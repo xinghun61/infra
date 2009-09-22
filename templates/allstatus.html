@@ -1,0 +1,6 @@
+{% block content %}
+Who,When,Message
+{% for a_status in status %}
+{{ a_status.username}}, {{ a_status.date}},{{ a_status.message}}
+{% endfor %}
+{% endblock %}

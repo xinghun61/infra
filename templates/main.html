@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <script type="text/javascript">
+    window.onload=function() {
+      document.add_new_message.message.focus();
+    }
+  </script>
+  <center>
+  {% if is_admin %}
+    <form action="/" name="add_new_message" method="post">
+      <input type="text" size="80" name="message">
+      <input type="submit" name="change" value="Change">
+      <input type="button" name="refresh" value="Refresh"
+             onclick="location.href='/';">
+    </form>
+  {% endif %}
+  <br><br>
+  <h2>Last 100 Chromium tree status</h2>
+  <table border="1" cellpadding="5">
+  <tr bgcolor="#CCCCFF">
+    <td><b>Who</b></td>
+    <td><b>When</b></td>
+    <td><b>Message</b></td>
+  </tr>
+  {% for a_status in status %}
+    <tr>
+      <td>{{ a_status.username|escape }}</td>
+      <td>{{ a_status.date|date:"D M d, H:i T " }}</td>
+      <td>{{ a_status.message }}</td>
+    </tr>
+  {% endfor %}
+
+  </table>
+  </center>
+{% endblock %}

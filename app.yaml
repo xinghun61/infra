@@ -1,0 +1,18 @@
+application: chromium-status
+version: 2
+runtime: python
+api_version: 1
+
+handlers:
+- url: /(.*\.(gif|png|jpg|ico))
+  static_files: static/\1
+  upload: static/(.*\.(gif|png|jpg|ico))
+
+- url: /stylesheets
+  static_dir: stylesheets
+
+- url: /templates
+  script: templates
+
+- url: /.*
+  script: main.py
