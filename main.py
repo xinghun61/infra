@@ -13,6 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 import lkgr
+import passwords
 import status
 import xmpp
 
@@ -26,6 +27,8 @@ URLS = [
   ('/revisions', lkgr.Revisions),
   ('/lkgr', lkgr.LastKnownGoodRevision),
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
+  # Useful to create the initial database. It should not be kept enabled.
+  #('/passwords', passwords.PasswordsPage),
 ]
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 
