@@ -14,6 +14,7 @@ from google.appengine.ext.webapp import util
 
 import lkgr
 import status
+import xmpp
 
 
 # Application configuration.
@@ -23,7 +24,8 @@ URLS = [
   ('/current', status.CurrentPage),
   ('/status', status.StatusPage),
   ('/revisions', lkgr.Revisions),
-  ('/lkgr', lkgr.LastKnownGoodRevision)
+  ('/lkgr', lkgr.LastKnownGoodRevision),
+  ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
 ]
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 

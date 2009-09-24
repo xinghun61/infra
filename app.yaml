@@ -3,6 +3,9 @@ version: 2
 runtime: python
 api_version: 1
 
+inbound_services:
+- xmpp_message
+
 handlers:
 - url: /(.*\.(gif|png|jpg|ico))
   static_files: static/\1
