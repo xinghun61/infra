@@ -59,5 +59,7 @@ class LastKnownGoodRevision(BasePage):
     """Look for the latest successful revision and return it."""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'
     self.response.headers['Content-Type'] = 'text/plain'
-    if Revision.gql('WHERE status = :1 ORDER BY revision DESC', True).get():
+    revision = Revision.gql('WHERE status = :1 ORDER BY revision DESC',
+                            True).get()
+    if revision:
       self.response.out.write(revision.revision)
