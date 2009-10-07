@@ -22,7 +22,7 @@ class Passwords(db.Model):
 
 class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
-  _VALID_EMAIL = re.compile(r"^.*@chromium\.org$")
+  _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
 
   def ValidateUser(self):
     """Checks if the user has the right to add messages.
@@ -41,7 +41,7 @@ class BasePage(webapp.RequestHandler):
       self.redirect(users.create_login_url(self.request.uri))
       return (False, False)
 
-    # Check if the username ends with @chromium.org.
+    # Check if the username ends with @chromium.org/@google.com.
     return (True, self._VALID_EMAIL.match(user.email()))
 
   def InitializeTemplate(self, title):
