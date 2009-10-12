@@ -27,7 +27,7 @@
     <tr>
       <td>{{ a_status.username|escape }}</td>
       <td>{{ a_status.date|date:"D M d, H:i T " }}</td>
-      <td>{{ a_status.message }}</td>
+      <td>{{ a_status.message|escape }}</td>
     </tr>
   {% endfor %}
 
