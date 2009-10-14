@@ -117,9 +117,15 @@ class MainPage(BasePage):
 
     template_values = self.InitializeTemplate('Chromium Tree Status')
     status = Status.gql('ORDER BY date DESC LIMIT 100')
+    last_status = status.get()
+    last_message = ''
+    if last_status:
+      last_message = last_status.message
+
     page_value = {
       'status': status,
       'is_admin': is_admin,
+      'last_message': last_message,
     }
     template_values.update(page_value)
     self.DisplayTemplate('main.html', template_values)

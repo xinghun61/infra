@@ -9,7 +9,7 @@
   <center>
   {% if is_admin %}
     <form action="/" name="add_new_message" method="post">
-      <input type="text" size="80" name="message">
+      <input type="text" size="80" name="message" value="{{ last_message|escape }}">
       <input type="submit" name="change" value="Change">
       <input type="button" name="refresh" value="Refresh"
              onclick="location.href='/';">
