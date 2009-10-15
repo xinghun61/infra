@@ -51,16 +51,21 @@ class AllStatusPage(BasePage):
       query.filter('date <',
                    datetime.datetime.utcfromtimestamp(int(start_date)))
 
-    # TODO(eroman): We should also be returning the very next entry whose
-    # date < enddate (otherwise we can't infer what the current status was at
-    # enddate, and there may be incomplete data.
     end_date = self.request.get('endTime')
+    beyond_end_of_range_status = None
     if end_date != "":
-      query.filter('date >=',
-                   datetime.datetime.utcfromtimestamp(int(end_date)))
+      end_date = datetime.datetime.utcfromtimestamp(int(end_date))
+      query.filter('date >=', end_date)
+      # We also need to get the very next status in the range, otherwise
+      # the caller can't tell what the effective tree status was at time
+      # |end_date|.
+      beyond_end_of_range_status = Status.gql(
+          'WHERE date < :end_date ORDER BY date DESC LIMIT 1',
+          end_date=end_date).get()
 
     page_value = {
       'status': query,
+      'beyond_end_of_range_status': beyond_end_of_range_status,
       'is_admin': is_admin,
     }
     template_values.update(page_value)

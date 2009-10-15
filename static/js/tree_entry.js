@@ -194,8 +194,7 @@ function MakeRuns(entries, timeRange) {
       timeRange.startTime : runs[runs.length - 1].GetEndTime();
   if (lastEndTime != timeRange.endTime) {
     var unknownEntry = new Entry(timeRange.endTime, Entry.AUTHOR_ORACLE,
-        "Missing data! (Probably because of the TODO in status.py, where " +
-        "final entry is not returned)");
+                                 "Missing data!");
     runs.push(new Run(unknownEntry, lastEndTime,
                       lastEndTime - timeRange.endTime));
   }
