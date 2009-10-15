@@ -1,0 +1,246 @@
+<html>
+  <head>
+    <script src="js/debug.js"></script>
+    <script src="js/dom_util.js"></script>
+    <script src="js/bind.js"></script>
+    <script src="js/tree_entry.js"></script>
+    <script src="js/data_fetcher.js"></script>
+    <script src="js/date_util.js"></script>
+    <script src="js/fragmentation_view.js"></script>
+    <script src="js/peak_hours_view.js"></script>
+    <script src="js/stats_view.js"></script>
+    <script src="js/list_view.js"></script>
+    <script src="js/viewer_app.js"></script>
+
+    <script>
+      var gViewerApp = new TreeStatusViewerApp();
+    </script>
+
+    <style>
+      .closed, .open, .maintenance, .unknown {
+        border-right: 1px solid white;
+      }
+      .closed {
+        background: red;
+      }
+      .open {
+        background: green;
+      }
+      .unknown {
+        background: gray;
+      }
+      .maintenance {
+        background: blue;
+        color: white;
+      }
+
+      .viewBadge, .viewBadge_selected {
+        font-size: 130%;
+        background: gray;
+        padding: 10px;
+      }
+
+      .viewBadge_selected {
+        background: yellow;
+      }
+
+      .sundayName {
+        border: 1px solid blue;
+      }
+
+      .saturdayName {
+        border: 1px solid black;
+      }
+
+      .open_badness0 {
+        color: red;
+      }
+
+      .open_badness1 {
+        color: orange;
+      }
+
+      .open_badness2 {
+        color: green;
+      }
+    </style>
+  </head>
+
+  <body onload="gViewerApp.OnPageLoaded()">
+    <h1>Chromium Tree Status</h1>
+
+<div style="border: 1px solid black">
+
+<table width=100%>
+<tr>
+<td>
+
+<form action="" method=GET>
+<input type=hidden value="fragmentation" name=curView id=curView />
+<table>
+<tr>
+<th align=right>Start date:</th>
+<td><input type=text width=10 value="TODAY" id=startTime name=startTime /></td>
+<td><i>Formatted as "YYYY/MM/DD".</i></td>
+</tr>
+<tr>
+<th align=right>Number of days:</th>
+<td><input type=text width=10 value=20 id=numDays name=numDays /></td>
+<td>&nbsp;</td>
+</tr>
+</table>
+
+<input type=submit value="Apply Time Range" style="padding: 10px;"/>
+</form>
+
+</td>
+<td align=right>
+<div>
+<span id=fragmentation_badge class="viewBadge"><a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('fragmentation')">Fragmentation view</a></span>
+<span id=peak_badge class="viewBadge"><a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('peak')">Peak hours view</a></span>
+<span id=stats_badge class="viewBadge"><a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('stats')">Stats view</a></span>
+<span id=list_badge class="viewBadge"><a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('list')">List view</a></span>
+</div>
+</td>
+</tr>
+
+</table>
+
+
+</div>
+
+<!-- ============================================================ -->
+<!-- UI widget to show when stuff is being loaded -->
+<!-- ============================================================ -->
+<div id=loading style="font-size: 200%; color: blue; padding: 10px; display:none;">Loading...</div>
+
+
+<!-- ============================================================ -->
+<!-- Spacer between time range controls and view panel -->
+<!-- ============================================================ -->
+<div style="margin: 3px;">&nbsp;</div>
+
+
+<!-- ============================================================ -->
+<!-- Fragmentation view content area -->
+<!-- ============================================================ -->
+    <div id=fragmentation_container style="display:none">
+      <div id=status></div>
+
+      <table>
+      <tr>
+
+      <td>
+      <div style="border: 1px solid black">
+
+      <table border=0>
+        <tr>
+          <td>
+            <div style="margin-bottom: 5px;">
+              <span class=open>&nbsp;&nbsp;&nbsp;&nbsp;</span> = Tree was open
+            </div>
+            <div style="margin-bottom: 5px;">
+              <span class=closed>&nbsp;&nbsp;&nbsp;&nbsp;</span> = Tree was closed
+            </div>
+            <div style="margin-bottom: 5px;">
+              <span class=maintenance>&nbsp;&nbsp;&nbsp;&nbsp;</span> = Tree was closed (maintenance)
+            </div>
+            <div style="margin-bottom: 5px;">
+              <span class=unknown>&nbsp;&nbsp;&nbsp;&nbsp;</span> = Dunno
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      </div>
+      </td>
+
+      <td style="padding-left: 15px;">
+      Click on the boxes below to see the particular status entry.
+      </td>
+
+      </tr>
+      </table>
+
+      <table width=100% border=0>
+        <thead>
+          <tr>
+            <td>&nbsp;</td>
+            <td width="100%">
+
+
+              <table width="100%" border=0>
+                <tr>
+                  <td width="12.25%" align=left>23:59</td>
+                  <td width="25%" align=center>18:00</td>
+                  <td width="25%" align=center>12:00</td>
+                  <td width="25%" align=center>06:00</td>
+                  <td width="12.25%" align=right>00:00</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </thead>
+        <tbody id=tbody></tbody>
+      </table>
+    </div>
+
+
+
+
+<!-- ============================================================ -->
+<!-- Stats view content area -->
+<!-- ============================================================ -->
+<div id=stats_container style="display:none">
+<h3>Total times</h3>
+<div id=timeClosed></div>
+<h3>Top authors</h3>
+<div id=topAuthors></div>
+<h3>Top message words</h3>
+<div id=topWords></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- List view content area -->
+<!-- ============================================================ -->
+<div id=list_container style="display:none">
+<table border=1>
+<thead>
+<tr>
+<th>Date</th>
+<th>Author</th>
+<th>Message</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody id=list_tbody></tbody>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!-- Peak hours view content area -->
+<!-- ============================================================ -->
+<div id=peak_container style="display:none">
+      <table width=100% border=0>
+        <thead>
+          <tr>
+            <td>&nbsp;</td>
+            <td width="100%">
+              <table width="100%" border=0>
+                <tr>
+                  <td width="33.333%" align=center>Time open in MTV 9-5</td>
+                  <td width="33.333%" align=center>Time open in China 9-5</td>
+                  <td width="33.333%" align=center>Time open in Denmark 9-5</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </thead>
+        <tbody id=peak_tbody></tbody>
+      </table>
+</div>
+
+
+    <pre id=log></pre>
+  </body>
+</html>

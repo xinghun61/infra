@@ -7,7 +7,7 @@ inbound_services:
 - xmpp_message
 
 handlers:
-- url: /(.*\.(gif|png|jpg|ico))
+- url: /(.*\.(gif|png|jpg|ico|html|js))
   static_files: static/\1
   upload: static/(.*\.(gif|png|jpg|ico))
 
