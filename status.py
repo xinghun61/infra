@@ -44,9 +44,23 @@ class AllStatusPage(BasePage):
       return
 
     template_values = self.InitializeTemplate('Chromium Tree Status')
-    status = Status.gql('ORDER BY date DESC')
+
+    query = db.Query(Status).order('-date')
+    start_date = self.request.get('startTime')
+    if start_date != "":
+      query.filter('date <',
+                   datetime.datetime.utcfromtimestamp(int(start_date)))
+
+    # TODO(eroman): We should also be returning the very next entry whose
+    # date < enddate (otherwise we can't infer what the current status was at
+    # enddate, and there may be incomplete data.
+    end_date = self.request.get('endTime')
+    if end_date != "":
+      query.filter('date >=',
+                   datetime.datetime.utcfromtimestamp(int(end_date)))
+
     page_value = {
-      'status': status,
+      'status': query,
       'is_admin': is_admin,
     }
     template_values.update(page_value)
