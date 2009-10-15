@@ -88,16 +88,16 @@ function ParseDataResponseAndAppend(entries, text, error) {
     if (line.length == 0)
       continue;
 
-    var parts = lines[i].split(",", 3);
-
-    if (parts.length != 3) {
-      Log("Failed to parse server response line: " + lines[i]);
+    // Comma separated parts (the message part may itself contain commas).
+    var parts = /^([^,]*),([^,]*),(.*)$/.exec(line);
+    if (!parts) {
+      Log("Failed to parse server response line: " + line);
       continue;
     }
 
-    var author = trim(parts[0]);
-    var dateStr = trim(parts[1]);
-    var message = trim(parts[2]);
+    var author = trim(parts[1]);
+    var dateStr = trim(parts[2]);
+    var message = trim(parts[3]);
 
     // The time has a trailing ".XXXXX" component we don't care for.
     // Also append "UTC" so we are left with a string resembling:
