@@ -62,22 +62,14 @@ function ParseDataResponseAndAppend(entries, text, error) {
   if (error) {
     // If we failed to download the file, error.
     Log("Failed to retrieve the data from server. Error:\n" + error);
-    alert("Failed to retrieve the data from server. Error:\n" + error);
     return false;  // failure.
   }
 
   var lines = text.split("\n");
 
-  if (lines.length > 2 && lines[2].indexOf("<title>Login</title>") != -1) {
-    alert("TODO: Must login before this will work");
-    Log("Server returned: " + text);
-    return false;
-  }
-
   // Check that the input is in a format we expect.
   if (lines.length.length < 2 || lines[1] != "Who,When,Message") {
     Log("Server returned: " + text);
-    alert("Failed to parse server response.");
     return false;
   }
 
@@ -144,7 +136,10 @@ DataFetcher.GetTreeStatusEntries = function(timeRange, callback) {
  */
 function OnFetchedDataComplete(callback, text, error) {
   var entries = [];
-  ParseDataResponseAndAppend(entries, text, error);
+  var ok = ParseDataResponseAndAppend(entries, text, error);
+  // TODO(eroman): Fix login situation.
+  if (!ok)
+    alert("TODO: You probably aren't logged in; try doing that first.");
   callback(entries);
 }
 
