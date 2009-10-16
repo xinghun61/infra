@@ -1,5 +1,5 @@
 application: chromium-status
-version: 2
+version: 1
 runtime: python
 api_version: 1
 
@@ -9,7 +9,7 @@ inbound_services:
 handlers:
 - url: /(.*\.(gif|png|jpg|ico|html|js))
   static_files: static/\1
-  upload: static/(.*\.(gif|png|jpg|ico))
+  upload: static/(.*\.(html|js|gif|png|jpg|ico))
 
 - url: /stylesheets
   static_dir: stylesheets
