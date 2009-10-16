@@ -38,11 +38,6 @@ class Status(db.Model):
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
   def get(self):
-    """Displays the current message and nothing else."""
-    (validated, is_admin) = self.ValidateUser()
-    if not validated:
-      return
-
     template_values = self.InitializeTemplate('Chromium Tree Status')
 
     query = db.Query(Status).order('-date')
@@ -66,7 +61,6 @@ class AllStatusPage(BasePage):
     page_value = {
       'status': query,
       'beyond_end_of_range_status': beyond_end_of_range_status,
-      'is_admin': is_admin,
     }
     template_values.update(page_value)
     self.DisplayTemplate('allstatus.html', template_values)
