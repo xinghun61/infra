@@ -38,7 +38,7 @@ class Status(db.Model):
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
   def get(self):
-    template_values = self.InitializeTemplate('Chromium Tree Status')
+    template_values = {'title': 'Chromium Tree Status'}
 
     query = db.Query(Status).order('-date')
     start_date = self.request.get('startTime')
