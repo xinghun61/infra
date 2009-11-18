@@ -10,8 +10,9 @@ import re
 import wsgiref.handlers
 
 from django.utils import simplejson as json
-from google.appengine.ext import db
+from google.appengine.api import memcache
 from google.appengine.api import users
+from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
@@ -72,7 +73,11 @@ class CurrentPage(BasePage):
   def get(self):
     """Displays the current message and nothing else."""
     format = self.request.get('format', 'html')
-    status = Status.gql('ORDER BY date DESC').get()
+    status = memcache.get('last_status')
+    if status is None:
+      status = Status.gql('ORDER BY date DESC').get()
+      # Cache 2 seconds.
+      memcache.add('last_status', status, 2)
     if not status:
       self.error(501)
     elif format == 'raw':
@@ -129,7 +134,7 @@ class MainPage(BasePage):
       return
 
     template_values = self.InitializeTemplate('Chromium Tree Status')
-    status = Status.gql('ORDER BY date DESC LIMIT 100')
+    status = Status.gql('ORDER BY date DESC LIMIT 15')
     last_status = status.get()
     last_message = ''
     if last_status:
