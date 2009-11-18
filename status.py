@@ -88,7 +88,7 @@ class CurrentPage(BasePage):
       self.response.out.write(json.dumps(status.AsDict()))
     elif format == 'html':
       message_value = {'message': status.message}
-      self.DisplayTemplate('current.html', message_value)
+      self.DisplayTemplate('current.html', message_value, use_cache=True)
     else:
       self.error(400)
 

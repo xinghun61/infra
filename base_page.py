@@ -9,6 +9,7 @@ import hashlib
 import os
 import re
 
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -54,7 +55,18 @@ class BasePage(webapp.RequestHandler):
     }
     return template_values
 
-  def DisplayTemplate(self, name, template_values):
-    path = os.path.join(os.path.dirname(__file__), 'templates/%s' % name)
+  def DisplayTemplate(self, name, template_values, use_cache=False):
+    """Replies to a http request with a template.
+
+    Optionally cache it for 1 second. Only to be used for user-invariant
+    pages!"""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
-    self.response.out.write(template.render(path, template_values))
+    buffer = None
+    if use_cache:
+      buffer = memcache.get(name)
+    if not buffer:
+      path = os.path.join(os.path.dirname(__file__), 'templates/%s' % name)
+      buffer = template.render(path, template_values)
+      if use_cache:
+        memcache.add(name, buffer, 1)
+    self.response.out.write(buffer)
