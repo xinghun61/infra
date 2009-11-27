@@ -17,5 +17,9 @@ handlers:
 - url: /templates
   script: templates
 
+- url: /restricted/.*
+  script: main.py
+  login: admin
+
 - url: /.*
   script: main.py

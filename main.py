@@ -12,6 +12,7 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
+import breakpad
 import lkgr
 import passwords
 import status
@@ -26,11 +27,20 @@ URLS = [
   ('/status', status.StatusPage),
   ('/revisions', lkgr.Revisions),
   ('/lkgr', lkgr.LastKnownGoodRevision),
+  ('/breakpad', breakpad.BreakPad),
+  ('/restricted/breakpad/im', breakpad.SendIM),
+  ('/restricted/breakpad/cleanup', breakpad.Cleanup),
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
-  # Useful to create the initial database. It should not be kept enabled.
-  #('/passwords', passwords.PasswordsPage),
+  # Useful to create the initial table schema. It should never be kept enabled.
+  # Keeping them in the /restricted/ zone is a basic safeguard.
+  #('/restricted/passwords', passwords.PasswordsPage),
+  #('/restricted/admins', breakpad.SetData),
 ]
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
+
+
+# Register django filters
+webapp.template.register_template_library('filters')
 
 
 def main():

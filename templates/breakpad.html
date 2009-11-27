@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Last Break Pad reports</h2>
+  {% for r in reports %}
+  <strong>Date:</strong> {{ r.date|date:"D M d, H:i T " }}<br>
+  <strong>User:</strong> {{ r.user|escape }}<br>
+  <strong>Args:</strong> {{ r.args|escape }}<br>
+  <strong>Stack:</strong><br>{{ r.stack|escape|spacify|linebreaksbr }}<br>
+  <p>
+  {% endfor %}
+{% endblock %}

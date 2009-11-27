@@ -9,15 +9,16 @@ can be managed with the admin-console. *Sigh*"""
 
 import hashlib
 
-import base_page
+from google.appengine.ext import webapp
+
+from utils import work_queue_only
 
 
-class PasswordsPage(base_page.BasePage):
+class PasswordsPage(webapp.RequestHandler):
   """This page is a potential security hole. Don't enable it unless
   necessary."""
+  @work_queue_only
   def get(self):
-    if not self.ValidateUser()[1]:
-      return
     raw_password = self.request.get('password')
     if raw_password:
       password_sha1 = password_sha1=hashlib.sha1(raw_password).hexdigest()

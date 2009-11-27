@@ -1,0 +1,4 @@
+cron:
+- description: Cleanup old logs
+  url: /restricted/breakpad/cleanup
+  schedule: every 24 hours
