@@ -11,6 +11,7 @@ import hashlib
 
 from google.appengine.ext import webapp
 
+import base_page
 from utils import work_queue_only
 
 

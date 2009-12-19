@@ -25,6 +25,10 @@ class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
   _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
 
+  def __init__(self):
+    webapp.RequestHandler.__init__(self)
+    self.app_name = 'Chromium'
+
   def ValidateUser(self):
     """Checks if the user has the right to add messages.
 
@@ -50,6 +54,7 @@ class BasePage(webapp.RequestHandler):
     user = users.get_current_user()
     template_values = {
       'username': user.email(),
+      'app_name': self.app_name,
       'title': title,
       'current_UTC_time': datetime.datetime.now(),
     }

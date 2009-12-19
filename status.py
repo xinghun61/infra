@@ -39,8 +39,6 @@ class Status(db.Model):
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
   def get(self):
-    template_values = {'title': 'Chromium Tree Status'}
-
     query = db.Query(Status).order('-date')
     start_date = self.request.get('startTime')
     if start_date != "":
@@ -59,11 +57,9 @@ class AllStatusPage(BasePage):
           'WHERE date < :end_date ORDER BY date DESC LIMIT 1',
           end_date=end_date).get()
 
-    page_value = {
-      'status': query,
-      'beyond_end_of_range_status': beyond_end_of_range_status,
-    }
-    template_values.update(page_value)
+    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+    template_values['status'] = query
+    template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
     self.DisplayTemplate('allstatus.html', template_values)
 
 
@@ -87,8 +83,9 @@ class CurrentPage(BasePage):
       self.response.headers['Content-Type'] = 'application/json'
       self.response.out.write(json.dumps(status.AsDict()))
     elif format == 'html':
-      message_value = {'message': status.message}
-      self.DisplayTemplate('current.html', message_value, use_cache=True)
+      template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+      template_values['message'] = status.message
+      self.DisplayTemplate('current.html', template_values, use_cache=True)
     else:
       self.error(400)
 
@@ -133,19 +130,16 @@ class MainPage(BasePage):
     if not validated:
       return
 
-    template_values = self.InitializeTemplate('Chromium Tree Status')
-    status = Status.gql('ORDER BY date DESC LIMIT 15')
+    status = Status.gql('ORDER BY date DESC LIMIT 25')
     last_status = status.get()
     last_message = ''
     if last_status:
       last_message = last_status.message
 
-    page_value = {
-      'status': status,
-      'is_admin': is_admin,
-      'last_message': last_message,
-    }
-    template_values.update(page_value)
+    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+    template_values['status'] = status
+    template_values['is_admin'] = is_admin
+    template_values['last_message'] = last_message
     self.DisplayTemplate('main.html', template_values)
 
   def post(self):
