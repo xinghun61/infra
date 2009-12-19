@@ -52,9 +52,13 @@ class BasePage(webapp.RequestHandler):
   def InitializeTemplate(self, title):
     """Initializes the template values with information needed by all pages."""
     user = users.get_current_user()
+    if user:
+      user_email = user.email()
+    else:
+      user_email = ''
     template_values = {
-      'username': user.email(),
       'app_name': self.app_name,
+      'username': user_email,
       'title': title,
       'current_UTC_time': datetime.datetime.now(),
     }
