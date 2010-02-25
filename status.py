@@ -121,6 +121,15 @@ class StatusPage(BasePage):
     self.redirect('/')
 
 
+class StatusViewerPage(BasePage):
+  """Displays the /status_viewer page."""
+
+  def get(self):
+    """Displays status_viewer.html template."""
+    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+    self.DisplayTemplate('status_viewer.html', template_values)
+
+
 class MainPage(BasePage):
   """Displays the main page containing the last 100 messages."""
 

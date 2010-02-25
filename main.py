@@ -25,6 +25,7 @@ URLS = [
   ('/allstatus', status.AllStatusPage),
   ('/current', status.CurrentPage),
   ('/status', status.StatusPage),
+  ('/status_viewer', status.StatusViewerPage),
   ('/revisions', lkgr.Revisions),
   ('/lkgr', lkgr.LastKnownGoodRevision),
   ('/breakpad', breakpad.BreakPad),
