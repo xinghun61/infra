@@ -7,6 +7,7 @@
   <strong>User:</strong> {{ r.user|escape }}<br>
   <strong>Args:</strong> {{ r.args|escape }}<br>
   <strong>Stack:</strong><br>{{ r.stack|escape|spacify|linebreaksbr }}<br>
+  <strong>Exception:</strong><br>{{ r.exception|escape|spacify|linebreaksbr }}<br>
   <p>
   {% endfor %}
 {% endblock %}
