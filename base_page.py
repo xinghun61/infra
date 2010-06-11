@@ -10,6 +10,7 @@ import os
 import re
 
 from google.appengine.api import memcache
+from google.appengine.api import oauth
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -29,12 +30,22 @@ class BasePage(webapp.RequestHandler):
     webapp.RequestHandler.__init__(self)
     self.app_name = 'Chromium'
 
+  def GetCurrentUser(self):
+    """Gets the current user (may be an OAuth user)."""
+    user = users.get_current_user()
+    if not user:
+      try:
+        user = oauth.get_current_user()
+      except oauth.OAuthRequestError:
+        return None
+    return user
+
   def ValidateUser(self):
     """Checks if the user has the right to add messages.
 
     Returns tuple (validated, is_admin)"""
     # If the current user is not logged in, redirect to the login page.
-    user = users.get_current_user()
+    user = self.GetCurrentUser()
     if not user:
       # Warning: this is not secure over http, use https.
       password = self.request.get('password')
@@ -51,7 +62,7 @@ class BasePage(webapp.RequestHandler):
 
   def InitializeTemplate(self, title):
     """Initializes the template values with information needed by all pages."""
-    user = users.get_current_user()
+    user = self.GetCurrentUser()
     if user:
       user_email = user.email()
     else:

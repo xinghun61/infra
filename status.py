@@ -161,7 +161,7 @@ class MainPage(BasePage):
     message = self.request.get('message')
     if message:
       status = Status(message=message,
-                      username=users.get_current_user().email())
+                      username=self.GetCurrentUser().email())
       status.put()
 
     self.get()
