@@ -160,6 +160,10 @@ class MainPage(BasePage):
     # Get the posted information.
     message = self.request.get('message')
     if message:
+      user = self.GetCurrentUser()
+      if not user or not user.email():
+        return HttpResponse('Failed to retrieve your email address to update '
+            'the tree status. Please try signing in first')
       status = Status(message=message,
                       username=self.GetCurrentUser().email())
       status.put()

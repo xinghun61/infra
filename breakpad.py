@@ -39,6 +39,7 @@ class Report(db.Model):
 
 class Admins(db.Model):
   user = db.UserProperty()
+  # When set to 0, doesn't sent IMs.
   nb_lines = db.IntegerProperty(default=5)
 
 
@@ -84,6 +85,8 @@ class SendIM(webapp.RequestHandler):
     stack = self.request.get('stack')
     stacks = stack.split('\n')
     for i in Admins.all():
+      if not i.nb_lines or not i.user or not i.user.email():
+        continue
       stack_text = '\n'.join(stacks[-min(len(stacks), i.nb_lines):])
       text = '%s:\n%s' % (user, stack_text)
       xmpp.send_message(i.user.email(), text)
