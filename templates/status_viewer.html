@@ -11,6 +11,7 @@
     <script src="js/stats_view.js"></script>
     <script src="js/list_view.js"></script>
     <script src="js/viewer_app.js"></script>
+    <script src="js/dygraph-combined.js"></script>
 
     <script>
       var gViewerApp = new TreeStatusViewerApp();
@@ -62,6 +63,17 @@
 
       .open_badness2 {
         color: green;
+      }
+      .dygraph {
+        font-family: sans-serif;
+        margin-bottom: 22px;
+        padding-bottom: 12px;
+        background: -webkit-gradient(linear, 
+                                     left top, 
+                                     left bottom, 
+                                     from(#fff), 
+                                     to(#eee));
+        border-radius: 10px;
       }
     </style>
     <title>{{ title }}</title>
@@ -222,6 +234,20 @@
 <!-- Peak hours view content area -->
 <!-- ============================================================ -->
 <div id=peak_container style="display:none">
+  <table class=dygraph width=100%>
+    <tr>
+      <td width=820px>
+        <div id=peak_dygraph style="width:800px;height:320px;"></div>
+        <span style="font-size:0.6em;position:relative;top:5px;left:55px;">
+          Use the box in the left corner to change the rolling average period.
+          Default: 7 days.
+        </span>
+      </td>
+      <td>
+        <div id=peak_dygraph_legend></div>
+      </td>
+    </tr>
+  </table>
       <table width=100% border=0>
         <thead>
           <tr>
@@ -229,9 +255,10 @@
             <td width="100%">
               <table width="100%" border=0>
                 <tr>
-                  <td width="33.333%" align=center>Time open in MTV 9-5</td>
-                  <td width="33.333%" align=center>Time open in China 9-5</td>
-                  <td width="33.333%" align=center>Time open in Denmark 9-5</td>
+                  <td width="25%" align=center>Time open in MTV 9-5</td>
+                  <td width="25%" align=center>Time open in NYC 9-5</td>
+                  <td width="25%" align=center>Time open in Denmark 9-5</td>
+                  <td width="25%" align=center>Time open in Tokyo 9-5</td>
                 </tr>
               </table>
             </td>

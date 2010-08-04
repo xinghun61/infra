@@ -5,8 +5,8 @@
 /**
  * Factory function to create a View for "peak hours".
  *
- * This display of the data shows tree closure/open totals during peak hours of
- * mountain view, china, and denmark.
+ * This display of the data shows tree closure/open totals during peak hours in
+ * various time zones.
  */
 var CreatePeakHoursView;
 
@@ -25,7 +25,7 @@ function PeakHoursView(timeRange, entries) {
 }
 
 PeakHoursView.prototype.Show = function(visible) {
- gViewerApp.ShowViewContentAndTabArea('peak', visible);
+ gViewerApp.ShowViewContentAndTabArea("peak", visible);
 }
 
 /**
@@ -34,21 +34,34 @@ PeakHoursView.prototype.Show = function(visible) {
  * @param {TimeRange} timeRange
  */
 function Draw(entries, timeRange) {
-  var utcOffsetsMillis = [
-    -7 * DateUtil.MILLIS_PER_HOUR,  // UTC-7 -- Mountain View
-    8 * DateUtil.MILLIS_PER_HOUR, // UTC+8 -- China
-    1 * DateUtil.MILLIS_PER_HOUR  // UTC+1 -- Denmark
-  ];
+  var utcOffsetsMillis = {
+    // Please keep this ordered by UTC offset.
+    // If you extend this list, you need to adjust column widths in 
+    // AddPeakColumn() and on the status_viewer.html page.
+    MTV: -7 * DateUtil.MILLIS_PER_HOUR,  // UTC-7 -- Mountain View
+    NYC: -4 * DateUtil.MILLIS_PER_HOUR,  // UTC-4 -- New York
+    CET: 1 * DateUtil.MILLIS_PER_HOUR,   // UTC+1 -- Denmark
+    TOK: 9 * DateUtil.MILLIS_PER_HOUR    // UTC+9 -- Tokyo
+  };
+  var graphCSV = [];
 
   // Find which is the minimum and maximum.
-  var minUTCOffsetMillis = utcOffsetsMillis[0];
-  var maxUTCOffsetMillis = utcOffsetsMillis[0];
+  var minUTCOffsetMillis = utcOffsetsMillis.MTV;
+  var maxUTCOffsetMillis = utcOffsetsMillis.MTV;
 
-  for (var i = 1; i < utcOffsetsMillis.length; ++i) {
-    var offset = utcOffsetsMillis[i];
+  for (var timezone in utcOffsetsMillis) {
+    var offset = utcOffsetsMillis[timezone];
     minUTCOffsetMillis = Math.min(minUTCOffsetMillis, offset);
     maxUTCOffsetMillis = Math.max(maxUTCOffsetMillis, offset);
   }
+  
+  // Set the graph csv header: "Date,MTV,NYC,CET,TOK\n".
+  graphCSV.push("Date");
+  for (var timezone in utcOffsetsMillis) {
+    graphCSV.push(",");
+    graphCSV.push(timezone);
+  }
+  graphCSV.push("\n");
 
   // Figure out what days we touch.
   // 
@@ -66,8 +79,24 @@ function Draw(entries, timeRange) {
   // Draw the rows for each day worth of data.
   for (var i = 0; i < days.length; ++i) {
     var day = days[i];
-    DrawDay(tbody, entries, day, utcOffsetsMillis);
+    DrawDay(tbody, entries, day, utcOffsetsMillis, graphCSV);
   }
+
+  // Draw a graph with the csv data across all dates.
+  // Dygraph docs at http://danvk.org/dygraphs/
+  var peakGraph = 
+      new Dygraph(document.getElementById("peak_dygraph"),
+                  graphCSV.join(""),
+                  {
+                    rollPeriod: 7,
+                    showRoller: true,
+                    axisLabelFontSize: 11,
+                    includeZero: true,
+                    colors: ["red", "orange", "blue", "LightSkyBlue"],
+                    strokeWidth: 3,
+                    labelsDiv: document.getElementById("peak_dygraph_legend"),
+                    labelsSeparateLines: true,
+                  });
 }
 
 /**
@@ -75,14 +104,18 @@ function Draw(entries, timeRange) {
  * @parm {DOMNode} tbody
  * @param {array<Entry>} entries
  * @param {TimeRange} day
+ * @param {dict} utcOffsetsMillis
+ * @param {array} graphCSV
  */
-function DrawDay(tbody, entries, utcDay, utcOffsetsMillis) {
+function DrawDay(tbody, entries, utcDay, utcOffsetsMillis, graphCSV) {
   var tr = DomUtil.AddNode(tbody, "tr");
 
 
   var tdForDayName = DomUtil.AddNode(tr, "td");
 
   DrawUTCDayNameColumn(utcDay, tdForDayName);
+  // Start each graphCSV row with a date like "2010/08/01".
+  graphCSV.push(tdForDayName.innerText);
 
   var tableTd = DomUtil.AddNode(tr, "td");
 
@@ -95,12 +128,14 @@ function DrawDay(tbody, entries, utcDay, utcOffsetsMillis) {
 
   var tr = DomUtil.AddNode(table, "tr");
 
-  // Percentage width for the column so things line up.
-  var width = (100 / utcOffsetsMillis.length).toFixed(3) + "%";
-
-  for (var i = 0; i < utcOffsetsMillis.length; ++i) {
-    AddPeakColumn(tr, entries, utcDay, utcOffsetsMillis[i], width);
+  for (var timezone in utcOffsetsMillis) {
+    AddPeakColumn(tr,
+                  entries,
+                  utcDay,
+                  utcOffsetsMillis[timezone],
+                  graphCSV);
   }
+  graphCSV.push("\n");
 }
 
 /**
@@ -133,10 +168,11 @@ function GetStateCountsInRange(runs, timeRange) {
   return statusTotalsSeconds;
 }
 
-function AddPeakColumn(tr, entries, utcDay, utcOffsetMillis, width) {
+function AddPeakColumn(tr, entries, utcDay, utcOffsetMillis, graphCSV) {
   var td = DomUtil.AddNode(tr, "td");
 
-  td.width = width;
+  // Width is (100/[items in utcMillisOffsets])%.
+  td.width = "25%";
   td.align = "center";
 
   // Get a day range for the timezone.
@@ -160,12 +196,14 @@ function AddPeakColumn(tr, entries, utcDay, utcOffsetMillis, width) {
   var color = "";
   var className = "";
 
+  var percentOpenNumber = "0.0";
   if (total == 0) {
     // This can happen if the day is in the future (edge day of slow timezone).
     percentOpenText = "N/A";
   } else {
     var fraction = statusTotalsSeconds.GetOpen() / total;
-    percentOpenText = (100 * fraction).toFixed(2) + "%";
+    percentOpenNumber = (100 * fraction).toFixed(2);
+    percentOpenText = percentOpenNumber + "%";
 
     // If we didn't fetch all the data necessary, our percentage won't be
     // accurate as it is missing zones.
@@ -183,6 +221,7 @@ function AddPeakColumn(tr, entries, utcDay, utcOffsetMillis, width) {
       }
     }
   }
+  graphCSV.push("," + percentOpenNumber);
 
   var span = DomUtil.AddNode(td, "span");
   span.className = className;
