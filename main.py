@@ -13,6 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 import breakpad
+import event_push
 import lkgr
 import passwords
 import status
@@ -31,6 +32,9 @@ URLS = [
   ('/breakpad', breakpad.BreakPad),
   ('/restricted/breakpad/im', breakpad.SendIM),
   ('/restricted/breakpad/cleanup', breakpad.Cleanup),
+  ('/recent-events', event_push.RecentEvents),
+  ('/status-receiver', event_push.StatusReceiver),
+  ('/restricted/status-processor', event_push.StatusProcessor),
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
   # Useful to create the initial table schema. It should never be kept enabled.
   # Keeping them in the /restricted/ zone is a basic safeguard.
