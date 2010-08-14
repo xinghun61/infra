@@ -22,13 +22,18 @@ class Passwords(db.Model):
   password_sha1 = db.StringProperty(required=True, multiline=False)
 
 
+class GlobalConfig(db.Model):
+  """Instance-specific config like application name."""
+  app_name = db.StringProperty(required=True)
+
+
 class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
   _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
+  app_name = None
 
   def __init__(self):
     webapp.RequestHandler.__init__(self)
-    self.app_name = 'Chromium'
 
   def GetCurrentUser(self):
     """Gets the current user (may be an OAuth user)."""
@@ -90,3 +95,17 @@ class BasePage(webapp.RequestHandler):
       if use_cache:
         memcache.add(name, buffer, 1)
     self.response.out.write(buffer)
+
+
+def bootstrap():
+  config = db.GqlQuery('SELECT __key__ FROM GlobalConfig').get()
+  if config is None:
+    # Insert a dummy GlobalConfig so it can be edited through the admin
+    # console
+    app_name = os.environ['APPLICATION_ID']
+    if app_name.endswith('-status'):
+      app_name = app_name[:-7]
+    GlobalConfig(app_name=app_name).put()
+    BasePage.app_name = app_name
+  else:
+    BasePage.app_name = config.app_name

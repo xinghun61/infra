@@ -12,6 +12,7 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
+import base_page
 import breakpad
 import event_push
 import lkgr
@@ -50,6 +51,7 @@ webapp.template.register_template_library('filters')
 
 def main():
   """Manages and displays chromium tree and revisions status."""
+  base_page.bootstrap()
   util.run_wsgi_app(APPLICATION)
 
 
