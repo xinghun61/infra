@@ -18,6 +18,7 @@ import event_push
 import lkgr
 import passwords
 import status
+import utils
 import xmpp
 
 
@@ -52,6 +53,7 @@ webapp.template.register_template_library('filters')
 def main():
   """Manages and displays chromium tree and revisions status."""
   base_page.bootstrap()
+  utils.bootstrap()
   util.run_wsgi_app(APPLICATION)
 
 

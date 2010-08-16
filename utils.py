@@ -7,6 +7,7 @@
 import os
 
 from google.appengine.api import users
+from google.appengine.ext import db
 
 
 def is_dev_env():
@@ -36,3 +37,26 @@ def work_queue_only(func):
       myself.response.set_status(401)
       myself.response.out.write('Handler only accessible for work queues')
   return decorated
+
+
+def admin_only(func):
+  """Valid for BasePage objects only."""
+  def decorated(self, *args, **kwargs):
+    if is_dev_env() or self.ValidateUser()[1]:
+      return func(self, *args, **kwargs)
+    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.out.write('Forbidden')
+    self.error(403)
+  return decorated
+
+
+def AsDict(self):
+  ret = {}
+  for k in self.properties():
+    ret[k] = str(getattr(self, k))
+  return ret
+
+
+def bootstrap():
+  """Monkey patch db.Model.AsDict()"""
+  db.Model.AsDict = AsDict

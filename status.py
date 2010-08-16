@@ -28,13 +28,6 @@ class Status(db.Model):
   # The message. It can contain html code.
   message = db.StringProperty(required=True)
 
-  def AsDict(self):
-    return {
-      'username': self.username,
-      'date': str(self.date),
-      'message': self.message,
-    }
-
 
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""

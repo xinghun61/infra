@@ -21,6 +21,8 @@ from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
 from base_page import BasePage
 
+import utils
+
 
 class Event(polymodel.PolyModel):
   """Base class for every events pushed by buildbot's StatusPush."""
@@ -169,14 +171,9 @@ SUPPORTED_EVENTS = {
 
 class StatusReceiver(BasePage):
   """Buildbot's HttpStatusPush event receiver"""
+  @utils.admin_only
   def post(self):
     self.response.headers['Content-Type'] = 'text/plain'
-    if (not os.environ['SERVER_SOFTWARE'].startswith('Dev') and
-        not self.ValidateUser()[1]):
-      self.response.out.write('Forbidden')
-      self.error(403)
-      return
-
     try:
       # TODO(maruel): Safety check, pwd?
       packets = simplejson.loads(self.request.POST['packets'])
