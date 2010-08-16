@@ -52,10 +52,11 @@ webapp.template.register_template_library('filters')
 
 def main():
   """Manages and displays chromium tree and revisions status."""
-  base_page.bootstrap()
-  utils.bootstrap()
   util.run_wsgi_app(APPLICATION)
 
 
 if __name__ == "__main__":
+  # Do some one-time initializations.
+  base_page.bootstrap()
+  utils.bootstrap()
   main()
