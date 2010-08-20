@@ -58,5 +58,6 @@ def main():
 if __name__ == "__main__":
   # Do some one-time initializations.
   base_page.bootstrap()
+  passwords.bootstrap()
   utils.bootstrap()
   main()

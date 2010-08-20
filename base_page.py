@@ -18,7 +18,10 @@ from google.appengine.ext.webapp import template
 
 
 class Passwords(db.Model):
-  """Super users. Useful for automated scripts."""
+  """Super users. Useful for automated scripts.
+
+  Should be in passwords.py but defined here to not cause a circular dependency.
+  """
   password_sha1 = db.StringProperty(required=True, multiline=False)
 
 
@@ -30,7 +33,7 @@ class GlobalConfig(db.Model):
 class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
   _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
-  app_name = None
+  app_name = ''
 
   def __init__(self):
     webapp.RequestHandler.__init__(self)
@@ -98,14 +101,17 @@ class BasePage(webapp.RequestHandler):
 
 
 def bootstrap():
-  config = db.GqlQuery('SELECT __key__ FROM GlobalConfig').get()
+  app_name = os.environ['APPLICATION_ID']
+  if app_name.endswith('-status'):
+    app_name = app_name[:-7]
+  config = db.GqlQuery('SELECT * FROM GlobalConfig').get()
   if config is None:
     # Insert a dummy GlobalConfig so it can be edited through the admin
     # console
-    app_name = os.environ['APPLICATION_ID']
-    if app_name.endswith('-status'):
-      app_name = app_name[:-7]
     GlobalConfig(app_name=app_name).put()
-    BasePage.app_name = app_name
+  elif not config.app_name:
+    config.app_name = app_name
+    config.put()
   else:
-    BasePage.app_name = config.app_name
+    app_name = config.app_name
+  BasePage.app_name = app_name

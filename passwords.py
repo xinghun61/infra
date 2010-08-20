@@ -9,6 +9,7 @@ can be managed with the admin-console. *Sigh*"""
 
 import hashlib
 
+from google.appengine.ext import db
 from google.appengine.ext import webapp
 
 import base_page
@@ -29,3 +30,9 @@ class PasswordsPage(webapp.RequestHandler):
         return
       password = base_page.Passwords(password_sha1=password_sha1)
       password.put()
+
+
+def bootstrap():
+  if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
+    # Insert a dummy Passwords so it can be edited through the admin console
+    base_page.Passwords(password_sha1='invalidhash').put()
