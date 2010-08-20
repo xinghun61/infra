@@ -23,3 +23,21 @@ handlers:
 
 - url: /.*
   script: main.py
+
+
+# Search DEFAULT_SKIP_FILES in google.appengine.api.appinfo plus a few others
+skip_files: |
+    ^(.*/)?(
+    (app\.yaml)|
+    (app\.yml)|
+    (index\.yaml)|
+    (index\.yml)|
+    (#.*#)|
+    (.*~)|
+    (.*\.py[co])|
+    (.*/RCS/.*)|
+    (\..*)|
+    (tools/.*)|
+    ([A-Z]+(\.py)?)|
+    (Makefile)
+    )$
