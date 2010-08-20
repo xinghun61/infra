@@ -53,7 +53,7 @@ def admin_only(func):
 def AsDict(self):
   ret = {}
   for k in self.properties():
-    ret[k] = str(getattr(self, k))
+    ret[k] = unicode(getattr(self, k))
   return ret
 
 
