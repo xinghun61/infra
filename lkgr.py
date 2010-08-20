@@ -18,7 +18,7 @@ class Revision(db.Model):
   # The success (True)/Failure (False) status of this revision.
   status = db.BooleanProperty(required=True)
   # The steps that caused the failure (if any).
-  failed_steps = db.StringProperty()
+  failed_steps = db.TextProperty()
 
 
 class Revisions(BasePage):

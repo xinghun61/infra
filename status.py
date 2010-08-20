@@ -155,8 +155,11 @@ class MainPage(BasePage):
     if message:
       user = self.GetCurrentUser()
       if not user or not user.email():
-        return HttpResponse('Failed to retrieve your email address to update '
-            'the tree status. Please try signing in first')
+        self.response.out.write(
+            '<html><body>Failed to retrieve your email address to update '
+            'the tree status. Please try signing in first</body></html>')
+        self.error(403)
+        return
       status = Status(message=message,
                       username=self.GetCurrentUser().email())
       status.put()
