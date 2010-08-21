@@ -13,6 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 import base_page
+import static_blobs
 import breakpad
 import event_push
 import lkgr
@@ -29,6 +30,11 @@ URLS = [
   ('/current', status.CurrentPage),
   ('/status', status.StatusPage),
   ('/status_viewer', status.StatusViewerPage),
+  ('/([^/]+\.(?:gif|png|jpg|ico))', static_blobs.ServeHandler),
+  ('/static_blobs/list', static_blobs.ListPage),
+  ('/static_blobs/(.*)', static_blobs.ServeHandler),
+  ('/restricted/static_blobs/upload/(.*)', static_blobs.FormPage),
+  ('/restricted/static_blobs/upload_internal/(.*)', static_blobs.UploadHandler),
   ('/revisions', lkgr.Revisions),
   ('/lkgr', lkgr.LastKnownGoodRevision),
   ('/breakpad', breakpad.BreakPad),

@@ -7,9 +7,18 @@ inbound_services:
 - xmpp_message
 
 handlers:
-- url: /(.*\.(gif|png|jpg|ico|html|js))
+- url: /(.*\.(html|js))
   static_files: static/\1
-  upload: static/(.*\.(html|js|gif|png|jpg|ico))
+  upload: static/(.*\.(html|js))
+
+# main will look for a replacement in blobstore, if not, will redirect to
+# static/
+- url: /([^/]+\.(gif|png|jpg|ico))
+  script: main.py
+
+- url: /static/([^/]+\.(gif|png|jpg|ico))
+  static_files: static/\1
+  upload: static/([^/]+\.(gif|png|jpg|ico))
 
 - url: /stylesheets
   static_dir: stylesheets
