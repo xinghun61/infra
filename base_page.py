@@ -18,10 +18,7 @@ from google.appengine.ext.webapp import template
 
 
 class Passwords(db.Model):
-  """Super users. Useful for automated scripts.
-
-  Should be in passwords.py but defined here to not cause a circular dependency.
-  """
+  """Super users. Useful for automated scripts."""
   password_sha1 = db.StringProperty(required=True, multiline=False)
 
 
@@ -115,3 +112,7 @@ def bootstrap():
   else:
     app_name = config.app_name
   BasePage.app_name = app_name
+
+  if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
+    # Insert a dummy Passwords so it can be edited through the admin console
+    base_page.Passwords(password_sha1='invalidhash').put()

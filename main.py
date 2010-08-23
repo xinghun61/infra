@@ -17,7 +17,6 @@ import static_blobs
 import breakpad
 import event_push
 import lkgr
-import passwords
 import status
 import utils
 import xmpp
@@ -44,10 +43,6 @@ URLS = [
   ('/status-receiver', event_push.StatusReceiver),
   ('/restricted/status-processor', event_push.StatusProcessor),
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
-  # Useful to create the initial table schema. It should never be kept enabled.
-  # Keeping them in the /restricted/ zone is a basic safeguard.
-  #('/restricted/passwords', passwords.PasswordsPage),
-  #('/restricted/admins', breakpad.SetData),
 ]
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 
@@ -64,6 +59,5 @@ def main():
 if __name__ == "__main__":
   # Do some one-time initializations.
   base_page.bootstrap()
-  passwords.bootstrap()
   utils.bootstrap()
   main()
