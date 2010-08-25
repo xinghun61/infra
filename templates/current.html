@@ -1,16 +1,28 @@
 {% block content %}
 <style type="text/css">
-div.Notice {
+div {
   margin-bottom: 1em;
-  background-color: #afdaff;
   padding: 0.5em;
   font-size: 16px;
   font-family: Verdana, Cursor;
   text-align: center;
+  color: black;
+}
+div.open {
+  background-color: #8fdf5f;
+}
+div.closed {
+  background-color: #e98080;
+}
+div.maintenance {
+  background-color: #e0b0ff;
+}
+div.throttled {
+  background-color: #fffc6c;
 }
 </style>
 
 <center>
-  <div class="Notice">{{ message|escape }} </div>
+  <div class="{{ state }}">{{ message|escape }} </div>
 </center>
 {% endblock %}
