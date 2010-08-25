@@ -90,11 +90,14 @@ class StatusPage(BasePage):
     """Displays 1 if the tree is open, and 0 if the tree is closed."""
     status = Status.gql('ORDER BY date DESC').get()
     if status:
-      is_closed = re.compile("closed", re.IGNORECASE)
-      if is_closed.search(status.message):
-        message_value = '0'
-      else:
-        message_value = '1'
+      # Throttled counts as closed for the purpose of /status.
+      # throt* counts as throttled
+      message_value = '1'
+      for rx in (re.compile('closed', re.IGNORECASE),
+                 re.compile('is close', re.IGNORECASE),
+                 re.compile('throt', re.IGNORECASE)):
+        if rx.search(status.message):
+          message_value = '0'
 
       self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
       self.response.headers['Content-Type'] = 'text/plain'
