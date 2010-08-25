@@ -8,12 +8,14 @@
  * @param {int} timestamp Unix timestamp in milliseconds.
  * @param {string} author
  * @param {string} message
+ * @param {string} general_state
  * @constructor
  */
-function Entry(timestamp, author, message) {
+function Entry(timestamp, author, message, general_state) {
   this.timestamp = timestamp;
   this.author = author;
   this.message = message;
+  this.general_state = general_state;
 }
 
 /**
@@ -23,29 +25,7 @@ function Entry(timestamp, author, message) {
  * See Entry.TREE_STATES for the enumeration of possible values.
  */
 Entry.prototype.GetTreeState = function() {
-  // See definition of IsOracle().
-  if (this.IsOracle())
-    return "unknown";
-
-  var lowercaseMessage = this.message.toLowerCase();
-
-  // Matches common mispelling "tree is close" as well.
-  var isClosed = /closed/.test(lowercaseMessage) ||
-                 /is close/.test(lowercaseMessage);
-
-  if (isClosed && /maintenance/.test(lowercaseMessage)) {
-    return "maintenance";
-  }
-
-  // count throt* as throttled
-  if (/throt/.test(lowercaseMessage)) {
-    return "throttled";
-  }
-
-  if (isClosed)
-    return "closed";
-
-  return "open";
+  return this.general_state;
 }
 
 Entry.TREE_STATES = [
@@ -185,7 +165,7 @@ function MakeRuns(entries, timeRange) {
 
     if (runs.length == 0 && runStartTime != timeRange.startTime) {
       var unknownEntry = new Entry(runStartTime, Entry.AUTHOR_ORACLE,
-                                   "Your future is uncertain...");
+                                   "Your future is uncertain...", "unknown");
       // Add an unknown filler.
       runs.push(new Run(unknownEntry, timeRange.startTime,
                         timeRange.startTime - runStartTime));
@@ -204,7 +184,7 @@ function MakeRuns(entries, timeRange) {
       timeRange.startTime : runs[runs.length - 1].GetEndTime();
   if (lastEndTime != timeRange.endTime) {
     var unknownEntry = new Entry(timeRange.endTime, Entry.AUTHOR_ORACLE,
-                                 "Missing data!");
+                                 "Missing data!", "unknown");
     runs.push(new Run(unknownEntry, lastEndTime,
                       lastEndTime - timeRange.endTime));
   }

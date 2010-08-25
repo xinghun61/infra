@@ -29,6 +29,38 @@ class Status(db.Model):
   message = db.StringProperty(required=True)
 
 
+def GeneralState(message):
+  """Interpret tree status from message in one place.
+
+  NOTE: please keep all interpretation of tree message here!
+  Args:
+    message: human input status message.
+  Returns:
+    String representing the general state.
+  """
+  closed = re.search('close', message, re.IGNORECASE)
+  if closed and re.search('maint', message, re.IGNORECASE):
+    return 'maintenance'
+  if re.search('throt', message, re.IGNORECASE):
+    return 'throttled'
+  if closed:
+    return 'closed'
+  return 'open'
+
+
+def CanCommitFreely(message):
+  return GeneralState(message) == 'open'
+
+
+def StatusToDict(status, json=False):
+  st = status.AsDict()
+  st['general_state'] = GeneralState(status.message)
+  st['can_commit_freely'] = CanCommitFreely(status.message)
+  if not json:
+    st['date'] = status.date  # Preserve date-y-ness
+  return st
+
+
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
   def get(self):
@@ -51,7 +83,7 @@ class AllStatusPage(BasePage):
           end_date=end_date).get()
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = query
+    template_values['status'] = (StatusToDict(s, json=False) for s in query)
     template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
     self.DisplayTemplate('allstatus.html', template_values)
 
@@ -74,10 +106,11 @@ class CurrentPage(BasePage):
       self.response.out.write(status.message)
     elif format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(json.dumps(status.AsDict()))
+      self.response.out.write(json.dumps(StatusToDict(status, json=True)))
     elif format == 'html':
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
       template_values['message'] = status.message
+      template_values['state'] = GeneralState(status.message)
       self.DisplayTemplate('current.html', template_values, use_cache=True)
     else:
       self.error(400)
@@ -90,14 +123,10 @@ class StatusPage(BasePage):
     """Displays 1 if the tree is open, and 0 if the tree is closed."""
     status = Status.gql('ORDER BY date DESC').get()
     if status:
-      # Throttled counts as closed for the purpose of /status.
-      # throt* counts as throttled
-      message_value = '1'
-      for rx in (re.compile('closed', re.IGNORECASE),
-                 re.compile('is close', re.IGNORECASE),
-                 re.compile('throt', re.IGNORECASE)):
-        if rx.search(status.message):
-          message_value = '0'
+      if CanCommitFreely(status.message):
+        message_value = '1'
+      else:
+        message_value = '0'
 
       self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
       self.response.headers['Content-Type'] = 'text/plain'
@@ -142,7 +171,7 @@ class MainPage(BasePage):
       last_message = last_status.message
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = status
+    template_values['status'] = (StatusToDict(s, json=False) for s in status)
     template_values['is_admin'] = is_admin
     template_values['last_message'] = last_message
     self.DisplayTemplate('main.html', template_values)

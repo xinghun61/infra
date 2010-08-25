@@ -68,20 +68,20 @@ function ParseDataResponseAndAppend(entries, text, error) {
   var lines = text.split("\n");
 
   // Check that the input is in a format we expect.
-  if (lines.length.length < 2 || lines[1] != "Who,When,Message") {
+  if (lines.length.length < 2 || lines[0] != "Who,When,GeneralStatus,Message") {
     Log("Server returned: " + text);
     return false;
   }
 
   // Skip the header line.
-  for (var i = 2; i < lines.length; ++i) {
+  for (var i = 1; i < lines.length; ++i) {
     var line = trim(lines[i]);
 
     if (line.length == 0)
       continue;
 
     // Comma separated parts (the message part may itself contain commas).
-    var parts = /^([^,]*),([^,]*),(.*)$/.exec(line);
+    var parts = /^([^,]*),([^,]*),([^,]*),(.*)$/.exec(line);
     if (!parts) {
       Log("Failed to parse server response line: " + line);
       continue;
@@ -89,7 +89,8 @@ function ParseDataResponseAndAppend(entries, text, error) {
 
     var author = trim(parts[1]);
     var dateStr = trim(parts[2]);
-    var message = trim(parts[3]);
+    var general_state = trim(parts[3]);
+    var message = trim(parts[4]);
 
     // The time has a trailing ".XXXXX" component we don't care for.
     // Also append "UTC" so we are left with a string resembling:
@@ -97,7 +98,7 @@ function ParseDataResponseAndAppend(entries, text, error) {
     dateStr = dateStr.split(".")[0] + " UTC";
 
     entries.push(new Entry(DateUtil.ParseUTCDateTimeString(dateStr), author,
-                           message));
+                           message, general_state));
   }
 
   return true;  // success.
@@ -116,7 +117,7 @@ DataFetcher.GetTreeStatusEntries = function(timeRange, callback) {
   // seconds.
   var startTime = DateUtil.MillisToSeconds(timeRange.startTime);
   var endTime = DateUtil.MillisToSeconds(timeRange.endTime);
-  
+
   // The peak hours view may need extra time for its day view.
   // Lets go ahead and optimisitically ask for it, just in case...
   startTime += DateUtil.MillisToSeconds(DateUtil.MILLIS_PER_DAY);
