@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <center>
+  <h2>{{ app_name }}</h2>
+  <table border="1" cellpadding="5">
+  <tr bgcolor="#CCCCFF">
+    <td><b>Filename</b></td>
+    <td><b>Original filename</b></td>
+    <td><b>Size</b></td>
+    <td><b>Upload date</b></td>
+  </tr>
+  {% for blob in blobs %}
+    <tr>
+      <td>{{ blob.filename|escape }}</td>
+      <td>{{ blob.blob.filename|escape }}</td>
+      <td>{{ blob.blob.size }}</td>
+      <td>{{ blob.blob.creation|date:"D M d, H:i T " }}</td>
+    </tr>
+  {% endfor %}
+   </table>
+  </center>
+{% endblock %}

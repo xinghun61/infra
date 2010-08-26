@@ -18,7 +18,7 @@ import base_page
 VALID_RESOURCES = [ 'favicon.ico', 'logo.png' ]
 
 
-class StaticBlobFile(db.Model):
+class StaticBlobStoreFile(db.Model):
   """A reference to a static blob to serve."""
   blob = blobstore.BlobReferenceProperty(required=True)
   # The corresponding file name of this object. blob.filename contains the
@@ -34,11 +34,11 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
       self.error(404)
     upload_files = self.get_uploads('file')
     blob_info = upload_files[0]
-    blob = StaticBlobFile.gql('WHERE filename = :1', resource).get()
+    blob = StaticBlobStoreFile.gql('WHERE filename = :1', resource).get()
     if blob:
       blob.blob = blob_info
     else:
-      blob = StaticBlobFile(blob=blob_info, filename=resource)
+      blob = StaticBlobStoreFile(blob=blob_info, filename=resource)
     blob.put()
     memcache.set(resource, blob_info.key(), namespace='static_blobs')
     self.redirect('/static_blobs/' + resource)
@@ -52,7 +52,7 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
       self.error(404)
     blob_key = memcache.get(filename, namespace='static_blobs')
     if blob_key is None:
-      blob = StaticBlobFile.gql('WHERE filename = :1', filename).get()
+      blob = StaticBlobStoreFile.gql('WHERE filename = :1', filename).get()
       if blob:
         blob_key = blob.blob
       else:
@@ -84,5 +84,5 @@ class ListPage(base_page.BasePage):
   """List the uploaded blobs."""
   def get(self):
     template_values = self.InitializeTemplate(self.app_name + ' static files')
-    template_values['blobs'] = StaticBlobFile.all()
-    self.DisplayTemplate('static_blobs_list.html', template_values)
+    template_values['blobs'] = StaticBlobStoreFile.all()
+    self.DisplayTemplate('static_blobs_store_list.html', template_values)

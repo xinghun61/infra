@@ -13,7 +13,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 import base_page
-import static_blobs
+import static_blobs_inline as static_blobs
 import breakpad
 import event_push
 import lkgr
