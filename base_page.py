@@ -115,4 +115,4 @@ def bootstrap():
 
   if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
     # Insert a dummy Passwords so it can be edited through the admin console
-    base_page.Passwords(password_sha1='invalidhash').put()
+    Passwords(password_sha1='invalidhash').put()
