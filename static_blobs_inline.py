@@ -4,6 +4,7 @@
 
 """Serve static images."""
 
+import logging
 import urllib
 
 from google.appengine.api import mail
@@ -31,6 +32,7 @@ class UploadHandler(webapp.RequestHandler):
   def post(self, resource):
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
     upload_file = self.request.POST['file']
     blob_data = upload_file.value
@@ -52,6 +54,7 @@ class ServeHandler(webapp.RequestHandler):
   def get(self, resource):
     filename = str(urllib.unquote(resource))
     if not filename in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
     blob_data = memcache.get(filename, namespace='static_blobs')
     if blob_data is None:
@@ -75,6 +78,7 @@ class FormPage(base_page.BasePage):
     (validated, is_admin) = self.ValidateUser()
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
       return
     template_values = self.InitializeTemplate(self.app_name)

@@ -4,6 +4,7 @@
 
 """Serve static images."""
 
+import logging
 import urllib
 
 from google.appengine.api import memcache
@@ -31,6 +32,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
   def post(self, resource):
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
     upload_files = self.get_uploads('file')
     blob_info = upload_files[0]
@@ -49,6 +51,7 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
   def get(self, resource):
     filename = str(urllib.unquote(resource))
     if not filename in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
     blob_key = memcache.get(filename, namespace='static_blobs')
     if blob_key is None:
@@ -71,6 +74,7 @@ class FormPage(base_page.BasePage):
     (validated, is_admin) = self.ValidateUser()
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
+      logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
       return
     template_values = self.InitializeTemplate(self.app_name)
