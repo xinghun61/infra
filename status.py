@@ -158,22 +158,25 @@ class StatusViewerPage(BasePage):
 class MainPage(BasePage):
   """Displays the main page containing the last 100 messages."""
 
-  def get(self):
+  def get(self, error_message='', last_message=''):
     """Sets the information to be displayed on the main page."""
     (validated, is_admin) = self.ValidateUser()
     if not validated:
       return
 
     status = Status.gql('ORDER BY date DESC LIMIT 25')
-    last_status = status.get()
-    last_message = ''
-    if last_status:
-      last_message = last_status.message
+    current_status = status.get()
+    if not last_message and current_status:
+      last_message = current_status.message
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
     template_values['status'] = (StatusToDict(s, json=False) for s in status)
     template_values['is_admin'] = is_admin
-    template_values['last_message'] = last_message
+    template_values['message'] = last_message
+    # If the DB is empty, current_status is None.
+    if current_status:
+      template_values['last_status_key'] = current_status.key()
+    template_values['error_message'] = error_message
     self.DisplayTemplate('main.html', template_values)
 
   def post(self):
@@ -182,18 +185,29 @@ class MainPage(BasePage):
     if not validated or not is_admin:
       return
 
-    # Get the posted information.
-    message = self.request.get('message')
-    if message:
-      user = self.GetCurrentUser()
-      if not user or not user.email():
-        self.response.out.write(
-            '<html><body>Failed to retrieve your email address to update '
-            'the tree status. Please try signing in first</body></html>')
-        self.error(403)
-        return
-      status = Status(message=message,
-                      username=self.GetCurrentUser().email())
-      status.put()
+    # We pass these variables back into get(), prepare them.
+    last_message = ''
+    error_message = ''
 
-    self.get()
+    # Get the posted information.
+    new_message = self.request.get('message')
+    last_status_key = self.request.get('last_status_key')
+    if new_message:
+      current_status = Status.gql('ORDER BY date DESC').get()
+      if current_status and (last_status_key != str(current_status.key())):
+        error_message = ('Message not saved, mid-air collision detected, '
+                         'please resolve any conflicts and try again!')
+        last_message = new_message
+      else:
+        user = self.GetCurrentUser()
+        if not user or not user.email():
+          self.response.out.write(
+              '<html><body>Failed to retrieve your email address to update '
+              'the tree status. Please try signing in first</body></html>')
+          self.error(403)
+          return
+        new_status = Status(message=new_message,
+                            username=self.GetCurrentUser().email())
+        new_status.put()
+
+    self.get(error_message, last_message)

@@ -8,8 +8,14 @@
   </script>
   <center>
   {% if is_admin %}
+    {% if error_message %}
+      <div class="error">
+      {{ error_message|escape }}
+      </div>
+    {% endif %}
     <form action="/" name="add_new_message" method="post">
-      <input type="text" size="80" name="message" value="{{ last_message|escape }}">
+      <input type="text" size="80" name="message" value="{{ message|escape }}">
+      <input type="hidden" name="last_status_key" value="{{ last_status_key|escape }}">
       <input type="submit" name="change" value="Change">
       <input type="button" name="refresh" value="Refresh" onclick="location.href='/';">
       <input type="button" name="history" value="History" onclick="location.href='/status_viewer';">
