@@ -25,6 +25,7 @@ class Report(db.Model):
   args = db.TextProperty()
   exception = db.TextProperty()
   host = db.StringProperty()
+  cwd = db.StringProperty()
 
   def asDict(self):
     return {
@@ -34,6 +35,7 @@ class Report(db.Model):
         'args': self.args,
         'exception': self.exception,
         'host': self.host,
+        'cwd': self.cwd,
     }
 
 
@@ -69,9 +71,10 @@ class BreakPad(BasePage):
     args = self.request.get('args')
     exception = self.request.get('exception')
     host = self.request.get('host')
+    cwd = self.request.get('cwd')
     if user and stack and args:
-      Report(user=user, stack=stack, args=args, exception=exception, host=host
-          ).put()
+      Report(user=user, stack=stack, args=args, exception=exception, host=host,
+             cwd=cwd).put()
       params = {'user': user, 'stack': stack}
       taskqueue.add(url='/restricted/breakpad/im', params=params)
     self.response.out.write('A stack trace has been sent to the maintainers.')

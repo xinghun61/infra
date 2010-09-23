@@ -6,6 +6,7 @@
   <strong>Date:</strong> {{ r.date|date:"D M d, H:i T " }}<br>
   <strong>User:</strong> {{ r.user|escape }}<br>
   <strong>Host:</strong> {{ r.host|escape }}<br>
+  <strong>Cwd:</strong> {{ r.cwd|escape }}<br>
   <strong>Args:</strong> {{ r.args|escape }}<br>
   <strong>Stack:</strong><br>{{ r.stack|escape|spacify|linebreaksbr }}<br>
   <strong>Exception:</strong><br>{{ r.exception|escape|spacify|linebreaksbr }}<br>
