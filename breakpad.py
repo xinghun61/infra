@@ -49,7 +49,7 @@ class BreakPad(BasePage):
   def get(self):
     (validated, is_admin) = self.ValidateUser()
     if not is_admin:
-      self.response.set_status(401)
+      self.redirect(users.create_login_url(self.request.uri))
       return
 
     limit = int(self.request.get('limit', 10))
