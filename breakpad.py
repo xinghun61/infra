@@ -52,7 +52,7 @@ class BreakPad(BasePage):
       self.redirect(users.create_login_url(self.request.uri))
       return
 
-    limit = int(self.request.get('limit', 10))
+    limit = int(self.request.get('limit', 30))
     reports = Report.gql('ORDER BY date DESC LIMIT %d' % limit)
     if self.request.get('json'):
       data = [report.asDict() for report in reports]
