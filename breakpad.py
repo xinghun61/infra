@@ -26,6 +26,7 @@ class Report(db.Model):
   exception = db.TextProperty()
   host = db.StringProperty()
   cwd = db.StringProperty()
+  version = db.StringProperty()
 
   def asDict(self):
     return {
@@ -36,6 +37,7 @@ class Report(db.Model):
         'exception': self.exception,
         'host': self.host,
         'cwd': self.cwd,
+        'version': self.version,
     }
 
 
@@ -72,9 +74,15 @@ class BreakPad(BasePage):
     exception = self.request.get('exception')
     host = self.request.get('host')
     cwd = self.request.get('cwd')
+    version = self.request.get('version')
+    # Cheap blacklisting to keep me sane.
+    if ('twisted.spread.pb.DeadReferenceError: Calling Stale Broker' in
+        exception):
+      self.response.out.write('Ignored.')
+      return
     if user and stack and args:
       Report(user=user, stack=stack, args=args, exception=exception, host=host,
-             cwd=cwd).put()
+             cwd=cwd, version=version).put()
       params = {'user': user, 'stack': stack}
       taskqueue.add(url='/restricted/breakpad/im', params=params)
     self.response.out.write('A stack trace has been sent to the maintainers.')

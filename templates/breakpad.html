@@ -4,6 +4,7 @@
   <h2>Last Break Pad reports</h2>
   {% for r in reports %}
   <strong>Date:</strong> {{ r.date|date:"D M d, H:i T " }}<br>
+  <strong>Version:</strong> {{ r.version|escape }}<br>
   <strong>User:</strong> {{ r.user|escape }}<br>
   <strong>Host:</strong> {{ r.host|escape }}<br>
   <strong>Cwd:</strong> {{ r.cwd|escape }}<br>
