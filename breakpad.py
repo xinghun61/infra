@@ -26,7 +26,7 @@ class Report(db.Model):
   exception = db.TextProperty()
   host = db.StringProperty()
   cwd = db.StringProperty()
-  version = db.StringProperty()
+  version = db.StringProperty(multiline=True)
 
   def asDict(self):
     return {
