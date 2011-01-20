@@ -25,3 +25,9 @@ indexes:
   - name: class
   - name: created
     direction: desc
+
+- kind: Report
+  properties:
+  - name: user
+  - name: date
+    direction: desc
