@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2009 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -59,7 +59,7 @@ class LastKnownGoodRevision(BasePage):
     """Look for the latest successful revision and return it."""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'
     self.response.headers['Content-Type'] = 'text/plain'
-    revision = Revision.gql('WHERE status = :1 ORDER BY revision DESC',
-                            True).get()
+    revision = Revision.gql(
+        'WHERE status = :1 ORDER BY revision DESC', True).get()
     if revision:
       self.response.out.write(revision.revision)

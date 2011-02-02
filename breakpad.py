@@ -1,4 +1,4 @@
-# Copyright (c) 2009 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,7 +6,7 @@
 
 import datetime
 
-from django.utils import simplejson as json
+import simplejson as json
 
 from google.appengine.api import users
 from google.appengine.api import xmpp
@@ -67,7 +67,10 @@ class BreakPad(BasePage):
       self.DisplayTemplate('breakpad.html', template_values)
 
   def post(self):
-    """Adds a new breakpad report."""
+    """Adds a new breakpad report.
+
+    Anyone can add a stack trace.
+    """
     user = self.request.get('user')
     stack = self.request.get('stack')
     args = self.request.get('args')
@@ -115,9 +118,7 @@ class Cleanup(webapp.RequestHandler):
       db.delete(report)
 
 
-class SetData(BasePage):
-  """Quick and dirty schema creator. Kept for historical purposes."""
-  @work_queue_only
-  def get(self):
-    if self.ValidateUser()[1]:
-      Admins(user=users.get_current_user()).put()
+def bootstrap():
+  if db.GqlQuery('SELECT __key__ FROM Admins').get() is None:
+    # Insert a dummy Admins so it can be edited through the admin console
+    Admins().put()

@@ -1,20 +1,15 @@
-# Copyright (c) 2008-2009 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 """Status management pages."""
 
 import datetime
-import os
 import re
-import wsgiref.handlers
 
-from django.utils import simplejson as json
+import simplejson as json
 from google.appengine.api import memcache
-from google.appengine.api import users
 from google.appengine.ext import db
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 
 from base_page import BasePage
 
@@ -52,11 +47,11 @@ def CanCommitFreely(message):
   return GeneralState(message) == 'open'
 
 
-def StatusToDict(status, json=False):
+def StatusToDict(status, as_json=False):
   st = status.AsDict()
   st['general_state'] = GeneralState(status.message)
   st['can_commit_freely'] = CanCommitFreely(status.message)
-  if not json:
+  if not as_json:
     st['date'] = status.date  # Preserve date-y-ness
   return st
 
@@ -83,7 +78,7 @@ class AllStatusPage(BasePage):
           end_date=end_date).get()
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = (StatusToDict(s, json=False) for s in query)
+    template_values['status'] = (StatusToDict(s, False) for s in query)
     template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
     self.DisplayTemplate('allstatus.html', template_values)
 
@@ -93,7 +88,9 @@ class CurrentPage(BasePage):
 
   def get(self):
     """Displays the current message and nothing else."""
-    format = self.request.get('format', 'html')
+    # Module 'google.appengine.api.memcache' has no 'get' member
+    # pylint: disable=E1101
+    out_format = self.request.get('format', 'html')
     status = memcache.get('last_status')
     if status is None:
       status = Status.gql('ORDER BY date DESC').get()
@@ -101,13 +98,13 @@ class CurrentPage(BasePage):
       memcache.add('last_status', status, 2)
     if not status:
       self.error(501)
-    elif format == 'raw':
+    elif out_format == 'raw':
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write(status.message)
-    elif format == 'json':
+    elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(json.dumps(StatusToDict(status, json=True)))
-    elif format == 'html':
+      self.response.out.write(json.dumps(StatusToDict(status, True)))
+    elif out_format == 'html':
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
       template_values['message'] = status.message
       template_values['state'] = GeneralState(status.message)
@@ -133,7 +130,11 @@ class StatusPage(BasePage):
       self.response.out.write(message_value)
 
   def post(self):
-    """Adds a new message from a backdoor."""
+    """Adds a new message from a backdoor.
+
+    The main difference with MainPage.post() is that it doesn't look for
+    conflicts.
+    """
     # Get the posted information.
     (validated, is_admin) = self.ValidateUser()
     if not validated:
@@ -170,7 +171,7 @@ class MainPage(BasePage):
       last_message = current_status.message
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = (StatusToDict(s, json=False) for s in status)
+    template_values['status'] = (StatusToDict(s, False) for s in status)
     template_values['is_admin'] = is_admin
     template_values['message'] = last_message
     # If the DB is empty, current_status is None.

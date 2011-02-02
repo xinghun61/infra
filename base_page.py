@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2009 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -84,17 +84,20 @@ class BasePage(webapp.RequestHandler):
     """Replies to a http request with a template.
 
     Optionally cache it for 1 second. Only to be used for user-invariant
-    pages!"""
+    pages!
+    """
+    # Module 'google.appengine.api.memcache' has no 'get' member
+    # pylint: disable=E1101
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
-    buffer = None
+    buff = None
     if use_cache:
-      buffer = memcache.get(name)
-    if not buffer:
+      buff = memcache.get(name)
+    if not buff:
       path = os.path.join(os.path.dirname(__file__), 'templates/%s' % name)
-      buffer = template.render(path, template_values)
+      buff = template.render(path, template_values)
       if use_cache:
-        memcache.add(name, buffer, 1)
-    self.response.out.write(buffer)
+        memcache.add(name, buff, 1)
+    self.response.out.write(buff)
 
 
 def bootstrap():

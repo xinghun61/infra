@@ -1,4 +1,4 @@
-# Copyright (c) 2010 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,10 +9,9 @@ See event_sample.txt for event format examples.
 
 import datetime
 import logging
-import os
 import time
 
-from django.utils import simplejson
+import simplejson
 from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
@@ -72,7 +71,7 @@ def ModelToStr(obj):
   """Converts a model to a human readable string, for debugging"""
   assert isinstance(obj, db.Model)
   out = [obj.__class__.__name__]
-  for k, v in obj.properties().iteritems():
+  for k in obj.properties():
     if k.startswith('_'):
       continue
     out.append('  %s: %s' % (k, str(getattr(obj, k))))

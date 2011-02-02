@@ -1,4 +1,4 @@
-# Copyright (c) 2010 The Chromium Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -30,6 +30,8 @@ class StaticBlobInlineFile(db.Model):
 class UploadHandler(webapp.RequestHandler):
   """Uploads a static file."""
   def post(self, resource):
+    # Module 'google.appengine.api.memcache' has no 'get' member
+    # pylint: disable=E1101
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
       logging.warning('Unknown resource "%s"' % resource)
@@ -52,6 +54,8 @@ class UploadHandler(webapp.RequestHandler):
 class ServeHandler(webapp.RequestHandler):
   """Serves a static file."""
   def get(self, resource):
+    # Module 'google.appengine.api.memcache' has no 'get' member
+    # pylint: disable=E1101
     filename = str(urllib.unquote(resource))
     if not filename in VALID_RESOURCES:
       logging.warning('Unknown resource "%s"' % resource)
@@ -66,6 +70,8 @@ class ServeHandler(webapp.RequestHandler):
         blob_data = ''
       memcache.set(filename, blob_data, namespace='static_blobs')
     if blob_data:
+      # Access to a protected member XXX of a client class
+      # pylint: disable=W0212
       self.response.headers['Content-Type'] = mail._GetMimeType(filename)
       self.response.out.write(blob_data)
     else:
