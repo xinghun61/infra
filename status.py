@@ -103,7 +103,13 @@ class CurrentPage(BasePage):
       self.response.out.write(status.message)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
-      self.response.out.write(json.dumps(StatusToDict(status, True)))
+      self.response.headers['Access-Control-Allow-Origin'] = '*'
+      data = json.dumps(StatusToDict(status, True))
+      callback = self.request.get('callback')
+      if callback:
+        if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
+          data = '%s(%s);' % (callback, data)
+      self.response.out.write(data)
     elif out_format == 'html':
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
       template_values['message'] = status.message
