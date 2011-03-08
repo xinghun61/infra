@@ -100,6 +100,13 @@
         // Get the main element.
         var results = xmlDoc.getElementsByTagName('ListBucketResult');
  
+        // Get IsTruncated.
+        var truncated = getNodeValue(results[0], 'IsTruncated');
+        var nextMarker = ''
+        if (truncated == 'true') {
+          nextMarker = getNodeValue(results[0], 'NextMarker');
+        }
+      
         // Get all the directories.
         var prefixes = results[0].getElementsByTagName('CommonPrefixes');
         for (var i = 0; i < prefixes.length; i++) {
@@ -173,15 +180,29 @@
         // Close the table.
         document.write('<tr><th colspan="6"><hr></th></tr>');
         document.write('</table>');
+
+        if (truncated == 'true') {
+          morePath = location.pathname + '?marker=' + nextMarker +
+                     '&path=' + path;
+          document.write('The results were truncated to 1000 lines. ');
+          document.write('<a href="' + morePath + '">Load More</a>');
+        }
       }
  
       function fetchAndDisplay() {
         path = getParameter('path');
+        marker = getParameter('marker');
         filename = location.pathname.substring(location.pathname.lastIndexOf("/")+1);
         root = location.pathname.substring(0, location.pathname.lastIndexOf("/")+1);
 
+        markerParam = '';
+        if (marker != '') {
+          markerParam = '&marker=' + marker;
+        }
+
         http = new XMLHttpRequest();
-        http.open('GET', root + '?delimiter=/&prefix=' + path, true);
+        http.open('GET', root + '?delimiter=/&prefix=' + path + markerParam,
+                  true);
         http.onreadystatechange = useHttpResponse;
         http.send(null);
         function useHttpResponse() {
