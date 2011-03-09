@@ -175,7 +175,6 @@ class MainPage(BasePage):
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
     template_values['status'] = (StatusToDict(s, False) for s in status)
-    template_values['is_admin'] = self.is_admin
     template_values['message'] = last_message
     # If the DB is empty, current_status is None.
     if current_status:
