@@ -12,6 +12,7 @@ from google.appengine.api import memcache
 from google.appengine.ext import db
 
 from base_page import BasePage
+import utils
 
 
 class Status(db.Model):
@@ -137,16 +138,13 @@ class StatusPage(BasePage):
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write(message_value)
 
+  @utils.admin_only
   def post(self):
     """Adds a new message from a backdoor.
 
     The main difference with MainPage.post() is that it doesn't look for
     conflicts.
     """
-    # Get the posted information.
-    (validated, is_admin) = self.ValidateUser()
-    if not validated:
-      return
     message = self.request.get('message')
     username = self.request.get('username')
     if message and username:
@@ -167,12 +165,9 @@ class StatusViewerPage(BasePage):
 class MainPage(BasePage):
   """Displays the main page containing the last 100 messages."""
 
+  @utils.require_user
   def get(self, error_message='', last_message=''):
     """Sets the information to be displayed on the main page."""
-    (validated, is_admin) = self.ValidateUser()
-    if not validated:
-      return
-
     status = Status.gql('ORDER BY date DESC LIMIT 25')
     current_status = status.get()
     if not last_message and current_status:
@@ -180,7 +175,7 @@ class MainPage(BasePage):
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
     template_values['status'] = (StatusToDict(s, False) for s in status)
-    template_values['is_admin'] = is_admin
+    template_values['is_admin'] = self.is_admin
     template_values['message'] = last_message
     # If the DB is empty, current_status is None.
     if current_status:
@@ -188,12 +183,10 @@ class MainPage(BasePage):
     template_values['error_message'] = error_message
     self.DisplayTemplate('main.html', template_values)
 
+  @utils.require_user
+  @utils.admin_only
   def post(self):
     """Adds a new message."""
-    (validated, is_admin) = self.ValidateUser()
-    if not validated or not is_admin:
-      return
-
     # We pass these variables back into get(), prepare them.
     last_message = ''
     error_message = ''
@@ -208,15 +201,6 @@ class MainPage(BasePage):
                          'please resolve any conflicts and try again!')
         last_message = new_message
       else:
-        user = self.GetCurrentUser()
-        if not user or not user.email():
-          self.response.out.write(
-              '<html><body>Failed to retrieve your email address to update '
-              'the tree status. Please try signing in first</body></html>')
-          self.error(403)
-          return
-        new_status = Status(message=new_message,
-                            username=self.GetCurrentUser().email())
-        new_status.put()
+        Status(message=new_message, username=self.user.email()).put()
 
     self.get(error_message, last_message)

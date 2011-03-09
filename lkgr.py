@@ -7,6 +7,7 @@
 from google.appengine.ext import db
 
 from base_page import BasePage
+import utils
 
 
 class Revision(db.Model):
@@ -25,23 +26,16 @@ class Revisions(BasePage):
   """Displays the revisions page containing the last 100 revisions."""
 
   def get(self):
-    """Sets the information to be displayed on the revisions page."""
-    (validated, is_admin) = self.ValidateUser()
-    if not validated:
-      return
-
+    """Returns information about the last revision status."""
     revisions = Revision.gql('ORDER BY revision DESC LIMIT 100')
     page_value = {'revisions': revisions}
     template_values = self.InitializeTemplate('Chromium Revisions Status')
     template_values.update(page_value)
     self.DisplayTemplate('revisions.html', template_values)
 
+  @utils.admin_only
   def post(self):
     """Adds a new revision status."""
-    # Get the posted information.
-    (validated, is_admin) = self.ValidateUser()
-    if not validated:
-      return
     revision = self.request.get('revision')
     success = self.request.get('success')
     steps = self.request.get('steps')

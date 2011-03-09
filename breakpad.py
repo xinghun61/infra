@@ -8,14 +8,13 @@ import datetime
 
 import simplejson as json
 
-from google.appengine.api import users
 from google.appengine.api import xmpp
 from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
 from base_page import BasePage
-from utils import work_queue_only
+import utils
 
 
 class Report(db.Model):
@@ -48,12 +47,8 @@ class Admins(db.Model):
 
 
 class BreakPad(BasePage):
+  @utils.admin_only
   def get(self):
-    (validated, is_admin) = self.ValidateUser()
-    if not is_admin:
-      self.redirect(users.create_login_url(self.request.uri))
-      return
-
     limit = int(self.request.get('limit', 30))
     reports = Report.gql('ORDER BY date DESC LIMIT %d' % limit)
     if self.request.get('json'):
@@ -93,7 +88,7 @@ class BreakPad(BasePage):
 
 class SendIM(webapp.RequestHandler):
   """A taskqueue."""
-  @work_queue_only
+  @utils.work_queue_only
   def post(self):
     user = self.request.get('user')
     stack = self.request.get('stack')
@@ -108,7 +103,7 @@ class SendIM(webapp.RequestHandler):
 
 class Cleanup(webapp.RequestHandler):
   """A cron job."""
-  @work_queue_only
+  @utils.work_queue_only
   def get(self):
     """Delete reports older than 31 days."""
     cutoff = datetime.datetime.now() - datetime.timedelta(days=31)

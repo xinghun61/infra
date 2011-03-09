@@ -16,6 +16,8 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
+import utils
+
 
 class Passwords(db.Model):
   """Super users. Useful for automated scripts."""
@@ -29,47 +31,55 @@ class GlobalConfig(db.Model):
 
 class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
+  # Check if the username ends with @chromium.org/@google.com.
   _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
   app_name = ''
+  _is_admin = None
+  _user = None
+  _initialized = False
 
-  def __init__(self):
-    webapp.RequestHandler.__init__(self)
-
-  def GetCurrentUser(self):
-    """Gets the current user (may be an OAuth user)."""
-    user = users.get_current_user()
-    if not user:
+  def _late_init(self):
+    """Initializes self._is_admin and self._user once the request object is
+    setup.
+    """
+    self._is_admin = False
+    self._user = users.get_current_user()
+    if not self._user:
       try:
-        user = oauth.get_current_user()
+        self._user = oauth.get_current_user()
       except oauth.OAuthRequestError:
-        return None
-    return user
+        if self.request.scheme == 'https':
+          password = self.request.get('password')
+          if password:
+            sha1_pass = hashlib.sha1(password).hexdigest()
+            if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
+              # The password is valid, this is a super admin.
+              self._is_admin = True
+    if not self._is_admin and self._user:
+      self._is_admin = (
+          users.is_current_user_admin() or
+          self._VALID_EMAIL.match(self._user.email()))
+    if utils.is_dev_env():
+      # Everyone is an admin on dev server.
+      self._is_admin = self._user is not None
+    self._initialized = True
 
-  def ValidateUser(self):
-    """Checks if the user has the right to add messages.
+  @property
+  def is_admin(self):
+    if not self._initialized:
+      self._late_init()
+    return self._is_admin
 
-    Returns tuple (validated, is_admin)"""
-    # If the current user is not logged in, redirect to the login page.
-    user = self.GetCurrentUser()
-    if not user:
-      # Warning: this is not secure over http, use https.
-      password = self.request.get('password')
-      if password:
-        sha1_pass = hashlib.sha1(password).hexdigest()
-        if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
-          # The password is valid, this is a super admin.
-          return (True, True)
-      self.redirect(users.create_login_url(self.request.uri))
-      return (False, False)
-
-    # Check if the username ends with @chromium.org/@google.com.
-    return (True, self._VALID_EMAIL.match(user.email()))
+  @property
+  def user(self):
+    if not self._initialized:
+      self._late_init()
+    return self._user
 
   def InitializeTemplate(self, title):
     """Initializes the template values with information needed by all pages."""
-    user = self.GetCurrentUser()
-    if user:
-      user_email = user.email()
+    if self.user:
+      user_email = self.user.email()
     else:
       user_email = ''
     template_values = {
@@ -77,6 +87,8 @@ class BasePage(webapp.RequestHandler):
       'username': user_email,
       'title': title,
       'current_UTC_time': datetime.datetime.now(),
+      'is_admin': self.is_admin,
+      'user': self.user,
     }
     return template_values
 

@@ -231,6 +231,8 @@ class StatusProcessor(BasePage):
 
   i.e. implement GateKeeper on appengine, close the tree when the buildbot
   master shuts down, etc."""
+
+  @utils.work_queue_only
   def post(self):
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.out.write('Success')

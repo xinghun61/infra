@@ -74,7 +74,6 @@ class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
 class FormPage(base_page.BasePage):
   """A simple form to upload a static blob."""
   def get(self, resource):
-    (validated, is_admin) = self.ValidateUser()
     resource = str(urllib.unquote(resource))
     if not resource in VALID_RESOURCES:
       logging.warning('Unknown resource "%s"' % resource)
@@ -83,7 +82,6 @@ class FormPage(base_page.BasePage):
     template_values = self.InitializeTemplate(self.app_name)
     template_values['upload_url'] = blobstore.create_upload_url(
         '/restricted/static_blobs/upload_internal/' + resource)
-    template_values['is_admin'] = is_admin
     self.DisplayTemplate('static_blob_upload_form.html', template_values)
 
 

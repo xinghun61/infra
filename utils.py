@@ -26,27 +26,40 @@ def work_queue_only(func):
   Returns:
     Function that will return a 401 error if not from an authorized source.
   """
-  def decorated(myself, *args, **kwargs):
-    if ('X-AppEngine-Cron' in myself.request.headers or
-        'X-AppEngine-TaskName' in myself.request.headers or
-        is_dev_env() or users.is_current_user_admin()):
-      return func(myself, *args, **kwargs)
-    elif users.get_current_user() is None:
-      myself.redirect(users.create_login_url(myself.request.url))
+  def decorated(self, *args, **kwargs):
+    if ('X-AppEngine-Cron' in self.request.headers or
+        'X-AppEngine-TaskName' in self.request.headers or
+        self.is_admin):
+      return func(self, *args, **kwargs)
+    elif self.user is None:
+      self.redirect(users.create_login_url(self.request.url))
     else:
-      myself.response.set_status(401)
-      myself.response.out.write('Handler only accessible for work queues')
+      self.response.set_status(401)
+      self.response.out.write('Handler only accessible for work queues')
   return decorated
 
 
 def admin_only(func):
   """Valid for BasePage objects only."""
   def decorated(self, *args, **kwargs):
-    if is_dev_env() or self.ValidateUser()[1]:
+    if not self.user:
+      self.redirect(users.create_login_url(self.request.url))
+    elif self.is_admin:
       return func(self, *args, **kwargs)
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.response.out.write('Forbidden')
-    self.error(403)
+    else:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write('Forbidden')
+      self.error(403)
+  return decorated
+
+
+def require_user(func):
+  """A user must be logged in."""
+  def decorated(self, *args, **kwargs):
+    if not self.user:
+      self.redirect(users.create_login_url(self.request.url))
+    else:
+      return func(self, *args, **kwargs)
   return decorated
 
 
