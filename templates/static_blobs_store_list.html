@@ -12,8 +12,8 @@
   </tr>
   {% for blob in blobs %}
     <tr>
-      <td>{{ blob.filename|escape }}</td>
-      <td>{{ blob.blob.filename|escape }}</td>
+      <td>{{ blob.filename }}</td>
+      <td>{{ blob.blob.filename }}</td>
       <td>{{ blob.blob.size }}</td>
       <td>{{ blob.blob.creation|date:"D M d, H:i T " }}</td>
     </tr>

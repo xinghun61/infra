@@ -77,6 +77,8 @@ class AllStatusPage(BasePage):
           'WHERE date < :end_date ORDER BY date DESC LIMIT 1',
           end_date=end_date).get()
 
+    # It's not really an html page.
+    self.response.headers['Content-Type'] = 'text/plain'
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
     template_values['status'] = (StatusToDict(s, False) for s in query)
     template_values['beyond_end_of_range_status'] = beyond_end_of_range_status

@@ -9,6 +9,14 @@
    database and the last 100 topics.
 """
 
+import os
+
+# Force use of django 1.2
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+from google.appengine.dist import use_library
+use_library('django', '1.2')
+
+# Now safe to import other modules.
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
@@ -45,10 +53,6 @@ URLS = [
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
 ]
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
-
-
-# Register django filters
-webapp.template.register_template_library('filters')
 
 
 def main():

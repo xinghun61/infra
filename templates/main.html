@@ -10,12 +10,12 @@
   {% if is_admin %}
     {% if error_message %}
       <div class="error">
-      {{ error_message|escape }}
+      {{ error_message }}
       </div>
     {% endif %}
     <form action="/" name="add_new_message" method="post">
-      <input type="text" size="80" name="message" value="{{ message|escape }}">
-      <input type="hidden" name="last_status_key" value="{{ last_status_key|escape }}">
+      <input type="text" size="80" name="message" value="{{ message }}">
+      <input type="hidden" name="last_status_key" value="{{ last_status_key }}">
       <input type="submit" name="change" value="Change">
       <input type="button" name="refresh" value="Refresh" onclick="location.href='/';">
       <input type="button" name="history" value="History" onclick="location.href='/status_viewer';">
@@ -31,9 +31,9 @@
   </tr>
   {% for a_status in status %}
     <tr>
-      <td>{{ a_status.username|escape }}</td>
+      <td>{{ a_status.username }}</td>
       <td>{{ a_status.date|date:"D M d, H:i T " }}</td>
-      <td>{{ a_status.message|escape }}</td>
+      <td>{{ a_status.message }}</td>
     </tr>
   {% endfor %}
 
