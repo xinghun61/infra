@@ -42,10 +42,10 @@ def work_queue_only(func):
 def admin_only(func):
   """Valid for BasePage objects only."""
   def decorated(self, *args, **kwargs):
-    if not self.user:
-      self.redirect(users.create_login_url(self.request.url))
-    elif self.is_admin:
+    if self.is_admin:
       return func(self, *args, **kwargs)
+    elif not self.user:
+      self.redirect(users.create_login_url(self.request.url))
     else:
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write('Forbidden')
