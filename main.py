@@ -9,12 +9,9 @@
    database and the last 100 topics.
 """
 
-import os
-
-# Force use of django 1.2
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-from google.appengine.dist import use_library
-use_library('django', '1.2')
+# Needs to be first to setup django, even if the import is unused.
+# pylint: disable=W0611
+import appengine_config
 
 # Now safe to import other modules.
 from google.appengine.ext import webapp

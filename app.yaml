@@ -34,6 +34,16 @@ handlers:
   script: main.py
 
 
+# http://code.google.com/appengine/docs/python/config/appconfig.html#Builtin_Handlers
+builtins:
+- admin_redirect: on
+- appstats: on
+- datastore_admin: on
+- deferred: on
+- mapreduce: on
+- remote_api: on
+
+
 # Search DEFAULT_SKIP_FILES in google.appengine.api.appinfo plus a few others
 skip_files: |
     ^(.*/)?(
