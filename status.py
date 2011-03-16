@@ -203,3 +203,8 @@ class MainPage(BasePage):
         Status(message=new_message, username=self.user.email()).put()
 
     self.get(error_message, last_message)
+
+
+def bootstrap():
+  if db.GqlQuery('SELECT __key__ FROM Status').get() is None:
+    Status(username='none', message='welcome to status').put()

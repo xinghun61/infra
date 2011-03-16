@@ -57,3 +57,8 @@ class LastKnownGoodRevision(BasePage):
         'WHERE status = :1 ORDER BY revision DESC', True).get()
     if revision:
       self.response.out.write(revision.revision)
+
+
+def bootstrap():
+  if db.GqlQuery('SELECT __key__ FROM Revision').get() is None:
+    Revision(revision=0, status=False).put()

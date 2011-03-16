@@ -6,6 +6,7 @@
 
 import datetime
 import hashlib
+import logging
 import os
 import re
 
@@ -55,6 +56,8 @@ class BasePage(webapp.RequestHandler):
             if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
               # The password is valid, this is a super admin.
               self._is_admin = True
+            else:
+              logging.error('Password is invalid')
     if not self._is_admin and self._user:
       self._is_admin = (
           users.is_current_user_admin() or
@@ -63,6 +66,7 @@ class BasePage(webapp.RequestHandler):
       # Everyone is an admin on dev server.
       self._is_admin = self._user is not None
     self._initialized = True
+    logging.info('Admin: %s, User: %s' % (self._is_admin, self._user))
 
   @property
   def is_admin(self):

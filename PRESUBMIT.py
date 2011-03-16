@@ -8,6 +8,12 @@ See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts for
 details on the presubmit API built into gcl.
 """
 
+
+UNIT_TESTS = [
+    'tests.main_test',
+]
+
+
 def CommonChecks(input_api, output_api):
   output = []
 
@@ -26,6 +32,11 @@ def CommonChecks(input_api, output_api):
         output_api))
   finally:
     sys.path = sys_path_backup
+
+  output.extend(input_api.canned_checks.RunPythonUnitTests(
+      input_api,
+      output_api,
+      UNIT_TESTS))
   return output
 
 
