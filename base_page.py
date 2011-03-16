@@ -44,27 +44,32 @@ class BasePage(webapp.RequestHandler):
     setup.
     """
     self._is_admin = False
+
+    def look_for_password():
+      """Looks for password parameter. Not awesome."""
+      password = self.request.get('password')
+      if password:
+        sha1_pass = hashlib.sha1(password).hexdigest()
+        if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
+          # The password is valid, this is a super admin.
+          self._is_admin = True
+        else:
+          logging.error('Password is invalid')
+
     self._user = users.get_current_user()
-    if not self._user:
+    if utils.is_dev_env():
+      look_for_password()
+    elif not self._user:
       try:
         self._user = oauth.get_current_user()
       except oauth.OAuthRequestError:
         if self.request.scheme == 'https':
-          password = self.request.get('password')
-          if password:
-            sha1_pass = hashlib.sha1(password).hexdigest()
-            if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
-              # The password is valid, this is a super admin.
-              self._is_admin = True
-            else:
-              logging.error('Password is invalid')
+          look_for_password()
+
     if not self._is_admin and self._user:
-      self._is_admin = (
+      self._is_admin = bool(
           users.is_current_user_admin() or
           self._VALID_EMAIL.match(self._user.email()))
-    if utils.is_dev_env():
-      # Everyone is an admin on dev server.
-      self._is_admin = self._user is not None
     self._initialized = True
     logging.info('Admin: %s, User: %s' % (self._is_admin, self._user))
 

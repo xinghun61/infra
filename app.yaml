@@ -30,6 +30,11 @@ handlers:
   script: main.py
   login: admin
 
+- url: /_ah/lib_config
+  script: $PYTHON_LIB/google/appengine/api/lib_config.py
+  secure: always
+  login: admin
+
 - url: /.*
   script: main.py
 

@@ -150,6 +150,10 @@ class StatusPage(BasePage):
     if message and username:
       status = Status(message=message, username=username)
       status.put()
+      # Cache the status.
+      # Module 'google.appengine.api.memcache' has no 'set' member
+      # pylint: disable=E1101
+      memcache.set('last_status', status)
     self.redirect('/')
 
 
@@ -200,7 +204,12 @@ class MainPage(BasePage):
                          'please resolve any conflicts and try again!')
         last_message = new_message
       else:
-        Status(message=new_message, username=self.user.email()).put()
+        status = Status(message=new_message, username=self.user.email())
+        status.put()
+        # Cache the status.
+        # Module 'google.appengine.api.memcache' has no 'set' member
+        # pylint: disable=E1101
+        memcache.set('last_status', status)
 
     self.get(error_message, last_message)
 
