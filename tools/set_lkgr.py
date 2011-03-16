@@ -3,29 +3,35 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import getpass
+import os
 import sys
 import urllib
 
-from set_lkgr import get_pwd
+
+def get_pwd():
+  if os.path.isfile('.status_password'):
+    return open('.status_password', 'r').read().strip()
+  return getpass.getpass()
 
 
-def post(username, message, url='chromium-status.appspot.com'):
+def post(revision, url='chromium-status.appspot.com'):
   if not url.startswith('https://'):
     url = 'https://' + url
   data = {
-      'message': message,
-      'username': username,
+      'revision': revision,
+      'success': 1,
       'password': get_pwd(),
   }
   print url
-  out = urllib.urlopen(url + '/status', urllib.urlencode(data)).read()
+  out = urllib.urlopen(url + '/revisions', urllib.urlencode(data)).read()
   print out
   return 0
 
 
 if __name__ == '__main__':
-  if not (3 <= len(sys.argv) <= 4):
-    print('Usage: set_status.py username message [url]')
+  if not (2 <= len(sys.argv) <= 3):
+    print('Usage: set_lkgr.py revision [url]')
     sys.exit(1)
 
   sys.exit(post(*sys.argv[1:]))

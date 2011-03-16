@@ -143,7 +143,7 @@ class StatusPage(BasePage):
     """Adds a new message from a backdoor.
 
     The main difference with MainPage.post() is that it doesn't look for
-    conflicts.
+    conflicts and doesn't redirect to /.
     """
     message = self.request.get('message')
     username = self.request.get('username')
@@ -154,7 +154,7 @@ class StatusPage(BasePage):
       # Module 'google.appengine.api.memcache' has no 'set' member
       # pylint: disable=E1101
       memcache.set('last_status', status)
-    self.redirect('/')
+    self.response.out.write('OK')
 
 
 class StatusViewerPage(BasePage):

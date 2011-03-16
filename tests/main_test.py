@@ -93,20 +93,16 @@ class StatusTest(TestCase):
         'password': 'bleh',
         'username': 'user1',
     }
-    out = self.post('status', data)
-    # TODO(maruel): Verify content is a redirect to '/'.
-    self.assertTrue(100 < len(out))
+    self.assertEqual('OK', self.post('status', data))
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'bar'
     data['password'] = 'wrong password'
-    out = self.post('status', data)
-    self.assertTrue(100 < len(out))
+    self.assertTrue(100 < len(self.post('status', data)))
     # Wasn't updated since the password was wrong.
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'boo'
     data['password'] = 'bleh'
-    out = self.post('status', data)
-    self.assertTrue(100 < len(out))
+    self.assertEqual('OK', self.post('status', data))
     self.assertEqual('boo', self.get('current?format=raw'))
 
   def test_root(self):
