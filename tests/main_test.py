@@ -11,7 +11,7 @@ import unittest
 try:
   import simplejson as json
 except ImportError:
-  import json
+  import json  # pylint: disable=F0401
 
 import local_gae
 

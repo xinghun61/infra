@@ -131,6 +131,7 @@ class LocalGae(object):
 
   def stop_server(self):
     if self.test_server:
+      # pylint: disable=E1101
       self.test_server.kill()
       self.test_server = None
       self.port = None
