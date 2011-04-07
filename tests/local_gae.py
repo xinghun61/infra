@@ -12,6 +12,7 @@ inbound TCP port.
 import logging
 import os
 import re
+import signal
 import socket
 import subprocess
 import tempfile
@@ -132,7 +133,10 @@ class LocalGae(object):
   def stop_server(self):
     if self.test_server:
       # pylint: disable=E1101
-      self.test_server.kill()
+      if hasattr(self.test_server, 'kill'):
+        self.test_server.kill()
+      else:
+        os.kill(self.test_server.pid, signal.SIGKILL)
       self.test_server = None
       self.port = None
       self.url = None

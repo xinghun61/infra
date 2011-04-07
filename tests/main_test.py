@@ -5,13 +5,22 @@
 
 import hashlib
 import logging
+import os
+import re
 import sys
 import unittest
 
 try:
   import simplejson as json
 except ImportError:
-  import json  # pylint: disable=F0401
+  try:
+    import json  # pylint: disable=F0401
+  except ImportError:
+    # Hack.
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..',
+        'depot_tools', 'third_party'))
+    import simplejson as json
+
 
 import local_gae
 
@@ -58,9 +67,12 @@ class TestCase(unittest.TestCase):
 
 class StatusTest(TestCase):
   def test_all_status(self):
-    out = self.get('allstatus')
-    # TODO(maruel): re.match() data.
-    self.assertEqual(87, len(out))
+    out = self.get('allstatus').splitlines()
+    out = [i for i in out if i]
+    self.assertEquals(2, len(out))
+    self.assertEquals('Who,When,GeneralStatus,Message', out[0])
+    self.assertTrue(
+        re.match('none,.+?, \d+?, .+?,open,welcome to status', out[1]))
 
   def test_status(self):
     self.assertEqual('1', self.get('status'))
