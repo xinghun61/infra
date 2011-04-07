@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 cd $(dirname $0)
+../../google_appengine/appcfg.py update .. -A chromeos-status $@
 ../../google_appengine/appcfg.py update .. -A chromium-status $@
 ../../google_appengine/appcfg.py update .. -A chromiumos-status $@
 ../../google_appengine/appcfg.py update .. -A chromiumos-browser-status $@
