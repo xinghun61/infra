@@ -57,20 +57,29 @@ def StatusToDict(status, as_json=False):
   return st
 
 
+def parse_date(date):
+  """Parses a date."""
+  match = re.match(r'^(\d\d\d\d)-(\d\d)-(\d\d)$', date)
+  if match:
+    return datetime.datetime(
+        int(match.group(1)), int(match.group(2)), int(match.group(3)))
+  if date.isdigit():
+    return datetime.datetime.utcfromtimestamp(int(date))
+  return None
+
+
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
   def get(self):
     query = db.Query(Status).order('-date')
     start_date = self.request.get('startTime')
-    if start_date != "":
-      query.filter('date <',
-                   datetime.datetime.utcfromtimestamp(int(start_date)))
+    if start_date:
+      query.filter('date <', parse_date(start_date))
 
     end_date = self.request.get('endTime')
     beyond_end_of_range_status = None
-    if end_date != "":
-      end_date = datetime.datetime.utcfromtimestamp(int(end_date))
-      query.filter('date >=', end_date)
+    if end_date:
+      query.filter('date >=', parse_date(end_date))
       # We also need to get the very next status in the range, otherwise
       # the caller can't tell what the effective tree status was at time
       # |end_date|.
@@ -78,12 +87,29 @@ class AllStatusPage(BasePage):
           'WHERE date < :end_date ORDER BY date DESC LIMIT 1',
           end_date=end_date).get()
 
-    # It's not really an html page.
-    self.response.headers['Content-Type'] = 'text/plain'
-    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = (StatusToDict(s, False) for s in query)
-    template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
-    self.DisplayTemplate('allstatus.html', template_values)
+    out_format = self.request.get('format', 'csv')
+    if out_format == 'csv':
+      # It's not really an html page.
+      self.response.headers['Content-Type'] = 'text/plain'
+      template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+      template_values['status'] = (StatusToDict(s, False) for s in query)
+      template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
+      self.DisplayTemplate('allstatus.html', template_values)
+    elif out_format == 'json':
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.headers['Access-Control-Allow-Origin'] = '*'
+      statuses = [StatusToDict(s, True) for s in query]
+      if beyond_end_of_range_status:
+        statuses.append(StatusToDict(beyond_end_of_range_status, True))
+      data = json.dumps(statuses)
+      callback = self.request.get('callback')
+      if callback:
+        if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
+          data = '%s(%s);' % (callback, data)
+      self.response.out.write(data)
+    else:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write('Invalid format')
 
 
 class CurrentPage(BasePage):

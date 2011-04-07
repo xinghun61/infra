@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -43,15 +43,6 @@ function Fetch(url, callback) {
 }
 
 /**
- * Trims trailing/leading whitespace from |str|.
- *
- * @param {string} str
- */
-function trim(str) {
-  return str.replace(/^\s+|\s+$/g, '');
-}
-
-/**
  * Parses response (text, error) and appends the parsed entry to |entries|.
  *
  * /allstatus returns entries as "<author>, <date>,<message>\n" lines, with
@@ -65,40 +56,22 @@ function ParseDataResponseAndAppend(entries, text, error) {
     return false;  // failure.
   }
 
-  var lines = text.split("\n");
-
-  // Check that the input is in a format we expect.
-  if (lines.length.length < 2 || lines[0] != "Who,When,GeneralStatus,Message") {
-    Log("Server returned: " + text);
+  var content = JSON.parse(text);
+  if (!content.length) {
+    Log("Content seems to be invalid");
     return false;
   }
 
-  // Skip the header line.
-  for (var i = 1; i < lines.length; ++i) {
-    var line = trim(lines[i]);
-
-    if (line.length == 0)
-      continue;
-
-    // Comma separated parts (the message part may itself contain commas).
-    var parts = /^([^,]*),([^,]*),([^,]*),(.*)$/.exec(line);
-    if (!parts) {
-      Log("Failed to parse server response line: " + line);
-      continue;
-    }
-
-    var author = trim(parts[1]);
-    var dateStr = trim(parts[2]);
-    var general_state = trim(parts[3]);
-    var message = trim(parts[4]);
-
-    // The time has a trailing ".XXXXX" component we don't care for.
+  for (var i = 0; i < content.length; ++i) {
+    // The time has a trailing ".XXXXX" ms component we don't care for.
     // Also append "UTC" so we are left with a string resembling:
     // "2009-10-14 21:59:18 UTC"
-    dateStr = dateStr.split(".")[0] + " UTC";
+    var item = content[i];
+    dateStr = item.date.split(".")[0] + " UTC";
+    entries.push(
+      new Entry(DateUtil.ParseUTCDateTimeString(dateStr), item.username,
+        item.message, item.general_state));
 
-    entries.push(new Entry(DateUtil.ParseUTCDateTimeString(dateStr), author,
-                           message, general_state));
   }
 
   return true;  // success.
@@ -123,7 +96,8 @@ DataFetcher.GetTreeStatusEntries = function(timeRange, callback) {
   startTime += DateUtil.MillisToSeconds(DateUtil.MILLIS_PER_DAY);
   endTime -= DateUtil.MillisToSeconds(DateUtil.MILLIS_PER_DAY);
 
-  var url = "/allstatus?startTime=" + startTime + "&endTime=" + endTime;
+  var url = "/allstatus?format=json&startTime=" + startTime + "&endTime=" +
+      endTime;
 
   Fetch(url, OnFetchedDataComplete.bind(this, callback));
 }
