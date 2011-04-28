@@ -18,10 +18,11 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 import base_page
-import static_blobs_inline as static_blobs
 import breakpad
 import event_push
 import lkgr
+import profiling
+import static_blobs_inline as static_blobs
 import status
 import utils
 import xmpp
@@ -44,6 +45,8 @@ URLS = [
   ('/breakpad', breakpad.BreakPad),
   ('/restricted/breakpad/im', breakpad.SendIM),
   ('/restricted/breakpad/cleanup', breakpad.Cleanup),
+  ('/profiling', profiling.Profiling),
+  ('/restricted/profiling/cleanup', profiling.Cleanup),
   ('/recent-events', event_push.RecentEvents),
   ('/status-receiver', event_push.StatusReceiver),
   ('/restricted/status-processor', event_push.StatusProcessor),
