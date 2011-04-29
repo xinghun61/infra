@@ -31,3 +31,161 @@ indexes:
   - name: user
   - name: date
     direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: first_arg
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: first_arg
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: platform
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: platform
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: first_arg
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: executable
+  - name: first_arg
+  - name: platform
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: first_arg
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: first_arg
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: platform
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: first_arg
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: executable
+  - name: first_arg
+  - name: platform
+  - name: timestamp
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: platform
+  - name: duration
+    direction: desc
+
+- kind: ProfileReport
+  properties:
+  - name: platform
+  - name: timestamp
+    direction: desc

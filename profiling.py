@@ -22,36 +22,57 @@ class ProfileReport(db.Model):
   first_arg = db.StringProperty()
   argv = db.TextProperty()
   platform = db.StringProperty()
+  domain = db.StringProperty()
   duration = db.FloatProperty()
 
-  def asDict(self):
-    return {
-        'timestamp': self.timestamp.isoformat(),
-        'executable': self.executable,
-        'first_arg': self.first_arg,
-        'argv': self.argv,
-        'platform': self.platform,
-        'duration': self.duration,
-    }
+  @staticmethod
+  def create(**kwargs):
+    """Creates a new ProfileReport.
+
+    Calculates executable and first_arg from argv.
+    """
+    arg0 = kwargs['argv'].split(' ', 1)[0]
+    kwargs['executable'] = arg0.rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
+    commands = kwargs['argv'].split(' ', 2)
+    if len(commands) >= 2:
+      kwargs['first_arg'] = commands[1]
+    return ProfileReport(**kwargs)
 
 
 class Profiling(BasePage):
   @utils.admin_only
   def get(self):
+    """Returns json formated data according to the provided filters."""
     limit = int(self.request.get('limit', 100))
-    executable = self.request.get('executable')
-    first_arg = self.request.get('first_arg')
-    platform = self.request.get('platform')
+    accepted_filters = ('executable', 'first_arg', 'platform', 'domain')
     reports = ProfileReport.all()
-    reports.order('-timestamp')
-    if executable:
-      reports.filter('executable =', executable)
-    if first_arg:
-      reports.filter('first_arg =', first_arg)
-    if platform:
-      reports.filter('platform =', platform)
-    data = [report.asDict() for report in reports.fetch(limit=limit)]
+    min_duration = self.request.get('min_duration')
+    max_duration = self.request.get('max_duration')
+    includes_not = False
+    for key in accepted_filters:
+      value = self.request.get(key)
+      if value:
+        if value.startswith('!'):
+          reports.filter('%s !=' % key, value[1:])
+          includes_not = True
+        else:
+          reports.filter('%s =' % key, value)
+    if min_duration:
+      reports.filter('duration >=', float(min_duration))
+    if max_duration:
+      reports.filter('duration <=', float(max_duration))
+    if not includes_not:
+      if min_duration or max_duration:
+        # Otherwise it'll throw a BadArgumentError.
+        reports.order('-duration')
+      else:
+        reports.order('-timestamp')
+      # Otherwise, gives up, the DB can't sort when a inequality filter property
+      # is specified.
+
+    data = [utils.AsDict(report) for report in reports.fetch(limit=limit)]
     self.response.headers.add_header('content-type', 'application/json')
+    self.response.headers.add_header('Access-Control-Allow-Origin', '*')
     # Write it as compact as possible.
     self.response.out.write(json.dumps(data, separators=(',',':')))
 
@@ -60,32 +81,28 @@ class Profiling(BasePage):
 
     Anyone can add a report.
     """
-    argv = self.request.get('argv')
-    duration = self.request.get('duration')
-    platform = self.request.get('platform')
-    try:
-      duration = float(duration)
-    except ValueError:
-      logging.info('duration(%s) is invalid' % duration)
-      duration = None
-    if not argv or not duration or not platform:
-      logging.info('argv(%s) or duration(%s) or platform(%s) is invalid.' % (
-        argv, duration, platform))
-      self.response.out.write('FAIL')
+    blacklist = ('timestamp', 'executable', 'first_arg')
+    required = ('argv', 'duration', 'platform', 'domain')
+    accepted_keys = list(set(ProfileReport.properties()) - set(blacklist))
+    kwargs = dict(
+        (k, self.request.get(k)) for k in accepted_keys if k in self.request)
+
+    if not all(kwargs.get(k, None) for k in required):
+      logging.info('missing required keys. %r' % kwargs)
+      self.response.out.write('fail')
       return
 
-    executable = argv.split(' ', 1)[0].rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
-    commands = argv.split(' ', 2)
-    first_arg = None
-    if len(commands) >= 2:
-      first_arg = commands[1]
-    ProfileReport(
-        executable=executable,
-        first_arg=first_arg,
-        argv=argv,
-        platform=platform,
-        duration=duration).put()
-    logging.debug('%s on %s took %.1f' % (executable, platform, duration))
+    try:
+      kwargs['duration'] = float(kwargs['duration'])
+    except ValueError:
+      logging.info('duration(%s) is invalid' % kwargs['duration'])
+      self.response.out.write('fail')
+      return
+
+    report = ProfileReport.create(**kwargs)
+    report.put()
+    logging.debug('%s on %s took %.1f' % (
+        report.executable, report.platform, report.duration))
     self.response.out.write('OK.')
 
 
