@@ -84,8 +84,9 @@ class Profiling(BasePage):
     blacklist = ('timestamp', 'executable', 'first_arg')
     required = ('argv', 'duration', 'platform', 'domain')
     accepted_keys = list(set(ProfileReport.properties()) - set(blacklist))
+    arguments = self.request.arguments()
     kwargs = dict(
-        (k, self.request.get(k)) for k in accepted_keys if k in self.request)
+        (k, self.request.get(k)) for k in accepted_keys if k in arguments)
 
     if not all(kwargs.get(k, None) for k in required):
       logging.info('missing required keys. %r' % kwargs)
