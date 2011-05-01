@@ -78,6 +78,11 @@ indexes:
   properties:
   - name: domain
   - name: platform
+
+- kind: ProfileReport
+  properties:
+  - name: domain
+  - name: platform
   - name: duration
     direction: desc
 

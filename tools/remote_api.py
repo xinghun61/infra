@@ -18,6 +18,8 @@ sys.path.append(os.path.join(LIB, 'simplejson'))
 sys.path.append(os.path.join(LIB, 'webob'))
 sys.path.append(ROOT)
 
+from google.appengine.ext.remote_api import remote_api_stub
+
 
 def auth_func():
   user = os.environ.get('EMAIL_ADDRESS')
@@ -25,7 +27,11 @@ def auth_func():
     print('User: %s' % user)
   else:
     user = raw_input('Username:')
-  return user, getpass.getpass('Password:')
+  try:
+    pwd = open('.pwd').readline().strip()
+  except IOError:
+    pwd = getpass.getpass('Password:')
+  return user, pwd
 
 
 def main():
@@ -40,7 +46,6 @@ def main():
   logging.basicConfig(level=logging.ERROR)
 
   # pylint: disable=W0612
-  from google.appengine.ext.remote_api import remote_api_stub
   from google.appengine.api import memcache
   from google.appengine.ext import db
   remote_api_stub.ConfigureRemoteDatastore(
@@ -48,9 +53,38 @@ def main():
 
   import base_page
   import breakpad
+  import event_push
+  import lkgr
+  import profiling
+  import static_blobs_inline
+  import static_blobs_store
   import status
-  code.interact(
-      'App Engine interactive console for %s' % (app_id,), None, locals())
+  import utils
+  import xmpp
+
+  utils.bootstrap()
+
+  def remove(entity, functor, batch=100):
+    """Remove entries."""
+    count = 0
+    items = []
+    while True:
+      entries = [i for i in entity.all().fetch(limit=batch) if functor(i)]
+      count += len(entries)
+      print '%s' % count
+      if entries:
+        db.delete(entries)
+      else:
+        break
+
+  # Symbols presented to the user.
+  predefined_vars = locals()
+
+  prompt = (
+      'App Engine interactive console for "%s".\n'
+      'Available symbols:\n'
+      '  %s\n') % (app_id, ', '.join(sorted(predefined_vars)))
+  code.interact(prompt, None, predefined_vars)
 
 
 if __name__ == '__main__':

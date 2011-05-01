@@ -64,9 +64,14 @@ def require_user(func):
 
 
 def AsDict(self):
+  """Converts an object that implements .properties() to a dict."""
   ret = {}
-  for k in self.properties():
-    ret[k] = unicode(getattr(self, k))
+  for key in self.properties():
+    value = getattr(self, key)
+    if isinstance(value, (int, long, None.__class__, float)):
+      ret[key] = value
+    else:
+      ret[key] = unicode(value)
   return ret
 
 

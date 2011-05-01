@@ -70,7 +70,7 @@ class Profiling(BasePage):
       # Otherwise, gives up, the DB can't sort when a inequality filter property
       # is specified.
 
-    data = [utils.AsDict(report) for report in reports.fetch(limit=limit)]
+    data = [report.AsDict() for report in reports.fetch(limit=limit)]
     self.response.headers.add_header('content-type', 'application/json')
     self.response.headers.add_header('Access-Control-Allow-Origin', '*')
     # Write it as compact as possible.

@@ -8,8 +8,8 @@ import datetime
 
 import simplejson as json
 
+from google.appengine.api import taskqueue
 from google.appengine.api import xmpp
-from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
