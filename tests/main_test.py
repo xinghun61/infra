@@ -109,7 +109,7 @@ class StatusTest(TestCase):
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'bar'
     data['password'] = 'wrong password'
-    self.assertTrue(100 < len(self.post('status', data)))
+    self.assertEqual('', self.post('status', data))
     # Wasn't updated since the password was wrong.
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'boo'
@@ -139,8 +139,7 @@ class LkgrTest(TestCase):
     data['password'] = 'wrongpassword'
     data['revision'] = 23
     out = self.post('revisions', data)
-    # Was redirected to login page.
-    self.assertTrue(100 < len(out))
+    self.assertEqual('', out)
     self.assertEqual('42', self.get('lkgr'))
     data['password'] = 'bleh'
     data['revision'] = 31337

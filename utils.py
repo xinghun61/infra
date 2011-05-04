@@ -44,8 +44,6 @@ def admin_only(func):
   def decorated(self, *args, **kwargs):
     if self.is_admin:
       return func(self, *args, **kwargs)
-    elif not self.user:
-      self.redirect(users.create_login_url(self.request.url))
     else:
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write('Forbidden')
