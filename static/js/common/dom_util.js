@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,7 +15,7 @@ var DomUtil = {};
  */
 DomUtil.DisplayNode = function(n, display) {
   n.style.display = display ? "" : "none";
-}
+};
 
 /**
  * Appends a new node with tag |type| to |parent|.
@@ -25,11 +25,14 @@ DomUtil.DisplayNode = function(n, display) {
  * @return {DOMNode} The node that was just created.
  */
 DomUtil.AddNode = function(parent, type) {
+  if (!type) {
+    throw ("type must be defined");
+  }
   var doc = parent.ownerDocument;
   var n = doc.createElement(type);
   parent.appendChild(n);
   return n;
-}
+};
 
 /**
  * Adds text to node |parent|.
@@ -42,4 +45,4 @@ DomUtil.AddText = function(parent, text) {
   var n = doc.createTextNode(text);
   parent.appendChild(n);
   return n;
-}
+};

@@ -21,6 +21,7 @@ import base_page
 import breakpad
 import event_push
 import lkgr
+import login
 import profiling
 import static_blobs_inline as static_blobs
 import status
@@ -31,6 +32,7 @@ import xmpp
 # Application configuration.
 URLS = [
   ('/', status.MainPage),
+  ('/login', login.Login),
   ('/allstatus', status.AllStatusPage),
   ('/current', status.CurrentPage),
   ('/status', status.StatusPage),

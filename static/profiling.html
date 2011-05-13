@@ -1,0 +1,146 @@
+<html>
+<head>
+  <script src="js/common/bind.js"></script>
+  <script src="js/common/date_util.js"></script>
+  <script src="js/common/debug.js"></script>
+  <script src="js/common/dom_util.js"></script>
+  <script src="js/profiling/class_util.js"></script>
+  <script src="js/profiling/data_fetcher.js"></script>
+  <script src="js/profiling/entry.js"></script>
+  <script src="js/profiling/list_view.js"></script>
+  <script src="js/profiling/viewer_app.js"></script>
+
+  <script>
+    var gViewerApp = new ProfilingApp();
+  </script>
+
+  <style>
+    .viewBadge {
+      font-size: 110%;
+      background: gray;
+      padding: 5px;
+    }
+
+    .sortBadge {
+    }
+
+    table.entriesList {
+      border: 1px solid black;
+    }
+    table.entriesList thead {
+      background: lightgreen;
+    }
+    table.entriesList tr:nth-child(odd) {
+      background: lightgray;
+    }
+    table.entriesList td {
+      padding: 2pt;
+    }
+
+    .dygraph {
+      font-family: sans-serif;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      background: -webkit-gradient(linear,
+                                    left top,
+                                    left bottom,
+                                    from(#fff),
+                                    to(#eee));
+      border-radius: 10px;
+    }
+
+    /* Must be last to take precedence. */
+    .Selected {
+      background: yellow;
+    }
+  </style>
+  <title>Profiling</title>
+</head>
+
+<body>
+<h1>Profiling</h1>
+
+<div style="border: 1px solid black">
+  <table width=100%>
+    <tr>
+      <td>
+        <form action="" method=GET>
+          <table>
+            <tr>
+              <th align=right>Platform:</th>
+              <td>
+                <input type=text id=platform
+                oninput="gViewerApp.PostOnQueryChanged();" />
+              </td>
+              <th align=right>Domain:</th>
+              <td>
+                <input type=text id=domain
+                oninput="gViewerApp.PostOnQueryChanged();" />
+              </td>
+            </tr>
+            <tr>
+              <th align=right>Executable:</th>
+              <td>
+                <input type=text id=executable
+                oninput="gViewerApp.PostOnQueryChanged();" />
+              </td>
+              <th align=right>First arg:</th>
+              <td>
+                <input type=text id=first_arg
+                oninput="gViewerApp.PostOnQueryChanged();" />
+              </td>
+            </tr>
+          </table>
+        </form>
+      </td>
+      <td align=right>
+        <div>
+          <!--
+          <span id=fragmentation_badge class="viewBadge">
+            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('fragmentation')">Fragmentation view</a>
+          </span>
+          <span id=peak_badge class="viewBadge">
+            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('peak')">Peak hours view</a>
+          </span>
+          <span id=stats_badge class="viewBadge">
+            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('stats')">Stats view</a>
+          </span>
+          -->
+          <span id=list_badge class="viewBadge Selected">
+            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('list')">List view</a>
+          </span>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- UI widget to show when stuff is being loaded -->
+<!-- ============================================================ -->
+<div id=loading style="font-size: 200%; color: blue; padding: 10px; display:none;">Loading...</div>
+
+
+<!-- ============================================================ -->
+<!-- Spacer between time range controls and view panel -->
+<!-- ============================================================ -->
+<div style="margin: 3px;">&nbsp;</div>
+
+<!-- ============================================================ -->
+<!-- UI widget to prompt for login.                               -->
+<!-- ============================================================ -->
+<div id=login_container style="display:none;"></div>
+
+<!-- ============================================================ -->
+<!-- UI widget with error data.                                   -->
+<!-- ============================================================ -->
+<div id=error_container style="display:none;"></div>
+
+<!-- ============================================================ -->
+<!-- List view content area -->
+<!-- ============================================================ -->
+<div id=list_container style="display:none"></div>
+
+<pre id=log></pre>
+</body>
+</html>

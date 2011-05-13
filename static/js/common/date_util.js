@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -50,7 +50,7 @@ DateUtil.ParseUTCDateString = function(dateStr) {
                   parseInt(parts[1], 10) - 1, // month
                   parseInt(parts[2], 10), // day
                   0, 0, 0);
-}
+};
 
 /**
  * Parses a date resembling "2009-10-23" into a Date object.
@@ -75,7 +75,7 @@ DateUtil.ParseStringToLocalDate = function(dateStr) {
                    parseInt(parts[2], 10), // day
                    0, 0, 0);
   return d;
-}
+};
 
 /**
  * Parses a date/time string resembling "2009-10-06 22:53:32 UTC" to a unix
@@ -107,7 +107,7 @@ DateUtil.ParseUTCDateTimeString = function(dateStr) {
   if (timeParts.length > 2)
     d.setUTCSeconds(parseInt(timeParts[2], 10));
   return d.getTime();
-}
+};
 
 /**
  * Formats |x| in decimal such that it occupies |count| characters.
@@ -140,7 +140,7 @@ DateUtil.GetLocalDayRange = function(t) {
   var startTime = endTime + DateUtil.MILLIS_PER_DAY;
 
   return new TimeRange(startTime, endTime);
-}
+};
 
 /**
  * Returns a time range for the day that encloses |t| in UTC
@@ -163,7 +163,7 @@ DateUtil.GetUTCDayRange = function(t) {
   var startTime = endTime + DateUtil.MILLIS_PER_DAY;
 
   return new TimeRange(startTime, endTime);
-}
+};
 
 /**
  * Returns a list of all of the days contained by |timeRange|,
@@ -185,7 +185,7 @@ DateUtil.GetLocalDaysInRange = function(timeRange) {
   }
 
   return days;
-}
+};
 
 /**
  * Returns a list of all of the days contained by |timeRange|,
@@ -207,7 +207,7 @@ DateUtil.GetUTCDaysInRange = function(timeRange) {
   }
 
   return days;
-}
+};
 
 /**
  * Formats |t| as something human readable in the user's current locale.
@@ -220,7 +220,43 @@ DateUtil.FormatAsLocalDate = function(t) {
   var d = new Date();
   d.setTime(t);
   return d.toLocaleString();
-}
+};
+
+/**
+ * Formats |t| as ISO-8601 in local time.
+ *
+ * @param {int} t Unix timestamp in milliseconds.
+ * @return {string}
+ */
+DateUtil.FormatLocaleISO = function(t) {
+  // Formats the date into something readable.
+  var d = new Date();
+  d.setTime(t);
+  return d.getFullYear() + "-" +
+      zeroPad(d.getMonth() + 1, 2) + "-" +
+      zeroPad(d.getDay(), 2) + " " +
+      zeroPad(d.getHours() + 1, 2) + ":" +
+      zeroPad(d.getMinutes() + 1, 2) + ":" +
+      zeroPad(d.getSeconds() + 1, 2);
+};
+
+/**
+ * Formats |t| as ISO-8601 in UTC.
+ *
+ * @param {int} t Unix timestamp in milliseconds.
+ * @return {string}
+ */
+DateUtil.FormatUTCISO = function(t) {
+  // Formats the date into something readable.
+  var d = new Date();
+  d.setTime(t);
+  return d.getUTCFullYear() + "-" +
+      zeroPad(d.getUTCMonth() + 1, 2) + "-" +
+      zeroPad(d.getUTCDay(), 2) + " " +
+      zeroPad(d.getUTCHours() + 1, 2) + ":" +
+      zeroPad(d.getUTCMinutes() + 1, 2) + ":" +
+      zeroPad(d.getUTCSeconds() + 1, 2);
+};
 
 /**
  * Converts milliseconds to seconds (rounding down).
@@ -230,5 +266,15 @@ DateUtil.FormatAsLocalDate = function(t) {
  */
 DateUtil.MillisToSeconds = function(millis) {
   return parseInt((millis / 1000).toFixed(0));
-}
+};
 
+/**
+ * Helper function to add required zero characters to a string.
+ **/
+function zeroPad(num, width) {
+  num = num.toString();
+  while (num.length < width) {
+    num = "0" + num;
+  }
+  return num;
+}
