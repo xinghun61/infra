@@ -8,6 +8,7 @@
   <script src="js/profiling/data_fetcher.js"></script>
   <script src="js/profiling/entry.js"></script>
   <script src="js/profiling/list_view.js"></script>
+  <script src="js/profiling/stats_view.js"></script>
   <script src="js/profiling/viewer_app.js"></script>
 
   <script>
@@ -25,16 +26,40 @@
     }
 
     table.entriesList {
-      border: 1px solid black;
+      padding: 1px;
     }
+
     table.entriesList thead {
       background: lightgreen;
     }
+
+    table.entriesList th {
+      padding: 3px;
+    }
+
+    table.entriesList th:first-of-type {
+      border-top-left-radius: 8px;
+    }
+
+    table.entriesList th:last-of-type {
+      border-top-right-radius: 8px;
+    }
+
     table.entriesList tr:nth-child(odd) {
       background: lightgray;
     }
+
     table.entriesList td {
       padding: 2pt;
+      padding-left: 4pt;
+      padding-right: 4pt;
+    }
+
+    .filters_container {
+    }
+
+    .filters_container th {
+      text-align: right;
     }
 
     .dygraph {
@@ -60,56 +85,14 @@
 <body>
 <h1>Profiling</h1>
 
-<div style="border: 1px solid black">
+<div style="border: 1px solid black" id=navigation_container>
   <table width=100%>
     <tr>
       <td>
-        <form action="" method=GET>
-          <table>
-            <tr>
-              <th align=right>Platform:</th>
-              <td>
-                <input type=text id=platform
-                oninput="gViewerApp.PostOnQueryChanged();" />
-              </td>
-              <th align=right>Domain:</th>
-              <td>
-                <input type=text id=domain
-                oninput="gViewerApp.PostOnQueryChanged();" />
-              </td>
-            </tr>
-            <tr>
-              <th align=right>Executable:</th>
-              <td>
-                <input type=text id=executable
-                oninput="gViewerApp.PostOnQueryChanged();" />
-              </td>
-              <th align=right>First arg:</th>
-              <td>
-                <input type=text id=first_arg
-                oninput="gViewerApp.PostOnQueryChanged();" />
-              </td>
-            </tr>
-          </table>
-        </form>
+        <div id=filters_container class=filters_container></div>
       </td>
       <td align=right>
-        <div>
-          <!--
-          <span id=fragmentation_badge class="viewBadge">
-            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('fragmentation')">Fragmentation view</a>
-          </span>
-          <span id=peak_badge class="viewBadge">
-            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('peak')">Peak hours view</a>
-          </span>
-          <span id=stats_badge class="viewBadge">
-            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('stats')">Stats view</a>
-          </span>
-          -->
-          <span id=list_badge class="viewBadge Selected">
-            <a href="javascript:void(0)" onclick="gViewerApp.SwitchToView('list')">List view</a>
-          </span>
-        </div>
+        <div id=view_selection_container></div>
       </td>
     </tr>
   </table>
@@ -137,9 +120,10 @@
 <div id=error_container style="display:none;"></div>
 
 <!-- ============================================================ -->
-<!-- List view content area -->
+<!-- Different views content area -->
 <!-- ============================================================ -->
 <div id=list_container style="display:none"></div>
+<div id=stats_container style="display:none"></div>
 
 <pre id=log></pre>
 </body>

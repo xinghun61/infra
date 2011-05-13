@@ -11,8 +11,8 @@
 function ProfilingApp() {
   // Factories for each of the view types.
   this.viewFactories_ = {
-    // TODO(maruel): More views.
     list: CreateListView,
+    stats: CreateStatsView,
   };
 
   // Views which have been created so far, keyed by their name.
@@ -24,11 +24,13 @@ function ProfilingApp() {
   // The last query filters that entries were fetched from the server for.
   this.filters_ = null;
 
-  this.update_timeout_id_ = null;
   this.pending_request_ = null;
-  this.filters_names_ = ["platform", "domain", "executable", "first_arg"];
+  this.filters_names_ = [
+      "platform", "domain", "executable", "first_arg", "limit"];
+  this.filters_titles_ = [
+      "Platform", "Domain", "Executable", "First Arg", "Limit"];
 
-  window.onload.addEventListener(this.OnPageLoaded.bind(this));
+  window.addEventListener("load", this.OnPageLoaded.bind(this));
 }
 
 /**
@@ -36,19 +38,47 @@ function ProfilingApp() {
  * finished loading.
  */
 ProfilingApp.prototype.OnPageLoaded = function() {
+  this.CreateFilterTable();
+  this.CreateViewSelectionTable();
   this.ApplyQueryParameters();
   this.OnQueryChanged();
 };
 
-
-ProfilingApp.prototype.PostOnQueryChanged = function() {
-  if (this.update_timeout_id_ != null) {
-    window.clearTimeout(this.update_timeout_id_);
-    this.update_timeout_id_ = null;
+ProfilingApp.prototype.CreateFilterTable = function() {
+  var container = document.getElementById("filters_container");
+  var form = DomUtil.AddNode(container, "form");
+  form.method = "GET";
+  // Create a table inside.
+  var table = DomUtil.AddNode(form, "table");
+  for (var i in this.filters_names_) {
+    var tr = DomUtil.AddNode(table, "tr");
+    var th = DomUtil.AddNode(tr, "th");
+    DomUtil.AddText(th, this.filters_titles_[i]);
+    var td = DomUtil.AddNode(tr, "td");
+    var input = DomUtil.AddNode(td, "input");
+    input.type = "search";
+    input.incremental = true;
+    input.id = this.filters_names_[i];
+    input.addEventListener("search", this.OnQueryChanged.bind(this));
   }
+};
 
-  var callback = this.OnQueryChanged.bind(this);
-  this.update_timeout_id_ = window.setTimeout(callback, 20);
+ProfilingApp.prototype.CreateViewSelectionTable = function() {
+  var container = document.getElementById("view_selection_container");
+  var first = true;
+  for (var i in this.viewFactories_) {
+    var span = DomUtil.AddNode(container, "span");
+    span.id = i + "_badge";
+    span.className = "viewBadge";
+    if (first) {
+      span.className += " Selected";
+      first = false;
+    }
+    var a = DomUtil.AddNode(span, "a");
+    a.href = "javascript:void(0)";
+    a.onclick = this.SwitchToView.bind(this, i);
+    DomUtil.AddText(a, this.viewFactories_[i].display_name);
+  }
 };
 
 /**
@@ -59,10 +89,6 @@ ProfilingApp.prototype.OnQueryChanged = function() {
   if (this.pending_request_ != null) {
     this.pending_request_.abort();
     this.pending_request_ = null;
-  }
-  if (this.update_timeout_id_ != null) {
-    window.clearTimeout(this.update_timeout_id_);
-    this.update_timeout_id_ = null;
   }
   var filters = this.GetFilters();
 

@@ -64,5 +64,7 @@ skip_files: |
     (tests/.*)|
     (tools/.*)|
     ([A-Z]+(\.py)?)|
-    (Makefile)
+    (Makefile)|
+    (.*\.rej)|
+    (.*\.orig)|
     )$

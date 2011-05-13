@@ -58,7 +58,6 @@ ListView.prototype.Draw = function(current_sort) {
   var table = DomUtil.AddNode(this.parent_, "table");
   table.className = "entriesList";
   var thead = DomUtil.AddNode(table, "thead");
-  var tr1 = DomUtil.AddNode(thead, "tr");
   for (var i in this.headers_) {
     var extra = "";
     var key = this.headers_[i];
@@ -73,6 +72,9 @@ ListView.prototype.Draw = function(current_sort) {
     DomUtil.AddText(a, this.titles_[i]);
   }
   var tbody = DomUtil.AddNode(table, "tbody");
+  if (!this.entries_) {
+    return;
+  }
   for (var i = 0; i < this.entries_.length; ++i) {
     var entry = this.entries_[i];
     var tr = DomUtil.AddNode(tbody, "tr");
@@ -109,3 +111,5 @@ ListView.prototype.SortEntries = function (current_sort) {
 };
 
 })();  // Private implementation.
+
+CreateListView.display_name = "List view";
