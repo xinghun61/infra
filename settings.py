@@ -6,6 +6,6 @@
 
 import os
 
-DEBUG = os.environ['SERVER_SOFTWARE'].startswith('Dev')
+DEBUG = os.environ.get('SERVER_SOFTWARE', '').startswith('Dev')
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1048576  # 1 MB
