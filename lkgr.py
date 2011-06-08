@@ -4,6 +4,7 @@
 
 """LKGR management webpages."""
 
+import simplejson as json
 from google.appengine.ext import db
 
 from base_page import BasePage
@@ -27,7 +28,15 @@ class Revisions(BasePage):
 
   def get(self):
     """Returns information about the last revision status."""
-    revisions = Revision.gql('ORDER BY revision DESC LIMIT 100')
+    limit = self.request.get('limit', 100)
+    revisions = Revision.all().order('-revision').fetch(limit)
+    if self.request.get('format') == 'json':
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.headers['Access-Control-Allow-Origin'] = '*'
+      data = json.dumps([revision.AsDict() for revision in revisions])
+      self.response.out.write(data)
+      return
+
     page_value = {'revisions': revisions}
     template_values = self.InitializeTemplate('Chromium Revisions Status')
     template_values.update(page_value)
