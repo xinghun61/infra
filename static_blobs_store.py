@@ -18,6 +18,9 @@ import base_page
 VALID_RESOURCES = [ 'favicon.ico', 'logo.png' ]
 
 
+# pylint: disable=W0221
+
+
 class StaticBlobStoreFile(db.Model):
   """A reference to a static blob to serve."""
   blob = blobstore.BlobReferenceProperty(required=True)

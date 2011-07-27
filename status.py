@@ -196,7 +196,10 @@ class MainPage(BasePage):
   """Displays the main page containing the last 100 messages."""
 
   @utils.require_user
-  def get(self, error_message='', last_message=''):
+  def get(self):
+    return self._handle()
+
+  def _handle(self, error_message='', last_message=''):
     """Sets the information to be displayed on the main page."""
     status = Status.gql('ORDER BY date DESC LIMIT 25')
     current_status = status.get()
@@ -237,7 +240,7 @@ class MainPage(BasePage):
         # pylint: disable=E1101
         memcache.set('last_status', status)
 
-    self.get(error_message, last_message)
+    return self._handle(error_message, last_message)
 
 
 def bootstrap():
