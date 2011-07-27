@@ -49,7 +49,7 @@ class BasePage(webapp.RequestHandler):
       """Looks for password parameter. Not awesome."""
       password = self.request.get('password')
       if password:
-        sha1_pass = hashlib.sha1(password).hexdigest()
+        sha1_pass = hashlib.sha1(password).hexdigest()  # pylint: disable=E1101
         if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
           # The password is valid, this is a super admin.
           self._is_admin = True

@@ -46,7 +46,7 @@ class TestCase(unittest.TestCase):
   def set_admin_pwd(self, password):
     # There will be no entities until main() has been called. So do a dummy
     # request first.
-    hashvalue = hashlib.sha1(password).hexdigest()
+    hashvalue = hashlib.sha1(password).hexdigest()  # pylint: disable=E1101
     self.get('doesnt_exist')
 
     # First verify the default value exists and then override its value.
