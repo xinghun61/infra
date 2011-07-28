@@ -54,7 +54,11 @@ class BasePage(webapp.RequestHandler):
           # The password is valid, this is a super admin.
           self._is_admin = True
         else:
-          logging.error('Password is invalid')
+          if utils.is_dev_env() and password == 'foobar':
+            # Dev server is unsecure.
+            self._is_admin = True
+          else:
+            logging.error('Password is invalid')
 
     self._user = users.get_current_user()
     if utils.is_dev_env():
