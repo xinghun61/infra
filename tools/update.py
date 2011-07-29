@@ -23,7 +23,11 @@ INSTANCES = [
 
 def main():
   if not sys.argv[1:]:
-    print('Usage: update.py <appcfg.py command> -v <version to use>\n')
+    print('Usage: update.py <appcfg.py command> -V <version to use>')
+    print('Examples:')
+    print('  update.py update -V r94532')
+    print('  update.py set_default_version -V r94532')
+    print('')
     print('The following instances will be affected:')
     for instance in INSTANCES:
       print('  %s' % instance)
