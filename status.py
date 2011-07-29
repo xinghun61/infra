@@ -24,37 +24,30 @@ class Status(db.Model):
   # The message. It can contain html code.
   message = db.StringProperty(required=True)
 
+  @property
+  def general_state(self):
+    """Returns a string representing the state that the status message
+    describes.
+    """
+    message = self.message
+    closed = re.search('close', message, re.IGNORECASE)
+    if closed and re.search('maint', message, re.IGNORECASE):
+      return 'maintenance'
+    if re.search('throt', message, re.IGNORECASE):
+      return 'throttled'
+    if closed:
+      return 'closed'
+    return 'open'
 
-def GeneralState(message):
-  """Interpret tree status from message in one place.
+  @property
+  def can_commit_freely(self):
+    return self.general_state == 'open'
 
-  NOTE: please keep all interpretation of tree message here!
-  Args:
-    message: human input status message.
-  Returns:
-    String representing the general state.
-  """
-  closed = re.search('close', message, re.IGNORECASE)
-  if closed and re.search('maint', message, re.IGNORECASE):
-    return 'maintenance'
-  if re.search('throt', message, re.IGNORECASE):
-    return 'throttled'
-  if closed:
-    return 'closed'
-  return 'open'
-
-
-def CanCommitFreely(message):
-  return GeneralState(message) == 'open'
-
-
-def StatusToDict(status, as_json=False):
-  st = status.AsDict()
-  st['general_state'] = GeneralState(status.message)
-  st['can_commit_freely'] = CanCommitFreely(status.message)
-  if not as_json:
-    st['date'] = status.date  # Preserve date-y-ness
-  return st
+  def AsDict(self):
+    data = super(Status, self).AsDict()
+    data['general_state'] = self.general_state
+    data['can_commit_freely'] = self.can_commit_freely
+    return data
 
 
 def parse_date(date):
@@ -92,15 +85,15 @@ class AllStatusPage(BasePage):
       # It's not really an html page.
       self.response.headers['Content-Type'] = 'text/plain'
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-      template_values['status'] = (StatusToDict(s, False) for s in query)
+      template_values['status'] = query
       template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
       self.DisplayTemplate('allstatus.html', template_values)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
       self.response.headers['Access-Control-Allow-Origin'] = '*'
-      statuses = [StatusToDict(s, True) for s in query]
+      statuses = [s.AsDict() for s in query]
       if beyond_end_of_range_status:
-        statuses.append(StatusToDict(beyond_end_of_range_status, True))
+        statuses.append(beyond_end_of_range_status.AsDict())
       data = json.dumps(statuses)
       callback = self.request.get('callback')
       if callback:
@@ -133,7 +126,7 @@ class CurrentPage(BasePage):
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
       self.response.headers['Access-Control-Allow-Origin'] = '*'
-      data = json.dumps(StatusToDict(status, True))
+      data = json.dumps(status.AsDict())
       callback = self.request.get('callback')
       if callback:
         if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
@@ -142,7 +135,7 @@ class CurrentPage(BasePage):
     elif out_format == 'html':
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
       template_values['message'] = status.message
-      template_values['state'] = GeneralState(status.message)
+      template_values['state'] = status.general_state
       self.DisplayTemplate('current.html', template_values, use_cache=True)
     else:
       self.error(400)
@@ -155,14 +148,9 @@ class StatusPage(BasePage):
     """Displays 1 if the tree is open, and 0 if the tree is closed."""
     status = Status.gql('ORDER BY date DESC').get()
     if status:
-      if CanCommitFreely(status.message):
-        message_value = '1'
-      else:
-        message_value = '0'
-
-      self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
+      self.response.headers['Cache-Control'] = 'no-cache, private, max-age=0'
       self.response.headers['Content-Type'] = 'text/plain'
-      self.response.out.write(message_value)
+      self.response.out.write(str(int(status.can_commit_freely)))
 
   @utils.admin_only
   def post(self):
@@ -207,7 +195,7 @@ class MainPage(BasePage):
       last_message = current_status.message
 
     template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-    template_values['status'] = (StatusToDict(s, False) for s in status)
+    template_values['status'] = status
     template_values['message'] = last_message
     # If the DB is empty, current_status is None.
     if current_status:

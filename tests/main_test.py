@@ -72,7 +72,7 @@ class StatusTest(TestCase):
     self.assertEquals(2, len(out))
     self.assertEquals('Who,When,GeneralStatus,Message', out[0])
     self.assertTrue(
-        re.match('none,.+?, \d+?, .+?,open,welcome to status', out[1]))
+        re.match('none,.+?, \d+?, .+?,open,welcome to status', out[1]), out[1])
 
   def test_status(self):
     self.assertEqual('1', self.get('status'))

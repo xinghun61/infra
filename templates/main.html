@@ -30,7 +30,7 @@
     <td><b>Message</b></td>
   </tr>
   {% for a_status in status %}
-    <tr>
+    <tr class="{{ a_status.general_state }}">
       <td>{{ a_status.username }}</td>
       <td>{{ a_status.date|date:"D M d, H:i T " }}</td>
       <td>{{ a_status.message }}</td>
