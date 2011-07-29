@@ -19,6 +19,7 @@ from google.appengine.ext.webapp import util
 
 import base_page
 import breakpad
+import commit_queue
 import event_push
 import lkgr
 import login
@@ -36,6 +37,8 @@ URLS = [
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
   ('/allstatus/?', status.AllStatusPage),
   ('/breakpad/?', breakpad.BreakPad),
+  ('/cq/receiver/?', commit_queue.Receiver),
+  ('/cq(/?.*)', commit_queue.Summary),
   ('/current/?', status.CurrentPage),
   ('/lkgr/?', lkgr.LastKnownGoodRevision),
   ('/login/?', login.Login),

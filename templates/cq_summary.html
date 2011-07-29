@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table border="1" cellpadding="5">
+  <thead>
+    <tr bgcolor="#CCCCFF">
+      <th>Issue</th>
+      <th>Patchset</th>
+      <th>Owner</th>
+      <th>Timestamp</th>
+      <th>Type</th>
+      <th>Message</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for event in events %}
+      <tr>
+        <td>{{ event.pending.issue }}</td>
+        <td>{{ event.pending.patchset }}</td>
+        <td>{{ event.pending.owner }}</td>
+        <td>{{ event.timestamp|date:"D M d, H:i T " }}</td>
+        <td>{{ event.name }}</td>
+        {% autoescape off %}
+        <td>{{ event.as_html }}</td>
+        {% endautoescape %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
