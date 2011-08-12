@@ -194,3 +194,9 @@ indexes:
   - name: platform
   - name: timestamp
     direction: desc
+
+- kind: VerificationEvent
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
