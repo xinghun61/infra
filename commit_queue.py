@@ -8,6 +8,7 @@ import cgi
 import logging
 import re
 import sys
+import urllib2
 
 import simplejson as json
 from google.appengine.api import memcache
@@ -81,12 +82,13 @@ def get_commit(issue, patchset, owner):
 class Summary(BasePage):
   def get(self, resource):  # pylint: disable=W0221
     query = VerificationEvent.all().order('-timestamp')
+    resource = resource.strip('/')
+    resource = urllib2.unquote(resource)
     if resource:
-      logging.debug('Filtering on %s' % resource)
-      resource = resource.strip('/')
       if resource == 'me':
         resource = self.user
       if resource:
+        logging.debug('Filtering on %s' % resource)
         query.filter('owner =', resource)
     limit = self.request.get('limit')
     if limit and limit.isdigit():
@@ -129,9 +131,15 @@ class Receiver(BasePage):
 
   @utils.admin_only
   def post(self):
-    db.put(
-        self._parse_packet((json.loads(p)) for p in self.request.get_all('p')))
-    self.response.out.write('OK')
+    def load_values():
+      for p in self.request.get_all('p'):
+        try:
+          yield json.loads(p)
+        except ValueError:
+          logging.warn('Discarding invalid packet %r' % p)
+    packets = list(self._parse_packet(p for p in load_values()))
+    db.put(packets)
+    self.response.out.write('%d\n' % len(packets))
 
   @staticmethod
   def _parse_packet(packets):

@@ -9,6 +9,9 @@ import os
 import re
 import sys
 import unittest
+import urllib2
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 try:
   import simplejson as json
@@ -17,8 +20,8 @@ except ImportError:
     import json  # pylint: disable=F0401
   except ImportError:
     # Hack.
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..',
-        'depot_tools', 'third_party'))
+    sys.path.append(
+        os.path.join(BASE_DIR, '..', '..', 'depot_tools', 'third_party'))
     import simplejson as json
 
 
@@ -27,6 +30,7 @@ import local_gae
 
 class TestCase(unittest.TestCase):
   def setUp(self):
+    super(TestCase, self).setUp()
     # Restart the server on each test. It's a bit slow but safer.
     self.local_gae = local_gae.LocalGae()
     self.local_gae.start_server(logging.getLogger().isEnabledFor(logging.DEBUG))
@@ -36,6 +40,7 @@ class TestCase(unittest.TestCase):
     if self.local_gae:
       self.local_gae.stop_server()
     self.local_gae = None
+    super(TestCase, self).tearDown()
 
   def get(self, suburl):
     return self.local_gae.get(suburl)
@@ -148,7 +153,30 @@ class LkgrTest(TestCase):
     self.assertEqual('31337', self.get('lkgr'))
 
 
+class CommitQueueTest(TestCase):
+  def _fill(self):
+    # Example dump taken from a run.
+    total = 0
+    for data in json.load(open(os.path.join(BASE_DIR, 'cq.json'))):
+      packet = {
+          'password': 'foobar',
+          'p': json.dumps(data),
+      }
+      total += int(self.post('cq/receiver', packet))
+    self.assertEquals(6, total)
+
+  def test_summary_json(self):
+    self._fill()
+    self.assertEquals(6, len(json.loads(self.get('cq/?format=json'))))
+    self.assertEquals([], json.loads(self.get('cq/mine?format=json')))
+    self.assertEquals(
+        [],
+        json.loads(self.get(
+          urllib2.quote('cq/wtc@chromium.org') + '?format=json')))
+
+
 if __name__ == '__main__':
-  if '-v' in sys.argv:
-    logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=
+      [logging.WARNING, logging.INFO, logging.DEBUG][
+        min(2, sys.argv.count('-v'))])
   unittest.main()
