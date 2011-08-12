@@ -1,30 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
-<table border="1" cellpadding="5">
-  <thead>
-    <tr bgcolor="#CCCCFF">
-      <th>Issue</th>
-      <th>Patchset</th>
-      <th>Owner</th>
-      <th>Timestamp</th>
-      <th>Type</th>
-      <th>Message</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for event in events %}
-      <tr>
-        <td>{{ event.parent.issue }}</td>
-        <td>{{ event.parent.patchset }}</td>
-        <td>{{ event.parent.parent.email }}</td>
-        <td>{{ event.timestamp|date:"D M d, H:i T " }}</td>
-        <td>{{ event.name }}</td>
+  {% for owner, pending_commit_html in data.items %}
+  <h1>{{ owner }}</h1>
+    <table border="1" cellpadding="5">
+      <thead>
+        <tr bgcolor="#CCCCFF">
+          <th>Issue</th>
+          <th>Patchset</th>
+          <th>Timestamp</th>
+          <th>Type</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
         {% autoescape off %}
-        <td>{{ event.as_html }}</td>
+        {{ pending_commit_html }}
         {% endautoescape %}
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      </tbody>
+    </table>
+  {% endfor %}
 {% endblock %}

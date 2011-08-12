@@ -6,6 +6,7 @@
 
 import cgi
 import logging
+import os
 import re
 import sys
 import urllib2
@@ -14,6 +15,7 @@ import simplejson as json
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
+from google.appengine.ext.webapp import template
 
 from base_page import BasePage
 import utils
@@ -121,6 +123,7 @@ class Summary(BasePage):
 
     out_format = self.request.get('format', 'html')
     if out_format == 'json':
+      # Output a flat list.
       self.response.headers['Content-Type'] = 'application/json'
       self.response.headers['Access-Control-Allow-Origin'] = '*'
       data = json.dumps([s.AsDict() for s in query.fetch(limit)])
@@ -130,8 +133,20 @@ class Summary(BasePage):
           data = '%s(%s);' % (callback, data)
       self.response.out.write(data)
     else:
+      # Group per user, then sort per PendingCommit.
+      data = {}
+      for event in query.fetch(limit):
+        pc = event.parent()
+        owner = data.setdefault(pc.parent().email, {})
+        owner.setdefault(pc.issue, []).append(event)
+      # Convert the inner table to html since django doesn't support recursion.
+      path = os.path.join(os.path.dirname(__file__), 'templates/cq_pc.html')
+      for owner in data:
+        data[owner] = '\n'.join(
+            template.render(path, {'events': events})
+            for events in data[owner].itervalues())
       template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
-      template_values['events'] = query.fetch(limit)
+      template_values['data'] = data
       self.DisplayTemplate('cq_summary.html', template_values, use_cache=True)
 
 

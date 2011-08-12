@@ -1,0 +1,11 @@
+{% for event in events %}
+  <tr>
+    <td>{{ event.parent.issue }}</td>
+    <td>{{ event.parent.patchset }}</td>
+    <td>{{ event.timestamp|date:"D M d, H:i T " }}</td>
+    <td>{{ event.name }}</td>
+    {% autoescape off %}
+    <td>{{ event.as_html }}</td>
+    {% endautoescape %}
+  </tr>
+{% endfor %}
