@@ -11,7 +11,7 @@ import sys
 
 ROOT = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
 LIB = os.path.join(ROOT, '..', 'google_appengine', 'lib')
-sys.path.append(os.path.join(ROOT, '..', 'google_appengine'))
+sys.path.insert(0, os.path.join(ROOT, '..', 'google_appengine'))
 sys.path.append(os.path.join(LIB, 'yaml', 'lib'))
 sys.path.append(os.path.join(LIB, 'fancy_urllib'))
 sys.path.append(os.path.join(LIB, 'simplejson'))
@@ -53,6 +53,7 @@ def main():
 
   import base_page
   import breakpad
+  import commit_queue
   import event_push
   import lkgr
   import profiling
