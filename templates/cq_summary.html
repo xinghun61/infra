@@ -15,9 +15,9 @@
   <tbody>
     {% for event in events %}
       <tr>
-        <td>{{ event.pending.issue }}</td>
-        <td>{{ event.pending.patchset }}</td>
-        <td>{{ event.pending.owner }}</td>
+        <td>{{ event.parent.issue }}</td>
+        <td>{{ event.parent.patchset }}</td>
+        <td>{{ event.parent.parent.key }}</td>
         <td>{{ event.timestamp|date:"D M d, H:i T " }}</td>
         <td>{{ event.name }}</td>
         {% autoescape off %}

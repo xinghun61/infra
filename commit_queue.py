@@ -19,16 +19,29 @@ from base_page import BasePage
 import utils
 
 
+class Owner(db.Model):
+  """key == email address."""
+  email = db.EmailProperty()
+
+  @staticmethod
+  def to_key(owner):
+    return '<%s>' % owner
+
+
 class PendingCommit(db.Model):
+  """parent is Owner."""
   issue = db.IntegerProperty()
   patchset = db.IntegerProperty()
-  owner = db.StringProperty()
   created = db.DateTimeProperty(auto_now_add=True)
-  done = db.BooleanProperty()
+  done = db.BooleanProperty(default=False)
+
+  @staticmethod
+  def to_key(issue, patchset, owner):
+    return '<%d-%d-%s>' % (issue, patchset, owner)
 
 
 class VerificationEvent(polymodel.PolyModel):
-  pending = db.ReferenceProperty(PendingCommit)
+  """parent is PendingCommit."""
   message = db.StringProperty()
   # From commit-queue/verification/base.py
   result = db.IntegerProperty()
@@ -43,6 +56,8 @@ class VerificationEvent(polymodel.PolyModel):
 class TryServerEvent(VerificationEvent):
   name = 'try server'
   url = db.StringProperty()
+  builder = db.StringProperty()
+  build = db.IntegerProperty()
 
   @property
   def as_html(self):
@@ -62,39 +77,47 @@ class PresubmitEvent(VerificationEvent):
     return '<pre>%s</pre>' % cgi.escape(self.output)
 
 
-def get_commit(issue, patchset, owner):
-  """Efficient querying of PendingCommit."""
+def get_owner(owner):
+  """Efficient querying of Owner with memcache."""
   # pylint: disable=E1101
-  key = '%d-%d-%s' % (issue, patchset, owner)
-  logging.warn('LOOKING FOR KEY %s' % key)
-  pc = memcache.get(key, namespace='PendingCommit')
-  if not pc:
-    pc = PendingCommit.gql(
-        'WHERE issue = :1 AND patchset = :2 AND owner = :3',
-        issue, patchset, owner).get()
-    if not pc:
-      pc = PendingCommit(issue=issue, patchset=patchset, owner=owner)
-      pc.put()
-    memcache.set(key, pc, time=60*60, namespace='PendingCommit')
-  return pc
+  key = Owner.to_key(owner)
+  obj = memcache.get(key, namespace='Owner')
+  if not obj:
+    obj = Owner.get_or_insert(key, email=owner)
+    memcache.set(key, obj, time=60*60, namespace='Owner')
+  return obj
+
+
+def get_pending_commit(issue, patchset, owner):
+  """Efficient querying of PendingCommit with memcache."""
+  # pylint: disable=E1101
+  owner_obj = get_owner(owner)
+  key = PendingCommit.to_key(issue, patchset, owner)
+  obj = memcache.get(key, namespace='PendingCommit')
+  if not obj:
+    obj = PendingCommit.get_or_insert(
+        key, parent=owner_obj, issue=issue, patchset=patchset, owner=owner)
+    memcache.set(key, obj, time=60*60, namespace='PendingCommit')
+  return obj
 
 
 class Summary(BasePage):
   def get(self, resource):  # pylint: disable=W0221
     query = VerificationEvent.all().order('-timestamp')
-    resource = resource.strip('/')
-    resource = urllib2.unquote(resource)
-    if resource:
-      if resource == 'me':
-        resource = self.user
-      if resource:
-        logging.debug('Filtering on %s' % resource)
-        query.filter('owner =', resource)
     limit = self.request.get('limit')
     if limit and limit.isdigit():
       limit = int(limit)
     else:
       limit = 100
+
+    resource = resource.strip('/')
+    resource = urllib2.unquote(resource)
+    if resource:
+      if resource == 'me':
+        resource = self.user.email()
+      if resource:
+        logging.debug('Filtering on %s' % resource)
+        query.ancestor(db.Key.from_path("Owner", Owner.to_key(resource)))
 
     out_format = self.request.get('format', 'html')
     if out_format == 'json':
@@ -155,7 +178,7 @@ class Receiver(BasePage):
       payload = packet.get('payload', {})
       values = dict(
           (i, payload.get(i)) for i in cls.properties() if not i == 'pending')
-      values['pending'] = get_commit(
+      pending = get_pending_commit(
           packet['issue'], packet['patchset'], packet['owner'])
       logging.debug('New packet %s' % cls.__name__)
-      yield cls(**values)
+      yield cls(parent=pending, **values)

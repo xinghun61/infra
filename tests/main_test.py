@@ -168,11 +168,11 @@ class CommitQueueTest(TestCase):
   def test_summary_json(self):
     self._fill()
     self.assertEquals(6, len(json.loads(self.get('cq/?format=json'))))
-    self.assertEquals([], json.loads(self.get('cq/mine?format=json')))
+    self.assertEquals([], json.loads(self.get('cq/doesntexist?format=json')))
     self.assertEquals(
-        [],
-        json.loads(self.get(
-          urllib2.quote('cq/wtc@chromium.org') + '?format=json')))
+        6,
+        len(json.loads(self.get(
+          urllib2.quote('cq/wtc@chromium.org') + '?format=json'))))
 
 
 if __name__ == '__main__':
