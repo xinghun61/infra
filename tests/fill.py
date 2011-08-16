@@ -36,7 +36,7 @@ def main():
     }
     total += int(post(url + '/cq/receiver', packet))
   if total != 6:
-    print >> sys.stderr, 'Unexpected length'
+    print >> sys.stderr, 'Unexpected length: %d' % total
     return 1
   return 0
 

@@ -52,17 +52,37 @@ class VerificationEvent(polymodel.PolyModel):
   def as_html(self):
     raise NotImplementedError()
 
+  @staticmethod
+  def to_key(packet):
+    raise NotImplementedError()
+
 
 class TryServerEvent(VerificationEvent):
   name = 'try server'
-  url = db.StringProperty()
   builder = db.StringProperty()
+  job_name = db.StringProperty()
   build = db.IntegerProperty()
+  url = db.StringProperty()
+  clobber = db.BooleanProperty()
 
   @property
   def as_html(self):
-    url = cgi.escape(self.url)
-    return '<a href="%s">%s</a>' % (url, url)
+    if self.build is not None:
+      return '<a href="%s">"%s" on %s, build #%s</a>' % (
+          cgi.escape(self.url), self.job_name, self.builder, self.build)
+    else:
+      # TODO(maruel): Load the json
+      # ('http://build.chromium.org/p/tryserver.chromium/json/builders/%s/'
+      #  'pendingBuilds') % self.builder and display the rank.
+      return '"%s" on %s (pending)</a>' % (
+          self.job_name, self.builder)
+
+  @staticmethod
+  def to_key(packet):
+    if not packet.get('builder') or not packet.get('job_name'):
+      return None
+    return '<%s-%s-%s>' % (
+        TryServerEvent.name, packet['builder'], packet['job_name'])
 
 
 class PresubmitEvent(VerificationEvent):
@@ -75,6 +95,11 @@ class PresubmitEvent(VerificationEvent):
   @property
   def as_html(self):
     return '<pre class="output">%s</pre>' % cgi.escape(self.output)
+
+  @staticmethod
+  def to_key(_):
+    # There shall be only one PresubmitEvent per PendingCommit.
+    return '<%s>' % (PresubmitEvent.name)
 
 
 def get_owner(owner):
@@ -199,14 +224,10 @@ class Receiver(BasePage):
           yield json.loads(p)
         except ValueError:
           logging.warn('Discarding invalid packet %r' % p)
-    packets = list(self._parse_packet(p for p in load_values()))
-    db.put(packets)
-    self.response.out.write('%d\n' % len(packets))
 
-  @staticmethod
-  def _parse_packet(packets):
-    for packet in packets:
-      cls = Receiver.event_map().get(packet.get('verification'))
+    count = 0
+    for packet in load_values():
+      cls = self.event_map().get(packet.get('verification'))
       if (not cls or
           not isinstance(packet.get('issue'), int) or
           not isinstance(packet.get('patchset'), int) or
@@ -214,10 +235,20 @@ class Receiver(BasePage):
           not isinstance(packet.get('owner'), basestring)):
         logging.warning('Ignoring packet %s' % packet)
         continue
+
       payload = packet.get('payload', {})
       values = dict(
           (i, payload.get(i)) for i in cls.properties() if not i == 'pending')
       pending = get_pending_commit(
           packet['issue'], packet['patchset'], packet['owner'])
+
       logging.debug('New packet %s' % cls.__name__)
-      yield cls(parent=pending, **values)
+      key = cls.to_key(values)
+      if not key:
+        continue
+
+      # This causes a transaction.
+      # TODO(maruel): It'd be nicer to process them in batch.
+      cls.get_or_insert(key, parent=pending, **values)
+      count += 1
+    self.response.out.write('%d\n' % count)

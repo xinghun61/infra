@@ -1,81 +1,95 @@
 [
   {
-    "timestamp": 1312228159.083112, 
-    "done": true, 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
-    "message": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE"
-  }, 
-  {
-    "timestamp": 1312228164.599032, 
-    "done": true, 
-    "verification": "presubmit", 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
+    "timestamp": 1312228164.599032,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
     "payload": {
-      "duration": 1.3960461616516113, 
+      "duration": 1.3960461616516113,
       "output": "Running presubmit commit checks ...\n\n** Presubmit Messages **\nIt looks like you have not configured your subversion config file or it is not up-to-date. Please look at http://dev.chromium.org/developers/coding-style to configure your subversion configuration file. This enables automatic properties to simplify the project maintenance.\n\nPresubmit checks passed.\n"
     }
-  }, 
+  },
   {
-    "timestamp": 1312228172.352167, 
-    "done": true, 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
-    "message": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE"
-  }, 
-  {
-    "timestamp": 1312228185.032032, 
-    "done": true, 
-    "verification": "try server", 
-    "owner": "joe@chromium.org", 
-    "patchset": 1, 
-    "issue": 7654321, 
+    "timestamp": 1312228185.032032,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
     "payload": {
+      "builder": "Windows",
+      "revision": 23,
+      "clobber": true,
+      "job_name": "Tryin' hard",
       "url": "http://example.com/a/random/url"
     }
-  }, 
+  },
   {
-    "timestamp": 1312228186.151732, 
-    "done": true, 
-    "verification": "presubmit", 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
+    "timestamp": 1312228187.2,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
     "payload": {
-      "duration": 1.1196770668029785, 
+      "builder": "Mac",
+      "revision": 23,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url"
+    }
+  },
+  {
+    "timestamp": 1312228187.2,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
+    "payload": {
+      "builder": "Linux",
+      "revision": 23,
+      "build": 0,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url"
+    }
+  },
+  {
+    "timestamp": 1312228190.2,
+    "verification": "non_existent",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "payload": {
+      "foo": "bar - should be ignored"
+    }
+  },
+  {
+    "timestamp": 1312228186.151732,
+    "done": true,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "payload": {
+      "duration": 1.1196770668029785,
       "output": "Running\npresubmit\ncommit\nchecks\n...\n\n** Presubmit Messages **\nIt\nlooks\nlike\nyou\nhave\nissues.\n\nPresubmit checks passed.\n"
     }
-  }, 
+  },
   {
-    "timestamp": 1312228231.039722, 
-    "done": true, 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
+    "timestamp": 1312228159.083112,
+    "done": true,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
     "message": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE"
-  }, 
+  },
   {
-    "timestamp": 1312228233.992394, 
-    "done": true, 
-    "verification": "presubmit", 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1234567, 
-    "payload": {}
-  }, 
-  {
-    "timestamp": 1312228235.242737, 
-    "done": true, 
-    "verification": "presubmit", 
-    "owner": "bar@chromium.org", 
-    "patchset": 1, 
-    "issue": 1000000, 
+    "timestamp": 1312228235.242737,
+    "done": true,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1000000,
     "payload": {
-      "duration": 1.2503180503845215, 
+      "duration": 1.2503180503845215,
       "output": "Running presubmit commit checks ...\n\n** Presubmit Messages **\n\nPresubmit checks failed.\n"
     }
   }
