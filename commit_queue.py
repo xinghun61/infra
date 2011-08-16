@@ -69,13 +69,17 @@ class TryServerEvent(VerificationEvent):
   def as_html(self):
     if self.build is not None:
       return '<a href="%s">"%s" on %s, build #%s</a>' % (
-          cgi.escape(self.url), self.job_name, self.builder, self.build)
+          cgi.escape(self.url),
+          cgi.escape(self.job_name),
+          cgi.escape(self.builder),
+          cgi.escape(str(self.build)))
     else:
       # TODO(maruel): Load the json
       # ('http://build.chromium.org/p/tryserver.chromium/json/builders/%s/'
       #  'pendingBuilds') % self.builder and display the rank.
-      return '"%s" on %s (pending)</a>' % (
-          self.job_name, self.builder)
+      return '"%s" on %s (pending)' % (
+          cgi.escape(self.job_name),
+          cgi.escape(self.builder))
 
   @staticmethod
   def to_key(packet):
