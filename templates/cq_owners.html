@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    <link href="/stylesheets/cq.css" type="text/css" rel="stylesheet"/>
+{% endblock %}
+
+{% block content %}
+  <ul>
+    {% for item in data %}
+      <li><a href="/cq/{{ item.0|urlencode }}" class="owner">{{ item.0 }}</a>
+        - {{ item.1 }} issues
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

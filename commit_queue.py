@@ -6,7 +6,6 @@
 
 import cgi
 import logging
-import os
 import re
 import sys
 import urllib2
@@ -15,7 +14,6 @@ import simplejson as json
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
-from google.appengine.ext.webapp import template
 
 from base_page import BasePage
 import utils
@@ -76,7 +74,7 @@ class PresubmitEvent(VerificationEvent):
 
   @property
   def as_html(self):
-    return '<pre>%s</pre>' % cgi.escape(self.output)
+    return '<pre class="output">%s</pre>' % cgi.escape(self.output)
 
 
 def get_owner(owner):
@@ -105,49 +103,75 @@ def get_pending_commit(issue, patchset, owner):
 
 class Summary(BasePage):
   def get(self, resource):  # pylint: disable=W0221
+    out_format = self.request.get('format', 'html')
+    resource = resource.strip('/')
+    resource = urllib2.unquote(resource)
+    if resource:
+      if resource == 'me':
+        resource = self.user.email()
+    if out_format == 'json':
+      return self.get_json(resource)
+    else:
+      return self.get_html(resource)
+
+  def get_json(self, owner):
     query = VerificationEvent.all().order('-timestamp')
     limit = self.request.get('limit')
     if limit and limit.isdigit():
       limit = int(limit)
     else:
       limit = 100
+    if owner:
+      query.ancestor(db.Key.from_path("Owner", Owner.to_key(owner)))
 
-    resource = resource.strip('/')
-    resource = urllib2.unquote(resource)
-    if resource:
-      if resource == 'me':
-        resource = self.user.email()
-      if resource:
-        logging.debug('Filtering on %s' % resource)
-        query.ancestor(db.Key.from_path("Owner", Owner.to_key(resource)))
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.headers['Access-Control-Allow-Origin'] = '*'
+    data = json.dumps([s.AsDict() for s in query.fetch(limit)])
+    callback = self.request.get('callback')
+    if callback:
+      if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
+        data = '%s(%s);' % (callback, data)
+    self.response.out.write(data)
 
-    out_format = self.request.get('format', 'html')
-    if out_format == 'json':
-      # Output a flat list.
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.headers['Access-Control-Allow-Origin'] = '*'
-      data = json.dumps([s.AsDict() for s in query.fetch(limit)])
-      callback = self.request.get('callback')
-      if callback:
-        if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
-          data = '%s(%s);' % (callback, data)
-      self.response.out.write(data)
+  def get_html(self, owner):
+    # HTML version.
+    if not owner:
+      return self.get_html_owners()
     else:
-      # Group per user, then sort per PendingCommit.
-      data = {}
-      for event in query.fetch(limit):
-        pc = event.parent()
-        owner = data.setdefault(pc.parent().email, {})
-        owner.setdefault(pc.issue, []).append(event)
-      # Convert the inner table to html since django doesn't support recursion.
-      path = os.path.join(os.path.dirname(__file__), 'templates/cq_pc.html')
-      for owner in data:
-        data[owner] = '\n'.join(
-            template.render(path, {'events': events})
-            for events in data[owner].itervalues())
-      template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
-      template_values['data'] = data
-      self.DisplayTemplate('cq_summary.html', template_values, use_cache=True)
+      return self.get_html_owner(owner)
+
+  def get_html_owners(self):
+    owners = []
+    for owner in Owner.all():
+      owners.append((owner.email, PendingCommit.all().ancestor(owner).count()))
+    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values['data'] = owners
+    self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
+
+  def get_html_owner(self, owner):
+    query = VerificationEvent.all().order('-timestamp')
+    limit = self.request.get('limit')
+    if limit and limit.isdigit():
+      limit = int(limit)
+    else:
+      limit = 100
+    query.ancestor(db.Key.from_path("Owner", Owner.to_key(owner)))
+    pending_commits_events = {}
+    pending_commits = {}
+    for event in query.fetch(limit):
+      # Implicitly find PendingCommit's.
+      pending_commit = event.parent()
+      pending_commits_events.setdefault(pending_commit.key(), []).append(event)
+      pending_commits[pending_commit.key()] = pending_commit
+
+    sorted_data = []
+    for pending_commit in sorted(
+        pending_commits.itervalues(), key=lambda x: x.issue):
+      sorted_data.append(
+          (pending_commit, pending_commits_events[pending_commit.key()]))
+    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values['data'] = sorted_data
+    self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
 
 
 class Receiver(BasePage):
