@@ -106,6 +106,23 @@ class PresubmitEvent(VerificationEvent):
     return '<%s>' % (PresubmitEvent.name)
 
 
+class CommitEvent(VerificationEvent):
+  name = 'commit'
+  revision = db.IntegerProperty()
+  url = db.StringProperty()
+
+  @property
+  def as_html(self):
+    return '<pre>%s</pre><a href="%s">Revision %s</a>' % (
+        cgi.escape(self.message),
+        cgi.escape(self.url),
+        cgi.escape(str(self.revision)))
+
+  @staticmethod
+  def to_key(_):
+    return '<%s>' % (CommitEvent.name)
+
+
 def get_owner(owner):
   """Efficient querying of Owner with memcache."""
   # pylint: disable=E1101

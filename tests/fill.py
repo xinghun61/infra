@@ -34,8 +34,12 @@ def main():
         'password': 'foobar',
         'p': json.dumps(data),
     }
-    total += int(post(url + '/cq/receiver', packet))
-  if total != 6:
+    output = post(url + '/cq/receiver', packet)
+    try:
+      total += int(output)
+    except ValueError:
+      print output
+  if total != 7:
     print >> sys.stderr, 'Unexpected length: %d' % total
     return 1
   return 0

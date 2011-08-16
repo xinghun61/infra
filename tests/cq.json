@@ -63,7 +63,6 @@
   },
   {
     "timestamp": 1312228186.151732,
-    "done": true,
     "verification": "presubmit",
     "owner": "bar@chromium.org",
     "patchset": 1,
@@ -75,11 +74,15 @@
   },
   {
     "timestamp": 1312228159.083112,
-    "done": true,
     "owner": "bar@chromium.org",
     "patchset": 1,
     "issue": 1234567,
-    "message": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE"
+    "verification": "commit",
+    "payload": {
+      "message": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE",
+      "url": "http://example.com/r123",
+      "revision": 123
+    }
   },
   {
     "timestamp": 1312228235.242737,
