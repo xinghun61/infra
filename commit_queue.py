@@ -216,6 +216,10 @@ class Summary(BasePage):
     for event in query.fetch(limit):
       # Implicitly find PendingCommit's.
       pending_commit = event.parent()
+      if not pending_commit:
+        logging.warn('Event %s is corrupted, can\'t find %s' % (
+          event.key().id_or_name(), event.parent_key().id_or_name()))
+        continue
       pending_commits_events.setdefault(pending_commit.key(), []).append(event)
       pending_commits[pending_commit.key()] = pending_commit
 
@@ -292,4 +296,10 @@ class Receiver(BasePage):
         count += 1
       elif obj:
         logging.warn('Received object out of order')
+
+      # Cache the fact that the change was committed in the PendingCommit.
+      if packet['verification'] == 'commit':
+        pending.done = True
+        pending.put()
+
     self.response.out.write('%d\n' % count)
