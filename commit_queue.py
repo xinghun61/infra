@@ -31,10 +31,10 @@ class Owner(db.Model):
 
 class PendingCommit(db.Model):
   """parent is Owner."""
-  issue = db.IntegerProperty()
-  patchset = db.IntegerProperty()
   created = db.DateTimeProperty(auto_now_add=True)
   done = db.BooleanProperty(default=False)
+  issue = db.IntegerProperty()
+  patchset = db.IntegerProperty()
 
   @staticmethod
   def to_key(issue, patchset, owner):
@@ -43,11 +43,10 @@ class PendingCommit(db.Model):
 
 class VerificationEvent(polymodel.PolyModel):
   """parent is PendingCommit."""
-  message = db.StringProperty()
-  # From commit-queue/verification/base.py
-  result = db.IntegerProperty()
   created = db.DateTimeProperty(auto_now_add=True)
-  timestamp = db.DateTimeProperty(auto_now=True)
+  message = db.StringProperty()
+  result = db.IntegerProperty()
+  timestamp = db.DateTimeProperty()
 
   @property
   def as_html(self):
@@ -60,11 +59,11 @@ class VerificationEvent(polymodel.PolyModel):
 
 class TryServerEvent(VerificationEvent):
   name = 'try server'
-  builder = db.StringProperty()
-  job_name = db.StringProperty()
   build = db.IntegerProperty()
-  url = db.StringProperty()
+  builder = db.StringProperty()
   clobber = db.BooleanProperty()
+  job_name = db.StringProperty()
+  url = db.StringProperty()
 
   @property
   def as_html(self):
@@ -92,8 +91,8 @@ class TryServerEvent(VerificationEvent):
 
 class PresubmitEvent(VerificationEvent):
   name = 'presubmit'
-  output = db.TextProperty()
   duration = db.FloatProperty()
+  output = db.TextProperty()
   result_code = db.IntegerProperty()
   timed_out = db.BooleanProperty()
 
