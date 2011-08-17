@@ -20,6 +20,11 @@ from base_page import BasePage
 import utils
 
 
+TRY_SERVER_MAP = [
+    'SUCCESS', 'WARNINGS', 'FAILURE', 'SKIPPED', 'EXCEPTION', 'RETRY',
+]
+
+
 class Owner(db.Model):
   """key == email address."""
   email = db.EmailProperty()
@@ -44,7 +49,6 @@ class PendingCommit(db.Model):
 class VerificationEvent(polymodel.PolyModel):
   """parent is PendingCommit."""
   created = db.DateTimeProperty(auto_now_add=True)
-  message = db.StringProperty()
   result = db.IntegerProperty()
   timestamp = db.DateTimeProperty()
 
@@ -63,16 +67,21 @@ class TryServerEvent(VerificationEvent):
   builder = db.StringProperty()
   clobber = db.BooleanProperty()
   job_name = db.StringProperty()
+  revision = db.IntegerProperty()
   url = db.StringProperty()
 
   @property
   def as_html(self):
     if self.build is not None:
-      return '<a href="%s">"%s" on %s, build #%s</a>' % (
+      out = '<a href="%s">"%s" on %s, build #%s</a>' % (
           cgi.escape(self.url),
           cgi.escape(self.job_name),
           cgi.escape(self.builder),
           cgi.escape(str(self.build)))
+      if (self.result is not None and
+          0 <= self.result < len(TRY_SERVER_MAP[self.result])):
+        out = '%s - result: %s' % (out, TRY_SERVER_MAP[self.result])
+      return out
     else:
       # TODO(maruel): Load the json
       # ('http://build.chromium.org/p/tryserver.chromium/json/builders/%s/'
@@ -93,7 +102,6 @@ class PresubmitEvent(VerificationEvent):
   name = 'presubmit'
   duration = db.FloatProperty()
   output = db.TextProperty()
-  result_code = db.IntegerProperty()
   timed_out = db.BooleanProperty()
 
   @property
@@ -108,13 +116,14 @@ class PresubmitEvent(VerificationEvent):
 
 class CommitEvent(VerificationEvent):
   name = 'commit'
+  output = db.TextProperty()
   revision = db.IntegerProperty()
   url = db.StringProperty()
 
   @property
   def as_html(self):
-    return '<pre>%s</pre><a href="%s">Revision %s</a>' % (
-        cgi.escape(self.message),
+    return '<pre class="output">%s</pre><a href="%s">Revision %s</a>' % (
+        cgi.escape(self.output),
         cgi.escape(self.url),
         cgi.escape(str(self.revision)))
 
@@ -258,6 +267,8 @@ class Receiver(BasePage):
         continue
 
       payload = packet.get('payload', {})
+      # TODO(maruel): Convert the type implicitly, because storing a int into a
+      # FloatProperty or a StringProperty will raise a BadValueError.
       values = dict(
           (i, payload[i]) for i in cls.properties()
           if i not in ('_class', 'pending') and i in payload)
@@ -268,12 +279,17 @@ class Receiver(BasePage):
           packet['issue'], packet['patchset'], packet['owner'])
 
       logging.debug('New packet %s' % cls.__name__)
-      key = cls.to_key(values)
-      if not key:
+      key_name = cls.to_key(values)
+      if not key_name:
         continue
 
-      # This causes a transaction.
-      # TODO(maruel): It'd be nicer to process them in batch.
-      cls.get_or_insert(key, parent=pending, **values)
-      count += 1
+      # TODO(maruel) Use an async transaction, in batch.
+      obj = cls.get_by_key_name(key_name, parent=pending)
+      # Compare the timestamps. Events could arrive in the reverse order.
+      if not obj or obj.timestamp <= values['timestamp']:
+        # This will override the previous obj if it existed.
+        cls(parent=pending, key_name=key_name, **values).put()
+        count += 1
+      elif obj:
+        logging.warn('Received object out of order')
     self.response.out.write('%d\n' % count)
