@@ -5,6 +5,7 @@
 """Commit queue status."""
 
 import cgi
+import datetime
 import logging
 import re
 import sys
@@ -259,7 +260,11 @@ class Receiver(BasePage):
 
       payload = packet.get('payload', {})
       values = dict(
-          (i, payload.get(i)) for i in cls.properties() if not i == 'pending')
+          (i, payload[i]) for i in cls.properties()
+          if i not in ('_class', 'pending') and i in payload)
+      # Inject the timestamp.
+      values['timestamp'] = datetime.datetime.utcfromtimestamp(
+          packet['timestamp'])
       pending = get_pending_commit(
           packet['issue'], packet['patchset'], packet['owner'])
 
