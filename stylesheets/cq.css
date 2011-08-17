@@ -2,6 +2,13 @@ table.issue {
   table-layout: fixed;
   width: 100%;
   margin-top: 1em;
+  border-collapse: collapse;
+  border-spacing: 0px;
+}
+
+table.issue, table.issue td, table.issue th {
+  border: 1px solid black;
+  padding: 5px;
 }
 
 table.issue .timestamp {

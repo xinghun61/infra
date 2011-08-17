@@ -36,7 +36,7 @@ class Owner(db.Model):
 
 class PendingCommit(db.Model):
   """parent is Owner."""
-  created = db.DateTimeProperty(auto_now_add=True)
+  created = db.DateTimeProperty()
   done = db.BooleanProperty(default=False)
   issue = db.IntegerProperty()
   patchset = db.IntegerProperty()
@@ -138,12 +138,12 @@ def get_owner(owner):
   key = Owner.to_key(owner)
   obj = memcache.get(key, namespace='Owner')
   if not obj:
-    obj = Owner.get_or_insert(key, email=owner)
+    obj = Owner.get_or_insert(key_name=key, email=owner)
     memcache.set(key, obj, time=60*60, namespace='Owner')
   return obj
 
 
-def get_pending_commit(issue, patchset, owner):
+def get_pending_commit(issue, patchset, owner, timestamp):
   """Efficient querying of PendingCommit with memcache."""
   # pylint: disable=E1101
   owner_obj = get_owner(owner)
@@ -151,7 +151,8 @@ def get_pending_commit(issue, patchset, owner):
   obj = memcache.get(key, namespace='PendingCommit')
   if not obj:
     obj = PendingCommit.get_or_insert(
-        key, parent=owner_obj, issue=issue, patchset=patchset, owner=owner)
+        key_name=key, parent=owner_obj, issue=issue, patchset=patchset,
+        owner=owner, created=timestamp)
     memcache.set(key, obj, time=60*60, namespace='PendingCommit')
   return obj
 
@@ -197,8 +198,23 @@ class Summary(BasePage):
 
   def get_html_owners(self):
     owners = []
+    # No need to sort.
     for owner in Owner.all():
-      owners.append((owner.email, PendingCommit.all().ancestor(owner).count()))
+      # Revisit when it becomes too costly to display.
+      q = lambda: PendingCommit.all().ancestor(owner)
+      now = datetime.datetime.utcnow()
+      t = lambda x: now - datetime.timedelta(days=x)
+      data = {
+          'last_day':
+              ', '.join(str(i.issue) for i in q().filter('created >=', t(1))),
+          'last_week':
+              ', '.join(
+                str(i.issue) for i in q().filter('created >=',  t(7)
+                  ).filter('created <', t(1))),
+          'last_month': q().filter('created >=', t(30)).count(),
+          'forever': q().count(),
+        }
+      owners.append((owner.email, data))
     template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
@@ -280,7 +296,8 @@ class Receiver(BasePage):
       values['timestamp'] = datetime.datetime.utcfromtimestamp(
           packet['timestamp'])
       pending = get_pending_commit(
-          packet['issue'], packet['patchset'], packet['owner'])
+          packet['issue'], packet['patchset'], packet['owner'],
+          values['timestamp'])
 
       logging.debug('New packet %s' % cls.__name__)
       key_name = cls.to_key(values)

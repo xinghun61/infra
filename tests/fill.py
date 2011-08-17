@@ -8,15 +8,35 @@ import logging
 import optparse
 import os
 import sys
+import time
 import urllib
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def post(url, data):
   return urllib.urlopen(url, urllib.urlencode(data)).read()
 
 
+def load_json():
+  data = json.load(open(os.path.join(BASE_DIR, 'cq.json')))
+  # Use 31 days ago as the offset.
+  offset = 60*60*24*31
+  for line in data:
+    line['timestamp'] += time.time() - offset
+  return data
+
+
+def load_packets():
+  return [
+    {
+      'password': 'foobar',
+      'p': json.dumps(data),
+    } for data in load_json()
+  ]
+
+
 def main():
-  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
   parser = optparse.OptionParser()
   parser.add_option('-v', '--verbose', action='count', default=0)
   options, args = parser.parse_args()
@@ -29,11 +49,7 @@ def main():
 
   url = args[0].rstrip('/')
   total = 0
-  for data in json.load(open(os.path.join(BASE_DIR, 'cq.json'))):
-    packet = {
-        'password': 'foobar',
-        'p': json.dumps(data),
-    }
+  for packet in load_packets():
     output = post(url + '/cq/receiver', packet)
     try:
       total += int(output)

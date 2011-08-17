@@ -6,10 +6,10 @@
 
 {% block content %}
   {% for item in data %}
-    <table border="1" cellpadding="5" class="issue" id="pc{{ item.0.issue }}">
+    <table class="issue" id="pc{{ item.0.issue }}">
       <caption><a href="http://codereview.chromium.org/{{ item.0.issue }}"
-        id="issue_link{{ item.0.issue }}" class="issue hoverable">
-        Issue {{ item.0.issue }}</a></caption>
+          id="issue_link{{ item.0.issue }}" class="issue">
+        Issue {{ item.0.issue }}</a> patchset {{ item.0.patchset }}</caption>
       <thead>
         <tr bgcolor="#CCCCFF">
           <th class="timestamp">Timestamp</th>

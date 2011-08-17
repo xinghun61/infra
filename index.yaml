@@ -195,6 +195,11 @@ indexes:
   - name: timestamp
     direction: desc
 
+- kind: PendingCommit
+  ancestor: yes
+  properties:
+  - name: created
+
 - kind: VerificationEvent
   ancestor: yes
   properties:

@@ -25,6 +25,7 @@ except ImportError:
     import simplejson as json
 
 
+import fill
 import local_gae
 
 
@@ -157,11 +158,7 @@ class CommitQueueTest(TestCase):
   def _fill(self):
     # Example dump taken from a run.
     total = 0
-    for data in json.load(open(os.path.join(BASE_DIR, 'cq.json'))):
-      packet = {
-          'password': 'foobar',
-          'p': json.dumps(data),
-      }
+    for packet in fill.load_packets():
       total += int(self.post('cq/receiver', packet))
     self.assertEquals(7, total)
 

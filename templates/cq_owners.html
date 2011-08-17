@@ -5,11 +5,26 @@
 {% endblock %}
 
 {% block content %}
-  <ul>
-    {% for item in data %}
-      <li><a href="/cq/{{ item.0|urlencode }}" class="owner">{{ item.0 }}</a>
-        - {{ item.1 }} issues
-      </li>
+<table class="issue">
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Last day</th>
+      <th>Last week</th>
+      <th>Last month</th>
+      <th>Ever</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for owner in data %}
+    <tr>
+      <td><a href="/cq/{{ owner.0|urlencode }}" class="owner">{{ owner.0 }}</a></td>
+      <td>{{ owner.1.last_day }}</td>
+      <td>{{ owner.1.last_week }}</td>
+      <td>{{ owner.1.last_month }}</td>
+      <td>{{ owner.1.forever }}</td>
+    </tr>
     {% endfor %}
-  </ul>
+  </tbody>
+</table>
 {% endblock %}

@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": 1293858010.0,
+    "timestamp": 2635200.0,
     "verification": "presubmit",
     "owner": "bar@chromium.org",
     "patchset": 1,
@@ -13,7 +13,7 @@
     }
   },
   {
-    "timestamp": 1293858001.0,
+    "timestamp": 1.0,
     "verification": "try server",
     "owner": "joe@chromium.org",
     "patchset": 1,
@@ -27,7 +27,7 @@
     }
   },
   {
-    "timestamp": 1293858002.0,
+    "timestamp": 2.0,
     "verification": "try server",
     "owner": "joe@chromium.org",
     "patchset": 1,
@@ -40,7 +40,7 @@
     }
   },
   {
-    "timestamp": 1293858003.0,
+    "timestamp": 3.0,
     "verification": "try server",
     "owner": "joe@chromium.org",
     "patchset": 1,
@@ -54,7 +54,7 @@
     }
   },
   {
-    "timestamp": 1293858004.0,
+    "timestamp": 4.0,
     "verification": "try server",
     "owner": "joe@chromium.org",
     "patchset": 1,
@@ -70,7 +70,7 @@
     }
   },
   {
-    "timestamp": 1293858005.0,
+    "timestamp": 2635150.0,
     "verification": "non_existent",
     "owner": "bar@chromium.org",
     "patchset": 1,
@@ -80,7 +80,7 @@
     }
   },
   {
-    "timestamp": 1293858006.0,
+    "timestamp": 2635151.0,
     "verification": "presubmit",
     "owner": "bar@chromium.org",
     "patchset": 1,
@@ -89,11 +89,11 @@
       "duration": 90.0,
       "result": 42,
       "timed_out": true,
-      "output": "THIS ITEM MUST BE DISCARDED\nbecause timestamp 7 < 9."
+      "output": "THIS ITEM MUST BE DISCARDED\nbecause first item."
     }
   },
   {
-    "timestamp": 1293858007.0,
+    "timestamp": 2635210.0,
     "owner": "bar@chromium.org",
     "patchset": 1,
     "issue": 1234567,
@@ -105,7 +105,7 @@
     }
   },
   {
-    "timestamp": 1293858008.0,
+    "timestamp": 2332800.0,
     "verification": "presubmit",
     "owner": "bar@chromium.org",
     "patchset": 9,
