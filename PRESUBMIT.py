@@ -17,16 +17,23 @@ UNIT_TESTS = [
 def CommonChecks(input_api, output_api):
   output = []
 
-  def join(*args):
-    return input_api.os_path.join(input_api.PresubmitLocalPath(), *args)
+  join = input_api.os_path.join
+  root = input_api.PresubmitLocalPath()
+  while len(root) > 3:
+    if input_api.os_path.isfile(join(root, 'google_appengine', 'VERSION')):
+      break
+    root = input_api.os_path.dirname(root)
+  if len(root) <= 3:
+    return [output_api.PresubmitError('Failed to find Google AppEngine SDK')]
+  input_api.logging.debug('Found GAE SDK in %s' % root)
 
   import sys
   sys_path_backup = sys.path
   try:
     sys.path = [
-        join('..', 'google_appengine'),
-        join('..', 'google_appengine', 'lib'),
-        join('..', 'google_appengine', 'lib', 'simplejson'),
+        join(root, 'google_appengine'),
+        join(root, 'google_appengine', 'lib'),
+        join(root, 'google_appengine', 'lib', 'simplejson'),
     ] + sys.path
     output.extend(input_api.canned_checks.RunPylint(
         input_api,

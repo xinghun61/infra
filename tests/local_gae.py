@@ -31,11 +31,15 @@ def _load_modules():
   global GAE_SDK
   if GAE_SDK:
     return
-  root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  GAE_SDK = os.path.realpath(os.path.join(root_dir, '..', 'google_appengine'))
+  root_dir = os.path.dirname(os.path.abspath(__file__))
   # First, verify the Google AppEngine SDK is available.
-  if not os.path.isdir(GAE_SDK):
+  while len(root_dir) > 3:
+    if os.path.isfile(os.path.join(root_dir, 'google_appengine', 'VERSION')):
+      break
+    root_dir = os.path.dirname(root_dir)
+  if len(root_dir) <= 3:
     raise Failure('Install google_appengine sdk in %s' % GAE_SDK)
+  GAE_SDK = os.path.realpath(os.path.join(root_dir, 'google_appengine'))
   # Need yaml later.
   gae_sdk_lib = os.path.realpath(os.path.join(GAE_SDK, 'lib'))
   sys.path.insert(0, os.path.realpath(os.path.join(gae_sdk_lib, 'yaml', 'lib')))
