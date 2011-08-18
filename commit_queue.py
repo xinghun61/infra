@@ -122,10 +122,14 @@ class CommitEvent(VerificationEvent):
 
   @property
   def as_html(self):
-    return '<pre class="output">%s</pre><a href="%s">Revision %s</a>' % (
-        cgi.escape(self.output),
+    out = '<pre class="output">%s</pre>' % cgi.escape(self.output)
+    if self.url:
+      out += '<a href="%s">Revision %s</a>' % (
         cgi.escape(self.url),
         cgi.escape(str(self.revision)))
+    elif self.revision:
+      out += '<br>Revision %s' % cgi.escape(str(self.revision))
+    return out
 
   @staticmethod
   def to_key(_):
