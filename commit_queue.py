@@ -247,7 +247,8 @@ class Summary(BasePage):
     for pending_commit in sorted(
         pending_commits.itervalues(), key=lambda x: x.issue):
       sorted_data.append(
-          (pending_commit, pending_commits_events[pending_commit.key()]))
+          (pending_commit,
+            reversed(pending_commits_events[pending_commit.key()])))
     template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
     template_values['data'] = sorted_data
     self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
