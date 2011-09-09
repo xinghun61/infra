@@ -68,7 +68,10 @@ class AllStatusPage(BasePage):
     start_date = self.request.get('startTime')
     if start_date:
       query.filter('date <', parse_date(start_date))
-
+    try:
+      limit = int(self.request.get('limit'))
+    except ValueError:
+      limit = 1000
     end_date = self.request.get('endTime')
     beyond_end_of_range_status = None
     if end_date:
@@ -85,13 +88,13 @@ class AllStatusPage(BasePage):
       # It's not really an html page.
       self.response.headers['Content-Type'] = 'text/plain'
       template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
-      template_values['status'] = query
+      template_values['status'] = query.fetch(limit)
       template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
       self.DisplayTemplate('allstatus.html', template_values)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
       self.response.headers['Access-Control-Allow-Origin'] = '*'
-      statuses = [s.AsDict() for s in query]
+      statuses = [s.AsDict() for s in query.fetch(limit)]
       if beyond_end_of_range_status:
         statuses.append(beyond_end_of_range_status.AsDict())
       data = json.dumps(statuses)
