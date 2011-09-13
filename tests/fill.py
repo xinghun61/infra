@@ -3,7 +3,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 import optparse
 import os
@@ -12,6 +11,16 @@ import time
 import urllib
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+try:
+  import json  # pylint: disable=F0401
+except ImportError:
+  try:
+    import simplejson as json
+  except ImportError:
+    sys.path.append(
+        os.path.join(BASE_DIR, '..', '..', 'depot_tools', 'third_party'))
+    import simplejson as json
 
 
 def post(url, data):
@@ -48,6 +57,8 @@ def main():
     parser.error('Url of server')
 
   url = args[0].rstrip('/')
+  if '://' not in url:
+    url = 'http://' + url
   total = 0
   for packet in load_packets():
     output = post(url + '/cq/receiver', packet)
