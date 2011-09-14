@@ -184,7 +184,7 @@ class StatusViewerPage(BasePage):
 
 
 class MainPage(BasePage):
-  """Displays the main page containing the last 100 messages."""
+  """Displays the main page containing the last 25 messages."""
 
   @utils.require_user
   def get(self):
@@ -192,7 +192,11 @@ class MainPage(BasePage):
 
   def _handle(self, error_message='', last_message=''):
     """Sets the information to be displayed on the main page."""
-    status = Status.gql('ORDER BY date DESC LIMIT 25')
+    try:
+      limit = min(max(int(self.request.get('limit')), 1), 1000)
+    except ValueError:
+      limit = 25
+    status = Status.gql('ORDER BY date DESC LIMIT %d' % limit)
     current_status = status.get()
     if not last_message and current_status:
       last_message = current_status.message
