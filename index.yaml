@@ -200,6 +200,13 @@ indexes:
   properties:
   - name: created
 
+- kind: PendingCommit
+  ancestor: yes
+  properties:
+  - name: issue
+  - name: created
+    direction: desc
+
 - kind: VerificationEvent
   ancestor: yes
   properties:

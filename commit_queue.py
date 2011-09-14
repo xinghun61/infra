@@ -43,6 +43,7 @@ class PendingCommit(db.Model):
 
   @staticmethod
   def to_key(issue, patchset, owner):
+    # TODO(maruel): My bad, shouldn't have put owner in the key.
     return '<%d-%d-%s>' % (issue, patchset, owner)
 
 
@@ -161,48 +162,81 @@ def get_pending_commit(issue, patchset, owner, timestamp):
   return obj
 
 
-class Summary(BasePage):
-  def get(self, resource):  # pylint: disable=W0221
-    out_format = self.request.get('format', 'html')
-    resource = resource.strip('/')
-    resource = urllib2.unquote(resource)
-    if resource:
-      if resource == 'me':
-        resource = self.user.email()
-    if out_format == 'json':
-      return self.get_json(resource)
-    else:
-      return self.get_html(resource)
+class CQBasePage(BasePage):
+  """Returns a web page or json data about commit queue state.
 
-  def get_json(self, owner):
+  Can filter for everyone, a particular user or a particular issue.
+
+  Query args:
+  - format: can be 'html' or 'json'.
+  - limit: maximum number of elements to result. default is 100.
+  """
+
+  def get(self, *args):
+    query = self._get_query(*args)
+    out_format = self.request.get('format', 'html')
+    if out_format == 'json':
+      return self._get_as_json(query)
+    else:
+      return self._get_as_html(query)
+
+  def _get_query(self, owner=None, issue=None, patchset=None):
     query = VerificationEvent.all().order('-timestamp')
+    ancestor = None
+    if owner:
+      owner = self._parse_user(owner)
+      ancestor = db.Key.from_path('Owner', Owner.to_key(owner))
+
+    if issue:
+      issue = int(issue)
+      if patchset:
+        patchset = int(patchset)
+        pending_key = PendingCommit.to_key(issue, patchset, owner)
+        ancestor = db.Key.from_path(
+            'PendingCommit', pending_key, parent=ancestor)
+      else:
+        # Only show the last object since it's complex to do a OR with multiple
+        # ancestors.
+        ancestor = db.Query(PendingCommit, keys_only=True).filter(
+            'issue =', issue).ancestor(ancestor).order('-created').get()
+
+    if ancestor:
+      query.ancestor(ancestor)
+    return query
+
+  def _get_limit(self):
     limit = self.request.get('limit')
     if limit and limit.isdigit():
       limit = int(limit)
     else:
       limit = 100
-    if owner:
-      query.ancestor(db.Key.from_path("Owner", Owner.to_key(owner)))
+    return limit
 
+  def _get_as_json(self, query):
     self.response.headers['Content-Type'] = 'application/json'
     self.response.headers['Access-Control-Allow-Origin'] = '*'
-    data = json.dumps([s.AsDict() for s in query.fetch(limit)])
+    data = json.dumps([s.AsDict() for s in query.fetch(self._get_limit())])
     callback = self.request.get('callback')
     if callback:
       if re.match(r'^[a-zA-Z$_][a-zA-Z$0-9._]*$', callback):
         data = '%s(%s);' % (callback, data)
     self.response.out.write(data)
 
-  def get_html(self, owner):
-    # HTML version.
-    if not owner:
-      return self.get_html_owners()
-    else:
-      return self.get_html_owner(owner)
+  def _get_as_html(self, query):
+    raise NotImplementedError()
 
-  def get_html_owners(self):
+  def _parse_user(self, user):
+    user = urllib2.unquote(user.strip('/'))
+    if user == 'me':
+      user = self.user.email()
+    return user
+
+
+class Summary(CQBasePage):
+  def _get_as_html(self, _):
     owners = []
     # No need to sort.
+    # TODO(maruel): Filter in the most actives
     for owner in Owner.all():
       # Revisit when it becomes too costly to display.
       q = lambda: PendingCommit.all().ancestor(owner)
@@ -223,17 +257,37 @@ class Summary(BasePage):
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
 
-  def get_html_owner(self, owner):
-    query = VerificationEvent.all().order('-timestamp')
-    limit = self.request.get('limit')
-    if limit and limit.isdigit():
-      limit = int(limit)
-    else:
-      limit = 100
-    query.ancestor(db.Key.from_path("Owner", Owner.to_key(owner)))
+
+class User(CQBasePage):
+  def _get_as_html(self, query):
     pending_commits_events = {}
     pending_commits = {}
-    for event in query.fetch(limit):
+    for event in query.fetch(self._get_limit()):
+      # Implicitly find PendingCommit's.
+      pending_commit = event.parent()
+      if not pending_commit:
+        logging.warn('Event %s is corrupted, can\'t find %s' % (
+          event.key().id_or_name(), event.parent_key().id_or_name()))
+        continue
+      pending_commits_events.setdefault(pending_commit.key(), []).append(event)
+      pending_commits[pending_commit.key()] = pending_commit
+
+    sorted_data = []
+    for pending_commit in sorted(
+        pending_commits.itervalues(), key=lambda x: x.issue):
+      sorted_data.append(
+          (pending_commit,
+            reversed(pending_commits_events[pending_commit.key()])))
+    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values['data'] = sorted_data
+    self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
+
+
+class Issue(CQBasePage):
+  def _get_as_html(self, query):
+    pending_commits_events = {}
+    pending_commits = {}
+    for event in query.fetch(self._get_limit()):
       # Implicitly find PendingCommit's.
       pending_commit = event.parent()
       if not pending_commit:
