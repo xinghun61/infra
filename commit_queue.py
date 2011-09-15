@@ -57,10 +57,6 @@ class VerificationEvent(polymodel.PolyModel):
   def as_html(self):
     raise NotImplementedError()
 
-  @staticmethod
-  def to_key(packet):
-    raise NotImplementedError()
-
 
 class TryServerEvent(VerificationEvent):
   name = 'try server'
@@ -91,12 +87,12 @@ class TryServerEvent(VerificationEvent):
           cgi.escape(self.job_name),
           cgi.escape(self.builder))
 
-  @staticmethod
-  def to_key(packet):
+  @classmethod
+  def to_key(cls, packet):
     if not packet.get('builder') or not packet.get('job_name'):
       return None
     return '<%s-%s-%s>' % (
-        TryServerEvent.name, packet['builder'], packet['job_name'])
+        cls.name, packet['builder'], packet['job_name'])
 
 
 class PresubmitEvent(VerificationEvent):
@@ -109,10 +105,10 @@ class PresubmitEvent(VerificationEvent):
   def as_html(self):
     return '<pre class="output">%s</pre>' % cgi.escape(self.output)
 
-  @staticmethod
-  def to_key(_):
+  @classmethod
+  def to_key(cls, _):
     # There shall be only one PresubmitEvent per PendingCommit.
-    return '<%s>' % (PresubmitEvent.name)
+    return '<%s>' % cls.name
 
 
 class CommitEvent(VerificationEvent):
@@ -132,9 +128,23 @@ class CommitEvent(VerificationEvent):
       out += '<br>Revision %s' % cgi.escape(str(self.revision))
     return out
 
-  @staticmethod
-  def to_key(_):
-    return '<%s>' % (CommitEvent.name)
+  @classmethod
+  def to_key(cls, _):
+    return '<%s>' % cls.name
+
+
+class InitialEvent(VerificationEvent):
+  name = 'initial'
+  revision = db.IntegerProperty()
+
+  @property
+  def as_html(self):
+    return 'Looking at new commit, using revision %s' % (
+        cgi.escape(str(self.revision)))
+
+  @classmethod
+  def to_key(cls, _):
+    return '<%s>' % cls.name
 
 
 def get_owner(owner):
