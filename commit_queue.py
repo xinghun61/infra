@@ -147,6 +147,19 @@ class InitialEvent(VerificationEvent):
     return '<%s>' % cls.name
 
 
+class AbortEvent(VerificationEvent):
+  name = 'abort'
+  output = db.TextProperty()
+
+  @property
+  def as_html(self):
+    return '<pre class="output">%s</pre>' % cgi.escape(self.output)
+
+  @classmethod
+  def to_key(cls, _):
+    return '<%s>' % cls.name
+
+
 def get_owner(owner):
   """Efficient querying of Owner with memcache."""
   # pylint: disable=E1101
