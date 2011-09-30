@@ -255,27 +255,95 @@ class CQBasePage(BasePage):
     return user
 
 
+class OwnerStats(object):
+  def __init__(self, now, owner, last_day, last_week, last_month, forever):
+    self.now = now
+    self.owner = owner
+    self.last_day = last_day
+    self.last_week = last_week
+    self.last_month = last_month
+    self.forever = forever
+
+  def to_stats(self):
+    return self
+
+
+class OwnerQuery(object):
+  def __init__(self, owner_key, now):
+    self.owner_key = owner_key
+    self.now = now
+    since = lambda x: now - datetime.timedelta(days=x)
+    self._owner = db.get_async(owner_key)
+    self._last_day = self._pendings().filter('created >=', since(1)).run()
+    self._last_week = self._pendings().filter(
+        'created >=', since(7)).filter('created <', since(1)).run()
+    # These block.
+    self.last_month = self._pendings().filter(
+        'created >=', since(30)).count()
+    self.forever = self._pendings(keys_only=True).count()
+
+  def _pendings(self, **kwargs):
+    return PendingCommit.all(**kwargs).ancestor(self.owner_key)
+
+  def to_stats(self):
+    obj = OwnerStats(
+        self.now,
+        self._owner.get_result(),
+        list(self._last_day),
+        list(self._last_week),
+        self.last_month,
+        self.forever)
+    # pylint: disable=E1101
+    memcache.add(
+        self.owner_key.name(), obj, 2*60*60, namespace='cq_owner_stats')
+    return obj
+
+
+def to_link(pending):
+  return '<a href="/cq/%s/%s/%s">%s</a>' % (
+      pending.parent_key().name()[1:-1],
+      pending.issue,
+      pending.patchset,
+      pending.issue)
+
+
+def get_owner_stats(owner_key, now):
+  # pylint: disable=E1101
+  obj = memcache.get(owner_key.name(), 'cq_owner_stats')
+  if obj:
+    return obj
+  return OwnerQuery(owner_key, now)
+
+
+def monthly_top_contributors():
+  # pylint: disable=E1101
+  obj = memcache.get('monthly', 'cq_top')
+  if not obj:
+    now = datetime.datetime.utcnow()
+    last_pendings = PendingCommit.all(
+        keys_only=True).order('-created').fetch(1000)
+    # Make it use asynchronous queries.
+    owner_stats_queries = [
+        get_owner_stats(o, now) for o in set(p.parent() for p in last_pendings)
+    ]
+    obj = [o.to_stats() for o in owner_stats_queries]
+    memcache.add('monthly', obj, 2*60*60, namespace='cq_top')
+  return obj
+
+
 class Summary(CQBasePage):
   def _get_as_html(self, _):
     owners = []
-    # No need to sort.
-    # TODO(maruel): Filter in the most actives
-    for owner in Owner.all():
-      # Revisit when it becomes too costly to display.
-      q = lambda: PendingCommit.all().ancestor(owner)
-      now = datetime.datetime.utcnow()
-      t = lambda x: now - datetime.timedelta(days=x)
+    for o in monthly_top_contributors():
+      stats = o.to_stats()
       data = {
-          'last_day':
-              ', '.join(str(i.issue) for i in q().filter('created >=', t(1))),
-          'last_week':
-              ', '.join(
-                str(i.issue) for i in q().filter('created >=',  t(7)
-                  ).filter('created <', t(1))),
-          'last_month': q().filter('created >=', t(30)).count(),
-          'forever': q().count(),
+          'last_day': ', '.join(to_link(i) for i in stats.last_day),
+          'last_week': ', '.join(to_link(i) for i in stats.last_week),
+          'last_month': stats.last_month,
+          'forever': stats.forever,
         }
-      owners.append((owner.email, data))
+      owners.append((stats.owner.email, data))
+    owners.sort(key=lambda x: -x[1]['last_month'])
     template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)

@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block content %}
+<h1>Sorted by last month usage</h1>
 <table class="issue">
   <thead>
     <tr>
@@ -19,8 +20,8 @@
     {% for owner in data %}
     <tr>
       <td><a href="/cq/{{ owner.0|urlencode }}" class="owner">{{ owner.0 }}</a></td>
-      <td>{{ owner.1.last_day }}</td>
-      <td>{{ owner.1.last_week }}</td>
+      <td>{{ owner.1.last_day|safe }}</td>
+      <td>{{ owner.1.last_week|safe }}</td>
       <td>{{ owner.1.last_month }}</td>
       <td>{{ owner.1.forever }}</td>
     </tr>
