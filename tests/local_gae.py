@@ -83,6 +83,7 @@ class LocalGae(object):
     self.app_id = None
     self.url = None
     self.tmp_db = None
+    self._xsrf_token = None
 
   def install_prerequisites(self):
     # Load GAE SDK.
@@ -160,6 +161,7 @@ class LocalGae(object):
     """
     data = {
         'code': 'from google.appengine.ext import db\n' + cmd,
+        'xsrf_token': self.xsrf_token,
     }
     result = self.post('_ah/admin/interactive/execute', data)
     match = re.search(
@@ -168,5 +170,15 @@ class LocalGae(object):
         result,
         re.DOTALL)
     return match.group(1)
+
+  @property
+  def xsrf_token(self):
+    if self._xsrf_token is None:
+      interactive = self.get(
+          '_ah/login?email=georges%40example.com&admin=True&action=Login&'
+          'continue=/_ah/admin/interactive')
+      self._xsrf_token = re.search(
+          r'name="xsrf_token" value="(.*?)"/>', interactive).group(1)
+    return self._xsrf_token
 
 # vim: ts=2:sw=2:tw=80:et:
