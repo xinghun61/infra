@@ -97,7 +97,7 @@ DataFetcher.GetTreeStatusEntries = function(timeRange, callback) {
   endTime -= DateUtil.MillisToSeconds(DateUtil.MILLIS_PER_DAY);
 
   var url = "/allstatus?format=json&startTime=" + startTime + "&endTime=" +
-      endTime;
+      endTime + "&limit=1000";
 
   Fetch(url, OnFetchedDataComplete.bind(this, callback));
 }
