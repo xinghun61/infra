@@ -28,7 +28,7 @@ class Revisions(BasePage):
 
   def get(self):
     """Returns information about the last revision status."""
-    limit = self.request.get('limit', 100)
+    limit = int(self.request.get('limit', 100))
     revisions = Revision.all().order('-revision').fetch(limit)
     if self.request.get('format') == 'json':
       self.response.headers['Content-Type'] = 'application/json'
