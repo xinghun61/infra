@@ -128,7 +128,12 @@ class CurrentPage(BasePage):
       self.response.out.write(status.message)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
-      self.response.headers['Access-Control-Allow-Origin'] = '*'
+      if self.request.get('with_credentials'):
+        self.response.headers['Access-Control-Allow-Origin'] = (
+            'gerrit-int.chromium.org, gerrit.chromium.org')
+        self.response.headers['Access-Control-Allow-Credentials'] = 'true'
+      else:
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
       data = json.dumps(status.AsDict())
       callback = self.request.get('callback')
       if callback:
