@@ -376,7 +376,7 @@ class User(CQBasePage):
 
     sorted_data = []
     for pending_commit in sorted(
-        pending_commits.itervalues(), key=lambda x: x.issue):
+        pending_commits.itervalues(), key=lambda x: x.created, reverse=True):
       sorted_data.append(
           (pending_commit,
             reversed(pending_commits_events[pending_commit.key()])))
