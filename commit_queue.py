@@ -13,6 +13,7 @@ import urllib2
 
 import simplejson as json
 from google.appengine.api import memcache
+from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
 
@@ -197,6 +198,10 @@ class CQBasePage(BasePage):
 
   def get(self, *args):
     query = self._get_query(*args)
+    if not query:
+      # The user probably used /me without being logged.
+      self.redirect(users.create_login_url(self.request.url))
+      return
     out_format = self.request.get('format', 'html')
     if out_format == 'json':
       return self._get_as_json(query)
@@ -204,10 +209,13 @@ class CQBasePage(BasePage):
       return self._get_as_html(query)
 
   def _get_query(self, owner=None, issue=None, patchset=None):
+    """Returns None on query failure."""
     query = VerificationEvent.all().order('-timestamp')
     ancestor = None
     if owner:
       owner = self._parse_user(owner)
+      if not owner:
+        return None
       ancestor = db.Key.from_path('Owner', Owner.to_key(owner))
 
     if issue:
@@ -251,7 +259,10 @@ class CQBasePage(BasePage):
   def _parse_user(self, user):
     user = urllib2.unquote(user.strip('/'))
     if user == 'me':
-      user = self.user.email()
+      if not self.user:
+        user = None
+      else:
+        user = self.user.email()
     return user
 
 
