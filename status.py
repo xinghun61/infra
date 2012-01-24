@@ -1,4 +1,4 @@
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -226,21 +226,26 @@ class MainPage(BasePage):
     # Get the posted information.
     new_message = self.request.get('message')
     last_status_key = self.request.get('last_status_key')
-    if new_message:
-      current_status = Status.gql('ORDER BY date DESC').get()
-      if current_status and (last_status_key != str(current_status.key())):
-        error_message = ('Message not saved, mid-air collision detected, '
-                         'please resolve any conflicts and try again!')
-        last_message = new_message
-      else:
-        status = Status(message=new_message, username=self.user.email())
-        status.put()
-        # Cache the status.
-        # Module 'google.appengine.api.memcache' has no 'set' member
-        # pylint: disable=E1101
-        memcache.set('last_status', status)
+    if not new_message:
+      # A submission contained no data. It's a better experience to redirect
+      # in this case.
+      self.redirect("/")
+      return
 
-    return self._handle(error_message, last_message)
+    current_status = Status.gql('ORDER BY date DESC').get()
+    if current_status and (last_status_key != str(current_status.key())):
+      error_message = ('Message not saved, mid-air collision detected, '
+                       'please resolve any conflicts and try again!')
+      last_message = new_message
+      return self._handle(error_message, last_message)
+    else:
+      status = Status(message=new_message, username=self.user.email())
+      status.put()
+      # Cache the status.
+      # Module 'google.appengine.api.memcache' has no 'set' member
+      # pylint: disable=E1101
+      memcache.set('last_status', status)
+      self.redirect("/")
 
 
 def bootstrap():
