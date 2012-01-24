@@ -1,4 +1,4 @@
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -113,6 +113,7 @@ class LocalGae(object):
     env['LANGUAGE'] = 'en'
     self.tmp_db = tempfile.NamedTemporaryFile()
     cmd = [
+        sys.executable,
         os.path.join(GAE_SDK, 'dev_appserver.py'),
         self.base_dir,
         '--port', str(self.port),
