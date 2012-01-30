@@ -1,4 +1,4 @@
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -49,7 +49,7 @@ class BasePage(webapp.RequestHandler):
       """Looks for password parameter. Not awesome."""
       password = self.request.get('password')
       if password:
-        sha1_pass = hashlib.sha1(password).hexdigest()  # pylint: disable=E1101
+        sha1_pass = hashlib.sha1(password).hexdigest()
         if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
           # The password is valid, this is a super admin.
           self._is_admin = True
@@ -111,8 +111,6 @@ class BasePage(webapp.RequestHandler):
     Optionally cache it for 1 second. Only to be used for user-invariant
     pages!
     """
-    # Module 'google.appengine.api.memcache' has no 'get' member
-    # pylint: disable=E1101
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=0'
     buff = None
     if use_cache:

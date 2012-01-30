@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -52,7 +52,7 @@ class TestCase(unittest.TestCase):
   def set_admin_pwd(self, password):
     # There will be no entities until main() has been called. So do a dummy
     # request first.
-    hashvalue = hashlib.sha1(password).hexdigest()  # pylint: disable=E1101
+    hashvalue = hashlib.sha1(password).hexdigest()
     self.get('doesnt_exist')
 
     # First verify the default value exists and then override its value.

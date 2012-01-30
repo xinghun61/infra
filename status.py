@@ -113,8 +113,6 @@ class CurrentPage(BasePage):
 
   def get(self):
     """Displays the current message and nothing else."""
-    # Module 'google.appengine.api.memcache' has no 'get' member
-    # pylint: disable=E1101
     out_format = self.request.get('format', 'html')
     status = memcache.get('last_status')
     if status is None:
@@ -173,8 +171,6 @@ class StatusPage(BasePage):
       status = Status(message=message, username=username)
       status.put()
       # Cache the status.
-      # Module 'google.appengine.api.memcache' has no 'set' member
-      # pylint: disable=E1101
       memcache.set('last_status', status)
     self.response.out.write('OK')
 
@@ -242,8 +238,6 @@ class MainPage(BasePage):
       status = Status(message=new_message, username=self.user.email())
       status.put()
       # Cache the status.
-      # Module 'google.appengine.api.memcache' has no 'set' member
-      # pylint: disable=E1101
       memcache.set('last_status', status)
       self.redirect("/")
 

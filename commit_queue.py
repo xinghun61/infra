@@ -1,4 +1,4 @@
-# Copyright (c) 2011 The Chromium Authors. All rights reserved.
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -163,7 +163,6 @@ class AbortEvent(VerificationEvent):
 
 def get_owner(owner):
   """Efficient querying of Owner with memcache."""
-  # pylint: disable=E1101
   key = Owner.to_key(owner)
   obj = memcache.get(key, namespace='Owner')
   if not obj:
@@ -174,7 +173,6 @@ def get_owner(owner):
 
 def get_pending_commit(issue, patchset, owner, timestamp):
   """Efficient querying of PendingCommit with memcache."""
-  # pylint: disable=E1101
   owner_obj = get_owner(owner)
   key = PendingCommit.to_key(issue, patchset, owner)
   obj = memcache.get(key, namespace='PendingCommit')
@@ -304,7 +302,6 @@ class OwnerQuery(object):
         list(self._last_week),
         self.last_month,
         self.forever)
-    # pylint: disable=E1101
     memcache.add(
         self.owner_key.name(), obj, 2*60*60, namespace='cq_owner_stats')
     return obj
@@ -319,7 +316,6 @@ def to_link(pending):
 
 
 def get_owner_stats(owner_key, now):
-  # pylint: disable=E1101
   obj = memcache.get(owner_key.name(), 'cq_owner_stats')
   if obj:
     return obj
@@ -327,7 +323,6 @@ def get_owner_stats(owner_key, now):
 
 
 def monthly_top_contributors():
-  # pylint: disable=E1101
   obj = memcache.get('monthly', 'cq_top')
   if not obj:
     now = datetime.datetime.utcnow()
