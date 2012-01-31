@@ -18,7 +18,7 @@ INSTANCES = [
   'naclports-status',
   'naclsdk-status',
   'nativeclient-status',
-  'o3d-status',
+  'o3d-status-hr',
 ]
 
 def main():
