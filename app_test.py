@@ -56,6 +56,15 @@ class GaeTestCase(unittest.TestCase):
     # pylint: disable=E1101
     memcache.flush_all()
 
+class MainTestCase(GaeTestCase):
+  def test_main_page_redirect(self):
+    from webtest import TestApp
+    import handler
+    testapp = TestApp(handler.application)
+    response = testapp.get('/')
+    self.assertEquals('302 Moved Temporarily', response.status)
+    self.assertEquals('', response.body)
+
 class PageTestCase(GaeTestCase):
   def test_creation(self):
     fetch_timestamp = datetime.datetime.now()

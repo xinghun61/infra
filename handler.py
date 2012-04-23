@@ -39,14 +39,6 @@ class MyRequestHandler(webapp2.RequestHandler):
         values))
 
 
-# W0232: 36,0:AnnounceAction: Class has no __init__ method
-# pylint: disable=W0232
-class AnnounceAction(MyRequestHandler):
-
-  def get(self):
-    self._render_template('announce.html', {})
-
-
 # W0232: 42,0:PageAction: Class has no __init__ method
 # pylint: disable=W0232
 class PageAction(MyRequestHandler):
@@ -101,7 +93,9 @@ class FetchPagesAction(MyRequestHandler):
 class MainAction(MyRequestHandler):
 
   def get(self):
-    self._render_template('main.html', {})
+    # E1101: 96,4:MainAction.get: Instance of 'MainAction' has no 'redirect' member
+    # pylint: disable=E1101
+    self.redirect('/p/chromium/console')
 
 
 # Call initial bootstrap for the app module.
@@ -112,6 +106,5 @@ app.bootstrap()
 # info.
 application = webapp2.WSGIApplication(
   [('/', MainAction),
-   ('/announce', AnnounceAction),
    ('/p/(.*)', PageAction),
    ('/tasks/fetch_pages', FetchPagesAction)])
