@@ -311,3 +311,41 @@ class ConsoleTestCase(GaeTestCase):
     self.assertEquals(filedata['chromium_merged_console.html'],
                       actual_mergedconsole,
                       'Unexpected console output found')
+
+  def test_console_merger_splitrevs(self):
+    test_dir = os.path.join(os.path.dirname(__file__),
+                            'tests',
+                            'test_console_merger_splitrevs')
+    filedata = {}
+    for filename in [
+        'chromium_chrome_console.html',
+        'chromium_chromiumos_console.html',
+        'chromium_console.html',
+        'chromium_memory_console.html',
+        'chromium_merged_console.html',
+    ]:
+      with open(os.path.join(test_dir, filename)) as fh:
+        filedata[filename] = fh.read()
+    self.save_page(localpath='chromium.chrome/console',
+                   content=filedata['chromium_chrome_console.html'])
+    self.save_page(localpath='chromium.chromiumos/console',
+                   content=filedata['chromium_chromiumos_console.html'])
+    self.save_page(localpath='chromium.main/console',
+                   content=filedata['chromium_console.html'])
+    self.save_page(localpath='chromium.memory/console',
+                   content=filedata['chromium_memory_console.html'])
+    actual_mergedconsole = app.console_merger(
+        'chromium.main/console',
+        'http://build.chromium.org/p/chromium/console',
+        content=filedata['chromium_merged_console.html'])
+    # Uncomment if deeper inspection is needed of the returned console.
+    # import logging
+    # logging.debug('foo')
+    # with open(os.path.join(test_dir, 'chromium_merged_console.html'),
+    #           'w') as fh:
+    #   fh.write(actual_mergedconsole)
+    # import code
+    # code.interact(local=locals())
+    self.assertEquals(filedata['chromium_merged_console.html'],
+                      actual_mergedconsole,
+                      'Unexpected console output found')
