@@ -361,7 +361,7 @@ def console_handler(unquoted_localpath, remoteurl, content=None):
   # Replace lkgrPath with a URL to chromium-build.
   content = re.sub(
       "var lkgrPath = c.status_lkgr",
-      "var lkgrPath = 'https://chromium-build.appspot.com/p/chromium.lkgr'",
+      "var lkgrPath = '/p/chromium.lkgr'",
       content)
   content = string.replace(content,
       "'/json/builders/Linux%20x64/builds/-1?as_text=1';",

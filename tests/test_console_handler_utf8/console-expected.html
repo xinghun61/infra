@@ -589,7 +589,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
                * var lkgrPath = 'http://chromium-build-master.appspot.com/p/chromium.lkgr/' +
                *                'json/builders/Linux%20x64/builds/-1/as_text=1.json';
                */
-              var lkgrPath = 'https://chromium-build.appspot.com/p/chromium.lkgr' +
+              var lkgrPath = '/p/chromium.lkgr' +
                              '/json/builders/Linux%20x64/builds/-1/as_text=1.json';
               var lkgrLink = document.getElementById('LKGRLink');
               xmlHttp.open('GET', lkgrPath, false);
