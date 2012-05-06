@@ -304,7 +304,8 @@ class ConsoleTestCase(GaeTestCase):
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
-    # with open(os.path.join(test_dir, 'chromium_merged_console.html'), 'w') as fh:
+    # merged_path = os.path.join(test_dir, 'chromium_merged_console.html')
+    # with open(merged_path, 'w') as fh:
     #   fh.write(actual_mergedconsole)
     # import code
     # code.interact(local=locals())

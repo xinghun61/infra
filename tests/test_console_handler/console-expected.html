@@ -438,7 +438,7 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
 
 <div class="Announcement">
 
-<iframe width="100%" height="44" frameborder="0" scrolling="no" src="http://chromium-build.appspot.com/p/chromium-status/current"></iframe>
+<iframe width="100%" height="44" frameborder="0" scrolling="no" src="https://chromium-build.appspot.com/p/chromium-status/current"></iframe>
 
 <center style="padding: 0 7px">
   <table width="100%" valign="top" bgcolor="#efefef" style="-webkit-border-bottom-left-radius: 24px; -webkit-border-bottom-right-radius: 24px; -moz-border-bottom-right-radius: 24px; -moz-border-bottom-right-radius: 24px;   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6); -moz-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6); -webkit-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);">
@@ -553,11 +553,11 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
              * @returns {String} The URL.
              */
             function BarUrl(x) {
-              return 'http://chromium-build.appspot.com/p/' + x +
+              return 'https://chromium-build.appspot.com/p/' + x +
                      '/horizontal_one_box_per_builder';
             }
             c.bar = BarUrl('chromium')
-            c.bar_webkit = 'http://chromium-build.appspot.com/p/chromium.webkit/horizontal_one_box_per_builder?chromiumconsole';
+            c.bar_webkit = 'https://chromium-build.appspot.com/p/chromium.webkit/horizontal_one_box_per_builder?chromiumconsole';
             c.bar_memory = BarUrl('chromium.memory');
             c.bar_memory_fyi = BarUrl('chromium.memory.fyi');
             c.bar_perf = BarUrl('chromium.perf');
@@ -589,8 +589,8 @@ document.addEventListener("DOMContentLoaded", SetupView, false);
                * var lkgrPath = 'http://chromium-build-master.appspot.com/p/chromium.lkgr/' +
                *                'json/builders/Linux%20x64/builds/-1/as_text=1.json';
                */
-              var lkgrPath = c.status_lkgr +
-                             '/json/builders/Linux%20x64/builds/-1?as_text=1';
+              var lkgrPath = 'https://chromium-build.appspot.com/p/chromium.lkgr' +
+                             '/json/builders/Linux%20x64/builds/-1/as_text=1.json';
               var lkgrLink = document.getElementById('LKGRLink');
               xmlHttp.open('GET', lkgrPath, false);
               xmlHttp.send(null);

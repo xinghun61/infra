@@ -93,7 +93,8 @@ class FetchPagesAction(MyRequestHandler):
 class MainAction(MyRequestHandler):
 
   def get(self):
-    # E1101: 96,4:MainAction.get: Instance of 'MainAction' has no 'redirect' member
+    # E1101: 96,4:MainAction.get: Instance of 'MainAction' has no 'redirect'
+    # member
     # pylint: disable=E1101
     self.redirect('/p/chromium/console')
 

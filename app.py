@@ -8,6 +8,7 @@ import datetime
 import logging
 import os
 import re
+import string
 import urllib
 
 from google.appengine.api import files, memcache, urlfetch
@@ -72,7 +73,7 @@ def get_and_cache_page(localpath):
 
 
 class ConsoleData(object):
-  def __init__(self, master=None):
+  def __init__(self):
     self.row_orderedkeys = []
     self.row_data = {}
 
@@ -166,7 +167,10 @@ class ConsoleData(object):
     #            the earliest revisions, set them to ''.
 
 
-def console_merger(unquoted_localpath, remoteurl, content=None):
+# W0613:169,39:console_merger: Unused argument 'remoteurl'
+# W0613:169,19:console_merger: Unused argument 'unquoted_localpath'
+# pylint: disable=W0613
+def console_merger(unquoted_localpath, remote_url, content=None):
   if content is None:
     return None
 
@@ -281,6 +285,8 @@ def console_merger(unquoted_localpath, remoteurl, content=None):
   return merged_content
 
 
+# W0613:284,20:console_handler: Unused argument 'unquoted_localpath'
+# pylint: disable=W0613
 def console_handler(unquoted_localpath, remoteurl, content=None):
   if content is None:
     return None
@@ -339,18 +345,32 @@ def console_handler(unquoted_localpath, remoteurl, content=None):
   content = re.sub(r"c.webkit = '([^\']+)'", r"c.webkit = ''", content)
   content = re.sub("'http://build\.chromium.org/p/chromium\.webkit/"
                    "horizontal_one_box_per_builder'",
-                   "'http://chromium-build.appspot.com/p/"
+                   "'https://chromium-build.appspot.com/p/"
                    "chromium.webkit/horizontal_one_box_per_builder"
                    "?chromiumconsole'", content)
 
   # Convert the chromium-status reference to reuse the local instance.
   content = re.sub(r"http://chromium-status\.appspot\.com/current",
-                   "http://chromium-build.appspot.com/p/"
+                   "https://chromium-build.appspot.com/p/"
                    "chromium-status/current", content)
 
   # Disable the personalized for box for now.
   content = re.sub(r"<input id='namebox", r"<!-- <input id='namebox", content)
   content = re.sub(r"reload_page\(\)'/>", r"reload_page()'/> -->", content)
+
+  # Replace lkgrPath with a URL to chromium-build.
+  content = re.sub(
+      "var lkgrPath = c.status_lkgr",
+      "var lkgrPath = 'https://chromium-build.appspot.com/p/chromium.lkgr'",
+      content)
+  content = string.replace(content,
+      "'/json/builders/Linux%20x64/builds/-1?as_text=1';",
+      "'/json/builders/Linux%20x64/builds/-1/as_text=1.json';")
+
+  # Fix up a reference to http chromium-build in BarUrl().
+  content = string.replace(content,
+      "return 'http://chromium-build.appspot.com/p/'",
+      "return 'https://chromium-build.appspot.com/p/'")
 
   # Encode content from unicode to utf-8.
   content = content.encode('utf-8')
@@ -514,7 +534,8 @@ URLS = [
 
   # Buildbot "One Boxes".
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium/horizontal_one_box_per_builder',
+    'remoteurl':
+        'http://build.chromium.org/p/chromium/horizontal_one_box_per_builder',
     'localpath': 'chromium/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
@@ -522,60 +543,85 @@ URLS = [
   # TODO(cmp): AppEngine thinks this URL is too long and chokes on it in the
   #            DataStore.
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.webkit/horizontal_one_box_per_builder?builder=Webkit+Win+Builder+%28deps%29&builder=Webkit+Win+%28deps%29&builder=Webkit+Mac+Builder+%28deps%29&builder=Webkit+Mac10.6+%28deps%29&builder=Webkit+Linux+%28deps%29',
-    'localpath': 'chromium.webkit/horizontal_one_box_per_builder?chromiumconsole',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.webkit/'
+         'horizontal_one_box_per_builder?'
+         'builder=Webkit+Win+Builder+%28deps%29&'
+         'builder=Webkit+Win+%28deps%29&'
+         'builder=Webkit+Mac+Builder+%28deps%29&'
+         'builder=Webkit+Mac10.6+%28deps%29&'
+         'builder=Webkit+Linux+%28deps%29'),
+    'localpath':
+        'chromium.webkit/horizontal_one_box_per_builder?chromiumconsole',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.memory/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.memory/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.memory/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.memory.fyi/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.memory.fyi/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.memory.fyi/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.perf/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.perf/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.perf/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.chrome/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.chrome/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.chrome/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.lkgr/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.lkgr/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.lkgr/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.pyauto/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.pyauto/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.pyauto/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.chromiumos/horizontal_one_box_per_builder',
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.chromiumos/'
+         'horizontal_one_box_per_builder'),
     'localpath': 'chromium.chromiumos/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
 
-  # # LKGR JSON.
-  # {
-  #   'remoteurl': 'http://build.chromium.org/p/chromium.lkgr/json/builders/Linux%20x64/builds/-1?as_text=1',
-  #   'localpath': 'chromium.lkgr/json/builders/Linux%20x64/builds/-1/as_text=1.json',
-  #   'maxage': 2*60,  # 2 mins
-  # },
+  # LKGR JSON.
+  {
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.lkgr/json/builders/Linux%20x64/'
+         'builds/-1?as_text=1'),
+    'localpath':
+        'chromium.lkgr/json/builders/Linux%20x64/builds/-1/as_text=1.json',
+    'maxage': 2*60,  # 2 mins
+  },
 ]
 
 
