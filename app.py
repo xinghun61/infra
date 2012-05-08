@@ -7,6 +7,7 @@ from __future__ import with_statement
 import datetime
 import logging
 import os
+import random
 import re
 import string
 import urllib
@@ -626,6 +627,12 @@ URLS = [
 
 
 def nonfatal_fetch_url(url, *args, **kwargs):
+  # Temporary workaround to disable AppEngine global cache of these pages.
+  if '?' in url:
+    url += '&' + str(random.random())
+  else:
+    url += '?' + str(random.random())
+
   try:
     return urlfetch.fetch(url, deadline=URLFETCH_DEADLINE, *args, **kwargs)
   except urlfetch.DownloadError:
