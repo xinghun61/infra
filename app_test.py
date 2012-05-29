@@ -10,19 +10,31 @@ import unittest
 import app
 
 
+TEST_DIR = os.path.join(os.path.dirname(__file__), 'tests')
+
+
 class GaeTestCase(unittest.TestCase):
   def setUp(self, *args, **kwargs):
     self.clear_datastore()
     super(GaeTestCase, self).setUp(*args, **kwargs)
 
+  # R0201: 21,2:GaeTestCase._load_content: Method could be a function
+  # pylint: disable=R0201
+  def _load_content(self, test_dir, path):
+    with open(os.path.join(test_dir, path)) as fh:
+      return fh.read()
+    return None
+
   @staticmethod
   def save_page(localpath, content):
+    page_data = {}
+    page_data['content'] = content
     fetch_timestamp = datetime.datetime.now()
     model = app.Page(localpath=localpath, content=None,
                      fetch_timestamp=fetch_timestamp)
     model.put()
-    app.save_page(model, localpath=localpath, content=content,
-                  fetch_timestamp=fetch_timestamp)
+    app.save_page(model, localpath=localpath, fetch_timestamp=fetch_timestamp,
+                  page_data=page_data)
     return model
 
   @staticmethod
@@ -34,15 +46,17 @@ class GaeTestCase(unittest.TestCase):
     for key in ['datastore', 'datastore_v3']:
       # W0212: 23,16:GaeTestCase.clear_datastore: Access to a protected member
       # _APIProxyStubMap__stub_map of a client class
-      # E1101: 26,16:GaeTestCase.clear_datastore: Instance of 'APIProxyStubMap'
+      # pylint: disable=W0212
+      # E1101: 50,16:GaeTestCase.clear_datastore: Instance of 'APIProxyStubMap'
       # has no '_APIProxyStubMap__stub_map' member
-      # pylint: disable=W0212,E1101
+      # pylint: disable=E1101
       if key in apiproxy_stub_map.apiproxy._APIProxyStubMap__stub_map:
         # W0212: 24,12:GaeTestCase.clear_datastore: Access to a protected
         # member _APIProxyStubMap__stub_map of a client class
-        # E1101: 30,12:GaeTestCase.clear_datastore: Instance of
+        # pylint: disable=W0212
+        # E1101: 54,12:GaeTestCase.clear_datastore: Instance of
         # 'APIProxyStubMap' has no '_APIProxyStubMap__stub_map' member
-        # pylint: disable=W0212,E1101
+        # pylint: disable=E1101
         del apiproxy_stub_map.apiproxy._APIProxyStubMap__stub_map[key]
 
     # Use a fresh stub datastore.
@@ -51,9 +65,6 @@ class GaeTestCase(unittest.TestCase):
     apiproxy_stub_map.apiproxy.RegisterStub('datastore', stub)
 
     # Flush memcache.
-    # E1101: 42,4:GaeTestCase.clear_datastore: Module
-    # 'google.appengine.api.memcache' has no 'flush_all' member
-    # pylint: disable=E1101
     memcache.flush_all()
 
 class MainTestCase(GaeTestCase):
@@ -174,9 +185,7 @@ class AppTestCase(GaeTestCase):
 
 class ConsoleTestCase(GaeTestCase):
   def test_console_handler(self):
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'tests',
-                            'test_console_handler')
+    test_dir = os.path.join(TEST_DIR, 'test_console_handler')
     self.save_page(localpath='chromium/sheriff.js',
                    content='document.write(\'sheriff1\')')
     self.save_page(localpath='chromium/sheriff_webkit.js',
@@ -191,24 +200,21 @@ class ConsoleTestCase(GaeTestCase):
                    content='document.write(\'sheriff6, sheriff7\')')
     self.save_page(localpath='chromium/sheriff_cros_nonmtv.js',
                    content='document.write(\'sheriff8\')')
-    with open(os.path.join(test_dir, 'console-input.html')) as input_fh:
-      input_console = input_fh.read()
-    with open(os.path.join(test_dir, 'console-expected.html')) as expected_fh:
-      expected_console = expected_fh.read()
+    input_console = self._load_content(test_dir, 'console-input.html')
+    expected_console = self._load_content(test_dir, 'console-expected.html')
+    page_data = {'content': input_console}
     actual_console = app.console_handler(
-        unquoted_localpath='chromium/console',
+        _unquoted_localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
-        content=input_console)
+        page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
     # with open(os.path.join(test_dir, 'console-expected.html'), 'w') as fh:
-    #   fh.write(actual_console)
-    self.assertEquals(expected_console, actual_console,
+    #   fh.write(actual_console['content'])
+    self.assertEquals(expected_console, actual_console['content'],
                       'Unexpected console output found')
 
   def test_console_handler_utf8(self):
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'tests',
-                            'test_console_handler_utf8')
+    test_dir = os.path.join(TEST_DIR, 'test_console_handler_utf8')
     self.save_page(localpath='chromium/sheriff.js',
                    content='document.write(\'sheriff1\')')
     self.save_page(localpath='chromium/sheriff_webkit.js',
@@ -223,24 +229,21 @@ class ConsoleTestCase(GaeTestCase):
                    content='document.write(\'sheriff6, sheriff7\')')
     self.save_page(localpath='chromium/sheriff_cros_nonmtv.js',
                    content='document.write(\'sheriff8\')')
-    with open(os.path.join(test_dir, 'console-input.html')) as input_fh:
-      input_console = input_fh.read()
-    with open(os.path.join(test_dir, 'console-expected.html')) as expected_fh:
-      expected_console = expected_fh.read()
+    input_console = self._load_content(test_dir, 'console-input.html')
+    expected_console = self._load_content(test_dir, 'console-expected.html')
+    page_data = {'content': input_console}
     actual_console = app.console_handler(
-        unquoted_localpath='chromium/console',
+        _unquoted_localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
-        content=input_console)
+        page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
     # with open(os.path.join(test_dir, 'console-expected.html'), 'w') as fh:
-    #   fh.write(actual_console)
-    self.assertEquals(expected_console, actual_console,
+    #   fh.write(actual_console['content'])
+    self.assertEquals(expected_console, actual_console['content'],
                       'Unexpected console output found')
 
   def test_console_merger(self):
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'tests',
-                            'test_console_merger')
+    test_dir = os.path.join(TEST_DIR, 'test_console_merger')
     filedata = {}
     for filename in [
         'chromium_chrome_console_input.html',
@@ -249,8 +252,7 @@ class ConsoleTestCase(GaeTestCase):
         'chromium_memory_console_input.html',
         'chromium_merged_console.html',
     ]:
-      with open(os.path.join(test_dir, filename)) as fh:
-        filedata[filename] = fh.read()
+      filedata[filename] = self._load_content(test_dir, filename)
     self.save_page(localpath='chromium.chrome/console',
                    content=filedata['chromium_chrome_console_input.html'])
     self.save_page(localpath='chromium.chromiumos/console',
@@ -259,26 +261,26 @@ class ConsoleTestCase(GaeTestCase):
                    content=filedata['chromium_main_console_input.html'])
     self.save_page(localpath='chromium.memory/console',
                    content=filedata['chromium_memory_console_input.html'])
-    actual_mergedconsole = app.console_merger(
+    page_data = {'content': filedata['chromium_merged_console.html']}
+    app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        content=filedata['chromium_merged_console.html'])
+        page_data=page_data)
+    actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
     # with open(os.path.join(test_dir, 'chromium_merged_console.html'),
     #           'w') as fh:
-    #   fh.write(actual_mergedconsole)
+    #   fh.write(actual_mergedconsole['content'])
     # import code
     # code.interact(local=locals())
     self.assertEquals(filedata['chromium_merged_console.html'],
-                      actual_mergedconsole,
+                      actual_mergedconsole['content'],
                       'Unexpected console output found')
 
   def test_console_merger_utf8(self):
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'tests',
-                            'test_console_merger_utf8')
+    test_dir = os.path.join(TEST_DIR, 'test_console_merger_utf8')
     filedata = {}
     for filename in [
         'chromium_chrome_console_input.html',
@@ -287,8 +289,7 @@ class ConsoleTestCase(GaeTestCase):
         'chromium_memory_console_input.html',
         'chromium_merged_console.html',
     ]:
-      with open(os.path.join(test_dir, filename)) as fh:
-        filedata[filename] = fh.read()
+      filedata[filename] = self._load_content(test_dir, filename)
     self.save_page(localpath='chromium.chrome/console',
                    content=filedata['chromium_chrome_console_input.html'])
     self.save_page(localpath='chromium.chromiumos/console',
@@ -297,26 +298,26 @@ class ConsoleTestCase(GaeTestCase):
                    content=filedata['chromium_main_console_input.html'])
     self.save_page(localpath='chromium.memory/console',
                    content=filedata['chromium_memory_console_input.html'])
-    actual_mergedconsole = app.console_merger(
+    page_data = {'content': filedata['chromium_merged_console.html']}
+    app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        content=filedata['chromium_merged_console.html'])
+        page_data=page_data)
+    actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
     # merged_path = os.path.join(test_dir, 'chromium_merged_console.html')
     # with open(merged_path, 'w') as fh:
-    #   fh.write(actual_mergedconsole)
+    #   fh.write(actual_mergedconsole['content'])
     # import code
     # code.interact(local=locals())
     self.assertEquals(filedata['chromium_merged_console.html'],
-                      actual_mergedconsole,
+                      actual_mergedconsole['content'],
                       'Unexpected console output found')
 
   def test_console_merger_splitrevs(self):
-    test_dir = os.path.join(os.path.dirname(__file__),
-                            'tests',
-                            'test_console_merger_splitrevs')
+    test_dir = os.path.join(TEST_DIR, 'test_console_merger_splitrevs')
     filedata = {}
     for filename in [
         'chromium_chrome_console.html',
@@ -325,8 +326,7 @@ class ConsoleTestCase(GaeTestCase):
         'chromium_memory_console.html',
         'chromium_merged_console.html',
     ]:
-      with open(os.path.join(test_dir, filename)) as fh:
-        filedata[filename] = fh.read()
+      filedata[filename] = self._load_content(test_dir, filename)
     self.save_page(localpath='chromium.chrome/console',
                    content=filedata['chromium_chrome_console.html'])
     self.save_page(localpath='chromium.chromiumos/console',
@@ -335,18 +335,74 @@ class ConsoleTestCase(GaeTestCase):
                    content=filedata['chromium_console.html'])
     self.save_page(localpath='chromium.memory/console',
                    content=filedata['chromium_memory_console.html'])
-    actual_mergedconsole = app.console_merger(
+    page_data = {'content': filedata['chromium_merged_console.html']}
+    app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        content=filedata['chromium_merged_console.html'])
+        page_data=page_data)
+    actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
     # with open(os.path.join(test_dir, 'chromium_merged_console.html'),
     #           'w') as fh:
-    #   fh.write(actual_mergedconsole)
+    #   fh.write(actual_mergedconsole['content'])
     # import code
     # code.interact(local=locals())
     self.assertEquals(filedata['chromium_merged_console.html'],
-                      actual_mergedconsole,
+                      actual_mergedconsole['content'],
                       'Unexpected console output found')
+
+
+class FetchTestCase(GaeTestCase):
+  class FakeResponse(object):
+    status_code = 200
+    content = None
+
+  def test_fetch_direct(self):
+    test_dir = os.path.join(TEST_DIR, 'test_fetch_direct')
+
+    def fetch_url(url):
+      fr = FetchTestCase.FakeResponse()
+      if url == 'http://build.chromium.org/p/chromium/console':
+        fr.content = self._load_content(test_dir, 'input.html')
+      return fr
+
+    expected_content = self._load_content(test_dir, 'expected.html')
+    app.fetch_page(
+        localpath='chromium/console',
+        remoteurl='http://build.chromium.org/p/chromium/console',
+        maxage=60,
+        fetch_url=fetch_url)
+    page = app.get_and_cache_pagedata('chromium/console')
+    # Uncomment if deeper inspection is needed of the returned console.
+    # with open(os.path.join(test_dir, 'expected.html'), 'w') as fh:
+    #   fh.write(page['content'])
+    self.assertEquals(expected_content, page['content'])
+
+  def test_fetch_console(self):
+    test_dir = os.path.join(TEST_DIR, 'test_fetch_console')
+
+    def fetch_url(url):
+      fr = FetchTestCase.FakeResponse()
+      if url == 'http://build.chromium.org/p/chromium/console':
+        fr.content = self._load_content(test_dir, 'input.html')
+      return fr
+
+    expected_content = self._load_content(test_dir, 'expected.html')
+    app.fetch_page(
+        localpath='chromium/console',
+        remoteurl='http://build.chromium.org/p/chromium/console',
+        maxage=60,
+        postfetch=app.console_handler,
+        fetch_url=fetch_url)
+    page = app.get_and_cache_pagedata('chromium/console')
+    # Uncomment if deeper inspection is needed of the returned console.
+    # with open(os.path.join(test_dir, 'expected.html'), 'w') as fh:
+    #   fh.write(page['content'])
+    self.assertEquals('interface', page['body_class'])
+    self.assertEquals(expected_content, page['content'])
+    self.assertEquals(
+        'http://build.chromium.org/p/chromium/console/../',
+        page['offsite_base'])
+    self.assertEquals('BuildBot: Chromium', page['title'])

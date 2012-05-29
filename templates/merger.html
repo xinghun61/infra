@@ -71,14 +71,14 @@
       {%- endfor %}
     {%- endfor -%}
   </tr>
-  
+
   <tr>
     <td colspan="{{ 2 + data.category_count }}"
         class="DevComment {{ extraclass }}">
       {{ data.row_data[row]['comment'] }}
     </td>
   </tr>
-  
+
   {%- if 'details' in data.row_data[row] -%}
     <tr>
       <td colspan="{{ 2 + data.category_count }}"

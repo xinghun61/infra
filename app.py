@@ -5,6 +5,7 @@
 from __future__ import with_statement
 
 import datetime
+import json
 import logging
 import os
 import random
@@ -37,40 +38,68 @@ URLFETCH_DEADLINE = 60*5  # 5 mins
 console_template = ''
 def bootstrap():
   global console_template
-  with open('templates/console.html', 'r') as fh:
+  with open('templates/merger.html', 'r') as fh:
     console_template = fh.read()
 
 
-# Assumes localpath is already unquoted.
-def get_and_cache_page(localpath):
-  # E1101: 29,12:get_and_cache_page: Module 'google.appengine.api.memcache' has
-  # no 'get' member
-  # pylint: disable=E1101
-  content = memcache.get(localpath)
-  if content is not None:
-    logging.debug('content for %s found in memcache' % localpath)
-    return content
+def get_pagedata_from_cache(localpath):
+  memcache_data = memcache.get(localpath)
+  if not memcache_data:
+    return None
+  logging.debug('content for %s found in memcache' % localpath)
+  return json.loads(memcache_data)
 
+
+def put_pagedata_into_cache(localpath, page_data):
+  memcache_data = json.dumps(page_data)
+  if not memcache.set(key=localpath, value=memcache_data, time=2*60):
+    logging.error('put_pagedata_into_cache(\'%s\'): memcache.set() failed' % (
+        localpath))
+
+
+def get_and_cache_pagedata(localpath):
+  """Returns a page_data dict, optionally caching and looking up a blob.
+
+  get_and_cache_pagedata takes a localpath which is used to fetch data
+  from the cache.  If the data is present and there's no content blob,
+  then we have all of the data we need to return a page view to the user
+  and we return early.
+
+  Otherwise, we need to fetch the page object and set up the page data
+  for the page view.  If the page has a blob associated with it, then we
+  mark the page data as having a blob and cache it as-is without the blob.
+  If there's no blob, we associate the content with the page data and
+  cache that.  This is so the next time get_and_cache_pagedata is called
+  for either case, we'll get the same behavior (a page-lookup for blobful
+  content and a page cache hit for blobless content).
+
+  Here we assume localpath is already unquoted.
+  """
+  page_data = get_pagedata_from_cache(localpath)
+  if page_data and not page_data.get('content_blob'):
+    return page_data
   page = Page.all().filter('localpath =', localpath).get()
   if not page:
-    logging.error('get_and_cache_page(\'%s\'): no matching localpath in '
+    logging.error('get_and_cache_pagedata(\'%s\'): no matching localpath in '
         'datastore' % localpath)
-    return None
-  if page.content_blob is not None:
+    return {'content': None}
+  page_data = {
+    'body_class': page.body_class,
+    'offsite_base': page.offsite_base,
+    'title': page.title,
+  }
+  if page.content_blob:
     # Get the blob.
-    blob_reader = blobstore.BlobReader(page.content_blob)
-    content = blob_reader.read().decode('utf-8', 'replace')
     logging.debug('content for %s found in blobstore' % localpath)
+    blob_reader = blobstore.BlobReader(page.content_blob)
+    page_data['content_blob'] = True
+    put_pagedata_into_cache(localpath, page_data)
+    page_data['content'] = blob_reader.read().decode('utf-8', 'replace')
   else:
     logging.debug('content for %s found in datastore' % localpath)
-    content = page.content
-    # E1101: 39,11:get_and_cache_page: Module 'google.appengine.api.memcache'
-    # has no 'set' member
-    # pylint: disable=E1101
-    if not memcache.set(key=localpath, value=content, time=2*60):
-      logging.error('get_and_cache_page(\'%s\'): memcache.set() failed' %
-          localpath)
-  return content
+    page_data['content'] = page.content
+    put_pagedata_into_cache(localpath, page_data)
+  return page_data
 
 
 class ConsoleData(object):
@@ -171,9 +200,8 @@ class ConsoleData(object):
 # W0613:169,39:console_merger: Unused argument 'remoteurl'
 # W0613:169,19:console_merger: Unused argument 'unquoted_localpath'
 # pylint: disable=W0613
-def console_merger(unquoted_localpath, remote_url, content=None):
-  if content is None:
-    return None
+def console_merger(unquoted_localpath, remote_url, page_data=None):
+  page_data = page_data or {}
 
   masters = [
     'chromium.main',
@@ -186,7 +214,8 @@ def console_merger(unquoted_localpath, remote_url, content=None):
   merged_tag = None
   fetch_timestamp = datetime.datetime.now()
   for master in masters:
-    master_content = get_and_cache_page('%s/console' % master)
+    page_data = get_and_cache_pagedata('%s/console' % master)
+    master_content = page_data['content']
     if master_content is None:
       continue
     master_content = master_content.encode('ascii', 'replace')
@@ -281,17 +310,19 @@ def console_merger(unquoted_localpath, remote_url, content=None):
   # Update the merged console page.
   merged_page = get_or_create_page('chromium/console', None, maxage=30)
   logging.debug('console_merger: saving merged console')
-  save_page(merged_page, 'chromium/console', merged_content,
-            fetch_timestamp)
-  return merged_content
+  page_data['title'] = 'BuildBot: Chromium'
+  page_data['offsite_base'] = 'http://build.chromium.org/p/chromium'
+  page_data['body_class'] = 'interface'
+  page_data['content'] = merged_content
+  save_page(merged_page, 'chromium/console', fetch_timestamp, page_data)
+  return
 
 
-# W0613:284,20:console_handler: Unused argument 'unquoted_localpath'
-# pylint: disable=W0613
-def console_handler(unquoted_localpath, remoteurl, content=None):
-  if content is None:
-    return None
-  # TODO(cmp): Fix the LKGR link.
+def console_handler(_unquoted_localpath, remoteurl, page_data=None):
+  page_data = page_data or {}
+  content = page_data.get('content')
+  if not content:
+    return page_data
 
   # Decode content from utf-8 to unicode, replacing bad characters.
   content = content.decode('utf-8', 'replace')
@@ -310,7 +341,8 @@ def console_handler(unquoted_localpath, remoteurl, content=None):
     'sheriff_webkit',
   ]
   for sheriff_file in sheriff_files:
-    sheriff_content = get_and_cache_page('chromium/%s.js' % sheriff_file)
+    sheriff_page_data = get_and_cache_pagedata('chromium/%s.js' % sheriff_file)
+    sheriff_content = sheriff_page_data['content']
     console_re = (r'<script src=\'http://chromium-build.appspot.com/'
                    'p/chromium/%s.js\'></script>')
     content = re.sub(console_re % sheriff_file,
@@ -374,23 +406,71 @@ def console_handler(unquoted_localpath, remoteurl, content=None):
       "return 'https://chromium-build.appspot.com/p/'")
 
   # Encode content from unicode to utf-8.
-  content = content.encode('utf-8')
-  return content
+  page_data['content'] = content.encode('utf-8')
+
+  # Last tweaks to HTML, plus extracting metadata about the page itself.
+  page_data['offsite_base'] = remoteurl + '/../'
+
+  # Extract the title from the page.
+  md = re.search(
+      r'^.*<title>([^\<]+)</title>',
+      page_data['content'],
+      re.MULTILINE|re.DOTALL)
+  if not md:
+    raise Exception('failed to locate title in page')
+  page_data['title'] = md.group(1)
+
+  # Remove the leading text up to the end of the opening body tag.  While
+  # there, extract the body_class from the page.
+  md = re.search(
+      r'^.*<body class="(\w+)\">(.*)$',
+      page_data['content'],
+      re.MULTILINE|re.DOTALL)
+  if not md:
+    raise Exception('failed to locate leading text up to body tag')
+  page_data['body_class'] = md.group(1)
+  page_data['content'] = md.group(2)
+
+  # Remove the leading div and hr tags.
+  md = re.search(
+      r'^.*?<hr/>(.*)$',
+      page_data['content'],
+      re.MULTILINE|re.DOTALL)
+  if not md:
+    raise Exception('failed to locate leading div and hr tags')
+  page_data['content'] = md.group(1)
+
+  # Strip the trailing body and html tags.
+  md = re.search(
+      r'^(.*)</body>.*$',
+      page_data['content'],
+      re.MULTILINE|re.DOTALL)
+  if not md:
+    raise Exception('failed to locate trailing body and html tags')
+  page_data['content'] = md.group(1)
+
+  return page_data
 
 
-def one_box_handler(unquoted_localpath, remoteurl, content=None):
+def one_box_handler(unquoted_localpath, remoteurl, page_data=None):
+  page_data = page_data or {}
+  content = page_data.get('content')
   if content is None:
-    return None
+    return page_data
   # Get the site name from the local path.
   md = re.match('^([^\/]+)/.*$', unquoted_localpath)
   if not md:
     logging.error('one_box_handler(\'%s\', \'%s\', \'%s\'): cannot get site '
-                  'from local path' % (unquoted_localpath, remoteurl, content))
-    return content
+                  'from local path' % (
+                      unquoted_localpath, remoteurl, page_data))
+    return page_data
   site = md.group(1)
   new_waterfall_url = 'http://build.chromium.org/p/%s/waterfall' % site
-  content = re.sub(r'waterfall', new_waterfall_url, content)
-  return content
+  page_data['content'] = re.sub(
+      r'waterfall',
+      new_waterfall_url,
+      page_data['content'])
+  return page_data
 
 
 
@@ -644,6 +724,9 @@ class Page(db.Model):
   fetch_timestamp = db.DateTimeProperty(required=True)
   localpath = db.StringProperty(required=True)
   content = db.TextProperty()
+  title = db.StringProperty()
+  offsite_base = db.StringProperty()
+  body_class = db.StringProperty()
   remoteurl = db.TextProperty()
   # Data updated separately, after creation.
   content_blob = blobstore.BlobReferenceProperty()
@@ -659,7 +742,12 @@ def write_blob(data, mime_type):
   return files.blobstore.get_blob_key(file_name)
 
 
-def save_page(page, localpath, content, fetch_timestamp):
+def save_page(page, localpath, fetch_timestamp, page_data):
+  body_class = page_data.get('body_class', '')
+  content = page_data.get('content')
+  offsite_base = page_data.get('offsite_base', '')
+  title = page_data.get('title', '')
+
   content_blob_key = None
   try:
     content = content.decode('utf-8', 'replace')
@@ -680,21 +768,26 @@ def save_page(page, localpath, content, fetch_timestamp):
     page.content = content
     page.content_blob = content_blob_key
     page.fetch_timestamp = fetch_timestamp
+    # title, offsite_base, body_class can all be empty strings for some
+    # content.  Where that's true, they're not used for displaying a console-
+    # like resource, and the content alone is returned to the web user.
+    page.title = title
+    page.offsite_base = offsite_base
+    page.body_class = body_class
     # E1103:231,4:fetch_page.tx_page: Instance of 'list' has no 'put' member
     # (but some types could not be inferred)
     # pylint: disable=E1103
     page.put()
   db.run_in_transaction(tx_page, page.key())
-  # E1101:232,11:fetch_page.tx_page: Module 'google.appengine.api.memcache'
-  # has no 'set' member
-  # pylint: disable=E1101
-  if page.content_blob is None:
-    if memcache.set(key=localpath, value=page.content, time=60):
-      logging.debug('tx_page(page key="%s"): memcache.set() succeeded' %
-          page.key())
-    else:
-      logging.error('tx_page(page key="%s"): memcache.set() failed' %
-          page.key())
+  page_data = {
+    'body_class': body_class,
+    'content': content,
+    'offsite_base': offsite_base,
+    'title': title,
+  }
+  if content_blob_key:
+    page_data['content_blob'] = True
+  put_pagedata_into_cache(localpath, page_data)
 
 
 def get_or_create_page(localpath, remoteurl, maxage):
@@ -708,7 +801,8 @@ def get_or_create_page(localpath, remoteurl, maxage):
     content_blob=None)
 
 
-def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None):
+def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None,
+               fetch_url=nonfatal_fetch_url):
   """Fetches data about a set of pages."""
   unquoted_localpath = urllib.unquote(localpath)
   logging.debug('fetch_page("%s", "%s", "%s")' % (
@@ -726,7 +820,7 @@ def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None):
 
   # Perform the actual page fetch.
   fetch_timestamp = datetime.datetime.now()
-  response = nonfatal_fetch_url(remoteurl)
+  response = fetch_url(remoteurl)
   if not response:
     logging.warning('fetch_page: got empty response')
     return
@@ -736,25 +830,26 @@ def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None):
     return
 
   # We have actual content.  If there's one or more handlers, call them.
-  content = response.content
+  page_data = {}
+  page_data['content'] = response.content
   if postfetch:
     if not isinstance(postfetch, list):
       postfetch = [postfetch]
     for handler in postfetch:
       logging.debug('fetch_page: calling postfetch handler '
                     '%s' % handler.__name__)
-      content = handler(unquoted_localpath, remoteurl, content)
+      page_data = handler(unquoted_localpath, remoteurl, page_data)
 
   # Save the returned content into the DB and caching layers.
   logging.debug('fetch_page: saving page')
-  save_page(page, unquoted_localpath, content, fetch_timestamp)
+  save_page(page, unquoted_localpath, fetch_timestamp, page_data)
   if postsave:
     if not isinstance(postsave, list):
       postsave = [postsave]
     for handler in postsave:
       logging.debug('fetch_page: calling postsave handler '
                     '%s' % handler.__name__)
-      handler(unquoted_localpath, remoteurl, content)
+      handler(unquoted_localpath, remoteurl, page_data)
 
 
 EXT_TO_MIME = {

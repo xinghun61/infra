@@ -16,12 +16,12 @@ Setup instructions:
 
 To run the tests directly:
   export PYTHONPATH="../google_appengine/"
-  nosetests --with-gae --gae-lib-root=../
+  nosetests --with-gae --gae-lib-root=../google_appengine/
 
 To interact with the environment:
   (insert a line: import code; code.interact(locals=local()))
   export PYTHONPATH="../google_appengine/"
-  nosetests --with-gae --gae-lib-root=../ -s
+  nosetests --with-gae --gae-lib-root=../google_appengine/ -s
 """
 
 
@@ -72,10 +72,17 @@ def CommonChecks(input_api, output_api):
         input_api.os_path.join(sdk_path, 'lib'),
         input_api.os_path.join(sdk_path, 'lib', 'simplejson'),
     ] + sys.path
+    # Update our environment to include the standard modules in AppEngine.
+    import appcfg
+    appcfg.fix_sys_path()
+    disabled_warnings = [
+        'W0232',  # has no init, disabled due to webapp2
+    ]
     results.extend(input_api.canned_checks.RunPylint(
         input_api,
         output_api,
-        black_list=black_list))
+        black_list=black_list,
+        disabled_warnings=disabled_warnings))
   finally:
     sys.path = backup_sys_path
   return results
