@@ -559,6 +559,11 @@ URLS = [
     'localpath': 'chromium.webkit/default.css',
     'maxage': 15*60,  # 15 mins
   },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromebot/default.css',
+    'localpath': 'chromebot/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
 
   # Sheriff URLs.
   {
@@ -690,6 +695,21 @@ URLS = [
         ('http://build.chromium.org/p/chromium.chromiumos/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.chromiumos/horizontal_one_box_per_builder',
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
+        ('http://build.chromium.org/p/chromebot/'
+         'horizontal_one_box_per_builder?'
+         'builder=Win+Chromebot+Server&'
+         'builder=Linux+Chromebot+Server&'
+         'builder=Mac+Chromebot+Server'),
+    'localpath':
+        ('chromebot/horizontal_one_box_per_builder?',
+         'builder=Win+Chromebot+Server&'
+         'builder=Linux+Chromebot+Server&'
+         'builder=Mac+Chromebot+Server'),
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
