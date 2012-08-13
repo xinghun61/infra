@@ -621,6 +621,18 @@ URLS = [
   # Buildbot "One Boxes".
   {
     'remoteurl':
+        ('http://build.chromium.org/p/chromebot/horizontal_one_box_per_builder?'
+         'builder=Win+Chromebot+Server&builder=Linux+Chromebot+Server&'
+         'builder=Mac+Chromebot+Server'),
+    'localpath':
+        ('chromebot/horizontal_one_box_per_builder?'
+         'builder=Win+Chromebot+Server&builder=Linux+Chromebot+Server&'
+         'builder=Mac+Chromebot+Server'),
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
         'http://build.chromium.org/p/chromium/horizontal_one_box_per_builder',
     'localpath': 'chromium/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
@@ -695,21 +707,6 @@ URLS = [
         ('http://build.chromium.org/p/chromium.chromiumos/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.chromiumos/horizontal_one_box_per_builder',
-    'postfetch': one_box_handler,
-    'maxage': 30,  # 30 secs
-  },
-  {
-    'remoteurl':
-        ('http://build.chromium.org/p/chromebot/'
-         'horizontal_one_box_per_builder?'
-         'builder=Win+Chromebot+Server&'
-         'builder=Linux+Chromebot+Server&'
-         'builder=Mac+Chromebot+Server'),
-    'localpath':
-        ('chromebot/horizontal_one_box_per_builder?',
-         'builder=Win+Chromebot+Server&'
-         'builder=Linux+Chromebot+Server&'
-         'builder=Mac+Chromebot+Server'),
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
@@ -824,6 +821,10 @@ def get_or_create_page(localpath, remoteurl, maxage):
 def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None,
                fetch_url=nonfatal_fetch_url):
   """Fetches data about a set of pages."""
+  if type(localpath) != type(''):
+    logging.error('fetch_page: localpath is %r, expected a string' % (
+        repr(localpath)))
+    return
   unquoted_localpath = urllib.unquote(localpath)
   logging.debug('fetch_page("%s", "%s", "%s")' % (
       unquoted_localpath, remoteurl, maxage))
