@@ -565,11 +565,6 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium.webkit/default.css',
-    'localpath': 'chromium.webkit/default.css',
-    'maxage': 15*60,  # 15 mins
-  },
-  {
     'remoteurl': 'http://build.chromium.org/p/chromebot/default.css',
     'localpath': 'chromebot/default.css',
     'maxage': 15*60,  # 15 mins
@@ -717,22 +712,6 @@ URLS = [
         ('http://build.chromium.org/p/chromium.pyauto/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.pyauto/horizontal_one_box_per_builder',
-    'postfetch': one_box_handler,
-    'maxage': 30,  # 30 secs
-  },
-  # TODO(cmp): AppEngine thinks this URL is too long and chokes on it in the
-  #            DataStore.
-  {
-    'remoteurl':
-        ('http://build.chromium.org/p/chromium.webkit/'
-         'horizontal_one_box_per_builder?'
-         'builder=Webkit+Win+Builder+%28deps%29&'
-         'builder=Webkit+Win+%28deps%29&'
-         'builder=Webkit+Mac+Builder+%28deps%29&'
-         'builder=Webkit+Mac10.6+%28deps%29&'
-         'builder=Webkit+Linux+%28deps%29'),
-    'localpath':
-        'chromium.webkit/horizontal_one_box_per_builder?chromiumconsole',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
