@@ -530,6 +530,16 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium.gpu/default.css',
+    'localpath': 'chromium.gpu/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.gpu.fyi/default.css',
+    'localpath': 'chromium.gpu.fyi/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium.lkgr/default.css',
     'localpath': 'chromium.lkgr/default.css',
     'maxage': 15*60,  # 15 mins
