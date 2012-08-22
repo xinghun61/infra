@@ -19,12 +19,13 @@ def CommonChecks(input_api, output_api):
 
   join = input_api.os_path.join
   root = input_api.PresubmitLocalPath()
-  while len(root) > 3:
+  while True:
     if input_api.os_path.isfile(join(root, 'google_appengine', 'VERSION')):
       break
-    root = input_api.os_path.dirname(root)
-  if len(root) <= 3:
-    return [output_api.PresubmitError('Failed to find Google AppEngine SDK')]
+    next_root = input_api.os_path.dirname(root)
+    if next_root == root:
+      return [output_api.PresubmitError('Failed to find Google AppEngine SDK')]
+    root = next_root
   input_api.logging.debug('Found GAE SDK in %s' % root)
 
   import sys
