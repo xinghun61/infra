@@ -91,7 +91,7 @@
         }
         
         // Return the string.
-        return unescape(queryString.substring(begin, end));
+        return escape(unescape(queryString.substring(begin, end)));
       }
  
       // Given a tag and a node, returns the value for this tag on this node.
@@ -119,9 +119,8 @@
         document.write('<th><a href="' + sortLink + '">Name</a></th>');
         document.write('<th>Last modified</th>');
         document.write('<th>Size</th>');
-        document.write('<th>Storage Class</th>');
         document.write('<th>ETag</th></tr>');
-        document.write('<tr><th colspan="6"><hr></th></tr>');
+        document.write('<tr><th colspan="5"><hr></th></tr>');
  
         // Display the 'go back' button.
         if (path != '') {
@@ -175,7 +174,6 @@
             obj.lastModified = getNodeValue(contents[i], 'LastModified');
             obj.eTag = getNodeValue(contents[i], 'ETag');
             obj.size = getNodeValue(contents[i], 'Size');
-            obj.storageClass = getNodeValue(contents[i], 'StorageClass');
             files.push(obj);
           }
         }
@@ -199,7 +197,6 @@
                          'icons/folder.gif" alt="[DIR]"></td>');
           document.write('<td><a href="' + lnk + '">' +
                          directories[i].split('/')[0] + '</a></td>');
-          document.write('<td align="right">-</td>');
           document.write('<td align="right">-</td>');
           document.write('<td align="right">-</td>');
           document.write('<td align="right">-</td>');
@@ -231,15 +228,13 @@
                          '</a></td>');
           document.write('<td align="right">' + lastModified + '</td>');
           document.write('<td align="right">' + size.toFixed(2) + 'MB</td>');
-          document.write('<td align="right">' + files[i].storageClass +
-                         '</td>');
           document.write('<td align="right"><pre>' +
                          files[i].eTag.split('"')[1] + '</pre></td>');
           document.write('</tr>');
         }
  
         // Close the table.
-        document.write('<tr><th colspan="6"><hr></th></tr>');
+        document.write('<tr><th colspan="5"><hr></th></tr>');
         document.write('</table>');
       }
  
