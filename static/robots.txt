@@ -1,2 +1,6 @@
 User-agent: *
 Disallow: /
+
+User-agent: Googlebot
+Allow: /p/chromium/sheriff_perf.js
+Disallow: /
