@@ -36,6 +36,7 @@ URLFETCH_DEADLINE = 60*5  # 5 mins
 # Default masters to merge together.
 DEFAULT_MASTERS_TO_MERGE = [
   'chromium.main',
+  'chromium.linux',
   'chromium.chromiumos',
   'chromium.chrome',
   'chromium.memory',
