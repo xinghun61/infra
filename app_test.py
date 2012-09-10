@@ -265,7 +265,13 @@ class ConsoleTestCase(GaeTestCase):
     app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        page_data=page_data)
+        page_data=page_data,
+        masters_to_merge=[
+            'chromium.main',
+            'chromium.chromiumos',
+            'chromium.chrome',
+            'chromium.memory',
+        ])
     actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
@@ -302,7 +308,13 @@ class ConsoleTestCase(GaeTestCase):
     app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        page_data=page_data)
+        page_data=page_data,
+        masters_to_merge=[
+            'chromium.main',
+            'chromium.chromiumos',
+            'chromium.chrome',
+            'chromium.memory',
+        ])
     actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
@@ -339,7 +351,13 @@ class ConsoleTestCase(GaeTestCase):
     app.console_merger(
         'chromium.main/console',
         'http://build.chromium.org/p/chromium/console',
-        page_data=page_data)
+        page_data=page_data,
+        masters_to_merge=[
+            'chromium.main',
+            'chromium.chromiumos',
+            'chromium.chrome',
+            'chromium.memory',
+        ])
     actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging

@@ -33,6 +33,14 @@ APP_NAME = get_application_id()
 # Deadline for fetching URLs (in seconds).
 URLFETCH_DEADLINE = 60*5  # 5 mins
 
+# Default masters to merge together.
+DEFAULT_MASTERS_TO_MERGE = [
+  'chromium.main',
+  'chromium.chromiumos',
+  'chromium.chrome',
+  'chromium.memory',
+]
+
 
 # Perform initial bootstrap for this module.
 console_template = ''
@@ -200,20 +208,16 @@ class ConsoleData(object):
 # W0613:169,39:console_merger: Unused argument 'remoteurl'
 # W0613:169,19:console_merger: Unused argument 'unquoted_localpath'
 # pylint: disable=W0613
-def console_merger(unquoted_localpath, remote_url, page_data=None):
+def console_merger(unquoted_localpath, remote_url, page_data=None,
+                   masters_to_merge=None):
   page_data = page_data or {}
 
-  masters = [
-    'chromium.main',
-    'chromium.chromiumos',
-    'chromium.chrome',
-    'chromium.memory',
-  ]
+  masters_to_merge = masters_to_merge or DEFAULT_MASTERS_TO_MERGE
   mergedconsole = ConsoleData()
   merged_page = None
   merged_tag = None
   fetch_timestamp = datetime.datetime.now()
-  for master in masters:
+  for master in masters_to_merge:
     page_data = get_and_cache_pagedata('%s/console' % master)
     master_content = page_data['content']
     if master_content is None:
@@ -478,13 +482,6 @@ def one_box_handler(unquoted_localpath, remoteurl, page_data=None):
 URLS = [
   # Console URLs.
   {
-    'remoteurl': 'http://build.chromium.org/p/chromium/console',
-    'localpath': 'chromium.main/console',
-    'postfetch': console_handler,
-    'postsave': console_merger,
-    'maxage': 30,  # 30 secs
-  },
-  {
     'remoteurl': 'http://build.chromium.org/p/chromium.chrome/console',
     'localpath': 'chromium.chrome/console',
     'postfetch': console_handler,
@@ -499,8 +496,36 @@ URLS = [
     'maxage': 30,  # 30 secs
   },
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium.linux/console',
+    'localpath': 'chromium.linux/console',
+    'postfetch': console_handler,
+    'postsave': console_merger,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.mac/console',
+    'localpath': 'chromium.mac/console',
+    'postfetch': console_handler,
+    'postsave': console_merger,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/console',
+    'localpath': 'chromium.main/console',
+    'postfetch': console_handler,
+    'postsave': console_merger,
+    'maxage': 30,  # 30 secs
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium.memory/console',
     'localpath': 'chromium.memory/console',
+    'postfetch': console_handler,
+    'postsave': console_merger,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.win/console',
+    'localpath': 'chromium.win/console',
     'postfetch': console_handler,
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
@@ -540,8 +565,18 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium.linux/default.css',
+    'localpath': 'chromium.linux/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium.lkgr/default.css',
     'localpath': 'chromium.lkgr/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.mac/default.css',
+    'localpath': 'chromium.mac/default.css',
     'maxage': 15*60,  # 15 mins
   },
   {
@@ -562,6 +597,11 @@ URLS = [
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.pyauto/default.css',
     'localpath': 'chromium.pyauto/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.win/default.css',
+    'localpath': 'chromium.win/default.css',
     'maxage': 15*60,  # 15 mins
   },
   {
@@ -677,9 +717,25 @@ URLS = [
   },
   {
     'remoteurl':
+        ('http://build.chromium.org/p/chromium.linux/'
+         'horizontal_one_box_per_builder'),
+    'localpath': 'chromium.linux/horizontal_one_box_per_builder',
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
         ('http://build.chromium.org/p/chromium.lkgr/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.lkgr/horizontal_one_box_per_builder',
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.mac/'
+         'horizontal_one_box_per_builder'),
+    'localpath': 'chromium.mac/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
@@ -712,6 +768,14 @@ URLS = [
         ('http://build.chromium.org/p/chromium.pyauto/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.pyauto/horizontal_one_box_per_builder',
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.win/'
+         'horizontal_one_box_per_builder'),
+    'localpath': 'chromium.win/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
