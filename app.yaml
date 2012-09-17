@@ -43,9 +43,7 @@ handlers:
 builtins:
 - admin_redirect: on
 - appstats: on
-- datastore_admin: on
 - deferred: on
-- mapreduce: on
 - remote_api: on
 
 
