@@ -342,6 +342,8 @@ def console_handler(_unquoted_localpath, remoteurl, page_data=None):
     'sheriff_cros_mtv',
     'sheriff_cros_nonmtv',
     'sheriff_gpu',
+    'sheriff_ios_europe',
+    'sheriff_ios_us',
     'sheriff_memory',
     'sheriff_nacl',
     'sheriff_perf',
@@ -643,6 +645,16 @@ URLS = [
   {
     'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_gpu.js',
     'localpath': 'chromium/sheriff_gpu.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_ios_europe.js',
+    'localpath': 'chromium/sheriff_ios_europe.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/sheriff_ios_us.js',
+    'localpath': 'chromium/sheriff_ios_us.js',
     'maxage': 15*60,  # 15 mins
   },
   {
