@@ -103,7 +103,7 @@ class AppTestCase(GaeTestCase):
     from webtest import TestApp
     import handler
     localpath = 'testfoo'  # The app prepends /p/.
-    content = 'a' * 1024*1024  # 1MB of a single character (ASCII).
+    content = 'a' * 10**6  # ~1MB of a single character (ASCII).
     self.save_page(localpath=localpath, content=content)
     testapp = TestApp(handler.application)
     response = testapp.get('/p/testfoo')
@@ -125,7 +125,7 @@ class AppTestCase(GaeTestCase):
   def test_app_unicode_blob(self):
     from webtest import TestApp
     import handler
-    times = 1024*1024*2  # 2 MB worth.
+    times = 2 * 10**6  # ~2 MB worth.
     localpath = 'testfoo'  # The app prepends /p/.
     content = u'\ua000' * times  # Lots of a single Unicode character.
     self.save_page(localpath=localpath, content=content)
@@ -150,7 +150,7 @@ class AppTestCase(GaeTestCase):
   def test_app_cp1252_blob(self):
     from webtest import TestApp
     import handler
-    times = 1024*1024*2  # 2 MB worth.
+    times = 2 * 10**6  # ~2 MB worth.
     localpath = 'testfoo'  # The app prepends /p/.
     content = '\xe2' * times
     self.save_page(localpath=localpath, content=content)

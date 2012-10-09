@@ -855,7 +855,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
   except UnicodeEncodeError:
     logging.debug('save_page: content was already in unicode')
   logging.debug('save_page: content size is %d' % len(content))
-  if len(content.encode('utf-8')) >= 1024*1024:
+  if len(content.encode('utf-8')) >= 10**6:
     logging.debug('save_page: saving to blob')
     content_blob_key = write_blob(content, path_to_mime_type(localpath))
     content = None
