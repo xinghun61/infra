@@ -461,6 +461,103 @@ def console_handler(_unquoted_localpath, remoteurl, page_data=None):
   return page_data
 
 
+def get_or_create_row(localpath, revision):
+  return Row.get_or_insert(
+    key_name=revision + ' '+ localpath,
+    rev_number=revision,
+    localpath=localpath,
+    fetch_timestamp=datetime.datetime.now())
+
+
+def save_row(row_data, localpath, timestamp):
+  rev_number = row_data['rev_number']
+  row = get_or_create_row(localpath, rev_number)
+  row_key = row.key()
+  def tx_row(row_key):
+    row = Row.get(row_key)
+    # E1103:959,7:save_row.tx_row: Instance of 'list' has no
+    # 'fetch_timestamp' member (but some types could not be inferred)
+    # pylint: disable=E1103
+    # if row.fetch_timestamp > timestamp:
+    #   return
+    row.fetch_timestamp = timestamp
+    row.revision = row_data['rev']
+    row.name = row_data['name']
+    row.status = row_data['status']
+    row.comment = row_data['comment']
+    row.details = row_data['details']
+    # E1103:967,4:save_row.tx_row: Instance of 'list' has no 'put' member
+    # (but some types could not be inferred)
+    # pylint: disable=E1103
+    row.put()
+  db.run_in_transaction(tx_row, row_key)
+  memcache_data = json.dumps(row_data)
+  # A row should never be large enough to hit the blobstore, so we
+  # explicitly don't handle rows larger than 10^6 bytes.
+  if not memcache.set(key=str(row_key), value=memcache_data, time=2*60):
+    logging.error('save_row(\'%s\'): memcache.set() failed' % (row_key))
+
+
+def parse_master(localpath, remoteurl, page_data=None):
+  """Part of the new pipeline to store individual rows rather than
+  whole pages of html. Parses the master data into a set of rows,
+  and writes them out to the datastore in an easily retrievable format.
+
+  Returns the same page_data as it was passed, so as to not interrupt
+  the current pipeline. This may change when we switch over.
+  """
+  ts = datetime.datetime.now()
+  page_data = page_data or {}
+  content = page_data.get('content')
+  if not content:
+    return page_data
+  content = content.decode('utf-8', 'replace')
+
+  # Split page into surroundings (announce, legend, footer) and data (rows).
+  surround = BeautifulSoup(content, convertEntities=None)
+  data = surround.find('table', 'ConsoleData')
+  data.extract()
+
+  rows = data.tbody.findAll('tr', recursive=False)
+  # The first table row can be special: the list of categories.
+  # pylint: disable=W0612
+  categories = None
+  # If the first row contains a DevStatus cell...
+  if rows[0].find('td', 'DevStatus') != None:
+    # ...extract it into the categories...
+    categories = rows[0]
+    # ...and get rid of the next (spacer) row too.
+    rows = rows[2:]
+
+  # The next table row is special: it's the summary one-box-per-builder.
+  # pylint: disable=W0612
+  summary = rows[0]
+  rows = rows[1:]
+
+  curr_row = {}
+  # Each table row is either a status row with a revision, name, and status,
+  # a comment row with the commit message, a details row with flakiness info,
+  # or a spacer row (in which case we finalize the row and save it).
+  for row in rows:
+    if row.find('td', 'DevComment'):
+      curr_row['comment'] = unicode(row)
+    elif row.find('td', 'DevDetails'):
+      curr_row['details'] = unicode(row)
+    elif row.find('td', 'DevStatus'):
+      curr_row['rev'] = unicode(row.find('td', 'DevRev'))
+      curr_row['rev_number'] = unicode(row.find('td', 'DevRev').a.string)
+      curr_row['name'] = unicode(row.find('td', 'DevName'))
+      curr_row['status'] = unicode(row.findAll('td', 'DevStatus'))
+    else:
+      if 'details' not in curr_row:
+        curr_row['details'] = ''
+      save_row(curr_row, localpath, ts)
+      curr_row = {}
+
+  # We do not yet save the surroundings, categories, or summary.
+  return page_data
+
+
 def one_box_handler(unquoted_localpath, remoteurl, page_data=None):
   page_data = page_data or {}
   content = page_data.get('content')
@@ -489,49 +586,49 @@ URLS = [
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.chrome/console',
     'localpath': 'chromium.chrome/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.chromiumos/console',
     'localpath': 'chromium.chromiumos/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.linux/console',
     'localpath': 'chromium.linux/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.mac/console',
     'localpath': 'chromium.mac/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium/console',
     'localpath': 'chromium.main/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.memory/console',
     'localpath': 'chromium.memory/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.win/console',
     'localpath': 'chromium.win/console',
-    'postfetch': console_handler,
+    'postfetch': [console_handler, parse_master],
     'postsave': console_merger,
     'maxage': 30,  # 30 secs
   },
@@ -819,6 +916,17 @@ def nonfatal_fetch_url(url, *args, **kwargs):
   except urlfetch.DownloadError:
     logging.warn('urlfetch failed: %s' % url, exc_info=1)
     return None
+
+
+class Row(db.Model):
+  fetch_timestamp = db.DateTimeProperty(required=True)
+  rev_number = db.StringProperty(required=True)
+  localpath = db.StringProperty(required=True)
+  revision = db.TextProperty()
+  name = db.TextProperty()
+  status = db.TextProperty()
+  comment = db.TextProperty()
+  details = db.TextProperty()
 
 
 class Page(db.Model):

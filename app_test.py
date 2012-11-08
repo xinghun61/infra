@@ -242,6 +242,39 @@ class ConsoleTestCase(GaeTestCase):
     self.assertEquals(expected_console, actual_console['content'],
                       'Unexpected console output found')
 
+  def test_parse_master(self):
+    test_dir = os.path.join(TEST_DIR, 'test_parse_master')
+    expected_rev = self._load_content(test_dir, 'expected-rev.html').strip()
+    expected_name = self._load_content(test_dir, 'expected-name.html').strip()
+    expected_status = self._load_content(test_dir,
+                                         'expected-status.html').strip()
+    expected_comment = self._load_content(test_dir,
+                                          'expected-comment.html').strip()
+    expected_details = self._load_content(test_dir,
+                                          'expected-details.html').strip()
+    input_console = self._load_content(test_dir, 'console-input-handled.html')
+    page_data = {'content': input_console}
+    test_localpath = 'chromium/console'
+    # Parse master returns its input, so we throw that away and access
+    # the stored rows directly
+    app.parse_master(
+        localpath=test_localpath,
+        remoteurl='http://build.chromium.org/p/chromium/console',
+        page_data=page_data)
+    test_revision = '121192'
+    actual_row = app.Row.get_by_key_name(test_revision + ' ' + test_localpath)
+    actual_row = app.db.to_dict(actual_row)
+    self.assertEquals(expected_rev, actual_row['revision'],
+                      'Unexpected revision number found')
+    self.assertEquals(expected_name, actual_row['name'],
+                      'Unexpected revision author found')
+    self.assertEquals(expected_status, actual_row['status'],
+                      'Unexpected build status found')
+    self.assertEquals(expected_comment, actual_row['comment'],
+                      'Unexpected commit message found')
+    self.assertEquals(expected_details, actual_row['details'],
+                      'Unexpected build details found')
+
   def test_console_merger(self):
     test_dir = os.path.join(TEST_DIR, 'test_console_merger')
     filedata = {}
