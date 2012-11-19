@@ -514,13 +514,20 @@ def parse_master(localpath, remoteurl, page_data=None):
   content = content.decode('utf-8', 'replace')
 
   # Split page into surroundings (announce, legend, footer) and data (rows).
-  surround = BeautifulSoup(content, convertEntities=None)
-  data = surround.find('table', 'ConsoleData')
+  surroundings = BeautifulSoup(content)
+  data = surroundings.find('table', 'ConsoleData')
   data.extract()
+
+  surroundings_page = get_or_create_page(localpath + '/surroundings',
+                                         None, maxage=30)
+  surroundings_data = {}
+  surroundings_data['title'] = 'Surroundings for ' + localpath
+  surroundings_data['content'] = unicode(surroundings)
+  save_page(surroundings_page, localpath + '/surroundings', ts,
+            surroundings_data)
 
   rows = data.tbody.findAll('tr', recursive=False)
   # The first table row can be special: the list of categories.
-  # pylint: disable=W0612
   categories = None
   # If the first row contains a DevStatus cell...
   if rows[0].find('td', 'DevStatus') != None:
@@ -529,10 +536,23 @@ def parse_master(localpath, remoteurl, page_data=None):
     # ...and get rid of the next (spacer) row too.
     rows = rows[2:]
 
+  if categories:
+    category_page = get_or_create_page(localpath + '/categories',
+                                       None, maxage=30)
+    category_data = {}
+    category_data['title'] = 'Categories for ' + localpath
+    category_data['content'] = unicode(categories)
+    save_page(category_page, localpath + '/categories', ts, category_data)
+
   # The next table row is special: it's the summary one-box-per-builder.
-  # pylint: disable=W0612
   summary = rows[0]
   rows = rows[1:]
+
+  summary_page = get_or_create_page(localpath + '/summary', None, maxage=30)
+  summary_data = {}
+  summary_data['title'] = 'Summary for ' + localpath
+  summary_data['content'] = unicode(summary)
+  save_page(summary_page, localpath + '/summary', ts, summary_data)
 
   curr_row = {}
   # Each table row is either a status row with a revision, name, and status,
@@ -554,7 +574,6 @@ def parse_master(localpath, remoteurl, page_data=None):
       save_row(curr_row, localpath, ts)
       curr_row = {}
 
-  # We do not yet save the surroundings, categories, or summary.
   return page_data
 
 
