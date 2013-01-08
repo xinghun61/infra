@@ -68,6 +68,7 @@ APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 # Do some one-time initializations.
 base_page.bootstrap()
 breakpad.bootstrap()
+commit_queue.bootstrap()
 lkgr.bootstrap()
 status.bootstrap()
 utils.bootstrap()

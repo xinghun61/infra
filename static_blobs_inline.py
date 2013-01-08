@@ -85,7 +85,7 @@ class FormPage(base_page.BasePage):
       logging.warning('Unknown resource "%s"' % resource)
       self.error(404)
       return
-    template_values = self.InitializeTemplate(self.app_name)
+    template_values = self.InitializeTemplate(self.APP_NAME)
     template_values['upload_url'] = (
         '/restricted/static_blobs/upload_internal/' + resource)
     self.DisplayTemplate('static_blob_upload_form.html', template_values)
@@ -94,6 +94,6 @@ class FormPage(base_page.BasePage):
 class ListPage(base_page.BasePage):
   """List the uploaded blobs."""
   def get(self):
-    template_values = self.InitializeTemplate(self.app_name + ' static files')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' static files')
     template_values['blobs'] = StaticBlobInlineFile.all()
     self.DisplayTemplate('static_blobs_inline_list.html', template_values)

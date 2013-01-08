@@ -21,9 +21,13 @@ from base_page import BasePage
 import utils
 
 
-TRY_SERVER_MAP = [
-    'SUCCESS', 'WARNINGS', 'FAILURE', 'SKIPPED', 'EXCEPTION', 'RETRY',
-]
+TRY_SERVER_MAP = (
+  'SUCCESS', 'WARNINGS', 'FAILURE', 'SKIPPED', 'EXCEPTION', 'RETRY',
+)
+
+# Verification name in commit-queue/verification/*.py. Initialized at the bottom
+# of this file.
+EVENT_MAP = {}
 
 
 class Owner(db.Model):
@@ -392,7 +396,7 @@ class Summary(CQBasePage):
         }
       owners.append((stats.owner.email, data))
     owners.sort(key=lambda x: -x[1]['last_month'])
-    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
 
@@ -417,7 +421,7 @@ class User(CQBasePage):
       sorted_data.append(
           (pending_commit,
             reversed(pending_commits_events[pending_commit.key()])))
-    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = sorted_data
     self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
 
@@ -442,28 +446,12 @@ class Issue(CQBasePage):
       sorted_data.append(
           (pending_commit,
             reversed(pending_commits_events[pending_commit.key()])))
-    template_values = self.InitializeTemplate(self.app_name + ' Commit queue')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = sorted_data
     self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
 
 
 class Receiver(BasePage):
-  # Verification name in commit-queue/verification/*.py
-  _EVENT_MAP = None
-
-  @staticmethod
-  def event_map():
-    # Used by _parse_packet() to find the right model to use from the
-    # 'verification' value of the packet.
-    if Receiver._EVENT_MAP is None:
-      Receiver._EVENT_MAP = {}
-      module = sys.modules[__name__]
-      for i in dir(module):
-        if i.endswith('Event') and i != 'VerificationEvent':
-          obj = getattr(module, i)
-          Receiver._EVENT_MAP[obj.name] = obj
-    return Receiver._EVENT_MAP
-
   @utils.admin_only
   def post(self):
     def load_values():
@@ -475,7 +463,7 @@ class Receiver(BasePage):
 
     count = 0
     for packet in load_values():
-      cls = self.event_map().get(packet.get('verification'))
+      cls = EVENT_MAP.get(packet.get('verification'))
       if (not cls or
           not isinstance(packet.get('issue'), int) or
           not isinstance(packet.get('patchset'), int) or
@@ -518,3 +506,13 @@ class Receiver(BasePage):
         pending.put()
 
     self.response.out.write('%d\n' % count)
+
+
+def bootstrap():
+  # Used by _parse_packet() to find the right model to use from the
+  # 'verification' value of the packet.
+  module = sys.modules[__name__]
+  for i in dir(module):
+    if i.endswith('Event') and i != 'VerificationEvent':
+      obj = getattr(module, i)
+      EVENT_MAP[obj.name] = obj

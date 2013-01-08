@@ -34,10 +34,14 @@ class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
   # Check if the username ends with @chromium.org/@google.com.
   _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
-  app_name = ''
-  _is_admin = None
-  _user = None
-  _initialized = False
+  # Initialized in bootstrap(), which is called serially at process startup.
+  APP_NAME = ''
+
+  def __init__(self, *args, **kwargs):
+    super(BasePage, self).__init__(*args, **kwargs)
+    self._is_admin = None
+    self._user = None
+    self._initialized = False
 
   def _late_init(self):
     """Initializes self._is_admin and self._user once the request object is
@@ -96,7 +100,7 @@ class BasePage(webapp.RequestHandler):
     else:
       user_email = ''
     template_values = {
-      'app_name': self.app_name,
+      'app_name': self.APP_NAME,
       'username': user_email,
       'title': title,
       'current_UTC_time': datetime.datetime.now(),
@@ -137,7 +141,7 @@ def bootstrap():
     config.put()
   else:
     app_name = config.app_name
-  BasePage.app_name = app_name
+  BasePage.APP_NAME = app_name
 
   if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
     # Insert a dummy Passwords so it can be edited through the admin console

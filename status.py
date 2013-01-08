@@ -87,7 +87,7 @@ class AllStatusPage(BasePage):
     if out_format == 'csv':
       # It's not really an html page.
       self.response.headers['Content-Type'] = 'text/plain'
-      template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+      template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
       template_values['status'] = query.fetch(limit)
       template_values['beyond_end_of_range_status'] = beyond_end_of_range_status
       self.DisplayTemplate('allstatus.html', template_values)
@@ -139,7 +139,7 @@ class CurrentPage(BasePage):
           data = '%s(%s);' % (callback, data)
       self.response.out.write(data)
     elif out_format == 'html':
-      template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+      template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
       template_values['message'] = status.message
       template_values['state'] = status.general_state
       self.DisplayTemplate('current.html', template_values, use_cache=True)
@@ -180,7 +180,7 @@ class StatusViewerPage(BasePage):
 
   def get(self):
     """Displays status_viewer.html template."""
-    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
     self.DisplayTemplate('status_viewer.html', template_values)
 
 
@@ -202,7 +202,7 @@ class MainPage(BasePage):
     if not last_message and current_status:
       last_message = current_status.message
 
-    template_values = self.InitializeTemplate(self.app_name + ' Tree Status')
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
     template_values['status'] = status
     template_values['message'] = last_message
     # If the DB is empty, current_status is None.
