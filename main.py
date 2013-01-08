@@ -9,13 +9,7 @@
    database and the last 100 topics.
 """
 
-# Needs to be first to setup django, even if the import is unused.
-# pylint: disable=W0611
-import appengine_config
-
-# Now safe to import other modules.
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
 
 import base_page
 import breakpad
@@ -30,11 +24,18 @@ import utils
 import xmpp
 
 
+class Warmup(webapp.RequestHandler):
+  def get(self):
+    """This handler is called as the initial request to 'warmup' the process."""
+    pass
+
+
 # Application configuration.
 URLS = [
   ('/', status.MainPage),
   ('/([^/]+\.(?:gif|png|jpg|ico))', static_blobs.ServeHandler),
   ('/_ah/xmpp/message/chat/', xmpp.XMPPHandler),
+  ('/_ah/warmup', Warmup),
   ('/allstatus/?', status.AllStatusPage),
   ('/breakpad/?', breakpad.BreakPad),
   ('/cq/receiver/?', commit_queue.Receiver),
@@ -64,16 +65,9 @@ URLS = [
 APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 
 
-def main():
-  """Manages and displays chromium tree and revisions status."""
-  util.run_wsgi_app(APPLICATION)
-
-
-if __name__ == "__main__":
-  # Do some one-time initializations.
-  base_page.bootstrap()
-  breakpad.bootstrap()
-  lkgr.bootstrap()
-  status.bootstrap()
-  utils.bootstrap()
-  main()
+# Do some one-time initializations.
+base_page.bootstrap()
+breakpad.bootstrap()
+lkgr.bootstrap()
+status.bootstrap()
+utils.bootstrap()

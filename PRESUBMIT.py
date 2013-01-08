@@ -34,7 +34,6 @@ def CommonChecks(input_api, output_api):
     sys.path = [
         join(root, 'google_appengine'),
         join(root, 'google_appengine', 'lib'),
-        join(root, 'google_appengine', 'lib', 'simplejson'),
     ] + sys.path
     output.extend(input_api.canned_checks.RunPylint(
         input_api,

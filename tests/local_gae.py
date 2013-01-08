@@ -114,15 +114,17 @@ class LocalGae(object):
     # Generate a friendly environment.
     env = os.environ.copy()
     env['LANGUAGE'] = 'en'
-    self.tmp_db = tempfile.NamedTemporaryFile()
+    h, self.tmp_db = tempfile.mkstemp(prefix='local_gae')
+    os.close(h)
     cmd = [
         sys.executable,
         os.path.join(GAE_SDK, 'dev_appserver.py'),
         self.base_dir,
         '--port', str(self.port),
-        '--datastore_path', self.tmp_db.name,
+        '--datastore_path', self.tmp_db,
         '-c',
         '--skip_sdk_update_check',
+        '--use_sqlite',
     ]
     if verbose:
       cmd.extend(['-a', '0.0.0.0'])
@@ -149,8 +151,12 @@ class LocalGae(object):
       self.test_server = None
       self.port = None
       self.url = None
-      self.tmp_db.close()
-      self.tmp_db = None
+      if self.tmp_db:
+        try:
+          os.remove(self.tmp_db)
+        except OSError:
+          pass
+        self.tmp_db = None
 
   def get(self, suburl):
     return urllib.urlopen(self.url + suburl).read()

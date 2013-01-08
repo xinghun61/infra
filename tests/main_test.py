@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import hashlib
+import json
 import logging
 import os
 import re
@@ -12,18 +13,6 @@ import unittest
 import urllib2
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-try:
-  import simplejson as json
-except ImportError:
-  try:
-    import json  # pylint: disable=F0401
-  except ImportError:
-    # Hack.
-    sys.path.append(
-        os.path.join(BASE_DIR, '..', '..', 'depot_tools', 'third_party'))
-    import simplejson as json
-
 
 import fill
 import local_gae

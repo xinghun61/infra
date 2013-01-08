@@ -4,7 +4,8 @@
 
 """LKGR management webpages."""
 
-import simplejson as json
+import json
+
 from google.appengine.ext import db
 
 from base_page import BasePage

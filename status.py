@@ -5,9 +5,9 @@
 """Status management pages."""
 
 import datetime
+import json
 import re
 
-import simplejson as json
 from google.appengine.api import memcache
 from google.appengine.ext import db
 

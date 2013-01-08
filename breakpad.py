@@ -5,8 +5,7 @@
 """Error reporting service, aka Breakpad for Python."""
 
 import datetime
-
-import simplejson as json
+import json
 
 from google.appengine.api import taskqueue
 from google.appengine.api import xmpp

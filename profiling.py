@@ -5,9 +5,8 @@
 """Profile reporting service."""
 
 import datetime
+import json
 import logging
-
-import simplejson as json
 
 from google.appengine.ext import db
 from google.appengine.ext import webapp

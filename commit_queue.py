@@ -6,12 +6,12 @@
 
 import cgi
 import datetime
+import json
 import logging
 import re
 import sys
 import urllib2
 
-import simplejson as json
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db

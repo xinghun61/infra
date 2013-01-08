@@ -8,10 +8,10 @@ See event_sample.txt for event format examples.
 """
 
 import datetime
+import json
 import logging
 import time
 
-import simplejson
 from google.appengine.api.labs import taskqueue
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
@@ -175,7 +175,7 @@ class StatusReceiver(BasePage):
     self.response.headers['Content-Type'] = 'text/plain'
     try:
       # TODO(maruel): Safety check, pwd?
-      packets = simplejson.loads(self.request.POST['packets'])
+      packets = json.loads(self.request.POST['packets'])
       # A list of packets should have been submitted, store each event.
       objs = []
       for index in xrange(len(packets)):
@@ -189,7 +189,7 @@ class StatusReceiver(BasePage):
             datetime.datetime.fromtimestamp(time.mktime(ts)))
         packet['eventid'] = packet['id']
         if not 'payload' in packet:
-          packet['payload'] = simplejson.loads(packet['payload_json'])
+          packet['payload'] = json.loads(packet['payload_json'])
         functor = SUPPORTED_EVENTS.get(packet['event'], None)
         if not functor:
           continue

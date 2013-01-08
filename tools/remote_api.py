@@ -14,7 +14,6 @@ LIB = os.path.join(ROOT, '..', 'google_appengine', 'lib')
 sys.path.insert(0, os.path.join(ROOT, '..', 'google_appengine'))
 sys.path.append(os.path.join(LIB, 'yaml', 'lib'))
 sys.path.append(os.path.join(LIB, 'fancy_urllib'))
-sys.path.append(os.path.join(LIB, 'simplejson'))
 sys.path.append(os.path.join(LIB, 'webob'))
 sys.path.append(ROOT)
 

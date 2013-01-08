@@ -1,9 +1,11 @@
 application: chromium-status
 version: 1
-runtime: python
+runtime: python27
 api_version: 1
+threadsafe: false
 
 inbound_services:
+- warmup
 - xmpp_message
 
 handlers:
@@ -14,7 +16,7 @@ handlers:
 # main will look for a replacement in blobstore, if not, will redirect to
 # static/
 - url: /([^/]+\.(gif|png|jpg|ico))
-  script: main.py
+  script: main.APPLICATION
 
 - url: /static/([^/]+\.(gif|png|jpg|ico))
   static_files: static/\1
@@ -27,24 +29,11 @@ handlers:
   script: templates
 
 - url: /restricted/.*
-  script: main.py
-  login: admin
-
-- url: /_ah/lib_config
-  script: $PYTHON_LIB/google/appengine/api/lib_config.py
-  secure: always
+  script: main.APPLICATION
   login: admin
 
 - url: /.*
-  script: main.py
-
-
-# http://code.google.com/appengine/docs/python/config/appconfig.html#Builtin_Handlers
-builtins:
-- admin_redirect: on
-- appstats: on
-- deferred: on
-- remote_api: on
+  script: main.APPLICATION
 
 
 # Search DEFAULT_SKIP_FILES in google.appengine.api.appinfo plus a few others
