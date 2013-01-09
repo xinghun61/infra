@@ -50,6 +50,32 @@ class Status(db.Model):
     return data
 
 
+def get_status():
+  """Returns the current Status, e.g. the most recent one."""
+  status = memcache.get('last_status')
+  if status is None:
+    status = Status.all().order('-date').get()
+    # Use add instead of set(); must not change it if it was already set.
+    memcache.add('last_status', status)
+  return status
+
+
+def put_status(status):
+  """Sets the current Status, e.g. append a new one."""
+  status.put()
+  memcache.set('last_status', status)
+  memcache.delete('last_statuses')
+
+
+def get_last_statuses(limit):
+  """Returns the last |limit| statuses."""
+  statuses = memcache.get('last_statuses')
+  if not statuses or len(statuses) < limit:
+    statuses = Status.all().order('-date').fetch(limit)
+    memcache.add('last_statuses', statuses)
+  return statuses[:limit]
+
+
 def parse_date(date):
   """Parses a date."""
   match = re.match(r'^(\d\d\d\d)-(\d\d)-(\d\d)$', date)
@@ -79,9 +105,8 @@ class AllStatusPage(BasePage):
       # We also need to get the very next status in the range, otherwise
       # the caller can't tell what the effective tree status was at time
       # |end_date|.
-      beyond_end_of_range_status = Status.gql(
-          'WHERE date < :end_date ORDER BY date DESC LIMIT 1',
-          end_date=end_date).get()
+      beyond_end_of_range_status = Status.all(
+          ).filter('date <', end_date).order('-date').get()
 
     out_format = self.request.get('format', 'csv')
     if out_format == 'csv':
@@ -114,14 +139,8 @@ class CurrentPage(BasePage):
   def get(self):
     """Displays the current message and nothing else."""
     out_format = self.request.get('format', 'html')
-    status = memcache.get('last_status')
-    if status is None:
-      status = Status.gql('ORDER BY date DESC').get()
-      # Cache 2 seconds.
-      memcache.add('last_status', status, 2)
-    if not status:
-      self.error(501)
-    elif out_format == 'raw':
+    status = get_status()
+    if out_format == 'raw':
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write(status.message)
     elif out_format == 'json':
@@ -152,11 +171,10 @@ class StatusPage(BasePage):
 
   def get(self):
     """Displays 1 if the tree is open, and 0 if the tree is closed."""
-    status = Status.gql('ORDER BY date DESC').get()
-    if status:
-      self.response.headers['Cache-Control'] = 'no-cache, private, max-age=0'
-      self.response.headers['Content-Type'] = 'text/plain'
-      self.response.out.write(str(int(status.can_commit_freely)))
+    status = get_status()
+    self.response.headers['Cache-Control'] = 'no-cache, private, max-age=0'
+    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.out.write(str(int(status.can_commit_freely)))
 
   @utils.admin_only
   def post(self):
@@ -168,10 +186,7 @@ class StatusPage(BasePage):
     message = self.request.get('message')
     username = self.request.get('username')
     if message and username:
-      status = Status(message=message, username=username)
-      status.put()
-      # Cache the status.
-      memcache.set('last_status', status)
+      put_status(Status(message=message, username=username))
     self.response.out.write('OK')
 
 
@@ -197,17 +212,15 @@ class MainPage(BasePage):
       limit = min(max(int(self.request.get('limit')), 1), 1000)
     except ValueError:
       limit = 25
-    status = Status.gql('ORDER BY date DESC LIMIT %d' % limit)
-    current_status = status.get()
-    if not last_message and current_status:
+    status = get_last_statuses(limit)
+    current_status = get_status()
+    if not last_message:
       last_message = current_status.message
 
     template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
     template_values['status'] = status
     template_values['message'] = last_message
-    # If the DB is empty, current_status is None.
-    if current_status:
-      template_values['last_status_key'] = current_status.key()
+    template_values['last_status_key'] = current_status.key()
     template_values['error_message'] = error_message
     self.DisplayTemplate('main.html', template_values)
 
@@ -228,20 +241,18 @@ class MainPage(BasePage):
       self.redirect("/")
       return
 
-    current_status = Status.gql('ORDER BY date DESC').get()
+    current_status = get_status()
     if current_status and (last_status_key != str(current_status.key())):
       error_message = ('Message not saved, mid-air collision detected, '
                        'please resolve any conflicts and try again!')
       last_message = new_message
       return self._handle(error_message, last_message)
     else:
-      status = Status(message=new_message, username=self.user.email())
-      status.put()
-      # Cache the status.
-      memcache.set('last_status', status)
+      put_status(Status(message=new_message, username=self.user.email()))
       self.redirect("/")
 
 
 def bootstrap():
+  # Guarantee that at least one instance exists.
   if db.GqlQuery('SELECT __key__ FROM Status').get() is None:
     Status(username='none', message='welcome to status').put()
