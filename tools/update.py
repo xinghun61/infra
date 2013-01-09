@@ -11,14 +11,13 @@ ROOT = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 APPCFG = os.path.join(ROOT, '..', 'google_appengine', 'appcfg.py')
 
 INSTANCES = [
-  'chromeos-status',
-  'chromium-status',
-  'chromiumos-status',
+  'chromeos-status-hrd',
+  'chromium-status-hr',
+  'chromiumos-status-hr',
   'dart-status',
-  'gyp-status',
-  'naclports-status',
-  'naclsdk-status',
-  'nativeclient-status',
+  'gyp-status-hrd',
+  'naclports-status-hrd',
+  'nativeclient-status-hrd',
   'o3d-status-hr',
 ]
 
