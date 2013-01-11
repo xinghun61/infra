@@ -162,25 +162,25 @@ class AppTestCase(GaeTestCase):
     self.assertEquals(content.decode('utf-8', 'replace').encode('utf-8'),
                       response.body)
 
-  def test_app_query_string(self):
+  def test_app_bogus_query_string(self):
     from webtest import TestApp
     from webtest import AppError
     import handler
-    localpath = 'test?query'  # The app prepends /p/.
+    localpath = 'test'  # The app prepends /p/.
     content = 'Test Query.'
     self.save_page(localpath=localpath, content=content)
     testapp = TestApp(handler.application)
 
-    # Verify that the path without the query string throws a 404.
+    # Verify that the path with the bogus query string throws a 404.
     try:
-      response = testapp.get('/p/test')
+      response = testapp.get('/p/test?query')
     except AppError, e:
       self.assertEquals(e.args[0],
           'Bad response: 404 Not Found (not 200 OK or 3xx redirect for '
-          'http://localhost/p/test)\n')
+          'http://localhost/p/test?query)\n')
 
-    # Verify that the path with the query string works.
-    response = testapp.get('/p/test?query')
+    # Verify that the path without the bogus query string works.
+    response = testapp.get('/p/test')
     self.assertEquals('200 OK', response.status)
     self.assertEquals('Test Query.', response.body)
 
@@ -342,9 +342,9 @@ class ConsoleTestCase(GaeTestCase):
                      files['%s_categories_input.html' % master])
       self.save_page('chromium.%s/console/summary' % master,
                      files['%s_summary_input.html' % master])
-      app.save_row(ast.literal_eval(files['%s_row_input.txt' % master]),
-                   'chromium.%s/console/%s' % (master, test_rev),
-                   datetime.datetime.now())
+      row_data = ast.literal_eval(files['%s_row_input.txt' % master])
+      row_data['fetch_timestamp'] = app.datetime.datetime.now()
+      app.save_row(row_data, 'chromium.%s/console/%s' % (master, test_rev))
 
     # Get the expected and real output, compare.
     self.save_page('merged_output', files['merged_console_output.html'])
@@ -394,9 +394,9 @@ class ConsoleTestCase(GaeTestCase):
                      files['%s_categories_input.html' % master])
       self.save_page('chromium.%s/console/summary' % master,
                      files['%s_summary_input.html' % master])
-      app.save_row(ast.literal_eval(files['%s_row_input.txt' % master]),
-                   'chromium.%s/console/%s' % (master, test_rev),
-                   datetime.datetime.now())
+      row_data = ast.literal_eval(files['%s_row_input.txt' % master])
+      row_data['fetch_timestamp'] = app.datetime.datetime.now()
+      app.save_row(row_data, 'chromium.%s/console/%s' % (master, test_rev))
 
     # Get the expected and real output, compare.
     self.save_page('merged_output', files['merged_console_output.html'])
@@ -439,7 +439,7 @@ class FetchTestCase(GaeTestCase):
     app.fetch_page(
         localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
-        maxage=60,
+        maxage=0,
         fetch_url=fetch_url)
     page = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
@@ -460,7 +460,7 @@ class FetchTestCase(GaeTestCase):
     app.fetch_page(
         localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
-        maxage=60,
+        maxage=0,
         postfetch=app.console_handler,
         fetch_url=fetch_url)
     page = app.get_and_cache_pagedata('chromium/console')

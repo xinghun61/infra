@@ -74,7 +74,8 @@ def get_or_create_page(localpath, remoteurl, maxage):
     localpath=localpath,
     remoteurl=remoteurl,
     maxage=maxage,
-    fetch_timestamp=datetime.datetime.now() - datetime.timedelta(hours=24),
+    # The real timestamp and content will be filled when the page is saved.
+    fetch_timestamp=datetime.datetime.min,
     content=None,
     content_blob=None)
 
@@ -99,6 +100,7 @@ def get_and_cache_pagedata(localpath):
   """
   page_data = get_data_from_cache(localpath)
   if page_data and not page_data.get('content_blob'):
+    logging.debug('content for %s found in cache' % localpath)
     return page_data
   page = Page.all().filter('localpath =', localpath).get()
   if not page:
@@ -109,6 +111,7 @@ def get_and_cache_pagedata(localpath):
     'body_class': page.body_class,
     'offsite_base': page.offsite_base,
     'title': page.title,
+    'fetch_timestamp': page.fetch_timestamp,
   }
   if page.content_blob:
     # Get the blob.
@@ -136,7 +139,8 @@ def save_page(page, localpath, fetch_timestamp, page_data):
   except UnicodeEncodeError:
     logging.debug('save_page: content was already in unicode')
   logging.debug('save_page: content size is %d' % len(content))
-  if len(content.encode('utf-8')) >= 10**6:
+  # Save to blobstore if content + metadata is too big.
+  if len(content.encode('utf-8')) >= 10**6 - 10**5:
     logging.debug('save_page: saving to blob')
     content_blob_key = write_blob(content, path_to_mime_type(localpath))
     content = None
@@ -166,6 +170,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
     'content': content,
     'offsite_base': offsite_base,
     'title': title,
+    'fetch_timestamp': fetch_timestamp,
   }
   if content_blob_key:
     page_data['content_blob'] = True
@@ -192,7 +197,7 @@ def get_or_create_row(localpath, revision):
     key_name=localpath,
     rev_number=revision,
     localpath=localpath,
-    fetch_timestamp=datetime.datetime.now())
+    fetch_timestamp=datetime.datetime.min)
 
 
 def get_and_cache_rowdata(localpath):
@@ -221,12 +226,13 @@ def get_and_cache_rowdata(localpath):
   row_data['comment'] = row.comment
   row_data['details'] = row.details
   row_data['rev_number'] = row.rev_number
+  row_data['fetch_timestamp'] = row.fetch_timestamp
   logging.debug('content for %s found in datastore' % localpath)
   put_data_into_cache(localpath, row_data)
   return row_data
 
 
-def save_row(row_data, localpath, timestamp):
+def save_row(row_data, localpath):
   rev_number = row_data['rev_number']
   row = get_or_create_row(localpath, rev_number)
   row_key = row.key()
@@ -237,7 +243,7 @@ def save_row(row_data, localpath, timestamp):
     # pylint: disable=E1103
     # if row.fetch_timestamp > timestamp:
     #   return
-    row.fetch_timestamp = timestamp
+    row.fetch_timestamp = row_data['fetch_timestamp']
     row.revision = row_data['rev']
     row.name = row_data['name']
     row.status = row_data['status']
@@ -375,8 +381,9 @@ class ConsoleData(object):
 # AKA postfetch and postsave functions/handlers.
 ##########
 def console_merger(localpath, remoteurl, page_data,
-                   masters_to_merge=None, num_rows_to_merge=25):
+                   masters_to_merge=None, num_rows_to_merge=None):
   masters_to_merge = masters_to_merge or DEFAULT_MASTERS_TO_MERGE
+  num_rows_to_merge = num_rows_to_merge or 25
   mergedconsole = ConsoleData()
   surroundings = get_and_cache_pagedata('surroundings')
   merged_page = BeautifulSoup(surroundings['content'])
@@ -413,14 +420,21 @@ def console_merger(localpath, remoteurl, page_data,
 
     # Fetch all of the rows that we need.
     rows_fetched = 0
+    revs_skipped = 0
     current_rev = latest_rev
     while rows_fetched < num_rows_to_merge and current_rev >= 0:
+      # Don't get stuck looping backwards forever into data we don't have.
+      # How hard we try scales with how many rows the person wants.
+      if revs_skipped > max(num_rows_to_merge, 10):
+        break
       row_data = get_and_cache_rowdata('%s/console/%s' % (master, current_rev))
       if not row_data:
         current_rev -= 1
+        revs_skipped += 1
         continue
       mergedconsole.AddRow(row_data)
       current_rev -= 1
+      revs_skipped = 0
       rows_fetched += 1
 
   # Convert the merged content into console content.
@@ -466,14 +480,14 @@ def console_merger(localpath, remoteurl, page_data,
       merged_content)
 
   # Update the merged console page.
-  merged_page = get_or_create_page('chromium/console', None, maxage=30)
+  merged_page = get_or_create_page(localpath, None, maxage=30)
   logging.info('console_merger: saving merged console')
-  page_data = get_and_cache_pagedata('chromium/console')
+  page_data = get_and_cache_pagedata(localpath)
   page_data['title'] = 'BuildBot: Chromium'
   page_data['offsite_base'] = 'http://build.chromium.org/p/chromium'
   page_data['body_class'] = 'interface'
   page_data['content'] = merged_content
-  save_page(merged_page, 'chromium/console', fetch_timestamp, page_data)
+  save_page(merged_page, localpath, fetch_timestamp, page_data)
   return
 
 
@@ -691,7 +705,8 @@ def parse_master(localpath, remoteurl, page_data=None):
     else:
       if 'details' not in curr_row:
         curr_row['details'] = ''
-      save_row(curr_row, localpath + '/' + curr_row['rev_number'], ts)
+      curr_row['fetch_timestamp'] = ts
+      save_row(curr_row, localpath + '/' + curr_row['rev_number'])
       curr_row = {}
 
   return page_data
@@ -729,8 +744,15 @@ def get_data_from_cache(localpath):
   return json.loads(memcache_data)
 
 
+def dtdumper(obj):
+  if hasattr(obj, 'isoformat'):
+    return obj.isoformat()
+  else:
+    raise TypeError(repr(obj) + "is not JSON serializable")
+
+
 def put_data_into_cache(localpath, data):
-  memcache_data = json.dumps(data)
+  memcache_data = json.dumps(data, default=dtdumper)
   if not memcache.set(key=localpath, value=memcache_data, time=2*60):
     logging.error('put_data_into_cache(\'%s\'): memcache.set() failed' % (
         localpath))

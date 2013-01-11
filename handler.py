@@ -19,21 +19,18 @@ class PageAction(base_page.BasePage):
   # W0221: 44,2:PageAction.get: Arguments number differs from overridden method
   # pylint: disable=W0221
   def get(self, localpath):
-    if len(self.request.query_string) > 0:
-      # The reload arg, if present, must be stripped from the URL.
-      args = self.request.query_string.split('&')
-      args = [arg for arg in args if not arg.startswith('reload=')]
-      if args:
-        localpath += '?' + '&'.join(args)
     unquoted_localpath = urllib.unquote(localpath)
-    page_data = app.get_and_cache_pagedata(unquoted_localpath)
+    if self.request.path.endswith('/chromium/console'):
+      page_data = self.cache_merged_console(unquoted_localpath)
+    else:
+      page_data = app.get_and_cache_pagedata(unquoted_localpath)
     if page_data.get('content') is None:
+      app.logging.error('Page %s not found.' % unquoted_localpath)
       self.error(404)  # file not found
       return
 
     self.response.headers['Content-Type'] = app.path_to_mime_type(
         unquoted_localpath)
-    template_values = self.InitializeTemplate()
     if self.request.path.endswith('/console'):
       template_values = self.InitializeTemplate()
       template_values['body_class'] = page_data.get('body_class')
@@ -53,13 +50,44 @@ class PageAction(base_page.BasePage):
         self.response.headers['Pragma'] = 'Public'
       self.DisplayTemplate('base.html', template_values)
       return
-
-    # Make the Google Frontend capable of caching this request for 60 seconds.
-    # TODO: Caching is not working yet.
     self.response.headers['Cache-Control'] = 'public, max-age=60'
     self.response.headers['Pragma'] = 'Public'
     self.response.out.write(page_data.get('content'))
 
+
+  def cache_merged_console(self, localpath):
+    # Remove any query args that we don't want to keep.
+    VARY_ARGS = ['numrevs=']
+    args = self.request.query_string.split('&')
+    args = [arg for arg in args if any([arg.startswith(pre) for pre in
+                                        VARY_ARGS])]
+    if args:
+      localpath += '?' + '&'.join(args)
+    # See if we already have the appropriate page cached.
+    unquoted_localpath = urllib.unquote(localpath)
+    page_data = app.get_and_cache_pagedata(unquoted_localpath)
+    # If we got the page and it was generated recently enough, just serve that.
+    if page_data.get('content') and recent_page(page_data):
+      return page_data
+    # If they specified a number of revs, figure out how many they want.
+    num_revs = self.request.get('numrevs')
+    if num_revs:
+      num_revs = utils.clean_int(num_revs, -1)
+      if num_revs <= 0:
+        num_revs = None
+    app.console_merger(unquoted_localpath, 'console/chromium', page_data,
+                       num_rows_to_merge=num_revs)
+    return app.get_and_cache_pagedata(unquoted_localpath)
+
+
+def recent_page(page_data):
+  ts = page_data.get('fetch_timestamp')
+  now = app.datetime.datetime.now()
+  if isinstance(ts, app.datetime.datetime):
+    delta = now - ts
+  else:
+    delta = now - app.datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f")
+  return delta < app.datetime.timedelta(minutes=1)
 
 
 class FetchPagesAction(base_page.BasePage):
