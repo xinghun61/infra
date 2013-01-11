@@ -1,0 +1,5 @@
+<tr>
+<td colspan="6" class="DevComment "> 
+      Add SpeechInputBubbleViews::notify_delegate_on_activation_change_, etc.<br />Ensure SpeechInputBubbleView continues observing its Widget as it&#39;s closed.<br />Needed so BubbleDelegateView::OnWidgetClosing will close the border widget.<br /><br />Only notify the SpeechInputBubbleView&#39;s delegate when the activation changes through normal user interaction. The SpeechInputBubbleController deletes the SpeechInputBubbleImpl to close it explicitly, and then doesn&#39;t expect to be notified on that loss of focus/activation.<br /><br />BUG=98323,112194<br />TEST=SpeechInputBubbles behave as expected.<br /><br />Review URL: http://codereview.chromium.org/9370006 â
+    </td>
+</tr>

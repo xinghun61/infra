@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import ast
 import datetime
 import os
 import unittest
@@ -204,7 +205,7 @@ class ConsoleTestCase(GaeTestCase):
     expected_console = self._load_content(test_dir, 'console-expected.html')
     page_data = {'content': input_console}
     actual_console = app.console_handler(
-        _unquoted_localpath='chromium/console',
+        unquoted_localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
         page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
@@ -233,7 +234,7 @@ class ConsoleTestCase(GaeTestCase):
     expected_console = self._load_content(test_dir, 'console-expected.html')
     page_data = {'content': input_console}
     actual_console = app.console_handler(
-        _unquoted_localpath='chromium/console',
+        unquoted_localpath='chromium/console',
         remoteurl='http://build.chromium.org/p/chromium/console',
         page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
@@ -254,8 +255,6 @@ class ConsoleTestCase(GaeTestCase):
                                           'expected-details.html').strip()
     expected_summary = self._load_content(test_dir,
                                           'expected-summary.html').strip()
-    print(expected_summary)
-    print("\n\n\n\n")
     input_console = self._load_content(test_dir, 'console-input-handled.html')
     page_data = {'content': input_console}
     test_localpath = 'chromium/console'
@@ -266,12 +265,9 @@ class ConsoleTestCase(GaeTestCase):
         remoteurl='http://build.chromium.org/p/chromium/console',
         page_data=page_data)
     test_revision = '121192'
-    actual_row = app.Row.get_by_key_name(test_revision + ' ' + test_localpath)
-    actual_row = app.db.to_dict(actual_row)
-    actual_summary = app.Page.get_by_key_name(test_localpath + '/summary')
-    actual_summary = app.db.to_dict(actual_summary)
-    print(actual_summary['content']) 
-    self.assertEquals(expected_rev, actual_row['revision'],
+    actual_row = app.get_and_cache_rowdata(test_localpath + '/' + test_revision)
+    actual_summary = app.get_and_cache_pagedata(test_localpath + '/summary')
+    self.assertEquals(expected_rev, actual_row['rev'],
                       'Unexpected revision number found')
     self.assertEquals(expected_name, actual_row['name'],
                       'Unexpected revision author found')
@@ -284,133 +280,143 @@ class ConsoleTestCase(GaeTestCase):
     self.assertEquals(expected_summary, actual_summary['content'],
                       'Unexpected build summary found')
 
+  def test_parse_master_utf8(self):
+    test_dir = os.path.join(TEST_DIR, 'test_parse_master_utf8')
+    expected_rev = self._load_content(test_dir, 'expected-rev.html').strip()
+    expected_name = self._load_content(test_dir, 'expected-name.html').strip()
+    expected_status = self._load_content(test_dir,
+                                         'expected-status.html').strip()
+    expected_comment = self._load_content(test_dir,
+                                          'expected-comment.html').strip()
+    expected_details = self._load_content(test_dir,
+                                          'expected-details.html').strip()
+    expected_summary = self._load_content(test_dir,
+                                          'expected-summary.html').strip()
+    input_console = self._load_content(test_dir, 'console-input-handled.html')
+    page_data = {'content': input_console}
+    test_localpath = 'chromium/console'
+    # Parse master returns its input, so we throw that away and access
+    # the stored rows directly.
+    app.parse_master(
+        localpath=test_localpath,
+        remoteurl='http://build.chromium.org/p/chromium/console',
+        page_data=page_data)
+    test_revision = '121192'
+    actual_row = app.get_and_cache_rowdata(test_localpath + '/' + test_revision)
+    actual_summary = app.get_and_cache_pagedata(test_localpath + '/summary')
+    self.assertEquals(expected_rev.decode('utf-8'), actual_row['rev'],
+                      'Unexpected revision number found')
+    self.assertEquals(expected_name.decode('utf-8'), actual_row['name'],
+                      'Unexpected revision author found')
+    self.assertEquals(expected_status.decode('utf-8'), actual_row['status'],
+                      'Unexpected build status found')
+    self.assertEquals(expected_comment.decode('utf-8'), actual_row['comment'],
+                      'Unexpected commit message found')
+    self.assertEquals(expected_details.decode('utf-8'), actual_row['details'],
+                      'Unexpected build details found')
+    self.assertEquals(expected_summary.decode('utf-8'),
+                      actual_summary['content'],
+                      'Unexpected build summary found')
 
   def test_console_merger(self):
+    # Read in all the necessary input files.
     test_dir = os.path.join(TEST_DIR, 'test_console_merger')
-    filedata = {}
-    for filename in [
-        'chromium_chrome_console_input.html',
-        'chromium_chromiumos_console_input.html',
-        'chromium_main_console_input.html',
-        'chromium_memory_console_input.html',
-        'chromium_merged_console.html',
-    ]:
-      filedata[filename] = self._load_content(test_dir, filename)
-    self.save_page(localpath='chromium.chrome/console',
-                   content=filedata['chromium_chrome_console_input.html'])
-    self.save_page(localpath='chromium.chromiumos/console',
-                   content=filedata['chromium_chromiumos_console_input.html'])
-    self.save_page(localpath='chromium.main/console',
-                   content=filedata['chromium_main_console_input.html'])
-    self.save_page(localpath='chromium.memory/console',
-                   content=filedata['chromium_memory_console_input.html'])
-    page_data = {'content': filedata['chromium_merged_console.html']}
+    test_masters = ['linux', 'mac', 'win', 'memory']
+    filenames = ['latest_rev.txt', 'surroundings_input.html']
+    for master in test_masters:
+      filenames += ['%s_categories_input.html' % master,
+                    '%s_summary_input.html' % master,
+                    '%s_row_input.txt' % master]
+    filenames.append('merged_console_output.html')
+    files = {}
+    for filename in filenames:
+      files[filename] = self._load_content(test_dir, filename)
+
+    # Save the input files as the corresponding pages and rows.
+    test_rev = files['latest_rev.txt'].strip()
+    app.memcache.set(key='latest_rev', value=test_rev)
+    self.save_page(localpath='surroundings',
+                   content=files['surroundings_input.html'])
+    for master in test_masters:
+      self.save_page('chromium.%s/console/categories' % master,
+                     files['%s_categories_input.html' % master])
+      self.save_page('chromium.%s/console/summary' % master,
+                     files['%s_summary_input.html' % master])
+      app.save_row(ast.literal_eval(files['%s_row_input.txt' % master]),
+                   'chromium.%s/console/%s' % (master, test_rev),
+                   datetime.datetime.now())
+
+    # Get the expected and real output, compare.
+    self.save_page('merged_output', files['merged_console_output.html'])
     app.console_merger(
-        'chromium.main/console',
-        'http://build.chromium.org/p/chromium/console',
-        page_data=page_data,
+        'chromium/console', '', {},
         masters_to_merge=[
-            'chromium.main',
-            'chromium.chromiumos',
-            'chromium.chrome',
+            'chromium.linux',
+            'chromium.mac',
+            'chromium.win',
             'chromium.memory',
-        ])
+        ],
+        num_rows_to_merge=1)
     actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
-    # with open(os.path.join(test_dir, 'chromium_merged_console.html'),
+    # with open(os.path.join(test_dir, 'merged_console_output.html'),
     #           'w') as fh:
     #   fh.write(actual_mergedconsole['content'])
     # import code
     # code.interact(local=locals())
-    self.assertEquals(filedata['chromium_merged_console.html'],
-                      actual_mergedconsole['content'],
-                      'Unexpected console output found')
-
-  def test_console_merger_utf8(self):
-    test_dir = os.path.join(TEST_DIR, 'test_console_merger_utf8')
-    filedata = {}
-    for filename in [
-        'chromium_chrome_console_input.html',
-        'chromium_chromiumos_console_input.html',
-        'chromium_main_console_input.html',
-        'chromium_memory_console_input.html',
-        'chromium_merged_console.html',
-    ]:
-      filedata[filename] = self._load_content(test_dir, filename)
-    self.save_page(localpath='chromium.chrome/console',
-                   content=filedata['chromium_chrome_console_input.html'])
-    self.save_page(localpath='chromium.chromiumos/console',
-                   content=filedata['chromium_chromiumos_console_input.html'])
-    self.save_page(localpath='chromium.main/console',
-                   content=filedata['chromium_main_console_input.html'])
-    self.save_page(localpath='chromium.memory/console',
-                   content=filedata['chromium_memory_console_input.html'])
-    page_data = {'content': filedata['chromium_merged_console.html']}
-    app.console_merger(
-        'chromium.main/console',
-        'http://build.chromium.org/p/chromium/console',
-        page_data=page_data,
-        masters_to_merge=[
-            'chromium.main',
-            'chromium.chromiumos',
-            'chromium.chrome',
-            'chromium.memory',
-        ])
-    actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
-    # Uncomment if deeper inspection is needed of the returned console.
-    # import logging
-    # logging.debug('foo')
-    # merged_path = os.path.join(test_dir, 'chromium_merged_console.html')
-    # with open(merged_path, 'w') as fh:
-    #   fh.write(actual_mergedconsole['content'])
-    # import code
-    # code.interact(local=locals())
-    self.assertEquals(filedata['chromium_merged_console.html'],
+    self.assertEquals(files['merged_console_output.html'],
                       actual_mergedconsole['content'],
                       'Unexpected console output found')
 
   def test_console_merger_splitrevs(self):
+    # Read in all the necessary input files.
     test_dir = os.path.join(TEST_DIR, 'test_console_merger_splitrevs')
-    filedata = {}
-    for filename in [
-        'chromium_chrome_console.html',
-        'chromium_chromiumos_console.html',
-        'chromium_console.html',
-        'chromium_memory_console.html',
-        'chromium_merged_console.html',
-    ]:
-      filedata[filename] = self._load_content(test_dir, filename)
-    self.save_page(localpath='chromium.chrome/console',
-                   content=filedata['chromium_chrome_console.html'])
-    self.save_page(localpath='chromium.chromiumos/console',
-                   content=filedata['chromium_chromiumos_console.html'])
-    self.save_page(localpath='chromium.main/console',
-                   content=filedata['chromium_console.html'])
-    self.save_page(localpath='chromium.memory/console',
-                   content=filedata['chromium_memory_console.html'])
-    page_data = {'content': filedata['chromium_merged_console.html']}
+    test_masters = ['linux', 'mac']
+    filenames = ['latest_rev.txt', 'surroundings_input.html']
+    for master in test_masters:
+      filenames += ['%s_categories_input.html' % master,
+                    '%s_summary_input.html' % master,
+                    '%s_row_input.txt' % master]
+    filenames.append('merged_console_output.html')
+    files = {}
+    for filename in filenames:
+      files[filename] = self._load_content(test_dir, filename)
+
+    # Save the input files as the corresponding pages and rows.
+    test_rev = files['latest_rev.txt'].strip()
+    app.memcache.set(key='latest_rev', value=test_rev)
+    self.save_page(localpath='surroundings',
+                   content=files['surroundings_input.html'])
+    for master in test_masters:
+      self.save_page('chromium.%s/console/categories' % master,
+                     files['%s_categories_input.html' % master])
+      self.save_page('chromium.%s/console/summary' % master,
+                     files['%s_summary_input.html' % master])
+      app.save_row(ast.literal_eval(files['%s_row_input.txt' % master]),
+                   'chromium.%s/console/%s' % (master, test_rev),
+                   datetime.datetime.now())
+
+    # Get the expected and real output, compare.
+    self.save_page('merged_output', files['merged_console_output.html'])
     app.console_merger(
-        'chromium.main/console',
-        'http://build.chromium.org/p/chromium/console',
-        page_data=page_data,
+        'chromium/console', '', {},
         masters_to_merge=[
-            'chromium.main',
-            'chromium.chromiumos',
-            'chromium.chrome',
-            'chromium.memory',
-        ])
+            'chromium.linux',
+            'chromium.mac',
+        ],
+        num_rows_to_merge=1)
     actual_mergedconsole = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
     # import logging
     # logging.debug('foo')
-    # with open(os.path.join(test_dir, 'chromium_merged_console.html'),
+    # with open(os.path.join(test_dir, 'merged_console_output.html'),
     #           'w') as fh:
     #   fh.write(actual_mergedconsole['content'])
     # import code
     # code.interact(local=locals())
-    self.assertEquals(filedata['chromium_merged_console.html'],
+    self.assertEquals(files['merged_console_output.html'],
                       actual_mergedconsole['content'],
                       'Unexpected console output found')
 
