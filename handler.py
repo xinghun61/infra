@@ -82,6 +82,8 @@ class PageAction(base_page.BasePage):
 
 def recent_page(page_data):
   ts = page_data.get('fetch_timestamp')
+  if not ts:
+    return False
   now = app.datetime.datetime.now()
   if isinstance(ts, app.datetime.datetime):
     delta = now - ts
