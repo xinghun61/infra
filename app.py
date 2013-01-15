@@ -212,9 +212,9 @@ def get_and_cache_rowdata(localpath):
   Here we assume localpath is already unquoted.
   """
   row_data = get_data_from_cache(localpath)
-  if row_data:
+  if row_data and type(row_data) == type({}):
     return row_data
-  row = Row.all().filter('localpath =', localpath).get()
+  row = Row.get_by_key_name(localpath)
   if not row:
     logging.error('get_and_cache_rowdata(\'%s\'): no matching localpath in '
         'datastore' % localpath)
@@ -254,11 +254,21 @@ def save_row(row_data, localpath):
     # pylint: disable=E1103
     row.put()
   db.run_in_transaction(tx_row, row_key)
-  prev_rev = memcache.get(key='latest_rev')
-  if (rev_number > prev_rev):
-    memcache.set(key='latest_rev', value=rev_number)
   put_data_into_cache(localpath, row_data)
   logging.info('Saved and cached row with localpath %s' % localpath)
+  # Update latest_rev in datastore & cache, or create it if it doesn't exist.
+  prev_rev = get_and_cache_rowdata('latest_rev')
+  if not prev_rev or rev_number > prev_rev['rev_number']:
+    latest_rev_row = {
+        'rev_number': rev_number,
+        'fetch_timestamp': datetime.datetime.now(),
+        'rev': None,
+        'name': None,
+        'status': None,
+        'comment': None,
+        'details': None,
+    }
+    save_row(latest_rev_row, 'latest_rev')
 
 
 ##########
@@ -388,7 +398,7 @@ def console_merger(localpath, remoteurl, page_data,
   surroundings = get_and_cache_pagedata('surroundings')
   merged_page = BeautifulSoup(surroundings['content'])
   merged_tag = merged_page.find('table', 'ConsoleData')
-  latest_rev = int(memcache.get(key='latest_rev'))
+  latest_rev = int(get_and_cache_rowdata('latest_rev')['rev_number'])
   if not latest_rev:
     logging.error('console_merger(\'%s\', \'%s\', \'%s\'): cannot get latest '
                   'revision number.' % (
