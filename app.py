@@ -1003,6 +1003,12 @@ URLS = [
     'maxage': 15*60,  # 15 mins
   },
   {
+    'remoteurl': (
+        'http://build.chromium.org/p/chromium/sheriff_android_gardeners.js'),
+    'localpath': 'chromium/sheriff_android_gardeners.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
     'remoteurl':
         'http://build.chromium.org/p/chromium/sheriff_cr_cros_gardeners.js',
     'localpath': 'chromium/sheriff_cr_cros_gardeners.js',
