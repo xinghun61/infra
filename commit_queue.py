@@ -111,7 +111,9 @@ class TryJobRietveldEvent(VerificationEvent):
   builder = db.StringProperty()
   clobber = db.BooleanProperty()
   job_name = db.StringProperty()
-  revision = db.IntegerProperty()
+  # TODO(maruel): Transition all revision properties to string, since it could
+  # be a hash for git commits.
+  revision = db.StringProperty()
   url = db.StringProperty()
 
   @property
