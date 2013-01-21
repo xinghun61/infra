@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -85,6 +86,17 @@ def parse_date(date):
   if date.isdigit():
     return datetime.datetime.utcfromtimestamp(int(date))
   return None
+
+
+def limit_length(string, length):
+  """Limits the string |string| at length |length|.
+
+  Inserts an ellipsis if it is cut.
+  """
+  string = unicode(string.strip())
+  if len(string) > length:
+    string = string[:length - 1] + u'…'
+  return string
 
 
 class AllStatusPage(BasePage):
@@ -184,6 +196,7 @@ class StatusPage(BasePage):
     conflicts and doesn't redirect to /.
     """
     message = self.request.get('message')
+    message = limit_length(message, 500)
     username = self.request.get('username')
     if message and username:
       put_status(Status(message=message, username=username))
@@ -234,6 +247,7 @@ class MainPage(BasePage):
 
     # Get the posted information.
     new_message = self.request.get('message')
+    new_message = limit_length(new_message, 500)
     last_status_key = self.request.get('last_status_key')
     if not new_message:
       # A submission contained no data. It's a better experience to redirect
