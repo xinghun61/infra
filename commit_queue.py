@@ -315,12 +315,24 @@ class CQBasePage(BasePage):
 class OwnerStats(object):
   """CQ usage statistics for a single user."""
   def __init__(self, now, owner, last_day, last_week, last_month, forever):
+    # Since epoch in float.
     self.now = now
+    # User instance.
     self.owner = owner
+    assert all(isinstance(i, PendingCommit) for i in last_day)
     self.last_day = last_day
+    assert all(isinstance(i, PendingCommit) for i in last_week)
     self.last_week = last_week
+    assert isinstance(last_month, int)
     self.last_month = last_month
+    assert isinstance(forever, int)
     self.forever = forever
+    # Gamify ALL the things!
+    self.points = (
+        len(self.last_day) * 10 +
+        len(self.last_week) * 5 +
+        self.last_month + 2 +
+        self.forever)
 
 
 class OwnerQuery(object):
@@ -400,6 +412,30 @@ class Summary(CQBasePage):
     template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
+
+
+class TopScore(CQBasePage):
+  def _get_as_html(self, _):
+    owners = [
+      {
+        'name': stats.owner.email.split('@', 1)[0].upper(),
+        'points': stats.points,
+      }
+      for stats in monthly_top_contributors()
+    ]
+    owners.sort(key=lambda x: -x['points'])
+    for i in xrange(len(owners)):
+      if i == 0:
+        owners[i]['rank'] = '1st'
+      elif i == 1:
+        owners[i]['rank'] = '2nd'
+      elif i == 2:
+        owners[i]['rank'] = '3rd'
+      else:
+        owners[i]['rank'] = '%dth' % (i + 1)
+    template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
+    template_values['data'] = owners
+    self.DisplayTemplate('cq_top_score.html', template_values, use_cache=True)
 
 
 class User(CQBasePage):

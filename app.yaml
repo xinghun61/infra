@@ -9,9 +9,9 @@ inbound_services:
 - xmpp_message
 
 handlers:
-- url: /(.*\.(html|js))
+- url: /(.*\.(html|js|txt|ttf))
   static_files: static/\1
-  upload: static/(.*\.(html|js))
+  upload: static/(.*\.(html|js|txt|ttf))
 
 # main will look for a replacement in blobstore, if not, will redirect to
 # static/
