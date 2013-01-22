@@ -313,6 +313,7 @@ class CQBasePage(BasePage):
 
 
 class OwnerStats(object):
+  """CQ usage statistics for a single user."""
   def __init__(self, now, owner, last_day, last_week, last_month, forever):
     self.now = now
     self.owner = owner
@@ -320,9 +321,6 @@ class OwnerStats(object):
     self.last_week = last_week
     self.last_month = last_month
     self.forever = forever
-
-  def to_stats(self):
-    return self
 
 
 class OwnerQuery(object):
@@ -364,23 +362,24 @@ def to_link(pending):
 
 
 def get_owner_stats(owner_key, now):
+  """Returns an OnwerStats instance for the Owner."""
   obj = memcache.get(owner_key.name(), 'cq_owner_stats')
   if obj:
     return obj
-  return OwnerQuery(owner_key, now)
+  return OwnerQuery(owner_key, now).to_stats()
 
 
 def monthly_top_contributors():
+  """Returns the top monthly contributors as a list of OwnerStats."""
   obj = memcache.get('monthly', 'cq_top')
   if not obj:
     now = datetime.datetime.utcnow()
     last_pendings = PendingCommit.all(
         keys_only=True).order('-created').fetch(1000)
     # Make it use asynchronous queries.
-    owner_stats_queries = [
+    obj = [
         get_owner_stats(o, now) for o in set(p.parent() for p in last_pendings)
     ]
-    obj = [o.to_stats() for o in owner_stats_queries]
     memcache.add('monthly', obj, 2*60*60, namespace='cq_top')
   return obj
 
@@ -388,16 +387,16 @@ def monthly_top_contributors():
 class Summary(CQBasePage):
   def _get_as_html(self, _):
     owners = []
-    for o in monthly_top_contributors():
-      stats = o.to_stats()
+    for stats in monthly_top_contributors():
       data = {
-          'last_day': ', '.join(to_link(i) for i in stats.last_day),
-          'last_week': ', '.join(to_link(i) for i in stats.last_week),
-          'last_month': stats.last_month,
-          'forever': stats.forever,
-        }
-      owners.append((stats.owner.email, data))
-    owners.sort(key=lambda x: -x[1]['last_month'])
+        'email': stats.owner.email,
+        'last_day': ', '.join(to_link(i) for i in stats.last_day),
+        'last_week': ', '.join(to_link(i) for i in stats.last_week),
+        'last_month': stats.last_month,
+        'forever': stats.forever,
+      }
+      owners.append(data)
+    owners.sort(key=lambda x: -x['last_month'])
     template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)

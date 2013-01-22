@@ -19,11 +19,11 @@
   <tbody>
     {% for owner in data %}
     <tr>
-      <td><a href="/cq/{{ owner.0|urlencode }}" class="owner">{{ owner.0 }}</a></td>
-      <td>{{ owner.1.last_day|safe }}</td>
-      <td>{{ owner.1.last_week|safe }}</td>
-      <td>{{ owner.1.last_month }}</td>
-      <td>{{ owner.1.forever }}</td>
+      <td><a href="/cq/{{ owner.email|urlencode }}" class="owner">{{ owner.email }}</a></td>
+      <td>{{ owner.last_day|safe }}</td>
+      <td>{{ owner.last_week|safe }}</td>
+      <td>{{ owner.last_month }}</td>
+      <td>{{ owner.forever }}</td>
     </tr>
     {% endfor %}
   </tbody>
