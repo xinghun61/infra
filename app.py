@@ -268,7 +268,11 @@ def save_row(row_data, localpath):
         'comment': None,
         'details': None,
     }
-    save_row(latest_rev_row, 'latest_rev')
+    prev_rev_db = get_or_create_row('latest_rev', rev_number)
+    prev_rev_db.fetch_timestamp = datetime.datetime.now()
+    prev_rev_db.rev_number = rev_number
+    prev_rev_db.put()
+    put_data_into_cache('latest_rev', latest_rev_row)
 
 
 ##########
