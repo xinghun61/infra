@@ -1,7 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> 
-<html> 
-  <head> 
-    <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type"> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
     <script language="javascript">
       // Split a string in 2 parts. The first is the leading number, if any,
       // the second is the string following the numbers.
@@ -49,18 +49,18 @@
         // the lowest.
         if (isNaN(numA) == false) return -1
         if (isNaN(numB) == false) return 1
-       
-        // They are both strings. 
+
+        // They are both strings.
         return (a < b) ? -1 : (a > b ? 1 : 0)
       }
     </script>
-  </head> 
-  <body> 
-    <script type="application/javascript"> 
+  </head>
+  <body>
+    <script type="application/javascript">
       String.prototype.startsWith = function(str) {
         return (this.match('^' + str) == str)
       }
- 
+
       // Helper function to retrieve the value of a GET query parameter.
       // Greatly inspired from http://alturl.com/8rj7a
       function getParameter(parameterName) {
@@ -70,30 +70,30 @@
         if (queryString.length <= 0) {
           return '';
         }
-        
+
         // Find the beginning of the string
         begin = queryString.indexOf(parameterName);
- 
+
         // If the parameter name is not found, skip it, otherwise return the
         // value.
         if (begin == -1) {
           return '';
         }
-         
+
         // Add the length (integer) to the beginning.
         begin += parameterName.length;
- 
+
         // Multiple parameters are separated by the '&' sign.
         end = queryString.indexOf ('&', begin);
-        
+
         if (end == -1) {
           end = queryString.length;
         }
-        
+
         // Return the string.
         return escape(unescape(queryString.substring(begin, end)));
       }
- 
+
       // Given a tag and a node, returns the value for this tag on this node.
       function getNodeValue(node, tag) {
         return node.getElementsByTagName(tag)[0].firstChild.nodeValue;
@@ -103,16 +103,16 @@
       function displayList(xmlstring, root, path) {
         // Display the header
         document.write('<h1>Index of /' + path + '</h1>');
- 
+
         // Start the table for the results.
         document.write('<table style="border-spacing:15px 0px;">');
 
         var sortOrder = getParameter('sort');
-        var sortLink = location.pathname + '?path=' + path;
+        var sortLink = location.pathname + '?path=' + escape(path);
         if (sortOrder != 'desc') {
           sortLink += '&sort=desc';
         }
- 
+
         // Display the table header.
         document.write('<tr><th><img src="' + root +
                        'icons/blank.gif" alt="[ICO]"></th>');
@@ -121,11 +121,11 @@
         document.write('<th>Size</th>');
         document.write('<th>ETag</th></tr>');
         document.write('<tr><th colspan="5"><hr></th></tr>');
- 
+
         // Display the 'go back' button.
         if (path != '') {
           var backpath = location.pathname;
- 
+
           // If there is more than one section delimited by '/' in the current
           // path we truncate the last section and append the rest to backpath.
           var delimiter = path.lastIndexOf('/');
@@ -133,19 +133,19 @@
             delimiter = path.substr(0, delimiter).lastIndexOf('/');
             if (delimiter >= 0) {
               backpath += '?path=';
-              backpath += path.substr(0, delimiter+1);
+              backpath += escape(path.substr(0, delimiter+1));
             }
           }
- 
+
           document.write('<tr><td valign="top"><img src="' + root +
                          'icons/back.gif" alt="[DIR]"></td>');
           document.write('<td><a href="');
           document.write(backpath);
           document.write('">Parent Directory</a></td>');
           document.write('<td>&nbsp;</td>');
-          document.write('<td align="right">  - </td></tr>'); 
+          document.write('<td align="right">  - </td></tr>');
         }
- 
+
         // Set up the variables.
         var directories = new Array();
         var files = new Array();
@@ -155,17 +155,17 @@
           // Parse the XML output.
           var parser = new DOMParser();
           var xmlDoc = parser.parseFromString(xmlstring, 'text/xml');
- 
+
           // Get the main element.
           var results = xmlDoc.getElementsByTagName('ListBucketResult');
- 
+
           // Get all the directories.
           var prefixes = results[0].getElementsByTagName('CommonPrefixes');
           for (var i = 0; i < prefixes.length; i++) {
             var prefix = getNodeValue(prefixes[i], 'Prefix');
             directories.push(prefix.substr(path.length));
         }
-      
+
           // Get all the files.
           var contents = results[0].getElementsByTagName('Contents');
           for (var i = 0; i < contents.length; i++) {
@@ -177,7 +177,7 @@
             files.push(obj);
           }
         }
- 
+
         files.sort(alphanumCompare);
         directories.sort(alphanumCompare);
 
@@ -186,12 +186,12 @@
           files.reverse();
           directories.reverse();
         }
-      
+
         // Display the directories.
         for (var i = 0; i < directories.length; i++) {
           var lnk = location.pathname.substr(0, location.pathname.indexOf('?'));
-          lnk += '?path=' + path + directories[i];
-      
+          lnk += '?path=' + escape(path) + directories[i];
+
           document.write('<tr>');
           document.write('<td valign="top"><img src="' + root +
                          'icons/folder.gif" alt="[DIR]"></td>');
@@ -202,7 +202,7 @@
           document.write('<td align="right">-</td>');
           document.write('</tr>');
         }
-      
+
         // Display the files.
         for (var i = 0; i < files.length; i++) {
           var link = root + files[i].keyName;
@@ -210,16 +210,16 @@
           var size = files[i].size / 1024 / 1024;
           var lastModified = files[i].lastModified.replace('T', ' ');
           lastModified = lastModified.substr(0, lastModified.indexOf('.'));
-          
+
           // Remove the entries we don't want to show.
           if (filename == '') {
             continue;
           }
-        
+
           if (filename.indexOf('$folder$') >= 0) {
             continue;
           }
-        
+
           // Display the row.
           document.write('<tr>');
           document.write('<td valign="top"><img src="' + root +
@@ -232,12 +232,12 @@
                          files[i].eTag.split('"')[1] + '</pre></td>');
           document.write('</tr>');
         }
- 
+
         // Close the table.
         document.write('<tr><th colspan="5"><hr></th></tr>');
         document.write('</table>');
       }
- 
+
       var xmlstrings = new Array();
 
       function fetchAndDisplay(marker) {
@@ -260,7 +260,7 @@
           if (http.readyState == 4) {
             var xmlstring = http.responseText;
             xmlstrings.push(xmlstring);
-    
+
             // Check if the data is truncated. if so, we need to request the
             // rest.
             var parser = new DOMParser();
@@ -276,13 +276,13 @@
               nextMarker = getNodeValue(results[0], 'NextMarker');
               fetchAndDisplay(nextMarker);
             } else {
-              displayList(xmlstrings, root, path);
+              displayList(xmlstrings, root, unescape(path));
             }
           }
         }
       }
-      
+
       fetchAndDisplay('');
-    </script> 
-  </body> 
+    </script>
+  </body>
 </html>
