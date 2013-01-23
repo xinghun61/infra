@@ -331,7 +331,7 @@ class OwnerStats(object):
     self.points = (
         len(self.last_day) * 10 +
         len(self.last_week) * 5 +
-        self.last_month + 2 +
+        self.last_month * 2 +
         self.forever)
 
 
