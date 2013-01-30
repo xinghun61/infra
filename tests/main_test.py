@@ -149,14 +149,14 @@ class CommitQueueTest(TestCase):
     total = 0
     for packet in fill.load_packets():
       total += int(self.post('cq/receiver', packet))
-    self.assertEquals(7, total)
+    self.assertEquals(9, total)
 
   def test_summary_json(self):
     self._fill()
-    self.assertEquals(6, len(json.loads(self.get('cq/?format=json'))))
+    self.assertEquals(7, len(json.loads(self.get('cq/?format=json'))))
     self.assertEquals([], json.loads(self.get('cq/doesntexist?format=json')))
     self.assertEquals(
-        3,
+        4,
         len(json.loads(self.get(
           urllib2.quote('cq/bar@chromium.org') + '?format=json'))))
     self.assertEquals(

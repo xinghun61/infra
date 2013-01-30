@@ -93,6 +93,26 @@
     }
   },
   {
+    "timestamp": 2635205.0,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "verification": "why not",
+    "payload": {
+      "output": "Waiting for something"
+    }
+  },
+  {
+    "timestamp": 2635210.0,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "verification": "why not",
+    "payload": {
+      "output": ""
+    }
+  },
+  {
     "timestamp": 2635210.0,
     "owner": "bar@chromium.org",
     "patchset": 1,

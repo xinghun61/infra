@@ -209,6 +209,19 @@ class AbortEvent(VerificationEvent):
     return '<%s>' % cls.name
 
 
+class WhyNotEvent(VerificationEvent):
+  name = 'why not'
+  message = db.TextProperty()
+
+  @property
+  def as_html(self):
+    return '<pre class="message">%s</pre>' % cgi.escape(self.message)
+
+  @classmethod
+  def to_key(cls, _):
+    return '<%s>' % cls.name
+
+
 def get_owner(owner):
   """Efficient querying of Owner with memcache."""
   key = Owner.to_key(owner)
