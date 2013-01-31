@@ -215,7 +215,7 @@ class WhyNotEvent(VerificationEvent):
 
   @property
   def as_html(self):
-    return '<pre class="message">%s</pre>' % cgi.escape(self.message)
+    return '<pre class="output">%s</pre>' % cgi.escape(self.message)
 
   @classmethod
   def to_key(cls, _):

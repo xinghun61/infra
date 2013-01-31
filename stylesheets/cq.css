@@ -19,10 +19,6 @@ table.issue .type {
   width: 100px;
 }
 
-table.issue .message {
-  width: 100%;
-}
-
 table.issue .message .output {
   margin: 0px;
   overflow-x: auto;
