@@ -1200,4 +1200,8 @@ URLS = [
         'chromium.lkgr/json/builders/Linux%20x64/builds/-1/as_text=1.json',
     'maxage': 2*60,  # 2 mins
   },
+
+# # Trigger background process update.
+# {
+#     'remoteurl': 'http://chromium-build.appspot.com/backend/update'
 ]
