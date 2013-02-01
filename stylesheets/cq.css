@@ -24,3 +24,8 @@ table.issue .message .output {
   overflow-x: auto;
   width: 100%;
 }
+
+table.links {
+  table-layout: fixed;
+  width: 100%;
+}

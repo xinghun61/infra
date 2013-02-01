@@ -5,6 +5,17 @@
 {% endblock %}
 
 {% block content %}
+<table class="links">
+  <tr>
+    <td>
+      <i><a href="/cq/top" style=>Top scores</a></i>
+    </td>
+    <td>
+      <i><a href="http://chromium.org/developers/testing/commit-queue" style=>Commit Queue FAQ</a></i>
+    </td>
+  </tr>
+</table>
+<p>
   {% for item in data %}
     <table class="issue" id="pc{{ item.0.issue }}">
       <caption><a href="http://codereview.chromium.org/{{ item.0.issue }}"
@@ -30,6 +41,4 @@
       </tbody>
     </table>
   {% endfor %}
-<p>
-<i><a href="/cq/top" style=>Top scores</a></i>
 {% endblock %}
