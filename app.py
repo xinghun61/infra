@@ -298,7 +298,8 @@ class ConsoleData(object):
 
   @staticmethod
   def ContentsToHtml(contents):
-    return ''.join([str(content) for content in contents])
+    return ''.join(unicode(content).encode('ascii', 'replace')
+                   for content in contents)
 
   @property
   def last_row(self):
@@ -369,15 +370,17 @@ class ConsoleData(object):
       attrvalue = re.sub(r'^(\S+).*', r'\1', attrvalue)
       if attrvalue == 'DevRev':
         revision = cells[0]
-        self.SawRevision(revision=revision.findAll('a')[0].contents[0])
-        self.SetLink(revlink=revision.findAll('a')[0].attrs[0][1])
+        self.SawRevision(self.ContentsToHtml(
+            revision.findAll('a')[0].contents[0]))
+        self.SetLink(self.ContentsToHtml(revision.findAll('a')[0].attrs[0][1]))
         nameparts = cells[1].contents
-        self.SetName(who=re.sub(r'^\s+(.*)\s*$',
-                                r'\1',
-                                self.ContentsToHtml(nameparts)))
+        self.SetName(re.sub(r'^\s+(.*)\s*$',
+                            r'\1',
+                            self.ContentsToHtml(nameparts)))
         for i, bs in enumerate(cells[2:]):
-          self.SetStatus(category=self.category_order[self.lastMasterSeen][i],
-                         status=str(bs.findAll('table', recursive=False)[0]))
+          self.SetStatus(self.category_order[self.lastMasterSeen][i],
+                         self.ContentsToHtml(bs.findAll('table',
+                                                        recursive=False)[0]))
       if attrvalue == 'DevComment':
         self.SetComment(comment=self.ContentsToHtml(cells[0].contents))
       if attrvalue == 'DevDetails':
