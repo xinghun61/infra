@@ -5,6 +5,7 @@
 """LKGR management webpages."""
 
 import json
+import logging
 
 from google.appengine.ext import db
 
@@ -12,7 +13,7 @@ from base_page import BasePage
 import utils
 
 
-class Revision(db.Model):
+class Revision(db.Model):  # pylint: disable=W0232
   """Description for the revisions table."""
   # The revision for which we save a status.
   revision = db.IntegerProperty(required=True)
@@ -22,6 +23,10 @@ class Revision(db.Model):
   status = db.BooleanProperty(required=True)
   # The steps that caused the failure (if any).
   failed_steps = db.TextProperty()
+  # Git hash for this revision
+  git_hash = db.StringProperty()
+  # Git hash is set
+  git_hash_set = db.BooleanProperty(default=False)
 
 
 class Revisions(BasePage):
@@ -49,24 +54,49 @@ class Revisions(BasePage):
     revision = self.request.get('revision')
     success = self.request.get('success')
     steps = self.request.get('steps')
+    git_hash = self.request.get('git_hash')
     if revision and success:
-      revision = Revision(revision=int(revision),
-                          status=(success == "1"),
-                          failed_steps=steps)
-      revision.put()
+      revision = int(revision)
+      obj = Revision.all().filter('revision', revision).get()
+      if not obj:
+        obj = Revision(revision=revision, status=(success=="1"))
+
+      obj.status = (success == "1")
+      obj.failed_steps = steps
+      if git_hash:
+        obj.git_hash = git_hash
+        obj.git_hash_set = True
+
+      obj.put()
 
 
-class LastKnownGoodRevision(BasePage):
-  """Displays the /lkgr page."""
+class LastKnownGoodRevisionSVN(BasePage):
+  """Displays the /lkgr and /svn-lkgr pages."""
 
   def get(self):
     """Look for the latest successful revision and return it."""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'
     self.response.headers['Content-Type'] = 'text/plain'
-    revision = Revision.gql(
-        'WHERE status = :1 ORDER BY revision DESC', True).get()
+    revision = Revision.all().filter('status', True).order('-revision').get()
     if revision:
       self.response.out.write(revision.revision)
+
+
+class LastKnownGoodRevisionGIT(BasePage):
+  """Displays the /git-lkgr page."""
+
+  def get(self):
+    """Look for the latest successful revision and return it."""
+    self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'
+    self.response.headers['Content-Type'] = 'text/plain'
+    revision = (
+        Revision.all().filter('status', True).filter('git_hash_set', True)
+        .order('-revision').get() )
+    if revision:
+      self.response.out.write(revision.git_hash)
+    else:
+      logging.error('OMG There\'s no git-lkgr!?')
+      self.abort(404)
 
 
 def bootstrap():

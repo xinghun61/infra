@@ -32,8 +32,8 @@ class TestCase(unittest.TestCase):
     self.local_gae = None
     super(TestCase, self).tearDown()
 
-  def get(self, suburl):
-    return self.local_gae.get(suburl)
+  def get(self, suburl, with_code=False):
+    return self.local_gae.get(suburl, with_code)
 
   def post(self, suburl, data):
     return self.local_gae.post(suburl, data)
@@ -131,16 +131,33 @@ class LkgrTest(TestCase):
     out = self.post('revisions', data)
     self.assertEqual('', out)
     self.assertEqual('42', self.get('lkgr'))
+    _, status_code = self.get('git-lkgr', with_code=True)
+    self.assertEqual(404, status_code)
+    data['git_hash'] = 'c305f265aba93cc594a0fece50346c3af7fe3301'
+    out = self.post('revisions', data)
+    self.assertEqual('', out)
+    self.assertEqual('c305f265aba93cc594a0fece50346c3af7fe3301',
+                     self.get('git-lkgr'))
     data['password'] = 'wrongpassword'
     data['revision'] = 23
     out = self.post('revisions', data)
     self.assertEqual('', out)
     self.assertEqual('42', self.get('lkgr'))
+    self.assertEqual('c305f265aba93cc594a0fece50346c3af7fe3301',
+                     self.get('git-lkgr'))
     data['password'] = 'bleh'
     data['revision'] = 31337
     out = self.post('revisions', data)
     self.assertEqual('', out)
     self.assertEqual('31337', self.get('lkgr'))
+    self.assertEqual('c305f265aba93cc594a0fece50346c3af7fe3301',
+                     self.get('git-lkgr'))
+    data['git_hash'] = '988881adc9fc3655077dc2d4d757d480b5ea0e11'
+    out = self.post('revisions', data)
+    self.assertEqual('', out)
+    self.assertEqual('31337', self.get('lkgr'))
+    self.assertEqual('988881adc9fc3655077dc2d4d757d480b5ea0e11',
+                     self.get('git-lkgr'))
 
 
 class CommitQueueTest(TestCase):

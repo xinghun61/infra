@@ -5,8 +5,14 @@
 
 import getpass
 import os
+import re
 import sys
 import urllib
+
+
+def usage():
+  print('Usage: set_lkgr.py revision [git_hash [url]]')
+  sys.exit(1)
 
 
 def get_pwd():
@@ -15,12 +21,16 @@ def get_pwd():
   return getpass.getpass()
 
 
-def post(revision, url='chromium-status.appspot.com'):
-  if not url.startswith('https://'):
+def post(revision, git_hash='', url='chromium-status.appspot.com'):
+  if not re.match('^([a-zA-Z0-9]{40})?$', git_hash):
+    print 'Git hash must match /^([a-zA-Z0-9]{40})?$/.'
+    usage()
+  if not url.startswith('https://') and not url.startswith('http://'):
     url = 'https://' + url
   data = {
       'revision': revision,
       'success': 1,
+      'git_hash': git_hash,
       'password': get_pwd(),
   }
   print url
@@ -30,8 +40,7 @@ def post(revision, url='chromium-status.appspot.com'):
 
 
 if __name__ == '__main__':
-  if not (2 <= len(sys.argv) <= 3):
-    print('Usage: set_lkgr.py revision [url]')
-    sys.exit(1)
+  if not (2 <= len(sys.argv) <= 4):
+    usage()
 
   sys.exit(post(*sys.argv[1:]))

@@ -6,6 +6,7 @@
   <table border="1" cellpadding="5">
   <tr bgcolor="#CCCCFF">
     <td><b>Revision</b></td>
+    <td><b>Git Hash</b></td>
     <td><b>When</b></td>
     <td><b>Status</b></td>
     <td><b>Failed steps</b></td>
@@ -13,6 +14,7 @@
   {% for revision in revisions %}
     <tr>
       <td>{{ revision.revision }}</td>
+      <td>{{ revision.git_hash }}</td>
       <td>{{ revision.date|date:"D M d, H:i T " }}</td>
       <td {% if revision.status %}
             bgcolor="#88FF88">SUCCESS

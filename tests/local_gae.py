@@ -158,8 +158,10 @@ class LocalGae(object):
           pass
         self.tmp_db = None
 
-  def get(self, suburl):
-    return urllib.urlopen(self.url + suburl).read()
+  def get(self, suburl, with_code):
+    f = urllib.urlopen(self.url + suburl)
+    data = f.read()
+    return data if not with_code else (data, f.getcode())
 
   def post(self, suburl, data):
     return urllib.urlopen(self.url + suburl, urllib.urlencode(data)).read()
@@ -186,7 +188,7 @@ class LocalGae(object):
     if self._xsrf_token is None:
       interactive = self.get(
           '_ah/login?email=georges%40example.com&admin=True&action=Login&'
-          'continue=/_ah/admin/interactive')
+          'continue=/_ah/admin/interactive', with_code=False)
       self._xsrf_token = re.search(
           r'name="xsrf_token" value="(.*?)"/>', interactive).group(1)
     return self._xsrf_token
