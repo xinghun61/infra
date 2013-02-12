@@ -1,13 +1,8 @@
 {
 'rev_number': '171895',
-'rev': """<td class='DevRev  DevRevCollapse' width="1%">
-  <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=171895" target="_blank">171895</a>
-</td>""",
-'name': """<td class='DevName ' width="1%">
-  danakj<span style="display:none">ohnoyoudont</span>@chromium.org
-</td>""",
-'status': """<td class='DevStatus  DevStatusCollapse'>
-<table width="100%">
+'rev': """<a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=171895" target="_blank">171895</a>""",
+'name': """danakj<span style="display:none">ohnoyoudont</span>@chromium.org""",
+'status': """<table width="100%">
 <tr>    
 <td class='DevStatusBox'>
 <a href='http://build.chromium.org/p/chromium.win/buildstatus?builder=Win%20Builder&number=4706'
@@ -171,12 +166,9 @@ target="_blank"></a>
 </td>
 
 </tr>
-</table>
-</td>""",
-'comment': """<tr>
-<td colspan="4" class='DevComment '>
+</table>""",
+'comment': """
 cc: Add receiver for CompositorFrameAck in LayerTreeHostImpl and forward it to the renderer.<br/><br/>BUG=146080<br/>R=piman<br/><br/>Review URL: https://codereview.chromium.org/11472004
-</td>
-</tr>""",
+""",
 'details': ''
 }

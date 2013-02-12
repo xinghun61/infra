@@ -347,18 +347,18 @@ class ConsoleData(object):
   def AddRow(self, row):
     revision = row['rev_number']
     self.SawRevision(revision)
-    revlink = BeautifulSoup(row['rev']).td.a['href']
+    revlink = BeautifulSoup(row['rev']).a['href']
     self.SetLink(revlink)
-    name = BeautifulSoup(row['name']).td.contents
+    name = BeautifulSoup(row['name'])
     self.SetName(self.ContentsToHtml(name))
     status = BeautifulSoup(row['status']).findAll('table')
     for i, stat in enumerate(status):
       self.SetStatus(self.category_order[self.lastMasterSeen][i],
                      unicode(stat))
-    comment = BeautifulSoup(row['comment']).td.contents
+    comment = BeautifulSoup(row['comment'])
     self.SetComment(self.ContentsToHtml(comment))
     if row['details']:
-      details = BeautifulSoup(row['details']).td.contents
+      details = BeautifulSoup(row['details'])
       self.SetDetail(self.ContentsToHtml(details))
 
   def ParseRow(self, row):
@@ -427,8 +427,7 @@ def console_merger(localpath, remoteurl, page_data,
       category_list.append('')
     else:
       category_row = BeautifulSoup(master_categories['content'])
-      category_list = map(lambda x: x.text,
-                          category_row.findAll('td', 'DevStatus'))
+      category_list = [c.text for c in category_row.findAll('td', 'DevStatus')]
     # Get the corresponding summary box(es).
     summary_row = BeautifulSoup(master_summary['content'])
     summary_list = summary_row.findAll('table')
@@ -711,14 +710,18 @@ def parse_master(localpath, remoteurl, page_data=None):
   # or a spacer row (in which case we finalize the row and save it).
   for row in rows:
     if row.find('td', 'DevComment'):
-      curr_row['comment'] = unicode(row)
+      curr_row['comment'] = ''.join(unicode(tag).strip() for tag in
+                                    row.td.contents)
     elif row.find('td', 'DevDetails'):
-      curr_row['details'] = unicode(row)
+      curr_row['details'] = ''.join(unicode(tag).strip() for tag in
+                                    row.td.contents)
     elif row.find('td', 'DevStatus'):
-      curr_row['rev'] = unicode(row.find('td', 'DevRev'))
+      curr_row['rev'] = unicode(row.find('td', 'DevRev').a)
       curr_row['rev_number'] = unicode(row.find('td', 'DevRev').a.string)
-      curr_row['name'] = unicode(row.find('td', 'DevName'))
-      curr_row['status'] = unicode(row.findAll('table'))
+      curr_row['name'] = ''.join(unicode(tag).strip() for tag in
+                                 row.find('td', 'DevName').contents)
+      curr_row['status'] = ''.join(unicode(box.table) for box in
+                                   row.findAll('td', 'DevStatus'))
     else:
       if 'details' not in curr_row:
         curr_row['details'] = ''
