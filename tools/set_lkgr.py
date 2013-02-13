@@ -27,6 +27,12 @@ def post(revision, git_hash='', url='chromium-status.appspot.com'):
     usage()
   if not url.startswith('https://') and not url.startswith('http://'):
     url = 'https://' + url
+  if url.startswith('http://'):
+    print('WARNING: Using set_lkgr.py with an http:// url only works on '
+          'the dev_appserver.')
+    if raw_input('Continue (y/N): ').lower() != 'y':
+      print 'Aborting.'
+      sys.exit(1)
   data = {
       'revision': revision,
       'success': 1,
