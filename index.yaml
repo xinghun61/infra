@@ -212,3 +212,10 @@ indexes:
   properties:
   - name: timestamp
     direction: desc
+
+- kind: Revision
+  properties:
+  - name: git_hash_set
+  - name: status
+  - name: revision
+    direction: desc
