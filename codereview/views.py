@@ -1978,7 +1978,14 @@ def _get_patchset_info(request, patchset_id):
           patch._lines = None
           patch.parsed_deltas = []
           for delta in patch.delta:
-            patch.parsed_deltas.append([patchset_id_mapping[delta], delta])
+            # If delta is not in patchset_id_mapping, it's because of internal
+            # corruption.
+            if delta in patchset_id_mapping:
+              patch.parsed_deltas.append([patchset_id_mapping[delta], delta])
+            else:
+              logging.error(
+                  'Issue %d: %d is missing from %s',
+                  issue.key().id(), delta, patchset_id_mapping)
       except DeadlineExceededError:
         logging.exception('DeadlineExceededError in _get_patchset_info')
         if attempt > 2:
@@ -3633,8 +3640,10 @@ def repos(request):
     # Using ._repo instead of .repo returns the db.Key of the referenced entity.
     # Access to a protected member FOO of a client class
     # pylint: disable=W0212
-    branch.repository = repo_map[str(branch._repo)]
-    branches.append(branch)
+    repo = str(branch._repo)
+    if repo in repo_map:
+      branch.repository = repo_map[repo]
+      branches.append(branch)
   branches.sort(key=lambda b: map(
     unicode.lower, (b.repository.name, b.category, b.name)))
   return respond(request, 'repos.html', {'branches': branches})
