@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}Build Log{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <script src="http://code.jquery.com/jquery.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/prettify.js"></script>
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+
+      #branding {
+        margin-left: 0;
+      }
+
+      #beta {
+        position: relative;
+        top: -10px;
+        font-size: 11pt;
+      }
+    </style>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <ul class="nav pull-right">
+          <li><a id="orig_page" href="{{url}}">Original Page</a></li>
+        </ul>
+        <div id='navbar-container' class="container-fluid">
+          <button type="button" class="btn btn-navbar"
+              data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a id="branding" class="brand" href="/buildbot/">
+            Buildbot Viewer<small id='beta'>Beta</small>
+          </a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              {% for crumb, link in breadcrumbs %}
+                {% if loop.last %}
+                  <li class="active">
+                {% else %}
+                  <li>
+                {% endif %}
+                  <a href="{{link}}">{{crumb}}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <div id="main-container" class="container-fluid">
+      {% block body %}{% endblock %}
+      {% block footer %}
+      <div class="row">
+        <hr>
+        <div class="span4">
+          {% block sub_footer %}{% endblock sub_footer %}
+        </div>
+        <div class="span2 pull-right">
+        <span class="pull-right">
+          <a href="https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&comment=This+is+a+user+reported+issue+with+the+new+build.chromium.org+interface.&summary=One+liner+issue+description+here">
+            Report an issue
+          </a>
+        </span>
+        <img alt="Chrome" data-g-event="nav-logo" data-g-label=
+          "consumer-home" id="logo" src=
+          "http://www.google.com/intl/en/chrome/assets/common/images/chrome_logo_2x.png">
+        </div>
+      </div>
+      {% endblock %}
+    </div>
+    <script>
+      !function ($) {
+        $(function(){
+          window.prettyPrint && prettyPrint()
+        })
+      }(window.jQuery)
+
+      // Creates a new cookie.
+      function createCookie(name, value, day) {
+          var date = new Date();
+          date.setTime(date.getTime() + (day * 24 * 60 * 60 * 1000));
+          var expires = "; expires=" + date.toGMTString();
+          document.cookie = name + "=" + value+expires + "; path=/";
+      }
+
+      // Deletes a cookie.
+      function eraseCookie(name) {
+          createCookie(name, "", -1);
+      }
+
+      function update_time_ago_sec(text) {
+        $(".time_ago").each(function(){
+          console.log($(this).text());
+          text = $(this).text();
+          r_mins = /(\d+) min/;
+          r_secs = /(\d+) sec/;
+          m_mins = r_mins.exec(text);
+          m_secs = r_secs.exec(text);
+          if (m_secs) {
+            secs = parseInt(m_secs[1]);
+          } else {
+            return;
+          }
+          if (m_mins) {
+            mins = parseInt(m_mins[1]);
+          } else {
+            mins = 0;
+          }
+          secs += 1;
+          if (secs > 59) {
+            mins += 1;
+            secs = 0;
+          }
+          results = "";
+          if (mins) {
+            if (mins == 1) {
+              results += mins + " min ";
+            } else {
+              results += mins + " mins ";
+            }
+          }
+          if (secs == 1) {
+            results += secs + " sec ";
+          } else {
+            results += secs + " secs ";
+          }
+          results += "ago";
+          $(this).text(results);
+        });
+      }
+
+        function update_time_ago_min(text) {
+          $(".time_ago").each(function(){
+            console.log($(this).text());
+            text = $(this).text();
+            r_hrs = /(\d+) hr/;
+            r_mins = /(\d+) min/;
+            r_secs = /(\d+) sec/;
+            jrs = parseInt(r_hrs.exec(text)[1]);
+            mins = parseInt(r_mins.exec(text)[1]);
+            secs = parseInt(r_secs.exec(text)[1]);
+            if (secs) {
+              return;
+            }
+            mins += 1;
+            if (mins > 59) {
+              hrs += 1;
+              mins = 0;
+            }
+            results = "";
+            if (hrs) {
+              if (hrs == 1) {
+                results += hrs + " hr ";
+              } else {
+                results += hrs + " hrs ";
+              }
+            }
+            if (mins == 1) {
+              results += mins + " min ";
+            } else {
+              results += mins + " mins ";
+            }
+            results += "ago";
+            $(this).text(results);
+          });
+        }
+
+      $(document).ready(function(){
+        createCookie('new', true, 99999);  // Default to the new page.
+        $("#orig_page").click(function(){
+          eraseCookie('new');
+        });
+
+        // Find .time_ago and makes them count down properly.
+        setInterval(update_time_ago_sec, 1000);
+        setInterval(update_time_ago_min, 60000);
+      });
+    </script>
+  </body>
+</html>

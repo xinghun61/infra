@@ -26,6 +26,9 @@ handlers:
   script: merger.application
   login: admin
 
+- url: /buildbot/.*
+  script: buildlogparse.app
+
 - url: /.*
   script: handler.application
 
