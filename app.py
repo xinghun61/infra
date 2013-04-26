@@ -581,10 +581,11 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
                    "https://chromium-build.appspot.com/p/"
                    "chromium-status/current", content)
 
+  # TODO(hinoka): Enable these when the app is done.
   # Convert direct build.chromium.org links to local links.
-  content = re.sub("http://build.chromium.org/p/", "/buildbot/", content)
-  content = re.sub(r"/buildbot/(.*)/buildstatus\?builder=(.*)&number=(\d+)",
-                   r"/buildbot/\1/builders/\2/builds/\3", content)
+  # content = re.sub("http://build.chromium.org/p/", "/buildbot/", content)
+  # content = re.sub(r"/buildbot/(.*)/buildstatus\?builder=(.*)&number=(\d+)",
+  #                  r"/buildbot/\1/builders/\2/builds/\3", content)
 
   # Disable the personalized for box for now.
   content = re.sub(r"<input id='namebox", r"<!-- <input id='namebox", content)
