@@ -16,6 +16,12 @@ from base_page import BasePage
 import utils
 
 
+ALLOWED_ORIGINS = [
+    'https://gerrit-int.chromium.org',
+    'https://gerrit.chromium.org',
+]
+
+
 class Status(db.Model):
   """Description for the status table."""
   # The username who added this status.
@@ -157,9 +163,9 @@ class CurrentPage(BasePage):
       self.response.out.write(status.message)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
-      if self.request.get('with_credentials'):
-        self.response.headers['Access-Control-Allow-Origin'] = (
-            'gerrit-int.chromium.org, gerrit.chromium.org')
+      origin = self.request.headers.get('Origin')
+      if self.request.get('with_credentials') and origin in ALLOWED_ORIGINS:
+        self.response.headers['Access-Control-Allow-Origin'] = origin
         self.response.headers['Access-Control-Allow-Credentials'] = 'true'
       else:
         self.response.headers['Access-Control-Allow-Origin'] = '*'
