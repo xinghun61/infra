@@ -522,6 +522,10 @@ class SearchForm(forms.Form):
                              max_length=MAX_REVIEWERS,
                              widget=AccountInput(attrs={'size': 60,
                                                         'multiple': False}))
+  cc = forms.CharField(required=False,
+                       max_length=MAX_CC,
+                       label = 'CC',
+                       widget=AccountInput(attrs={'size': 60}))
   repo_guid = forms.CharField(required=False, max_length=MAX_URL,
                               label="Repository ID")
   base = forms.CharField(required=False, max_length=MAX_URL)
@@ -575,10 +579,24 @@ class SearchForm(forms.Form):
       return user.email()
 
 
+class StringListField(forms.CharField):
+
+  def prepare_value(self, value):
+    if value is None:
+      return ''
+    return ','.join(value)
+
+  def to_python(self, value):
+    if not value:
+      return []
+    return [list_value.strip() for list_value in value.split(',')]
+
+
 class ClientIDAndSecretForm(forms.Form):
   """Simple form for collecting Client ID and Secret."""
   client_id = forms.CharField()
   client_secret = forms.CharField()
+  additional_client_ids = StringListField()
 
 
 ### Exceptions ###
@@ -1396,6 +1414,26 @@ def block_user(request):
           account.blocked,
           account.email)
       account.put()
+      if account.blocked:
+        # Remove user from existing issues so that he doesn't participate in
+        # email communication anymore.
+        tbd = {}
+        email = account.user.email()
+        query = models.Issue.all().filter('reviewers =', email)
+        for issue in query:
+          issue.reviewers.remove(email)
+          issue.calculate_updates_for()
+          tbd[issue.key()] = issue
+        # look for issues where blocked user is in cc only
+        query = models.Issue.all().filter('cc =', email)
+        for issue in query:
+          if issue.key() in tbd:
+            # Update already changed instance instead. This happens when the
+            # blocked user is in both reviewers and ccs.
+            issue = tbd[issue.key()]
+          issue.cc.remove(account.user.email())
+          tbd[issue.key()] = issue
+        db.put(tbd.values())
   else:
     form = BlockForm()
   form.initial['blocked'] = account.blocked
@@ -1695,10 +1733,6 @@ def upload_complete(request, patchset_id=None):
   return HttpTextResponse(msg, status=status)
 
 
-class EmptyPatchSet(Exception):
-  """Exception used inside _make_new() to break out of the transaction."""
-
-
 def _make_new(request, form):
   """Creates new issue and fill relevant fields from given form data.
 
@@ -1730,33 +1764,47 @@ def _make_new(request, form):
   if base is None:
     return (None, None)
 
-  def txn():
-    issue = models.Issue(subject=form.cleaned_data['subject'],
-                         description=form.cleaned_data['description'],
-                         base=base,
-                         repo_guid=form.cleaned_data.get('repo_guid', None),
-                         reviewers=reviewers,
-                         cc=cc,
-                         private=form.cleaned_data.get('private', False),
-                         n_comments=0)
-    issue.put()
+  issue_key = db.Key.from_path(
+    models.Issue.kind(),
+    db.allocate_ids(db.Key.from_path(models.Issue.kind(), 1), 1)[0])
 
-    patchset = models.PatchSet(issue=issue, data=data, url=url, parent=issue)
-    patchset.put()
+  issue = models.Issue(subject=form.cleaned_data['subject'],
+                       description=form.cleaned_data['description'],
+                       base=base,
+                       repo_guid=form.cleaned_data.get('repo_guid', None),
+                       reviewers=reviewers,
+                       cc=cc,
+                       private=form.cleaned_data.get('private', False),
+                       n_comments=0,
+                       key=issue_key)
+  issue.put()
 
-    if not separate_patches:
+  ps_key = db.Key.from_path(
+    models.PatchSet.kind(),
+    db.allocate_ids(db.Key.from_path(models.PatchSet.kind(), 1,
+                                     parent=issue.key()), 1)[0],
+    parent=issue.key())
+
+  patchset = models.PatchSet(issue=issue, data=data, url=url, key=ps_key)
+  patchset.put()
+
+  if not separate_patches:
+    try:
       patches = engine.ParsePatchSet(patchset)
-      if not patches:
-        raise EmptyPatchSet  # Abort the transaction
-      db.put(patches)
-    return issue, patchset
+    except:
+      # catch all exceptions happening in engine.ParsePatchSet,
+      # engine.SplitPatch. With malformed diffs a variety of exceptions could
+      # happen there.
+      logging.exception('Exception during patch parsing')
+      patches = []
+    if not patches:
+      patchset.delete()
+      issue.delete()
+      errkey = url and 'url' or 'data'
+      form.errors[errkey] = ['Patch set contains no recognizable patches']
+      return (None, None)
 
-  try:
-    issue, patchset = db.run_in_transaction(txn)
-  except EmptyPatchSet:
-    errkey = url and 'url' or 'data'
-    form.errors[errkey] = ['Patch set contains no recognizable patches']
-    return (None, None)
+    db.put(patches)
 
   if form.cleaned_data.get('send_mail'):
     msg = _make_message(request, issue, '', '', True)
@@ -1829,7 +1877,6 @@ def add(request):
 def _add_patchset_from_form(request, issue, form, message_key='message',
                             emails_add_only=False):
   """Helper for add() and upload()."""
-  # TODO(guido): use a transaction like in _make_new(); may be share more code?
   if form.is_valid():
     data_url = _get_data_url(form)
   if not form.is_valid():
@@ -1842,12 +1889,21 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     return None
   data, url, separate_patches = data_url
   message = form.cleaned_data[message_key]
+  ps_key = db.Key.from_path(
+    models.PatchSet.kind(),
+    db.allocate_ids(db.Key.from_path(models.PatchSet.kind(), 1,
+                                     parent=issue.key()), 1)[0],
+    parent=issue.key())
   patchset = models.PatchSet(issue=issue, message=message, data=data, url=url,
-                             parent=issue)
+                             key=ps_key)
   patchset.put()
 
   if not separate_patches:
-    patches = engine.ParsePatchSet(patchset)
+    try:
+      patches = engine.ParsePatchSet(patchset)
+    except:
+      logging.exception('Exception during patchset parsing')
+      patches = []
     if not patches:
       patchset.delete()
       errkey = url and 'url' or 'data'
@@ -1911,6 +1967,13 @@ def _get_emails_from_raw(raw_emails, form=None, label=None):
         return None
       if db_email not in emails:
         emails.append(db_email)
+  # Remove blocked accounts
+  for account in models.Account.get_multiple_accounts_by_email(emails).values():
+    if account.blocked:
+      try:
+        emails.remove(account.email)
+      except IndexError:
+        pass
   return emails
 
 
@@ -2238,6 +2301,7 @@ def account(request):
     accounts = models.Account.all()
     accounts.filter("lower_%s >= " % property, query)
     accounts.filter("lower_%s < " % property, query + u"\ufffd")
+    accounts.filter("blocked =", False)
     accounts.order("lower_%s" % property)
     for account in accounts:
       if account.key() in added:
@@ -3433,6 +3497,20 @@ def publish(request):
   return HttpResponseRedirect(reverse(show, args=[issue.key().id()]))
 
 
+@login_required
+@issue_required
+@xsrf_required
+def delete_drafts(request):
+  """Deletes all drafts of the current user for an issue."""
+  query = models.Comment.all().ancestor(request.issue).filter(
+    'author = ', request.user).filter('draft = ', True)
+  db.delete(query)
+  request.issue.calculate_draft_count_by_user()
+  request.issue.put()
+  return HttpResponseRedirect(
+    reverse(publish, args=[request.issue.key().id()]))
+
+
 def _encode_safely(s):
   """Helper to turn a unicode string into 8-bit bytes."""
   if isinstance(s, unicode):
@@ -3827,6 +3905,8 @@ def search(request):
     q.filter('owner = ', form.cleaned_data['owner'])
   if form.cleaned_data['reviewer']:
     q.filter('reviewers = ', form.cleaned_data['reviewer'])
+  if form.cleaned_data['cc']:
+    q.filter('cc = ', form.cleaned_data['cc'])
   if form.cleaned_data['private'] is not None:
     q.filter('private = ', form.cleaned_data['private'])
   if form.cleaned_data['commit'] is not None:
@@ -4451,7 +4531,7 @@ def _create_flow(django_request):
   """
   redirect_path = reverse(oauth2callback)
   redirect_uri = django_request.build_absolute_uri(redirect_path)
-  client_id, client_secret = auth_utils.SecretKey.get_config()
+  client_id, client_secret, _ = auth_utils.SecretKey.get_config()
   return OAuth2WebServerFlow(client_id, client_secret, auth_utils.EMAIL_SCOPE,
                              redirect_uri=redirect_uri,
                              approval_prompt='force')
@@ -4558,7 +4638,9 @@ def set_client_id_and_secret(request):
     if form.is_valid():
       client_id = form.cleaned_data['client_id']
       client_secret = form.cleaned_data['client_secret']
-      auth_utils.SecretKey.set_config(client_id, client_secret)
+      additional_client_ids = form.cleaned_data['additional_client_ids']
+      auth_utils.SecretKey.set_config(client_id, client_secret,
+                                      additional_client_ids)
     return HttpResponseRedirect(reverse(set_client_id_and_secret))
   else:
     form = ClientIDAndSecretForm()
