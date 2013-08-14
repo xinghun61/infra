@@ -155,9 +155,19 @@ class AllStatusPage(BasePage):
 class CurrentPage(BasePage):
   """Displays the /current page."""
 
-  @utils.requires_read_access
   def get(self):
-    """Displays the current message and nothing else."""
+    # Show login link on current status bar when login is required.
+    out_format = self.request.get('format', 'html')
+    if out_format == 'html' and not self.read_access and not self.user:
+      template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
+      template_values['show_login'] = True
+      self.DisplayTemplate('current.html', template_values, use_cache=True)
+    else:
+      self._handle() 
+
+  @utils.requires_read_access
+  def _handle(self):
+    """Displays the current message in various formats."""
     out_format = self.request.get('format', 'html')
     status = get_status()
     if out_format == 'raw':
@@ -179,6 +189,7 @@ class CurrentPage(BasePage):
       self.response.out.write(data)
     elif out_format == 'html':
       template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
+      template_values['show_login'] = False
       template_values['message'] = status.message
       template_values['state'] = status.general_state
       self.DisplayTemplate('current.html', template_values, use_cache=True)

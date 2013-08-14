@@ -221,9 +221,9 @@ class AccessControl(TestCase):
           urllib2.HTTPError, self.post, '',
           {'message': 'foo', 'last_status_key': 'junk'})
     else:
-      current = self.get('')
+      main_page = self.get('')
       last_status_key = re.search(
-          r'name="last_status_key" value="(.*?)"', current)
+          r'name="last_status_key" value="(.*?)"', main_page)
       if fails:
         # last_status_key doesn't appear if you aren't an admin.
         self.assertEqual(None, last_status_key)
@@ -235,14 +235,34 @@ class AccessControl(TestCase):
                   'last_status_key': last_status_key.group(1)})
         self.assertEqual('foo', self.get('current?format=raw'))
 
-  def _check_current_page(self, fails=False):
+  def _check_current_page(self, fails=False, seeks_login=False):
     if fails:
       self.assertRaises(urllib2.HTTPError, self.get, 'current')
+    elif seeks_login:
+      out = self.get('current')
+      self.assertTrue(100 < len(out))
+      self.assertTrue(out.startswith('<html>'))
+      self.assertTrue('Login Required' in out)
     else:
       out = self.get('current')
       self.assertTrue(100 < len(out))
       self.assertTrue(out.startswith('<html>'))
       self.assertTrue('<title>Login</title>' not in out)
+      self.assertTrue('Login Required' not in out)
+
+  def _check_current_raw_page(self, fails=False, seeks_login=False):
+    if fails:
+      self.assertRaises(urllib2.HTTPError, self.get, 'current?format=raw')
+    elif seeks_login:
+      out = self.get('current?format=raw')
+      self.assertTrue(100 < len(out))
+      self.assertTrue(out.startswith('<html>'))
+      self.assertTrue('<title>Login</title>' in out)
+    else:
+      out = self.get('current?format=raw')
+      self.assertTrue(not out.startswith('<html>'))
+      self.assertTrue('<title>Login</title>' not in out)
+      self.assertTrue('Login Required' not in out)
 
   def _check_post_thru_status_fails(self):
     self.assertRaises(urllib2.HTTPError, self.post,
@@ -252,17 +272,19 @@ class AccessControl(TestCase):
     # Confirm default config does not allow chromium.org access.
     self.login('bob@chromium.org')
     self._check_current_page(fails=True)
+    self._check_current_raw_page(fails=True)
     self._check_post_thru_ui(fails=True, fails_main_page=True)
     self._check_post_thru_status_fails()
 
   def test_private_requires_login(self):
     # Confirm private access redirects to a login screen.
-    out = self.get('current')
-    self.assertTrue('<title>Login</title>' in out)
+    self._check_current_page(seeks_login=True)
+    self._check_current_raw_page(seeks_login=True)
 
   def test_private_allows_google(self):
     self.login('bob@google.com')
     self._check_current_page()
+    self._check_current_raw_page()
     self._check_post_thru_ui()
     # Status, however, requires bot login.
     self._check_post_thru_status_fails()
@@ -270,6 +292,7 @@ class AccessControl(TestCase):
   def test_private_denies_other(self):
     self.login('bob@example.com')
     self._check_current_page(fails=True)
+    self._check_current_raw_page(fails=True)
     self._check_post_thru_ui(fails=True, fails_main_page=True)
     self._check_post_thru_status_fails()
 
@@ -277,6 +300,7 @@ class AccessControl(TestCase):
     self.set_global_config(app_name='foo', public_access=True)
     self.login('bob@chromium.org')
     self._check_current_page()
+    self._check_current_raw_page()
     self._check_post_thru_ui()
     # Status, however, requires bot login.
     self._check_post_thru_status_fails()
@@ -285,6 +309,7 @@ class AccessControl(TestCase):
     self.set_global_config(app_name='foo', public_access=True)
     self.login('bar@baz.com')
     self._check_current_page()
+    self._check_current_raw_page()
     self._check_post_thru_ui(fails=True)
     self._check_post_thru_status_fails()
 
@@ -322,6 +347,7 @@ class AccessControl(TestCase):
     # Login and try various operations.
     self.login('bob@chromium.org')
     self._check_current_page()
+    self._check_current_raw_page()
     self._check_post_thru_ui()
     # Verify the config now shows True.
     result = self.local_gae.query(
