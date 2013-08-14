@@ -39,7 +39,7 @@ class ProfileReport(db.Model):
 
 
 class Profiling(BasePage):
-  @utils.admin_only
+  @utils.requires_write_access
   def get(self):
     """Returns json formated data according to the provided filters."""
     limit = int(self.request.get('limit', 100))
@@ -108,7 +108,7 @@ class Profiling(BasePage):
 
 class Cleanup(webapp.RequestHandler):
   """A cron job."""
-  @utils.work_queue_only
+  @utils.requires_work_queue_login
   def get(self):
     """Delete reports older than ~6 months."""
     cutoff = datetime.datetime.now() - datetime.timedelta(days=31*6)

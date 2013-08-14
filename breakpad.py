@@ -46,7 +46,7 @@ class Admins(db.Model):
 
 
 class BreakPad(BasePage):
-  @utils.admin_only
+  @utils.requires_write_access
   def get(self):
     limit = int(self.request.get('limit', 30))
     reports = Report.gql('ORDER BY date DESC LIMIT %d' % limit)
@@ -87,7 +87,7 @@ class BreakPad(BasePage):
 
 class SendIM(webapp.RequestHandler):
   """A taskqueue."""
-  @utils.work_queue_only
+  @utils.requires_work_queue_login
   def post(self):
     user = self.request.get('user')
     stack = self.request.get('stack')
@@ -102,7 +102,7 @@ class SendIM(webapp.RequestHandler):
 
 class Cleanup(webapp.RequestHandler):
   """A cron job."""
-  @utils.work_queue_only
+  @utils.requires_work_queue_login
   def get(self):
     """Delete reports older than 31 days."""
     cutoff = datetime.datetime.now() - datetime.timedelta(days=31)

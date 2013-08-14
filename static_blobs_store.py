@@ -13,6 +13,7 @@ from google.appengine.ext import db
 from google.appengine.ext.webapp import blobstore_handlers
 
 import base_page
+import utils
 
 
 VALID_RESOURCES = [ 'favicon.ico', 'logo.png' ]
@@ -50,6 +51,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
 
 class ServeHandler(blobstore_handlers.BlobstoreDownloadHandler):
   """Serves a static file."""
+  @utils.requires_read_access
   def get(self, resource):
     filename = str(urllib.unquote(resource))
     if not filename in VALID_RESOURCES:
@@ -86,6 +88,7 @@ class FormPage(base_page.BasePage):
 
 class ListPage(base_page.BasePage):
   """List the uploaded blobs."""
+  @utils.requires_read_access
   def get(self):
     template_values = self.InitializeTemplate(self.APP_NAME + ' static files')
     template_values['blobs'] = StaticBlobStoreFile.all()

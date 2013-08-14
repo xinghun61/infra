@@ -28,26 +28,31 @@ class Passwords(db.Model):
 class GlobalConfig(db.Model):
   """Instance-specific config like application name."""
   app_name = db.StringProperty(required=True)
+  # Flag indicating that anonymous viewing is possible.
+  public_access = db.BooleanProperty()
 
 
 class BasePage(webapp.RequestHandler):
   """Utility functions needed to validate user and display a template."""
-  # Check if the username ends with @chromium.org/@google.com.
-  _VALID_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
   # Initialized in bootstrap(), which is called serially at process startup.
   APP_NAME = ''
+  _VALID_PUBLIC_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
+  _VALID_PRIVATE_EMAIL = re.compile(r"^.*@(google\.com)$")
+  PUBLIC_ACCESS = False
 
   def __init__(self, *args, **kwargs):
     super(BasePage, self).__init__(*args, **kwargs)
-    self._is_admin = None
-    self._user = None
     self._initialized = False
+    # Read and write access mean to the datastore.
+    # Bot access is specifically required (in addition to write access) for
+    # some queries that are allowed to specify a username synthetically.
+    self._read_access = False
+    self._write_access = False
+    self._bot_login = False
+    self._user = None
 
   def _late_init(self):
-    """Initializes self._is_admin and self._user once the request object is
-    setup.
-    """
-    self._is_admin = False
+    """Initializes access control fields once the object is setup."""
 
     def look_for_password():
       """Looks for password parameter. Not awesome."""
@@ -56,11 +61,15 @@ class BasePage(webapp.RequestHandler):
         sha1_pass = hashlib.sha1(password).hexdigest()
         if Passwords.gql('WHERE password_sha1 = :1', sha1_pass).get():
           # The password is valid, this is a super admin.
-          self._is_admin = True
+          self._write_access = True
+          self._read_access = True
+          self._bot_login = True
         else:
           if utils.is_dev_env() and password == 'foobar':
             # Dev server is unsecure.
-            self._is_admin = True
+            self._read_access = True
+            self._write_access = True
+            self._bot_login = True
           else:
             logging.error('Password is invalid')
 
@@ -74,24 +83,46 @@ class BasePage(webapp.RequestHandler):
         if self.request.scheme == 'https':
           look_for_password()
 
-    if not self._is_admin and self._user:
-      self._is_admin = bool(
+    if not self._write_access and self._user:
+      if self.PUBLIC_ACCESS:
+        valid_email = self._VALID_PUBLIC_EMAIL
+      else:
+        valid_email = self._VALID_PRIVATE_EMAIL
+      self._write_access = bool(
           users.is_current_user_admin() or
-          self._VALID_EMAIL.match(self._user.email()))
+          valid_email.match(self._user.email()))
+    if self.PUBLIC_ACCESS:
+      self._read_access = True
+    else:
+      self._read_access = self._write_access
+
     self._initialized = True
-    logging.info('Admin: %s, User: %s' % (self._is_admin, self._user))
+    logging.info('ReadAccess: %r, WriteAccess: %r, BotLogin: %r, User: %s' % (
+        self._read_access, self._write_access, self._bot_login, self._user))
 
   @property
-  def is_admin(self):
+  def write_access(self):
     if not self._initialized:
       self._late_init()
-    return self._is_admin
+    return self._write_access
+
+  @property
+  def read_access(self):
+    if not self._initialized:
+      self._late_init()
+    return self._read_access
 
   @property
   def user(self):
     if not self._initialized:
       self._late_init()
     return self._user
+
+  @property
+  def bot_login(self):
+    if not self._initialized:
+      self._late_init()
+    return self._bot_login
 
   def InitializeTemplate(self, title):
     """Initializes the template values with information needed by all pages."""
@@ -104,7 +135,7 @@ class BasePage(webapp.RequestHandler):
       'username': user_email,
       'title': title,
       'current_UTC_time': datetime.datetime.now(),
-      'is_admin': self.is_admin,
+      'write_access': self.write_access,
       'user': self.user,
     }
     return template_values
@@ -131,17 +162,26 @@ def bootstrap():
   app_name = os.environ['APPLICATION_ID']
   if app_name.endswith('-status'):
     app_name = app_name[:-7]
-  config = db.GqlQuery('SELECT * FROM GlobalConfig').get()
+  config = GlobalConfig.all().get()
   if config is None:
     # Insert a dummy GlobalConfig so it can be edited through the admin
     # console
-    GlobalConfig(app_name=app_name).put()
-  elif not config.app_name:
-    config.app_name = app_name
+    config = GlobalConfig(app_name=app_name)
+    config.public_access = False
     config.put()
   else:
-    app_name = config.app_name
-  BasePage.APP_NAME = app_name
+    needs_update = False
+    if not config.app_name:
+      config.app_name = app_name
+      needs_update = True
+    if config.public_access is None:
+      # Upgrade to public_access for existing waterfalls.
+      config.public_access = True
+      needs_update = True
+    if needs_update:
+      config.put()
+  BasePage.APP_NAME = config.app_name
+  BasePage.PUBLIC_ACCESS = config.public_access
 
   if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
     # Insert a dummy Passwords so it can be edited through the admin console

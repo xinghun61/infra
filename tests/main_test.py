@@ -25,6 +25,7 @@ class TestCase(unittest.TestCase):
     self.local_gae = local_gae.LocalGae()
     self.local_gae.start_server(logging.getLogger().isEnabledFor(logging.DEBUG))
     self.url = 'http://127.0.0.1:%d/' % self.local_gae.port
+    self.clear_cookies()
 
   def tearDown(self):
     if self.local_gae:
@@ -32,17 +33,26 @@ class TestCase(unittest.TestCase):
     self.local_gae = None
     super(TestCase, self).tearDown()
 
-  def get(self, suburl, with_code=False):
-    return self.local_gae.get(suburl, with_code)
+  def get(self, suburl):
+    return self.local_gae.get(suburl)
 
   def post(self, suburl, data):
     return self.local_gae.post(suburl, data)
+
+  def clear_cookies(self):
+    self.local_gae.clear_cookies()
+
+  def login(self, username, admin=False):
+    self.local_gae.login(username, admin)
 
   def set_admin_pwd(self, password):
     # There will be no entities until main() has been called. So do a dummy
     # request first.
     hashvalue = hashlib.sha1(password).hexdigest()
-    self.get('doesnt_exist')
+    try:
+      self.get('doesnt_exist')
+    except urllib2.HTTPError:
+      pass
 
     # First verify the default value exists and then override its value.
     count = self.local_gae.query(
@@ -59,8 +69,31 @@ class TestCase(unittest.TestCase):
         'print db.GqlQuery("SELECT * FROM Passwords").count()\n')
     assert int(count) == 1
 
+  def set_global_config(self, app_name, public_access):
+    # Verify the default config doesn't exist.
+    count = self.local_gae.query(
+        'import base_page\n'
+        'print db.GqlQuery("SELECT * FROM GlobalConfig").count()\n')
+    assert int(count) == 0
 
-class StatusTest(TestCase):
+    cmd = (
+        'import base_page\n'
+        'config = base_page.GlobalConfig(app_name=%r)\n' % app_name +
+        'config.public_access = %r\n' % public_access +
+        'config.put()\n'
+        'print "ok"'
+    )
+    ok = self.local_gae.query(cmd)
+    assert ok.strip() == 'ok'
+
+
+class PublicTestCase(TestCase):
+  def setUp(self):
+    super(PublicTestCase, self).setUp()
+    self.set_global_config(app_name='bogus_app', public_access=True)
+
+
+class StatusTest(PublicTestCase):
   def test_all_status(self):
     out = self.get('allstatus').splitlines()
     out = [i for i in out if i]
@@ -104,7 +137,7 @@ class StatusTest(TestCase):
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'bar'
     data['password'] = 'wrong password'
-    self.assertEqual('', self.post('status', data))
+    self.assertRaises(urllib2.HTTPError, self.post, 'status', data)
     # Wasn't updated since the password was wrong.
     self.assertEqual('foo', self.get('current?format=raw'))
     data['message'] = 'boo'
@@ -116,7 +149,7 @@ class StatusTest(TestCase):
     self.assertTrue(100 < len(self.get('')))
 
 
-class LkgrTest(TestCase):
+class LkgrTest(PublicTestCase):
   def test_lkgr(self):
     self.assertEqual('', self.get('lkgr'))
 
@@ -131,8 +164,7 @@ class LkgrTest(TestCase):
     out = self.post('revisions', data)
     self.assertEqual('', out)
     self.assertEqual('42', self.get('lkgr'))
-    _, status_code = self.get('git-lkgr', with_code=True)
-    self.assertEqual(404, status_code)
+    self.assertRaises(urllib2.HTTPError, self.get, 'git-lkgr')
     data['git_hash'] = 'c305f265aba93cc594a0fece50346c3af7fe3301'
     out = self.post('revisions', data)
     self.assertEqual('', out)
@@ -140,8 +172,7 @@ class LkgrTest(TestCase):
                      self.get('git-lkgr'))
     data['password'] = 'wrongpassword'
     data['revision'] = 23
-    out = self.post('revisions', data)
-    self.assertEqual('', out)
+    self.assertRaises(urllib2.HTTPError, self.post, 'revisions', data)
     self.assertEqual('42', self.get('lkgr'))
     self.assertEqual('c305f265aba93cc594a0fece50346c3af7fe3301',
                      self.get('git-lkgr'))
@@ -160,7 +191,7 @@ class LkgrTest(TestCase):
                      self.get('git-lkgr'))
 
 
-class CommitQueueTest(TestCase):
+class CommitQueueTest(PublicTestCase):
   def _fill(self):
     # Example dump taken from a run.
     total = 0
@@ -180,6 +211,125 @@ class CommitQueueTest(TestCase):
         3,
         len(json.loads(self.get(
           urllib2.quote('cq/joe@chromium.org') + '?format=json'))))
+
+
+class AccessControl(TestCase):
+  def _check_post_thru_ui(self, fails=False, fails_main_page=False):
+    if fails_main_page:
+      self.assertRaises(urllib2.HTTPError, self.get, '')
+      self.assertRaises(
+          urllib2.HTTPError, self.post, '',
+          {'message': 'foo', 'last_status_key': 'junk'})
+    else:
+      current = self.get('')
+      last_status_key = re.search(
+          r'name="last_status_key" value="(.*?)"', current)
+      if fails:
+        # last_status_key doesn't appear if you aren't an admin.
+        self.assertEqual(None, last_status_key)
+        self.assertRaises(
+            urllib2.HTTPError, self.post, '',
+            {'message': 'foo', 'last_status_key': 'junk'})
+      else:
+        self.post('', {'message': 'foo',
+                  'last_status_key': last_status_key.group(1)})
+        self.assertEqual('foo', self.get('current?format=raw'))
+
+  def _check_current_page(self, fails=False):
+    if fails:
+      self.assertRaises(urllib2.HTTPError, self.get, 'current')
+    else:
+      out = self.get('current')
+      self.assertTrue(100 < len(out))
+      self.assertTrue(out.startswith('<html>'))
+      self.assertTrue('<title>Login</title>' not in out)
+
+  def _check_post_thru_status_fails(self):
+    self.assertRaises(urllib2.HTTPError, self.post,
+                      'status', {'message': 'foo'})
+
+  def test_default_denies_chromium(self):
+    # Confirm default config does not allow chromium.org access.
+    self.login('bob@chromium.org')
+    self._check_current_page(fails=True)
+    self._check_post_thru_ui(fails=True, fails_main_page=True)
+    self._check_post_thru_status_fails()
+
+  def test_private_requires_login(self):
+    # Confirm private access redirects to a login screen.
+    out = self.get('current')
+    self.assertTrue('<title>Login</title>' in out)
+
+  def test_private_allows_google(self):
+    self.login('bob@google.com')
+    self._check_current_page()
+    self._check_post_thru_ui()
+    # Status, however, requires bot login.
+    self._check_post_thru_status_fails()
+
+  def test_private_denies_other(self):
+    self.login('bob@example.com')
+    self._check_current_page(fails=True)
+    self._check_post_thru_ui(fails=True, fails_main_page=True)
+    self._check_post_thru_status_fails()
+
+  def test_public_allows_chromium(self):
+    self.set_global_config(app_name='foo', public_access=True)
+    self.login('bob@chromium.org')
+    self._check_current_page()
+    self._check_post_thru_ui()
+    # Status, however, requires bot login.
+    self._check_post_thru_status_fails()
+
+  def test_public_is_limited(self):
+    self.set_global_config(app_name='foo', public_access=True)
+    self.login('bar@baz.com')
+    self._check_current_page()
+    self._check_post_thru_ui(fails=True)
+    self._check_post_thru_status_fails()
+
+  def test_non_bot_admins_cant_forge(self):
+    self.login('admin@google.com')
+    data = {
+        'message': 'foo',
+        'username': 'bogus@google.com',
+    }
+    self.assertRaises(urllib2.HTTPError, self.post, 'status', data)
+    self.assertNotEqual('foo', self.get('current?format=raw'))
+
+  def test_update_global_config(self):
+    # Verify the default config doesn't exist.
+    count = self.local_gae.query(
+        'import base_page\n'
+        'print base_page.GlobalConfig.all().count()\n')
+    self.assertEqual(0, int(count))
+    # Create old config.
+    result = self.local_gae.query(
+        'from google.appengine.ext import db\n'
+        'class GlobalConfig(db.Model):\n'
+        '  app_name = db.StringProperty(required=True)\n'
+        'c = GlobalConfig(app_name="melvin")\n'
+        'c.put()\n'
+        'print "OK"\n')
+    self.assertEqual('OK\n', result)
+    # Verify the old config is there, and shows None.
+    result = self.local_gae.query(
+        'import base_page\n'
+        'q = base_page.GlobalConfig.all()\n'
+        'assert q.count() == 1\n'
+        'print q.get().public_access\n')
+    self.assertEqual('None\n', result)
+    # Login and try various operations.
+    self.login('bob@chromium.org')
+    self._check_current_page()
+    self._check_post_thru_ui()
+    # Verify the config now shows True.
+    result = self.local_gae.query(
+        'import base_page\n'
+        'q = base_page.GlobalConfig.all()\n'
+        'assert q.count() == 1\n'
+        'print q.get().public_access\n')
+    self.assertEqual('True\n', result)
 
 
 if __name__ == '__main__':

@@ -32,6 +32,7 @@ class Revision(db.Model):  # pylint: disable=W0232
 class Revisions(BasePage):
   """Displays the revisions page containing the last 100 revisions."""
 
+  @utils.requires_read_access
   def get(self):
     """Returns information about the last revision status."""
     limit = int(self.request.get('limit', 100))
@@ -48,7 +49,7 @@ class Revisions(BasePage):
     template_values.update(page_value)
     self.DisplayTemplate('revisions.html', template_values)
 
-  @utils.admin_only
+  @utils.requires_write_access
   def post(self):
     """Adds a new revision status."""
     revision = self.request.get('revision')
@@ -73,6 +74,7 @@ class Revisions(BasePage):
 class LastKnownGoodRevisionSVN(BasePage):
   """Displays the /lkgr and /svn-lkgr pages."""
 
+  @utils.requires_read_access
   def get(self):
     """Look for the latest successful revision and return it."""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'
@@ -85,6 +87,7 @@ class LastKnownGoodRevisionSVN(BasePage):
 class LastKnownGoodRevisionGIT(BasePage):
   """Displays the /git-lkgr page."""
 
+  @utils.requires_read_access
   def get(self):
     """Look for the latest successful revision and return it."""
     self.response.headers['Cache-Control'] =  'no-cache, private, max-age=5'

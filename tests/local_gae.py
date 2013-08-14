@@ -9,6 +9,7 @@ It makes sure Google AppEngine SDK is found and starts the server on a free
 inbound TCP port.
 """
 
+import cookielib
 import logging
 import os
 import re
@@ -19,6 +20,7 @@ import tempfile
 import time
 import sys
 import urllib
+import urllib2
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GAE_SDK = None
@@ -87,6 +89,10 @@ class LocalGae(object):
     self.url = None
     self.tmp_db = None
     self._xsrf_token = None
+    self._cookie_jar = cookielib.CookieJar()
+    cookie_processor = urllib2.HTTPCookieProcessor(self._cookie_jar)
+    redirect_handler = urllib2.HTTPRedirectHandler()
+    self._opener = urllib2.build_opener(redirect_handler, cookie_processor)
 
   def install_prerequisites(self):
     # Load GAE SDK.
@@ -158,13 +164,27 @@ class LocalGae(object):
           pass
         self.tmp_db = None
 
-  def get(self, suburl, with_code):
-    f = urllib.urlopen(self.url + suburl)
+  def get(self, suburl):
+    request = urllib2.Request(self.url + suburl)
+    f = self._opener.open(request)
     data = f.read()
-    return data if not with_code else (data, f.getcode())
+    return data
 
   def post(self, suburl, data):
-    return urllib.urlopen(self.url + suburl, urllib.urlencode(data)).read()
+    request = urllib2.Request(self.url + suburl, urllib.urlencode(data))
+    f = self._opener.open(request)
+    return f.read()
+
+  def clear_cookies(self):
+    self._cookie_jar.clear()
+
+  def login(self, username, admin):
+    try:
+      self.get('_ah/login?email=%s&admin=%r&action=Login&continue=/' % (
+          urllib.quote_plus(username), admin))
+    except urllib2.HTTPError:
+      # Ignore http errors as the continue url may be inaccessible.
+      pass
 
   def query(self, cmd):
     """Lame way to modify the db remotely on dev server.
@@ -186,11 +206,13 @@ class LocalGae(object):
   @property
   def xsrf_token(self):
     if self._xsrf_token is None:
+      self.clear_cookies()
       interactive = self.get(
           '_ah/login?email=georges%40example.com&admin=True&action=Login&'
-          'continue=/_ah/admin/interactive', with_code=False)
+          'continue=/_ah/admin/interactive')
       self._xsrf_token = re.search(
           r'name="xsrf_token" value="(.*?)"/>', interactive).group(1)
+      self.clear_cookies()
     return self._xsrf_token
 
 # vim: ts=2:sw=2:tw=80:et:

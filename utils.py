@@ -15,7 +15,7 @@ def is_dev_env():
   return 'Dev' in os.environ.get('SERVER_SOFTWARE', '')
 
 
-def work_queue_only(func):
+def requires_work_queue_login(func):
   """Decorator that only allows a request if from cron job, task, or an admin.
 
   Also allows access if running in development server environment.
@@ -29,7 +29,7 @@ def work_queue_only(func):
   def decorated(self, *args, **kwargs):
     if ('X-AppEngine-Cron' in self.request.headers or
         'X-AppEngine-TaskName' in self.request.headers or
-        self.is_admin):
+        self.write_access):
       return func(self, *args, **kwargs)
     elif self.user is None:
       self.redirect(users.create_login_url(self.request.url))
@@ -39,10 +39,10 @@ def work_queue_only(func):
   return decorated
 
 
-def admin_only(func):
-  """Valid for BasePage objects only."""
+def requires_bot_login(func):
+  """Allowed only when logged in via bot password. BasePage objects only."""
   def decorated(self, *args, **kwargs):
-    if self.is_admin:
+    if self.bot_login:
       return func(self, *args, **kwargs)
     else:
       self.response.headers['Content-Type'] = 'text/plain'
@@ -51,13 +51,43 @@ def admin_only(func):
   return decorated
 
 
-def require_user(func):
-  """A user must be logged in."""
+def requires_write_access(func):
+  """Write access via login or bot password. BasePage objects only."""
   def decorated(self, *args, **kwargs):
-    if not self.user:
+    if self.write_access:
+      return func(self, *args, **kwargs)
+    else:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write('Forbidden')
+      self.error(403)
+  return decorated
+
+
+def requires_login(func):
+  """Must be logged in for access. BasePage objects only."""
+  def decorated(self, *args, **kwargs):
+    if self.user:
+      return func(self, *args, **kwargs)
+    elif not self.user:
       self.redirect(users.create_login_url(self.request.url))
     else:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write('Forbidden')
+      self.error(403)
+  return decorated
+
+
+def requires_read_access(func):
+  """Read access via login or anonymous if public. BasePage objects only."""
+  def decorated(self, *args, **kwargs):
+    if self.read_access:
       return func(self, *args, **kwargs)
+    elif not self.user:
+      self.redirect(users.create_login_url(self.request.url))
+    else:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.out.write('Forbidden')
+      self.error(403)
   return decorated
 
 

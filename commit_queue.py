@@ -502,7 +502,7 @@ class Issue(CQBasePage):
 
 
 class Receiver(BasePage):
-  @utils.admin_only
+  @utils.requires_write_access
   def post(self):
     def load_values():
       for p in self.request.get_all('p'):

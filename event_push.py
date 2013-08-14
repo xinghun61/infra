@@ -170,7 +170,7 @@ SUPPORTED_EVENTS = {
 
 class StatusReceiver(BasePage):
   """Buildbot's HttpStatusPush event receiver"""
-  @utils.admin_only
+  @utils.requires_write_access
   def post(self):
     self.response.headers['Content-Type'] = 'text/plain'
     try:
@@ -216,6 +216,7 @@ class RecentEvents(BasePage):
   """Returns the most recent events.
 
   Mostly for testing"""
+  @utils.requires_read_access
   def get(self):
     self.response.headers['Content-Type'] = 'text/plain'
     limit = int(self.request.GET.get('limit', 25))
@@ -232,7 +233,7 @@ class StatusProcessor(BasePage):
   i.e. implement GateKeeper on appengine, close the tree when the buildbot
   master shuts down, etc."""
 
-  @utils.work_queue_only
+  @utils.requires_work_queue_login
   def post(self):
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.out.write('Success')

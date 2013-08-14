@@ -107,6 +107,7 @@ def limit_length(string, length):
 
 class AllStatusPage(BasePage):
   """Displays a big chunk, 1500, status values."""
+  @utils.requires_read_access
   def get(self):
     query = db.Query(Status).order('-date')
     start_date = self.request.get('startTime')
@@ -154,6 +155,7 @@ class AllStatusPage(BasePage):
 class CurrentPage(BasePage):
   """Displays the /current page."""
 
+  @utils.requires_read_access
   def get(self):
     """Displays the current message and nothing else."""
     out_format = self.request.get('format', 'html')
@@ -189,12 +191,14 @@ class StatusPage(BasePage):
 
   def get(self):
     """Displays 1 if the tree is open, and 0 if the tree is closed."""
+    # NOTE: This item is always public to allow waterfalls to check it.
     status = get_status()
     self.response.headers['Cache-Control'] = 'no-cache, private, max-age=0'
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.out.write(str(int(status.can_commit_freely)))
 
-  @utils.admin_only
+  @utils.requires_bot_login
+  @utils.requires_write_access
   def post(self):
     """Adds a new message from a backdoor.
 
@@ -212,6 +216,7 @@ class StatusPage(BasePage):
 class StatusViewerPage(BasePage):
   """Displays the /status_viewer page."""
 
+  @utils.requires_read_access
   def get(self):
     """Displays status_viewer.html template."""
     template_values = self.InitializeTemplate(self.APP_NAME + ' Tree Status')
@@ -221,7 +226,10 @@ class StatusViewerPage(BasePage):
 class MainPage(BasePage):
   """Displays the main page containing the last 25 messages."""
 
-  @utils.require_user
+  # NOTE: This is require_login in order to ensure that authentication doesn't
+  # happen while changing the tree status.
+  @utils.requires_login
+  @utils.requires_read_access
   def get(self):
     return self._handle()
 
@@ -243,8 +251,8 @@ class MainPage(BasePage):
     template_values['error_message'] = error_message
     self.DisplayTemplate('main.html', template_values)
 
-  @utils.require_user
-  @utils.admin_only
+  @utils.requires_login
+  @utils.requires_write_access
   def post(self):
     """Adds a new message."""
     # We pass these variables back into get(), prepare them.
