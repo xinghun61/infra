@@ -29,6 +29,10 @@ handlers:
 - url: /buildbot/.*
   script: buildlogparse.app
 
+- url: /mailer/.*
+  script: mailer.app
+  secure: always
+
 - url: /.*
   script: handler.application
 

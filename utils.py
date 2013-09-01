@@ -12,6 +12,7 @@ import logging
 import sys
 import string
 import json
+import urllib
 
 from google.appengine.api import users
 
@@ -270,3 +271,6 @@ def cl_comment(value):
   # Obfuscure email addresses with rot13 encoding.
   value = re.sub(r'(\w+@[\w.]+)', lambda m: rot13_email(m.group(1)), value)
   return value
+
+def urlquote(value, safe=''):
+  return urllib.quote(value, safe=safe)

@@ -1,0 +1,87 @@
+{% extends "base_mail.html" %}
+
+{% block buildbox%}
+
+{% set results = ["success", "warnings", "failure", "skipped", "exception",
+                      "retry"] %}
+{% set styles = {
+    'exception': ('color: #FFFFFF; background-color: #e0b0ff; '
+                  'border-color: #ACA0B3;'),
+    'failure': ('color: #FFFFFF; background-color: #e98080; '
+                'border-color: #A77272;'),
+    'retry': ('color: #FFFFFF; background-color: #e0b0ff; '
+                  'border-color: #ACA0B3;'),
+    'offline': ('color: #FFFFFF; background-color: #e0b0ff; '
+                'border-color: #ACA0B3;'),
+    'skipped': '',
+    'start': ('color: #666666; background-color: #fffc6c;'
+              'border-color: #C5C56D;'),
+    'success': ('color: #FFFFFF; background-color: #8fdf5f; '
+                'border-color: #4F8530;'),
+    'warnings': ('color: #FFFFFF; background-color: #ffc343; '
+                 'border-color: #C29D46;'),
+   }
+%}
+
+{% set buildername = build_status['builderName'] %}
+<tr><td style="{{styles[results[(build_status['result'])]]}}"><a title="Reason: {{build_status['reason']}}" href="{{waterfall_url}}builders/{{buildername|urlquote}}/builds/{{build_status['number']}}">Build {{build_status['number']}}</a></td></tr>
+{% for step in build_status['steps'] if step['started'] and step['text'] %}
+  <tr><td style="{{styles[results[step['results']]]}}">
+      {% for line in step['text'] %}
+        {{line}}<br/>
+      {% endfor %}
+      {% for steplog in step['logs'] %}
+        <a href="{{steplog[1]}}">{{steplog[0]}}</a><br/>
+      {% endfor %}
+      {% for urlname, target in step['urls'].iteritems() %}
+        <a href="{{target}}">{{urlname}}</a><br/>
+      {% endfor %}
+  </td></tr>
+{% endfor %}
+{% endblock %}
+
+
+{% block changes %}
+  {% for change in build_status['changes'] %}
+    <p>Changed by: <b>{{change['who']}}</b><br />
+    Changed at: <b>{{change['at']}}</b><br />
+    {% if change['repository'] %}
+      Repository: <b>{{change['repository']}}</b><br />
+    {% endif %}
+    {% if change['branch'] %}
+      Branch: <b>{{change['branch']}}</b><br />
+    {% endif %}
+    {% if change['revision'] %}
+      {% if change.get('revlink') %}
+        Revision: <a href="{{change['revlink']}}"><b>{{change['revision']}}</b></a>
+      {% else %}
+        Revision: <b>{{change['revision']}}</b><br />
+      {% endif %}
+    {% endif %}
+    <br />
+
+    Changed files:
+    <ul>
+      {% for f in change['files'] %}
+        <li>
+          {% if f['url'] %}
+            <a href="{{f['url']}}"><b>{{f['name']}}</b></a>
+          {% else %}
+            <b>{{f['name']}}</b>{% endif %}</li>
+      {% endfor %}
+    </ul>
+
+    Comments:
+    <pre>{{change['comments']}}</pre>
+
+    Properties:
+    <ul>
+      {% for prop in change['properties'] %}
+        <li>
+          {{prop[0]}}: {{prop[1]}}<br/></li>
+      {% endfor %}
+    </ul>
+    </p>
+  {% endfor %}
+{% endblock %}
+

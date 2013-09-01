@@ -5,10 +5,16 @@
 
 import ast
 import datetime
+import hashlib
+import hmac
+import json
 import os
+import random
+import time
 import unittest
 
 import app
+from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup
 
 
 TEST_DIR = os.path.join(os.path.dirname(__file__), 'tests')
@@ -473,3 +479,74 @@ class FetchTestCase(GaeTestCase):
         'http://build.chromium.org/p/chromium/console/../',
         page['offsite_base'])
     self.assertEquals('BuildBot: Chromium', page['title'])
+
+
+class MailTestCase(GaeTestCase):
+  def setUp(self):
+    self.test_dir = os.path.join(TEST_DIR, 'test_mailer')
+    with open(os.path.join(self.test_dir, 'input.json')) as f:
+      self.input_json = json.load(f)
+    self.build_data = json.loads(self.input_json['message'])
+
+  @staticmethod
+  def _hash_message(mytime, message, url, secret):
+    salt = random.getrandbits(32)
+    hasher = hmac.new(secret, message, hashlib.sha256)
+    hasher.update(str(mytime))
+    hasher.update(str(salt))
+    client_hash = hasher.hexdigest()
+
+    return {'message': message,
+            'time': mytime,
+            'salt': salt,
+            'url': url,
+            'hmac-sha256': client_hash,
+           }
+
+  def test_html_format(self):
+    import gatekeeper_mailer
+    template = gatekeeper_mailer.MailTemplate(self.build_data['waterfall_url'],
+                                              self.build_data['build_url'],
+                                              self.build_data['project_name'],
+                                              'test@chromium.org')
+
+    _, html_content, _ = template.genMessageContent(self.build_data)
+
+    with open(os.path.join(self.test_dir, 'expected.html')) as f:
+      expected_html = ' '.join(f.read().splitlines())
+
+    saw = str(BeautifulSoup(html_content)).split()
+    expected = str(BeautifulSoup(expected_html)).split()
+
+    self.assertEqual(saw, expected)
+
+  def test_hmac_validation(self):
+    from mailer import Email
+    message = self.input_json['message']
+    url = 'http://invalid.chromium.org'
+    secret = 'pajamas'
+
+    test_json = self._hash_message(time.time(), message, url, secret)
+    # pylint: disable=W0212
+    self.assertTrue(Email._validate_message(test_json, url, secret))
+
+    # Test that a trailing slash doesn't affect URL parsing.
+    test_json = self._hash_message(time.time(), message, url + '/', secret)
+    # pylint: disable=W0212
+    self.assertTrue(Email._validate_message(test_json, url, secret))
+
+    tests = [
+        self._hash_message(time.time() + 61, message, url, secret),
+        self._hash_message(time.time() - 61, message, url, secret),
+        self._hash_message(time.time(), message, url + 'hey', secret),
+        self._hash_message(time.time(), message, url, secret + 'hey'),
+    ]
+
+    for test_json in tests:
+      # pylint: disable=W0212
+      self.assertFalse(Email._validate_message(test_json, url, secret))
+
+    test_json = self._hash_message(time.time(), message, url, secret)
+    test_json['message'] = test_json['message'] + 'hey'
+    # pylint: disable=W0212
+    self.assertFalse(Email._validate_message(test_json, url, secret))
