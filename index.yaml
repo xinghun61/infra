@@ -28,6 +28,12 @@ indexes:
 
 - kind: Report
   properties:
+  - name: host
+  - name: date
+    direction: desc
+
+- kind: Report
+  properties:
   - name: user
   - name: date
     direction: desc
