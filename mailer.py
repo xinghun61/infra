@@ -177,10 +177,13 @@ class Email(BaseHandler):
 
     text_content, html_content, subject = template.genMessageContent(build_data)
 
+    mail_override = ['stip@chromium.org',
+                     'gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com']
+
     message = mail.EmailMessage(sender=from_addr,
                                 subject=subject,
                                 #to=recipients,
-                                to=['xusydoc@chromium.org'],
+                                to=mail_override,
                                 body=text_content,
                                 html=html_content)
     logging.info('sending email to %s', recipients)
