@@ -1,4 +1,24 @@
 Chromium Status
 
-Base framework for http://chromium-status.appspot.com,
-http://chromiumos-status.appspot.com and http://nativeclient-status.appspot.com
+Base framework for:
+  http://blink-status.appspot.com
+  http://chromium-status.appspot.com
+  http://chromiumos-status.appspot.com
+  http://nativeclient-status.appspot.com
+  ... among others ...
+
+You should download & install Google Appengine into the parent dir:
+  https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python
+Just unzip it there so that google_appengine/ exists alongside chromium-status/.
+
+You can launch a local instance for testing by doing:
+  ../google_appengine/dev_appserver.py --host $(hostname -s) app.yaml
+
+Then browse to your desktop's port 8080.
+
+To post commits with git, you can do:
+  git svn clone svn://svn.chromium.org/chrome -Ttrunk/tools/chromium-status
+  git checkout -b work trunk
+  ... make changes ...
+  git commit -a -m 'commit message'
+  git cl upload --send-mail
