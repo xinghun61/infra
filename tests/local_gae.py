@@ -128,13 +128,13 @@ class LocalGae(object):
         self.base_dir,
         '--port', str(self.port),
         '--datastore_path', self.tmp_db,
-        '-c',
+        '--datastore_consistency_policy', 'consistent',
         '--skip_sdk_update_check',
-        '--use_sqlite',
     ]
     if verbose:
-      cmd.extend(['-a', '0.0.0.0'])
-      cmd.append('--debug')
+      cmd.extend([
+          '--log_level', 'debug',
+      ])
     self.test_server = subprocess.Popen(
         cmd, stdout=stdout, stderr=stderr, env=env)
     # Loop until port 127.0.0.1:port opens or the process dies.
