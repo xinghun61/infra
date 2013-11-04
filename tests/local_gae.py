@@ -62,9 +62,9 @@ def test_port(port):
     s.close()
 
 
-def find_free_port():
+def find_free_port(base_port=8080):
   """Finds an available port starting at 8080."""
-  port = 8080
+  port = base_port
   max_val = (2<<16)
   while test_port(port) and port < max_val:
     port += 1
@@ -85,8 +85,10 @@ class LocalGae(object):
       self.base_dir = os.path.realpath(os.path.join(self.base_dir, '..'))
     self.test_server = None
     self.port = None
+    self.admin_port = None
     self.app_id = None
     self.url = None
+    self.admin_url = None
     self.tmp_db = None
     self._xsrf_token = None
     self._cookie_jar = cookielib.CookieJar()
@@ -111,6 +113,7 @@ class LocalGae(object):
   def start_server(self, verbose=False):
     self.install_prerequisites()
     self.port = find_free_port()
+    self.admin_port = find_free_port(base_port=self.port + 1)
     if verbose:
       stdout = None
       stderr = None
@@ -127,6 +130,7 @@ class LocalGae(object):
         os.path.join(GAE_SDK, 'dev_appserver.py'),
         self.base_dir,
         '--port', str(self.port),
+        '--admin_port', str(self.admin_port),
         '--datastore_path', self.tmp_db,
         '--datastore_consistency_policy', 'consistent',
         '--skip_sdk_update_check',
@@ -139,13 +143,15 @@ class LocalGae(object):
         cmd, stdout=stdout, stderr=stderr, env=env)
     # Loop until port 127.0.0.1:port opens or the process dies.
     while not test_port(self.port):
-      self.test_server.poll()
-      if self.test_server.returncode is not None:
-        raise Failure(
-            'Test GAE instance failed early on port %s' %
-            self.port)
-      time.sleep(0.001)
+      while not test_port(self.admin_port):
+        self.test_server.poll()
+        if self.test_server.returncode is not None:
+          raise Failure(
+              'Test GAE instance failed early on port %s' %
+              self.port)
+        time.sleep(0.001)
     self.url = 'http://localhost:%d/' % self.port
+    self.admin_url = 'http://localhost:%d/' % self.admin_port
 
   def stop_server(self):
     if self.test_server:
@@ -157,6 +163,7 @@ class LocalGae(object):
       self.test_server = None
       self.port = None
       self.url = None
+      self.admin_url = None
       if self.tmp_db:
         try:
           os.remove(self.tmp_db)
@@ -164,14 +171,20 @@ class LocalGae(object):
           pass
         self.tmp_db = None
 
-  def get(self, suburl):
-    request = urllib2.Request(self.url + suburl)
+  def get(self, suburl, url=None):
+    if url is None:
+      url = self.url
+    logging.debug('GET: %r', url + suburl)
+    request = urllib2.Request(url + suburl)
     f = self._opener.open(request)
     data = f.read()
     return data
 
-  def post(self, suburl, data):
-    request = urllib2.Request(self.url + suburl, urllib.urlencode(data))
+  def post(self, suburl, data, url=None):
+    if url is None:
+      url = self.url
+    logging.debug('POST(%r): %r', url + suburl, data)
+    request = urllib2.Request(url + suburl, urllib.urlencode(data))
     f = self._opener.open(request)
     return f.read()
 
@@ -180,7 +193,7 @@ class LocalGae(object):
 
   def login(self, username, admin):
     try:
-      self.get('_ah/login?email=%s&admin=%r&action=Login&continue=/' % (
+      self.get('_ah/login?email=%s&admin=%r&action=login&continue=/' % (
           urllib.quote_plus(username), admin))
     except urllib2.HTTPError:
       # Ignore http errors as the continue url may be inaccessible.
@@ -193,25 +206,21 @@ class LocalGae(object):
     """
     data = {
         'code': 'from google.appengine.ext import db\n' + cmd,
+        'module_name': 'default',
         'xsrf_token': self.xsrf_token,
     }
-    result = self.post('_ah/admin/interactive/execute', data)
-    match = re.search(
-        re.escape(r'<pre id="output">') + r'(.*?)' +
-        re.escape('</pre>\n</body>\n</html>\n'),
-        result,
-        re.DOTALL)
-    return match.group(1)
+    return self.post('console', data, url=self.admin_url)
 
   @property
   def xsrf_token(self):
     if self._xsrf_token is None:
       self.clear_cookies()
-      interactive = self.get(
-          '_ah/login?email=georges%40example.com&admin=True&action=Login&'
-          'continue=/_ah/admin/interactive')
-      self._xsrf_token = re.search(
-          r'name="xsrf_token" value="(.*?)"/>', interactive).group(1)
+      interactive = self.get('console', url=self.admin_url)
+      match = re.search(r"'xsrf_token': *'(.*?)'", interactive)
+      if not match:
+        logging.debug('interactive console output:\n%s', interactive)
+        raise Failure('could not find xsrf_token')
+      self._xsrf_token = match.group(1)
       self.clear_cookies()
     return self._xsrf_token
 
