@@ -260,6 +260,7 @@ class MainPage(BasePage):
     template_values['message'] = last_message
     template_values['last_status_key'] = current_status.key()
     template_values['error_message'] = error_message
+    template_values['limit'] = limit
     self.DisplayTemplate('main.html', template_values)
 
   @utils.requires_login

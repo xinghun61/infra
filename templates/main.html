@@ -21,8 +21,8 @@
       <input type="button" name="history" value="History" onclick="location.href='/status_viewer';">
     </form>
   {% endif %}
-  <br><br>
-  <h2>Last 25 {{ title }}</h2>
+  <br>
+  <h2>Last <a href="?limit={{ limit }}">{{ limit }}</a> {{ title }}</h2>
   <table border="1" cellpadding="5">
   <tr bgcolor="#CCCCFF">
     <td><b>Who</b></td>
