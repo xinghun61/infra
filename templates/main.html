@@ -26,14 +26,14 @@
   <table border="1" cellpadding="5">
   <tr bgcolor="#CCCCFF">
     <td><b>Who</b></td>
-    <td><b>When</b></td>
+    <td><b>When (UTC)</b></td>
     <td><b>Message</b></td>
   </tr>
   {% for a_status in status %}
     <tr class="{{ a_status.general_state }}">
-      <td>{{ a_status.username }}</td>
-      <td>{{ a_status.date|date:"D M d, H:i T " }}</td>
-      <td>{{ a_status.message }}</td>
+      <td class="username">{{ a_status.username }}</td>
+      <td class="date">{{ a_status.date|date:"D, d M H:i" }}</td>
+      <td class="message">{{ a_status.message }}</td>
     </tr>
   {% endfor %}
 

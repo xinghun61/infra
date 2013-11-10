@@ -44,6 +44,16 @@ div.error {
   margin-bottom: 20px;
 }
 
+td.username {
+  font-size: smaller;
+}
+
+td.date {
+  font-size: smaller;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
 .closed {
   background-color: #E98080;
 }
