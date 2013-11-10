@@ -76,6 +76,8 @@ class BasePage(webapp.RequestHandler):
     self._user = users.get_current_user()
     if utils.is_dev_env():
       look_for_password()
+      # Maybe the tests reloaded our public settings ...
+      self.PUBLIC_ACCESS = GlobalConfig.all().get().public_access
     elif not self._user:
       try:
         self._user = oauth.get_current_user()

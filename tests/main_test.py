@@ -55,37 +55,36 @@ class TestCase(unittest.TestCase):
     except urllib2.HTTPError:
       pass
 
-    # First verify the default value exists and then override its value.
-    count = self.local_gae.query(
+    output = self.local_gae.query(
         'import base_page\n'
-        'print db.GqlQuery("SELECT * FROM Passwords").count()\n')
-    assert int(count) == 1
-    count = self.local_gae.query(
-        'import base_page\n'
+
+        # First verify the default value exists.
+        'n = db.GqlQuery("SELECT * FROM Passwords").count()\n'
+        'assert n == 1, "n == 1"\n'
+
+        # Then override its value with |password|.
         'p = db.GqlQuery("SELECT * FROM Passwords").get()\n'
         + ('p.password_sha1 = %r\n' % hashvalue) +
-        'p.put()\n')
-    count = self.local_gae.query(
-        'import base_page\n'
-        'print db.GqlQuery("SELECT * FROM Passwords").count()\n')
-    assert int(count) == 1
+        'p.put()\n'
+        'print db.GqlQuery("SELECT * FROM Passwords").count(),\n')
+    self.assertEqual(output, '1')
 
   def set_global_config(self, app_name, public_access):
-    # Verify the default config doesn't exist.
-    count = self.local_gae.query(
-        'import base_page\n'
-        'print db.GqlQuery("SELECT * FROM GlobalConfig").count()\n')
-    assert int(count) == 0
-
     cmd = (
         'import base_page\n'
+
+        # Verify the default config exists.
+        'n = db.GqlQuery("SELECT * FROM GlobalConfig").count()\n'
+        'assert n == 1, "n == 1"\n'
+
+        # Then make sure access is sane.
         'config = base_page.GlobalConfig(app_name=%r)\n' % app_name +
         'config.public_access = %r\n' % public_access +
         'config.put()\n'
-        'print "ok"'
+        'print "ok",\n'
     )
-    ok = self.local_gae.query(cmd)
-    assert ok.strip() == 'ok'
+    output = self.local_gae.query(cmd)
+    self.assertEqual(output, 'ok')
 
 
 class PublicTestCase(TestCase):
@@ -324,27 +323,25 @@ class AccessControl(TestCase):
     self.assertNotEqual('foo', self.get('current?format=raw'))
 
   def test_update_global_config(self):
-    # Verify the default config doesn't exist.
-    count = self.local_gae.query(
-        'import base_page\n'
-        'print base_page.GlobalConfig.all().count()\n')
-    self.assertEqual(0, int(count))
-    # Create old config.
-    result = self.local_gae.query(
-        'from google.appengine.ext import db\n'
-        'class GlobalConfig(db.Model):\n'
-        '  app_name = db.StringProperty(required=True)\n'
-        'c = GlobalConfig(app_name="melvin")\n'
-        'c.put()\n'
-        'print "OK"\n')
-    self.assertEqual('OK\n', result)
-    # Verify the old config is there, and shows None.
+    """Verify updating the global config affects the active instance"""
     result = self.local_gae.query(
         'import base_page\n'
+
+        # Verify the default config exists.
+        'n = base_page.GlobalConfig.all().count()\n'
+        'assert n == 1, "n == 1"\n'
+
+        # Verify there is a config, and shows False.
         'q = base_page.GlobalConfig.all()\n'
-        'assert q.count() == 1\n'
-        'print q.get().public_access\n')
-    self.assertEqual('None\n', result)
+        'assert q.count() == 1, "q.count() == 1"\n'
+        'config = q.get()\n'
+        'assert not config.public_access, "not config.public_access"\n'
+
+        # Make the instance public.
+        'config.public_access = True\n'
+        'config.put()\n'
+        'print "ok",\n')
+    self.assertEqual('ok', result)
     # Login and try various operations.
     self.login('bob@chromium.org')
     self._check_current_page()
@@ -354,7 +351,7 @@ class AccessControl(TestCase):
     result = self.local_gae.query(
         'import base_page\n'
         'q = base_page.GlobalConfig.all()\n'
-        'assert q.count() == 1\n'
+        'assert q.count() == 1, "q.count() == 1"\n'
         'print q.get().public_access\n')
     self.assertEqual('True\n', result)
 
