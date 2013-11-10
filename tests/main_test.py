@@ -6,6 +6,7 @@
 import hashlib
 import json
 import logging
+import optparse
 import os
 import re
 import sys
@@ -358,8 +359,16 @@ class AccessControl(TestCase):
     self.assertEqual('True\n', result)
 
 
+def _init_logging(argv):
+  """Set up our logging by re-using some of the unittest flags"""
+  parser = optparse.OptionParser()
+  parser.add_option('-v', action='count', default=0)
+  (opts, _) = parser.parse_args([x for x in argv if x.startswith('-v')])
+
+  levels = [logging.WARNING, logging.INFO, logging.DEBUG]
+  logging.basicConfig(level=levels[min(2, opts.v)])
+
+
 if __name__ == '__main__':
-  logging.basicConfig(level=
-      [logging.WARNING, logging.INFO, logging.DEBUG][
-        min(2, sys.argv.count('-v'))])
+  _init_logging(sys.argv)
   unittest.main()
