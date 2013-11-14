@@ -588,8 +588,8 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
   #                  r"/buildbot/\1/builders/\2/builds/\3", content)
 
   # Disable the personalized for box for now.
-  content = re.sub(r"<input id='namebox", r"<!-- <input id='namebox", content)
-  content = re.sub(r"reload_page\(\)'/>", r"reload_page()'/> -->", content)
+  content = re.sub(r"<input id='namebox'[^>]+>", '', content)
+  content = re.sub(r"<input.*onclick='reload_page\(\)'/>", '', content)
 
   # Replace lkgrPath with a URL to chromium-build.
   content = re.sub(
