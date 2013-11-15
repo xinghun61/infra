@@ -10,10 +10,10 @@ inbound TCP port.
 """
 
 import cookielib
+import errno
 import logging
 import os
 import re
-import signal
 import socket
 import subprocess
 import tempfile
@@ -155,11 +155,11 @@ class LocalGae(object):
 
   def stop_server(self):
     if self.test_server:
-      # pylint: disable=E1101
-      if hasattr(self.test_server, 'kill'):
-        self.test_server.kill()
-      else:
-        os.kill(self.test_server.pid, signal.SIGKILL)
+      try:
+        self.test_server.terminate()
+      except OSError as e:
+        if e.errno != errno.ESRCH:
+          raise
       self.test_server = None
       self.port = None
       self.url = None
