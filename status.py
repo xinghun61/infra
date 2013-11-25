@@ -19,6 +19,8 @@ import utils
 ALLOWED_ORIGINS = [
     'https://gerrit-int.chromium.org',
     'https://gerrit.chromium.org',
+    'https://chrome-internal-review.googlesource.com',
+    'https://chromium-review.googlesource.com',
 ]
 
 
@@ -163,7 +165,7 @@ class CurrentPage(BasePage):
       template_values['show_login'] = True
       self.DisplayTemplate('current.html', template_values, use_cache=True)
     else:
-      self._handle() 
+      self._handle()
 
   @utils.requires_read_access
   def _handle(self):
