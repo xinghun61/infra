@@ -31,9 +31,25 @@
   </tr>
   {% for a_status in status %}
     <tr class="{{ a_status.general_state }}">
-      <td class="username">{{ a_status.username }}</td>
+      <td class="username">
+        {% for a_link in a_status.username_links.links %}
+          {% if a_link.target %}
+            <a href="{% if a_link.is_email %}mailto:{% endif %}{{ a_link.target }}">{{ a_link.text }}</a>
+          {% else %}
+            {{ a_link.text }}
+          {% endif %}
+        {% endfor %}
+      </td>
       <td class="date">{{ a_status.date|date:"D, d M H:i" }}</td>
-      <td class="message">{{ a_status.message }}</td>
+      <td class="message">
+        {% for a_link in a_status.message_links.links %}
+          {% if a_link.target %}
+            <a href="{% if a_link.is_email %}mailto:{% endif %}{{ a_link.target }}">{{ a_link.text }}</a>
+          {% else %}
+            {{ a_link.text }}
+          {% endif %}
+        {% endfor %}
+      </td>
     </tr>
   {% endfor %}
 

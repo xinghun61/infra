@@ -24,6 +24,110 @@ ALLOWED_ORIGINS = [
 ]
 
 
+class TextFragment(object):
+  """Simple object to hold text that might be linked"""
+
+  def __init__(self, text, target=None, is_email=False):
+    self.text = text
+    self.target = target
+    self.is_email = is_email
+
+  def __repr__(self):
+    return 'TextFragment({%s->%s})' % (self.text, self.target)
+
+
+class LinkableText(object):
+  """Turns arbitrary text into a set of links"""
+
+  GERRIT_URLS = {
+      'chrome': 'https://chrome-internal-review.googlesource.com',
+      'chromium': 'https://chromium-review.googlesource.com',
+  }
+
+  WATERFALL_URLS = {
+      'chromeos': 'http://chromegw/i/chromeos',
+      'chromiumos': 'http://build.chromium.org/p/chromiumos',
+  }
+
+  # Automatically linkify known strings for the user.
+  _CONVERTS = []
+
+  @classmethod
+  def register_converter(cls, regex, target, pretty, is_email, flags=re.I):
+    """Register a new conversion for creating links from text"""
+    cls._CONVERTS.append(
+        (re.compile(regex, flags=flags), target, pretty, is_email))
+
+  @classmethod
+  def bootstrap(cls, _app_name):
+    """Add conversions (possibly specific to |app_name| instance)"""
+    # Convert CrOS bug links.  Support the forms:
+    # http://crbug.com/1234
+    # http://crosbug.com/1234
+    # crbug/1234
+    # crosbug/p/1234
+    cls.register_converter(
+        #   1   2      3      4        5       6 7
+        r'\b((http://)?((crbug|crosbug)(\.com)?(/(p/)?[0-9]+)))\b',
+        r'http://\4.com\6', r'\1', False)
+
+    # Convert e-mail addresses.
+    cls.register_converter(
+        r'(([-+.a-z0-9_!#$%&*/=?^_`{|}~]+)@[-a-z0-9.]+\.[a-z0-9]+)\b',
+        r'\1', r'\2', True)
+
+    # Convert SHA1's to gerrit links.  Assume all external since
+    # there is no sane way to detect it's an internal CL.
+    cls.register_converter(
+        r'\b([0-9a-f]{40})\b',
+        r'%s/#q,\1,n,z' % cls.GERRIT_URLS['chromium'], r'\1', False)
+
+    # Convert public gerrit CL numbers which take the form:
+    # CL:1234
+    cls.register_converter(
+        r'\b(CL:([0-9]+))\b',
+        r'%s/\2' % cls.GERRIT_URLS['chromium'], r'\1', False)
+    # Convert internal gerrit CL numbers which take the form:
+    # CL:*1234
+    cls.register_converter(
+        r'\b(CL:\*([0-9]+))\b',
+        r'%s/\2' % cls.GERRIT_URLS['chrome'], r'\1', False)
+
+    # Match the string:
+    #   Automatic: "cbuildbot" on "x86-generic ASAN" from.
+    # Do this for everyone since "cbuildbot" is unique to CrOS.
+    # Otherwise, we'd do it only for chromium |app_name| instances.
+    cls.register_converter(
+       r'("cbuildbot" on "([^"]+ canary)")',
+       r'%s/builders/\2' % cls.WATERFALL_URLS['chromeos'], r'\1', False)
+    cls.register_converter(
+       r'("cbuildbot" on "([^"]+)")',
+       r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
+
+  @classmethod
+  def parse(cls, text):
+    """Creates a list of TextFragment objects based on |text|"""
+    if not text:
+      return []
+    for prog, target, pretty_text, is_email in cls._CONVERTS:
+      m = prog.search(text)
+      if m:
+        link = TextFragment(m.expand(pretty_text),
+                            target=m.expand(target),
+                            is_email=is_email)
+        left_links = cls.parse(text[:m.start()].rstrip())
+        right_links = cls.parse(text[m.end():].lstrip())
+        return left_links + [link] + right_links
+    return [TextFragment(text)]
+
+  def __init__(self, text):
+    self.raw_text = text
+    self.links = self.parse(text.strip())
+
+  def __str__(self):
+    return self.raw_text
+
+
 class Status(db.Model):
   """Description for the status table."""
   # The username who added this status.
@@ -32,6 +136,14 @@ class Status(db.Model):
   date = db.DateTimeProperty(auto_now_add=True)
   # The message. It can contain html code.
   message = db.StringProperty(required=True)
+
+  @property
+  def username_links(self):
+    return LinkableText(self.username)
+
+  @property
+  def message_links(self):
+    return LinkableText(self.message)
 
   @property
   def general_state(self):
@@ -298,3 +410,4 @@ def bootstrap():
   # Guarantee that at least one instance exists.
   if db.GqlQuery('SELECT __key__ FROM Status').get() is None:
     Status(username='none', message='welcome to status').put()
+  LinkableText.bootstrap(BasePage.APP_NAME)

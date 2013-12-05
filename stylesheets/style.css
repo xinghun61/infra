@@ -34,6 +34,13 @@ th {
   font-size: 9pt;
 }
 
+a:link {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
 div.error {
   background-color: #fcc;
   width: 80%;
