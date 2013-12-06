@@ -2,6 +2,8 @@
 
 {% block extra_head %}
   <script src="js/main/main.js"></script>
+  <script data-dojo-config="async:true"
+          src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -41,7 +43,7 @@
   <table border="1" cellpadding="5">
   <tr bgcolor="#CCCCFF">
     <td><b>Who</b></td>
-    <td><b>When (UTC)</b></td>
+    <td><b>When (<span name="date.tz">UTC</span>)</b></td>
     <td><b>Message</b></td>
   </tr>
   {% for a_status in status %}
@@ -55,7 +57,7 @@
           {% endif %}
         {% endfor %}
       </td>
-      <td class="date">{{ a_status.date|date:"D, d M H:i" }}</td>
+      <td class="date" name="date.date">{{ a_status.date|date:"D, d M H:i" }}</td>
       <td class="message">
         {% for a_link in a_status.message_links.links %}
           {% if a_link.target %}
