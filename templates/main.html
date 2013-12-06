@@ -1,11 +1,26 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+  <script src="js/main/main.js"></script>
+{% endblock %}
+
 {% block content %}
-  <script type="text/javascript">
-    window.onload=function() {
-      document.add_new_message.message.focus();
-    }
-  </script>
+  <!-- Keep in sync with status.py:Status.general_state() logic -->
+  <div id="help" class="help" hidden>
+    The message is scanned for partial matches (in the order listed)<br>
+    and will set the tree state accordingly. The scan order does <b>not</b><br>
+    correspond to the severity of the tree state.<br>
+    <br>
+    &nbsp;(1) "<span class="maintenance">maint</span>": The tree is closed for
+      maintenance<br>
+    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; (also needs to have the text
+      "close")<br>
+    &nbsp;(2) "<span class="throttled">throt</span>": The tree is throttled;
+      tread carefully<br>
+    &nbsp;(3) "<span class="closed">close</span>": The tree is closed<br>
+    &nbsp;(4) Otherwise, the tree is <span class="open">open</span> for business
+  </div>
+
   <center>
   {% if write_access %}
     {% if error_message %}

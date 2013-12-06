@@ -76,3 +76,10 @@ td.date {
 .throttled {
   background-color: #FFFC6C;
 }
+
+.help {
+  border: 1px black solid;
+  background-color: #FFFFCA;
+  position: fixed;
+  padding: 0.1em;
+}

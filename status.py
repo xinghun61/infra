@@ -149,6 +149,8 @@ class Status(db.Model):
   def general_state(self):
     """Returns a string representing the state that the status message
     describes.
+
+    Note: Keep in sync with main.html help text.
     """
     message = self.message
     closed = re.search('close', message, re.IGNORECASE)
