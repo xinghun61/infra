@@ -5,7 +5,7 @@
 
 """Provides mailer templates for gatekeeper_ng.
 
-This module populates jinja  mail templates to notify tree watchers when the
+This module populates jinja mail templates to notify tree watchers when the
 tree is closed.
 """
 
@@ -28,17 +28,16 @@ class MailTemplate(object):
   """Encapsulates a buildbot status email."""
 
   status_header = 'Automatically closing tree for "%(steps)s" on "%(builder)s"'
+  default_subject = ('buildbot %(result)s in %(projectName)s on %(builder)s, '
+                     'revision %(revision)s')
 
-  def __init__(self, waterfall_url, build_url,
-               project_name,
-               fromaddr,
-               reply_to=None,
-               subject='buildbot %(result)s in %(projectName)s on %(builder)s, '
-                       'revision %(revision)s'):
+  def __init__(self, waterfall_url, build_url, project_name, fromaddr,
+               reply_to=None, subject=None):
+
 
     self.reply_to = reply_to
     self.fromaddr = fromaddr
-    self.subject = subject
+    self.subject = subject or self.default_subject
     self.waterfall_url = waterfall_url.rstrip('/') + '/'
     self.build_url = build_url
     self.project_name = project_name
