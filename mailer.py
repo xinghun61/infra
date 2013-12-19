@@ -183,6 +183,14 @@ class Email(BaseHandler):
     mail_override = ['stip@chromium.org',
                      'gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com']
 
+    whitelist = ['jschuh']
+
+    for alias in whitelist:
+      for domain in ('@chromium.org', '@google.com'):
+        candidate = alias + domain
+        if candidate in recipients:
+          mail_override.append(candidate)
+
     message = mail.EmailMessage(sender=from_addr,
                                 subject=subject,
                                 #to=recipients,
