@@ -24,7 +24,7 @@
 %}
 
 {% set buildername = build_status['builderName'] %}
-<tr><td style="{{styles[results[(build_status['result'])]]}}"><a title="Reason: {{build_status['reason']}}" href="{{waterfall_url}}builders/{{buildername|urlquote}}/builds/{{build_status['number']}}">Build {{build_status['number']}}</a></td></tr>
+<tr><td style="{{styles[results[(build_status['result'])]]}}"><a title="Reason: {{build_status['reason']}}" href="{{waterfall_url}}/builders/{{buildername|urlquote}}/builds/{{build_status['number']}}">Build {{build_status['number']}}</a></td></tr>
 {% for step in build_status['steps'] if step['started'] and step['text'] %}
   <tr><td style="{{styles[results[step['results']]]}}">
       {% for line in step['text'] %}

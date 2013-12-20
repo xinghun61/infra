@@ -2,7 +2,7 @@
 
 {{build_url}}
 
-{{waterfall_url|urlquote(':/')}}waterfall?builder={{builder_name|urlquote}}
+{{waterfall_url|urlquote(':/')}}/waterfall?builder={{builder_name|urlquote}}
 
 --=>  {{status_text}}  <=--
 
@@ -10,4 +10,3 @@ Revision: {{revisions}}
 Blame list: {{blame_list}}
 
 Buildbot waterfall: http://build.chromium.org/
-

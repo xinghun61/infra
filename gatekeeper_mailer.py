@@ -38,7 +38,7 @@ class MailTemplate(object):
     self.reply_to = reply_to
     self.fromaddr = fromaddr
     self.subject = subject or self.default_subject
-    self.waterfall_url = waterfall_url.rstrip('/') + '/'
+    self.waterfall_url = waterfall_url
     self.build_url = build_url
     self.project_name = project_name
 
