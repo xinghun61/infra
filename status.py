@@ -288,6 +288,7 @@ class CurrentPage(BasePage):
     status = get_status()
     if out_format == 'raw':
       self.response.headers['Content-Type'] = 'text/plain'
+      self.response.headers['Access-Control-Allow-Origin'] = '*'
       self.response.out.write(status.message)
     elif out_format == 'json':
       self.response.headers['Content-Type'] = 'application/json'
