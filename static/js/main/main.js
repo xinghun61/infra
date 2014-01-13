@@ -41,7 +41,10 @@ function localize_times() {
       return format(date, 'EEE, dd MMM', 'HH:mm');
     }
 
-    var tzname = locale.format(new Date(), {
+    var now = new Date();
+    var curr_year = now.getFullYear();
+
+    var tzname = locale.format(now, {
         selector: 'time',
         timePattern: 'z'
       });
@@ -54,9 +57,13 @@ function localize_times() {
       elements[i].innerText = long_date(elements[i].innerText);
 
     // Convert all the fields that lack a timezone (which we know is UTC).
+    // We'll assume the timestamps represent the current year as it'll only
+    // really affect the short day-of-week name, and even then it'll only be
+    // slightly off during the ~1st week of January.
     elements = document.getElementsByName('date.date');
     for (i = 0; i < elements.length; ++i)
-      elements[i].innerText = short_date(elements[i].innerText + ' UTC');
+      elements[i].innerText = short_date(elements[i].innerText + ' ' + curr_year
+                                         + ' UTC');
 
     // Convert all the fields that are just a timezone.
     elements = document.getElementsByName('date.tz');
