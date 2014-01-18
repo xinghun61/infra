@@ -169,8 +169,6 @@ class Email(BaseHandler):
 
     subject_template = build_data.get('subject_template')
 
-    recipients = ', '.join(build_data['recipients'])
-
     template = gatekeeper_mailer.MailTemplate(build_data['waterfall_url'],
                                               build_data['build_url'],
                                               build_data['project_name'],
@@ -180,24 +178,17 @@ class Email(BaseHandler):
 
     text_content, html_content, subject = template.genMessageContent(build_data)
 
-    mail_override = ['stip@chromium.org',
-                     'gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com']
+    sentries = ['gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com',
+                'stip@chromium.org']
 
-    whitelist = ['jschuh']
-
-    for alias in whitelist:
-      for domain in ('@chromium.org', '@google.com'):
-        candidate = alias + domain
-        if candidate in recipients:
-          mail_override.append(candidate)
+    recipients = list(set(build_data['recipients'] + sentries))
 
     message = mail.EmailMessage(sender=from_addr,
                                 subject=subject,
-                                #to=recipients,
-                                to=mail_override,
+                                to=recipients,
                                 body=text_content,
                                 html=html_content)
-    logging.info('sending email to %s', recipients)
+    logging.info('sending email to %s', ', '.join(recipients))
     logging.info('sending from %s', from_addr)
     logging.info('subject is %s', subject)
     message.send()
