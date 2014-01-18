@@ -215,6 +215,8 @@ class ConsoleTestCase(GaeTestCase):
         remoteurl='http://build.chromium.org/p/chromium/console',
         page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
+    # This is also useful if changing the site layout and you need to
+    # 'retrain' the test expectations.
     # with open(os.path.join(test_dir, 'console-expected.html'), 'w') as fh:
     #   fh.write(actual_console['content'])
     self.assertEquals(expected_console, actual_console['content'],
@@ -244,6 +246,8 @@ class ConsoleTestCase(GaeTestCase):
         remoteurl='http://build.chromium.org/p/chromium/console',
         page_data=page_data)
     # Uncomment if deeper inspection is needed of the returned console.
+    # This is also useful if changing the site layout and you need to
+    # 'retrain' the test expectations.
     # with open(os.path.join(test_dir, 'console-expected.html'), 'w') as fh:
     #   fh.write(actual_console['content'])
     self.assertEquals(expected_console, actual_console['content'],
@@ -449,6 +453,8 @@ class FetchTestCase(GaeTestCase):
         fetch_url=fetch_url)
     page = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
+    # This is also useful if changing the site layout and you need to
+    # 'retrain' the test expectations.
     # with open(os.path.join(test_dir, 'expected.html'), 'w') as fh:
     #   fh.write(page['content'])
     self.assertEquals(expected_content, page['content'])
@@ -471,6 +477,8 @@ class FetchTestCase(GaeTestCase):
         fetch_url=fetch_url)
     page = app.get_and_cache_pagedata('chromium/console')
     # Uncomment if deeper inspection is needed of the returned console.
+    # This is also useful if changing the site layout and you need to
+    # 'retrain' the test expectations.
     # with open(os.path.join(test_dir, 'expected.html'), 'w') as fh:
     #   fh.write(page['content'])
     self.assertEquals('interface', page['body_class'])
