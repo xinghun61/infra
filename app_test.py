@@ -528,6 +528,25 @@ class MailTestCase(GaeTestCase):
 
     self.assertEqual(saw, expected)
 
+  def test_html_format_status(self):
+    import gatekeeper_mailer
+    status_header = ('Perf alert for "%(steps)s" on "%(builder_name)s"')
+    template = gatekeeper_mailer.MailTemplate(self.build_data['waterfall_url'],
+                                              self.build_data['build_url'],
+                                              self.build_data['project_name'],
+                                              'test@chromium.org',
+                                              status_header=status_header)
+
+    _, html_content, _ = template.genMessageContent(self.build_data)
+
+    with open(os.path.join(self.test_dir, 'expected_status.html')) as f:
+      expected_html = ' '.join(f.read().splitlines())
+
+    saw = str(BeautifulSoup(html_content)).split()
+    expected = str(BeautifulSoup(expected_html)).split()
+
+    self.assertEqual(saw, expected)
+
   def test_hmac_validation(self):
     from mailer import Email
     message = self.input_json['message']

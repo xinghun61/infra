@@ -168,12 +168,14 @@ class Email(BaseHandler):
         app_identity.get_application_id())
 
     subject_template = build_data.get('subject_template')
+    status_header = build_data.get('status_header')
 
     template = gatekeeper_mailer.MailTemplate(build_data['waterfall_url'],
                                               build_data['build_url'],
                                               build_data['project_name'],
                                               from_addr,
-                                              subject=subject_template)
+                                              subject=subject_template,
+                                              status_header=status_header)
 
 
     text_content, html_content, subject = template.genMessageContent(build_data)
