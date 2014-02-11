@@ -20,6 +20,7 @@ INSTANCES = [
   'nativeclient-status-hrd',
   'o3d-status-hr',
   'v8-status',
+  'webrtc-status',
 ]
 
 def main():
