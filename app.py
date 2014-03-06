@@ -118,7 +118,6 @@ def get_and_cache_pagedata(localpath):
     logging.debug('content for %s found in blobstore' % localpath)
     blob_reader = blobstore.BlobReader(page.content_blob)
     page_data['content_blob'] = True
-    put_data_into_cache(localpath, page_data)
     page_data['content'] = blob_reader.read().decode('utf-8', 'replace')
   else:
     logging.debug('content for %s found in datastore' % localpath)
@@ -140,7 +139,8 @@ def save_page(page, localpath, fetch_timestamp, page_data):
     logging.debug('save_page: content was already in unicode')
   logging.debug('save_page: content size is %d' % len(content))
   # Save to blobstore if content + metadata is too big.
-  if len(content.encode('utf-8')) >= 10**6 - 10**5:
+  json_data = json.dumps(content.encode('utf-8'), default=dtdumper)
+  if len(json_data) >= 10**6 - 10**5:
     logging.debug('save_page: saving to blob')
     content_blob_key = write_blob(content, path_to_mime_type(localpath))
     content = None
