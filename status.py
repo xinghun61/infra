@@ -45,7 +45,7 @@ class LinkableText(object):
   }
 
   WATERFALL_URLS = {
-      'chromeos': 'http://chromegw/i/chromeos',
+      'chromeos': 'https://uberchromegw.corp.google.com/i/chromeos',
       'chromiumos': 'http://build.chromium.org/p/chromiumos',
   }
 
