@@ -31,7 +31,8 @@
       </div>
     {% endif %}
     <form action="/" name="add_new_message" method="post">
-      <input type="text" size="80" name="message" value="{{ message }}">
+      <textarea cols="80" rows="2" name="message"
+        style="vertical-align: middle;">{{ message }}</textarea>
       <input type="hidden" name="last_status_key" value="{{ last_status_key }}">
       <input type="submit" name="change" value="Change">
       <input type="button" name="refresh" value="Refresh" onclick="location.href='/';">

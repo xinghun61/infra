@@ -82,6 +82,7 @@ function help_init() {
   message.onmouseover = help_show;
   message.onmousemove = help_show;
   message.onmouseout = help_hide;
+  message.onkeypress = auto_submit;
 
   var help = document.getElementById('help');
   help.onmouseover = help_show;
@@ -99,4 +100,20 @@ function help_show() {
 function help_hide() {
   var help = document.getElementById('help');
   help.hidden = true;
+}
+
+/*
+ * Misc functions.
+ */
+
+// Used by the status field.
+function auto_submit(e) {
+  if (!e.shiftKey && e.keyCode == 13) {
+    // Catch the enter key in the textarea.  Allow shift+enter to work
+    // so people editing a lot of text can play around with things.
+    var form = document.getElementsByName('add_new_message')[0]
+    form.submit();
+    return false;
+  }
+  return true;
 }

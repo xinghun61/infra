@@ -137,6 +137,13 @@ class Status(db.Model):
   # The message. It can contain html code.
   message = db.StringProperty(required=True)
 
+  def __init__(self, *args, **kwargs):
+    # Normalize newlines otherwise the DB store barfs.  We don't really want to
+    # make this field handle newlines as none of the places where we output the
+    # content is designed to handle it, nor the clients that consume us.
+    kwargs['message'] = kwargs.get('message', '').replace('\n', ' ')
+    super(Status, self).__init__(*args, **kwargs)
+
   @property
   def username_links(self):
     return LinkableText(self.username)
