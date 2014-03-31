@@ -1,0 +1,43 @@
+{% extends "viewer_base.html" %}
+
+{% block title %}
+Buildbot viewer
+{% endblock title %}
+
+{% block head %}
+<style>
+.code {
+  font-family:monospace;
+}
+body {
+  white-space: nowrap;
+}
+.section-header {
+  background-color: #E8E8E8;
+}
+.center {
+     float: none;
+     margin-left: auto;
+     margin-right: auto;
+     width: 500px;
+}
+</style>
+{% endblock head %}
+
+{% block body %}
+<div class="row">
+</div>
+<div class="row">
+  <div class="center">
+    <div class="hero-unit">
+      <h1>Welcome</h1>
+      <p>Paste in a stdio url from a build log</p>
+    </div>
+    <form method='GET' action='/buildbot/' class="form-inline">
+      <input type='text' class="input-block-level" name='url' placeholder='http://build.chromium.org/p/....'>
+      </input>
+      <button type="submit" class="btn btn-primary">Go</button>
+    </form>
+  </div>
+</div>
+{% endblock body %}

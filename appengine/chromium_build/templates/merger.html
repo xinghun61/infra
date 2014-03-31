@@ -1,0 +1,92 @@
+<table width="96%" class="ConsoleData">
+
+{#- List the master names in the console. -#}
+<tr>
+  <td width="1%"></td>
+  <td width="1%"></td>
+  {%- for master in data.masters -%}
+    {%- if loop.first -%}
+      {%- set extraclass = 'first' -%}
+    {%- elif loop.last -%}
+      {%- set extraclass = 'last' -%}
+    {%- else -%}
+      {%- set extraclass = '' -%}
+    {%- endif -%}
+    <td class='DevStatus Alt {{ extraclass }} '
+        colspan="{{ data.category_order[master]|length }}">
+      {%- set master_pretty_name = master -%}
+      {%- if master == 'chromium.main' -%}
+        {%- set master_pretty_name = 'chromium' -%}
+      {%- endif -%}
+      <a href="http://build.chromium.org/p/{{master_pretty_name}}/console"
+         target="_blank">{{ master_pretty_name }}</a>
+    </td>
+  {%- endfor -%}
+</tr>
+<tr class='DevStatusSpacing'></tr>
+
+{#- List the categories in the console. -#}
+<tr>
+  <td width="1%"></td>
+  <td width="1%"></td>
+  {% for master in data.masters -%}
+    {%- for category in data.category_order[master] -%}
+      <td class='DevSlave'>{{ category }}</td>
+    {% endfor -%}
+  {%- endfor -%}
+</tr>
+
+{#- List the builder statuses in the console. -#}
+<tr>
+  <td width="1%"></td>
+  <td width="1%"></td>
+  {% for master in data.masters -%}
+    {%- for category in data.category_order[master] -%}
+      <td class='DevSlave Alt '>
+        {{ data.category_data[master][category] }}
+      </td>
+    {%- endfor -%}
+  {%- endfor %}
+</tr>
+
+{#- List the revision data in the console. -#}
+{% for row in data.row_orderedkeys -%}
+  {%- set extraclass = loop.cycle('', 'Alt') -%}
+  <tr>
+    <td width="1%" class="DevRev DevRevCollapse {{ extraclass }}">
+      <a href="{{ data.row_data[row]['revlink']|escape }}">{{ row }}</a>
+    </td>
+    <td width="1%" class="DevName {{extraclass}}">
+      {{ data.row_data[row]['who'] }}
+    </td>
+    {%- for master in data.masters -%}
+      {% for category in data.category_order[master] -%}
+        <td class='DevStatus {{extraclass}}'>
+          {%- if master in data.row_data[row]['status'] -%}
+            {{ data.row_data[row]['status'][master][category] }}
+          {%- else -%}
+            {{ data.category_data[master][category]|notstarted }}
+          {%- endif -%}
+        </td>
+      {%- endfor %}
+    {%- endfor -%}
+  </tr>
+
+  <tr>
+    <td colspan="{{ 2 + data.category_count }}"
+        class="DevComment {{ extraclass }}">
+      {{ data.row_data[row]['comment'] }}
+    </td>
+  </tr>
+
+  {%- if 'details' in data.row_data[row] -%}
+    <tr>
+      <td colspan="{{ 2 + data.category_count }}"
+          class="DevDetails {{ extraclass }}">
+        {{ data.row_data[row]['details'] }}
+      </td>
+    </tr>
+  {%- endif -%}
+  <tr class='DevStatusSpacing'></tr>
+{%- endfor %}
+</table>

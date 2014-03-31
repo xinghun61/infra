@@ -1,0 +1,4 @@
+- Verify returned mime type for blob data is correct.
+- Look into mimetypes.guess_type() for path_to_mime_type().
+- Look into adding utf-8 to MIME type (charset=utf-8).
+- Ensure there are no references to URL paths that are >500 characters.

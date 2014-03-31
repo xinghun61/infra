@@ -1,0 +1,14 @@
+TESTING / UPDATE PROCESS
+
+1. Make sure the presubmit tests pass.
+2. Upload a new version of the app.  Wait for the upload to complete.
+3. Load http://chromium-build.appspot.com/p/chromium/sheriff.js, does it
+   return correctly?
+4. Load http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder,
+   does it return correctly?
+5. Load http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder?a,
+   does it return a 404?
+6. Load http://chromium-build.appspot.com/p/chromium/console, does this load
+   correctly?
+7. Verify the same in Firefox and IE.
+8. Check the AppEngine console for chromium-build, are there any errors?

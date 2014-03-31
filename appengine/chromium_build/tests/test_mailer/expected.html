@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Automatically closing tree for &#34;check_deps2git,sizes,update_scripts,update,compile,gclient_revert,archive_build,runhooks&#34; on &#34;Linux x64&#34;</title>
+</head>
+<body>
+  <a href="http://build.chromium.org/p/chromium/waterfall">http://build.chromium.org/p/chromium/waterfall</a><p>
+  Automatically closing tree for &#34;check_deps2git,sizes,update_scripts,update,compile,gclient_revert,archive_build,runhooks&#34; on &#34;Linux x64&#34;</p>
+  <a href="http://build.chromium.org/p/chromium/builders/Linux x64/builds/54475">http://build.chromium.org/p/chromium/builders/Linux x64/builds/54475</a><p>
+  Revision: 218091, 218092, 218093, 218094<br>
+  Blame list: akalin@chromium.org,lazyboy@chromium.org,noamsml@chromium.org,rmsousa@chromium.org</p>
+<table style="border-spacing: 1px 1px; font-weight: bold; padding: 3px 0px 3px 0px; text-align: center;">
+<tr><td style="color: #FFFFFF; background-color: #e0b0ff; border-color: #ACA0B3;"><a title="Reason: scheduler" href="http://build.chromium.org/p/chromium/builders/Linux%20x64/builds/54475">Build 54475</a></td></tr> <tr><td style="color: #FFFFFF; background-color: #e0b0ff; border-color: #ACA0B3;"> update_scripts<br/> exception<br/> slave<br/> lost<br/> <a href="http://build.chromium.org/p/chromium/builders/Linux%20x64/builds/54475/steps/update_scripts/logs/stdio">stdio</a><br/> <a href="http://build.chromium.org/p/chromium/builders/Linux%20x64/builds/54475/steps/update_scripts/logs/interrupt">interrupt</a><br /> </td></tr> </table>
+<p>
+<p>Changed by: <b>noamsml@chromium.org</b><br />
+Changed at: <b>Fri 16 Aug 2013 14:20:12</b><br />
+Repository: <b>svn://svn-mirror.golo.chromium.org/chrome/trunk</b><br />
+
+Branch: <b>src</b><br />
+
+Revision: <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=218091"><b>218091</b></a>
+
+<br />
+
+Changed files:
+<ul>
+<li> <b>chrome/browser/local_discovery/service_discovery_host_client.cc</b></li>
+<li> <b>chrome/browser/local_discovery/service_discovery_host_client.h</b></li>
+<li> <b>chrome/browser/ui/webui/local_discovery/local_discovery_ui_handler.cc</b></li>
+</ul>
+
+
+Comments:
+<pre>Added singleton factory for ServiceDiscoveryHostClient
+
+Added singleton factory for ServiceDiscoveryHostClient so it can be shared
+between multiple unrelated users. The factory keeps track of references to
+service discovery and shuts down the client when not used.
+
+BUG=
+
+Review URL: https://chromiumcodereview.appspot.com/22449004</pre>
+
+Properties:
+<ul>
+</ul>
+
+</p>
+
+<p>Changed by: <b>lazyboy@chromium.org</b><br />
+Changed at: <b>Fri 16 Aug 2013 14:20:12</b><br />
+Repository: <b>svn://svn-mirror.golo.chromium.org/chrome/trunk</b><br />
+
+Branch: <b>src</b><br />
+
+Revision: <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=218092"><b>218092</b></a>
+
+<br />
+
+Changed files:
+<ul>
+<li> <b>chrome/browser/apps/web_view_browsertest.cc</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown/embedder.js</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown/https_page.html</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown/main.html</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown/manifest.json</b></li>
+<li> <b>chrome/test/data/extensions/platform_apps/web_view/interstitial_teardown/test.js</b></li>
+<li> <b>content/browser/browser_plugin/browser_plugin_guest.cc</b></li>
+<li> <b>content/browser/browser_plugin/browser_plugin_guest.h</b></li>
+<li> <b>content/browser/renderer_host/render_widget_host_view_guest.cc</b></li>
+</ul>
+
+
+Comments:
+<pre>&lt;webview&gt;: Fix ptr access crash on browser plugin + interstitial teardown.
+
+If browser plugin loaded an interstitial page as view contents
+(e.g. loading plugin resulted in ssl-error), upon closing the
+containing app, the interstitial would try to show back
+(RenderWidgetHostView::WasShown) the original contents of the
+RWHViewGuest, whose render_view_host_ was already in the middle of
+destruction. We record the destruction phase and avoid calling methods
+on RenderViewHost in this case.
+
+BUG=270313
+TEST=chrome app &lt;webview&gt;, load a guest pointing a page that results in
+ssl-error page showing (Proceed to safety page, etc), close the app. The app
+would crash without this change.
+Added regression test.
+
+Review URL: https://chromiumcodereview.appspot.com/23004002</pre>
+
+Properties:
+<ul>
+</ul>
+
+</p>
+
+<p>Changed by: <b>akalin@chromium.org</b><br />
+Changed at: <b>Fri 16 Aug 2013 14:25:12</b><br />
+Repository: <b>svn://svn-mirror.golo.chromium.org/chrome/trunk</b><br />
+
+Branch: <b>src</b><br />
+
+Revision: <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=218093"><b>218093</b></a>
+
+<br />
+
+Changed files:
+<ul>
+<li> <b>chrome/browser/devtools/tethering_adb_filter.cc</b></li>
+<li> <b>chrome/browser/extensions/api/dns/dns_api.cc</b></li>
+<li> <b>chrome/browser/extensions/api/socket/socket_api.cc</b></li>
+<li> <b>chrome/browser/net/network_stats.cc</b></li>
+<li> <b>chrome/browser/net/predictor.cc</b></li>
+<li> <b>content/browser/renderer_host/p2p/socket_dispatcher_host.cc</b></li>
+<li> <b>content/browser/renderer_host/pepper/pepper_host_resolver_message_filter.cc</b></li>
+<li> <b>content/browser/renderer_host/pepper/pepper_tcp_socket.cc</b></li>
+<li> <b>net/dns/host_resolver.cc</b></li>
+<li> <b>net/dns/host_resolver.h</b></li>
+<li> <b>net/dns/host_resolver_impl_unittest.cc</b></li>
+<li> <b>net/dns/mapped_host_resolver_unittest.cc</b></li>
+<li> <b>net/dns/single_request_host_resolver_unittest.cc</b></li>
+<li> <b>net/ftp/ftp_network_transaction.cc</b></li>
+<li> <b>net/http/http_auth_handler_negotiate.cc</b></li>
+<li> <b>net/http/http_network_transaction_unittest.cc</b></li>
+<li> <b>net/proxy/proxy_resolver_v8_tracing.cc</b></li>
+<li> <b>net/quic/quic_network_transaction_unittest.cc</b></li>
+<li> <b>net/quic/quic_stream_factory.cc</b></li>
+<li> <b>net/socket/socks5_client_socket_unittest.cc</b></li>
+<li> <b>net/socket/socks_client_socket_pool.cc</b></li>
+<li> <b>net/socket/socks_client_socket_unittest.cc</b></li>
+<li> <b>net/socket/ssl_client_socket_pool_unittest.cc</b></li>
+<li> <b>net/socket/transport_client_socket_pool.cc</b></li>
+<li> <b>net/socket/transport_client_socket_pool.h</b></li>
+<li> <b>net/socket/transport_client_socket_unittest.cc</b></li>
+<li> <b>net/socket_stream/socket_stream.cc</b></li>
+<li> <b>net/spdy/spdy_session_pool.cc</b></li>
+<li> <b>net/spdy/spdy_session_pool_unittest.cc</b></li>
+<li> <b>net/spdy/spdy_session_unittest.cc</b></li>
+<li> <b>net/test/spawned_test_server/base_test_server.cc</b></li>
+<li> <b>net/tools/gdig/gdig.cc</b></li>
+</ul>
+
+
+Comments:
+<pre>Add a priority parameter for HostResolver::RequestInfo&#39;s constructor
+
+Use DEFAULT_PRIORITY when there isn&#39;t already a priority
+available.
+
+This has the net effect of changing the priority of
+host resolver requests that didn&#39;t specify one from
+MEDIUM to DEFAULT_PRIORITY (= LOWEST). This is okay,
+as those requests apparently didn&#39;t care what priority
+they wanted.
+
+BUG=166689
+TBR=mmenke@chromium.org
+
+Review URL: https://codereview.chromium.org/23146004</pre>
+
+Properties:
+<ul>
+</ul>
+
+</p>
+
+<p>Changed by: <b>rmsousa@chromium.org</b><br />
+Changed at: <b>Fri 16 Aug 2013 14:29:12</b><br />
+Repository: <b>svn://svn-mirror.golo.chromium.org/chrome/trunk</b><br />
+
+Branch: <b>src</b><br />
+
+Revision: <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=218094"><b>218094</b></a>
+
+<br />
+
+Changed files:
+<ul>
+<li> <b>remoting/host/setup/native_messaging_host.cc</b></li>
+<li> <b>remoting/host/setup/native_messaging_host.h</b></li>
+<li> <b>remoting/host/setup/native_messaging_host_unittest.cc</b></li>
+<li> <b>remoting/host/setup/oauth_client.cc</b></li>
+<li> <b>remoting/host/setup/oauth_client.h</b></li>
+<li> <b>remoting/remoting.gyp</b></li>
+<li> <b>remoting/webapp/host_controller.js</b></li>
+<li> <b>remoting/webapp/host_dispatcher.js</b></li>
+<li> <b>remoting/webapp/host_native_messaging.js</b></li>
+</ul>
+
+
+Comments:
+<pre>Native messaging support for service accounts.
+
+This is an alternative implementation of https://codereview.chromium.org/19670021/ . This version performs the OAuth token exchange steps from inside the NativeMessaging host. This means that the client secret and the service account access token never leave the native messaging host.
+
+Since the API keys are also needed to use the refresh token, this means that only the host binaries are able to get an access token for the service account.
+
+BUG=224742
+
+Review URL: https://chromiumcodereview.appspot.com/22769002</pre>
+
+Properties:
+<ul>
+</ul>
+
+</p>
+</body>
+</html>

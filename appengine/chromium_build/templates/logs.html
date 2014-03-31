@@ -1,0 +1,79 @@
+{% extends "viewer_base.html" %}
+
+{% block title %}
+Log File for {{name}}
+{% endblock title %}
+
+{% block head %}
+<style>
+.code {
+  font-family:monospace;
+}
+body {
+  white-space: nowrap;
+}
+{% if output %}
+  #main-container {
+    padding: 0;
+  }
+  .row {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+{% endif %}
+.alert {
+  margin-left: 20px;
+}
+.section-header {
+  background-color: #E8E8E8;
+}
+.center {
+     float: none;
+     margin-left: auto;
+     margin-right: auto;
+     width: 500px;
+}
+</style>
+{% endblock head %}
+
+{% block body %}
+<div class="row">
+  {% if status == 'RUNNING' %}
+    <div class="alert alert-info">
+      This step is still running...
+    </div>
+  {% elif status == 'OK' %}
+    <div class="alert alert-success">
+      This step passed with status {{ret_code}}
+    </div>
+  {% elif status == 'ERROR' %}
+    <div class="alert alert-error">
+      This step failed with status {{ret_code}}
+    </div>
+  {% endif %}
+  <div class="span12">
+    <h2>Output from <a href='{{url}}'>{{name}}</a></h2>
+  </div>
+</div>
+{% autoescape False %}
+{% for section_title, lines in output %}
+<div class="row section-{{section_title}}">
+  <div class="span12">
+    {% for line, attrs in lines %}
+      <span class="code {% for attr in attrs %}{{attr}} {% endfor %}">{{line}}</span><br>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endautoescape %}
+{% endblock body %}
+
+{% block sub_footer %}
+{% if output and debug %}
+  Fetch time: {{'%02f' % log_fetch_time}}s<br>
+  Parse time: {{'%02f' % parse_time}}s<br>
+  Size: {{size}} bytes<br>
+  Compressed Size: {{compressed_size}} bytes<br>
+  Compressed Report: {{compressed_report}} bytes
+{% endif %}
+{% endblock sub_footer %}

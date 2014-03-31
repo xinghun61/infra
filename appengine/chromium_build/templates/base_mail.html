@@ -1,0 +1,18 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>{{status_title}}</title>
+  </head>
+  <body>
+    <a href="{{waterfall_url}}/waterfall">{{waterfall_url}}/waterfall</a><p>
+    {{status}}</p>
+    <a href="{{build_url}}">{{build_url}}</a><p>
+    Revision: {{revisions}}<br>
+    Blame list: {{blame_list}}</p>
+    <table style="border-spacing: 1px 1px; font-weight: bold; padding: 3px 0px 3px 0px; text-align: center;">
+      {% block buildbox %}{% endblock %}</table>
+    <p>
+    {% block changes %}{%endblock %}
+    </p>
+  </body>
+</html>

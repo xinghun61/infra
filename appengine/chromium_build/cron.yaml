@@ -1,0 +1,3 @@
+cron:
+- url: /tasks/fetch_pages
+  schedule: every 1 minutes

@@ -1,0 +1,130 @@
+{% extends "viewer_base.html" %}
+
+{% block title %}
+Buildbot: {{builderName}} build #{{number}}
+{% endblock title %}
+
+{% block body %}
+<div class="row-fluid">
+  <div class="span12">
+    {% if currentStep %}
+      <div class="alert alert-info">
+        Currently running {{currentStep.name}}
+      </div>
+    {% elif results == 0 %}
+      <div class="alert alert-success">
+        This build passed
+      </div>
+    {% else %}
+      <div class="alert alert-error">
+        This build <blink>failed</blink> on
+        {% autoescape False %}{{failed_steps}}{% endautoescape %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row-fluid">
+  <div class="span6">
+    <h4>Steps and Logfiles</h4>
+    <table class="table table-condensed table-hover">
+      {% for step in steps %}
+        {% if not step.isFinished %}
+          {% if step.isStarted %}
+            <tr class="warning"><td>
+          {% else %}
+            <tr><td>
+          {% endif %}
+        {% elif step.results[0] == 0 %}
+          <tr class="success"><td>
+        {% elif step.results[0] == 3 %}
+          <tr><td>
+        {% elif step.results[0] == 1 %}
+          <tr class="warning"><td>
+        {% else %}
+          <tr class="error"><td>
+        {% endif %}
+        <strong>{{step.name}}</strong>
+        {% if step.logs %}
+          (<a href="/buildbot/?url={{step.logs[0][1]}}">{{step.logs[0][0]}}</a>)
+        {% endif %}
+        <small class="muted">
+          {% for text in step.text %}
+            {% autoescape False %}
+              {{text}}
+            {% endautoescape %}
+          {% endfor %}
+        </small>
+        {% if step.times and step.times[1:] %}
+          <span class="pull-right muted">
+            {% if step.times[1] %}
+              {% set delta = step.times[1] - step.times[0] %}
+              {{delta|delta_time}}
+            {% elif step.times[0] %}
+              Running for {{step.times[0]|time_since}}
+            {% endif %}
+          </span>
+        {% endif %}
+        {% if step.logs and step.logs[1:] %}
+          <ol>
+            {% for log_name, log_url in step.logs %}
+              {% if not loop.first %}
+                <li><a href="/buildbot/?url={{log_url}}">{{log_name}}</a></li>
+              {% endif %}
+            {% endfor %}
+          </ol>
+        {% endif %}
+        </td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="span6">
+    <h4>Build Properties</h4>
+    {% for name, value, source in properties %}
+      {% if value and name not in ['blamelist', 'rietveld'] %}
+        <strong>{{name}}</strong>:
+        {% if name == 'issue' %}
+          <a href="{{rietveld}}/{{value}}">
+            {{value}}
+          </a><br>
+        {% elif name == 'testfilter' %}
+          {{', '.join(value)}}<br>
+        {% elif name == 'try_job_key' %}
+          {{value[:10]}}...{{value[-10:]}}<br>
+        {% else %}
+          {{value}}<br>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    <h4>All Changes</h4>
+    {% for change in sourceStamp.changes %}
+      <div class="well">
+        <span class="pull-right muted time_ago">
+          {{change.when|time_since}} ago
+        </span>
+        <strong>Change #{{change.number}}</strong><br>
+        By {% autoescape False %}{{change.who|rot13_email}}{% endautoescape %}
+        <br>
+        Revision {{change.revision}}<br><br>
+        <strong>Comments:</strong><br>
+        {% autoescape False %}
+          {{change.comments|cl_comment}}<br><br>
+        {% endautoescape %}
+        <strong>Changes Files:</strong><br>
+        {% for file in change.files %}
+          <li><a href="https://code.google.com/p/chromium/codesearch#chromium/src/{{file.name}}">
+            {{file.name}}
+          </a></li>
+        {% else %}
+          No changed files
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock body %}
+
+{% block sub_footer %}
+{% endblock sub_footer %}

@@ -1,0 +1,40 @@
+{% extends "viewer_base.html" %}
+
+{% block title %}
+Buildslave: {{name}}
+{% endblock title %}
+
+{% block body %}
+<div class="row-fluid">
+  <div class="span12">
+    <h2>Buildslave {{name}}</h2>
+    {% if runningBuilds %}
+      <h4>Currently building:</h4>
+      <table class='table table-condensed'><tbody>
+        {% for build in runningBuilds %}
+          <tr>
+            <td class="time_ago">{{build.times[0]|time_since}} ago</td>
+            <td>Revision {{build.sourceStamp.revision}}</td>
+            <td>
+              <a href="/buildbot/{{master}}/builders/{{build.builderName}}?new=true">
+                {{build.builderName}}
+              </a>
+            </td>
+            <td>
+              <a href="/buildbot/{{master}}/builders/{{build.builderName}}/builds/{{build.number}}">
+                #{{build.number}}
+              </a>
+          </tr>
+        {% endfor %}
+      </tbody></table>
+    {% else %}
+      <h4>Not currently running any builds</h4>
+    {% endif %}
+
+
+  </div>
+</div>
+{% endblock body %}
+
+{% block sub_footer %}
+{% endblock sub_footer %}

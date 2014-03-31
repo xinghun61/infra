@@ -1,0 +1,4 @@
+backends:
+- name: merger
+  class: B2
+  instances: 1
