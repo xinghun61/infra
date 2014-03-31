@@ -1,0 +1,130 @@
+<html>
+<head>
+  <script src="js/common/bind.js"></script>
+  <script src="js/common/date_util.js"></script>
+  <script src="js/common/debug.js"></script>
+  <script src="js/common/dom_util.js"></script>
+  <script src="js/profiling/class_util.js"></script>
+  <script src="js/profiling/data_fetcher.js"></script>
+  <script src="js/profiling/entry.js"></script>
+  <script src="js/profiling/list_view.js"></script>
+  <script src="js/profiling/stats_view.js"></script>
+  <script src="js/profiling/viewer_app.js"></script>
+
+  <script>
+    var gViewerApp = new ProfilingApp();
+  </script>
+
+  <style>
+    .viewBadge {
+      font-size: 110%;
+      background: gray;
+      padding: 5px;
+    }
+
+    .sortBadge {
+    }
+
+    table.entriesList {
+      padding: 1px;
+    }
+
+    table.entriesList thead {
+      background: lightgreen;
+    }
+
+    table.entriesList th {
+      padding: 3px;
+    }
+
+    table.entriesList th:first-of-type {
+      border-top-left-radius: 8px;
+    }
+
+    table.entriesList th:last-of-type {
+      border-top-right-radius: 8px;
+    }
+
+    table.entriesList tr:nth-child(odd) {
+      background: lightgray;
+    }
+
+    table.entriesList td {
+      padding: 2pt;
+      padding-left: 4pt;
+      padding-right: 4pt;
+    }
+
+    .filters_container {
+    }
+
+    .filters_container th {
+      text-align: right;
+    }
+
+    .dygraph {
+      font-family: sans-serif;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      background: -webkit-gradient(linear,
+                                    left top,
+                                    left bottom,
+                                    from(#fff),
+                                    to(#eee));
+      border-radius: 10px;
+    }
+
+    /* Must be last to take precedence. */
+    .Selected {
+      background: yellow;
+    }
+  </style>
+  <title>Profiling</title>
+</head>
+
+<body>
+<h1>Profiling</h1>
+
+<div style="border: 1px solid black" id=navigation_container>
+  <table width=100%>
+    <tr>
+      <td>
+        <div id=filters_container class=filters_container></div>
+      </td>
+      <td align=right>
+        <div id=view_selection_container></div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- UI widget to show when stuff is being loaded -->
+<!-- ============================================================ -->
+<div id=loading style="font-size: 200%; color: blue; padding: 10px; display:none;">Loading...</div>
+
+
+<!-- ============================================================ -->
+<!-- Spacer between time range controls and view panel -->
+<!-- ============================================================ -->
+<div style="margin: 3px;">&nbsp;</div>
+
+<!-- ============================================================ -->
+<!-- UI widget to prompt for login.                               -->
+<!-- ============================================================ -->
+<div id=login_container style="display:none;"></div>
+
+<!-- ============================================================ -->
+<!-- UI widget with error data.                                   -->
+<!-- ============================================================ -->
+<div id=error_container style="display:none;"></div>
+
+<!-- ============================================================ -->
+<!-- Different views content area -->
+<!-- ============================================================ -->
+<div id=list_container style="display:none"></div>
+<div id=stats_container style="display:none"></div>
+
+<pre id=log></pre>
+</body>
+</html>

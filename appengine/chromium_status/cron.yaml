@@ -1,0 +1,8 @@
+cron:
+- description: Cleanup old logs
+  url: /restricted/breakpad/cleanup
+  schedule: every 24 hours
+
+- description: Cleanup old logs
+  url: /restricted/profiling/cleanup
+  schedule: every 24 hours

@@ -1,0 +1,138 @@
+[
+  {
+    "timestamp": 2635200.0,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "payload": {
+      "duration": 13.9,
+      "timed_out": false,
+      "result": 0,
+      "output": "Running presubmit commit checks ...\n\n** Presubmit Messages **\nIt looks like you have not configured your subversion config file or it is not up-to-date. Please look at http://dev.chromium.org/developers/coding-style to configure your subversion configuration file. This enables automatic properties to simplify the project maintenance.\n\nPresubmit checks passed.\n"
+    }
+  },
+  {
+    "timestamp": 1.0,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
+    "payload": {
+      "builder": "Windows",
+      "revision": 23,
+      "clobber": true,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url/win"
+    }
+  },
+  {
+    "timestamp": 2.0,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
+    "payload": {
+      "builder": "Mac",
+      "revision": 23,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url/mac"
+    }
+  },
+  {
+    "timestamp": 3.0,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
+    "payload": {
+      "builder": "Linux",
+      "revision": 23,
+      "build": 0,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url/lin"
+    }
+  },
+  {
+    "timestamp": 4.0,
+    "verification": "try server",
+    "owner": "joe@chromium.org",
+    "patchset": 1,
+    "issue": 7654321,
+    "payload": {
+      "build": 2000,
+      "builder": "Mac",
+      "duration": 50.0,
+      "revision": 23,
+      "result": 3,
+      "job_name": "Tryin' hard",
+      "url": "http://example.com/a/random/url/mac"
+    }
+  },
+  {
+    "timestamp": 2635150.0,
+    "verification": "non_existent",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "payload": {
+      "foo": "bar - should be ignored"
+    }
+  },
+  {
+    "timestamp": 2635151.0,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "payload": {
+      "duration": 90.0,
+      "result": 42,
+      "timed_out": true,
+      "output": "THIS ITEM MUST BE DISCARDED\nbecause first item."
+    }
+  },
+  {
+    "timestamp": 2635205.0,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "verification": "why not",
+    "payload": {
+      "output": "Waiting for something"
+    }
+  },
+  {
+    "timestamp": 2635210.0,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "verification": "why not",
+    "payload": {
+      "output": ""
+    }
+  },
+  {
+    "timestamp": 2635210.0,
+    "owner": "bar@chromium.org",
+    "patchset": 1,
+    "issue": 1234567,
+    "verification": "commit",
+    "payload": {
+      "output": "Committed: http://src.chromium.org/viewvc/chrome?view=rev&revision=FAKE",
+      "url": "http://example.com/r123",
+      "revision": 123
+    }
+  },
+  {
+    "timestamp": 2332800.0,
+    "verification": "presubmit",
+    "owner": "bar@chromium.org",
+    "patchset": 9,
+    "issue": 1000000,
+    "payload": {
+      "duration": 1.2,
+      "output": "Running\npresubmit\ncommit\nchecks\n...\n\n** Presubmit Messages **\nIt\nlooks\nlike\nyou\nhave\nissues.\n\nPresubmit checks passed.\n"
+    }
+  }
+]

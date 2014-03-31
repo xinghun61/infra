@@ -1,0 +1,120 @@
+These are examples of StatusPush generated data.
+
+onChangeAdded = {
+  u'started': u'2010-08-11 20:50:19.094756',
+  u'timestamp': u'2010-08-11 20:51:11.735387',
+  u'event': u'changeAdded',
+  u'project': u'Chromium',
+  u'version': 1,
+  u'payload_json': u'{
+    "change": {
+      "files": [
+        "chrome/browser/appcache/chrome_appcache_service.cc",
+        "chrome/browser/appcache/chrome_appcache_service.h",
+        (...)
+      ],
+      "who": "michaeln@chromium.org",
+      "when": 1281559871.732846,
+      "number": 534,
+      "comments": "Provide a profile.GetAppCacheService() ...",
+      "branch": "src",
+      "revlink": "http://src.chromium.org/viewvc/chrome?view=rev&revision=55773",
+      "revision": "55773"
+    }
+  }',
+  u'id': 2
+}
+
+
+onBuildFinished = {
+  u'started': u'2010-08-11 18:58:55.668549',
+  u'timestamp': u'2010-08-11 19:07:17.507269',
+  u'event': u'buildFinished',
+  u'project': u'Chromium Try Server',
+  u'version': 1,
+  u'payload_json': u' {
+    "build": {
+      "slave": "jega188",
+      "builderName": "linux",
+      "text": ["failed", "shell"],
+      "results": 2,
+      "number": 31,
+      "times": [1281553237.7719929, 1281553637.5062699],
+      "reason": "The web-page \'force build\' button was pressed by : ",
+      "steps": [
+        {
+          "name": "shell",
+          "isFinished": true,
+          "text": ["update scripts", "failed"],
+          "results": [2, ["shell"]],
+          "isStarted": true,
+          "times": [1281553237.7731969, 1281553239.118417],
+          "expectations": [["output", 1028, null]]},
+        {
+          "name": "gclient", "isFinished": true, "text": ["update", "r55762"],
+          "expectations": [["output", 373961, null]], "isStarted": true,
+          "times": [1281553239.1201389, 1281553516.140173]
+        },
+        (...)
+        {
+          "name": "base_unittests", "isFinished": true,
+          "text": [
+            "base_unittests", "6 flaky", "failed 2",
+            "<div class=\\"BuildResultInfo\\">", "<a href=\\"http://test-...",
+            "Flakiness dashboard", "</a>", "</div>"
+          ],
+          "results": [1, null], "isStarted": true,
+          "times": [1281553583.072479, 1281553637.5038481],
+          "expectations": [["output", 86839, null]]
+        }
+      ],
+      "requests": [
+        {
+          "submittedAt": 1281553237.7569211,
+          "builds": [31],
+          "builderName": "linux"
+        }
+      ],
+      "properties": [
+        ["blamelist", null, "Build"],
+        ["branch", null, "Build"],
+        ["buildername", "linux", "Build"],
+        ["buildnumber", 31, "Build"],
+        ["got_revision", "55762", "Source"],
+        ["gtest_filter", null, "Factory"],
+        ["revision", null, "Build"],
+        ["slavename", "jega188", "BuildSlave"]
+      ]
+    }
+  }',
+  u'id': 158
+}
+
+
+onStepFinished = {
+  u'started': u'2010-08-11 18:58:55.668549',
+  u'timestamp': u'2010-08-11 19:00:39.118508',
+  u'event': u'stepFinished',
+  u'project': u'Chromium Try Server',
+  u'version': 1,
+  u'payload_json': u'{
+    "step": {
+      "name": "shell",
+      "isFinished": true,
+      "text": ["update scripts", "failed"],
+      "results": [2, ["shell"]],
+      "isStarted": true,
+      "times": [1281553237.7731969, 1281553239.118417],
+      "expectations": [["output", 1028, null]]
+    },
+    "properties": [
+      ["blamelist", null, "Build"],
+      ["branch", null, "Build"],
+      ["buildername", "linux", "Build"],
+      ["buildnumber", 31, "Build"],
+      ["revision", null, "Build"],
+      ["slavename", "jega188", "BuildSlave"]
+    ]
+  }',
+  u'id': 149
+}

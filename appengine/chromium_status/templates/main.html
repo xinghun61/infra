@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+  <script src="js/main/main.js"></script>
+  <script data-dojo-config="async:true"
+          src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js"></script>
+{% endblock %}
+
+{% block content %}
+  <!-- Keep in sync with status.py:Status.general_state() logic -->
+  <div id="help" class="help" hidden>
+    The message is scanned for partial matches (in the order listed)<br>
+    and will set the tree state accordingly. The scan order does <b>not</b><br>
+    correspond to the severity of the tree state.<br>
+    <br>
+    &nbsp;(1) "<span class="maintenance">maint</span>": The tree is closed for
+      maintenance<br>
+    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; (also needs to have the text
+      "close")<br>
+    &nbsp;(2) "<span class="throttled">throt</span>": The tree is throttled;
+      tread carefully<br>
+    &nbsp;(3) "<span class="closed">close</span>": The tree is closed<br>
+    &nbsp;(4) Otherwise, the tree is <span class="open">open</span> for business
+  </div>
+
+  <center>
+  {% if write_access %}
+    {% if error_message %}
+      <div class="error">
+      {{ error_message }}
+      </div>
+    {% endif %}
+    <form action="/" name="add_new_message" method="post">
+      <textarea cols="80" rows="2" name="message"
+        style="vertical-align: middle;">{{ message }}</textarea>
+      <input type="hidden" name="last_status_key" value="{{ last_status_key }}">
+      <input type="submit" name="change" value="Change">
+      <input type="button" name="refresh" value="Refresh" onclick="location.href='/';">
+      <input type="button" name="history" value="History" onclick="location.href='/status_viewer';">
+    </form>
+  {% endif %}
+  <br>
+  <h2>Last <a href="?limit={{ limit }}">{{ limit }}</a> {{ title }}</h2>
+  <table border="1" cellpadding="5">
+  <tr bgcolor="#CCCCFF">
+    <td><b>Who</b></td>
+    <td><b>When (<span name="date.tz">UTC</span>)</b></td>
+    <td><b>Message</b></td>
+  </tr>
+  {% for a_status in status %}
+    <tr class="{{ a_status.general_state }}">
+      <td class="username">
+        {% for a_link in a_status.username_links.links %}
+          {% if a_link.target %}
+            <a href="{% if a_link.is_email %}mailto:{% endif %}{{ a_link.target }}">{{ a_link.text }}</a>
+          {% else %}
+            {{ a_link.text }}
+          {% endif %}
+        {% endfor %}
+      </td>
+      <td class="date" name="date.date">{{ a_status.date|date:"D, d M H:i" }}</td>
+      <td class="message">
+        {% for a_link in a_status.message_links.links %}
+          {% if a_link.target %}
+            <a href="{% if a_link.is_email %}mailto:{% endif %}{{ a_link.target }}">{{ a_link.text }}</a>
+          {% else %}
+            {{ a_link.text }}
+          {% endif %}
+        {% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+
+  </table>
+  </center>
+{% endblock %}
