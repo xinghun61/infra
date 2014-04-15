@@ -886,7 +886,7 @@ def _show_user(request):
   _optimize_draft_counts(all_issues)
   account = models.Account.get_account_for_user(request.user_to_show)
   return respond(request, 'user.html',
-                 {'account': account,
+                 {'viewed_account': account,
                   'outgoing_issues': outgoing_issues,
                   'unsent_issues': unsent_issues,
                   'review_issues': review_issues,
@@ -953,7 +953,7 @@ def block_user(request):
     form = BlockForm()
   form.initial['blocked'] = account.blocked
   templates = {
-    'account': account,
+    'viewed_account': account,
     'form': form,
   }
   return respond(request, 'block_user.html', templates)
@@ -1206,6 +1206,13 @@ def upload_complete(request, patchset_id=None):
     query = query.filter('status =', None)  # all uploaded file have a status
     if query.count() > 0:
       errors.append('Base files missing.')
+
+  if errors:
+    msg = ('The following errors occured:\n%s\n'
+           'Try to upload the changeset again.' % '\n'.join(errors))
+    logging.error('Returning error:\n %s', msg)
+    return HttpTextResponse(msg, status=500)
+
   # Create (and send) a message if needed.
   if request.POST.get('send_mail') == 'yes' or request.POST.get('message'):
     msg = make_message(request, request.issue, request.POST.get('message', ''),
@@ -1213,15 +1220,8 @@ def upload_complete(request, patchset_id=None):
     request.issue.put()
     msg.put()
     notify_xmpp.notify_issue(request, request.issue, 'Mailed')
-  if errors:
-    msg = ('The following errors occured:\n%s\n'
-           'Try to upload the changeset again.'
-           % '\n'.join(errors))
-    status = 500
-  else:
-    msg = 'OK'
-    status = 200
-  return HttpTextResponse(msg, status=status)
+
+  return HttpTextResponse('OK')
 
 
 def _make_new(request, form):
@@ -4762,7 +4762,7 @@ def show_user_stats(request, when):
       request,
       'user_stats.html',
       {
-        'account': request.user_to_show,
+        'viewed_account': request.user_to_show,
         'incoming': incoming,
         'outgoing': outgoing,
         'stats': stats,
