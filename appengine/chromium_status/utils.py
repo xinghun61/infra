@@ -100,6 +100,9 @@ def AsDict(self):
       ret[key] = value
     else:
       ret[key] = unicode(value)
+  key = self.key()
+  if key:
+    ret['key'] = key.name() or key.id()
   parent_key = self.parent_key()
   if parent_key:
     ret['parent_key'] = parent_key.name() or parent_key.id()
