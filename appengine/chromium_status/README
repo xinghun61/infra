@@ -17,8 +17,6 @@ You can launch a local instance for testing by doing:
 Then browse to your desktop's port 8080.
 
 To post commits with git, you can do:
-  git svn clone svn://svn.chromium.org/chrome -Ttrunk/tools/chromium-status
-  git checkout -b work trunk
   ... make changes ...
   git commit -a -m 'commit message'
-  git cl upload --send-mail
+  git cl upload

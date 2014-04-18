@@ -6,7 +6,7 @@ hooks = [
   {
     "pattern": ".",
     "action": [
-      "python", "infra/appengine/get_appengine.py", "--dest=.",
+      "python", "infra/bootstrap/hooks/get_appengine.py", "--dest=.",
     ],
   },
 ]
