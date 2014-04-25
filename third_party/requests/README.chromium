@@ -1,0 +1,10 @@
+URL: https://pypi.python.org/packages/source/r/requests/requests-2.2.1.tar.gz
+Version: 2.2.1
+License: Apache 2.0, portions MIT, LGPL-2.1
+License File: LICENSE
+
+Description:
+Python HTTP Client
+
+Local Modifications:
+Unpackaged (ALLCAPS files moved into requests/, auxiliary files removed.)
