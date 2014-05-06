@@ -10,7 +10,7 @@ import re
 import shutil
 import sys
 import tempfile
-import urllib
+import urllib2
 import zipfile
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +31,7 @@ def get_latest_gae_sdk_url(name):
   """Returns the url to get the latest GAE SDK and its version."""
   url = 'https://code.google.com/appengine/downloads.html'
   logging.debug('%s', url)
-  content = urllib.urlopen(url).read()
+  content = urllib2.urlopen(url).read()
   regexp = (
       r'(https\:\/\/commondatastorage.googleapis.com\/appengine-sdks\/featured\/'
       + re.escape(name) + r'[0-9\.]+?\.zip)')
@@ -91,11 +91,16 @@ def install_latest_gae_sdk(root_path, fetch_go, dry_run):
 
   print('Fetching %s' % url)
   if not dry_run:
+    u = urllib2.urlopen(url)
     with tempfile.NamedTemporaryFile() as f:
-      urllib.urlretrieve(url, f.name)
+      while True:
+        chunk = u.read(2**20)
+        if not chunk:
+          break
+        f.write(chunk)
       # Assuming we're extracting there. In fact, we have no idea.
       print('Extracting into %s' % gae_path)
-      z = zipfile.ZipFile(f.name, 'r')
+      z = zipfile.ZipFile(f, 'r')
       try:
         extract_zip(z, root_path)
       finally:
