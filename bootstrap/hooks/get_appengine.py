@@ -33,7 +33,7 @@ def get_latest_gae_sdk_url(name):
   logging.debug('%s', url)
   content = urllib2.urlopen(url).read()
   regexp = (
-      r'(https\:\/\/commondatastorage.googleapis.com\/appengine-sdks\/featured\/'
+      r'(https\:\/\/storage.googleapis.com\/appengine-sdks\/featured\/'
       + re.escape(name) + r'[0-9\.]+?\.zip)')
   m = re.search(regexp, content)
   url = m.group(1)
