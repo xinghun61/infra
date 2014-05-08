@@ -1,0 +1,4 @@
+This is the lkgr_finder workdir. This directory has two primary purposes:
+1) Store the chromium-status app passwords; and
+2) Store the local checkouts for those repositories that use Git.
+All passwords and all currently known checkouts are in the .gitignore file.
