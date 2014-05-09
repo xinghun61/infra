@@ -56,6 +56,7 @@ import json
 import logging
 import multiprocessing
 import os
+import Queue
 import re
 import signal
 import smtplib
@@ -253,28 +254,32 @@ class HTMLStatusGenerator(StatusGenerator):
 ##################################################
 # Input Functions
 ##################################################
-def FetchBuilderJson(master_url, builder, output_builds):
-  """Pull build json from a buildbot master.
+def FetchBuilderJson(fetch_q):
+  """Pull build json from buildbot masters.
 
   Args:
-    @param master_url: Url of the buildbot master to get json from.
-    @type master_url: string
-    @param builder: Name of the builder on that master.
-    @type builder: string
-    @param output_builds: Output dictionary of builder to build data.
-    @type output_builds: list
+    @param fetch_q: A pre-populated Queue.Queue containing tuples of:
+      master_url: Url of the buildbot master to get json from.
+      builder: Name of the builder on that master.
+      output_builds: Output dictionary of builder to build data.
+    @type fetch_q: tuple
   """
-  url = '%s/json/builders/%s/builds/_all' % (master_url, builder)
-  LOGGER.debug('Fetching buildbot json from %s', url)
-  try:
-    r = requests.get(url, params={'filter': 'false'})
-    builder_history = r.json()
-    output_builds[builder] = builder_history
-  except requests.exceptions.RequestException as e:
-    LOGGER.error('RequestException while fetching %s:\n%s', url, repr(e))
+  while True:
+    try:
+      master_url, builder, output_builds = fetch_q.get(False)
+    except Queue.Empty:
+      return
+    url = '%s/json/builders/%s/builds/_all' % (master_url, builder)
+    LOGGER.debug('Fetching buildbot json from %s', url)
+    try:
+      r = requests.get(url, params={'filter': 'false'})
+      builder_history = r.json()
+      output_builds[builder] = builder_history
+    except requests.exceptions.RequestException as e:
+      LOGGER.error('RequestException while fetching %s:\n%s', url, repr(e))
 
 
-def FetchBuildData(masters):
+def FetchBuildData(masters, max_threads=0):
   """Fetch all build data about the builders in the input masters.
 
   Args:
@@ -283,20 +288,25 @@ def FetchBuildData(masters):
         base_url: string
         builders: [list of strings]
     } }
+    @param max_threads: Maximum number of parallel requests.
+    @type max_threads: int
     This dictionary is a subset of the project configuration json.
     @type masters: dict
   """
   build_data = {master: {} for master in masters}
-  fetch_threads = set()
+  fetch_q = Queue.Queue()
   for master, master_data in masters.iteritems():
     master_url = master_data['base_url']
     builders = master_data['builders']
     for builder in builders:
-      th = threading.Thread(target=FetchBuilderJson,
-                            name='Fetch %s %s' % (master, builder),
-                            args=(master_url, builder, build_data[master]))
-      th.start()
-      fetch_threads.add(th)
+      fetch_q.put((master_url, builder, build_data[master]))
+  fetch_threads = set()
+  if not max_threads:
+    max_threads = fetch_q.qsize()
+  for _ in xrange(max_threads):
+    th = threading.Thread(target=FetchBuilderJson, args=(fetch_q,))
+    th.start()
+    fetch_threads.add(th)
   for th in fetch_threads:
     th.join()
 
@@ -703,6 +713,9 @@ def ParseArgs(argv):
                            help='Get data from the specified file.')
   input_group.add_argument('--manual', metavar='VALUE',
                            help='Bypass logic and manually specify LKGR.')
+  input_group.add_argument('--max-threads', '-j', type=int, default=4,
+                           help='Maximum number of parallel json requests. '
+                           'A value of zero means full parallelism.')
 
   output_group = parser.add_argument_group('Output data formats')
   output_group.add_argument('--dry-run', '-n', action='store_true',
@@ -830,7 +843,7 @@ def main(argv):
     if args.build_data:
       builds = ReadBuildData(args.build_data)
     else:
-      builds = FetchBuildData(lkgr_steps)
+      builds = FetchBuildData(lkgr_steps, args.max_threads)
 
     if args.dump_build_data:
       try:
