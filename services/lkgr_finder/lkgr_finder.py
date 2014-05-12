@@ -66,7 +66,7 @@ import sys
 import textwrap
 import threading
 import urllib
-import xml
+import xml.etree.ElementTree as xml
 
 if __name__ == '__main__' and __package__ is None:
   up = os.path.dirname
@@ -518,7 +518,7 @@ def GetLKGRAge(lkgr, repo):
                                stderr=subprocess.PIPE)
     stdout = process.communicate()[0]
     if not process.returncode:
-      log = xml.etree.ElementTree.fromstring(stdout)
+      log = xml.fromstring(stdout)
       date = log.find('logentry').find('date').text
       if date:
         lkgr_dt = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
