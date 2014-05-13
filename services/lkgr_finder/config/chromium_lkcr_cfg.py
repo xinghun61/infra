@@ -33,12 +33,12 @@ CONFIG = {
       "base_url": "https://build.chromium.org/p/chromium.mac",
       "builders": {
         'Mac Builder': [
-          'bot_update,'
+          'bot_update',
           'compile',
           'gclient runhooks',
         ],
         'Mac Builder (dbg)': [
-          'bot_update,'
+          'bot_update',
           'compile',
           'gclient runhooks',
         ],
