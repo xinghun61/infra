@@ -10,7 +10,6 @@ WEBRTC_NORMAL_STEPS = [
     'libjingle_unittest',
     'modules_tests',
     'modules_unittests',
-    'neteq_unittests',
     'system_wrappers_unittests',
     'test_support_unittests',
     'tools_unittests',
