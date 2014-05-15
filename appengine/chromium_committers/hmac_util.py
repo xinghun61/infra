@@ -11,7 +11,6 @@ import collections
 import hashlib
 import functools
 import hmac
-import json
 import logging
 import operator
 import time

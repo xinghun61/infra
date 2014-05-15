@@ -174,6 +174,6 @@ def TmpGit(url, bare=False):
 
     shutil.rmtree(git_obj.path, ignore_errors=False, onerror=rm_on_error)
 
-  git.__del__ = MethodType(__del__, git, Git)
+  git.__del__ = MethodType(__del__, git, Git)  # pylint: disable=W0201
 
   return git
