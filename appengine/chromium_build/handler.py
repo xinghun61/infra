@@ -13,45 +13,16 @@ import app
 import base_page
 import utils
 
+from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup
+
+ONE_BOX_URL = 'horizontal_one_box_per_builder'
 
 class PageAction(base_page.BasePage):
 
   # W0221: 44,2:PageAction.get: Arguments number differs from overridden method
   # pylint: disable=W0221
   def get(self, localpath):
-    unquoted_localpath = urllib.unquote(localpath)
-    if self.request.path.endswith('/chromium/console'):
-      page_data = self.cache_merged_console(unquoted_localpath)
-    else:
-      page_data = app.get_and_cache_pagedata(unquoted_localpath)
-    if page_data.get('content') is None:
-      app.logging.error('Page %s not found.' % unquoted_localpath)
-      self.error(404)  # file not found
-      return
-
-    self.response.headers['Content-Type'] = app.path_to_mime_type(
-        unquoted_localpath)
-    if self.request.path.endswith('/console'):
-      template_values = self.InitializeTemplate()
-      template_values['body_class'] = page_data.get('body_class')
-      template_values['content'] = page_data.get('content')
-      template_values['offsite_base'] = page_data.get('offsite_base')
-      template_values['title'] = page_data.get('title')
-      if self.user:
-        reloadarg = utils.clean_int(self.request.get('reload'), -1)
-        if reloadarg != -1:
-          reloadarg = max(reloadarg, 30)
-          template_values['reloadarg'] = reloadarg
-      else:
-        # Make the Google Frontend capable of caching this request for 60
-        # seconds.
-        # TODO: Caching is not working yet.
-        self.response.headers['Cache-Control'] = 'public, max-age=60'
-        self.response.headers['Pragma'] = 'Public'
-      self.DisplayTemplate('base.html', template_values)
-      return
-    self.response.headers['Cache-Control'] = 'public, max-age=60'
-    self.response.headers['Pragma'] = 'Public'
+    page_data = self._do_almost_everything(localpath)
     self.response.out.write(page_data.get('content'))
 
 
@@ -78,6 +49,64 @@ class PageAction(base_page.BasePage):
     app.console_merger(unquoted_localpath, 'console/chromium', page_data,
                        num_rows_to_merge=num_revs)
     return app.get_and_cache_pagedata(unquoted_localpath)
+
+
+  def _do_almost_everything(self, localpath):
+    # Does almost all of the work except for writing the content to
+    # the response. Returns the page_data.
+    unquoted_localpath = urllib.unquote(localpath)
+    if self.request.path.endswith('/chromium/console'):
+      page_data = self.cache_merged_console(unquoted_localpath)
+    else:
+      page_data = app.get_and_cache_pagedata(unquoted_localpath)
+    if page_data.get('content') is None:
+      app.logging.error('Page %s not found.' % unquoted_localpath)
+      self.error(404)  # file not found
+      return page_data
+
+    self.response.headers['Content-Type'] = app.path_to_mime_type(
+        unquoted_localpath)
+    if self.request.path.endswith('/console'):
+      template_values = self.InitializeTemplate()
+      template_values['body_class'] = page_data.get('body_class')
+      template_values['content'] = page_data.get('content')
+      template_values['offsite_base'] = page_data.get('offsite_base')
+      template_values['title'] = page_data.get('title')
+      if self.user:
+        reloadarg = utils.clean_int(self.request.get('reload'), -1)
+        if reloadarg != -1:
+          reloadarg = max(reloadarg, 30)
+          template_values['reloadarg'] = reloadarg
+      else:
+        # Make the Google Frontend capable of caching this request for 60
+        # seconds.
+        # TODO: Caching is not working yet.
+        self.response.headers['Cache-Control'] = 'public, max-age=60'
+        self.response.headers['Pragma'] = 'Public'
+      self.DisplayTemplate('base.html', template_values)
+      return page_data
+    self.response.headers['Cache-Control'] = 'public, max-age=60'
+    self.response.headers['Pragma'] = 'Public'
+    return page_data
+
+class OneBoxAction(PageAction):
+  def _do_almost_everything(self, localpath):
+    page_data = super(OneBoxAction, self)._do_almost_everything(
+      localpath + '/' + ONE_BOX_URL)
+    builders = self.request.GET.getall('builder')
+    if builders and len(builders):
+      one_box = BeautifulSoup(page_data['content'])
+      all_tds = one_box.findAll('td')
+      for td in all_tds:
+        if td.a and td.a['title'] not in builders:
+          td.extract()
+      page_data['content'] = self.ContentsToHtml(one_box)
+    return page_data
+
+  @staticmethod
+  def ContentsToHtml(contents):
+    return ''.join(unicode(content).encode('ascii', 'replace')
+                   for content in contents)
 
 
 def recent_page(page_data):
@@ -116,5 +145,6 @@ base_page.bootstrap()
 # info.
 application = webapp2.WSGIApplication(
   [('/', MainAction),
+   ('/p/(.*)/' + ONE_BOX_URL, OneBoxAction),
    ('/p/(.*)', PageAction),
    ('/tasks/fetch_pages', FetchPagesAction)])

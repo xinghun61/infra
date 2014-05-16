@@ -1,14 +1,31 @@
 TESTING / UPDATE PROCESS
+------------------------
+
+LOCAL TESTING
 
 1. Make sure the presubmit tests pass.
-2. Upload a new version of the app.  Wait for the upload to complete.
-3. Load http://chromium-build.appspot.com/p/chromium/sheriff.js, does it
+2. Install the AppEngine SDK.
+3. cd into this directory.
+4. .../google_appengine/dev_appserver.py .
+5. Navigate to http://localhost:8080/tasks/fetch_pages .
+6. Wait for it to complete. (Watch the output from dev_appserver.py
+   until it quiesces.)
+7. Replace chromium-build.appspot.com with localhost:8080 in the steps
+   below, and run all of those tests.
+
+PRODUCTION TESTING
+
+1. Upload a new version of the app.  Wait for the upload to complete.
+2. Load http://chromium-build.appspot.com/p/chromium/sheriff.js, does it
    return correctly?
-4. Load http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder,
+3. Load
+   http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder,
    does it return correctly?
-5. Load http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder?a,
-   does it return a 404?
-6. Load http://chromium-build.appspot.com/p/chromium/console, does this load
-   correctly?
-7. Verify the same in Firefox and IE.
-8. Check the AppEngine console for chromium-build, are there any errors?
+4. Load
+   http://chromium-build.appspot.com/p/chromium/horizontal_one_box_per_builder?builder=Win&builder=Mac,
+   does it return correctly and display only two boxes?
+5. Load http://chromium-build.appspot.com/p/chromium/console, does this
+   load correctly?
+6. Verify the same in Firefox and IE.
+
+7. Check the AppEngine console for chromium-build, are there any errors?
