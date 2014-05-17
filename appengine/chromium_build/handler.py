@@ -23,7 +23,8 @@ class PageAction(base_page.BasePage):
   # pylint: disable=W0221
   def get(self, localpath):
     page_data = self._do_almost_everything(localpath)
-    self.response.out.write(page_data.get('content'))
+    if page_data is not None:
+      self.response.out.write(page_data.get('content'))
 
 
   def cache_merged_console(self, localpath):
@@ -53,7 +54,9 @@ class PageAction(base_page.BasePage):
 
   def _do_almost_everything(self, localpath):
     # Does almost all of the work except for writing the content to
-    # the response. Returns the page_data.
+    # the response. Returns the page_data, or None either if an error
+    # occurred or if the processing of the request was fully handled
+    # in this method (this is done for the console).
     unquoted_localpath = urllib.unquote(localpath)
     if self.request.path.endswith('/chromium/console'):
       page_data = self.cache_merged_console(unquoted_localpath)
@@ -62,7 +65,7 @@ class PageAction(base_page.BasePage):
     if page_data.get('content') is None:
       app.logging.error('Page %s not found.' % unquoted_localpath)
       self.error(404)  # file not found
-      return page_data
+      return None
 
     self.response.headers['Content-Type'] = app.path_to_mime_type(
         unquoted_localpath)
@@ -84,7 +87,7 @@ class PageAction(base_page.BasePage):
         self.response.headers['Cache-Control'] = 'public, max-age=60'
         self.response.headers['Pragma'] = 'Public'
       self.DisplayTemplate('base.html', template_values)
-      return page_data
+      return None
     self.response.headers['Cache-Control'] = 'public, max-age=60'
     self.response.headers['Pragma'] = 'Public'
     return page_data
@@ -93,14 +96,15 @@ class OneBoxAction(PageAction):
   def _do_almost_everything(self, localpath):
     page_data = super(OneBoxAction, self)._do_almost_everything(
       localpath + '/' + ONE_BOX_URL)
-    builders = self.request.GET.getall('builder')
-    if builders and len(builders):
-      one_box = BeautifulSoup(page_data['content'])
-      all_tds = one_box.findAll('td')
-      for td in all_tds:
-        if td.a and td.a['title'] not in builders:
-          td.extract()
-      page_data['content'] = self.ContentsToHtml(one_box)
+    if page_data:
+      builders = self.request.GET.getall('builder')
+      if builders and len(builders):
+        one_box = BeautifulSoup(page_data['content'])
+        all_tds = one_box.findAll('td')
+        for td in all_tds:
+          if td.a and td.a['title'] not in builders:
+            td.extract()
+        page_data['content'] = self.ContentsToHtml(one_box)
     return page_data
 
   @staticmethod
