@@ -57,7 +57,6 @@ CONFIG = {
         'Linux64 Debug': WEBRTC_NORMAL_STEPS,
         'Linux64 Release': WEBRTC_NORMAL_STEPS,
         'Linux64 Release [large tests]': [
-          'audio_e2e_test',
           'audioproc_perf',
           'isac_fixed_perf',
           'libjingle_peerconnection_java_unittest',
