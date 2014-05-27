@@ -9,23 +9,19 @@ CONFIG = {
       "builders": {
         'Win Builder': [
           'compile',
-          'runhooks',
-          'update',
+          'gclient runhooks',
         ],
         'Win Builder (dbg)': [
           'compile',
-          'runhooks',
-          'update',
+          'gclient runhooks',
         ],
         'Win x64 Builder': [
           'compile',
-          'runhooks',
-          'update',
+          'gclient runhooks',
         ],
         'Win x64 Builder (dbg)': [
           'compile',
-          'runhooks',
-          'update',
+          'gclient runhooks',
         ],
       },
     },  # chromium.win
