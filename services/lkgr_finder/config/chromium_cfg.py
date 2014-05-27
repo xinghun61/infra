@@ -39,7 +39,7 @@ CONFIG = {
           'content_unittests',
           'views_unittests',
           'wm_unittests',
-          'intaller_util_unittests',
+          'installer_util_unittests',
           'webkit_compositor_bindings_unittests',
         ],
         'Win7 Tests (dbg)(2)': [
