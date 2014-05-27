@@ -19,7 +19,7 @@ CONFIG = {
           'components_unittests',
           'courgette_unittests',
           'crypto_unittests',
-          'gcm_unit_tests'
+          'gcm_unit_tests',
           'gpu_unittests',
           'url_unittests',
           'jingle_unittests',
