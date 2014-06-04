@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block body %}
+   <div class="row">
+    <div class="span4">
+      <ul class="nav nav-tabs nav-stacked">
+        {% for tag, num_graphs in tags %}
+          <li {%if tag in current_tags-%}class="active"{%-endif-%}>
+            {% if tag not in current_tags %}
+              <a href="/list_graphs/{%-for ctag in current_tags -%}
+                       {{ctag}}/{%-endfor-%}{{tag}}">
+                {{tag}} - {{num_graphs}}
+              </a>
+            {% else %}
+              <a>{{tag}} - {{num_graphs}} (Selected)</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="span8">
+      {% for graph in graphs %}
+      	<li><a href="/view_graph/{{graph.name}}">{{graph.name}}</a></li>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock body %}

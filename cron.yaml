@@ -1,0 +1,13 @@
+cron:
+- description: Run full update
+  url: /tasks/update_all
+  schedule: every 5 minutes
+- description: Update tryserver.blink status
+  url: /tasks/update_build_queue/tryserver.blink
+  schedule: every 1 minutes
+- description: Update tryserver.chromium status
+  url: /tasks/update_build_queue/tryserver.chromium
+  schedule: every 1 minutes
+- description: Update tryserver.chromium.gpu status
+  url: /tasks/update_build_queue/tryserver.chromium.gpu
+  schedule: every 1 minutes
