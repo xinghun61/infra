@@ -68,12 +68,15 @@ CONFIG = {
         'V8 Linux - arm - sim': V8_CHECK + ['Test262', 'Mozilla'],
         'V8 Linux - arm - sim - debug': V8_CHECK + ['Test262', 'Mozilla'],
         'V8 Linux - arm64 - sim': V8_CHECK + ['Webkit', 'Test262', 'Mozilla'],
+        'V8 Linux - arm64 - sim - debug': (V8_CHECK +
+                                           ['Webkit', 'Test262', 'Mozilla']),
         'V8 GC Stress - 1': V8_GC,
         'V8 GC Stress - 2': V8_GC,
         'V8 GC Stress - 3': V8_GC,
         'Linux Debug Builder': ['compile'],
         'Linux ASAN Builder': ['compile'],
         'Android Builder': ['compile'],
+        'V8 Linux GN': ['compile'],
         # TODO(machenbach): Disabled until there are pure builders available for
         # this. With a perf BuilderTester, the total lkgr cycle time is too big.
         # 'Chrome Win7 Perf': ['compile'],
