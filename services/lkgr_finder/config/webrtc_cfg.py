@@ -67,6 +67,7 @@ CONFIG = {
         'Linux Clang': WEBRTC_NORMAL_STEPS,
         'Android': ['compile'],
         'Android (dbg)': ['compile'],
+        'Android ARM64 (dbg)': ['compile'],
         'Android Clang (dbg)': ['compile'],
         'Chrome OS': WEBRTC_NORMAL_STEPS,
       },
