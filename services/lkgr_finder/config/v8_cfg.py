@@ -37,8 +37,9 @@ CONFIG = {
                        'Static-Initializers'],
         'V8 Linux64 - debug': ['Check', 'Webkit', 'Test262', 'Mozilla'],
         'V8 Linux64 ASAN': ['Check'],
-        'V8 Linux - nosnap': ['Check', 'Test262', 'Mozilla'],
-        'V8 Linux - nosnap - debug': ['Check', 'Test262', 'Mozilla'],
+        # TODO(machenbach): Enable as soon as crbug.com/382930 is resolved.
+        # 'V8 Linux - nosnap': ['Check', 'Test262', 'Mozilla'],
+        # 'V8 Linux - nosnap - debug': ['Check', 'Test262', 'Mozilla'],
         'V8 Linux - isolates': ['Check'],
         'V8 Linux - debug - isolates': ['Check'],
         'V8 Linux - nosse2': ['Check', 'Test262', 'Mozilla', 'GCMole'],
