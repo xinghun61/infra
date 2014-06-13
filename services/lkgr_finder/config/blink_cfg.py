@@ -7,30 +7,30 @@ CONFIG = {
     "chromium.win": {
       "base_url": "https://build.chromium.org/p/chromium.win",
       "builders": {
-        'Win Builder (dbg)': ['compile'],
+        'Win Builder (dbg)',
       },
     },  # chromium.win
     "chromium.mac": {
       "base_url": "https://build.chromium.org/p/chromium.mac",
       "builders": {
-        'Mac Builder (dbg)': ['compile'],
+        'Mac Builder (dbg)',
       },
     },  # chromium.mac
     "chromium.linux": {
       "base_url": "https://build.chromium.org/p/chromium.linux",
       "builders": {
-        'Linux Builder (dbg)': ['compile'],
-        'Linux Builder (dbg)(32)': ['compile'],
-        'Android Builder (dbg)': ['slave_steps'],
-        'Android Builder': ['slave_steps'],
+        'Linux Builder (dbg)',
+        'Linux Builder (dbg)(32)',
+        'Android Builder (dbg)',
+        'Android Builder',
       },
     },  # chromium.linux
     "chromium.webkit": {
       "base_url": "https://build.chromium.org/p/chromium.webkit",
       "builders": {
-        'WebKit Win Builder (deps)': ['compile'],
-        'WebKit Mac Builder (deps)': ['compile'],
-        'WebKit Linux (deps)': ['compile'],
+        'WebKit Win Builder (deps)',
+        'WebKit Mac Builder (deps)',
+        'WebKit Linux (deps)',
       },
     },  # chromium.webkit
   },

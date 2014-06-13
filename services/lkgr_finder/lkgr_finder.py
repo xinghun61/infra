@@ -338,48 +338,32 @@ def FetchLKGR(lkgr_url):
 ##################################################
 # Data Processing
 ##################################################
-def EvaluateBuildData(build_data, builder_lkgr_steps):
-  """Determine the status of a build, predicated on the steps we care about."""
-  step_data = {step['name']: step for step in build_data['steps']}
-  reasons = []
+def IsResultFailure(result_data):
+  """Returns true if result_data indicates a failure."""
+  while isinstance(result_data, list):
+    result_data = result_data[0]
+  if not result_data:
+    return False
+  # 0 means SUCCESS and 1 means WARNINGS.
+  return result_data not in (0, 1, '0', '1')
+
+
+def EvaluateBuildData(build_data):
+  """Determine the status of a build."""
   status = STATUS.SUCCESS
-  for lkgr_step in builder_lkgr_steps:
-    # This allows us to rename a step and tell lkgr_finder that it should
-    # accept either name for step status. We assume in the code that any
-    # given build will have at most one of the two steps.
-    if isinstance(lkgr_step, basestring):
-      steps = (lkgr_step,)
-    else:
-      steps = lkgr_step
-    matching_steps = [s for s in step_data if s in steps]
-    if not matching_steps:
-      reasons.append('Step %s is not listed on the build.' % (lkgr_step,))
-    elif len(matching_steps) > 1:
-      reasons.append('Multiple step matches: %s' % matching_steps)
-      status = STATUS.FAILURE
-      continue
-    else:
-      step = matching_steps[0]
-      cur_data = step_data[step]
-      if (cur_data.get('isFinished') is True and 'results' in cur_data):
-        result_data = cur_data['results'][0]
-        if isinstance(result_data, list):
-          result_data = result_data[0]
-        if result_data and str(result_data) not in ('0', '1'):
-          reasons.append('Step %s failed' % step)
-          status = STATUS.FAILURE
-        continue
-      else:
-        reasons.append('Step %s has not completed (isFinished: %s)' % (
-            step, step_data[step].get('isFinished')))
-    if build_data['currentStep'] is not None and status != STATUS.FAILURE:
-      status = STATUS.RUNNING
-    else:
-      status = STATUS.FAILURE
-  return status, reasons
+
+  if build_data['currentStep'] is not None:
+    status = STATUS.RUNNING
+    for step in build_data['steps']:
+      if step['isFinished'] is True and IsResultFailure(step.get('results')):
+        return STATUS.FAILURE
+  elif IsResultFailure(build_data.get('results')):
+    status = STATUS.FAILURE
+
+  return status
 
 
-def CollateRevisionHistory(build_data, lkgr_steps, revkey):
+def CollateRevisionHistory(build_data, lkgr_builders, revkey):
   """Organize complex build data into a simpler form.
 
   Returns:
@@ -391,19 +375,19 @@ def CollateRevisionHistory(build_data, lkgr_steps, revkey):
 
   Args:
     build_data: json-formatted build data returned by buildbot.
-    lkgr_steps: List of interesting builders and steps.
+    lkgr_builders: List of interesting builders.
     revkey: Keyfunc to map each revision to a sortable key
   """
   build_history = {}
   revisions = set()
   # TODO(agable): Make build_data stronly typed, so we're not messing with JSON
   for master, master_data in build_data.iteritems():
-    if master not in lkgr_steps:
+    if master not in lkgr_builders:
       continue
     LOGGER.debug('Collating master %s', master)
     master_history = build_history.setdefault(master, {})
     for (builder, builder_data) in master_data.iteritems():
-      if builder not in lkgr_steps[master]['builders']:
+      if builder not in lkgr_builders[master]['builders']:
         continue
       LOGGER.debug('Collating builder %s', builder)
       builder_history = []
@@ -423,8 +407,7 @@ def CollateRevisionHistory(build_data, lkgr_steps, revkey):
         if not revision:
           continue
         revisions.add(str(revision))
-        status, _ = EvaluateBuildData(
-            this_build_data, lkgr_steps[master]['builders'][builder])
+        status = EvaluateBuildData(this_build_data)
         builder_history.append((revision, status, build_num))
       revkey.cache(*list(revisions))
       master_history[builder] = sorted(
@@ -839,11 +822,11 @@ def main(argv):
           'for project %s' % (args.manual, args.project))
       return 1
   else:
-    lkgr_steps = config['masters']
+    lkgr_builders = config['masters']
     if args.build_data:
       builds = ReadBuildData(args.build_data)
     else:
-      builds = FetchBuildData(lkgr_steps, args.max_threads)
+      builds = FetchBuildData(lkgr_builders, args.max_threads)
 
     if args.dump_build_data:
       try:
@@ -854,7 +837,7 @@ def main(argv):
             (args.dump_build_data, repr(e)))
 
     (build_history, revisions) = CollateRevisionHistory(
-        builds, lkgr_steps, revkey)
+        builds, lkgr_builders, revkey)
 
     status_gen = None
     if args.html:
