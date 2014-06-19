@@ -1,0 +1,42 @@
+- - Bad master commit footer
+  - origin:
+      refs/heads/master:
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'
+      refs/pending-tags/heads/master:
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'
+      refs/pending/heads/master:
+        3c0ff6ee3e1ed0a130a38bcc974f6d52addb6173:
+        - Hello world
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: MalformedPositionFooter in Commit(TestRepo(''local''), ''ebdb2f276652e30cb1421ce8daf90bcd03dfd320''):
+    "git-svn-id: BlobbyGumpus!"'
+- - Should be the same
+  - origin:
+      refs/heads/master:
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'
+      refs/pending-tags/heads/master:
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'
+      refs/pending/heads/master:
+        3c0ff6ee3e1ed0a130a38bcc974f6d52addb6173:
+        - Hello world
+        ebdb2f276652e30cb1421ce8daf90bcd03dfd320:
+        - Base commit
+        - ''
+        - 'git-svn-id: BlobbyGumpus!'

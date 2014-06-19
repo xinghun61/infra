@@ -1,0 +1,42 @@
+- - Bad master commit footer
+  - origin:
+      refs/heads/master:
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'
+      refs/pending-tags/heads/master:
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'
+      refs/pending/heads/master:
+        9fb924bf9d84385a64cd49aa68ee3fafe3b2dca6:
+        - Hello world
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: MalformedPositionFooter in Commit(TestRepo(''local''), ''e5eae8e8c0ae88655c33436d409d3e80d14a57aa''):
+    "Cr-Commit-Position: BlobbyGumpus!"'
+- - Should be the same
+  - origin:
+      refs/heads/master:
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'
+      refs/pending-tags/heads/master:
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'
+      refs/pending/heads/master:
+        9fb924bf9d84385a64cd49aa68ee3fafe3b2dca6:
+        - Hello world
+        e5eae8e8c0ae88655c33436d409d3e80d14a57aa:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: BlobbyGumpus!'

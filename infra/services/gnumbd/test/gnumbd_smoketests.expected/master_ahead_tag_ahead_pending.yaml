@@ -1,0 +1,46 @@
+- - Master and tag have diverged, pend lags
+  - origin:
+      refs/heads/master:
+        1ce83b0600e873050fd833715a6e17ea1f45b311:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        6f3a3474079fe04dba5aed138c076654263e34de:
+        - Tag ahead of pending
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: ''refs/pending-tags/heads/master'' doesn''t match ''refs/pending/heads/master'',
+    but there are no new_commits?'
+- - Should have errored and nothing changed
+  - origin:
+      refs/heads/master:
+        1ce83b0600e873050fd833715a6e17ea1f45b311:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        6f3a3474079fe04dba5aed138c076654263e34de:
+        - Tag ahead of pending
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

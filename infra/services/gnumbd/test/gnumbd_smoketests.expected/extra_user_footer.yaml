@@ -1,0 +1,67 @@
+- - The setup...
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        3bf575299c996d15489e2a8461d92201ed2bba13:
+        - Hello world
+        - ''
+        - 'Change-Id: Icafebabe1cec6eadfeba'
+        - 'Reviewed-by: Cool Dudette 64 <cd64@example.com>'
+        - 'Reviewed-by: Epic Sky Troll <est@example.com>'
+        - 'Tested-by: Lol JK <lol_jk@example.com>'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''2b8631483ef82ff1d86df36c068f3f38f562dd58''
+    for ''3bf575299c996d15489e2a8461d92201ed2bba13'''
+- - The new footers should appear after the current ones
+  - origin:
+      refs/heads/master:
+        2b8631483ef82ff1d86df36c068f3f38f562dd58:
+        - Hello world
+        - ''
+        - 'Change-Id: Icafebabe1cec6eadfeba'
+        - 'Reviewed-by: Cool Dudette 64 <cd64@example.com>'
+        - 'Reviewed-by: Epic Sky Troll <est@example.com>'
+        - 'Tested-by: Lol JK <lol_jk@example.com>'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        3bf575299c996d15489e2a8461d92201ed2bba13:
+        - Hello world
+        - ''
+        - 'Change-Id: Icafebabe1cec6eadfeba'
+        - 'Reviewed-by: Cool Dudette 64 <cd64@example.com>'
+        - 'Reviewed-by: Epic Sky Troll <est@example.com>'
+        - 'Tested-by: Lol JK <lol_jk@example.com>'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        3bf575299c996d15489e2a8461d92201ed2bba13:
+        - Hello world
+        - ''
+        - 'Change-Id: Icafebabe1cec6eadfeba'
+        - 'Reviewed-by: Cool Dudette 64 <cd64@example.com>'
+        - 'Reviewed-by: Epic Sky Troll <est@example.com>'
+        - 'Tested-by: Lol JK <lol_jk@example.com>'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

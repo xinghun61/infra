@@ -1,0 +1,61 @@
+- - Two commits
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        25efd930528d32f140214ad054561b5c3b0b4acd:
+        - Hello world
+        - ''
+        - 'Cr-Double-Secret: I can impersonate the daemon!'
+        - 'git-svn-id: Well... this should never happen'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Dropping key on user commit 25efd930528d32f140214ad054561b5c3b0b4acd:
+    ''Cr-Double-Secret'' -> (''I can impersonate the daemon!'',)'
+  - 'WARNING: Dropping key on user commit 25efd930528d32f140214ad054561b5c3b0b4acd:
+    ''git-svn-id'' -> (''Well... this should never happen'',)'
+  - 'INFO: Pushing synthesized commit ''f4806ab03b8fc0f1210307cb750dd974e348a3ad''
+    for ''25efd930528d32f140214ad054561b5c3b0b4acd'''
+- - The bogus footers should be gone
+  - origin:
+      refs/heads/master:
+        f4806ab03b8fc0f1210307cb750dd974e348a3ad:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        25efd930528d32f140214ad054561b5c3b0b4acd:
+        - Hello world
+        - ''
+        - 'Cr-Double-Secret: I can impersonate the daemon!'
+        - 'git-svn-id: Well... this should never happen'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        25efd930528d32f140214ad054561b5c3b0b4acd:
+        - Hello world
+        - ''
+        - 'Cr-Double-Secret: I can impersonate the daemon!'
+        - 'git-svn-id: Well... this should never happen'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

@@ -1,0 +1,114 @@
+- - Master is behind, pending is ahead of tag
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        074071c552b436f9167c3b16b41e1092e90cc297:
+        - New pending
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
+    ''refs/heads/master''): ''074071c552b436f9167c3b16b41e1092e90cc297'''
+  - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
+    (was 1 behind)'
+  - 'ERROR: Content of new tag ''074071c552b436f9167c3b16b41e1092e90cc297'' does not
+    match content of ''f493b56e446fb46797fa09bbf5888790acb039f2''!'
+- - Should see errors and no change
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        074071c552b436f9167c3b16b41e1092e90cc297:
+        - New pending
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- - Fix by rewinding tag
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        074071c552b436f9167c3b16b41e1092e90cc297:
+        - New pending
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''bcb32c4afe6a1a17e64d6e6a7e69884c1b80a1be''
+    for ''d0168885399a3cfd71ca399347923e166183c704'''
+  - 'INFO: Pushing synthesized commit ''e9c4d2437d60d8f31b2a8e8bc506aa9fe928c740''
+    for ''074071c552b436f9167c3b16b41e1092e90cc297'''
+- - All better
+  - origin:
+      refs/heads/master:
+        e9c4d2437d60d8f31b2a8e8bc506aa9fe928c740:
+        - New pending
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        bcb32c4afe6a1a17e64d6e6a7e69884c1b80a1be:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        074071c552b436f9167c3b16b41e1092e90cc297:
+        - New pending
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        074071c552b436f9167c3b16b41e1092e90cc297:
+        - New pending
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

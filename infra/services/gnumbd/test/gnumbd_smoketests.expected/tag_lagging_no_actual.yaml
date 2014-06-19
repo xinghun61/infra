@@ -1,0 +1,78 @@
+- - Tag on root (2 behind pend)
+  - origin:
+      refs/heads/master:
+        c0a079abf31b13e5ea3173e8e92c737b228a8cf6:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        044be2ae06ebccb44a60ef3475394b6fb23a0844:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'
+      refs/pending-tags/heads/master:
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'
+      refs/pending/heads/master:
+        6af19948514842550195296888195ed268385a7d:
+        - Hello world
+        044be2ae06ebccb44a60ef3475394b6fb23a0844:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
+    ''refs/heads/master''): ''044be2ae06ebccb44a60ef3475394b6fb23a0844'''
+  - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
+    ''refs/heads/master''): ''6af19948514842550195296888195ed268385a7d'''
+  - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
+    (was 2 behind)'
+  - 'WARNING: Tag was lagging for Ref(TestRepo(''local''), ''refs/heads/master'')
+    by 0, but no new commits are pending'
+- - Tag caught up
+  - origin:
+      refs/heads/master:
+        c0a079abf31b13e5ea3173e8e92c737b228a8cf6:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        044be2ae06ebccb44a60ef3475394b6fb23a0844:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'
+      refs/pending-tags/heads/master:
+        6af19948514842550195296888195ed268385a7d:
+        - Hello world
+        044be2ae06ebccb44a60ef3475394b6fb23a0844:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'
+      refs/pending/heads/master:
+        6af19948514842550195296888195ed268385a7d:
+        - Hello world
+        044be2ae06ebccb44a60ef3475394b6fb23a0844:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+        171f979abbc914c103ec51a7d06fc887cc10de9a:
+        - Root commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#99}'

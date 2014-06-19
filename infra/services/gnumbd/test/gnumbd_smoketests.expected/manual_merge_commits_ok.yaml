@@ -1,0 +1,106 @@
+- - The setup.
+  - origin:
+      refs/heads/master:
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/other:
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+      refs/pending-tags/heads/master:
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        05726084aa3e3caa3127e29b323a14c7b81a5367:
+        - Hello world
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''174544952b2988883002f0d6d28bf31c76f3a6de''
+    for ''05726084aa3e3caa3127e29b323a14c7b81a5367'''
+- - Hello world landed w/o a hitch
+  - origin:
+      refs/heads/master:
+        174544952b2988883002f0d6d28bf31c76f3a6de:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/other:
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+      refs/pending-tags/heads/master:
+        05726084aa3e3caa3127e29b323a14c7b81a5367:
+        - Hello world
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        05726084aa3e3caa3127e29b323a14c7b81a5367:
+        - Hello world
+        6a6a537d5a9e56978c2cca0dcd550383e563e615:
+        - Two for one!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

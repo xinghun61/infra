@@ -1,0 +1,50 @@
+- - Master contains a commit whose content isn't in pending
+  - origin:
+      refs/heads/master:
+        e8bb2df62c9488a1de75919cbe8942707fd4f608:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
+    ''refs/heads/master''): ''d0168885399a3cfd71ca399347923e166183c704'''
+  - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
+    (was 1 behind)'
+  - 'ERROR: Content of new tag ''d0168885399a3cfd71ca399347923e166183c704'' does not
+    match content of ''e8bb2df62c9488a1de75919cbe8942707fd4f608''!'
+- - Should have errored and nothing changed
+  - origin:
+      refs/heads/master:
+        e8bb2df62c9488a1de75919cbe8942707fd4f608:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

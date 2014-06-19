@@ -1,0 +1,42 @@
+- - Master has no position footer
+  - origin:
+      refs/heads/master:
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'
+      refs/pending-tags/heads/master:
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'
+      refs/pending/heads/master:
+        092c1b7fddf2e8ed44cc06295127e85952c82112:
+        - Hello world
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: NoPositionData No ''Cr-Commit-Position'' or git-svn-id found for Commit(TestRepo(''local''),
+    ''0c244b2bf58ddbacbd80a1162b851bf69ed66cf3'')'
+- - Should be the same
+  - origin:
+      refs/heads/master:
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'
+      refs/pending-tags/heads/master:
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'
+      refs/pending/heads/master:
+        092c1b7fddf2e8ed44cc06295127e85952c82112:
+        - Hello world
+        0c244b2bf58ddbacbd80a1162b851bf69ed66cf3:
+        - Base commit
+        - ''
+        - 'Sup: Not a footer'

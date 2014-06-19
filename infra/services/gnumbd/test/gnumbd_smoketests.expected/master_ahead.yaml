@@ -1,0 +1,43 @@
+- - Master contains a commit whose content isn't in pending
+  - origin:
+      refs/heads/master:
+        1ce83b0600e873050fd833715a6e17ea1f45b311:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'') and Ref(TestRepo(''local''),
+    ''refs/pending/heads/master'') match, but Ref(TestRepo(''local''), ''refs/heads/master'')''s
+    content doesn''t match!'
+- - Should have errored and nothing changed
+  - origin:
+      refs/heads/master:
+        1ce83b0600e873050fd833715a6e17ea1f45b311:
+        - Directly landed commit!
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

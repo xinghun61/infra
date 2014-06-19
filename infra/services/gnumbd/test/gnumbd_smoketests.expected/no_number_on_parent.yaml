@@ -1,0 +1,20 @@
+- - One commit in origin
+  - origin:
+      refs/heads/master:
+        613a1eb7dd1d33bd4468b63cb74f79db8a9243a1:
+        - Base without number
+      refs/pending/heads/master:
+        6cd6eb7d5204d18862b3c8b52d31770ab94e7737:
+        - Hello world
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: Missing pending tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
+    for Ref(TestRepo(''local''), ''refs/heads/master'')'
+- - Should still only have 1 commit
+  - origin:
+      refs/heads/master:
+        613a1eb7dd1d33bd4468b63cb74f79db8a9243a1:
+        - Base without number
+      refs/pending/heads/master:
+        6cd6eb7d5204d18862b3c8b52d31770ab94e7737:
+        - Hello world

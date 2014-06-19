@@ -1,0 +1,67 @@
+- - The setup.
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/other:
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        aeedb7388bbeb9d10cf8a2f3aceeb32984b07624:
+        - Hello world
+        38b859f0a917740e3f427a6aa7d3322ff3934693:
+        - Two for one!
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
+    ''refs/heads/master''): ''497a51ee3c7cc6826aeca9070a4be56011f8e5f6'''
+  - 'ERROR: Commit ''38b859f0a917740e3f427a6aa7d3322ff3934693'' has more than one
+    parent!'
+  - 'ERROR: Cannot process pending merge commit Commit(TestRepo(''local''), ''38b859f0a917740e3f427a6aa7d3322ff3934693'')'
+- - Should be the same
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/other:
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+      refs/pending-tags/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        aeedb7388bbeb9d10cf8a2f3aceeb32984b07624:
+        - Hello world
+        38b859f0a917740e3f427a6aa7d3322ff3934693:
+        - Two for one!
+        497a51ee3c7cc6826aeca9070a4be56011f8e5f6:
+        - Incoming merge!
+        - ''
+        - 'Cr-Commit-Position: refs/heads/other@{#20}'
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

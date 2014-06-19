@@ -1,0 +1,302 @@
+- - Branch 1 in place
+  - origin:
+      refs/branch-heads/cool_branch:
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/master:
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
+      refs/pending-tags/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- - New pending commit for branch
+  - origin:
+      refs/branch-heads/cool_branch:
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/branch-heads/cool_branch_yo:
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/master:
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
+      refs/pending-tags/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/branch-heads/cool_branch_yo:
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/branch-heads/cool_branch_yo:
+        9212a87dfa78241acf65908f0f56bbb121471d77:
+        - Super branchey commit
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Ref(TestRepo(''local''), ''refs/heads/master'') is up to date'
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'')'
+  - 'INFO: Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'') is up to date'
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch_yo'')'
+  - 'INFO: Pushing synthesized commit ''f449095356acf5ebca83c5f125de03849596b137''
+    for ''9212a87dfa78241acf65908f0f56bbb121471d77'''
+- - Second pending commit now on branch
+  - origin:
+      refs/branch-heads/cool_branch:
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/branch-heads/cool_branch_yo:
+        f449095356acf5ebca83c5f125de03849596b137:
+        - Super branchey commit
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch_yo@{#1}'
+        - 'Cr-Branched-From: 157f613ec89b70fcc2c142bd7b15d7ad98a08d86-refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/heads/master:
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
+      refs/pending-tags/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/branch-heads/cool_branch_yo:
+        9212a87dfa78241acf65908f0f56bbb121471d77:
+        - Super branchey commit
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/branch-heads/cool_branch:
+        04606a0a66f0a88f1199dd78c4fa3915906f4670:
+        - Branch commit!
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/branch-heads/cool_branch_yo:
+        9212a87dfa78241acf65908f0f56bbb121471d77:
+        - Super branchey commit
+        157f613ec89b70fcc2c142bd7b15d7ad98a08d86:
+        - Branch commit!
+        - ''
+        - 'Cr-Commit-Position: refs/branch-heads/cool_branch@{#1}'
+        - 'Cr-Branched-From: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}'
+        dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        4dac15f5702bf197eb2908203a87f43196d3789f:
+        - Hello world
+        9b00786942a531ae1510844f4ba3943cc4ca77fc:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

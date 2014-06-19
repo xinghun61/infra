@@ -1,0 +1,32 @@
+- - Two commits in origin
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'ERROR: Missing pending tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
+    for Ref(TestRepo(''local''), ''refs/heads/master'')'
+- - Origin should not have changed
+  - origin:
+      refs/heads/master:
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d0168885399a3cfd71ca399347923e166183c704:
+        - Hello world
+        f493b56e446fb46797fa09bbf5888790acb039f2:
+        - Base commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

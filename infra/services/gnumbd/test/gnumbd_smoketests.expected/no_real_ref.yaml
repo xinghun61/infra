@@ -1,0 +1,12 @@
+- - One commit in origin
+  - origin:
+      refs/pending/heads/master:
+        f0de3e2de68632f6bfc29e7baba94a3156c30a76:
+        - Hello world
+- log output:
+  - 'ERROR: Missing real ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+- - Origin should not have changed
+  - origin:
+      refs/pending/heads/master:
+        f0de3e2de68632f6bfc29e7baba94a3156c30a76:
+        - Hello world
