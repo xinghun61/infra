@@ -2,3 +2,4 @@
 CODE_REVIEW_SERVER: https://codereview.chromium.org
 VIEW_VC: https://chromium.googlesource.com/infra/infra/+/
 CC_LIST: chromium-reviews@chromium.org
+PROJECT: infra
