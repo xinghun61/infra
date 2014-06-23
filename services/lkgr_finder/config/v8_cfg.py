@@ -25,8 +25,6 @@ CONFIG = {
         # 'V8 Linux - nosnap - debug',
         'V8 Linux - isolates',
         'V8 Linux - debug - isolates',
-        'V8 Linux - nosse2',
-        'V8 Linux - debug - nosse2',
         'V8 Linux - nosse3',
         'V8 Linux - debug - nosse3',
         'V8 Linux - nosse4',
@@ -60,18 +58,14 @@ CONFIG = {
         'Linux ASAN Builder',
         'Android Builder',
         'V8 Linux GN',
-        # TODO(machenbach): Disabled until there are pure builders available for
-        # this. With a perf BuilderTester, the total lkgr cycle time is too big.
-        # 'Chrome Win7 Perf',
-        # 'Chrome Mac10.6 Perf',
-        # 'Chrome Linux Perf',
         # TODO(machenbach): Disabled until stability issues with the windows bot
         # are resolved.
         # 'Webkit',
-        'Webkit Mac',
-        'Webkit Linux',
-        'Webkit Linux 64',
-        'Webkit Linux - dbg',
+        # TODO(machenbach): Disabled until layout tests are more reliable.
+        # 'Webkit Mac',
+        # 'Webkit Linux',
+        # 'Webkit Linux 64',
+        # 'Webkit Linux - dbg',
       },
     },  # client.v8
   },
