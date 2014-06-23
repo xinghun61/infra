@@ -30,6 +30,7 @@ CONFIG = {
         'V8 Linux - nosse4',
         'V8 Linux - debug - nosse4',
         'V8 Linux - deadcode',
+        'V8 Linux - gcmole',
         # TODO(machenbach): Disabled until enough slaves are available.
         # 'V8 Linux - interpreted regexp',
         'V8 Win32 - builder',
