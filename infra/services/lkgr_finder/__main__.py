@@ -107,6 +107,7 @@ class STATUS(object):
 
 
 class RevisionKeyfunc(object):
+
   def __call__(self, r):
     raise NotImplementedError
 
@@ -115,6 +116,7 @@ class RevisionKeyfunc(object):
 
 
 class SvnRevKeyfunc(RevisionKeyfunc):
+
   def __call__(self, r):
     try:
       return int(r)
@@ -123,6 +125,7 @@ class SvnRevKeyfunc(RevisionKeyfunc):
 
 
 class GitRevKeyfunc(RevisionKeyfunc):
+
   def __init__(self, git_repo):
     self._cache = {}
     self._git_repo = git_repo
@@ -142,6 +145,7 @@ class GitRevKeyfunc(RevisionKeyfunc):
 
 
 class RunLogger(logging.Filter):
+
   def filter(self, record):
     RUN_LOG.append('%s: %s' % (datetime.datetime.now(), record.getMessage()))
     return True
@@ -151,19 +155,25 @@ class RunLogger(logging.Filter):
 # Status Generators
 ##################################################
 class StatusGenerator(object):
+
   def master_cb(self, master):
     pass
+
   def builder_cb(self, builder):
     pass
+
   def revision_cb(self, revision):
     pass
+
   def build_cb(self, master, builder, status, build_num=None):
     pass
+
   def lkgr_cb(self, revision):
     pass
 
 
 class HTMLStatusGenerator(StatusGenerator):
+
   def __init__(self):
     self.masters = []
     self.rows = []
@@ -534,7 +544,7 @@ def CheckLKGRLag(lag_age, rev_gap, allowed_lag_hrs, allowed_rev_gap):
                   min(30, max(15, rev_rate))) * allowed_lag_hrs)
 
   LOGGER.debug('LKGR is %s hours old (threshold: %s hours)' %
-      (lag_hrs, max_lag_hrs))
+               (lag_hrs, max_lag_hrs))
 
   return lag_age < datetime.timedelta(hours=max_lag_hrs)
 
@@ -611,17 +621,17 @@ def PostLKGR(status_url, lkgr, lkgr_alt, vcs, password_file, dry):
       password = f.read().strip()
   except (IOError, TypeError):
     LOGGER.error('Could not read password file %s, aborting upload' %
-        password_file)
+                 password_file)
     return
 
   params = {
-    'revision': lkgr,
-    'success': 1,
+      'revision': lkgr,
+      'success': 1,
   }
   if vcs == 'git':
     params = {
-      'git_hash': lkgr,
-      'gen_number': lkgr_alt,
+        'git_hash': lkgr,
+        'gen_number': lkgr_alt,
     }
 
   if dry:
@@ -682,7 +692,6 @@ def ParseArgs(argv):
                          action='store_const', const='CRITICAL', default='INFO')
   log_group.add_argument('--verbose', '-v', dest='loglevel',
                          action='store_const', const='DEBUG', default='INFO')
-
 
   input_group = parser.add_argument_group('Input data sources')
   input_group.add_argument('--buildbot', action='store_true', default=True,
@@ -745,6 +754,7 @@ def ParseArgs(argv):
 
   args = parser.parse_args(argv)
   return args, config_arg_names
+
 
 def main(argv):
   # TODO(agable): Refactor this into multiple sequential helper functions.
@@ -814,7 +824,7 @@ def main(argv):
         candidate = int(candidate)
     except (AssertionError, ValueError):
       LOGGER.fatal('Manually specified revision %s is not a valid revision '
-          'for project %s' % (args.manual, args.project))
+                   'for project %s' % (args.manual, args.project))
       return 1
   else:
     lkgr_builders = config['masters']
@@ -829,7 +839,7 @@ def main(argv):
           json.dump(builds, fh, indent=2)
       except IOError, e:
         LOGGER.warn('Could not dump to %s:\n%s\n' %
-            (args.dump_build_data, repr(e)))
+                    (args.dump_build_data, repr(e)))
 
     (build_history, revisions) = CollateRevisionHistory(
         builds, lkgr_builders, revkey)
@@ -875,7 +885,7 @@ def main(argv):
   if candidate and (args.force or revkey(candidate) > revkey(lkgr)):
     # We found a new LKGR!
     LOGGER.info('Candidate is%snewer than current %s LKGR!',
-        ' (forcefully) ' if args.force else ' ', args.project)
+                ' (forcefully) ' if args.force else ' ', args.project)
 
     candidate_alt = candidate
     if git_repo:

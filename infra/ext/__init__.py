@@ -5,6 +5,7 @@
 import os
 import sys
 
+
 def _add_ext_dirs_to_path():
   base = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,7 +26,9 @@ if False:
   import requests
   import argcomplete
 
+
 class _LazyImportHack(object):
+
   def __getattr__(self, name):
     mod = __import__(name)
     setattr(self, name, mod)

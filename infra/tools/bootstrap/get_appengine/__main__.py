@@ -49,7 +49,7 @@ def extract_zip(z, root_path):
   for f in z.infolist():
     perm = (f.external_attr >> 16L) & 0777
     filepath = os.path.join(root_path, f.filename)
-    logging.debug('Extracting %s' % f.filename)
+    logging.debug('Extracting %s', f.filename)
     if f.filename.endswith('/'):
       os.mkdir(filepath, perm)
     else:
@@ -94,7 +94,7 @@ def install_latest_gae_sdk(root_path, fetch_go, dry_run):
     u = urllib2.urlopen(url)
     with tempfile.NamedTemporaryFile() as f:
       while True:
-        chunk = u.read(2**20)
+        chunk = u.read(2 ** 20)
         if not chunk:
           break
         f.write(chunk)

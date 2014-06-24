@@ -76,8 +76,8 @@ def main(argv):
   cmd_parser_current.set_defaults(func=cmd_current)
   cmd_parser_current.add_argument('json_base')
   cmd_parser_current.add_argument(
-    '-b', '--builder', dest='builders', action='append', default=[],
-    help='Builders to filter on')
+      '-b', '--builder', dest='builders', action='append', default=[],
+      help='Builders to filter on')
   cmd_parser_current.add_argument('--blame', action='store_true')
 
   args = parser.parse_args(argv)
