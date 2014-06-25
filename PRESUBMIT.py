@@ -18,6 +18,7 @@ DISABLED_TESTS = [
 DISABLED_PROJECTS = [
     'appengine/chromium_build',
     'infra/services/lkgr_finder',
+    'infra/services/gnumbd',
     'infra/ext/[^/]*/.*',
 ]
 
