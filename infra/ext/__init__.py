@@ -23,8 +23,12 @@ _add_ext_dirs_to_path()
 #
 # This list should always contain a complete list of all modules in ext.
 if False:
-  import requests
   import argcomplete
+  import dateutil
+  import httplib2
+  import oauth2client
+  import pytz
+  import requests
 
 
 class _LazyImportHack(object):
