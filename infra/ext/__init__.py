@@ -5,16 +5,26 @@
 import os
 import sys
 
+# Explicit import paths for sub-projects that don't follow the
+# 'infra/ext/<package>/<package>/' directory layout.
+EXTPACKAGES = {
+    'httplib2': os.path.join('httplib2', 'python' + str(sys.version_info[0])),
+    'pytz': os.path.join('pytz', 'src'),
+    }
+
 
 def _add_ext_dirs_to_path():
   base = os.path.dirname(os.path.abspath(__file__))
 
   for d in os.listdir(base):
-    full = os.path.join(base, d)
+    full = os.path.join(base, EXTPACKAGES.get(d, d))
     if os.path.isdir(full):
       # TODO(iannucci): look for egg
+      # Needed to support absolute imports in sub-projects (e.g. pytz has
+      # imports like: from pytz.exceptions import AmbiguousTimeError).
       sys.path.insert(0, full)
-      globals()[d] = __import__(d)
+      # Needed to support 'import infra.ext.foo' syntax.
+      __path__.append(full)
 
 _add_ext_dirs_to_path()
 
@@ -29,13 +39,3 @@ if False:
   import oauth2client
   import pytz
   import requests
-
-
-class _LazyImportHack(object):
-
-  def __getattr__(self, name):
-    mod = __import__(name)
-    setattr(self, name, mod)
-    return mod
-
-sys.modules[__name__] = _LazyImportHack()
