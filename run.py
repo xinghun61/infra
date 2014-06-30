@@ -5,6 +5,9 @@
 
 """Wrapper for `python -m` to make running tools simpler.
 
+A tool is defined as a python module with a __main__.py file. This latter file
+is run by the present script.
+
 In particular, allows gclient to change directories when running hooks for
 infra.
 """

@@ -28,13 +28,59 @@ somewhere in your path) to run:
 This will check out the base repository (infra/) and its dependencies.
 
 
-Adding an external package in the ext directory
------------------------------------------------
+Invoking tools
+--------------
 
-infra/ext/ (short for "external") is intended for various python libraries. This
-directory is populated by `gclient sync` using information from infra/DEPS. Only
-repositories hosted on chromium.googlesource.com should be used as source. 
-Adding something here requires those steps:
+Mixing modules and scripts in the same hierarchy can sometimes be a pain in
+Python, because it usually requires updating the Python path. The goal for
+infra/ is to be able to check out the repository and be able to run code right
+away, without setting up anything. The adopted solution is to use __main__.py
+files everywhere.
+
+Example: `python -m infra.services.lkgr_finder` will run the lkgr_finder script.
+
+To make things easier, a convenience script is located at root level. This will
+do the same thing: `run.py infra.services.lkgr_finder`. It also provides some
+additional goodness, like listing all available tools (when invoked without any
+arguments), and allowing for autocompletion.
+
+If you want run.py to auto-complete, just run:
+
+    # BEGIN = ZSH ONLY
+    autoload -Uz bashcompinit
+    bashcompinit
+    # END   = ZSH ONLY
+
+    eval "$(./infra/ext/argcomplete/scripts/register-python-argcomplete run.py)"
+
+And that's it. You may want to put that in your .bashrc somewhere.
+
+
+External packages
+-----------------
+
+### Description
+
+`infra/ext/` (short for "external") is intended for various python libraries.
+This directory is populated by `gclient sync` using information from infra/DEPS.
+The raw repositories are checked out, and used in-place. This requires a bit a
+magic for imports to work properly (see `infra/ext/__init__.py` for details).
+The framework assumes that the actual python packages to import are located
+inside directories right under infra/ext.
+
+Example: infra/ext/dateutil contains the dateutils repository checkout, and the
+actual dateutil package is in infra/ext/dateutil/dateutil. In practice, dateutil
+is imported using the 'from' syntax:
+
+    from infra.ext import dateutil
+
+`import infra.ext.dateutil` will __not__ work.
+
+
+### Adding an external package in the ext directory
+
+Only repositories hosted on chromium.googlesource.com should be used as source.
+Adding something in infra/ext thus requires more than adding an entry into DEPS:
 
 - create a new repository on chromium.googlesource.com
 - populate it with a mirror of the third-party repository (e.g.:
