@@ -13,7 +13,7 @@ deps = {
 
   # v1.5 (v2 requires more dependencies)
   "infra/infra/ext/dateutil":
-    ("https://chromium.googlesource.com/infra/third_party/dateutil.git"
+    ("https://chromium.googlesource.com/infra/third_party/python_dateutil.git"
      "@731ee1ce8456361eba2c619e90989f6db45625b9"),
 
   # master at 2014-05-03 9:27-4
