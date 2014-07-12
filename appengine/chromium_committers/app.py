@@ -9,6 +9,7 @@ __author__ = 'agable@google.com (Aaron Gable)'
 
 import base64
 import json
+import logging
 import os
 
 import jinja2
@@ -18,7 +19,6 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 
 import auth_util
-import constants
 import hmac_util
 import model
 
@@ -35,47 +35,59 @@ class MainPageHandler(webapp2.RequestHandler):
   def get(self):
     """Displays the homepage, with a login url."""
     template = JINJA2_ENVIRONMENT.get_template('index.html')
-    template_values = {'login_url': users.create_login_url(dest_url='/')}
+    template_values = {}
+
+    user = users.get_current_user()
+    template_values['login_url'] = ''
+    if not user:
+      template_values['login_url'] = users.create_login_url(dest_url='/')
+
+    lists = model.EmailList.query().fetch(keys_only=True)
+    template_values['lists'] = [l.string_id() for l in lists
+                                if auth_util.CheckUserInList(l)]
+
     page = template.render(template_values)
     self.response.write(page)
 
 
-class ChromiumHandler(webapp2.RequestHandler):
+class ListHandler(webapp2.RequestHandler):
 
-  @auth_util.CheckUserAuth
-  @hmac_util.CheckHmacAuth
-  @auth_util.RequireAuth
-  def get(self):
+  def get(self, list_name):
     """Displays the list of chromium committers in plain text."""
-    committer_list = ndb.Key(model.EmailList, constants.LIST).get()
+    if not list_name:
+      logging.warning('Tried to view list with no name.')
+      self.abort(404)
+
+    committer_list = ndb.Key(model.EmailList, list_name).get()
     emails = committer_list.emails if committer_list else []
+    logging.debug('Fetched emails: %s' % emails)
+    if not emails:
+      logging.warning('Tried to view nonexistent or empty list.')
+      self.abort(404)
+
+    if not auth_util.CheckUserInList(emails):
+      # Technically should be 403, but use 404 to avoid exposing list names.
+      self.abort(404)
+      return
+
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.write('\n'.join(sorted(emails)))
-
-
-class MappingHandler(webapp2.RequestHandler):
-
-  def get(self):
-    """Displays the mapping of chromium to googler email addresses."""
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.response.out.write('Not yet implemented. Sorry!')
 
 
 class UpdateHandler(webapp2.RequestHandler):
 
   @hmac_util.CheckHmacAuth
   @auth_util.RequireAuth
-  def post(self):
+  def post(self, list_name):
     """Updates the list of committers from the POST data recieved."""
-    emails = base64.b64decode(self.request.get('committers'))
-    email_list = json.loads(emails)
-    committer_list = model.EmailList(id=constants.LIST, emails=email_list)
+    email_json = base64.b64decode(self.request.get('committers'))
+    emails = json.loads(email_json)
+    committer_list = model.EmailList(id=list_name, emails=emails)
     committer_list.put()
 
 
 app = webapp2.WSGIApplication([
     ('/', MainPageHandler),
-    ('/chromium', ChromiumHandler),
-    ('/mapping', MappingHandler),
-    ('/update', UpdateHandler),
-  ], debug=True)
+    ('/lists/([a-zA-Z0-9_-]+)', ListHandler),
+    ('/update/([a-zA-Z0-9_-]+)', UpdateHandler),
+    ], debug=True)

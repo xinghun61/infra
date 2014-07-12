@@ -132,31 +132,6 @@ def CheckHmacAuth(handler):
   return wrapper
 
 
-def CreateRequest(**params):
-  """Given a payload to send, constructs an authenticated request.
-
-  Returns a dictionary containing:
-    id: Unique  ID of this app, from the datastore AuthToken 'self'
-    t: Current Unix epoch time
-    auth: The hmac(key, id+time+parms, sha256), to authenticate the request,
-      where the key is the corresponding secret in the app's AuthToken
-    **params: All of the GET/POST parameters
-
-  It is up to the calling code to convert this dictionary into valid GET/POST
-  parameters.
-  """
-  authtoken = ndb.Key(AuthToken, 'self').get()
-  if not authtoken:
-    raise AuthError('No AuthToken found for this app.')
-
-  now = str(int(time.time()))
-
-  ret = params.copy()
-  ret.update({'id': authtoken.client_id, 't': now,
-              'auth': GenerateHmac(authtoken, t=now, **params)})
-  return ret
-
-
 class AuthError(Exception):
   pass
 

@@ -13,65 +13,47 @@ import logging
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-import constants
 import model
 
 
-def CheckUserAuth(handler):
-  """Decorator for webapp2 request handler methods.
+def CheckUserInList(key_or_emails):
+  """Return true if the currently logged in user is in the email list.
 
-  Only use on webapp2.RequestHandler methods (e.g. get, post, put).
-
-  Checks to see if the user is logged in, and if they are
-  * If they are an administrator of the app, or
-  * If their email appears in the list of allowed addresses
-
-  Sets request.authenticated to 'user' if successful. Otherwise, None.
+  Args:
+    key_or_emails: either a list of string email addresses, or an ndb.Key
+                   pointing to a model.EmailList object.
   """
-  @functools.wraps(handler)
-  def wrapper(self, *args, **kwargs):
-    """Does the real legwork and calls the wrapped handler."""
-    def abort_auth(log_msg):
-      """Helper method to be an exit hatch when authentication fails."""
-      logging.warning(log_msg)
-      self.request.authenticated = None
-      handler(self, *args, **kwargs)
+  user = users.get_current_user()
+  if not user:
+    logging.warning('No logged in user.')
+    return False
+  email = user.email()
 
-    def finish_auth(log_msg):
-      """Helper method to be an exit hatch when authentication succeeds."""
-      logging.info(log_msg)
-      self.request.authenticated = 'user'
-      handler(self, *args, **kwargs)
+  if users.is_current_user_admin():
+    logging.info('User %s is admin.', email)
+    return True
 
-    if getattr(self.request, 'authenticated', None):
-      finish_auth('Already authenticated.')
-      return
+  if isinstance(key_or_emails, ndb.Key):
+    email_list = key_or_emails.get()
+    emails = email_list.emails if email_list else []
+  elif isinstance(key_or_emails, list):
+    emails = key_or_emails
+  else:
+    logging.error('Invalid input (not a list or datastore key): %s',
+                  key_or_emails)
+    return False
 
-    user = users.get_current_user()
-    if not user:
-      abort_auth('No logged in user.')
-      return
+  if email in emails:
+    logging.info('User %s in email list.', email)
+    return True
 
-    if users.is_current_user_admin():
-      finish_auth('User is admin.')
-      return
+  if (email.endswith('@google.com') and
+      email.replace('@google.com', '@chromium.org') in emails):
+    logging.info('User %s in email list via google -> chromium map.', email)
+    return True
 
-    email = user.email()
-    email_list = ndb.Key(model.EmailList, constants.LIST).get()
-    allowed_emails = email_list.emails if email_list else []
-
-    if email in allowed_emails:
-      finish_auth('User in allowed email list.')
-      return
-
-    if (email.endswith('@google.com') and
-        email.replace('@google.com', '@chromium.org') in allowed_emails):
-      finish_auth('User in allowed email list via google -> chromium map.')
-      return
-
-    abort_auth('User not in allowed email list.')
-
-  return wrapper
+  logging.warning('User %s not in email list.', email)
+  return False
 
 
 def RequireAuth(handler):

@@ -10,13 +10,17 @@
 
       <p style="color:rgb(255,0,0);font-weight:bold">
         Access to the Chromium Committers list is restricted to committers only.
+        {% if login_url %}
         <a href={{ login_url }}>Log in.</a>
+        {% endif %}
       </p>
 
       <p>
-        Please follow the link below to continue to the list.<br>
+        Please follow one of the links below to access the list you want.<br>
         <ul>
-          <li><a href="/chromium">Chromium Committers</a>
+          {% for list in lists %}
+          <li><a href="/lists/{{ list }}">{{ list }}</a>
+          {% endfor %}
         </ul>
       </p>
     </font>
