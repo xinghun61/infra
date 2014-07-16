@@ -13,8 +13,6 @@ import logging
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-import model
-
 
 def CheckUserInList(key_or_emails):
   """Return true if the currently logged in user is in the email list.
