@@ -51,5 +51,18 @@ CONFIG = {
                 'Google Chrome Linux x64',
             },
         },  # chromium.chrome
+        'chromium.chromiumos': {
+            'base_url': 'https://build.chromium.org/p/chromium.chromiumos',
+            'builders': {
+                'Linux ChromiumOS Builder',
+                'Linux ChromiumOS Tests (1)',
+                'Linux ChromiumOS Tests (2)',
+                'Linux ChromiumOS Builder (dbg)',
+                'Linux ChromiumOS Tests (dbg)(1)',
+                'Linux ChromiumOS Tests (dbg)(2)',
+                'Linux ChromiumOS Tests (dbg)(3)',
+                'Linux ChromiumOS (Clang dbg)',
+            },
+        },  # chromium.chromiumos
     },
 }
