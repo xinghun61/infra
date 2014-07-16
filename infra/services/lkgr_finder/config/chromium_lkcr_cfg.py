@@ -32,5 +32,13 @@ CONFIG = {
                 'Android Clang Builder (dbg)',
             },
         },  # chromium.linux
+        'chromium.chromiumos': {
+            'base_url': 'https://build.chromium.org/p/chromium.chromiumos',
+            'builders': {
+                'Linux ChromiumOS Builder',
+                'Linux ChromiumOS Builder (dbg)',
+                'Linux ChromiumOS (Clang dbg)',
+            },
+        },  # chromium.chromiumos
     },
 }
