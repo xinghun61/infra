@@ -94,51 +94,69 @@
         return escape(unescape(queryString.substring(begin, end)));
       }
 
-      // Given a tag and a node, returns the value for this tag on this node.
-      function getNodeValue(node, tag) {
-        return node.getElementsByTagName(tag)[0].firstChild.nodeValue;
+      function getDisplayName(objectName, prefix) {
+        if(objectName.indexOf(prefix) == 0) {
+          return objectName.substring(prefix.length);
+        }
+        return objectName;
       }
 
-      // Displays the directory listing given the XML and path.
-      function displayList(xmlstring, root, path) {
+      var CR_GIT_COMMIT_KEY = 'Cr-Git-Commit';
+
+      function getCommitHTML(bucket, storageObject) {
+        var gitCommit = (storageObject.metadata || {})[CR_GIT_COMMIT_KEY];
+
+        // Handle no metadata
+        if (gitCommit === undefined) {
+          return '-';
+        }
+
+        return '<a href="https://crrev.com/' + escape(gitCommit) + '">' +
+               gitCommit + '</a>';
+      }
+
+      // Displays the directory listing given the XML and prefix.
+      function displayList(objectDict, bucket, root, prefix) {
         // Display the header
-        document.write('<h1>Index of /' + path + '</h1>');
+        document.write('<h1>Index of <em>' + bucket + '</em>: /' +
+                       prefix + '</h1>');
 
         // Start the table for the results.
         document.write('<table style="border-spacing:15px 0px;">');
 
         var sortOrder = getParameter('sort');
-        var sortLink = location.pathname + '?path=' + escape(path);
+        var sortLink = location.pathname + '?prefix=' + escape(prefix);
         if (sortOrder != 'desc') {
           sortLink += '&sort=desc';
         }
 
         // Display the table header.
         document.write('<tr><th><img src="' + root +
-                       'icons/blank.gif" alt="[ICO]"></th>');
+                       '/icons/blank.gif" alt="[ICO]"></th>');
         document.write('<th><a href="' + sortLink + '">Name</a></th>');
         document.write('<th>Last modified</th>');
         document.write('<th>Size</th>');
-        document.write('<th>ETag</th></tr>');
+        document.write('<th>Commit</th></tr>');
         document.write('<tr><th colspan="5"><hr></th></tr>');
 
         // Display the 'go back' button.
-        if (path != '') {
+        if (prefix != '') {
           var backpath = location.pathname;
 
           // If there is more than one section delimited by '/' in the current
-          // path we truncate the last section and append the rest to backpath.
-          var delimiter = path.lastIndexOf('/');
+          // prefix we truncate the last section and append the rest to
+          // backpath.
+          var delimiter = prefix.lastIndexOf('/');
           if (delimiter >= 0) {
-            delimiter = path.substr(0, delimiter).lastIndexOf('/');
+            delimiter = prefix.substr(0, delimiter).lastIndexOf('/');
             if (delimiter >= 0) {
-              backpath += '?path=';
-              backpath += escape(path.substr(0, delimiter+1));
+              backpath += '?prefix=';
+              backpath += escape(prefix.substr(0, delimiter+1));
             }
           }
 
           document.write('<tr><td valign="top"><img src="' + root +
-                         'icons/back.gif" alt="[DIR]"></td>');
+                         '/icons/back.gif" alt="[DIR]"></td>');
           document.write('<td><a href="');
           document.write(backpath);
           document.write('">Parent Directory</a></td>');
@@ -146,40 +164,24 @@
           document.write('<td align="right">  - </td></tr>');
         }
 
-        // Set up the variables.
-        var directories = new Array();
-        var files = new Array();
-
-        for (var iter = 0; iter < xmlstrings.length; iter++) {
-          var xmlstring = xmlstrings[iter];
-          // Parse the XML output.
-          var parser = new DOMParser();
-          var xmlDoc = parser.parseFromString(xmlstring, 'text/xml');
-
-          // Get the main element.
-          var results = xmlDoc.getElementsByTagName('ListBucketResult');
-
-          // Get all the directories.
-          var prefixes = results[0].getElementsByTagName('CommonPrefixes');
-          for (var i = 0; i < prefixes.length; i++) {
-            var prefix = getNodeValue(prefixes[i], 'Prefix');
-            directories.push(prefix.substr(path.length));
-        }
-
-          // Get all the files.
-          var contents = results[0].getElementsByTagName('Contents');
-          for (var i = 0; i < contents.length; i++) {
-            var obj = new Object();
-            obj.keyName = getNodeValue(contents[i], 'Key');
-            obj.lastModified = getNodeValue(contents[i], 'LastModified');
-            obj.eTag = getNodeValue(contents[i], 'ETag');
-            obj.size = getNodeValue(contents[i], 'Size');
-            files.push(obj);
-          }
-        }
-
-        files.sort(alphanumCompare);
+        // Identify directories
+        var directories = (objectDict.prefixes || [])
         directories.sort(alphanumCompare);
+
+        // Set up the variables.
+        var files = Array();
+        (objectDict.items || []).forEach(function(storageObject) {
+          // If this object _is_ the current prefix, skip it.
+          if(
+              (storageObject.kind !== 'storage#object') ||
+              (storageObject.name === prefix)) {
+            return;
+          }
+          files.push(storageObject);
+        });
+        files.sort(function(a, b){
+            return alphanumCompare(a.name, b.name);
+        });
 
         // Reverse the list for a descending sort.
         if (sortOrder == 'desc') {
@@ -188,95 +190,79 @@
         }
 
         // Display the directories.
-        for (var i = 0; i < directories.length; i++) {
+        directories.forEach(function(directory) {
           var lnk = location.pathname.substr(0, location.pathname.indexOf('?'));
-          lnk += '?path=' + escape(path) + directories[i];
+          lnk += '?prefix=' + directory;
 
           document.write('<tr>');
           document.write('<td valign="top"><img src="' + root +
-                         'icons/folder.gif" alt="[DIR]"></td>');
+                         '/icons/folder.gif" alt="[DIR]"></td>');
           document.write('<td><a href="' + lnk + '">' +
-                         directories[i].split('/')[0] + '</a></td>');
+                         getDisplayName(directory, prefix) + '</a></td>');
           document.write('<td align="right">-</td>');
           document.write('<td align="right">-</td>');
           document.write('<td align="right">-</td>');
           document.write('</tr>');
-        }
+        });
 
         // Display the files.
-        for (var i = 0; i < files.length; i++) {
-          var link = root + files[i].keyName;
-          var filename = files[i].keyName.substr(path.length);
-          var size = files[i].size / 1024 / 1024;
-          var lastModified = files[i].lastModified.replace('T', ' ');
+        files.forEach(function(storageObject) {
+          var link = storageObject['mediaLink'];
+          var filename = getDisplayName(storageObject['name'], prefix);
+          var size = parseInt(storageObject['size']) / 1024 / 1024;
+          var lastModified = storageObject['updated'].replace('T', ' ');
           lastModified = lastModified.substr(0, lastModified.indexOf('.'));
 
           // Remove the entries we don't want to show.
           if (filename == '') {
-            continue;
-          }
-
-          if (filename.indexOf('$folder$') >= 0) {
-            continue;
+            return;
           }
 
           // Display the row.
           document.write('<tr>');
           document.write('<td valign="top"><img src="' + root +
-                         'icons/binary.gif" alt="[DIR]"></td>');
+                         '/icons/binary.gif" alt="[DIR]"></td>');
           document.write('<td><a href="' + link + '">' + filename +
                          '</a></td>');
           document.write('<td align="right">' + lastModified + '</td>');
           document.write('<td align="right">' + size.toFixed(2) + 'MB</td>');
-          document.write('<td align="right"><pre>' +
-                         files[i].eTag.split('"')[1] + '</pre></td>');
+          document.write('<td align="right">' +
+                         getCommitHTML(bucket, storageObject) + '</td>')
           document.write('</tr>');
-        }
+        });
 
         // Close the table.
         document.write('<tr><th colspan="5"><hr></th></tr>');
         document.write('</table>');
       }
 
-      var xmlstrings = new Array();
-
-      function fetchAndDisplay(marker) {
-        var path = getParameter('path');
+      function fetchAndDisplay() {
+        var prefix = getParameter('prefix');
         var lastSlash = location.pathname.lastIndexOf("/");
-        var filename = location.pathname.substring(lastSlash + 1);
-        var root = location.pathname.substring(0, lastSlash + 1);
-
-        var markerParam = '';
-        if (marker != '') {
-          markerParam = '&marker=' + marker;
+        var root = location.pathname.substring(0, lastSlash);
+        var bucket = root;
+        if(bucket[0] == "/") {
+          bucket = bucket.substring(1);
         }
 
+        var gsAPIBase = 'https://www.googleapis.com/storage/v1';
+        var fieldsParam = 'items(kind,mediaLink,metadata,name,size,updated),' +
+                          'kind,prefixes';
+        var gsAPIListObjects = gsAPIBase + '/b/' + bucket + '/o';
+        var url = gsAPIListObjects + '?delimiter=/&prefix=' + prefix +
+                  '&fields=' + fieldsParam;
+
         var http = new XMLHttpRequest();
-        http.open('GET', root + '?delimiter=/&prefix=' + path + markerParam,
-                  true);
+        http.open('GET', url, true);
         http.onreadystatechange = useHttpResponse;
         http.send(null);
         function useHttpResponse() {
-          if (http.readyState == 4) {
-            var xmlstring = http.responseText;
-            xmlstrings.push(xmlstring);
-
-            // Check if the data is truncated. if so, we need to request the
-            // rest.
-            var parser = new DOMParser();
-            var xmlDoc = parser.parseFromString(xmlstring, 'text/xml');
-
-            // Get the main element.
-            var results = xmlDoc.getElementsByTagName('ListBucketResult');
-
-            // Get IsTruncated.
-            var truncated = getNodeValue(results[0], 'IsTruncated');
-            var nextMarker = '';
-            if (truncated == 'true') {
-              nextMarker = getNodeValue(results[0], 'NextMarker');
-              fetchAndDisplay(nextMarker);
+          if (http.readyState === http.DONE) {
+            objectsDict = JSON.parse(http.responseText);
+            if(objectsDict['kind'] != 'storage#objects') {
+              console.log("JSON API did not return 'storage#objects' object");
             } else {
-              displayList(xmlstrings, root, unescape(path));
+              displayList(objectsDict, bucket, root, unescape(prefix));
             }
           }
         }
