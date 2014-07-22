@@ -67,20 +67,20 @@ def get_links(deps):
 
       if pip.wheel.Wheel(fname).supported():
         link = OBJECT_URL.format(entry['name'], md5hash)
-        if plat_tag and plat_tag in fname:
-          if binary_link:
-            LOGGER.error(
-              'Found more than one binary matching wheel for %r: %r',
-              prefix, dep)
-            continue
-          binary_link = link
-        else:
+        if fname.endswith('none-any.whl'):
           if generic_link:
             LOGGER.error(
               'Found more than one generic matching wheel for %r: %r',
               prefix, dep)
             continue
           generic_link = link
+        elif plat_tag and plat_tag in fname:
+          if binary_link:
+            LOGGER.error(
+              'Found more than one binary matching wheel for %r: %r',
+              prefix, dep)
+            continue
+          binary_link = link
 
     if not binary_link and not generic_link:
       raise NoWheelException(name, version, dep['build'], source_sha)
