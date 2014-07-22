@@ -62,7 +62,7 @@ If you want run.py to auto-complete, just run:
     bashcompinit
     # END   = ZSH ONLY
 
-    eval "$(./infra/ext/argcomplete/scripts/register-python-argcomplete run.py)"
+    eval "$(/path/to/infra/ENV/bin/register-python-argcomplete run.py)"
 
 And that's it. You may want to put that in your .bashrc somewhere.
 
