@@ -52,14 +52,15 @@ def grab_wheel(src, dst, source_sha, build):
   if not wheelfile.endswith('none-any.whl'):
     plat_tag = platform_tag()
 
-  os.rename(os.path.join(src, wheelfile),
-            os.path.join(dst, '{}-{}_{}{}{}'.format(
-              wheel_info.group('namever'),
-              build,
-              source_sha,
-              plat_tag,
-              wheel_info.group(4),
-            )))
+  shutil.copyfile(
+      os.path.join(src, wheelfile),
+      os.path.join(dst, '{}-{}_{}{}{}'.format(
+        wheel_info.group('namever'),
+        build,
+        source_sha,
+        plat_tag,
+        wheel_info.group(4),
+      )))
 
 
 def run_custom_build(name, link, sha, build):
