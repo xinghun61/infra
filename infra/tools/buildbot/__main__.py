@@ -7,7 +7,7 @@ import argparse
 import sys
 import time
 
-from infra.ext import requests
+import requests
 
 
 def get_builders(json_base):

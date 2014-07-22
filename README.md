@@ -28,6 +28,17 @@ somewhere in your path) to run:
 This will check out the base repository (infra/) and its dependencies.
 
 
+Bootstrapping Dependencies
+--------------------------
+(See `bootstrap/README.md` for more details).
+
+Manually create a bootstrap virtualenv environment by running:
+
+  `./bootstrap/bootstrap.py --deps_file bootstrap/deps.pyl`
+
+This is done for you automatically by `gclient sync` (or `gclient runhooks`).
+
+
 Invoking tools
 --------------
 

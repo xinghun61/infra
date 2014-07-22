@@ -1,0 +1,71 @@
+#vim: ft=python:
+{
+  'wheel': {
+    'version': '0.24.0',
+    'build': '0',
+    'gs': 'c02262299489646af253067e8136c060a93572e3.tar.gz',
+  },
+
+  'argcomplete': {
+    'version': '0.8.0',
+    'build': '0',
+    'rev': 'a88dcaae3132003ae123d39a2cd9924113b8f985',
+  },
+  'coverage': {
+    'version': '3.7.1',
+    'build': '0',
+    'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
+  },
+  'python_dateutil': {
+    'version': '1.5',
+    'build': '0',
+    'rev': '30af0028a6633dc415a6c41bf2f2a67bda9bb68a',
+  },
+  'oauth2client': {
+    'version': '1.2',
+    'build': '0',
+    'rev': 'd02b317af0313dcf66755844f5421651af5eb356'
+  },
+  'pytz': {
+    'version': '2014.4',
+    'build': '0',
+    'rev': '056207cdda4a8f01f7f0bd924e89d0df434c7547',
+  },
+  'PyYAML': {
+    'version': '3.11',
+    'build': '0',
+    'gs': '1a2d5df8b31124573efb9598ec6d54767f3c4cd4.tar.gz',
+    'build_options': ['--without-libyaml'],
+  },
+  'requests': {
+    'version': '2.3.0',
+    'build': '0',
+    'rev': '6366d3dd190a9e58ca582955cddf7e2ac5f32dcc',
+  },
+
+  # Deps for oauth2client
+  'httplib2': {
+    'version': '0.9',
+    'build': '0',
+    'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
+    'implicit': True,
+  },
+  'pyasn1': {
+    'version': '0.1.7',
+    'build': '0',
+    'gs': 'e32b91c5a5d9609fb1d07d8685a884bab22ca6d0.tar.gz',
+    'implicit': True,
+  },
+  'pyasn1_modules': {
+    'version': '0.0.5',
+    'build': '0',
+    'gs': '108bdef1b3ca7050ff93c59e7ef7225c9c1a8b07.tar.gz',
+    'implicit': True,
+  },
+  'rsa': {
+    'version': '3.1.4',
+    'build': '0',
+    'gs': '208583c49489b7ab415a4455eae7618b7055feca.tar.gz',
+    'implicit': True,
+  },
+}

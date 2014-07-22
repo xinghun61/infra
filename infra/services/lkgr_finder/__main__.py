@@ -66,9 +66,9 @@ import threading
 import urllib
 import xml.etree.ElementTree as xml
 
-from infra.libs import git
+import requests
 
-from infra.ext import requests
+from infra.libs import git
 
 
 LOGGER = logging.getLogger(__name__)

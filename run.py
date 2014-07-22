@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!ENV/bin/python
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -21,7 +21,17 @@ import shlex
 import sys
 import textwrap
 
-from infra.ext import argcomplete
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+
+if os.path.abspath(sys.prefix) != os.path.join(ROOT, 'ENV'):
+  print 'You must use the virtualenv in ENV for scripts in the infra repo.'
+  print 'Please run this as `./ENV/bin/python run.py`. If you do not have an'
+  print 'ENV directory, please make one with `gclient runhooks`.'
+  sys.exit(1)
+
+
+import argcomplete
 
 
 def main(args):
