@@ -6,7 +6,8 @@
 
 import datetime
 import logging
-from infra.ext import pytz
+
+import pytz
 
 
 class InfraFilter(logging.Filter):
