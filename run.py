@@ -1,4 +1,4 @@
-#!ENV/bin/python
+#!/usr/bin/env python
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -14,22 +14,38 @@ infra.
 
 assert __name__ == '__main__'
 
-import argparse
 import os
-import runpy
-import shlex
 import sys
-import textwrap
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+ENV = os.path.join(ROOT, 'ENV')
+RUN_PY_RECURSION_BLOCKER = 'RUN_PY_RECURSION'
 
-if os.path.abspath(sys.prefix) != os.path.join(ROOT, 'ENV'):
+if os.path.abspath(sys.prefix) != ENV:
+  if RUN_PY_RECURSION_BLOCKER in os.environ:
+    print >> sys.stderr, 'TOO MUCH RECURSION IN RUN.PY'
+    sys.exit(-1)
+
+  # not in the venv
+  python = os.path.join(ENV, 'bin', 'python')
+  if os.path.exists(python):
+    os.environ[RUN_PY_RECURSION_BLOCKER] = "1"
+    os.execv(python, [python, __file__] + sys.argv[1:])
+    print >> sys.stderr, "Exec is busted :("
+    sys.exit(-1)  # should never reach
+
   print 'You must use the virtualenv in ENV for scripts in the infra repo.'
-  print 'Please run this as `./ENV/bin/python run.py`. If you do not have an'
-  print 'ENV directory, please make one with `gclient runhooks`.'
+  print 'Running `gclient runhooks` will create this environment for you.'
   sys.exit(1)
 
+# In case some poor script ends up calling run.py, don't explode them.
+os.environ.pop(RUN_PY_RECURSION_BLOCKER, None)
+
+import argparse
+import runpy
+import shlex
+import textwrap
 
 import argcomplete
 
