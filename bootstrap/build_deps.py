@@ -12,9 +12,12 @@ import sys
 
 import bootstrap
 
-from util import GIT_REPO, ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL
+from util import ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL
 
 from util import tempdir, tempname, read_deps, print_deps, platform_tag
+
+
+DEFAULT_REPO = 'https://chromium.googlesource.com/infra/third_party/{name}'
 
 
 def has_custom_build(name):
@@ -79,11 +82,13 @@ def run_custom_build(name, link, sha, build):
     grab_wheel(wheeld, WHEELHOUSE, sha, build)
 
 
-def process_git(name, rev, build, build_options):
+def process_git(name, rev, build, build_options, repo):
   print
   print 'Processing (git)', name, rev
 
-  url = GIT_REPO.format(name) + '@' + rev
+  url = repo.format(name=name) + '@' + rev
+  if not url.startswith('git+'):
+    url = 'git+' + url
 
   if not has_custom_build(name):
     wheel(url, rev, build, build_options)
@@ -166,7 +171,8 @@ def main(args):
     # TODO(iannucci):  skip entries which already exist in gs
     if 'rev' in options:
       process_git(name, options['rev'], options['build'],
-                  options.get('build_options', ()))
+                  options.get('build_options', ()),
+                  options.get('repo', DEFAULT_REPO))
     elif 'gs' in options:
       process_gs(name, options['gs'], options['build'],
                  options.get('build_options', ()))

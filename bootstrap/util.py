@@ -18,7 +18,6 @@ BUCKET = 'chrome-python-wheelhouse'
 STORAGE_URL = 'https://www.googleapis.com/storage/v1/b/{}/o'.format(BUCKET)
 OBJECT_URL = 'https://storage.googleapis.com/{}/{{}}#md5={{}}'.format(BUCKET)
 
-GIT_REPO = 'git+https://chromium.googlesource.com/infra/third_party/{}'
 SOURCE_URL = 'gs://{}/sources/{{}}'.format(BUCKET)
 WHEELS_URL = 'gs://{}/wheels/'.format(BUCKET)
 
