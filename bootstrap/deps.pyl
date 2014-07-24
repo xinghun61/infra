@@ -48,6 +48,12 @@
     'rev': 'b4e089992f7e15a8f549f8b551d68acff92ab727',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
+  'testing_support': {
+    'version': '0.1',
+    'build': '0',
+    'rev': 'fc2ed27d5079e405a5daef7babcba937f17c21d4',
+    'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
+  },
 
   # Deps for oauth2client
   'httplib2': {
