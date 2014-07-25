@@ -74,7 +74,7 @@ def get_links(deps):
               prefix, dep)
             continue
           generic_link = link
-        elif plat_tag and plat_tag in fname:
+        elif plat_tag in fname:
           if binary_link:
             LOGGER.error(
               'Found more than one binary matching wheel for %r: %r',
