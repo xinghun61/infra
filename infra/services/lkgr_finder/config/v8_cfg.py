@@ -52,6 +52,7 @@ CONFIG = {
                 'V8 Linux - arm - sim - debug',
                 'V8 Linux - arm64 - sim',
                 'V8 Linux - arm64 - sim - debug',
+                'V8 Linux - mips - sim',
                 'V8 GC Stress - 1',
                 'V8 GC Stress - 2',
                 'V8 GC Stress - 3',
