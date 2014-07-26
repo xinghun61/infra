@@ -31,6 +31,9 @@ jinja_environment.filters['json_dumps'] = json.dumps
 CBE_MASTER_URL = 'http://chrome-build-extract.appspot.com/get_master/%s'
 DEFAULT_MASTER = [
     'tryserver.chromium',
+    'tryserver.chromium.linux',
+    'tryserver.chromium.mac',
+    'tryserver.chromium.win',
     'tryserver.chromium.gpu',
     'tryserver.blink',
 ]
