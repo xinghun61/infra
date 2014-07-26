@@ -4,29 +4,30 @@
 import json
 import logging
 
-from infra.services.gnumbd.support.util import cached_property
-from infra.services.gnumbd.support.git import INVALID
+from infra.libs import git2
+from infra.libs.decorators import cached_property
 
 LOGGER = logging.getLogger(__name__)
 
 class ConfigRef(object):
-  CONVERT = {
-    'interval': lambda self, val: float(val),
-    'pending_tag_prefix': lambda self, val: str(val),
-    'pending_ref_prefix': lambda self, val: str(val),
-    'enabled_refglobs': lambda self, val: map(str, list(val)),
-  }
-  DEFAULTS = {
-    'interval': 5.0,
-    'pending_tag_prefix': 'refs/pending-tags',
-    'pending_ref_prefix': 'refs/pending',
-    'enabled_refglobs': [],
-  }
+  # {key: lambda self, val: convert(val)}
+  CONVERT = {}
 
-  def __init__(self, ref, filename='config.json'):
-    self.ref = ref
-    self.repo = ref.repo
-    self.filename = filename
+  # {key: default_val}
+  DEFAULTS = {}
+
+  REF = None
+
+  FILENAME = 'config.json'
+
+  def __init__(self, repo):
+    assert self.REF is not None
+    self._ref = repo[self.REF]
+    self._repo = repo
+
+  # pylint: disable=W0212
+  ref = property(lambda self: self._ref)
+  repo = property(lambda self: self._repo)
 
   def __getitem__(self, key):
     return self.current[key]
@@ -35,11 +36,11 @@ class ConfigRef(object):
   def current(self):
     cur = self.ref.commit
 
-    while cur is not None and cur is not INVALID:
-      LOGGER.debug('Evaluating config at %s:%s', cur.hsh, self.filename)
+    while cur is not None and cur is not git2.INVALID:
+      LOGGER.debug('Evaluating config at %s:%s', cur.hsh, self.FILENAME)
       try:
         data = self.repo.run('cat-file', 'blob',
-                             '%s:%s' % (cur.hsh, self.filename))
+                             '%s:%s' % (cur.hsh, self.FILENAME))
         data = json.loads(data)
         if not isinstance(data, dict):
           LOGGER.error('Non-dict config: %r', data)

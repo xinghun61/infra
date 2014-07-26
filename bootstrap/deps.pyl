@@ -43,15 +43,15 @@
     'rev': '6366d3dd190a9e58ca582955cddf7e2ac5f32dcc',
   },
   'expect_tests': {
-    'version': '0.1',
+    'version': '0.2',
     'build': '0',
-    'rev': 'b4e089992f7e15a8f549f8b551d68acff92ab727',
+    'rev': '54d12a58aabb169bf01a06e8af92807d32eba032',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'testing_support': {
-    'version': '0.1',
+    'version': '0.1.1',
     'build': '0',
-    'rev': 'fc2ed27d5079e405a5daef7babcba937f17c21d4',
+    'rev': '38d3181a2921eb30d992c47c14d63fe1655dd0fd',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
 

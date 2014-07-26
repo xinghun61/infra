@@ -11,14 +11,13 @@ import tempfile
 
 from cStringIO import StringIO
 
-from infra.services.gnumbd import inner_loop as gnumbd
+import expect_tests
 
-from infra.services.gnumbd.support import config_ref, data, git
+from infra.libs import git2
+from infra.libs.git2 import data
+from infra.services.gnumbd import gnumbd
+from infra.services.gnumbd.test import gnumbd_test_definitions
 
-from infra.services.gnumbd.test import gnumbd_smoketests
-
-# should already be on path
-import expect_tests  # pylint: disable=F0401
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -65,7 +64,7 @@ class GitTree(GitEntry):
       tf.seek(0)
       return repo.run('mktree', '-z', stdin=tf).strip()
 
-class TestRef(git.Ref):
+class TestRef(git2.Ref):
   def synthesize_commit(self, message, number=None, tree=None, svn=False,
                         footers=None):
     footers = footers or collections.OrderedDict()
@@ -92,7 +91,7 @@ class TestClock(object):
     return self._time
 
 
-class TestConfigRef(config_ref.ConfigRef):
+class TestConfigRef(gnumbd.GnumbdConfigRef):
   def update(self, **values):
     new_config = self.current
     new_config.update(values)
@@ -101,14 +100,14 @@ class TestConfigRef(config_ref.ConfigRef):
         tree=GitTree({'config.json': GitFile(json.dumps(new_config))}))
 
 
-class TestRepo(git.Repo):
-  def __init__(self, short_name, tmpdir, clock, mirror_of=None):
+class TestRepo(git2.Repo):
+  def __init__(self, short_name, clock, mirror_of=None):
     super(TestRepo, self).__init__(mirror_of or 'local test repo')
     self._short_name = short_name
-    self.repos_dir = tmpdir
+    self.repos_dir = tempfile.tempdir
 
     if mirror_of is None:
-      self._repo_path = tempfile.mkdtemp(dir=self.repos_dir, suffix='.git')
+      self._repo_path = tempfile.mkdtemp(suffix='.git')
       self.run('init', '--bare')
 
     self._clock = clock
@@ -124,7 +123,7 @@ class TestRepo(git.Repo):
     tree = tree.intern(self) if isinstance(tree, GitTree) else tree
     assert isinstance(tree, str)
 
-    parents = [parent.hsh] if parent is not git.INVALID else []
+    parents = [parent.hsh] if parent is not git2.INVALID else []
 
     timestamp = data.CommitTimestamp(self._clock.time(), '+', 8, 0)
     user = data.CommitUser('Test User', 'test_user@example.com', timestamp)
@@ -141,7 +140,7 @@ class TestRepo(git.Repo):
     else:
       fmt = '%H%x00%B%x00%x00'
     for ref in (r.ref for r in self.refglob('*')):
-      if ref == gnumbd.DEFAULT_CONFIG_REF and not include_config:
+      if ref == gnumbd.GnumbdConfigRef.REF and not include_config:
         continue
       log = self.run('log', ref, '--format=%s' % fmt)
       ret[ref] = collections.OrderedDict(
@@ -155,13 +154,13 @@ class TestRepo(git.Repo):
     return 'TestRepo(%r)' % self._short_name
 
 
-def RunTest(tmpdir, test_name):
+def RunTest(test_name):
   ret = []
   clock = TestClock()
-  origin = TestRepo('origin', tmpdir, clock)
-  local = TestRepo('local', tmpdir, clock, origin.repo_path)
+  origin = TestRepo('origin', clock)
+  local = TestRepo('local', clock, origin.repo_path)
 
-  cref = TestConfigRef(origin[gnumbd.DEFAULT_CONFIG_REF])
+  cref = TestConfigRef(origin)
   cref.update(enabled_refglobs=['refs/heads/*'], interval=0)
 
   def checkpoint(message, include_committer=False, include_config=False):
@@ -198,16 +197,20 @@ def RunTest(tmpdir, test_name):
         root_logger.setLevel(log_level)
         ret.append({'log output': logout.getvalue().splitlines()})
 
-  gnumbd_smoketests.GNUMBD_TESTS[test_name](
+  gnumbd_test_definitions.GNUMBD_TESTS[test_name](
       origin, local, cref, run, checkpoint)
 
   return expect_tests.Result(ret)
 
 
-def GenTests(tmpdir):
-  for test_name, test in gnumbd_smoketests.GNUMBD_TESTS.iteritems():
+@expect_tests.test_generator
+def GenTests():
+  for test_name, test in gnumbd_test_definitions.GNUMBD_TESTS.iteritems():
     yield expect_tests.Test(
         __package__ + '.' + test_name,
-        expect_tests.FuncCall(RunTest, tmpdir, test_name),
-        os.path.join(BASE_PATH, 'gnumbd_smoketests.expected'),
-        test_name, 'yaml', break_funcs=[test])
+        expect_tests.FuncCall(RunTest, test_name),
+        expect_base=test_name, ext='yaml', break_funcs=[test],
+        covers=(
+            expect_tests.Test.covers_obj(RunTest) +
+            expect_tests.Test.covers_obj(gnumbd_test_definitions)
+        ))

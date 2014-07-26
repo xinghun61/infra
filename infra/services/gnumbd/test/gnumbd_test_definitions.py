@@ -4,7 +4,7 @@
 
 import collections
 
-from infra.services.gnumbd import inner_loop as gnumbd
+from infra.services.gnumbd import gnumbd
 content_of = gnumbd.content_of
 
 REAL = 'refs/heads/master'

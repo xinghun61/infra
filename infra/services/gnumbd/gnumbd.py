@@ -16,19 +16,40 @@ import re
 import sys
 import time
 
+from infra.libs import git2
+from infra.libs import infra_types
+from infra.libs.git2 import config_ref
+
+
 LOGGER = logging.getLogger(__name__)
 
-from infra.services.gnumbd.support import git, data, util
 
-
-DEFAULT_CONFIG_REF = 'refs/pending-config/main'
-DEFAULT_REPO_DIR = 'gnumbd_repos'
 FOOTER_PREFIX = 'Cr-'
 COMMIT_POSITION = FOOTER_PREFIX + 'Commit-Position'
 # takes a Ref and a number
 FMT_COMMIT_POSITION = '{.ref}@{{#{:d}}}'.format
 BRANCHED_FROM = FOOTER_PREFIX + 'Branched-From'
 GIT_SVN_ID = 'git-svn-id'
+
+
+################################################################################
+# ConfigRef
+################################################################################
+
+class GnumbdConfigRef(config_ref.ConfigRef):
+  CONVERT = {
+    'interval': lambda self, val: float(val),
+    'pending_tag_prefix': lambda self, val: str(val),
+    'pending_ref_prefix': lambda self, val: str(val),
+    'enabled_refglobs': lambda self, val: map(str, list(val)),
+  }
+  DEFAULTS = {
+    'interval': 5.0,
+    'pending_tag_prefix': 'refs/pending-tags',
+    'pending_ref_prefix': 'refs/pending',
+    'enabled_refglobs': [],
+  }
+  REF = 'refs/gnumbd-config/main'
 
 
 ################################################################################
@@ -54,7 +75,7 @@ class NoPositionData(Exception):
 def content_of(commit):
   """Calculates the content of |commit| such that a gnumbd-landed commit and
   the original commit will compare as equals. Returns the content as a
-  data.CommitData object.
+  git2.CommitData object.
 
   This strips out:
     * The parent(s)
@@ -65,18 +86,18 @@ def content_of(commit):
   Stores a cached copy of the result data on the |commit| instance itself.
   """
   if commit is None:
-    return git.INVALID
+    return git2.INVALID
 
   if not hasattr(commit, '_cr_content'):
     d = commit.data
-    footers = util.thaw(d.footers)
+    footers = infra_types.thaw(d.footers)
     footers[GIT_SVN_ID] = None
     for k in footers.keys():
       if k.startswith(FOOTER_PREFIX):
         footers[k] = None
     commit._cr_content = d.alter(
         parents=(),
-        committer=d.committer.alter(timestamp=data.NULL_TIMESTAMP),
+        committer=d.committer.alter(timestamp=git2.data.NULL_TIMESTAMP),
         footers=footers)
   return commit._cr_content  # pylint: disable=W0212
 
@@ -98,7 +119,7 @@ def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
     m = _position_re.match(current_pos)
     if not m:
       raise MalformedPositionFooter(commit, COMMIT_POSITION, current_pos)
-    parent_ref = git.Ref(commit.repo, m.group(1))
+    parent_ref = commit.repo[m.group(1)]
     parent_num = int(m.group(2))
   else:
     # TODO(iannucci): Remove this and rely on a manual initial commit?
@@ -128,9 +149,9 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
   commit timestamps will always increase (at least from the point where this
   daemon went into service).
 
-  @type commit: git.Commit
-  @type new_parent: git.Commit
-  @type ref: git.Ref
+  @type commit: git2.Commit
+  @type new_parent: git2.Commit
+  @type ref: git2.Ref
   @kind clock: implements .time(), used for testing determinisim.
   """
   # TODO(iannucci): See if there are any other footers we want to carry over
@@ -162,9 +183,9 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
   # Ensure that every commit has a time which is at least 1 second after its
   # parent, and reset the tz to UTC.
   parent_time = new_parent.data.committer.timestamp.secs
-  new_parents = [] if new_parent is git.INVALID else [new_parent.hsh]
+  new_parents = [] if new_parent is git2.INVALID else [new_parent.hsh]
   new_committer = commit.data.committer.alter(
-      timestamp=data.NULL_TIMESTAMP.alter(
+      timestamp=git2.data.NULL_TIMESTAMP.alter(
           secs=max(int(clock.time()), parent_time + 1)))
 
   return commit.alter(
@@ -207,10 +228,10 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
   Other discrepancies are errors and this method will return an empty list.
 
-  @type pending_tag: git.Ref
-  @type pending_tip: git.Ref
-  @type real_ref: git.Ref
-  @returns [git.Commit]
+  @type pending_tag: git2.Ref
+  @type pending_tip: git2.Ref
+  @type real_ref: git2.Ref
+  @returns [git2.Commit]
   """
   assert pending_tag.commit != pending_tip.commit
   i = 0
@@ -222,7 +243,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
   for commit in new_commits:
     parent = commit.parent
-    if parent is git.INVALID:
+    if parent is git2.INVALID:
       LOGGER.error('Cannot process pending merge commit %r', commit)
       return []
 
@@ -271,9 +292,9 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
   A  B  C  D  E  F  <- pending_tip
   A' B' C' D' E' F' <- master
 
-  @type real_ref: git.Ref
-  @type pending_tag: git.Ref
-  @type new_commits: [git.Commit]
+  @type real_ref: git2.Ref
+  @type pending_tag: git2.Ref
+  @type new_commits: [git2.Commit]
   @kind clock: implements .time(), used for testing determinisim.
   """
   # TODO(iannucci): use push --force-with-lease to reset pending to the real
@@ -307,24 +328,24 @@ def process_repo(repo, cref, clock=time):
   enabled_refglobs = cref['enabled_refglobs']
 
   def join(prefix, ref):
-    return git.Ref(repo, '/'.join((prefix, ref.ref[len('refs/'):])))
+    return repo['/'.join((prefix, ref.ref[len('refs/'):]))]
 
   for refglob in enabled_refglobs:
-    glob = join(pending_ref_prefix, git.Ref(repo, refglob))
+    glob = join(pending_ref_prefix, repo[refglob])
     for pending_tip in repo.refglob(glob.ref):
       # TODO(iannucci): each real_ref could have its own thread.
       try:
-        real_ref = git.Ref(repo, pending_tip.ref.replace(
+        real_ref = git2.Ref(repo, pending_tip.ref.replace(
             pending_ref_prefix, 'refs'))
 
-        if real_ref.commit is git.INVALID:
+        if real_ref.commit is git2.INVALID:
           LOGGER.error('Missing real ref %r', real_ref)
           continue
 
         LOGGER.info('Processing %r', real_ref)
         pending_tag = join(pending_tag_prefix, real_ref)
 
-        if pending_tag.commit is git.INVALID:
+        if pending_tag.commit is git2.INVALID:
           LOGGER.error('Missing pending tag %r for %r', pending_tag, real_ref)
           continue
 

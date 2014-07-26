@@ -10,12 +10,13 @@ import sys
 import time
 import urlparse
 
+from infra.libs import git2
+from infra.services.gnumbd import gnumbd
+
+
 LOGGER = logging.getLogger(__name__)
 
-from infra.services.gnumbd.inner_loop import (
-    inner_loop, DEFAULT_CONFIG_REF, DEFAULT_REPO_DIR)
-
-from infra.services.gnumbd.support import git, config_ref
+DEFAULT_REPO_DIR = 'gnumbd_repos'
 
 
 def parse_args(args):  # pragma: no cover
@@ -26,7 +27,7 @@ def parse_args(args):  # pragma: no cover
           'Repo URL must use https, git or file protocol.')
     if not parsed.path.strip('/'):
       raise argparse.ArgumentTypeError('URL is missing a path?')
-    return git.Repo(s)
+    return git2.Repo(s)
 
   parser = argparse.ArgumentParser('python -m %s' % __package__)
   g = parser.add_mutually_exclusive_group()
@@ -39,8 +40,6 @@ def parse_args(args):  # pragma: no cover
                  dest='log_level', help='Make the output really loud.')
   parser.add_argument('--dry_run', action='store_true',
                       help='Do not actually push anything.')
-  parser.add_argument('--config_ref', metavar='REF', default=DEFAULT_CONFIG_REF,
-                      help='The config ref to use (default: %(default)s)')
   parser.add_argument('--repo_dir', metavar='DIR', default=DEFAULT_REPO_DIR,
                       help=('The directory to use for git clones '
                             '(default: %(default)s)'))
@@ -60,11 +59,12 @@ def parse_args(args):  # pragma: no cover
     if e.errno != errno.EEXIST:
       raise
 
-  return repo, config_ref.ConfigRef(git.Ref(repo, opts.config_ref))
+  return repo
 
 
 def main(args):  # pragma: no cover
-  repo, cref = parse_args(args)
+  repo = parse_args(args)
+  cref = gnumbd.GnumbdConfigRef(repo)
   repo.reify()
 
   loop_count = 0
@@ -75,7 +75,7 @@ def main(args):  # pragma: no cover
 
       print
       try:
-        inner_loop(repo, cref)
+        gnumbd.inner_loop(repo, cref)
       except KeyboardInterrupt:
         raise
       except Exception:

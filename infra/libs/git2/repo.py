@@ -1,6 +1,7 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 import collections
 import fnmatch
 import logging
@@ -10,28 +11,11 @@ import sys
 import tempfile
 import urlparse
 
-from infra.services.gnumbd.support.util import (
-    cached_property, CalledProcessError)
-
-from infra.services.gnumbd.support.data import CommitData
+from infra.libs.git2 import CalledProcessError
+from infra.libs.git2 import Commit
+from infra.libs.git2 import Ref
 
 LOGGER = logging.getLogger(__name__)
-
-
-class _Invalid(object):
-  def __call__(self, *_args, **_kwargs):
-    return self
-
-  def __getattr__(self, _key):
-    return self
-
-  def __eq__(self, _other):
-    return False
-
-  def __ne__(self, _other):  # pylint: disable=R0201
-    return True
-
-INVALID = _Invalid()
 
 
 class Repo(object):
@@ -49,6 +33,10 @@ class Repo(object):
     self._repo_path = None
     self._commit_cache = collections.OrderedDict()
     self._log = LOGGER.getChild('Repo')
+
+  def __getitem__(self, ref):
+    """Get a Ref attached to this Repo."""
+    return Ref(self, ref)
 
   def reify(self):
     """Ensures the local mirror of this Repo exists."""
@@ -146,125 +134,3 @@ class Repo(object):
   def intern(self, data, typ='blob'):
     return self.run(
         'hash-object', '-w', '-t', typ, '--stdin', indata=str(data)).strip()
-
-
-class Commit(object):
-  """Represents the identity of a commit in a git repo."""
-
-  def __init__(self, repo, hsh):
-    """
-    @type repo: Repo
-    """
-    assert CommitData.HASH_RE.match(hsh)
-    self._repo = repo
-    self._hsh = hsh
-
-  # Comparison & Representation
-  def __eq__(self, other):
-    return (self is other) or (
-        isinstance(other, Commit) and (
-            self.hsh == other.hsh
-        )
-    )
-
-  def __ne__(self, other):
-    return not (self == other)
-
-  def __repr__(self):
-    return 'Commit({_repo!r}, {_hsh!r})'.format(**self.__dict__)
-
-  # Accessors
-  # pylint: disable=W0212
-  repo = property(lambda self: self._repo)
-  hsh = property(lambda self: self._hsh)
-
-  # Properties
-  @cached_property
-  def data(self):
-    """Get a structured data representation of this commit."""
-    try:
-      raw_data = self.repo.run('cat-file', 'commit', self.hsh)
-    except CalledProcessError:
-      return INVALID
-    return CommitData.from_raw(raw_data)
-
-  @cached_property
-  def parent(self):
-    """Get the corresponding parent Commit() for this Commit(), or None.
-
-    If self has more than one parent, this raises an Exception.
-    """
-    parents = self.data.parents
-    if len(parents) > 1:
-      LOGGER.error('Commit %r has more than one parent!', self.hsh)
-      return INVALID
-    return self.repo.get_commit(parents[0]) if parents else None
-
-  # Methods
-  def alter(self, **kwargs):
-    """Get a new Commit which is the same as this one, except for alterations
-    specified by kwargs.
-
-    This will intern the new Commit object into the Repo.
-    """
-    return self.repo.get_commit(
-        self.repo.intern(self.data.alter(**kwargs), 'commit'))
-
-
-class Ref(object):
-  """Represents a single simple ref in a git Repo."""
-  def __init__(self, repo, ref_str):
-    """
-    @type repo: Repo
-    @type ref_str: str
-    """
-    self._repo = repo
-    self._ref = ref_str
-
-  # Comparison & Representation
-  def __eq__(self, other):
-    return (self is other) or (
-        isinstance(other, Ref) and (
-            self.ref == other.ref and
-            self.repo is other.repo
-        )
-    )
-
-  def __ne__(self, other):
-    return not (self == other)
-
-  def __repr__(self):
-    return 'Ref({_repo!r}, {_ref!r})'.format(**self.__dict__)
-
-  # Accessors
-  # pylint: disable=W0212
-  repo = property(lambda self: self._repo)
-  ref = property(lambda self: self._ref)
-
-  # Properties
-  @property
-  def commit(self):
-    """Get the Commit at the tip of this Ref."""
-    try:
-      val = self._repo.run('show-ref', '--verify', self._ref)
-    except CalledProcessError:
-      return INVALID
-    return self._repo.get_commit(val.split()[0])
-
-  # Methods
-  def to(self, other):
-    """Generate Commit()'s which occur from `self..other`."""
-    assert self.commit is not INVALID
-    arg = '%s..%s' % (self.ref, other.ref)
-    for hsh in self.repo.run('rev-list', '--reverse', arg).splitlines():
-      yield self.repo.get_commit(hsh)
-
-  def fast_forward_push(self, commit):
-    """Push |commit| to this ref on the remote, and update the local copy of the
-    ref to |commit|."""
-    self.repo.run('push', 'origin', '%s:%s' % (commit.hsh, self.ref))
-    self.update_to(commit)
-
-  def update_to(self, commit):
-    """Update the local copy of the ref to |commit|."""
-    self.repo.run('update-ref', self.ref, commit.hsh)

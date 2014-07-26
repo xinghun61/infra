@@ -14,6 +14,11 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/gnumbd-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
         - Hello world
@@ -23,11 +28,6 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
-      refs/pending-config/main:
-        9c89763c0044528f8436434c820864c5e34ee1b6:
-        - update(['enabled_refglobs'])
-        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
-        - update(['interval', 'enabled_refglobs'])
       refs/pending-tags/branch-heads/cool_branch:
         04606a0a66f0a88f1199dd78c4fa3915906f4670:
         - Branch commit!
@@ -94,6 +94,11 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/gnumbd-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
         - Hello world
@@ -103,11 +108,6 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
-      refs/pending-config/main:
-        9c89763c0044528f8436434c820864c5e34ee1b6:
-        - update(['enabled_refglobs'])
-        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
-        - update(['interval', 'enabled_refglobs'])
       refs/pending-tags/branch-heads/cool_branch:
         04606a0a66f0a88f1199dd78c4fa3915906f4670:
         - Branch commit!
@@ -218,6 +218,11 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/gnumbd-config/main:
+        9c89763c0044528f8436434c820864c5e34ee1b6:
+        - update(['enabled_refglobs'])
+        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
+        - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
         - Hello world
@@ -227,11 +232,6 @@
         - Base commit
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
-      refs/pending-config/main:
-        9c89763c0044528f8436434c820864c5e34ee1b6:
-        - update(['enabled_refglobs'])
-        caf49fa243a8fbdc11cb66bfbf745b578dc4d5b0:
-        - update(['interval', 'enabled_refglobs'])
       refs/pending-tags/branch-heads/cool_branch:
         04606a0a66f0a88f1199dd78c4fa3915906f4670:
         - Branch commit!

@@ -8,7 +8,6 @@ See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts for
 details on the presubmit API built into gcl.
 """
 
-
 DISABLED_TESTS = [
     '.*appengine/chromium_status/tests/main_test.py',
     '.*appengine/chromium_build/app_test.py',
@@ -23,6 +22,11 @@ DISABLED_PROJECTS = [
 
 
 def CommonChecks(input_api, output_api):
+  # Cause all pylint commands to execute in the virtualenv
+  input_api.python_executable = (
+    input_api.os_path.join(input_api.PresubmitLocalPath(),
+                           'ENV', 'bin', 'python'))
+
   tests = []
 
   blacklist = list(input_api.DEFAULT_BLACK_LIST) + DISABLED_PROJECTS
@@ -49,12 +53,17 @@ def CommonChecks(input_api, output_api):
       output_api,
       black_list=blacklist,
       disabled_warnings=disabled_warnings,
-      extra_paths_list=[appengine_path]))
+      extra_paths_list=[appengine_path,
+                        '/infra/infra/ENV/lib/python2.7']))
 
-  whitelist = [r'.+_test\.py$']
-  blacklist = blacklist + DISABLED_TESTS
-  tests.extend(input_api.canned_checks.GetUnitTestsRecursively(
-      input_api, output_api, '.', whitelist=whitelist, blacklist=blacklist))
+  message_type = (output_api.PresubmitError if output_api.is_committing else
+                  output_api.PresubmitPromptWarning)
+  tests.append(input_api.Command(
+    name='All Tests',
+    cmd=input_api.os_path.join('ENV', 'bin', 'expect_tests'),
+    kwargs={'cwd': input_api.PresubmitLocalPath()},
+    message=message_type,
+  ))
 
   # Run the tests.
   return input_api.RunTests(tests)

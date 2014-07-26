@@ -6,7 +6,7 @@ import collections
 import textwrap
 import unittest
 
-from infra.services.gnumbd.support import data
+from infra.libs.git2 import data
 
 class TestCommitTimestamp(unittest.TestCase):
   def testBasic(self):
