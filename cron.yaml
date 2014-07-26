@@ -5,8 +5,14 @@ cron:
 - description: Update tryserver.blink status
   url: /tasks/update_build_queue/tryserver.blink
   schedule: every 1 minutes
-- description: Update tryserver.chromium status
-  url: /tasks/update_build_queue/tryserver.chromium
+- description: Update tryserver.chromium.mac status
+  url: /tasks/update_build_queue/tryserver.chromium.mac
+  schedule: every 1 minutes
+- description: Update tryserver.chromium.linux status
+  url: /tasks/update_build_queue/tryserver.chromium.linux
+  schedule: every 1 minutes
+- description: Update tryserver.chromium.win status
+  url: /tasks/update_build_queue/tryserver.chromium.win
   schedule: every 1 minutes
 - description: Update tryserver.chromium.gpu status
   url: /tasks/update_build_queue/tryserver.chromium.gpu
