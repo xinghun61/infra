@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import shutil
 import sys
 import tempfile
@@ -53,6 +54,6 @@ class TestBasis(testing_support.git.unittest_helpers.GitRepoReadWriteTestBase):
 
   def mkRepo(self): # pragma: no cover
     r = git2.Repo(self.repo.repo_path)
-    r.repos_dir = self.repos_dir
+    r.repos_dir = os.path.join(self.repos_dir, 'repos')
     self.capture_stdio(r.reify)
     return r

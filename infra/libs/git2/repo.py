@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import errno
 import fnmatch
 import logging
 import os
@@ -41,6 +42,15 @@ class Repo(object):
   def reify(self):
     """Ensures the local mirror of this Repo exists."""
     assert self.repos_dir is not None
+
+    if not os.path.exists(self.repos_dir):
+      try:
+        self._log.info('making repos dir: %s', self.repos_dir)
+        os.makedirs(self.repos_dir)
+      except OSError as e:  # pragma: no cover
+        if e.errno != errno.EEXIST:
+          raise
+
     parsed = urlparse.urlparse(self._url)
     norm_url = parsed.netloc + parsed.path
     if norm_url.endswith('.git'):
