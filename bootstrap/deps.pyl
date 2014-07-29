@@ -49,9 +49,9 @@
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'testing_support': {
-    'version': '0.1.1',
+    'version': '0.1.2',
     'build': '0',
-    'rev': '38d3181a2921eb30d992c47c14d63fe1655dd0fd',
+    'rev': '0ffa4a6eea5585ea0ca760a2e268dfbff167eba7',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
 
