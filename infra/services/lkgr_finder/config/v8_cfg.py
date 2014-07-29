@@ -57,7 +57,8 @@ CONFIG = {
                 'V8 GC Stress - 2',
                 'V8 GC Stress - 3',
                 'Linux Debug Builder',
-                'Linux ASAN Builder',
+                # FIXME(machenbach): The builder has issues since a restart.
+                # 'Linux ASAN Builder',
                 'Android Builder',
                 'V8 Linux GN',
                 # TODO(machenbach): Disabled until stability issues with the
