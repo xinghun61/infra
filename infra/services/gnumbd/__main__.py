@@ -11,6 +11,8 @@ import time
 import urlparse
 
 from infra.libs import git2
+from infra.libs import logs
+
 from infra.services.gnumbd import gnumbd
 
 
@@ -30,14 +32,6 @@ def parse_args(args):  # pragma: no cover
     return git2.Repo(s)
 
   parser = argparse.ArgumentParser('python -m %s' % __package__)
-  g = parser.add_mutually_exclusive_group()
-  g.set_defaults(log_level=logging.WARN)
-  g.add_argument('--quiet', action='store_const', const=logging.ERROR,
-                 dest='log_level', help='Make the output quieter.')
-  g.add_argument('--verbose', action='store_const', const=logging.INFO,
-                 dest='log_level', help='Make the output louder.')
-  g.add_argument('--debug', action='store_const', const=logging.DEBUG,
-                 dest='log_level', help='Make the output really loud.')
   parser.add_argument('--dry_run', action='store_true',
                       help='Do not actually push anything.')
   parser.add_argument('--repo_dir', metavar='DIR', default=DEFAULT_REPO_DIR,
@@ -45,9 +39,9 @@ def parse_args(args):  # pragma: no cover
                             '(default: %(default)s)'))
   parser.add_argument('repo', nargs=1, help='The url of the repo to act on.',
                       type=check_url)
+  logs.add_argparse_options(parser)
   opts = parser.parse_args(args)
-
-  logging.basicConfig(level=opts.log_level)
+  logs.process_argparse_options(opts)
 
   repo = opts.repo[0]
   repo.dry_run = opts.dry_run
@@ -71,9 +65,8 @@ def main(args):  # pragma: no cover
   try:
     while True:
       start = time.time()
-      LOGGER.debug('Begin loop %d', loop_count)
+      LOGGER.info('Begin loop %d', loop_count)
 
-      print
       try:
         gnumbd.inner_loop(repo, cref)
       except KeyboardInterrupt:
@@ -81,7 +74,7 @@ def main(args):  # pragma: no cover
       except Exception:
         LOGGER.exception('Uncaught exception in inner_loop')
 
-      LOGGER.debug('End loop %d (%f sec)', loop_count, time.time() - start)
+      LOGGER.info('End loop %d (%f sec)', loop_count, time.time() - start)
 
       # TODO(iannucci): This timeout should be an exponential backon/off.
       #   Whenever we push, we should decrease the interval at 'backon_rate'
