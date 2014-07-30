@@ -1,3 +1,9 @@
+- inner_loop success: true
+  synthesized_commits:
+  - commit: c0a079abf31b13e5ea3173e8e92c737b228a8cf6
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
 - - Tag on root (2 behind pend)
   - origin:
       refs/heads/master:
@@ -39,6 +45,8 @@
     (was 2 behind)'
   - 'WARNING: Tag was lagging for Ref(TestRepo(''local''), ''refs/heads/master'')
     by 0, but no new commits are pending'
+- inner_loop success: true
+  synthesized_commits: []
 - - Tag caught up
   - origin:
       refs/heads/master:

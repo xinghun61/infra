@@ -1,3 +1,17 @@
+- inner_loop success: true
+  synthesized_commits:
+  - commit: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
+- inner_loop success: true
+  synthesized_commits:
+  - commit: 157f613ec89b70fcc2c142bd7b15d7ad98a08d86
+    footers:
+      Cr-Commit-Position:
+      - refs/branch-heads/cool_branch@{#1}
+      Cr-Branched-From:
+      - dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}
 - - Branch 1 in place
   - origin:
       refs/branch-heads/cool_branch:
@@ -183,6 +197,15 @@
   - 'INFO: Pushing synthesized commit ''f449095356acf5ebca83c5f125de03849596b137''
     for ''9212a87dfa78241acf65908f0f56bbb121471d77'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch_yo'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: f449095356acf5ebca83c5f125de03849596b137
+    footers:
+      Cr-Commit-Position:
+      - refs/branch-heads/cool_branch_yo@{#1}
+      Cr-Branched-From:
+      - 157f613ec89b70fcc2c142bd7b15d7ad98a08d86-refs/branch-heads/cool_branch@{#1}
+      - dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}
 - - Second pending commit now on branch
   - origin:
       refs/branch-heads/cool_branch:

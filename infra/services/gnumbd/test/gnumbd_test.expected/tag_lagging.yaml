@@ -1,3 +1,9 @@
+- inner_loop success: true
+  synthesized_commits:
+  - commit: c0a079abf31b13e5ea3173e8e92c737b228a8cf6
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
 - - Tag on root (3 behind pend). Real 1 behind pend
   - origin:
       refs/heads/master:
@@ -42,6 +48,12 @@
   - 'INFO: Pushing synthesized commit ''fac75a9e5b1cc44944ad1f2592d3616256f9693b''
     for ''1121e8253f173d018f662e1a68153bbc754f9b55'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: fac75a9e5b1cc44944ad1f2592d3616256f9693b
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#102}
 - - Tag + pending caught up
   - origin:
       refs/heads/master:

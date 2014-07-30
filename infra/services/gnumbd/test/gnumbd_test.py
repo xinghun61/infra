@@ -14,6 +14,7 @@ from cStringIO import StringIO
 import expect_tests
 
 from infra.libs import git2
+from infra.libs import infra_types
 from infra.libs.git2 import data
 from infra.services.gnumbd import gnumbd
 from infra.services.gnumbd.test import gnumbd_test_definitions
@@ -181,10 +182,12 @@ def RunTest(test_name):
       root_logger.addHandler(shandler)
       root_logger.setLevel(logging.INFO)
 
+    success = False
+    synthesized_commits = []
     try:
       sys.stderr = sys.stdout = open(os.devnull, 'w')
       local.reify()
-      gnumbd.inner_loop(local, cref, clock)
+      success, synthesized_commits = gnumbd.inner_loop(local, cref, clock)
     except Exception:  # pragma: no cover
       import traceback
       ret.append(traceback.format_exc().splitlines())
@@ -196,6 +199,16 @@ def RunTest(test_name):
         root_logger.removeHandler(shandler)
         root_logger.setLevel(log_level)
         ret.append({'log output': logout.getvalue().splitlines()})
+
+      ret.append({
+        'inner_loop success': success,
+        'synthesized_commits': [
+          {
+            'commit': c.hsh,
+            'footers': infra_types.thaw(c.data.footers),
+          } for c in synthesized_commits
+        ],
+      })
 
   gnumbd_test_definitions.GNUMBD_TESTS[test_name](
       origin, local, cref, run, checkpoint)

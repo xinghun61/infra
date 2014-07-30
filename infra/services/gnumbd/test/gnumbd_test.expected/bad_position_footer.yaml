@@ -21,6 +21,8 @@
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'ERROR: MalformedPositionFooter in Commit(TestRepo(''local''), ''e5eae8e8c0ae88655c33436d409d3e80d14a57aa''):
     "Cr-Commit-Position: BlobbyGumpus!"'
+- inner_loop success: false
+  synthesized_commits: []
 - - Should be the same
   - origin:
       refs/heads/master:

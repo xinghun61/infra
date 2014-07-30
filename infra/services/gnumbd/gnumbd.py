@@ -296,6 +296,7 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
   @type pending_tag: git2.Ref
   @type new_commits: [git2.Commit]
   @kind clock: implements .time(), used for testing determinisim.
+  @yields synthesized git2.Commit, pushes them to the remote as a side-effect.
   """
   # TODO(iannucci): use push --force-with-lease to reset pending to the real
   # ref?
@@ -318,6 +319,7 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
     })
 
     real_parent = synth_commit
+    yield synth_commit
 
 
 def process_repo(repo, cref, clock=time):
@@ -325,6 +327,8 @@ def process_repo(repo, cref, clock=time):
 
   Will call |process_ref| for every branch indicated by the enabled_refglobs
   config option.
+
+  @returns tuple (bool success status, list of synthesized commits).
   """
   pending_tag_prefix = cref['pending_tag_prefix']
   pending_ref_prefix = cref['pending_ref_prefix']
@@ -333,6 +337,8 @@ def process_repo(repo, cref, clock=time):
   def join(prefix, ref):
     return repo['/'.join((prefix, ref.ref[len('refs/'):]))]
 
+  success = True
+  synthesized_commits = []
   for refglob in enabled_refglobs:
     glob = join(pending_ref_prefix, repo[refglob])
     for pending_tip in repo.refglob(glob.ref):
@@ -343,6 +349,7 @@ def process_repo(repo, cref, clock=time):
 
         if real_ref.commit is git2.INVALID:
           LOGGER.error('Missing real ref %r', real_ref)
+          success = False
           continue
 
         LOGGER.info('Processing %r', real_ref)
@@ -350,26 +357,36 @@ def process_repo(repo, cref, clock=time):
 
         if pending_tag.commit is git2.INVALID:
           LOGGER.error('Missing pending tag %r for %r', pending_tag, real_ref)
+          success = False
           continue
 
         if pending_tag.commit != pending_tip.commit:
           new_commits = get_new_commits(real_ref, pending_tag, pending_tip)
           if new_commits:
-            process_ref(real_ref, pending_tag, new_commits, clock)
+            synthesized_commits.extend(
+                process_ref(real_ref, pending_tag, new_commits, clock))
         else:
           if content_of(pending_tag.commit) != content_of(real_ref.commit):
             LOGGER.error('%r and %r match, but %r\'s content doesn\'t match!',
                          pending_tag, pending_tip, real_ref)
+            success = False
           else:
             LOGGER.info('%r is up to date', real_ref)
       except (NoPositionData, MalformedPositionFooter) as e:
         LOGGER.error('%s %s', e.__class__.__name__, e)
+        success = False
       except Exception:  # pragma: no cover
         LOGGER.exception('Uncaught exception while processing %r', real_ref)
+        success = False
+  return success, synthesized_commits
 
 
 def inner_loop(repo, cref, clock=time):
+  """Fetches the config ref and runs single iteration of processing.
+
+  @returns tuple (bool success status, list of synthesized commits).
+  """
   LOGGER.debug('fetching %r', repo)
   repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
   cref.evaluate()
-  process_repo(repo, cref, clock)
+  return process_repo(repo, cref, clock)

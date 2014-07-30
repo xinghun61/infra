@@ -1,3 +1,9 @@
+- inner_loop success: true
+  synthesized_commits:
+  - commit: f4806ab03b8fc0f1210307cb750dd974e348a3ad
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
 - - Master and tag ahead of pending
   - origin:
       refs/heads/master:
@@ -25,6 +31,8 @@
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'ERROR: ''refs/pending-tags/heads/master'' doesn''t match ''refs/pending/heads/master'',
     but there are no new_commits?'
+- inner_loop success: true
+  synthesized_commits: []
 - - Should see errors and no change
   - origin:
       refs/heads/master:

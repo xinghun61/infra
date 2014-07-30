@@ -27,6 +27,12 @@
   - 'INFO: Pushing synthesized commit ''dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04''
     for ''4dac15f5702bf197eb2908203a87f43196d3789f'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
 - - And now it's on master
   - origin:
       refs/gnumbd-config/main:
@@ -123,6 +129,14 @@
   - 'INFO: Pushing synthesized commit ''157f613ec89b70fcc2c142bd7b15d7ad98a08d86''
     for ''04606a0a66f0a88f1199dd78c4fa3915906f4670'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: 157f613ec89b70fcc2c142bd7b15d7ad98a08d86
+    footers:
+      Cr-Commit-Position:
+      - refs/branch-heads/cool_branch@{#1}
+      Cr-Branched-From:
+      - dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}
 - - Pending commit now on branch
   - origin:
       refs/branch-heads/cool_branch:
@@ -264,6 +278,14 @@
   - 'INFO: Pushing synthesized commit ''53f6c5ab92997362d568aff7050353676c288d98''
     for ''e3b9742df729c42adf6d5396426b784d3562e694'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: 53f6c5ab92997362d568aff7050353676c288d98
+    footers:
+      Cr-Commit-Position:
+      - refs/branch-heads/cool_branch@{#2}
+      Cr-Branched-From:
+      - dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04-refs/heads/master@{#101}
 - - Second pending commit now on branch
   - origin:
       refs/branch-heads/cool_branch:

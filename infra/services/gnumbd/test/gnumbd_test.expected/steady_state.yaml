@@ -1,3 +1,9 @@
+- inner_loop success: true
+  synthesized_commits:
+  - commit: f4806ab03b8fc0f1210307cb750dd974e348a3ad
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
 - - Hello world should be 101
   - origin:
       refs/heads/master:
@@ -26,6 +32,8 @@
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: Ref(TestRepo(''local''), ''refs/heads/master'') is up to date'
+- inner_loop success: true
+  synthesized_commits: []
 - - Hello world should still be 101
   - origin:
       refs/heads/master:

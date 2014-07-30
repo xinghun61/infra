@@ -10,6 +10,8 @@
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'ERROR: Missing pending tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
     for Ref(TestRepo(''local''), ''refs/heads/master'')'
+- inner_loop success: false
+  synthesized_commits: []
 - - Should still only have 1 commit
   - origin:
       refs/heads/master:

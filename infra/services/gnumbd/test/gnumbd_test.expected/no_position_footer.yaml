@@ -21,6 +21,8 @@
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'ERROR: NoPositionData No ''Cr-Commit-Position'' or git-svn-id found for Commit(TestRepo(''local''),
     ''0c244b2bf58ddbacbd80a1162b851bf69ed66cf3'')'
+- inner_loop success: false
+  synthesized_commits: []
 - - Should be the same
   - origin:
       refs/heads/master:

@@ -5,6 +5,8 @@
         - Hello world
 - log output:
   - 'ERROR: Missing real ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+- inner_loop success: false
+  synthesized_commits: []
 - - Origin should not have changed
   - origin:
       refs/pending/heads/master:

@@ -26,20 +26,27 @@ class TestOuterLoop(auto_stub.TestCase):
       if not tasks:
         raise KeyboardInterrupt()
       tasks.pop(0)
+      return True
     ret = outer_loop.loop(task, sleep_timeout=1)
     self.assertTrue(ret)
     self.assertEqual([1, 1, 1], self.sleeps)
 
   def testUntilDeadlineFastTask(self):
     calls = []
-    ret = outer_loop.loop(lambda: calls.append(1), sleep_timeout=3, duration=10)
+    def task():
+      calls.append(1)
+      return True
+    ret = outer_loop.loop(task, sleep_timeout=3, duration=10)
     self.assertTrue(ret)
     self.assertEqual(4, len(calls))
     self.assertEqual([3, 3, 3], self.sleeps)
 
   def testUntilDeadlineSlowTask(self):
     # This test exists mostly to satisfy 100% code coverage requirement.
-    ret = outer_loop.loop(lambda: time.sleep(6), sleep_timeout=1, duration=5)
+    def task():
+      time.sleep(6)
+      return True
+    ret = outer_loop.loop(task, sleep_timeout=1, duration=5)
     self.assertTrue(ret)
     self.assertEqual([6], self.sleeps)
 
@@ -55,12 +62,15 @@ class TestOuterLoop(auto_stub.TestCase):
     self.assertEqual([1, 1, 1], self.sleeps)
 
   def testMaxErrorCount(self):
-    tasks = ['ok', 'err', 'ok', 'err', 'err', 'err', 'skipped']
+    tasks = ['ok', 'err', 'false', 'ok', 'err', 'false', 'err', 'skipped']
     def task():
       t = tasks.pop(0)
       if t == 'err':
         raise Exception('Horrible error')
+      if t == 'false':
+        return False
+      return True
     ret = outer_loop.loop(task, sleep_timeout=1, max_errors=3)
     self.assertFalse(ret)
     self.assertEqual(['skipped'], tasks)
-    self.assertEqual([1, 1, 1, 1, 1], self.sleeps)
+    self.assertEqual([1, 1, 1, 1, 1, 1], self.sleeps)

@@ -13,10 +13,13 @@ LOGGER = logging.getLogger(__name__)
 def loop(task, sleep_timeout, duration=None, max_errors=None):
   """Runs the task in a loop for a given duration.
 
-  Handles and logs all uncaught exceptions.
+  Handles and logs all uncaught exceptions. |task| callback should return True
+  on success, and False (or raise an exception) in error.
+
+  Doesn't leak any exceptions (including KeyboardInterrupt).
 
   Args:
-    @param task: Callable with no arguments, raises exceptions on errors.
+    @param task: Callable with no arguments returning True or False.
     @param sleep_timeout: How long to sleep between task invocations (sec).
     @param duration: How long to run the loop (sec), or None for forever.
     @param max_errors: Max number of consecutive errors before loop aborts.
@@ -26,7 +29,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   """
   deadline = None if duration is None else (time.time() + duration)
   errors_left = max_errors
-  success = True
+  overall_success = True
   loop_count = 0
   try:
     while True:
@@ -41,23 +44,28 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
         LOGGER.info('Begin loop %d', loop_count)
 
       # Do it. Abort if number of consecutive errors is too large.
+      attempt_success = False
       try:
-        task()
-        errors_left = max_errors
+        attempt_success = task()
       except KeyboardInterrupt:
         raise
       except Exception:
         LOGGER.exception('Uncaught exception in the task')
-        success = False
+      finally:
+        LOGGER.info('End loop %d (%f sec)', loop_count, time.time() - start)
+        LOGGER.info('-------------------')
+
+      # Reset error counter on success, or abort on too many errors.
+      if attempt_success:
+        errors_left = max_errors
+      else:
+        overall_success = False
         if errors_left is not None:
           errors_left -= 1
           if not errors_left:
             LOGGER.warn(
                 'Too many consecutive errors (%d), stopping.', max_errors)
             break
-      finally:
-        LOGGER.info('End loop %d (%f sec)', loop_count, time.time() - start)
-        LOGGER.info('-------------------')
 
       # Sleep before trying again.
       # TODO(vadimsh): Make sleep timeout dynamic.
@@ -76,7 +84,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   except KeyboardInterrupt:
     LOGGER.warn('Stopping due to KeyboardInterrupt')
 
-  return success
+  return overall_success
 
 
 def add_argparse_options(parser):  # pragma: no cover

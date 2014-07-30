@@ -27,6 +27,16 @@
   - 'INFO: Pushing synthesized commit ''2ad3b5b465a7505c0069131ac547dd861ac51d56''
     for ''33fde7277796b37038e6117f8b5a03cbb92f48a1'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: d12d32dcf404f666df8fbc46793d098d4d7b27e4
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
+  - commit: 2ad3b5b465a7505c0069131ac547dd861ac51d56
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#102}
 - - And now they're on master
   - origin:
       refs/heads/master:
