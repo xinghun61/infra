@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import urlparse
 
 from infra.libs.git2 import CalledProcessError
@@ -131,9 +132,11 @@ class Repo(object):
     cmd = ('git',) + args
 
     self._log.debug('Running %r', cmd)
+    started = time.time()
     process = subprocess.Popen(cmd, **kwargs)
     output, errout = process.communicate(indata)
     retcode = process.poll()
+    self._log.debug('Finished in %.1f sec', time.time() - started)
     if retcode not in ok_ret:
       raise CalledProcessError(retcode, cmd, output, errout)
 
