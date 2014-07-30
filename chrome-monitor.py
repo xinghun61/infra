@@ -311,7 +311,8 @@ class ListGraphs(webapp2.RequestHandler):
         'current_tags': tags,
         'graphs': graphs,
         'all_tags': sorted(all_tags),
-        'tags': sorted(known_tags.iteritems(), key=lambda x: (-x[1], x[0]))
+        # Sort by name.
+        'tags': sorted(known_tags.iteritems(), key=lambda x: x[0])
     }
 
 
