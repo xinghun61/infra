@@ -5,6 +5,10 @@ deps = {
   "depot_tools":
     "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
 
+  "infra/appengine/swarming":
+    ("https://chromium.googlesource.com/infra/swarming.git"
+     "@292e1a46f854be008b1dd46f15e07e023fd1eb8a"),
+
   ## external deps
   # v1.11.6
   "infra/bootstrap/virtualenv":

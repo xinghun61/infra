@@ -16,6 +16,7 @@ DISABLED_TESTS = [
 
 DISABLED_PROJECTS = [
     'appengine/chromium_build',
+    'appengine/swarming',
     'infra/services/lkgr_finder',
     'infra/services/gnumbd',
 ]

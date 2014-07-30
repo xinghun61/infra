@@ -2,3 +2,4 @@
 infra/ext/*/
 ENV
 .wheelcache
+appengine/swarming
