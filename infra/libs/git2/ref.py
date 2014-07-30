@@ -53,12 +53,6 @@ class Ref(object):
     for hsh in self.repo.run('rev-list', '--reverse', arg).splitlines():
       yield self.repo.get_commit(hsh)
 
-  def fast_forward_push(self, commit):
-    """Push |commit| to this ref on the remote, and update the local copy of the
-    ref to |commit|."""
-    self.repo.run('push', 'origin', '%s:%s' % (commit.hsh, self.ref))
-    self.update_to(commit)
-
   def update_to(self, commit):
     """Update the local copy of the ref to |commit|."""
     self.repo.run('update-ref', self.ref, commit.hsh)

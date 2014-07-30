@@ -45,24 +45,9 @@ class TestRef(test_util.TestBasis):
         [self.repo[c] for c in 'BCDLMNO']
     )
 
-  def testNonFastForward(self):
-    r = self.mkRepo()
-    O = r['refs/heads/branch_O']
-    D = r.get_commit(self.repo['D'])
-    with self.assertRaises(git2.CalledProcessError):
-      O.fast_forward_push(D)
-    self.assertEqual(
-        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
-        self.repo['O'])
-
-  def testFastForward(self):
+  def testUpdateTo(self):
     r = self.mkRepo()
     O = r['refs/heads/branch_O']
     S = r.get_commit(self.repo['S'])
-    self.capture_stdio(O.fast_forward_push, S)
+    self.capture_stdio(O.update_to, S)
     self.assertEqual(O.commit.hsh, self.repo['S'])
-    self.assertEqual(
-        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
-        self.repo['S'])
-
-

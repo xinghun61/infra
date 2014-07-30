@@ -40,7 +40,8 @@
   - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
     (was 2 behind)'
   - 'INFO: Pushing synthesized commit ''fac75a9e5b1cc44944ad1f2592d3616256f9693b''
-    for ''1121e8253f173d018f662e1a68153bbc754f9b55'''
+    for ''1121e8253f173d018f662e1a68153bbc754f9b55'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
 - - Tag + pending caught up
   - origin:
       refs/heads/master:

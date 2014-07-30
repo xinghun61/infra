@@ -136,7 +136,9 @@ class Repo(object):
     process = subprocess.Popen(cmd, **kwargs)
     output, errout = process.communicate(indata)
     retcode = process.poll()
-    self._log.debug('Finished in %.1f sec', time.time() - started)
+    dt = time.time() - started
+    if dt > 1:  # pragma: no cover
+      self._log.debug('Finished in %.1f sec', dt)
     if retcode not in ok_ret:
       raise CalledProcessError(retcode, cmd, output, errout)
 
@@ -147,3 +149,21 @@ class Repo(object):
   def intern(self, data, typ='blob'):
     return self.run(
         'hash-object', '-w', '-t', typ, '--stdin', indata=str(data)).strip()
+
+  def fast_forward_push(self, refs_and_commits):
+    """Push commits to refs on the remote, and also update refs' local copies.
+
+    Refs names are specified as refs on remote, i.e. push to
+    Ref('refs/heads/master') would update 'refs/heads/master' on remote (and on
+    local repo mirror), no ref name translation is happening.
+
+    Args:
+      refs_and_commits: dict {Ref object -> Commit to push to the ref}.
+    """
+    refspec = [
+      '%s:%s' % (c.hsh, r.ref)
+      for r, c in refs_and_commits.iteritems()
+    ]
+    self.run('push', 'origin', *refspec)
+    for r, c in refs_and_commits.iteritems():
+      r.update_to(c)

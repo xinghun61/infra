@@ -20,7 +20,8 @@
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: Pushing synthesized commit ''f4806ab03b8fc0f1210307cb750dd974e348a3ad''
-    for ''d0168885399a3cfd71ca399347923e166183c704'''
+    for ''d0168885399a3cfd71ca399347923e166183c704'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
 - - Hello world should be 101
   - origin:
       refs/heads/master:

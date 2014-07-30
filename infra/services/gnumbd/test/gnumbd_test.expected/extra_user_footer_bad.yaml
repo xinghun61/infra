@@ -27,7 +27,8 @@
   - 'WARNING: Dropping key on user commit 25efd930528d32f140214ad054561b5c3b0b4acd:
     ''git-svn-id'' -> (''Well... this should never happen'',)'
   - 'INFO: Pushing synthesized commit ''f4806ab03b8fc0f1210307cb750dd974e348a3ad''
-    for ''25efd930528d32f140214ad054561b5c3b0b4acd'''
+    for ''25efd930528d32f140214ad054561b5c3b0b4acd'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
 - - The bogus footers should be gone
   - origin:
       refs/heads/master:

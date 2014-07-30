@@ -97,3 +97,23 @@ class TestRepo(test_util.TestBasis):
     r = self.mkRepo()
     self.assertEqual(r['refs/heads/branch_Z'].commit.hsh,
                      'c9813df312aae7cadb91b0d4eb89ad1a4d1b22c9')
+
+  def testNonFastForward(self):
+    r = self.mkRepo()
+    O = r['refs/heads/branch_O']
+    D = r.get_commit(self.repo['D'])
+    with self.assertRaises(git2.CalledProcessError):
+      r.fast_forward_push({O: D})
+    self.assertEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['O'])
+
+  def testFastForward(self):
+    r = self.mkRepo()
+    O = r['refs/heads/branch_O']
+    S = r.get_commit(self.repo['S'])
+    self.capture_stdio(r.fast_forward_push, {O: S})
+    self.assertEqual(O.commit.hsh, self.repo['S'])
+    self.assertEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['S'])

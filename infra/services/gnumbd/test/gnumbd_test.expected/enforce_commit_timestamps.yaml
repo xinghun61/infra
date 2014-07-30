@@ -28,7 +28,8 @@
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: Pushing synthesized commit ''5385f01a1a0a04f3f005f919d26fdef847f35843''
-    for ''f4cb4d318d2c5fb436f448e55260f0ca42703bcc'''
+    for ''f4cb4d318d2c5fb436f448e55260f0ca42703bcc'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
 - - Presto! Timestamp is fixed
   - origin:
       refs/heads/master:

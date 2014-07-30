@@ -262,7 +262,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
                    new_tag_val.hsh, real_ref.commit.hsh)
       return []
     new_commits = new_commits[i:]
-    pending_tag.fast_forward_push(new_tag_val)
+    pending_tag.repo.fast_forward_push({pending_tag: new_tag_val})
 
   if not new_commits:
     LOGGER.warn('Tag was lagging for %r by %d, but no new commits are pending',
@@ -302,18 +302,21 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
   # TODO(iannucci): The ACL rejection message for the real ref should point
   # users to the pending ref.
   assert content_of(pending_tag.commit) == content_of(real_ref.commit)
+  assert real_ref.repo == pending_tag.repo
+  repo = real_ref.repo
   real_parent = real_ref.commit
   for commit in new_commits:
     assert content_of(commit.parent) == content_of(real_parent)
     synth_commit = synthesize_commit(commit, real_parent, real_ref, clock)
 
-    # TODO(iannucci):  do multi-ref atomic push here.
-    logging.info('Pushing synthesized commit %r for %r', synth_commit.hsh,
-                 commit.hsh)
-    real_ref.fast_forward_push(synth_commit)
+    logging.info(
+        'Pushing synthesized commit %r for %r and pending_tag %r',
+        synth_commit.hsh, commit.hsh, pending_tag)
+    repo.fast_forward_push({
+      real_ref: synth_commit,
+      pending_tag: commit,
+    })
 
-    logging.debug('Pushing pending_tag %r', pending_tag)
-    pending_tag.fast_forward_push(commit)
     real_parent = synth_commit
 
 

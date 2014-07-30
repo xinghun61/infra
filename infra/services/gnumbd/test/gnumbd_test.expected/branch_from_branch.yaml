@@ -181,7 +181,8 @@
   - 'INFO: Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'') is up to date'
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch_yo'')'
   - 'INFO: Pushing synthesized commit ''f449095356acf5ebca83c5f125de03849596b137''
-    for ''9212a87dfa78241acf65908f0f56bbb121471d77'''
+    for ''9212a87dfa78241acf65908f0f56bbb121471d77'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/branch-heads/cool_branch_yo'')'
 - - Second pending commit now on branch
   - origin:
       refs/branch-heads/cool_branch:

@@ -25,7 +25,8 @@
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: Pushing synthesized commit ''2b8631483ef82ff1d86df36c068f3f38f562dd58''
-    for ''3bf575299c996d15489e2a8461d92201ed2bba13'''
+    for ''3bf575299c996d15489e2a8461d92201ed2bba13'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
 - - The new footers should appear after the current ones
   - origin:
       refs/heads/master:
