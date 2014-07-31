@@ -42,6 +42,11 @@
     'build': '0',
     'rev': '6366d3dd190a9e58ca582955cddf7e2ac5f32dcc',
   },
+  'requests_cache': {
+    'version': '0.4.4',
+    'build': '0',
+    'rev': 'b347a9c516f1b7c1d65c376ce255eca274b88999',
+  },
   'expect_tests': {
     'version': '0.2',
     'build': '0',
