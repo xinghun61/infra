@@ -1,0 +1,62 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<!doctype html>
+<html>
+  <head>
+    <title>{{ tree }} Tree Status</title>
+    <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
+    <script type='text/javascript' src='//www.google.com/jsapi'></script>
+    <script>
+      var BUILD_DATA = {{ builds|safe }};
+    </script>
+    <style type="text/css">
+      body {
+        font-family: 'RobotoDraft';
+      }
+      .chart {
+        margin-bottom: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ tree }} Build times</h1>
+
+    <div class="chart" id="build-chart"></div>
+
+    <script>
+      google.load('visualization', '1.1', {'packages':['corechart']});
+      google.setOnLoadCallback(drawCharts);
+      function drawCharts() {
+        drawChart(BUILD_DATA, 'build-chart');
+      }
+      function drawChart(data, id) {
+        var dataTable = new google.visualization.DataTable(data);
+        var chart = new google.visualization.ColumnChart(
+            document.getElementById(id));
+        chart.setAction({
+          id: 'details',
+          text: 'Build Details',
+          action: function() {
+            selection = chart.getSelection();
+            if (!selection)
+              return;
+            var key = BUILD_DATA.rows[selection[0].row].c[0].key;
+            window.open('/build-details/' + key);
+          }
+        })
+        var options = {
+          tooltip: {
+            isHtml: true,
+            trigger: 'selection'
+          },
+          focusTarget: 'category',
+          isStacked: true,
+          colors: ['green', 'yellow', 'red']
+        };
+
+        chart.draw(dataTable, options);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,56 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<!doctype html>
+<html>
+  <head>
+    <title>Commit Queue Status</title>
+    <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
+    <script type='text/javascript' src='//www.google.com/jsapi'></script>
+    <script>
+      var SANITY_DATA = {{ sanity|safe }};
+      var LENGTH_DATA = {{ length|safe }};
+      var MAX_DATA = {{ max|safe }};
+    </script>
+    <style type="text/css">
+      body {
+        font-family: 'RobotoDraft';
+      }
+      .chart {
+        margin-bottom: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Commit Queue Stats</h1>
+
+    <h2>Commit Queue Times</h2>
+    <div class="chart" id="sanity-chart"></div>
+
+    <h2>Commit Queue Length</h2>
+    <div class="chart" id="length-chart"></div>
+
+    <h2>Max Commit Queue Times</h2>
+    <div class="chart" id="max-chart"></div>
+
+    <script>
+      google.load('visualization', '1.1', {'packages':['annotationchart']});
+      google.setOnLoadCallback(drawCharts);
+      function drawCharts() {
+        drawChart(SANITY_DATA, 'sanity-chart');
+        drawChart(LENGTH_DATA, 'length-chart');
+        drawChart(MAX_DATA, 'max-chart');
+      }
+      function drawChart(data, id) {
+        var dataTable = new google.visualization.DataTable(data);
+        var chart = new google.visualization.AnnotationChart(
+            document.getElementById(id));
+        var options = {
+          displayAnnotations: true,
+        };
+
+        chart.draw(dataTable, options);
+      }
+    </script>
+  </body>
+</html>

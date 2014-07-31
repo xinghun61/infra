@@ -1,0 +1,12 @@
+cron:
+- description: check CQ length and sanity
+  url: /check-cq
+  schedule: every 15 minutes
+
+- description: check chromium tree
+  url: /check-tree/chromium
+  schedule: every 15 minutes
+
+- description: check blink tree
+  url: /check-tree/blink
+  schedule: every 15 minutes

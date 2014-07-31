@@ -1,0 +1,23 @@
+indexes:
+
+- kind: BuildTimeStat
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
+- kind: BuildTimeStat
+  ancestor: yes
+  properties:
+  - name: timestamp
+
+- kind: CqStat
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
+- kind: CqStat
+  ancestor: yes
+  properties:
+  - name: timestamp

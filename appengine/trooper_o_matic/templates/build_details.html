@@ -1,0 +1,138 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<!doctype html>
+<html>
+  <head>
+    <title>Build Details</title>
+    <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/polymer/0.3.4/platform.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/polymer/0.3.4/polymer.js"></script>
+    <script>
+      var BUILD_DATA = {{ builds|safe }};
+    </script>
+    <style type="text/css">
+      body {
+        font-family: 'RobotoDraft';
+      }
+      .chart {
+        margin-bottom: 40px;
+      }
+    </style>
+    {% raw %}
+    <polymer-element name="build-table" attributes="builds">
+      <template>
+        <style>
+          :host {
+            font-family: 'RobotoDraft';
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212121;
+          }
+          table {
+            border-spacing: 0;
+          }
+          table th, table td {
+            padding: 4px 16px 4px 4px;
+            text-align: left;
+            cursor: pointer;
+          }
+          tr:hover {
+            background-color: #e9eaed;
+          }
+          th {
+            background-color: white;
+          }
+          th[data-sortdown] {
+            background-image: url('/images/sort-down.gif');
+            background-repeat: no-repeat;
+            background-position: 95% 40%;
+            background-color: white;
+          }
+          th[data-sortup] {
+            background-image: url('/images/sort-up.gif');
+            background-repeat: no-repeat;
+            background-position: 95% 40%;
+            background-color: white;
+          }
+        </style>
+        <table>
+          <tr>
+            <th data-type="master" on-click="{{updateSort}}">Master</th>
+            <th data-type="builder" on-click="{{updateSort}}">Builder</th>
+            <th data-type="buildnumber" on-click="{{updateSort}}">Build Number</th>
+            <th data-type="buildtime" on-click="{{updateSort}}">Build Time (s)</th>
+            <th data-type="result" on-click="{{updateSort}}">Result</th>
+            <th data-type="revision" on-click="{{updateSort}}">Revision</th>
+          </tr>
+          <template repeat="{{build in builds}}">
+            <tr data-master="{{ build.master }}"
+                data-builder="{{ build.builder }}"
+                data-buildnumber="{{ build.buildnumber }}"
+                on-click="{{trClick}}">
+              <td>{{ build.master }}</td>
+              <td>{{ build.builder }}</td>
+              <td>{{ build.buildnumber }}</td>
+              <td>{{ build.buildtime }}</td>
+              <td>{{ build.result }}</td>
+              <td>{{ build.revision }}</td>
+            </tr>
+          </template>
+        </table>
+      </template>
+      <script>
+        Polymer('build-table', {
+          trClick: function(event, detail, sender) {
+            var master = sender.getAttribute('data-master');
+            var builder = sender.getAttribute('data-builder');
+            var buildnumber = sender.getAttribute('data-buildnumber');
+            var url = 'http://build.chromium.org/p/MASTER/builders/BUILDER/builds/NUM'.
+                replace('MASTER', master).
+                replace('BUILDER', builder).
+                replace('NUM', buildnumber);
+            window.open(url);
+          },
+          updateSort: function(event, detail, sender) {
+            var th = sender;
+            var sortDir = 'down';
+            if (th.getAttribute('data-sortdown')) {
+              sortDir = 'up';
+            }
+            var headers = this.shadowRoot.querySelectorAll('th');
+            for (var i = 0; i < headers.length; i++) {
+              headers[i].removeAttribute('data-sortdown');
+              headers[i].removeAttribute('data-sortup');
+            }
+            th.setAttribute('data-sort' + sortDir, true);
+            var type = th.getAttribute('data-type');
+            this.builds.sort(function(a, b) {
+              var aVal = a[type], bVal = b[type];
+              if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
+                if (sortDir == 'down') {
+                  return aVal - bVal;
+                } else {
+                  return bVal - aVal;
+                }
+              } else {
+                if (sortDir == 'down') {
+                  return aVal.localeCompare(bVal);
+                } else {
+                  return bVal.localeCompare(aVal);
+                }
+              }
+            });
+          }
+        });
+      </script>
+    </polymer-element>
+    {% endraw %}
+  </head>
+  <body>
+    <script>
+      var el = document.createElement('build-table');
+      el.builds = BUILD_DATA;
+      document.body.appendChild(el);
+    </script>
+  </body>
+</html>

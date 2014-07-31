@@ -1,0 +1,42 @@
+#!/usr/bin/python
+import distutils.spawn
+import optparse
+import os.path
+import sys
+import unittest
+
+USAGE = """%prog [SDK_PATH] TEST_PATH
+Run unit tests for App Engine apps.
+
+SDK_PATH    Path to the SDK installation
+TEST_PATH   Path to package containing test modules"""
+
+
+def main(sdk_path, test_path):
+  sys.path.insert(0, sdk_path)
+  import dev_appserver
+  dev_appserver.fix_sys_path()
+  suite = unittest.loader.TestLoader().discover(test_path)
+  unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+if __name__ == '__main__':
+    parser = optparse.OptionParser(USAGE)
+    options, args = parser.parse_args()
+    if len(args) == 1:
+      dev_appserver_path = distutils.spawn.find_executable('dev_appserver.py')
+      if not distutils.spawn.find_executable('dev_appserver.py'):
+        print 'Error: dev_appserver.py not found in path.'
+        print 'You must specify SDK_PATH.'
+        parser.print_help()
+        sys.exit(1)
+      SDK_PATH = os.path.dirname(dev_appserver_path)
+      TEST_PATH = args[0]
+    elif len(args) == 2:
+      SYS_PATH = args[0]
+      TEST_PATH = args[1]
+    else:
+      print 'Error: Wrong number of arguments.'
+      parser.print_help()
+      sys.exit(1)
+    main(SDK_PATH, TEST_PATH)
