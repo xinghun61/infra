@@ -45,17 +45,17 @@ def CommonChecks(input_api, output_api):
     'W0613',  # Unused argument
     'F0401',  # Unable to import
   ]
-  appengine_path = input_api.os_path.abspath(
-      input_api.os_path.join(
-          input_api.os_path.dirname(input_api.PresubmitLocalPath()),
-          'google_appengine'))
+  infra_path = input_api.os_path.abspath(input_api.PresubmitLocalPath())
+  appengine_path = input_api.os_path.join(
+          input_api.os_path.dirname(infra_path),
+          'google_appengine')
+  venv_path = input_api.os_path.join(infra_path, 'ENV', 'lib', 'python2.7')
   tests.extend(input_api.canned_checks.GetPylint(
       input_api,
       output_api,
       black_list=blacklist,
       disabled_warnings=disabled_warnings,
-      extra_paths_list=[appengine_path,
-                        '/infra/infra/ENV/lib/python2.7']))
+      extra_paths_list=[appengine_path, venv_path]))
 
   message_type = (output_api.PresubmitError if output_api.is_committing else
                   output_api.PresubmitPromptWarning)
