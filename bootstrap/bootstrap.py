@@ -12,7 +12,8 @@ import subprocess
 import sys
 import tempfile
 
-from util import STORAGE_URL, OBJECT_URL, read_deps, print_deps, platform_tag
+from util import STORAGE_URL, OBJECT_URL
+from util import read_deps, merge_deps, print_deps, platform_tag
 
 LOGGER = logging.getLogger(__name__)
 
@@ -126,9 +127,7 @@ def activate_env(env, deps):
     return
 
   print 'Activating environment: %r' % env
-  if isinstance(deps, basestring):
-    deps = read_deps(deps)
-  assert deps is not None
+  assert isinstance(deps, dict)
 
   manifest_path = os.path.join(env, 'manifest.pyl')
   cur_deps = read_deps(manifest_path)
@@ -161,14 +160,15 @@ def activate_env(env, deps):
 
 def main(args):
   parser = argparse.ArgumentParser()
-  parser.add_argument('--deps_file',
+  parser.add_argument('--deps_file', nargs='+',
                       help='Path to python deps file (default: %(default)s)')
-  parser.add_argument('env_path', nargs='?',
+  parser.add_argument('--env_path',
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
   opts = parser.parse_args(args)
 
-  activate_env(opts.env_path, opts.deps_file or {})
+  deps = merge_deps(opts.deps_file)
+  activate_env(opts.env_path, deps)
 
 
 if __name__ == '__main__':

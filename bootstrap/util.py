@@ -22,6 +22,12 @@ SOURCE_URL = 'gs://{}/sources/{{}}'.format(BUCKET)
 WHEELS_URL = 'gs://{}/wheels/'.format(BUCKET)
 
 
+class DepsConflictException(Exception):
+  def __init__(self, name):
+    super(DepsConflictException, self).__init__(
+        'Package \'%s\' is defined twice in deps.pyl' % name)
+
+
 def platform_tag():
   if sys.platform.startswith('linux'):
     return '_{0}_{1}'.format(*platform.linux_distribution())
@@ -65,3 +71,14 @@ def read_deps(path):
   if os.path.exists(path):
     with open(path, 'rb') as f:
       return ast.literal_eval(f.read())
+
+
+def merge_deps(paths):
+  deps = {}
+  for path in paths:
+    d = read_deps(path)
+    for key in d:
+      if key in deps:
+        raise DepsConflictException(key)
+    deps.update(d)
+  return deps

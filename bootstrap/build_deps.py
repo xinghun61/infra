@@ -13,8 +13,7 @@ import sys
 import bootstrap
 
 from util import ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL
-
-from util import tempdir, tempname, read_deps, print_deps, platform_tag
+from util import tempdir, tempname, platform_tag, merge_deps, print_deps
 
 
 DEFAULT_REPO = 'https://chromium.googlesource.com/infra/third_party/{name}'
@@ -127,7 +126,10 @@ def push_wheelhouse():
 def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      'to_build', nargs='*',
+      '--deps_file', nargs='*',
+      help='Path to python deps file (default: bootstrap/deps.pyl)')
+  parser.add_argument(
+      '--to_build', nargs='*',
       help='Names of packages to build. Defaults to all packages.')
   opts = parser.parse_args(args)
 
@@ -141,12 +143,13 @@ def main(args):
     ])
     return 1
 
-  to_build = set(opts.to_build)
+  deps_files = opts.deps_file or [os.path.join(ROOT, 'deps.pyl')]
+  to_build = set(opts.to_build or [])
 
   build_env = os.path.join(ROOT, 'BUILD_ENV')
 
   print 'Parsing deps.pyl'
-  deps = read_deps(os.path.join(ROOT, 'deps.pyl'))
+  deps = merge_deps(deps_files)
   bootstrap.activate_env(build_env, {'wheel': deps.pop('wheel')})
 
   print 'Finding missing deps'

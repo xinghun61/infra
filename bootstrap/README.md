@@ -26,7 +26,7 @@ Say we want to add a stock `my_pkg` python package at version 1.2.3
   ```
 
   # If it comes from a repo
-  # File a ticke to have it mirrored (no matter what VCS!) to
+  # File a ticket to have it mirrored (no matter what VCS!) to
   #    `chromium.googlesource.com/infra/third_party/my_pkg`
   # Grab the git commit hash of the commit to build:
   #  badc0ffeebadc0ffeebadc0ffeebadc0
