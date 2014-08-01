@@ -62,7 +62,7 @@
             <th data-type="master" on-click="{{updateSort}}">Master</th>
             <th data-type="builder" on-click="{{updateSort}}">Builder</th>
             <th data-type="buildnumber" on-click="{{updateSort}}">Build Number</th>
-            <th data-type="buildtime" on-click="{{updateSort}}">Build Time (s)</th>
+            <th data-type="buildtime" on-click="{{updateSort}}">Build Time (HH:MM:SS)</th>
             <th data-type="result" on-click="{{updateSort}}">Result</th>
             <th data-type="revision" on-click="{{updateSort}}">Revision</th>
           </tr>
@@ -74,8 +74,8 @@
               <td>{{ build.master }}</td>
               <td>{{ build.builder }}</td>
               <td>{{ build.buildnumber }}</td>
-              <td>{{ build.buildtime }}</td>
-              <td>{{ build.result }}</td>
+              <td>{{ build.buildtime | prettifyBuildTime }}</td>
+              <td>{{ build.result | resultToString }}</td>
               <td>{{ build.revision }}</td>
             </tr>
           </template>
@@ -92,6 +92,24 @@
                 replace('BUILDER', builder).
                 replace('NUM', buildnumber);
             window.open(url);
+          },
+          resultToString: function(value) {
+            return ["success", "warning", "failure", "skipped", "exception", "retry"][value];
+          },
+          prettifyBuildTime: function(value) {
+            var s = Math.round(value);
+            var m = 0;
+            var h = 0;
+            if (s >= 60) {
+              m = Math.floor(s / 60);
+              s = s % 60;
+              if (m >= 60) {
+                h = Math.floor(m / 60);
+                m = m % 60;
+              }
+            }
+
+            return h + ":" + (m > 9 ? m : '0' + m) + ":" + (s > 9 ? s : '0' + s);
           },
           updateSort: function(event, detail, sender) {
             var th = sender;
