@@ -9,6 +9,8 @@
     <script type='text/javascript' src='//www.google.com/jsapi'></script>
     <script>
       var BUILD_DATA = {{ builds|safe }};
+      var OFFENDER_DATA = {{ offenders|safe }};
+      var SLO_BUILDTIME_MAX = {{ slo_buildtime_max|safe }};
     </script>
     <style type="text/css">
       body {
@@ -24,13 +26,17 @@
 
     <div class="chart" id="build-chart"></div>
 
+    <h2>Offending Builds</h2>
+    <div class="chart" id="offender-chart"></div>
+
     <script>
       google.load('visualization', '1.1', {'packages':['corechart']});
       google.setOnLoadCallback(drawCharts);
       function drawCharts() {
-        drawChart(BUILD_DATA, 'build-chart');
+        drawBuildChart(BUILD_DATA, 'build-chart');
+        drawOffenderChart(OFFENDER_DATA, 'offender-chart');
       }
-      function drawChart(data, id) {
+      function drawBuildChart(data, id) {
         var dataTable = new google.visualization.DataTable(data);
         var chart = new google.visualization.ColumnChart(
             document.getElementById(id));
@@ -53,6 +59,54 @@
           focusTarget: 'category',
           isStacked: true,
           colors: ['green', 'yellow', 'red']
+        };
+
+        chart.draw(dataTable, options);
+      }
+      function drawOffenderChart(data, id) {
+        var dataTable = new google.visualization.DataTable();
+        dataTable.addColumn({id: 'timestamp', label: 'Time', type: 'datetime'});
+        dataTable.addColumn({id: 'buildtime', label: 'Build Time', type: 'number'});
+        dataTable.addColumn({role: 'scope', type: 'boolean'});
+        dataTable.addColumn({role: 'tooltip', type: 'string'});
+        dataTable.addRows(data.map(function(row) {
+          var master = row[2];
+          var builder = row[3];
+          var buildnumber = row[4];
+          var tooltip = master + ' / ' + builder + ' / ' + buildnumber;
+          return [
+            new Date(row[0]),
+            row[1] / 60,
+            row[1] > 60 * 60,
+            tooltip,
+          ];
+        }));
+
+        var chart = new google.visualization.ScatterChart(
+            document.getElementById(id));
+        chart.setAction({
+          id: 'details',
+          text: 'Build Details',
+          action: function() {
+            selection = chart.getSelection();
+            if (!selection)
+              return;
+            var item = data[selection[0].row];
+            var master = item[2];
+            var builder = item[3];
+            var buildnumber = item[4];
+            var url = 'http://build.chromium.org/p/MASTER/builders/BUILDER/builds/NUM'.
+                replace('MASTER', master).
+                replace('BUILDER', builder).
+                replace('NUM', buildnumber);
+            window.open(url);
+          }
+        });
+        var options = {
+          tooltip: {
+            isHtml: true,
+            trigger: 'selection'
+          },
         };
 
         chart.draw(dataTable, options);
