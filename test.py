@@ -11,5 +11,5 @@ import os
 import sys
 
 path = os.path.join('ENV', 'bin', 'expect_tests')
-os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.execv(path, [path] + sys.argv[1:])
