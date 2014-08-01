@@ -160,9 +160,9 @@ def activate_env(env, deps):
 
 def main(args):
   parser = argparse.ArgumentParser()
-  parser.add_argument('--deps_file', nargs='+',
-                      help='Path to python deps file (default: %(default)s)')
-  parser.add_argument('--env_path',
+  parser.add_argument('--deps_file', action='append',
+                      help='Path to deps.pyl file (may be used multiple times)')
+  parser.add_argument('env_path',
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
   opts = parser.parse_args(args)

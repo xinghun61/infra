@@ -21,8 +21,7 @@ hooks = [
     "pattern": ".",
     "action": [
       "python", "-u", "./infra/bootstrap/bootstrap.py",
-      "--deps_file", "infra/bootstrap/deps.pyl",
-      "--env_path", "infra/ENV"
+      "--deps_file", "infra/bootstrap/deps.pyl", "infra/ENV"
     ],
   },
   {

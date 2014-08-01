@@ -126,10 +126,10 @@ def push_wheelhouse():
 def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--deps_file', nargs='*',
-      help='Path to python deps file (default: bootstrap/deps.pyl)')
+      '--deps_file', action='append',
+      help='Path to deps.pyl file (default: bootstrap/deps.pyl)')
   parser.add_argument(
-      '--to_build', nargs='*',
+      'to_build', nargs='*',
       help='Names of packages to build. Defaults to all packages.')
   opts = parser.parse_args(args)
 
@@ -144,7 +144,7 @@ def main(args):
     return 1
 
   deps_files = opts.deps_file or [os.path.join(ROOT, 'deps.pyl')]
-  to_build = set(opts.to_build or [])
+  to_build = set(opts.to_build)
 
   build_env = os.path.join(ROOT, 'BUILD_ENV')
 
