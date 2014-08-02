@@ -38,6 +38,18 @@
             text-align: left;
             cursor: pointer;
           }
+          table td.error {
+            color: red;
+            font-weight: bold;
+          }
+          table td.warning {
+            color: orange;
+            font-weight: bold;
+          }
+          table td.ok {
+            color: green;
+            font-weight: bold;
+          }
           tr:hover {
             background-color: #e9eaed;
           }
@@ -74,8 +86,8 @@
               <td>{{ build.master }}</td>
               <td>{{ build.builder }}</td>
               <td>{{ build.buildnumber }}</td>
-              <td>{{ build.buildtime | prettifyBuildTime }}</td>
-              <td>{{ build.result | resultToString }}</td>
+              <td class="{{ howBadIsTime(build.buildtime) }}">{{ build.buildtime | prettifyBuildTime }}</td>
+              <td class="{{ howBadIsResult(build.result) }}">{{ build.result | resultToString }}</td>
               <td>{{ build.revision }}</td>
             </tr>
           </template>
@@ -110,6 +122,16 @@
             }
 
             return h + ":" + (m > 9 ? m : '0' + m) + ":" + (s > 9 ? s : '0' + s);
+          },
+          howBadIsTime: function(time) {
+            if (time > 60 * 60) {
+              return 'error';
+            } else {
+              return 'warning';
+            }
+          },
+          howBadIsResult: function(result) {
+            return ['ok', 'warning', 'error', 'warning', 'error', 'warning'][result];
           },
           updateSort: function(event, detail, sender) {
             var th = sender;
