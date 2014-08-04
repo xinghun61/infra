@@ -505,3 +505,21 @@ def enforce_commit_timestamps(origin, _local, _config_ref, RUN, CHECKPOINT):
       origin[REAL].commit.data.committer.timestamp.secs >
       origin[REAL].commit.parent.data.committer.timestamp.secs
   )
+
+
+# git_svn_mode test.
+
+@gnumbd_test
+def svn_mode_uses_svn_rev(origin, _local, config_ref, RUN, CHECKPOINT):
+  config_ref.update(git_svn_mode=True)
+
+  base_commit = origin[REAL].synthesize_commit('Base commit', 100, svn=True)
+  for ref in (PEND, PEND_TAG):
+    origin[ref].update_to(base_commit)
+
+  user_commit = origin[PEND].synthesize_commit('Hello world', 200, svn=True)
+  CHECKPOINT('Two commits in origin')
+  RUN()
+  CHECKPOINT('Hello world should be 200')
+  assert content_of(origin[REAL].commit) == content_of(user_commit)
+  assert origin[REAL].commit.parent == base_commit

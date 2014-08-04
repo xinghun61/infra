@@ -38,12 +38,18 @@ GIT_SVN_ID = 'git-svn-id'
 
 class GnumbdConfigRef(config_ref.ConfigRef):
   CONVERT = {
+    'git_svn_mode': lambda self, val: bool(val),
     'interval': lambda self, val: float(val),
     'pending_tag_prefix': lambda self, val: str(val),
     'pending_ref_prefix': lambda self, val: str(val),
     'enabled_refglobs': lambda self, val: map(str, list(val)),
   }
   DEFAULTS = {
+    # If git_svn_mode is True, the following happens:
+    #  * git-svn-id footer is NOT stripped from the commit.
+    #  * Cr-Commit-Position equals to SVN revision from git-svn-id footer.
+    # TODO(vadimsh): Remove git_svn_mode support when no longer needed.
+    'git_svn_mode': False,
     'interval': 5.0,
     'pending_tag_prefix': 'refs/pending-tags',
     'pending_ref_prefix': 'refs/pending',
@@ -102,6 +108,22 @@ def content_of(commit):
   return commit._cr_content  # pylint: disable=W0212
 
 
+def get_git_svn_rev(commit):
+  """Extracts SVN revision from git-svn-id footer of a commit.
+
+  Raises NoPositionData or MalformedPositionFooter on errors.
+  """
+  svn_pos = commit.data.footers.get(GIT_SVN_ID)
+  if not svn_pos:
+    raise NoPositionData(commit)
+  assert len(svn_pos) == 1
+  svn_pos = svn_pos[0]
+  try:
+    return int(svn_pos.split()[0].split('@')[1])
+  except (IndexError, ValueError):
+    raise MalformedPositionFooter(commit, GIT_SVN_ID, svn_pos)
+
+
 def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
   """Returns (ref, position number) for the given |commit|.
 
@@ -111,8 +133,7 @@ def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
 
   May raise the MalformedPositionFooter or NoPositionData exceptions.
   """
-  f = commit.data.footers
-  current_pos = f.get(COMMIT_POSITION)
+  current_pos = commit.data.footers.get(COMMIT_POSITION)
   if current_pos:
     assert len(current_pos) == 1
     current_pos = current_pos[0]
@@ -124,22 +145,13 @@ def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
     parent_num = int(m.group(2))
   else:
     # TODO(iannucci): Remove this and rely on a manual initial commit?
-    svn_pos = f.get(GIT_SVN_ID)
-    if not svn_pos:
-      raise NoPositionData(commit)
-
-    assert len(svn_pos) == 1
-    svn_pos = svn_pos[0]
     parent_ref = None
-    try:
-      parent_num = int(svn_pos.split()[0].split('@')[1])
-    except (IndexError, ValueError):
-      raise MalformedPositionFooter(commit, GIT_SVN_ID, svn_pos)
+    parent_num = get_git_svn_rev(commit)
 
   return parent_ref, parent_num
 
 
-def synthesize_commit(commit, new_parent, ref, clock=time):
+def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   """Synthesizes a new Commit given |new_parent| and ref.
 
   The new commit will contain a Cr-Commit-Position footer, and possibly
@@ -150,10 +162,65 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
   a branch, commit timestamps will always increase (at least from the point
   where this daemon went into service).
 
+  If git_svn_mode is False, uses parent's commit position to derive new commit
+  position. Also git-svn-id footer will be stripped out.
+
+  If git_svn_mode is True, uses SVN revision from git-svn-id footer: it sets
+  the commit position number equal to the svn revision. Keeps git-svn-id footer.
+
   @type commit: git2.Commit
   @type new_parent: git2.Commit
   @type ref: git2.Ref
+  @type git_svn_mode: bool
   @kind clock: implements .time(), used for testing determinism.
+  """
+  # Generate new footers.
+  if git_svn_mode:
+    git_svn_footer = commit.data.footers.get(GIT_SVN_ID)
+    footers = generate_footers_from_git_svn_id(commit, new_parent, ref)
+  else:
+    git_svn_footer = None
+    footers = generate_footers_from_parent(new_parent, ref)
+
+  # TODO(iannucci): We could be more order-preserving of user supplied footers
+  # but I'm inclined not to care. This loop will be enough to keep stuff from
+  # Gerrit-landed commits.
+  for key, value in commit.data.footers.iteritems():
+    # In git_svn_mode drop git-svn-id silently, it's going to be added back.
+    if git_svn_mode and key == GIT_SVN_ID:
+      footers[key] = None
+    elif key.startswith(FOOTER_PREFIX) or key == GIT_SVN_ID:
+      LOGGER.warn('Dropping key on user commit %s: %r -> %r',
+                  commit.hsh, key, value)
+      footers[key] = None
+
+  # Ensure that every commit has a time which is at least 1 second after its
+  # parent, and reset the tz to UTC.
+  parent_time = new_parent.data.committer.timestamp.secs
+  new_parents = [] if new_parent is git2.INVALID else [new_parent.hsh]
+  new_committer = commit.data.committer.alter(
+      timestamp=git2.data.NULL_TIMESTAMP.alter(
+          secs=max(int(clock.time()), parent_time + 1)))
+
+  commit = commit.alter(
+      parents=new_parents,
+      committer=new_committer,
+      footers=footers)
+
+  # Slap back git-svn-id footer, do it as a separate operation to ensure it is
+  # appended at the bottom of the footers list.
+  if git_svn_mode and git_svn_footer:
+    commit = commit.alter(footers={GIT_SVN_ID: git_svn_footer})
+
+  return commit
+
+
+def generate_footers_from_parent(new_parent, ref):
+  """Generates Cr-Commit-Position footer, and possibly Cr-Branched-From footers.
+
+  Uses parent's footers to derive new values.
+
+  @returns OrderedDict.
   """
   # TODO(iannucci): See if there are any other footers we want to carry over
   # between new_parent and commit
@@ -172,28 +239,20 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
     footers[COMMIT_POSITION] = [FMT_COMMIT_POSITION(ref, parent_num + 1)]
     footers[BRANCHED_FROM] = new_parent.data.footers.get(BRANCHED_FROM, ())
 
-  # TODO(iannucci): We could be more order-preserving of user supplied footers
-  # but I'm inclined not to care. This loop will be enough to keep stuff from
-  # Gerrit-landed commits.
-  for key, value in commit.data.footers.iteritems():
-    if key.startswith(FOOTER_PREFIX) or key == GIT_SVN_ID:
-      LOGGER.warn('Dropping key on user commit %s: %r -> %r',
-                  commit.hsh, key, value)
-      footers[key] = None
+  return footers
 
-  # Ensure that every commit has a time which is at least 1 second after its
-  # parent, and reset the tz to UTC.
-  parent_time = new_parent.data.committer.timestamp.secs
-  new_parents = [] if new_parent is git2.INVALID else [new_parent.hsh]
-  new_committer = commit.data.committer.alter(
-      timestamp=git2.data.NULL_TIMESTAMP.alter(
-          secs=max(int(clock.time()), parent_time + 1)))
 
-  return commit.alter(
-      parents=new_parents,
-      committer=new_committer,
-      footers=footers,
-  )
+def generate_footers_from_git_svn_id(commit, new_parent, ref):
+  """Generates Cr-Commit-Position footer from git-svn-id footer.
+
+  Will never generate Cr-Branched-From footer.
+
+  @returns OrderedDict.
+  """
+  svn_rev = get_git_svn_rev(commit)
+  footers = collections.OrderedDict()
+  footers[COMMIT_POSITION] = [FMT_COMMIT_POSITION(ref, svn_rev)]
+  return footers
 
 
 ################################################################################
@@ -276,7 +335,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
   return new_commits
 
 
-def process_ref(real_ref, pending_tag, new_commits, clock=time):
+def process_ref(real_ref, pending_tag, new_commits, git_svn_mode, clock=time):
   """Given a |real_ref|, its corresponding |pending_tag|, and a list of
   |new_commits|, copy the |new_commits| to |real_ref|, and advance |pending_tag|
   to match.
@@ -312,7 +371,8 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
   real_parent = real_ref.commit
   for commit in new_commits:
     assert content_of(commit.parent) == content_of(real_parent)
-    synth_commit = synthesize_commit(commit, real_parent, real_ref, clock)
+    synth_commit = synthesize_commit(
+        commit, real_parent, real_ref, git_svn_mode, clock)
 
     logging.info(
         'Pushing synthesized commit %r for %r and pending_tag %r',
@@ -334,6 +394,7 @@ def process_repo(repo, cref, clock=time):
 
   @returns tuple (bool success status, list of synthesized commits).
   """
+  git_svn_mode = cref['git_svn_mode']
   pending_tag_prefix = cref['pending_tag_prefix']
   pending_ref_prefix = cref['pending_ref_prefix']
   enabled_refglobs = cref['enabled_refglobs']
@@ -369,8 +430,9 @@ def process_repo(repo, cref, clock=time):
           if new_commits is None:
             success = False
           elif new_commits:
-            synthesized_commits.extend(
-                process_ref(real_ref, pending_tag, new_commits, clock))
+            commits = process_ref(
+                real_ref, pending_tag, new_commits, git_svn_mode, clock)
+            synthesized_commits.extend(commits)
         else:
           if content_of(pending_tag.commit) != content_of(real_ref.commit):
             LOGGER.error('%r and %r match, but %r\'s content doesn\'t match!',
