@@ -34,20 +34,20 @@ CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
 # Unclear if this should be specific to builds.
 class BuildCache(object):
-  def __init__(self, root_path):
+  def __init__(self, root_path):  # pragma: no cover
     self.root_path = root_path
 
   # Could be in operator.
-  def has(self, key):
+  def has(self, key):  # pragma: no cover
     path = os.path.join(self.root_path, key)
     return os.path.exists(path)
 
-  def key_age(self, key):
+  def key_age(self, key):  # pragma: no cover
     path = os.path.join(self.root_path, key)
     return datetime.datetime.fromtimestamp(os.path.getmtime(path))
 
   # Could be attr getter.
-  def get(self, key):
+  def get(self, key):  # pragma: no cover
     path = os.path.join(self.root_path, key)
     if not self.has(path):
       return None
@@ -55,7 +55,7 @@ class BuildCache(object):
       return json.load(cached)
 
   # Could be attr setter.
-  def set(self, key, json_object):
+  def set(self, key, json_object):  # pragma: no cover
     path = os.path.join(self.root_path, key)
     cache_dir = os.path.dirname(path)
     if not os.path.exists(cache_dir):
@@ -74,18 +74,19 @@ def build_url(master_url, builder_name, build_number):
   return "%s/builders/%s/builds/%s" % args
 
 
-def cache_key_for_build(master_url, builder_name, build_number):
+# "line too long" pylint: disable=C0301
+def cache_key_for_build(master_url, builder_name, build_number):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   return os.path.join(master_name, builder_name, "%s.json" % build_number)
 
 
-def fetch_master_json(master_url):
+def fetch_master_json(master_url):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   url = '%s/get_master/%s' % (CBE_BASE, master_name)
   return requests.get(url).json()
 
 
-def prefill_builds_cache(cache, master_url, builder_name):
+def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   builds_url = '%s/get_builds' % CBE_BASE
   params = { 'master': master_name, 'builder': builder_name }
@@ -108,7 +109,7 @@ def prefill_builds_cache(cache, master_url, builder_name):
   return build_numbers
 
 
-def fetch_and_cache_build(cache, url, cache_key):
+def fetch_and_cache_build(cache, url, cache_key):  # pragma: no cover
   response = requests.get(url)
   if response.status_code != 200:
     log.error('Failed (%.1fs, %s) %s' % (response.elapsed.total_seconds(),
@@ -127,7 +128,8 @@ def fetch_and_cache_build(cache, url, cache_key):
   return build
 
 
-def fetch_build_json(cache, master_url, builder_name, build_number):
+# "line too long" pylint: disable=C0301
+def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: no cover
   cache_key = cache_key_for_build(master_url, builder_name, build_number)
   build = cache.get(cache_key)
   master_name = master_name_from_url(master_url)
@@ -158,7 +160,7 @@ def fetch_build_json(cache, master_url, builder_name, build_number):
 
 # This effectively extracts the 'configuration' of the build
 # we could extend this beyond repo versions in the future.
-def revisions_from_build(build_json):
+def revisions_from_build(build_json):  # pragma: no cover
   def _property_value(build_json, property_name):
     for prop_tuple in build_json['properties']:
       if prop_tuple[0] == property_name:
@@ -188,7 +190,8 @@ def revisions_from_build(build_json):
   return revisions
 
 
-def latest_revisions_for_master(cache, master_url, master_json):
+# "line too long" pylint: disable=C0301
+def latest_revisions_for_master(cache, master_url, master_json):  # pragma: no cover
   latest_revisions = collections.defaultdict(dict)
   master_name = master_name_from_url(master_url)
   for builder_name, builder_json in master_json['builders'].items():
@@ -204,7 +207,7 @@ def latest_revisions_for_master(cache, master_url, master_json):
 
 
 def warm_build_cache(cache, master_url, builder_name,
-    recent_build_ids, active_builds):
+    recent_build_ids, active_builds):  # pragma: no cover
   # Cache active (in-progress) builds:
   match_builder_name = lambda build: build['builderName'] == builder_name
   actives = filter(match_builder_name, active_builds)

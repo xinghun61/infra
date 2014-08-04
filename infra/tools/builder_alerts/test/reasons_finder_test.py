@@ -21,7 +21,3 @@ C   59.798s Main  [  FAILED  ] org.chromium.mojo.system.impl.CoreImplTest#testAs
       'org.chromium.mojo.system.impl.CoreImplTest#testAsyncWaiterWaitingOnDefaultInvalidHandle',
     ]
     self.assertEquals(splitter.failed_tests_from_stdio(stdio), expected)
-
-
-if __name__ == '__main__':
-  unittest.main()

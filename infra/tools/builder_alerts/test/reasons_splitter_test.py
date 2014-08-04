@@ -3,24 +3,22 @@
 # found in the LICENSE file.
 
 import unittest
+
 from infra.tools.builder_alerts import reasons_splitter
 
 
 class SplitterTests(unittest.TestCase):
-  def handles_step_test(self):
+  def test_handles_step(self):
     name_tests = [
-      ('compile', CompileSplitter),
-      ('webkit_tests', LayoutTestsSplitter),
-      ('androidwebview_instrumentation_tests', JUnitSplitter),
-      ('foo_test', GTestSplitter),
+      ('compile', reasons_splitter.CompileSplitter),
+      ('webkit_tests', reasons_splitter.LayoutTestsSplitter),
+      ('androidwebview_instrumentation_tests', reasons_splitter.JUnitSplitter),
+      ('foo_tests', reasons_splitter.GTestSplitter),
+      ('foo_test', None),
     ]
     for step_name, expected_class in name_tests:
-      step = {
-        'name': step_name
-      }
-      splitter = splitter_for_step(step)
+      splitter = reasons_splitter.splitter_for_step({'name': step_name})
       if expected_class is None:
-        self.assertEqual(splitter, None)
+        self.assertIsNone(splitter)
       else:
         self.assertEqual(splitter.__class__, expected_class)
-

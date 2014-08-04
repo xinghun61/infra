@@ -17,7 +17,3 @@ class StringHelpersTest(unittest.TestCase):
     self.assertEquals(string_helpers.longest_substring('foo', 'foo'), 'foo')
     self.assertEquals(string_helpers.longest_substring('aa', 'aaa'), 'aa')
     self.assertEquals(string_helpers.longest_substring('aaa', 'aa'), 'aa')
-
-
-if __name__ == '__main__':
-  unittest.main()

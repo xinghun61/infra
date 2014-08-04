@@ -43,8 +43,8 @@ def setup_logging():
 log, logging_handler = setup_logging()
 
 
-def stdio_for_step(master_url, builder_name, build, step):
-# FIXME: Should get this from the step in some way?
+def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
+  # FIXME: Should get this from the step in some way?
   base_url = buildbot.build_url(master_url, builder_name, build['number'])
   stdio_url = "%s/steps/%s/logs/stdio/text" % (base_url, step['name'])
 
@@ -56,7 +56,7 @@ def stdio_for_step(master_url, builder_name, build, step):
     return None
 
 
-def fancy_case_master_name(master_url):
+def fancy_case_master_name(master_url):  # pragma: no cover
   master_name = buildbot.master_name_from_url(master_url)
   return master_name.title().replace('.', '')
 
@@ -77,7 +77,7 @@ class GTestSplitter(object):
     return step_name in KNOWN_STEPS
 
   @staticmethod
-  def split_step(step, build, builder_name, master_url):
+  def split_step(step, build, builder_name, master_url):  # pragma: no cover
     params = {
       'name': 'full_results.json',
       'master': fancy_case_master_name(master_url),
@@ -131,7 +131,7 @@ class JUnitSplitter(object):
 
   FAILED_REGEXP = re.compile('\[\s+FAILED\s+\] (?P<test_name>\S+)( \(.*\))?$')
 
-  def failed_tests_from_stdio(self, stdio):
+  def failed_tests_from_stdio(self, stdio):  # pragma: no cover
     failed_tests = []
     for line in stdio.split('\n'):
       match = self.FAILED_REGEXP.search(line)
@@ -139,7 +139,8 @@ class JUnitSplitter(object):
         failed_tests.append(match.group('test_name'))
     return failed_tests
 
-  def split_step(self, step, build, builder_name, master_url):
+  # "line too long" pylint: disable=C0301
+  def split_step(self, step, build, builder_name, master_url):  # pragma: no cover
     stdio_log = stdio_for_step(master_url, builder_name, build, step)
     # Can't split if we can't get the logs.
     if not stdio_log:
@@ -153,7 +154,7 @@ class JUnitSplitter(object):
     return None
 
 
-def decode_results(results, include_expected=False):
+def decode_results(results, include_expected=False):  # pragma: no cover
   tests = convert_trie_to_flat_paths(results['tests'])
   failures = {}
   flakes = {}
@@ -177,7 +178,7 @@ def decode_results(results, include_expected=False):
   return (passes, failures, flakes)
 
 
-def convert_trie_to_flat_paths(trie, prefix=None):
+def convert_trie_to_flat_paths(trie, prefix=None):  # pragma: no cover
   # Cloned from webkitpy.layout_tests.layout_package.json_results_generator
   # so that this code can stand alone.
   result = {}
@@ -200,7 +201,7 @@ class LayoutTestsSplitter(object):
     return step['name'] == 'webkit_tests'
 
   @staticmethod
-  def split_step(step, build, builder_name, master_url):
+  def split_step(step, build, builder_name, master_url):  # pragma: no cover
     # WTF?  The android bots call it archive_webkit_results and the
     # rest call it archive_webkit_tests_results?
     archive_names = ['archive_webkit_results', 'archive_webkit_tests_results']
@@ -268,7 +269,7 @@ class CompileSplitter(object):
   # obj/chrome/browser/extensions/interactive_ui_tests.extension_commands_global_registry_apitest.o:extension_commands_global_registry_apitest.cc:function extensions::SendNativeKeyEventToXDisplay(ui::KeyboardCode, bool, bool, bool): error: undefined reference to 'gfx::GetXDisplay()'
 
   @staticmethod
-  def split_step(step, build, builder_name, master_url):
+  def split_step(step, build, builder_name, master_url):  # pragma: no cover
     stdio = stdio_for_step(master_url, builder_name, build, step)
     # Can't split if we can't get the logs.
     if not stdio:
@@ -306,7 +307,7 @@ def splitter_for_step(step):
 
 
 # For testing:
-def main(args):
+def main(args):  # pragma: no cover
   parser = argparse.ArgumentParser()
   parser.add_argument('stdio_url', action='store')
   args = parser.parse_args(args)

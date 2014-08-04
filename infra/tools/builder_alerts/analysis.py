@@ -10,11 +10,11 @@ from infra.tools.builder_alerts import string_helpers
 
 # Git ready, but only implemented for SVN atm.
 def ids_after_first_including_second(first, second):
-  if not first or not second:
+  if not first or not second:  # pragma: no cover
     return []
   try:
     return range(int(first) + 1, int(second) + 1)
-  except ValueError:
+  except ValueError:  # pragma: no cover
     # likely passed a git hash
     return []
 
@@ -28,7 +28,7 @@ def is_decendant_of(younger, older):
   return is_ancestor_of(older, younger)
 
 
-def commit_compare(one, two):
+def commit_compare(one, two):  # pragma: no cover
   if is_decendant_of(one, two):
     return -1
   if is_ancestor_of(one, two):
@@ -38,7 +38,7 @@ def commit_compare(one, two):
 
 def flatten_to_commit_list(passing, failing):
   # Flatten two commit dicts to a list of 'name:commit'
-  if not passing or not failing:
+  if not passing or not failing:  # pragma: no cover
     return []
   all_commits = []
   for name in passing.keys():
@@ -48,7 +48,7 @@ def flatten_to_commit_list(passing, failing):
 
 
 # FIXME: Perhaps this should be done by the feeder?
-def assign_keys(alerts):
+def assign_keys(alerts):  # pragma: no cover
   for key, alert in enumerate(alerts):
     # We could come up with something more sophisticated if necessary.
     alert['key'] = 'f%s' % key # Just something so it doesn't look like a number
@@ -95,7 +95,7 @@ def merge_regression_ranges(alerts):
   return last_passing, first_failing
 
 
-def reason_key_for_alert(alert):
+def reason_key_for_alert(alert):  # pragma: no cover
   # FIXME: May need something smarter for reason_key.
   reason_key = alert['step_name']
   if alert['reason']:
@@ -106,7 +106,7 @@ def reason_key_for_alert(alert):
   return reason_key
 
 
-def group_by_reason(alerts):
+def group_by_reason(alerts):  # pragma: no cover
   by_reason = collections.defaultdict(list)
   for alert in alerts:
     by_reason[reason_key_for_alert(alert)].append(alert)

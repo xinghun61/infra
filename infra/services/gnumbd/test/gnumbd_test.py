@@ -29,7 +29,7 @@ class GitEntry(object):
   mode = None
 
   def intern(self, repo):
-    raise NotImplementedError()  # pragma: no cover
+    raise NotImplementedError()
 
 
 class GitFile(GitEntry):
