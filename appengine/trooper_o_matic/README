@@ -1,0 +1,30 @@
+INSTALLING TROOPER-O-MATIC
+==========================
+
+1. Install the App Engine SDK for Python
+   (https://developers.google.com/appengine/downloads)
+
+2. Install bower
+   (npm install bower)
+
+3. Install dependencies
+   (bower install)
+
+4. Install WebTest
+   (sudo easy_install WebTest)
+
+UPDATING TROOPER-O-MATIC
+========================
+
+In addition to updating your git repository, be sure to update any bower
+dependencies (bower update).
+
+RUNNING TROOPER-O-MATIC LOCALLY
+===============================
+
+dev_appserver.py .
+
+RUNNING UNIT TESTS
+==================
+
+./run_tests

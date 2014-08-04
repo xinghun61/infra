@@ -11,6 +11,11 @@ handlers:
 - url: /images
   static_dir: images
 
+# FIXME: Write a script to do the appcfg update so that we can error out
+# # if there is no bower_components, or, even better just run "bower update".
+- url: /components
+  static_dir: bower_components
+
 - url: /.*
   script: main.application
 

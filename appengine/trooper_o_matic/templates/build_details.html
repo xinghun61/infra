@@ -6,8 +6,8 @@
   <head>
     <title>Build Details</title>
     <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/polymer/0.3.4/platform.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/polymer/0.3.4/polymer.js"></script>
+    <script src="../components/platform/platform.js"></script>
+    <link rel="import" href="../components/core-ajax/core-ajax.html">
     <script>
       var BUILD_DATA = {{ builds|safe }};
     </script>
@@ -77,6 +77,9 @@
             <th data-type="buildtime" on-click="{{updateSort}}">Build Time (HH:MM:SS)</th>
             <th data-type="result" on-click="{{updateSort}}">Result</th>
             <th data-type="revision" on-click="{{updateSort}}">Revision</th>
+            <th data-type="name" on-click="{{updateSortForResponse}}">Longest Step</th>
+            <th data-type="duration" on-click="{{updateSortForResponse}}">Longest Step Duration</th>
+            <th data-type="percent" on-click="{{updateSortForResponse}}">Longest Step %</th>
           </tr>
           <template repeat="{{build in builds}}">
             <tr data-master="{{ build.master }}"
@@ -89,6 +92,12 @@
               <td class="{{ howBadIsTime(build.buildtime) }}">{{ build.buildtime | prettifyBuildTime }}</td>
               <td class="{{ howBadIsResult(build.result) }}">{{ build.result | resultToString }}</td>
               <td>{{ build.revision }}</td>
+              <td class='longest-step'>{{ build.response.steps.max.name }}</td>
+              <td class='longest-step-duration {{ howBadIsTime(build.response.steps.max.duration) }}'>
+                {{ build.response.steps.max.duration | prettifyBuildTime }}</td>
+              <td class='longest-step-percent'>{{ build.response.steps.max.percent | prettifyPercent }}</td>
+              <core-ajax url='http://build.chromium.org/p/chromium.webkit/json/builders/{{build.builder}}/builds/{{build.buildnumber}}'
+                handleAs='json' auto response={{build.response}} on-core-response={{findLongest}}></core-ajax>
             </tr>
           </template>
         </table>
@@ -123,17 +132,22 @@
 
             return h + ":" + (m > 9 ? m : '0' + m) + ":" + (s > 9 ? s : '0' + s);
           },
+          prettifyPercent: function(percent) {
+            return (percent * 100).toFixed(1) + '%';
+          },
           howBadIsTime: function(time) {
             if (time > 60 * 60) {
               return 'error';
-            } else {
+            } else if (time > 30 * 60) {
               return 'warning';
+            } else {
+              return '';
             }
           },
           howBadIsResult: function(result) {
             return ['ok', 'warning', 'error', 'warning', 'error', 'warning'][result];
           },
-          updateSort: function(event, detail, sender) {
+          _sort: function(sender, extractor) {
             var th = sender;
             var sortDir = 'down';
             if (th.getAttribute('data-sortdown')) {
@@ -145,9 +159,8 @@
               headers[i].removeAttribute('data-sortup');
             }
             th.setAttribute('data-sort' + sortDir, true);
-            var type = th.getAttribute('data-type');
             this.builds.sort(function(a, b) {
-              var aVal = a[type], bVal = b[type];
+              var aVal = extractor(a), bVal = extractor(b);
               if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
                 if (sortDir == 'down') {
                   return aVal - bVal;
@@ -162,6 +175,35 @@
                 }
               }
             });
+          },
+          updateSort: function(event, detail, sender) {
+            var type = sender.getAttribute('data-type');
+            this._sort(sender, function(a) { return a[type] });
+          },
+          updateSortForResponse: function(event, detail, sender) {
+            var type = sender.getAttribute('data-type');
+            this._sort(sender, function(a) { return a.response.steps.max[type] });
+          },
+          findLongest: function(event, data) {
+            var maxDuration = 0;
+            var maxDurationName = '';
+            var buildDuration = 0;
+            var steps = data.response.steps;
+            if (steps == null)
+              steps.max= {name: 'waiting', duration: 0, percent: 0};
+            steps.forEach(function(step) {
+              var name = step.name
+              if (name == 'steps') {
+                return;
+              }
+              var duration = step.times[1] - step.times[0];
+              if (duration > maxDuration) {
+                maxDuration = duration;
+                maxDurationName = name;
+              }
+              buildDuration += duration;
+            });
+            steps.max = {name: maxDurationName, duration: maxDuration, percent: maxDuration / buildDuration};
           }
         });
       </script>
