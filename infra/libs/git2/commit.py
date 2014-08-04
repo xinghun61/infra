@@ -58,7 +58,7 @@ class Commit(object):
   def parent(self):
     """Get the corresponding parent Commit() for this Commit(), or None.
 
-    If self has more than one parent, this raises an Exception.
+    If self has more than one parent, returns INVALID.
     """
     parents = self.data.parents
     if len(parents) > 1:

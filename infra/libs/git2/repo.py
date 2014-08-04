@@ -118,7 +118,7 @@ class Repo(object):
       self._log.warn('DRY-RUN: Would have pushed %r', args[1:])
       return
 
-    if not 'cwd' in kwargs:
+    if 'cwd' not in kwargs:
       assert self._repo_path is not None
       kwargs.setdefault('cwd', self._repo_path)
 

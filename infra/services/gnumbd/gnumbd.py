@@ -105,8 +105,9 @@ def content_of(commit):
 def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
   """Returns (ref, position number) for the given |commit|.
 
-  Looks for the Cr-Commit-Position footer. If that's unavailable, it falls back
-  to the git-svn-id footer, passing back ref as None.
+  Extracts them from Cr-Commit-Position footer (that looks like
+  refs/heads/master@{#287136}). If it falls back to git-svn-id, it passes back
+  None for ref, and relies on the caller to make its best guess.
 
   May raise the MalformedPositionFooter or NoPositionData exceptions.
   """
@@ -145,23 +146,23 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
   Cr-Branched-From footers (if commit is on a branch).
 
   The new commit's committer date will also be updated to 'time.time()', or
-  the new parent's date + 1, whichever is higher. This means that within a branch,
-  commit timestamps will always increase (at least from the point where this
-  daemon went into service).
+  the new parent's date + 1, whichever is higher. This means that within
+  a branch, commit timestamps will always increase (at least from the point
+  where this daemon went into service).
 
   @type commit: git2.Commit
   @type new_parent: git2.Commit
   @type ref: git2.Ref
-  @kind clock: implements .time(), used for testing determinisim.
+  @kind clock: implements .time(), used for testing determinism.
   """
   # TODO(iannucci): See if there are any other footers we want to carry over
   # between new_parent and commit
-  footers = collections.OrderedDict()
   parent_ref, parent_num = get_position(new_parent)
   # if parent_ref wasn't encoded, assume that the parent is on the same ref.
   if parent_ref is None:
     parent_ref = ref
 
+  footers = collections.OrderedDict()
   if parent_ref != ref:
     footers[COMMIT_POSITION] = [FMT_COMMIT_POSITION(ref, 1)]
     footers[BRANCHED_FROM] = [
@@ -198,8 +199,11 @@ def synthesize_commit(commit, new_parent, ref, clock=time):
 ################################################################################
 # Core functionality
 ################################################################################
+
 def get_new_commits(real_ref, pending_tag, pending_tip):
-  """Return a list of new pending commits to process.
+  """Return a list of new pending commits to process or None on an error.
+
+  Mutates pending_tag under some circumstances, see below.
 
   Ideally, real_ref, pending_tag and pending_tip should look something like:
 
@@ -224,28 +228,28 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
   A' B' C' D' E' F' <- master
 
   In either case, pending_tag would be advanced, and the method would return
-  the commits beteween the tag's proper position and the tip.
+  the commits between the tag's proper position and the tip.
 
   Other discrepancies are errors and this method will return an empty list.
 
   @type pending_tag: git2.Ref
   @type pending_tip: git2.Ref
   @type real_ref: git2.Ref
-  @returns [git2.Commit]
+  @returns [git2.Commit] or None
   """
   assert pending_tag.commit != pending_tip.commit
-  i = 0
   new_commits = list(pending_tag.to(pending_tip))
   if not new_commits:
     LOGGER.error('%r doesn\'t match %r, but there are no new_commits?',
                  pending_tag.ref, pending_tip.ref)
-    return []
+    return None
 
+  i = 0
   for commit in new_commits:
     parent = commit.parent
     if parent is git2.INVALID:
       LOGGER.error('Cannot process pending merge commit %r', commit)
-      return []
+      return None
 
     if content_of(parent) == content_of(real_ref.commit):
       break
@@ -260,7 +264,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
     if content_of(new_tag_val) != content_of(real_ref.commit):
       LOGGER.error('Content of new tag %r does not match content of %r!',
                    new_tag_val.hsh, real_ref.commit.hsh)
-      return []
+      return None
     new_commits = new_commits[i:]
     pending_tag.repo.fast_forward_push({pending_tag: new_tag_val})
 
@@ -295,7 +299,7 @@ def process_ref(real_ref, pending_tag, new_commits, clock=time):
   @type real_ref: git2.Ref
   @type pending_tag: git2.Ref
   @type new_commits: [git2.Commit]
-  @kind clock: implements .time(), used for testing determinisim.
+  @kind clock: implements .time(), used for testing determinism.
   @yields synthesized git2.Commit, pushes them to the remote as a side-effect.
   """
   # TODO(iannucci): use push --force-with-lease to reset pending to the real
@@ -335,6 +339,7 @@ def process_repo(repo, cref, clock=time):
   enabled_refglobs = cref['enabled_refglobs']
 
   def join(prefix, ref):
+    assert ref.ref.startswith('refs/')
     return repo['/'.join((prefix, ref.ref[len('refs/'):]))]
 
   success = True
@@ -342,7 +347,6 @@ def process_repo(repo, cref, clock=time):
   for refglob in enabled_refglobs:
     glob = join(pending_ref_prefix, repo[refglob])
     for pending_tip in repo.refglob(glob.ref):
-      # TODO(iannucci): each real_ref could have its own thread.
       try:
         real_ref = git2.Ref(repo, pending_tip.ref.replace(
             pending_ref_prefix, 'refs'))
@@ -362,7 +366,9 @@ def process_repo(repo, cref, clock=time):
 
         if pending_tag.commit != pending_tip.commit:
           new_commits = get_new_commits(real_ref, pending_tag, pending_tip)
-          if new_commits:
+          if new_commits is None:
+            success = False
+          elif new_commits:
             synthesized_commits.extend(
                 process_ref(real_ref, pending_tag, new_commits, clock))
         else:

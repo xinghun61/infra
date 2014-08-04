@@ -31,7 +31,7 @@
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'ERROR: ''refs/pending-tags/heads/master'' doesn''t match ''refs/pending/heads/master'',
     but there are no new_commits?'
-- inner_loop success: true
+- inner_loop success: false
   synthesized_commits: []
 - - Should see errors and no change
   - origin:

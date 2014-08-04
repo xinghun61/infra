@@ -35,7 +35,7 @@
     (was 1 behind)'
   - 'ERROR: Content of new tag ''074071c552b436f9167c3b16b41e1092e90cc297'' does not
     match content of ''f493b56e446fb46797fa09bbf5888790acb039f2''!'
-- inner_loop success: true
+- inner_loop success: false
   synthesized_commits: []
 - - Should see errors and no change
   - origin:

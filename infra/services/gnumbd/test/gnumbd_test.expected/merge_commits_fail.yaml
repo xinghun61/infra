@@ -35,7 +35,7 @@
   - 'ERROR: Commit ''38b859f0a917740e3f427a6aa7d3322ff3934693'' has more than one
     parent!'
   - 'ERROR: Cannot process pending merge commit Commit(TestRepo(''local''), ''38b859f0a917740e3f427a6aa7d3322ff3934693'')'
-- inner_loop success: true
+- inner_loop success: false
   synthesized_commits: []
 - - Should be the same
   - origin:
