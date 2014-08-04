@@ -56,10 +56,10 @@ CONFIG = {
                 'V8 GC Stress - 1',
                 'V8 GC Stress - 2',
                 'V8 GC Stress - 3',
-                'Linux Debug Builder',
-                # FIXME(machenbach): The builder has issues since a restart.
+                # FIXME(machenbach,hinoka): bot_update revision issues.
+                # 'Linux Debug Builder',
                 # 'Linux ASAN Builder',
-                'Android Builder',
+                # 'Android Builder',
                 'V8 Linux GN',
                 # TODO(machenbach): Disabled until stability issues with the
                 # windows bot are resolved.
