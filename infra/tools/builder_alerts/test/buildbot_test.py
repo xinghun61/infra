@@ -14,3 +14,7 @@ class BuildbotTest(unittest.TestCase):
     ]
     for master_url, master_name in tests:
       self.assertEquals(buildbot.master_name_from_url(master_url), master_name)
+
+  def test_build_url(self):
+    url = buildbot.build_url('https://foo.com/p/bar', 'baz', '12')
+    self.assertEquals(url, 'https://foo.com/p/bar/builders/baz/builds/12')
