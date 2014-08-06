@@ -96,7 +96,7 @@
               <td class='longest-step-duration {{ howBadIsTime(build.response.steps.max.duration) }}'>
                 {{ build.response.steps.max.duration | prettifyBuildTime }}</td>
               <td class='longest-step-percent'>{{ build.response.steps.max.percent | prettifyPercent }}</td>
-              <core-ajax url='http://build.chromium.org/p/chromium.webkit/json/builders/{{build.builder}}/builds/{{build.buildnumber}}'
+              <core-ajax url='http://build.chromium.org/p/{{build.master}}/json/builders/{{build.builder}}/builds/{{build.buildnumber}}'
                 handleAs='json' auto response={{build.response}} on-core-response={{findLongest}}></core-ajax>
             </tr>
           </template>
