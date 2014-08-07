@@ -4,10 +4,21 @@
 
 """Outer loop for services that run short lived tasks."""
 
+import collections
 import logging
 import time
 
 LOGGER = logging.getLogger(__name__)
+
+LoopResults = collections.namedtuple(
+    'LoopResults',
+    [
+      # True on no errors or if all failed attempts were successfully retried.
+      'success',
+      # Total number of errors seen (some may have been fixed with retries).
+      'error_count',
+    ],
+)
 
 
 def loop(task, sleep_timeout, duration=None, max_errors=None):
@@ -25,12 +36,13 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
     @param max_errors: Max number of consecutive errors before loop aborts.
 
   Returns:
-    @returns False if at least one task invocation failed, True otherwise.
+    @returns LoopResults.
   """
   deadline = None if duration is None else (time.time() + duration)
   errors_left = max_errors
-  overall_success = True
+  failed = False
   loop_count = 0
+  error_count = 0
   try:
     while True:
       # Log that new attempt is starting.
@@ -59,10 +71,11 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
       if attempt_success:
         errors_left = max_errors
       else:
-        overall_success = False
+        error_count += 1
         if errors_left is not None:
           errors_left -= 1
           if not errors_left:
+            failed = True
             LOGGER.warn(
                 'Too many consecutive errors (%d), stopping.', max_errors)
             break
@@ -84,7 +97,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   except KeyboardInterrupt:
     LOGGER.warn('Stopping due to KeyboardInterrupt')
 
-  return overall_success
+  return LoopResults(not failed, error_count)
 
 
 def add_argparse_options(parser):  # pragma: no cover

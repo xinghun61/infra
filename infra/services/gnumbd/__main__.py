@@ -76,7 +76,7 @@ def main(args):  # pragma: no cover
   #
   #   When all is going well, this should be looping at < 1 sec. If things
   #   start going sideways, we should automatically back off.
-  success = outer_loop.loop(
+  loop_results = outer_loop.loop(
       task=outer_loop_iteration,
       sleep_timeout=cref['interval'],
       **opts.loop_opts)
@@ -84,6 +84,7 @@ def main(args):  # pragma: no cover
   if opts.json_output:
     with open(opts.json_output, 'w') as f:
       json.dump({
+        'error_count': loop_results.error_count,
         'synthesized_commits': [
           {
             'commit': c.hsh,
@@ -92,7 +93,7 @@ def main(args):  # pragma: no cover
         ],
       }, f)
 
-  return 0 if success else 1
+  return 0 if loop_results.success else 1
 
 
 if __name__ == '__main__':

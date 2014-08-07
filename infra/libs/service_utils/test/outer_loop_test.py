@@ -28,7 +28,7 @@ class TestOuterLoop(auto_stub.TestCase):
       tasks.pop(0)
       return True
     ret = outer_loop.loop(task, sleep_timeout=1)
-    self.assertTrue(ret)
+    self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual([1, 1, 1], self.sleeps)
 
   def testUntilDeadlineFastTask(self):
@@ -37,7 +37,7 @@ class TestOuterLoop(auto_stub.TestCase):
       calls.append(1)
       return True
     ret = outer_loop.loop(task, sleep_timeout=3, duration=10)
-    self.assertTrue(ret)
+    self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual(4, len(calls))
     self.assertEqual([3, 3, 3], self.sleeps)
 
@@ -47,7 +47,7 @@ class TestOuterLoop(auto_stub.TestCase):
       time.sleep(6)
       return True
     ret = outer_loop.loop(task, sleep_timeout=1, duration=5)
-    self.assertTrue(ret)
+    self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual([6], self.sleeps)
 
   def testUntilCtrlCWithErrors(self):
@@ -58,7 +58,7 @@ class TestOuterLoop(auto_stub.TestCase):
       tasks.pop(0)
       raise Exception('Error')
     ret = outer_loop.loop(task, sleep_timeout=1)
-    self.assertFalse(ret)
+    self.assertEqual(outer_loop.LoopResults(True, 3), ret)
     self.assertEqual([1, 1, 1], self.sleeps)
 
   def testMaxErrorCount(self):
@@ -71,6 +71,6 @@ class TestOuterLoop(auto_stub.TestCase):
         return False
       return True
     ret = outer_loop.loop(task, sleep_timeout=1, max_errors=3)
-    self.assertFalse(ret)
+    self.assertEqual(outer_loop.LoopResults(False, 5), ret)
     self.assertEqual(['skipped'], tasks)
     self.assertEqual([1, 1, 1, 1, 1, 1], self.sleeps)
