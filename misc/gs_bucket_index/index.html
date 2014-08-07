@@ -1,9 +1,47 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<html ng-app="main">
   <head>
     <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js">
-    </script>
+    <script src="/chromium-common/web/angular-1.2.0/angular.min.js"></script>
+    <script src="/chromium-common/web/jquery-2.1.1/jquery-2.1.1.min.js"></script>
+    <script src="/chromium-common/web/ng-grid/ng-grid.min.js"></script>
+
+    <link rel="stylesheet" href="/chromium-common/web/ng-grid/ng-grid.min.css" />
+    <link rel="stylesheet" href="/chromium-common/web/bootstrap-3.2.0/bootstrap.min.css" />
+
+    <style>
+      body, html {
+        height: 95%;
+        width: 95%;
+        margin: 0;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .wrapper {
+        display: table;
+        width: 100%;
+        height: 100%;
+      }
+
+      .loader-spinner {
+        width: 30px;
+        height: 30px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .header {
+        height: 70px;
+        display: table-row;
+        background: OldLace;
+      }
+
+      .gridStyle {
+        display: table-row;
+        height: 100% !important;
+      }
+    </style>
 
     <script language="javascript">
       // Split a string in 2 parts. The first is the leading number, if any,
@@ -60,6 +98,22 @@
         return (a < b) ? -1 : (a > b ? 1 : 0)
       }
 
+      var TYPE_ORDER = ["parent", "prefix", "storageObject"];
+
+      function entryCompare(a, b) {
+        var aType = TYPE_ORDER.indexOf(a.type);
+        var bType = TYPE_ORDER.indexOf(b.type);
+        if (aType != bType) {
+          return aType - bType;
+        }
+
+        return alphanumCompare(a.name, b.name);
+      }
+
+      function sizeCompare(a, b) {
+        return ((a || 0) - (b || 0));
+      }
+
       // Helper function to retrieve the value of a GET query parameter.
       // Greatly inspired from http://alturl.com/8rj7a
       function getParameter(parameterName) {
@@ -96,52 +150,13 @@
       String.prototype.endsWith = function(suffix) {
             return this.indexOf(suffix, this.length - suffix.length) !== -1;
       };
-    </script>
-  </head>
-  <body>
-    <h1>
-      Index of <em id="bucket-name"></em>/<span id="bucket-prefix"></span>
-    </h1>
 
-    <table id="content-table" style="border-spacing:15px 0px;">
-      <tr>
-        <th><img class="img-blank" alt="[ICO]"></th>
-        <th>Name</th>
-        <th>Last modified</th>
-        <th>Size</th>
-        <th>Commit Position</th>
-        <th>Commit</th>
-      </tr>
-      <!-- Table header line -->
-      <tr>
-        <th colspan="6"><hr></th>
-      </tr>
-
-      <!-- Insert table contents here -->
-
-      <!-- Table footer line -->
-      <tr>
-        <th colspan="6"><hr></th>
-      </tr>
-    </table>
-
-    <script type="application/javascript">
-
-      var CR_GIT_COMMIT_POSITION_NUMBER_KEY = 'Cr-Commit-Position-Number';
+      var CR_COMMIT_POSITION_NUMBER_KEY = 'Cr-Commit-Position-Number';
       var CR_GIT_COMMIT_KEY = 'Cr-Git-Commit';
 
-      var lastSlash = location.pathname.lastIndexOf("/");
-      var root = location.pathname.substring(0, lastSlash);
-      var bucket = root;
-      var prefix = getParameter('prefix');
-
-      if(bucket[0] == "/") {
-        bucket = bucket.substring(1);
-      }
-
-      function getDisplayName(objectName) {
-        if (objectName.indexOf(prefix) == 0) {
-          objectName = objectName.substring(prefix.length);
+      function getDisplayName($scope, objectName) {
+        if (objectName.indexOf($scope.prefix) == 0) {
+          objectName = objectName.substring($scope.prefix.length);
         }
         if (objectName.endsWith("/")) {
           objectName = objectName.substring(0, (objectName.length - 1));
@@ -154,152 +169,126 @@
         return (storageObject.metadata || {})[key.toLowerCase()]
       }
 
-      function getPositionNumberHTML(bucket, storageObject) {
-        var v = getMetadata(storageObject,
-                            CR_GIT_COMMIT_POSITION_NUMBER_KEY);
-
-        // Handle no metadata
-        if (v === undefined) {
-          return '-';
-        }
-
-        return '<a href="https://crrev.com/' + escape(v) + '">' + v + '</a>';
+      function getCommitPositionNumber(storageObject) {
+        return getMetadata(storageObject, CR_COMMIT_POSITION_NUMBER_KEY);
       }
 
-      function getGitCommitHTML(bucket, storageObject) {
-        var gitCommit = getMetadata(storageObject, CR_GIT_COMMIT_KEY);
-
-        // Handle no metadata
-        if (gitCommit === undefined) {
-          return '-';
-        }
-
-        return '<a href="https://crrev.com/' + escape(gitCommit) + '">' +
-               gitCommit + '</a>';
+      function getGitCommit(storageObject) {
+        return getMetadata(storageObject, CR_GIT_COMMIT_KEY);
       }
 
-      var topTableOffset = 2;
-      var numBuckets = 0;
-      var numItems = 0;
-
-      function appendTableRow(idx, contentHTML) {
-        $("#content-table").each(function() {
-          this.insertRow(idx).innerHTML = contentHTML;
-        });
+      function getCommitPositionNumberURL(commitPositionNumber) {
+        return 'https://crrev.com/' + escape(commitPositionNumber);
       }
 
-      function appendTopRow(contentHTML) {
-        appendTableRow(topTableOffset, contentHTML);
-        topTableOffset++;
+      function getGitCommitURL(gitCommit) {
+        return 'https://crrev.com/' + escape(gitCommit);
       }
 
-      function appendPrefixRow(contentHTML) {
-        appendTableRow(topTableOffset + numBuckets, contentHTML);
-        numBuckets++;
+      function formatSizeUnits(bytes){
+              if      (bytes>=1000000000) {bytes=(bytes/1000000000).toFixed(2)+' GB';}
+              else if (bytes>=1000000)    {bytes=(bytes/1000000).toFixed(2)+' MB';}
+              else if (bytes>=1000)       {bytes=(bytes/1000).toFixed(2)+' KB';}
+              else if (bytes>1)           {bytes=bytes+' bytes';}
+              else if (bytes==1)          {bytes=bytes+' byte';}
+              else                        {bytes='0 byte';}
+              return bytes;
       }
 
-      function appendItemRow(contentHTML) {
-        appendTableRow(topTableOffset + numBuckets + numItems, contentHTML);
-        numItems++;
+      function createEntry(type, name, icon) {
+        var entry = {
+            type: type,
+            name: name,
+            icon: icon,
+        };
+        entry.this = entry;
+        return entry;
       }
 
-      function addParentRow() {
+      function getParentRowEntry($scope) {
         var backpath = location.pathname;
 
         // If there is more than one section delimited by '/' in the current
         // prefix we truncate the last section and append the rest to
         // backpath.
-        var delimiter = prefix.lastIndexOf('/');
+        var delimiter = $scope.prefix.lastIndexOf('/');
         if (delimiter >= 0) {
-          delimiter = prefix.substr(0, delimiter).lastIndexOf('/');
+          delimiter = $scope.prefix.substr(0, delimiter).lastIndexOf('/');
           if (delimiter >= 0) {
             backpath += '?prefix=';
-            backpath += escape(prefix.substr(0, delimiter+1));
+            backpath += escape($scope.prefix.substr(0, delimiter+1));
           }
         }
 
-        appendTopRow(
-          '<td valign="top"><img src="' + root +
-                                 '/icons/back.gif" alt="[DIR]"></td>' +
-          '<td><a href="' + backpath + '">Parent Directory</a></td>' +
-          '<td>&nbsp;</td>' +
-          '<td align="right">  - </td>' +
-          '');
+        var entry = createEntry("parent", "Parent Directory", "back.gif");
+        entry.url = backpath;
+        return entry;
       }
 
-      function augmentPrefixes(prefixes) {
-        prefixes.sort(function(a, b){
-            return alphanumCompare(getDisplayName(a), getDisplayName(b));
-        });
-        prefixes.forEach(function(directory) {
-          var lnk = location.pathname.substr(0, location.pathname.indexOf('?'));
-          lnk += '?prefix=' + directory;
-          this.appendPrefixRow(
-            '<td valign="top"><img src="' + root +
-                '/icons/folder.gif" alt="[DIR]"></td>' +
-            '<td><a href="' + lnk + '">' + getDisplayName(directory) +
-                '</a></td>' +
-            '<td align="right">-</td>' +
-            '<td align="right">-</td>' +
-            '<td align="right">-</td>' +
-            '<td align="right">-</td>' +
-            ''
+      function getPrefixEntries($scope, prefixes) {
+        var entries = Array();
+        prefixes.forEach(function(prefix) {
+          var link = location.pathname.substr(0,
+              location.pathname.indexOf('?')) + '?prefix=' + prefix;
+
+          var entry = createEntry(
+            "prefix",
+            getDisplayName($scope, prefix),
+            "folder.gif"
           );
+          entry.prefix = prefix;
+          entry.url = link;
+          entries.push(entry);
         });
+        return entries;
       }
 
-      function augmentItems(items) {
+      function getStorageObjectEntries($scope, items) {
         // Set up the variables.
-        var files = Array();
+        var entries = Array();
         items.forEach(function(storageObject) {
           // If this object _is_ the current prefix, skip it.
           if(
               (storageObject.kind !== 'storage#object') ||
-              (storageObject.name === prefix)) {
+              (storageObject.name === $scope.prefix)) {
             return;
           }
-          files.push(storageObject);
-        });
-        files.sort(function(a, b){
-            return alphanumCompare(a.name, b.name);
-        });
 
-        files.forEach(function(storageObject) {
-          var link = storageObject['mediaLink'];
-          var filename = getDisplayName(storageObject['name']);
-          var size = parseInt(storageObject['size']) / 1024 / 1024;
-          var lastModified = storageObject['updated'].replace('T', ' ');
+          var link = storageObject.mediaLink;
+          var filename = getDisplayName($scope, storageObject.name);
+          var lastModified = storageObject.updated.replace('T', ' ');
           lastModified = lastModified.substr(0, lastModified.indexOf('.'));
 
-          // Remove the entries we don't want to show.
           if (filename == '') {
             return;
           }
 
-          // Display the row.
-          appendItemRow(
-            '<td valign="top"><img src="' + root +
-                           '/icons/binary.gif" alt="[DIR]"></td>' +
-            '<td><a href="' + link + '">' + filename + '</a></td>' +
-            '<td align="right">' + lastModified + '</td>' +
-            '<td align="right">' + size.toFixed(2) + 'MB</td>' +
-            '<td align="right">' +
-                getPositionNumberHTML(bucket, storageObject) + '</td>' +
-            '<td align="right">' +
-                getGitCommitHTML(bucket, storageObject) + '</td>' +
-            '');
+          var entry = createEntry(
+            "storageObject",
+            filename,
+            "binary.gif"
+          );
+          entry.so = storageObject;
+          entry.url = link;
+          entry.lastModified = lastModified;
+          entry.size = storageObject.size;
+          entry.commit = getGitCommit(storageObject);
+          entry.commitPositionNumber = getCommitPositionNumber(storageObject);
+          entries.push(entry);
         });
+        return entries;
       }
 
-      function fetchAndDisplayObjects() {
+      function fetchAndDisplayObjects($scope, $http) {
         var gsAPIBase = 'https://www.googleapis.com/storage/v1';
         var fieldsParam = 'items(kind,mediaLink,metadata,name,size,updated),' +
                           'kind,prefixes,nextPageToken';
-        var gsAPIListObjects = gsAPIBase + '/b/' + bucket + '/o';
-        var url = gsAPIListObjects + '?delimiter=/&prefix=' + prefix +
+        var gsAPIListObjects = gsAPIBase + '/b/' + $scope.bucket + '/o';
+        var url = gsAPIListObjects + '?delimiter=/&prefix=' + $scope.prefix +
                   '&fields=' + fieldsParam;
 
         // Initial page load
+        $scope.loading = true;
         addNextPage('')
 
         function addNextPage(nextPageToken) {
@@ -308,68 +297,182 @@
             reqURL += '&pageToken=' + nextPageToken;
           }
 
-          var http = new XMLHttpRequest();
-          http.open('GET', reqURL, true);
-          http.onreadystatechange = addNextPageHttpResponse;
-          http.send(null);
+          var req = $http.get(reqURL).
+            success(function(data, status, headers, config) {
+              if(data.kind != 'storage#objects') {
+                console.log("JSON API did not return 'storage#objects' object");
+                return;
+              }
 
-          function addNextPageHttpResponse() {
-            if (http.readyState !== http.DONE) {
-              return;
-            }
+              var entries = Array();
 
-            // If the status isn't 200, error and stop.
-            if (http.status != 200) {
-              console.log("HTTP request failed with [" + http.status + "]");
-              return;
-            }
+              // Augment prefixes
+              if (data.prefixes !== undefined) {
+                entries.push.apply(
+                    entries,
+                    getPrefixEntries($scope, data.prefixes)
+                );
+              }
 
-            objectsDict = JSON.parse(http.responseText);
-            if(objectsDict.kind != 'storage#objects') {
-              console.log("JSON API did not return 'storage#objects' object");
-              return;
-            }
+              // Augment items
+              if (data.items !== undefined) {
+                entries.push.apply(
+                    entries,
+                    getStorageObjectEntries($scope, data.items)
+                );
+              }
 
-            // Augment prefixes
-            if (objectsDict.prefixes !== undefined) {
-              augmentPrefixes(objectsDict.prefixes)
-            }
+              // Add all generated entries to our table data.
+              $scope.data.push.apply($scope.data, entries);
 
-            // Augment items
-            if (objectsDict.items !== undefined) {
-              augmentItems(objectsDict.items)
-            }
+              // Load next page
+              if(data.nextPageToken !== undefined) {
+                return addNextPage(data.nextPageToken);
+              }
 
-            // Load next page
-            if(objectsDict.nextPageToken !== undefined) {
-              addNextPage(objectsDict.nextPageToken);
-            }
-          }
+              // Finished loading.
+              $scope.loading = false;
+            }).
+            error(function(data, status, headers, config) {
+              console.log("HTTP request failed with [" + status + "]");
+            });
+          return req;
         }
       }
 
-      $( document ).ready(function() {
-        // Initialize static content
-        $('.img-blank').each(function() {
-          $(this).attr('src', root + '/icons/blank.gif');
-        });
+      var app = angular.module('main', ['ngGrid'])
+      app.controller('ChromeGSIndex', function($scope, $http, $sce) {
+        $scope.data = new Array();
 
-        $('#bucket-name').each(function() {
-          $(this).html(bucket);
-        });
+        var lastSlash = location.pathname.lastIndexOf("/");
 
-        $('#bucket-prefix').each(function() {
-          $(this).html(prefix);
-        });
+        $scope.root = location.pathname.substring(0, lastSlash);
+        $scope.prefix = getParameter('prefix');
+        $scope.iconPath = "/chromium-common/images";
+        $scope.loading = false;
 
-        // Add "parent" row, if we have a non-empty prefix
-        if (prefix != '') {
-          addParentRow();
+        var bucket = $scope.root;
+        if(bucket[0] == "/") {
+          bucket = bucket.substring(1);
+        }
+        $scope.bucket = bucket;
+
+        // Add a parent directory entry, if applicable
+        if ($scope.prefix != "") {
+          $scope.data.push(getParentRowEntry($scope));
         }
 
-        // Fetch and render
-        fetchAndDisplayObjects();
+        $scope.filterOptions = {
+          filterText: '',
+        };
+
+        $scope.commitPositionNumberHtml = function(entry) {
+          var html;
+          if (entry.type != "storageObject") {
+            html = "";
+          } else if (entry.commitPositionNumber) {
+            var link = getCommitPositionNumberURL(entry.commitPositionNumber);
+            html = "<a href='" + link + "'>" +
+                     entry.commitPositionNumber +
+                   "</a>";
+          } else {
+            html = "-";
+          }
+          return $sce.trustAsHtml(html);
+        };
+
+        $scope.commitHtml = function(entry) {
+          var html;
+          if (entry.type != "storageObject") {
+            html = "";
+          } else if (entry.commit) {
+            var link = getGitCommitURL(entry.commit);
+            html = "<a href='" + link + "'>" +
+                     entry.commit +
+                   "</a>";
+          } else {
+            html = "-";
+          }
+          return $sce.trustAsHtml(html);
+        };
+
+        $scope.getSizeHtml = function(value) {
+          var html;
+          // This checks for value in 'undefined' and 'null'.
+          if (value == null) {
+            html = "";
+          } else {
+            html = formatSizeUnits(value);
+          }
+          return $sce.trustAsHtml(html);
+        };
+
+        $scope.gridOptions = {
+          data: 'data',
+          enableRowSelection: false,
+          enableColumnResize: true,
+          filterOptions: $scope.filterOptions,
+          columnDefs: [
+            {
+              displayName: "",
+              field: "icon",
+              width: "20px",
+              cellTemplate: "<img src='{{iconPath}}/{{row.entity.icon}}' />",
+            },
+            {
+              displayName: "Name",
+              field: "this",
+              width: "***",
+              sortFn: entryCompare,
+              cellTemplate:
+                "<div>" +
+                  "<a href='{{row.entity.url}}'>{{row.entity.name}}</a>" +
+                "</div>",
+            },
+            {
+              displayName: "Last Modified",
+              field: "lastModified",
+            },
+            {
+              displayName: "Size",
+              field: "size",
+              sortFn: sizeCompare,
+              cellTemplate:
+                "<div ng-bind-html='getSizeHtml(row.entity.size)'></div>",
+            },
+            {
+              displayName: "Commit Position",
+              field: "commitPositionNumber",
+              cellTemplate:
+                "<div ng-bind-html='commitPositionNumberHtml(row.entity)'></div>",
+            },
+            {
+              displayName: "Commit",
+              field: "commit",
+              width: "**",
+              cellTemplate:
+                "<div ng-bind-html='commitHtml(row.entity)'></div>",
+            },
+          ],
+        };
+
+        fetchAndDisplayObjects($scope, $http);
       });
     </script>
+  </head>
+  <body ng-controller="ChromeGSIndex">
+    <script type="text/ng-template" id="header">
+      <h1>
+        Index of <em>{{bucket}}</em>/{{prefix}}</span>
+        <img class="loader-spinner" ng-show="loading"
+            src="/chromium-common/images/spinner.gif"></img>
+      </h1>
+    </script>
+
+    <div class="wrapper">
+      <div class="header" ng-include="'header'"></div>
+      <strong>Filter:</strong><input type="text" ng-model="filterOptions.filterText" />
+      <div class="gridStyle" ng-grid="gridOptions"></div>
+    </div>
   </body>
 </html>
