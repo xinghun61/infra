@@ -1,6 +1,6 @@
 [run]
 include = ./*
-omit = ./ENV/*
+omit = ./ENV/*, ./appengine/third_party/*
 
 [report]
 exclude_lines =

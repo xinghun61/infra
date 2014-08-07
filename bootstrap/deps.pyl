@@ -16,6 +16,11 @@
     'build': '0',
     'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
   },
+  'numpy': {
+    'version': '1.10.0.dev_7e53e9b',
+    'build': '0',
+    'rev': '7e53e9b6f50ba98aafb73147917dfc39743fffd0',
+  },
   'python_dateutil': {
     'version': '1.5',
     'build': '0',
