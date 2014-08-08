@@ -1,0 +1,27 @@
+application: cr-rev
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+module: default
+automatic_scaling:
+  min_idle_instances: 1
+
+handlers:
+- url: /css
+  static_dir: css
+  secure: always
+
+- url: /.*
+  script: app.app
+  secure: always
+
+builtins:
+- remote_api: on
+
+inbound_services:
+- warmup
+
+libraries:
+- name: jinja2
+  version: latest

@@ -10,6 +10,10 @@ deps = {
      "@292e1a46f854be008b1dd46f15e07e023fd1eb8a"),
 
   # Appengine third_party DEPS
+  "infra/appengine/third_party/bootstrap":
+    ("https://chromium.googlesource.com/infra/third_party/bootstrap.git"
+     "@b4895a0d6dc493f17fe9092db4debe44182d42ac"),
+
   "infra/appengine/third_party/cloudstorage":
     ("https://chromium.googlesource.com/infra/third_party/cloudstorage.git"
      "@ad74316d12e198e0c7352bd666bbc2ec7938bd65"),
