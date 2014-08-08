@@ -88,7 +88,7 @@ function Draw(entries, timeRange) {
       new Dygraph(document.getElementById("peak_dygraph"),
                   graphCSV.join(""),
                   {
-                    rollPeriod: 7,
+                    rollPeriod: 1,
                     showRoller: true,
                     axisLabelFontSize: 11,
                     includeZero: true,
