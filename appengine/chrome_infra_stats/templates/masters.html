@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <p>
+        {% if login_url %}
+          <a href={{ login_url}}>{{ login_text }}</a>
+        {% else %}
+          {{ login_text }}
+        {% endif %}
+        </p>
+        <div class="span10">
+          <h3> crawled masters </h3>
+          <ul>
+            {% for master in masters %}
+            <li>{{ master}}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+{% endblock %}

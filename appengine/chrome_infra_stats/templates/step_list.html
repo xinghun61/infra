@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <p>
+        {% if login_url %}
+          <a href={{ login_url}}>{{ login_text }}</a>
+        {% else %}
+          {{ login_text }}
+        {% endif %}
+        </p>
+          {% for step_group_name in group_data %}
+          <div class="span10">
+            <h3> {{ step_group_name }} </h3>
+          (top graph: timing in seconds,
+          bottom graph: seen per hour, failures per hour, failure %)
+            {% for i in range(len(column_tuples)) %}
+            <div id='chart_div_{{ sha256(step_group_name).hexdigest() }}_{{ i
+              }}'><p>loading graph...</p></div>
+            {% if not loop.last %}
+            <p>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% if not loop.last %}
+          <hr/>
+          {% endif %}
+          {% endfor %}
+      </div>
+    </div>
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+  <script type='text/javascript'>
+     google.load('visualization', '1.1', {'packages':['annotationchart']});
+     google.setOnLoadCallback(drawMarkersMap);
+     function drawMarkersMap() {
+       {% for step_name, step_url in group_data.iteritems() %}
+         $.getJSON("{{ step_url }}", function(chart_data) {
+            {% for i, column_tuple in enumerate(column_tuples) %}
+              var data = new google.visualization.DataTable();
+              data.addColumn('datetime', 'Time');
+              {% for column_name, _ in column_tuple %}
+              data.addColumn('number', '{{ column_name }}');
+              {% endfor %}
+
+              chart_data['statistics'].forEach(function(row) {
+                data.addRow([
+                  new Date(row['center']),
+                  {% for _, column_field in column_tuple %}
+                  Number(row['{{ column_field }}']){% if not loop.last %},{% endif %}
+                  {% endfor %}
+                  ]);
+              });
+
+              var options = {
+              };
+
+              var elem = document.getElementById(
+                    'chart_div_{{ sha256(step_name).hexdigest() }}_{{ i }}')
+
+              $('#chart_div_{{ sha256(step_name).hexdigest() }}_{{ i }}').html('');
+
+              var chart = new google.visualization.AnnotationChart(elem);
+              chart.draw(data, options);
+            {% endfor %}
+          });
+        {% endfor %}
+    };
+  </script>
+{% endblock %}

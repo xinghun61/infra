@@ -11,6 +11,11 @@
     'build': '0',
     'rev': 'a88dcaae3132003ae123d39a2cd9924113b8f985',
   },
+  'beautifulsoup4': {
+    'version': '4.3.2',
+    'build': '0',
+    'rev': '372c827cb1d38e418163d6b3fa5f550bdc5a8ec7',
+  },
   'coverage': {
     'version': '3.7.1',
     'build': '0',
@@ -58,11 +63,31 @@
     'rev': '54d12a58aabb169bf01a06e8af92807d32eba032',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
+  'six': {
+    'version': '1.7.3',
+    'build': '0',
+    'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
+  },
   'testing_support': {
     'version': '0.1.2',
     'build': '0',
     'rev': '0ffa4a6eea5585ea0ca760a2e268dfbff167eba7',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
+  },
+  'waitress': {
+    'version': '0.8.10dev',
+    'build': '0',
+    'rev': '77698fbf35376bdd530493e5db262c256ebe87c4',
+  },
+  'WebTest': {
+    'version': '2.0.16.dev0',
+    'build': '0',
+    'rev': '6581ebfe7e1f95b6f2e193723a9e0e1f02337851',
+  },
+  'WebOb': {
+    'version': '1.4.1dev',
+    'build': '0',
+    'rev': 'ec67aba9d62d0e32dc5154c940a2214441bf0a9e',
   },
 
   # Deps for oauth2client

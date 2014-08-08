@@ -1,0 +1,83 @@
+application: chrome-infra-stats
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F2
+module: default
+automatic_scaling:
+  min_idle_instances: 1
+
+handlers:
+# Pipeline handler
+- url: /_ah/pipeline(/.*)?
+  script: pipeline.handlers._APP
+
+# Endpoints handler
+- url: /_ah/spi/.*
+  script: stats_api.APPLICATION
+
+- url: /crawl_masters
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /run_step_summary_jobs
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /delete_summary/.*
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /delete_all_summaries
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /cache_page
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /cache_steps
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /cull_steps
+  login: admin
+  secure: always
+  script: app.app
+
+- url: /css
+  static_dir: css
+  secure: always
+
+- url: /js
+  static_dir: js
+  secure: always
+
+- url: /.*
+  script: app.app
+  secure: always
+
+builtins:
+- remote_api: on
+- appstats: on
+- deferred: on
+
+inbound_services:
+- warmup
+
+libraries:
+- name: jinja2
+  version: latest
+- name: endpoints
+  version: 1.0
+- name: pycrypto
+  version: "2.6"
+- name: numpy
+  version: latest

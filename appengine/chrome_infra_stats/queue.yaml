@@ -1,0 +1,24 @@
+queue:
+- name: default
+  rate: 5/s
+- name: step-summary
+  rate: 500/s
+  bucket_size: 100
+  retry_parameters:
+    task_age_limit: 1h
+- name: summary-cache
+  rate: 5/s
+- name: step-write
+  rate: 100/s
+- name: builder-crawl
+  rate: 5/s
+  max_concurrent_requests: 50
+- name: master-crawl
+  rate: 5/s
+  max_concurrent_requests: 50
+- name: summary-delete
+  rate: 5/s
+- name: page-render
+  rate: 5/s
+- name: step-operations
+  rate: 5/s

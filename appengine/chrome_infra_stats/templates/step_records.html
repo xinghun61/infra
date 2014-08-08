@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <p>
+        {% if login_url %}
+          <a href={{ login_url}}>{{ login_text }}</a>
+        {% else %}
+          {{ login_text }}
+        {% endif %}
+        </p>
+          <div class="span10">
+            <table>
+              <tr>
+                <th>Link</th>
+                <th>Start Time</th> 
+                <th>Seconds</th> 
+                <th>Result</th>
+              </tr>
+              {% for record in records %}
+              <tr>
+                <td><a href="https://build.chromium.org/p/{{ record.master }}/builders/{{ record.builder }}/builds/{{ record.buildnumber }}/steps/{{ record.stepname }}">https://build.chromium.org/p/{{ record.master }}/builders/{{ record.builder }}/builds/{{ record.buildnumber }}/steps/{{ record.stepname }}</a></td>
+                <td>{{ record.step_start.isoformat() }}</td>
+                <td>{{ record.step_time }}</td>
+                <td>{{ record.result }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+      </div>
+    </div>
+{% endblock %}

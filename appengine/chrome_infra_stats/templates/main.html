@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <p>
+        {% if login_url %}
+          <a href={{ login_url}}>{{ login_text }}</a>
+        {% else %}
+          {{ login_text }}
+        {% endif %}
+        </p>
+        <div class="span10">
+          <h3> welcome to chrome-infra-stats! </h3>
+          <ul>
+            <li><a href="/masters">currently crawled masters</a></li>
+          </ul>
+          <hr/>
+          <h4> individual step graphs </h4>
+          <ol>
+            {% for step in steps %}
+            <li><a href="/view/{{ quote(step[0]) }}">{{ step[0] }}</a> (seen {{ step[1]
+              }} times in the past {{ hour_window }} hours)</li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+    </div>
+{% endblock %}

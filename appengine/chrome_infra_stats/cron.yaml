@@ -1,0 +1,16 @@
+cron:
+- description: crawl masters for new data
+  url: /crawl_masters
+  schedule: every 10 minutes
+- description: pre-cache cleaned step data
+  url: /cache_page
+  schedule: every 20 minutes
+- description: cache major step queries
+  url: /run_step_summary_jobs
+  schedule: every 15 minutes
+- description: pre-cache step data
+  url: /cache_steps
+  schedule: every 5 minutes
+- description: remove old steps
+  url: /cull_steps
+  schedule: every 20 minutes
