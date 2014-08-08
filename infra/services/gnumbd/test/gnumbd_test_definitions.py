@@ -523,3 +523,24 @@ def svn_mode_uses_svn_rev(origin, _local, config_ref, RUN, CHECKPOINT):
   CHECKPOINT('Hello world should be 200')
   assert content_of(origin[REAL].commit) == content_of(user_commit)
   assert origin[REAL].commit.parent == base_commit
+
+
+@gnumbd_test
+def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
+  config_ref.update(
+    git_svn_mode=True,
+    push_synth_extra={
+      'refs/heads/master': ['refs/heads/crazy-times']
+    }
+  )
+
+  base_commit = origin[REAL].synthesize_commit('Base commit', 100, svn=True)
+  for ref in (PEND, PEND_TAG):
+    origin[ref].update_to(base_commit)
+
+  user_commit = origin[PEND].synthesize_commit('Hello world', 200, svn=True)
+  CHECKPOINT('Two commits in origin')
+  RUN()
+  CHECKPOINT('Should have crazy-times')
+  assert content_of(origin[REAL].commit) == content_of(user_commit)
+  assert origin[REAL].commit.parent == base_commit

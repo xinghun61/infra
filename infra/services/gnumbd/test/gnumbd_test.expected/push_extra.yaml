@@ -1,0 +1,74 @@
+- - Two commits in origin
+  - origin:
+      refs/heads/master:
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+      refs/pending-tags/heads/master:
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+      refs/pending/heads/master:
+        32d0752c1f7674b3c99f6b84e53e9d5e4d7c29b1:
+        - Hello world
+        - ''
+        - 'git-svn-id: svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98'
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''ff57398878d77d349777b99e1698f7857c7189b8''
+    for ''32d0752c1f7674b3c99f6b84e53e9d5e4d7c29b1'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: ff57398878d77d349777b99e1698f7857c7189b8
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#200}
+      git-svn-id:
+      - svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98
+- - Should have crazy-times
+  - origin:
+      refs/heads/crazy-times:
+        ff57398878d77d349777b99e1698f7857c7189b8:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#200}'
+        - 'git-svn-id: svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98'
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+      refs/heads/master:
+        ff57398878d77d349777b99e1698f7857c7189b8:
+        - Hello world
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#200}'
+        - 'git-svn-id: svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98'
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+      refs/pending-tags/heads/master:
+        32d0752c1f7674b3c99f6b84e53e9d5e4d7c29b1:
+        - Hello world
+        - ''
+        - 'git-svn-id: svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98'
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'
+      refs/pending/heads/master:
+        32d0752c1f7674b3c99f6b84e53e9d5e4d7c29b1:
+        - Hello world
+        - ''
+        - 'git-svn-id: svn://repo/path@200 0039d316-1c4b-4281-b951-d872f2087c98'
+        143b0974cb6efb76aea4d1bef29c80e60a572615:
+        - Base commit
+        - ''
+        - 'git-svn-id: svn://repo/path@100 0039d316-1c4b-4281-b951-d872f2087c98'

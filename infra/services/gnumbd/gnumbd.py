@@ -43,6 +43,10 @@ class GnumbdConfigRef(config_ref.ConfigRef):
     'pending_tag_prefix': lambda self, val: str(val),
     'pending_ref_prefix': lambda self, val: str(val),
     'enabled_refglobs': lambda self, val: map(str, list(val)),
+    'push_synth_extra': lambda self, val: dict(
+      (str(k), [self.repo[r] for r in v])
+      for k, v in val.iteritems()
+    )
   }
   DEFAULTS = {
     # If git_svn_mode is True, the following happens:
@@ -54,6 +58,7 @@ class GnumbdConfigRef(config_ref.ConfigRef):
     'pending_tag_prefix': 'refs/pending-tags',
     'pending_ref_prefix': 'refs/pending',
     'enabled_refglobs': [],
+    'push_synth_extra': {},
   }
   REF = 'refs/gnumbd-config/main'
 
@@ -242,7 +247,7 @@ def generate_footers_from_parent(new_parent, ref):
   return footers
 
 
-def generate_footers_from_git_svn_id(commit, new_parent, ref):
+def generate_footers_from_git_svn_id(commit, _new_parent, ref):
   """Generates Cr-Commit-Position footer from git-svn-id footer.
 
   Will never generate Cr-Branched-From footer.
@@ -335,7 +340,8 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
   return new_commits
 
 
-def process_ref(real_ref, pending_tag, new_commits, git_svn_mode, clock=time):
+def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
+                push_synth_extras, clock=time):
   """Given a |real_ref|, its corresponding |pending_tag|, and a list of
   |new_commits|, copy the |new_commits| to |real_ref|, and advance |pending_tag|
   to match.
@@ -377,10 +383,13 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode, clock=time):
     logging.info(
         'Pushing synthesized commit %r for %r and pending_tag %r',
         synth_commit.hsh, commit.hsh, pending_tag)
-    repo.fast_forward_push({
+    to_push = {
       real_ref: synth_commit,
       pending_tag: commit,
-    })
+    }
+    for extra_ref in push_synth_extras:
+      to_push[extra_ref] = synth_commit
+    repo.fast_forward_push(to_push)
 
     real_parent = synth_commit
     yield synth_commit
@@ -398,6 +407,7 @@ def process_repo(repo, cref, clock=time):
   pending_tag_prefix = cref['pending_tag_prefix']
   pending_ref_prefix = cref['pending_ref_prefix']
   enabled_refglobs = cref['enabled_refglobs']
+  push_synth_extra = cref['push_synth_extra']
 
   def join(prefix, ref):
     assert ref.ref.startswith('refs/')
@@ -431,7 +441,8 @@ def process_repo(repo, cref, clock=time):
             success = False
           elif new_commits:
             commits = process_ref(
-                real_ref, pending_tag, new_commits, git_svn_mode, clock)
+                real_ref, pending_tag, new_commits, git_svn_mode,
+                push_synth_extra.get(real_ref.ref, []), clock)
             synthesized_commits.extend(commits)
         else:
           if content_of(pending_tag.commit) != content_of(real_ref.commit):

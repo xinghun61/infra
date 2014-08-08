@@ -1,9 +1,9 @@
 - - Pending commit
   - origin:
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         9b00786942a531ae1510844f4ba3943cc4ca77fc:
@@ -36,9 +36,9 @@
 - - And now it's on master
   - origin:
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
@@ -75,9 +75,9 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
@@ -154,9 +154,9 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
@@ -220,9 +220,9 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
@@ -308,9 +308,9 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/gnumbd-config/main:
-        3300e3b9863dd17ad0c41c8ce82805bb397141f2:
+        962558f8747b949db3e3f5971dfbb457b50258f0:
         - update(['enabled_refglobs'])
-        0365440f21465fb629dd8ba04e0e4a87079200b7:
+        1ddb8725bf00fb1c0bb9bcd84d6de92f940e1861:
         - update(['interval', 'enabled_refglobs'])
       refs/heads/master:
         dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:
