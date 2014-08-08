@@ -15,7 +15,6 @@ import base_page
 import breakpad
 import commit_queue
 import event_push
-import git_lkgr
 import lkgr
 import login
 import profiling
@@ -46,11 +45,9 @@ URLS = [
   ('/cq/([^/]+)/(\d+)/?', commit_queue.Issue),
   ('/cq/([^/]+)/(\d+)/(\d+)/?', commit_queue.Issue),
   ('/current/?', status.CurrentPage),
-  # TODO(agable): redirect /lkgr to /git-lkgr on migration day.
   ('/lkgr/?', lkgr.LastKnownGoodRevisionSVN),
-  # TODO(agable): remove /svn-lkgr on migration day.
   ('/svn-lkgr/?', lkgr.LastKnownGoodRevisionSVN),
-  ('/git-lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
+  ('/git-lkgr/?', lkgr.LastKnownGoodRevisionGIT),
   ('/login/?', login.Login),
   ('/profiling/?', profiling.Profiling),
   ('/recent-events/?', event_push.RecentEvents),
@@ -61,9 +58,7 @@ URLS = [
   ('/restricted/static_blobs/upload_internal/(.*)/?',
     static_blobs.UploadHandler),
   ('/restricted/status-processor/?', event_push.StatusProcessor),
-  # TODO(agable): redirect /revisions to /commits on migration day.
   ('/revisions/?', lkgr.Revisions),
-  ('/commits/?', git_lkgr.Commits),
   ('/static_blobs/(.*)/?', static_blobs.ServeHandler),
   ('/static_blobs/list/?', static_blobs.ListPage),
   ('/status/?', status.StatusPage),
@@ -78,6 +73,5 @@ base_page.bootstrap()
 breakpad.bootstrap()
 commit_queue.bootstrap()
 lkgr.bootstrap()
-git_lkgr.bootstrap()
 status.bootstrap()
 utils.bootstrap()
