@@ -4,6 +4,7 @@
 
 """Collect stats regularly via app engine cron.
 """
+import calendar
 import datetime
 import json
 import logging
@@ -244,4 +245,83 @@ class CheckTreeHandler(webapp2.RequestHandler):
           stat.slo_offenders.append(v)
           if record['step_time'] > models.SLO_BUILDTIME_MAX:
             stat.num_over_max_slo += 1
+    stat.put()
+
+
+class CheckTreeStatusHandler(webapp2.RequestHandler):
+
+  status_url = ('https://%s-status.appspot.com/allstatus?format=json&'
+                'endTime=%s&limit=1000')
+
+  @staticmethod
+  def tree_is_open_for(entry):
+    # Count scheduled maintenance as tree open, we only want to alert on
+    # unexpected closures.
+    return (entry['can_commit_freely'] or
+            entry['message'].startswith('Tree is closed for maintenance'))
+
+  @staticmethod
+  def date_for( entry):
+    return datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S.%f')
+
+  def fetchEntries(self, project, days):
+    # Get two previous days of data, in case the tree has been in the same
+    # state for the entire time period.
+    data_start = datetime_now() - datetime.timedelta(days=days+2)
+    url = self.status_url % (project, calendar.timegm(data_start.timetuple()))
+    result = urlfetch.fetch(url)
+    entries = json.loads(result.content)
+    entries.sort(key=self.date_for)
+    return entries
+
+  def getStateOfTree(self, entries, cutoff):
+    # Find the state of the tree before the days started.
+    was_open = True
+    for index, entry in enumerate(entries):
+      if self.date_for(entry) > cutoff:
+        break
+      was_open = self.tree_is_open_for(entry)
+    return was_open
+
+  def get(self, project, days):
+    # Check tree status in last N days
+    days = int(days)
+    now = datetime_now()
+    cutoff = datetime_now() - datetime.timedelta(days=days)
+
+    entries = self.fetchEntries(project, days)
+    was_open = self.getStateOfTree(entries, cutoff)
+
+    # Now look through the entries in the relevant days to find the tree open
+    # times.
+    last_change = cutoff
+    open_time = datetime.timedelta(seconds=0)
+    closed_time = datetime.timedelta(seconds=0)
+    for entry in entries:
+      is_open = self.tree_is_open_for(entry)
+      if self.date_for(entry) <= cutoff or is_open == was_open:
+        continue
+      current_time = self.date_for(entry)
+      delta = current_time - last_change
+      if was_open:
+        open_time += delta
+      else:
+        closed_time += delta
+      last_change = current_time
+      was_open = is_open
+
+    delta = now - last_change
+    if was_open:
+      open_time += delta
+    else:
+      closed_time += delta
+
+    open_seconds = open_time.total_seconds()
+    closed_seconds = closed_time.total_seconds()
+    project_model = models.Project.get_or_insert(project)
+    project_model.put()
+    stat = models.TreeOpenStat(
+        parent=project_model.key,
+        num_days=days,
+        percent_open=(open_seconds / (open_seconds + closed_seconds)) * 100)
     stat.put()

@@ -21,3 +21,10 @@ indexes:
   ancestor: yes
   properties:
   - name: timestamp
+
+- kind: TreeOpenStat
+  ancestor: yes
+  properties:
+  - name: num_days
+  - name: timestamp
+    direction: desc

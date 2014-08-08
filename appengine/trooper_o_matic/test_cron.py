@@ -219,6 +219,36 @@ CHROMIUM_WIN_MASTER_TREE_24H = {
     }]
 }
 
+CHROMIUM_TREE_DATA = [{
+    'date': '2013-12-27 12:00:00.000000',
+    'message': 'Tree is closed (details)',
+    'can_commit_freely': False,
+}, {
+    'date': '2013-12-28 12:00:00.000000',
+    'message': 'Tree is open (message)',
+    'can_commit_freely': True,
+}, {
+    'date': '2013-12-24 00:00:00.000000',
+    'message': 'Tree is closed (x)',
+    'can_commit_freely': False,
+}, {
+    'date': '2013-12-25 12:00:00.000000',
+    'message': 'Tree is open (blah)',
+    'can_commit_freely': True,
+}, {
+    'date': '2013-12-28 13:00:00.000000',
+    'message': 'Tree is closed for maintenance (message)',
+    'can_commit_freely': False,
+}, {
+    'date': '2013-12-30 00:00:00.000000',
+    'message': 'Tree is closed (blah)',
+    'can_commit_freely': False,
+}, {
+    'date': '2013-12-30 12:00:00.000000',
+    'message': 'Tree is open (details)',
+    'can_commit_freely': True,
+},]
+
 URLFETCH_RESPONSES = {
     ('https://codereview.chromium.org/search?format=json&limit=500&'
      'with_messages=1&order=modified&'
@@ -254,8 +284,18 @@ URLFETCH_RESPONSES = {
     ('https://chrome-infra-stats.appspot.com/_ah/api/stats/v1/steps/'
      'chromium.win/overall__build__result__/2013-12-31T13:00Z'): {
          'statuscode': 200,
-         'content': json.dumps(CHROMIUM_WIN_MASTER_TREE_24H)
+         'content': json.dumps(CHROMIUM_WIN_MASTER_TREE_24H),
      },
+    ('https://chromium-status.appspot.com/allstatus?format=json&'
+     'endTime=1387800000&limit=1000'): {
+         'statuscode': 200,
+         'content': json.dumps(CHROMIUM_TREE_DATA),
+     },
+    ('https://chromium-status.appspot.com/allstatus?format=json&'
+     'endTime=1388318400&limit=1000'): {
+         'statuscode': 200,
+         'content': json.dumps(CHROMIUM_TREE_DATA),
+     }
 }
 
 
@@ -274,6 +314,7 @@ for hour in range(0, 24):
           'statuscode': 200,
       }
 
+
 class CronTest(unittest.TestCase):
 
   def setUp(self):
@@ -288,6 +329,7 @@ class CronTest(unittest.TestCase):
     app = webapp2.WSGIApplication([
         ('/check-cq', cron.CheckCqHandler),
         ('/check-tree/(.*)', cron.CheckTreeHandler),
+        ('/check-tree-status/([^/]*)/(.*)', cron.CheckTreeStatusHandler),
     ])
     self.testapp = webtest.TestApp(app)
     cron.datetime_now = MockNow
@@ -341,6 +383,26 @@ class CronTest(unittest.TestCase):
     self.assertEqual(1, stats[0].slo_offenders[2].result)
     self.assertEqual(1800, stats[0].slo_offenders[0].slo_median_buildtime)
     self.assertEqual(3600, stats[0].slo_offenders[0].slo_max_buildtime)
+
+  def testCheckTreeStatusSevenDays(self):
+    self.testapp.get('/check-tree-status/chromium/7')
+    projects = models.Project.query().fetch()
+    self.assertEqual(len(projects), 1)
+    self.assertEqual('chromium', projects[0].key.id())
+    stats = models.TreeOpenStat.query().fetch()
+    self.assertEqual(1, len(stats))
+    self.assertEqual(7, stats[0].num_days)
+    self.assertEqual(78.57142857142857, stats[0].percent_open)
+
+  def testCheckTreeStatusOneDayNoChanges(self):
+    self.testapp.get('/check-tree-status/chromium/1')
+    projects = models.Project.query().fetch()
+    self.assertEqual(1, len(projects))
+    self.assertEqual('chromium', projects[0].key.id())
+    stats = models.TreeOpenStat.query().fetch()
+    self.assertEqual(1, len(stats))
+    self.assertEqual(1, stats[0].num_days)
+    self.assertEqual(100.0, stats[0].percent_open)
 
 
 if __name__ == '__main__':

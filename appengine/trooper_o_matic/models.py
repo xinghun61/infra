@@ -27,6 +27,12 @@ class CqStat(ndb.Model):
   p99 = ndb.FloatProperty(default=0)
 
 
+class TreeOpenStat(ndb.Model):
+  timestamp = ndb.DateTimeProperty(auto_now_add=True)
+  num_days = ndb.IntegerProperty(required=True)
+  percent_open = ndb.FloatProperty(required=True)
+
+
 class Tree(ndb.Model):
   pass
 

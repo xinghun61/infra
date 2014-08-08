@@ -1,0 +1,73 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+<!doctype html>
+<html>
+  <head>
+    <title>Tree Open Status</title>
+    <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
+    <script type='text/javascript' src='//www.google.com/jsapi'></script>
+    <script>
+      var DAYS_1_DATA = {{ days_1|safe }};
+      var DAYS_7_DATA = {{ days_7|safe }};
+      var GAUGE_DATA = {{ data_gauge|safe }};
+    </script>
+    <style type="text/css">
+      body {
+        font-family: 'RobotoDraft';
+      }
+      .chart {
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tree Open Stats</h1>
+
+    <h2>Current Open Times (%)</h2>
+    <div class="chart" id="gauge-chart"></div>
+
+    <h2>Tree Open Times (24hr Rolling Average)</h2>
+    <div class="chart" id="days1-chart" style="height: 300px"></div>
+
+    <h2>Tree Open Times (7 Days Rolling Average)</h2>
+    <div class="chart" id="days7-chart" style="height: 300px"></div>
+
+    <script>
+      google.load('visualization', '1.1', {'packages':['annotationchart', 'gauge']});
+      google.setOnLoadCallback(drawCharts);
+      function drawCharts() {
+        drawChart(DAYS_1_DATA, 'days1-chart');
+        drawChart(DAYS_7_DATA, 'days7-chart');
+        drawGauge(GAUGE_DATA, 'gauge-chart');
+      }
+      function drawChart(data, id) {
+        var dataTable = new google.visualization.DataTable(data);
+        var chart = new google.visualization.AnnotationChart(
+            document.getElementById(id));
+        var options = {
+          displayAnnotations: true,
+          min: 0,
+          max: 100,
+          fill: 20,
+        };
+
+        chart.draw(dataTable, options);
+      }
+      function drawGauge(data, id) {
+        var dataTable = new google.visualization.arrayToDataTable(data);
+        var chart = new google.visualization.Gauge(
+          document.getElementById(id));
+        var options = {
+          height: 200,
+          greenFrom: 85, greenTo: 100,
+          yellowFrom: 80, yellowTo: 85,
+          redFrom: 0, redTo: 80,
+          minorTicks: 5
+        };
+
+        chart.draw(dataTable, options);
+      }
+    </script>
+  </body>
+</html>

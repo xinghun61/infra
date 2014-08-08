@@ -3,10 +3,26 @@ cron:
   url: /check-cq
   schedule: every 15 minutes
 
-- description: check chromium tree
+- description: check chromium tree for slow builds
   url: /check-tree/chromium
   schedule: every 15 minutes
 
-- description: check blink tree
+- description: check blink tree for slow builds
   url: /check-tree/blink
   schedule: every 15 minutes
+
+- description: check chromium tree open status for last 24 hours
+  url: /check-tree-status/chromium/1
+  schedule: every 15 minutes
+
+- description: check blink tree open status for last 24 hours
+  url: /check-tree-status/blink/1
+  schedule: every 15 minutes
+
+- description: check chromium tree open status for last 7 days
+  url: /check-tree-status/chromium/7
+  schedule: every 6 hours
+
+- description: check blink tree open status for last 7 days
+  url: /check-tree-status/blink/7
+  schedule: every 6 hours
