@@ -2,19 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from appengine.utils import testing_support
+from appengine.utils import testing
 from appengine.cr_rev import app
 
 
-class TestViews(testing_support.AppengineTestCase):
+class TestViews(testing.AppengineTestCase):
   app_module = app.app
 
   def test_main_page(self):
     """Test that the root page renders."""
-    response = self.testapp.get('/')
+    response = self.test_app.get('/')
     self.assertEquals('200 OK', response.status)
 
   def test_warmup(self):
     """Test that the warmup page renders."""
-    response = self.testapp.get('/_ah/warmup')
+    response = self.test_app.get('/_ah/warmup')
     self.assertEquals('200 OK', response.status)
