@@ -154,8 +154,27 @@ class JUnitSplitter(object):
     return None
 
 
-def decode_results(results, include_expected=False):  # pragma: no cover
-  tests = convert_trie_to_flat_paths(results['tests'])
+def decode_results(results, include_expected=False):
+  """
+  Decode test results into passes, failures, or flakes.
+
+  Each test has an expected result, an actual result, and a flag indicating
+  whether the test harness considered the result unexpected. For example, an
+  individual test result might look like:
+
+  {
+    'actual': 'PASS foobar',
+    'expected': 'foobar',
+    'is_unexpected': True,
+  }
+
+  A result is considered a pass if the actual result is just the string 'PASS'.
+  A result is considered a flake if the actual result has a value attached and
+  the value appears in the expected values. All other kinds of results are
+  considered failures. The test result given above is an example of a flake
+  result.
+  """
+  tests = flatten_test_results(results['tests'])
   failures = {}
   flakes = {}
   passes = {}
@@ -178,7 +197,42 @@ def decode_results(results, include_expected=False):  # pragma: no cover
   return (passes, failures, flakes)
 
 
-def convert_trie_to_flat_paths(trie, prefix=None):  # pragma: no cover
+def flatten_test_results(trie, prefix=None):
+  """
+  Flattens a trie structure of test results into a single-level map.
+
+  This function flattens a trie to a single-level map, stopping when it reaches
+  a nonempty node that has either 'actual' or 'expected' as child keys. For
+  example:
+
+  {
+    'foo': {
+      'bar': {
+        'expected': 'something good',
+        'actual': 'something bad'
+      },
+      'baz': {
+        'expected': 'something else good',
+        'actual': 'something else bad',
+        'quxx': 'some other test metadata'
+      }
+    }
+  }
+
+  would flatten to:
+
+  {
+    'foo/bar': {
+      'expected': 'something good',
+      'actual': 'something bad'
+    },
+    'foo/baz': {
+      'expected': 'something else good',
+      'actual': 'something else bad',
+      'quxx': 'some other test metadata'
+    }
+  }
+  """
   # Cloned from webkitpy.layout_tests.layout_package.json_results_generator
   # so that this code can stand alone.
   result = {}
@@ -187,7 +241,7 @@ def convert_trie_to_flat_paths(trie, prefix=None):  # pragma: no cover
       name = prefix + "/" + name
 
     if len(data) and not "actual" in data and not "expected" in data:
-      result.update(convert_trie_to_flat_paths(data, name))
+      result.update(flatten_test_results(data, name))
     else:
       result[name] = data
 
