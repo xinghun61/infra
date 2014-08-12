@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 import collections
+import datetime
 import json
 import logging
 import operator
 import os
-import urlparse
-import datetime
 import urllib
+import urlparse
 
 import requests
 
@@ -34,28 +34,28 @@ CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
 # Unclear if this should be specific to builds.
 class BuildCache(object):
-  def __init__(self, root_path):  # pragma: no cover
+  def __init__(self, root_path):
     self.root_path = root_path
 
   # Could be in operator.
-  def has(self, key):  # pragma: no cover
+  def has(self, key):
     path = os.path.join(self.root_path, key)
     return os.path.exists(path)
 
-  def key_age(self, key):  # pragma: no cover
+  def key_age(self, key):
     path = os.path.join(self.root_path, key)
     return datetime.datetime.fromtimestamp(os.path.getmtime(path))
 
   # Could be attr getter.
-  def get(self, key):  # pragma: no cover
-    path = os.path.join(self.root_path, key)
-    if not self.has(path):
+  def get(self, key):
+    if not self.has(key):
       return None
+    path = os.path.join(self.root_path, key)
     with open(path) as cached:
       return json.load(cached)
 
   # Could be attr setter.
-  def set(self, key, json_object):  # pragma: no cover
+  def set(self, key, json_object):
     path = os.path.join(self.root_path, key)
     cache_dir = os.path.dirname(path)
     if not os.path.exists(cache_dir):
@@ -74,8 +74,7 @@ def build_url(master_url, builder_name, build_number):
   return "%s/builders/%s/builds/%s" % args
 
 
-# "line too long" pylint: disable=C0301
-def cache_key_for_build(master_url, builder_name, build_number):  # pragma: no cover
+def cache_key_for_build(master_url, builder_name, build_number):
   master_name = master_name_from_url(master_url)
   return os.path.join(master_name, builder_name, "%s.json" % build_number)
 
