@@ -8,6 +8,10 @@ automatic_scaling:
   min_idle_instances: 1
 
 handlers:
+# Endpoints handler
+- url: /_ah/spi/.*
+  script: cr_rev_api.APPLICATION
+
 - url: /css
   static_dir: css
   secure: always
@@ -25,3 +29,5 @@ inbound_services:
 libraries:
 - name: jinja2
   version: latest
+- name: endpoints
+  version: 1.0

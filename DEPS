@@ -18,6 +18,11 @@ deps = {
     ("https://chromium.googlesource.com/infra/third_party/cloudstorage.git"
      "@ad74316d12e198e0c7352bd666bbc2ec7938bd65"),
 
+  "infra/appengine/third_party/endpoints-proto-datastore":
+    ("https://chromium.googlesource.com/infra/third_party/"
+     "endpoints-proto-datastore.git"
+     "@971bca8e31a4ab0ec78b823add5a47394d78965a"),
+
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
      "appengine-pipeline.git"
