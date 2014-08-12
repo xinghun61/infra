@@ -29,7 +29,7 @@ class NoWheelException(Exception):
 
 
 def ls(prefix):
-  from pip._vendor import requests
+  from pip._vendor import requests  # pylint: disable=E0611
   data = requests.get(STORAGE_URL, params=dict(
       prefix=prefix,
       fields='items(name,md5Hash)'

@@ -277,7 +277,7 @@ class CheckTreeStatusHandler(webapp2.RequestHandler):
   def getStateOfTree(self, entries, cutoff):
     # Find the state of the tree before the days started.
     was_open = True
-    for index, entry in enumerate(entries):
+    for _, entry in enumerate(entries):
       if self.date_for(entry) > cutoff:
         break
       was_open = self.tree_is_open_for(entry)
