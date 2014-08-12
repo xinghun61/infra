@@ -12,19 +12,6 @@ from infra.tools.builder_alerts import buildbot
 from infra.tools.builder_alerts import reasons_splitter
 from infra.tools.builder_alerts import string_helpers
 
-# Python logging is stupidly verbose to configure.
-def setup_logging():
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s: %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  return logger, handler
-
-
-log, logging_handler = setup_logging()
 
 # Success or Warnings or None (didn't run) don't count as 'failing'.
 NON_FAILING_RESULTS = (0, 1, None)
@@ -46,7 +33,7 @@ def compute_transition_and_failure_count(failure,
         # This case is pretty common, so just warn all at once at the end.
         builds_missing_steps.append(build['number'])
       else:
-        log.error("%s has unexpected number of %s steps: %s" % (
+        logging.error("%s has unexpected number of %s steps: %s" % (
             build['number'], step_name, matching_steps))
       continue
 
@@ -77,7 +64,7 @@ def compute_transition_and_failure_count(failure,
     break
 
   if builds_missing_steps:
-    log.warn("Builds %s missing %s step" % (
+    logging.warn("Builds %s missing %s step" % (
         string_helpers.re_range(builds_missing_steps), step_name))
 
   return last_pass, first_fail, fail_count
@@ -107,7 +94,7 @@ def complete_steps_by_type(build):
 
 def failing_steps_for_build(build):
   if build.get('results') is None:
-    log.error('Bad build: %s %s %s' % (build.get('number'),
+    logging.error('Bad build: %s %s %s' % (build.get('number'),
         build.get('eta'), build.get('currentStep', {}).get('name')))
   # This check is probably not necessary.
   if build.get('results', 0) == 0:
@@ -195,7 +182,7 @@ def find_current_step_failures(fetch_function, recent_build_ids):
     success_step_names.update(passing_names)
     for step in failing:
       if step['name'] in success_step_names:
-        log.debug('%s passed more recently, ignoring.' % (step['name']))
+        logging.debug('%s passed more recently, ignoring.' % (step['name']))
         continue
       step_failures.append({
         'build_number': build_id,
@@ -204,7 +191,7 @@ def find_current_step_failures(fetch_function, recent_build_ids):
     # Bad way to check is-finished.
     if build['eta'] is None:
       break
-    # log.debug('build %s incomplete, continuing search' % build['number'])
+    # logging.debug('build %s incomplete, continuing search' % build['number'])
   return step_failures
 
 
@@ -250,6 +237,8 @@ def alerts_for_master(cache, master_url, master_json, builder_name_filter=None):
 
 
 def main(args):
+  logging.basicConfig(level=logging.DEBUG)
+
   parser = argparse.ArgumentParser()
   parser.add_argument('builder_url', action='store')
   args = parser.parse_args(args)

@@ -32,21 +32,6 @@ from slave import gatekeeper_ng_config
 CACHE_PATH = 'build_cache'
 
 
-# Python logging is stupidly verbose to configure.
-def setup_logging():
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s: %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  return logger, handler
-
-
-log, logging_handler = setup_logging()
-
-
 def apply_gatekeeper_rules(alerts, gatekeeper):
   filtered_alerts = []
   for alert in alerts:
@@ -79,6 +64,8 @@ def fetch_master_urls(gatekeeper, args):
 
 
 def main(args):
+  logging.basicConfig(level=logging.DEBUG)
+
   parser = argparse.ArgumentParser()
   parser.add_argument('data_url', action='store', nargs='*')
   parser.add_argument('--use-cache', action='store_true')
@@ -86,7 +73,7 @@ def main(args):
   args = parser.parse_args(args)
 
   if not args.data_url:
-    log.warn("No /data url passed, won't do anything")
+    logging.warn("No /data url passed, won't do anything")
 
   if args.use_cache:
     requests_cache.install_cache('failure_stats')
@@ -132,7 +119,7 @@ def main(args):
       'latest_revisions': latest_revisions,
   })}
   for url in args.data_url:
-    log.info('POST %s alerts to %s' % (len(alerts), url))
+    logging.info('POST %s alerts to %s' % (len(alerts), url))
     requests.post(url, data=data)
 
 

@@ -6,20 +6,6 @@
 
 import logging
 
-# Python logging is stupidly verbose to configure.
-def setup_logging():
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s: %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  return logger, handler
-
-
-log, logging_handler = setup_logging()
-
 
 def excluded_builders(master_config):
   return master_config[0].get('*', {}).get('excluded_builders', set())
@@ -62,13 +48,13 @@ def would_close_tree(master_config, builder_name, step_name):
   # close_tree is currently unused in gatekeeper.json but planned to be.
   close_tree = builder_config.get('close_tree', True)
   if not close_tree:
-    log.debug('close_tree is false')
+    logging.debug('close_tree is false')
     return False
 
   # Excluded steps never close.
   excluded_steps = set(builder_config.get('excluded_steps', []))
   if step_name in excluded_steps:
-    log.debug('%s is an excluded_step' % step_name)
+    logging.debug('%s is an excluded_step' % step_name)
     return False
 
   # See gatekeeper_ng_config.py for documentation of
@@ -89,5 +75,5 @@ def would_close_tree(master_config, builder_name, step_name):
   if step_name in closing_steps:
     return True
 
-  log.debug('%s not in closing_steps: %s' % (step_name, closing_steps))
+  logging.debug('%s not in closing_steps: %s' % (step_name, closing_steps))
   return False

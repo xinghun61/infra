@@ -28,21 +28,6 @@ sys.path.insert(0, os.path.join(top_dir, 'build', 'scripts'))
 from common import gtest_utils
 
 
-# Python logging is stupidly verbose to configure.
-def setup_logging():
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s: %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  return logger, handler
-
-
-log, logging_handler = setup_logging()
-
-
 def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
   # FIXME: Should get this from the step in some way?
   base_url = buildbot.build_url(master_url, builder_name, build['number'])
@@ -52,7 +37,7 @@ def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
     return requests.get(stdio_url).text
   except requests.exceptions.ConnectionError, e:
     # Some builders don't save logs for whatever reason.
-    log.error('Failed to fetch %s: %s' % (stdio_url, e))
+    logging.error('Failed to fetch %s: %s' % (stdio_url, e))
     return None
 
 
@@ -92,7 +77,7 @@ class GTestSplitter(object):
       return [name for name, results in test_results.items()
           if results['expected'] != results['actual']]
 
-    log.warn('test-results missing %s %s %s, using GTestLogParser.' % (
+    logging.warn('test-results missing %s %s %s, using GTestLogParser.' % (
         builder_name, build['number'], step['name']))
     stdio_log = stdio_for_step(master_url, builder_name, build, step)
     # Can't split if we can't get the logs.
@@ -111,7 +96,7 @@ class GTestSplitter(object):
     if failed_tests:
       return failed_tests
     # Failed to split, just group with the general failures.
-    log.debug('First Line: %s' % stdio_log.split('\n')[0])
+    logging.debug('First Line: %s' % stdio_log.split('\n')[0])
     return None
 
 
@@ -150,7 +135,7 @@ class JUnitSplitter(object):
     if failed_tests:
       return failed_tests
     # Failed to split, just group with the general failures.
-    log.debug('First Line: %s' % stdio_log.split('\n')[0])
+    logging.debug('First Line: %s' % stdio_log.split('\n')[0])
     return None
 
 
@@ -264,7 +249,7 @@ class LayoutTestsSplitter(object):
     url_to_build = buildbot.build_url(master_url, builder_name, build['number'])
 
     if not archive_step:
-      log.warn('No archive step in %s' % url_to_build)
+      logging.warn('No archive step in %s' % url_to_build)
       # print json.dumps(build['steps'], indent=1)
       return None
 
@@ -278,7 +263,7 @@ class LayoutTestsSplitter(object):
           if step['name'] == 'webkit_tests'), None)
       # Common cause of this is an exception in the webkit_tests step.
       if webkit_tests_step['results'][0] != 5:
-        log.warn('No results url for archive step in %s' % url_to_build)
+        logging.warn('No results url for archive step in %s' % url_to_build)
       # print json.dumps(archive_step, indent=1)
       return None
 
@@ -289,7 +274,7 @@ class LayoutTestsSplitter(object):
     # FIXME: Silly that this is still JSONP.
     jsonp_string = requests.get(jsonp_url).text
     if 'The specified key does not exist' in jsonp_string:
-      log.warn('%s %s %s missing failing_results.json' % (builder_name,
+      logging.warn('%s %s %s missing failing_results.json' % (builder_name,
           build['number'], step['name']))
       return None
 
@@ -362,6 +347,8 @@ def splitter_for_step(step):
 
 # For testing:
 def main(args):  # pragma: no cover
+  logging.basicConfig(level=logging.DEBUG)
+
   parser = argparse.ArgumentParser()
   parser.add_argument('stdio_url', action='store')
   args = parser.parse_args(args)

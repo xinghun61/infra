@@ -15,20 +15,6 @@ import requests
 
 from infra.tools.builder_alerts import string_helpers
 
-# Python logging is stupidly verbose to configure.
-def setup_logging():
-  logger = logging.getLogger(__name__)
-  logger.setLevel(logging.DEBUG)
-  handler = logging.StreamHandler()
-  handler.setLevel(logging.DEBUG)
-  formatter = logging.Formatter('%(levelname)s: %(message)s')
-  handler.setFormatter(formatter)
-  logger.addHandler(handler)
-  return logger, handler
-
-
-log, logging_handler = setup_logging()
-
 
 CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
@@ -94,14 +80,14 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   for build in builds:
     if not build.get('number'):
       index = builds.index(build)
-      log.error('build at index %s in %s missing number?' % (index,
+      logging.error('build at index %s in %s missing number?' % (index,
           response.url))
       continue
     build_number = build['number']
     key = cache_key_for_build(master_url, builder_name, build_number)
     cache.set(key, build)
   build_numbers = map(operator.itemgetter('number'), builds)
-  log.debug('Prefilled (%.1fs) %s for %s %s' %
+  logging.debug('Prefilled (%.1fs) %s for %s %s' %
       (response.elapsed.total_seconds(),
       string_helpers.re_range(build_numbers),
       master_name, builder_name))
@@ -111,18 +97,18 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
 def fetch_and_cache_build(cache, url, cache_key):  # pragma: no cover
   response = requests.get(url)
   if response.status_code != 200:
-    log.error('Failed (%.1fs, %s) %s' % (response.elapsed.total_seconds(),
+    logging.error('Failed (%.1fs, %s) %s' % (response.elapsed.total_seconds(),
         response.status_code, response.url))
     return None
 
   try:
     build = response.json()
   except ValueError, e:
-    log.error('Not caching invalid json: %s (%s): %s\n%s' % (url,
+    logging.error('Not caching invalid json: %s (%s): %s\n%s' % (url,
         response.status_code, e, response.text))
     return None
 
-  log.debug('Fetched (%.1fs) %s' % (response.elapsed.total_seconds(), url))
+  logging.debug('Fetched (%.1fs) %s' % (response.elapsed.total_seconds(), url))
   cache.set(cache_key, build)
   return build
 
@@ -140,7 +126,7 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     cache_age = datetime.timedelta(seconds=round(cache_age.total_seconds()))
     if cache_age.total_seconds() < 120:
       return build
-    log.debug('Expired (%s) %s %s %s' % (cache_age,
+    logging.debug('Expired (%s) %s %s %s' % (cache_age,
         master_name, builder_name, build_number))
     build = None
 
@@ -226,5 +212,5 @@ def warm_build_cache(cache, master_url, builder_name,
   cached_build = cache.get(cache_key)
   if not cached_build or cached_build.get('eta') is not None:
     # reason = 'in progress' if cached_build else 'missing'
-    # log.debug('prefill reason: %s %s' % (max(finished_build_ids), reason))
+    # logging.debug('prefill reason: %s %s' % (max(finished_build_ids), reason))
     prefill_builds_cache(cache, master_url, builder_name)

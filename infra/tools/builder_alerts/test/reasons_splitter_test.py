@@ -31,7 +31,7 @@ class SplitterTests(unittest.TestCase):
     self.assertEqual(flatten({'a': {}}, 'foo'), {'foo/a': {}})
     # single-component names flatten to themselves
     self.assertEqual(flatten({'a': {'actual': '1'}}),
-                     {'a': { 'actual': '1'}}),
+                     {'a': { 'actual': '1'}})
     # >1 component names flatten properly
     self.assertEqual(flatten({'a': {'b': {'actual': '3'}}}),
                      {'a/b': {'actual': '3'}})

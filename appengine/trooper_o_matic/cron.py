@@ -233,7 +233,8 @@ class CheckTreeHandler(webapp2.RequestHandler):
         content = json.loads(result.content)
         records += content.get('step_records', [])
       for record in records:
-        generated_time = date_from_str(record['generated'], self.generated_format);
+        generated_time = date_from_str(record['generated'],
+            self.generated_format)
         if now - generated_time > last_hour:
           continue
         stat.num_builds += 1

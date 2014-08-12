@@ -24,6 +24,9 @@ class BuildCacheTest(unittest.TestCase):
 
     test_data = ['test']
     cache.set(test_key, test_data)
+    # Set it a second time to hit the "already there" case.
+    cache.set(test_key, test_data)
+
     self.assertTrue(cache.has(test_key))
     self.assertEquals(cache.get(test_key), test_data)
 
