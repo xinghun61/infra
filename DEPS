@@ -39,6 +39,12 @@ hooks = [
   {
     "pattern": ".",
     "action": [
+      "python", "-u", "./infra/bootstrap/remove_orphaned_pycs.py",
+    ],
+  },
+  {
+    "pattern": ".",
+    "action": [
       "python", "-u", "./infra/bootstrap/bootstrap.py",
       "--deps_file", "infra/bootstrap/deps.pyl", "infra/ENV"
     ],
