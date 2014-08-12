@@ -23,6 +23,13 @@ def datetime_now():
   """Easy to mock datetime.datetime.now() for unit testing."""
   return datetime.datetime.now()
 
+def date_from_str(string, base_format):
+  """Converts a string to a date, taking into account the possible existence
+     of a millisecond precision value."""
+  try:
+    return datetime.datetime.strptime(string, base_format + '.%f')
+  except ValueError:
+    return datetime.datetime.strptime(string, base_format)
 
 class CheckCqHandler(webapp2.RequestHandler):
   """Collect commit queue length and run times."""
@@ -51,10 +58,7 @@ class CheckCqHandler(webapp2.RequestHandler):
     Returns:
         datetime.datetime
     """
-    try:
-      return datetime.datetime.strptime(iso_str, '%Y-%m-%d %H:%M:%S.%f')
-    except ValueError:
-      return datetime.datetime.strptime(iso_str, '%Y-%m-%d %H:%M:%S')
+    return date_from_str(iso_str, '%Y-%m-%d %H:%M:%S')
 
   @staticmethod
   def record_cq_time(time, cutoff, run_info, runs, result, msg_text, issue):
@@ -196,7 +200,7 @@ class CheckTreeHandler(webapp2.RequestHandler):
                    'steps/%s/overall__build__result__/%s')
 
   last_hour_format = '%Y-%m-%dT%H:%MZ'
-  generated_format = '%Y-%m-%dT%H:%M:%S.%f'
+  generated_format = '%Y-%m-%dT%H:%M:%S'
 
   def get(self, tree):
     """For each master in the tree, find builds that don't meet our SLO."""
@@ -229,8 +233,7 @@ class CheckTreeHandler(webapp2.RequestHandler):
         content = json.loads(result.content)
         records += content.get('step_records', [])
       for record in records:
-        generated_time = datetime.datetime.strptime(record['generated'],
-                                                    self.generated_format)
+        generated_time = date_from_str(record['generated'], self.generated_format);
         if now - generated_time > last_hour:
           continue
         stat.num_builds += 1
