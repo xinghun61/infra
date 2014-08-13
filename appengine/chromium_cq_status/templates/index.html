@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<style>
+h1 {
+  font-family: sans-serif;
+}
+#postWarning {
+  color: red;
+}
+textarea {
+  width: calc(100%% - 10px);
+  height: 50vh;
+}
+</style>
+
+<h1>Chromium CQ Status</h1>
+<pre>
+<a href="/query">/query</a> to query CQ data
+  project: str='chromium'
+  key: str='' (non numeric)
+  begin: timestamp=0
+  end: timestamp=now
+  tags: str (comma separated)
+  fields: json={}
+  count: int=100 (max 1000)
+  cursor: str=''
+
+The returned query results are in JSON format with the following structure:
+{
+  results: [{
+    timestamp: int,
+    key: str|null,
+    tags: [str],
+    fields: {}
+  }],
+  more: bool,
+  cursor: str
+}
+
+<a href="/post">/post</a> to post CQ data (requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>)
+  project: str='chromium'
+  key: str='' (non numeric)
+  tags: str (comma separated)
+  fields: json={}
+
+
+TESTING ONLY:
+<form id="queryForm">
+Query entries from /query:
+  project: <input type="textbox" name="project">
+  key: <input type="textbox" name="key">
+  begin: <input type="textbox" name="begin">
+  end: <input type="textbox" name="end">
+  tags: <input type="textbox" name="tags">
+  fields: <input type="textbox" name="fields">
+  count: <input type="textbox" name="count">
+  cursor: <input type="textbox" name="cursor">
+  <input type="reset" value="Clear"> <input type="button" id="querySubmit" value="Query">
+</form>
+Query view:
+<textarea id="queryResult"></textarea>
+
+<form id="postForm">
+Post entry to /post:
+  project: <input type="textbox" name="project">
+  key: <input type="textbox" name="key">
+  tags: <input type="textbox" name="tags">
+  fields: <input type="textbox" name="fields">
+  <input type="reset" value="Clear"> <input type="button" id="postSubmit" value="Post"> <span id="postWarning"></span>
+Post result:
+<textarea id="postResult"></textarea>
+</form>
+</pre>
+
+<script>
+if (!%(valid_user)d) {
+  postWarning.textContent = 'Posting restricted to @chromium.org/@google.com users.';
+  postSubmit.disabled = true;
+}
+
+function encodeForm(form) {
+  return [].map.call(form.querySelectorAll('input[type=textbox]'), function(field) {
+    return field.name + '=' + encodeURIComponent(field.value);
+  }).join('&');
+}
+
+function loadResult(url, textarea) {
+  textarea.value = '';
+  var xhr = new XMLHttpRequest();
+  xhr.open('get', url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      try {
+        var json = JSON.parse(xhr.responseText);
+        textarea.value = JSON.stringify(json, null, '  ')
+      } catch (_) {
+        textarea.value = xhr.responseText;
+      }
+    }
+  }
+  xhr.send();
+}
+
+postSubmit.addEventListener('click', function() {
+  loadResult('/post?' + encodeForm(postForm), postResult);
+});
+querySubmit.addEventListener('click', function() {
+  loadResult('/query?' + encodeForm(queryForm), queryResult);
+});
+</script>

@@ -77,3 +77,11 @@ class AppengineTestCase(auto_stub.TestCase): # pragma: no cover
     """
     self.mock(ndb.DateTimeProperty, '_now', lambda _: now)
     self.mock(ndb.DateProperty, '_now', lambda _: now.date())
+
+  def mock_current_user(self, user_id='', user_email='', is_admin=False):
+    # dev_appserver hack.
+    self.testbed.setup_env(
+      USER_ID=user_id,
+      USER_EMAIL=user_email,
+      USER_IS_ADMIN=str(int(is_admin)),
+      overwrite=True)
