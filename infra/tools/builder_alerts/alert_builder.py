@@ -18,7 +18,7 @@ NON_FAILING_RESULTS = (0, 1, None)
 
 
 def compute_transition_and_failure_count(failure,
-      failing_build, previous_builds):
+      failing_build, previous_builds):  # pragma: no cover
   step_name = failure['step_name']
   reason = failure['reason']
 
@@ -50,6 +50,7 @@ def compute_transition_and_failure_count(failure,
         # FIXME: This is wrong for compile failures, and possibly
         # for test failures as well if not all tests are run...
         if reason not in reasons:
+          last_pass = build
           break
 
       first_fail = build
@@ -70,7 +71,7 @@ def compute_transition_and_failure_count(failure,
   return last_pass, first_fail, fail_count
 
 
-def complete_steps_by_type(build):
+def complete_steps_by_type(build):  # pragma: no cover
   # Some builders use a sub-step pattern which just generates noise.
   # FIXME: This code shouldn't contain constants like these.
   IGNORED_STEP_NAMES = ['steps', 'trigger', 'slave_steps']
@@ -92,7 +93,7 @@ def complete_steps_by_type(build):
   return passing, failing, ignored
 
 
-def failing_steps_for_build(build):
+def failing_steps_for_build(build):  # pragma: no cover
   if build.get('results') is None:
     logging.error('Bad build: %s %s %s' % (build.get('number'),
         build.get('eta'), build.get('currentStep', {}).get('name')))
@@ -109,14 +110,16 @@ def failing_steps_for_build(build):
   return [step for step in failing_steps if step['name'] not in IGNORED_STEPS]
 
 
-def reasons_for_failure(step, build, builder_name, master_url):
+def reasons_for_failure(step, build, builder_name,
+    master_url):  # pragma: no cover
   splitter = reasons_splitter.splitter_for_step(step)
   if not splitter:
     return None
   return splitter.split_step(step, build, builder_name, master_url)
 
 
-def alerts_from_step_failure(cache, step_failure, master_url, builder_name):
+def alerts_from_step_failure(cache, step_failure, master_url,
+    builder_name):  # pragma: no cover
   build = buildbot.fetch_build_json(cache, master_url,
       builder_name, step_failure['build_number'])
   step = next((s for s in build['steps']
@@ -145,7 +148,7 @@ def alerts_from_step_failure(cache, step_failure, master_url, builder_name):
 
 
 # FIXME: This should merge with compute_transition_and_failure_count.
-def fill_in_transition(cache, alert, recent_build_ids):
+def fill_in_transition(cache, alert, recent_build_ids):  # pragma: no cover
   previous_build_ids = [num for num in recent_build_ids
       if num < alert['last_failing_build']]
   fetch_function = lambda num: buildbot.fetch_build_json(cache,
@@ -172,7 +175,8 @@ def fill_in_transition(cache, alert, recent_build_ids):
   return alert
 
 
-def find_current_step_failures(fetch_function, recent_build_ids):
+def find_current_step_failures(fetch_function,
+    recent_build_ids):  # pragma: no cover
   step_failures = []
   success_step_names = set()
   for build_id in recent_build_ids:
@@ -195,7 +199,8 @@ def find_current_step_failures(fetch_function, recent_build_ids):
   return step_failures
 
 
-def alerts_for_builder(cache, master_url, builder_name, recent_build_ids):
+def alerts_for_builder(cache, master_url, builder_name,
+    recent_build_ids):  # pragma: no cover
   recent_build_ids = sorted(recent_build_ids, reverse=True)
   # Limit to 100 to match our current cache-warming logic
   recent_build_ids = recent_build_ids[:100]
@@ -215,7 +220,8 @@ def alerts_for_builder(cache, master_url, builder_name, recent_build_ids):
       for alert in alerts]
 
 
-def alerts_for_master(cache, master_url, master_json, builder_name_filter=None):
+def alerts_for_master(cache, master_url, master_json,
+    builder_name_filter=None):  # pragma: no cover
   active_builds = []
   for slave in master_json['slaves'].values():
     for build in slave['runningBuilds']:
@@ -236,7 +242,7 @@ def alerts_for_master(cache, master_url, master_json, builder_name_filter=None):
   return alerts
 
 
-def main(args):
+def main(args):  # pragma: no cover
   logging.basicConfig(level=logging.DEBUG)
 
   parser = argparse.ArgumentParser()
