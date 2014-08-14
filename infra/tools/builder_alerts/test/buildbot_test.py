@@ -50,3 +50,7 @@ class BuildbotTest(unittest.TestCase):
   def test_cache_key_for_build(self):
     key = buildbot.cache_key_for_build('master', 'builder', 10)
     self.assertEquals(key, 'master/builder/10.json')
+
+  def test_is_in_progress(self):
+    self.assertEqual(buildbot.is_in_progress({'results': None}), True)
+    self.assertEqual(buildbot.is_in_progress({'results': 2}), False)

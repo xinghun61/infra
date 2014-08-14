@@ -7,11 +7,12 @@ import unittest
 
 from infra.tools.builder_alerts import alert_builder
 
+from infra.tools.builder_alerts import buildbot
 
 class AlertBuilderTest(unittest.TestCase):
   def test_compute_transition_and_failure_count_failure_to_failing_build(self):
-    """Tests that a failure that started in a run after there were already
-    failures gets the correct builds"""
+    '''Tests that a failure that started in a run after there were already
+    failures gets the correct builds'''
     old_reasons_for_failure = alert_builder.reasons_for_failure
 
     # TODO(ojan): Is there a better way to do this? Should this test just
@@ -149,3 +150,119 @@ class AlertBuilderTest(unittest.TestCase):
       self.assertEqual(fail_count, 1)
     finally:
       alert_builder.reasons_for_failure = old_reasons_for_failure
+
+
+  def test_find_current_step_failures_no_recent_build_ids(self):
+    '''Silly test to get coverage of scenario that never happens, i.e.
+    padding in an empty list of recent build ids.
+    '''
+    step_failures = alert_builder.find_current_step_failures(None, [])
+    self.assertEqual(step_failures, [])
+
+
+  def test_find_current_step_failures_in_progress(self):
+    '''Test that failing steps from the previous completed build
+    get included if the in-progress build hasn't run this test step yet.
+    '''
+    def fetch(build_id):
+      results = None
+      if build_id == 4119:
+        results = 2
+
+      return {
+        'number': build_id,
+        'results': results,
+      }
+
+    def mock_complete_steps_by_type(build):
+      passing = []
+      if build['number'] == 4119:
+        failing = [{'name': 'foo_tests'}]
+      else:
+        failing = []
+      return passing, failing
+
+    old_complete_steps_by_type = alert_builder.complete_steps_by_type
+    try:
+      alert_builder.complete_steps_by_type = mock_complete_steps_by_type
+
+      step_failures = alert_builder.find_current_step_failures(fetch,
+          [4120, 4119])
+
+      expected_step_failures = [
+        {'build_number': 4119, 'step_name': 'foo_tests'}
+      ]
+      self.assertEqual(step_failures, expected_step_failures)
+    finally:
+      alert_builder.complete_steps_by_type = old_complete_steps_by_type
+
+
+  def test_find_current_step_failures_in_progress_still_failing(self):
+    '''Test that only the last failing step gets included if the test step
+    failed in both the in-progress build and the last completed build.
+    '''
+    def fetch(build_id):
+      results = None
+      if build_id == 4119:
+        results = 2
+
+      return {
+        'number': build_id,
+        'results': results,
+      }
+
+    def mock_complete_steps_by_type(build):
+      passing = []
+      if build['number'] == 4119:
+        failing = [{'name': 'foo_tests'}]
+      else:
+        failing = [{'name': 'foo_tests'}]
+      return passing, failing
+
+    old_complete_steps_by_type = alert_builder.complete_steps_by_type
+    try:
+      alert_builder.complete_steps_by_type = mock_complete_steps_by_type
+
+      step_failures = alert_builder.find_current_step_failures(fetch,
+          [4120, 4119])
+
+      expected_step_failures = [
+        {'build_number': 4120, 'step_name': 'foo_tests'}
+      ]
+      self.assertEqual(step_failures, expected_step_failures)
+    finally:
+      alert_builder.complete_steps_by_type = old_complete_steps_by_type
+
+  def test_find_current_step_failures_in_progress_now_passing(self):
+    '''Test that a passing run for the in-progress build overrides a failing
+    run from the previous complete build.
+    '''
+    def fetch(build_id):
+      results = None
+      if build_id == 4119:
+        results = 2
+
+      return {
+        'number': build_id,
+        'results': results,
+      }
+
+    def mock_complete_steps_by_type(build):
+      passing = [{'name': 'foo_tests'}]
+      if build['number'] == 4119:
+        failing = [{'name': 'foo_tests'}]
+      else:
+        failing = []
+      return passing, failing
+
+    old_complete_steps_by_type = alert_builder.complete_steps_by_type
+    try:
+      alert_builder.complete_steps_by_type = mock_complete_steps_by_type
+
+      step_failures = alert_builder.find_current_step_failures(fetch,
+          [4120, 4119])
+
+      expected_step_failures = []
+      self.assertEqual(step_failures, expected_step_failures)
+    finally:
+      alert_builder.complete_steps_by_type = old_complete_steps_by_type

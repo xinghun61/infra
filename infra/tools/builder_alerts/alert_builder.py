@@ -78,8 +78,6 @@ def complete_steps_by_type(build):  # pragma: no cover
   steps = build['steps']
   complete_steps = [s for s in steps if s['isFinished']]
 
-  ignored = [s for s in complete_steps
-      if s['name'] in IGNORED_STEP_NAMES]
   not_ignored = [s for s in complete_steps
       if s['name'] not in IGNORED_STEP_NAMES]
 
@@ -90,7 +88,7 @@ def complete_steps_by_type(build):  # pragma: no cover
   failing = [s for s in not_ignored
       if s['results'][0] not in NON_FAILING_RESULTS]
 
-  return passing, failing, ignored
+  return passing, failing
 
 
 def failing_steps_for_build(build):  # pragma: no cover
@@ -175,27 +173,36 @@ def fill_in_transition(cache, alert, recent_build_ids):  # pragma: no cover
   return alert
 
 
-def find_current_step_failures(fetch_function,
-    recent_build_ids):  # pragma: no cover
+def find_current_step_failures(fetch_function, recent_build_ids):
   step_failures = []
-  success_step_names = set()
+  completed_step_names = set()
+
   for build_id in recent_build_ids:
     build = fetch_function(build_id)
-    passing, failing, _ = complete_steps_by_type(build)
+    passing, failing = complete_steps_by_type(build)
+
     passing_names = set(map(lambda s: s['name'], passing))
-    success_step_names.update(passing_names)
+    completed_step_names.update(passing_names)
+
     for step in failing:
-      if step['name'] in success_step_names:
-        logging.debug('%s passed more recently, ignoring.' % (step['name']))
+      name = step['name']
+
+      if name in completed_step_names:
+        logging.debug('%s ran more recently, ignoring.' % (name))
         continue
+
+      # Add this here so that the if-check above doesn't skip failures
+      # from the current build we're processing.
+      completed_step_names.add(name)
+
       step_failures.append({
         'build_number': build_id,
-        'step_name': step['name'],
+        'step_name': name,
       })
-    # Bad way to check is-finished.
-    if build['eta'] is None:
+
+    if not buildbot.is_in_progress(build):
       break
-    # logging.debug('build %s incomplete, continuing search' % build['number'])
+
   return step_failures
 
 
@@ -208,9 +215,6 @@ def alerts_for_builder(cache, master_url, builder_name,
   fetch_function = lambda num: buildbot.fetch_build_json(cache,
       master_url, builder_name, num)
   step_failures = find_current_step_failures(fetch_function, recent_build_ids)
-
-  # for failure in step_failures:
-  #   print '%s from %s' % (failure['step_name'], failure['build_number'])
 
   alerts = []
   for step_failure in step_failures:
@@ -231,6 +235,7 @@ def alerts_for_master(cache, master_url, master_json,
   for builder_name, builder_json in master_json['builders'].items():
     if builder_name_filter and builder_name_filter not in builder_name:
       continue
+
     # cachedBuilds will include runningBuilds.
     recent_build_ids = builder_json['cachedBuilds']
 

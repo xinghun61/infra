@@ -70,10 +70,11 @@ def main(args):
   parser.add_argument('data_url', action='store', nargs='*')
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
+  parser.add_argument('--builder-filter', action='store')
   args = parser.parse_args(args)
 
   if not args.data_url:
-    logging.warn("No /data url passed, won't do anything")
+    logging.warn("No /data url passed, will write to builder_alerts.json")
 
   if args.use_cache:
     requests_cache.install_cache('failure_stats')
@@ -94,7 +95,7 @@ def main(args):
   for master_url in master_urls:
     master_json = buildbot.fetch_master_json(master_url)
     master_alerts = alert_builder.alerts_for_master(cache,
-        master_url, master_json)
+        master_url, master_json, args.builder_filter)
     alerts.extend(master_alerts)
 
     # FIXME: This doesn't really belong here. garden-o-matic wants
@@ -118,6 +119,11 @@ def main(args):
       'range_groups': range_groups,
       'latest_revisions': latest_revisions,
   })}
+
+  if not args.data_url:
+    with open('builder_alerts.json', 'w') as f:
+      f.write(json.dumps(data, indent=1))
+
   for url in args.data_url:
     logging.info('POST %s alerts to %s' % (len(alerts), url))
     requests.post(url, data=data)

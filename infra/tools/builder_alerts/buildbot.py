@@ -113,6 +113,10 @@ def fetch_and_cache_build(cache, url, cache_key):  # pragma: no cover
   return build
 
 
+def is_in_progress(build):
+  return build.get('results', None) is None
+
+
 # "line too long" pylint: disable=C0301
 def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: no cover
   cache_key = cache_key_for_build(master_url, builder_name, build_number)
@@ -120,7 +124,7 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
   master_name = master_name_from_url(master_url)
 
   # We will cache in-progress builds, but only for 2 minutes.
-  if build and build.get('eta'):
+  if build and is_in_progress(build):
     cache_age = datetime.datetime.now() - cache.key_age(cache_key)
     # Round for display.
     cache_age = datetime.timedelta(seconds=round(cache_age.total_seconds()))
