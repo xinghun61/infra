@@ -5,11 +5,6 @@
 from datetime import datetime
 import json
 
-from config import DEFAULT_PROJECT # pylint: disable-msg=W0403
-
-def parse_project(value): # pragma: no cover
-  return value or DEFAULT_PROJECT
-
 def parse_timestamp(value): # pragma: no cover
   if not value:
     return None

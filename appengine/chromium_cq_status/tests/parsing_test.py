@@ -8,10 +8,6 @@ import unittest
 from appengine.chromium_cq_status.shared import parsing
 
 class TestCase(unittest.TestCase):
-  def test_parse_project(self):
-    self.assertEqual('chromium', parsing.parse_project(''))
-    self.assertEqual('blink', parsing.parse_project('blink'))
-
   def test_parse_timestamp(self):
     self.assertEqual(None, parsing.parse_timestamp(''))
     self.assertEqual('1970-01-01 00:20:34',
@@ -59,17 +55,17 @@ class TestCase(unittest.TestCase):
 
   def test_parse_request(self):
     self.assertEqual({
-      'a': 'test_project',
-      'b': None,
-      'c': ['d', 'e', 'f'],
+      'a': None,
+      'b': ['a', 'b', 'c'],
+      'c': {'d': 'e'},
     }, parsing.parse_request({
-      'a': 'test_project',
-      'b': '',
-      'c': 'd,e,f',
+      'a': '',
+      'b': 'a,b,c',
+      'c': '{"d": "e"}',
     }, {
-      'a': parsing.parse_project,
-      'b': parsing.parse_timestamp,
-      'c': parsing.parse_tags,
+      'a': parsing.parse_timestamp,
+      'b': parsing.parse_tags,
+      'c': parsing.parse_fields,
     }))
     self.assertRaises(ValueError,
         lambda: parsing.parse_request({'a': '1234'}, {'a': parsing.parse_key}))

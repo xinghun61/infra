@@ -8,23 +8,17 @@ from google.appengine.api import users
 import webapp2
 
 from shared import utils
-from shared.config import (
-  AUTO_TAGGED_FIELDS,
-  CQ_BOT_PASSWORD_KEY,
-  DEFAULT_PROJECT,
-)
+from shared.config import AUTO_TAGGED_FIELDS, CQ_BOT_PASSWORD_KEY
 from shared.parsing import (
   parse_fields,
   parse_key,
-  parse_project,
   parse_request,
   parse_tags,
 )
 from model.password import Password # pylint: disable-msg=E0611
 from model.record import Record # pylint: disable-msg=E0611
 
-def update_record(project=DEFAULT_PROJECT,
-    key=None, tags=None, fields=None): # pragma: no cover
+def update_record(key=None, tags=None, fields=None): # pragma: no cover
   tags = tags or []
   fields = fields or {}
   if not key and len(tags) == 0 and len(fields) == 0:
@@ -32,7 +26,7 @@ def update_record(project=DEFAULT_PROJECT,
   for item in fields:
     if item in AUTO_TAGGED_FIELDS:
       tags.append('%s=%s' % (item, fields[item]))
-  record = Record(id=key, namespace=project)
+  record = Record(id=key)
   record.tags = list(set(tags))
   record.fields = fields
   record.put()
@@ -45,7 +39,6 @@ class Post(webapp2.RequestHandler): # pragma: no cover
 
     try:
       update_record(**parse_request(self.request, {
-        'project': parse_project,
         'key': parse_key,
         'tags': parse_tags,
         'fields': parse_fields,
@@ -69,7 +62,7 @@ class Post(webapp2.RequestHandler): # pragma: no cover
 
     try:
       for packet in packets:
-        update_record(**packet)
+        update_record(**utils.filter_dict(packet, ('key', 'tags', 'fields')))
     except ValueError, e:
       self.response.write(e)
 

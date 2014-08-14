@@ -12,6 +12,11 @@ from appengine.utils import testing
 from appengine.chromium_cq_status.shared import utils
 
 class TestUtils(testing.AppengineTestCase):
+  def test_filter_dict(self):
+    self.assertEquals(
+        {'b': 2, 'c': 3},
+        utils.filter_dict({'a': 1, 'b': 2, 'c': 3}, ('b', 'c', 'd')))
+
   def test_is_valid_user(self):
     self.assertFalse(utils.is_valid_user())
 

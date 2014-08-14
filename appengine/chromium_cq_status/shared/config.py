@@ -8,9 +8,9 @@ AUTO_TAGGED_FIELDS = (
   'issue',
   'owner',
   'patchset',
+  'project',
   'verification',
 )
 CQ_BOT_PASSWORD_KEY = 'cq_bot'
-DEFAULT_PROJECT = 'chromium'
 MAXIMUM_QUERY_SIZE = 1000
 VALID_EMAIL_RE = re.compile(r'^.*@(chromium\.org|google\.com)$')

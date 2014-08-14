@@ -8,6 +8,9 @@ from google.appengine.api import users
 
 from shared.config import VALID_EMAIL_RE
 
+def filter_dict(d, keys): # pragma: no cover
+  return {key: d[key] for key in d if key in keys}
+
 def is_valid_user(): # pragma: no cover
   if users.is_current_user_admin():
     return True

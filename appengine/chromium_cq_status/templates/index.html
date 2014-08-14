@@ -14,8 +14,9 @@ textarea {
 
 <h1>Chromium CQ Status</h1>
 <pre>
+QUERYING
+
 <a href="/query">/query</a> to query CQ data
-  project: str='chromium'
   key: str='' (non numeric)
   begin: timestamp=0
   end: timestamp=now
@@ -36,8 +37,17 @@ The returned query results are in JSON format with the following structure:
   cursor: str
 }
 
+Example:
+/query?tags=a,b,c&count=10
+
+Shortcut:
+Tags can be specified in the URL, the following is an equivalent example.
+/query/a/b?tags=c&count=10
+
+
+POSTING
+
 <a href="/post">/post</a> to post CQ data (requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>)
-  project: str='chromium'
   key: str='' (non numeric)
   tags: str (comma separated)
   fields: json={}
@@ -46,7 +56,6 @@ The returned query results are in JSON format with the following structure:
 TESTING ONLY:
 <form id="queryForm">
 Query entries from /query:
-  project: <input type="textbox" name="project">
   key: <input type="textbox" name="key">
   begin: <input type="textbox" name="begin">
   end: <input type="textbox" name="end">
@@ -61,7 +70,6 @@ Query view:
 
 <form id="postForm">
 Post entry to /post:
-  project: <input type="textbox" name="project">
   key: <input type="textbox" name="key">
   tags: <input type="textbox" name="tags">
   fields: <input type="textbox" name="fields">
