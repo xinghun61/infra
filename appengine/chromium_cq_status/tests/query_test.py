@@ -80,7 +80,7 @@ class TestQuery(testing.AppengineTestCase):
 
   def test_query_count(self):
     _clear_records()
-    for i in range(10):
+    for _ in range(10):
       Record().put()
 
     response = self.test_app.get('/query', params={'count': 1})
@@ -103,7 +103,7 @@ class TestQuery(testing.AppengineTestCase):
 
   def test_query_cursor(self):
     _clear_records()
-    for i in range(10):
+    for _ in range(10):
       Record().put()
 
     response = self.test_app.get('/query', params={'count': 4})

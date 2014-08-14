@@ -7,7 +7,6 @@ import unittest
 
 from infra.tools.builder_alerts import alert_builder
 
-from infra.tools.builder_alerts import buildbot
 
 class AlertBuilderTest(unittest.TestCase):
   def test_compute_transition_and_failure_count_failure_to_failing_build(self):

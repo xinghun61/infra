@@ -33,7 +33,7 @@ class AlertsTest(unittest.TestCase):
     # Shouldn't use this one--too old
     models.TreeOpenStat(
         num_days=7, percent_open=99.9, parent=chromium_project,
-        timestamp=datetime.datetime.utcnow() - datetime.timedelta(days=10)).put()
+        timestamp=datetime.datetime.utcnow()-datetime.timedelta(days=10)).put()
     # Should use this one
     models.TreeOpenStat(
         num_days=7, percent_open=75, parent=chromium_project).put()
@@ -46,7 +46,7 @@ class AlertsTest(unittest.TestCase):
     # Shouldn't use this one--too old
     models.CqStat(
         parent=chromium_project, p50=70, p90=200, length=10,
-        timestamp=datetime.datetime.utcnow() - datetime.timedelta(hours=3)).put()
+        timestamp=datetime.datetime.utcnow()-datetime.timedelta(hours=3)).put()
     # Should use this one
     models.CqStat(parent=chromium_project, p50=30, p90=190, length=5).put()
     models.CqStat(parent=blink_project, p50=70, p90=100, length=8).put()
