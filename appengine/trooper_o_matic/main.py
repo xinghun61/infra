@@ -14,6 +14,7 @@ import tree_status
 # Set route definitions and enable debug stacks in the UI. See
 # https://webapp-improved.appspot.com/guide/app.html#debug-flag
 application = webapp2.WSGIApplication([
+    ('[/]', alerts.OverviewHandler),
     ('/alerts', alerts.AlertsHandler),
     ('/build-details/(.*)', build_details.BuildDetailsHandler),
     ('/check-cq', cron.CheckCqHandler),
