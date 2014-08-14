@@ -27,7 +27,7 @@ class TestOuterLoop(auto_stub.TestCase):
         raise KeyboardInterrupt()
       tasks.pop(0)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=1)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual([1, 1, 1], self.sleeps)
 
@@ -36,7 +36,7 @@ class TestOuterLoop(auto_stub.TestCase):
     def task():
       calls.append(1)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=3, duration=10)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 3, duration=10)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual(4, len(calls))
     self.assertEqual([3, 3, 3], self.sleeps)
@@ -46,7 +46,7 @@ class TestOuterLoop(auto_stub.TestCase):
     def task():
       time.sleep(6)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=1, duration=5)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, duration=5)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual([6], self.sleeps)
 
@@ -57,7 +57,7 @@ class TestOuterLoop(auto_stub.TestCase):
         raise KeyboardInterrupt()
       tasks.pop(0)
       raise Exception('Error')
-    ret = outer_loop.loop(task, sleep_timeout=1)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1)
     self.assertEqual(outer_loop.LoopResults(True, 3), ret)
     self.assertEqual([1, 1, 1], self.sleeps)
 
@@ -70,7 +70,7 @@ class TestOuterLoop(auto_stub.TestCase):
       if t == 'false':
         return False
       return True
-    ret = outer_loop.loop(task, sleep_timeout=1, max_errors=3)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, max_errors=3)
     self.assertEqual(outer_loop.LoopResults(False, 5), ret)
     self.assertEqual(['skipped'], tasks)
     self.assertEqual([1, 1, 1, 1, 1, 1], self.sleeps)

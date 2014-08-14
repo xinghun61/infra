@@ -7,7 +7,6 @@ import collections
 import json
 import os
 import sys
-import time
 import urlparse
 
 from infra.libs import git2
@@ -78,7 +77,7 @@ def main(args):  # pragma: no cover
   #   start going sideways, we should automatically back off.
   loop_results = outer_loop.loop(
       task=outer_loop_iteration,
-      sleep_timeout=cref['interval'],
+      sleep_timeout=lambda: cref['interval'],
       **opts.loop_opts)
 
   if opts.json_output:

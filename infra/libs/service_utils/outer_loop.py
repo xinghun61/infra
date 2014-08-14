@@ -31,7 +31,8 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
 
   Args:
     @param task: Callable with no arguments returning True or False.
-    @param sleep_timeout: How long to sleep between task invocations (sec).
+    @param sleep_timeout: A function returning how long to sleep between task
+                          invocations (sec), called once per loop.
     @param duration: How long to run the loop (sec), or None for forever.
     @param max_errors: Max number of consecutive errors before loop aborts.
 
@@ -83,15 +84,16 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
       # Sleep before trying again.
       # TODO(vadimsh): Make sleep timeout dynamic.
       now = time.time()
-      if deadline and now + sleep_timeout >= deadline:
+      timeout = sleep_timeout()
+      if deadline and now + timeout >= deadline:
         when = now - deadline
         if when > 0:
           LOGGER.info('Deadline reached %.1f sec ago, stopping.', when)
         else:
           LOGGER.info('Deadline is in %.1f sec, stopping now', -when)
         break
-      LOGGER.debug('Sleeping %.1f sec', sleep_timeout)
-      time.sleep(sleep_timeout)
+      LOGGER.debug('Sleeping %.1f sec', timeout)
+      time.sleep(timeout)
 
       loop_count += 1
   except KeyboardInterrupt:
