@@ -2,11 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import jinja2
 import json
 import os
-
 import webapp2
-import jinja2
 
 from google.appengine.ext import ndb
 
@@ -74,12 +73,10 @@ class TreeStatusHandler(webapp2.RequestHandler):
     }))
 
 class TreeStatusJSONHandler(webapp2.RequestHandler):
-  def get(self, project):
-    days = int(self.request.get('days', 1))
-
+  def get(self, project, days):
     project_key = ndb.Key('Project', project)
     latest = models.TreeOpenStat.query(
-        models.TreeOpenStat.num_days == days, ancestor=project_key).order(
+        models.TreeOpenStat.num_days == int(days), ancestor=project_key).order(
         -models.TreeOpenStat.timestamp).get()
 
     data = {}
