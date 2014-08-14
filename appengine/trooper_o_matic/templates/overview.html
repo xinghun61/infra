@@ -21,14 +21,14 @@
           <tr><td>Chromium</td><td>Blink</td></tr>
           <tr>
               <td {{alert(cq_latency.chromium.should_alert)}}>
-                <div>50th percentile: {{cq_latency.chromium.p50}} seconds</div>
-                <div>90th percentile: {{cq_latency.chromium.p90}} seconds</div>
+                <div>50th percentile: {{cq_latency.chromium.p50}} minutes</div>
+                <div>90th percentile: {{cq_latency.chromium.p90}} minutes</div>
                 <div>Length: {{cq_latency.chromium.length}}</div>
                 <a href="/cq/chromium">graphs</a>
               </td>
               <td {{alert(cq_latency.blink.should_alert)}}>
-                <div>50th percentile: {{cq_latency.blink.p50}} seconds</div>
-                <div>90th percentile: {{cq_latency.blink.p90}} seconds</div>
+                <div>50th percentile: {{cq_latency.blink.p50}} minutes</div>
+                <div>90th percentile: {{cq_latency.blink.p90}} minutes</div>
                 <div>Length: {{cq_latency.blink.length}}</div>
                 <a href="/cq/blink">graphs</a>
               </td>
