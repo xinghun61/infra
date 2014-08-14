@@ -4,13 +4,15 @@
 
 """Collect stats regularly via app engine cron.
 """
+
 import calendar
 import datetime
 import json
 import logging
-import numpy
 import re
 import urllib
+
+import numpy
 import webapp2
 
 from google.appengine.api import urlfetch
@@ -268,7 +270,7 @@ class CheckTreeStatusHandler(webapp2.RequestHandler):
   def date_for( entry):
     return datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S.%f')
 
-  def fetchEntries(self, project, days):
+  def fetch_entries(self, project, days):
     # Get two previous days of data, in case the tree has been in the same
     # state for the entire time period.
     data_start = datetime_now() - datetime.timedelta(days=days+2)
@@ -278,7 +280,7 @@ class CheckTreeStatusHandler(webapp2.RequestHandler):
     entries.sort(key=self.date_for)
     return entries
 
-  def getStateOfTree(self, entries, cutoff):
+  def get_state_of_tree(self, entries, cutoff):
     # Find the state of the tree before the days started.
     was_open = True
     for _, entry in enumerate(entries):
@@ -293,8 +295,8 @@ class CheckTreeStatusHandler(webapp2.RequestHandler):
     now = datetime_now()
     cutoff = datetime_now() - datetime.timedelta(days=days)
 
-    entries = self.fetchEntries(project, days)
-    was_open = self.getStateOfTree(entries, cutoff)
+    entries = self.fetch_entries(project, days)
+    was_open = self.get_state_of_tree(entries, cutoff)
 
     # Now look through the entries in the relevant days to find the tree open
     # times.

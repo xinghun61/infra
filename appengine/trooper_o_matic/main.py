@@ -22,5 +22,5 @@ application = webapp2.WSGIApplication([
     ('/cq/(.*)', cq.CqHandler),
     ('/tree/(.*)', tree.TreeHandler),
     ('/tree-status/(.*)', tree_status.TreeStatusHandler),
-    ('/tree-status-json/([^/]*)/(\d+)/?', tree_status.TreeStatusJSONHandler),
+    ('/project/([^/]*)/tree-status/?', tree_status.TreeStatusJSONHandler),
 ], debug=True)
