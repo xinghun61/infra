@@ -1,0 +1,4 @@
+cron:
+- description: generate builders map
+  url: /tasks/builders_map
+  schedule: every 1 hours
