@@ -93,5 +93,6 @@ class Query(webapp2.RequestHandler): # pragma: no cover
       return
 
     results = execute_query(**data)
+    self.response.headers.add_header("Access-Control-Allow-Origin", "*")
     self.response.headers.add_header('Content-Type', 'application/json')
     json.dump(results, self.response)
