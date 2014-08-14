@@ -32,7 +32,13 @@ class TestUtils(testing.AppengineTestCase):
     self.mock_current_user('fake', 'fake@google.comm')
     self.assertFalse(utils.is_valid_user())
 
+    self.mock_current_user('fake', 'fake@google_com')
+    self.assertFalse(utils.is_valid_user())
+
     self.mock_current_user('fake', 'fake@chromium.orgg')
+    self.assertFalse(utils.is_valid_user())
+
+    self.mock_current_user('fake', 'fake@chromium_org')
     self.assertFalse(utils.is_valid_user())
 
   def test_password_sha1(self):

@@ -26,43 +26,54 @@ def execute_query(
     key, begin, end, tags, fields, count, cursor): # pragma: no cover
   count = min(count, MAXIMUM_QUERY_SIZE)
 
-  filters = []
-  if begin:
-    filters.append(Record.timestamp >= begin)
-  if end:
-    filters.append(Record.timestamp <= end)
-  for tag in tags:
-    filters.append(Record.tags == tag)
+  records = []
+  next_cursor = ''
+  if key and count > 0:
+    record = Record.get_by_id(key)
+    if record and (
+        (not begin or record.timestamp >= begin) and
+        (not end or record.timestamp <= end) and
+        set(tags).issubset(record.tags) and
+        matches_fields(fields, record)):
+      records.append(record)
+    more = False
+  else:
+    more = True
+    while more and len(records) < count:
+      filters = []
+      if begin:
+        filters.append(Record.timestamp >= begin)
+      if end:
+        filters.append(Record.timestamp <= end)
+      for tag in tags:
+        filters.append(Record.tags == tag)
+      query = Record.query().filter(*filters).order(-Record.timestamp)
+      page_records, next_cursor, more = query.fetch_page(count - len(records),
+          start_cursor=Cursor(urlsafe=next_cursor or cursor))
+      next_cursor = next_cursor.urlsafe() if next_cursor else ''
+      for record in page_records:
+        if matches_fields(fields, record):
+          records.append(record)
 
   results = []
-  more = True
-  next_cursor = ''
-  while more and len(results) < count:
-    if key and not filters and count > 0:
-      record = Record.get_by_id(key)
-      records = [record] if record else []
-      more = False
-    else:
-      query = Record.query().filter(*filters).order(-Record.timestamp)
-      records, next_cursor, more = query.fetch_page(count - len(results),
-          start_cursor=Cursor(urlsafe=cursor))
-      next_cursor = next_cursor.urlsafe() if next_cursor else ''
+  for record in records:
+    result = record.to_dict(exclude=['timestamp'])
+    result['timestamp'] = calendar.timegm(record.timestamp.timetuple())
+    record_key = record.key.id()
+    result['key'] = record_key if type(record_key) != long else None
+    results.append(result)
 
-    for record in records:
-      for field, value in fields.items():
-        if not field in record.fields or record.fields[field] != value:
-          break
-      else:
-        result = record.to_dict(exclude=['timestamp'])
-        result['timestamp'] = calendar.timegm(record.timestamp.timetuple())
-        record_key = record.key.id()
-        result['key'] = record_key if type(record_key) != long else None
-        results.append(result)
   return {
     'results': results,
     'cursor': next_cursor,
     'more': more,
   }
+
+def matches_fields(fields, record): # pragma: no cover
+  for field, value in fields.items():
+    if not field in record.fields or record.fields[field] != value:
+      return False
+  return True
 
 class Query(webapp2.RequestHandler): # pragma: no cover
   def get(self, url_tags): # pylint: disable-msg=W0221

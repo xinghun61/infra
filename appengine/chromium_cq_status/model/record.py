@@ -7,4 +7,4 @@ from google.appengine.ext import ndb
 class Record(ndb.Model):
   timestamp = ndb.DateTimeProperty(auto_now=True)
   tags = ndb.StringProperty(repeated=True)
-  fields = ndb.JsonProperty()
+  fields = ndb.JsonProperty(default={})

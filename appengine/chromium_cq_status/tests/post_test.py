@@ -77,12 +77,14 @@ class TestPost(testing.AppengineTestCase):
     self.assertEquals([], record.tags)
     self.assertEquals({}, record.fields)
 
+    old_count = Record.query().count()
     response = self.test_app.get('/post', params={
       'key': 'single_key_update',
       'tags': '1,2,3',
       'fields': '{"update": "the", "same": "record"}',
     })
     self.assertEquals('', response.body)
+    self.assertEquals(old_count, Record.query().count())
     record = Record.get_by_id('single_key_update')
     self.assertTrue(record != None)
     self.assertEquals(set(['1', '2', '3']), set(record.tags))
