@@ -73,7 +73,7 @@ class GTestSplitter(object):
     base_url = 'http://test-results.appspot.com/testfile'
     response = requests.get(base_url, params=params)
     if response.status_code == 200:
-      test_results = response.json()['tests']
+      test_results = flatten_test_results(response.json()['tests'])
       return [name for name, results in test_results.items()
           if results['expected'] != results['actual']]
 
