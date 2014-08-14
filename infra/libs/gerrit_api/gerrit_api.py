@@ -134,6 +134,28 @@ class Gerrit(object):  # pragma: no cover
     if code != 200:
       raise UnexpectedResponseException(code, body)
 
+  def is_account_active(self, account_id):
+    if '/' in account_id:
+      raise ValueError('Invalid account id: %s' % account_id)
+    code, body = self._request(
+        method='GET',
+        url='/accounts/%s/active' % account_id)
+    if code == 200:
+      return True
+    if code == 204:
+      return False
+    raise UnexpectedResponseException(code, body)
+
+  def activate_account(self, account_id):
+    """Sets account state to 'active'."""
+    if '/' in account_id:
+      raise ValueError('Invalid account id: %s' % account_id)
+    code, body = self._request(
+        method='PUT',
+        url='/accounts/%s/active' % account_id)
+    if code not in (200, 201):
+      raise UnexpectedResponseException(code, body)
+
 
 def _load_netrc(path=None):  # pragma: no cover
   """Loads netrc file with gerrit credentials.
