@@ -30,7 +30,7 @@ class AlertsHandler(webapp2.RequestHandler):
         'should_alert': stat.percent_open > 80.0,
         'details': ('Tree %.2f%% open over last 7 days (must be > 80.0)' %
                     stat.percent_open),
-        'url': ('http://trooper-o-matic.appspot.com/tree-status/%s' %
+        'url': ('http://trooper-o-matic.appspot.com/project/%s/tree-status' %
                 project.id()),
     }
 
