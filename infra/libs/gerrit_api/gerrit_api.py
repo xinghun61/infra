@@ -30,12 +30,12 @@ class NetrcException(GerritException):
 class UnexpectedResponseException(GerritException):
   """Gerrit returned something unexpected."""
 
-  def __init__(self, http_code, body):
+  def __init__(self, http_code, body):  # pragma: no cover
     super(UnexpectedResponseException, self).__init__()
     self.http_code = http_code
     self.body = body
 
-  def __str__(self):
+  def __str__(self):  # pragma: no cover
     return 'Unexpected response (HTTP %d): %s' % (self.http_code, self.body)
 
 
