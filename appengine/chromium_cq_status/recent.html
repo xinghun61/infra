@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <title>Recent Messages</title>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <script src="/components/platform/platform.js"></script>
+  <style>
+  html,body {
+    height: 100%;
+    margin: 0;
+    background-color: #E5E5E5;
+    font-family: 'RobotoDraft', sans-serif;
+  }
+  </style>
+  <link rel="import" href="/components/polymer/polymer.html">
+  <link rel="import" href="/components/core-ajax/core-ajax.html">
+  <link rel="import" href="/components/font-roboto/roboto.html">
+  <link rel="import" href="/components/sortable-table/sortable-table.html">
+  <script src="/scripts/third_party/js_humanized_time_span/humanized_time_span.js"></script>
+</head>
+
+<body unresolved touch-action="auto">
+<polymer-element name="cq-recent-messages" attributes='messages'>
+  <template>
+    <sortable-table id='table' data="{{ messages }}" style='width: 100%'>
+    <template id='issueTemplate'>
+    <td>
+      <a href='/recent/issue={{value}}'>{{ value }}</a>
+    </td>
+    </template>
+    <template id='messageTemplate'>
+    <td>
+      {{ value.message }} {{ value.output }}
+    </td>
+    </template>
+    <template id='timestampTemplate'>
+    <td title='{{ value | since_string }}'>
+      {{ value | utc_date_string }}
+    </td>
+    </template>
+    </sortable-table>
+  </template>
+  <script>
+  Polymer('cq-recent-messages', {
+    ready: function() {
+      this.$.table.columns = [
+        { name: 'timestamp', cellTemplate: 'timestampTemplate'},
+        { name: 'issue', cellTemplate: 'issueTemplate' },
+        { name: 'patchset' },
+        { title: 'type', name: 'verification' },
+        { title: 'message', name: 'payload', cellTemplate: 'messageTemplate' },
+      ];
+      this.$.table.sortColumn = 'timestamp';
+      this.$.table.sortDescending = true;
+    }
+  });
+  </script>
+</polymer-element>
+
+<polymer-element name="cq-main" attributes='query response messages'>
+<template>
+<div>{{ query }}</div>
+<cq-recent-messages messages='{{ messages }}'></cq-recent-messages>
+<core-ajax url="/query" id='loader' auto handleAs="json" response="{{ response }}"></core-ajax>
+</template>
+<script>
+Polymer('cq-main', {
+  ready: function() {
+    this.query = window.location.pathname.replace('/recent', '');
+    this.$.loader.url += this.query;
+  },
+  responseChanged: function(oldValue, newValue) {
+    var messages = [];
+    newValue.results.forEach(function(result) {
+      messages.push(result.fields);
+    }, this);
+    this.messages = messages;
+  },
+});
+// Needed to make filters visible inside sortable-table.
+PolymerExpressions.prototype.since_string = function(value) {
+  // Buildbot talks to us in seconds, js expect milliseconds
+  date = new Date(value * 1000.0);
+  return humanized_time_span(date);
+}
+PolymerExpressions.prototype.utc_date_string = function(value) {
+  // Buildbot talks to us in seconds, js expect milliseconds
+  return (new Date(value * 1000.0)).toUTCString();
+}
+</script>
+</polymer-element>
+<cq-main></cq-main>
+</body>
+</html>
