@@ -31,10 +31,8 @@ class AppengineTestCase(auto_stub.TestCase): # pragma: no cover
 
   def setUp(self):
     super(AppengineTestCase, self).setUp()
-    tb = testbed.Testbed()
-    tb.setup_env(current_version_id='testbed.version')
-    tb.activate()
-    self.testbed = tb
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
     # Can't use init_all_stubs() because PIL isn't in wheel.
     self.testbed.init_app_identity_stub()
     self.testbed.init_blobstore_stub()

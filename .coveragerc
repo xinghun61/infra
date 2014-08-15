@@ -1,6 +1,14 @@
 [run]
 include = ./*
-omit = ./ENV/*, ./appengine/third_party/*
+omit =
+    # Virtual environment with third_party packages.
+    ./ENV/*
+
+    # Appengine third_party packages, committed into the repo as is.
+    ./appengine/third_party/*
+
+    # Apps symlinking swarming/components.
+    ./appengine/*/components/*
 
 [report]
 exclude_lines =
