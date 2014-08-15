@@ -45,7 +45,7 @@ def sha_for(deps_entry):
 
 
 def get_links(deps):
-  import pip.wheel
+  import pip.wheel  # pylint: disable=E0611
 
   plat_tag = platform_tag()
 

@@ -40,7 +40,7 @@ def wheel(arg, source_sha, build, build_options):
 
 def grab_wheel(src, dst, source_sha, build):
   # late import lets us grab the virtualenv pip
-  from pip.wheel import Wheel
+  from pip.wheel import Wheel  # pylint: disable=E0611
 
   items = os.listdir(src)
   assert len(items) == 1, 'Wrong number of files in wheel directory: %r' % items
