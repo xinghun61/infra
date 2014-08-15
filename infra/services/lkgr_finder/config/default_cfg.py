@@ -1,8 +1,0 @@
-CONFIG = {
-    'status_url': 'https://chromium-status.appspot.com',
-    'password_file': 'workdir/.status_password',
-    'allowed_gap': 150,
-    'allowed_lag': 2,
-    'error_recipients': 'chrome-troopers+alerts@google.com',
-    'update_recipients': None,
-}

@@ -24,7 +24,7 @@ class GitException(UserWarning):
 class Git(object):
   """Wrapper class to abstract git operations against a single repository."""
 
-  def __init__(self, path):
+  def __init__(self, path):  # pragma: no cover
     """Creates the Git object, pointed at the on-disk repo.
 
     Args:
@@ -38,7 +38,7 @@ class Git(object):
     """
     self.path = os.path.abspath(path)
 
-  def __call__(self, *args, **kwargs):
+  def __call__(self, *args, **kwargs):  # pragma: no cover
     """Run a git command and returns its combined stdout and stderr."""
     cmd = ['git'] + [str(arg) for arg in args]
     LOGGER.debug('Running %s', ' '.join(cmd))
@@ -47,11 +47,11 @@ class Git(object):
     return out
 
   @property
-  def bare(self):
+  def bare(self):  # pragma: no cover
     """True if the repository is bare (is just the .git directory)."""
     return self('config', '--get', 'core.bare').strip() == 'true'
 
-  def show(self, ref, path, *args):
+  def show(self, ref, path, *args):  # pragma: no cover
     """Get the contents of a Git object (blob, tree, tag, or commit).
 
     Args:
@@ -64,7 +64,7 @@ class Git(object):
     cmd = ['show', treeish] + list(args)
     return self(*cmd)
 
-  def number(self, *refs):
+  def number(self, *refs):  # pragma: no cover
     """Get the generation number of each input ref.
 
     Args:
@@ -78,7 +78,7 @@ class Git(object):
     return map(int, out.splitlines())
 
 
-def NewGit(url, path, bare=False):
+def NewGit(url, path, bare=False):  # pragma: no cover
   """Factory function to create a Git object against a remote url.
 
   Ensures the given path exists. If a git repository is already present
@@ -134,7 +134,7 @@ def NewGit(url, path, bare=False):
   return git
 
 
-def TmpGit(url, bare=False):
+def TmpGit(url, bare=False):  # pragma: no cover
   """Factory function to create a temporary Git object against a remote url.
 
   Creates a temporary directory, clones the repository into that directory,
