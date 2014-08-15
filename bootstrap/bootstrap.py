@@ -145,8 +145,7 @@ def activate_env(env, deps):
         env, search_dirs=virtualenv.file_search_dirs())
 
   print '  Activating environment'
-  bin_dir = 'Scripts' if virtualenv.is_win else 'bin'
-  activate_this = os.path.join(env, bin_dir, 'activate_this.py')
+  activate_this = os.path.join(env, 'bin', 'activate_this.py')
   execfile(activate_this, dict(__file__=activate_this))
 
   if cur_deps is None:
