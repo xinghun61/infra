@@ -10,11 +10,11 @@ from infra.tools.builder_alerts import string_helpers
 
 # Git ready, but only implemented for SVN atm.
 def ids_after_first_including_second(first, second):
-  if not first or not second:  # pragma: no cover
+  if not first or not second:
     return []
   try:
     return range(int(first) + 1, int(second) + 1)
-  except ValueError:  # pragma: no cover
+  except ValueError:
     # likely passed a git hash
     return []
 
@@ -23,22 +23,12 @@ def ids_after_first_including_second(first, second):
 def is_ancestor_of(older, younger):
   return int(older) < int(younger)
 
-
-def is_decendant_of(younger, older):
+def is_descendant_of(younger, older):
   return is_ancestor_of(older, younger)
-
-
-def commit_compare(one, two):  # pragma: no cover
-  if is_decendant_of(one, two):
-    return -1
-  if is_ancestor_of(one, two):
-    return 1
-  return 0 # This is technically not right, since commits can be non-comparable.
-
 
 def flatten_to_commit_list(passing, failing):
   # Flatten two commit dicts to a list of 'name:commit'
-  if not passing or not failing:  # pragma: no cover
+  if not passing or not failing:
     return []
   all_commits = []
   for name in passing.keys():
@@ -48,7 +38,13 @@ def flatten_to_commit_list(passing, failing):
 
 
 # FIXME: Perhaps this should be done by the feeder?
-def assign_keys(alerts):  # pragma: no cover
+def assign_keys(alerts):
+  """
+  Assign identifying keys to each alert in alerts.
+
+  Keys must be comparable for sorting, but can otherwise have arbitrary
+  structure.
+  """
   for key, alert in enumerate(alerts):
     # We could come up with something more sophisticated if necessary.
     alert['key'] = 'f%s' % key # Just something so it doesn't look like a number
@@ -79,7 +75,7 @@ def merge_regression_ranges(alerts):
     return compare
 
   # These don't handle the case where commits can't be compared (git branches)
-  younger_commit = make_compare(is_decendant_of)
+  younger_commit = make_compare(is_descendant_of)
   passing_dicts = map(operator.itemgetter('passing_revisions'), alerts)
   last_passing = reduce(_make_merge_dicts(younger_commit), passing_dicts)
 
@@ -95,7 +91,14 @@ def merge_regression_ranges(alerts):
   return last_passing, first_failing
 
 
-def reason_key_for_alert(alert):  # pragma: no cover
+def reason_key_for_alert(alert):
+  """
+  Computes the reason key for an alert.
+
+  The reason key for an alert is used to group related alerts together. Alerts
+  for the same step name and reason are grouped together, and alerts for the
+  same step name and builder are grouped together.
+  """
   # FIXME: May need something smarter for reason_key.
   reason_key = alert['step_name']
   if alert['reason']:

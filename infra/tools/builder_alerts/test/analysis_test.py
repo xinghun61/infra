@@ -81,7 +81,8 @@ class FailureAnalysisTest(unittest.TestCase):
     failing = { 'v8': '2', 'chromium': '4'}
     commit_list = analysis.flatten_to_commit_list(passing, failing)
     self.assertEquals(commit_list, ['v8:2'])
-
+    self.assertEquals(analysis.flatten_to_commit_list(passing, []), [])
+    self.assertEquals(analysis.flatten_to_commit_list([], failing), [])
 
   def test_range_key_for_group(self):
     failing = { 'v8': '2', 'chromium': '4'}
@@ -115,6 +116,44 @@ class FailureAnalysisTest(unittest.TestCase):
   def test_merge_by_range(self):
     groups = json.loads(self.MERGE_BY_RANGE_JSON)
     merged = analysis.merge_by_range(groups)
-    self.assertEquals(len(merged), 1)
-    self.assertEquals(merged[0]['sort_key'], 'dromaeo.')
-    self.assertEquals(analysis.merge_by_range([]), [])
+    self.assertEqual(len(merged), 1)
+    self.assertEqual(merged[0]['sort_key'], 'dromaeo.')
+    self.assertEqual(analysis.merge_by_range([]), [])
+
+  def test_assign_keys(self):
+    alerts = [ { 'foo': 1 }, { 'foo': 1 } ]
+    alerts = analysis.assign_keys(alerts)
+    # keys assigned...
+    self.assertIn('key', alerts[0])
+    self.assertIn('key', alerts[1])
+    # and distinct
+    self.assertNotEqual(alerts[0]['key'], alerts[1]['key'])
+
+  def test_reason_key_for_alert(self):
+    def alert(step, builder, reason=None):
+      return {'step_name': step, 'builder_name': builder, 'reason': reason}
+    a0 = alert('s0', 'b0', 'r0')
+    a1 = alert('s0', 'b0', 'r0')
+    a2 = alert('s0', 'b0')
+    a3 = alert('s0', 'b1', 'r0')
+    a4 = alert('s0', 'b1')
+    a5 = alert('s0', 'b0', 'r1')
+    f = analysis.reason_key_for_alert
+    self.assertEqual(f(a0), f(a1)) # equal s/b/r -> equal key
+    self.assertEqual(f(a0), f(a3)) # equal s/r -> equal key
+    self.assertNotEqual(f(a0), f(a2)) # r vs no r -> different key
+    self.assertNotEqual(f(a2), f(a4)) # different s/b -> different key
+    self.assertNotEqual(f(a3), f(a4)) # r vs no r -> different key
+    self.assertNotEqual(f(a0), f(a5)) # different r -> different key
+
+  def test_ids_after_first(self):
+    f = analysis.ids_after_first_including_second
+    # invalid range endpoints yield []
+    self.assertEqual([], f(0, 5))
+    self.assertEqual([], f(5, 0))
+    # valid endpoints (a,b) yield (a, b]
+    self.assertEqual([2, 3, 4, 5], f(1, 5))
+    c0 = '4fcb9c951929b41e7e489c90889a00a1c7214cfd'
+    c1 = '10caabc60b70832f702e200d9fd0a06be061317d'
+    # git commit-ids currently unsupported
+    self.assertEqual([], f(c0, c1))
