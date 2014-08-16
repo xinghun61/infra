@@ -31,13 +31,14 @@ class AccessCheckEntry(ndb.Model):
     'chromium_netrc_email',
     'git_user_email',
     'git_user_name',
+    'git_version',
     'is_git',
     'is_home_set',
     'is_using_netrc',
     'netrc_file_mode',
+    'platform',
     'push_works',
     'username',
-    'platform',
   ])
 
   # Properties settable via HTTP POST from client.
@@ -61,6 +62,8 @@ class AccessCheckEntry(ndb.Model):
   # netrc file access mode.
   netrc_file_mode = ndb.IntegerProperty()
 
+  # Git version, as reported by git --version.
+  git_version = ndb.StringProperty()
   # System platform, as reported by sys.platform.
   platform = ndb.StringProperty()
   # User name in the system, as returned by getpass.getuser().

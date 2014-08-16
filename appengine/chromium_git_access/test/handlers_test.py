@@ -37,6 +37,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     'chromium_netrc_email': 'blah@chromium.org',
     'git_user_email': 'blah@chromium.org',
     'git_user_name': 'Blah Blahovic',
+    'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
     'is_git': True,
     'is_home_set': True,
     'is_using_netrc': True,
@@ -75,9 +76,9 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.assertEquals(
         ndb.Key(
             'AccessCheckEntryShard_v1',
-            '52',
+            'be',
             'AccessCheckEntry',
-            '523e0b836ceaf0583017c23e8cab77908e8fc932'),
+            'be0419de10aade88dd3d83a8f2bc18be53b1fdc9'),
         entries[0].key)
     self.assertEquals(
         {
@@ -86,6 +87,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
           'chromium_netrc_email': u'blah@chromium.org',
           'git_user_email': u'blah@chromium.org',
           'git_user_name': u'Blah Blahovic',
+          'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
           'is_git': True,
           'is_home_set': True,
           'is_using_netrc': True,
