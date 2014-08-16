@@ -106,8 +106,8 @@ def html_index(links):
 
 
 def install(deps):
-  py = os.path.join(sys.prefix, 'bin', 'python')
-  pip = os.path.join(sys.prefix, 'bin', 'pip')
+  bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
+  pip = os.path.join(sys.prefix, bin_dir, 'pip')
 
   links = get_links(deps)
   with html_index(links) as ipath:
@@ -117,7 +117,7 @@ def install(deps):
       if not deps_entry.get('implicit'):
         requirements.append('%s==%s' % (name, deps_entry['version']))
     subprocess.check_call(
-        [py, pip, 'install', '--no-index', '--download-cache',
+        [pip, 'install', '--no-index', '--download-cache',
          os.path.join(ROOT, '.wheelcache'), '-f', ipath] + requirements)
 
 

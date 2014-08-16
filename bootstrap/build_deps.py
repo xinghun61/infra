@@ -24,8 +24,9 @@ def has_custom_build(name):
 
 
 def pip(*args, **kwargs):
+  bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
   subprocess.check_call(
-      (os.path.join(sys.prefix, 'bin', 'pip'),) + args, **kwargs)
+      (os.path.join(sys.prefix, bin_dir, 'pip'),) + args, **kwargs)
 
 
 def wheel(arg, source_sha, build, build_options):
