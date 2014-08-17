@@ -45,6 +45,70 @@ class GitEntry(object):
       return GitFile(*spec)
     raise AssertionError('Do not know how to parse spec: %r' % spec)
 
+  @staticmethod
+  def spec_for(repo, treeish):
+    """Return a GitEntry-compatible spec from something which resolves to a
+    tree.
+    """
+    if hasattr(treeish, 'hsh'):
+      treeish = treeish.hsh
+    spec = {}
+    for entry in repo.run('ls-tree', '-zr', treeish).split('\0'):
+      if not entry:
+        continue
+      metadata, path = entry.split('\t')
+      mode, typ, hsh = metadata.split(' ')
+
+      # since we did a recursive ls-tree, the only thing we should see are
+      # blobs.
+      assert typ == 'blob', 'Cannot handle anything but blobs and trees!'
+
+      subspec = spec
+      pieces = path.split('/')
+      for subpath in pieces[:-1]:
+        subspec = subspec.setdefault(subpath, {})
+      subspec[pieces[-1]] = (repo.run('cat-file', 'blob', hsh),
+                             int(mode[1:], 8))
+    return spec
+
+  @staticmethod
+  def merge_specs(left, right):
+    """Merge two specs.
+
+    If a value in the right tree is None, it's removed if present in left.
+
+    All conflicts are resolved in the favor of the right spec.
+    """
+    assert left is not None, 'left spec cannot contain None'
+    if right is None:
+      return right
+
+    if type(left) != type(right):
+      return right
+
+    assert isinstance(left, dict), (
+      'Do not know how to merge (%r, %r)' % (left, right))
+
+    new_spec = {}
+    old = set(left.keys())
+    new = set(right.keys())
+
+    # any keys in both are merged.
+    for key in (old & new):
+      merged = GitEntry.merge_specs(left[key], right[key])
+      if merged is not None:
+        new_spec[key] = merged
+
+    # keys in old, but not in new are carried from the left
+    for key in (old - new):
+      new_spec[key] = left[key]
+
+    # keys in new, but not in old are carried from the right
+    for key in (new - old):
+      new_spec[key] = right[key]
+
+    return new_spec
+
 
 class GitFile(GitEntry):
   typ = 'blob'
@@ -83,11 +147,20 @@ class GitTree(GitEntry):
 class TestRef(git2.Ref):
   """A testing version of git2.Ref."""
 
-  def synthesize_commit(self, *args, **kwargs):
-    """Like TestRepo.synthesize_commit, but also updates this Ref to point at
+  def make_full_tree_commit(self, *args, **kwargs):
+    """Like TestRepo.make_full_tree_commit, but also updates this Ref to point
+    at the synthesized commit, and uses the current value of the ref as the
+    parent.
+    """
+    commit = self.repo.make_full_tree_commit(self.commit, *args, **kwargs)
+    self.update_to(commit)
+    return commit
+
+  def make_commit(self, *args, **kwargs):
+    """Like TestRepo.make_commit, but also updates this Ref to point at
     the synthesized commit, and uses the current value of the ref as the parent.
     """
-    commit = self.repo.synthesize_commit(self.commit, *args, **kwargs)
+    commit = self.repo.make_commit(self.commit, *args, **kwargs)
     self.update_to(commit)
     return commit
 
@@ -105,7 +178,7 @@ class TestRepo(git2.Repo):
   """A testing version of git2.Repo, which adds a couple useful methods:
 
     __init__          - initialize without a remote
-    synthesize_commit - allow the synthesis of new commits in the repo
+    make_*_commit     - allow the synthesis of new commits in the repo
     snap              - Get a dict representation of the state of the refs in
                         the repo.
   """
@@ -158,23 +231,11 @@ class TestRepo(git2.Repo):
       )
     return ret
 
-  DEFAULT_TREE = object()
-  def synthesize_commit(self, parent, message, tree=DEFAULT_TREE,
-                        footers=None):
-    """Synthesize and add a new commit object to the repo.
-
-    Args:
-      parent - a Commit object, or INVALID
-      message - the message of the commit
-      tree - a GitEntry-style spec for a tree, or a GitTree object. Defaults
-        to a commit with a file named 'file' whose contents is 'contents'.
-      footers - a dictionary-like listing of {footer_name: [values]}
-    """
-    if tree is TestRepo.DEFAULT_TREE:
-      tree = {'file': 'contents'}
-    tree = GitEntry.from_spec(tree)
+  def _synth_commit(self, parent, message, tree=None, footers=None):
+    """Internal helper for make_commit and make_full_tree_commit."""
+    tree = GitEntry.from_spec(tree or {})
     assert isinstance(tree, GitTree)
-    tree = tree.intern(self)
+    tree_hash = tree.intern(self)
 
     parents = [parent.hsh] if parent is not git2.INVALID else []
 
@@ -182,9 +243,51 @@ class TestRepo(git2.Repo):
     user = data.CommitUser('Test User', 'test_user@example.com', timestamp)
 
     return self.get_commit(self.intern(data.CommitData(
-        tree, parents, user, user, (), message.splitlines(),
+        tree_hash, parents, user, user, (), message.splitlines(),
         data.CommitData.merge_lines([], footers or {})
     ), 'commit'))
+
+
+  DEFAULT_TREE = object()
+  def make_full_tree_commit(self, parent, message, tree=DEFAULT_TREE,
+                            footers=None):
+    """Synthesize and add a new commit object to the repo, where the tree is
+    described in its entirety via a GitEntry spec.
+
+    Args:
+      parent  - a Commit object, or INVALID.
+      message - the message of the commit.
+      tree    - a GitEntry-style spec for a tree, or a GitTree object.
+                Defaults to the tree `{'file': 'contents'}`.
+      footers - a dictionary-like listing of {footer_name: [values]}.
+    """
+    if tree is self.DEFAULT_TREE:
+      tree = {'file': 'contents'}
+    return self._synth_commit(parent, message, tree=tree, footers=footers)
+
+
+  def make_commit(self, parent, message, tree_diff=None, footers=None):
+    """Synthesize and add a new commit object to the repo, where the tree is
+    described differentially from |parent|'s tree.
+
+    Args:
+      parent    - a Commit object, or INVALID.
+      message   - the message of the commit.
+      tree_diff - a mergable GitEntry-style spec which will be merged into the
+                  spec retrieved from |parent| as the right side using
+                  GitEntry.merge_specs. If |parent| is INVALID, tree_diff is
+                  taken as a full tree spec.
+      footers   - a dictionary-like listing of {footer_name: [values]}.
+    """
+    parent_spec = {}
+    if parent is not git2.INVALID:
+      parent_spec = self.spec_for(parent)
+    tree = GitEntry.merge_specs(parent_spec, tree_diff)
+    return self._synth_commit(parent, message, tree=tree, footers=footers)
+
+
+  def spec_for(self, treeish):
+    return GitEntry.spec_for(self, treeish)
 
   def __repr__(self):
     return 'TestRepo(%r)' % self._short_name

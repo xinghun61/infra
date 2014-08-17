@@ -18,13 +18,13 @@ class TestTestRepo(test_util.TestBasis):
       list(r.refglob('*'))  # no refs yet
     self.assertIsNotNone(r.repo_path)
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit')
+    ref.make_full_tree_commit('Initial Commit')
     self.assertEqual(list(r.refglob('*')), [ref])
 
   def testInitialCommit(self):
     r = TestRepo('foo', TestClock())
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit', {
+    ref.make_full_tree_commit('Initial Commit', {
       'cool_file': 'whazzap',
       'subdir': {
         'crazy times': 'this is awesome'
@@ -48,13 +48,13 @@ class TestTestRepo(test_util.TestBasis):
   def testMultiCommit(self):
     r = TestRepo('foo', TestClock())
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit', {
+    ref.make_full_tree_commit('Initial Commit', {
       'cool_file': 'whazzap',
       'subdir': {
         'crazy times': 'this is awesome'
       }
     })
-    ref.synthesize_commit('Second commit')
+    ref.make_full_tree_commit('Second commit')
     self.assertEqual(r.snap(), {
       'refs/heads/master': OD([
         ('86fa6839ec4bb328e82bde851ad131c01b10162d', ['Second commit']),
@@ -70,7 +70,7 @@ class TestTestRepo(test_util.TestBasis):
   def testSpec(self):
     r = TestRepo('foo', TestClock())
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit', {
+    ref.make_full_tree_commit('Initial Commit', {
       'cool_file': ('whazzap', 0755),  # executable
       'subdir': {
         'crazy times': GitFile('this is awesome')  # explicit entry
@@ -85,20 +85,21 @@ class TestTestRepo(test_util.TestBasis):
     self.assertEqual('this is awesome',
                      r.run('cat-file', 'blob', 'master:subdir/crazy times'))
     with self.assertRaises(AssertionError):
-      ref.synthesize_commit('invalid object', {'not', 'a', 'spec'})
+      ref.make_full_tree_commit('invalid object', {'not', 'a', 'spec'})
 
 
   def testConfigRefOmission(self):
     r = TestRepo('foo', TestClock())
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit', {
+    ref.make_full_tree_commit('Initial Commit', {
       'cool_file': ('whazzap', 0755),  # executable
       'subdir': {
         'crazy times': GitFile('this is awesome')  # explicit entry
       }
     })
     cref = r['refs/fancy-config/main']
-    cref.synthesize_commit('Config data', {'config.json': '{"hello": "world"}'})
+    cref.make_full_tree_commit('Config data',
+                               {'config.json': '{"hello": "world"}'})
     self.assertEqual(r.snap(), {
       'refs/heads/master': OD([
         ('29c7b88f7eeed928d38c692052bd0a26f7899864', ['Initial Commit'])
@@ -118,10 +119,66 @@ class TestTestRepo(test_util.TestBasis):
     m = TestRepo('mirror', TestClock(), mirror_of=r.repo_path)
     self.capture_stdio(m.reify)
     ref = r['refs/heads/master']
-    ref.synthesize_commit('Initial Commit')
+    ref.make_full_tree_commit('Initial Commit')
     self.assertEqual(list(r.refglob('*')), [ref])
     with self.assertRaises(git2.CalledProcessError):
       list(m.refglob('*'))  # no refs yet in mirror
     self.capture_stdio(m.run, 'fetch')
     self.assertEqual(list(m.refglob('*')), [m['refs/heads/master']])
     self.assertEqual(r.snap(), m.snap())
+
+  def testSpecFor(self):
+    r = TestRepo('foo', TestClock())
+    ref = r['refs/heads/master']
+    spec = {
+      'cool_file': ('whazzap', 0755),  # executable
+      'subdir': {
+        'crazy times': ('this is awesome', 0644)
+      }
+    }
+    c = ref.make_full_tree_commit('Initial Commit', spec)
+    self.assertEquals(spec, r.spec_for(c))
+
+    # can take a raw tree hash too
+    self.assertEquals(
+      r.spec_for(r.run('rev-parse', '%s:subdir' % c.hsh).strip()), {
+        'crazy times': ('this is awesome', 0644)
+      }
+    )
+
+  def testMergeSpecs(self):
+    r = TestRepo('foo', TestClock())
+    ref = r['refs/heads/master']
+    spec = {
+      'cool_file': ('whazzap', 0755),  # executable
+      'subdir': {
+        'crazy times': ('this is awesome', 0644)
+      },
+      'nested': {
+        'nested_file': 'one thing',
+        'nested_carry': 'can\'t touch this',
+      },
+      'carry_over': 'this is the same before and after',
+    }
+    ref.make_commit('Initial Commit', spec)
+    c = ref.make_commit('Differential Commit', {
+      'cool_file': None,
+      'subdir': 'now its a file',
+      'nested': {
+        'nested_file': 'other thing'
+      },
+      'other_dir': {
+        'neat-o': 'it\'s a neat file!'
+      },
+    })
+    self.assertEquals(r.spec_for(c), {
+      'subdir': ('now its a file', 0644),
+      'other_dir': {
+        'neat-o': ('it\'s a neat file!', 0644)
+      },
+      'nested': {
+        'nested_file': ('other thing', 0644),
+        'nested_carry': ('can\'t touch this', 0644)
+      },
+      'carry_over': ('this is the same before and after', 0644),
+    })

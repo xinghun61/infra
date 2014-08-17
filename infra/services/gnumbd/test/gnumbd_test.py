@@ -25,9 +25,9 @@ class TestConfigRef(gnumbd.GnumbdConfigRef):
   def update(self, **values):
     new_config = self.current
     new_config.update(values)
-    self.ref.synthesize_commit(
+    self.ref.make_commit(
         'update(%r)' % values.keys(),
-        tree={'config.json': json.dumps(new_config)})
+        {'config.json': json.dumps(new_config)})
 
 
 def RunTest(test_name):
