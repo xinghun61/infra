@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import hashlib
+import os
 import shutil
 import sys
 
@@ -117,3 +118,43 @@ class TestRepo(test_util.TestBasis):
     self.assertEqual(
         self.repo.git('rev-parse', 'branch_O').stdout.strip(),
         self.repo['S'])
+
+  def testEmptyFastForward(self):
+    r = self.mkRepo()
+    out, err = self.capture_stdio(r.fast_forward_push, {})
+    self.assertEqual(out, '')
+    self.assertEqual(err, '')
+
+  def testShareObjectsFrom(self):
+    r = self.mkRepo()
+    # make a mirror of THAT
+    r2 = git2.Repo('file://' + r.repo_path)
+    r2.repos_dir = os.path.join(self.repos_dir, 'repos')
+    self.capture_stdio(r2.reify, share_from=r)
+
+    data = 'super-cool-blob'
+    hsh = r.intern(data)
+    self.assertEqual(r2.run('cat-file', 'blob', hsh), data)
+
+  def testShareObjectsAdd(self):
+    r = self.mkRepo()
+    data = 'super-cool-blob'
+    hsh = r.intern(data)
+    # make a mirror of THAT
+    r2 = git2.Repo('file://' + r.repo_path)
+    r2.repos_dir = os.path.join(self.repos_dir, 'repos')
+    self.capture_stdio(r2.reify)
+
+    # blob is not there because it's a clone, but the blob wasn't in a commit
+    with self.assertRaises(git2.CalledProcessError):
+      r2.run('cat-file', 'blob', hsh)
+
+    self.capture_stdio(r2.reify, share_from=r)
+    self.assertEqual(r2.run('cat-file', 'blob', hsh), data)
+
+    # reifying a second time shouldn't change the alternates file
+    with open(os.path.join(r2.repo_path, 'objects', 'info', 'alternates')) as f:
+      altfile = f.read()
+    self.capture_stdio(r2.reify, share_from=r)
+    with open(os.path.join(r2.repo_path, 'objects', 'info', 'alternates')) as f:
+      self.assertEqual(altfile, f.read())

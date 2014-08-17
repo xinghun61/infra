@@ -40,7 +40,12 @@ class Repo(object):
     """Get a Ref attached to this Repo."""
     return Ref(self, ref)
 
-  def reify(self):
+  # Accessors
+  # pylint: disable=W0212
+  url = property(lambda self: self._url)
+  repo_path = property(lambda self: self._repo_path)
+
+  def reify(self, share_from=None):
     """Ensures the local mirror of this Repo exists."""
     assert self.repos_dir is not None
 
@@ -52,21 +57,45 @@ class Repo(object):
         if e.errno != errno.EEXIST:
           raise
 
-    parsed = urlparse.urlparse(self._url)
+    parsed = urlparse.urlparse(self.url)
     norm_url = parsed.netloc + parsed.path
     if norm_url.endswith('.git'):
       norm_url = norm_url[:-len('.git')]
     folder = norm_url.replace('-', '--').replace('/', '-').lower()
 
     rpath = os.path.abspath(os.path.join(self.repos_dir, folder))
+
+    share_objects = None
+    if share_from:
+      assert isinstance(share_from, Repo)
+      assert share_from.repo_path, 'share_from target must be reify()\'d'
+      share_objects = os.path.join(share_from.repo_path, 'objects')
+
     if not os.path.isdir(rpath):
       self._log.debug('initializing %r -> %r', self, rpath)
-      name = tempfile.mkdtemp(dir=self.repos_dir)
-      self.run('clone', '--mirror', self._url, os.path.basename(name),
-               stdout=sys.stdout, stderr=sys.stderr, cwd=self.repos_dir)
-      os.rename(os.path.join(self.repos_dir, name),
+      tmp_path = tempfile.mkdtemp(dir=self.repos_dir)
+      args = ['clone', '--mirror', self.url, os.path.basename(tmp_path)]
+      if share_objects:
+        args.extend(('--reference', share_from.repo_path))
+      self.run(*args, stdout=sys.stdout, stderr=sys.stderr, cwd=self.repos_dir)
+      os.rename(os.path.join(self.repos_dir, tmp_path),
                 os.path.join(self.repos_dir, folder))
     else:
+      if share_objects:
+        altfile = os.path.join(rpath, 'objects', 'info', 'alternates')
+        try:
+          os.makedirs(os.path.dirname(altfile))
+        except OSError as e:
+          if e.errno != errno.EEXIST:
+            raise  # pragma: no cover
+
+        add_entry = not os.path.exists(altfile)
+        if not add_entry:
+          with open(altfile, 'r') as f:
+            add_entry = share_objects in f.readlines()
+        if add_entry:
+          with open(altfile, 'a') as f:
+            print >> f, share_objects
       self._log.debug('%r already initialized', self)
     self._repo_path = rpath
 
@@ -160,6 +189,8 @@ class Repo(object):
     Args:
       refs_and_commits: dict {Ref object -> Commit to push to the ref}.
     """
+    if not refs_and_commits:
+      return
     refspec = [
       '%s:%s' % (c.hsh, r.ref)
       for r, c in refs_and_commits.iteritems()
