@@ -131,7 +131,7 @@ class Repo(object):
     """Yield every Ref in this repo which matches |globstring|."""
     for _, ref in (l.split() for l in self.run('show-ref').splitlines()):
       if fnmatch.fnmatch(ref, globstring):
-        yield Ref(self, ref)
+        yield self[ref]
 
   def run(self, *args, **kwargs):
     """Yet-another-git-subprocess-wrapper.

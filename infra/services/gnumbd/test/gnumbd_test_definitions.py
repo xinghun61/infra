@@ -22,6 +22,19 @@ def gnumbd_test(f):
   return f
 
 
+def svn_footers(num):
+  return {
+    gnumbd.GIT_SVN_ID: [
+      'svn://repo/path@%s 0039d316-1c4b-4281-b951-d872f2087c98' % num]
+  }
+
+
+def gnumbd_footers(ref, num):
+  return {
+    gnumbd.COMMIT_POSITION: [gnumbd.FMT_COMMIT_POSITION(ref, num)]
+  }
+
+
 # Error cases
 @gnumbd_test
 def no_real_ref(origin, _local, _config_ref, RUN, CHECKPOINT):
@@ -33,7 +46,8 @@ def no_real_ref(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def no_pending_tag(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   origin[PEND].update_to(base_commit)
   origin[PEND].synthesize_commit('Hello world')
   CHECKPOINT('Two commits in origin')
@@ -85,11 +99,13 @@ def no_position_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def merge_commits_fail(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
-  o_commit = origin['refs/heads/other'].synthesize_commit('Incoming merge!', 20)
+  o_commit = origin['refs/heads/other'].synthesize_commit(
+    'Incoming merge!', footers=gnumbd_footers(origin['refs/heads/other'], 20))
   m_commit = base_commit.alter(
       parents=(base_commit.hsh, o_commit.hsh),
       message_lines=['Two for one!'],
@@ -106,9 +122,11 @@ def merge_commits_fail(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def manual_merge_commits_ok(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
 
-  o_commit = origin['refs/heads/other'].synthesize_commit('Incoming merge!', 20)
+  o_commit = origin['refs/heads/other'].synthesize_commit(
+    'Incoming merge!', footers=gnumbd_footers(origin['refs/heads/other'], 20))
   footers = {k: None for k in base_commit.data.footers}
   footers[gnumbd.COMMIT_POSITION] = ['refs/heads/master@{#101}']
 
@@ -142,7 +160,8 @@ def no_number_on_parent(origin, local, _config_ref, RUN, CHECKPOINT):
 # Normal cases
 @gnumbd_test
 def incoming_svn_id_drops(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100, svn=True)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -157,7 +176,8 @@ def incoming_svn_id_drops(origin, _local, _config_ref, RUN, CHECKPOINT):
 # pending > master == tag
 @gnumbd_test
 def normal_update(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -172,7 +192,8 @@ def normal_update(origin, _local, _config_ref, RUN, CHECKPOINT):
 # master == pending == tag
 @gnumbd_test
 def steady_state(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -188,8 +209,10 @@ def steady_state(origin, _local, _config_ref, RUN, CHECKPOINT):
 # master == pending > tag
 @gnumbd_test
 def tag_lagging_no_actual(origin, _local, _config_ref, RUN, CHECKPOINT):
-  origin[REAL].synthesize_commit('Root commit', 99)
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  origin[REAL].synthesize_commit(
+    'Root commit', footers=gnumbd_footers(origin[REAL], 99))
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -209,8 +232,10 @@ def tag_lagging_no_actual(origin, _local, _config_ref, RUN, CHECKPOINT):
 # pending > master > tag
 @gnumbd_test
 def tag_lagging(origin, _local, _config_ref, RUN, CHECKPOINT):
-  origin[REAL].synthesize_commit('Root commit', 99)
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  origin[REAL].synthesize_commit(
+    'Root commit', footers=gnumbd_footers(origin[REAL], 99))
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -232,7 +257,8 @@ def tag_lagging(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def multi_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -256,7 +282,8 @@ def multi_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
 #   * tag > pending == master
 @gnumbd_test
 def master_tag_ahead_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -272,7 +299,8 @@ def master_tag_ahead_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
 # pending > tag > master
 @gnumbd_test
 def normal_with_master_lag(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -299,7 +327,8 @@ def normal_with_master_lag(origin, _local, _config_ref, RUN, CHECKPOINT):
 @gnumbd_test
 def master_ahead_tag_ahead_pending(origin, _local, _config_ref, RUN,
                                    CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -314,7 +343,8 @@ def master_ahead_tag_ahead_pending(origin, _local, _config_ref, RUN,
 # master > pending == tag
 @gnumbd_test
 def master_ahead(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -329,7 +359,8 @@ def master_ahead(origin, _local, _config_ref, RUN, CHECKPOINT):
 # pending == tag > master
 @gnumbd_test
 def master_behind(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -343,7 +374,8 @@ def master_behind(origin, _local, _config_ref, RUN, CHECKPOINT):
 # master > pending > tag
 @gnumbd_test
 def master_mismatch_and_pend(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
   origin[PEND].synthesize_commit('Hello world')
@@ -362,7 +394,8 @@ def branch(origin, _local, config_ref, RUN, CHECKPOINT):
   new_globs = config_ref['enabled_refglobs'] + ['refs/branch-heads/*']
   config_ref.update(enabled_refglobs=new_globs)
 
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -398,7 +431,8 @@ def branch_from_branch(origin, _local, config_ref, RUN, CHECKPOINT):
   new_globs = config_ref['enabled_refglobs'] + ['refs/branch-heads/*']
   config_ref.update(enabled_refglobs=new_globs)
 
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -440,7 +474,8 @@ def branch_from_branch(origin, _local, config_ref, RUN, CHECKPOINT):
 # Extra footers
 @gnumbd_test
 def extra_user_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -462,7 +497,8 @@ def extra_user_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def extra_user_footer_bad(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -482,7 +518,8 @@ def extra_user_footer_bad(origin, _local, _config_ref, RUN, CHECKPOINT):
 
 @gnumbd_test
 def enforce_commit_timestamps(origin, _local, _config_ref, RUN, CHECKPOINT):
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
@@ -513,11 +550,13 @@ def enforce_commit_timestamps(origin, _local, _config_ref, RUN, CHECKPOINT):
 def svn_mode_uses_svn_rev(origin, _local, config_ref, RUN, CHECKPOINT):
   config_ref.update(git_svn_mode=True)
 
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100, svn=True)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
-  user_commit = origin[PEND].synthesize_commit('Hello world', 200, svn=True)
+  user_commit = origin[PEND].synthesize_commit(
+    'Hello world', footers=svn_footers(200))
   CHECKPOINT('Two commits in origin')
   RUN()
   CHECKPOINT('Hello world should be 200')
@@ -534,11 +573,13 @@ def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
     }
   )
 
-  base_commit = origin[REAL].synthesize_commit('Base commit', 100, svn=True)
+  base_commit = origin[REAL].synthesize_commit(
+    'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
     origin[ref].update_to(base_commit)
 
-  user_commit = origin[PEND].synthesize_commit('Hello world', 200, svn=True)
+  user_commit = origin[PEND].synthesize_commit(
+    'Hello world', footers=svn_footers(200))
   CHECKPOINT('Two commits in origin')
   RUN()
   CHECKPOINT('Should have crazy-times')
