@@ -69,9 +69,9 @@
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
   },
   'testing_support': {
-    'version': '0.1.3',
+    'version': '0.1.4',
     'build': '0',
-    'rev': '26ba50eb582e88514ee075a36ff26ca5e4cbf992',
+    'rev': '119f437580a5d02409b3a445abe33955a4ae2bc6',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'waitress': {

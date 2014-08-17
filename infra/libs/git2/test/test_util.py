@@ -12,7 +12,7 @@ import testing_support
 from infra.libs import git2
 
 
-class TestBasis(testing_support.git.unittest_helpers.GitRepoReadWriteTestBase):
+class TestBasis(testing_support.git.unittest_helpers.GitRepoTestBase):
   # TODO(iannucci): Make this covered by the other tests in this folder
 
   REPO_SCHEMA = """
