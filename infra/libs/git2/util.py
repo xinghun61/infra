@@ -17,6 +17,9 @@ class _Invalid(object):
   def __ne__(self, _other):  # pylint: disable=R0201
     return True
 
+  def __repr__(self):
+    return 'git2.INVALID'
+
 INVALID = _Invalid()
 
 

@@ -47,9 +47,15 @@ class Ref(object):
 
   # Methods
   def to(self, other):
-    """Generate Commit()'s which occur from `self..other`."""
-    assert self.commit is not INVALID
-    arg = '%s..%s' % (self.ref, other.ref)
+    """Generate Commit()'s which occur from `self..other`.
+
+    If the current ref is INVAILD, list all of the commits reachable from
+    other.
+    """
+    if self.commit is INVALID:
+      arg = other.ref
+    else:
+      arg = '%s..%s' % (self.ref, other.ref)
     for hsh in self.repo.run('rev-list', '--reverse', arg).splitlines():
       yield self.repo.get_commit(hsh)
 

@@ -45,6 +45,16 @@ class TestRef(test_util.TestBasis):
         [self.repo[c] for c in 'BCDLMNO']
     )
 
+  def testInvalidTo(self):
+    r = self.mkRepo()
+    dne = r['refs/heads/doesnt_exist_yet']
+    O = r['refs/heads/branch_O']
+    self.assertIs(dne.commit, git2.INVALID)
+    self.assertEqual(
+        list(c.hsh for c in dne.to(O)),
+        [self.repo[c] for c in 'ABCDLMNO']
+    )
+
   def testUpdateTo(self):
     r = self.mkRepo()
     O = r['refs/heads/branch_O']
