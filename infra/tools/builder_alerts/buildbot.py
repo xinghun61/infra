@@ -11,7 +11,7 @@ import os
 import urllib
 import urlparse
 
-import fetcher
+import requests
 
 from infra.tools.builder_alerts import string_helpers
 
@@ -68,14 +68,14 @@ def cache_key_for_build(master_url, builder_name, build_number):
 def fetch_master_json(master_url):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   url = '%s/get_master/%s' % (CBE_BASE, master_name)
-  return fetcher.get(url).json()
+  return requests.get(url).json()
 
 
 def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   builds_url = '%s/get_builds' % CBE_BASE
   params = { 'master': master_name, 'builder': builder_name }
-  response = fetcher.get(builds_url, params=params)
+  response = requests.get(builds_url, params=params)
   builds = response.json()['builds']
   for build in builds:
     if not build.get('number'):
@@ -95,7 +95,7 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
 
 
 def fetch_and_cache_build(cache, url, cache_key):  # pragma: no cover
-  response = fetcher.get(url)
+  response = requests.get(url)
   if response.status_code != 200:
     logging.error('Failed (%.1fs, %s) %s' % (response.elapsed.total_seconds(),
         response.status_code, response.url))
