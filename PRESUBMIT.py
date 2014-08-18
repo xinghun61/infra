@@ -79,3 +79,12 @@ def CheckChangeOnCommit(input_api, output_api):
   output = CommonChecks(input_api, output_api)
   output.extend(input_api.canned_checks.CheckOwners(input_api, output_api))
   return output
+
+
+def GetPreferredTryMasters(project, change):
+  return {
+    'tryserver.chromium.linux': {
+      'infra_tester': set(['defaulttests']),
+    }
+  }
+

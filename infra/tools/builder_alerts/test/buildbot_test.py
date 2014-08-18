@@ -360,7 +360,8 @@ class RevisionsForMasterTest(TestCaseWithBuildCache):
     for b in builds:
       cache_set(master0_url, 'builder0', b['index'], b)
       cache_set(master0_url, 'builder1', b['index'], b)
-    latest = buildbot.latest_builder_info_for_master(cache, master0_url, master0)
+    latest = buildbot.latest_builder_info_for_master(cache, master0_url,
+        master0)
     self.assertIn('master0', latest)
     self.assertIn('builder0', latest['master0'])
     self.assertIn('builder1', latest['master0'])
