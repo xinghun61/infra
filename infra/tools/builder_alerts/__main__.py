@@ -87,7 +87,7 @@ def main(args):
   master_urls = fetch_master_urls(gatekeeper, args)
   start_time = datetime.datetime.now()
 
-  latest_revisions = {}
+  latest_builder_info = {}
 
   cache = buildbot.BuildCache(CACHE_PATH)
 
@@ -101,9 +101,9 @@ def main(args):
     # FIXME: This doesn't really belong here. garden-o-matic wants
     # this data and we happen to have the builder json cached at
     # this point so it's cheap to compute.
-    revisions = buildbot.latest_revisions_for_master(cache,
+    builder_info = buildbot.latest_builder_info_for_master(cache,
         master_url, master_json)
-    latest_revisions.update(revisions)
+    latest_builder_info.update(builder_info)
 
 
   print "Fetch took: %s" % (datetime.datetime.now() - start_time)
@@ -117,7 +117,7 @@ def main(args):
       'alerts': alerts,
       'reason_groups': reason_groups,
       'range_groups': range_groups,
-      'latest_revisions': latest_revisions,
+      'latest_builder_info': latest_builder_info,
   })}
 
   if not args.data_url:

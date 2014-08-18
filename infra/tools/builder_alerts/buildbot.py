@@ -178,10 +178,20 @@ def revisions_from_build(build_json):  # pragma: no cover
     revisions[repo_name] = revision
   return revisions
 
+def latest_update_time_for_builder(last_build):
+  last_update = None
+  if last_build['times'][1] != None:
+    last_update = float(last_build['times'][1])
+  else:
+    for step in last_build['steps']:
+      step_time = float(step['times'][0])
+      last_update = max(step_time, last_update)
+  return last_update
+
 
 # "line too long" pylint: disable=C0301
-def latest_revisions_for_master(cache, master_url, master_json):  # pragma: no cover
-  latest_revisions = collections.defaultdict(dict)
+def latest_builder_info_for_master(cache, master_url, master_json):  # pragma: no cover
+  latest_builder_info = collections.defaultdict(dict)
   master_name = master_name_from_url(master_url)
   for builder_name, builder_json in master_json['builders'].items():
     # recent_builds can include current builds
@@ -190,9 +200,12 @@ def latest_revisions_for_master(cache, master_url, master_json):  # pragma: no c
     last_finished_id = sorted(recent_builds - active_builds, reverse=True)[0]
     last_build = fetch_build_json(cache,
         master_url, builder_name, last_finished_id)
-    latest_revisions[master_name][builder_name] = \
-        revisions_from_build(last_build)
-  return latest_revisions
+    latest_builder_info[master_name][builder_name] = {
+      'revisions': revisions_from_build(last_build),
+      'state': builder_json['state'],
+      'lastUpdateTime': latest_update_time_for_builder(last_build),
+    }
+  return latest_builder_info
 
 
 def warm_build_cache(cache, master_url, builder_name,
