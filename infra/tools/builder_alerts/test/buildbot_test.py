@@ -8,14 +8,14 @@ import unittest
 
 from infra.tools.builder_alerts import buildbot
 
-
-class BuildCacheTest(unittest.TestCase):
+class TestCaseWithBuildCache(unittest.TestCase):
   def setUp(self):
     self.cache_path = tempfile.mkdtemp()
 
   def tearDown(self):
     shutil.rmtree(self.cache_path, ignore_errors=True)
 
+class BuildCacheTest(TestCaseWithBuildCache):
   def test_build_cache(self):
     cache = buildbot.BuildCache(self.cache_path)
 
@@ -316,3 +316,63 @@ class BuildbotTest(unittest.TestCase):
   def test_is_in_progress(self):
     self.assertEqual(buildbot.is_in_progress({'results': None}), True)
     self.assertEqual(buildbot.is_in_progress({'results': 2}), False)
+
+class RevisionsForMasterTest(TestCaseWithBuildCache):
+  def test_builder_info_for_master(self):
+    """
+    Tests latest_builder_info_for_master.
+
+    We have to pre-fill the build json cache to avoid this test hitting the
+    network, which accounts for much of the complexity here.
+    """
+    cache = buildbot.BuildCache(self.cache_path)
+    def cache_set(master_url, builder, build, value):
+      key = buildbot.cache_key_for_build(master_url, builder, build)
+      cache.set(key, value)
+    def build(index):
+      return {
+        'properties': [
+          ['got_revision', 100 + index],
+          ['got_webkit_revision', 200 + index],
+          ['got_v8_revision', 300 + index],
+          ['parent_got_nacl_revision', 400 + index]
+        ],
+        'times': [ 1.0, 2.0 ],
+        'index': index
+      }
+    builds = map(build, range(0, 10))
+    master0_url = 'http://foo/bar/master0'
+    master0 = {
+      'builders': {
+        'builder0': {
+          'cachedBuilds': [0, 1],
+          'currentBuilds': [2],
+          'state': 'happy'
+        },
+        'builder1': {
+          'cachedBuilds': [2, 3, 4, 5, 7],
+          'currentBuilds': [4, 5, 6, 7],
+          'state': 'sad'
+        }
+      }
+    }
+    # set up the cache so we don't hit the network
+    for b in builds:
+      cache_set(master0_url, 'builder0', b['index'], b)
+      cache_set(master0_url, 'builder1', b['index'], b)
+    latest = buildbot.latest_builder_info_for_master(cache, master0_url, master0)
+    self.assertIn('master0', latest)
+    self.assertIn('builder0', latest['master0'])
+    self.assertIn('builder1', latest['master0'])
+    # b0's latest cached build is 1
+    b0 = latest['master0']['builder0']['revisions']
+    self.assertEqual(b0['chromium'], 101)
+    self.assertEqual(b0['blink'], 201)
+    self.assertEqual(b0['v8'], 301)
+    self.assertEqual(b0['nacl'], 401)
+    # b1's latest cached build is 3
+    b1 = latest['master0']['builder1']['revisions']
+    self.assertEqual(b1['chromium'], 103)
+    self.assertEqual(b1['blink'], 203)
+    self.assertEqual(b1['v8'], 303)
+    self.assertEqual(b1['nacl'], 403)

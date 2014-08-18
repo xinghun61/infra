@@ -149,7 +149,7 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
 
 # This effectively extracts the 'configuration' of the build
 # we could extend this beyond repo versions in the future.
-def revisions_from_build(build_json):  # pragma: no cover
+def revisions_from_build(build_json):
   def _property_value(build_json, property_name):
     for prop_tuple in build_json['properties']:
       if prop_tuple[0] == property_name:
@@ -190,7 +190,7 @@ def latest_update_time_for_builder(last_build):
 
 
 # "line too long" pylint: disable=C0301
-def latest_builder_info_for_master(cache, master_url, master_json):  # pragma: no cover
+def latest_builder_info_for_master(cache, master_url, master_json):
   latest_builder_info = collections.defaultdict(dict)
   master_name = master_name_from_url(master_url)
   for builder_name, builder_json in master_json['builders'].items():
