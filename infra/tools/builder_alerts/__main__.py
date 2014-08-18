@@ -10,8 +10,7 @@ import logging
 import sys
 import os
 
-import requests
-import requests_cache
+import fetcher
 
 from infra.tools.builder_alerts import analysis
 from infra.tools.builder_alerts import buildbot
@@ -57,6 +56,8 @@ def apply_gatekeeper_rules(alerts, gatekeeper):
 def fetch_master_urls(gatekeeper, args):
   # Currently using gatekeeper.json, but could use:
   # https://chrome-infra-stats.appspot.com/_ah/api#p/stats/v1/stats.masters.list
+  if args.only_master:
+    return [args.only_master]
   master_urls = gatekeeper.keys()
   if args.master_filter:
     master_urls = [url for url in master_urls if args.master_filter not in url]
@@ -71,15 +72,14 @@ def main(args):
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
+  parser.add_argument('--only-master', action='store')
   args = parser.parse_args(args)
 
   if not args.data_url:
     logging.warn("No /data url passed, will write to builder_alerts.json")
 
-  if args.use_cache:
-    requests_cache.install_cache('failure_stats')
-  else:
-    requests_cache.install_cache(backend='memory')
+  if not args.use_cache:
+    fetcher.set_cache(':memory:')
 
   # FIXME: gatekeeper_config should find gatekeeper.json for us.
   gatekeeper_path = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
@@ -126,8 +126,7 @@ def main(args):
 
   for url in args.data_url:
     logging.info('POST %s alerts to %s' % (len(alerts), url))
-    requests.post(url, data=data)
-
+    fetcher.post(url, data=data)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))
