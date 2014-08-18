@@ -36,6 +36,9 @@ class Repo(object):
     self._commit_cache = collections.OrderedDict()
     self._log = LOGGER.getChild('Repo')
 
+  def __hash__(self):
+    return hash((self._url, self._repo_path))
+
   def __getitem__(self, ref):
     """Get a Ref attached to this Repo."""
     return Ref(self, ref)

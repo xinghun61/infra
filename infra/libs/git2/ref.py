@@ -27,6 +27,9 @@ class Ref(object):
   def __ne__(self, other):
     return not (self == other)
 
+  def __hash__(self):
+    return hash((self._repo, self._ref))
+
   def __repr__(self):
     return 'Ref({_repo!r}, {_ref!r})'.format(**self.__dict__)
 

@@ -61,3 +61,11 @@ class TestRef(test_util.TestBasis):
     S = r.get_commit(self.repo['S'])
     self.capture_stdio(O.update_to, S)
     self.assertEqual(O.commit.hsh, self.repo['S'])
+
+  def testHash(self):
+    # ensure that Ref's can be used as keys in a dict
+    r = self.mkRepo()
+    mapping = {}
+    mapping[r['refs/heads/branch_O']] = True
+    mapping[r['refs/heads/branch_O']] = True
+    self.assertEqual(len(mapping), 1)
