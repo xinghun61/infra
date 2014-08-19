@@ -7,6 +7,10 @@ from infra.libs.git2.test import test_util
 
 
 class TestRef(test_util.TestBasis):
+  COMMIT_D = {"path/cool_file": {"data": "useless content!"}}
+  COMMIT_M = {"path/cool_file": {"data": "super neat content!"}}
+  COMMIT_O = {"path/cool_file": {"data": "super neat content!"}}
+
   def testComparison(self):
     r = self.mkRepo()
     O = r['refs/heads/branch_O']
@@ -43,6 +47,17 @@ class TestRef(test_util.TestBasis):
     self.assertEqual(
         list(c.hsh for c in A.to(O)),
         [self.repo[c] for c in 'BCDLMNO']
+    )
+
+  def testToSubpath(self):
+    r = self.mkRepo()
+    A = r['refs/heads/root_A']
+    O = r['refs/heads/branch_O']
+    # See the COMMIT_* class variables for commit content.
+    # M and O have the same content for cool_file, so it won't show up here.
+    self.assertEqual(
+        list(c.hsh for c in A.to(O, 'path')),
+        [self.repo[c] for c in 'DM']
     )
 
   def testInvalidTo(self):

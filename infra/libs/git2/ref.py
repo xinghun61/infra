@@ -49,17 +49,25 @@ class Ref(object):
     return self._repo.get_commit(val.split()[0])
 
   # Methods
-  def to(self, other):
+  def to(self, other, path=None):
     """Generate Commit()'s which occur from `self..other`.
 
     If the current ref is INVAILD, list all of the commits reachable from
     other.
+
+    Args:
+      path - A string indicating a repo-root-relative path to filter commits on.
+             Only Commits which change this path will be yielded. See help for
+             `git rev-list self..other -- <path>`.
     """
+    args = ['rev-list', '--reverse']
     if self.commit is INVALID:
-      arg = other.ref
+      args.append(other.ref)
     else:
-      arg = '%s..%s' % (self.ref, other.ref)
-    for hsh in self.repo.run('rev-list', '--reverse', arg).splitlines():
+      args.append('%s..%s' % (self.ref, other.ref))
+    if path:
+      args.extend(['--', path])
+    for hsh in self.repo.run(*args).splitlines():
       yield self.repo.get_commit(hsh)
 
   def update_to(self, commit):
