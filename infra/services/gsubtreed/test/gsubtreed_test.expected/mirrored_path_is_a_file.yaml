@@ -15,15 +15,9 @@
   - 'INFO: processing path mirrored_path/subpath'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''c9511a69beb0196ade7d78d062abeebf7e43de39'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''7a36651d95201b93b7774ad9427b2f93164a2567'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''3f96fe56937903ad7158825d1d6cd20e20250c71'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''ab1dbcd7cff198979ff11618603f97846a5f4931'')'
   - 'INFO: processing path mirrored_path'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d'')'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''c9511a69beb0196ade7d78d062abeebf7e43de39'')'
   - 'WARNING: path ''mirrored_path'' is not a tree in commit Commit(TestRepo(''local''),
     ''c9511a69beb0196ade7d78d062abeebf7e43de39'')'
@@ -60,15 +54,13 @@
         - back to a dir
         etc: '...'
       refs/subtree-synthesized/mirrored_path/-/heads/master:
-        3e94bd945ba88b21c7499132978e48a4435d3c86:
+        3db9398d3995ad6c7de356f79b5b605edb529792:
         - back to a dir
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: ab1dbcd7cff198979ff11618603f97846a5f4931'
-        - 'Cr-Mirrored-Subtree: mirrored_path'
-        7c1fd3e1ac9ec13dec18179536ccdf4ce761b863:
+        ad305862141ad5ef326fb9f6148a56ef21c87262:
         - but now it's OK
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: 7a36651d95201b93b7774ad9427b2f93164a2567'
-        - 'Cr-Mirrored-Subtree: mirrored_path'

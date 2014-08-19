@@ -10,7 +10,6 @@
   - 'INFO: processing path mirrored_path/subpath'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''92c96f11ffe418019c661a1dc933bfca0f6920e3'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
@@ -49,23 +48,20 @@
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
       refs/subtree-synthesized/mirrored_path/-/heads/master:
-        a4a9b80c8bd01662e27e3bec46fac3ba32202c72:
+        53eb90f840c9e5fd04b50fb079381620205d3529:
         - nerd_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: 92c96f11ffe418019c661a1dc933bfca0f6920e3'
-        - 'Cr-Mirrored-Subtree: mirrored_path'
       refs/subtree-synthesized/mirrored_path/-/heads/other:
-        86b972267147993c79fedb58321ce380fde25f0f:
+        79af6c5c5a2eda738426be59a8932afecad69e43:
         - what_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: e213bc0ab9d92e8d6fcd9167d1db625516946de5'
-        - 'Cr-Mirrored-Subtree: mirrored_path'
       refs/subtree-synthesized/mirrored_path/subpath/-/heads/other:
-        a87db120a6fa09045d11114581d266936f4368ab:
+        c7e96f4cfbd7c45854bba77ff60bb854d867ed76:
         - what_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: e213bc0ab9d92e8d6fcd9167d1db625516946de5'
-        - 'Cr-Mirrored-Subtree: mirrored_path/subpath'

@@ -7,7 +7,6 @@ import logging
 import posixpath
 import sys
 
-from infra.libs.git2 import CalledProcessError
 from infra.libs.git2 import INVALID
 from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
@@ -88,36 +87,29 @@ def process_path(path, origin_repo, config):
       synthed = join(config['subtree_synthesized_prefix'], ref)
 
       synth_parent = synthed.commit
-      cur_tree = synthed.commit.data.tree
-      LOGGER.info('starting with tree %r', cur_tree)
+      LOGGER.info('starting with tree %r', synthed.commit.data.tree)
 
-      for commit in processed.to(ref):
+      for commit in processed.to(ref, path):
         LOGGER.info('processing commit %s', commit)
-        try:
-          obj_name = '{.hsh}:{}'.format(commit, path)
-          typ = origin_repo.run('cat-file', '-t', obj_name).strip()
-          if typ != 'tree':
-            LOGGER.warn('path %r is not a tree in commit %s', path, commit)
-            continue
-          dir_tree = origin_repo.run('rev-parse', obj_name).strip()
-        except CalledProcessError:
+        obj_name = '{.hsh}:{}'.format(commit, path)
+        typ = origin_repo.run('cat-file', '-t', obj_name).strip()
+        if typ != 'tree':
+          LOGGER.warn('path %r is not a tree in commit %s', path, commit)
           continue
+        dir_tree = origin_repo.run('rev-parse', obj_name).strip()
 
-        if dir_tree != cur_tree:
-          LOGGER.info('found new tree %r', dir_tree)
-          cur_tree = dir_tree
-          synthed_count += 1
-          synth_parent = commit.alter(
-            parents=[synth_parent.hsh] if synth_parent is not INVALID else [],
-            tree=dir_tree,
-            footers=collections.OrderedDict([
-              ('Cr-Mirrored-From', [mirror_url]),
-              ('Cr-Mirrored-Commit', [commit.hsh]),
-              ('Cr-Mirrored-Subtree', [path]),
-            ]),
-          )
-          origin_push[synthed] = synth_parent
-          subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
+        LOGGER.info('found new tree %r', dir_tree)
+        synthed_count += 1
+        synth_parent = commit.alter(
+          parents=[synth_parent.hsh] if synth_parent is not INVALID else [],
+          tree=dir_tree,
+          footers=collections.OrderedDict([
+            ('Cr-Mirrored-From', [mirror_url]),
+            ('Cr-Mirrored-Commit', [commit.hsh]),
+          ]),
+        )
+        origin_push[synthed] = synth_parent
+        subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
 
       origin_push[processed] = ref.commit
 

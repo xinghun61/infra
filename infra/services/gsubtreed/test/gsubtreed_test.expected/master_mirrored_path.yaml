@@ -11,16 +11,11 @@
   - 'INFO: processing path mirrored_path/subpath'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''ea9899ff5037bdb48ec4e9b2c52075284010f0a3'')'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0'')'
   - 'INFO: processing path mirrored_path'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d'')'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''ea9899ff5037bdb48ec4e9b2c52075284010f0a3'')'
   - 'INFO: found new tree ''58e2ba602f2b3b89d2a97a416d12c49d17b52daa'''
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0'')'
 - inner_loop success: true
   processed:
     mirrored_path: 1
@@ -43,9 +38,8 @@
         - unrelated commit
         etc: '...'
       refs/subtree-synthesized/mirrored_path/-/heads/master:
-        0130715efb42324390e1a57bab85fd368aabb925:
+        54ec3957a50fdfd16ced02b78685cf0e117e8141:
         - next commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: ea9899ff5037bdb48ec4e9b2c52075284010f0a3'
-        - 'Cr-Mirrored-Subtree: mirrored_path'
