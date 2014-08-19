@@ -26,7 +26,7 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     'subtree_synthesized_prefix': lambda self, val: str(val),
     'subtree_processed_prefix': lambda self, val: str(val),
 
-    'base_url': lambda self, val: str(val) or self.repo.url,
+    'base_url': lambda self, val: str(val) if val else self.repo.url,
     'enabled_refglobs': lambda self, val: map(str, list(val)),
     # normpath to avoid trailing/double-slash errors.
     'enabled_paths': lambda self, val: map(posixpath.normpath, map(str, val)),
