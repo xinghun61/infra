@@ -58,15 +58,6 @@ def CommonChecks(input_api, output_api):
       disabled_warnings=disabled_warnings,
       extra_paths_list=[appengine_path, venv_path]))
 
-  message_type = (output_api.PresubmitError if output_api.is_committing else
-                  output_api.PresubmitPromptWarning)
-  tests.append(input_api.Command(
-    name='All Tests',
-    cmd=input_api.os_path.join('ENV', 'bin', 'expect_tests'),
-    kwargs={'cwd': input_api.PresubmitLocalPath()},
-    message=message_type,
-  ))
-
   # Run the tests.
   return input_api.RunTests(tests)
 
