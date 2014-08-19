@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 
 from components import auth
 from components import datastore_utils
+from components import utils
 
 
 class AccessCheckEntry(ndb.Model):
@@ -29,6 +30,9 @@ class AccessCheckEntry(ndb.Model):
     'checker_version',
     'chrome_internal_netrc_email',
     'chromium_netrc_email',
+    'gclient_deps',
+    'gclient_managed',
+    'gclient_url',
     'git_user_email',
     'git_user_name',
     'git_version',
@@ -45,7 +49,6 @@ class AccessCheckEntry(ndb.Model):
   EXTERNAL_PROPERTIES = frozenset(list(FINGERPRINT_PROPERTIES) + [
     'push_duration_ms',
     'push_log',
-    'push_works',
   ])
 
   # When the entry was submitted.
@@ -77,6 +80,13 @@ class AccessCheckEntry(ndb.Model):
   chromium_netrc_email = ndb.StringProperty()
   # email in ~/.netrc entry for chrome-internal host, or None if missing.
   chrome_internal_netrc_email = ndb.StringProperty()
+
+  # 'deps_file' property of 'src' gclient solution.
+  gclient_deps = ndb.StringProperty()
+  # 'managed' property of 'src' gclient solution.
+  gclient_managed = ndb.BooleanProperty()
+  # 'url' property of 'src' gclient solution.
+  gclient_url = ndb.StringProperty()
 
   # True if push attempt was successful.
   push_works = ndb.BooleanProperty()
@@ -112,7 +122,7 @@ class WarmupHandler(webapp2.RequestHandler):
 
 
 class AccessCheckHandler(auth.ApiHandler):
-  # We don't care about XSRF here since there's no authentication anyway.
+  # We don't care about XSRF since there's no authentication for POST anyway.
   xsrf_token_enforce_on = ()
 
   @auth.public
@@ -156,4 +166,17 @@ class AccessCheckHandler(auth.ApiHandler):
             AccessCheckEntry.SHARD_ENTITY_CLASS))
     entity.put()
 
-    self.send_response({'ok': True})
+    # Report id back to client, so that logs can be correlated with this entry.
+    self.send_response({'ok': True, 'report_id': fingerprint})
+
+  @auth.require(auth.is_admin)
+  def get(self):
+    """Dumps all collected reports as JSON."""
+    # TODO(vadimsh): Add filtering?
+    def to_dict(e):
+      d = e.to_dict()
+      d['_id'] = e.key.id()
+      return utils.to_json_encodable(d)
+    self.send_response({
+      'reports': [to_dict(e) for e in AccessCheckEntry.query()],
+    })

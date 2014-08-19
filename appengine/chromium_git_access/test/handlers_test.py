@@ -35,6 +35,9 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     'checker_version': 0,
     'chrome_internal_netrc_email': None,
     'chromium_netrc_email': 'blah@chromium.org',
+    'gclient_deps': '.DEPS.git',
+    'gclient_managed': False,
+    'gclient_url': 'https://chromium.googlesource.com/chromium/src.git',
     'git_user_email': 'blah@chromium.org',
     'git_user_name': 'Blah Blahovic',
     'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
@@ -69,22 +72,27 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.assertEquals(0, len(self.fetch_entries()))
     response = self.post_check(**self.canned_access_check)
     self.assertEquals(200, response.status_int)
-    self.assertEquals({'ok': True}, response.json_body)
+    self.assertEquals(
+        {'ok': True, 'report_id': '10cd0530a35170f1d1574ffffcbaa68d78ded034'},
+        response.json_body)
     # Read it back from datastore.
     entries = self.fetch_entries()
     self.assertEquals(1, len(entries))
     self.assertEquals(
         ndb.Key(
             'AccessCheckEntryShard_v1',
-            'be',
+            '10',
             'AccessCheckEntry',
-            'be0419de10aade88dd3d83a8f2bc18be53b1fdc9'),
+            '10cd0530a35170f1d1574ffffcbaa68d78ded034'),
         entries[0].key)
     self.assertEquals(
         {
           'checker_version': 0,
           'chrome_internal_netrc_email': None,
           'chromium_netrc_email': u'blah@chromium.org',
+          'gclient_deps': '.DEPS.git',
+          'gclient_managed': False,
+          'gclient_url': 'https://chromium.googlesource.com/chromium/src.git',
           'git_user_email': u'blah@chromium.org',
           'git_user_name': u'Blah Blahovic',
           'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
@@ -130,7 +138,9 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     """Extra properties are ignored."""
     response = self.post_check(extra=1, **self.canned_access_check)
     self.assertEquals(200, response.status_int)
-    self.assertEquals({'ok': True}, response.json_body)
+    self.assertEquals(
+        {'ok': True, 'report_id': '10cd0530a35170f1d1574ffffcbaa68d78ded034'},
+        response.json_body)
 
   def test_resubmit_skipped(self):
     """Submitting same report twice doesn't create second entity."""
@@ -138,3 +148,66 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.post_check(**self.canned_access_check)
     self.post_check(**self.canned_access_check)
     self.assertEquals(1, len(self.fetch_entries()))
+
+  def test_get_works(self):
+    mocked_now = datetime.datetime(1963, 11, 22)
+    self.mock_now(mocked_now)
+    # GET is protected, mock is_admin to return True.
+    self.mock(handlers.auth.api, 'is_group_member', lambda *_: True)
+    # Add two reports.
+    self.post_check(**self.canned_access_check)
+    another = self.canned_access_check.copy()
+    another['checker_version'] = 1
+    self.post_check(**another)
+    # Read them back.
+    response = self.test_app.get('/git_access/api/v1/reports/access_check')
+    self.assertEquals(200, response.status_int)
+    self.assertEquals(['reports'], response.json.keys())
+    self.assertEquals(
+      [
+        {
+          u'_id': u'10cd0530a35170f1d1574ffffcbaa68d78ded034',
+          u'checker_version': 0,
+          u'chrome_internal_netrc_email': None,
+          u'chromium_netrc_email': u'blah@chromium.org',
+          u'gclient_deps': u'.DEPS.git',
+          u'gclient_managed': False,
+          u'gclient_url': u'https://chromium.googlesource.com/chromium/src.git',
+          u'git_user_email': u'blah@chromium.org',
+          u'git_user_name': u'Blah Blahovic',
+          u'git_version': u'git version 2.1.0.rc2.206.gedb03e5',
+          u'is_git': True,
+          u'is_home_set': True,
+          u'is_using_netrc': True,
+          u'netrc_file_mode': 384,
+          u'platform': u'linux2',
+          u'push_duration_ms': 5000,
+          u'push_log': u'It just worked!!!111',
+          u'push_works': True,
+          u'timestamp': u'1963-11-22 00:00:00',
+          u'username': u'blah',
+        },
+        {
+          u'_id': u'd632344103963d3511a97644443c7e6d8ac30551',
+          u'checker_version': 1,
+          u'chrome_internal_netrc_email': None,
+          u'chromium_netrc_email': u'blah@chromium.org',
+          u'gclient_deps': u'.DEPS.git',
+          u'gclient_managed': False,
+          u'gclient_url': u'https://chromium.googlesource.com/chromium/src.git',
+          u'git_user_email': u'blah@chromium.org',
+          u'git_user_name': u'Blah Blahovic',
+          u'git_version': u'git version 2.1.0.rc2.206.gedb03e5',
+          u'is_git': True,
+          u'is_home_set': True,
+          u'is_using_netrc': True,
+          u'netrc_file_mode': 384,
+          u'platform': u'linux2',
+          u'push_duration_ms': 5000,
+          u'push_log': u'It just worked!!!111',
+          u'push_works': True,
+          u'timestamp': u'1963-11-22 00:00:00',
+          u'username': u'blah',
+        }
+      ],
+      sorted(response.json['reports'], key=lambda x: x['checker_version']))
