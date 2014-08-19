@@ -122,21 +122,24 @@ def process_path(path, origin_repo, config):
       origin_push[processed] = ref.commit
 
   success = True
-  try:
-    # because the hashes are deterministic based on the real history, if the
-    # first push succeeds, but the second does not, it just means we'll end up
-    # doing a bit of extra work on the next loop, but correctness will still be
-    # ensured
+  # TODO(iannucci): Return the pushspecs from this method, and then thread
+  # the dispatches to subtree_repo. Additionally, can batch the origin_repo
+  # pushes (and push them serially in batches as the subtree_repo pushes
+  # complete).
 
-    # TODO(iannucci): Return the pushspecs from this method, and then thread
-    # the dispatches to subtree_repo. Additionally, can batch the origin_repo
-    # pushes (and push them serially in batches as the subtree_repo pushes
-    # complete). As long as each (sub, origin) push happens in order, it doesn't
-    # matter what else gets pushed along with it.
-    subtree_repo.fast_forward_push(subtree_repo_push)
+  # because the hashes are deterministic based on the real history, the pushes
+  # can happen completely independently. If we miss one, we'll catch it on the
+  # next pass.
+  try:
     origin_repo.fast_forward_push(origin_push)
   except Exception:  # pragma: no cover
-    LOGGER.exception('Caught exception while pushing in process_path')
+    LOGGER.exception('Caught exception while pushing origin in process_path')
+    success = False
+
+  try:
+    subtree_repo.fast_forward_push(subtree_repo_push)
+  except Exception:  # pragma: no cover
+    LOGGER.exception('Caught exception while pushing subtree in process_path')
     success = False
 
   return success, synthed_count
