@@ -16,9 +16,9 @@ import webtest
 
 from google.appengine.ext import testbed
 
-import cron
-import models
-import testing_common
+from appengine.trooper_o_matic import cron
+from appengine.trooper_o_matic import models
+from appengine.trooper_o_matic.tests import testing_common
 
 RIETVELD_RESPONSE = {
     'results': [{

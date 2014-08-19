@@ -21,11 +21,11 @@ import models
 import trees
 
 
-def datetime_now():
+def datetime_now(): # pragma: no cover
   """Easy to mock datetime.datetime.now() for unit testing."""
   return datetime.datetime.now()
 
-def date_from_str(string, base_format):
+def date_from_str(string, base_format): # pragma: no cover
   """Converts a string to a date, taking into account the possible existence
      of a millisecond precision value."""
   try:
@@ -33,7 +33,7 @@ def date_from_str(string, base_format):
   except ValueError:
     return datetime.datetime.strptime(string, base_format)
 
-class CheckCqHandler(webapp2.RequestHandler):
+class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
   """Collect commit queue length and run times."""
 
   pending_api_url = 'https://chromium-commit-queue.appspot.com/api/%s/pending'
@@ -195,7 +195,7 @@ class CheckCqHandler(webapp2.RequestHandler):
       stat.put()
 
 
-class CheckTreeHandler(webapp2.RequestHandler):
+class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
   """Checks the given tree for build times higher than the SLO specifies."""
 
   stats_api_url = ('https://chrome-infra-stats.appspot.com/_ah/api/stats/v1/'
@@ -254,7 +254,7 @@ class CheckTreeHandler(webapp2.RequestHandler):
     stat.put()
 
 
-class CheckTreeStatusHandler(webapp2.RequestHandler):
+class CheckTreeStatusHandler(webapp2.RequestHandler): # pragma: no cover
 
   status_url = ('https://%s-status.appspot.com/allstatus?format=json&'
                 'endTime=%s&limit=1000')

@@ -17,7 +17,7 @@ URL = ('https://chromium.googlesource.com/chromium/tools/build/+'
 MASTER_RE = r'https://build.chromium.org/p/(.*)'
 
 
-def GetMastersForTree(tree):
+def GetMastersForTree(tree): # pragma: no cover
   response = urlfetch.fetch(URL)
   if response.status_code != 200:
     logging.error('Error %d fetching %s', response.status_code, URL)

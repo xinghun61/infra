@@ -7,7 +7,7 @@ from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 
 
-def StubUrlfetch(responses, stub=None):
+def StubUrlfetch(responses, stub=None): # pragma: no cover
   """Stub out url fetch for unit tests.
 
   Args:
@@ -22,7 +22,7 @@ def StubUrlfetch(responses, stub=None):
     apiproxy_stub_map.apiproxy.RegisterStub('urlfetch', fetch_mock)
 
 
-class FetchServiceMock(apiproxy_stub.APIProxyStub):
+class FetchServiceMock(apiproxy_stub.APIProxyStub): # pragma: no cover
   """Mock URLFetch service used byt StubUrlfetch."""
 
   def __init__(self, responses):

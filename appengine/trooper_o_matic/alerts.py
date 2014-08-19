@@ -19,7 +19,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True)
 
 
-def GetTreeStatusDict(project):
+def GetTreeStatusDict(project): # pragma: no cover
   stat = models.TreeOpenStat.query(
       models.TreeOpenStat.num_days == 7, ancestor=project).order(
           -models.TreeOpenStat.timestamp).get()
@@ -32,7 +32,7 @@ def GetTreeStatusDict(project):
               project.id()),
   }
 
-def GetCqLatencyDict(project):
+def GetCqLatencyDict(project): # pragma: no cover
   stat = models.CqStat.query(ancestor=project).order(
       -models.CqStat.timestamp).get()
   return {
@@ -46,13 +46,13 @@ def GetCqLatencyDict(project):
       'url': 'http://trooper-o-matic.appspot.com/cq/%s' % project.id(),
   }
 
-def _GetPercent(numerator, denominator):
+def _GetPercent(numerator, denominator): # pragma: no cover
   if denominator == 0:
     return "0%"
   else:
     return "%.2f%%" % (float(numerator) / float(denominator) * 100)
 
-def GetCycleTimeDict(tree):
+def GetCycleTimeDict(tree): # pragma: no cover
   stat = models.BuildTimeStat.query(ancestor=tree).order(
       -models.BuildTimeStat.timestamp).get()
   # TODO(sullivan): Make this account for clobber time.
@@ -71,7 +71,7 @@ def GetCycleTimeDict(tree):
       'url': 'http://trooper-o-matic.appspot.com/tree/%s' % tree.id()
   }
 
-def UpdateJsonForProject(name, status_dict):
+def UpdateJsonForProject(name, status_dict): # pragma: no cover
   project = ndb.Key('Project', name)
   tree = ndb.Key('Tree', name)
   status_dict.setdefault('tree_status', {})[name] = GetTreeStatusDict(project)
@@ -79,7 +79,7 @@ def UpdateJsonForProject(name, status_dict):
   status_dict.setdefault('cycle_time', {})[name] = GetCycleTimeDict(tree)
 
 
-class AlertsHandler(webapp2.RequestHandler):
+class AlertsHandler(webapp2.RequestHandler): # pragma: no cover
 
   def get(self):
     status_dict = {}
@@ -88,7 +88,7 @@ class AlertsHandler(webapp2.RequestHandler):
     self.response.write(json.dumps(status_dict))
 
 
-class OverviewHandler(webapp2.RequestHandler):
+class OverviewHandler(webapp2.RequestHandler): # pragma: no cover
 
   def get(self):
     status_dict = {}
