@@ -6,6 +6,7 @@ import argparse
 import collections
 import json
 import os
+import sys
 import urlparse
 
 from infra.libs import git2
@@ -79,3 +80,6 @@ def main(args):  # pragma: no cover
       }, f)
 
   return 0 if loop_results.success else 1
+
+
+sys.exit(main(sys.argv[1:]))
