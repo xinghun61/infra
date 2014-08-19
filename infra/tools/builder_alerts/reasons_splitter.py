@@ -4,16 +4,20 @@
 
 import json
 import logging
+import requests
 import sys
 import urllib
-import urllib2
 import urlparse
 import argparse
 import re
 import os
 
+import requests_cache
+
 from infra.tools.builder_alerts import buildbot
-from infra.tools.builder_alerts import fetcher
+
+requests_cache.install_cache('reasons')
+
 
 import infra
 infra_module_path = os.path.dirname(os.path.abspath(infra.__file__))
@@ -30,8 +34,8 @@ def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
   stdio_url = "%s/steps/%s/logs/stdio/text" % (base_url, step['name'])
 
   try:
-    return fetcher.get(stdio_url).text
-  except urllib2.URLError, e:
+    return requests.get(stdio_url).text
+  except requests.exceptions.ConnectionError, e:
     # Some builders don't save logs for whatever reason.
     logging.error('Failed to fetch %s: %s' % (stdio_url, e))
     return None
@@ -67,7 +71,7 @@ class GTestSplitter(object):
       'testtype': step['name'],
     }
     base_url = 'http://test-results.appspot.com/testfile'
-    response = fetcher.get(base_url, params=params)
+    response = requests.get(base_url, params=params)
     if response.status_code == 200:
       test_results = flatten_test_results(response.json()['tests'])
       return [name for name, results in test_results.items()
@@ -268,7 +272,7 @@ class LayoutTestsSplitter(object):
 
     jsonp_url = urlparse.urljoin(html_results_url, 'failing_results.json')
     # FIXME: Silly that this is still JSONP.
-    jsonp_string = fetcher.get(jsonp_url).text
+    jsonp_string = requests.get(jsonp_url).text
     if 'The specified key does not exist' in jsonp_string:
       logging.warn('%s %s %s missing failing_results.json' % (builder_name,
           build['number'], step['name']))
