@@ -47,6 +47,9 @@ def use_default(parser, default_value): # pragma: no cover
   return new_parser
 
 def parse_request(request, validators): # pragma: no cover
+  unknown_parameters = set(request.arguments()) - set(validators.keys())
+  if unknown_parameters:
+    raise ValueError('Unexpected parameters: %s' % ' '.join(unknown_parameters))
   data = {}
   for parameter, validator in validators.items():
     data[parameter] = validator(request.get(parameter))

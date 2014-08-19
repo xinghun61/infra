@@ -58,17 +58,21 @@ class TestCase(unittest.TestCase):
       'a': None,
       'b': ['a', 'b', 'c'],
       'c': {'d': 'e'},
-    }, parsing.parse_request({
+    }, parsing.parse_request(MockRequest({
       'a': '',
       'b': 'a,b,c',
       'c': '{"d": "e"}',
-    }, {
+    }), {
       'a': parsing.parse_timestamp,
       'b': parsing.parse_tags,
       'c': parsing.parse_fields,
     }))
-    self.assertRaises(ValueError,
-        lambda: parsing.parse_request({'a': '1234'}, {'a': parsing.parse_key}))
+    self.assertRaises(ValueError, lambda: parsing.parse_request(
+        MockRequest({'a': '1234'}),
+        {'a': parsing.parse_key}))
+    self.assertRaises(ValueError, lambda: parsing.parse_request(
+        MockRequest({'a': 'valid', 'b': 'invalid'}),
+        {'a': parsing.parse_key}))
 
   def test_parse_url_tags(self):
     self.assertEqual([], parsing.parse_url_tags(None))
@@ -76,6 +80,16 @@ class TestCase(unittest.TestCase):
     self.assertEqual(['test tag'], parsing.parse_url_tags('test tag'))
     self.assertEqual(['test tag'], parsing.parse_url_tags('/test tag/'))
     self.assertEqual(['tag1', 'tag2'], parsing.parse_url_tags('/tag1//tag2/'))
+
+class MockRequest(object):
+  def __init__(self, parameters):
+    self.parameters = parameters
+
+  def get(self, key):
+    return self.parameters.get(key, '')
+
+  def arguments(self):
+    return self.parameters.keys()
 
 if __name__ == '__main__':
   unittest.main()
