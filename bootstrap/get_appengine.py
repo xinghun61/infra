@@ -61,17 +61,20 @@ def extract_zip(z, root_path):
 
 def install_latest_gae_sdk(root_path, fetch_go, dry_run):
   if fetch_go:
+    rootdir = 'go_appengine'
     if sys.platform == 'darwin':
       name = 'go_appengine_sdk_darwin_amd64-'
     else:
       # Add other platforms as needed.
       name = 'go_appengine_sdk_linux_amd64-'
   else:
+    rootdir = 'google_appengine'
     name = 'google_appengine_'
 
-  # The zip file already contains 'google_appengine' in its path so it's a bit
+  # The zip file already contains 'google_appengine' (for python) or
+  # 'go_appengine' (for go) in its path so it's a bit
   # awkward to unzip otherwise. Hard code the path in for now.
-  gae_path = os.path.join(root_path, 'google_appengine')
+  gae_path = os.path.join(root_path, rootdir)
   print('Looking up path %s' % gae_path)
   version = get_gae_sdk_version(gae_path)
   if version:
