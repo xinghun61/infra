@@ -1,0 +1,58 @@
+- - a really sweet commit
+  - origin:
+      refs/heads/branch:
+        b404e807c89d3b8f4b255fec1aaa9e123808f63c:
+        - sweet commit
+        - ''
+        - 'git-svn-id: totally annoying!'
+        - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
+        - 'Commit-Id: whaaat'
+        - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+- log output:
+  - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/branch'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path mirrored_path'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/branch'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing commit Commit(TestRepo(''local''), ''b404e807c89d3b8f4b255fec1aaa9e123808f63c'')'
+  - 'INFO: found new tree ''0dcb5629d63f25755c3f2ad3a6987e069a83a754'''
+- inner_loop success: true
+  processed:
+    mirrored_path: 1
+    mirrored_path/subpath: 0
+- - a really sweet (mirrored) commit
+  - origin:
+      refs/heads/branch:
+        b404e807c89d3b8f4b255fec1aaa9e123808f63c:
+        - sweet commit
+        - ''
+        - 'git-svn-id: totally annoying!'
+        - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
+        - 'Commit-Id: whaaat'
+        - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+      refs/subtree-processed/mirrored_path/-/heads/branch:
+        b404e807c89d3b8f4b255fec1aaa9e123808f63c:
+        - sweet commit
+        - ''
+        - 'git-svn-id: totally annoying!'
+        - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
+        - 'Commit-Id: whaaat'
+        - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+      refs/subtree-processed/mirrored_path/subpath/-/heads/branch:
+        b404e807c89d3b8f4b255fec1aaa9e123808f63c:
+        - sweet commit
+        - ''
+        - 'git-svn-id: totally annoying!'
+        - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
+        - 'Commit-Id: whaaat'
+        - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+      refs/subtree-synthesized/mirrored_path/-/heads/branch:
+        5c3f835c4a13b397b949d345715a0d61403d04f0:
+        - sweet commit
+        - ''
+        - 'Commit-Id: whaaat'
+        - 'Cr-Original-Commit-Position: refs/heads/branch@{#12345}'
+        - 'Cr-Original-Branched-From: deadbeef-refs/heads/master@{#12300}'
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: b404e807c89d3b8f4b255fec1aaa9e123808f63c'

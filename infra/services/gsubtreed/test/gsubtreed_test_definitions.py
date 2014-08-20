@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import OrderedDict
+
 from infra.libs.git2.testing_support import GitEntry
+from infra.libs.infra_types import thaw
 
 GSUBTREED_TESTS = {}
 def test(f):
@@ -109,3 +112,33 @@ def multiple_runs(origin, run, checkpoint):
   checkpoint('added new_commit')
   run()
   checkpoint('should gain new synthed commit')
+
+
+@test
+def fix_footers(origin, run, checkpoint):
+  branch = origin['refs/heads/branch']
+  branch.make_commit(
+    'sweet commit',
+    {'mirrored_path': {'sweet': 'totally!'}},
+    OrderedDict([
+      ('git-svn-id', ['totally annoying!']),
+      ('Cr-Commit-Position', ['refs/heads/branch@{#12345}']),
+      ('Commit-Id', ['whaaat']),
+      ('Cr-Branched-From', ['deadbeef-refs/heads/master@{#12300}']),
+    ]))
+
+  checkpoint('a really sweet commit')
+  run()
+  checkpoint('a really sweet (mirrored) commit')
+
+  synthed = 'refs/subtree-synthesized/mirrored_path/-/heads/branch'
+  assert GitEntry.spec_for(origin, synthed) == {
+    'sweet': ('totally!', 0644)
+  }
+  assert thaw(origin[synthed].commit.data.footers) == OrderedDict([
+    ('Commit-Id', ['whaaat']),
+    ('Cr-Original-Commit-Position', ['refs/heads/branch@{#12345}']),
+    ('Cr-Original-Branched-From', ['deadbeef-refs/heads/master@{#12300}']),
+    ('Cr-Mirrored-From', ['[FILE-URL]']),
+    ('Cr-Mirrored-Commit', ['b404e807c89d3b8f4b255fec1aaa9e123808f63c']),
+  ])

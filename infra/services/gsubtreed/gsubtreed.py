@@ -11,8 +11,13 @@ from infra.libs.git2 import INVALID
 from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
 
+from infra.services.gnumbd.gnumbd import FOOTER_PREFIX
+from infra.services.gnumbd.gnumbd import GIT_SVN_ID
 
 LOGGER = logging.getLogger(__name__)
+
+MIRRORED_FROM = FOOTER_PREFIX + 'Mirrored-From'
+MIRRORED_COMMIT = FOOTER_PREFIX + 'Mirrored-Commit'
 
 
 ################################################################################
@@ -99,14 +104,30 @@ def process_path(path, origin_repo, config):
         dir_tree = origin_repo.run('rev-parse', obj_name).strip()
 
         LOGGER.info('found new tree %r', dir_tree)
+
+        # Remove git-svn-id, Cr-Commit-Position and Cr-Branched-From
+        # Replace original Cr- footers
+        # to indicate them as the /original/ values.
+        footers = [
+          (GIT_SVN_ID, None),
+        ]
+        for key, val in commit.data.footers.iteritems():
+          if key.startswith(FOOTER_PREFIX):
+            footers += [
+              (key, None),
+              (key.replace(FOOTER_PREFIX, FOOTER_PREFIX + 'Original-', 1), val),
+            ]
+
+        footers += [
+          (MIRRORED_FROM, [mirror_url]),
+          (MIRRORED_COMMIT, [commit.hsh]),
+        ]
+
         synthed_count += 1
         synth_parent = commit.alter(
           parents=[synth_parent.hsh] if synth_parent is not INVALID else [],
           tree=dir_tree,
-          footers=collections.OrderedDict([
-            ('Cr-Mirrored-From', [mirror_url]),
-            ('Cr-Mirrored-Commit', [commit.hsh]),
-          ]),
+          footers=collections.OrderedDict(footers),
         )
 
       if synth_parent is not INVALID:
