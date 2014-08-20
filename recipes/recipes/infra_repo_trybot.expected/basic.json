@@ -14,12 +14,24 @@
     "cmd": [
       "python",
       "-u",
+      "[BUILD]/scripts/slave/gclient_safe_revert.py",
+      ".",
+      "[DEPOT_TOOLS]/gclient"
+    ],
+    "name": "gclient revert"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[DEPOT_TOOLS]/gclient.py",
       "sync",
       "--nohooks",
       "--delete_unversioned_trees",
       "--force",
       "--verbose",
+      "--revision",
+      "infra@HEAD",
       "--output-json",
       "/path/to/tmp/json"
     ],
@@ -51,5 +63,31 @@
       "[SLAVE_BUILD]/infra/test.py"
     ],
     "name": "test.py"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[DEPOT_TOOLS]/presubmit_support.py",
+      "--commit",
+      "--verbose",
+      "--verbose",
+      "--issue",
+      "12853011",
+      "--patchset",
+      "1",
+      "--skip_canned",
+      "CheckRietveldTryJobExecution",
+      "--skip_canned",
+      "CheckTreeIsOpen",
+      "--skip_canned",
+      "CheckBuildbotPendingBuilds",
+      "--rietveld_url",
+      "https://codereview.chromium.org",
+      "--rietveld_email",
+      "",
+      "--rietveld_fetch"
+    ],
+    "name": "presubmit"
   }
 ]
