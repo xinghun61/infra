@@ -24,8 +24,32 @@ RUNNING TROOPER-O-MATIC LOCALLY
 
 dev_appserver.py .
 
-RUNNING UNIT TESTS
-==================
+TESTING
+=======
 
 From the infra/ directory:
 ./test.py "*trooper_o_matic*"
+
+Mocha (new-style) tests
+-----------------------
+
+The tests can be run in the browser or from the command line.
+
+In the browser: http://localhost:8000/test/run-unit-tests.html
+
+From the command line:
+
+$ make test
+
+This will launch karma, run the tests and watch the source files for
+changes. To run once and exit, use:
+
+$ make single-test
+
+Or, you can start karma manually:
+
+$ ./node_modules/karma/bin/karma start
+
+You can shorten this command to 'karma start' if you run
+'npm install -g karma-cli'.
+

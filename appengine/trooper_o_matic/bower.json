@@ -2,6 +2,8 @@
   "name": "trooper-o-matic",
   "dependencies": {
     "polymer": "Polymer/polymer#~0.3.3",
-    "core-elements": "Polymer/core-elements#~0.3.3"
+    "core-elements": "Polymer/core-elements#~0.3.3",
+    "sugar": "sugar#~1.4.1",
+    "chai": "chai#~1.9.1"
   }
 }

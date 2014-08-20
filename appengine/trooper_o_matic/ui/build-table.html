@@ -1,0 +1,193 @@
+ <!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<link rel="import" href="../bower_components/core-ajax/core-ajax.html">
+
+<polymer-element name="build-table" attributes="builds auto">
+  <template>
+    <style>
+      :host {
+        font-family: 'RobotoDraft';
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212121;
+      }
+      table {
+        border-spacing: 0;
+      }
+      th, td {
+        padding: 4px 16px 4px 4px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+      }
+      .warning {
+        color: orange;
+        font-weight: bold;
+      }
+      .ok {
+        color: green;
+        font-weight: bold;
+      }
+      tr:hover {
+        background-color: #e9eaed;
+      }
+      th {
+        background-color: white;
+      }
+      th[data-sortdown] {
+        background-image: url('/images/sort-down.gif');
+        background-repeat: no-repeat;
+        background-position: 95% 40%;
+        background-color: white;
+      }
+      th[data-sortup] {
+        background-image: url('/images/sort-up.gif');
+        background-repeat: no-repeat;
+        background-position: 95% 40%;
+        background-color: white;
+      }
+    </style>
+    <table>
+      <tr>
+        <th data-type="master" on-click="{{ updateSort }}">Master</th>
+        <th data-type="builder" on-click="{{ updateSort }}">Builder</th>
+        <th data-type="buildnumber" on-click="{{ updateSort }}">Build Number</th>
+        <th data-type="buildtime" on-click="{{ updateSort }}">Build Time (HH:MM:SS)</th>
+        <th data-type="result" on-click="{{ updateSort }}">Result</th>
+        <th data-type="revision" on-click="{{ updateSort }}">Revision</th>
+        <th data-type="name" on-click="{{ updateSortForResponse }}">Longest Step</th>
+        <th data-type="duration" on-click="{{ updateSortForResponse }}">Longest Step Duration</th>
+        <th data-type="percent" on-click="{{ updateSortForResponse }}">Longest Step %</th>
+      </tr>
+      <template repeat="{{ build in builds }}">
+        <tr data-master="{{ build.master }}"
+            data-builder="{{ build.builder }}"
+            data-buildnumber="{{ build.buildnumber }}"
+            on-click="{{ trClick }}">
+          <td>{{ build.master }}</td>
+          <td>{{ build.builder }}</td>
+          <td>{{ build.buildnumber }}</td>
+          <td class="{{ howBadIsTime(build.buildtime) }}">{{ build.buildtime | prettifyBuildTime }}</td>
+          <td class="{{ howBadIsResult(build.result) }}">{{ build.result | resultToString }}</td>
+          <td>{{ build.revision }}</td>
+          <td class='longest-step'>{{ build.response.steps.max.name }}</td>
+          <td class='longest-step-duration {{ howBadIsTime(build.response.steps.max.duration) }}'>
+            {{ build.response.steps.max.duration | prettifyBuildTime }}</td>
+          <td class='longest-step-percent'>{{ build.response.steps.max.percent | prettifyPercent }}</td>
+          <core-ajax url='http://build.chromium.org/p/{{ build.master }}/json/builders/{{ build.builder }}/builds/{{ build.buildnumber }}'
+            handleAs='json' auto="{{ auto }}" response="{{ build.response }}" on-core-response="{{ findLongest }}"></core-ajax>
+        </tr>
+      </template>
+    </table>
+  </template>
+  <script>
+    Polymer('build-table', {
+      auto: true,
+      trClick: function(event, detail, sender) {
+        var master = sender.getAttribute('data-master');
+        var builder = sender.getAttribute('data-builder');
+        var buildnumber = sender.getAttribute('data-buildnumber');
+        var url = 'http://build.chromium.org/p/{1}/builders/{2}/builds/{3}'.
+            assign(master, builder, buildnumber);
+        window.open(url);
+      },
+      resultToString: function(value) {
+        return ["success", "warning", "failure", "skipped", "exception", "retry"][value];
+      },
+      prettifyBuildTime: function(value) {
+        var s = Math.round(value);
+        var m = 0;
+        var h = 0;
+        if (s >= 60) {
+          m = Math.floor(s / 60);
+          s = s % 60;
+          if (m >= 60) {
+            h = Math.floor(m / 60);
+            m = m % 60;
+          }
+        }
+
+        return h + ":" + (m > 9 ? m : '0' + m) + ":" + (s > 9 ? s : '0' + s);
+      },
+      prettifyPercent: function(percent) {
+        return (percent * 100).toFixed(1) + '%';
+      },
+      howBadIsTime: function(time) {
+        if (time > 60 * 60) {
+          return 'error';
+        } else if (time > 30 * 60) {
+          return 'warning';
+        } else {
+          return '';
+        }
+      },
+      howBadIsResult: function(result) {
+        return ['ok', 'warning', 'error', 'warning', 'error', 'warning'][result];
+      },
+      _sort: function(sender, extractor) {
+        var th = sender;
+        var sortDir = 'down';
+        if (th.getAttribute('data-sortdown')) {
+          sortDir = 'up';
+        }
+        var headers = this.shadowRoot.querySelectorAll('th');
+        for (var i = 0; i < headers.length; i++) {
+          headers[i].removeAttribute('data-sortdown');
+          headers[i].removeAttribute('data-sortup');
+        }
+        th.setAttribute('data-sort' + sortDir, true);
+        this.builds.sort(function(a, b) {
+          var aVal = extractor(a), bVal = extractor(b);
+          if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
+            if (sortDir == 'down') {
+              return aVal - bVal;
+            } else {
+              return bVal - aVal;
+            }
+          } else {
+            if (sortDir == 'down') {
+              return aVal.localeCompare(bVal);
+            } else {
+              return bVal.localeCompare(aVal);
+            }
+          }
+        });
+      },
+      updateSort: function(event, detail, sender) {
+        var type = sender.getAttribute('data-type');
+        this._sort(sender, function(a) { return a[type] });
+      },
+      updateSortForResponse: function(event, detail, sender) {
+        var type = sender.getAttribute('data-type');
+        this._sort(sender, function(a) { return a.response.steps.max[type] });
+      },
+      findLongest: function(event, data) {
+        var maxDuration = 0;
+        var maxDurationName = '';
+        var buildDuration = 0;
+        var steps = data.response.steps;
+        if (steps == null)
+          steps.max= {name: 'waiting', duration: 0, percent: 0};
+        steps.forEach(function(step) {
+          var name = step.name
+          if (name == 'steps') {
+            return;
+          }
+          var duration = step.times[1] - step.times[0];
+          if (duration > maxDuration) {
+            maxDuration = duration;
+            maxDurationName = name;
+          }
+          buildDuration += duration;
+        });
+        steps.max = {name: maxDurationName, duration: maxDuration, percent: maxDuration / buildDuration};
+      }
+    });
+  </script>
+</polymer-element>

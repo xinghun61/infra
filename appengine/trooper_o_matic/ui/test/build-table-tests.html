@@ -1,0 +1,179 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../build-table.html">
+
+<script>
+(function() {
+
+var assert = chai.assert;
+
+describe('build-table', function() {
+  var buildTable;
+  var builds = [];
+
+  function getCellByRC(row, column) {
+    return buildTable.shadowRoot.querySelectorAll('tr')[row].
+        querySelector('td:nth-child(' + column + ')');
+  }
+
+  beforeEach(function(done) {
+    buildTable = document.createElement('build-table');
+    buildTable.builds = builds;
+    buildTable.auto = false;
+    setTimeout(done);
+  });
+
+  describe('build table: result', function() {
+    before(function() {
+      builds = [{
+          master: 'test', builder: 'test', buildnumber: 1,
+          buildtime: 60, result: 0, revision: 1}];
+    });
+
+    it('should show success if result is 0', function() {
+      assert.equal(getCellByRC(1, 5).textContent, 'success');
+    });
+
+    it('should show failure if result is 2', function(done) {
+      buildTable.builds[0].result = 2;
+      setTimeout(function() {
+        assert.equal(getCellByRC(1, 5).textContent, 'failure');
+        done();
+      });
+    });
+  });
+
+  describe('build table: core-ajax', function() {
+    before(function() {
+      builds = [{
+          master: 'aMaster', builder: 'aBuilder', buildnumber: 42,
+          buildTime: 321, result: 1, revision: 33}];
+    });
+
+    it('should fetch the appropriate build info', function() {
+      assert.equal(buildTable.shadowRoot.querySelector('core-ajax').url,
+          'http://build.chromium.org/p/aMaster/json/builders/aBuilder/builds/42');
+    });
+  });
+
+  describe('build table: build time', function() {
+    before(function() {
+      builds = [
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 1, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 59, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 60, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 61, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 599, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 601, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 3599, result: 1, revision: 33},
+          {master: 'test', builder: 'test', buildnumber: 100, buildtime: 3601, result: 1, revision: 33}];
+    });
+
+    it('should format a duration of 1 second as 0:00:01', function() {
+      assert.equal(getCellByRC(1, 4).textContent, '0:00:01');
+    });
+
+    it('should format a duration of 59 seconds as 0:00:59', function() {
+      assert.equal(getCellByRC(2, 4).textContent, '0:00:59');
+    });
+
+    it('should format a duration of 60 seconds as 0:01:00', function() {
+      assert.equal(getCellByRC(3, 4).textContent, '0:01:00');
+    });
+
+    it('should format a duration of 61 seconds as 0:01:01', function() {
+      assert.equal(getCellByRC(4, 4).textContent, '0:01:01');
+    });
+
+    it('should format a duration of 599 seconds as 0:09:59', function() {
+      assert.equal(getCellByRC(5, 4).textContent, '0:09:59');
+    });
+
+    it('should format a duration of 601 seconds as 0:10:01', function() {
+      assert.equal(getCellByRC(6, 4).textContent, '0:10:01');
+    });
+
+    it('should format a duration of 3599 seconds as 0:59:59', function() {
+      assert.equal(getCellByRC(7, 4).textContent, '0:59:59');
+    });
+
+    it('should format a duration of 3601 seconds as 1:00:01', function() {
+      assert.equal(getCellByRC(8, 4).textContent, '1:00:01');
+    });
+  });
+
+  describe('build table: sorting', function() {
+    before(function() {
+      builds = [
+          {master: 'a', builder: 'p', buildnumber: 3, buildtime: 1, result: 1, revision: 33},
+          {master: 'c', builder: 'j', buildnumber: 36, buildtime: 59, result: 1, revision: 33},
+          {master: 'h', builder: 'k', buildnumber: 8, buildtime: 60, result: 1, revision: 33},
+          {master: 'b', builder: 'i', buildnumber: 5, buildtime: 61, result: 1, revision: 33},
+          {master: 'e', builder: 'm', buildnumber: 32, buildtime: 599, result: 1, revision: 33},
+          {master: 'g', builder: 'l', buildnumber: 31, buildtime: 601, result: 1, revision: 33},
+          {master: 'd', builder: 'o', buildnumber: 11, buildtime: 3599, result: 1, revision: 33},
+          {master: 'f', builder: 'n', buildnumber: 37, buildtime: 3601, result: 1, revision: 33}];
+    });
+
+    function getColumnContents(num_rows, column) {
+      var contents = [];
+      for (var i = 0; i < num_rows; i++)
+        contents.push(getCellByRC(i + 1, column).textContent);
+      return contents;
+    }
+
+    it('should sort master alphabetically', function(done) {
+      buildTable.shadowRoot.querySelector('th[data-type="master"]').click();
+      setTimeout(function() {
+        assert.deepEqual(getColumnContents(8, 1), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+        assert.deepEqual(getColumnContents(8, 2), ['p', 'i', 'j', 'o', 'm', 'n', 'l', 'k']);
+        done();
+      });
+    });
+
+    it('should sort builder alphabetically', function(done) {
+      buildTable.shadowRoot.querySelector('th[data-type="builder"]').click();
+      setTimeout(function() {
+        assert.deepEqual(getColumnContents(8, 1), ['b', 'c', 'h', 'g', 'e', 'f', 'd', 'a']);
+        assert.deepEqual(getColumnContents(8, 2), ['i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']);
+        done();
+      });
+    });
+
+    it('should sort buildnumber numerically', function(done) {
+      buildTable.shadowRoot.querySelector('th[data-type="buildnumber"]').click();
+      setTimeout(function() {
+        assert.deepEqual(getColumnContents(8, 3).map(Number), [3, 5, 8, 11, 31, 32, 36, 37]);
+        assert.deepEqual(getColumnContents(8, 1), ['a', 'b', 'h', 'd', 'g', 'e', 'c', 'f']);
+        done();
+      });
+    });
+
+    it('should sort buildtime numerically', function(done) {
+      buildTable.shadowRoot.querySelector('th[data-type="buildtime"]').click();
+      setTimeout(function() {
+        assert.deepEqual(getColumnContents(8, 4), ["0:00:01", "0:00:59", "0:01:00", "0:01:01", "0:09:59", "0:10:01", "0:59:59", "1:00:01"]);
+        assert.deepEqual(getColumnContents(8, 1), ['a', 'c', 'h', 'b', 'e', 'g', 'd', 'f']);
+        done();
+      });
+    });
+
+    it('should reverse sort order after clicking twice', function(done) {
+      buildTable.shadowRoot.querySelector('th[data-type="master"]').click();
+      buildTable.shadowRoot.querySelector('th[data-type="master"]').click();
+      setTimeout(function() {
+        assert.deepEqual(getColumnContents(8, 1), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].reverse());
+        assert.deepEqual(getColumnContents(8, 2), ['p', 'i', 'j', 'o', 'm', 'n', 'l', 'k'].reverse());
+        done();
+      });
+    });
+  });
+});
+
+})();
+</script>
+
