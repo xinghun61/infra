@@ -937,19 +937,24 @@ function htmlForIndividualTestOnAllBuildersWithResultsLinks(test)
     var html = '';
     html += htmlForIndividualTestOnAllBuilders(test);
 
-    html += '<div class=expectations test=' + test + '><div>' +
-        linkHTMLToToggleState('showExpectations', 'results')
-
-    if (g_history.isLayoutTestResults() || g_history.isGPUTestResults()) {
-        if (g_history.isLayoutTestResults())
-            html += ' | ' + linkHTMLToToggleState('showLargeExpectations', 'large thumbnails');
-            html += ' | <b>Only shows actual results/diffs from the most recent *failure* on each bot.</b>';
+    if (!g_history.dashboardSpecificState.showChrome) {
+        var newWindowURL = window.location.hash.replace(/showChrome=false/, 'showChrome=true');
+        html += linkHTMLToOpenWindow(newWindowURL, 'Pop out in a new tab');
     } else {
-      html += ' | <span>Results height:<input ' +
-          'onchange="g_history.setQueryParameter(\'resultsHeight\',this.value)" value="' +
-          g_history.dashboardSpecificState.resultsHeight + '" style="width:2.5em">px</span>';
+        html += '<div class=expectations test=' + test + '><div>';
+        html += linkHTMLToToggleState('showExpectations', 'results');
+
+        if (g_history.isLayoutTestResults() || g_history.isGPUTestResults()) {
+            if (g_history.isLayoutTestResults())
+                html += ' | ' + linkHTMLToToggleState('showLargeExpectations', 'large thumbnails');
+            html += ' | <b>Only shows actual results/diffs from the most recent *failure* on each bot.</b>';
+        } else {
+          html += ' | <span>Results height:<input ' +
+              'onchange="g_history.setQueryParameter(\'resultsHeight\',this.value)" value="' +
+              g_history.dashboardSpecificState.resultsHeight + '" style="width:2.5em">px</span>';
+        }
+        html += '</div></div>';
     }
-    html += '</div></div>';
     return html;
 }
 

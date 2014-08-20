@@ -110,12 +110,15 @@ test('htmlForTestTypeSwitcherGroup', 6, function() {
 
 test('htmlForIndividualTestOnAllBuilders', 1, function() {
     resetGlobals();
+    g_history.dashboardSpecificState.showChrome = true;
     builders.loadBuildersList('@ToT Blink', 'layout-tests');
     equal(htmlForIndividualTestOnAllBuilders('foo/nonexistant.html'), '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>');
+    g_history.dashboardSpecificState.showChrome = false;
 });
 
 test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, function() {
     resetGlobals();
+    g_history.dashboardSpecificState.showChrome = true;
     builders.loadBuildersList('@ToT Blink', 'layout-tests');
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks('foo/nonexistant.html'),
         '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>' +
@@ -126,10 +129,12 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, functio
                 '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b>' +
             '</div>' +
         '</div>');
+    g_history.dashboardSpecificState.showChrome = false;
 });
 
 test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
     resetGlobals();
+    g_history.dashboardSpecificState.showChrome = true;
     builders.loadBuildersList('@ToT Blink', 'layout-tests');
 
     var builderName = 'WebKit Linux';
@@ -169,6 +174,7 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
             '<span class=link onclick="g_history.setQueryParameter(\'showLargeExpectations\', true)">Show large thumbnails</span> | ' +
             '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b></div>' +
         '</div>');
+    g_history.dashboardSpecificState.showChrome = false;
 });
 
 test('individualTestsForSubstringList', 2, function() {
@@ -200,11 +206,7 @@ test('htmlForIndividualTest', 2, function() {
     historyInstance.dashboardSpecificState.showChrome = false;
 
     equal(htmlForIndividualTest(test), htmlForIndividualTestOnAllBuilders(test) +
-        '<div class=expectations test=foo/nonexistant.html>' +
-            '<div><span class=link onclick=\"g_history.setQueryParameter(\'showExpectations\', true)\">Show results</span> | ' +
-            '<span class=link onclick=\"g_history.setQueryParameter(\'showLargeExpectations\', true)\">Show large thumbnails</span> | ' +
-            '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b></div>' +
-        '</div>');
+        '<a href="#useTestData=true" target="_blank">Pop out in a new tab</a>');
 
     historyInstance.dashboardSpecificState.showChrome = true;
 
@@ -447,6 +449,7 @@ test('collapsedRevisionListChromium', 1, function() {
 
 test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
     resetGlobals();
+    g_history.dashboardSpecificState.showChrome = true;
     builders.loadBuildersList('@ToT Blink', 'layout-tests');
     var test = 'dummytest.html';
 
@@ -511,10 +514,12 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
             '<span class=link onclick="g_history.setQueryParameter(\'showLargeExpectations\', true)">Show large thumbnails</span> | ' +
             '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b></div>' +
         '</div>');
+    g_history.dashboardSpecificState.showChrome = false;
 });
 
 test('collapsedRevisionListChromiumWithGitHash', 1, function() {
     resetGlobals();
+    g_history.dashboardSpecificState.showChrome = true;
     builders.loadBuildersList('@ToT Blink', 'layout-tests');
     var test = 'dummytest.html';
 
@@ -555,4 +560,5 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
                 '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b>' +
             '</div>' +
         '</div>');
+    g_history.dashboardSpecificState.showChrome = false;
 });
