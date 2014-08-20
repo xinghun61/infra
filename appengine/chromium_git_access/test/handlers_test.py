@@ -38,6 +38,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     'gclient_deps': '.DEPS.git',
     'gclient_managed': False,
     'gclient_url': 'https://chromium.googlesource.com/chromium/src.git',
+    'git_insteadof': '',
     'git_user_email': 'blah@chromium.org',
     'git_user_name': 'Blah Blahovic',
     'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
@@ -73,7 +74,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     response = self.post_check(**self.canned_access_check)
     self.assertEquals(200, response.status_int)
     self.assertEquals(
-        {'ok': True, 'report_id': '10cd0530a35170f1d1574ffffcbaa68d78ded034'},
+        {'ok': True, 'report_id': '2e4519cfb784f010c39d85db5525000d1d1b259f'},
         response.json_body)
     # Read it back from datastore.
     entries = self.fetch_entries()
@@ -81,9 +82,9 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.assertEquals(
         ndb.Key(
             'AccessCheckEntryShard_v1',
-            '10',
+            '2e',
             'AccessCheckEntry',
-            '10cd0530a35170f1d1574ffffcbaa68d78ded034'),
+            '2e4519cfb784f010c39d85db5525000d1d1b259f'),
         entries[0].key)
     self.assertEquals(
         {
@@ -93,6 +94,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
           'gclient_deps': '.DEPS.git',
           'gclient_managed': False,
           'gclient_url': 'https://chromium.googlesource.com/chromium/src.git',
+          'git_insteadof': '',
           'git_user_email': u'blah@chromium.org',
           'git_user_name': u'Blah Blahovic',
           'git_version': 'git version 2.1.0.rc2.206.gedb03e5',
@@ -117,15 +119,6 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.assertEquals(400, response.status_int)
     self.assertEquals({'text': 'Missing access_check dict'}, response.json_body)
 
-  def test_missing_some_properties(self):
-    """All known properties are required."""
-    request = self.canned_access_check.copy()
-    request.pop('username')
-    response = self.post_check(**request)
-    self.assertEquals(400, response.status_int)
-    self.assertEquals(
-        {'text': 'Incomplete access_check dict'}, response.json_body)
-
   def test_wrong_type(self):
     request = self.canned_access_check.copy()
     request['checker_version'] = 'I am totally an integer'
@@ -139,7 +132,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     response = self.post_check(extra=1, **self.canned_access_check)
     self.assertEquals(200, response.status_int)
     self.assertEquals(
-        {'ok': True, 'report_id': '10cd0530a35170f1d1574ffffcbaa68d78ded034'},
+        {'ok': True, 'report_id': '2e4519cfb784f010c39d85db5525000d1d1b259f'},
         response.json_body)
 
   def test_resubmit_skipped(self):
@@ -166,13 +159,14 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     self.assertEquals(
       [
         {
-          u'_id': u'10cd0530a35170f1d1574ffffcbaa68d78ded034',
+          u'_id': u'2e4519cfb784f010c39d85db5525000d1d1b259f',
           u'checker_version': 0,
           u'chrome_internal_netrc_email': None,
           u'chromium_netrc_email': u'blah@chromium.org',
           u'gclient_deps': u'.DEPS.git',
           u'gclient_managed': False,
           u'gclient_url': u'https://chromium.googlesource.com/chromium/src.git',
+          u'git_insteadof': '',
           u'git_user_email': u'blah@chromium.org',
           u'git_user_name': u'Blah Blahovic',
           u'git_version': u'git version 2.1.0.rc2.206.gedb03e5',
@@ -188,13 +182,14 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
           u'username': u'blah',
         },
         {
-          u'_id': u'd632344103963d3511a97644443c7e6d8ac30551',
+          u'_id': u'489b8e5bad8c54a5174fe212bb16bbce12cc9104',
           u'checker_version': 1,
           u'chrome_internal_netrc_email': None,
           u'chromium_netrc_email': u'blah@chromium.org',
           u'gclient_deps': u'.DEPS.git',
           u'gclient_managed': False,
           u'gclient_url': u'https://chromium.googlesource.com/chromium/src.git',
+          u'git_insteadof': '',
           u'git_user_email': u'blah@chromium.org',
           u'git_user_name': u'Blah Blahovic',
           u'git_version': u'git version 2.1.0.rc2.206.gedb03e5',
@@ -219,5 +214,5 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
     response = self.post_check(**report)
     self.assertEquals(200, response.status_int)
     self.assertEquals(
-        {'ok': True, 'report_id': '6df3a973637905ceb7b07327264047b4533e4e38'},
+        {'ok': True, 'report_id': '1eaa795af7b4fe4511bd83df531dff1e151c4228'},
         response.json_body)

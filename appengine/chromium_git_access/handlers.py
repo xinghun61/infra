@@ -33,6 +33,7 @@ class AccessCheckEntry(ndb.Model):
     'gclient_deps',
     'gclient_managed',
     'gclient_url',
+    'git_insteadof',
     'git_user_email',
     'git_user_name',
     'git_version',
@@ -75,6 +76,8 @@ class AccessCheckEntry(ndb.Model):
   git_user_email = ndb.StringProperty()
   # git user name as seen by chromium/src repo.
   git_user_name = ndb.StringProperty()
+  # List of insteadOf entries for chromium host.
+  git_insteadof = ndb.StringProperty()
 
   # email in ~/.netrc entry for chromium host, or None if missing.
   chromium_netrc_email = ndb.StringProperty()
@@ -130,11 +133,6 @@ class AccessCheckHandler(auth.ApiHandler):
     body = self.parse_body()
     if not isinstance(body.get('access_check'), dict):
       self.abort_with_error(400, text='Missing access_check dict')
-    access_check = body['access_check']
-
-    # All EXTERNAL_PROPERTIES are required.
-    if not AccessCheckEntry.EXTERNAL_PROPERTIES.issubset(access_check):
-      self.abort_with_error(400, text='Incomplete access_check dict')
 
     # Read entity properties from the request body.
     entity = AccessCheckEntry()
