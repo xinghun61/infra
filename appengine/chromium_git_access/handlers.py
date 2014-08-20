@@ -147,12 +147,17 @@ class AccessCheckHandler(auth.ApiHandler):
       else:
         logging.warning('Skipping unknown key %s', key)
 
+    def to_utf8(x):
+      if isinstance(x, unicode):
+        return x.encode('utf-8')
+      return str(x)
+
     # Use important parts of the entity to derive its key. It's a simple way
     # to avoid having duplicate entities in db in case client submits
     # same report multiple times.
     fingerprint = []
     for key in sorted(list(AccessCheckEntry.FINGERPRINT_PROPERTIES)):
-      fingerprint.append(str(getattr(entity, key, None)))
+      fingerprint.append(to_utf8(getattr(entity, key, None)))
     fingerprint = hashlib.sha1('\0'.join(fingerprint)).hexdigest()
 
     # Shard across 256 shards to avoid creating too many entity groups, queries

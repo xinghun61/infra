@@ -211,3 +211,13 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
         }
       ],
       sorted(response.json['reports'], key=lambda x: x['checker_version']))
+
+  def test_unicode(self):
+    """Non ascii symbols in report work."""
+    report = self.canned_access_check.copy()
+    report['git_user_name'] = u'\u0412\u0430\u0441\u0438\u043b\u0438\u0439'
+    response = self.post_check(**report)
+    self.assertEquals(200, response.status_int)
+    self.assertEquals(
+        {'ok': True, 'report_id': '6df3a973637905ceb7b07327264047b4533e4e38'},
+        response.json_body)
