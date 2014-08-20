@@ -36,7 +36,7 @@ import webapp2
 
 from google.appengine.api import memcache
 
-from handlers import master_config
+from ..handlers import master_config
 
 # Buildbot steps that have test in the name, but don't run tests.
 NON_TEST_STEP_NAMES = [
@@ -75,7 +75,7 @@ class FetchBuildersException(Exception):
   pass
 
 
-def fetch_json(url):
+def fetch_json(url):  # pragma: no cover
   logging.debug('Fetching %s' % url)
   fetched_json = {}
   try:
@@ -95,11 +95,11 @@ def fetch_json(url):
   return fetched_json
 
 
-def dump_json(data):
+def dump_json(data):  # pragma: no cover
   return json.dumps(data, separators=(',', ':'), sort_keys=True)
 
 
-def fetch_buildbot_data(masters=None):
+def fetch_buildbot_data(masters=None):  # pragma: no cover
   start_time = datetime.datetime.now()
   all_masters_data = []
   if masters:
@@ -168,7 +168,7 @@ class UpdateBuilders(webapp2.RequestHandler):  # pylint: disable=W0232
 
   """Fetch and update the cached buildbot data."""
 
-  def get(self):
+  def get(self):  # pragma: no cover
     try:
       buildbot_data = fetch_buildbot_data()
       memcache.set('buildbot_data', buildbot_data)
@@ -185,7 +185,7 @@ class GetBuilders(webapp2.RequestHandler):  # pylint: disable=W0232
   """Return a list of masters mapped to their respective builders,
   possibly using cached data."""
 
-  def get(self):
+  def get(self):  # pragma: no cover
     buildbot_data = memcache.get('buildbot_data')
 
     if not buildbot_data:

@@ -31,7 +31,7 @@ import logging
 
 from google.appengine.ext import db
 
-from model.datastorefile import DataStoreFile
+from ..model.datastorefile import DataStoreFile
 
 
 class TestFile(DataStoreFile):  # pylint: disable=W0232
@@ -41,14 +41,14 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
   build_number = db.IntegerProperty()
 
   @property
-  def file_information(self):
+  def file_information(self):  # pragma: no cover
     return ("master: %s, builder: %s, test_type: %s, build_number: %r, "
             "name: %s.") % (self.master, self.builder, self.test_type,
             self.build_number, self.name)
 
   @classmethod
   def delete_file(cls, key, master, builder, test_type, build_number, name,
-      before, limit):
+      before, limit):  # pragma: no cover
     if key:
       record = db.get(key)
       if not record:
@@ -73,7 +73,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
 
   @classmethod
   def get_files(cls, master, builder, test_type, build_number, name,
-      before=None, load_data=True, limit=1):
+      before=None, load_data=True, limit=1):  # pragma: no cover
     query = TestFile.all()
     if master:
       query = query.filter("master =", master)
@@ -113,7 +113,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     return files
 
   @classmethod
-  def save_file(cls, record, data):
+  def save_file(cls, record, data):  # pragma: no cover
     if record.save(data):
       status_string = "Saved file. %s" % record.file_information
       status_code = 200
@@ -123,7 +123,8 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     return status_string, status_code
 
   @classmethod
-  def add_file(cls, master, builder, test_type, build_number, name, data):
+  def add_file(cls, master, builder, test_type, build_number, name,
+        data):  # pragma: no cover
     record = TestFile()
     record.master = master
     record.builder = builder
@@ -132,7 +133,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     record.name = name
     return cls.save_file(record, data)
 
-  def save(self, data):
+  def save(self, data):  # pragma: no cover
     if not self.save_data(data):
       return False
 
@@ -141,6 +142,6 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
 
     return True
 
-  def delete_all(self):
+  def delete_all(self):  # pragma: no cover
     self.delete_data()
     self.delete()

@@ -33,7 +33,7 @@ import re
 import sys
 import traceback
 
-from model.testfile import TestFile
+from ..model.testfile import TestFile
 
 JSON_RESULTS_FILE = "results.json"
 JSON_RESULTS_FILE_SMALL = "results-small.json"
@@ -111,7 +111,7 @@ FAILURE_TO_CHAR = {
 CHAR_TO_FAILURE = dict((value, key) for key, value in FAILURE_TO_CHAR.items())
 
 
-def _is_directory(subtree):
+def _is_directory(subtree):  # pragma: no cover
   return (RESULTS_KEY not in subtree
       or not isinstance(subtree[RESULTS_KEY], collections.Sequence))
 
@@ -119,22 +119,22 @@ def _is_directory(subtree):
 class JsonResults(object):
 
   @staticmethod
-  def is_aggregate_file(name):
+  def is_aggregate_file(name):  # pragma: no cover
     return name in (JSON_RESULTS_FILE, JSON_RESULTS_FILE_SMALL)
 
   @classmethod
-  def _strip_prefix_suffix(cls, data):
+  def _strip_prefix_suffix(cls, data):  # pragma: no cover
     if (data.startswith(JSON_RESULTS_PREFIX)
         and data.endswith(JSON_RESULTS_SUFFIX)):
       return data[len(JSON_RESULTS_PREFIX):len(data) - len(JSON_RESULTS_SUFFIX)]
     return data
 
   @classmethod
-  def _generate_file_data(cls, jsonObject, sort_keys=False):
+  def _generate_file_data(cls, jsonObject, sort_keys=False):  # pragma: no cover
     return json.dumps(jsonObject, separators=(',', ':'), sort_keys=sort_keys)
 
   @classmethod
-  def load_json(cls, file_data):
+  def load_json(cls, file_data):  # pragma: no cover
     json_results_str = cls._strip_prefix_suffix(file_data)
     if not json_results_str:
       logging.warning("No json results data.")
@@ -149,7 +149,8 @@ class JsonResults(object):
       return None
 
   @classmethod
-  def _merge_json(cls, aggregated_json, incremental_json, num_runs):
+  def _merge_json(cls, aggregated_json, incremental_json,
+        num_runs):  # pragma: no cover
     # We have to delete expected entries because the incremental json may not
     # have any entry for every test in the aggregated json. But, the incremental
     # json will have all the correct expected entries for that run.
@@ -161,7 +162,7 @@ class JsonResults(object):
       cls._merge_tests(aggregated_tests, incremental_tests, num_runs)
 
   @classmethod
-  def _delete_expected_entries(cls, aggregated_json):
+  def _delete_expected_entries(cls, aggregated_json):  # pragma: no cover
     for key in aggregated_json:
       item = aggregated_json[key]
       if _is_directory(item):
@@ -173,7 +174,8 @@ class JsonResults(object):
           del item[BUG_KEY]
 
   @classmethod
-  def _merge_non_test_data(cls, aggregated_json, incremental_json, num_runs):
+  def _merge_non_test_data(cls, aggregated_json, incremental_json,
+        num_runs):  # pragma: no cover
     incremental_builds = incremental_json[BUILD_NUMBERS_KEY]
 
     # FIXME: It's no longer possible to have multiple runs worth of data in the
@@ -189,7 +191,7 @@ class JsonResults(object):
 
   @classmethod
   def _merge_one_build(cls, aggregated_json, incremental_json,
-        incremental_index, num_runs):
+        incremental_index, num_runs):  # pragma: no cover
     for key in incremental_json.keys():
       # Merge json results except "tests" properties (results, times etc).
       # "tests" properties will be handled separately.
@@ -208,7 +210,8 @@ class JsonResults(object):
         aggregated_json[key] = incremental_json[key]
 
   @classmethod
-  def _merge_tests(cls, aggregated_json, incremental_json, num_runs):
+  def _merge_tests(cls, aggregated_json, incremental_json,
+        num_runs):  # pragma: no cover
     # FIXME: Some data got corrupted and has results/times at the directory
     # level. Once the data is fixed, this should assert that the directory
     # level does not have
@@ -256,7 +259,7 @@ class JsonResults(object):
 
   @classmethod
   def _insert_item_run_length_encoded(cls, incremental_item, aggregated_item,
-      num_runs):
+      num_runs):  # pragma: no cover
     for item in incremental_item:
       if len(aggregated_item) and item[1] == aggregated_item[0][1]:
         aggregated_item[0][0] = min(aggregated_item[0][0] + item[0], num_runs)
@@ -265,7 +268,7 @@ class JsonResults(object):
 
   @classmethod
   def _normalize_results(cls, aggregated_json, num_runs,
-      run_time_pruning_threshold):
+      run_time_pruning_threshold):  # pragma: no cover
     names_to_delete = []
     for test_name in aggregated_json:
       if _is_directory(aggregated_json[test_name]):
@@ -288,7 +291,8 @@ class JsonResults(object):
       del aggregated_json[test_name]
 
   @classmethod
-  def _should_delete_leaf(cls, leaf, run_time_pruning_threshold):
+  def _should_delete_leaf(cls, leaf,
+        run_time_pruning_threshold):  # pragma: no cover
     if leaf.get(EXPECTED_KEY, PASS_STRING) != PASS_STRING:
       return False
 
@@ -307,7 +311,8 @@ class JsonResults(object):
     return True
 
   @classmethod
-  def _remove_items_over_max_number_of_builds(cls, encoded_list, num_runs):
+  def _remove_items_over_max_number_of_builds(cls, encoded_list,
+        num_runs):  # pragma: no cover
     num_builds = 0
     index = 0
     for result in encoded_list:
@@ -319,7 +324,8 @@ class JsonResults(object):
     return encoded_list
 
   @classmethod
-  def _convert_gtest_json_to_aggregate_results_format(cls, json_dict):
+  def _convert_gtest_json_to_aggregate_results_format(cls,
+        json_dict):  # pragma: no cover
     # FIXME: Change gtests over to uploading the full results format like
     # layout-tests so we don't have to do this normalizing.
     # http://crbug.com/247192.
@@ -338,7 +344,7 @@ class JsonResults(object):
     json_dict[FAILURES_BY_TYPE_KEY] = failures_by_type
 
   @classmethod
-  def _check_json(cls, builder, json_dict):
+  def _check_json(cls, builder, json_dict):  # pragma: no cover
     version = json_dict[VERSIONS_KEY]
     if version > JSON_RESULTS_HIERARCHICAL_VERSION:
       return "Results JSON version '%s' is not supported." % version
@@ -346,7 +352,7 @@ class JsonResults(object):
     if not builder in json_dict:
       return "Builder '%s' is not in json results." % builder
 
-    results_for_builder = json[builder]
+    results_for_builder = json_dict[builder]
     if not BUILD_NUMBERS_KEY in results_for_builder:
       return "Missing build number in json results."
 
@@ -370,7 +376,8 @@ class JsonResults(object):
     return ""
 
   @classmethod
-  def _populate_tests_from_full_results(cls, full_results, new_results):
+  def _populate_tests_from_full_results(cls, full_results,
+        new_results):  # pragma: no cover
     if EXPECTED_KEY in full_results:
       expected = full_results[EXPECTED_KEY]
       if expected != PASS_STRING and expected != NOTRUN_STRING:
@@ -402,7 +409,8 @@ class JsonResults(object):
           full_results[key], new_results[key])
 
   @classmethod
-  def _convert_full_results_format_to_aggregate(cls, full_results_format):
+  def _convert_full_results_format_to_aggregate(cls,
+        full_results_format):  # pragma: no cover
     failures_by_type = full_results_format[FAILURES_BY_TYPE_KEY]
 
     tests = {}
@@ -429,7 +437,8 @@ class JsonResults(object):
     return aggregate_results_format
 
   @classmethod
-  def _get_incremental_json(cls, builder, results_json, is_full_results_format):
+  def _get_incremental_json(cls, builder, results_json,
+        is_full_results_format):  # pragma: no cover
     if not results_json:
       return "No incremental JSON data to merge.", 403
 
@@ -445,7 +454,7 @@ class JsonResults(object):
     return results_json, 200
 
   @classmethod
-  def _get_aggregated_json(cls, builder, aggregated_string):
+  def _get_aggregated_json(cls, builder, aggregated_string):  # pragma: no cover
     logging.info("Loading existing aggregated json.")
     aggregated_json = cls.load_json(aggregated_string)
     if not aggregated_json:
@@ -460,7 +469,7 @@ class JsonResults(object):
 
   @classmethod
   def merge(cls, builder, aggregated_string, incremental_json, num_runs,
-        sort_keys=False):
+        sort_keys=False):  # pragma: no cover
     aggregated_json, status_code = cls._get_aggregated_json(
         builder, aggregated_string)
     if not aggregated_json:
@@ -495,7 +504,7 @@ class JsonResults(object):
 
   @classmethod
   def _get_aggregate_file(cls, master, builder, test_type, filename,
-        deprecated_master):
+        deprecated_master):  # pragma: no cover
     files = TestFile.get_files(master, builder, test_type, None, filename)
     if files:
       return files[0]
@@ -520,7 +529,7 @@ class JsonResults(object):
 
   @classmethod
   def update(cls, master, builder, test_type, results_json, deprecated_master,
-        is_full_results_format):
+        is_full_results_format):  # pragma: no cover
     logging.info("Updating %s and %s." %
                  (JSON_RESULTS_FILE_SMALL, JSON_RESULTS_FILE))
     small_file = cls._get_aggregate_file(
@@ -532,7 +541,7 @@ class JsonResults(object):
 
   @classmethod
   def update_files(cls, builder, results_json, small_file, large_file,
-        is_full_results_format):
+        is_full_results_format):  # pragma: no cover
     incremental_json, status_code = cls._get_incremental_json(
         builder, results_json, is_full_results_format)
     if status_code != 200:
@@ -547,7 +556,8 @@ class JsonResults(object):
         JSON_RESULTS_MAX_BUILDS)
 
   @classmethod
-  def update_file(cls, builder, record, incremental_json, num_runs):
+  def update_file(cls, builder, record, incremental_json,
+        num_runs):  # pragma: no cover
     new_results, status_code = cls.merge(
         builder, record.data, incremental_json, num_runs)
     if status_code != 200:
@@ -555,7 +565,7 @@ class JsonResults(object):
     return TestFile.save_file(record, new_results)
 
   @classmethod
-  def _delete_results_and_times(cls, tests):
+  def _delete_results_and_times(cls, tests):  # pragma: no cover
     for key in tests.keys():
       if key in (RESULTS_KEY, TIMES_KEY):
         del tests[key]
@@ -563,7 +573,7 @@ class JsonResults(object):
         cls._delete_results_and_times(tests[key])
 
   @classmethod
-  def get_test_list(cls, builder, json_file_data):
+  def get_test_list(cls, builder, json_file_data):  # pragma: no cover
     logging.debug("Loading test results json...")
     json_dict = cls.load_json(json_file_data)
     if not json_dict:

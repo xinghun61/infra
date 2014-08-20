@@ -49,7 +49,7 @@ menu = [
 
 class Menu(webapp2.RequestHandler):  # pylint: disable=W0232
 
-  def get(self):
+  def get(self):  # pragma: no cover
     user = users.get_current_user()
     if user:
       user_email = user.email()

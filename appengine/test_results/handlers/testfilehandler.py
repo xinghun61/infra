@@ -35,10 +35,10 @@ from google.appengine.api import users
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 
-from handlers import master_config
+from ..handlers import master_config
 
-from model.jsonresults import JsonResults
-from model.testfile import TestFile
+from ..model.jsonresults import JsonResults
+from ..model.testfile import TestFile
 
 PARAM_MASTER = "master"
 PARAM_BUILDER = "builder"
@@ -54,7 +54,7 @@ PARAM_TEST_LIST_JSON = "testlistjson"
 PARAM_CALLBACK = "callback"
 
 
-def _replace_jsonp_callback(json, callback_name):
+def _replace_jsonp_callback(json, callback_name):  # pragma: no cover
   if callback_name and re.search(r"^[A-Za-z0-9_]+$", callback_name):
     if re.search(r"^[A-Za-z0-9_]+[(]", json):
       return re.sub(r"^[A-Za-z0-9_]+[(]", callback_name + "(", json)
@@ -67,7 +67,7 @@ class DeleteFile(webapp2.RequestHandler):  # pylint: disable=W0232
 
   """Delete test file for a given builder and name from datastore."""
 
-  def get(self):
+  def get(self):  # pragma: no cover
     key = self.request.get(PARAM_KEY)
     # Intentionally don't munge the master from deprecated names here.
     # Assume anyone deleting files wants explicit control.
@@ -96,7 +96,7 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
   """Get file content or list of files for given builder and name."""
 
   def _get_file_list(self, master, builder, test_type, build_number, name,
-      before, limit, callback_name=None):
+      before, limit, callback_name=None):  # pragma: no cover
     """Get and display a list of files that matches builder and file name.
 
     Args:
@@ -133,7 +133,8 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
                                             template_values))
 
   @staticmethod
-  def _get_file_content(master, builder, test_type, build_number, name):
+  def _get_file_content(master, builder, test_type, build_number,
+        name):  # pragma: no cover
     """Return content of the file that matches builder and file name.
 
     Args:
@@ -154,7 +155,7 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
     return files[0].data, files[0].date
 
   @staticmethod
-  def _get_file_content_from_key(key):
+  def _get_file_content_from_key(key):  # pragma: no cover
     record = db.get(key)
 
     if not record:
@@ -164,7 +165,7 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
     record.load_data()
     return record.data, record.date
 
-  def _serve_json(self, json, modified_date):
+  def _serve_json(self, json, modified_date):  # pragma: no cover
     if json:
       if "If-Modified-Since" in self.request.headers:
         old_date_string = self.request.headers["If-Modified-Since"]
@@ -184,7 +185,7 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
     else:
       self.error(404)
 
-  def get(self):
+  def get(self):  # pragma: no cover
     key = self.request.get(PARAM_KEY)
     master = self.request.get(PARAM_MASTER)
     builder = self.request.get(PARAM_BUILDER)
@@ -238,7 +239,7 @@ class Upload(webapp2.RequestHandler):  # pylint: disable=W0232
 
   """Upload test results file to datastore."""
 
-  def post(self):
+  def post(self):  # pragma: no cover
     file_params = self.request.POST.getall(PARAM_FILE)
     if not file_params:
       self.response.out.write("FAIL: missing upload file field.")
@@ -330,7 +331,7 @@ class UploadForm(webapp2.RequestHandler):  # pylint: disable=W0232
 
   """Show a form so user can upload a file."""
 
-  def get(self):
+  def get(self):  # pragma: no cover
     template_values = {
         "upload_url": "/testfile/upload",
     }

@@ -29,32 +29,26 @@
 # Allow this unittest to access _members.
 # pylint: disable=W0212
 
-try:
-  from model import jsonresults
-  from model.jsonresults import (
-    JsonResults,
-    TEXT,
-    FAIL,
-    LEAK,
-    PASS,
-    TIMEOUT,
-    IMAGE,
-    NO_DATA,
-    IMAGE_PLUS_TEXT,
-    CRASH,
-    NOTRUN,
-    TestFile,
-  )
-except ImportError:
-  print ("ERROR: Add the TestResultServer, google_appengine and yaml/lib "
-         "directories to your PYTHONPATH")
-  raise
-
-from handlers import master_config
-
 import json
 import logging
 import unittest
+
+from appengine.test_results.model import jsonresults
+from appengine.test_results.model.jsonresults import (
+  JsonResults,
+  TEXT,
+  FAIL,
+  LEAK,
+  PASS,
+  TIMEOUT,
+  IMAGE,
+  NO_DATA,
+  IMAGE_PLUS_TEXT,
+  CRASH,
+  NOTRUN,
+  TestFile,
+)
+from appengine.test_results.handlers import master_config
 
 from google.appengine.ext import testbed
 

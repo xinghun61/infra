@@ -53,7 +53,7 @@ _masters = {
 _master_name_to_url_name = dict((v['name'], k) for k, v in _masters.items())
 
 
-def getMaster(url_name):
+def getMaster(url_name):  # pragma: no cover
   result = _masters.get(url_name)
   if result:
     # Note: we copy off result['groups'] to ensure a full deep copy of the
@@ -66,13 +66,13 @@ def getMaster(url_name):
   return None
 
 
-def getMasterByMasterName(master_name):
+def getMasterByMasterName(master_name):  # pragma: no cover
   url_name = _master_name_to_url_name.get(master_name)
   if url_name:
     return getMaster(url_name)
   return None
 
 
-def getAllMasters():
+def getAllMasters():  # pragma: no cover
   for master in _masters:
     yield getMaster(master)

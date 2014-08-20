@@ -38,7 +38,7 @@ MAX_ENTRY_LEN = 1000 * 1000
 
 class ChunkData:
 
-  def __init__(self):
+  def __init__(self):  # pragma: no cover
     self.reused_key = None
     self.data_entry = None
     self.entry_future = None
@@ -54,15 +54,15 @@ class DataEntry(db.Model):  # pylint: disable=W0232
   data = db.BlobProperty()
 
   @classmethod
-  def get(cls, key):
+  def get(cls, key):  # pragma: no cover
     return db.get(key)
 
   @classmethod
-  def get_async(cls, key):
+  def get_async(cls, key):  # pragma: no cover
     return db.get_async(key)
 
   @classmethod
-  def delete_async(cls, key):
+  def delete_async(cls, key):  # pragma: no cover
     return db.delete_async(key)
 
 
@@ -83,12 +83,12 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
   data = None
 
   @staticmethod
-  def _get_chunk_indices(data_length):
+  def _get_chunk_indices(data_length):  # pragma: no cover
     nchunks = math.ceil(float(data_length) / MAX_ENTRY_LEN)
     return xrange(0, int(nchunks) * MAX_ENTRY_LEN, MAX_ENTRY_LEN)
 
   @staticmethod
-  def _convert_blob_keys(keys):
+  def _convert_blob_keys(keys):  # pragma: no cover
     converted_keys = []
     for key in keys:
       new_key = blobstore.BlobMigrationRecord.get_new_blob_key(key)
@@ -98,7 +98,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
         converted_keys.append(key)
     return keys
 
-  def delete_data(self, keys=None):
+  def delete_data(self, keys=None):  # pragma: no cover
     if not keys:
       keys = self._convert_blob_keys(self.data_keys)
     logging.info('Doing async delete of keys: %s', keys)
@@ -113,7 +113,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
     for delete_future in delete_futures:
       delete_future.get_result()
 
-  def save_data(self, data):
+  def save_data(self, data):  # pragma: no cover
     if not data:
       logging.warning("No data to save.")
       return False
@@ -179,7 +179,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
 
     return True
 
-  def load_data(self):
+  def load_data(self):  # pragma: no cover
     if not self.data_keys:
       logging.warning("No data to load.")
       return None
