@@ -108,9 +108,10 @@ def process_path(path, origin_repo, config):
             ('Cr-Mirrored-Commit', [commit.hsh]),
           ]),
         )
+
+      if synth_parent is not INVALID:
         origin_push[synthed] = synth_parent
         subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
-
       origin_push[processed] = ref.commit
 
   success = True
