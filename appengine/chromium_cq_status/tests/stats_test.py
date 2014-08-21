@@ -22,10 +22,10 @@ class TestStats(testing.AppengineTestCase):
     super(TestStats, self).setUp()
     self.mock_current_user(is_admin=True)
     for record in Record.query():
-      record.key.delete()
+      record.key.delete()  # pragma: no cover
     assert Record.query().count() == 0
     for stats in CQStats.query():
-      stats.key.delete()
+      stats.key.delete()  # pragma: no cover
     assert CQStats.query().count() == 0
 
   def tearDown(self):
@@ -160,8 +160,7 @@ class TestStats(testing.AppengineTestCase):
     ).put()
 
   def _assertStats(self, expected_stats, actual_stats=None):
-    if not actual_stats:
-      actual_stats = list(CQStats.query().order(CQStats.begin))
+    actual_stats = actual_stats or list(CQStats.query().order(CQStats.begin))
     self.assertEquals(len(expected_stats), len(actual_stats))
     oldMaxDiff = self.maxDiff
     self.maxDiff = None
