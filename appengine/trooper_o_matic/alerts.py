@@ -85,6 +85,7 @@ class AlertsHandler(webapp2.RequestHandler): # pragma: no cover
     status_dict = {}
     UpdateJsonForProject('blink', status_dict)
     UpdateJsonForProject('chromium', status_dict)
+    self.response.headers.add_header('Access-Control-Allow-Origin', '*')
     self.response.write(json.dumps(status_dict))
 
 
