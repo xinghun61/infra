@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <center>
+  <h2>Last {{ limit }} {{ app_name }} LKGR commits</h2>
+  <table border="1" cellpadding="5">
+  <tr bgcolor="#CCCCFF">
+    <td><b>Git Hash</b></td>
+    <td><b>Commit Position</b></td>
+    <td><b>When</b></td>
+  </tr>
+  {% for commit in commits %}
+    <tr>
+      <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{ commit.git_hash }}">{{ commit.git_hash }}</a>
+        <td>{{ commit.position_ref }}@{#{{ commit.position_num }}}</td>
+      <td>{{ commit.date|date:"D M d, H:i T " }}</td>
+    </tr>
+  {% endfor %}
+   </table>
+  </center>
+{% endblock %}
