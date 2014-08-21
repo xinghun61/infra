@@ -3,17 +3,23 @@
 # found in the LICENSE file.
 
 DEPS = [
+  'bot_update',
   'gclient',
   'path',
   'python',
+  'properties',
 ]
 
 def GenSteps(api):
   api.gclient.set_config('infra')
-  api.gclient.checkout()
+  api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
   api.python('test.py', api.path['checkout'].join('test.py'))
 
 
 def GenTests(api):
-  yield api.test('basic')
+  yield api.test('basic') + api.properties(
+    mastername='fake master',
+    buildername='fake builder',
+    slavename='fake slave',
+  )
