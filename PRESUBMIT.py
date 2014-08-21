@@ -63,12 +63,24 @@ def CommonChecks(input_api, output_api):
   return input_api.RunTests(tests)
 
 
+def CheckTests(input_api, output_api):
+  return input_api.RunTests([
+      input_api.Command(
+          name='All Tests',
+          cmd=input_api.os_path.join('ENV', 'bin', 'expect_tests'),
+          kwargs={'cwd': input_api.PresubmitLocalPath()},
+          message=output_api.PresubmitError
+      )
+  ])
+
+
 def CheckChangeOnUpload(input_api, output_api):
   return CommonChecks(input_api, output_api)
 
 
 def CheckChangeOnCommit(input_api, output_api):
   output = CommonChecks(input_api, output_api)
+  output.extend(CheckTests(input_api, output_api))
   output.extend(input_api.canned_checks.CheckOwners(input_api, output_api))
   return output
 
