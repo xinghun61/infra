@@ -121,6 +121,8 @@ class GitWrapper(VCSWrapper):
     self._number_cache.update(dict(zip(revs, nums)))
 
   def keyfunc(self, r):  # pragma: no cover
+    if r is NOREV:
+      return -1
     if not self.check_rev(r):
       raise ValueError('%s is not a Git revision.' % r)
     k = self._number_cache.get(r)
@@ -324,7 +326,14 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           continue
         revision = None
         for prop in this_build_data.get('properties', []):
-          if prop[0] == 'got_revision':
+          if type(repo) is SvnWrapper and prop[0] == 'got_revision':
+            revision = prop[1]
+            break
+          if type(repo) is GitWrapper and prop[0] == 'got_revision_git':
+            revision = prop[1]
+            break
+          # If repo is a project that depends on 'src'
+          if prop[0] == 'got_src_revision':
             revision = prop[1]
             break
         if not revision:
