@@ -49,7 +49,13 @@ class Repo(object):
   repo_path = property(lambda self: self._repo_path)
 
   def reify(self, share_from=None):
-    """Ensures the local mirror of this Repo exists."""
+    """Ensures the local mirror of this Repo exists.
+
+    Args:
+      share_from - Either a Repo, or a path to a git repo (on disk). This will
+                   cause objects/info/alternates to be set up to point to the
+                   other repo for objects.
+    """
     assert self.repos_dir is not None
 
     if not os.path.exists(self.repos_dir):
@@ -70,16 +76,17 @@ class Repo(object):
 
     share_objects = None
     if share_from:
-      assert isinstance(share_from, Repo)
-      assert share_from.repo_path, 'share_from target must be reify()\'d'
-      share_objects = os.path.join(share_from.repo_path, 'objects')
+      if isinstance(share_from, Repo):
+        assert share_from.repo_path, 'share_from target must be reify()\'d'
+        share_from = share_from.repo_path
+      share_objects = os.path.join(share_from, 'objects')
 
     if not os.path.isdir(rpath):
       self._log.debug('initializing %r -> %r', self, rpath)
       tmp_path = tempfile.mkdtemp(dir=self.repos_dir)
       args = ['clone', '--mirror', self.url, os.path.basename(tmp_path)]
       if share_objects:
-        args.extend(('--reference', share_from.repo_path))
+        args.extend(('--reference', os.path.dirname(share_objects)))
       self.run(*args, stdout=sys.stdout, stderr=sys.stderr, cwd=self.repos_dir)
       os.rename(os.path.join(self.repos_dir, tmp_path),
                 os.path.join(self.repos_dir, folder))

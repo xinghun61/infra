@@ -158,3 +158,19 @@ class TestRepo(test_util.TestBasis):
     self.capture_stdio(r2.reify, share_from=r)
     with open(os.path.join(r2.repo_path, 'objects', 'info', 'alternates')) as f:
       self.assertEqual(altfile, f.read())
+
+  def testShareObjectsStringPath(self):
+    r = self.mkRepo()
+    data = 'super-cool-blob'
+    hsh = r.intern(data)
+    # make a mirror of THAT
+    r2 = git2.Repo('file://' + r.repo_path)
+    r2.repos_dir = os.path.join(self.repos_dir, 'repos')
+    self.capture_stdio(r2.reify)
+
+    # blob is not there because it's a clone, but the blob wasn't in a commit
+    with self.assertRaises(git2.CalledProcessError):
+      r2.run('cat-file', 'blob', hsh)
+
+    self.capture_stdio(r2.reify, share_from=r.repo_path)
+    self.assertEqual(r2.run('cat-file', 'blob', hsh), data)
