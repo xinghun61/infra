@@ -355,7 +355,7 @@ class TestQuery(testing.AppengineTestCase):
 
 
 def _clear_records(): # pragma: no cover
-  for record in Record.query().fetch():
+  for record in Record.query():
     record.key.delete()
   assert Record.query().count() == 0
 

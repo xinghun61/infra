@@ -15,9 +15,6 @@ handlers:
 - url: /recent.*
   static_files: recent.html
   upload: recent.html
-- url: /set-bot-password
-  secure: always
-  script: main.app
 - url: /.*
   script: main.app
 
@@ -33,3 +30,9 @@ skip_files:
 - ^(.*/)?README$
 - ^(.*/)?Makefile$
 - ^bower_components/json5/test/.*$
+
+libraries:
+- name: webapp2
+  version: latest
+- name: numpy
+  version: latest

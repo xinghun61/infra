@@ -1,0 +1,10 @@
+cron:
+- description: Update daily CQ stats
+  url: /cron/update-daily-stats
+  schedule: every day 00:01
+  timezone: US/Pacific
+
+- description: Update weekly CQ stats
+  url: /cron/update-weekly-stats
+  schedule: every monday 00:01
+  timezone: US/Pacific

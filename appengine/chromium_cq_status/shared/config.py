@@ -13,4 +13,5 @@ AUTO_TAGGED_FIELDS = (
 )
 CQ_BOT_PASSWORD_KEY = 'cq_bot'
 MAXIMUM_QUERY_SIZE = 1000
+STATS_START_TIMESTAMP = 374400 # 1970-01-05T00:00-0800 (midnight Monday PST)
 VALID_EMAIL_RE = re.compile(r'^.*@(chromium\.org|google\.com)$')

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<pre>
+<form method="POST">
+Clear CQStats for:
+Projects: <input type="text" name="projects">
+From: <input type="text" name="begin" class="timestamp">
+Until: <input type="text" name="end" class="timestamp">
+This will clear any CQStats that lie within the time range provided.
+Times may be specified as YYYY-MM-DD and will be converted to POSIX timestamps on blur.
+Leaving the time fields blank will clear all CQStats for the given projects.
+<input type="submit">
+</form>
+
+<form method="POST">
+<input type="hidden" name="all" value="_">
+Clear all CQStats:
+<input type="submit">
+</form>
+</pre>
+<script>
+[].forEach.call(document.querySelectorAll('.timestamp'), function(input) {
+  input.addEventListener('blur', function() {
+    if (/^\d*$/.test(input.value))
+      return;
+    input.value = (new Date(input.value).getTime() / 1000) >> 0;
+  });
+})
+</script>
