@@ -345,13 +345,20 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           if prop[0] == 'got_src_revision':
             revision = prop[1]
             break
+        status = EvaluateBuildData(this_build_data)
+        if revision is None:
+          if status is STATUS.FAILURE or status is STATUS.RUNNING:
+            # The build failed too early or is still in early stage even before
+            # chromium revision was tagged. If we allow 'revision' fallback it
+            # will end up being non-chromium revision for non chromium projects.
+            # Or it may end up getting an SVN revision if the build is running.
+            continue
         if not revision:
           revision = this_build_data.get(
               'sourceStamp', {}).get('revision', None)
         if not revision:
           continue
         revisions.add(str(revision))
-        status = EvaluateBuildData(this_build_data)
         builder_history.append((revision, status, build_num))
       master_history[builder] = repo.sort(
           builder_history, keyfunc=lambda x: x[0])
