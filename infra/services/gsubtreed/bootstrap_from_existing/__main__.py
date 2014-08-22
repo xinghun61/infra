@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import sys
 
+from infra.libs import logs
 from infra.libs.git2 import Repo
 
 
@@ -55,13 +56,16 @@ def main(argv):
                  help=('The directory to use for git clones '
                        '(default: %(default)s)'))
   p.add_argument('subpath', nargs='*', help='subpaths to mirror from')
+  logs.add_argparse_options(p)
   opts = p.parse_args(argv)
+  logs.process_argparse_options(opts)
 
   # TODO(iannucci): make this work for other refs?
 
   repo = Repo(CHROMIUM_URL)
   repo.repos_dir = os.path.abspath(opts.repo_dir)
   repo.reify(share_from=opts.reference)
+  repo.run('fetch')
 
   plan = []
 
@@ -70,16 +74,16 @@ def main(argv):
 
   print 'Plan of attack: '
   for task in plan:
-    print '  Push ', '%s:%s' % (task.frm, task.to)
+    print '  Push ', '%s:%s' % (task.frm.hsh, task.to)
   print
 
-  if opts.dry_run or 'yes'.startswith(raw_input('Continue? [y/N]').lower()):
+  if opts.dry_run or not 'yes'.startswith(raw_input('Continue? [y/N] ').lower()):
     print 'Doing nothing'
     return 0
 
   args = ['push', 'origin']
   for task in plan:
-    args.append('%s:%s' % (task.frm, task.to))
+    args.append('%s:%s' % (task.frm.hsh, task.to))
 
   repo.run(*args)
 
