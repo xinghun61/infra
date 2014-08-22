@@ -51,7 +51,7 @@ class Commits(BasePage):
     """Adds a new revision status."""
     git_hash = self.request.get('hash')
     position_ref = self.request.get('position_ref')
-    position_num = self.request.get('position_num')
+    position_num = int(self.request.get('position_num'))
     if git_hash and position_ref and position_num:
       obj = Commit(git_hash=git_hash,
                    position_ref=position_ref, position_num=position_num)

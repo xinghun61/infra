@@ -41,9 +41,10 @@ class Git(object):
   def __call__(self, *args, **kwargs):  # pragma: no cover
     """Run a git command and returns its combined stdout and stderr."""
     cmd = ['git'] + [str(arg) for arg in args]
-    LOGGER.debug('Running %s', ' '.join(cmd))
+    kwargs.setdefault('cwd', self.path)
+    LOGGER.debug('Running `%s` with %s', ' '.join(cmd), kwargs)
     out = subprocess.check_output(
-        cmd, stderr=subprocess.STDOUT, cwd=self.path, **kwargs)
+        cmd, stderr=subprocess.STDOUT, **kwargs)
     return out
 
   @property
@@ -65,17 +66,27 @@ class Git(object):
     return self(*cmd)
 
   def number(self, *refs):  # pragma: no cover
-    """Get the generation number of each input ref.
+    """Get the commit position of each input ref.
 
     Args:
       @param refs: tuple of refishes to number
       @type refs: tuple
     Returns:
-      @type list of int
+      @type list of [str|None]
     """
-    cmd = ['number'] + list(refs)
-    out = self(*cmd)
-    return map(int, out.splitlines())
+    positions = []
+    for ref in refs:
+      cmd = ['show', '-s', '--format=%B', ref]
+      out = self(*cmd)
+      found = False
+      for line in reversed(out.splitlines()):
+        if line.startswith('Cr-Commit-Position: '):
+          positions.append(line.split()[-1].strip())
+          found = True
+          break
+      if not found:
+        positions.append(None)
+    return positions
 
 
 def NewGit(url, path, bare=False):  # pragma: no cover
@@ -112,9 +123,10 @@ def NewGit(url, path, bare=False):  # pragma: no cover
 
   # If the directory is already correctly configured for this repo, fetch.
   try:
-    if git('config', '--get', 'remote.origin.url').strip() != url:
+    curr_url = git('config', '--get', 'remote.origin.url').strip()
+    if curr_url != url:
       msg = ('A Git repo at %s exists, '
-             'but has %s configured as remote origin url.' % (path, url))
+             'but has %s configured as remote origin url.' % (path, curr_url))
       LOGGER.error(msg)
       raise GitException(msg)
     if git.bare != bare:

@@ -165,8 +165,10 @@ def main(argv):
   # Calculate new candidate LKGR.
   LOGGER.info('Calculating LKGR for project %s', args.project)
 
-  repo = lkgr_lib.VCSWrapper.new(config['source_vcs'], config['source_url'],
-                                 os.path.join('workdir', args.project))
+  repo = lkgr_lib.VCSWrapper.new(
+      config['source_vcs'], config['source_url'],
+      os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                   'workdir', args.project))
 
   if args.manual:
     candidate = args.manual
@@ -233,14 +235,12 @@ def main(argv):
     LOGGER.info('Candidate is%snewer than current %s LKGR!',
                 ' (forcefully) ' if args.force else ' ', args.project)
 
-    candidate_alt = repo.keyfunc(candidate)
-
     if args.write_to_file:
       lkgr_lib.WriteLKGR(candidate, args.write_to_file, args.dry_run)
 
     if args.post:
       lkgr_lib.PostLKGR(
-          config['status_url'], candidate, candidate_alt,
+          config['status_url'], candidate, repo.keyfunc(candidate),
           config['source_vcs'], config['password_file'], args.dry_run)
       if config['update_recipients']:
         subject = 'Updated %s LKGR to %s' % (args.project, candidate)

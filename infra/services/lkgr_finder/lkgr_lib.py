@@ -105,10 +105,11 @@ class VCSWrapper(object):
 class GitWrapper(VCSWrapper):
   _status_path = '/git-lkgr'
   _GIT_HASH_RE = re.compile('^[a-fA-F0-9]{40}$')
+  _GIT_POS_RE = re.compile('(\S+)@{#(\d+)}')
 
   def __init__(self, url, path):  # pragma: no cover
     self._git = git.NewGit(url, path)
-    self._number_cache = {}
+    self._position_cache = {}
     LOGGER.debug('Local git repository located at %s', self._git.path)
 
   def check_rev(self, r):  # pragma: no cover
@@ -117,20 +118,28 @@ class GitWrapper(VCSWrapper):
     return bool(self._GIT_HASH_RE.match(r))
 
   def _cache(self, *revs):  # pragma: no cover
-    nums = map(int, self._git.number(*revs))
-    self._number_cache.update(dict(zip(revs, nums)))
+    positions = self._git.number(*revs)
+    # We know we only care about revisions along a single branch.
+    keys = []
+    for pos in positions:
+      match = self._GIT_POS_RE.match(pos or '')
+      if match:
+        key = (int(match.group(2)), match.group(1))
+      else:
+        key = None
+      keys.append(key)
+    self._position_cache.update(dict(zip(revs, keys)))
 
   def keyfunc(self, r):  # pragma: no cover
-    if r is NOREV:
-      return -1
+    # Returns a tuple (commit-position-number, commit-position-ref).
     if not self.check_rev(r):
-      raise ValueError('%s is not a Git revision.' % r)
-    k = self._number_cache.get(r)
+      return (-1, '')
+    k = self._position_cache.get(r)
     if k is None:
       self._cache(r)
-      k = self._number_cache.get(r)
+      k = self._position_cache.get(r)
     if k is None:
-      raise LookupError('%s could not be found in the Git repo.' % r)
+      return (-1, '')
     return k
 
   def sort(self, revisions, keyfunc=None):  # pragma: no cover
@@ -512,7 +521,7 @@ def PostLKGR(status_url, lkgr, lkgr_alt, vcs, password_file, dry):  # pragma: no
   Args:
     status_url: the instance of chromium-status to post the lkgr to
     lkgr: the value of the new lkgr to post
-    lkgr_alt: an alternate lkgr value (such as the git number for the hash)
+    lkgr_alt: the keyfunc representation of the lkgr
     vcs: 'svn' or 'git', determines the parameters to use in the post
     password_file: path to a password file containing the shared secret
     dry: if True, don't actually make the post request
@@ -537,8 +546,9 @@ def PostLKGR(status_url, lkgr, lkgr_alt, vcs, password_file, dry):  # pragma: no
   }
   if vcs == 'git':
     params = {
-        'git_hash': lkgr,
-        'gen_number': lkgr_alt,
+        'hash': lkgr,
+        'position_ref': lkgr_alt[1],
+        'position_num': lkgr_alt[0],
     }
 
   if dry:
