@@ -152,6 +152,9 @@ class GitWrapper(VCSWrapper):
     dt = datetime.datetime.utcfromtimestamp(float(ts))
     return datetime.datetime.utcnow() - dt
 
+  def get_gap(self, revisions, r):  # pragma: no cover
+    latest = self.sort(revisions)[-1]
+    return self.keyfunc(latest)[0] - self.keyfunc(r)[0]
 
 class SvnWrapper(VCSWrapper):
   _status_path = '/lkgr'

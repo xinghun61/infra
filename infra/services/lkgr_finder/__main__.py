@@ -255,7 +255,7 @@ def main(argv):
     # No new LKGR found.
     LOGGER.info('Candidate is not newer than current %s LKGR.', args.project)
 
-    if not args.manual:
+    if not args.manual and lkgr:
       rev_behind = repo.get_gap(revisions, lkgr)
       LOGGER.info('LKGR is %d revisions behind', rev_behind)
 
