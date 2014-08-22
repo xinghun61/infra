@@ -74,8 +74,7 @@ class GTestSplitter(object):
     response = requests.get(base_url, params=params)
     if response.status_code == 200:
       test_results = flatten_test_results(response.json()['tests'])
-      return [name for name, results in test_results.items()
-          if results['expected'] != results['actual']]
+      return GTestSplitter.failed_tests(test_results)
 
     logging.warn('test-results missing %s %s %s, using GTestLogParser.' % (
         builder_name, build['number'], step['name']))
@@ -99,6 +98,26 @@ class GTestSplitter(object):
     logging.debug('First Line: %s' % stdio_log.split('\n')[0])
     return None
 
+  @staticmethod
+  def failed_tests(test_results):
+    """Returns any tests that that had actual results and were not expected.
+
+    Args:
+      test_results: Map from test name to results, which map the type
+        ('expected' or 'actual') to a string containing the results.
+
+    Returns:
+      List of tests names that fail expectations.
+    """
+    names = []
+    for name, results in test_results.items():
+      expected = set(results['expected'].split(' '))
+      actual = set(results['actual'].split(' '))
+      # These entries showed up in the actual list but not in expected.
+      unexpected = actual - expected
+      if len(unexpected) > 0:
+        names.append(name)
+    return names
 
 # Our Android tests produce very gtest-like output, but not
 # quite GTestLogParser-compatible (it parse the name of the
@@ -139,9 +158,9 @@ class JUnitSplitter(object):
     return None
 
 
-def decode_results(results, include_expected=False):
+def decode_results(results):
   """
-  Decode test results into passes, failures, or flakes.
+  Decode test results and generates failures if any failures exist.
 
   Each test has an expected result, an actual result, and a flag indicating
   whether the test harness considered the result unexpected. For example, an
@@ -161,25 +180,19 @@ def decode_results(results, include_expected=False):
   """
   tests = flatten_test_results(results['tests'])
   failures = {}
-  flakes = {}
-  passes = {}
   for (test, result) in tests.iteritems():
-    if include_expected or result.get('is_unexpected'):
+    if result.get('is_unexpected'):
       actual_results = result['actual'].split()
       expected_results = result['expected'].split()
       if len(actual_results) > 1:
-        if actual_results[1] in expected_results:
-          flakes[test] = actual_results[0]
-        else:
+        if actual_results[1] not in expected_results:
           # We report the first failure type back, even if the second
           # was more severe.
           failures[test] = actual_results[0]
-      elif actual_results[0] == 'PASS':
-        passes[test] = result
-      else:
+      elif actual_results[0] != 'PASS':
         failures[test] = actual_results[0]
 
-  return (passes, failures, flakes)
+  return failures
 
 
 def flatten_test_results(trie, prefix=None):
@@ -281,7 +294,7 @@ class LayoutTestsSplitter(object):
     json_string = jsonp_string[len('ADD_RESULTS('):-len(');')]
     try:
       results = json.loads(json_string)
-      _, failures, _ = decode_results(results)
+      failures = decode_results(results)
       if failures:
         return ['%s:%s' % (name, types) for name, types in failures.items()]
     except ValueError, e:

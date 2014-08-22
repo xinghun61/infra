@@ -6,8 +6,26 @@ import unittest
 
 from infra.tools.builder_alerts import reasons_splitter
 
-
 class SplitterTests(unittest.TestCase):
+
+  def test_failed_tests(self):
+    tests = {
+      'test1': {'actual': 'PASS', 'expected': 'PASS'},
+      'test2': {'actual': 'FAIL', 'expected': 'PASS'},
+      'test3': {'actual': 'PASS', 'expected': 'FAIL'},
+      'test4': {'actual': 'PASS', 'expected': 'FAIL PASS'},
+      'test5': {'actual': 'CRASH', 'expected': 'FAIL PASS'},
+      'test6': {'actual': 'CRASH', 'expected': 'CRASH PASS'}
+    }
+    failed = reasons_splitter.GTestSplitter.failed_tests(tests)
+    self.assertFalse('test1' in failed)
+    self.assertTrue('test2' in failed)
+    self.assertTrue('test3' in failed)
+    self.assertFalse('test4' in failed)
+    self.assertTrue('test5' in failed)
+    self.assertFalse('test6' in failed)
+
+
   def test_handles_step(self):
     name_tests = [
       ('compile', reasons_splitter.CompileSplitter),
@@ -68,27 +86,15 @@ class SplitterTests(unittest.TestCase):
                                 'b': result('PASS', 'bar'),
                                 'c': result('FAIL foo', 'foo'),
                                 'd': result('FAIL foo', 'bar')}}),
-                     ({'b': result('PASS', 'bar')},
-                      {'a': 'FAIL', 'd': 'FAIL'},
-                      {'c': 'FAIL'}))
+                      {'a': 'FAIL', 'd': 'FAIL'})
     # An unexpected failure is included.
     self.assertEquals(decode({'tests': {'a': result('FAIL foo', 'bar')}}),
-                      ({}, {'a': 'FAIL'}, {}))
-    # An unexpected success is included.
-    self.assertEquals(decode({'tests': {'a': result('PASS', 'bar')}}),
-                      ({'a': result('PASS', 'bar')}, {}, {}))
-    # Flakes are included.
-    self.assertEquals(decode({'tests': {'a': result('FAIL foo', 'foo')}}),
-                      ({}, {}, {'a': 'FAIL'}))
+                      {'a': 'FAIL'})
     # Failures with multiple results log the first.
     self.assertEquals(decode({'tests': {'a': result('FAIL foo', 'PASS bar')}}),
-                      ({}, {'a': 'FAIL'}, {}))
-    # Expected results aren't included by default...
+                      {'a': 'FAIL'})
+    # Expected results aren't included.
     self.assertEquals(decode({'tests': {
                                 'a': result('FAIL', 'PASS', False),
                                 'b': result('PASS', 'FAIL', False)}}),
-                      ({}, {}, {}))
-    # ...but can be
-    self.assertEquals(decode({'tests': {'a': result('FAIL', 'PASS', False)}},
-                             True),
-                      ({}, {'a': 'FAIL'}, {}))
+                      {})
