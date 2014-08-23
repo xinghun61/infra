@@ -1,7 +1,7 @@
 {
   'project': 'chromium_lkcr',
-  'source_vcs': 'svn',
-  'source_url': 'svn://svn.chromium.org/chrome/trunk/src',
+  'source_vcs': 'git',
+  'source_url': 'https://chromium.googlesource.com/chromium/src',
   'status_url': 'https://build.chromium.org/p/chromium/lkcr-status',
   'masters': {
     'chromium.win': {
