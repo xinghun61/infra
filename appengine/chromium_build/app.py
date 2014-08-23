@@ -312,13 +312,14 @@ class ConsoleData(object):
     self.category_order.setdefault(self.lastMasterSeen, [])
     self.category_data.setdefault(self.lastMasterSeen, {})
 
-  def SawRevision(self, revision):
-    self.lastRevisionSeen = revision
+  def SawRevision(self, revision, rev_number):
+    self.lastRevisionSeen = rev_number
     # TODO(cmp): Fix the order of the revision data in self.row_orderedkeys
     if self.lastRevisionSeen not in self.row_orderedkeys:
       logging.debug('SawRevision: guessing at row ordering')
       self.row_orderedkeys.append(self.lastRevisionSeen)
     self.row_data.setdefault(self.lastRevisionSeen, {})
+    self.last_row['revision'] = revision
     self.last_row.setdefault('status', {})
     self.last_row['status'].setdefault(self.lastMasterSeen, {})
 
@@ -345,8 +346,7 @@ class ConsoleData(object):
     self.category_count += 1
 
   def AddRow(self, row):
-    revision = row['rev_number']
-    self.SawRevision(revision)
+    self.SawRevision(row['rev'], row['rev_number'])
     revlink = BeautifulSoup(row['rev']).a['href']
     self.SetLink(revlink)
     name = BeautifulSoup(row['name'])
@@ -652,6 +652,15 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
 
   return page_data
 
+
+def get_position_number(commit_msg):
+  for line in reversed(commit_msg.split('<br />')):
+    logging.debug(line)
+    if line.startswith('Cr-Commit-Position: '):
+      return filter(str.isdigit, str(line.split('@')[-1]))
+  return '0'
+
+
 # W0613:600,28:parse_master: Unused argument 'remoteurl'
 # pylint: disable=W0613
 def parse_master(localpath, remoteurl, page_data=None):
@@ -724,7 +733,6 @@ def parse_master(localpath, remoteurl, page_data=None):
                                     row.td.contents)
     elif row.find('td', 'DevStatus'):
       curr_row['rev'] = unicode(row.find('td', 'DevRev').a)
-      curr_row['rev_number'] = unicode(row.find('td', 'DevRev').a.string)
       curr_row['name'] = ''.join(unicode(tag).strip() for tag in
                                  row.find('td', 'DevName').contents)
       curr_row['status'] = ''.join(unicode(box.table) for box in
@@ -733,6 +741,7 @@ def parse_master(localpath, remoteurl, page_data=None):
       if 'details' not in curr_row:
         curr_row['details'] = ''
       curr_row['fetch_timestamp'] = ts
+      curr_row['rev_number'] = get_position_number(curr_row['comment'])
       save_row(curr_row, localpath + '/' + curr_row['rev_number'])
       curr_row = {}
 

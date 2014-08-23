@@ -54,7 +54,9 @@
   {%- set extraclass = loop.cycle('', 'Alt') -%}
   <tr>
     <td width="1%" class="DevRev DevRevCollapse {{ extraclass }}">
-      <a href="{{ data.row_data[row]['revlink']|escape }}">{{ row }}</a>
+      <a href="{{ data.row_data[row]['revlink']|escape }}">
+        {{ data.row_data[row]['revision'] }}
+      </a>
     </td>
     <td width="1%" class="DevName {{extraclass}}">
       {{ data.row_data[row]['who'] }}
