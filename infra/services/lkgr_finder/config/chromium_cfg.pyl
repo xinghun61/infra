@@ -21,8 +21,6 @@
         'Mac Builder (dbg)',
         'Mac 10.6 Tests (dbg)(1)',
         'Mac 10.6 Tests (dbg)(2)',
-        'Mac 10.6 Tests (dbg)(3)',
-        'Mac 10.6 Tests (dbg)(4)',
         'iOS Device',
         'iOS Simulator (dbg)',
       ],
@@ -61,7 +59,6 @@
         'Linux ChromiumOS Tests (dbg)(1)',
         'Linux ChromiumOS Tests (dbg)(2)',
         'Linux ChromiumOS Tests (dbg)(3)',
-        'Linux ChromiumOS (Clang dbg)',
       ],
     },  # chromium.chromiumos
   },
