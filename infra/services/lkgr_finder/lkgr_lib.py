@@ -594,6 +594,21 @@ def WriteLKGR(lkgr, filename, dry):  # pragma: no cover
     f.write(str(lkgr))
 
 
+def ReadLKGR(filename):  # pragma: no cover
+  """Read the lkgr from a file.
+
+  Args:
+    filename: the path to the file to read from.
+  """
+  path = os.path.abspath(filename)
+  LOGGER.info('Reading lkgr from file at %s', path)
+  try:
+    with open(path, 'r') as f:
+      return f.read().strip()
+  except:
+    return None
+
+
 def WriteHTML(status_gen, filename, dry):  # pragma: no cover
   """Write the html status to a file.
 

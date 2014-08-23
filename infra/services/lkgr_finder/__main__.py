@@ -210,15 +210,29 @@ def main(argv):
   lkgr = None
   if not args.force:
     # Get old/current LKGR.
-    lkgr = lkgr_lib.FetchLKGR(config['status_url'] + repo.status_path)
-
-    if lkgr is None:
-      if args.email_errors:
-        lkgr_lib.SendMail(config['error_recipients'],
-                          'Failed to fetch %s LKGR' % args.project,
-                          '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
-      LOGGER.fatal('Failed to fetch current %s LKGR' % args.project)
-      return 1
+    if args.write_to_file:
+      # If the new lkgr should be written to a file, read the current one from
+      # the same file.
+      lkgr = lkgr_lib.ReadLKGR(args.write_to_file)
+      if lkgr is None:
+        if args.email_errors:
+          lkgr_lib.SendMail(config['error_recipients'],
+                            'Failed to read %s LKGR. Please seed an initial '
+                            'LKGR in file %s' %
+                            (args.project, args.write_to_file),
+                            '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
+        LOGGER.fatal('Failed to read current %s LKGR. Please seed an initial '
+                     'LKGR in file %s' % (args.project, args.write_to_file))
+        return 1
+    else:
+      lkgr = lkgr_lib.FetchLKGR(config['status_url'] + repo.status_path)
+      if lkgr is None:
+        if args.email_errors:
+          lkgr_lib.SendMail(config['error_recipients'],
+                            'Failed to fetch %s LKGR' % args.project,
+                            '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
+        LOGGER.fatal('Failed to fetch current %s LKGR' % args.project)
+        return 1
 
     if not repo.check_rev(lkgr):
       if args.email_errors:
