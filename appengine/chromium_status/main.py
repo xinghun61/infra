@@ -46,14 +46,8 @@ URLS = [
   ('/cq/([^/]+)/(\d+)/?', commit_queue.Issue),
   ('/cq/([^/]+)/(\d+)/(\d+)/?', commit_queue.Issue),
   ('/current/?', status.CurrentPage),
-  # TODO(agable): redirect /lkgr to /git-lkgr on migration day.
-  ('/lkgr/?', lkgr.LastKnownGoodRevisionSVN),
-  # TODO(agable): remove /svn-lkgr on migration day.
-  ('/svn-lkgr/?', lkgr.LastKnownGoodRevisionSVN),
-  # TODO(agable): switch this to git_lkgr.LaskKnownGoodRevisionGIT on flag day.
-  ('/git-lkgr/?', lkgr.LastKnownGoodRevisionGIT),
-  # TODO(agable): remove /pure-git-lkgr on migration day.
-  ('/pure-git-lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
+  ('/lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
+  ('/git-lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
   ('/login/?', login.Login),
   ('/profiling/?', profiling.Profiling),
   ('/recent-events/?', event_push.RecentEvents),
@@ -64,8 +58,7 @@ URLS = [
   ('/restricted/static_blobs/upload_internal/(.*)/?',
     static_blobs.UploadHandler),
   ('/restricted/status-processor/?', event_push.StatusProcessor),
-  # TODO(agable): redirect /revisions to /commits on migration day.
-  ('/revisions/?', lkgr.Revisions),
+  ('/revisions/?', git_lkgr.Commits),
   ('/commits/?', git_lkgr.Commits),
   ('/static_blobs/(.*)/?', static_blobs.ServeHandler),
   ('/static_blobs/list/?', static_blobs.ListPage),
