@@ -190,7 +190,7 @@ def decode_results(results):
           # was more severe.
           failures[test] = actual_results[0]
       elif actual_results[0] != 'PASS':
-        failures[test] = actual_results[0]
+        failures[test] = actual_results[0]  # pragma: no cover
 
   return failures
 

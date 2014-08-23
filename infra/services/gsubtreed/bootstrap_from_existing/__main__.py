@@ -77,7 +77,8 @@ def main(argv):
     print '  Push ', '%s:%s' % (task.frm.hsh, task.to)
   print
 
-  if opts.dry_run or not 'yes'.startswith(raw_input('Continue? [y/N] ').lower()):
+  prompt = 'yes'.startswith(raw_input('Continue? [y/N] ').lower())
+  if opts.dry_run or not prompt:
     print 'Doing nothing'
     return 0
 
