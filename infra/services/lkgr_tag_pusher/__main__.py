@@ -32,7 +32,7 @@ def parse_args(args):  # pragma: no cover
                             '(default: %(default)s)'))
   parser.add_argument('--spec_json', metavar='SPEC', required=True,
                       help=('JSON file with configuration: '
-                            '{<repo_url>: [{"ref" : <ref>, "url": <url>}]}'))
+                            '{<repo_url>: [{"refs" : [<ref>], "url": <url>}]}'))
   parser.add_argument('--json_output', metavar='PATH',
                       help='Path to write JSON with results of the run to')
   logs.add_argparse_options(parser)
@@ -57,20 +57,21 @@ def parse_args(args):  # pragma: no cover
       parser.error('Repo URL is missing a path?')
     # Ref and URL to fetch.
     for d in push_list:
-      ref = d.get('ref')
+      refs = d.get('refs') or []
       url_to_read = d.get('url')
-      if not ref or not ref.startswith('refs/'):
-        parser.error('Ref to push should start with refs/')
+      for ref in refs:
+        if not ref or not ref.startswith('refs/'):
+          parser.error('Ref to push should start with refs/')
       if not url_to_read or not url_to_read.startswith('https://'):
         parser.error('URL to read SHA1 from should use https')
 
-  # git2.Repo -> [(ref_to_push, url_to_read)].
+  # git2.Repo -> [([ref_to_push], url_to_read)].
   spec_by_repo = {}
   for url, push_list in spec.iteritems():
     repo = git2.Repo(url)
     repo.dry_run = opts.dry_run
     repo.repos_dir = opts.repo_dir
-    spec_by_repo[repo] = {(d['ref'], d['url']) for d in push_list}
+    spec_by_repo[repo] = [(d['refs'], d['url']) for d in push_list]
 
   return Options(spec_by_repo, loop_opts, opts.json_output)
 
@@ -81,12 +82,12 @@ def process_repo(repo, push_list):  # pragma: no cover
     repo.reify()
     repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
     to_push = {}
-    for ref, url_to_read in push_list:
+    for refs, url_to_read in push_list:
       # Grab SHA1 from URL and validate it looks OK.
       response = requests.get(url_to_read)
       if response.status_code != 200:
         logging.error(
-            'Failed to fetch %s for %s: %s', url_to_read, ref, response.text)
+            'Failed to fetch %s: %s', url_to_read, response.text)
         ok = False
         continue
       sha1 = response.text.strip().lower()
@@ -98,11 +99,12 @@ def process_repo(repo, push_list):  # pragma: no cover
         continue
       # Update the ref if required.
       commit = repo.get_commit(sha1)
-      if repo[ref].commit == commit:
-        logging.info('%s is already at %s', ref, sha1)
-      else:
-        to_push[repo[ref]] = commit
-    # Push new tags.
+      for ref in refs:
+        if repo[ref].commit == commit:
+          logging.info('%s is already at %s', ref, sha1)
+        else:
+          to_push[repo[ref]] = commit
+    # Push new refs.
     repo.fast_forward_push(to_push)
     return ok, to_push
   except Exception:
