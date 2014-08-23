@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-
 from infra.libs.git2.util import CalledProcessError
 from infra.libs.git2.util import INVALID
 
@@ -77,7 +75,10 @@ class Ref(object):
     self.repo.run('update-ref', self.ref, commit.hsh)
 
   def fast_forward(self, commit):
-    """Fast forward the local copy of the ref to |commit|."""
-    with open(os.devnull, 'w') as f:
-      self.repo.run('push', '.', '%s:%s' % (commit.hsh, self.ref),
-                    stderr=f)
+    """Fast forward the local copy of the ref to |commit|.
+
+    Allows fast forward from undefined to a value as well.
+    """
+    if self.commit is not INVALID:
+      self.repo.run('merge-base', '--is-ancestor', self.commit.hsh, commit.hsh)
+    self.update_to(commit)

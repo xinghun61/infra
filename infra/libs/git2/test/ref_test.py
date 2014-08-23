@@ -77,6 +77,14 @@ class TestRef(test_util.TestBasis):
     self.capture_stdio(O.fast_forward, S)
     self.assertEqual(O.commit.hsh, self.repo['S'])
 
+  def testFastForwardINVALID(self):
+    r = self.mkRepo()
+    O = r['refs/heads/watville']
+    self.assertIs(O.commit, git2.INVALID)
+    S = r.get_commit(self.repo['S'])
+    self.capture_stdio(O.fast_forward, S)
+    self.assertEqual(O.commit.hsh, self.repo['S'])
+
   def testUpdateTo(self):
     r = self.mkRepo()
     S = r['refs/heads/branch_S']
