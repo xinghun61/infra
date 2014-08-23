@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
 from infra.libs.git2.util import CalledProcessError
 from infra.libs.git2.util import INVALID
 
@@ -73,3 +75,9 @@ class Ref(object):
   def update_to(self, commit):
     """Update the local copy of the ref to |commit|."""
     self.repo.run('update-ref', self.ref, commit.hsh)
+
+  def fast_forward(self, commit):
+    """Fast forward the local copy of the ref to |commit|."""
+    with open(os.devnull, 'w') as f:
+      self.repo.run('push', '.', '%s:%s' % (commit.hsh, self.ref),
+                    stderr=f)

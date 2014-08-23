@@ -48,7 +48,7 @@ def no_real_ref(origin, _local, _config_ref, RUN, CHECKPOINT):
 def no_pending_tag(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
-  origin[PEND].update_to(base_commit)
+  origin[PEND].fast_forward(base_commit)
   origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Two commits in origin')
   RUN()
@@ -60,7 +60,7 @@ def bad_position_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
       'Base commit', footers={gnumbd.COMMIT_POSITION: ['BlobbyGumpus!']})
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Bad master commit footer')
@@ -74,7 +74,7 @@ def bad_svn_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
       'Base commit', footers={gnumbd.GIT_SVN_ID: ['BlobbyGumpus!']})
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Bad master commit footer')
@@ -88,7 +88,7 @@ def no_position_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
       'Base commit', footers={'Sup': ['Not a footer']})
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Master has no position footer')
@@ -102,7 +102,7 @@ def merge_commits_fail(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   o_commit = origin['refs/heads/other'].make_full_tree_commit(
     'Incoming merge!', footers=gnumbd_footers(origin['refs/heads/other'], 20))
@@ -112,7 +112,7 @@ def merge_commits_fail(origin, _local, _config_ref, RUN, CHECKPOINT):
       footers={k: None for k in base_commit.data.footers}
   )
 
-  origin[PEND].update_to(m_commit)
+  origin[PEND].fast_forward(m_commit)
   origin[PEND].make_full_tree_commit('Hello world')
 
   CHECKPOINT('The setup.')
@@ -135,9 +135,9 @@ def manual_merge_commits_ok(origin, _local, _config_ref, RUN, CHECKPOINT):
       message_lines=['Two for one!'],
       footers=footers
   )
-  origin[REAL].update_to(m_commit)
+  origin[REAL].fast_forward(m_commit)
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(m_commit)
+    origin[ref].fast_forward(m_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
 
@@ -163,7 +163,7 @@ def incoming_svn_id_drops(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Two commits in origin')
@@ -179,7 +179,7 @@ def normal_update(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Two commits')
@@ -195,7 +195,7 @@ def steady_state(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit('Hello world')
   RUN(include_log=False)
@@ -214,7 +214,7 @@ def tag_lagging_no_actual(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit('Hello world')
 
@@ -237,7 +237,7 @@ def tag_lagging(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
 
@@ -260,7 +260,7 @@ def multi_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit1 = origin[PEND].make_full_tree_commit('Hello world')
   user_commit2 = origin[PEND].make_full_tree_commit('Cat food')
@@ -285,7 +285,7 @@ def master_tag_ahead_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   RUN(include_log=False)
@@ -302,7 +302,7 @@ def normal_with_master_lag(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   RUN(include_log=False)
@@ -330,7 +330,7 @@ def master_ahead_tag_ahead_pending(origin, _local, _config_ref, RUN,
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[REAL].make_full_tree_commit('Directly landed commit!')
   origin[PEND_TAG].make_full_tree_commit('Tag ahead of pending')
@@ -346,7 +346,7 @@ def master_ahead(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   base_commit = origin[REAL].make_full_tree_commit('Directly landed commit!')
 
@@ -362,10 +362,10 @@ def master_behind(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit('Hello world')
-  origin[PEND_TAG].update_to(user_commit)
+  origin[PEND_TAG].fast_forward(user_commit)
   CHECKPOINT('Master should have new commit but does not')
   RUN()
   CHECKPOINT('Error and no change')
@@ -377,7 +377,7 @@ def master_mismatch_and_pend(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
   origin[PEND].make_full_tree_commit('Hello world')
 
   base_commit = origin[REAL].make_full_tree_commit('Directly landed commit!')
@@ -397,7 +397,7 @@ def branch(origin, _local, config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   CHECKPOINT('Pending commit', include_config=True)
@@ -406,7 +406,7 @@ def branch(origin, _local, config_ref, RUN, CHECKPOINT):
 
   # Build a new branch
   for ref in (BRANCH, BRANCH_TAG, BRANCH_PEND):
-    origin[ref].update_to(origin[REAL].commit)
+    origin[ref].fast_forward(origin[REAL].commit)
 
   origin[BRANCH_PEND].make_full_tree_commit('Branch commit!')
   CHECKPOINT('New branch with pending', include_config=True)
@@ -434,14 +434,14 @@ def branch_from_branch(origin, _local, config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit('Hello world')
   RUN(include_log=False)
 
   # Build a new branch
   for ref in (BRANCH, BRANCH_TAG, BRANCH_PEND):
-    origin[ref].update_to(origin[REAL].commit)
+    origin[ref].fast_forward(origin[REAL].commit)
 
   origin[BRANCH_PEND].make_full_tree_commit('Branch commit!')
   RUN(include_log=False)
@@ -452,7 +452,7 @@ def branch_from_branch(origin, _local, config_ref, RUN, CHECKPOINT):
   yo_branch_tag = BRANCH_TAG+'_yo'
   yo_branch_pend = BRANCH_PEND+'_yo'
   for ref in (yo_branch, yo_branch_tag, yo_branch_pend):
-    origin[ref].update_to(origin[BRANCH].commit)
+    origin[ref].fast_forward(origin[BRANCH].commit)
 
   origin[yo_branch_pend].make_full_tree_commit('Super branchey commit')
   CHECKPOINT('New pending commit for branch', include_config=True)
@@ -477,7 +477,7 @@ def extra_user_footer(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit(
       'Hello world', footers=collections.OrderedDict([
@@ -500,7 +500,7 @@ def extra_user_footer_bad(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit(
       'Hello world', footers=collections.OrderedDict([
@@ -521,7 +521,7 @@ def enforce_commit_timestamps(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=gnumbd_footers(origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   # cheat and rewind the TestClock
   origin._clock._time -= 100  # pylint: disable=W0212
@@ -553,7 +553,7 @@ def svn_mode_uses_svn_rev(origin, _local, config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit(
     'Hello world', footers=svn_footers(200))
@@ -576,7 +576,7 @@ def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Base commit', footers=svn_footers(100))
   for ref in (PEND, PEND_TAG):
-    origin[ref].update_to(base_commit)
+    origin[ref].fast_forward(base_commit)
 
   user_commit = origin[PEND].make_full_tree_commit(
     'Hello world', footers=svn_footers(200))

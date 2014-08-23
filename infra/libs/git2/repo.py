@@ -35,6 +35,7 @@ class Repo(object):
     self._repo_path = None
     self._commit_cache = collections.OrderedDict()
     self._log = LOGGER.getChild('Repo')
+    self._queued_refs = {}
 
   def __hash__(self):
     return hash((self._url, self._repo_path))
@@ -189,6 +190,15 @@ class Repo(object):
     return self.run(
         'hash-object', '-w', '-t', typ, '--stdin', indata=str(data)).strip()
 
+  def fetch(self):
+    """Update all local repo state to match remote.
+
+    Clears queue_fast_forward entries.
+    """
+    self._queued_refs = {}
+    LOGGER.debug('fetching %r', self)
+    self.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
+
   def fast_forward_push(self, refs_and_commits):
     """Push commits to refs on the remote, and also update refs' local copies.
 
@@ -201,10 +211,35 @@ class Repo(object):
     """
     if not refs_and_commits:
       return
+    assert all(r.repo is self for r in refs_and_commits)
     refspec = [
       '%s:%s' % (c.hsh, r.ref)
       for r, c in refs_and_commits.iteritems()
     ]
     self.run('push', 'origin', *refspec)
     for r, c in refs_and_commits.iteritems():
-      r.update_to(c)
+      r.fast_forward(c)
+
+  def queue_fast_forward(self, refs_and_commits):
+    """Update local refs, and keep track of which refs are updated.
+
+    Push all queued refs to remote when push_queued_fast_forwards() is called.
+
+    Refs names are specified the same as fast_forward_push()
+
+    Args:
+      refs_and_commits: dict {Ref object -> Commit to push to the ref}.
+    """
+    if not refs_and_commits:
+      return
+    assert all(r.repo is self for r in refs_and_commits)
+    for r, c in refs_and_commits.iteritems():
+      LOGGER.debug('Queuing %r -> %r', r.ref, c.hsh)
+      r.fast_forward(c)
+      self._queued_refs[r] = c
+
+  def push_queued_fast_forwards(self):
+    """Push refs->commits enqueued with queue_fast_forward."""
+    queued = self._queued_refs
+    self._queued_refs = {}
+    self.fast_forward_push(queued)

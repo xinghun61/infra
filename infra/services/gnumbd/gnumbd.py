@@ -13,7 +13,6 @@ ref.
 import collections
 import logging
 import re
-import sys
 import time
 
 from infra.libs import git2
@@ -330,7 +329,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
                    new_tag_val.hsh, real_ref.commit.hsh)
       return None
     new_commits = new_commits[i:]
-    pending_tag.repo.fast_forward_push({pending_tag: new_tag_val})
+    pending_tag.repo.queue_fast_forward({pending_tag: new_tag_val})
 
   if not new_commits:
     LOGGER.warn('Tag was lagging for %r by %d, but no new commits are pending',
@@ -372,7 +371,7 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
   # TODO(iannucci): The ACL rejection message for the real ref should point
   # users to the pending ref.
   assert content_of(pending_tag.commit) == content_of(real_ref.commit)
-  assert real_ref.repo == pending_tag.repo
+  assert real_ref.repo is pending_tag.repo
   repo = real_ref.repo
   real_parent = real_ref.commit
   for commit in new_commits:
@@ -388,8 +387,9 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
       pending_tag: commit,
     }
     for extra_ref in push_synth_extras:
-      to_push[extra_ref] = synth_commit
-    repo.fast_forward_push(to_push)
+      # convert the extra_refs to Ref's on the local repo
+      to_push[repo[extra_ref.ref]] = synth_commit
+    repo.queue_fast_forward(to_push)
 
     real_parent = synth_commit
     yield synth_commit
@@ -465,7 +465,8 @@ def inner_loop(repo, cref, clock=time):
 
   @returns tuple (bool success status, list of synthesized commits).
   """
-  LOGGER.debug('fetching %r', repo)
-  repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
+  repo.fetch()
   cref.evaluate()
-  return process_repo(repo, cref, clock)
+  commits = process_repo(repo, cref, clock)
+  repo.push_queued_fast_forwards()
+  return commits

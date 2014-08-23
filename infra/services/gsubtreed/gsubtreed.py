@@ -145,7 +145,7 @@ def process_path(path, origin_repo, config):
   # can happen completely independently. If we miss one, we'll catch it on the
   # next pass.
   try:
-    origin_repo.fast_forward_push(origin_push)
+    origin_repo.queue_fast_forward(origin_push)
   except Exception:  # pragma: no cover
     LOGGER.exception('Caught exception while pushing origin in process_path')
     success = False
@@ -162,8 +162,7 @@ def process_path(path, origin_repo, config):
 def inner_loop(origin_repo, config):
   """Returns (success, {path: #commits_synthesized})."""
 
-  LOGGER.debug('fetching %r', origin_repo)
-  origin_repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
+  origin_repo.fetch()
   config.evaluate()
 
   success = True
@@ -173,6 +172,7 @@ def inner_loop(origin_repo, config):
     try:
       path_success, num_synthed = process_path(path, origin_repo, config)
       success = path_success and success
+      origin_repo.push_queued_fast_forwards()
       processed[path] = num_synthed
     except Exception:  # pragma: no cover
       LOGGER.exception('Caught in inner_loop')

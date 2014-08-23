@@ -153,7 +153,7 @@ class TestRef(git2.Ref):
     parent.
     """
     commit = self.repo.make_full_tree_commit(self.commit, *args, **kwargs)
-    self.update_to(commit)
+    self.fast_forward(commit)
     return commit
 
   def make_commit(self, *args, **kwargs):
@@ -161,7 +161,7 @@ class TestRef(git2.Ref):
     the synthesized commit, and uses the current value of the ref as the parent.
     """
     commit = self.repo.make_commit(self.commit, *args, **kwargs)
-    self.update_to(commit)
+    self.fast_forward(commit)
     return commit
 
 

@@ -174,3 +174,48 @@ class TestRepo(test_util.TestBasis):
 
     self.capture_stdio(r2.reify, share_from=r.repo_path)
     self.assertEqual(r2.run('cat-file', 'blob', hsh), data)
+
+  def testFetch(self):
+    r = self.mkRepo()
+    br_O = self.repo.git('rev-parse', 'branch_O')[1].strip()
+    br_O_ref = r['refs/heads/branch_O']
+
+    with open(os.path.join(self.repo.repo_path, 'catfood'), 'w') as f:
+      print >> f, 'It\'s cat food'
+    self.repo.git('checkout', 'branch_O')
+    self.repo.git('add', 'catfood')
+    self.repo.git_commit('CF')
+    new = self.repo.git('rev-parse', 'HEAD')[1].strip()
+    self.assertEqual(br_O_ref.commit.hsh, br_O)
+    self.capture_stdio(r.fetch)
+    self.assertEqual(br_O_ref.commit.hsh, new)
+
+  def testQueuedNonFastForward(self):
+    r = self.mkRepo()
+    O = r['refs/heads/branch_O']
+    D = r.get_commit(self.repo['D'])
+    with self.assertRaises(git2.CalledProcessError):
+      r.queue_fast_forward({O: D})
+    self.assertEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['O'])
+
+  def testQueuedFastForward(self):
+    r = self.mkRepo()
+    O = r['refs/heads/branch_O']
+    S = r.get_commit(self.repo['S'])
+    self.capture_stdio(r.queue_fast_forward, {O: S})
+    self.assertEqual(O.commit.hsh, self.repo['S'])
+    self.assertNotEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['S'])
+    self.capture_stdio(r.push_queued_fast_forwards)
+    self.assertEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['S'])
+
+  def testEmptyQueuedFastForward(self):
+    r = self.mkRepo()
+    out, err = self.capture_stdio(r.queue_fast_forward, {})
+    self.assertEqual(out, '')
+    self.assertEqual(err, '')

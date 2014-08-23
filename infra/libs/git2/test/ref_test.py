@@ -70,12 +70,21 @@ class TestRef(test_util.TestBasis):
         [self.repo[c] for c in 'ABCDLMNO']
     )
 
-  def testUpdateTo(self):
+  def testFastForward(self):
     r = self.mkRepo()
     O = r['refs/heads/branch_O']
     S = r.get_commit(self.repo['S'])
-    self.capture_stdio(O.update_to, S)
+    self.capture_stdio(O.fast_forward, S)
     self.assertEqual(O.commit.hsh, self.repo['S'])
+
+  def testUpdateTo(self):
+    r = self.mkRepo()
+    S = r['refs/heads/branch_S']
+    O = r.get_commit(self.repo['O'])
+    with self.assertRaises(git2.CalledProcessError):
+      self.capture_stdio(S.fast_forward, O)
+    self.capture_stdio(S.update_to, O)
+    self.assertEqual(S.commit.hsh, self.repo['O'])
 
   def testHash(self):
     # ensure that Ref's can be used as keys in a dict
