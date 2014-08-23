@@ -49,9 +49,10 @@ class DebugStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
 class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
 
-  def __init__(self):
+  def __init__(self, viewvc):
     self.masters = []
     self.rows = []
+    self.viewvc = viewvc
 
   def master_cb(self, master):
     self.masters.append((master, []))
@@ -60,11 +61,10 @@ class HTMLStatusGenerator(StatusGeneratorStub):  # pragma: no cover
     self.masters[-1][1].append(builder)
 
   def revision_cb(self, revision):
-    tmpl = 'https://src.chromium.org/viewvc/chrome?view=rev&revision=%s'
     row = [
         revision,
         '<td class="revision"><a href="%s" target="_blank">%s</a></td>\n' % (
-            tmpl % urllib.quote(revision), revision)]
+            self.viewvc % urllib.quote(revision), revision)]
     self.rows.append(row)
 
   def build_cb(self, master, builder, status, build_num=None):

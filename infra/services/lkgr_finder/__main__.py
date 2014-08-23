@@ -197,7 +197,8 @@ def main(argv):
 
     status_gen = status_generator.StatusGeneratorStub()
     if args.html:
-      status_gen = status_generator.HTMLStatusGenerator()
+      viewvc = config.get('viewvc_url', config['source_url'] + '/+/%s')
+      status_gen = status_generator.HTMLStatusGenerator(viewvc=viewvc)
 
     candidate = lkgr_lib.FindLKGRCandidate(
         build_history, revisions, repo.keyfunc, status_gen)
