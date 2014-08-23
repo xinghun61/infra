@@ -361,6 +361,10 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
               'sourceStamp', {}).get('revision', None)
         if not revision:
           continue
+        if type(repo) is GitWrapper and len(str(revision)) < 40:
+          # Ignore stource stamps that don't contain a proper git hash. This
+          # can happen if very old build numbers get into the build data.
+          continue
         revisions.add(str(revision))
         builder_history.append((revision, status, build_num))
       master_history[builder] = repo.sort(
