@@ -94,22 +94,22 @@ class BuildCacheTest(TestCaseWithBuildCache):
             "Change"
           ],
           [
-            "got_nacl_revision",
-            13611,
+            "got_nacl_revision_cp",
+            "refs/heads/master@{#13611}",
             "Annotation(bot_update)"
           ],
           [
-            "got_nacl_revision_git",
+            "got_nacl_revision",
             "570e50beb76a2bdf6be4b345cbd47f225caf90af",
             "Annotation(bot_update)"
           ],
           [
-            "got_revision",
-            289623,
+            "got_revision_cp",
+            "refs/heads/master@{#289623}",
             "Annotation(bot_update)"
           ],
           [
-            "got_revision_git",
+            "got_revision",
             "7ddb6d39574175cdd237eca54537e84fb960d3b8",
             "Annotation(bot_update)"
           ],
@@ -119,32 +119,32 @@ class BuildCacheTest(TestCaseWithBuildCache):
             "Annotation(bot_update)"
           ],
           [
-            "got_v8_revision",
-            23117,
+            "got_v8_revision_cp",
+            "refs/heads/master@{#23117}",
             "Annotation(bot_update)"
           ],
           [
-            "got_v8_revision_git",
+            "got_v8_revision",
             "f284b29e37d97d7ee9128055862179dcbda7e398",
             "Annotation(bot_update)"
           ],
           [
-            "got_webkit_revision",
-            180191,
+            "got_webkit_revision_cp",
+            "refs/heads/master@{#180191}",
             "Annotation(bot_update)"
           ],
           [
-            "got_webkit_revision_git",
+            "got_webkit_revision",
             "9df9a9e66fed3921ec1f620f92ea7333a9c18122",
             "Annotation(bot_update)"
           ],
           [
-            "got_webrtc_revision",
-            6886,
+            "got_webrtc_revision_cp",
+            "refs/heads/master@{#6886}",
             "Annotation(bot_update)"
           ],
           [
-            "got_webrtc_revision_git",
+            "got_webrtc_revision",
             "c2ef523233552340785557abce1129a0f61537eb",
             "Annotation(bot_update)"
           ],
@@ -330,12 +330,13 @@ class RevisionsForMasterTest(TestCaseWithBuildCache):
       key = buildbot.cache_key_for_build(master_url, builder, build)
       cache.set(key, value)
     def build(index):
+      commit_position = 'refs/heads/master@{#%d}'
       return {
         'properties': [
-          ['got_revision', 100 + index],
-          ['got_webkit_revision', 200 + index],
-          ['got_v8_revision', 300 + index],
-          ['parent_got_nacl_revision', 400 + index]
+          ['got_revision_cp', commit_position % (100 + index)],
+          ['got_webkit_revision_cp', commit_position % (200 + index)],
+          ['got_v8_revision_cp', commit_position % (300 + index)],
+          ['got_nacl_revision_cp', commit_position % (400 + index)]
         ],
         'times': [ 1.0, 2.0 ],
         'index': index
@@ -377,3 +378,14 @@ class RevisionsForMasterTest(TestCaseWithBuildCache):
     self.assertEqual(b1['blink'], 203)
     self.assertEqual(b1['v8'], 303)
     self.assertEqual(b1['nacl'], 403)
+
+  # This is a silly test to get 100% code coverage. This
+  # never actually happens.
+  def test_revisions_from_build_no_properties(self):
+    build = {'properties': []}
+    self.assertEqual(buildbot.revisions_from_build(build), {
+      'v8': None,
+      'chromium': None,
+      'nacl': None,
+      'blink': None,
+    })

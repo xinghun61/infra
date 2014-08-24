@@ -8,6 +8,7 @@ import json
 import logging
 import operator
 import os
+import re
 import urllib
 import urlparse
 
@@ -150,32 +151,29 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
 # This effectively extracts the 'configuration' of the build
 # we could extend this beyond repo versions in the future.
 def revisions_from_build(build_json):
-  def _property_value(build_json, property_name):
+
+  def _revision(build_json, property_name):
     for prop_tuple in build_json['properties']:
       if prop_tuple[0] == property_name:
-        return prop_tuple[1]
+        value = prop_tuple[1]
+        # refs/heads/master@{#291569}
+        match = re.search('@\{\#(\d+)\}', value)
+        return int(match.group(1))
 
+  # TODO(ojan): Use the git hashes. That involves fixing all the code
+  # that does arithmetic on revisions in analysis.py.
   REVISION_VARIABLES = [
-    ('chromium', 'got_revision'),
-    ('blink', 'got_webkit_revision'),
-    ('v8', 'got_v8_revision'),
-    ('nacl', 'got_nacl_revision'),
+    ('chromium', 'got_revision_cp'),
+    ('blink', 'got_webkit_revision_cp'),
+    ('v8', 'got_v8_revision_cp'),
+    ('nacl', 'got_nacl_revision_cp'),
     # Skia, for whatever reason, isn't exposed in the buildbot properties so
     # don't bother to include it here.
   ]
 
   revisions = {}
   for repo_name, buildbot_property in REVISION_VARIABLES:
-    # This is epicly stupid:  'tester' builders have the wrong
-    # revision for 'got_foo_revision' and we have to use
-    # parent_got_foo_revision instead, but non-tester builders
-    # don't have the parent_ versions, so we have to fall back
-    # to got_foo_revision in those cases!
-    # Don't even think about using 'revision' that's wrong too.
-    revision = _property_value(build_json, 'parent_' + buildbot_property)
-    if not revision:
-      revision = _property_value(build_json, buildbot_property)
-    revisions[repo_name] = revision
+    revisions[repo_name] = _revision(build_json, buildbot_property)
   return revisions
 
 def latest_update_time_for_builder(last_build):
