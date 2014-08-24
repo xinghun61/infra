@@ -604,3 +604,35 @@ def cherry_pick_regression(origin, _local, _config_ref, RUN, CHECKPOINT):
   CHECKPOINT('OK commit with cherrypick (including cr-commit-pos)')
   RUN()
   CHECKPOINT('Cherry pick\'s number should be overwritten')
+
+
+@gnumbd_test
+def cherry_pick_x_regression(origin, _local, _config_ref, RUN, CHECKPOINT):
+  base_commit = origin[REAL].make_full_tree_commit(
+    'Numbered commit', footers=gnumbd_footers(
+      origin[REAL], 100))
+  for ref in (PEND, PEND_TAG):
+    origin[ref].fast_forward(base_commit)
+
+  origin[PEND].make_full_tree_commit(
+    'cherry pick\n'
+    '\n'
+    'Cr-Commit-Position: refs/other/branch@{#200}\n'
+    '(cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)'
+  )
+
+  origin[PEND].make_full_tree_commit('normal commit')
+
+  CHECKPOINT('OK commit with cherrypick (including cr-commit-pos)')
+  RUN()
+  CHECKPOINT('Cherry pick\'s number should be overwritten')
+
+  cp = str(origin[REAL].commit.parent.data).rstrip()
+  cp += '\n(cherry picked from commit %s)' % origin[REAL].commit.parent.hsh
+
+  origin[PEND].make_full_tree_commit(cp)
+  origin[PEND].make_full_tree_commit('another normal commit')
+
+  CHECKPOINT('Now we see a double-cherry-pick')
+  RUN()
+  CHECKPOINT('Should see two Cr-Original footers')

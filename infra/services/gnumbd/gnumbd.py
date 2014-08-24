@@ -16,6 +16,7 @@ import re
 import time
 
 from infra.libs import git2
+from infra.libs.git2 import data
 from infra.libs import infra_types
 from infra.libs.git2 import config_ref
 
@@ -29,6 +30,7 @@ COMMIT_POSITION = FOOTER_PREFIX + 'Commit-Position'
 FMT_COMMIT_POSITION = '{.ref}@{{#{:d}}}'.format
 BRANCHED_FROM = FOOTER_PREFIX + 'Branched-From'
 GIT_SVN_ID = 'git-svn-id'
+C_PICK = re.compile(r'\(cherry picked from commit [a-fA-F0-9]{40}\)')
 
 
 ################################################################################
@@ -82,6 +84,25 @@ class NoPositionData(Exception):
 # Commit Manipulation
 ################################################################################
 
+
+def tweak_cherry_pick(commit_data):
+  # if there are no parsable footers, and the last line of the message
+  # is a cherry pick notation, remove the cp line, and add it back with
+  # a blank line to the message.
+  d = commit_data
+  if not d.footers and C_PICK.match(d.message_lines[-1]):
+    cp_line = d.message_lines[-1]
+    d = d.alter(message_lines=d.message_lines[:-1])
+    d = data.CommitData.from_raw(str(d))
+
+    new_lines = d.message_lines
+    if not C_PICK.match(new_lines[-1]):
+      new_lines += ('',)
+    new_lines += (cp_line,)
+    d = d.alter(message_lines=new_lines)
+  return d
+
+
 def content_of(commit):
   """Calculates the content of |commit| such that a gnumbd-landed commit and
   the original commit will compare as equals. Returns the content as a
@@ -92,6 +113,7 @@ def content_of(commit):
     * The committer date
     * footers beginning with 'Cr-'
     * the 'git-svn-id' footer.
+    * the '(cherry picked from ...)' line.
 
   Stores a cached copy of the result data on the |commit| instance itself.
   """
@@ -100,11 +122,15 @@ def content_of(commit):
 
   if not hasattr(commit, '_cr_content'):
     d = commit.data
+
+    d = tweak_cherry_pick(d)
+
     footers = infra_types.thaw(d.footers)
     footers[GIT_SVN_ID] = None
     for k in footers.keys():
       if k.startswith(FOOTER_PREFIX):
         footers[k] = None
+
     commit._cr_content = d.alter(
         parents=(),
         committer=d.committer.alter(timestamp=git2.data.NULL_TIMESTAMP),
@@ -178,16 +204,22 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   @type git_svn_mode: bool
   @kind clock: implements .time(), used for testing determinism.
   """
+  repo = commit.repo
+  d = commit.data
+
+  # If commit ends with a cherrypick line, remove it, then re-parse it.
+  d = tweak_cherry_pick(d)
+
   # Remove all Cr- footers
-  sanitized_commit = commit.alter(
+  sanitized_d = d.alter(
     footers=collections.OrderedDict(
-      (k, None) for k in commit.data.footers
+      (k, None) for k in d.footers
       if k.startswith(FOOTER_PREFIX)))
 
   footers = collections.OrderedDict()
 
   # Original-ify all Cr footers
-  for key, value in commit.data.footers.iteritems():
+  for key, value in d.footers.iteritems():
     # In git_svn_mode drop git-svn-id silently, it's going to be added back.
     if key == GIT_SVN_ID:
       footers[key] = None
@@ -197,7 +229,7 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
 
   # Generate New footers.
   if git_svn_mode:
-    git_svn_footer = commit.data.footers.get(GIT_SVN_ID)
+    git_svn_footer = d.footers.get(GIT_SVN_ID)
     footers.update(generate_footers_from_git_svn_id(commit, new_parent, ref))
   else:
     git_svn_footer = None
@@ -207,11 +239,11 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   # parent, and reset the tz to UTC.
   parent_time = new_parent.data.committer.timestamp.secs
   new_parents = [] if new_parent is git2.INVALID else [new_parent.hsh]
-  new_committer = commit.data.committer.alter(
+  new_committer = d.committer.alter(
       timestamp=git2.data.NULL_TIMESTAMP.alter(
           secs=max(int(clock.time()), parent_time + 1)))
 
-  commit = sanitized_commit.alter(
+  d = sanitized_d.alter(
       parents=new_parents,
       committer=new_committer,
       footers=footers)
@@ -219,9 +251,9 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   # Slap back git-svn-id footer, do it as a separate operation to ensure it is
   # appended at the bottom of the footers list.
   if git_svn_mode and git_svn_footer:
-    commit = commit.alter(footers={GIT_SVN_ID: git_svn_footer})
+    d = d.alter(footers={GIT_SVN_ID: git_svn_footer})
 
-  return commit
+  return repo.get_commit(repo.intern(d, 'commit'))
 
 
 def generate_footers_from_parent(new_parent, ref):

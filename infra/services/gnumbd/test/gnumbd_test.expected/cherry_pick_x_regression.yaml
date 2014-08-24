@@ -1,0 +1,255 @@
+- - OK commit with cherrypick (including cr-commit-pos)
+  - origin:
+      refs/heads/master:
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''d5c6a86c6c35b279c123704818da2a2eb70a8401''
+    for ''22bb28e9668d69ed547ee7ab3ea805ed4996c546'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''e515a2c4969533824a86677efe0deb70fe5cc648''
+    for ''d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: d5c6a86c6c35b279c123704818da2a2eb70a8401
+    footers:
+      Cr-Original-Commit-Position:
+      - refs/other/branch@{#200}
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
+  - commit: e515a2c4969533824a86677efe0deb70fe5cc648
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#102}
+- - Cherry pick's number should be overwritten
+  - origin:
+      refs/heads/master:
+        e515a2c4969533824a86677efe0deb70fe5cc648:
+        - normal commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        d5c6a86c6c35b279c123704818da2a2eb70a8401:
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- - Now we see a double-cherry-pick
+  - origin:
+      refs/heads/master:
+        e515a2c4969533824a86677efe0deb70fe5cc648:
+        - normal commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        d5c6a86c6c35b279c123704818da2a2eb70a8401:
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c:
+        - another normal commit
+        152149b568bd593283b15c477372eb20c0b079a2:
+        - tree 5bfa85fe39384c975a4d1558a6811e2b47492603
+        - parent 714ce68e546fc501eac9c16faafb19a37309464b
+        - author Test User <test_user@example.com> 1402589366 +0800
+        - committer Test User <test_user@example.com> 1402589386 +0000
+        - ''
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        - (cherry picked from commit d5c6a86c6c35b279c123704818da2a2eb70a8401)
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+- log output:
+  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''e36353569a94b0e7abfa83c3c7df9cbd35dcc970''
+    for ''152149b568bd593283b15c477372eb20c0b079a2'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+  - 'INFO: Pushing synthesized commit ''0735365f97cf1220e8910ba2fba29713614fd5d6''
+    for ''757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
+  synthesized_commits:
+  - commit: e36353569a94b0e7abfa83c3c7df9cbd35dcc970
+    footers:
+      Cr-Original-Original-Commit-Position:
+      - refs/other/branch@{#200}
+      Cr-Original-Commit-Position:
+      - refs/heads/master@{#101}
+      Cr-Commit-Position:
+      - refs/heads/master@{#103}
+  - commit: 0735365f97cf1220e8910ba2fba29713614fd5d6
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#104}
+- - Should see two Cr-Original footers
+  - origin:
+      refs/heads/master:
+        0735365f97cf1220e8910ba2fba29713614fd5d6:
+        - another normal commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#104}'
+        e36353569a94b0e7abfa83c3c7df9cbd35dcc970:
+        - tree 5bfa85fe39384c975a4d1558a6811e2b47492603
+        - parent 714ce68e546fc501eac9c16faafb19a37309464b
+        - author Test User <test_user@example.com> 1402589366 +0800
+        - committer Test User <test_user@example.com> 1402589386 +0000
+        - ''
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - (cherry picked from commit d5c6a86c6c35b279c123704818da2a2eb70a8401)
+        - ''
+        - 'Cr-Original-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Original-Commit-Position: refs/heads/master@{#101}'
+        - 'Cr-Commit-Position: refs/heads/master@{#103}'
+        e515a2c4969533824a86677efe0deb70fe5cc648:
+        - normal commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        d5c6a86c6c35b279c123704818da2a2eb70a8401:
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c:
+        - another normal commit
+        152149b568bd593283b15c477372eb20c0b079a2:
+        - tree 5bfa85fe39384c975a4d1558a6811e2b47492603
+        - parent 714ce68e546fc501eac9c16faafb19a37309464b
+        - author Test User <test_user@example.com> 1402589366 +0800
+        - committer Test User <test_user@example.com> 1402589386 +0000
+        - ''
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        - (cherry picked from commit d5c6a86c6c35b279c123704818da2a2eb70a8401)
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c:
+        - another normal commit
+        152149b568bd593283b15c477372eb20c0b079a2:
+        - tree 5bfa85fe39384c975a4d1558a6811e2b47492603
+        - parent 714ce68e546fc501eac9c16faafb19a37309464b
+        - author Test User <test_user@example.com> 1402589366 +0800
+        - committer Test User <test_user@example.com> 1402589386 +0000
+        - ''
+        - cherry pick
+        - ''
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        - ''
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        - (cherry picked from commit d5c6a86c6c35b279c123704818da2a2eb70a8401)
+        d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:
+        - normal commit
+        22bb28e9668d69ed547ee7ab3ea805ed4996c546:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        - (cherry picked from commit 42a2ff8eb8b7167353587c52f4e06e67f87d4b60)
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
