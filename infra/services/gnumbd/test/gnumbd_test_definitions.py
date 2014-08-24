@@ -585,3 +585,21 @@ def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
   CHECKPOINT('Should have crazy-times')
   assert content_of(origin[REAL].commit) == content_of(user_commit)
   assert origin[REAL].commit.parent == base_commit
+
+
+@gnumbd_test
+def cherry_pick_regression(origin, _local, _config_ref, RUN, CHECKPOINT):
+  base_commit = origin[REAL].make_full_tree_commit(
+    'Numbered commit', footers=gnumbd_footers(
+      origin['refs/branch-heads/1'], 100))
+  for ref in (PEND, PEND_TAG):
+    origin[ref].fast_forward(base_commit)
+
+  origin[PEND].make_full_tree_commit(
+    'cherry pick', footers=gnumbd_footers(origin[REAL], 200))
+
+  origin[PEND].make_full_tree_commit('normal commit')
+
+  CHECKPOINT('OK commit with cherrypick (including cr-commit-pos)')
+  RUN()
+  CHECKPOINT('Cherry pick\'s number should be overwritten')
