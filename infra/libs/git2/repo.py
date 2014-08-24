@@ -199,15 +199,22 @@ class Repo(object):
     LOGGER.debug('fetching %r', self)
     self.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
 
-  def fast_forward_push(self, refs_and_commits):
+  def fast_forward_push(self, refs_and_commits, include_err=False):
     """Push commits to refs on the remote, and also update refs' local copies.
 
     Refs names are specified as refs on remote, i.e. push to
     Ref('refs/heads/master') would update 'refs/heads/master' on remote (and on
     local repo mirror), no ref name translation is happening.
 
+    Optionally captures the stderror output of the push command and returns
+    it as a string.
+
+    Returns the stdout of the push command, or the stdout+stderr of the push
+    command if |include_err| is specified.
+
     Args:
       refs_and_commits: dict {Ref object -> Commit to push to the ref}.
+      include_err: a boolean indicating to capture and return the push output.
     """
     if not refs_and_commits:
       return
@@ -216,9 +223,11 @@ class Repo(object):
       '%s:%s' % (c.hsh, r.ref)
       for r, c in refs_and_commits.iteritems()
     ]
-    self.run('push', 'origin', *refspec)
+    kwargs = {'stderr': sys.stdout} if include_err else {}
+    output = self.run('push', 'origin', *refspec, **kwargs)
     for r, c in refs_and_commits.iteritems():
       r.fast_forward(c)
+    return output
 
   def queue_fast_forward(self, refs_and_commits):
     """Update local refs, and keep track of which refs are updated.

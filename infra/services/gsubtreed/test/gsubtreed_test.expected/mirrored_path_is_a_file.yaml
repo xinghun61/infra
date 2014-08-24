@@ -28,6 +28,8 @@
     ''3f96fe56937903ad7158825d1d6cd20e20250c71'')'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''ab1dbcd7cff198979ff11618603f97846a5f4931'')'
   - 'INFO: found new tree ''6987dee8db61edb533b23f7d1dd464a43dd027a7'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Completed push for ''mirrored_path'''
 - inner_loop success: true
   processed:
     mirrored_path: 2

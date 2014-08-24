@@ -23,6 +23,8 @@
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Completed push for ''mirrored_path'''
 - inner_loop success: true
   processed:
     mirrored_path: 2
@@ -118,6 +120,8 @@
   - 'INFO: found new tree ''36d5f31d83dc46f1dd7f52c8f5282a82fed22965'''
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
   - 'INFO: starting with tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Completed push for ''mirrored_path'''
 - inner_loop success: true
   processed:
     mirrored_path: 1

@@ -6,7 +6,9 @@ import collections
 import logging
 import posixpath
 import sys
+import threading
 
+from infra.libs.git2 import CalledProcessError
 from infra.libs.git2 import INVALID
 from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
@@ -65,6 +67,35 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
 ################################################################################
 # Core functionality
 ################################################################################
+
+
+class Pusher(threading.Thread):
+  def __init__(self, name, dest_repo, pushspec):
+    super(Pusher, self).__init__()
+    self._name = name
+    self._repo = dest_repo
+    self._pushspec = pushspec
+
+    self._success = False
+    self._output = None
+
+  def run(self):
+    try:
+      self._output = self._repo.fast_forward_push(
+          self._pushspec, include_err=True)
+      self._success = True
+    except CalledProcessError as cpe:  # pragma: no cover
+      self._output = str(cpe)
+
+  def get_result(self):
+    self.join()
+    log = logging.info if self._success else logging.error
+    prefix = 'Completed' if self._success else 'FAILED'
+    log("%s push for %r", prefix, self._name)
+    if self._output:
+      log(self._output)  # pragma: no cover
+    return self._success
+
 
 def process_path(path, origin_repo, config):
   def join(prefix, ref):
@@ -147,16 +178,13 @@ def process_path(path, origin_repo, config):
   try:
     origin_repo.queue_fast_forward(origin_push)
   except Exception:  # pragma: no cover
-    LOGGER.exception('Caught exception while pushing origin in process_path')
+    LOGGER.exception('Caught exception while queuing origin in process_path')
     success = False
 
-  try:
-    subtree_repo.fast_forward_push(subtree_repo_push)
-  except Exception:  # pragma: no cover
-    LOGGER.exception('Caught exception while pushing subtree in process_path')
-    success = False
+  t = Pusher(path, subtree_repo, subtree_repo_push)
+  t.start()
 
-  return success, synthed_count
+  return success, synthed_count, t
 
 
 def inner_loop(origin_repo, config):
@@ -165,17 +193,25 @@ def inner_loop(origin_repo, config):
   origin_repo.fetch()
   config.evaluate()
 
+  threads = []
   success = True
   processed = {}
   for path in config['enabled_paths']:
     LOGGER.info('processing path %s', path)
     try:
-      path_success, num_synthed = process_path(path, origin_repo, config)
+      path_success, num_synthed, t = process_path(path, origin_repo, config)
+      threads.append(t)
       success = path_success and success
-      origin_repo.push_queued_fast_forwards()
       processed[path] = num_synthed
     except Exception:  # pragma: no cover
       LOGGER.exception('Caught in inner_loop')
       success = False
+
+  for t in threads:
+    rslt = t.get_result()
+    if not rslt:  # pragma: no cover
+      success = False
+
+  origin_repo.push_queued_fast_forwards()
 
   return success, processed
