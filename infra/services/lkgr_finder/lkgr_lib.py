@@ -338,14 +338,19 @@ def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
           continue
         revision = None
         for prop in this_build_data.get('properties', []):
-          if type(repo) is SvnWrapper and prop[0] == 'got_revision':
+          # Revision fallthrough:
+          # * If there is a got_src_revision, we probably want to use that,
+          #   because otherwise it wouldn't be specified.
+          # * If we're in Git and there's a got_revision_git, might as well
+          #   use that since it is guaranteed to be the righ type.
+          # * Finally, just use the default got_revision.
+          if prop[0] == 'got_src_revision':
             revision = prop[1]
             break
           if type(repo) is GitWrapper and prop[0] == 'got_revision_git':
             revision = prop[1]
             break
-          # If repo is a project that depends on 'src'
-          if prop[0] == 'got_src_revision':
+          if prop[0] == 'got_revision':
             revision = prop[1]
             break
         status = EvaluateBuildData(this_build_data)
