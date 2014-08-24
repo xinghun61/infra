@@ -512,7 +512,8 @@ def extra_user_footer_bad(origin, _local, _config_ref, RUN, CHECKPOINT):
   CHECKPOINT('The bogus footers should be gone')
   assert content_of(origin[REAL].commit) == content_of(user_commit)
   assert origin[REAL].commit.data.footers == {
-      gnumbd.COMMIT_POSITION: (gnumbd.FMT_COMMIT_POSITION(origin[REAL], 101),)
+      'Cr-Original-Double-Secret': ('I can impersonate the daemon!',),
+      gnumbd.COMMIT_POSITION: (gnumbd.FMT_COMMIT_POSITION(origin[REAL], 101),),
   }
 
 
@@ -591,12 +592,12 @@ def push_extra(origin, _local, config_ref, RUN, CHECKPOINT):
 def cherry_pick_regression(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
     'Numbered commit', footers=gnumbd_footers(
-      origin['refs/branch-heads/1'], 100))
+      origin[REAL], 100))
   for ref in (PEND, PEND_TAG):
     origin[ref].fast_forward(base_commit)
 
   origin[PEND].make_full_tree_commit(
-    'cherry pick', footers=gnumbd_footers(origin[REAL], 200))
+    'cherry pick', footers=gnumbd_footers(origin['refs/other/branch'], 200))
 
   origin[PEND].make_full_tree_commit('normal commit')
 

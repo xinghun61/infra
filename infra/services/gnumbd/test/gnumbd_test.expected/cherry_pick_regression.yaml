@@ -1,69 +1,81 @@
 - - OK commit with cherrypick (including cr-commit-pos)
   - origin:
       refs/heads/master:
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
+        714ce68e546fc501eac9c16faafb19a37309464b:
         - Numbered commit
         - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/pending-tags/heads/master:
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
+        714ce68e546fc501eac9c16faafb19a37309464b:
         - Numbered commit
         - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
       refs/pending/heads/master:
-        701d829c6f9526ad5f0e52a0ce4551178fed2ae2:
+        612199ad4e0a9e1cf6cce558a336f6be2a40b521:
         - normal commit
-        d520d30788766432fa9fea1876f3e77879d1c916:
+        ccfa1135714498a9fcac5d50c980d784002fdde6:
         - cherry pick
         - ''
-        - 'Cr-Commit-Position: refs/heads/master@{#200}'
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
         - Numbered commit
         - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
-  - 'WARNING: Dropping key on user commit d520d30788766432fa9fea1876f3e77879d1c916:
-    ''Cr-Commit-Position'' -> (''refs/heads/master@{#200}'',)'
-  - 'INFO: Pushing synthesized commit ''bcc709b9158de619a40c2242aed2932b1fd46144''
-    for ''d520d30788766432fa9fea1876f3e77879d1c916'' and pending_tag Ref(TestRepo(''local''),
+  - 'INFO: Pushing synthesized commit ''1b89062b5a7c8a745d81fab3d400a82dcc680a8f''
+    for ''ccfa1135714498a9fcac5d50c980d784002fdde6'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
-  - 'ERROR: NoPositionData No ''Cr-Commit-Position'' or git-svn-id found for Commit(TestRepo(''local''),
-    ''bcc709b9158de619a40c2242aed2932b1fd46144'')'
-- inner_loop success: false
+  - 'INFO: Pushing synthesized commit ''75e0de1ff47ca54f8a1094f581a86606636372a5''
+    for ''612199ad4e0a9e1cf6cce558a336f6be2a40b521'' and pending_tag Ref(TestRepo(''local''),
+    ''refs/pending-tags/heads/master'')'
+- inner_loop success: true
   synthesized_commits:
-  - commit: bcc709b9158de619a40c2242aed2932b1fd46144
+  - commit: 1b89062b5a7c8a745d81fab3d400a82dcc680a8f
     footers:
-      Cr-Branched-From:
-      - 1a9a11fa8d2573986aaf44ec618338e90894f9a9-refs/branch-heads/1@{#100}
+      Cr-Original-Commit-Position:
+      - refs/other/branch@{#200}
+      Cr-Commit-Position:
+      - refs/heads/master@{#101}
+  - commit: 75e0de1ff47ca54f8a1094f581a86606636372a5
+    footers:
+      Cr-Commit-Position:
+      - refs/heads/master@{#102}
 - - Cherry pick's number should be overwritten
   - origin:
       refs/heads/master:
-        bcc709b9158de619a40c2242aed2932b1fd46144:
-        - cherry pick
-        - ''
-        - 'Cr-Branched-From: 1a9a11fa8d2573986aaf44ec618338e90894f9a9-refs/branch-heads/1@{#100}'
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
-        - Numbered commit
-        - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
-      refs/pending-tags/heads/master:
-        d520d30788766432fa9fea1876f3e77879d1c916:
-        - cherry pick
-        - ''
-        - 'Cr-Commit-Position: refs/heads/master@{#200}'
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
-        - Numbered commit
-        - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
-      refs/pending/heads/master:
-        701d829c6f9526ad5f0e52a0ce4551178fed2ae2:
+        75e0de1ff47ca54f8a1094f581a86606636372a5:
         - normal commit
-        d520d30788766432fa9fea1876f3e77879d1c916:
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#102}'
+        1b89062b5a7c8a745d81fab3d400a82dcc680a8f:
         - cherry pick
         - ''
-        - 'Cr-Commit-Position: refs/heads/master@{#200}'
-        1a9a11fa8d2573986aaf44ec618338e90894f9a9:
+        - 'Cr-Original-Commit-Position: refs/other/branch@{#200}'
+        - 'Cr-Commit-Position: refs/heads/master@{#101}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
         - Numbered commit
         - ''
-        - 'Cr-Commit-Position: refs/branch-heads/1@{#100}'
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending-tags/heads/master:
+        612199ad4e0a9e1cf6cce558a336f6be2a40b521:
+        - normal commit
+        ccfa1135714498a9fcac5d50c980d784002fdde6:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'
+      refs/pending/heads/master:
+        612199ad4e0a9e1cf6cce558a336f6be2a40b521:
+        - normal commit
+        ccfa1135714498a9fcac5d50c980d784002fdde6:
+        - cherry pick
+        - ''
+        - 'Cr-Commit-Position: refs/other/branch@{#200}'
+        714ce68e546fc501eac9c16faafb19a37309464b:
+        - Numbered commit
+        - ''
+        - 'Cr-Commit-Position: refs/heads/master@{#100}'

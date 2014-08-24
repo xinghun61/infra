@@ -178,25 +178,30 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   @type git_svn_mode: bool
   @kind clock: implements .time(), used for testing determinism.
   """
-  # Generate new footers.
-  if git_svn_mode:
-    git_svn_footer = commit.data.footers.get(GIT_SVN_ID)
-    footers = generate_footers_from_git_svn_id(commit, new_parent, ref)
-  else:
-    git_svn_footer = None
-    footers = generate_footers_from_parent(new_parent, ref)
+  # Remove all Cr- footers
+  sanitized_commit = commit.alter(
+    footers=collections.OrderedDict(
+      (k, None) for k in commit.data.footers
+      if k.startswith(FOOTER_PREFIX)))
 
-  # TODO(iannucci): We could be more order-preserving of user supplied footers
-  # but I'm inclined not to care. This loop will be enough to keep stuff from
-  # Gerrit-landed commits.
+  footers = collections.OrderedDict()
+
+  # Original-ify all Cr footers
   for key, value in commit.data.footers.iteritems():
     # In git_svn_mode drop git-svn-id silently, it's going to be added back.
-    if git_svn_mode and key == GIT_SVN_ID:
+    if key == GIT_SVN_ID:
       footers[key] = None
-    elif key.startswith(FOOTER_PREFIX) or key == GIT_SVN_ID:
-      LOGGER.warn('Dropping key on user commit %s: %r -> %r',
-                  commit.hsh, key, value)
-      footers[key] = None
+    elif key.startswith(FOOTER_PREFIX):
+      orig_key = key.replace(FOOTER_PREFIX, FOOTER_PREFIX + 'Original-')
+      footers[orig_key] = value
+
+  # Generate New footers.
+  if git_svn_mode:
+    git_svn_footer = commit.data.footers.get(GIT_SVN_ID)
+    footers.update(generate_footers_from_git_svn_id(commit, new_parent, ref))
+  else:
+    git_svn_footer = None
+    footers.update(generate_footers_from_parent(new_parent, ref))
 
   # Ensure that every commit has a time which is at least 1 second after its
   # parent, and reset the tz to UTC.
@@ -206,7 +211,7 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
       timestamp=git2.data.NULL_TIMESTAMP.alter(
           secs=max(int(clock.time()), parent_time + 1)))
 
-  commit = commit.alter(
+  commit = sanitized_commit.alter(
       parents=new_parents,
       committer=new_committer,
       footers=footers)

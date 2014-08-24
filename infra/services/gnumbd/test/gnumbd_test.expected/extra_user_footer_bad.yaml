@@ -22,25 +22,24 @@
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
   - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
-  - 'WARNING: Dropping key on user commit 25efd930528d32f140214ad054561b5c3b0b4acd:
-    ''Cr-Double-Secret'' -> (''I can impersonate the daemon!'',)'
-  - 'WARNING: Dropping key on user commit 25efd930528d32f140214ad054561b5c3b0b4acd:
-    ''git-svn-id'' -> (''Well... this should never happen'',)'
-  - 'INFO: Pushing synthesized commit ''f4806ab03b8fc0f1210307cb750dd974e348a3ad''
+  - 'INFO: Pushing synthesized commit ''156a5777ca8cbf94172d6f1e392359b261fd5a02''
     for ''25efd930528d32f140214ad054561b5c3b0b4acd'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
-  - commit: f4806ab03b8fc0f1210307cb750dd974e348a3ad
+  - commit: 156a5777ca8cbf94172d6f1e392359b261fd5a02
     footers:
+      Cr-Original-Double-Secret:
+      - I can impersonate the daemon!
       Cr-Commit-Position:
       - refs/heads/master@{#101}
 - - The bogus footers should be gone
   - origin:
       refs/heads/master:
-        f4806ab03b8fc0f1210307cb750dd974e348a3ad:
+        156a5777ca8cbf94172d6f1e392359b261fd5a02:
         - Hello world
         - ''
+        - 'Cr-Original-Double-Secret: I can impersonate the daemon!'
         - 'Cr-Commit-Position: refs/heads/master@{#101}'
         f493b56e446fb46797fa09bbf5888790acb039f2:
         - Base commit
