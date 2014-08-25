@@ -406,6 +406,8 @@ class UpdateBuildQueue(webapp2.RequestHandler):
     for builder_name, builder_data in master_data['builders'].iteritems():
       taskqueue.add(url='/tasks/update_builder_success_rate/%s/%s/100' % (
           master, builder_name))
+      taskqueue.add(url='/tasks/update_builder_times/%s/%s/100' % (
+          master, builder_name))
 
       pending = builder_data['pendingBuilds']
       current = len(builder_data['currentBuilds'])
@@ -478,6 +480,45 @@ class UpdateBuilderSuccessRate(webapp2.RequestHandler):
                },
                y_label='percent',
                tags=[master, builder, 'success_rate', 'builder'])
+
+    return {
+        'data': builds_data,
+    }
+
+  def post(self, *args, **kwargs):
+    return self.get(*args, **kwargs)
+
+
+class UpdateBuilderTimes(webapp2.RequestHandler):
+  """Get information on the build times and update graphs.
+
+  Graphs the following information:
+    * Builder Times Stats
+  """
+  @render_json
+  def get(self, master, builder, num_builds):
+    url = ('https://chrome-build-extract.appspot.com/get_builds'
+           '?master=%s&builder=%s&num_builds=%s' % (
+               master, builder, num_builds))
+    builds_data = json.loads(urlfetch.fetch(url, deadline=600).content)
+
+    times = []
+
+    for build_data in builds_data['builds']:
+      # Only process complete builds.
+      if ('times' not in build_data or
+          len(build_data['times']) < 2 or
+          not build_data['times'][0] or
+          not build_data['times'][1]):
+        continue
+
+      times.append((build_data['times'][1] - build_data['times'][0]) / 60.0)
+
+    add_stats('%s Builder %s Times (Last %s Builds)' % (
+                   master, builder, num_builds),
+              times,
+              y_label='minutes',
+              tags=[master, builder, 'builder_time', 'builder'])
 
     return {
         'data': builds_data,
@@ -625,6 +666,7 @@ app = webapp2.WSGIApplication([
     ('/tasks/update_build_queue/(.+)', UpdateBuildQueue),
     ('/tasks/update_builder_success_rate/(.+)/(.+)/(.+)',
      UpdateBuilderSuccessRate),
+    ('/tasks/update_builder_times/(.+)/(.+)/(.+)', UpdateBuilderTimes),
     ('/view_graph/(.+)', ViewGraph),
     ('/list_graphs/(.+)/?', ListGraphs),
     ('/list_graphs/?', ListGraphs),
