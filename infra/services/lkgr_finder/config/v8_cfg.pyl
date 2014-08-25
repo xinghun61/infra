@@ -31,8 +31,7 @@
         'V8 Linux - nosse4',
         'V8 Linux - debug - nosse4',
         'V8 Linux - deadcode',
-        # TODO(mstarzinger, svenpanne): Figure out why gcmole turned unreliable.
-        # 'V8 Linux - gcmole',
+        'V8 Linux - gcmole',
         # TODO(machenbach): Disabled until enough slaves are available.
         # 'V8 Linux - interpreted regexp',
         'V8 Win32 - builder',
