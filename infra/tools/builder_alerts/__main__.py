@@ -64,7 +64,7 @@ def fetch_master_urls(gatekeeper, args):
 
 
 def main(args):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.CRITICAL)
 
   parser = argparse.ArgumentParser()
   parser.add_argument('data_url', action='store', nargs='*')
