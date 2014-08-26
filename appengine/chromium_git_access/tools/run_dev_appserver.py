@@ -15,7 +15,7 @@ COMPONENTS_DIR = os.path.abspath(os.path.join(
 sys.path.insert(0, COMPONENTS_DIR)
 sys.path.insert(0, os.path.join(COMPONENTS_DIR, 'third_party'))
 
-from tools import run_dev_appserver
+from tools import run_dev_appserver  # pylint: disable=E0611
 
 
 if __name__ == '__main__':

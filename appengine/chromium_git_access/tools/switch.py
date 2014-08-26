@@ -15,7 +15,7 @@ COMPONENTS_DIR = os.path.abspath(os.path.join(
 sys.path.insert(0, COMPONENTS_DIR)
 sys.path.insert(0, os.path.join(COMPONENTS_DIR, 'third_party'))
 
-from tools import switch
+from tools import switch  # pylint: disable=E0611
 
 
 if __name__ == '__main__':
