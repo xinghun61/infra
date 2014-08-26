@@ -71,6 +71,8 @@ def main(args):
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
+  gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
+  parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
   args = parser.parse_args(args)
 
   if not args.data_url:
@@ -82,7 +84,8 @@ def main(args):
     requests_cache.install_cache(backend='memory')
 
   # FIXME: gatekeeper_config should find gatekeeper.json for us.
-  gatekeeper_path = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
+  gatekeeper_path = os.path.abspath(args.gatekeeper)
+  print "Processsing gatekeeper json: %s" % (gatekeeper_path)
   gatekeeper = gatekeeper_ng_config.load_gatekeeper_config(gatekeeper_path)
   master_urls = fetch_master_urls(gatekeeper, args)
   start_time = datetime.datetime.now()
