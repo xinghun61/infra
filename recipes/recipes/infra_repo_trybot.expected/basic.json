@@ -67,6 +67,8 @@
       "python",
       "-u",
       "[DEPOT_TOOLS]/presubmit_support.py",
+      "--root",
+      "[SLAVE_BUILD]/infra",
       "--commit",
       "--verbose",
       "--verbose",
