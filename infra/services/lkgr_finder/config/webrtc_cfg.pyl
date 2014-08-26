@@ -2,7 +2,7 @@
   'project': 'webrtc',
   'source_vcs': 'svn',
   'source_url': 'http://webrtc.googlecode.com/svn/',
-  'viewvc_url': 'https://code.google.com/p/webrtc/source/browse/?r=%s'
+  'viewvc_url': 'https://code.google.com/p/webrtc/source/browse/?r=%s',
   'status_url': 'https://webrtc-status.appspot.com',
   'error_recipients': 'chrome-troopers+alerts@google.com,phoglund@google.com,kjellander@google.com',
   'masters': {

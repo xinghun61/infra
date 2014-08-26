@@ -2,7 +2,7 @@
   'project': 'v8',
   'source_vcs': 'svn',
   'source_url': 'http://v8.googlecode.com/svn/branches/bleeding_edge',
-  'viewvc_url': 'https://code.google.com/p/v8/source/browse/?r=%s'
+  'viewvc_url': 'https://code.google.com/p/v8/source/browse/?r=%s',
   'status_url': 'https://v8-status.appspot.com',
   'error_recipients': 'machenbach@google.com',
   'masters': {
