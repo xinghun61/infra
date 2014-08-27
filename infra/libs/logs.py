@@ -38,7 +38,7 @@ class InfraFormatter(logging.Formatter):
                                          '%(module)s:%(lineno)s] %(message)s')
 
 
-def add_handler(logger, handler=None, timezone='UTC', level=logging.INFO):
+def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
   """Configures and adds a handler to a logger, the standard way for infra.
 
   Arguments:
@@ -78,15 +78,20 @@ def add_argparse_options(parser, default_level=logging.WARN):
   g.set_defaults(log_level=default_level)
   g.add_argument('--quiet', action='store_const', const=logging.ERROR,
                  dest='log_level', help='Make the output quieter.')
+  g.add_argument('--warning', action='store_const', const=logging.WARN,
+                 dest='log_level',
+                 help='Set the output to an average verbosity.')
   g.add_argument('--verbose', action='store_const', const=logging.INFO,
                  dest='log_level', help='Make the output louder.')
   g.add_argument('--debug', action='store_const', const=logging.DEBUG,
                  dest='log_level', help='Make the output really loud.')
 
 
-def process_argparse_options(opts):
+def process_argparse_options(options, logger=None):
   """Handles logging argparse options added in 'add_argparse_options'.
 
   Configures 'logging' module.
   """
-  add_handler(logging.root, level=opts.log_level)
+  if logger is None:
+    logger = logging.root
+  add_handler(logger, level=options.log_level)
