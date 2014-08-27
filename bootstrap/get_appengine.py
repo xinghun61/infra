@@ -3,12 +3,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import logging
 import optparse
 import os
 import re
 import shutil
 import sys
+import time
 import tempfile
 import urllib2
 import zipfile
@@ -48,6 +50,7 @@ def extract_zip(z, root_path):
   count = 0
   for f in z.infolist():
     perm = (f.external_attr >> 16L) & 0777
+    mtime = time.mktime(datetime.datetime(*f.date_time).timetuple())
     filepath = os.path.join(root_path, f.filename)
     logging.debug('Extracting %s', f.filename)
     if f.filename.endswith('/'):
@@ -56,6 +59,7 @@ def extract_zip(z, root_path):
       z.extract(f, root_path)
       os.chmod(filepath, perm)
       count += 1
+    os.utime(filepath, (mtime, mtime))
   print('Extracted %d files' % count)
 
 
