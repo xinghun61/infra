@@ -6,11 +6,11 @@ import webapp2
 
 from google.appengine.api import users
 
-from cron import cq_stats
+from stats import analysis
 
 commands = { # pragma: no cover
-  'update-daily-stats': lambda: cq_stats.analyze_interval(days=1),
-  'update-weekly-stats': lambda: cq_stats.analyze_interval(days=7),
+  'update-daily-stats': lambda: analysis.analyze_interval(days=1),
+  'update-weekly-stats': lambda: analysis.analyze_interval(days=7),
 }
 
 class CronDispatch(webapp2.RequestHandler): # pragma: no cover

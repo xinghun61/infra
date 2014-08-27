@@ -12,6 +12,8 @@ AUTO_TAGGED_FIELDS = (
   'verification',
 )
 CQ_BOT_PASSWORD_KEY = 'cq_bot'
+DEFAULT_STATS_VIEW_DAYS = 100
 MAXIMUM_QUERY_SIZE = 1000
+TRYJOBVERIFIER = 'simple try job'
 STATS_START_TIMESTAMP = 374400 # 1970-01-05T00:00-0800 (midnight Monday PST)
 VALID_EMAIL_RE = re.compile(r'^.*@(chromium\.org|google\.com)$')

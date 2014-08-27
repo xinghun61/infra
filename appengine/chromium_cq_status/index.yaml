@@ -18,6 +18,18 @@ indexes:
 
 - kind: CQStats
   properties:
+  - name: interval_days
+  - name: project
+  - name: begin
+
+- kind: CQStats
+  properties:
+  - name: interval_days
+  - name: project
+  - name: end
+
+- kind: CQStats
+  properties:
   - name: project
   - name: end
 

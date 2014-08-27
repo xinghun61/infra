@@ -1,0 +1,177 @@
+<style>
+:root {
+  font-family: sans-serif;
+  overflow-y: scroll;
+}
+.index-link {
+  font-size: 80%%;
+}
+.graph {
+  position: relative;
+  width: 100%%;
+  height: 200px;
+  margin-bottom: 100px;
+}
+.chart {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 200px;
+}
+.legend {
+  position: absolute;
+  right: 0px;
+  width: 200px;
+}
+</style>
+<script src="/scripts/third_party/dygraph/dygraph-combined.js"></script>
+<h1>%(project)s %(period)s CQ Stats</h1>
+<div id="indexDiv"></div>
+<div id="emptyMessage" style="display: none">No stats found.</div>
+<script>
+window.addEventListener('load', function() {
+  var rawData = %(raw_data)s;
+  var graphs = buildGraphs(rawData);
+  drawGraphs(graphs, [
+    new Date(Date.now() - (15 * 24 * 60 * 60 * 1000)),
+    new Date(),
+  ]);
+});
+
+function buildGraphs(rawData) {
+  var graphs = {};
+  rawData.forEach(function(cqStats) {
+    var date = new Date(cqStats['end'] * 1000);
+    cqStats['stats'].forEach(function(stats) {
+      ensureGraph(graphs, stats);
+      updateGraph(graphs, date, stats);
+    });
+  });
+  return graphs;
+}
+
+function ensureGraph(graphs, stats) {
+  var name = stats['name'];
+  if (!graphs[name]) {
+    var graph = {
+      type: stats['type'],
+      name: stats['name'],
+      description: stats['description'],
+      rows: [],
+      dateRange: null,
+    };
+    if (graph.type === 'list') {
+      graph.unit = stats['unit'];
+      graph.multiplier = 1;
+      if (graph.unit === 'seconds') {
+        graph.unit = 'minutes';
+        graph.multiplier = 1 / 60;
+      }
+    }
+    graphs[name] = graph;
+  }
+}
+
+function updateGraph(graphs, date, stats) {
+  var graph = graphs[stats['name']];
+  console.assert(stats['type'] == graph.type);
+  if (!graph.dateRange) {
+    graph.dateRange = [date, date];
+  } else {
+    graph.dateRange[0] = Math.min(graph.dateRange[0], date);
+    graph.dateRange[1] = Math.max(graph.dateRange[1], date);
+  }
+  if (graph.type == 'count') {
+    graph.rows.push([
+      date,
+      stats['count'],
+    ]);
+  } else if (graph.type === 'list') {
+    graph.rows.push([
+      date,
+      stats['sample_size'],
+      stats['max'] * graph.multiplier,
+      stats['percentile_99'] * graph.multiplier,
+      stats['percentile_90'] * graph.multiplier,
+      stats['percentile_50'] * graph.multiplier,
+      stats['min'] * graph.multiplier,
+      stats['mean'] * graph.multiplier,
+    ]);
+  } else {
+    console.assert(false, 'Unknown type: ' + graph.type);
+  }
+}
+
+function drawGraphs(graphs, dateWindow) {
+  var anyGraphs = false;
+  Object.getOwnPropertyNames(graphs).sort().forEach(function(name) {
+    anyGraphs = true;
+    var title = name.replace(/_/g, ' ')
+          .replace(/^(\w)|\s(\w)/g, function(c) {return c.toUpperCase();});
+    var indexLink = createElement('index-link', indexDiv, 'a');
+    indexLink.textContent = title;
+    indexLink.href = '#' + name;
+    createElement('', indexDiv, 'br');
+    var graphDiv = createElement('graph', document.body);
+    var anchor = createElement('', graphDiv, 'a');
+    anchor.name = name;
+    var chartDiv = createElement('chart', graphDiv);
+    var legendDiv = createElement('legend', graphDiv);
+    var graph = graphs[name];
+    var options = {
+      title: title,
+      labels: ['Date'],
+      xlabel: graph.description,
+      labelsDiv: legendDiv,
+      legend: 'always',
+      labelsSeparateLines: true,
+      highlightSeriesOpts: {
+        strokeWidth: 2,
+        highlightCircleSize: 3,
+      },
+      highlightSeriesBackgroundAlpha: 1,
+      hideOverlayOnMouseOut: false,
+      showRangeSelector: true,
+      mousedown: Dygraph.Interaction.dragIsPanInteractionModel.mousedown,
+      mousemove: Dygraph.Interaction.dragIsPanInteractionModel.mousemove,
+      mouseup: Dygraph.Interaction.dragIsPanInteractionModel.mouseup,
+      dateWindow: [
+        Math.max(graph.dateRange[0], dateWindow[0]),
+        Math.min(graph.dateRange[1], dateWindow[1]),
+      ],
+    };
+    if (graph.type === 'count') {
+      options.labels.push('Count');
+      options.colors = ['#800'];
+    } else if (graph.type === 'list') {
+      options.labels.push('Sample Size');
+      options.labels.push('Max');
+      options.labels.push('99th Percentile');
+      options.labels.push('90th Percentile');
+      options.labels.push('50th Percentile');
+      options.labels.push('Min');
+      options.labels.push('Mean');
+      options.colors = ['#ccc', '#f00', '#f40', '#f80', '#fc0', '#08f', '#000'];
+      options.ylabel = graph.unit;
+    } else {
+      console.assert(false, 'Unknown type: ' + graph.type);
+    }
+    var dygraph = new Dygraph(chartDiv, graph.rows, options);
+    dygraph.setSelection(graph.rows.length - 1);
+  });
+  if (!anyGraphs) {
+    emptyMessage.style.display = 'block';
+  }
+}
+
+function createElement(className, parent, tagName) {
+  tagName = tagName || 'div'
+  var div = document.createElement(tagName);
+  if (className) {
+    div.classList.add(className);
+  }
+  parent.appendChild(div);
+  return div;
+}
+</script>
