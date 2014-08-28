@@ -2,10 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import calendar
 import numpy
 
 from google.appengine.ext import ndb
+
+from shared.utils import to_unix_timestamp
 
 class CountStats(ndb.Model): # pragma: no cover
   name = ndb.StringProperty(required=True)
@@ -123,8 +124,8 @@ class CQStats(ndb.Model): # pragma: no cover
     stats = [stats.to_dict() for stats in self.count_stats + self.list_stats]
     return {
       'interval_days': self.interval_days,
-      'begin': calendar.timegm(self.begin.timetuple()),
-      'end': calendar.timegm(self.end.timetuple()),
+      'begin': to_unix_timestamp(self.begin),
+      'end': to_unix_timestamp(self.end),
       'project': self.project,
       'stats': stats,
     }

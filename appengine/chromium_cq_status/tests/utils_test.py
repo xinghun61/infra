@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import os
 
 from appengine.path_mangler_hack import PathMangler
@@ -43,3 +44,17 @@ class TestUtils(testing.AppengineTestCase):
     self.assertEquals(
         '018d644a17b71b65cef51fa0a523a293f2b3266f',
         utils.password_sha1('cq'))
+
+  def test_to_unix_timestamp(self):
+    self.assertEquals(100,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(100)))
+    self.assertEquals(100.1,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(100.1)))
+    self.assertEquals(100.5,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(100.5)))
+    self.assertEquals(100.9,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(100.9)))
+    self.assertEquals(-100,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(-100)))
+    self.assertEquals(-100.1,
+        utils.to_unix_timestamp(datetime.utcfromtimestamp(-100.1)))

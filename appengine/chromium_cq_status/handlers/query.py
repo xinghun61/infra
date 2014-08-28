@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import json
-import calendar
 
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
@@ -20,6 +19,7 @@ from shared.parsing import (
   parse_timestamp,
   use_default,
 )
+from shared.utils import to_unix_timestamp
 from model.record import Record # pylint: disable-msg=E0611
 
 def execute_query(
@@ -58,7 +58,7 @@ def execute_query(
   results = []
   for record in records:
     result = record.to_dict(exclude=['timestamp'])
-    result['timestamp'] = calendar.timegm(record.timestamp.timetuple())
+    result['timestamp'] = to_unix_timestamp(record.timestamp)
     record_key = record.key.id()
     result['key'] = record_key if type(record_key) != long else None
     results.append(result)

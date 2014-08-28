@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import calendar
 import hashlib
 
 from google.appengine.api import users
@@ -19,3 +20,6 @@ def is_valid_user(): # pragma: no cover
 
 def password_sha1(password): # pragma: no cover
   return hashlib.sha1(password).hexdigest()
+
+def to_unix_timestamp(datetime): # pragma: no cover
+  return calendar.timegm(datetime.timetuple()) + datetime.microsecond / 1e6
