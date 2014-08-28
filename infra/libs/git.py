@@ -7,9 +7,11 @@
 import logging
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 from types import MethodType
 
@@ -166,11 +168,10 @@ def TmpGit(url, bare=False):  # pragma: no cover
 
   def __del__(git_obj):
     """Destroy the temporary directory."""
-    def rm_on_error(func, path, exc):
+    def rm_on_error(_func, _path, _exc):
       """Error handling function to enforce removal of readonly files."""
       if sys.platform.startswith('win'):
         # On windows, we'll just fall back to using cmd.exe's rd.
-        import time
         for _ in xrange(3):
           exitcode = subprocess.call(['cmd.exe', '/c', 'rd', '/q', '/s', path])
           if exitcode == 0:
@@ -180,7 +181,6 @@ def TmpGit(url, bare=False):  # pragma: no cover
           time.sleep(3)
         LOGGER.fatal('Failed to remove path %s', path)
       else:
-        import stat
         os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 777
         shutil.rmtree(path, ignore_errors=False, onerror=rm_on_error)
 

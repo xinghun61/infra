@@ -45,7 +45,6 @@ def CommonChecks(input_api, output_api):
     'W0231',  # __init__ method from base class is not called
     'W0232',  # Class has no __init__ method
     'W0403',  # Relative import 'bar', should be 'foo.bar'
-    'W0613',  # Unused argument
   ]
   infra_path = input_api.os_path.abspath(input_api.PresubmitLocalPath())
   appengine_path = input_api.os_path.join(
@@ -85,6 +84,7 @@ def CheckChangeOnCommit(input_api, output_api):
   return output
 
 
+# Unused argument - pylint: disable=W0613
 def GetPreferredTryMasters(project, change):
   return {
     'tryserver.chromium.linux': {

@@ -8,6 +8,9 @@ import unittest
 from infra.tools.builder_alerts import alert_builder
 
 
+# Unused argument - pylint: disable=W0613
+
+
 class AlertBuilderTest(unittest.TestCase):
   def test_compute_transition_and_failure_count_failure_to_failing_build(self):
     '''Tests that a failure that started in a run after there were already

@@ -8,6 +8,10 @@ import unittest
 
 from infra.tools.builder_alerts import buildbot
 
+
+# Unused argument - pylint: disable=W0613
+
+
 class TestCaseWithBuildCache(unittest.TestCase):
   def setUp(self):
     self.cache_path = tempfile.mkdtemp()

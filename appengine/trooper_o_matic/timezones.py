@@ -12,6 +12,9 @@ import datetime
 import time
 
 
+# Unused argument - pylint: disable=W0613
+
+
 class UtcTzinfo(datetime.tzinfo):
 
   def utcoffset(self, dt):

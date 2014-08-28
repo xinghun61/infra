@@ -468,6 +468,7 @@ class StatsApi(remote.Service):
                     path='aggregate/{step}', http_method='GET',
                     name='aggregate.get')
   # pylint: disable=R0201
+  # Unused argument - pylint: disable=W0613
   def get_aggregate(self, request):
     raise endpoints.InternalServerErrorException('Not yet implemented')
 
