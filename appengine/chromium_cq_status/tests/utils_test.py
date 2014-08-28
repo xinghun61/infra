@@ -2,14 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import sys
 import os
 
-# App Engine source file imports must be relative to their app's root.
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from appengine.utils import testing
-from appengine.chromium_cq_status.shared import utils
+from appengine.path_mangler_hack import PathMangler
+with PathMangler(os.path.dirname(os.path.dirname(__file__))):
+  from appengine.utils import testing
+  from appengine.chromium_cq_status.shared import utils
 
 class TestUtils(testing.AppengineTestCase):
   def test_filter_dict(self):

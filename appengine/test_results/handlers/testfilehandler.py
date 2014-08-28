@@ -35,10 +35,10 @@ from google.appengine.api import users
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 
-from ..handlers import master_config
+import master_config
 
-from ..model.jsonresults import JsonResults
-from ..model.testfile import TestFile
+from model.jsonresults import JsonResults
+from model.testfile import TestFile
 
 PARAM_MASTER = "master"
 PARAM_BUILDER = "builder"

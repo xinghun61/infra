@@ -31,7 +31,7 @@ import logging
 
 from google.appengine.ext import db
 
-from ..model.datastorefile import DataStoreFile
+from model.datastorefile import DataStoreFile
 
 
 class TestFile(DataStoreFile):  # pylint: disable=W0232

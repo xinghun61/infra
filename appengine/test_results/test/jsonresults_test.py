@@ -31,24 +31,27 @@
 
 import json
 import logging
+import os
 import unittest
 
-from appengine.test_results.model import jsonresults
-from appengine.test_results.model.jsonresults import (
-  JsonResults,
-  TEXT,
-  FAIL,
-  LEAK,
-  PASS,
-  TIMEOUT,
-  IMAGE,
-  NO_DATA,
-  IMAGE_PLUS_TEXT,
-  CRASH,
-  NOTRUN,
-  TestFile,
-)
-from appengine.test_results.handlers import master_config
+from appengine.path_mangler_hack import PathMangler
+with PathMangler(os.path.dirname(os.path.dirname(__file__))):
+    from appengine.test_results.model import jsonresults
+    from appengine.test_results.model.jsonresults import (
+      JsonResults,
+      TEXT,
+      FAIL,
+      LEAK,
+      PASS,
+      TIMEOUT,
+      IMAGE,
+      NO_DATA,
+      IMAGE_PLUS_TEXT,
+      CRASH,
+      NOTRUN,
+      TestFile,
+    )
+    from appengine.test_results.handlers import master_config
 
 from google.appengine.ext import testbed
 

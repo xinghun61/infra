@@ -5,14 +5,13 @@
 from datetime import datetime
 import json
 import os
-import sys
-
-# App Engine source file imports must be relative to their app's root.
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from appengine.utils import testing
-from appengine.chromium_cq_status import main
-from appengine.chromium_cq_status.model.record import Record
+
+from appengine.path_mangler_hack import PathMangler
+with PathMangler(os.path.dirname(os.path.dirname(__file__))):
+  from appengine.chromium_cq_status import main
+  from appengine.chromium_cq_status.model.record import Record
 
 class TestQuery(testing.AppengineTestCase):
   app_module = main.app

@@ -36,7 +36,7 @@ import webapp2
 
 from google.appengine.api import memcache
 
-from ..handlers import master_config
+import master_config
 
 # Buildbot steps that have test in the name, but don't run tests.
 NON_TEST_STEP_NAMES = [

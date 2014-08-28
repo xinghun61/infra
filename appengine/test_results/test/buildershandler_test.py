@@ -26,9 +26,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from appengine.test_results.handlers import buildershandler
 import logging
 import unittest
+
+from appengine.test_results.handlers import buildershandler
 
 # pylint: disable=C0301
 
