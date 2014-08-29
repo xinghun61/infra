@@ -427,6 +427,17 @@ class Summary(CQBasePage):
     self.DisplayTemplate('cq_owners.html', template_values, use_cache=True)
 
 
+def ordinal_number(i):
+  if (i % 10) == 1 and (i % 100) != 11:
+    return '%dst' % i
+  elif (i % 10) == 2 and (i % 100) != 12:
+    return '%dnd' % i
+  elif (i % 10) == 3 and (i % 100) != 13:
+    return '%drd' % i
+  else:
+    return '%dth' % i
+
+
 class TopScore(CQBasePage):
   def _get_as_html(self, _):
     owners = [
@@ -438,14 +449,7 @@ class TopScore(CQBasePage):
     ]
     owners.sort(key=lambda x: -x['points'])
     for i in xrange(len(owners)):
-      if i == 0:
-        owners[i]['rank'] = '1st'
-      elif i == 1:
-        owners[i]['rank'] = '2nd'
-      elif i == 2:
-        owners[i]['rank'] = '3rd'
-      else:
-        owners[i]['rank'] = '%dth' % (i + 1)
+      owners[i]['rank'] = ordinal_number(i + 1)
     template_values = self.InitializeTemplate(self.APP_NAME + ' Commit queue')
     template_values['data'] = owners
     self.DisplayTemplate('cq_top_score.html', template_values, use_cache=True)
