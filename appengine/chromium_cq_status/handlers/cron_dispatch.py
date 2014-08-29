@@ -15,5 +15,6 @@ commands = { # pragma: no cover
 
 class CronDispatch(webapp2.RequestHandler): # pragma: no cover
   def get(self, job): # pylint: disable-msg=W0221,R0201
-    assert users.is_current_user_admin()
+    assert (self.request.headers.get('X-AppEngine-Cron') or
+        users.is_current_user_admin())
     commands[job]()
