@@ -3,11 +3,11 @@
 # found in the LICENSE file.
 
 from datetime import datetime, timedelta
-import json
 import webapp2
 
 from model.cq_stats import CQStats # pylint: disable-msg=E0611
 from shared.config import DEFAULT_STATS_VIEW_DAYS
+from shared.utils import compressed_json_dumps
 
 class StatsViewer(webapp2.RequestHandler): # pragma: no cover
   def get(self, project, period):
@@ -26,5 +26,5 @@ class StatsViewer(webapp2.RequestHandler): # pragma: no cover
     self.response.write(open('templates/stats_viewer.html').read() % {
       'project': project.capitalize(),
       'period': period,
-      'raw_data': json.dumps(cq_stats_dicts),
+      'raw_data': compressed_json_dumps(cq_stats_dicts),
     })

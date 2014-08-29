@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
-
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
@@ -19,7 +17,7 @@ from shared.parsing import (
   parse_timestamp,
   use_default,
 )
-from shared.utils import to_unix_timestamp
+from shared.utils import to_unix_timestamp, compressed_json_dump
 from model.record import Record # pylint: disable-msg=E0611
 
 def execute_query(
@@ -95,4 +93,4 @@ class Query(webapp2.RequestHandler): # pragma: no cover
     results = execute_query(**data)
     self.response.headers.add_header("Access-Control-Allow-Origin", "*")
     self.response.headers.add_header('Content-Type', 'application/json')
-    json.dump(results, self.response)
+    compressed_json_dump(results, self.response)

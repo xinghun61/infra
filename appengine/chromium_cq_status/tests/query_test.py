@@ -21,6 +21,12 @@ class TestQuery(testing.AppengineTestCase):
     response = self.test_app.get('/query')
     self.assertEquals(response.headers['Access-Control-Allow-Origin'], '*')
 
+  def test_whitespace(self):
+    _clear_records()
+    response = self.test_app.get('/query')
+    self.assertEquals(39, len(response.body))
+    self.assertEquals(0, response.body.count(' '))
+
   def test_query_empty(self):
     _clear_records()
     response = self.test_app.get('/query')

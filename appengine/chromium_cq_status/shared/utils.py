@@ -4,10 +4,13 @@
 
 import calendar
 import hashlib
+import json
 
 from google.appengine.api import users
 
 from shared.config import VALID_EMAIL_RE
+
+compressed_separators = (',', ':')
 
 def filter_dict(d, keys): # pragma: no cover
   return {key: d[key] for key in d if key in keys}
@@ -23,3 +26,9 @@ def password_sha1(password): # pragma: no cover
 
 def to_unix_timestamp(datetime): # pragma: no cover
   return calendar.timegm(datetime.timetuple()) + datetime.microsecond / 1e6
+
+def compressed_json_dump(value, writer): # pragma: no cover
+  return json.dump(value, writer, separators=compressed_separators)
+
+def compressed_json_dumps(value): # pragma: no cover
+  return json.dumps(value, separators=compressed_separators)
