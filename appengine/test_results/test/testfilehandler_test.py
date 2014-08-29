@@ -10,12 +10,12 @@ from appengine.utils import testing
 
 from appengine.path_mangler_hack import PathMangler
 with PathMangler(os.path.dirname(os.path.dirname(__file__))):
-    from appengine.test_results import main
-    from appengine.test_results.handlers import master_config
-    from appengine.test_results.handlers import testfilehandler
-    from appengine.test_results.model.jsonresults import (
-      JSON_RESULTS_HIERARCHICAL_VERSION
-    )
+  from appengine.test_results import main
+  from appengine.test_results.handlers import master_config
+  from appengine.test_results.handlers import testfilehandler
+  from appengine.test_results.model.jsonresults import (
+    JSON_RESULTS_HIERARCHICAL_VERSION
+  )
 
 
 class TestFileHandlerTest(testing.AppengineTestCase):
