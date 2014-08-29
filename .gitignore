@@ -4,3 +4,4 @@ infra/ext/*/
 ENV
 .wheelcache
 appengine/swarming
+.DS_Store
