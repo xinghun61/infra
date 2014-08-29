@@ -1,0 +1,52 @@
+<input type="hidden" name="label1" value="Area-Webkit" >
+<input type="hidden" name="label9" value="Type-Bug" >
+
+<dl>
+  <dt>What specific URL can reproduce the problem?</dt>
+  <dd><input name="specific_url" size="80" 
+	     aria-label="What specific URL can reproduce the problem?" ></dd>
+
+
+  <dt>Does the problem occur on multiple sites?</dt>
+  <dd>
+   <select name="multiple_sites" aria-label="Does the problem occur on multiple sites?" >
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Yes">Yes - Please describe below</option>
+     <option value="No">No - Just that one URL</option>
+   </select>
+  </dd>
+
+
+  <dt>Is it a problem with a plugin?</dt>
+  <dd>
+   <select name="plugin" onchange="exposeQuestion(this.value, 'which_plugin', ['Yes'])"
+	   aria-label="Is it a problem with a plugin?" >
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Yes">Yes - Those darn plugins</option>
+     <option value="No">No - It's the browser itself</option>
+   </select>
+  </dd>
+
+
+  <dt id="q_which_plugin" class="conditional">Which plugin?</td>
+  <dd><input name="which_plugin" size="80" aria-label="Which plugin?" 
+	     id="a_which_plugin" class="conditional"></dd>
+
+
+  <dt>Does this feature work correctly other browsers?</dt>
+  <dd>
+   <select name="works_others" onchange="exposeQuestion(this.value, 'works_which', ['No'])"
+	   aria-label="Does this feature work correctly in other browsers?" >
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Yes">Yes - This is just a Chromium problem</option>
+     <option value="No">No - I can reproduce the problem in another browser</option>
+   </select>
+  </dd>
+
+
+  <dt id="q_works_which" class="conditional">Which other browsers (including versions) also have the problem?</td>
+  <dd><input name="works_which" size="80"  id="a_works_which" class="conditional"
+	     aria-label="Which other browsers (including versions) also have the problem?" ></dd>
+
+</dl>
+

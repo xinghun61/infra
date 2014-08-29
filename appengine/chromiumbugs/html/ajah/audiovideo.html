@@ -1,0 +1,37 @@
+<input type="hidden" name="label1" value="Cr-Internals-Media" >
+
+<dl>
+  <dt>What specific URL can reproduce the problem?</dt>
+  <dd><input name="specific_url" size="80" 
+	     aria-label="What specific URL can reproduce the problem?" ></dd>
+
+
+  <dt>Is it a problem with Flash or HTML5?</dt>
+  <dd>
+   <select name="flash_or_html5"
+	   aria-label="Is it a problem Flash or HTML5?" >
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Flash">Flash - Those darn plugins</option>
+     <option value="HTML5">HTML5 - It's the browser itself</option>
+     <option value="Both">Both - I tried it both ways</option>
+   </select>
+  </dd>
+
+
+  <dt>Does this feature work correctly in other browsers?</dt>
+  <dd>
+   <select name="works_others" onchange="exposeQuestion(this.value, 'works_which', ['No'])"
+	   aria-label="Does this feature work correctly other browsers?" >
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Yes">Yes - This is just a Chromium problem</option>
+     <option value="No">No - I can reproduce the problem in another browser</option>
+   </select>
+  </dd>
+
+
+  <dt id="q_works_which" class="conditional">Which other browsers (including versions) also have the problem?</td>
+  <dd><input name="works_which" size="80"  id="a_works_which" class="conditional"
+	     aria-label="Which other browsers (including versions) also have the problem?" ></dd>
+
+</dl>
+

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Example links to issue wizard</title>
+ <style>
+   li { margin: .5em; }
+ </style>
+</head>
+<body>
+
+<h2>Please try out the chromium new issue wizard</h2>
+
+
+<p>Use one of the following links to try out how the wizard would work in different use cases.</p>
+
+Normal cases:
+<ul>
+
+ <li><a href="wizard.html?role=&token=foo&continue=http%3A//dit2test.googleplex.com/p/chromium/issues/entry.do">
+     Non-member with expected query string parameters</a></li>
+
+ <li><a href="wizard.html?role=contributor&token=foo&continue=http%3A//dit2test.googleplex.com/p/chromium/issues/entry.do">
+     Chromium project member skips the wizard</a></li>
+
+</ul>
+
+Error cases:
+
+<ul>
+ <li><a href="wizard.html?role=&token=foo">
+     No continue parameter specified</a></li>
+
+ <li><a href="wizard.html?role=&token=foo&continue=http%3A//dit2test.googleplex.com/p/chromium/issues/entry">
+     Invalid continue parameter specified</a></li>
+
+ <li><a href="wizard.html?role=&token=foo&continue=entry.do">
+     Another invalid continue parameter specified</a></li>
+
+
+</ul>
+
+Note: For testing I am using dit2test.googleplex.com rather than
+code.google.com just to keep testing data out of the real issue tracker.
+
+
+</body>
+</html>

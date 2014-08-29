@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chromium issue wizard</title>
+  <link type="text/css" rel="stylesheet" href="static/css/wizard.css">
+</head>
+<body ONPOPSTATE="showStep(event.state)">
+
+
+<div class="headbg">
+<table style="padding:0px; margin: 0px 0px 10px 0px;" cellpadding="0" cellspacing="0">
+ <tr style="height: 58px;">
+ 
+ <td id="plogo">
+ <img src="http://code.google.com/p/chromium/logo"
+ alt="Logo" itemprop="image" width="48" height="48">
+ </td>
+ 
+ <td style="padding-left: 0.5em"> 
+ <div id="pname">
+ <a href="http://code.google.com/p/chromium/">chromium</a>
+ </div>
+ 
+ <div id="psum">
+ <a id="project_summary_link"
+ href="http://code.google.com/p/chromium/">An open-source browser project to help move the web forward.</a> 
+ </div>
+ 
+ </td> 
+ </tr>
+ </table>
+
+
+  <div id="maincol">
+  <form action="#" id="input_form">
+    <div id="step1" class="activestep"><div class="wizstep">
+      <h3>New issue wizard</h3>
+      <div class="wizbody">
+	<h4>Welcome</h4>
+
+        <p>We want you to enter the best possible issue report so that
+        the project team members can act on it effectively. The
+        following steps will help route your issue to the correct people.</p>
+      </div>
+
+
+      <div class="wizbody">
+	<h4>Chrome version</h4>
+
+        <p>Please confirm that the following version information is correct.</p>
+	<table>
+	  <tr>
+	    <th>Chrome version:</th>
+	    <td><input size="20" name="chromeversion" id="chromeversion" 
+		       value="[chrome_version]" aria-label="Chrome version" /></td>
+	  </tr>
+	  <tr>
+	    <th>Operating system:</th>
+	    <td>
+	      <select name="platform" id="platform" aria-label="operating system type" onchange="exposePlatformLine()">
+		<option value="OS-Windows" [is os_name "Windows"]selected="selected"[end]>Windows</option>
+		<option value="OS-Mac" [is os_name "Macintosh"]selected="selected"[end]>Macintosh</option>
+		<option value="OS-Linux" [is os_name "Linux"]selected="selected"[end]>Linux</option>
+		<option value="OS-Chrome" [is os_name "ChromeOS"]selected="selected"[end]>ChromeOS</option>
+		<option value="OS-Android" [is os_name "Android"]selected="selected"[end]>Android</option>
+		<option value="OS-iOS" [is os_name "iOS"]selected="selected"[end]>iOS</option>
+		<option value="Cr-ChromeFrame" [is os_name "chromeframe"]selected="selected"[end]>ChromeFrame</option>
+	      </select>
+	      <b>Version:</b>
+	      <input size="20" name="osversion" id="osversion" value="[os_version]" 
+		     aria-label="operating system version" />
+	      <b>Channel:</b>
+	      <select name="channel" id="channel" aria-label="Channel" >
+		<option value="n/a" selected="selected">Not sure</option>
+		<option value="stable">Stable</option>
+		<option value="beta">Beta</option>
+		<option value="dev">Dev</option>
+		<option value="canary">Canary</option>
+	      </select>
+            </td>
+	  </tr>
+	  <tr id="platformrow" style="display:none">
+	    <th style="vertical-align:top">Platform:</th>
+	    <td>
+	      <input size="70" name="aboutplatformline" id="aboutplatformline" value=""
+		     aria-label="Platform"><br>
+	      Please open a new tab, visit "chrome://version",
+	      and copy the "Platform" line to here.
+            </td>
+	  </tr>
+	  <tr>
+	    <th>Flash version:</th>
+	    <td>
+	      <input size="30" name="flashversion" id="flashversion" value=""
+		     aria-label="flash version">
+            </td>
+	  </tr>
+	</table>
+      </div>
+
+
+      <div class="wizbody">
+	<h4>Help avoid duplicate issue reports</h4>
+
+	<p class="required" style="padding-left:1em">
+	  <input type="checkbox" checked="checked"
+		 onclick="document.getElementById('next1').disabled = this.checked ? '' : 'disabled'"
+		 aria-label="I searched for existing issues that already report this problem"/>
+	  <label for="already_searched">
+	    I searched for 
+	    <a href="http://code.google.com/p/chromium/issues/list">existing issues</a>
+		that already report this problem.
+	  </label>
+	</p>        
+      </div>
+
+
+      <div class="wizcontrols">
+        <input type="button" value="Back" disabled="disabled" aria-label="Back" />
+        <span>Step 1 of 3</span>
+        <input type="button" value="Next" onclick="goStep(2)" aria-label="Next" 
+	       id="next1"/>
+	<a href="https://groups.google.com/a/chromium.org/group/chromium-dev/browse_thread/thread/5e48f707acf100dd#" class="feedback">Report a problem with this wizard</a>
+
+      </div>
+
+    </div></div>
+
+
+
+    
+    <div id="step2"><div class="wizstep">
+      <h3>New issue wizard</h3>
+      <div class="wizbody">
+	<h4>Which of the following best describes the issue that you are reporting?</h4>
+        <table cellspacing="4">
+	  <tr>
+	    <td><input type="radio" name="comp" value="UI" id="opt_1" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_1">UI</label></td>
+	    <td><label for="">Something is wrong with the user interface (e.g. tabs, context menus, etc...)</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Network / Downloading" id="opt_2" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_2">Network / Downloading</label></td>
+	    <td><label for="">Problems with accessing remote content</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Audio / Video" id="opt_3" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_3">Audio / Video</label></td>
+	    <td><label for="">Problems playing back sound or movies</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Content" id="opt_4" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_4">Content</label></td>
+	    <td><label for="">Web pages aren't displaying or working properly</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Apps" id="opt_5" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_5">Apps</label></td>
+	    <td><label for="">Problems with how the browser deals with apps from the webstore</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Extensions" id="opt_6" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_6">Extensions / Themes &nbsp; </label></td>
+	    <td><label for="">Issues related to extensions and themes from the webstore</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Webstore" id="opt_7" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_7">Webstore &nbsp; </label></td>
+	    <td><label for="">Problems with the Chrome WebStore itself</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Sync" id="opt_8" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_8">Sync</label></td>
+	    <td><label for="">Problems syncing data</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Enterprise" id="opt_9" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_9">Enterprise</label></td>
+	    <td><label for="">Policy configuration and deployment issues</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Installation" id="opt_10" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_10">Installation</label></td>
+	    <td><label for="">Problem installing Chrome</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Javascript" id="opt_11" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_11">Javascript</label></td>
+	    <td><label for="">Problems w/ the Javascript interpreter</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Developer Tools" id="opt_12" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_12">Developer Tools</label></td>
+	    <td><label for="">Problems w/ the Developer tool chain/ inspector</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Crashes" id="opt_13" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_13">Crashes</label></td>
+	    <td><label for="">The browser closes abruptly or I see "aw' snap" pages</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Security" id="opt_14" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_14">Security</label></td>
+	    <td><label for="">Issues related to the security of the browser</label></td>
+	  </tr>
+	  <tr>
+	    <td><input type="radio" name="comp" value="Other" id="opt_15" onclick="selectComp(this.value)" /></td>
+	    <td><label for="opt_15">Other</label></td>
+	    <td>Something not listed here</td></tr>
+	</table>
+      </div>
+      <div class="wizcontrols">
+        <input type="button" value="Back" onclick="goStep(1)" aria-label="Back" />
+        <span>Step 2 of 3</span>
+        <input type="button" value="Next" onclick="goStep(3, 'summary')" id="next2" 
+	       disabled="disabled" aria-label="Next" />
+      </div>
+    </div></div>
+
+
+    
+
+    
+    <div id="step3"><div class="wizstep">
+      <h3>New issue wizard</h3>
+      <div class="wizbody">	
+        <h4>Details for component <span id="component_name"></span>: </h4>
+	
+	<dl>
+	  <dt>Please enter a one-line summary:</dt>
+	  <dd class="required">
+	    <input id="summary" name="summary" size="80" aria-label="Please enter a one-line summary" >
+	  </dd>
+	</dl>
+	
+        <div id="detail_area">Loading...</div>
+	 
+	<dl>
+	  <dt>Steps to reproduce the problem:</dt>
+	  <dd class="required">
+	    <textarea name="repro_steps" cols="60" rows="4"  
+		      aria-label="Steps to reproduce the problem" >1. 
+2. 
+3. 
+</textarea>
+	  </dd>
+
+
+	  <dt>What is the expected behavior?</dt>
+	  <dd>
+	    <textarea name="expected" cols="60" rows="4" 
+		      aria-label="What is the expected behavior?"
+		      ></textarea>
+	  </dd>
+
+
+	  <dt>What went wrong?</dt>
+	  <dd class="required">
+	    <textarea name="actual" cols="60" rows="6" 
+		      aria-label="What went wrong?"
+		      ></textarea>
+	    <div id="attachmentarea"></div>
+	    <div id="attachprompt">
+	      <img width="15" height="15" src="/static/images/paperclip.gif" border="0"
+		   ><a href="#" onclick="addAttachmentFields(); return false" id="attachafile">Attach a file</a>
+	      <span id="attachmaxsize" style="margin-left:1.2em; display:none">Max. attachments: 10.0 MB</span>
+	    </div>
+	    <p id="actual_instructions"></p>
+	  </dd>
+
+
+	  <dt>Did this work before?</dt>
+	  <dd>
+	    <select name="worked_before" onchange="exposeQuestion(this.value, 'when_worked', ['Yes'])"
+		    aria-label="Did this work before?" >
+	      <option value="N/A" selected="selected">Not applicable or don't know</option>
+	      <option value="Yes">Yes - This is a regression</option>
+	      <option value="No">No - I think it never worked</option>
+	    </select>
+	  </dd>
+
+
+	  <dt id="q_when_worked" class="conditional">When did it work?</dt>
+	  <dd><input name="when_worked" size="80" id="a_when_worked" class="conditional"
+		     aria-label="When did it work?"></dd>
+	  
+
+	  <dt>Any other comments?</dt>
+	  <dd>
+	    <textarea name="other_comments" cols="60" rows="4" 
+		      aria-label="Any other comments?" ></textarea>
+	  </dd>
+	</dl>
+      </div>
+      <div class="wizcontrols">	  
+          <input type="button" value="Back" onclick="goStep(2)" aria-label="Back" />
+          <span>Step 3 of 3</span>
+          <input type="button" value="Submit" id="submit_button" 
+		 onclick="stuffDataAndSubmit();" disabled="disabled" 
+		 aria-label="Submit" />
+      </div>
+
+      <p class="note" id="actual_password_warning"></p>
+      <div id="default_password_warning" style="display:none">
+	Note: Please do not include passwords or personal information that you do 
+	not intend to share.
+      </div>
+    </div></div>
+ 
+  </form>
+  </div>
+
+
+  <div id="debug"></div>
+
+  <script type="text/javascript" src="static/js/flash_detect.js?version=[format "url"][app_version][end]"></script>
+  <script type="text/javascript" src="static/js/wizard.js?version=[format "url"][app_version][end]"></script>
+
+
+<form action="[continue_url]" method="post" enctype="multipart/form-data" id="submit_form">
+  <input type="hidden" name="token" value="[token]" />
+  <input type="hidden" name="star" id="star" value="1" />
+  <input type="hidden" name="summary" id="post_summary" value="" />
+  <input type="hidden" name="comment" id="post_comment" value="" />
+  <input type="hidden" name="status" id="post_status" value="Unconfirmed" />
+  <input type="hidden" name="owner" id="post_owner" value="" />
+  <input type="hidden" name="cc" id="post_cc" value="" />
+  <input type="hidden" name="label" id="post_label1" value="" />
+  <input type="hidden" name="label" id="post_label2"  value="" />
+  <input type="hidden" name="label" id="post_label3"  value="" />
+  <input type="hidden" name="label" id="post_label4" value="" />
+  <input type="hidden" name="label" id="post_label5" value="" />
+  <input type="hidden" name="label" id="post_label6"  value="" />
+  <input type="hidden" name="label" id="post_label7"  value="Pri-2" />
+  <input type="hidden" name="label" id="post_label8" value="Via-Wizard" />
+  <input type="hidden" name="label" id="post_label9" value="Type-Bug" />
+  <input type="hidden" name="label" id="post_label_os" value="" />  [# set from name="platform"]
+  <input type="hidden" name="label" id="post_label_bitness" value="" />  [# set from UserAgent]
+  <div id="submit_attachmentarea" style="display:none"></div>
+  <input type="hidden" name="recaptcha_challenge_field" value="03AHJ_VuvI2YeBIgHQ80KMLMC1lgjRX9LrcQgi0EmYujBufJ5p0gwcUV3D4T6ULE2ou04Q4ewjvtX1j3rZlawS-b7jIXdgTzfi08T4vmrAQrC4Q_bvyQXuw-JeF8vtCP1KBXQprEKYp7VbrKBXOuFHoTXJwZ3ylrBliK5N-9oLqOzgB5CUIdMIIMI" />
+  <input type="hidden" name="recaptcha_response_field" value="missing" />
+</form>
+
+<script type="text/javascript"
+	src="http://omahaproxy.appspot.com/guess?version=[chrome_version]&os=[channel_guess_os_name]&callback=guessChannel">
+</script>
+
+</body>
+</html>
+

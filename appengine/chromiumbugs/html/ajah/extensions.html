@@ -1,0 +1,21 @@
+<input type="hidden" name="label1" value="Cr-Platform-Extensions" >
+
+<dl>
+  <dt>What kind of software had the problem?</dt>
+  <dd>
+   <select name="software_kind" onchange="exposeQuestion(this.value, 'store_url', ['App', 'Extension', 'Theme'])"
+	   aria-label="What kind of software had the problem?" >
+     <option value="Extension" selected="selected">Chrome Extension - Adds new browser functionality</option>
+     <option value="Theme">Chrome Theme - Makes Chrome look awesome</option>
+   </select>
+  </dd>
+
+
+  <dt>What is the name or URL of that software at 
+      <a href="http://chrome.google.com/webstore" target="_blank">http://chrome.google.com/webstore</a>?</td>
+  <dd>
+    <input name="webstore_url" size="80"
+	   aria-label="What is the name or URL of that software?" >
+  </dd>
+
+</dl>

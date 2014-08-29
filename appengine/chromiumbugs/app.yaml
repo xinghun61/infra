@@ -1,0 +1,16 @@
+application: chromiumbugs
+version: 2014-05-02
+runtime: python
+api_version: 1
+
+default_expiration: "1h"
+
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /ajah
+  static_dir: html/ajah
+
+- url: /.*
+  script: main.py

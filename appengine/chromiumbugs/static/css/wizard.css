@@ -1,0 +1,168 @@
+@charset "utf-8";
+
+body {
+    background: #fff;
+    font: 82% arial, sans-serif;
+    min-width: 768px;
+}
+
+.headbg {
+    margin: 0 8px;
+}
+
+#user_bar {
+    text-align: right;
+}
+
+a:link, a:focus {
+    color: #00c;
+}
+
+a:active {
+    color: red;
+}
+
+select, input {
+    font-family: arial, sans-serif;
+}
+
+input[type="text"] {
+    border-color: #999 #ccc #ccc;
+    border-style: solid;
+    border-width: 1px;
+    padding: 2px 1px;
+}
+
+input[type=button], input[type=reset], input[type=submit] {
+    font-size: 100%;
+    background: url("/hosting/images/button-bg.gif") repeat-x scroll left top #E3E3E3;
+    background: -webkit-gradient(linear,0% 40%,0% 70%,from(#F9F9F9),to(#E3E3E3));
+    background: -moz-linear-gradient(top,  #fff,  #ddd);
+
+    vertical-align: baseline;
+    padding: 1px 3px 1px 3px;
+    border: 1px solid #aaa;
+    border-top-color: #ccc;
+    border-bottom-color: #888;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+input[type=button]:hover, input[type=reset]:hover, input[type=submit]:hover {
+    border-color: #666;
+    text-decoration: none !important;
+}
+
+input[type=button]:active, input[type=reset]:active, input[type=submit]:active {
+    background: url("/hosting/images/button-bg.gif") repeat-x scroll left bottom #bbb;
+    background: -webkit-gradient(linear,0% 40%,0% 70%,from(#e3e3e3),to(#f9f9f9));
+    background: -moz-linear-gradient(top,  #e3e3e3,  #f9f9f9);
+    border-color: #aaa;
+}
+
+textarea {
+    border-color: #999 #ccc #ccc;
+    border-style: solid;
+    border-width: 1px;
+}
+
+td td, th th, th td, td th {
+    font-size: 100%;
+}
+
+h3 {
+    font-size: medium;
+    background: #e5ecf9;
+    border-top: 1px solid #3366cc;
+    padding: 0.5ex 0.5em 0.5ex 0.5em;
+ }
+
+h4 {
+    margin-top: 0;
+}
+
+
+form {
+    padding: 0;
+    margin: 0;
+}
+
+
+#maincol {
+    margin 1em;
+}
+
+.wizstep {
+    display: none;
+    width: 60em;
+}
+
+.wizbody {
+    background: #eee;
+    border: 1px solid #ddd;
+    padding: 1em;
+    margin-bottom: 1em;
+}
+
+div.activestep .wizstep {
+    display: block;
+}
+
+.wizcontrols input {
+    padding: 2px 6px 2px 6px;
+    margin: 1em;
+}
+
+.wizbody ul {
+    list-style: none;
+}
+
+.wizbody ul li {
+    margin-bottom: .7em;
+}
+
+th {
+   text-align: right;
+}
+
+dd {
+   margin-bottom: 1.5em;
+}
+
+#pname { font-size:300%; margin: 0; padding: 0}
+#pname a, #pname a:visited { text-decoration:none; color: #666;}
+#project_summary_link { text-decoration:none; color:#444;}
+
+.conditional {
+    display: none;
+}
+
+dt {
+    font-weight: bold;
+}
+
+
+.required:before {
+    content: "*";
+    color: darkred;
+    font-weight: bold;
+    font-size: large;
+    position: relative;
+    top: .1em;
+    left: -.6em;
+    width: 0;
+    float: left;
+}
+
+a.feedback {
+    float: right;
+    padding-top: 1.5em;
+    color: #888; 
+    text-decoration: none;
+}
+
+.feedback:hover {
+    color: #00c; 
+    text-decoration: underline;
+}

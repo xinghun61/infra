@@ -1,0 +1,40 @@
+<input type="hidden" name="label1" value="Stability-Crash" >
+
+<dl>
+  <dt>Please read the instructions on <a
+    href="https://sites.google.com/a/chromium.org/dev/for-testers/bug-reporting-guidelines/reporting-crash-bug"
+    target="_blank">reporting a crash issue</a>.</dt>
+  <dd>&nbsp;</dd>
+  
+  <dt>Do you have a Report ID from chrome://crashes?</dt>
+  <dd><input name="crash_report_id" size="80" 
+	     aria-label="Do you have a Report ID from chrome://crashes?"></dd>
+
+
+  <dt>How much crashes?</dt>
+  <dd>
+   <select name="crash_scope" aria-label="How much crashes?">
+     <option value="Just one tab" selected="selected">Just one tab</option>
+     <option value="Just one plugin">Just one plugin</option>
+     <option value="Whole browser">The whole browser</option>
+   </select>
+  </dd>
+
+
+  <dt>Is it a problem with a plugin?</dt>
+  <dd>
+   <select name="plugin" onchange="exposeQuestion(this.value, 'which_plugin', ['Yes'])"
+	   aria-label="Is it a problem with a plugin?">
+     <option value="N/A" selected="selected">Not sure - I don't know</option>
+     <option value="Yes">Yes - Those darn plugins</option>
+     <option value="No">No - It's the browser itself</option>
+   </select>
+  </dd>
+
+
+  <dt id="q_which_plugin" class="conditional">Which plugin?</td>
+  <dd><input name="which_plugin" size="80" id="a_which_plugin" class="conditional"
+	     aria-label="Which plugin?"></dd>
+
+
+</dl>
