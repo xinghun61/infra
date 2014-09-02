@@ -34,10 +34,8 @@ import logging
 import os
 import unittest
 
-from appengine.path_mangler_hack import PathMangler
-with PathMangler(os.path.dirname(os.path.dirname(__file__))):
-  from appengine.test_results.model import jsonresults
-  from appengine.test_results.model.jsonresults import (
+from model import jsonresults
+from model.jsonresults import (
     JsonResults,
     TEXT,
     FAIL,
@@ -51,7 +49,7 @@ with PathMangler(os.path.dirname(os.path.dirname(__file__))):
     NOTRUN,
     TestFile,
   )
-  from appengine.test_results.handlers import master_config
+from handlers import master_config
 
 from google.appengine.ext import testbed
 

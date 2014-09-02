@@ -3,12 +3,10 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import os
 
-from appengine.path_mangler_hack import PathMangler
-with PathMangler(os.path.dirname(os.path.dirname(__file__))):
-  from appengine.utils import testing
-  from appengine.chromium_cq_status.shared import utils
+from testing_utils import testing
+from shared import utils
+
 
 class TestUtils(testing.AppengineTestCase):
   def test_filter_dict(self):

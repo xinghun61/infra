@@ -28,7 +28,7 @@
 
 import unittest
 
-from appengine.test_results.model import datastorefile
+from model import datastorefile
 
 from google.appengine.ext import testbed
 

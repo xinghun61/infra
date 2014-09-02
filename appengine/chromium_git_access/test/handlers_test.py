@@ -2,16 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Hack sys.path.
-import setup_test_env  # pylint: disable=W0611
-
 import datetime
 import webapp2
 
 from google.appengine.ext import ndb
 
-from appengine.utils import testing
-from appengine.chromium_git_access import handlers
+from testing_utils import testing
+import handlers
 
 
 class TestBasicHandlers(testing.AppengineTestCase):

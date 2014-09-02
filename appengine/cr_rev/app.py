@@ -4,7 +4,7 @@
 
 import webapp2
 
-import views  # pylint: disable=W0403
+import views
 
 app = webapp2.WSGIApplication([
     ('/_ah/warmup', views.StartPage),

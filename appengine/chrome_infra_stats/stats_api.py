@@ -10,7 +10,7 @@ from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
-import controller  # pylint: disable=W0403
+import controller
 
 
 package = 'Stats'

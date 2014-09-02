@@ -25,7 +25,8 @@ infra_dir = os.path.dirname(infra_module_path)
 top_dir = os.path.dirname(infra_dir)
 sys.path.insert(0, os.path.join(top_dir, 'build', 'scripts'))
 
-from common import gtest_utils
+# The air of sophistication of this sys.path hack suffocates poor pylint.
+from common import gtest_utils  # pylint: disable=F0401
 
 
 def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover

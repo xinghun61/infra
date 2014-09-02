@@ -17,7 +17,7 @@ from google.appengine.api import app_identity
 from google.appengine.api import users
 from google.appengine.ext import deferred
 
-import controller  # pylint: disable=W0403
+import controller
 
 
 class BaseHandler(webapp2.RequestHandler):

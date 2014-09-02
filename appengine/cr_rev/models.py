@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
-# pylint: disable=W0403
+
 from endpoints_proto_datastore.ndb import EndpointsModel
 
 

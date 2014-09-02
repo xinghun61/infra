@@ -5,7 +5,7 @@
 import endpoints
 from protorpc import remote
 
-import models  # pylint: disable=W0403
+import models
 
 
 package = 'CrRev'

@@ -3,14 +3,11 @@
 # found in the LICENSE file.
 
 import json
-import os
 
-from appengine.utils import testing
+from testing_utils import testing
 
-from appengine.path_mangler_hack import PathMangler
-with PathMangler(os.path.dirname(os.path.dirname(__file__))):
-  from appengine.chromium_cq_status import main
-  from appengine.chromium_cq_status.model.record import Record
+import main
+from model.record import Record
 
 from webtest.app import AppError
 

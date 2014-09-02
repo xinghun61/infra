@@ -5,8 +5,8 @@
 """Unit test for trees module."""
 import unittest
 
-from appengine.trooper_o_matic import trees
-from appengine.trooper_o_matic.tests import testing_common
+import trees
+from tests import testing_common
 
 URLFETCH_RESPONSES = {
     ('https://chromium.googlesource.com/chromium/tools/build/+'

@@ -5,7 +5,8 @@
 
 import unittest
 
-from appengine.chromium_cq_status.shared import parsing
+from shared import parsing
+
 
 class TestCase(unittest.TestCase):
   def test_parse_timestamp(self):

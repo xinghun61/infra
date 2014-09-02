@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from appengine.utils import testing
-from appengine.cr_rev import app
+from testing_utils import testing
+import app
 
 
 class TestViews(testing.AppengineTestCase):

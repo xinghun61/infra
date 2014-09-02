@@ -20,11 +20,11 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
-import cloudstorage as gcs  # pylint: disable=W0403
-from pipeline import pipeline  # pylint: disable=W0403
-import pipeline.common  # pylint: disable=W0403
+import cloudstorage as gcs
+from pipeline import pipeline
+import pipeline.common
 
-import models  # pylint: disable=W0403
+import models
 
 
 masters = [
@@ -460,7 +460,7 @@ def process_builder(master, builder):  # pragma: no cover
         })
         if len(step_chunks) >= batch_factor:
           logging.info('writing batch of %d' % len(step_chunks))
-          deferred.defer(submit_chunks, step_chunks, _queue='step-write', 
+          deferred.defer(submit_chunks, step_chunks, _queue='step-write',
               _target='stats-backend')
           step_chunks = []
     if step_chunks:
@@ -619,7 +619,8 @@ def memcache_wrap(key, check_cache=True, expire_time=None):  # pragma: no cover
 
 class TimeAggregate(pipeline.Pipeline):
   # pylint: disable=W0221,W0223
-  def run(self, step=None, end=None, master=None, builder=None, window=None,
+  @staticmethod
+  def run(step=None, end=None, master=None, builder=None, window=None,
       check_cache=True):  # pragma: no cover
     try:
       hybrid_step = step

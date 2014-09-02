@@ -5,9 +5,9 @@
 import json
 
 import endpoints
-from appengine.utils import testing
-from appengine.cr_rev import cr_rev_api
-from appengine.cr_rev import models
+from testing_utils import testing
+import cr_rev_api
+import models
 
 from protorpc import protojson
 

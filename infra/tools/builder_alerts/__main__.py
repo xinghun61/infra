@@ -26,7 +26,8 @@ top_dir = os.path.dirname(infra_dir)
 build_scripts_dir = os.path.join(top_dir, 'build', 'scripts')
 sys.path.insert(0, build_scripts_dir)
 
-from slave import gatekeeper_ng_config
+# Our sys.path hacks are too bursting with chest-hair for pylint's little brain.
+from slave import gatekeeper_ng_config  # pylint: disable=F0401
 
 
 CACHE_PATH = 'build_cache'

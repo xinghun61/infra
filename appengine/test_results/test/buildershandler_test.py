@@ -29,7 +29,7 @@
 import logging
 import unittest
 
-from appengine.test_results.handlers import buildershandler
+from handlers import buildershandler
 
 # pylint: disable=C0301
 
