@@ -1,10 +1,10 @@
 cron:
 - description: Update daily CQ stats
-  url: /cron/update-daily-stats
+  url: /background/update-stats?interval_days=1
   schedule: every day 00:01
   timezone: US/Pacific
 
 - description: Update weekly CQ stats
-  url: /cron/update-weekly-stats
+  url: /background/update-stats?interval_days=7
   schedule: every monday 00:01
   timezone: US/Pacific

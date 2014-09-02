@@ -1,0 +1,7 @@
+application: chromium-cq-status
+
+dispatch:
+- url: "*/background/*"
+  module: background
+- url: "*/*"
+  module: default
