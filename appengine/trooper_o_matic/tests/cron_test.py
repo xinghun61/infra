@@ -77,11 +77,11 @@ RIETVELD_RESPONSE = {
         }, {
             'sender': 'commit-bot@chromium.org',
             'text': 'CQ is trying da patch. /author/12345/2',
-            'date': '2014-01-01 11:56:00.000000',
+            'date': '2014-01-01 12:56:00.000000',
         }, {
             'sender': 'commit-bot@chromium.org',
             'text': 'Change committed as 45668',
-            'date': '2014-01-01 11:59:00.000000',  # 3 minutes
+            'date': '2014-01-01 12:59:00.000000',  # 3 minutes
         }],
     }, {
         # These should be added to 'chromium' stats.
@@ -159,7 +159,7 @@ CHROMIUM_MASTER_TREE = {
         'builder': 'Android',
         'buildnumber': 2500,
         'result': 0,
-        'revision': 12345,
+        'revision': '12345',
     }, {
         # Under SLO
         'generated': '2014-01-01T11:59:00.000000',
@@ -167,7 +167,7 @@ CHROMIUM_MASTER_TREE = {
         'builder': 'Windows',
         'buildnumber': 1500,
         'result': 1,
-        'revision': 12343,
+        'revision': '12343',
     }, {
         # Over median, under max SLO
         'generated': '2014-01-01T11:50:00.000000',
@@ -175,7 +175,7 @@ CHROMIUM_MASTER_TREE = {
         'builder': 'Linux',
         'buildnumber': 500,
         'result': 0,
-        'revision': 12245,
+        'revision': '12245',
     }, {
         # Over max SLO
         'generated': '2014-01-01T12:00:00.000000',
@@ -183,7 +183,7 @@ CHROMIUM_MASTER_TREE = {
         'builder': 'Android',
         'buildnumber': 2500,
         'result': 0,
-        'revision': 12345,
+        'revision': '12345',
     },],
 }
 
@@ -195,7 +195,7 @@ CHROMIUM_WIN_MASTER_TREE = {
         'builder': 'Win XP',
         'buildnumber': 500,
         'result': 0,
-        'revision': 1245,
+        'revision': '1245',
     }, {
         # Over median, under max SLO
         'generated': '2014-01-01T12:00:00.000000',
@@ -203,7 +203,7 @@ CHROMIUM_WIN_MASTER_TREE = {
         'builder': 'Windows 8',
         'buildnumber': 5500,
         'result': 1,
-        'revision': 12243,
+        'revision': '12243',
     },],
 }
 
@@ -215,7 +215,7 @@ CHROMIUM_WIN_MASTER_TREE_24H = {
         'builder': 'Windows 7',
         'buildnumber': 55,
         'result': 0,
-        'revision': 12340,
+        'revision': '32a5653f715e45901798ae3635db1339bed4fd7d',
     }]
 }
 
@@ -351,6 +351,19 @@ class CronTest(unittest.TestCase):
     self.assertEqual(19.5, stats[1].p90)
     self.assertEqual(21.750000000000004, stats[1].p99)
     self.assertEqual(10.333333333333334, stats[1].mean)
+    in_queue_stats = models.CqTimeInQueueForPatchStat().query().fetch()
+    self.assertEqual(2, len(in_queue_stats))
+    self.assertEqual(8, in_queue_stats[0].p50)
+    self.assertEqual(5, in_queue_stats[1].length)
+    self.assertEqual(5, in_queue_stats[1].min)
+    self.assertEqual(23, in_queue_stats[1].max)
+    self.assertEqual(17, in_queue_stats[1].p50)
+    total_time_stats = models.CqTotalTimeForPatchStat().query().fetch()
+    self.assertEqual(2, len(total_time_stats))
+    self.assertEqual(69, total_time_stats[0].p50)
+    self.assertEqual(5, total_time_stats[1].length)
+    self.assertEqual(5, total_time_stats[1].min)
+    self.assertEqual(25, total_time_stats[1].max)
 
   def testCheckTree(self):
     self.testapp.get('/check-tree/chromium')

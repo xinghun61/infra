@@ -17,6 +17,18 @@ indexes:
   - name: timestamp
     direction: desc
 
+- kind: CqTimeInQueueForPatchStat
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
+- kind: CqTotalTimeForPatchStat
+  ancestor: yes
+  properties:
+  - name: timestamp
+    direction: desc
+
 - kind: CqStat
   ancestor: yes
   properties:

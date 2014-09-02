@@ -35,6 +35,15 @@ def GetTreeStatusDict(project): # pragma: no cover
 def GetCqLatencyDict(project): # pragma: no cover
   stat = models.CqStat.query(ancestor=project).order(
       -models.CqStat.timestamp).get()
+  if not stat.p50:
+    return {
+        'should_alert': False,
+        'p50': None,
+        'p90': None,
+        'length': stat.length,
+        'details': 'No CQ jobs in last hour',
+        'url': 'http://trooper-o-matic.appspot.com/cq/%s' % project.id(),
+    }
   return {
       'should_alert': stat.p50 > 60 or stat.p90 > 180,
       'p50': stat.p50,

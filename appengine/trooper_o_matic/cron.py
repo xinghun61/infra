@@ -7,6 +7,7 @@
 
 import calendar
 import datetime
+import itertools
 import json
 import logging
 import re
@@ -21,11 +22,12 @@ import models
 import trees
 
 
-def datetime_now(): # pragma: no cover
+def datetime_now():  # pragma: no cover
   """Easy to mock datetime.datetime.now() for unit testing."""
   return datetime.datetime.now()
 
-def date_from_str(string, base_format): # pragma: no cover
+
+def date_from_str(string, base_format):  # pragma: no cover
   """Converts a string to a date, taking into account the possible existence
      of a millisecond precision value."""
   try:
@@ -33,7 +35,8 @@ def date_from_str(string, base_format): # pragma: no cover
   except ValueError:
     return datetime.datetime.strptime(string, base_format)
 
-class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
+
+class CheckCqHandler(webapp2.RequestHandler):  # pragma: no cover
   """Collect commit queue length and run times."""
 
   pending_api_url = 'https://chromium-commit-queue.appspot.com/api/%s/pending'
@@ -63,18 +66,32 @@ class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
     return date_from_str(iso_str, '%Y-%m-%d %H:%M:%S')
 
   @staticmethod
-  def record_cq_time(time, cutoff, run_info, runs, result, msg_text, issue):
+  def record_cq_time(time, cutoff, run_info, recent_runs, all_runs, result,
+                     msg_text, issue):
     if not run_info:
       logging.error('Missing CQ start message for end message %s on issue %s',
                     msg_text, issue)
-      return
-    if time < cutoff:
       return
     run_info['end'] = time
     delta = run_info['end'] - run_info['start']
     run_info['minutes'] = int(delta.total_seconds() / 60)
     run_info['result'] = result
-    runs.append(run_info)
+    if time >= cutoff:
+      recent_runs.append(run_info)
+    all_runs.append(run_info)
+
+  @staticmethod
+  def update_stat_for_times(stat, times):
+    stat.min = times[0]
+    stat.max = times[-1]
+    stat.mean = numpy.mean(times)
+    stat.p10 = numpy.percentile(times, 10)
+    stat.p25 = numpy.percentile(times, 25)
+    stat.p50 = numpy.percentile(times, 50)
+    stat.p75 = numpy.percentile(times, 75)
+    stat.p90 = numpy.percentile(times, 90)
+    stat.p95 = numpy.percentile(times, 95)
+    stat.p99 = numpy.percentile(times, 99)
 
   def get(self):
     # We only care about the last hour.
@@ -111,13 +128,18 @@ class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
       # Ensure there is an ancestor for all the stats for this project.
       project_model = models.Project.get_or_insert(project)
       project_model.put()
-      stat = models.CqStat(parent=project_model.key)
 
       # CQ exposes an API for its length.
       result = urlfetch.fetch(url=self.pending_api_url % project, deadline=60)
       pending = set(json.loads(result.content)['results'])
-      stat.length = len(pending)
-      cq_runs = []
+      num_pending = len(pending)
+      stat = models.CqStat(parent=project_model.key, length=num_pending)
+      patch_in_queue_stat = models.CqTimeInQueueForPatchStat(
+          parent=project_model.key, length=num_pending)
+      patch_total_time_stat = models.CqTotalTimeForPatchStat(
+          parent=project_model.key, length=num_pending)
+      recent_cq_runs = []
+      all_cq_runs = []
 
       # Getting the running time is more complicated. Loop through each issue,
       # parsing the commit queue messages to find start and end times for CQ
@@ -144,8 +166,8 @@ class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
 
           if (self.committed_regexp.match(text) or
               text.startswith('This issue passed the CQ.')):
-            self.record_cq_time(date, cutoff, current_run, cq_runs,
-                                'COMMITTED', text, issue['issue'])
+            self.record_cq_time(date, cutoff, current_run, recent_cq_runs,
+                                all_cq_runs, 'COMMITTED', text, issue['issue'])
             current_run = None
 
           cq_end_messages = {
@@ -175,24 +197,37 @@ class CheckCqHandler(webapp2.RequestHandler): # pragma: no cover
           }
           for result, message_text in cq_end_messages.items():
             if text.startswith(message_text):
-              self.record_cq_time(date, cutoff, current_run, cq_runs,
-                                  result, text, issue['issue'])
+              self.record_cq_time(date, cutoff, current_run, recent_cq_runs,
+                                  all_cq_runs, result, text, issue['issue'])
               current_run = None
               break
 
-      if cq_runs:
-        minutes = sorted([item['minutes'] for item in cq_runs])
-        stat.min = minutes[0]
-        stat.max = minutes[-1]
-        stat.mean = numpy.mean(minutes)
-        stat.p10 = numpy.percentile(minutes, 10)
-        stat.p25 = numpy.percentile(minutes, 25)
-        stat.p50 = numpy.percentile(minutes, 50)
-        stat.p75 = numpy.percentile(minutes, 75)
-        stat.p90 = numpy.percentile(minutes, 90)
-        stat.p95 = numpy.percentile(minutes, 95)
-        stat.p99 = numpy.percentile(minutes, 99)
+      if recent_cq_runs:
+        minutes = sorted([item['minutes'] for item in recent_cq_runs])
+        self.update_stat_for_times(stat, minutes)
+
+        def unique_patch_id(run):
+          return '%s %s' % (run['issue_id'], run['patch_id'])
+        all_cq_runs.sort(key=unique_patch_id)
+        total_minutes = []
+        in_queue_minutes = []
+        for _, group in itertools.groupby(all_cq_runs, key=unique_patch_id):
+          group = list(group)
+          group.sort(key=lambda k: k['end'])
+          if group[-1]['end'] < cutoff:
+            continue
+          in_queue_minutes.append(sum(r['minutes'] for r in group))
+          total_minutes.append(
+              int((group[-1]['end'] - group[0]['start']).total_seconds()) / 60)
+
+        in_queue_minutes.sort()
+        total_minutes.sort()
+        self.update_stat_for_times(patch_in_queue_stat, in_queue_minutes)
+        self.update_stat_for_times(patch_total_time_stat, total_minutes)
+
       stat.put()
+      patch_in_queue_stat.put()
+      patch_total_time_stat.put()
 
 
 class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
@@ -236,7 +271,7 @@ class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
         records += content.get('step_records', [])
       for record in records:
         generated_time = date_from_str(record['generated'],
-            self.generated_format)
+                                       self.generated_format)
         if now - generated_time > last_hour:
           continue
         stat.num_builds += 1
@@ -247,7 +282,7 @@ class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
                                       buildnumber=int(record['buildnumber']),
                                       buildtime=float(record['step_time']),
                                       result=int(record['result']),
-                                      revision=int(record['revision']))
+                                      revision=record['revision'])
           stat.slo_offenders.append(v)
           if record['step_time'] > models.SLO_BUILDTIME_MAX:
             stat.num_over_max_slo += 1

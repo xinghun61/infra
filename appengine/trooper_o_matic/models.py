@@ -15,16 +15,24 @@ class Project(ndb.Model):
 class CqStat(ndb.Model):
   timestamp = ndb.DateTimeProperty(auto_now_add=True)
   length = ndb.IntegerProperty(required=True)
-  min = ndb.FloatProperty(default=0)
-  max = ndb.FloatProperty(default=0)
-  mean = ndb.FloatProperty(default=0)
-  p10 = ndb.FloatProperty(default=0)
-  p25 = ndb.FloatProperty(default=0)
-  p50 = ndb.FloatProperty(default=0)
-  p75 = ndb.FloatProperty(default=0)
-  p90 = ndb.FloatProperty(default=0)
-  p95 = ndb.FloatProperty(default=0)
-  p99 = ndb.FloatProperty(default=0)
+  min = ndb.FloatProperty()
+  max = ndb.FloatProperty()
+  mean = ndb.FloatProperty()
+  p10 = ndb.FloatProperty()
+  p25 = ndb.FloatProperty()
+  p50 = ndb.FloatProperty()
+  p75 = ndb.FloatProperty()
+  p90 = ndb.FloatProperty()
+  p95 = ndb.FloatProperty()
+  p99 = ndb.FloatProperty()
+
+
+class CqTimeInQueueForPatchStat(CqStat):
+  pass
+
+
+class CqTotalTimeForPatchStat(CqStat):
+  pass
 
 
 class TreeOpenStat(ndb.Model):
@@ -44,7 +52,7 @@ class BuildSLOOffender(ndb.Model):
   buildnumber = ndb.IntegerProperty()
   buildtime = ndb.FloatProperty()
   result = ndb.IntegerProperty()
-  revision = ndb.IntegerProperty()
+  revision = ndb.StringProperty()
   # Store these with each build, in case we change the SLO, so that we know
   # what SLO was not met.
   slo_median_buildtime = ndb.FloatProperty(default=SLO_BUILDTIME_MEDIAN)
