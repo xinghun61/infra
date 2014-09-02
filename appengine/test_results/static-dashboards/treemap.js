@@ -32,8 +32,7 @@ var defaultDashboardSpecificStateValues = {
 };
 
 var DB_SPECIFIC_INVALIDATING_PARAMETERS = {
-    'testType': 'builder',
-    'group': 'builder'
+    'testType': 'builder'
 };
 
 var g_haveEverGeneratedPage = false;
@@ -45,7 +44,8 @@ function generatePage(historyInstance)
 
     g_isGeneratingPage = true;
 
-    var rawTree = g_resultsByBuilder[historyInstance.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder()];
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var rawTree = g_resultsByBuilder[builder.key()];
     g_webTree = convertToWebTreemapFormat('AllTests', rawTree);
     appendTreemap($('map'), g_webTree);
 
@@ -60,7 +60,14 @@ function handleValidHashParameter(historyInstance, key, value)
     switch(key) {
     case 'builder':
         history.validateParameter(historyInstance.dashboardSpecificState, key, value,
-            function() { return value in currentBuilders(); });
+            function() {
+                var current = currentBuilders();
+                for (var c = 0; c < current.length; c++) {
+                    if (current[c].key() == value)
+                        return true;
+                }
+                return false;
+            });
         return true;
 
     case 'treemapfocus':

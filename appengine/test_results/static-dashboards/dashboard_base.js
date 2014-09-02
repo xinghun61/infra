@@ -28,25 +28,20 @@
 
 // FIXME: Find somewhere better for these functions to live or restructure such that we don't need them.
 
-function currentBuilderGroupName()
-{
-    return g_history.crossDashboardState.group ||
-        builders.groupNamesForTestType(g_history.crossDashboardState.testType)[0];
-}
-
-function currentBuilderGroup()
-{
-    return builders.getBuilderGroup(currentBuilderGroupName(), g_history.crossDashboardState.testType);
-}
-
 function currentBuilders()
 {
-    return currentBuilderGroup().builders;
+    return builders.getBuilders(g_history.crossDashboardState.testType);
 }
 
-// FIXME: Index by group name, then test type, then builder so we can get rid of the hacks
-// in overview.js.
+function currentFirstBuilder()
+{
+    if (currentBuilders().length == 0)
+        console.error('There are no builders.');
+    return currentBuilders()[0];
+}
+
+// FIXME: Index by test type, then builder so we can get rid of the hacks in overview.js.
 // FIXME: Have results.js fire off the loader and then the calling code passing in a callback
 // for once everything is loaded and doesn't know about Loader at all. The calling code just
-// calls fetchResults(groupName, testType, builder, callback) or whatever.
+// calls fetchResults(testType, builder, callback) or whatever.
 var g_resultsByBuilder = {};

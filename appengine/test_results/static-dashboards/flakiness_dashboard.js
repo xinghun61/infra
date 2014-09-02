@@ -76,10 +76,11 @@ function generatePage(historyInstance)
     if (historyInstance.dashboardSpecificState.tests || historyInstance.dashboardSpecificState.result)
         generatePageForIndividualTests(individualTests());
     else
-        generatePageForBuilder(historyInstance.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder());
+        generatePageForBuilder(builders.builderFromKey(historyInstance.dashboardSpecificState.builder) || currentFirstBuilder());
 
-    for (var builder in currentBuilders())
+    currentBuilders().forEach(function(builder) {
         processTestResultsForBuilderAsync(builder);
+    });
 
     postHeightChangedMessage();
 }
@@ -98,7 +99,12 @@ function handleValidHashParameter(historyInstance, key, value)
     case 'builder':
         history.validateParameter(historyInstance.dashboardSpecificState, key, value,
             function() {
-                return value in currentBuilders();
+                var current = currentBuilders();
+                for (var c = 0; c < current.length; c++) {
+                    if (current[c].key() == value)
+                        return true;
+                }
+                return false;
             });
 
         return true;
@@ -194,8 +200,7 @@ var defaultDashboardSpecificStateValues = {
 
 var DB_SPECIFIC_INVALIDATING_PARAMETERS = {
     'tests' : 'builder',
-    'testType': 'builder',
-    'group': 'builder'
+    'testType': 'builder'
 };
 
 var flakinessConfig = {
@@ -239,16 +244,15 @@ function createResultsObjectForTest(test, builder)
 var TestTrie = function(builders, resultsByBuilder)
 {
     this._trie = {};
-
-    for (var builder in builders) {
-        if (!resultsByBuilder[builder]) {
-            console.warn("No results for builder: ", builder)
-            continue;
+    builders.forEach(function(builder) {
+        if (!resultsByBuilder[builder.key()]) {
+            console.warn("No results for builder: ", builder.key());
+            return;
         }
-        var testsForBuilder = resultsByBuilder[builder].tests;
+        var testsForBuilder = resultsByBuilder[builder.key()].tests;
         for (var test in testsForBuilder)
             this._addTest(test.split('/'), this._trie);
-    }
+    }.bind(this));
 }
 
 TestTrie.prototype.forEach = function(callback, startingTriePath)
@@ -388,28 +392,29 @@ function processTestResultsForBuilderAsync(builder)
 
 function processTestRunsForAllBuilders()
 {
-    for (var builder in currentBuilders())
+    currentBuilders().forEach(function(builder) {
         processTestRunsForBuilder(builder);
+    });
 }
 
-function processTestRunsForBuilder(builderName)
+function processTestRunsForBuilder(builder)
 {
-    if (g_perBuilderFailures[builderName])
+    if (g_perBuilderFailures[builder.key()])
       return;
 
-    if (!g_resultsByBuilder[builderName]) {
-        console.error('No tests found for ' + builderName);
-        g_perBuilderFailures[builderName] = [];
+    if (!g_resultsByBuilder[builder.key()]) {
+        console.error('No tests found for ' + builder.key());
+        g_perBuilderFailures[builder.key()] = [];
         return;
     }
 
     var failures = [];
-    var allTestsForThisBuilder = g_resultsByBuilder[builderName].tests;
+    var allTestsForThisBuilder = g_resultsByBuilder[builder.key()].tests;
 
     for (var test in allTestsForThisBuilder) {
-        var resultsForTest = createResultsObjectForTest(test, builderName);
+        var resultsForTest = createResultsObjectForTest(test, builder);
 
-        var rawTest = g_resultsByBuilder[builderName].tests[test];
+        var rawTest = g_resultsByBuilder[builder.key()].tests[test];
         resultsForTest.rawTimes = rawTest.times;
         var rawResults = rawTest.results;
         resultsForTest.rawResults = rawResults;
@@ -420,7 +425,7 @@ function processTestRunsForBuilder(builderName)
         if (rawTest.bugs)
             resultsForTest.bugs = rawTest.bugs;
 
-        var failureMap = g_resultsByBuilder[builderName][results.FAILURE_MAP];
+        var failureMap = g_resultsByBuilder[builder.key()][results.FAILURE_MAP];
         // FIXME: Switch to resultsByBuild
         var times = resultsForTest.rawTimes;
         var numTimesSeen = 0;
@@ -454,7 +459,7 @@ function processTestRunsForBuilder(builderName)
         g_testToResultsMap[test].push(resultsForTest);
     }
 
-    g_perBuilderFailures[builderName] = failures;
+    g_perBuilderFailures[builder.key()] = failures;
 }
 
 function linkHTMLToOpenWindow(url, text)
@@ -467,8 +472,8 @@ function linkHTMLToOpenWindow(url, text)
 function isFailure(builder, testName, index)
 {
     var currentIndex = 0;
-    var rawResults = g_resultsByBuilder[builder].tests[testName].results;
-    var failureMap = g_resultsByBuilder[builder][results.FAILURE_MAP];
+    var rawResults = g_resultsByBuilder[builder.key()].tests[testName].results;
+    var failureMap = g_resultsByBuilder[builder.key()][results.FAILURE_MAP];
     for (var i = 0; i < rawResults.length; i++) {
         currentIndex += rawResults[i][results.RLE.LENGTH];
         if (currentIndex > index)
@@ -480,9 +485,9 @@ function isFailure(builder, testName, index)
 // Returns an array of indexes for all builds where this test failed.
 function indexesForFailures(builder, testName)
 {
-    var rawResults = g_resultsByBuilder[builder].tests[testName].results;
-    var buildNumbers = g_resultsByBuilder[builder].buildNumbers;
-    var failureMap = g_resultsByBuilder[builder][results.FAILURE_MAP];
+    var rawResults = g_resultsByBuilder[builder.key()].tests[testName].results;
+    var buildNumbers = g_resultsByBuilder[builder.key()].buildNumbers;
+    var failureMap = g_resultsByBuilder[builder.key()][results.FAILURE_MAP];
     var index = 0;
     var failures = [];
     for (var i = 0; i < rawResults.length; i++) {
@@ -502,30 +507,31 @@ function pathToFailureLog(testName)
     return '/steps/' + g_history.crossDashboardState.testType + '/logs/' + testName.split('.')[1]
 }
 
-function showPopupForBuild(e, builder, index, opt_testName)
+function showPopupForBuild(e, builderKey, index, opt_testName)
 {
     var html = '';
+    var builder = builders.builderFromKey(builderKey);
 
-    var time = g_resultsByBuilder[builder].secondsSinceEpoch[index];
+    var time = g_resultsByBuilder[builder.key()].secondsSinceEpoch[index];
     if (time) {
         var date = new Date(time * 1000);
         html += date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
 
-    var buildNumber = g_resultsByBuilder[builder].buildNumbers[index];
-    var master = builders.master(builder);
-    var buildBasePath = master.logPath(builder, buildNumber);
+    var buildNumber = g_resultsByBuilder[builder.key()].buildNumbers[index];
+    var master = builder.master();
+    var buildBasePath = master.logPath(builder.builderName, buildNumber);
 
     html += '<ul><li>' + linkHTMLToOpenWindow(buildBasePath, 'Build log');
 
-    if (g_resultsByBuilder[builder][results.BLINK_REVISIONS])
-        html += '</li><li>Blink: ' + ui.html.blinkRevisionLink(g_resultsByBuilder[builder], index) + '</li>';
+    if (g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS])
+        html += '</li><li>Blink: ' + ui.html.blinkRevisionLink(g_resultsByBuilder[builder.key()], index) + '</li>';
 
-    html += '</li><li>Chromium: ' + ui.html.chromiumRevisionLink(g_resultsByBuilder[builder], index) + '</li>';
+    html += '</li><li>Chromium: ' + ui.html.chromiumRevisionLink(g_resultsByBuilder[builder.key()], index) + '</li>';
 
-    var chromeRevision = g_resultsByBuilder[builder].chromeRevision[index];
+    var chromeRevision = g_resultsByBuilder[builder.key()].chromeRevision[index];
     if (chromeRevision && g_history.isLayoutTestResults()) {
-        html += '<li><a href="' + TEST_RESULTS_BASE_PATH + currentBuilders()[builder] +
+        html += '<li><a href="' + TEST_RESULTS_BASE_PATH + builder.builderNameForPath() +
             '/' + buildNumber + '/layout-test-results.zip">layout-test-results.zip</a></li>';
     }
 
@@ -553,11 +559,10 @@ function htmlForTestResults(test, revisions)
     var testResults = test.rawResults.concat();
     var times = test.rawTimes.concat();
     var builder = test.builder;
-    var master = builders.master(builder);
-    var buildNumbers = g_resultsByBuilder[builder].buildNumbers;
+    var buildNumbers = g_resultsByBuilder[builder.key()].buildNumbers;
 
-    // FIXME: Support other revision types instead of just chrome/blink.
-    var revisionType = g_history.isBlinkGroup() ?
+    // FIXME: Support other revision types instead of just chrome/blink based on the test type.
+    var revisionType = g_history.isLayoutTestResults() ?
         results.BLINK_REVISIONS : results.CHROME_REVISIONS;
 
     var cells = [];
@@ -572,7 +577,7 @@ function htmlForTestResults(test, revisions)
         if (i > indexToReplaceCurrentResult) {
             currentResultArray = testResults.shift();
             if (currentResultArray) {
-                resultString = g_resultsByBuilder[builder][results.FAILURE_MAP][currentResultArray[results.RLE.VALUE]];
+                resultString = g_resultsByBuilder[builder.key()][results.FAILURE_MAP][currentResultArray[results.RLE.VALUE]];
                 indexToReplaceCurrentResult += currentResultArray[results.RLE.LENGTH];
             } else {
                 resultString = results.NO_DATA;
@@ -591,7 +596,7 @@ function htmlForTestResults(test, revisions)
         }
 
         var revision = parseInt(
-            g_resultsByBuilder[builder][revisionType][i], 10);
+            g_resultsByBuilder[builder.key()][revisionType][i], 10);
 
         // Locate the empty cell corresponding to this blink revision.
         var cell = undefined;
@@ -615,7 +620,7 @@ function htmlForTestResults(test, revisions)
             + ' title="' + resultString + '. Click for more info."'
             + ' class="results ' + cell.className + '"'
             + ' onclick=\'showPopupForBuild(event,'
-            + ' "' + builder + '",' + i + ',"' + test.test + '")\'>'
+            + ' "' + builder.key() + '",' + i + ',"' + test.test + '")\'>'
             + (currentTime || (cell.hasResult ? '' : '?')) + '</td>';
     }
 
@@ -730,7 +735,7 @@ function htmlForSingleTestRow(test, showBuilderNames, revisions)
         var header = headers[i];
         if (string.startsWith(header, 'test') || string.startsWith(header, 'builder')) {
             var testCellClassName = 'test-link' + (showBuilderNames ? ' builder-name' : '');
-            var testCellHTML = showBuilderNames ? test.builder : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
+            var testCellHTML = showBuilderNames ? test.builder.key() : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
             html += '<tr><td class="' + testCellClassName + '">' + testCellHTML;
         } else if (string.startsWith(header, 'bugs'))
             // FIXME: linkify bugs.
@@ -857,21 +862,21 @@ function sortTests(tests, column, order)
 }
 
 // Return an array of revisions across all builders such that all of a builder's
-// builds have a unique entry in the list. The currently selected group
-// (e.g., @ToT Chromium) determines which revision type is not collapsed.
+// builds have a unique entry in the list. The currently selected test type
+// (e.g., layout tests) determines which revision type is not collapsed.
 // Note that revisions may not be unique: a single builder can have two runs at
 // the same blink revision but different chrome revisions which will result in
 // multiple entries of the same blink revision.
 function collapsedRevisionList(testResults)
 {
-    // FIXME: Support other revision types instead of just chrome/blink.
-    var revisionType = g_history.isBlinkGroup() ?
+    // FIXME: Support other revision types instead of just chrome/blink based on the test type.
+    var revisionType = g_history.isLayoutTestResults() ?
         results.BLINK_REVISIONS : results.CHROME_REVISIONS;
 
     var revisionsCountedSet = {};
     for (var resultIndex = 0; resultIndex < testResults.length; resultIndex++) {
         var builder = testResults[resultIndex].builder;
-        var build = g_resultsByBuilder[builder];
+        var build = g_resultsByBuilder[builder.key()];
         var buildNumbers = build.buildNumbers;
         var builderRevisionsCountedSet = {};
         for (var i = 0; i < buildNumbers.length; i++) {
@@ -906,24 +911,24 @@ function htmlForIndividualTestOnAllBuilders(test)
         return '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>';
 
     var html = '';
-    var shownBuilders = [];
+    var shownBuilderKeys = [];
     var revisions = collapsedRevisionList(testResults);
     for (var j = 0; j < testResults.length; j++) {
-        shownBuilders.push(testResults[j].builder);
+        shownBuilderKeys.push(testResults[j].builder.key());
         var showBuilderNames = true;
         html += htmlForSingleTestRow(testResults[j], showBuilderNames, revisions);
     }
 
-    var skippedBuilders = []
-    for (builder in currentBuilders()) {
-        if (shownBuilders.indexOf(builder) == -1)
-            skippedBuilders.push(builder);
-    }
+    var skippedBuilderKeys = []
+    currentBuilders().forEach(function(builder) {
+        if (shownBuilderKeys.indexOf(builder.key()) == -1)
+            skippedBuilderKeys.push(builder.key());
+    });
 
     var skippedBuildersHtml = '';
-    if (skippedBuilders.length) {
+    if (skippedBuilderKeys.length) {
         skippedBuildersHtml = '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
-            '<div class=skipped-builder-list><div class=skipped-builder>' + skippedBuilders.join('</div><div class=skipped-builder>') + '</div></div>';
+            '<div class=skipped-builder-list><div class=skipped-builder>' + skippedBuilderKeys.join('</div><div class=skipped-builder>') + '</div></div>';
     }
 
     return htmlForTestTable(html) + skippedBuildersHtml;
@@ -1033,15 +1038,15 @@ function handleExpectationsItemLoad(title, item, itemType, parent)
 function addExpectationItem(expectationsContainers, parentContainer, url, opt_builder)
 {
     // Group expectations by builder, putting test and reference files first.
-    var builder = opt_builder || "Test and reference files";
-    var container = expectationsContainers[builder];
+    var builderName = opt_builder && opt_builder.builderName || "Test and reference files";
+    var container = expectationsContainers[builderName];
 
     if (!container) {
         container = document.createElement('div');
         container.className = 'expectations-container';
-        container.setAttribute('data-builder', builder);
+        container.setAttribute('data-builder-name', builderName);
         parentContainer.appendChild(container);
-        expectationsContainers[builder] = container;
+        expectationsContainers[builderName] = container;
     }
 
     var numUnloaded = container.getAttribute('data-unloaded') || 0;
@@ -1093,12 +1098,12 @@ function handleFinishedLoadingExpectations(container)
         return;
     }
 
-    var builder = container.getAttribute('data-builder');
-    if (!builder)
+    var builderName = container.getAttribute('data-builder-name');
+    if (!builderName)
         return;
 
     var header = document.createElement('h2');
-    header.textContent = builder;
+    header.textContent = builderName;
     container.insertBefore(header, container.firstChild);
 }
 
@@ -1130,25 +1135,25 @@ function loadExpectations(expectationsContainer)
     }
 }
 
-function gpuResultsPath(chromeRevision, builder)
+function gpuResultsPath(chromeRevision, builderName)
 {
-  return chromeRevision + '_' + builder.replace(/[^A-Za-z0-9]+/g, '_');
+  return chromeRevision + '_' + builderName.replace(/[^A-Za-z0-9]+/g, '_');
 }
 
 function loadGPUResultsForBuilder(builder, test, expectationsContainer)
 {
     var container = document.createElement('div');
     container.className = 'expectations-container';
-    container.innerHTML = '<div><b>' + builder + '</b></div>';
+    container.innerHTML = '<div><b>' + builder.key() + '</b></div>';
     expectationsContainer.appendChild(container);
 
     var failureIndex = indexesForFailures(builder, test)[0];
 
-    var buildNumber = g_resultsByBuilder[builder].buildNumbers[failureIndex];
-    var pathToLog = builders.master(builder).logPath(builder, buildNumber) + pathToFailureLog(test);
+    var buildNumber = g_resultsByBuilder[builder.key()].buildNumbers[failureIndex];
+    var pathToLog = builder.master().logPath(builder.builderName, buildNumber) + pathToFailureLog(test);
 
-    var chromeRevision = g_resultsByBuilder[builder].chromeRevision[failureIndex];
-    var resultsUrl = GPU_RESULTS_BASE_PATH + gpuResultsPath(chromeRevision, builder);
+    var chromeRevision = g_resultsByBuilder[builder.key()].chromeRevision[failureIndex];
+    var resultsUrl = GPU_RESULTS_BASE_PATH + gpuResultsPath(chromeRevision, builder.builderName);
     var filename = test.split(/\./)[1] + '.png';
 
     appendNonWebKitResults(container, pathToLog, 'non-webkit-results');
@@ -1161,13 +1166,13 @@ function loadNonWebKitResultsForBuilder(builder, test, expectationsContainer)
 {
     var failureIndexes = indexesForFailures(builder, test);
     var container = document.createElement('div');
-    container.innerHTML = '<div><b>' + builder + '</b></div>';
+    container.innerHTML = '<div><b>' + builder.key() + '</b></div>';
     expectationsContainer.appendChild(container);
     for (var i = 0; i < failureIndexes.length; i++) {
         // FIXME: This doesn't seem to work anymore. Did the paths change?
         // Once that's resolved, see if we need to try each gtest modifier prefix as well.
-        var buildNumber = g_resultsByBuilder[builder].buildNumbers[failureIndexes[i]];
-        var pathToLog = builders.master(builder).logPath(builder, buildNumber) + pathToFailureLog(test);
+        var buildNumber = g_resultsByBuilder[builder.key()].buildNumbers[failureIndexes[i]];
+        var pathToLog = builder.master().logPath(builder.builderName, buildNumber) + pathToFailureLog(test);
         appendNonWebKitResults(container, pathToLog, 'non-webkit-results');
     }
 }
@@ -1240,12 +1245,12 @@ function loadExpectationsLayoutTests(test, expectationsContainer)
 
     var testWithoutSuffix = test.substring(0, test.lastIndexOf('.'));
 
-    for (var builder in currentBuilders()) {
-        var actualResultsBase = TEST_RESULTS_BASE_PATH + currentBuilders()[builder] + '/results/layout-test-results/';
+    currentBuilders().forEach(function(builder) {
+        var actualResultsBase = TEST_RESULTS_BASE_PATH + builder.builderNameForPath() + '/results/layout-test-results/';
         ACTUAL_RESULT_SUFFIXES.forEach(function(suffix) {{
             addExpectationItem(expectationsContainers, expectationsContainer, actualResultsBase + testWithoutSuffix + '-' + suffix, builder);
         }})
-    }
+    });
 
     // Add a clearing element so floated elements don't bleed out of their
     // containing block.
@@ -1369,11 +1374,11 @@ function headerForTestTableHtml()
         checkBoxToToggleState('showWontFix', 'Show WontFix');
 }
 
-function generatePageForBuilder(builderName)
+function generatePageForBuilder(builder)
 {
-    processTestRunsForBuilder(builderName);
+    processTestRunsForBuilder(builder);
 
-    var filteredResults = g_perBuilderFailures[builderName].filter(shouldShowTest);
+    var filteredResults = g_perBuilderFailures[builder.key()].filter(shouldShowTest);
     sortTests(filteredResults, g_history.dashboardSpecificState.sortColumn, g_history.dashboardSpecificState.sortOrder);
 
     var testsHTML = '';

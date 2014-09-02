@@ -50,27 +50,29 @@ test('loading steps', 1, function() {
 
 // Total number of assertions is 1 for the deepEqual of the builder lists
 // and then 2 per builder (one for ok, one for deepEqual of tests).
-test('results files loading', 11, function() {
+test('results files loading', 13, function() {
     resetGlobals();
-    var expectedLoadedBuilders =  ['WebKit Linux', 'WebKit Linux (dbg)', 'WebKit Mac10.7', 'WebKit Win', 'WebKit Win (dbg)'];
-    var loadedBuilders = [];
+
+    var expectedLoadedBuilderKeys =  ['chromium.webkit:WebKit Linux', 'chromium.webkit:WebKit Linux (dbg)', 'chromium.webkit:WebKit Linux (deps)', 'chromium.webkit:WebKit Mac10.7', 'chromium.webkit:WebKit Win', 'chromium.webkit:WebKit Win (dbg)'];
+    var loadedBuilderKeys = [];
     var resourceLoader = new loader.Loader();
     resourceLoader._loadNext = function() {
-        deepEqual(loadedBuilders.sort(), expectedLoadedBuilders);
-        loadedBuilders.forEach(function(builderName) {
-            ok('secondsSinceEpoch' in g_resultsByBuilder[builderName]);
-            deepEqual(g_resultsByBuilder[builderName].tests, {});
+        deepEqual(loadedBuilderKeys.sort(), expectedLoadedBuilderKeys);
+        loadedBuilderKeys.forEach(function(builderKey) {
+            ok('secondsSinceEpoch' in g_resultsByBuilder[builderKey]);
+            deepEqual(g_resultsByBuilder[builderKey].tests, {});
         });
     }
 
     var requestFunction = loader.request;
     loader.request = function(url, successCallback, errorCallback) {
+        var masterName = 'chromium.webkit';
         var builderName = /builder=([\w ().]+)&/.exec(url)[1];
-        loadedBuilders.push(builderName);
+        loadedBuilderKeys.push(masterName + ':' + builderName);
         successCallback({responseText: '{"version":4,"' + builderName + '":{"failure_map":{"A":"AUDIO","C":"CRASH","F":"TEXT"},"secondsSinceEpoch":[' + Date.now() + '],"tests":{}}}'});
     }
 
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
 
     try {
         resourceLoader._loadResultsFiles();
@@ -81,7 +83,7 @@ test('results files loading', 11, function() {
 
 test('results file failing to load', 2, function() {
     resetGlobals();
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
 
     var resourceLoader = new loader.Loader();
     var resourceLoadCount = 0;
@@ -89,43 +91,41 @@ test('results file failing to load', 2, function() {
         resourceLoadCount++;
     }
 
-    var builder1 = 'builder1';
-    currentBuilders()[builder1] = true;
+    var builder1 = new builders.Builder('DummyMaster1', 'DummyBuilder1');
+    currentBuilders().push(builder1);
     resourceLoader._handleResultsFileLoadError(builder1);
 
-    var builder2 = 'builder2';
-    currentBuilders()[builder2] = true;
+    var builder2 = new builders.Builder('DummyMaster2', 'DummyBuilder2');
+    currentBuilders().push(builder2);
     resourceLoader._handleResultsFileLoadError(builder2);
 
-    deepEqual(resourceLoader._buildersThatFailedToLoad, [builder1, builder2]);
+    deepEqual(resourceLoader.builderKeysThatFailedToLoad(), [builder1.key(), builder2.key()]);
     equal(resourceLoadCount, 2);
-
 });
 
 test('Default builder gets set.', 3, function() {
     resetGlobals();
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
 
-    var defaultBuilder = currentBuilderGroup().defaultBuilder();
+    var defaultBuilder = currentFirstBuilder();
     ok(defaultBuilder, "Default builder should exist.");
 
     // Simulate error loading the default builder data, then make sure
     // a new defaultBuilder is set, and isn't the now invalid one.
     var resourceLoader = new loader.Loader();
     resourceLoader._handleResultsFileLoadError(defaultBuilder);
-    var newDefaultBuilder = currentBuilderGroup().defaultBuilder();
+    var newDefaultBuilder = currentFirstBuilder();
     ok(newDefaultBuilder, "There should still be a default builder.");
-    notEqual(newDefaultBuilder, defaultBuilder, "Default builder should not be the old default builder");
+    notEqual(newDefaultBuilder.key(), defaultBuilder.key(), "Default builder should not be the old default builder");
 });
 
 test('addBuilderLoadErrors', 1, function() {
     var resourceLoader = new loader.Loader();
-    resourceLoader._buildersThatFailedToLoad = ['builder1', 'builder2'];
-    resourceLoader._staleBuilders = ['staleBuilder1'];
+    resourceLoader._builderKeysThatFailedToLoad = ['FailMaster1:FailBuilder1', 'FailMaster2:FailBuilder2'];
+    resourceLoader._staleBuilderKeys = ['StaleMaster:StaleBuilder'];
     resourceLoader._addErrors();
-    equal(resourceLoader._errors._messages, 'ERROR: Failed to get data from builder1,builder2.<br>ERROR: Data from staleBuilder1 is more than 1 day stale.<br>');
+    equal(resourceLoader._errors._messages, 'ERROR: Failed to get data from FailMaster1:FailBuilder1,FailMaster2:FailBuilder2.<br>ERROR: Data from StaleMaster:StaleBuilder is more than 1 day stale.<br>');
 });
-
 
 test('flattenTrie', 1, function() {
     resetGlobals();

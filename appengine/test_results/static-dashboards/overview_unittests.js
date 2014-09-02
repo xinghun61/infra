@@ -112,7 +112,7 @@ test('htmlForFlakyTests', 6, function() {
     }
 
     var container = document.createElement('div');
-    container.innerHTML = overview._htmlForFlakyTests(flakyData, 'MockGroup');
+    container.innerHTML = overview._htmlForFlakyTests(flakyData);
 
     // There should only be one row other than the header since browser_tests
     // have testCount of 0.
@@ -120,7 +120,7 @@ test('htmlForFlakyTests', 6, function() {
 
     var firstRow = container.querySelectorAll('tr')[1];
     equal(firstRow.querySelector('td:nth-child(1)').textContent, 'layout-tests');
-    equal(firstRow.querySelector('td:nth-child(1) a').hash, '#group=MockGroup&testType=layout-tests&tests=css3/foo.html,css3/bar.html');
+    equal(firstRow.querySelector('td:nth-child(1) a').hash, '#testType=layout-tests&tests=css3/foo.html,css3/bar.html');
     equal(firstRow.querySelector('td:nth-child(2)').textContent, '2 / 4');
     equal(firstRow.querySelector('td:nth-child(3)').textContent, '50%');
     equal(firstRow.querySelector('td:nth-child(4)').innerHTML, '<div class="flaky-bar" style="width:250px"></div>');
@@ -136,12 +136,10 @@ test('handleValidHashParameter', 5, function() {
     ok(!overview.handleValidHashParameter(historyInstance, 'randomKey', "5"))
 });
 
-test('navbar', 3, function() {
+test('navbar', 2, function() {
     var flipCount = 5;
     var container = document.createElement('div');
     container.innerHTML = overview._htmlForNavBar(flipCount);
-
-    ok(container.querySelector('select'));
 
     var sliderContainer = container.querySelector('#flip-slider-container');
     ok(sliderContainer);

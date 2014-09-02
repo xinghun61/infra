@@ -64,16 +64,16 @@ overview._getFlakyData = function(allTestTypes, resultsByTestType, flipCountThre
             testCount: 0
         }
 
-        var resultsByBuilder = resultsByTestType[testType];
-        for (var builder in resultsByBuilder) {
-            var totalTestCount = results.testCounts(resultsByBuilder[builder][results.NUM_FAILURES_BY_TYPE]).totalTests[0];
+        var resultsByBuilderKey = resultsByTestType[testType];
+        for (var builderKey in resultsByBuilderKey) {
+            var totalTestCount = results.testCounts(resultsByBuilderKey[builderKey][results.NUM_FAILURES_BY_TYPE]).totalTests[0];
             flakyData[testType].testCount = Math.max(totalTestCount, flakyData[testType].testCount);
 
-            var allTestsForThisBuilder = resultsByBuilder[builder].tests;
+            var allTestsForThisBuilder = resultsByBuilderKey[builderKey].tests;
             for (var test in allTestsForThisBuilder) {
                 var resultsForTest = {};
-                var testData = resultsByBuilder[builder].tests[test].results;
-                var failureMap = resultsByBuilder[builder][results.FAILURE_MAP];
+                var testData = resultsByBuilderKey[builderKey].tests[test].results;
+                var failureMap = resultsByBuilderKey[builderKey][results.FAILURE_MAP];
                 results.determineFlakiness(failureMap, testData, resultsForTest);
 
                 if (resultsForTest.isFlaky)
@@ -92,11 +92,11 @@ overview._generatePage = function()
 {
     var flipCountThreshold = Number(g_history.dashboardSpecificState.flipCount);
     var flakyData = overview._getFlakyData(builders.testTypes, overview._resultsByTestType, flipCountThreshold);
-    $('content').innerHTML = overview._htmlForFlakyTests(flakyData, g_history.crossDashboardState.group) +
+    $('content').innerHTML = overview._htmlForFlakyTests(flakyData) +
         '<div>*Tests that fail due to a bad patch being committed are counted as flaky.</div>';
 }
 
-overview._htmlForFlakyTests = function(flakyData, group)
+overview._htmlForFlakyTests = function(flakyData)
 {
     var html = '<table><tr><th>Test type</th><th>flaky count / total count</th><th>percent</th><th></th></tr>';
 
@@ -115,7 +115,7 @@ overview._htmlForFlakyTests = function(flakyData, group)
         var flakyCount = tests.length;
         var percentage = Math.round(100 * flakyCount / testCount);
         html += '<tr>' +
-            '<td><a href="flakiness_dashboard.html#group=' + group + '&testType=' + testType + '&tests=' + tests.join(',') + '" target=_blank>' +
+            '<td><a href="flakiness_dashboard.html#testType=' + testType + '&tests=' + tests.join(',') + '" target=_blank>' +
                 testType +
             '</a></td>' +
             '<td>' + flakyCount + ' / ' + testCount + '</td>' +
@@ -146,11 +146,11 @@ overview.handleValidHashParameter = function(historyInstance, key, value) {
 
 overview._htmlForNavBar = function(flipCount, showNoFlakes)
 {
-    return ui.html.navbar(ui.html.select('Group', 'group', builders.getAllGroupNames())) +
-        '<div id=flip-slider-container>' +
-            ui.html.range('flipCount', 'Flakiness threshold (low-->high):', 1, 50, flipCount) +
-            ui.html.checkbox('showNoFlakes', 'Show test suites with no flakes', showNoFlakes) +
-        '</div>';
+    return ui.html.navbar() +
+            '<div id=flip-slider-container>' +
+                ui.html.range('flipCount', 'Flakiness threshold (low-->high):', 1, 50, flipCount) +
+                ui.html.checkbox('showNoFlakes', 'Show test suites with no flakes', showNoFlakes) +
+            '</div>';
 }
 
 // FIXME: Once dashboard_base, loader and ui stop using the g_history global, we can stop setting it here.

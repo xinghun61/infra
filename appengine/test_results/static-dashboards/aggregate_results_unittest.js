@@ -36,25 +36,25 @@ function setupAggregateResultsData(includeRevisonNumbers)
     for (var key in history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES)
         historyInstance.crossDashboardState[key] = history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES[key];
 
-    var builderName = 'Blink Linux';
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
     LOAD_BUILDBOT_DATA({
         "no_upload_test_types": [],
         "masters": [
             {
-                "groups": [ "@ToT Blink" ],
-                "name": "ChromiumWebkit",
+                "name": builder.masterName,
                 "url_name": "chromium.webkit",
                 "tests": {
                     "layout-tests": {
-                        "builders": [builderName]
+                        "builders": [builder.builderName]
                     }
                 },
             }
         ]
     });
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
 
-    g_resultsByBuilder[builderName] = {
+    builders.getBuilders('layout-tests');
+
+    g_resultsByBuilder[builder.key()] = {
         "num_failures_by_type": {
             "CRASH": [ 13, 10 ],
             "MISSING": [ 6, 8 ],
@@ -68,11 +68,11 @@ function setupAggregateResultsData(includeRevisonNumbers)
             "WONTFIX": [ 2, 2 ],
         },
         "buildNumbers": [5, 3]
-    }
+    };
 
     if (includeRevisonNumbers) {
-        g_resultsByBuilder[builderName][results.BLINK_REVISIONS] = [1234, 1233];
-        g_resultsByBuilder[builderName][results.CHROME_REVISIONS] = [4567, 4566];
+        g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS] = [1234, 1233];
+        g_resultsByBuilder[builder.key()][results.CHROME_REVISIONS] = [4567, 4566];
     }
 
     g_totalFailureCounts = {};
@@ -84,13 +84,14 @@ test('htmlForBuilderIncludeRevisionNumbers', 1, function() {
     g_history.dashboardSpecificState.rawValues = false;
 
     var expectedHtml = '<div class=container>' +
-        '<h2>Blink Linux</h2>' +
-        '<a href="timeline_explorer.html#useTestData=true&builder=Blink Linux">' +
-            '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:qe..&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Blink Revision|&chxr=0,1233,1234|2,0,1445&chtt=Total failing">' +
-            '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:AjAt,AcAV,A7A7,DuEc,pB..,DSE4,CoD8&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Blink Revision|&chxr=0,1233,1234|2,0,1167&chtt=Detailed breakdown&chdl=CRASH|MISSING|IMAGE+TEXT|IMAGE|SKIP|TEXT|TIMEOUT&chco=FF0000,00FF00,0000FF,000000,FF6EB4,FFA812,9B30FF">' +
+        '<h2>chromium.webkit:Blink Linux</h2>' +
+        '<a href="timeline_explorer.html#useTestData=true&builder=chromium.webkit:Blink Linux">' +
+            '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:qe..&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Chrome Revision|&chxr=0,4566,4567|2,0,1445&chtt=Total failing">' +
+            '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:AjAt,AcAV,A7A7,DuEc,pB..,DSE4,CoD8&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Chrome Revision|&chxr=0,4566,4567|2,0,1167&chtt=Detailed breakdown&chdl=CRASH|MISSING|IMAGE+TEXT|IMAGE|SKIP|TEXT|TIMEOUT&chco=FF0000,00FF00,0000FF,000000,FF6EB4,FFA812,9B30FF">' +
         '</a>' +
     '</div>';
-    equal(expectedHtml, htmlForBuilder('Blink Linux'));
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    equal(expectedHtml, htmlForBuilder(builder));
 });
 
 test('htmlForBuilder', 1, function() {
@@ -99,13 +100,14 @@ test('htmlForBuilder', 1, function() {
     g_history.dashboardSpecificState.rawValues = false;
 
     var expectedHtml = '<div class=container>' +
-        '<h2>Blink Linux</h2>' +
-        '<a href="timeline_explorer.html#useTestData=true&builder=Blink Linux">' +
+        '<h2>chromium.webkit:Blink Linux</h2>' +
+        '<a href="timeline_explorer.html#useTestData=true&builder=chromium.webkit:Blink Linux">' +
             '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:qe..&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Build Number|&chxr=0,3,5|2,0,1445&chtt=Total failing">' +
             '<img src="http://chart.apis.google.com/chart?cht=lc&chs=600x400&chd=e:AjAt,AcAV,A7A7,DuEc,pB..,DSE4,CoD8&chg=15,15,1,3&chxt=x,x,y&chxl=1:||Build Number|&chxr=0,3,5|2,0,1167&chtt=Detailed breakdown&chdl=CRASH|MISSING|IMAGE+TEXT|IMAGE|SKIP|TEXT|TIMEOUT&chco=FF0000,00FF00,0000FF,000000,FF6EB4,FFA812,9B30FF">' +
         '</a>' +
     '</div>';
-    equal(expectedHtml, htmlForBuilder('Blink Linux'));
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    equal(expectedHtml, htmlForBuilder(builder));
 });
 
 test('htmlForBuilderRawResultsIncludeRevisionNumbers', 1, function() {
@@ -114,10 +116,9 @@ test('htmlForBuilderRawResultsIncludeRevisionNumbers', 1, function() {
     g_history.dashboardSpecificState.rawValues = true;
 
     var expectedHtml = '<div class=container>' +
-        '<h2>Blink Linux</h2>' +
+        '<h2>chromium.webkit:Blink Linux</h2>' +
         '<table>' +
             '<tbody>' +
-                '<tr><td>Blink Revision</td><td>1234</td><td>1233</td></tr>' +
                 '<tr><td>Chrome Revision</td><td>4567</td><td>4566</td></tr>' +
                 '<tr><td>Percent passed</td><td>95.1%</td><td>96.8%</td></tr>' +
                 '<tr><td>Failures</td><td>1445</td><td>959</td></tr>' +
@@ -135,7 +136,8 @@ test('htmlForBuilderRawResultsIncludeRevisionNumbers', 1, function() {
             '</tbody>' +
         '</table>' +
     '</div>';
-    equal(expectedHtml, htmlForBuilder('Blink Linux'));
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    equal(expectedHtml, htmlForBuilder(builder));
 });
 
 test('htmlForBuilderRawResults', 1, function() {
@@ -144,9 +146,10 @@ test('htmlForBuilderRawResults', 1, function() {
     g_history.dashboardSpecificState.rawValues = true;
 
     var expectedHtml = '<div class=container>' +
-        '<h2>Blink Linux</h2>' +
+        '<h2>chromium.webkit:Blink Linux</h2>' +
         '<table>' +
             '<tbody>' +
+                '<tr><td>Build Number</td><td>5</td><td>3</td></tr>' +
                 '<tr><td>Percent passed</td><td>95.1%</td><td>96.8%</td></tr>' +
                 '<tr><td>Failures</td><td>1445</td><td>959</td></tr>' +
                 '<tr><td>Total Tests</td><td>29549</td><td>29545</td></tr>' +
@@ -163,5 +166,6 @@ test('htmlForBuilderRawResults', 1, function() {
             '</tbody>' +
         '</table>' +
     '</div>';
-    equal(expectedHtml, htmlForBuilder('Blink Linux'));
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    equal(expectedHtml, htmlForBuilder(builder));
 });

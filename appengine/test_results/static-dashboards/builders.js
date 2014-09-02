@@ -29,26 +29,30 @@
 function LOAD_BUILDBOT_DATA(builderData)
 {
     builders.masters = {};
-    builders.urlNameToMasterName = {};
-    var groups = {};
     var testTypes = {};
     var testTypesThatDoNotUpload = {};
-    builders.noUploadTestTypes = builderData['no_upload_test_types']
+    builders.noUploadTestTypes = builderData['no_upload_test_types'];
+    builders.testTypeToBuilder = {};
+
     builderData['masters'].forEach(function(master) {
-        builders.urlNameToMasterName[master.url_name] = master.name;
-        builders.masters[master.name] = new builders.BuilderMaster(master);
-
-        master.groups.forEach(function(group) { groups[group] = true; });
-
+        builders.masters[master.url_name] = new builders.Master(master);
         Object.keys(master.tests).forEach(function(testType) {
+            if (!master.builderNames)
+                master.builderNames = {};
+            var builderNames = master.tests[testType].builders;
+            builderNames.forEach(function(builderName) {
+                master.builderNames[builderName] = true;
+                if (!builders.testTypeToBuilder[testType])
+                    builders.testTypeToBuilder[testType] = [];
+                builders.testTypeToBuilder[testType].push(new builders.Builder(master.url_name, builderName));
+            });
+
             if (builders.testTypeUploadsToFlakinessDashboardServer(testType))
                 testTypes[testType] = true;
             else
                 testTypesThatDoNotUpload[testType] = true;
         });
     });
-    builders.groups = Object.keys(groups);
-    builders.groups.sort();
     builders.testTypes = Object.keys(testTypes);
     builders.testTypes.sort();
     // FIXME: Expose this in the flakiness dashboard UI and give a clear error message
@@ -70,99 +74,72 @@ builders.testTypeUploadsToFlakinessDashboardServer = function(testType)
     return true;
 }
 
-var currentBuilderGroup = {};
-var testTypesThatRunToTBlinkBots = ['layout-tests', 'webkit_unit_tests'];
+// FIXME: Do not rely on current* state but instead pass it in to every caller.
+var _currentBuilders = [];
+var _currentTestType;
 
-builders.getBuilderGroup = function(groupName, testType)
+builders.getBuilders = function(testType)
 {
-    if (!builders in currentBuilderGroup) {
-        currentBuilderGroup = builders.loadBuildersList(groupName, testType);
+    if (_currentTestType != testType)
+        this._updateCurrentTestType(testType);
+
+    return _currentBuilders;
+}
+
+builders._updateCurrentTestType = function(testType)
+{
+    _currentTestType = testType;
+    if (!builders.testTypeToBuilder[testType])
+        console.error('No master and builder found for ' + testType);
+    _currentBuilders = builders.testTypeToBuilder[testType];
+}
+
+builders.Builder = function(masterName, builderName)
+{
+    this.masterName = masterName;
+    this.builderName = builderName;
+}
+
+builders.Builder.prototype = {
+    key: function() {
+        return this.masterName + ':' + this.builderName;
+    },
+    master: function() {
+        if (!builders.masters[this.masterName])
+            console.error('Master not found for ' + this.key());
+        return builders.masters[this.masterName];
+    },
+    builderNameForPath: function() {
+        var name = this.builderName;
+        return name.replace(/[ .()]/g, '_');
     }
-    return currentBuilderGroup;
 }
 
-function isChromiumWebkitTipOfTreeTestRunner(builder)
+builders.builderFromKey = function(builderKey)
 {
-    return !isChromiumWebkitDepsTestRunner(builder);
-}
+    if (!builderKey)
+        return undefined;
 
-function isChromiumWebkitDepsTestRunner(builder)
-{
-    return builder.indexOf('(deps)') != -1;
-}
-
-builders._builderFilter = function(groupName, masterName, testType)
-{
-    if (testTypesThatRunToTBlinkBots.indexOf(testType) == -1) {
-        if (masterName == 'ChromiumWebkit' && groupName != '@ToT Blink')
-            return function() { return false };
-        return null;
-    }
-
-    if (groupName == '@ToT Blink')
-        return isChromiumWebkitTipOfTreeTestRunner;
-
-    if (groupName == '@ToT Chromium')
-        return isChromiumWebkitDepsTestRunner;
-
-    return null;
-}
-
-// FIXME: When we change to show multiple groups at once, this will need to
-// change to key off groupName and builderName.
-builders.master = function(builderName)
-{
-    return builders.builderToMaster[builderName];
-}
-
-builders.loadBuildersList = function(groupName, testType)
-{
-    if (!groupName || !testType) {
-        console.warn("Group name and/or test type were empty.");
-        return new builders.BuilderGroup(false);
-    }
-    var builderGroup = new builders.BuilderGroup(groupName == '@ToT Blink');
-    builders.builderToMaster = {};
-
-    for (masterName in builders.masters) {
-        if (!builders.masters[masterName])
-            continue;
-
-        var master = builders.masters[masterName];
-        var hasTest = testType in master.tests;
-        var isInGroup = master.groups.indexOf(groupName) != -1;
-
-        if (hasTest && isInGroup) {
-            var builderList = master.tests[testType].builders;
-            var builderFilter = builders._builderFilter(groupName, masterName, testType);
-            if (builderFilter)
-                builderList = builderList.filter(builderFilter);
-            builderGroup.append(builderList);
-
-            builderList.forEach(function (builderName) {
-                builders.builderToMaster[builderName] = master;
-            });
-        }
+    var masterNameAndBuilderName = builderKey.split(':');
+    if (!masterNameAndBuilderName.length) {
+        console.error('Builder not found for ' + builderKey);
+        return undefined;
     }
 
-    currentBuilderGroup = builderGroup;
-    return currentBuilderGroup;
+    var masterName = masterNameAndBuilderName[0];
+    if (!builders.masters[masterName])
+        console.error('Master "' + masterName + '" not found');
+    return new builders.Builder(masterName, masterNameAndBuilderName[1]);
 }
 
-builders.getAllGroupNames = function()
-{
-    return builders.groups;
-}
-
-builders.BuilderMaster = function(master_data)
+builders.Master = function(master_data)
 {
     this.name = master_data.name;
     this.basePath = 'http://build.chromium.org/p/' + master_data.url_name;
     this.tests = master_data.tests;
-    this.groups = master_data.groups;
 }
 
-builders.BuilderMaster.prototype = {
+builders.Master.prototype = {
     logPath: function(builder, buildNumber)
     {
         return this.builderPath(builder) + '/builds/' + buildNumber;
@@ -175,57 +152,6 @@ builders.BuilderMaster.prototype = {
     {
         return this.basePath + '/json/builders';
     },
-}
-
-builders.BuilderGroup = function(isToTBlink)
-{
-    this.isToTBlink = isToTBlink;
-    // Map of builderName (the name shown in the waterfall) to builderPath (the
-    // path used in the builder's URL)
-    this.builders = {};
-}
-
-builders.BuilderGroup.prototype = {
-    append: function(builders) {
-        builders.forEach(function(builderName) {
-            this.builders[builderName] = builderName.replace(/[ .()]/g, '_');
-        }, this);
-    },
-    defaultBuilder: function()
-    {
-        for (var builder in this.builders)
-            return builder;
-        console.error('There are no builders in this builder group.');
-    },
-    master: function()
-    {
-        return builders.master(this.defaultBuilder());
-    },
-}
-
-builders.groupNamesForTestType = function(testType)
-{
-    var groupNames = [];
-    for (masterName in builders.masters) {
-        var master = builders.masters[masterName];
-        if (testType in master.tests) {
-            groupNames = groupNames.concat(master.groups);
-        }
-    }
-
-    if (groupNames.length == 0) {
-        console.error("The current test type wasn't present in any groups:", testType);
-        return groupNames;
-    }
-
-    var groupNames = groupNames.reduce(function(prev, curr) {
-        if (prev.indexOf(curr) == -1) {
-            prev.push(curr);
-        }
-        return prev;
-    }, []);
-
-    return groupNames;
 }
 
 })();

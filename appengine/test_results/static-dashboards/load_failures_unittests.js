@@ -5,50 +5,39 @@
 module('loadfailures');
 
 test('htmlForBuilder', 1, function() {
-    var html = loadfailures._htmlForBuilder('MockBuilder', 'MockTestType', {
-        'MockBuilder': new builders.BuilderMaster({name: 'MockMaster', url_name: 'mock.master', tests: [], groups: []}),
-    });
+    var mockMaster = new builders.Master({name: 'MockMaster1', url_name: 'mock.master', tests: [], groups: []});
+    builders.masters['mock.master'] = mockMaster;
+    var builder = new builders.Builder('mock.master', 'Builder1');
+    var html = loadfailures._htmlForBuilder(builder, 'layout-tests');
 
     equal(html, '<tr class="builder">' +
-        '<td>MockBuilder' +
-        '<td><a href="http://test-results.appspot.com/testfile?testtype=MockTestType&builder=MockBuilder&master=MockMaster">uploaded results</a>' +
-        '<td><a href="http://mockbasepath/builders/MockBuilder">buildbot</a>' +
+        '<td>mock.master:Builder1' +
+        '<td><a href="http://test-results.appspot.com/testfile?testtype=layout-tests&builder=Builder1&master=mock.master">uploaded results</a>' +
+        '<td><a href="http://build.chromium.org/p/mock.master/builders/Builder1">buildbot</a>' +
     '</tr>');
 });
 
-test('html', 5, function() {
-    var mockBuilderMaster = new builders.BuilderMaster({name: 'MockMaster', url_name: 'mock.master', tests: [], groups: []}),
+test('html', 4, function() {
+    var mockMaster = new builders.Master({name: 'MockMaster', url_name: 'mock.master', tests: [], groups: []});
+    builders.masters['mock.master'] = mockMaster;
+    var builderFail = new builders.Builder('mock.master', 'BuilderFail');
+    var builderStale = new builders.Builder('mock.master', 'BuilderStale');
+
     var failureData = {
-        '@ToT Chromium': {
-            failingBuilders: {
-                'MockTestType': ['MockFailingBuilder'],
-            },
-            staleBuilders: {
-                'MockTestType': ['MockStaleBuilder'],
-            },
-            testTypesWithNoSuccessfullLoads: [ 'MockTestType' ],
-            builderToMaster: {
-                'MockFailingBuilder': mockBuilderMaster,
-                'MockStaleBuilder': mockBuilderMaster,
-            },
+        failingBuilders: {
+            'MockTestType': [builderFail],
         },
-        '@ToT Blink': {
-            failingBuilders: {
-                'MockTestType': ['MockFailingBuilder'],
-            },
-            staleBuilders: {},
-            testTypesWithNoSuccessfullLoads: [],
-            builderToMaster: {
-                'MockFailingBuilder': mockBuilderMaster,
-            },
+        staleBuilders: {
+            'MockTestType': [builderStale],
         },
+        testTypesWithNoSuccessfullLoads: [ 'MockTestType' ],
     }
 
     var container = document.createElement('div');
     container.innerHTML = loadfailures._html(failureData);
+    console.log(container.innerHTML)
 
-    equal(container.querySelectorAll('h1').length, 2, 'There should be two group headers');
-    equal(container.querySelectorAll('.builder').length, 3, 'There should be 3 builders');
+    equal(container.querySelectorAll('.builder').length, 2, 'There should be 2 builders');
 
     var firstFailingBuilder = container.querySelector('table').querySelector('tr:nth-child(2) > td:nth-child(2)');
     equal(firstFailingBuilder.querySelector('b').innerHTML, 'No builders with up to date results.');

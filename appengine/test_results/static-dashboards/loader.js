@@ -33,9 +33,9 @@ var loader = loader || {};
 
 var TEST_RESULTS_SERVER = 'http://test-results.appspot.com/';
 
-function pathToBuilderResultsFile(builderName) {
-    return TEST_RESULTS_SERVER + 'testfile?builder=' + builderName +
-           '&master=' + builders.master(builderName).name +
+function pathToBuilderResultsFile(builder) {
+    return TEST_RESULTS_SERVER + 'testfile?builder=' + builder.builderName +
+           '&master=' + builder.masterName +
            '&testtype=' + g_history.crossDashboardState.testType + '&name=';
 }
 
@@ -59,12 +59,12 @@ loader.request = function(url, success, error, opt_isBinaryData)
 loader.Loader = function()
 {
     this._loadingSteps = [
-        this._loadBuildersList,
+        this._loadBuilders,
         this._loadResultsFiles,
     ];
 
-    this._buildersThatFailedToLoad = [];
-    this._staleBuilders = [];
+    this._builderKeysThatFailedToLoad = [];
+    this._staleBuilderKeys = [];
     this._errors = new ui.Errors();
     // TODO(jparent): Pass in the appropriate history obj per db.
     this._history = g_history;
@@ -99,11 +99,11 @@ loader.Loader.prototype = {
     {
         this._errors.show();
     },
-    buildersThatFailedToLoad: function() {
-        return this._buildersThatFailedToLoad;
+    builderKeysThatFailedToLoad: function() {
+        return this._builderKeysThatFailedToLoad;
     },
-    staleBuilders: function() {
-        return this._staleBuilders;
+    staleBuilderKeys: function() {
+        return this._staleBuilderKeys;
     },
     _loadNext: function()
     {
@@ -115,21 +115,20 @@ loader.Loader.prototype = {
         }
         loadingStep.apply(this);
     },
-    _loadBuildersList: function()
+    _loadBuilders: function()
     {
-        builders.loadBuildersList(currentBuilderGroupName(), this._history.crossDashboardState.testType);
+        builders.getBuilders(this._history.crossDashboardState.testType);
         this._loadNext();
     },
     _loadResultsFiles: function()
     {
-        var builderNames = Object.keys(currentBuilders());
-        if (builderNames.length)
-            builderNames.forEach(this._loadResultsFileForBuilder.bind(this));
+        if (currentBuilders().length)
+            currentBuilders().forEach(this._loadResultsFileForBuilder.bind(this));
         else
             this._loadNext();
 
     },
-    _loadResultsFileForBuilder: function(builderName)
+    _loadResultsFileForBuilder: function(builder)
     {
         var resultsFilename;
         // FIXME: times_ms.json should store the actual buildnumber and
@@ -141,41 +140,41 @@ loader.Loader.prototype = {
         else
             resultsFilename = 'results-small.json';
 
-        var resultsFileLocation = pathToBuilderResultsFile(builderName) + resultsFilename;
+        var resultsFileLocation = pathToBuilderResultsFile(builder) + resultsFilename;
         loader.request(resultsFileLocation,
-                partial(function(loader, builderName, xhr) {
-                    loader._handleResultsFileLoaded(builderName, xhr.responseText);
-                }, this, builderName),
-                partial(function(loader, builderName, xhr) {
-                    loader._handleResultsFileLoadError(builderName);
-                }, this, builderName));
+                partial(function(loader, builder, xhr) {
+                    loader._handleResultsFileLoaded(builder, xhr.responseText);
+                }, this, builder),
+                partial(function(loader, builder, xhr) {
+                    loader._handleResultsFileLoadError(builder);
+                }, this, builder));
     },
-    _handleResultsFileLoaded: function(builderName, fileData)
+    _handleResultsFileLoaded: function(builder, fileData)
     {
         if (history.isTreeMap())
-            this._processTimesJSONData(builderName, fileData);
+            this._processTimesJSONData(builder, fileData);
         else
-            this._processResultsJSONData(builderName, fileData);
+            this._processResultsJSONData(builder, fileData);
 
         // We need this work-around for webkit.org/b/50589.
-        if (!g_resultsByBuilder[builderName]) {
-            this._handleResultsFileLoadError(builderName);
+        if (!g_resultsByBuilder[builder.key()]) {
+            this._handleResultsFileLoadError(builder);
             return;
         }
 
         this._handleResourceLoad();
     },
-    _processTimesJSONData: function(builderName, fileData)
+    _processTimesJSONData: function(builder, fileData)
     {
         // FIXME: We should probably include the builderName in the JSON
         // rather than relying on only loading one JSON file per page.
-        g_resultsByBuilder[builderName] = JSON.parse(fileData);
+        g_resultsByBuilder[builder.key()] = JSON.parse(fileData);
     },
-    _processResultsJSONData: function(builderName, fileData)
+    _processResultsJSONData: function(builder, fileData)
     {
         var builds = JSON.parse(fileData);
 
-        if (builderName == 'version' || builderName == 'failure_map')
+        if (builder.builderName == 'version' || builder.builderName == 'failure_map')
              return;
 
         var ONE_DAY_SECONDS = 60 * 60 * 24;
@@ -185,24 +184,28 @@ loader.Loader.prototype = {
         // Assume any builder without a run in two weeks for a given test suite isn't
         // running that suite anymore.
         // FIXME: Grab which bots run which tests directly from the buildbot JSON instead.
-        var lastRunSeconds = builds[builderName].secondsSinceEpoch[0];
+        var lastRunSeconds = builds[builder.builderName].secondsSinceEpoch[0];
         if ((Date.now() / 1000) - lastRunSeconds > ONE_WEEK_SECONDS)
             return;
 
         if ((Date.now() / 1000) - lastRunSeconds > ONE_DAY_SECONDS)
-            this._staleBuilders.push(builderName);
+            this._staleBuilderKeys.push(builder.key());
 
-        builds[builderName][results.TESTS] = loader.Loader._flattenTrie(builds[builderName][results.TESTS]);
-        g_resultsByBuilder[builderName] = builds[builderName];
+        builds[builder.builderName][results.TESTS] = loader.Loader._flattenTrie(builds[builder.builderName][results.TESTS]);
+        g_resultsByBuilder[builder.key()] = builds[builder.builderName];
     },
-    _handleResultsFileLoadError: function(builderName)
+    _handleResultsFileLoadError: function(builder)
     {
         // FIXME: loader shouldn't depend on state defined in dashboard_base.js.
-        this._buildersThatFailedToLoad.push(builderName);
+        this._builderKeysThatFailedToLoad.push(builder.key());
 
         // Remove this builder from builders, so we don't try to use the
         // data that isn't there.
-        delete currentBuilders()[builderName];
+        var current = currentBuilders();
+        for (var c = current.length - 1; c >= 0; --c) {
+            if (current[c].key() == builder.key())
+                current.splice(c, 1);
+        }
 
         // Proceed as if the resource had loaded.
         this._handleResourceLoad();
@@ -214,19 +217,21 @@ loader.Loader.prototype = {
     },
     _haveResultsFilesLoaded: function()
     {
-        for (var builderName in currentBuilders()) {
-            if (!g_resultsByBuilder[builderName] && this._buildersThatFailedToLoad.indexOf(builderName) < 0)
+        var current = currentBuilders();
+        for (var c = 0; c < current.length; c++) {
+            var builder = current[c];
+            if (!g_resultsByBuilder[builder.key()] && this._builderKeysThatFailedToLoad.indexOf(builder.key()) < 0)
                 return false;
         }
         return true;
     },
     _addErrors: function()
     {
-        if (this._buildersThatFailedToLoad.length)
-            this._errors.addError('ERROR: Failed to get data from ' + this._buildersThatFailedToLoad.toString() +'.');
+        if (this._builderKeysThatFailedToLoad.length)
+            this._errors.addError('ERROR: Failed to get data from ' + this._builderKeysThatFailedToLoad.toString() +'.');
 
-        if (this._staleBuilders.length)
-            this._errors.addError('ERROR: Data from ' + this._staleBuilders.toString() + ' is more than 1 day stale.');
+        if (this._staleBuilderKeys.length)
+            this._errors.addError('ERROR: Data from ' + this._staleBuilderKeys.toString() + ' is more than 1 day stale.');
     }
 }
 

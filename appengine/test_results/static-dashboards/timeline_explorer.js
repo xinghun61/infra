@@ -39,13 +39,13 @@ var defaultDashboardSpecificStateValues = {
 };
 
 var DB_SPECIFIC_INVALIDATING_PARAMETERS = {
-    'testType': 'builder',
-    'group': 'builder'
+    'testType': 'builder'
 };
 
 function generatePage(historyInstance)
 {
-    var resultsForBuilder = g_resultsByBuilder[historyInstance.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder()];
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var resultsForBuilder = g_resultsByBuilder[builder.key()];
 
     g_totalFailureCount = results.testCounts(resultsForBuilder[results.NUM_FAILURES_BY_TYPE]).totalFailingTests;
 
@@ -81,8 +81,15 @@ function handleValidHashParameter(historyInstance, key, value)
 {
     switch(key) {
     case 'builder':
-        history.validateParameter(historyInstance.dashboardSpecificState, key, value,
-            function() { return value in currentBuilders(); });
+        history.validateParameter(this.dashboardSpecificState, key, value,
+            function() {
+                var current = currentBuilders();
+                for (var c = 0; c < current.length; c++) {
+                    if (current[c].key() == value)
+                        return true;
+                }
+                return false;
+            });
         return true;
     case 'buildTimestamp':
         historyInstance.dashboardSpecificState.buildTimestamp = parseInt(value, 10);
@@ -108,18 +115,14 @@ g_history.parseCrossDashboardParameters();
 
 function initCurrentBuilderTestResults()
 {
-    g_currentBuilderTestResults = _decompressResults(g_resultsByBuilder[g_history.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder()]);
-}
-
-function shouldShowBlinkRevisionsOnly()
-{
-    return currentBuilderGroup().isToTBlink;
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    g_currentBuilderTestResults = _decompressResults(g_resultsByBuilder[builder.key()]);
 }
 
 function updateTimelineForBuilder()
 {
-    var builder = g_history.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder();
-    var resultsForBuilder = g_resultsByBuilder[builder];
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var resultsForBuilder = g_resultsByBuilder[builder.key()];
     var graphData = [];
 
     var annotations = [];
@@ -136,7 +139,7 @@ function updateTimelineForBuilder()
 
         graphData.push([buildDate, failureCount]);
 
-        if (!shouldShowBlinkRevisionsOnly() && (resultsForBuilder[results.BLINK_REVISIONS][i] != resultsForBuilder[results.BLINK_REVISIONS][i + 1])) {
+        if (resultsForBuilder[results.BLINK_REVISIONS][i] != resultsForBuilder[results.BLINK_REVISIONS][i + 1]) {
             annotations.push({
                 series: FAILING_TESTS_DATASET_NAME,
                 x: buildDate,
@@ -227,16 +230,15 @@ function updateBuildInspector(resultsForBuilder, builder, dygraph, index)
     // Builder and results links
     var buildNumber = resultsForBuilder[results.BUILD_NUMBERS][index];
     addRow('', '');
-    var master = builders.master(builder);
-    var buildUrl = master.logPath(builder, resultsForBuilder[results.BUILD_NUMBERS][index]);
+    var master = builder.master();
+    var buildUrl = master.logPath(builder.builderName, resultsForBuilder[results.BUILD_NUMBERS][index]);
     var resultsUrl = 'https://storage.googleapis.com/chromium-layout-test-archives/' +
-        currentBuilders()[builder] + '/' + resultsForBuilder[results.BUILD_NUMBERS][index];
+        builder.buildNameForPath() + '/' + resultsForBuilder[results.BUILD_NUMBERS][index];
 
     addRow('Build:', '<a href="' + buildUrl + '" target="_blank">' + buildNumber + '</a> (<a href="' + resultsUrl + '" target="_blank">results</a>)');
 
     // Revision link(s)
-    if (!shouldShowBlinkRevisionsOnly())
-        addRow('Chromium change:', ui.html.chromiumRevisionLink(resultsForBuilder, index));
+    addRow('Chromium change:', ui.html.chromiumRevisionLink(resultsForBuilder, index));
     addRow('Blink change:', ui.html.blinkRevisionLink(resultsForBuilder, index));
 
     // Test status/counts
@@ -467,18 +469,18 @@ document.addEventListener('keydown', function(e) {
     if (g_currentBuildIndex == -1)
         return;
 
-    var builder = g_history.dashboardSpecificState.builder || currentBuilderGroup().defaultBuilder();
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
     switch (e.keyIdentifier) {
     case 'Left':
         selectBuild(
-            g_resultsByBuilder[builder],
+            g_resultsByBuilder[builder.key()],
             builder,
             g_dygraph,
             g_currentBuildIndex + 1);
         break;
     case 'Right':
         selectBuild(
-            g_resultsByBuilder[builder],
+            g_resultsByBuilder[builder.key()],
             builder,
             g_dygraph,
             g_currentBuildIndex - 1);

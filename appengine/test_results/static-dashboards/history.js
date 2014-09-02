@@ -32,7 +32,6 @@ var history = history || {};
 (function() {
 
 history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES = {
-    group: '@ToT Blink',
     showAllRuns: false,
     testType: 'layout-tests',
     useTestData: false,
@@ -70,31 +69,6 @@ history.queryHashAsMap = function()
 
         paramsMap[thisParam[0]] = decodeURIComponent(thisParam[1]);
     }
-
-    // FIXME: Make master a first-class parameter instead of replacing it with the group.
-    if (paramsMap.master) {
-        var errors = new ui.Errors();
-        if (paramsMap.master == 'TryServer')
-            errors.addError('ERROR: You got here from the trybot waterfall. The try bots do not record data in the flakiness dashboard. Showing results for the regular waterfall.');
-        else if (!builders.masters[paramsMap.master] && !builders.urlNameToMasterName[paramsMap.master])
-            errors.addError('ERROR: Unknown master name: ' + paramsMap.master);
-
-        if (errors.hasErrors()) {
-            errors.show();
-            window.location.hash = window.location.hash.replace('master=' + paramsMap.master, '');
-        } else {
-            var master = builders.urlNameToMasterName[paramsMap.master] || paramsMap.master;
-            var groupIndex = master == 'ChromiumWebkit' ? 1 : 0;
-            paramsMap.group = builders.masters[master].groups[groupIndex];
-            window.location.hash = window.location.hash.replace('master=' + paramsMap.master, 'group=' + encodeURIComponent(paramsMap.group));
-            delete paramsMap.master;
-        }
-    }
-
-    // FIXME: Find a better way to do this. For layout-tests, we want the default group to be
-    // the ToT blink group. For other test types, we want it to be the Deps group.
-    if (!paramsMap.group && (!paramsMap.testType || paramsMap.testType == 'layout-tests'))
-        paramsMap.group = builders.groupNamesForTestType('layout-tests')[1];
 
     return paramsMap;
 }
@@ -138,22 +112,13 @@ history.History = function(configuration)
     }
 }
 
-history.reloadRequiringParameters = ['showAllRuns', 'group', 'testType'];
-
-var CROSS_DB_INVALIDATING_PARAMETERS = {
-    'testType': 'group'
-};
+history.reloadRequiringParameters = ['showAllRuns', 'testType'];
 
 history.History.prototype = {
     initialize: function()
     {
         window.onhashchange = this._handleLocationChange.bind(this);
         this._handleLocationChange();
-    },
-    isBlinkGroup: function()
-    {
-        var group = this.crossDashboardState.group;
-        return group && group.indexOf('@ToT Blink') >= 0;
     },
     isLayoutTestResults: function()
     {
@@ -236,13 +201,6 @@ history.History.prototype = {
                 function() { return builders.testTypes.indexOf(value) != -1; });
             return true;
 
-        case 'group':
-            history.validateParameter(this.crossDashboardState, key, value,
-                function() {
-                    return builders.getAllGroupNames().indexOf(value) != -1;
-                });
-            return true;
-
         case 'useTestData':
         case 'showAllRuns':
             this.crossDashboardState[key] = value == 'true';
@@ -285,8 +243,6 @@ history.History.prototype = {
     invalidateQueryParameters: function(queryParamsAsState)
     {
         for (var key in queryParamsAsState) {
-            if (key in CROSS_DB_INVALIDATING_PARAMETERS)
-                delete this.crossDashboardState[CROSS_DB_INVALIDATING_PARAMETERS[key]];
             if (this._dashboardSpecificInvalidatingParameters && key in this._dashboardSpecificInvalidatingParameters)
                 delete this.dashboardSpecificState[this._dashboardSpecificInvalidatingParameters[key]];
         }

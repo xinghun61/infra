@@ -32,69 +32,89 @@ test('loading steps', 4, function() {
     var tests = {}
     var basePath = 'http://build.chromium.org/p/';
     var name = 'dummyname';
-    var master = new builders.BuilderMaster({name: name, url_name: name, tests: tests});
+    var master = new builders.Master({name: name, url_name: name, tests: tests});
 
-    var builder = 'dummybuilder';
+    var builderName = 'dummybuilder';
     var buildNumber = 12345;
-    equal(master.logPath(builder, buildNumber), basePath + name + '/builders/' + builder + '/builds/' + buildNumber);
+    equal(master.logPath(builderName, buildNumber), basePath + name + '/builders/' + builderName + '/builds/' + buildNumber);
     equal(master.builderJsonPath(), basePath + name + '/json/builders');
     equal(master.tests, tests);
     equal(master.name, name);
 });
 
-test('builders._builderFilter', 5, function() {
-    var filter = builders._builderFilter('@ToT Blink', 'DummyMaster', 'layout-tests');
-    equal(filter('WebKit Android (Nexus4)'), true, 'show android webkit builder');
-    equal(filter('WebKit Linux'), true, 'show linux webkit builder');
-
-    var filter = builders._builderFilter('@ToT Chromium', 'DummyMaster', 'webkit_unit_tests');
-    equal(filter('WebKit Win7 (deps)'), true, 'show DEPS builder');
-    equal(filter('WebKit Win7'), false, 'don\'t show non-deps builder');
-
-    var filter = builders._builderFilter('@ToT Chromium', 'ChromiumWebkit', 'dummy_test_type');
-    equal(filter('Android Tests (dbg)'), false, 'Should not show non deps ChromiumWebkit bots for test suites other than layout-tests or webkit_unit_tests');
-});
-
-test('builders.groupNamesForTestType', 4, function() {
-    var names = builders.groupNamesForTestType('layout-tests');
-    equal(names.indexOf('@ToT Blink') != -1, true, 'include layout-tests in ToT');
-    equal(names.indexOf('@ToT Chromium') != -1, true, 'include layout-tests in DEPS');
-
-    names = builders.groupNamesForTestType('ash_unittests');
-    equal(names.indexOf('@ToT Blink') != -1, false, 'don\'t include ash_unittests in ToT');
-    equal(names.indexOf('@ToT Chromium') != -1, true, 'include ash_unittests in DEPS');
-});
-
-test('BuilderGroup.isToTBlink', 2, function() {
-    var builderGroup = builders.loadBuildersList('@ToT Blink', 'layout-tests');
-    equal(builderGroup.isToTBlink, true);
-    builderGroup = builders.loadBuildersList('@ToT Chromium', 'layout-tests');
-    equal(builderGroup.isToTBlink, false);
-});
-
-test('builders.loadBuildersList', 4, function() {
+test('builders.getBuilders', 4, function() {
     resetGlobals();
 
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
-    var expectedBuilder = 'WebKit Win';
-    equal(expectedBuilder in builders.getBuilderGroup().builders, true, expectedBuilder + ' should be among current builders');
+    var builderKeys = [];
+    var allBuilders = builders.getBuilders('layout-tests');
+    allBuilders.forEach(function(builder) {
+        builderKeys.push(builder.key());
+    });
 
-    builders.loadBuildersList('@ToT Chromium', 'layout-tests');
-    expectedBuilder = 'WebKit Linux (deps)'
-    equal(expectedBuilder in builders.getBuilderGroup().builders, true, expectedBuilder + ' should be among current builders');
-    expectedBuilder = 'XP Tests (1)'
-    equal(expectedBuilder in builders.getBuilderGroup().builders, false, expectedBuilder + ' should not be among current builders');
+    var expectedBuilderKey = new builders.Builder('chromium.webkit', 'WebKit Win').key();
+    equal(builderKeys.indexOf(expectedBuilderKey) != -1, true, expectedBuilderKey + ' should be among the current builders');
 
-    builders.loadBuildersList('@ToT Chromium', 'ash_unittests');
-    equal(expectedBuilder in builders.getBuilderGroup().builders, true, expectedBuilder + ' should be among current builders');
+    expectedBuilderKey = new builders.Builder('chromium.webkit', 'WebKit Linux').key();
+    equal(builderKeys.indexOf(expectedBuilderKey) != -1, true, expectedBuilderKey + ' should be among the current builders');
+    expectedBuilderKey = new builders.Builder('chromium.win', 'XP Tests (1)').key();
+    equal(builderKeys.indexOf(expectedBuilderKey) != -1, false, expectedBuilderKey + ' should not be among the current builders');
+
+
+    allBuilders = [];
+    allBuilders = builders.getBuilders('ash_unittests');
+    allBuilders.forEach(function(builder) {
+        builderKeys.push(builder.key());
+    });
+    equal(builderKeys.indexOf(expectedBuilderKey) != -1, true, expectedBuilderKey + ' should be among the current builders');
 });
 
-test('builders.master', 2, function() {
+test('builders.Builder.master', 1, function() {
     resetGlobals();
 
-    builders.loadBuildersList('@ToT Chromium', 'unit_tests');
-    equal(builders.master('Linux Tests').basePath, 'http://build.chromium.org/p/chromium.win');
+    var allBuilders = builders.getBuilders('unit_tests');
+    equal(allBuilders[0].master().basePath, 'http://build.chromium.org/p/chromium.webkit');
+});
 
-    builders.loadBuildersList('@ToT Blink', 'unit_tests');
-    equal(builders.master('Linux Tests').basePath, 'http://build.chromium.org/p/chromium.webkit');
+test('builders.Buidler keys', 2, function() {
+    resetGlobals();
+
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    currentBuilders().push(builder);
+    equal(builder.key(), 'chromium.webkit:Blink Linux');
+    equal(builders.builderFromKey('chromium.webkit:Blink Linux').key(), 'chromium.webkit:Blink Linux');
+});
+
+test('builders.Buidler names', 3, function() {
+    resetGlobals();
+
+    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
+    equal(builder.builderName, 'Blink Linux');
+    equal(builder.masterName, 'chromium.webkit');
+    equal(builder.builderNameForPath(), 'Blink_Linux');
+});
+
+test('builders.Buidler duplicate names', 6, function() {
+    resetGlobals();
+
+    var masterA = new builders.Master({name: 'Master A', url_name: 'MasterA', tests: [], groups: []});
+    var builder1 = new builders.Builder('MasterA', 'Builder');
+    builders.masters['MasterA'] = masterA;
+    currentBuilders().push(builder1);
+
+    var masterB = new builders.Master({name: 'Master B', url_name: 'MasterB', tests: [], groups: []});
+    var builder2 = new builders.Builder('MasterB', 'Builder');
+    builders.masters['MasterB'] = masterB;
+    currentBuilders().push(builder2);
+
+    var masterP = new builders.Master({name: 'Master P', url_name: 'MasterP', tests: [], groups: []});
+    var builder3 = new builders.Builder('MasterP', 'Builder');
+    builders.masters['MasterP'] = masterP;
+    currentBuilders().push(builder3);
+    
+    equal(builders.builderFromKey('MasterA:Builder').key(), 'MasterA:Builder');
+    equal(builders.builderFromKey('MasterP:Builder').master().name, 'Master P');
+    equal(builders.builderFromKey('MasterB:Builder').key(), 'MasterB:Builder');
+    equal(builders.builderFromKey('MasterB:Builder').master().name, 'Master B');
+    equal(builders.builderFromKey('MasterP:Builder').key(), 'MasterP:Builder');
+    equal(builders.builderFromKey('MasterA:Builder').master().name, 'Master A');
 });

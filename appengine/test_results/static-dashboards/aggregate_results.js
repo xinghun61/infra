@@ -41,8 +41,9 @@ function generatePage(historyInstance)
         ui.html.checkbox('rawValues', 'Show raw values', g_history.dashboardSpecificState.rawValues) +
         ui.html.checkbox('showOutliers', 'Show outliers', g_history.dashboardSpecificState.showOutliers) +
     '</div>';
-    for (var builder in currentBuilders())
+    currentBuilders().forEach(function(builder) {
         html += htmlForBuilder(builder);
+    });
     document.body.innerHTML = html;
 }
 
@@ -78,19 +79,20 @@ g_totalFailureCounts = {};
 
 function totalFailureCountFor(builder)
 {
-    if (!g_totalFailureCounts[builder])
-        g_totalFailureCounts[builder] = results.testCounts(g_resultsByBuilder[builder][results.NUM_FAILURES_BY_TYPE]);
-    return g_totalFailureCounts[builder];
+    var buidlerKey = builder.key();
+    if (!g_totalFailureCounts[buidlerKey])
+        g_totalFailureCounts[buidlerKey] = results.testCounts(g_resultsByBuilder[buidlerKey][results.NUM_FAILURES_BY_TYPE]);
+    return g_totalFailureCounts[buidlerKey];
 }
 
 function htmlForBuilder(builder)
 {
-    var html = '<div class=container><h2>' + builder + '</h2>';
+    var html = '<div class=container><h2>' + builder.key() + '</h2>';
 
     if (g_history.dashboardSpecificState.rawValues) {
         html += htmlForTestType(builder);
     } else {
-        html += '<a href="timeline_explorer.html' + (location.hash ? location.hash + '&' : '#') + 'builder=' + builder + '">' +
+        html += '<a href="timeline_explorer.html' + (location.hash ? location.hash + '&' : '#') + 'builder=' + builder.key() + '">' +
             chartHTML(builder) + '</a>';
     }
 
@@ -99,15 +101,12 @@ function htmlForBuilder(builder)
 
 function chartHTML(builder)
 {
-    var resultsForBuilder = g_resultsByBuilder[builder];
+    var resultsForBuilder = g_resultsByBuilder[builder.key()];
     var totalFailingTests = totalFailureCountFor(builder).totalFailingTests;
 
     // Some bots don't properly record revision numbers. Handle that gracefully.
     var label, values;
-    if (currentBuilderGroup().isToTBlink && resultsForBuilder[results.BLINK_REVISIONS]) {
-        label = 'Blink Revision';
-        values = resultsForBuilder[results.BLINK_REVISIONS]
-    } else if (resultsForBuilder[results.CHROME_REVISIONS]) {
+    if (resultsForBuilder[results.CHROME_REVISIONS]) {
         label = 'Chrome Revision';
         values = resultsForBuilder[results.CHROME_REVISIONS];
     } else {
@@ -199,12 +198,10 @@ function chart(title, values, revisionLabel, startRevision, endRevision)
 
 function htmlForRevisionRows(resultsForBuilder, numColumns)
 {
-    var html = '';
-    if (resultsForBuilder[results.BLINK_REVISIONS])
-        html += htmlForTableRow('Blink Revision', resultsForBuilder[results.BLINK_REVISIONS].slice(0, numColumns));
     if (resultsForBuilder[results.CHROME_REVISIONS])
-        html += htmlForTableRow('Chrome Revision', resultsForBuilder[results.CHROME_REVISIONS].slice(0, numColumns));
-    return html;
+        return htmlForTableRow('Chrome Revision', resultsForBuilder[results.CHROME_REVISIONS].slice(0, numColumns));
+    else
+        return htmlForTableRow('Build Number', resultsForBuilder[results.BUILD_NUMBERS].slice(0, numColumns));
 }
 
 function htmlForTestType(builder)
@@ -220,7 +217,7 @@ function htmlForTestType(builder)
         percent.push(Math.round(percentage * 10) / 10 + '%');
     }
 
-    var resultsForBuilder = g_resultsByBuilder[builder];
+    var resultsForBuilder = g_resultsByBuilder[builder.key()];
     html = '<table><tbody>' +
         htmlForRevisionRows(resultsForBuilder, totalTests.length) +
         htmlForTableRow('Percent passed', percent) +

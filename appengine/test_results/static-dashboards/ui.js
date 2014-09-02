@@ -131,13 +131,15 @@ ui.html.testTypeSwitcher = function(opt_noBuilderMenu, opt_extraHtml, opt_includ
 {
     var html = ui.html.select('Test type', 'testType', builders.testTypes);
     if (!opt_noBuilderMenu) {
-        var buildersForMenu = Object.keys(currentBuilders());
+        var buildersForMenu = [];
+        currentBuilders().forEach(function(builder) {
+            buildersForMenu.push(builder.key());
+        });
+
         if (opt_includeNoneBuilder)
             buildersForMenu.unshift('--------------');
         html += ui.html.select('Builder', 'builder', buildersForMenu);
     }
-
-    html += ui.html.select('Group', 'group', builders.groupNamesForTestType(g_history.crossDashboardState.testType));
 
     if (opt_extraHtml)
         html += opt_extraHtml;

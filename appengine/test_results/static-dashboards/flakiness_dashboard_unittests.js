@@ -42,6 +42,8 @@ function resetGlobals()
     for (var key in history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES)
         historyInstance.crossDashboardState[key] = history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES[key];
 
+    builders._updateCurrentTestType('');
+
     LOAD_BUILDBOT_DATA({
         "no_upload_test_types": [
             "webkit_unit_tests"
@@ -85,33 +87,10 @@ test('headerForTestTableHtml', 1, function() {
     equal(container.querySelectorAll('input').length, 4);
 });
 
-test('htmlForTestTypeSwitcherGroup', 6, function() {
-    resetGlobals();
-    var historyInstance = new history.History(flakinessConfig);
-    // FIXME(jparent): Remove this once global isn't used.
-    g_history = historyInstance;
-    var container = document.createElement('div');
-    historyInstance.crossDashboardState.testType = 'ash_unittests';
-    container.innerHTML = ui.html.testTypeSwitcher(true);
-    var selects = container.querySelectorAll('select');
-    equal(selects.length, 2);
-    var group = selects[1];
-    equal(group.parentNode.textContent.indexOf('Group:'), 0);
-    equal(group.children.length, 1);
-
-    historyInstance.crossDashboardState.testType = 'layout-tests';
-    container.innerHTML = ui.html.testTypeSwitcher(true);
-    var selects = container.querySelectorAll('select');
-    equal(selects.length, 2);
-    var group = selects[1];
-    equal(group.parentNode.textContent.indexOf('Group:'), 0);
-    equal(group.children.length, 2);
-});
-
 test('htmlForIndividualTestOnAllBuilders', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     equal(htmlForIndividualTestOnAllBuilders('foo/nonexistant.html'), '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>');
     g_history.dashboardSpecificState.showChrome = false;
 });
@@ -119,7 +98,7 @@ test('htmlForIndividualTestOnAllBuilders', 1, function() {
 test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks('foo/nonexistant.html'),
         '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>' +
         '<div class=expectations test=foo/nonexistant.html>' +
@@ -135,13 +114,13 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, functio
 test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
 
-    var builderName = 'WebKit Linux';
-    g_resultsByBuilder[builderName] = {buildNumbers: [2, 1], blinkRevision: [1234, 1233], failure_map: FAILURE_MAP};
+    var builder = new builders.Builder('DummyMaster', 'WebKit Linux');
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: [1234, 1233], failure_map: FAILURE_MAP};
 
     var test = 'dummytest.html';
-    var resultsObject = createResultsObjectForTest(test, builderName);
+    var resultsObject = createResultsObjectForTest(test, builder);
     resultsObject.rawResults = [[1, 'F']];
     resultsObject.rawTimes = [[1, 0]];
     resultsObject.bugs = ["crbug.com/1234", "webkit.org/5678"];
@@ -156,18 +135,18 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
             '<tbody><tr>' +
-                '<td class="test-link builder-name">WebKit Linux' +
+                '<td class="test-link builder-name">DummyMaster:WebKit Linux' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<div><a href="http://webkit.org/5678">webkit.org/5678</a></div>' +
                 '<td class=options-container><td>' +
-                '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "WebKit Linux",0,"dummytest.html")\'></td>' +
-                '<td title="NO DATA. Click for more info." class="results NODATA" onclick=\'showPopupForBuild(event, "WebKit Linux",1,"dummytest.html")\'>?</td>' +
+                '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "DummyMaster:WebKit Linux",0,"dummytest.html")\'></td>' +
+                '<td title="NO DATA. Click for more info." class="results NODATA" onclick=\'showPopupForBuild(event, "DummyMaster:WebKit Linux",1,"dummytest.html")\'>?</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
         '<div class=skipped-builder-list>' +
-            '<div class=skipped-builder>WebKit Linux (dbg)</div><div class=skipped-builder>WebKit Mac10.7</div><div class=skipped-builder>WebKit Win</div><div class=skipped-builder>WebKit Win (dbg)</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Linux</div><div class=skipped-builder>chromium.webkit:WebKit Linux (dbg)</div><div class=skipped-builder>chromium.webkit:WebKit Linux (deps)</div><div class=skipped-builder>chromium.webkit:WebKit Mac10.7</div><div class=skipped-builder>chromium.webkit:WebKit Win</div><div class=skipped-builder>chromium.webkit:WebKit Win (dbg)</div>' +
         '</div>' +
         '<div class=expectations test=dummytest.html>' +
             '<div><span class=link onclick="g_history.setQueryParameter(\'showExpectations\', true)">Show results</span> | ' +
@@ -178,8 +157,11 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
 });
 
 test('individualTestsForSubstringList', 2, function() {
-    var builderName = 'WebKit Linux';
-    g_resultsByBuilder[builderName] = {
+    resetGlobals();
+    builders.getBuilders('layout-tests');
+
+    var builder = new builders.Builder('chromium.webkit', 'WebKit Linux');
+    g_resultsByBuilder[builder.key()] = {
         buildNumbers: [2, 1],
         blinkRevision: [1234, 1233],
         failure_map: FAILURE_MAP,
@@ -200,7 +182,7 @@ test('individualTestsForSubstringList', 2, function() {
 
 test('htmlForIndividualTest', 2, function() {
     var historyInstance = resetGlobals();
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     var test = 'foo/nonexistant.html';
 
     historyInstance.dashboardSpecificState.showChrome = false;
@@ -225,11 +207,12 @@ test('linkifyBugs', 4, function() {
 
 test('htmlForSingleTestRow', 1, function() {
     var historyInstance = resetGlobals();
-    var builder = 'dummyBuilder';
+    var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
+    currentBuilders().push(builder);
     var test = createResultsObjectForTest('foo/exists.html', builder);
     historyInstance.dashboardSpecificState.showNonFlaky = true;
     var blinkRevisions = [1234, 1233];
-    g_resultsByBuilder[builder] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
     test.rawResults = [[1, 'F'], [2, 'I']];
     test.rawTimes = [[1, 0], [2, 5]];
     var expected = '<tr>' +
@@ -237,8 +220,8 @@ test('htmlForSingleTestRow', 1, function() {
         '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=Layout%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20layout%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
         '<td class=options-container>' +
         '<td>' +
-        '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "dummyBuilder",0,"foo/exists.html")\'></td>' +
-        '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "dummyBuilder",1,"foo/exists.html")\'>5</td>';
+        '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "dummyMaster:dummyBuilder",0,"foo/exists.html")\'></td>' +
+        '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "dummyMaster:dummyBuilder",1,"foo/exists.html")\'>5</td>';
 
     equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
 });
@@ -254,9 +237,10 @@ test('baseTest', 2, function() {
 });
 
 test('sortTests', 4, function() {
-    var test1 = createResultsObjectForTest('foo/test1.html', 'dummyBuilder');
-    var test2 = createResultsObjectForTest('foo/test2.html', 'dummyBuilder');
-    var test3 = createResultsObjectForTest('foo/test3.html', 'dummyBuilder');
+    var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
+    var test1 = createResultsObjectForTest('foo/test1.html', builder);
+    var test2 = createResultsObjectForTest('foo/test2.html', builder);
+    var test3 = createResultsObjectForTest('foo/test3.html', builder);
     test1.expectations = 'b';
     test2.expectations = 'a';
     test3.expectations = '';
@@ -292,21 +276,25 @@ test('gpuResultsPath', 3, function() {
 });
 
 test('TestTrie', 3, function() {
-    var builders = {
-        "Dummy Chromium Windows Builder": true,
-        "Dummy GTK Linux Builder": true,
-        "Dummy Apple Mac Lion Builder": true
-    };
+    resetGlobals();
+    var allBuilders = [
+        new builders.Builder("DummmyMaster", "Dummy Chromium Windows Builder"),
+        new builders.Builder("DummmyMaster", "Dummy GTK Linux Builder"),
+        new builders.Builder("DummmyMaster", "Dummy Apple Mac Lion Builder")
+    ];
+    allBuilders.forEach(function(builder) {
+        currentBuilders().push(builder);
+    });
 
     var resultsByBuilder = {
-        "Dummy Chromium Windows Builder": {
+        "DummmyMaster:Dummy Chromium Windows Builder": {
             tests: {
                 "foo": true,
                 "foo/bar/1.html": true,
                 "foo/bar/baz": true
             }
         },
-        "Dummy GTK Linux Builder": {
+        "DummmyMaster:Dummy GTK Linux Builder": {
             tests: {
                 "bar": true,
                 "foo/1.html": true,
@@ -314,7 +302,7 @@ test('TestTrie', 3, function() {
                 "foo/bar/baz/1.html": true,
             }
         },
-        "Dummy Apple Mac Lion Builder": {
+        "DummmyMaster:Dummy Apple Mac Lion Builder": {
             tests: {
                 "foo/bar/3.html": true,
                 "foo/bar/baz/foo": true,
@@ -337,7 +325,7 @@ test('TestTrie', 3, function() {
         "bar": true
     }
 
-    var trie = new TestTrie(builders, resultsByBuilder);
+    var trie = new TestTrie(allBuilders, resultsByBuilder);
     deepEqual(trie._trie, expectedTrie);
 
     var leafsOfCompleteTrieTraversal = [];
@@ -355,71 +343,60 @@ test('TestTrie', 3, function() {
     deepEqual(leafsOfPartialTrieTraversal, expectedLeafs);
 });
 
-test('changeTestTypeInvalidatesGroup', 1, function() {
-    var historyInstance = resetGlobals();
-    var originalGroup = '@ToT Blink';
-    var originalTestType = 'layout-tests';
-    builders.loadBuildersList(originalGroup, originalTestType);
-    historyInstance.crossDashboardState.group = originalGroup;
-    historyInstance.crossDashboardState.testType = originalTestType;
-
-    historyInstance.invalidateQueryParameters({'testType': 'ui_tests'});
-    notEqual(historyInstance.crossDashboardState.group, originalGroup, "group should have been invalidated");
-});
-
 test('shouldShowTest', 9, function() {
     var historyInstance = new history.History(flakinessConfig);
     historyInstance.parseParameters();
     // FIXME(jparent): Change to use the flakiness_dashboard's history object
     // once it exists, rather than tracking global.
     g_history = historyInstance;
-    var test = createResultsObjectForTest('foo/test.html', 'dummyBuilder');
+    var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
+    var test = createResultsObjectForTest('foo/test.html', builder);
 
     equal(shouldShowTest(test), false, 'default layout test, hide it.');
     historyInstance.dashboardSpecificState.showNonFlaky = true;
     equal(shouldShowTest(test), true, 'show correct expectations.');
     historyInstance.dashboardSpecificState.showNonFlaky = false;
 
-    test = createResultsObjectForTest('foo/test.html', 'dummyBuilder');
+    test = createResultsObjectForTest('foo/test.html', builder);
     test.expectations = "WONTFIX";
     equal(shouldShowTest(test), false, 'by default hide wontfix');
     historyInstance.dashboardSpecificState.showWontFix = true;
     equal(shouldShowTest(test), true, 'show wontfix');
     historyInstance.dashboardSpecificState.showWontFix = false;
 
-    test = createResultsObjectForTest('foo/test.html', 'dummyBuilder');
+    test = createResultsObjectForTest('foo/test.html', builder);
     test.expectations = "SKIP";
     equal(shouldShowTest(test), false, 'we hide skip tests by default');
     historyInstance.dashboardSpecificState.showSkip = true;
     equal(shouldShowTest(test), true, 'show skip test');
     historyInstance.dashboardSpecificState.showSkip = false;
 
-    test = createResultsObjectForTest('foo/test.html', 'dummyBuilder');
+    test = createResultsObjectForTest('foo/test.html', builder);
     test.isFlaky = true;
     equal(shouldShowTest(test), false, 'hide flaky tests by default');
     historyInstance.dashboardSpecificState.showFlaky = true;
     equal(shouldShowTest(test), true, 'show flaky test');
     historyInstance.dashboardSpecificState.showFlaky = false;
 
-    test = createResultsObjectForTest('foo/test.html', 'dummyBuilder');
+    test = createResultsObjectForTest('foo/test.html', builder);
     historyInstance.crossDashboardState.testType = 'not layout tests';
     equal(shouldShowTest(test), true, 'show all non layout tests');
 });
 
 test('collapsedRevisionListBlink', 1, function() {
     resetGlobals();
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
-    var builderName1 = 'WebKit Linux 1';
+    var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
     // Note: r1235 results were generated twice by two separate builds.
-    g_resultsByBuilder[builderName1] = {buildNumbers: [2, 1, 3, 4], blinkRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
 
-    var builderName2 = 'WebKit Linux 2';
-    g_resultsByBuilder[builderName2] = {buildNumbers: [4, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
+    var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
+    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
 
-    var resultsObject1 = createResultsObjectForTest(test, builderName1);
-    var resultsObject2 = createResultsObjectForTest(test, builderName2);
+    var resultsObject1 = createResultsObjectForTest(test, builder1);
+    var resultsObject2 = createResultsObjectForTest(test, builder2);
 
     var result = collapsedRevisionList([resultsObject1, resultsObject2]).join(',');
     var expected = [1236, 1235, 1235, 1234, 1232].join(',');
@@ -428,19 +405,19 @@ test('collapsedRevisionListBlink', 1, function() {
 
 test('collapsedRevisionListChromium', 1, function() {
     resetGlobals();
-    g_history.crossDashboardState.group = '@ToT Chromium';
-    builders.loadBuildersList('@ToT Chromium', 'unit_tests');
+    g_history.crossDashboardState.testType = 'layout-tests';
+    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
-    var builderName1 = 'WebKit Linux 1';
+    var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
     // Note: r1235 results were generated twice by two separate builds.
-    g_resultsByBuilder[builderName1] = {buildNumbers: [2, 1, 3, 4], chromeRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
 
-    var builderName2 = 'WebKit Linux 2';
-    g_resultsByBuilder[builderName2] = {buildNumbers: [4, 5], chromeRevision: [1236, 1234], failure_map: FAILURE_MAP};
+    var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
+    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
 
-    var resultsObject1 = createResultsObjectForTest(test, builderName1);
-    var resultsObject2 = createResultsObjectForTest(test, builderName2);
+    var resultsObject1 = createResultsObjectForTest(test, builder1);
+    var resultsObject2 = createResultsObjectForTest(test, builder2);
 
     var result = collapsedRevisionList([resultsObject1, resultsObject2]).join(',');
     var expected = [1236, 1235, 1235, 1234, 1232].join(',');
@@ -450,22 +427,22 @@ test('collapsedRevisionListChromium', 1, function() {
 test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
-    var builderName1 = 'WebKit Linux (dbg)';
+    var builder1 = new builders.Builder('Master1', 'WebKit Linux (dbg)');
     // Note: r1235 results were generated thrice by three separate builds.
-    g_resultsByBuilder[builderName1] = {buildNumbers: [4, 3, 2, 1, 0], blinkRevision: [1235, 1235, 1235, 1234, 1233], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {buildNumbers: [4, 3, 2, 1, 0], blinkRevision: [1235, 1235, 1235, 1234, 1233], failure_map: FAILURE_MAP};
 
-    var builderName2 = 'WebKit Win (dbg)';
-    g_resultsByBuilder[builderName2] = {buildNumbers: [6, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
+    var builder2 = new builders.Builder('Master1', 'WebKit Win (dbg)');
+    g_resultsByBuilder[builder2.key()] = {buildNumbers: [6, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
 
-    var resultsObject1 = createResultsObjectForTest(test, builderName1);
+    var resultsObject1 = createResultsObjectForTest(test, builder1);
     resultsObject1.rawResults = [[0, 'F'], [1, 'I'], [2, 'I'], [3, 'P'], [4, 'F']];
     resultsObject1.rawTimes = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]];
     resultsObject1.bugs = ["crbug.com/1234", "crbug.com/5678", "crbug.com/9101112"];
 
-    var resultsObject2 = createResultsObjectForTest(test, builderName2);
+    var resultsObject2 = createResultsObjectForTest(test, builder2);
     resultsObject2.rawResults = [[4, 'F'], [5, 'I']];
     resultsObject2.rawTimes = [[4, 0], [5, 5]];
     resultsObject2.bugs = ["crbug.com/one", "crbug.com/two"];
@@ -480,34 +457,34 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
             '<tbody><tr>' +
-                '<td class="test-link builder-name">WebKit Linux (dbg)' +
+                '<td class="test-link builder-name">Master1:WebKit Linux (dbg)' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<div><a href="http://crbug.com/5678">crbug.com/5678</a></div>' +
                     '<div><a href="http://crbug.com/9101112">crbug.com/9101112</a></div>' +
                 '<td class=options-container><td>' +
                     '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1236")\' class="results interpolatedResult NODATA" >?</td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "WebKit Linux (dbg)",0,"dummytest.html")\'></td>' +
-                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "WebKit Linux (dbg)",1,"dummytest.html")\'></td>' +
-                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "WebKit Linux (dbg)",2,"dummytest.html")\'></td>' +
-                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "WebKit Linux (dbg)",3,"dummytest.html")\'></td>' +
-                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "WebKit Linux (dbg)",4,"dummytest.html")\'></td>' +
-                '<tr><td class="test-link builder-name">WebKit Win (dbg)' +
+                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",0,"dummytest.html")\'></td>' +
+                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",1,"dummytest.html")\'></td>' +
+                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",2,"dummytest.html")\'></td>' +
+                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",3,"dummytest.html")\'></td>' +
+                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",4,"dummytest.html")\'></td>' +
+                '<tr><td class="test-link builder-name">Master1:WebKit Win (dbg)' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/one">crbug.com/one</a></div>' +
                     '<div><a href="http://crbug.com/two">crbug.com/two</a></div>' +
                 '<td class=options-container><td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "WebKit Win (dbg)",0,"dummytest.html")\'></td>' +
+                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Win (dbg)",0,"dummytest.html")\'></td>' +
                     '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
                     '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
                     '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "WebKit Win (dbg)",1,"dummytest.html")\'></td>' +
+                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Win (dbg)",1,"dummytest.html")\'></td>' +
                     '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1233")\' class="results interpolatedResult NODATA" >?</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
         '<div class=skipped-builder-list>' +
-            '<div class=skipped-builder>WebKit Linux</div><div class=skipped-builder>WebKit Mac10.7</div><div class=skipped-builder>WebKit Win</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Linux</div><div class=skipped-builder>chromium.webkit:WebKit Linux (dbg)</div><div class=skipped-builder>chromium.webkit:WebKit Linux (deps)</div><div class=skipped-builder>chromium.webkit:WebKit Mac10.7</div><div class=skipped-builder>chromium.webkit:WebKit Win</div><div class=skipped-builder>chromium.webkit:WebKit Win (dbg)</div>' +
         '</div>' +
         '<div class=expectations test=dummytest.html>' +
             '<div><span class=link onclick="g_history.setQueryParameter(\'showExpectations\', true)">Show results</span> | ' +
@@ -520,13 +497,13 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
 test('collapsedRevisionListChromiumWithGitHash', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.loadBuildersList('@ToT Blink', 'layout-tests');
+    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
-    var builderName = 'WebKit Linux (dbg)';
-    g_resultsByBuilder[builderName] = {buildNumbers: [0], blinkRevision: ['b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b'], failure_map: FAILURE_MAP};
+    var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [0], blinkRevision: ['b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b'], failure_map: FAILURE_MAP};
 
-    var resultsObject = createResultsObjectForTest(test, builderName);
+    var resultsObject = createResultsObjectForTest(test, builder);
     resultsObject.rawResults = [[0, 'P']];
     resultsObject.rawTimes = [[0, 0]];
     resultsObject.bugs = ["crbug.com/1234"];
@@ -542,16 +519,18 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
             '<tbody><tr>' +
-                '<td class="test-link builder-name">WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
+                '<td class="test-link builder-name">Master1:WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                 '<td class=options-container><td><td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b")\' class="results interpolatedResult NODATA" >?</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
         '<div class=skipped-builder-list>' +
-            '<div class=skipped-builder>WebKit Linux</div>' +
-            '<div class=skipped-builder>WebKit Mac10.7</div>' +
-            '<div class=skipped-builder>WebKit Win</div>' +
-            '<div class=skipped-builder>WebKit Win (dbg)</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Linux</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Linux (dbg)</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Linux (deps)</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Mac10.7</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Win</div>' +
+            '<div class=skipped-builder>chromium.webkit:WebKit Win (dbg)</div>' +
         '</div>' +
         '<div class=expectations test=dummytest.html>' +
             '<div>' +
