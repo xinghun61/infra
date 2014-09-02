@@ -64,16 +64,19 @@ def fetch_master_urls(gatekeeper, args):
 
 
 def main(args):
-  logging.basicConfig(level=logging.CRITICAL)
-
-  parser = argparse.ArgumentParser()
+  parser = argparse.ArgumentParser(prog='run.py %s' % __package__)
   parser.add_argument('data_url', action='store', nargs='*')
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
+  # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
+  parser.add_argument("-v", "--verbose", action='store_true')
+
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
   args = parser.parse_args(args)
+
+  logging.basicConfig(level=logging.DEBUG if args.verbose else logging.CRITICAL)
 
   if not args.data_url:
     logging.warn("No /data url passed, will write to builder_alerts.json")
