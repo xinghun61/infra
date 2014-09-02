@@ -9,7 +9,9 @@ assert __name__ == '__main__'
 
 import os
 import sys
+import subprocess
 
 path = os.path.join('ENV', 'bin', 'expect_tests')
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
 os.execv(path, [path] + sys.argv[1:])
