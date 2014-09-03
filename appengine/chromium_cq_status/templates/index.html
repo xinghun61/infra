@@ -14,27 +14,104 @@ textarea {
 
 <h1>Chromium CQ Status</h1>
 <pre>
-QUERYING
+Site directory listing:
 
-<a href="/query">/query</a> to query CQ data
-  key: str='' (non numeric)
-  begin: timestamp=0
-  end: timestamp=now
-  tags: str (comma separated)
-  fields: json={}
+
+<a href="/recent">/recent</a>
+Shows the most recently submitted CQ updates.
+
+
+<a href="/stats/blink/daily">/stats/blink/daily</a>
+<a href="/stats/blink/weekly">/stats/blink/weekly</a>
+<a href="/stats/chromium/daily">/stats/chromium/daily</a>
+<a href="/stats/chromium/weekly">/stats/chromium/weekly</a>
+Recent CQ stats for the Blink/Chromium projects aggregated by day or week.
+Only accepts GET requests.
+Accepts optional URL param for how many days worth of stats to fetch:
+  days: int=100
+
+
+<a href="/stats/query">/stats/query</a>
+API for querying CQ stats.
+Only accepts GET requests.
+Accepts the following optional URL params:
+  project: str
+  interval_days: int
+  begin: timestamp
+  end: timestamp
+  names: str (comma separated)
   count: int=100 (max 1000)
   cursor: str=''
 
-The returned query results are in JSON format with the following structure:
+The returned query results are in the following JSON structure:
 {
-  results: [{
-    timestamp: int,
-    key: str|null,
-    tags: [str],
-    fields: {}
-  }],
-  more: bool,
+  "results": [
+    {
+      "project": str,
+      "interval_days": int,
+      "begin": timestamp,
+      "end": timestamp,
+      "stats": [
+        {
+          "type": "count",
+          "name": str,
+          "description": str,
+          "count": int,
+        }
+        OR
+        {
+          "type": "list",
+          "name": str,
+          "description": str,
+          "unit": str,
+          "sample_size": int,
+          "min": float,
+          "max": float,
+          "mean": float,
+          "percentile_10": float,
+          "percentile_25": float,
+          "percentile_50": float,
+          "percentile_75": float,
+          "percentile_90": float,
+          "percentile_95": float,
+          "percentile_99": float,
+          "best_10": [[float, {}]],
+          "worst_10": [[float, {}]],
+        }
+
+      ]
+    }
+  ],
+  "cursor": str,
+  "more": bool
+}
+
+Example:
+/stats/query?project=chromium&names=issue_count,patchset_count
+
+
+<a href="/query">/query</a>
+API for querying CQ records.
+Only accepts GET requests.
+Accepts the following optional URL params:
+  key: str (non numeric)
+  begin: timestamp
+  end: timestamp
+  tags: str (comma separated)
+  fields: json
+  count: int=100 (max 1000)
   cursor: str
+
+The returned query results are in the following JSON structure:
+{
+  "results": [{
+    "timestamp": int,
+    "key": str|null,
+    "tags": [str],
+    "fields": {field: value}
+  }],
+  "more": bool,
+  "cursor": str
 }
 
 Example:
@@ -45,12 +122,18 @@ Tags can be specified in the URL, the following is an equivalent example.
 /query/a/b?tags=c&count=10
 
 
-POSTING
+<a href="/post">/post</a>
+API for posting CQ records.
+Requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>.
+Only accepts POST requests.
+Accepts multiple p URL params.
+Each p value is a record to add in the following JSON structure:
+{
+  "key": str|null,
+  "tags": [str],
+  "fields": {field: value}
+}
 
-<a href="/post">/post</a> to post CQ data (requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>)
-  key: str='' (non numeric)
-  tags: str (comma separated)
-  fields: json={}
 
 
 TESTING ONLY:
