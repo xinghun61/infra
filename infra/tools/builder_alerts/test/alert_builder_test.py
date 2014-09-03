@@ -154,12 +154,59 @@ class AlertBuilderTest(unittest.TestCase):
       alert_builder.reasons_for_failure = old_reasons_for_failure
 
 
+  def test_complete_steps_by_type(self):
+    build = {
+      'steps': [
+        { 'isFinished': True, 'name': 'finished_pass_step', 'results': [0] },
+        { 'isFinished': True, 'name': 'finished_fail_step', 'results': [2] },
+        { 'isFinished': False, 'name': 'unfinished_pass_step', 'results': [0] },
+        { 'isFinished': False, 'name': 'unfinished_fail_step', 'results': [2] },
+      ]
+    }
+
+    passing, failing = alert_builder.complete_steps_by_type(build)
+
+    self.assertEqual(passing, [
+      {'isFinished': True, 'name': 'finished_pass_step', 'results': [0]}
+    ])
+    self.assertEqual(failing, [
+      {'isFinished': True, 'name': 'finished_fail_step', 'results': [2]}
+    ])
+
+
   def test_find_current_step_failures_no_recent_build_ids(self):
     '''Silly test to get coverage of scenario that never happens, i.e.
     padding in an empty list of recent build ids.
     '''
     step_failures = alert_builder.find_current_step_failures(None, [])
     self.assertEqual(step_failures, [])
+
+
+  def test_find_current_step_failures_only_ignored_steps(self):
+    '''Test that when the only failing steps are ignored steps, we return those
+    as the list of step failures.
+    '''
+    def fetch(build_id):
+      return {
+        'number': 4119,
+        'results': 2,
+      }
+
+    def mock_complete_steps_by_type(build):
+      passing = []
+      failing = [{'name': 'steps'}]
+      return passing, failing
+
+    old_complete_steps_by_type = alert_builder.complete_steps_by_type
+    try:
+      alert_builder.complete_steps_by_type = mock_complete_steps_by_type
+      step_failures = alert_builder.find_current_step_failures(fetch, [4119])
+      expected_step_failures = [
+        {'build_number': 4119, 'step_name': 'steps'}
+      ]
+      self.assertEqual(step_failures, expected_step_failures)
+    finally:
+      alert_builder.complete_steps_by_type = old_complete_steps_by_type
 
 
   def test_find_current_step_failures_in_progress(self):
@@ -179,7 +226,7 @@ class AlertBuilderTest(unittest.TestCase):
     def mock_complete_steps_by_type(build):
       passing = []
       if build['number'] == 4119:
-        failing = [{'name': 'foo_tests'}]
+        failing = [{'name': 'foo_tests'}, {'name': 'steps'}]
       else:
         failing = []
       return passing, failing

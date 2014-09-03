@@ -71,21 +71,15 @@ def compute_transition_and_failure_count(failure,
   return last_pass, first_fail, fail_count
 
 
-def complete_steps_by_type(build):  # pragma: no cover
-  # Some builders use a sub-step pattern which just generates noise.
-  # FIXME: This code shouldn't contain constants like these.
-  IGNORED_STEP_NAMES = ['steps', 'trigger', 'slave_steps']
+def complete_steps_by_type(build):
   steps = build['steps']
   complete_steps = [s for s in steps if s['isFinished']]
 
-  not_ignored = [s for s in complete_steps
-      if s['name'] not in IGNORED_STEP_NAMES]
-
   # 'passing' and 'failing' are slightly inaccurate
   # 'not_failing' and 'not_passing' would be more accurate, but harder to read.
-  passing = [s for s in not_ignored
+  passing = [s for s in complete_steps
       if s['results'][0] in NON_FAILING_RESULTS]
-  failing = [s for s in not_ignored
+  failing = [s for s in complete_steps
       if s['results'][0] not in NON_FAILING_RESULTS]
 
   return passing, failing
@@ -203,7 +197,18 @@ def find_current_step_failures(fetch_function, recent_build_ids):
     if not buildbot.is_in_progress(build):
       break
 
-  return step_failures
+  # Some builders use a sub-step pattern which just generates noise.
+  # FIXME: This code shouldn't contain constants like these.
+  IGNORED_STEP_NAMES = ['steps', 'trigger', 'slave_steps']
+
+  ignored_failures = [s for s in step_failures
+      if s['step_name'] in IGNORED_STEP_NAMES]
+  non_ignored_failures = [s for s in step_failures
+      if s['step_name'] not in IGNORED_STEP_NAMES]
+
+  if len(non_ignored_failures):
+    return non_ignored_failures
+  return ignored_failures
 
 
 def alerts_for_builder(cache, master_url, builder_name,
