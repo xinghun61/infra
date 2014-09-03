@@ -13,7 +13,7 @@ from shared.parsing import (
   parse_fields,
   parse_key,
   parse_request,
-  parse_tags,
+  parse_strings,
 )
 from model.password import Password # pylint: disable-msg=E0611
 from model.record import Record # pylint: disable-msg=E0611
@@ -40,7 +40,7 @@ class Post(webapp2.RequestHandler): # pragma: no cover
     try:
       update_record(**parse_request(self.request, {
         'key': parse_key,
-        'tags': parse_tags,
+        'tags': parse_strings,
         'fields': parse_fields,
       }))
     except ValueError, e:

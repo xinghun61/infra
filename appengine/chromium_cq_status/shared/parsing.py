@@ -17,7 +17,10 @@ def parse_key(value): # pragma: no cover
     return value or None
   raise ValueError('Numeric key values are reserved for keyless entries')
 
-def parse_tags(value): # pragma: no cover
+def parse_string(value): # pragma: no cover
+  return value or ''
+
+def parse_strings(value): # pragma: no cover
   if not value:
     return []
   return value.split(',')

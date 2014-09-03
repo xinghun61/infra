@@ -88,19 +88,32 @@ class ListStats(ndb.Model): # pragma: no cover
     }
 
 class CQStats(ndb.Model): # pragma: no cover
+  project = ndb.StringProperty(required=True)
   interval_days = ndb.IntegerProperty(required=True)
   begin = ndb.DateTimeProperty(required=True)
   end = ndb.DateTimeProperty(required=True)
-  project = ndb.StringProperty(required=True)
   count_stats = ndb.StructuredProperty(CountStats, repeated=True)
   list_stats = ndb.StructuredProperty(ListStats, repeated=True)
 
-  def to_dict(self):
-    stats = [stats.to_dict() for stats in self.count_stats + self.list_stats]
+  def to_dict(self, name_filter=None):
+    """Returns a JSON friendly dict
+
+    If the name filter is falsey it is ignored.
+    """
+    def combined_stats():
+      for stats in self.count_stats + self.list_stats:
+        if not name_filter or stats.name in name_filter:
+          yield stats.to_dict()
     return {
       'interval_days': self.interval_days,
       'begin': to_unix_timestamp(self.begin),
       'end': to_unix_timestamp(self.end),
       'project': self.project,
-      'stats': stats,
+      'stats': list(combined_stats()),
     }
+
+  def has_any_names(self, names):
+    for stats in self.count_stats + self.list_stats:
+      if stats.name in names:
+        return True
+    return False

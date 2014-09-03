@@ -138,10 +138,10 @@ def save_stats(project_stats, days, begin, end): # pragma: no cover
         assert type(stats) == ListStats
         list_stats.append(stats)
     CQStats(
+      project=project,
       interval_days=days,
       begin=begin,
       end=end,
-      project=project,
       count_stats=count_stats,
       list_stats=list_stats,
     ).put()

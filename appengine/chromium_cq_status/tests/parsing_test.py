@@ -21,10 +21,15 @@ class TestCase(unittest.TestCase):
     self.assertRaises(ValueError, lambda: parsing.parse_key('1234'))
     self.assertRaises(ValueError, lambda: parsing.parse_key('1234L'))
 
-  def test_parse_tags(self):
-    self.assertEqual([], parsing.parse_tags(''))
-    self.assertEqual(['test_tag'], parsing.parse_tags('test_tag'))
-    self.assertEqual(['a', 'b', 'c'], parsing.parse_tags('a,b,c'))
+  def test_parse_string(self):
+    self.assertEqual('', parsing.parse_string(None))
+    self.assertEqual('project_name', parsing.parse_string('project_name'))
+    self.assertEqual('a,b,c', parsing.parse_string('a,b,c'))
+
+  def test_parse_strings(self):
+    self.assertEqual([], parsing.parse_strings(''))
+    self.assertEqual(['test_tag'], parsing.parse_strings('test_tag'))
+    self.assertEqual(['a', 'b', 'c'], parsing.parse_strings('a,b,c'))
 
   def test_parse_fields(self):
     self.assertEqual({}, parsing.parse_fields(''))
@@ -65,7 +70,7 @@ class TestCase(unittest.TestCase):
       'c': '{"d": "e"}',
     }), {
       'a': parsing.parse_timestamp,
-      'b': parsing.parse_tags,
+      'b': parsing.parse_strings,
       'c': parsing.parse_fields,
     }))
     self.assertRaises(ValueError, lambda: parsing.parse_request(
@@ -91,6 +96,3 @@ class MockRequest(object):
 
   def arguments(self):
     return self.parameters.keys()
-
-if __name__ == '__main__':
-  unittest.main()

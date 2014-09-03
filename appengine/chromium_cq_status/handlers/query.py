@@ -14,7 +14,7 @@ from shared.parsing import (
   parse_key,
   parse_non_negative_integer,
   parse_request,
-  parse_tags,
+  parse_strings,
   parse_timestamp,
   use_default,
 )
@@ -72,7 +72,7 @@ class Query(webapp2.RequestHandler): # pragma: no cover
         'begin': parse_timestamp,
         'end': parse_timestamp,
         'key': parse_key,
-        'tags': parse_tags,
+        'tags': parse_strings,
         'fields': parse_fields,
         'count': use_default(parse_non_negative_integer, 100),
         'cursor': parse_cursor,
