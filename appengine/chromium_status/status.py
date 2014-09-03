@@ -49,6 +49,11 @@ class LinkableText(object):
       'chromiumos': 'http://build.chromium.org/p/chromiumos',
   }
 
+  APP_PREFIXES = (
+      'dev~',
+      's~',
+  )
+
   # Automatically linkify known strings for the user.
   _CONVERTS = []
 
@@ -59,8 +64,28 @@ class LinkableText(object):
         (re.compile(regex, flags=flags), target, pretty, is_email))
 
   @classmethod
-  def bootstrap(cls, _app_name):
+  def canonical_app_name(cls, app_name):
+    """Cannoicalize |app_name| by removing prefixes and suffixes."""
+    # Appengine sometimes prefixes the app name, e.g., 'dev~' if you
+    # launch the instance locally. Remove these prefixes.
+    for prefix in cls.APP_PREFIXES:
+      if app_name.startswith(prefix):
+        app_name = app_name[len(prefix):]
+
+    # The existing instance names have the '-hr' suffix due to
+    # migration, etc. Also remove these so users don't have to worry
+    # about them.
+    for suffix in ('-hr', '-status'):
+      if app_name.endswith(suffix):
+        app_name = app_name[:-len(suffix)]
+
+    return app_name
+
+  @classmethod
+  def bootstrap(cls, app_name):
     """Add conversions (possibly specific to |app_name| instance)"""
+    # Canonicalize the app name.
+    app_name = cls.canonical_app_name(app_name)
     # Convert CrOS bug links.  Support the forms:
     # http://crbug.com/1234
     # http://crosbug.com/1234
@@ -98,11 +123,28 @@ class LinkableText(object):
     # Do this for everyone since "cbuildbot" is unique to CrOS.
     # Otherwise, we'd do it only for chromium |app_name| instances.
     cls.register_converter(
-       r'("cbuildbot" on "([^"]+ canary)")',
-       r'%s/builders/\2' % cls.WATERFALL_URLS['chromeos'], r'\1', False)
+        r'("cbuildbot" on "([^"]+ canary)")',
+        r'%s/builders/\2' % cls.WATERFALL_URLS['chromeos'], r'\1', False)
     cls.register_converter(
-       r'("cbuildbot" on "([^"]+)")',
-       r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
+        r'("cbuildbot" on "([^"]+)")',
+        r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
+
+    if app_name == 'chromiumos':
+      # Match the string '"builder name"-internal/public-buildnumber:'. E.g.,
+      #   "Canary master"-i-120:
+      # This applies only to the CrOS instance where the builders may update
+      # the tree status directly.
+      cls.register_converter(
+          r'("([\w\s]+)"-i-(\d+):)',
+          r'%s/builders/\2/builds/\3' % cls.WATERFALL_URLS['chromeos'],
+          r'\1', False
+      )
+      cls.register_converter(
+          r'("([\w\s]+)"-p-(\d+):)',
+          r'%s/builders/\2/builds/\3' % cls.WATERFALL_URLS['chromiumos'],
+          r'\1', False
+      )
+
 
   @classmethod
   def parse(cls, text):
