@@ -97,7 +97,7 @@ class TestRepo(test_util.TestBasis):
   def testGetRef(self):
     r = self.mkRepo()
     self.assertEqual(r['refs/heads/branch_Z'].commit.hsh,
-                     'c9813df312aae7cadb91b0d4eb89ad1a4d1b22c9')
+                     'cd2277651786a3f5a8cefb6be22ab42988f25cd9')
 
   def testNonFastForward(self):
     r = self.mkRepo()

@@ -49,7 +49,7 @@ class TestCommit(test_util.TestBasis):
     d = c.data
 
     a = c.alter(committer=d.committer.alter(email='bob@dude.example.com'))
-    self.assertEqual(a.hsh, 'fadfbe63d40f60f5313a71a1c9d72a741ee91770')
+    self.assertEqual(a.hsh, '03607bb224aea0bc0623918c59883be39a49dd6b')
 
     with self.assertRaises(Exception):
       c.alter(tree='failbeef')
