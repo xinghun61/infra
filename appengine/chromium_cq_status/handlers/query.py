@@ -5,6 +5,7 @@
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
+from model.record import Record # pylint: disable-msg=E0611
 from shared.config import MAXIMUM_QUERY_SIZE
 from shared.parsing import (
   parse_cursor,
@@ -17,8 +18,7 @@ from shared.parsing import (
   parse_timestamp,
   use_default,
 )
-from shared.utils import to_unix_timestamp, compressed_json_dump
-from model.record import Record # pylint: disable-msg=E0611
+from shared.utils import compressed_json_dump
 
 def execute_query(
     key, begin, end, tags, fields, count, cursor): # pragma: no cover
@@ -53,16 +53,8 @@ def execute_query(
         if matches_fields(fields, record):
           records.append(record)
 
-  results = []
-  for record in records:
-    result = record.to_dict(exclude=['timestamp'])
-    result['timestamp'] = to_unix_timestamp(record.timestamp)
-    record_key = record.key.id()
-    result['key'] = record_key if type(record_key) != long else None
-    results.append(result)
-
   return {
-    'results': results,
+    'results': [record.to_dict() for record in records],
     'cursor': next_cursor,
     'more': more,
   }

@@ -4,7 +4,17 @@
 
 from google.appengine.ext import ndb
 
-class Record(ndb.Model):
+from shared.utils import to_unix_timestamp
+
+class Record(ndb.Model): # pragma: no cover
   timestamp = ndb.DateTimeProperty(auto_now=True)
   tags = ndb.StringProperty(repeated=True)
   fields = ndb.JsonProperty(default={})
+
+  def to_dict(self):
+    return {
+      'key': self.key.id() if type(self.key.id()) != long else None,
+      'timestamp': to_unix_timestamp(self.timestamp),
+      'tags': self.tags,
+      'fields': self.fields,
+    }

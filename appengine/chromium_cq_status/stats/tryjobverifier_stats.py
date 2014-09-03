@@ -2,8 +2,22 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model.cq_stats import CountStats, ListStats # pylint: disable-msg=E0611
 from shared.config import TRYJOBVERIFIER
+from stats.analyzer import (
+  AnalyzerGroup,
+  CountAnalyzer,
+  ListAnalyzer,
+)
+
+counted_actions = (
+  ('error', 'Number of tryjob verifier runs errored.'),
+  ('fail', 'Number of tryjob verifier runs failed.'),
+  ('pass', 'Number of tryjob verifier runs passed.'),
+  ('retry', 'Number of tryjob verifier runs retried.'),
+  ('skip', 'Number of tryjob verifier runs skipped.'),
+  ('start', 'Number of tryjob verifier runs started.'),
+  ('timeout', 'Number of tryjob verifier runs that timed out.'),
+)
 
 tryjobverifier_terminator_actions = (
   'verifier_pass',
@@ -12,55 +26,38 @@ tryjobverifier_terminator_actions = (
   'verifier_timeout',
 )
 
-def analyzers(): # pragma: no cover
-  return (
-    tryjobverifier_start_count,
-    tryjobverifier_retry_count,
-    tryjobverifier_pass_count,
-    tryjobverifier_fail_count,
-    tryjobverifier_skip_count,
-    tryjobverifier_error_count,
-    tryjobverifier_timeout_count,
-    tryjobverifier_first_run_durations,
-    tryjobverifier_retry_durations,
-    tryjobverifier_total_durations,
-  )
+class TryjobverifierAnalyzer(AnalyzerGroup):
+  def __init__(self):
+    super(TryjobverifierAnalyzer, self).__init__(
+      TryjobverifierActionCountGroup,
+      TryjobverifierFirstRunDurations,
+      TryjobverifierRetryDurations,
+      TryjobverifierTotalDurations,
+    )
 
-@CountStats.constructor('Number of tryjob verifier runs started.')
-def tryjobverifier_start_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_start')
+class TryjobverifierActionCount(CountAnalyzer):
+  def __init__(self, action, description):
+    super(TryjobverifierActionCount, self).__init__()
+    self.action = action
+    self.description = description
 
-@CountStats.constructor('Number of tryjob verifier runs retried.')
-def tryjobverifier_retry_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_retry')
+  def new_patchset_attempts(self, issue, patchset, attempts):
+    self.count += count_actions(attempts, 'verifier_' + self.action)
 
-@CountStats.constructor('Number of tryjob verifier runs passed.')
-def tryjobverifier_pass_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_pass')
+  def _get_name(self):
+    return 'tryjobverifier_%s_count' % self.action
 
-@CountStats.constructor('Number of tryjob verifier runs failed.')
-def tryjobverifier_fail_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_fail')
+class TryjobverifierActionCountGroup(AnalyzerGroup):
+  def __init__(self):
+    self.analyzers = []
+    for action, description in counted_actions:
+      self.analyzers.append(TryjobverifierActionCount(action, description))
 
-@CountStats.constructor('Number of tryjob verifier runs skipped.')
-def tryjobverifier_skip_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_skip')
-
-@CountStats.constructor('Number of tryjob verifier runs errored.')
-def tryjobverifier_error_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_error')
-
-@CountStats.constructor('Number of tryjob verifier runs that timed out.')
-def tryjobverifier_timeout_count(patchset_attempts): # pragma: no cover
-  return count_actions(patchset_attempts, 'verifier_timeout')
-
-@ListStats.constructor(
-    'Time spent on each tryjob verifier first run',
-    unit = 'seconds')
-def tryjobverifier_first_run_durations(patchset_attempts): # pragma: no cover
-  duration_points = []
-  for (issue, patchset), attempts in patchset_attempts.items():
-    for i, attempt in enumerate(attempts):
+class TryjobverifierFirstRunDurations(ListAnalyzer):
+  description = 'Time spent on each tryjob verifier first run.'
+  unit = 'seconds'
+  def new_patchset_attempts(self, issue, patchset, attempts):
+    for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:
@@ -73,20 +70,16 @@ def tryjobverifier_first_run_durations(patchset_attempts): # pragma: no cover
           break
       if start_timestamp and end_timestamp:
         duration = (end_timestamp - start_timestamp).total_seconds()
-        duration_points.append((duration, {
+        self.points.append((duration, {
           'issue': issue,
           'patchset': patchset,
-          'attempt': i + 1,
         }))
-  return duration_points
 
-@ListStats.constructor(
-    'Time spent on each tryjob verifier retry.',
-    unit = 'seconds')
-def tryjobverifier_retry_durations(patchset_attempts): # pragma: no cover
-  duration_points = []
-  for (issue, patchset), attempts in patchset_attempts.items():
-    for i, attempt in enumerate(attempts):
+class TryjobverifierRetryDurations(ListAnalyzer):
+  description = 'Time spent on each tryjob verifier retry.'
+  unit = 'seconds'
+  def new_patchset_attempts(self, issue, patchset, attempts):
+    for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:
@@ -98,24 +91,20 @@ def tryjobverifier_retry_durations(patchset_attempts): # pragma: no cover
         elif record.fields.get('action') in tryjobverifier_terminator_actions:
           end_timestamp = record.timestamp
           duration = (end_timestamp - start_timestamp).total_seconds()
-          duration_points.append((duration, {
+          self.points.append((duration, {
             'issue': issue,
             'patchset': patchset,
-            'attempt': i + 1,
           }))
           if record.fields.get('action') == 'verifier_retry':
             start_timestamp = end_timestamp
           else:
             start_timestamp = None
-  return duration_points
 
-@ListStats.constructor(
-  'Total time spent per CQ attempt on tryjob verifier runs',
-  unit = 'seconds')
-def tryjobverifier_total_durations(patchset_attempts): # pragma: no cover
-  duration_points = []
-  for (issue, patchset), attempts in patchset_attempts.items():
-    for i, attempt in enumerate(attempts):
+class TryjobverifierTotalDurations(ListAnalyzer):
+  description = 'Total time spent per CQ attempt on tryjob verifier runs.'
+  unit = 'seconds'
+  def new_patchset_attempts(self, issue, patchset, attempts):
+    for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:
@@ -126,19 +115,16 @@ def tryjobverifier_total_durations(patchset_attempts): # pragma: no cover
         end_timestamp = record.timestamp
       if start_timestamp:
         duration = (end_timestamp - start_timestamp).total_seconds()
-        duration_points.append((duration, {
+        self.points.append((duration, {
           'issue': issue,
           'patchset': patchset,
-          'attempt': i + 1,
         }))
-  return duration_points
 
-def count_actions(patchset_attempts, action): # pragma: no cover
+def count_actions(attempts, action):
   count = 0
-  for attempts in patchset_attempts.values():
-    for attempt in attempts:
-      for record in attempt:
-        if (record.fields.get('verifier') == TRYJOBVERIFIER and
-            record.fields.get('action') == action):
-          count += 1
+  for attempt in attempts:
+    for record in attempt:
+      if (record.fields.get('verifier') == TRYJOBVERIFIER and
+          record.fields.get('action') == action):
+        count += 1
   return count
