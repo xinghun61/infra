@@ -3,3 +3,8 @@ cron:
   url: /updatebuilders
   schedule: every 30 minutes
   timezone: America/Los_Angeles
+
+- description: refresh builder state job
+  url: /updatebuilderstate
+  schedule: every 30 minutes
+  timezone: America/Los_Angeles

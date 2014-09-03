@@ -29,6 +29,7 @@
 import webapp2
 
 from handlers import buildershandler
+from handlers import builderstatehandler
 from handlers import menu
 from handlers import testfilehandler
 
@@ -39,6 +40,8 @@ routes = [
     ('/testfile/?', testfilehandler.GetFile),
     ('/builders', buildershandler.GetBuilders),
     ('/updatebuilders', buildershandler.UpdateBuilders),
+    ('/builderstate', builderstatehandler.GetBuilderState),
+    ('/updatebuilderstate', builderstatehandler.Update),
     ('/', menu.Menu),
 ]
 

@@ -31,12 +31,15 @@ import logging
 import re
 import webapp2
 
+from datetime import datetime
+
 from google.appengine.api import users
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 
 import master_config
 
+from model.builderstate import BuilderState
 from model.jsonresults import JsonResults
 from model.testfile import TestFile
 
@@ -310,6 +313,7 @@ class Upload(webapp2.RequestHandler):  # pylint: disable=W0232
         status_string, status_code = JsonResults.update(master, builder,
             test_type, file_json, deprecated_master=deprecated_master,
             is_full_results_format=True)
+        BuilderState.incremental_update(master, builder, test_type, datetime.now())
 
       if status_code == 200:
         logging.info(status_string)
