@@ -8,6 +8,7 @@ This test requires the WebTest module. To install:
 sudo apt-get install python-pip
 sudo pip install WebTest
 """
+import calendar
 import datetime
 import json
 import unittest
@@ -21,136 +22,159 @@ import models
 from tests import testing_common
 
 
-RIETVELD_RESPONSE = {
-    'results': [{
-        'project': 'chromium',
-        'issue': '34562',
-        'messages': [{
-            # Ignore too old date
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/12345/12',
-            'date': '2014-01-01 01:59:00.123456'
+def _CreateTimestamp(hr, minute):
+  return calendar.timegm(datetime.datetime(2014, 1, 1, hr, minute).timetuple())
+
+CQ_API_RESPONSE1 = {
+    'cursor': 'some-cursor',
+    'results': [
+      {
+        'timestamp': _CreateTimestamp(11, 59),
+        'fields': {
+            'project': 'blink',
+            'action': 'patch_stop',
+            'issue': 12345,
+            'patchset': 2001,
+        },
+      },
+      {
+        'timestamp': _CreateTimestamp(11, 50),
+        'fields': {
+            'project': 'chromium',
+            'action': 'patch_stop',
+            'issue': 54321,
+            'patchset': 1,
+        },
+      },
+      {
+        'timestamp': _CreateTimestamp(11, 15),
+        'fields': {
+            'project': 'blink',
+            'action': 'patch_stop',
+            'issue': 987654,
+            'patchset': 2001,
+        },
+      },
+    ],
+    'more': True,
+}
+
+CQ_API_RESPONSE2 = {
+    'cursor': 'dead-end',
+    'results': [
+      {
+        'timestamp': _CreateTimestamp(11, 30),
+        'fields': {
+            'project': 'chromium',
+            'action': 'patch_stop',
+            'issue': 54321,
+            'patchset': 1,
+        },
+      },
+      {
+        'timestamp': _CreateTimestamp(11, 27),
+        'fields': {
+            'project': 'blink',
+            'action': 'patch_stop',
+            'issue': 12345,
+            'patchset': 2001,
+        },
+      },
+      {
+        'timestamp': _CreateTimestamp(11, 1),
+        'fields': {
+            'project': 'chromium',
+            'action': 'patch_stop',
+            'issue': 499494,
+            'patchset': 2001,
+        },
+      },
+    ],
+    'more': False,
+}
+
+CQ_PATCHSET_RESPONSES = [
+    {
+        # blink 12345 2001
+        'results': [
+        {
+            # Ignored, patch start not finished yet
+            'fields': {
+                'timestamp': _CreateTimestamp(12, 0),
+                'action': 'patch_start',
+            },
         }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Change committed as 12345',
-            'date': '2014-01-01 02:10:00.123456'
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 59),
+                'action': 'patch_stop',  # 29 minutes
+            },
         }, {
-            # Ignore invalid sender
-            'sender': 'notcommitqueue@google.com',
-            'text': 'CQ is trying da patch. /author/12345/12',
-            'date': '2014-01-01 11:59:00.123456'
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 30),
+                'action': 'patch_start',
+            },
         }, {
-            'sender': 'notcommitqueue@google.com',
-            'text': 'Change committed as 12345',
-            'date': '2014-01-01 12:10:00.123456'
-        },],
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 27),
+                'action': 'patch_stop',  # 27 minutes
+            },
+        }, {
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 0),
+                'action': 'patch_start',
+            },
+        }]
     }, {
-        # Ignore invalid project
-        'project': 'something else',
-        'issue': 'ignore',
-        'messages': [{
-            # Ignore too old date
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/12345/12',
-            'date': '2014-01-01 11:59:00.123456'
+        # blink 987654, 2001
+        'results': [{
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 15),
+                'action': 'patch_stop',  # 45 minutes
+            },
         }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Change committed as 12345',
-            'date': '2014-01-01 12:10:00.123456'
+            'fields': {
+                'timestamp': _CreateTimestamp(10, 30),
+                'action': 'patch_start',
+            },
+        }]
+    }, {
+        # chromium 54321, 1
+        'results': [{
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 50),
+                'action': 'patch_stop',  # ignored, not valid
+            },
+        }, {
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 30),
+                'action': 'patch_stop',  # 20 minutes
+            },
+        }, {
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 10),
+                'action': 'patch_start',
+            },
         },]
     }, {
-        # These should be added to 'blink' stats.
-        'project': 'blink',
-        'issue': '12345',
-        # Ignored--user cancelled
-        'messages': [{
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/12345/2',
-            'date': '2014-01-01 11:45:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/12345/2',
-            'date': '2014-01-01 11:50:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'List of reviewers changed.',
-            'date': '2014-01-01 11:55:00.000000',  # 5 minutes
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/12345/2',
-            'date': '2014-01-01 12:56:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Change committed as 45668',
-            'date': '2014-01-01 12:59:00.000000',  # 3 minutes
-        }],
-    }, {
-        # These should be added to 'chromium' stats.
-        'project': 'chromium',
-        'issue': '65435',
-        # Ignored--user cancelled
-        'messages': [{
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/65435/2',
-            'date': '2014-01-01 11:30:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Try jobs failed on following builders: foo',
-            'date': '2014-01-01 11:47:00.000000',  # 17 minutes
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/65435/2',
-            'date': '2014-01-01 11:49:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Commit queue failed due to new patchset.',
-            'date': '2014-01-01 11:55:00.000000',  # 6 minutes
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/65435/4',
-            'date': '2014-01-01 11:56:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Try jobs failed on following builders: foo',
-            'date': '2014-01-01 12:01:00.000000',  # 5 minutes
-        }],
-    }, {
-        # These should be added to 'chromium' stats.
-        'project': 'chromium',
-        'issue': '349205',
-        # Ignored--user cancelled
-        'messages': [{
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/349205/2',
-            'date': '2014-01-01 11:25:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Step "update" is always a major failure.',
-            'date': '2014-01-01 11:47:00.000000',  # 22 minutes
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/349205/2',
-            'date': '2014-01-01 11:48:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Failed to apply patch',
-            'date': '2014-01-01 11:49:00.000000',  # 1 minute
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/349205/4',
-            'date': '2014-01-01 11:50:00.000000',
-        }, {
-            'sender': 'commit-bot@chromium.org',
-            'text': 'Try jobs failed on following builders: foo',
-            'date': '2014-01-01 12:01:00.000000',  # 11 minutes
-        }, {
-            # Ignore since no finish
-            'sender': 'commit-bot@chromium.org',
-            'text': 'CQ is trying da patch. /author/349205/4',
-            'date': '2014-01-01 12:02:00.000000',
-        }],
-    }],
-}
+        # chromium 499494
+        'results': [{
+            'fields': {
+                'timestamp': _CreateTimestamp(11, 1),
+                'action': 'patch_stop',  # 61 minutes
+            },
+        },{
+            'fields': {
+                'timestamp': _CreateTimestamp(10, 0),
+                'action': 'patch_start',
+            },
+        },{
+            'fields': {
+                'timestamp': _CreateTimestamp(9, 59),
+                'action': 'patch_start',  # ignored, not valid
+            },
+        },]
+    }
+]
 
 CHROMIUM_MASTER_TREE = {
     'step_records': [{
@@ -251,12 +275,36 @@ CHROMIUM_TREE_DATA = [{
 },]
 
 URLFETCH_RESPONSES = {
-    ('https://codereview.chromium.org/search?format=json&limit=500&'
-     'with_messages=1&order=modified&'
-     'modified_after=2014-01-01%2011%3A00%3A00'): {
-         'statuscode': 200,
-         'content': json.dumps(RIETVELD_RESPONSE)
-     },
+    ('http://chromium-cq-status.appspot.com/query/action=patch_stop/?'
+     'begin=1388574000'): {
+        'statuscode': 200, 
+        'content': json.dumps(CQ_API_RESPONSE1)
+    },
+    ('http://chromium-cq-status.appspot.com/query/action=patch_stop/?'
+     'begin=1388574000&cursor=some-cursor'): {
+        'statuscode': 200,
+        'content': json.dumps(CQ_API_RESPONSE2)
+    },
+    ('https://chromium-cq-status.appspot.com/query/'
+     'issue=12345/patchset=2001/'): {
+        'statuscode': 200,
+        'content': json.dumps(CQ_PATCHSET_RESPONSES[0])
+    },
+    ('https://chromium-cq-status.appspot.com/query/'
+     'issue=987654/patchset=2001/'): {
+        'statuscode': 200,
+        'content': json.dumps(CQ_PATCHSET_RESPONSES[1])
+    },
+    ('https://chromium-cq-status.appspot.com/query/'
+     'issue=54321/patchset=1/'): {
+        'statuscode': 200,
+        'content': json.dumps(CQ_PATCHSET_RESPONSES[2])
+    },
+    ('https://chromium-cq-status.appspot.com/query/'
+     'issue=499494/patchset=2001/'): {
+        'statuscode': 200,
+        'content': json.dumps(CQ_PATCHSET_RESPONSES[3])
+    },
     'https://chromium-commit-queue.appspot.com/api/chromium/pending': {
         'statuscode': 200,
         'content': json.dumps({'results': [1, 2, 3, 4, 5]})
@@ -340,31 +388,23 @@ class CronTest(unittest.TestCase):
     stats = models.CqStat.query().fetch()
     self.assertEqual(2, len(stats))
     self.assertEqual('blink', stats[0].key.parent().id())
+    self.assertEqual(27, stats[0].min)
+    self.assertEqual(45, stats[0].max)
     self.assertEqual(3, stats[0].length)
-    self.assertEqual(3, stats[0].min)
-    self.assertEqual(5, stats[0].max)
-    self.assertEqual(4, stats[0].mean)
     self.assertEqual('chromium', stats[1].key.parent().id())
     self.assertEqual(5, stats[1].length)
-    self.assertEqual(1, stats[1].min)
-    self.assertEqual(22, stats[1].max)
-    self.assertEqual(8.5, stats[1].p50)
-    self.assertEqual(19.5, stats[1].p90)
-    self.assertEqual(21.750000000000004, stats[1].p99)
-    self.assertEqual(10.333333333333334, stats[1].mean)
+    self.assertEqual(20, stats[1].min)
+    self.assertEqual(61, stats[1].max)
     in_queue_stats = models.CqTimeInQueueForPatchStat().query().fetch()
     self.assertEqual(2, len(in_queue_stats))
-    self.assertEqual(8, in_queue_stats[0].p50)
+    self.assertEqual(45, in_queue_stats[0].min)
+    self.assertEqual(56, in_queue_stats[0].max)
     self.assertEqual(5, in_queue_stats[1].length)
-    self.assertEqual(5, in_queue_stats[1].min)
-    self.assertEqual(23, in_queue_stats[1].max)
-    self.assertEqual(17, in_queue_stats[1].p50)
     total_time_stats = models.CqTotalTimeForPatchStat().query().fetch()
+    self.assertEqual(45, total_time_stats[0].min)
+    self.assertEqual(59, total_time_stats[0].max)
     self.assertEqual(2, len(total_time_stats))
-    self.assertEqual(69, total_time_stats[0].p50)
     self.assertEqual(5, total_time_stats[1].length)
-    self.assertEqual(5, total_time_stats[1].min)
-    self.assertEqual(25, total_time_stats[1].max)
 
   def testCheckTree(self):
     self.testapp.get('/check-tree/chromium')

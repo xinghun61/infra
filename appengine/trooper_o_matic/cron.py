@@ -7,11 +7,8 @@
 
 import calendar
 import datetime
-import itertools
 import json
 import logging
-import re
-import urllib
 
 import numpy
 import webapp2
@@ -23,8 +20,8 @@ import trees
 
 
 def datetime_now():  # pragma: no cover
-  """Easy to mock datetime.datetime.now() for unit testing."""
-  return datetime.datetime.now()
+  """Easy to mock datetime.datetime.utcnow() for unit testing."""
+  return datetime.datetime.utcnow()
 
 
 def date_from_str(string, base_format):  # pragma: no cover
@@ -39,46 +36,13 @@ def date_from_str(string, base_format):  # pragma: no cover
 class CheckCqHandler(webapp2.RequestHandler):  # pragma: no cover
   """Collect commit queue length and run times."""
 
+  patch_stop_list = ('http://chromium-cq-status.appspot.com/query/action='
+                     'patch_stop/?begin=%d')
+
   pending_api_url = 'https://chromium-commit-queue.appspot.com/api/%s/pending'
-  rietveld_api_url = ('https://codereview.chromium.org/search?format=json'
-                      '&limit=500&with_messages=1&order=modified'
-                      '&modified_after=%s')
-  start_regexp = re.compile(
-      r'CQ is trying da patch.*( |/)(?P<author>.*)/(?P<issue_id>\d+)/'
-      r'(?P<patch_id>\d+)$', re.DOTALL)
-  committed_regexp = re.compile(r'Change committed as (?P<revision>\d+)')
-  manual_commit_regexp = re.compile(
-      r'Committed patchset #(?P<patch_id>\d+) manually as r(?P<revision>\d+)')
 
-  @staticmethod
-  def date_from_iso_str(iso_str):
-    """Convert the date from a rietveld message into a datetime.
-
-    Args:
-        iso_str: string datetime from rietveld message. These have one of two
-                 formats:
-                 2013-10-17 16:43:04.391480
-                 2013-10-17 16:43:04
-
-    Returns:
-        datetime.datetime
-    """
-    return date_from_str(iso_str, '%Y-%m-%d %H:%M:%S')
-
-  @staticmethod
-  def record_cq_time(time, cutoff, run_info, recent_runs, all_runs, result,
-                     msg_text, issue):
-    if not run_info:
-      logging.error('Missing CQ start message for end message %s on issue %s',
-                    msg_text, issue)
-      return
-    run_info['end'] = time
-    delta = run_info['end'] - run_info['start']
-    run_info['minutes'] = int(delta.total_seconds() / 60)
-    run_info['result'] = result
-    if time >= cutoff:
-      recent_runs.append(run_info)
-    all_runs.append(run_info)
+  patchset_details = ('https://chromium-cq-status.appspot.com/query/'
+                      'issue=%d/patchset=%d/')
 
   @staticmethod
   def update_stat_for_times(stat, times):
@@ -96,34 +60,28 @@ class CheckCqHandler(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     # We only care about the last hour.
     cutoff = datetime_now() - datetime.timedelta(hours=1)
-    modified_after = urllib.quote(cutoff.strftime('%Y-%m-%d %H:%M:%S'))
+    url = self.patch_stop_list % calendar.timegm(
+        cutoff.timetuple())
 
-    # Rietveld has a limit of 1000 results it can return, and if there are more
+    # CQ API has a limit of results it will return, and if there are more
     # results it will return a cursor. So loop through results until
     # there is no cursor.
     cursor = None
     more_results = True
-    issues = []
+    patchsets = {}
     while more_results:
-      url = self.rietveld_api_url % modified_after
       if cursor:
         url = url + '&cursor=' + cursor
       result = urlfetch.fetch(url=url, deadline=60)
       content = json.loads(result.content)
-      new_issues = content['results']
-      issues += new_issues
+      for result in content['results']:
+        patchsets.setdefault(result['fields']['project'], set()).add(
+            (result['fields']['issue'], result['fields']['patchset']))
       cursor = content.get('cursor')
-      more_results = new_issues and cursor
+      more_results = content.get('more')
 
-    # Only track the chromium and blink projects. Split them out here because
-    # the project= field in the rietveld API does not work.
-    # TODO(sullivan): if CQ exposes its projects as an API, use it here instead
-    # of hard-coding.
+    # Only track the chromium and blink projects.
     projects = set(['chromium', 'blink'])
-    cq_issues = {
-        'chromium': [i for i in issues if i['project'] == 'chromium'],
-        'blink': [i for i in issues if i['project'] == 'blink'],
-    }
     for project in projects:
       # Ensure there is an ancestor for all the stats for this project.
       project_model = models.Project.get_or_insert(project)
@@ -138,92 +96,46 @@ class CheckCqHandler(webapp2.RequestHandler):  # pragma: no cover
           parent=project_model.key, length=num_pending)
       patch_total_time_stat = models.CqTotalTimeForPatchStat(
           parent=project_model.key, length=num_pending)
-      recent_cq_runs = []
-      all_cq_runs = []
 
-      # Getting the running time is more complicated. Loop through each issue,
-      # parsing the commit queue messages to find start and end times for CQ
-      # attempts. Only count finished runs. This is similar to the
-      # implementation at http://go/stats.py except we only count times of
-      # individual runs, instead of summing retries together.
-      for issue in cq_issues[project]:
-        current_run = None
-        for msg in issue['messages']:
-          if msg['sender'] != 'commit-bot@chromium.org':
-            continue
-          text = msg['text']
-          date = self.date_from_iso_str(msg['date'])
+      single_run_times = []
+      in_queue_times = []
+      total_times = []
 
-          match = self.start_regexp.match(text)
-          if match:
-            patch_id = match.group('patch_id')
-            current_run = {
-                'patch_id': patch_id,
-                'issue_id': issue['issue'],
-                'start': date,
-            }
-            continue
+      for patchset in patchsets[project]:
+        url = self.patchset_details % (patchset[0], patchset[1])
+        result = urlfetch.fetch(url=url, deadline=60)
+        content = json.loads(result.content)
+        # Get a list of all starts/stops for this patch.
+        actions = [result['fields'] for result in content['results'] if (
+            result['fields'].get('action') == 'patch_start' or
+            result['fields'].get('action') == 'patch_stop')]
+        actions.sort(key=lambda k: k['timestamp'])
 
-          if (self.committed_regexp.match(text) or
-              text.startswith('This issue passed the CQ.')):
-            self.record_cq_time(date, cutoff, current_run, recent_cq_runs,
-                                all_cq_runs, 'COMMITTED', text, issue['issue'])
-            current_run = None
+        start_time = None
+        last_start = None
+        end_time = None
+        run_times = []
+        for action in actions:
+          if action['action'] == 'patch_start':
+            if not start_time:
+              start_time = action['timestamp']
+            last_start = action['timestamp']
+          else:
+            if last_start:
+              run_time = (action['timestamp'] - last_start) / 60
+              run_times.append(run_time)
+              last_start = None
+              end_time = action['timestamp']
 
-          cq_end_messages = {
-              'TRY': 'Retried try job',
-              'TRY_JOBS_FAILED': 'Try jobs failed on following builders',
-              'APPLY': 'Failed to apply patch',
-              'APPLY2': 'Failed to apply the patch',
-              'BAD_SVN': 'Could not make sense out of svn commit message',
-              'COMPILE': 'Sorry for I got bad news for ya',
-              'DESCRIPTION_CHANGED': ('Commit queue rejected this change'
-                                      ' because the description'),
-              # This is too conservative.
-              'REVIEWERS_CHANGED': 'List of reviewers changed.',
-              # User caused.
-              'PATCH_CHANGED': 'Commit queue failed due to new patchset.',
-              # FAILED_TO_TRIGGER is a very serious failure, unclear why it
-              # happens!
-              'FAILED_TO_TRIGGER': 'Failed to trigger a try job on',
-              # BINARY_FILE is just a bug in the CQ.
-              'BINARY_FILE': 'Can\'t process patch for file',
-              'BINARY_FILE2': 'Failed to request the patch to try',
-              # Unclear why UPDATE_STEP happens.  Likely broken bots, shouldn't
-              # fail patches!
-              'UPDATE_STEP': 'Step "update" is always a major failure.',
-              'BERSERK': 'The commit queue went berserk',
-              'INTERNAL_ERROR': 'Commit queue had an internal error.',
-          }
-          for result, message_text in cq_end_messages.items():
-            if text.startswith(message_text):
-              self.record_cq_time(date, cutoff, current_run, recent_cq_runs,
-                                  all_cq_runs, result, text, issue['issue'])
-              current_run = None
-              break
+        if run_times:
+          single_run_times += run_times
+          in_queue_times.append(sum(run_times))
+          total_times.append((end_time - start_time) / 60)
 
-      if recent_cq_runs:
-        minutes = sorted([item['minutes'] for item in recent_cq_runs])
-        self.update_stat_for_times(stat, minutes)
-
-        def unique_patch_id(run):
-          return '%s %s' % (run['issue_id'], run['patch_id'])
-        all_cq_runs.sort(key=unique_patch_id)
-        total_minutes = []
-        in_queue_minutes = []
-        for _, group in itertools.groupby(all_cq_runs, key=unique_patch_id):
-          group = list(group)
-          group.sort(key=lambda k: k['end'])
-          if group[-1]['end'] < cutoff:
-            continue
-          in_queue_minutes.append(sum(r['minutes'] for r in group))
-          total_minutes.append(
-              int((group[-1]['end'] - group[0]['start']).total_seconds()) / 60)
-
-        in_queue_minutes.sort()
-        total_minutes.sort()
-        self.update_stat_for_times(patch_in_queue_stat, in_queue_minutes)
-        self.update_stat_for_times(patch_total_time_stat, total_minutes)
+      if single_run_times:
+        self.update_stat_for_times(stat, sorted(single_run_times))
+        self.update_stat_for_times(patch_in_queue_stat, sorted(in_queue_times))
+        self.update_stat_for_times(patch_total_time_stat, sorted(total_times))
 
       stat.put()
       patch_in_queue_stat.put()

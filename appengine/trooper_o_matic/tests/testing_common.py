@@ -31,6 +31,6 @@ class FetchServiceMock(apiproxy_stub.APIProxyStub): # pragma: no cover
 
   def _Dynamic_Fetch(self, request, response):
     url = request.url()
-    assert url in self.responses
+    assert url in self.responses, '%s unexpected' % url
     response.set_content(self.responses[url]['content'])
     response.set_statuscode(self.responses[url]['statuscode'])
