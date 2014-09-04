@@ -138,15 +138,6 @@ function updateTimelineForBuilder()
             failureCount -= g_currentBuilderTestResults.flakyDeltasByBuild[i].total || 0;
 
         graphData.push([buildDate, failureCount]);
-
-        if (resultsForBuilder[results.BLINK_REVISIONS][i] != resultsForBuilder[results.BLINK_REVISIONS][i + 1]) {
-            annotations.push({
-                series: FAILING_TESTS_DATASET_NAME,
-                x: buildDate,
-                shortText: 'R',
-                text: 'Blink roll: r' + resultsForBuilder[results.BLINK_REVISIONS][i + 1] + ' to ' + resultsForBuilder[results.BLINK_REVISIONS][i]
-            });
-        }
     }
 
     var windowWidth = document.documentElement.clientWidth;
