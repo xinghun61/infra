@@ -19,6 +19,7 @@ class TestCaseWithBuildCache(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.cache_path, ignore_errors=True)
 
+
 class BuildCacheTest(TestCaseWithBuildCache):
   def test_build_cache(self):
     cache = buildbot.BuildCache(self.cache_path)
@@ -284,7 +285,8 @@ class BuildCacheTest(TestCaseWithBuildCache):
         },
         {
           "times": [
-            22
+            22,
+            None
           ]
         }
       ]
@@ -298,6 +300,32 @@ class BuildCacheTest(TestCaseWithBuildCache):
     k_example_last_build_times["times"][1] = None
     time = buildbot.latest_update_time_for_builder(k_example_last_build_times)
     self.assertEqual(time, 22)
+
+  def test_latest_update_time_for_builder_none_values(self):
+    # Test that a step that hasn't started yet doesn't throw an error.
+    k_example_last_build_times = {
+      "times": [
+        10,
+        None
+      ],
+      "steps": [
+        {
+          "times": [
+            20,
+            21
+          ]
+        },
+        {
+          "times": [
+            None,
+            None
+          ]
+        }
+      ]
+    }
+
+    time = buildbot.latest_update_time_for_builder(k_example_last_build_times)
+    self.assertEqual(time, 21)
 
 
 class BuildbotTest(unittest.TestCase):

@@ -182,8 +182,11 @@ def latest_update_time_for_builder(last_build):
     last_update = float(last_build['times'][1])
   else:
     for step in last_build['steps']:
-      step_time = float(step['times'][0])
-      last_update = max(step_time, last_update)
+      # A None value for the first step time means the step hasn't started yet.
+      # A None value for the second step time means it hasn't finished yet.
+      step_time = step['times'][1] or step['times'][0]
+      if step_time:
+        last_update = max(float(step_time), last_update)
   return last_update
 
 
