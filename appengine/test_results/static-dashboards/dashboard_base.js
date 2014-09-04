@@ -26,20 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// FIXME: Find somewhere better for these functions to live or restructure such that we don't need them.
-
-function currentBuilders()
-{
-    return builders.getBuilders(g_history.crossDashboardState.testType);
-}
-
-function currentFirstBuilder()
-{
-    if (currentBuilders().length == 0)
-        console.error('There are no builders.');
-    return currentBuilders()[0];
-}
-
 // FIXME: Index by test type, then builder so we can get rid of the hacks in overview.js.
 // FIXME: Have results.js fire off the loader and then the calling code passing in a callback
 // for once everything is loaded and doesn't know about Loader at all. The calling code just

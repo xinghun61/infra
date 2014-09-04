@@ -132,7 +132,8 @@ ui.html.testTypeSwitcher = function(opt_noBuilderMenu, opt_extraHtml, opt_includ
     var html = ui.html.select('Test type', 'testType', builders.testTypes);
     if (!opt_noBuilderMenu) {
         var buildersForMenu = [];
-        currentBuilders().forEach(function(builder) {
+        var currentBuidlers = builders.getBuilders(g_history.crossDashboardState.testType);
+        currentBuidlers.forEach(function(builder) {
             buildersForMenu.push(builder.key());
         });
 

@@ -52,8 +52,6 @@ function setupAggregateResultsData(includeRevisonNumbers)
         ]
     });
 
-    builders.getBuilders('layout-tests');
-
     g_resultsByBuilder[builder.key()] = {
         "num_failures_by_type": {
             "CRASH": [ 13, 10 ],

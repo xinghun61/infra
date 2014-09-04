@@ -41,7 +41,8 @@ function generatePage(historyInstance)
         ui.html.checkbox('rawValues', 'Show raw values', g_history.dashboardSpecificState.rawValues) +
         ui.html.checkbox('showOutliers', 'Show outliers', g_history.dashboardSpecificState.showOutliers) +
     '</div>';
-    currentBuilders().forEach(function(builder) {
+    var currentBuilders = builders.getBuilders(g_history.crossDashboardState.testType);
+    currentBuilders.forEach(function(builder) {
         html += htmlForBuilder(builder);
     });
     document.body.innerHTML = html;

@@ -68,6 +68,7 @@ loader.Loader = function()
     this._errors = new ui.Errors();
     // TODO(jparent): Pass in the appropriate history obj per db.
     this._history = g_history;
+    this._builders = [];
 }
 
 // TODO(aboxhall): figure out whether this is a performance bottleneck and
@@ -117,13 +118,13 @@ loader.Loader.prototype = {
     },
     _loadBuilders: function()
     {
-        builders.getBuilders(this._history.crossDashboardState.testType);
+        this._builders = builders.getBuilders(this._history.crossDashboardState.testType);
         this._loadNext();
     },
     _loadResultsFiles: function()
     {
-        if (currentBuilders().length)
-            currentBuilders().forEach(this._loadResultsFileForBuilder.bind(this));
+        if (this._builders.length)
+            this._builders.forEach(this._loadResultsFileForBuilder.bind(this));
         else
             this._loadNext();
 
@@ -201,10 +202,9 @@ loader.Loader.prototype = {
 
         // Remove this builder from builders, so we don't try to use the
         // data that isn't there.
-        var current = currentBuilders();
-        for (var c = current.length - 1; c >= 0; --c) {
-            if (current[c].key() == builder.key())
-                current.splice(c, 1);
+        for (var c = this._builders.length - 1; c >= 0; --c) {
+            if (this._builders[c].key() == builder.key())
+                this._builders.splice(c, 1);
         }
 
         // Proceed as if the resource had loaded.
@@ -217,10 +217,9 @@ loader.Loader.prototype = {
     },
     _haveResultsFilesLoaded: function()
     {
-        var current = currentBuilders();
-        for (var c = 0; c < current.length; c++) {
-            var builder = current[c];
-            if (!g_resultsByBuilder[builder.key()] && this._builderKeysThatFailedToLoad.indexOf(builder.key()) < 0)
+        for (var c = 0; c < this._builders.length; c++) {
+            var builderKey = this._builders[c].key();
+            if (!g_resultsByBuilder[builderKey] && this._builderKeysThatFailedToLoad.indexOf(builderKey) < 0)
                 return false;
         }
         return true;

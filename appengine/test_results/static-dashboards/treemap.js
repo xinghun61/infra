@@ -44,7 +44,8 @@ function generatePage(historyInstance)
 
     g_isGeneratingPage = true;
 
-    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder)
+        || builders.getBuilders(historyInstance.crossDashboardState.testType)[0];
     var rawTree = g_resultsByBuilder[builder.key()];
     g_webTree = convertToWebTreemapFormat('AllTests', rawTree);
     appendTreemap($('map'), g_webTree);
@@ -61,9 +62,9 @@ function handleValidHashParameter(historyInstance, key, value)
     case 'builder':
         history.validateParameter(historyInstance.dashboardSpecificState, key, value,
             function() {
-                var current = currentBuilders();
-                for (var c = 0; c < current.length; c++) {
-                    if (current[c].key() == value)
+                var currentBuidlers = builders.getBuilders(historyInstance.crossDashboardState.testType);
+                for (var c = 0; c < currentBuidlers.length; c++) {
+                    if (currentBuidlers[c].key() == value)
                         return true;
                 }
                 return false;

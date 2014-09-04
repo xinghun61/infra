@@ -72,7 +72,7 @@ test('results files loading', 13, function() {
         successCallback({responseText: '{"version":4,"' + builderName + '":{"failure_map":{"A":"AUDIO","C":"CRASH","F":"TEXT"},"secondsSinceEpoch":[' + Date.now() + '],"tests":{}}}'});
     }
 
-    builders.getBuilders('layout-tests');
+    resourceLoader._builders = builders.getBuilders('layout-tests');
 
     try {
         resourceLoader._loadResultsFiles();
@@ -83,20 +83,20 @@ test('results files loading', 13, function() {
 
 test('results file failing to load', 2, function() {
     resetGlobals();
-    builders.getBuilders('layout-tests');
 
     var resourceLoader = new loader.Loader();
+    resourceLoader._builders = builders.getBuilders('layout-tests');
     var resourceLoadCount = 0;
     resourceLoader._handleResourceLoad = function() {
         resourceLoadCount++;
     }
 
     var builder1 = new builders.Builder('DummyMaster1', 'DummyBuilder1');
-    currentBuilders().push(builder1);
+    resourceLoader._builders.push(builder1);
     resourceLoader._handleResultsFileLoadError(builder1);
 
     var builder2 = new builders.Builder('DummyMaster2', 'DummyBuilder2');
-    currentBuilders().push(builder2);
+    resourceLoader._builders.push(builder2);
     resourceLoader._handleResultsFileLoadError(builder2);
 
     deepEqual(resourceLoader.builderKeysThatFailedToLoad(), [builder1.key(), builder2.key()]);
@@ -105,18 +105,19 @@ test('results file failing to load', 2, function() {
 
 test('Default builder gets set.', 3, function() {
     resetGlobals();
-    builders.getBuilders('layout-tests');
-
-    var defaultBuilder = currentFirstBuilder();
-    ok(defaultBuilder, "Default builder should exist.");
 
     // Simulate error loading the default builder data, then make sure
     // a new defaultBuilder is set, and isn't the now invalid one.
     var resourceLoader = new loader.Loader();
-    resourceLoader._handleResultsFileLoadError(defaultBuilder);
-    var newDefaultBuilder = currentFirstBuilder();
+    resourceLoader._builders = builders.getBuilders('layout-tests');
+
+    var firstBuilder = resourceLoader._builders[0];
+    ok(firstBuilder, "Default builder should exist.");
+
+    resourceLoader._handleResultsFileLoadError(resourceLoader._builders[0]);
+    var newDefaultBuilder = resourceLoader._builders[0];
     ok(newDefaultBuilder, "There should still be a default builder.");
-    notEqual(newDefaultBuilder.key(), defaultBuilder.key(), "Default builder should not be the old default builder");
+    notEqual(newDefaultBuilder.key(), firstBuilder.key(), "Default builder should not be the old default builder");
 });
 
 test('addBuilderLoadErrors', 1, function() {

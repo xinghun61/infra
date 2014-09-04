@@ -42,8 +42,6 @@ function resetGlobals()
     for (var key in history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES)
         historyInstance.crossDashboardState[key] = history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES[key];
 
-    builders._updateCurrentTestType('');
-
     LOAD_BUILDBOT_DATA({
         "no_upload_test_types": [
             "webkit_unit_tests"
@@ -90,7 +88,6 @@ test('headerForTestTableHtml', 1, function() {
 test('htmlForIndividualTestOnAllBuilders', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.getBuilders('layout-tests');
     equal(htmlForIndividualTestOnAllBuilders('foo/nonexistant.html'), '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>');
     g_history.dashboardSpecificState.showChrome = false;
 });
@@ -98,7 +95,6 @@ test('htmlForIndividualTestOnAllBuilders', 1, function() {
 test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.getBuilders('layout-tests');
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks('foo/nonexistant.html'),
         '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>' +
         '<div class=expectations test=foo/nonexistant.html>' +
@@ -114,7 +110,6 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinksNonexistant', 1, functio
 test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.getBuilders('layout-tests');
 
     var builder = new builders.Builder('DummyMaster', 'WebKit Linux');
     g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: [1234, 1233], failure_map: FAILURE_MAP};
@@ -158,7 +153,6 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
 
 test('individualTestsForSubstringList', 2, function() {
     resetGlobals();
-    builders.getBuilders('layout-tests');
 
     var builder = new builders.Builder('chromium.webkit', 'WebKit Linux');
     g_resultsByBuilder[builder.key()] = {
@@ -182,7 +176,6 @@ test('individualTestsForSubstringList', 2, function() {
 
 test('htmlForIndividualTest', 2, function() {
     var historyInstance = resetGlobals();
-    builders.getBuilders('layout-tests');
     var test = 'foo/nonexistant.html';
 
     historyInstance.dashboardSpecificState.showChrome = false;
@@ -208,7 +201,6 @@ test('linkifyBugs', 4, function() {
 test('htmlForSingleTestRow', 1, function() {
     var historyInstance = resetGlobals();
     var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
-    currentBuilders().push(builder);
     var test = createResultsObjectForTest('foo/exists.html', builder);
     historyInstance.dashboardSpecificState.showNonFlaky = true;
     var blinkRevisions = [1234, 1233];
@@ -282,9 +274,6 @@ test('TestTrie', 3, function() {
         new builders.Builder("DummmyMaster", "Dummy GTK Linux Builder"),
         new builders.Builder("DummmyMaster", "Dummy Apple Mac Lion Builder")
     ];
-    allBuilders.forEach(function(builder) {
-        currentBuilders().push(builder);
-    });
 
     var resultsByBuilder = {
         "DummmyMaster:Dummy Chromium Windows Builder": {
@@ -385,7 +374,6 @@ test('shouldShowTest', 9, function() {
 
 test('collapsedRevisionListBlink', 1, function() {
     resetGlobals();
-    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
@@ -405,8 +393,6 @@ test('collapsedRevisionListBlink', 1, function() {
 
 test('collapsedRevisionListChromium', 1, function() {
     resetGlobals();
-    g_history.crossDashboardState.testType = 'layout-tests';
-    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
@@ -427,7 +413,6 @@ test('collapsedRevisionListChromium', 1, function() {
 test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux (dbg)');
@@ -497,7 +482,6 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
 test('collapsedRevisionListChromiumWithGitHash', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
-    builders.getBuilders('layout-tests');
     var test = 'dummytest.html';
 
     var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');

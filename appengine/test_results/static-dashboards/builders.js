@@ -74,24 +74,12 @@ builders.testTypeUploadsToFlakinessDashboardServer = function(testType)
     return true;
 }
 
-// FIXME: Do not rely on current* state but instead pass it in to every caller.
-var _currentBuilders = [];
-var _currentTestType;
-
 builders.getBuilders = function(testType)
 {
-    if (_currentTestType != testType)
-        this._updateCurrentTestType(testType);
-
-    return _currentBuilders;
-}
-
-builders._updateCurrentTestType = function(testType)
-{
-    _currentTestType = testType;
-    if (!builders.testTypeToBuilder[testType])
+    var currentBuilders = builders.testTypeToBuilder[testType];
+    if (!currentBuilders)
         console.error('No master and builder found for ' + testType);
-    _currentBuilders = builders.testTypeToBuilder[testType];
+    return currentBuilders;
 }
 
 builders.Builder = function(masterName, builderName)

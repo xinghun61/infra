@@ -71,14 +71,16 @@ function generatePage(historyInstance)
     document.body.innerHTML = '<div id="loading-ui">LOADING...</div>';
     resourceLoader.showErrors();
 
+    var currentBuilders = _currentBuilders();
+
     // tests expands to all tests that match the CSV list.
     // result expands to all tests that ever have the given result
     if (historyInstance.dashboardSpecificState.tests || historyInstance.dashboardSpecificState.result)
         generatePageForIndividualTests(individualTests());
     else
-        generatePageForBuilder(builders.builderFromKey(historyInstance.dashboardSpecificState.builder) || currentFirstBuilder());
+        generatePageForBuilder(builders.builderFromKey(historyInstance.dashboardSpecificState.builder) || currentBuilders[0]);
 
-    currentBuilders().forEach(function(builder) {
+    currentBuilders.forEach(function(builder) {
         processTestResultsForBuilderAsync(builder);
     });
 
@@ -99,9 +101,9 @@ function handleValidHashParameter(historyInstance, key, value)
     case 'builder':
         history.validateParameter(historyInstance.dashboardSpecificState, key, value,
             function() {
-                var current = currentBuilders();
-                for (var c = 0; c < current.length; c++) {
-                    if (current[c].key() == value)
+                var currentBuilders = _currentBuilders();
+                for (var c = 0; c < currentBuilders.length; c++) {
+                    if (currentBuilders[c].key() == value)
                         return true;
                 }
                 return false;
@@ -299,7 +301,7 @@ var g_allTestsTrie;
 function getAllTestsTrie()
 {
     if (!g_allTestsTrie)
-        g_allTestsTrie = new TestTrie(currentBuilders(), g_resultsByBuilder);
+        g_allTestsTrie = new TestTrie(_currentBuilders(), g_resultsByBuilder);
 
     return g_allTestsTrie;
 }
@@ -392,7 +394,7 @@ function processTestResultsForBuilderAsync(builder)
 
 function processTestRunsForAllBuilders()
 {
-    currentBuilders().forEach(function(builder) {
+    _currentBuilders().forEach(function(builder) {
         processTestRunsForBuilder(builder);
     });
 }
@@ -920,7 +922,7 @@ function htmlForIndividualTestOnAllBuilders(test)
     }
 
     var skippedBuilderKeys = []
-    currentBuilders().forEach(function(builder) {
+    _currentBuilders().forEach(function(builder) {
         if (shownBuilderKeys.indexOf(builder.key()) == -1)
             skippedBuilderKeys.push(builder.key());
     });
@@ -1245,7 +1247,7 @@ function loadExpectationsLayoutTests(test, expectationsContainer)
 
     var testWithoutSuffix = test.substring(0, test.lastIndexOf('.'));
 
-    currentBuilders().forEach(function(builder) {
+    _currentBuilders().forEach(function(builder) {
         var actualResultsBase = TEST_RESULTS_BASE_PATH + builder.builderNameForPath() + '/results/layout-test-results/';
         ACTUAL_RESULT_SUFFIXES.forEach(function(suffix) {{
             addExpectationItem(expectationsContainers, expectationsContainer, actualResultsBase + testWithoutSuffix + '-' + suffix, builder);
@@ -1491,6 +1493,11 @@ function postHeightChangedMessage()
         height += scrollbarWidth;
     }
     parent.postMessage({command: 'heightChanged', height: height}, '*')
+}
+
+function _currentBuilders()
+{
+    return builders.getBuilders(g_history.crossDashboardState.testType);
 }
 
 if (window != parent)

@@ -75,13 +75,15 @@ test('builders.Builder.master', 1, function() {
     equal(allBuilders[0].master().basePath, 'http://build.chromium.org/p/chromium.webkit');
 });
 
-test('builders.Buidler keys', 2, function() {
+test('builders.Buidler keys', 3, function() {
     resetGlobals();
 
-    var builder = new builders.Builder('chromium.webkit', 'Blink Linux');
-    currentBuilders().push(builder);
-    equal(builder.key(), 'chromium.webkit:Blink Linux');
-    equal(builders.builderFromKey('chromium.webkit:Blink Linux').key(), 'chromium.webkit:Blink Linux');
+    var master = new builders.Master({name: 'Master', url_name: 'Master', tests: [], groups: []});
+    var builder = new builders.Builder('Master', 'Bot');
+    builders.masters['Master'] = master;
+    equal(builder.key(), 'Master:Bot');
+    equal(builders.builderFromKey('Master:Bot').key(), 'Master:Bot');
+    equal(builders.builderFromKey('Master:Bot').master().name, 'Master');
 });
 
 test('builders.Buidler names', 3, function() {
@@ -99,17 +101,14 @@ test('builders.Buidler duplicate names', 6, function() {
     var masterA = new builders.Master({name: 'Master A', url_name: 'MasterA', tests: [], groups: []});
     var builder1 = new builders.Builder('MasterA', 'Builder');
     builders.masters['MasterA'] = masterA;
-    currentBuilders().push(builder1);
 
     var masterB = new builders.Master({name: 'Master B', url_name: 'MasterB', tests: [], groups: []});
     var builder2 = new builders.Builder('MasterB', 'Builder');
     builders.masters['MasterB'] = masterB;
-    currentBuilders().push(builder2);
 
     var masterP = new builders.Master({name: 'Master P', url_name: 'MasterP', tests: [], groups: []});
     var builder3 = new builders.Builder('MasterP', 'Builder');
     builders.masters['MasterP'] = masterP;
-    currentBuilders().push(builder3);
     
     equal(builders.builderFromKey('MasterA:Builder').key(), 'MasterA:Builder');
     equal(builders.builderFromKey('MasterP:Builder').master().name, 'Master P');

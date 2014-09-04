@@ -44,7 +44,7 @@ var DB_SPECIFIC_INVALIDATING_PARAMETERS = {
 
 function generatePage(historyInstance)
 {
-    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var builder = _currentBuilder();
     var resultsForBuilder = g_resultsByBuilder[builder.key()];
 
     g_totalFailureCount = results.testCounts(resultsForBuilder[results.NUM_FAILURES_BY_TYPE]).totalFailingTests;
@@ -83,9 +83,9 @@ function handleValidHashParameter(historyInstance, key, value)
     case 'builder':
         history.validateParameter(this.dashboardSpecificState, key, value,
             function() {
-                var current = currentBuilders();
-                for (var c = 0; c < current.length; c++) {
-                    if (current[c].key() == value)
+                var currentBuilders = builders.getBuilders(historyInstance.crossDashboardState.testType);
+                for (var c = 0; c < currentBuilders.length; c++) {
+                    if (currentBuilders[c].key() == value)
                         return true;
                 }
                 return false;
@@ -115,13 +115,12 @@ g_history.parseCrossDashboardParameters();
 
 function initCurrentBuilderTestResults()
 {
-    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
-    g_currentBuilderTestResults = _decompressResults(g_resultsByBuilder[builder.key()]);
+    g_currentBuilderTestResults = _decompressResults(g_resultsByBuilder[_currentBuilder().key()]);
 }
 
 function updateTimelineForBuilder()
 {
-    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var builder = _currentBuilder();
     var resultsForBuilder = g_resultsByBuilder[builder.key()];
     var graphData = [];
 
@@ -456,11 +455,19 @@ function _decompressResults(builderResults)
     };
 }
 
+function _currentBuilder()
+{
+    var dashboardSpecificBuilder = builders.builderFromKey(g_history.dashboardSpecificState.builder);
+    if (dashboardSpecificBuilder)
+        return dashboardSpecificBuilder;
+    return builders.getBuilders(g_history.crossDashboardState.testType)[0];
+}
+
 document.addEventListener('keydown', function(e) {
     if (g_currentBuildIndex == -1)
         return;
 
-    var builder = builders.builderFromKey(g_history.dashboardSpecificState.builder) || currentFirstBuilder();
+    var builder = _currentBuilder();
     switch (e.keyIdentifier) {
     case 'Left':
         selectBuild(
