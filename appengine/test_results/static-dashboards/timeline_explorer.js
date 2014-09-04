@@ -233,7 +233,7 @@ function updateBuildInspector(resultsForBuilder, builder, dygraph, index)
     var master = builder.master();
     var buildUrl = master.logPath(builder.builderName, resultsForBuilder[results.BUILD_NUMBERS][index]);
     var resultsUrl = 'https://storage.googleapis.com/chromium-layout-test-archives/' +
-        builder.buildNameForPath() + '/' + resultsForBuilder[results.BUILD_NUMBERS][index];
+        builder.builderNameForPath() + '/' + resultsForBuilder[results.BUILD_NUMBERS][index];
 
     addRow('Build:', '<a href="' + buildUrl + '" target="_blank">' + buildNumber + '</a> (<a href="' + resultsUrl + '" target="_blank">results</a>)');
 
