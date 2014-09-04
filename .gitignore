@@ -1,6 +1,5 @@
 *.pyc
 .expect_tests_coverage*
-infra/ext/*/
 ENV
 .wheelcache
 appengine/swarming
