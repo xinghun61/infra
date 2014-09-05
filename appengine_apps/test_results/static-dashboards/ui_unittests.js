@@ -49,21 +49,21 @@ test('chromiumRevisionLinkOneRevision', 1, function() {
     var testResults = {};
     testResults[results.CHROME_REVISIONS] = [3, 2, 1];
     var html = ui.html.chromiumRevisionLink(testResults, 1);
-    equal(html, '<a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=2">r2</a>');
+    equal(html, '<a href="https://crrev.com/2">r2</a>');
 });
 
 test('chromiumRevisionLinkAtRevision', 1, function() {
     var testResults = {};
     testResults[results.CHROME_REVISIONS] = [3, 2, 2];
     var html = ui.html.chromiumRevisionLink(testResults, 1);
-    equal(html, 'At <a href="http://src.chromium.org/viewvc/chrome?view=rev&revision=2">r2</a>');
+    equal(html, 'At <a href="https://crrev.com/2">r2</a>');
 });
 
 test('chromiumRevisionLinkRevisionRange', 1, function() {
     var testResults = {};
     testResults[results.CHROME_REVISIONS] = [5, 2];
     var html = ui.html.chromiumRevisionLink(testResults, 0);
-    equal(html, '<a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog.html?url=/trunk/src&range=3:5&mode=html">r3 to r5</a>');
+    equal(html, '<a href="../../revision_range?start=2&end=5">r3 to r5</a>');
 });
 
 test('blinkRevisionLinkOneRevision', 1, function() {

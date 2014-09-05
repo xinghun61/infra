@@ -31,6 +31,7 @@ import webapp2
 from appengine_module.test_results.handlers import buildershandler
 from appengine_module.test_results.handlers import builderstatehandler
 from appengine_module.test_results.handlers import menu
+from appengine_module.test_results.handlers import redirector
 from appengine_module.test_results.handlers import testfilehandler
 
 routes = [
@@ -43,6 +44,8 @@ routes = [
     ('/builderstate', builderstatehandler.GetBuilderState),
     ('/updatebuilderstate', builderstatehandler.Update),
     ('/', menu.Menu),
+    webapp2.Route('/revision_range', webapp2.RedirectHandler, defaults={
+        '_uri': redirector.get_googlesource_url}),
 ]
 
 app = webapp2.WSGIApplication(routes, debug=True)
