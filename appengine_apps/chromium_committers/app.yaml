@@ -18,7 +18,7 @@ handlers:
   secure: always
 
 - url: /.*
-  script: app.app
+  script: appengine_module.chromium_committers.app.app
   secure: always
 
 

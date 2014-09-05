@@ -18,9 +18,9 @@ import webapp2
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-import auth_util
-import hmac_util
-import model
+from appengine_module.chromium_committers import auth_util
+from appengine_module.chromium_committers import hmac_util
+from appengine_module.chromium_committers import model
 
 
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), 'templates')
