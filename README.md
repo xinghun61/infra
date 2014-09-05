@@ -67,3 +67,18 @@ If you want run.py to auto-complete, just run:
 
 And that's it. You may want to put that in your .bashrc somewhere.
 
+
+AppEngine
+---------
+Infra.git hosts several google appengine projects.  In order to support
+ease of testing and pylint all of the python code for these projects
+is stored in one shared python package "appengine_module".
+
+In order to interface well with dev_appserver.py and appcfg.py individual
+directories exist for the appengine projects under "appengine_apps".  Symlinks
+exist from those directories back into appengine_module to expose the necessary
+parts of the appengine_module package to run the app in question.
+
+The 'appengine' directory holds the as-of-yet fully converted Appengine apps.
+All of those should be split into appengine_apps and appengine_module pieces
+and appengine_module should be renamed to 'appengine'.  See crbug.com/407734.
