@@ -4,9 +4,103 @@
 
 import unittest
 
+import requests
+
 from infra.tools.builder_alerts import reasons_splitter
 
+# This is for the mock_requests_get. They need the parameters because those are
+# passed in to the get function, but they don't use the parameters.
+# Unused argument - pylint: disable=W0613
+
+
+class MockJsonResponse():
+  def __init__(self, data=None, status_code=200):
+    self.data = data
+    self.status_code = status_code
+
+  def json(self):
+    return self.data
+
+
+k_mock_step = { 'name': 'foo_step' }
+k_mock_build = { 'number': 123 }
+k_mock_builder_name = 'foo_builder'
+k_mock_master_url = 'http://dummydomain.com/foo.master'
+
+
 class SplitterTests(unittest.TestCase):
+
+  def test_gtest_split_step(self):
+    def mock_requests_get(base_url, params):
+      return MockJsonResponse(data={
+        'tests': {
+          'test1': {'actual': 'PASS', 'expected': 'PASS'},
+          'test2': {'actual': 'FAIL', 'expected': 'PASS'},
+        }
+      })
+
+    old_requests_get = requests.get
+    # TODO(ojan): Import httpretty so we don't have to do these try/finally
+    # shenanigans.
+    try:
+      requests.get = mock_requests_get
+      failures = reasons_splitter.GTestSplitter.split_step(
+          k_mock_step, k_mock_build, k_mock_builder_name, k_mock_master_url)
+      self.assertEqual(failures, ['test2'])
+    finally:
+      requests.get = old_requests_get
+
+  def test_gtest_split_step_404(self):
+    def mock_requests_get(base_url, params):
+      return MockJsonResponse(status_code=404)
+
+    old_requests_get = requests.get
+    # TODO(ojan): Import httpretty so we don't have to do these try/finally
+    # shenanigans.
+    try:
+      requests.get = mock_requests_get
+      failures = reasons_splitter.GTestSplitter.split_step(
+          k_mock_step, k_mock_build, k_mock_builder_name, k_mock_master_url)
+      self.assertIsNone(failures)
+    finally:
+      requests.get = old_requests_get
+
+  def test_layout_test_split_step(self):
+    def mock_requests_get(base_url, params):
+      return MockJsonResponse(data={
+        'tests': {
+          'test1': {'actual': 'PASS', 'expected': 'PASS'},
+          'test2': {
+            'actual': 'FAIL', 'expected': 'PASS', 'is_unexpected': True
+          },
+        }
+      })
+
+    old_requests_get = requests.get
+    # TODO(ojan): Import httpretty so we don't have to do these try/finally
+    # shenanigans.
+    try:
+      requests.get = mock_requests_get
+      failures = reasons_splitter.LayoutTestsSplitter.split_step(
+          k_mock_step, k_mock_build, k_mock_builder_name, k_mock_master_url)
+      self.assertEqual(failures, {'test2': 'FAIL'})
+    finally:
+      requests.get = old_requests_get
+
+  def test_layout_test_split_step_404(self):
+    def mock_requests_get(base_url, params):
+      return MockJsonResponse(status_code=404)
+
+    old_requests_get = requests.get
+    # TODO(ojan): Import httpretty so we don't have to do these try/finally
+    # shenanigans.
+    try:
+      requests.get = mock_requests_get
+      failures = reasons_splitter.LayoutTestsSplitter.split_step(
+          k_mock_step, k_mock_build, k_mock_builder_name, k_mock_master_url)
+      self.assertIsNone(failures)
+    finally:
+      requests.get = old_requests_get
 
   def test_failed_tests(self):
     tests = {
@@ -24,7 +118,6 @@ class SplitterTests(unittest.TestCase):
     self.assertFalse('test4' in failed)
     self.assertTrue('test5' in failed)
     self.assertFalse('test6' in failed)
-
 
   def test_handles_step(self):
     name_tests = [
@@ -81,20 +174,20 @@ class SplitterTests(unittest.TestCase):
               'expected': expected,
               'is_unexpected': unexpected}
     # unexpected results are included
-    self.assertEquals(decode({'tests': {
+    self.assertEquals(decode({
                                 'a': result('FAIL foo', 'bar'),
                                 'b': result('PASS', 'bar'),
                                 'c': result('FAIL foo', 'foo'),
-                                'd': result('FAIL foo', 'bar')}}),
+                                'd': result('FAIL foo', 'bar')}),
                       {'a': 'FAIL', 'd': 'FAIL'})
     # An unexpected failure is included.
-    self.assertEquals(decode({'tests': {'a': result('FAIL foo', 'bar')}}),
+    self.assertEquals(decode({'a': result('FAIL foo', 'bar')}),
                       {'a': 'FAIL'})
     # Failures with multiple results log the first.
-    self.assertEquals(decode({'tests': {'a': result('FAIL foo', 'PASS bar')}}),
+    self.assertEquals(decode({'a': result('FAIL foo', 'PASS bar')}),
                       {'a': 'FAIL'})
     # Expected results aren't included.
-    self.assertEquals(decode({'tests': {
+    self.assertEquals(decode({
                                 'a': result('FAIL', 'PASS', False),
-                                'b': result('PASS', 'FAIL', False)}}),
+                                'b': result('PASS', 'FAIL', False)}),
                       {})

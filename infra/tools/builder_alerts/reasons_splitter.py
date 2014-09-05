@@ -2,15 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
+import argparse
 import logging
+import os
+import re
 import requests
 import sys
 import urllib
-import urlparse
-import argparse
-import re
-import os
 
 import requests_cache
 
@@ -24,9 +22,6 @@ infra_module_path = os.path.dirname(os.path.abspath(infra.__file__))
 infra_dir = os.path.dirname(infra_module_path)
 top_dir = os.path.dirname(infra_dir)
 sys.path.insert(0, os.path.join(top_dir, 'build', 'scripts'))
-
-# The air of sophistication of this sys.path hack suffocates poor pylint.
-from common import gtest_utils  # pylint: disable=F0401
 
 
 def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
@@ -42,9 +37,23 @@ def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
     return None
 
 
-def fancy_case_master_name(master_url):  # pragma: no cover
-  master_name = buildbot.master_name_from_url(master_url)
-  return master_name.title().replace('.', '')
+def request_test_results_json(step, build, builder_name, master_url):
+  params = {
+    'name': 'full_results.json',
+    'master': buildbot.master_name_from_url(master_url),
+    'builder': builder_name,
+    'buildnumber': build['number'],
+    'testtype': step['name'],
+  }
+  base_url = 'https://test-results.appspot.com/testfile'
+  response = requests.get(base_url, params=params)
+
+  if response.status_code != 200:
+    logging.warn('test-results missing %s %s %s %s.' % (
+        master_url, builder_name, build['number'], step['name']))
+    return None
+
+  return flatten_test_results(response.json()['tests'])
 
 
 # These are reason finders, more than splitters?
@@ -63,41 +72,11 @@ class GTestSplitter(object):
     return step_name in KNOWN_STEPS
 
   @staticmethod
-  def split_step(step, build, builder_name, master_url):  # pragma: no cover
-    params = {
-      'name': 'full_results.json',
-      'master': fancy_case_master_name(master_url),
-      'builder': builder_name,
-      'buildnumber': build['number'],
-      'testtype': step['name'],
-    }
-    base_url = 'http://test-results.appspot.com/testfile'
-    response = requests.get(base_url, params=params)
-    if response.status_code == 200:
-      test_results = flatten_test_results(response.json()['tests'])
-      return GTestSplitter.failed_tests(test_results)
-
-    logging.warn('test-results missing %s %s %s, using GTestLogParser.' % (
-        builder_name, build['number'], step['name']))
-    stdio_log = stdio_for_step(master_url, builder_name, build, step)
-    # Can't split if we can't get the logs.
-    if not stdio_log:
+  def split_step(step, build, builder_name, master_url):
+    tests = request_test_results_json(step, build, builder_name, master_url)
+    if not tests:
       return None
-
-    # pylint: disable=C0301
-    # Lines this fails for:
-    #[  FAILED  ] ExtensionApiTest.TabUpdate, where TypeParam =  and GetParam() =  (10907 ms)
-
-    log_parser = gtest_utils.GTestLogParser()
-    for line in stdio_log.split('\n'):
-      log_parser.ProcessLine(line)
-
-    failed_tests = log_parser.FailedTests()
-    if failed_tests:
-      return failed_tests
-    # Failed to split, just group with the general failures.
-    logging.debug('First Line: %s' % stdio_log.split('\n')[0])
-    return None
+    return GTestSplitter.failed_tests(tests)
 
   @staticmethod
   def failed_tests(test_results):
@@ -159,7 +138,10 @@ class JUnitSplitter(object):
     return None
 
 
-def decode_results(results):
+# TODO(ojan): Merge this with GTestSplitter.failed_tests once we resolve that
+# gtests' results json doesn't have the is_unexpected field or, vice versa,
+# once we make layout tests results json not need the is_unexpected field.
+def decode_results(tests):
   """
   Decode test results and generates failures if any failures exist.
 
@@ -179,7 +161,6 @@ def decode_results(results):
   considered failures. The test result given above is an example of a flake
   result.
   """
-  tests = flatten_test_results(results['tests'])
   failures = {}
   for (test, result) in tests.iteritems():
     if result.get('is_unexpected'):
@@ -254,57 +235,11 @@ class LayoutTestsSplitter(object):
     return step['name'] == 'webkit_tests'
 
   @staticmethod
-  def split_step(step, build, builder_name, master_url):  # pragma: no cover
-    # WTF?  The android bots call it archive_webkit_results and the
-    # rest call it archive_webkit_tests_results?
-    archive_names = ['archive_webkit_results', 'archive_webkit_tests_results']
-    archive_step = next((step for step in build['steps']
-        if step['name'] in archive_names), None)
-    url_to_build = buildbot.build_url(master_url, builder_name, build['number'])
-
-    if not archive_step:
-      logging.warn('No archive step in %s' % url_to_build)
-      # print json.dumps(build['steps'], indent=1)
+  def split_step(step, build, builder_name, master_url):
+    tests = request_test_results_json(step, build, builder_name, master_url)
+    if not tests:
       return None
-
-    html_results_url = archive_step['urls'].get('layout test results')
-    # FIXME: Here again, Android is a special snowflake.
-    if not html_results_url:
-      html_results_url = archive_step['urls'].get('results')
-
-    if not html_results_url:
-      webkit_tests_step = next((step for step in build['steps']
-          if step['name'] == 'webkit_tests'), None)
-      # Common cause of this is an exception in the webkit_tests step.
-      if webkit_tests_step['results'][0] != 5:
-        logging.warn('No results url for archive step in %s' % url_to_build)
-      # print json.dumps(archive_step, indent=1)
-      return None
-
-    # !@?#!$^&$% WTF HOW DO URLS HAVE \r in them!?!
-    html_results_url = html_results_url.replace('\r', '')
-
-    jsonp_url = urlparse.urljoin(html_results_url, 'failing_results.json')
-    # FIXME: Silly that this is still JSONP.
-    jsonp_string = requests.get(jsonp_url).text
-    if 'The specified key does not exist' in jsonp_string:
-      logging.warn('%s %s %s missing failing_results.json' % (builder_name,
-          build['number'], step['name']))
-      return None
-
-    json_string = jsonp_string[len('ADD_RESULTS('):-len(');')]
-    try:
-      results = json.loads(json_string)
-      failures = decode_results(results)
-      if failures:
-        return ['%s:%s' % (name, types) for name, types in failures.items()]
-    except ValueError, e:
-      print archive_step['urls']
-      print html_results_url
-      print 'Failed %s, %s at decode of: %s' % (jsonp_url, e, jsonp_string)
-
-    # Failed to split, just group with the general failures.
-    return None
+    return decode_results(tests)
 
 
 class CompileSplitter(object):
