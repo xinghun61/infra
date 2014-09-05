@@ -21,6 +21,7 @@ DISABLED_PYLINT_WARNINGS = [
 
 DISABLED_PROJECTS = [
     'appengine/chromium_build',
+    'appengine/chromium_build_stats',
     'appengine/swarming',
     'appengine/test_results',
     'infra/services/lkgr_finder',
@@ -253,4 +254,3 @@ def GetPreferredTryMasters(project, change):  # pragma: no cover
       'infra_tester': set(['defaulttests']),
     }
   }
-
