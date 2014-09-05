@@ -20,7 +20,7 @@ handlers:
   static_dir: ui
 
 - url: /.*
-  script: main.application
+  script: appengine_module.trooper_o_matic.main.application
 
 libraries:
 - name: webapp2

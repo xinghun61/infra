@@ -17,9 +17,9 @@ import webtest
 
 from google.appengine.ext import testbed
 
-import cron
-import models
-from tests import testing_common
+from appengine_module.trooper_o_matic import cron
+from appengine_module.trooper_o_matic import models
+from appengine_module.trooper_o_matic.test import testing_common
 
 
 def _CreateTimestamp(hr, minute):
@@ -277,7 +277,7 @@ CHROMIUM_TREE_DATA = [{
 URLFETCH_RESPONSES = {
     ('http://chromium-cq-status.appspot.com/query/action=patch_stop/?'
      'begin=1388574000'): {
-        'statuscode': 200, 
+        'statuscode': 200,
         'content': json.dumps(CQ_API_RESPONSE1)
     },
     ('http://chromium-cq-status.appspot.com/query/action=patch_stop/?'

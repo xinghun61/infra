@@ -11,8 +11,8 @@ import webtest
 
 from google.appengine.ext import testbed
 
-import alerts
-import models
+from appengine_module.trooper_o_matic import alerts
+from appengine_module.trooper_o_matic import models
 
 
 class AlertsTest(unittest.TestCase):

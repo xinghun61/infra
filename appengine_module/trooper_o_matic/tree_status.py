@@ -10,8 +10,8 @@ import jinja2
 
 from google.appengine.ext import ndb
 
-import models
-import timezones
+from appengine_module.trooper_o_matic import models
+from appengine_module.trooper_o_matic import timezones
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(

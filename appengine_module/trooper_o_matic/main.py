@@ -4,12 +4,12 @@
 
 import webapp2
 
-import alerts
-import build_details
-import cq
-import cron
-import tree
-import tree_status
+from appengine_module.trooper_o_matic import alerts
+from appengine_module.trooper_o_matic import build_details
+from appengine_module.trooper_o_matic import cq
+from appengine_module.trooper_o_matic import cron
+from appengine_module.trooper_o_matic import tree
+from appengine_module.trooper_o_matic import tree_status
 
 # Set route definitions and enable debug stacks in the UI. See
 # https://webapp-improved.appspot.com/guide/app.html#debug-flag

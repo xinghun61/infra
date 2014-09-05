@@ -15,8 +15,8 @@ import webapp2
 
 from google.appengine.api import urlfetch
 
-import models
-import trees
+from appengine_module.trooper_o_matic import models
+from appengine_module.trooper_o_matic import trees
 
 
 def datetime_now():  # pragma: no cover

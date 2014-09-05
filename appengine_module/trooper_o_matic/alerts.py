@@ -9,7 +9,7 @@ import webapp2
 
 from google.appengine.ext import ndb
 
-import models
+from appengine_module.trooper_o_matic import models
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(

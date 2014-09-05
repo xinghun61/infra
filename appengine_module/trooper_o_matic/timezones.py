@@ -12,6 +12,7 @@ import datetime
 import time
 
 
+# FIXME: Just use @staticmethod instead!
 # Unused argument - pylint: disable=W0613
 
 
