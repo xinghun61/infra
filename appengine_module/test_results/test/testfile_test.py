@@ -26,11 +26,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
 import unittest
 
-from model import datastorefile
-from model import testfile
+from appengine_module.test_results.model import datastorefile
+from appengine_module.test_results.model import testfile
 
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import testbed

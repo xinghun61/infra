@@ -4,13 +4,12 @@
 
 import json
 import logging
-import time
 
 from datetime import datetime
 
 from google.appengine.api import memcache
 
-from model.testfile import TestFile
+from appengine_module.test_results.model.testfile import TestFile
 
 MEMCACHE_KEY = 'builder_state'
 

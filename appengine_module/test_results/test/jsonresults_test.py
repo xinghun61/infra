@@ -31,11 +31,10 @@
 
 import json
 import logging
-import os
 import unittest
 
-from model import jsonresults
-from model.jsonresults import (
+from appengine_module.test_results.model import jsonresults
+from appengine_module.test_results.model.jsonresults import (
     JsonResults,
     TEXT,
     FAIL,
@@ -49,7 +48,7 @@ from model.jsonresults import (
     NOTRUN,
     TestFile,
   )
-from handlers import master_config
+from appengine_module.test_results.handlers import master_config
 
 from google.appengine.ext import testbed
 

@@ -28,10 +28,10 @@
 
 import webapp2
 
-from handlers import buildershandler
-from handlers import builderstatehandler
-from handlers import menu
-from handlers import testfilehandler
+from appengine_module.test_results.handlers import buildershandler
+from appengine_module.test_results.handlers import builderstatehandler
+from appengine_module.test_results.handlers import menu
+from appengine_module.test_results.handlers import testfilehandler
 
 routes = [
     ('/testfile/delete', testfilehandler.DeleteFile),

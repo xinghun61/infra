@@ -4,14 +4,13 @@
 
 import collections
 import json
-import os
 
-from testing_utils import testing
+from appengine_module.testing_utils import testing
 
-import main
-from handlers import master_config
-from handlers import testfilehandler
-from model.jsonresults import (
+from appengine_module.test_results import main
+from appengine_module.test_results.handlers import master_config
+from appengine_module.test_results.handlers import testfilehandler
+from appengine_module.test_results.model.jsonresults import (
   JSON_RESULTS_HIERARCHICAL_VERSION
 )
 

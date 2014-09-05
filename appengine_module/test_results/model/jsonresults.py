@@ -33,7 +33,7 @@ import re
 import sys
 import traceback
 
-from model.testfile import TestFile
+from appengine_module.test_results.model.testfile import TestFile
 
 JSON_RESULTS_FILE = "results.json"
 JSON_RESULTS_FILE_SMALL = "results-small.json"

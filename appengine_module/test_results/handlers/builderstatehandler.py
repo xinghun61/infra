@@ -2,16 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
-import time
 import webapp2
 
 from datetime import datetime
 
 from google.appengine.api import memcache
 
-from model import builderstate
+from appengine_module.test_results.model import builderstate
 
 
 class GetBuilderState(webapp2.RequestHandler):

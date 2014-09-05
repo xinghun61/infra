@@ -2,14 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-
-from appengine.utils import testing
-
-from appengine.path_mangler_hack import PathMangler
-with PathMangler(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))):
-  from appengine.test_results import main
-  from appengine.test_results.handlers import builderstatehandler
+from appengine_module.testing_utils import testing
+from appengine_module.test_results import main
+from appengine_module.test_results.handlers import builderstatehandler
 
 from google.appengine.api import memcache
 
@@ -26,7 +21,7 @@ class BuilderStateHandlerTest(testing.AppengineTestCase):
     self.refresh_result = None
 
     @classmethod
-    def mock_refresh(cls):
+    def mock_refresh(_):
       self.assertFalse(self.refresh_called)
       self.refresh_called = True
       return self.refresh_result

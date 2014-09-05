@@ -3,15 +3,12 @@
 # found in the LICENSE file.
 
 import json
-import os
 
 from datetime import datetime
 from testing_support import auto_stub
 
-from appengine.path_mangler_hack import PathMangler
-with PathMangler(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))):
-  from appengine.test_results.model import builderstate
-  from appengine.test_results.model import testfile
+from appengine_module.test_results.model import builderstate
+from appengine_module.test_results.model import testfile
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
@@ -19,6 +16,9 @@ from google.appengine.ext import testbed
 TEST_MASTER = 'chromium.webkit'
 TEST_BUILDER = 'WebKit Linux'
 TEST_TEST_TYPE = 'browser_tests'
+
+# Allow lines to exceed 80c and access to private _foo members.
+# pylint: disable=C0301,W0212
 
 TEST_BUILDERS = {
     'masters': [{
@@ -83,7 +83,8 @@ class BuilderStateTest(auto_stub.TestCase):
             set(step_data['builders'].keys()),
             set(result_step_data['builders'].keys()))
         for builder, timestamp in result_step_data['builders'].items():
-          if master_name == TEST_MASTER and builder == TEST_BUILDER and test_type == TEST_TEST_TYPE:
+          if (master_name == TEST_MASTER and builder == TEST_BUILDER
+              and test_type == TEST_TEST_TYPE):
             self.assertEquals(TEST_NOW.isoformat(), timestamp)
           else:
             self.assertEqual(step_data['builders'][builder], timestamp)
@@ -137,7 +138,8 @@ class BuilderStateTest(auto_stub.TestCase):
 
     @staticmethod
     def mocked_last_upload_date(master_name, builder, test_type):
-      if master_name == TEST_MASTER and builder == TEST_BUILDER and test_type == TEST_TEST_TYPE:
+      if (master_name == TEST_MASTER and builder == TEST_BUILDER
+          and test_type == TEST_TEST_TYPE):
         return TEST_NOW
       return None
     self.mock(
