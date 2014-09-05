@@ -18,9 +18,9 @@ from google.appengine.ext.db import polymodel
 from google.appengine.runtime import DeadlineExceededError
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 
-from base_page import BasePage
+from appengine_module.chromium_status.base_page import BasePage
 
-import utils
+from appengine_module.chromium_status import utils
 
 
 class Event(polymodel.PolyModel):

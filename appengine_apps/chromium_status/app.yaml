@@ -16,7 +16,7 @@ handlers:
 # main will look for a replacement in blobstore, if not, will redirect to
 # static/
 - url: /([^/]+\.(gif|png|jpg|ico))
-  script: main.APPLICATION
+  script: appengine_module.chromium_status.main.APPLICATION
 
 - url: /static/([^/]+\.(gif|png|jpg|ico))
   static_files: static/\1
@@ -26,14 +26,14 @@ handlers:
   static_dir: stylesheets
 
 - url: /templates
-  script: templates
+  script: appengine_module.chromium_status.templates
 
 - url: /restricted/.*
-  script: main.APPLICATION
+  script: appengine_module.chromium_status.main.APPLICATION
   login: admin
 
 - url: /.*
-  script: main.APPLICATION
+  script: appengine_module.chromium_status.main.APPLICATION
 
 
 # Search DEFAULT_SKIP_FILES in google.appengine.api.appinfo plus a few others

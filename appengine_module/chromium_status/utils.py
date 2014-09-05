@@ -10,12 +10,12 @@ from google.appengine.api import users
 from google.appengine.ext import db
 
 
-def is_dev_env():
+def is_dev_env():  # pragma: no cover
   """Returns True if we're running in the development environment."""
   return 'Dev' in os.environ.get('SERVER_SOFTWARE', '')
 
 
-def requires_work_queue_login(func):
+def requires_work_queue_login(func):  # pragma: no cover
   """Decorator that only allows a request if from cron job, task, or an admin.
 
   Also allows access if running in development server environment.
@@ -39,7 +39,7 @@ def requires_work_queue_login(func):
   return decorated
 
 
-def requires_bot_login(func):
+def requires_bot_login(func):  # pragma: no cover
   """Allowed only when logged in via bot password. BasePage objects only."""
   def decorated(self, *args, **kwargs):
     if self.bot_login:
@@ -51,7 +51,7 @@ def requires_bot_login(func):
   return decorated
 
 
-def requires_write_access(func):
+def requires_write_access(func):  # pragma: no cover
   """Write access via login or bot password. BasePage objects only."""
   def decorated(self, *args, **kwargs):
     if self.write_access:
@@ -63,7 +63,7 @@ def requires_write_access(func):
   return decorated
 
 
-def requires_login(func):
+def requires_login(func):  # pragma: no cover
   """Must be logged in for access. BasePage objects only."""
   def decorated(self, *args, **kwargs):
     if self.user:
@@ -77,7 +77,7 @@ def requires_login(func):
   return decorated
 
 
-def requires_read_access(func):
+def requires_read_access(func):  # pragma: no cover
   """Read access via login or anonymous if public. BasePage objects only."""
   def decorated(self, *args, **kwargs):
     if self.read_access:
@@ -91,7 +91,7 @@ def requires_read_access(func):
   return decorated
 
 
-def AsDict(self):
+def AsDict(self):  # pragma: no cover
   """Converts an object that implements .properties() to a dict."""
   ret = {}
   for key in self.properties():
@@ -109,6 +109,6 @@ def AsDict(self):
   return ret
 
 
-def bootstrap():
+def bootstrap():  # pragma: no cover
   """Monkey patch db.Model.AsDict()"""
   db.Model.AsDict = AsDict

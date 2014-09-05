@@ -50,17 +50,17 @@ def main():
   remote_api_stub.ConfigureRemoteDatastore(
       app_id, '/_ah/remote_api', auth_func, host)
 
-  import base_page
-  import breakpad
-  import commit_queue
-  import event_push
-  import lkgr
-  import profiling
-  import static_blobs_inline
-  import static_blobs_store
-  import status
-  import utils
-  import xmpp
+  from appengine_module.chromium_status import base_page
+  from appengine_module.chromium_status import breakpad
+  from appengine_module.chromium_status import commit_queue
+  from appengine_module.chromium_status import event_push
+  from appengine_module.chromium_status import lkgr
+  from appengine_module.chromium_status import profiling
+  from appengine_module.chromium_status import static_blobs_inline
+  from appengine_module.chromium_status import static_blobs_store
+  from appengine_module.chromium_status import status
+  from appengine_module.chromium_status import utils
+  from appengine_module.chromium_status import xmpp
 
   utils.bootstrap()
 

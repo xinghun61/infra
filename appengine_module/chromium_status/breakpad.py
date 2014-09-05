@@ -12,8 +12,8 @@ from google.appengine.api import xmpp
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 
-from base_page import BasePage
-import utils
+from appengine_module.chromium_status.base_page import BasePage
+from appengine_module.chromium_status import utils
 
 
 class Report(db.Model):

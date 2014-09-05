@@ -11,18 +11,18 @@
 
 from google.appengine.ext import webapp
 
-import base_page
-import breakpad
-import commit_queue
-import event_push
-import git_lkgr
-import lkgr
-import login
-import profiling
-import static_blobs_inline as static_blobs
-import status
-import utils
-import xmpp
+from appengine_module.chromium_status import base_page
+from appengine_module.chromium_status import breakpad
+from appengine_module.chromium_status import commit_queue
+from appengine_module.chromium_status import event_push
+from appengine_module.chromium_status import git_lkgr
+from appengine_module.chromium_status import lkgr
+from appengine_module.chromium_status import login
+from appengine_module.chromium_status import profiling
+from appengine_module.chromium_status import static_blobs_inline as static_blobs
+from appengine_module.chromium_status import status
+from appengine_module.chromium_status import utils
+from appengine_module.chromium_status import xmpp
 
 
 class Warmup(webapp.RequestHandler):

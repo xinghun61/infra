@@ -1,0 +1,5 @@
+Integration tests found in tests/ use dev_appserver.py
+but aren't allowed to actually load/test python code directly.
+
+We should generalize the mechanism for writing dev_appserver.py tests
+and share that with other appengine_apps.

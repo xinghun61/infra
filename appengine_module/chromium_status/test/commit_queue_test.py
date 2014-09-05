@@ -1,15 +1,11 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-import sys
 import unittest
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from appengine_module.chromium_status import commit_queue
 
-import commit_queue
 
 class TestOrdinalNumbers(unittest.TestCase):
   def test_small_numbers(self):
@@ -33,7 +29,3 @@ class TestOrdinalNumbers(unittest.TestCase):
     self.assertEqual(commit_queue.ordinal_number(42), '42nd')
     self.assertEqual(commit_queue.ordinal_number(183), '183rd')
     self.assertEqual(commit_queue.ordinal_number(1011), '1011th')
-
-
-if __name__ == '__main__':
-  unittest.main()

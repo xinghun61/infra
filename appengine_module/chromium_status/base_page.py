@@ -17,7 +17,7 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 
-import utils
+from appengine_module.chromium_status import utils
 
 
 class Passwords(db.Model):
@@ -40,7 +40,7 @@ class BasePage(webapp.RequestHandler):
   _VALID_PRIVATE_EMAIL = re.compile(r"^.*@(google\.com)$")
   PUBLIC_ACCESS = False
 
-  def __init__(self, *args, **kwargs):
+  def __init__(self, *args, **kwargs):  # pragma: no cover
     super(BasePage, self).__init__(*args, **kwargs)
     self._initialized = False
     # Read and write access mean to the datastore.
@@ -51,7 +51,7 @@ class BasePage(webapp.RequestHandler):
     self._bot_login = False
     self._user = None
 
-  def _late_init(self):
+  def _late_init(self):  # pragma: no cover
     """Initializes access control fields once the object is setup."""
 
     def look_for_password():
@@ -103,30 +103,30 @@ class BasePage(webapp.RequestHandler):
         self._read_access, self._write_access, self._bot_login, self._user))
 
   @property
-  def write_access(self):
+  def write_access(self):  # pragma: no cover
     if not self._initialized:
       self._late_init()
     return self._write_access
 
   @property
-  def read_access(self):
+  def read_access(self):  # pragma: no cover
     if not self._initialized:
       self._late_init()
     return self._read_access
 
   @property
-  def user(self):
+  def user(self):  # pragma: no cover
     if not self._initialized:
       self._late_init()
     return self._user
 
   @property
-  def bot_login(self):
+  def bot_login(self):  # pragma: no cover
     if not self._initialized:
       self._late_init()
     return self._bot_login
 
-  def InitializeTemplate(self, title):
+  def InitializeTemplate(self, title):  # pragma: no cover
     """Initializes the template values with information needed by all pages."""
     if self.user:
       user_email = self.user.email()
@@ -142,7 +142,8 @@ class BasePage(webapp.RequestHandler):
     }
     return template_values
 
-  def DisplayTemplate(self, name, template_values, use_cache=False):
+  def DisplayTemplate(self, name, template_values,
+        use_cache=False):  # pragma: no cover
     """Replies to a http request with a template.
 
     Optionally cache it for 1 second. Only to be used for user-invariant
@@ -160,7 +161,7 @@ class BasePage(webapp.RequestHandler):
     self.response.out.write(buff)
 
 
-def bootstrap():
+def bootstrap():  # pragma: no cover
   app_name = os.environ['APPLICATION_ID']
   if app_name.endswith('-status'):
     app_name = app_name[:-7]

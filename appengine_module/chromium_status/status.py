@@ -12,8 +12,8 @@ import re
 from google.appengine.api import memcache
 from google.appengine.ext import db
 
-from base_page import BasePage
-import utils
+from appengine_module.chromium_status.base_page import BasePage
+from appengine_module.chromium_status import utils
 
 
 ALLOWED_ORIGINS = [

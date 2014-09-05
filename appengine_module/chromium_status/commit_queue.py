@@ -17,8 +17,8 @@ from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
 
-from base_page import BasePage
-import utils
+from appengine_module.chromium_status.base_page import BasePage
+from appengine_module.chromium_status import utils
 
 
 TRY_SERVER_MAP = (
@@ -35,7 +35,7 @@ class Owner(db.Model):
   email = db.EmailProperty()
 
   @staticmethod
-  def to_key(owner):
+  def to_key(owner):  # pragma: no cover
     return '<%s>' % owner
 
 
@@ -47,7 +47,7 @@ class PendingCommit(db.Model):
   patchset = db.IntegerProperty()
 
   @staticmethod
-  def to_key(issue, patchset, owner):
+  def to_key(issue, patchset, owner):  # pragma: no cover
     # TODO(maruel): My bad, shouldn't have put owner in the key.
     return '<%d-%d-%s>' % (issue, patchset, owner)
 
@@ -73,7 +73,7 @@ class TryServerEvent(VerificationEvent):
   url = db.StringProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     if self.build is not None:
       out = '<a href="%s">"%s" on %s, build #%s</a>' % (
           cgi.escape(self.url),
@@ -93,7 +93,7 @@ class TryServerEvent(VerificationEvent):
           cgi.escape(self.builder))
 
   @classmethod
-  def to_key(cls, packet):
+  def to_key(cls, packet):  # pragma: no cover
     if not packet.get('builder') or not packet.get('job_name'):
       return None
     return '<%s-%s-%s>' % (
@@ -117,7 +117,7 @@ class TryJobRietveldEvent(VerificationEvent):
   url = db.StringProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     if self.build is not None:
       out = '<a href="%s">"%s" on %s, build #%s</a>' % (
           cgi.escape(self.url),
@@ -137,7 +137,7 @@ class TryJobRietveldEvent(VerificationEvent):
           cgi.escape(self.builder))
 
   @classmethod
-  def to_key(cls, packet):
+  def to_key(cls, packet):  # pragma: no cover
     if not packet.get('builder') or not packet.get('job_name'):
       return None
     return '<%s-%s-%s>' % (
@@ -151,11 +151,11 @@ class PresubmitEvent(VerificationEvent):
   timed_out = db.BooleanProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     return '<pre class="output">%s</pre>' % cgi.escape(self.output)
 
   @classmethod
-  def to_key(cls, _):
+  def to_key(cls, _):  # pragma: no cover
     # There shall be only one PresubmitEvent per PendingCommit.
     return '<%s>' % cls.name
 
@@ -167,7 +167,7 @@ class CommitEvent(VerificationEvent):
   url = db.StringProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     out = '<pre class="output">%s</pre>' % cgi.escape(self.output)
     if self.url:
       out += '<a href="%s">Revision %s</a>' % (
@@ -178,7 +178,7 @@ class CommitEvent(VerificationEvent):
     return out
 
   @classmethod
-  def to_key(cls, _):
+  def to_key(cls, _):  # pragma: no cover
     return '<%s>' % cls.name
 
 
@@ -187,12 +187,12 @@ class InitialEvent(VerificationEvent):
   revision = db.IntegerProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     return 'Looking at new commit, using revision %s' % (
         cgi.escape(str(self.revision)))
 
   @classmethod
-  def to_key(cls, _):
+  def to_key(cls, _):  # pragma: no cover
     return '<%s>' % cls.name
 
 
@@ -201,11 +201,11 @@ class AbortEvent(VerificationEvent):
   output = db.TextProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     return '<pre class="output">%s</pre>' % cgi.escape(self.output)
 
   @classmethod
-  def to_key(cls, _):
+  def to_key(cls, _):  # pragma: no cover
     return '<%s>' % cls.name
 
 
@@ -214,15 +214,15 @@ class WhyNotEvent(VerificationEvent):
   message = db.TextProperty()
 
   @property
-  def as_html(self):
+  def as_html(self):  # pragma: no cover
     return '<pre class="output">%s</pre>' % cgi.escape(self.message)
 
   @classmethod
-  def to_key(cls, _):
+  def to_key(cls, _):  # pragma: no cover
     return '<%s>' % cls.name
 
 
-def get_owner(owner):
+def get_owner(owner):  # pragma: no cover
   """Efficient querying of Owner with memcache."""
   key = Owner.to_key(owner)
   obj = memcache.get(key, namespace='Owner')
@@ -232,7 +232,7 @@ def get_owner(owner):
   return obj
 
 
-def get_pending_commit(issue, patchset, owner, timestamp):
+def get_pending_commit(issue, patchset, owner, timestamp):  # pragma: no cover
   """Efficient querying of PendingCommit with memcache."""
   owner_obj = get_owner(owner)
   key = PendingCommit.to_key(issue, patchset, owner)
@@ -255,7 +255,7 @@ class CQBasePage(BasePage):
   - limit: maximum number of elements to result. default is 100.
   """
 
-  def get(self, *args):
+  def get(self, *args):  # pragma: no cover
     query = self._get_query(*args)
     if not query:
       # The user probably used /me without being logged.
@@ -267,7 +267,8 @@ class CQBasePage(BasePage):
     else:
       return self._get_as_html(query)
 
-  def _get_query(self, owner=None, issue=None, patchset=None):
+  def _get_query(self, owner=None, issue=None,
+        patchset=None):  # pragma: no cover
     """Returns None on query failure."""
     query = VerificationEvent.all().order('-timestamp')
     ancestor = None
@@ -294,7 +295,7 @@ class CQBasePage(BasePage):
       query.ancestor(ancestor)
     return query
 
-  def _get_limit(self):
+  def _get_limit(self):  # pragma: no cover
     limit = self.request.get('limit')
     if limit and limit.isdigit():
       limit = int(limit)
@@ -302,7 +303,7 @@ class CQBasePage(BasePage):
       limit = 100
     return limit
 
-  def _get_as_json(self, query):
+  def _get_as_json(self, query):  # pragma: no cover
     self.response.headers['Content-Type'] = 'application/json'
     self.response.headers['Access-Control-Allow-Origin'] = '*'
     data = json.dumps([s.AsDict() for s in query.fetch(self._get_limit())])
@@ -312,10 +313,10 @@ class CQBasePage(BasePage):
         data = '%s(%s);' % (callback, data)
     self.response.out.write(data)
 
-  def _get_as_html(self, query):
+  def _get_as_html(self, query):  # pragma: no cover
     raise NotImplementedError()
 
-  def _parse_user(self, user):
+  def _parse_user(self, user):  # pragma: no cover
     user = urllib2.unquote(user.strip('/'))
     if user == 'me':
       if not self.user:
@@ -325,7 +326,7 @@ class CQBasePage(BasePage):
     return user
 
 
-class OwnerStats(object):
+class OwnerStats(object):  # pragma: no cover
   """CQ usage statistics for a single user."""
   def __init__(self, now, owner, last_day, last_week, last_month, forever):
     # Since epoch in float.
@@ -348,7 +349,7 @@ class OwnerStats(object):
         self.forever)
 
 
-class OwnerQuery(object):
+class OwnerQuery(object):  # pragma: no cover
   def __init__(self, owner_key, now):
     self.owner_key = owner_key
     self.now = now
@@ -378,7 +379,7 @@ class OwnerQuery(object):
     return obj
 
 
-def to_link(pending):
+def to_link(pending):  # pragma: no cover
   return '<a href="/cq/%s/%s/%s">%s</a>' % (
       pending.parent_key().name()[1:-1],
       pending.issue,
@@ -386,7 +387,7 @@ def to_link(pending):
       pending.issue)
 
 
-def get_owner_stats(owner_key, now):
+def get_owner_stats(owner_key, now):  # pragma: no cover
   """Returns an OnwerStats instance for the Owner."""
   obj = memcache.get(owner_key.name(), 'cq_owner_stats')
   if obj:
@@ -394,7 +395,7 @@ def get_owner_stats(owner_key, now):
   return OwnerQuery(owner_key, now).to_stats()
 
 
-def monthly_top_contributors():
+def monthly_top_contributors():  # pragma: no cover
   """Returns the top monthly contributors as a list of OwnerStats."""
   obj = memcache.get('monthly', 'cq_top')
   if not obj:
@@ -409,7 +410,7 @@ def monthly_top_contributors():
   return obj
 
 
-class Summary(CQBasePage):
+class Summary(CQBasePage):  # pragma: no cover
   def _get_as_html(self, _):
     owners = []
     for stats in monthly_top_contributors():
@@ -438,7 +439,7 @@ def ordinal_number(i):
     return '%dth' % i
 
 
-class TopScore(CQBasePage):
+class TopScore(CQBasePage):  # pragma: no cover
   def _get_as_html(self, _):
     owners = [
       {
@@ -455,7 +456,7 @@ class TopScore(CQBasePage):
     self.DisplayTemplate('cq_top_score.html', template_values, use_cache=True)
 
 
-class User(CQBasePage):
+class User(CQBasePage):  # pragma: no cover
   def _get_as_html(self, query):
     pending_commits_events = {}
     pending_commits = {}
@@ -480,7 +481,7 @@ class User(CQBasePage):
     self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
 
 
-class Issue(CQBasePage):
+class Issue(CQBasePage):  # pragma: no cover
   def _get_as_html(self, query):
     pending_commits_events = {}
     pending_commits = {}
@@ -505,7 +506,7 @@ class Issue(CQBasePage):
     self.DisplayTemplate('cq_owner.html', template_values, use_cache=True)
 
 
-class Receiver(BasePage):
+class Receiver(BasePage):  # pragma: no cover
   @utils.requires_write_access
   def post(self):
     def load_values():
@@ -562,7 +563,7 @@ class Receiver(BasePage):
     self.response.out.write('%d\n' % count)
 
 
-def bootstrap():
+def bootstrap():  # pragma: no cover
   # Used by _parse_packet() to find the right model to use from the
   # 'verification' value of the packet.
   module = sys.modules[__name__]
