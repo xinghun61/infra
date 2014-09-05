@@ -33,6 +33,9 @@ GIT_SVN_ID = 'git-svn-id'
 C_PICK = re.compile(r'\(cherry picked from commit [a-fA-F0-9]{40}\)')
 
 
+# How long to wait for 'git push' to complete before forcefully killing it.
+PUSH_TIMEOUT = 5 * 60
+
 ################################################################################
 # ConfigRef
 ################################################################################
@@ -505,5 +508,5 @@ def inner_loop(repo, cref, clock=time):
   repo.fetch()
   cref.evaluate()
   commits = process_repo(repo, cref, clock)
-  repo.push_queued_fast_forwards()
+  repo.push_queued_fast_forwards(timeout=PUSH_TIMEOUT)
   return commits

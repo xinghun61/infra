@@ -15,6 +15,7 @@ from infra.libs.git2 import repo
 
 from infra.services.gnumbd.gnumbd import FOOTER_PREFIX
 from infra.services.gnumbd.gnumbd import GIT_SVN_ID
+from infra.services.gnumbd.gnumbd import PUSH_TIMEOUT
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class Pusher(threading.Thread):
   def run(self):
     try:
       self._output = self._repo.fast_forward_push(
-          self._pushspec, include_err=True)
+          self._pushspec, include_err=True, timeout=PUSH_TIMEOUT)
       self._success = True
     except CalledProcessError as cpe:  # pragma: no cover
       self._output = str(cpe)
@@ -212,6 +213,6 @@ def inner_loop(origin_repo, config):
     if not rslt:  # pragma: no cover
       success = False
 
-  origin_repo.push_queued_fast_forwards()
+  origin_repo.push_queued_fast_forwards(timeout=PUSH_TIMEOUT)
 
   return success, processed

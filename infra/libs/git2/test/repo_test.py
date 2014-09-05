@@ -8,10 +8,21 @@ import shutil
 import sys
 
 from infra.libs import git2
+from infra.libs.git2 import repo
 from infra.libs.git2.test import test_util
 
 
 class TestRepo(test_util.TestBasis):
+  def runFastForwardPush(self, **kwargs):
+    r = self.mkRepo()
+    O = r['refs/heads/branch_O']
+    S = r.get_commit(self.repo['S'])
+    self.capture_stdio(r.fast_forward_push, {O: S}, **kwargs)
+    self.assertEqual(O.commit.hsh, self.repo['S'])
+    self.assertEqual(
+        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
+        self.repo['S'])
+
   def testEmptyRepo(self):
     r = git2.Repo('doesnt_exist')
     r.repos_dir = self.repos_dir
@@ -110,14 +121,24 @@ class TestRepo(test_util.TestBasis):
         self.repo['O'])
 
   def testFastForward(self):
-    r = self.mkRepo()
-    O = r['refs/heads/branch_O']
-    S = r.get_commit(self.repo['S'])
-    self.capture_stdio(r.fast_forward_push, {O: S})
-    self.assertEqual(O.commit.hsh, self.repo['S'])
-    self.assertEqual(
-        self.repo.git('rev-parse', 'branch_O').stdout.strip(),
-        self.repo['S'])
+    self.runFastForwardPush()
+
+  def testFastForwardWithTimeoutOk(self):
+    self.runFastForwardPush(timeout=5)
+
+  def testFastForwardWithTimeoutFail(self):
+    orig_proc = repo.subprocess.Popen
+    def mocked_Popen(cmd, *args, **kwargs):
+      if cmd[:2] != ('git', 'push'):
+        return orig_proc(cmd, *args, **kwargs)
+      # Just sleep instead of doing push.
+      return orig_proc(
+          [sys.executable, '-c', 'import time; time.sleep(0.5)'],
+          *args, **kwargs)
+    self.mock(repo.subprocess, 'Popen', mocked_Popen)
+    # TODO: Flakiness alert. Depends on real time.
+    with self.assertRaises(repo.CalledProcessError):
+      self.runFastForwardPush(timeout=0.1)
 
   def testEmptyFastForward(self):
     r = self.mkRepo()

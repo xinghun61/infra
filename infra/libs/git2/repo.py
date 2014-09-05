@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urlparse
 
@@ -152,6 +153,7 @@ class Repo(object):
     Kwargs:
       indata - String data to feed to communicate()
       ok_ret - A set() of valid return codes. Defaults to {0}.
+      timeout - How long to wait for process to finish before killing it, sec.
       ...    - passes through to subprocess.Popen()
     """
     if args[0] == 'push' and self.dry_run:
@@ -169,13 +171,31 @@ class Repo(object):
       assert 'stdin' not in kwargs
       kwargs['stdin'] = subprocess.PIPE
     ok_ret = kwargs.pop('ok_ret', {0})
+    timeout = kwargs.pop('timeout', None)
     cmd = ('git',) + args
 
     self._log.debug('Running %r', cmd)
     started = time.time()
     process = subprocess.Popen(cmd, **kwargs)
-    output, errout = process.communicate(indata)
-    retcode = process.poll()
+    def kill_proc():
+      LOGGER.warning('Killing stuck process, %d sec timeout exceeded', timeout)
+      try:
+        process.kill()
+      except OSError as e:  # pragma: no cover
+        if e.errno != errno.ESRCH:
+          LOGGER.exception('Unexpected exception')
+      except Exception:  # pragma: no cover
+        LOGGER.exception('Unexpected exception')
+    killer = threading.Timer(timeout, kill_proc) if timeout else None
+    try:
+      if killer:
+        killer.start()
+      output, errout = process.communicate(indata)
+      retcode = process.poll()
+    finally:
+      if killer:
+        killer.cancel()
+
     dt = time.time() - started
     if dt > 1:  # pragma: no cover
       self._log.debug('Finished in %.1f sec', dt)
@@ -199,7 +219,8 @@ class Repo(object):
     LOGGER.debug('fetching %r', self)
     self.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
 
-  def fast_forward_push(self, refs_and_commits, include_err=False):
+  def fast_forward_push(self, refs_and_commits,
+                        include_err=False, timeout=None):
     """Push commits to refs on the remote, and also update refs' local copies.
 
     Refs names are specified as refs on remote, i.e. push to
@@ -215,6 +236,7 @@ class Repo(object):
     Args:
       refs_and_commits: dict {Ref object -> Commit to push to the ref}.
       include_err: a boolean indicating to capture and return the push output.
+      timeout: how long to wait for push to complete before aborting, in sec.
     """
     if not refs_and_commits:
       return
@@ -224,6 +246,7 @@ class Repo(object):
       for r, c in refs_and_commits.iteritems()
     ]
     kwargs = {'stderr': sys.stdout} if include_err else {}
+    kwargs['timeout'] = timeout
     output = self.run('push', 'origin', *refspec, **kwargs)
     for r, c in refs_and_commits.iteritems():
       r.fast_forward(c)
@@ -247,8 +270,9 @@ class Repo(object):
       r.fast_forward(c)
       self._queued_refs[r] = c
 
-  def push_queued_fast_forwards(self):
+  def push_queued_fast_forwards(self, include_err=False, timeout=None):
     """Push refs->commits enqueued with queue_fast_forward."""
     queued = self._queued_refs
     self._queued_refs = {}
-    self.fast_forward_push(queued)
+    return self.fast_forward_push(
+        queued, include_err=include_err, timeout=timeout)
