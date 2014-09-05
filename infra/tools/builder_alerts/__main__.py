@@ -33,37 +33,6 @@ from slave import gatekeeper_ng_config  # pylint: disable=F0401
 CACHE_PATH = 'build_cache'
 
 
-def apply_gatekeeper_rules(alerts, gatekeeper):
-  filtered_alerts = []
-  for alert in alerts:
-    master_url = alert['master_url']
-    master_name = buildbot.master_name_from_url(master_url)
-    config = gatekeeper.get(master_url)
-    if not config:
-      # Unclear if this should be set or not?
-      # alert['would_close_tree'] = False
-      filtered_alerts.append(alert)
-      continue
-    excluded_builders = gatekeeper_extras.excluded_builders(config)
-    if alert['builder_name'] in excluded_builders:
-      continue
-    alert['would_close_tree'] = \
-      gatekeeper_extras.would_close_tree(config,
-        alert['builder_name'], alert['step_name'])
-    filtered_alerts.append(alert)
-    alert['tree_name'] = gatekeeper_extras.tree_for_master(master_name)
-  return filtered_alerts
-
-
-def fetch_master_urls(gatekeeper, args):
-  # Currently using gatekeeper.json, but could use:
-  # https://chrome-infra-stats.appspot.com/_ah/api#p/stats/v1/stats.masters.list
-  master_urls = gatekeeper.keys()
-  if args.master_filter:
-    master_urls = [url for url in master_urls if args.master_filter not in url]
-  return master_urls
-
-
 def main(args):
   parser = argparse.ArgumentParser(prog='run.py %s' % __package__)
   parser.add_argument('data_url', action='store', nargs='*')
@@ -89,9 +58,16 @@ def main(args):
 
   # FIXME: gatekeeper_config should find gatekeeper.json for us.
   gatekeeper_path = os.path.abspath(args.gatekeeper)
-  print "Processsing gatekeeper json: %s" % (gatekeeper_path)
+  logging.debug("Processsing gatekeeper json: %s", gatekeeper_path)
   gatekeeper = gatekeeper_ng_config.load_gatekeeper_config(gatekeeper_path)
-  master_urls = fetch_master_urls(gatekeeper, args)
+
+  gatekeeper_trees_path = os.path.join(os.path.dirname(gatekeeper_path),
+                                       'gatekeeper_trees.json')
+  logging.debug('Processing gatekeeper trees json: %s', gatekeeper_trees_path)
+  gatekeeper_trees = gatekeeper_ng_config.load_gatekeeper_tree_config(
+      gatekeeper_trees_path)
+
+  master_urls = gatekeeper_extras.fetch_master_urls(gatekeeper, args)
   start_time = datetime.datetime.now()
 
   latest_builder_info = {}
@@ -115,7 +91,8 @@ def main(args):
 
   print "Fetch took: %s" % (datetime.datetime.now() - start_time)
 
-  alerts = apply_gatekeeper_rules(alerts, gatekeeper)
+  alerts = gatekeeper_extras.apply_gatekeeper_rules(alerts, gatekeeper,
+                                                    gatekeeper_trees)
 
   alerts = analysis.assign_keys(alerts)
   reason_groups = analysis.group_by_reason(alerts)

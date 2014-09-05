@@ -21,6 +21,11 @@
     'build': '0',
     'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
   },
+  'mock': {
+    'version': '1.0.1',
+    'build': '0',
+    'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
+  },
   'numpy': {
     'version': '1.10.0.dev_7e53e9b',
     'build': '0',

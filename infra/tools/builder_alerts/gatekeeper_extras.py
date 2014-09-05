@@ -6,36 +6,46 @@
 
 import logging
 
+from infra.tools.builder_alerts.buildbot import master_name_from_url
 
 def excluded_builders(master_config):
   return master_config[0].get('*', {}).get('excluded_builders', set())
 
 
-# pylint: disable=C0301
-# FIXME: This is currently baked into:
-# https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_launch.py
-# http://crbug.com/394961
-MASTER_CONFIG = {
-  'chromium-status': [
-    'chromium',
-    'chromium.chrome',
-    'chromium.chromiumos',
-    'chromium.gpu',
-    'chromium.linux',
-    'chromium.mac',
-    'chromium.memory',
-    'chromium.win',
-  ],
-  'blink-status': [
-    'chromium.webkit',
-  ],
-}
-
-
-def tree_for_master(master_name):
-  for tree_name, master_names in MASTER_CONFIG.items():
-    if master_name in master_names:
+def tree_for_master(master_url, gatekeeper_trees_config):
+  """Get the name of the tree for a given master url, or the master's name."""
+  for tree_name, tree_config in gatekeeper_trees_config.iteritems():
+    if master_url in tree_config['masters']:
       return tree_name
+  return master_name_from_url(master_url)
+
+
+def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
+  filtered_alerts = []
+  for alert in alerts:
+    master_url = alert['master_url']
+    config = gatekeeper.get(master_url)
+    if not config:
+      # Unclear if this should be set or not?
+      # alert['would_close_tree'] = False
+      filtered_alerts.append(alert)
+      continue
+    if alert['builder_name'] in excluded_builders(config):
+      continue
+    alert['would_close_tree'] = would_close_tree(
+        config, alert['builder_name'], alert['step_name'])
+    alert['tree'] = tree_for_master(master_url, gatekeeper_trees)
+    filtered_alerts.append(alert)
+  return filtered_alerts
+
+
+def fetch_master_urls(gatekeeper, args):
+  # Currently using gatekeeper.json, but could use:
+  # https://chrome-infra-stats.appspot.com/_ah/api#p/stats/v1/stats.masters.list
+  master_urls = gatekeeper.keys()
+  if args.master_filter:
+    master_urls = [url for url in master_urls if args.master_filter not in url]
+  return master_urls
 
 
 def would_close_tree(master_config, builder_name, step_name):
