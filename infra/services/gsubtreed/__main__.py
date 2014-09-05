@@ -82,4 +82,5 @@ def main(args):  # pragma: no cover
   return 0 if loop_results.success else 1
 
 
-sys.exit(main(sys.argv[1:]))
+if __name__ == '__main__':
+  sys.exit(main(sys.argv[1:]))
