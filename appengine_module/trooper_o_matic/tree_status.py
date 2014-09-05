@@ -30,7 +30,7 @@ class TreeStatusHandler(webapp2.RequestHandler):
         pt.year, pt.month - 1, pt.day, pt.hour, pt.minute, pt.second)
 
   def get(self, project):
-    project_key = ndb.Key('Project', project)
+    project_key = ndb.Key(models.Project, project)
     data_1 = models.TreeOpenStat.query(
         models.TreeOpenStat.num_days == 1, ancestor=project_key).order(
         -models.TreeOpenStat.timestamp).fetch(limit=500)
@@ -77,7 +77,7 @@ class TreeStatusJSONHandler(webapp2.RequestHandler):
   def get(self, project):
     days = int(self.request.get('days', 1))
 
-    project_key = ndb.Key('Project', project)
+    project_key = ndb.Key(models.Project, project)
     latest = models.TreeOpenStat.query(
         models.TreeOpenStat.num_days == days, ancestor=project_key).order(
         -models.TreeOpenStat.timestamp).get()

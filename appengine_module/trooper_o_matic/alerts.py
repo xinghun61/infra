@@ -81,8 +81,8 @@ def GetCycleTimeDict(tree): # pragma: no cover
   }
 
 def UpdateJsonForProject(name, status_dict): # pragma: no cover
-  project = ndb.Key('Project', name)
-  tree = ndb.Key('Tree', name)
+  project = ndb.Key(models.Project, name)
+  tree = ndb.Key(models.Tree, name)
   status_dict.setdefault('tree_status', {})[name] = GetTreeStatusDict(project)
   status_dict.setdefault('cq_latency', {})[name] = GetCqLatencyDict(project)
   status_dict.setdefault('cycle_time', {})[name] = GetCycleTimeDict(tree)

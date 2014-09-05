@@ -30,7 +30,7 @@ class TreeHandler(webapp2.RequestHandler):
         pt.year, pt.month - 1, pt.day, pt.hour, pt.minute, pt.second)
 
   def get(self, tree):
-    tree_key = ndb.Key('Tree', tree)
+    tree_key = ndb.Key(models.Tree, tree)
     data = models.BuildTimeStat.query(ancestor=tree_key).order(
         -models.BuildTimeStat.timestamp).fetch(limit=30)
     data.reverse()

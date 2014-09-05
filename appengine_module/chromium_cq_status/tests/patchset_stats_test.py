@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from appengine_module.chromium_cq_status.model.cq_stats import CountStats, ListStats  # pylint: disable=C0301
+# StatsTest must be imported first in order to get proper ndb monkeypatching.
 from appengine_module.chromium_cq_status.tests.stats_test import StatsTest, hours  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.model.cq_stats import CountStats, ListStats  # pylint: disable=C0301
 
 class PatchsetStatsTest(StatsTest):
   attempt_records = (
