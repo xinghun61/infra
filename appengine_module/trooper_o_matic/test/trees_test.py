@@ -21,6 +21,7 @@ URLFETCH_RESPONSES = {
 class TreesTest(unittest.TestCase):
 
   def setUp(self):
+    super(TreesTest, self).setUp()
     testing_common.StubUrlfetch(URLFETCH_RESPONSES)
 
   def testTreesUrlFetch(self):

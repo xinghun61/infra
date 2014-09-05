@@ -367,7 +367,7 @@ for hour in range(0, 24):
 class CronTest(unittest.TestCase):
 
   def setUp(self):
-
+    super(CronTest, self).setUp()
     self.testbed = testbed.Testbed()
     self.testbed.activate()
     self.testbed.init_datastore_v3_stub()
@@ -382,6 +382,12 @@ class CronTest(unittest.TestCase):
     ])
     self.testapp = webtest.TestApp(app)
     cron.datetime_now = MockNow
+
+  def tearDown(self):
+    try:
+      self.testbed.deactivate()
+    finally:
+      super(CronTest, self).tearDown()
 
   def testCheckCq(self):
     self.testapp.get('/check-cq')
