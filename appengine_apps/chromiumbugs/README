@@ -1,0 +1,5 @@
+If this app had any python tests all of its code should move to
+appengine_module and be tested there.
+
+Since it does not have any python tests its code is just
+in the app root for now.

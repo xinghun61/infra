@@ -24,7 +24,9 @@ from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
-import httpagentparser
+# pylint warning disabled until httpagentparser can be added to the wheelhouse.
+# http://crbug.com/410984
+import httpagentparser # pylint: disable=F0401
 import settings
 from third_party import ezt
 
@@ -185,7 +187,7 @@ class MainHandler(webapp.RequestHandler):
         detectable_phrase = '' if token else ' of that'
         comment = legacy_template % (
           chrome_version, os_version, detectable_phrase, chrome_ua)
-        url = (issue_entry_page_url + '?template=' + template_name + '&' + 
+        url = (issue_entry_page_url + '?template=' + template_name + '&' +
                urllib.urlencode({'comment': comment}))
         self.redirect(url)
         return
@@ -205,8 +207,8 @@ class MainHandler(webapp.RequestHandler):
           'app_version': app_version,
           'chrome_version': chrome_version,
           'channel_guess_os_name': channel_guess_os_name,
-          'os_name': name, 
-          'os_version': os_version, 
+          'os_name': name,
+          'os_version': os_version,
           'chrome_ua': chrome_ua,
           'continue_url': continue_url,
           'token': token,
@@ -251,7 +253,7 @@ class MainHandler(webapp.RequestHandler):
         logging.info('Site is scheduled to be in read-only mode %r < %r < %r',
                      start, now, start + duration)
         return True
-        
+
     return False
 
 
