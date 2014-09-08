@@ -72,8 +72,8 @@ def fetch_master_json(master_url):  # pragma: no cover
   try:
     return requests.get(url).json()
   except ValueError:
-    logging.critical('Failed to parse master json file.')
-    return dict()
+    logging.critical('Failed to parse master json file from %s.' % url)
+    return {}
 
 
 def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
@@ -85,7 +85,9 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   try:
     builds = response.json()['builds']
   except ValueError:
-    logging.critical('Failed to parse JSON response from %s' % builds_url)
+    logging.critical(
+        'Failed to parse JSON response from master: %s, builder: %s' % (
+            master_name, builder_name))
   for build in builds:
     if not build.get('number'):
       index = builds.index(build)

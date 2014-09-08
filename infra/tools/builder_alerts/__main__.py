@@ -77,6 +77,9 @@ def main(args):
   alerts = []
   for master_url in master_urls:
     master_json = buildbot.fetch_master_json(master_url)
+    if not master_json:
+      continue
+
     master_alerts = alert_builder.alerts_for_master(cache,
         master_url, master_json, args.builder_filter)
     alerts.extend(master_alerts)
