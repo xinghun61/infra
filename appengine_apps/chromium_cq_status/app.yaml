@@ -13,8 +13,8 @@ handlers:
 - url: /scripts
   static_dir: scripts
 - url: /recent.*
-  static_files: recent.html
-  upload: recent.html
+  static_files: appengine_module/chromium_cq_status/recent.html
+  upload: appengine_module/chromium_cq_status/recent.html
 - url: /.*
   script: appengine_module.chromium_cq_status.main.app
 
