@@ -8,10 +8,6 @@ import requests
 
 from infra.tools.builder_alerts import reasons_splitter
 
-# This is for the mock_requests_get. They need the parameters because those are
-# passed in to the get function, but they don't use the parameters.
-# Unused argument - pylint: disable=W0613
-
 
 class MockJsonResponse():
   def __init__(self, data=None, status_code=200):
@@ -32,6 +28,7 @@ class SplitterTests(unittest.TestCase):
 
   def test_gtest_split_step(self):
     def mock_requests_get(base_url, params):
+      # Unused argument - pylint: disable=W0613
       return MockJsonResponse(data={
         'tests': {
           'test1': {'actual': 'PASS', 'expected': 'PASS'},
@@ -52,6 +49,7 @@ class SplitterTests(unittest.TestCase):
 
   def test_gtest_split_step_404(self):
     def mock_requests_get(base_url, params):
+      # Unused argument - pylint: disable=W0613
       return MockJsonResponse(status_code=404)
 
     old_requests_get = requests.get
@@ -67,6 +65,7 @@ class SplitterTests(unittest.TestCase):
 
   def test_layout_test_split_step(self):
     def mock_requests_get(base_url, params):
+      # Unused argument - pylint: disable=W0613
       return MockJsonResponse(data={
         'tests': {
           'test1': {'actual': 'PASS', 'expected': 'PASS'},
@@ -89,6 +88,7 @@ class SplitterTests(unittest.TestCase):
 
   def test_layout_test_split_step_404(self):
     def mock_requests_get(base_url, params):
+      # Unused argument - pylint: disable=W0613
       return MockJsonResponse(status_code=404)
 
     old_requests_get = requests.get
