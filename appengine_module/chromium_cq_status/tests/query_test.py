@@ -7,12 +7,12 @@ import json
 
 from appengine_module.testing_utils import testing
 
-from appengine_module.chromium_cq_status import main
+from appengine_module.chromium_cq_status import highend
 from appengine_module.chromium_cq_status.model.record import Record
 
 
 class TestQuery(testing.AppengineTestCase):
-  app_module = main.app
+  app_module = highend.app
 
   def test_query_headers(self):
     _clear_records()

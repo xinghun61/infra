@@ -7,7 +7,6 @@ import webapp2
 from appengine_module.chromium_cq_status.handlers.admin_dispatch import AdminDispatch  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.handlers.index import Index
 from appengine_module.chromium_cq_status.handlers.post import Post
-from appengine_module.chromium_cq_status.handlers.query import Query
 from appengine_module.chromium_cq_status.handlers.stats_viewer import StatsViewer  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.handlers.stats_query import StatsQuery
 
@@ -15,7 +14,6 @@ handlers = [
   (r'/', Index),
   (r'/admin/(.*)', AdminDispatch),
   (r'/post', Post),
-  (r'/query(/.*)?', Query),
   (r'/stats/query', StatsQuery),
   (r'/stats/(.*)/(daily|weekly)', StatsViewer),
 ]

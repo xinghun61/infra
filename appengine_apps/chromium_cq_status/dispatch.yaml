@@ -1,7 +1,9 @@
 application: chromium-cq-status
 
 dispatch:
-- url: "*/background/*"
-  module: background
+- url: "*.appspot.com/background/*"
+  module: highend
+- url: "*.appspot.com/query*"
+  module: highend
 - url: "*/*"
   module: default

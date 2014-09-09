@@ -12,6 +12,13 @@ from appengine_module.chromium_cq_status.shared.config import VALID_EMAIL_RE
 
 compressed_separators = (',', ':')
 
+def cronjob(cronjob_handler): # pragma: no cover
+  def checked_cronjob_handler(self, *args):
+    assert (self.request.headers.get('X-AppEngine-Cron') or
+        users.is_current_user_admin())
+    cronjob_handler(self, *args)
+  return checked_cronjob_handler
+
 def filter_dict(d, keys): # pragma: no cover
   return {key: d[key] for key in d if key in keys}
 
