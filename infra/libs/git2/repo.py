@@ -178,9 +178,11 @@ class Repo(object):
     started = time.time()
     process = subprocess.Popen(cmd, **kwargs)
     def kill_proc():
-      LOGGER.warning('Killing stuck process, %d sec timeout exceeded', timeout)
+      LOGGER.warning(
+          'Terminating stuck process %d, %d sec timeout exceeded',
+          process.pid, timeout)
       try:
-        process.kill()
+        process.terminate()
       except OSError as e:  # pragma: no cover
         if e.errno != errno.ESRCH:
           LOGGER.exception('Unexpected exception')
