@@ -309,7 +309,7 @@ class ListGraphs(webapp2.RequestHandler):
     logging.info(sorted(known_tags.iteritems()))
     return {
         'current_tags': tags,
-        'graphs': graphs,
+        'graphs': sorted(graphs, key=lambda x: x['name']),
         'all_tags': sorted(all_tags),
         # Sort by name.
         'tags': sorted(known_tags.iteritems(), key=lambda x: x[0])
