@@ -35,7 +35,6 @@ test('html', 4, function() {
 
     var container = document.createElement('div');
     container.innerHTML = loadfailures._html(failureData);
-    console.log(container.innerHTML)
 
     equal(container.querySelectorAll('.builder').length, 2, 'There should be 2 builders');
 
@@ -45,4 +44,21 @@ test('html', 4, function() {
 
     var firstStaleBuilder = container.querySelector('table').querySelector('tr:nth-child(2) > td:nth-child(3)');
     equal(firstFailingBuilder.querySelectorAll('.builder').length, 1, 'There should be one stale builder in the first group.');
+});
+
+test('load failure', 3, function() {
+    loadfailures._loader = new loader.Loader();
+    loadfailures._loader._builderKeysThatFailedToLoad = ['FailMaster:FailBuilder'];
+    loadfailures._testTypeIndex = builders.testTypes.length - 1; // Only load the last test.
+
+    loadfailures._generatePage = function() {
+        var failureData = loadfailures._failureData;
+        var failingTestTypes = Object.keys(failureData.failingBuilders);
+        equal(failingTestTypes.length, 1, 'There should be one failing test type.');
+        var failingBuilders = failureData.failingBuilders[failingTestTypes[0]];
+        equal(failingBuilders.length, 1, 'There should be one failing builder.');
+        equal(failingBuilders[0].key(), 'FailMaster:FailBuilder');
+    }
+
+    loadfailures.loadNextTestType();
 });

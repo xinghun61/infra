@@ -7,7 +7,11 @@ var loadfailures = loadfailures || {};
 (function() {
 
 loadfailures._testTypeIndex = 0;
-loadfailures._failureData = {};
+loadfailures._failureData = {
+    failingBuilders: {},
+    staleBuilders: {},
+    testTypesWithNoSuccessfullLoads: []
+}
 loadfailures._loader = null;
 
 // FIXME: This is a gross hack to make it so that changing the test type in loadNextTestType doesn't reload the page.
@@ -50,14 +54,13 @@ loadfailures.loadNextTestType = function(historyInstance)
         loadfailures._failureData = {
             failingBuilders: {},
             staleBuilders: {},
-            testTypesWithNoSuccessfullLoads: [],
-            builderToMaster: {},
+            testTypesWithNoSuccessfullLoads: []
         }
     }
     historyInstance.crossDashboardState.testType = builders.testTypes[loadfailures._testTypeIndex];
 
     var totalIterations = builders.testTypes.length;
-    var currentIteration = builders.testTypes.length + loadfailures._testTypeIndex;
+    var currentIteration = loadfailures._testTypeIndex;
     $('content').innerHTML = 'Loading ' + currentIteration + '/' + totalIterations + ' ' +
         historyInstance.crossDashboardState.testType + '...';
 
