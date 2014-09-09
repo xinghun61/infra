@@ -154,7 +154,7 @@ class BasePage(webapp.RequestHandler):
     if use_cache:
       buff = memcache.get(name)
     if not buff:
-      path = os.path.join(os.path.dirname(__file__), 'templates/%s' % name)
+      path = 'templates/%s' % name
       buff = template.render(path, template_values)
       if use_cache:
         memcache.add(name, buff, 1)
