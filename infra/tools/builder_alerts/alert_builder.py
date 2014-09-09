@@ -17,32 +17,37 @@ from infra.tools.builder_alerts import string_helpers
 NON_FAILING_RESULTS = (0, 1, None)
 
 
-def compute_transition_and_failure_count(failure,
-      failing_build, previous_builds):  # pragma: no cover
-  step_name = failure['step_name']
-  reason = failure['reason']
+def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
+  master = alert['master_url']
+  builder = alert['builder_name']
+  step = alert['step_name']
+  reason = alert['reason']
 
-  first_fail = failing_build
+  previous_build_ids = [num for num in recent_build_ids
+      if num < alert['last_failing_build']]
+  fetch_function = lambda num: buildbot.fetch_build_json(
+      cache, master, builder, num)
+  first_fail = fetch_function(alert['last_failing_build'])
+  previous_builds = map(fetch_function, previous_build_ids)
+
   last_pass = None
-  fail_count = 1
   builds_missing_steps = []
   for build in previous_builds:
-    matching_steps = [s for s in build['steps'] if s['name'] == step_name]
+    matching_steps = [s for s in build['steps'] if s['name'] == step]
     if len(matching_steps) != 1:
       if not matching_steps:
         # This case is pretty common, so just warn all at once at the end.
         builds_missing_steps.append(build['number'])
       else:
         logging.error("%s has unexpected number of %s steps: %s" % (
-            build['number'], step_name, matching_steps))
+            build['number'], step, matching_steps))
       continue
 
     step = matching_steps[0]
     step_result = step['results'][0]
     if step_result not in NON_FAILING_RESULTS:
       if reason:
-        reasons = reasons_for_failure(step, build,
-          failure['builder_name'], failure['master_url'])
+        reasons = reasons_for_failure(step, build, builder, master)
         # This build doesn't seem to have this step reason, ignore it.
         if not reasons:
           continue
@@ -54,7 +59,6 @@ def compute_transition_and_failure_count(failure,
           break
 
       first_fail = build
-      fail_count += 1
       continue
 
     # None is 'didn't run', not a passing result.
@@ -66,9 +70,9 @@ def compute_transition_and_failure_count(failure,
 
   if builds_missing_steps:
     logging.warn("Builds %s missing %s step" % (
-        string_helpers.re_range(builds_missing_steps), step_name))
+        string_helpers.re_range(builds_missing_steps), step))
 
-  return last_pass, first_fail, fail_count
+  return last_pass, first_fail
 
 
 def complete_steps_by_type(build):
@@ -139,31 +143,44 @@ def alerts_from_step_failure(cache, step_failure, master_url,
   return alerts
 
 
-# FIXME: This should merge with compute_transition_and_failure_count.
-def fill_in_transition(cache, alert, recent_build_ids):  # pragma: no cover
-  previous_build_ids = [num for num in recent_build_ids
-      if num < alert['last_failing_build']]
-  fetch_function = lambda num: buildbot.fetch_build_json(cache,
-      alert['master_url'], alert['builder_name'], num)
-  build = fetch_function(alert['last_failing_build'])
-  previous_builds = map(fetch_function, previous_build_ids)
+def generate_alert_key(master, builder, step, reason):  # pragma: no cover
+  return '%s.%s.%s.%s' % (master, builder, step, reason)
 
-  last_pass_build, first_fail_build, fail_count = \
-    compute_transition_and_failure_count(alert, build, previous_builds)
+def fill_in_transition(cache, alert, recent_build_ids,
+    old_alerts):  # pragma: no cover
+  master = alert['master_url']
+  builder = alert['builder_name']
+  step = alert['step_name']
+  reason = alert['reason']
+  alert_key = generate_alert_key(master, builder, step, reason)
 
-  failing = buildbot.revisions_from_build(first_fail_build)
-  if last_pass_build:
-    passing = buildbot.revisions_from_build(last_pass_build)
+  if alert_key in old_alerts:
+    logging.debug('Using old alert data. master: %s, builder: %s, step: %s,'
+        ' reason: %s' % (master, builder, step, reason))
+    update_data = { k: old_alerts[alert_key][k] for k in [
+        'passing_build', 'failing_build', 'failing_revisions',
+        'passing_revisions']}
   else:
-    passing = None
+    logging.debug('Computing new alert data. master: %s, builder: %s, step: %s,'
+        ' reason: %s' % (master, builder, step, reason))
 
-  alert.update({
-    'failing_build_count': fail_count,
-    'passing_build': last_pass_build['number'] if last_pass_build else None,
-    'failing_build': first_fail_build['number'],
-    'failing_revisions': failing,
-    'passing_revisions': passing,
-  })
+    last_pass_build, first_fail_build = \
+      compute_transition(cache, alert, recent_build_ids)
+
+    failing = buildbot.revisions_from_build(first_fail_build)
+    if last_pass_build:
+      passing = buildbot.revisions_from_build(last_pass_build)
+    else:
+      passing = None
+
+    update_data = {
+      'passing_build': last_pass_build['number'] if last_pass_build else None,
+      'failing_build': first_fail_build['number'],
+      'failing_revisions': failing,
+      'passing_revisions': passing,
+    }
+
+  alert.update(update_data)
   return alert
 
 
@@ -212,7 +229,7 @@ def find_current_step_failures(fetch_function, recent_build_ids):
 
 
 def alerts_for_builder(cache, master_url, builder_name,
-    recent_build_ids):  # pragma: no cover
+    recent_build_ids, old_alerts):  # pragma: no cover
   recent_build_ids = sorted(recent_build_ids, reverse=True)
   # Limit to 100 to match our current cache-warming logic
   recent_build_ids = recent_build_ids[:100]
@@ -225,11 +242,11 @@ def alerts_for_builder(cache, master_url, builder_name,
   for step_failure in step_failures:
     alerts += alerts_from_step_failure(cache, step_failure,
         master_url, builder_name)
-  return [fill_in_transition(cache, alert, recent_build_ids)
+  return [fill_in_transition(cache, alert, recent_build_ids, old_alerts)
       for alert in alerts]
 
 
-def alerts_for_master(cache, master_url, master_json,
+def alerts_for_master(cache, master_url, master_json, old_alerts,
     builder_name_filter=None):  # pragma: no cover
   active_builds = []
   for slave in master_json['slaves'].values():
@@ -247,7 +264,7 @@ def alerts_for_master(cache, master_url, master_json,
     buildbot.warm_build_cache(cache, master_url, builder_name,
         recent_build_ids, active_builds)
     alerts.extend(alerts_for_builder(cache, master_url,
-        builder_name, recent_build_ids))
+        builder_name, recent_build_ids, old_alerts))
 
   return alerts
 

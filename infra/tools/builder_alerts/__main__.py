@@ -74,6 +74,28 @@ def main(args):
 
   cache = buildbot.BuildCache(CACHE_PATH)
 
+  old_alerts = {}
+  if args.data_url:
+    try:
+      old_alerts_raw = requests.get(args.data_url[0]).json()
+    except ValueError:
+      logging.debug('No old alerts found.')
+    else:
+      for alert in old_alerts_raw['alerts']:
+        master = alert['master_url']
+        builder = alert['builder_name']
+        step = alert['step_name']
+        reason = alert['reason']
+        alert_key = alert_builder.generate_alert_key(
+            master, builder, step, reason)
+
+        if alert_key in old_alerts:
+          logging.critical('Incorrectly overwriting an alert reason from the'
+              ' old alert data. master: %s, builder: %s, step: %s, reason:'
+              ' %s' % (master, builder, step, reason))
+
+        old_alerts[alert_key] = alert
+
   alerts = []
   for master_url in master_urls:
     master_json = buildbot.fetch_master_json(master_url)
@@ -81,7 +103,7 @@ def main(args):
       continue
 
     master_alerts = alert_builder.alerts_for_master(cache,
-        master_url, master_json, args.builder_filter)
+        master_url, master_json, old_alerts, args.builder_filter)
     alerts.extend(master_alerts)
 
     # FIXME: This doesn't really belong here. garden-o-matic wants
