@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import logging
 import math
 
+from google.appengine.ext import ndb
+
 from appengine_module.chromium_cq_status.model.cq_stats import (
   CountStats,
   CQStats,
@@ -84,6 +86,11 @@ def attempts_for_interval(begin, end): # pragma: no cover
       )
       finish_timestamps.setdefault(key, []).append(record.timestamp)
   for key in finish_timestamps:
+    # NDB seems to cache records beyond the soft memory limit.
+    # Force a cache clear between each patchset analysis run to avoid getting
+    # terminated by Appengine.
+    ndb.get_context().clear_cache()
+
     last_finish_timestamp = max(finish_timestamps[key])
     project, issue, patchset = key
     earliest_start_record = Record.query().order(Record.timestamp).filter(
