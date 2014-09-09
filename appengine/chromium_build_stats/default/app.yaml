@@ -1,8 +1,22 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# To check locally (couldn't fetch from cloud storage because
+# dev_appserver doesn't support service account)
+#  $ ../goenv.sh goapp serve
+#
+# To deploy
+#  $ ../goenv.sh goapp deploy
+#
 application: chromium-build-stats
 version: 1
 runtime: go
 api_version: go1
 
 handlers:
+- url: /file.*
+  script: _go_app
+  login: required
 - url: /.*
   script: _go_app

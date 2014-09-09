@@ -30,6 +30,10 @@ deps = {
   "infra/bootstrap/virtualenv":
     ("https://github.com/pypa/virtualenv.git"
      "@93cfa83481a1cb934eb14c946d33aef94c21bcb0"),
+
+  "infra/appengine/third_party/src/github.com/golang/oauth2":
+  ("https://github.com/golang/oauth2.git"
+   "@cb029f4c1f58850787981eefaf9d9bf547c1a722"),
 }
 
 hooks = [

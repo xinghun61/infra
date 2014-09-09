@@ -23,9 +23,9 @@ def _go_files(input_api, source_file_filter=None):
   return files
 
 def _run_go_tool(input_api, args):
-  cmdline = [input_api.os_path.join(reporoot(input_api), '..',
-                                    'go_appengine', args[0])]
-  cmdline.extend(args[1:])
+  cmdline = [input_api.os_path.join(reporoot(input_api), 'appengine',
+                                    'chromium_build_stats', 'goenv.sh')]
+  cmdline.extend(args)
   cwd = reporoot(input_api)
   p = input_api.subprocess.Popen(cmdline,
                                  cwd=cwd,
@@ -55,8 +55,8 @@ def _CheckChangeByGoTool(input_api, output_api, source_file_filter=None,
     return [output_api.PresubmitError(msg, items=items)]
   return []
 
-def CheckGoTest(input_api, output_api, source_file_filter=None):
-  """Checks that all directories test pass by goapp test."""
+def CheckGo(cmd, input_api, output_api, source_file_filter=None):
+  """Checks that all directories test pass by goapp command."""
   items = _go_files(input_api, source_file_filter)
   dirs = set()
   for f in items:
@@ -66,9 +66,9 @@ def CheckGoTest(input_api, output_api, source_file_filter=None):
     return []
   result=[]
   for d in dirs:
-    cmdline = [input_api.os_path.join(reporoot(input_api), '..',
-                                      'go_appengine', 'goapp')]
-    cmdline.extend(['test'])
+    cmdline = [input_api.os_path.join(reporoot(input_api), 'appengine',
+                                      'chromium_build_stats', 'goenv.sh')]
+    cmdline.extend(['goapp', cmd])
     p = input_api.subprocess.Popen(cmdline,
                                    cwd=d,
                                    stdout=input_api.subprocess.PIPE,
@@ -101,7 +101,8 @@ def CommonChecks(input_api, output_api):
       input_api, output_api)
   results += CheckChangeGoFmtClean(input_api, output_api)
   results += CheckChangeGoVetClean(input_api, output_api)
-  results += CheckGoTest(input_api, output_api)
+  results += CheckGo('build', input_api, output_api)
+  results += CheckGo('test', input_api, output_api)
   results += input_api.canned_checks.CheckChangeHasNoCrAndHasOnlyOneEol(
       input_api, output_api)
   # go uses TAB.
