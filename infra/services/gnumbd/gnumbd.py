@@ -34,7 +34,7 @@ C_PICK = re.compile(r'\(cherry picked from commit [a-fA-F0-9]{40}\)')
 
 
 # How long to wait for 'git push' to complete before forcefully killing it.
-PUSH_TIMEOUT = 5 * 60
+PUSH_TIMEOUT = 10 * 60
 
 ################################################################################
 # ConfigRef
