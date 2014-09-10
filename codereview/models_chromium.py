@@ -102,6 +102,9 @@ class TryserverBuilders(ndb.Model):
     'tryserver.v8': [
       'http://build.chromium.org/p/tryserver.v8/json/builders'
     ],
+    'tryserver.webrtc': [
+      'http://build.chromium.org/p/tryserver.webrtc/json/builders'
+    ],
   }
 
   MEMCACHE_KEY = 'default_builders'
