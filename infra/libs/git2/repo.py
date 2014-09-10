@@ -7,6 +7,7 @@ import errno
 import fnmatch
 import logging
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -170,6 +171,12 @@ class Repo(object):
     if indata:
       assert 'stdin' not in kwargs
       kwargs['stdin'] = subprocess.PIPE
+
+    # Git spawns subprocesses, we want to be able to kill them all.
+    assert 'preexec_fn' not in kwargs
+    if sys.platform != 'win32':  # pragma: no cover
+      kwargs['preexec_fn'] = os.setpgrp
+
     ok_ret = kwargs.pop('ok_ret', {0})
     timeout = kwargs.pop('timeout', None)
     cmd = ('git',) + args
@@ -182,7 +189,11 @@ class Repo(object):
           'Terminating stuck process %d, %d sec timeout exceeded',
           process.pid, timeout)
       try:
-        process.terminate()
+        if sys.platform == 'win32':  # pragma: no cover
+          process.terminate()
+        else:
+          assert os.getpgid(process.pid) == process.pid
+          os.killpg(process.pid, signal.SIGTERM)
       except OSError as e:  # pragma: no cover
         if e.errno != errno.ESRCH:
           LOGGER.exception('Unexpected exception')
