@@ -15,6 +15,8 @@ import (
 	"appengine/user"
 
 	"github.com/golang/oauth2/google"
+
+	"chromegomalog"
 )
 
 func init() {
@@ -38,7 +40,7 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 	})
 	client := &http.Client{Transport: config.NewTransport()}
 	path := req.URL.Path
-	resp, err := fetch(client, path)
+	resp, err := chromegomalog.Fetch(client, path)
 	if err != nil {
 		ctx.Errorf("failed to fetch %s: %v", path, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -50,5 +52,16 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		ctx.Errorf("failed to copy %s: %v", path, err)
+	}
+}
+
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		if strings.HasPrefix(k, "X-") {
+			continue
+		}
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
 	}
 }

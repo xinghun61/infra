@@ -18,5 +18,7 @@ handlers:
 - url: /file.*
   script: _go_app
   login: required
+- url: /ninja_log.*
+  script: _go_app
 - url: /.*
   script: _go_app

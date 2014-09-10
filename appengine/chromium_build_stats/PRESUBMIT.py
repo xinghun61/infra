@@ -35,7 +35,8 @@ def _run_go_tool(input_api, args):
   return (out, p.returncode)
 
 def _CheckChangeByGoTool(input_api, output_api, source_file_filter=None,
-                         go_tool=None):
+                         go_tool=None,
+                         msgPrefix=None):
   """Checks that all '.go' files pass by go_tool."""
   tool = ' '.join(go_tool)
   cmdline = []
@@ -52,7 +53,7 @@ def _CheckChangeByGoTool(input_api, output_api, source_file_filter=None,
   if out:
     msg = "\n".join([msg, out])
   if msg:
-    return [output_api.PresubmitError(msg, items=items)]
+    return [output_api.PresubmitError(msgPrefix+"\n"+msg, items=items)]
   return []
 
 def CheckGo(cmd, input_api, output_api, source_file_filter=None):
@@ -76,7 +77,7 @@ def CheckGo(cmd, input_api, output_api, source_file_filter=None):
     (out, _) = p.communicate()
     msg = ""
     if p.returncode:
-      msg = "Failed to run goapp test in %s" % d
+      msg = "Failed to run goapp %s in %s" % (cmd, d)
       if out:
         msg = "\n".join([msg, out])
     if msg:
@@ -87,12 +88,8 @@ def CheckGo(cmd, input_api, output_api, source_file_filter=None):
 def CheckChangeGoFmtClean(input_api, output_api, source_file_filter=None):
   return _CheckChangeByGoTool(input_api, output_api,
                               source_file_filter=source_file_filter,
-                              go_tool=['gofmt', '-l'])
-
-def CheckChangeGoVetClean(input_api, output_api, source_file_filter=None):
-  return _CheckChangeByGoTool(input_api, output_api,
-                              source_file_filter=source_file_filter,
-                              go_tool=['goapp', 'vet'])
+                              go_tool=['gofmt', '-l'],
+                              msgPrefix="gofmt check")
 
 
 def CommonChecks(input_api, output_api):
@@ -100,7 +97,7 @@ def CommonChecks(input_api, output_api):
   results += input_api.canned_checks.CheckChangeHasDescription(
       input_api, output_api)
   results += CheckChangeGoFmtClean(input_api, output_api)
-  results += CheckChangeGoVetClean(input_api, output_api)
+  results += CheckGo('vet', input_api, output_api)
   results += CheckGo('build', input_api, output_api)
   results += CheckGo('test', input_api, output_api)
   results += input_api.canned_checks.CheckChangeHasNoCrAndHasOnlyOneEol(
