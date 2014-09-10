@@ -287,7 +287,8 @@ def inner_handle(reason, base_url, timestamp, packet, result, properties):
           requester=requester,
           project=project,
           clobber=bool(properties.get('clobber')),
-          tests=properties.get('testfilter') or [])
+          tests=properties.get('testfilter') or [],
+          build_properties=json.dumps(properties))
       logging.info('Creating instance %s' % keyname)
     else:
       # Update result only if relevant.
@@ -315,6 +316,7 @@ def inner_handle(reason, base_url, timestamp, packet, result, properties):
       try_obj.revision = revision
       try_obj.slave = slavename
       try_obj.buildnumber = buildnumber
+      try_obj.build_properties = json.dumps(properties)
       logging.info(
           'Updated %s: %s' % (keyname, try_obj.result))
     try_obj.put()

@@ -516,6 +516,9 @@ class TryJobResult(ndb.Model):
   # that owns the issue.
   requester = ndb.UserProperty(auto_current_user_add=True)
 
+  # JSON dictionary of build properties.
+  build_properties = ndb.TextProperty(default='{}')
+
   @property
   def status(self):
     """Returns a string equivalent so it can be used in CSS styles."""
