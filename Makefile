@@ -27,14 +27,14 @@ DEV_APPSERVER_FLAGS?=
 APPCFG?= $(if $(SDK_PATH), $(SDK_PATH)/,)appcfg.py
 APPCFG_FLAGS?=
 
-# Set dirty suffix depending on output of "hg status".
+# Set dirty suffix depending on output of "git status".
 dirty=
-ifneq ($(shell hg status),)
+ifneq ($(shell git status --porcelain),)
         dirty="-tainted"
 endif
-VERSION_TAG= `hg parents --template='{rev}:{node|short}'`$(dirty)
+VERSION_TAG= `git show --format='%h' --no-patch`$(dirty)
 # AppEngine version cannot use ':' in its name so use a '-' instead.
-VERSION?= `hg parents --template='{rev}-{node|short}'`$(dirty)
+VERSION?= `git show --format='%h' --no-patch`$(dirty)
 
 PYTHON?= python2.7
 COVERAGE?= coverage
