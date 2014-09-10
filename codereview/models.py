@@ -49,7 +49,7 @@ def is_privileged_user(user):
   if not user:
     return False
   email = user.email().lower()
-  return email.endswith(('@chromium.org', '@google.com'))
+  return email.endswith(('@chromium.org', '@google.com', '@webrtc.org'))
 
 
 ### Issues, PatchSets, Patches, Contents, Comments, Messages ###
