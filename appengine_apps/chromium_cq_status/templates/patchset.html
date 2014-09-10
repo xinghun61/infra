@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<title>Commit attempts for issue %(issue)s patchset %(patchset)s</title>
+<script>
+var issue = %(issue)s;
+var patchset = %(patchset)s;
+</script>
+<script src="/scripts/patchset.js"></script>
+
+<style>
+:root {
+  font-family: sans-serif;
+}
+a {
+  text-decoration: none;
+}
+h1, h3, tryjob > a {
+  color: black;
+}
+row {
+  position: relative;
+  border: solid 1px rgba(0, 0, 0, 0.125);
+  border-radius: 3px;
+  max-width: 900px;
+  display: block;
+  padding-bottom: 10px;
+  margin-bottom: -1px;
+}
+row.normal {
+  background: #fdfdfd;
+}
+row.normal:nth-child(2n + 1) {
+  background: #f8f8f8;
+}
+row.important {
+  background: #ddd;
+}
+row.good {
+  background: #dfd;
+}
+row.bad {
+  background: #fee;
+}
+timestamp {
+  font-family: monospace;
+  padding-bottom: 20px;
+}
+later {
+  font-size: 60%%;
+  margin-left: 1em;
+}
+description {
+  display: block;
+  margin-top: 10px;
+  margin-left: 10px;
+  line-height: 1.5em;
+}
+tryjob {
+  font-size: 90%%;
+  border: solid 1px rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+tryjob.triggered {
+  background: #fff;
+}
+tryjob.not-started {
+  background: #eee;
+}
+tryjob.running {
+  background: #ff7;
+}
+tryjob.passed {
+  background: #9e6;
+}
+tryjob.failed {
+  background: #e88;
+}
+</style>
+<a href="/"><h1>Chromium CQ Status</h1></a>
+<h2>Commit attempts for issue <a href="http://codereview.chromium.org/%(issue)s">%(issue)s</a> patchset <a href="http://codereview.chromium.org/%(issue)s#ps%(patchset)s">%(patchset)s</a></h2>
+<div id="rows"></div>
