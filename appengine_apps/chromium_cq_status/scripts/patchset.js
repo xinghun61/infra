@@ -6,7 +6,7 @@ var actionInfo = {
   },
   patch_stop: {
     stopAttempt: true,
-    description: 'CQ stopped processing a patchset',
+    description: 'CQ stopped processing patchset',
     cls: 'important',
   },
   patch_ready_to_commit: {
