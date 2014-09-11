@@ -124,7 +124,7 @@ function displayRecords(records) {
     if (info.stopAttempt) {
       openAttemptHeader = null;
     }
-    addRow(startTimestamp, record.timestamp, info.description, info.cls);
+    addRow(startTimestamp, record.timestamp, info.description, record.fields.message, info.cls);
   });
   if (openAttemptHeader) {
     openAttemptHeader.textContent += ' (in progress)';
@@ -142,7 +142,7 @@ function addHeader(attempt) {
   return h3;
 }
 
-function addRow(startTimestamp, timestamp, description, cls, later) {
+function addRow(startTimestamp, timestamp, description, message, cls) {
   var row = newElement('row', '', cls);
   row.appendChild(newElement('timestamp', getTimestampString(timestamp)));
   if (startTimestamp !== null) {
@@ -155,6 +155,9 @@ function addRow(startTimestamp, timestamp, description, cls, later) {
     descriptionNode.appendChild(description);
   }
   row.appendChild(descriptionNode);
+  if (message) {
+    row.appendChild(newElement('message', '(' + message + ')'));
+  }
   rows.appendChild(row);
 }
 
