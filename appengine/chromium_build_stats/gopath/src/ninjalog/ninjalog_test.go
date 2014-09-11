@@ -28,49 +28,42 @@ var (
 		Step{
 			Start:   76 * time.Millisecond,
 			End:     187 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "resources/inspector/devtools_extension_api.js",
 			CmdHash: "75430546595be7c2",
 		},
 		Step{
 			Start:   80 * time.Millisecond,
 			End:     284 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/autofill_regex_constants.cc",
 			CmdHash: "fa33c8d7ce1d8791",
 		},
 		Step{
 			Start:   78 * time.Millisecond,
 			End:     286 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/angle/commit_id.py",
 			CmdHash: "4ede38e2c1617d8c",
 		},
 		Step{
 			Start:   79 * time.Millisecond,
 			End:     287 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/angle/copy_compiler_dll.bat",
 			CmdHash: "9fb635ad5d2c1109",
 		},
 		Step{
 			Start:   141 * time.Millisecond,
 			End:     287 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "PepperFlash/manifest.json",
 			CmdHash: "324f0a0b77c37ef",
 		},
 		Step{
 			Start:   142 * time.Millisecond,
 			End:     288 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "PepperFlash/libpepflashplayer.so",
 			CmdHash: "1e2c2b7845a4d4fe",
 		},
 		Step{
 			Start:   287 * time.Millisecond,
 			End:     290 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp",
 			CmdHash: "b211d373de72f455",
 		},
@@ -80,49 +73,42 @@ var (
 		Step{
 			Start:   76 * time.Millisecond,
 			End:     187 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "resources/inspector/devtools_extension_api.js",
 			CmdHash: "75430546595be7c2",
 		},
 		Step{
 			Start:   78 * time.Millisecond,
 			End:     286 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/angle/commit_id.py",
 			CmdHash: "4ede38e2c1617d8c",
 		},
 		Step{
 			Start:   79 * time.Millisecond,
 			End:     287 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/angle/copy_compiler_dll.bat",
 			CmdHash: "9fb635ad5d2c1109",
 		},
 		Step{
 			Start:   80 * time.Millisecond,
 			End:     284 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "gen/autofill_regex_constants.cc",
 			CmdHash: "fa33c8d7ce1d8791",
 		},
 		Step{
 			Start:   141 * time.Millisecond,
 			End:     287 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "PepperFlash/manifest.json",
 			CmdHash: "324f0a0b77c37ef",
 		},
 		Step{
 			Start:   142 * time.Millisecond,
 			End:     288 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "PepperFlash/libpepflashplayer.so",
 			CmdHash: "1e2c2b7845a4d4fe",
 		},
 		Step{
 			Start:   287 * time.Millisecond,
 			End:     290 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     "obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp",
 			CmdHash: "b211d373de72f455",
 		},
@@ -176,7 +162,7 @@ func TestStepsReverse(t *testing.T) {
 }
 
 func TestParseBadVersion(t *testing.T) {
-	_, err := Parse(strings.NewReader(`# ninja log v4
+	_, err := Parse(".ninja_log", strings.NewReader(`# ninja log v4
 0	1	0	foo	touch foo
 `))
 	if err == nil {
@@ -185,14 +171,15 @@ func TestParseBadVersion(t *testing.T) {
 }
 
 func TestParseSimple(t *testing.T) {
-	njl, err := Parse(strings.NewReader(logTestCase))
+	njl, err := Parse(".ninja_log", strings.NewReader(logTestCase))
 	if err != nil {
 		t.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
 	}
 
 	want := &NinjaLog{
-		Start: 1,
-		Steps: stepsTestCase,
+		Filename: ".ninja_log",
+		Start:    1,
+		Steps:    stepsTestCase,
 	}
 	if !reflect.DeepEqual(njl, want) {
 		t.Errorf("Parse()=%v; want=%v", njl, want)
@@ -200,7 +187,7 @@ func TestParseSimple(t *testing.T) {
 }
 
 func TestParseLast(t *testing.T) {
-	njl, err := Parse(strings.NewReader(`# ninja log v5
+	njl, err := Parse(".ninja_log", strings.NewReader(`# ninja log v5
 1020807	1020916	0	chrome.1	e101fd46be020cfc
 84	9489	0	gen/libraries.cc	9001f3182fa8210e
 1024369	1041522	0	chrome	aee9d497d56c9637
@@ -217,8 +204,9 @@ func TestParseLast(t *testing.T) {
 	}
 
 	want := &NinjaLog{
-		Start: 4,
-		Steps: stepsTestCase,
+		Filename: ".ninja_log",
+		Start:    4,
+		Steps:    stepsTestCase,
 	}
 	if !reflect.DeepEqual(njl, want) {
 		t.Errorf("Parse()=%v; want=%v", njl, want)
@@ -226,7 +214,7 @@ func TestParseLast(t *testing.T) {
 }
 
 func TestParseMetadata(t *testing.T) {
-	njl, err := Parse(strings.NewReader(`# ninja log v5
+	njl, err := Parse(".ninja_log", strings.NewReader(`# ninja log v5
 1020807	1020916	0	chrome.1	e101fd46be020cfc
 84	9489	0	gen/libraries.cc	9001f3182fa8210e
 1024369	1041522	0	chrome	aee9d497d56c9637
@@ -245,6 +233,7 @@ func TestParseMetadata(t *testing.T) {
 	}
 
 	want := &NinjaLog{
+		Filename: ".ninja_log",
 		Start:    4,
 		Steps:    stepsTestCase,
 		Metadata: metadataTestCase,
@@ -276,7 +265,6 @@ func TestDedup(t *testing.T) {
 		steps = append(steps, Step{
 			Start:   302 * time.Millisecond,
 			End:     5764 * time.Millisecond,
-			Restat:  time.Unix(0, 0),
 			Out:     out,
 			CmdHash: "a551cc46f8c21e5a",
 		})
@@ -286,7 +274,6 @@ func TestDedup(t *testing.T) {
 	want = append(want, Step{
 		Start:   302 * time.Millisecond,
 		End:     5764 * time.Millisecond,
-		Restat:  time.Unix(0, 0),
 		Out:     "gen/ui/keyboard/webui/keyboard.mojom-internal.h",
 		CmdHash: "a551cc46f8c21e5a",
 	})
@@ -300,7 +287,6 @@ func TestFlow(t *testing.T) {
 	steps = append(steps, Step{
 		Start:   187 * time.Millisecond,
 		End:     21304 * time.Millisecond,
-		Restat:  time.Unix(0, 0),
 		Out:     "obj/third_party/pdfium/core/src/fpdfdoc/fpdfdoc.doc_formfield.o",
 		CmdHash: "2ac7111aa1ae86af",
 	})
@@ -312,14 +298,12 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   76 * time.Millisecond,
 				End:     187 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "resources/inspector/devtools_extension_api.js",
 				CmdHash: "75430546595be7c2",
 			},
 			Step{
 				Start:   187 * time.Millisecond,
 				End:     21304 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "obj/third_party/pdfium/core/src/fpdfdoc/fpdfdoc.doc_formfield.o",
 				CmdHash: "2ac7111aa1ae86af",
 			},
@@ -328,14 +312,12 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   78 * time.Millisecond,
 				End:     286 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/angle/commit_id.py",
 				CmdHash: "4ede38e2c1617d8c",
 			},
 			Step{
 				Start:   287 * time.Millisecond,
 				End:     290 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp",
 				CmdHash: "b211d373de72f455",
 			},
@@ -344,7 +326,6 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   79 * time.Millisecond,
 				End:     287 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/angle/copy_compiler_dll.bat",
 				CmdHash: "9fb635ad5d2c1109",
 			},
@@ -353,7 +334,6 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   80 * time.Millisecond,
 				End:     284 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/autofill_regex_constants.cc",
 				CmdHash: "fa33c8d7ce1d8791",
 			},
@@ -362,7 +342,6 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   141 * time.Millisecond,
 				End:     287 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "PepperFlash/manifest.json",
 				CmdHash: "324f0a0b77c37ef",
 			},
@@ -371,7 +350,6 @@ func TestFlow(t *testing.T) {
 			Step{
 				Start:   142 * time.Millisecond,
 				End:     288 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "PepperFlash/libpepflashplayer.so",
 				CmdHash: "1e2c2b7845a4d4fe",
 			},

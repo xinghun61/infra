@@ -14,6 +14,7 @@ import (
 	"html/template"
 	"net/http"
 	"path"
+	"sort"
 	"strings"
 
 	"appengine"
@@ -29,6 +30,7 @@ type outputFunc func(http.ResponseWriter, string, *ninjalog.NinjaLog) error
 var (
 	outputs = map[string]outputFunc{
 		"lastbuild":     outputFunc(lastBuild),
+		"table":         outputFunc(table),
 		"metadata.json": outputFunc(metadataJSON),
 		"trace.json":    outputFunc(traceJSON),
 	}
@@ -44,10 +46,45 @@ var (
 <ul>
  <li><a href="/file/{{.Path}}">original file</a>
  <li><a href="{{.Filename}}/lastbuild">.ninja_log</a>
+ <li><a href="{{.Filename}}/table">.ninja_log in table format</a>
  <li><a href="{{.Filename}}/metadata.json">metadata.json</a>
  <li><a href="{{.Filename}}/trace.json">trace.json</a>
 </ul>
 </body>
+</html>
+`))
+
+	tableTmpl = template.Must(template.New("table").Parse(`
+<html>
+<head>
+ <title>{{.Filename}}</title>
+</head>
+<body>
+<h1>{{.Filename}}</h1>
+Platform: {{.Metadata.Platform}}
+Cmdline: {{.Metadata.Cmdline}}
+Exit:{{.Metadata.Exit}}
+<hr />
+<table border=1>
+<tr>
+ <th>n
+ <th>duration
+ <th>start
+ <th>end
+ <th>restat
+ <th>output
+</tr>
+{{range $i, $step := .Steps}}
+<tr>
+ <td><a name="{{$i}}" href="#{{$i}}">{{$i}}</a>
+ <td>{{$step.Duration}}
+ <td>{{$step.Start}}
+ <td>{{$step.End}}
+ <td>{{if gt $step.Restat 0}}{{$step.Restat}}{{end}}
+ <td>{{$step.Out}}
+</tr>
+{{end}}
+</table>
 </html>
 `))
 )
@@ -103,8 +140,8 @@ func ninjalogPath(reqPath string) (string, outputFunc, error) {
 	return strings.TrimSuffix(reqPath, "/"), outputFunc(indexPage), nil
 }
 
-func ninjalogFetch(client *http.Client, path string) (*ninjalog.NinjaLog, http.Header, error) {
-	resp, err := chromegomalog.Fetch(client, path)
+func ninjalogFetch(client *http.Client, logPath string) (*ninjalog.NinjaLog, http.Header, error) {
+	resp, err := chromegomalog.Fetch(client, logPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -114,7 +151,7 @@ func ninjalogFetch(client *http.Client, path string) (*ninjalog.NinjaLog, http.H
 	if err != nil {
 		return nil, nil, err
 	}
-	nl, err := ninjalog.Parse(rd)
+	nl, err := ninjalog.Parse(logPath, rd)
 	return nl, resp.Header, nil
 }
 
@@ -126,7 +163,7 @@ func indexPage(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) er
 		Filename string
 	}{
 		Path:     logPath,
-		Filename: path.Base(logPath),
+		Filename: path.Base(njl.Filename),
 	}
 	return indexTmpl.Execute(w, data)
 }
@@ -135,6 +172,13 @@ func lastBuild(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) er
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	return ninjalog.Dump(w, njl.Steps)
+}
+
+func table(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	sort.Sort(sort.Reverse(ninjalog.ByDuration{Steps: njl.Steps}))
+	return tableTmpl.Execute(w, njl)
 }
 
 func metadataJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {

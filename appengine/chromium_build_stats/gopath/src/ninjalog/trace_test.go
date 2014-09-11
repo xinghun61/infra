@@ -16,14 +16,12 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   76 * time.Millisecond,
 				End:     187 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "resources/inspector/devtools_extension_api.js",
 				CmdHash: "75430546595be7c2",
 			},
 			Step{
 				Start:   187 * time.Millisecond,
 				End:     21304 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "obj/third_party/pdfium/core/src/fpdfdoc/fpdfdoc.doc_formfield.o",
 				CmdHash: "2ac7111aa1ae86af",
 			},
@@ -32,14 +30,12 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   78 * time.Millisecond,
 				End:     286 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/angle/commit_id.py",
 				CmdHash: "4ede38e2c1617d8c",
 			},
 			Step{
 				Start:   287 * time.Millisecond,
 				End:     290 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp",
 				CmdHash: "b211d373de72f455",
 			},
@@ -48,7 +44,6 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   79 * time.Millisecond,
 				End:     287 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/angle/copy_compiler_dll.bat",
 				CmdHash: "9fb635ad5d2c1109",
 			},
@@ -57,7 +52,6 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   80 * time.Millisecond,
 				End:     284 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "gen/autofill_regex_constants.cc",
 				CmdHash: "fa33c8d7ce1d8791",
 			},
@@ -66,7 +60,6 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   141 * time.Millisecond,
 				End:     287 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "PepperFlash/manifest.json",
 				CmdHash: "324f0a0b77c37ef",
 			},
@@ -75,7 +68,6 @@ func TestTrace(t *testing.T) {
 			Step{
 				Start:   142 * time.Millisecond,
 				End:     288 * time.Millisecond,
-				Restat:  time.Unix(0, 0),
 				Out:     "PepperFlash/libpepflashplayer.so",
 				CmdHash: "1e2c2b7845a4d4fe",
 			},

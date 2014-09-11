@@ -18,9 +18,12 @@ import (
 // Step is one step in ninja_log file.
 // time is measured from ninja start time.
 type Step struct {
-	Start   time.Duration
-	End     time.Duration
-	Restat  time.Time
+	Start time.Duration
+	End   time.Duration
+	// modification time, but not convertable to absolute real time.
+	// on POSIX, time_t is used, but on Windows different type is used.
+	// htts://github.com/martine/ninja/blob/master/src/timestamp.h
+	Restat  int
 	Out     string
 	CmdHash string
 }
@@ -93,6 +96,9 @@ type Metadata struct {
 
 // NinjaLog is parsed data of ninja_log file.
 type NinjaLog struct {
+	// Filename is a filename of ninja_log.
+	Filename string
+
 	// Start is start line of the last build in ninja_log file.
 	Start int
 
@@ -104,10 +110,10 @@ type NinjaLog struct {
 }
 
 // Parse parses .ninja_log file, with chromium's compile.py metadata.
-func Parse(r io.Reader) (*NinjaLog, error) {
+func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 	b := bufio.NewReader(r)
 	scanner := bufio.NewScanner(b)
-	nlog := &NinjaLog{}
+	nlog := &NinjaLog{Filename: fname}
 	lineno := 0
 	if !scanner.Scan() {
 		if err := scanner.Err(); err != nil {
@@ -176,7 +182,7 @@ func lineToStep(line string) (Step, error) {
 	}
 	step.Start = time.Duration(s) * time.Millisecond
 	step.End = time.Duration(e) * time.Millisecond
-	step.Restat = time.Unix(int64(rs), 0)
+	step.Restat = rs
 	step.Out = fields[3]
 	step.CmdHash = fields[4]
 	return step, nil
@@ -186,7 +192,7 @@ func stepToLine(s Step) string {
 	return fmt.Sprintf("%d\t%d\t%d\t%s\t%s",
 		s.Start.Nanoseconds()/int64(time.Millisecond),
 		s.End.Nanoseconds()/int64(time.Millisecond),
-		s.Restat.Unix(),
+		s.Restat,
 		s.Out,
 		s.CmdHash)
 }
