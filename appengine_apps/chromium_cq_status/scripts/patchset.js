@@ -1,32 +1,32 @@
 var actionInfo = {
   patch_start: {
     startAttempt: true,
-    description: 'CQ started processing patchset',
+    description: 'CQ started processing patch',
     cls: 'important',
   },
   patch_stop: {
     stopAttempt: true,
-    description: 'CQ stopped processing patchset',
+    description: 'CQ stopped processing patch',
     cls: 'important',
   },
   patch_ready_to_commit: {
-    description: 'Patchset is ready to be committed',
+    description: 'Patch is ready to be committed',
     cls: 'important',
   },
   patch_tree_closed: {
-    description: 'Patchset blocked on closed tree',
+    description: 'Patch blocked on closed tree',
     cls: 'bad',
   },
   patch_throttled: {
-    description: 'Patchset blocked on throttled CQ',
+    description: 'Patch blocked on throttled CQ',
     cls: 'bad',
   },
   patch_committing: {
-    description: 'Patchset is being committed',
+    description: 'Patch is being committed',
     cls: 'normal',
   },
   patch_committed: {
-    description: 'Patchset committed successfully',
+    description: 'Patch committed successfully',
     cls: 'good',
   },
   verifier_skip: {
@@ -47,7 +47,7 @@ var actionInfo = {
     filter: simpleTryjobVerifierCheck,
   },
   verifier_fail: {
-    description: 'Patchset failed tryjobs',
+    description: 'Patch failed tryjobs',
     cls: 'bad',
     filter: simpleTryjobVerifierCheck,
   },
@@ -72,7 +72,7 @@ tryjobStatus = [
 
 
 function main() {
-  rows.textContent = 'Loading patchset data...';
+  rows.textContent = 'Loading patch data...';
   loadPatchsetRecords(function(records) {
     displayRecords(records);
     scrollToHash();
