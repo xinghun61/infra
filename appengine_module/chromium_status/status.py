@@ -123,7 +123,7 @@ class LinkableText(object):
     # Do this for everyone since "cbuildbot" is unique to CrOS.
     # Otherwise, we'd do it only for chromium |app_name| instances.
     cls.register_converter(
-        r'("cbuildbot" on "([^"]+ canary)")',
+        r'("cbuildbot" on "([^"]+ (canary|master))")',
         r'%s/builders/\2' % cls.WATERFALL_URLS['chromeos'], r'\1', False)
     cls.register_converter(
         r'("cbuildbot" on "([^"]+)")',
