@@ -80,7 +80,7 @@ function main() {
 }
 
 function loadPatchsetRecords(callback) {
-  var url = 'http://chromium-cq-status.appspot.com/query/issue=' + issue + '/patchset=' + patchset;
+  var url = '//chromium-cq-status.appspot.com/query/issue=' + issue + '/patchset=' + patchset;
   var records = [];
   var moreRecords = true;
   function queryRecords(cursor) {
