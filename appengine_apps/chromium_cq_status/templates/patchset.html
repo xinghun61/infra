@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<title>Commit attempts for issue %(issue)s patch %(patchset)s</title>
+<title>CQ status timeline for issue %(issue)s patch %(patchset)s</title>
 <script>
 var issue = %(issue)s;
 var patchset = %(patchset)s;
@@ -13,8 +13,11 @@ var patchset = %(patchset)s;
 a {
   text-decoration: none;
 }
-h1, h3, tryjob > a {
+h1, h3 > a, tryjob > a {
   color: black;
+}
+h3 {
+  margin-top: 2em;
 }
 row {
   position: relative;
@@ -44,7 +47,7 @@ timestamp {
   font-family: monospace;
   padding-bottom: 20px;
 }
-later {
+duration {
   font-size: 60%%;
   margin-left: 1em;
 }
@@ -82,5 +85,7 @@ tryjob.failed {
 }
 </style>
 <a href="/"><h1>Chromium CQ Status</h1></a>
-<h2>Commit attempts for issue <a href="http://codereview.chromium.org/%(issue)s">%(issue)s</a> patch <a href="http://codereview.chromium.org/%(issue)s#ps%(patchset)s">%(patchset)s</a></h2>
-<div id="rows"></div>
+<h2>CQ status timeline for issue <a href="http://codereview.chromium.org/%(issue)s">%(issue)s</a> patch <a href="http://codereview.chromium.org/%(issue)s#ps%(patchset)s">%(patchset)s</a></h2>
+Status updates are shown in reverse chronological order.<br>
+<br>
+<div id="container"></div>

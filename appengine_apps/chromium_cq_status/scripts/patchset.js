@@ -72,7 +72,7 @@ tryjobStatus = [
 
 
 function main() {
-  rows.textContent = 'Loading patch data...';
+  container.textContent = 'Loading patch data...';
   loadPatchsetRecords(function(records) {
     displayRecords(records);
     scrollToHash();
@@ -104,10 +104,9 @@ function loadPatchsetRecords(callback) {
 }
 
 function displayRecords(records) {
-  rows.textContent = records.length ? '' : 'No records found.';
-  var startTimestamp = null;
-  var openAttemptHeader = null;
-  var attempts = 0;
+  container.textContent = '';
+  var currentAttempt = null;
+  var attempts = [];
   records.forEach(function(record) {
     var action = record.fields.action;
     var info = actionInfo[action];
@@ -118,36 +117,56 @@ function displayRecords(records) {
       return;
     }
     if (info.startAttempt) {
-      startTimestamp = record.timestamp;
-      openAttemptHeader = addHeader(++attempts);
+      currentAttempt = {
+        start: record.timestamp,
+        header: newHeader(attempts.length + 1),
+        rows: [],
+      }
+      attempts.push(currentAttempt);
     }
+    if (!currentAttempt) {
+      console.warn('Unexpected record outside of start/end records:', record);
+    }
+    var duration = getDurationString(currentAttempt.start, record.timestamp);
+    currentAttempt.rows.push(newRow(record.timestamp, duration, info.description, record.fields.message, info.cls));
     if (info.stopAttempt) {
-      openAttemptHeader = null;
+      currentAttempt.header.addText(' (' + duration + ')');
+      currentAttempt = null;
     }
-    addRow(startTimestamp, record.timestamp, info.description, record.fields.message, info.cls);
   });
-  if (openAttemptHeader) {
-    openAttemptHeader.textContent += ' (in progress)';
+  if (currentAttempt) {
+    currentAttempt.header.addText(' (in progress for ' + getDurationString(currentAttempt.start, Date.now() / 1000) + ')');
   }
+  if (attempts.length === 0) {
+    container.textContent = 'No attempts found.';
+    return;
+  }
+  attempts.reverse();
+  attempts.forEach(function(attempt) {
+    container.appendChild(attempt.header);
+    attempt.rows.reverse();
+    attempt.rows.forEach(function(row) {
+      container.appendChild(row);
+    });
+  });
 }
 
-function addHeader(attempt) {
-  rows.appendChild(newElement('br'));
-  var anchor = newElement('a');
-  anchor.name = attempt;
-  anchor.href = '#' + attempt;
-  var h3 = newElement('h3', 'Attempt #' + attempt);
-  anchor.appendChild(h3);
-  rows.appendChild(anchor);
-  return h3;
+function newHeader(attemptNumber) {
+  var header = newElement('h3');
+  var anchor = newElement('a', 'Attempt #' + attemptNumber);
+  anchor.name = attemptNumber;
+  anchor.href = '#' + attemptNumber;
+  header.appendChild(anchor);
+  header.addText = function(text) {
+    anchor.textContent += text;
+  };
+  return header;
 }
 
-function addRow(startTimestamp, timestamp, description, message, cls) {
+function newRow(timestamp, duration, description, message, cls) {
   var row = newElement('row', '', cls);
   row.appendChild(newElement('timestamp', getTimestampString(timestamp)));
-  if (startTimestamp !== null) {
-    row.appendChild(newElement('later', '(' + getLaterString(startTimestamp, timestamp) + ')'));
-  }
+  row.appendChild(newElement('duration', '(' + duration + ')'));
   var descriptionNode = newElement('description')
   if (typeof description === 'string') {
     descriptionNode.textContent = description;
@@ -158,7 +177,7 @@ function addRow(startTimestamp, timestamp, description, message, cls) {
   if (message) {
     row.appendChild(newElement('message', '(' + message + ')'));
   }
-  rows.appendChild(row);
+  return row;
 }
 
 function newElement(tag, text, cls) {
@@ -176,7 +195,7 @@ function getTimestampString(timestamp) {
   return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
 }
 
-function getLaterString(startTimestamp, timestamp) {
+function getDurationString(startTimestamp, timestamp) {
   var seconds = parseInt(timestamp - startTimestamp);
   if (seconds < 60) {
     return seconds + ' second' + plural(seconds);
@@ -187,7 +206,7 @@ function getLaterString(startTimestamp, timestamp) {
   }
   var hours = parseInt(minutes / 60);
   minutes -= hours * 60;
-  return hours + ' hour' + plural(hours) + ' ' + minutes + ' minute' + plural(minutes);
+  return hours + ' hour' + plural(hours) + (minutes ? ' ' + minutes + ' minute' + plural(minutes) : '');
 }
 
 function plural(value) {
