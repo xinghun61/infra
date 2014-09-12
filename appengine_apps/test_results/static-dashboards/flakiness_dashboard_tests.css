@@ -80,12 +80,18 @@
     -webkit-box-flex: 1;
     cursor: pointer;
 }
+.results-container {
+    display: flex;
+    align-items: flex-start;
+    padding: 0px;
+}
 .results {
     cursor: pointer;
-    padding: 0 1px;
-    font-size: 10px;
+    font-size: 9px;
     text-align: center;
-    min-width: .75em;
+    width: 16px;
+    line-height: 16px; /* it adjusts the cell height and centers the text vertically */
+    border-right: 1px solid white;
 }
 .interpolatedResult {
     color: rgba(0, 0, 0, 0.2);
@@ -311,3 +317,4 @@ pre.expectation {
 .skipped-builder:last-child:after {
     content: '';
 }
+

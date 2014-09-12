@@ -122,21 +122,23 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
     g_testToResultsMap[test] = [resultsObject];
 
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks(test),
-        '<table class=test-table><thead><tr>' +
+        '<table class=test-table onclick="showPopup(event)"><thead><tr>' +
                 '<th sortValue=test><div class=table-header-content><span></span><span class=header-text>test</span></div></th>' +
                 '<th sortValue=bugs><div class=table-header-content><span></span><span class=header-text>bugs</span></div></th>' +
                 '<th sortValue=expectations><div class=table-header-content><span></span><span class=header-text>expectations</span></div></th>' +
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr>' +
+            '<tbody><tr builder="DummyMaster:WebKit Linux" test="dummytest.html">' +
                 '<td class="test-link builder-name">DummyMaster:WebKit Linux' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<div><a href="http://webkit.org/5678">webkit.org/5678</a></div>' +
                 '<td class=options-container><td>' +
-                '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "DummyMaster:WebKit Linux",0,"dummytest.html")\'></td>' +
-                '<td title="NO DATA. Click for more info." class="results NODATA" onclick=\'showPopupForBuild(event, "DummyMaster:WebKit Linux",1,"dummytest.html")\'>?</td>' +
+                '<td class="results-container">' +
+                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                    '<div title="NO DATA. Click for more info." class="results NODATA">?</div>' +
+                '</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
@@ -207,13 +209,15 @@ test('htmlForSingleTestRow', 1, function() {
     g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
     test.rawResults = [[1, 'F'], [2, 'I']];
     test.rawTimes = [[1, 0], [2, 5]];
-    var expected = '<tr>' +
+    var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
         '<td class="test-link"><span class="link" onclick="g_history.setQueryParameter(\'tests\',\'foo/exists.html\');">foo/exists.html</span>' +
         '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=Layout%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20layout%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
         '<td class=options-container>' +
         '<td>' +
-        '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "dummyMaster:dummyBuilder",0,"foo/exists.html")\'></td>' +
-        '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "dummyMaster:dummyBuilder",1,"foo/exists.html")\'>5</td>';
+        '<td class="results-container">' +
+            '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+            '<div title="IMAGE. Click for more info." class="results IMAGE">5</div>' +
+        '</td>';
 
     equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
 });
@@ -434,37 +438,40 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
 
     g_testToResultsMap[test] = [resultsObject1, resultsObject2];
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks(test),
-        '<table class=test-table><thead><tr>' +
+        '<table class=test-table onclick="showPopup(event)"><thead><tr>' +
                 '<th sortValue=test><div class=table-header-content><span></span><span class=header-text>test</span></div></th>' +
                 '<th sortValue=bugs><div class=table-header-content><span></span><span class=header-text>bugs</span></div></th>' +
                 '<th sortValue=expectations><div class=table-header-content><span></span><span class=header-text>expectations</span></div></th>' +
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr>' +
+            '<tbody><tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
                 '<td class="test-link builder-name">Master1:WebKit Linux (dbg)' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<div><a href="http://crbug.com/5678">crbug.com/5678</a></div>' +
                     '<div><a href="http://crbug.com/9101112">crbug.com/9101112</a></div>' +
-                '<td class=options-container><td>' +
-                    '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1236")\' class="results interpolatedResult NODATA" >?</td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",0,"dummytest.html")\'></td>' +
-                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",1,"dummytest.html")\'></td>' +
-                    '<td title="IMAGE. Click for more info." class="results IMAGE" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",2,"dummytest.html")\'></td>' +
-                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",3,"dummytest.html")\'></td>' +
-                    '<td title="PASS. Click for more info." class="results PASS" onclick=\'showPopupForBuild(event, "Master1:WebKit Linux (dbg)",4,"dummytest.html")\'></td>' +
-                '<tr><td class="test-link builder-name">Master1:WebKit Win (dbg)' +
+                '<td class=options-container><td><td class="results-container">' +
+                    '<div title="Unknown result. Did not run tests." rev="1236" class="results interpolatedResult NODATA">?</div>' +
+                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                    '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
+                    '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
+                    '<div title="PASS. Click for more info." class="results PASS"></div>' +
+                    '<div title="PASS. Click for more info." class="results PASS"></div>' +
+                '</td>' +
+                '<tr builder="Master1:WebKit Win (dbg)" test="dummytest.html">' +
+                '<td class="test-link builder-name">Master1:WebKit Win (dbg)' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/one">crbug.com/one</a></div>' +
                     '<div><a href="http://crbug.com/two">crbug.com/two</a></div>' +
-                '<td class=options-container><td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Win (dbg)",0,"dummytest.html")\'></td>' +
-                    '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
-                    '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
-                    '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1235")\' class="results interpolatedResult TEXT" >?</td>' +
-                    '<td title="TEXT. Click for more info." class="results TEXT" onclick=\'showPopupForBuild(event, "Master1:WebKit Win (dbg)",1,"dummytest.html")\'></td>' +
-                    '<td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "1233")\' class="results interpolatedResult NODATA" >?</td>' +
+                '<td class=options-container><td><td class="results-container">' +
+                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                    '<div title="Unknown result. Did not run tests." rev="1233" class="results interpolatedResult NODATA">?</div>' +
+                '</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
@@ -494,7 +501,7 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
 
     g_testToResultsMap[test] = [resultsObject];
     equal(htmlForIndividualTestOnAllBuildersWithResultsLinks(test),
-        '<table class=test-table>' +
+        '<table class=test-table onclick="showPopup(event)">' +
             '<thead><tr>' +
                 '<th sortValue=test><div class=table-header-content><span></span><span class=header-text>test</span></div></th>' +
                 '<th sortValue=bugs><div class=table-header-content><span></span><span class=header-text>bugs</span></div></th>' +
@@ -502,9 +509,11 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr>' +
+            '<tbody><tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
                 '<td class="test-link builder-name">Master1:WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
-                '<td class=options-container><td><td title="Unknown result. Did not run tests." onclick=\'showPopupForInterpolatedResult(event, "b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b")\' class="results interpolatedResult NODATA" >?</td>' +
+                '<td class=options-container><td><td class="results-container">' +
+                    '<div title="Unknown result. Did not run tests." rev="b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b" class="results interpolatedResult NODATA">?</div>' +
+                '</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +

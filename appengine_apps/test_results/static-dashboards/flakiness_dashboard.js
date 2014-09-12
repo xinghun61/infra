@@ -509,6 +509,20 @@ function pathToFailureLog(testName)
     return '/steps/' + g_history.crossDashboardState.testType + '/logs/' + testName.split('.')[1]
 }
 
+function showPopup(event)
+{
+    if (event.target.classList.contains("interpolatedResult")) {
+        showPopupForInterpolatedResult(event, event.target.attributes.rev.value);
+    } else if (event.target.classList.contains("results")) {
+        var tableData = event.target.parentElement;
+        var tableRow = tableData.parentElement;
+        var builder = tableRow.attributes.builder.value;
+        var index = Array.prototype.indexOf.call(tableData.children, event.target);
+        var test = tableRow.attributes.test.value;
+        showPopupForBuild(event, builder, index, test);
+    }
+}
+
 function showPopupForBuild(e, builderKey, index, opt_testName)
 {
     var html = '';
@@ -557,7 +571,7 @@ function classNameForFailureString(failure)
 
 function htmlForTestResults(test, revisions)
 {
-    var html = '';
+    var html = '<td class="results-container">';
     var testResults = test.rawResults.concat();
     var times = test.rawTimes.concat();
     var builder = test.builder;
@@ -618,12 +632,11 @@ function htmlForTestResults(test, revisions)
         cell.className = classNameForFailureString(resultString);
         cell.hasResult =
             resultString !== results.NO_DATA && resultString !== results.NOTRUN;
-        cell.html = '<td'
+        cell.html = '<div'
             + ' title="' + resultString + '. Click for more info."'
             + ' class="results ' + cell.className + '"'
-            + ' onclick=\'showPopupForBuild(event,'
-            + ' "' + builder.key() + '",' + i + ',"' + test.test + '")\'>'
-            + (currentTime || (cell.hasResult ? '' : '?')) + '</td>';
+            + '>'
+            + (currentTime || (cell.hasResult ? '' : '?')) + '</div>';
     }
 
     populateEmptyCells(cells);
@@ -631,7 +644,7 @@ function htmlForTestResults(test, revisions)
     for (var index = 0; index < cells.length; index++)
         html += cells[index].html;
 
-    return html;
+    return html + "</td>";
 }
 
 // Fill in cells where no test data is available with a question mark.
@@ -655,12 +668,11 @@ function populateEmptyCells(cells)
             var interpolateResult =
                 cell.nextClassName && cell.nextClassName == cell.prevClassName;
             cell.className = interpolateResult ? cell.nextClassName : "NODATA";
-            cell.html = '<td'
+            cell.html = '<div'
                 + ' title="Unknown result. Did not run tests."'
-                + ' onclick=\'showPopupForInterpolatedResult(event,'
-                + ' "' + cell.revision + '")\''
+                + ' rev="' + cell.revision + '"'
                 + ' class="results interpolatedResult ' + cell.className + '"'
-                + ' >?</td>';
+                + '>?</div>';
         }
     });
 }
@@ -738,7 +750,8 @@ function htmlForSingleTestRow(test, showBuilderNames, revisions)
         if (string.startsWith(header, 'test') || string.startsWith(header, 'builder')) {
             var testCellClassName = 'test-link' + (showBuilderNames ? ' builder-name' : '');
             var testCellHTML = showBuilderNames ? test.builder.key() : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
-            html += '<tr><td class="' + testCellClassName + '">' + testCellHTML;
+            html += '<tr builder="' + test.builder.key() + '" test="' + test.test + '">';
+            html += '<td class="' + testCellClassName + '">' + testCellHTML;
         } else if (string.startsWith(header, 'bugs'))
             // FIXME: linkify bugs.
             html += '<td class=options-container>' + (linkifyBugs(test.bugs) || createBugHTML(test));
@@ -774,7 +787,7 @@ function htmlForTableColumnHeader(headerName, opt_fillColSpan)
 
 function htmlForTestTable(rowsHTML, opt_excludeHeaders)
 {
-    var html = '<table class=test-table>';
+    var html = '<table class=test-table onclick="showPopup(event)">';
     if (!opt_excludeHeaders) {
         html += '<thead><tr>';
         var headers = tableHeaders();
@@ -782,7 +795,7 @@ function htmlForTestTable(rowsHTML, opt_excludeHeaders)
             html += htmlForTableColumnHeader(headers[i], i == headers.length - 1);
         html += '</tr></thead>';
     }
-    return html + '<tbody>' + rowsHTML + '</tbody></table>';
+    return html + '<tbody>' + rowsHTML + '</tbody></table>';;
 }
 
 function appendHTML(html)
