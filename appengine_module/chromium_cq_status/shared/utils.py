@@ -19,6 +19,15 @@ def cronjob(cronjob_handler): # pragma: no cover
     cronjob_handler(self, *args)
   return checked_cronjob_handler
 
+def cross_origin_json(handler): # pragma: no cover
+  def headered_json_handler(self, *args):
+    result = handler(self, *args)
+    if result:
+      self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+      self.response.headers.add_header('Content-Type', 'application/json')
+      compressed_json_dump(result, self.response)
+  return headered_json_handler
+
 def filter_dict(d, keys): # pragma: no cover
   return {key: d[key] for key in d if key in keys}
 

@@ -5,7 +5,7 @@
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
-
+from appengine_module.chromium_cq_status.model.cq_stats import CQStats
 from appengine_module.chromium_cq_status.shared.parsing import (
   parse_cursor,
   parse_non_negative_integer,
@@ -16,8 +16,7 @@ from appengine_module.chromium_cq_status.shared.parsing import (
   parse_timestamp,
   use_default,
 )
-from appengine_module.chromium_cq_status.shared.utils import compressed_json_dump  # pylint: disable=C0301
-from appengine_module.chromium_cq_status.model.cq_stats import CQStats
+from appengine_module.chromium_cq_status.shared.utils import cross_origin_json
 
 def execute_query(project, interval_days, begin, end, names,
     count, cursor): # pragma: no cover
@@ -49,9 +48,10 @@ def execute_query(project, interval_days, begin, end, names,
   }
 
 class StatsQuery(webapp2.RequestHandler): # pragma: no cover
+  @cross_origin_json
   def get(self): # pylint: disable-msg=W0221
     try:
-      data = parse_request(self.request, {
+      params = parse_request(self.request, {
         'project': parse_string,
         'interval_days': use_default(parse_non_negative_integer, None),
         'begin': parse_timestamp,
@@ -60,11 +60,6 @@ class StatsQuery(webapp2.RequestHandler): # pragma: no cover
         'count': parse_query_count,
         'cursor': parse_cursor,
       })
+      return execute_query(**params)
     except ValueError, e:
       self.response.write(e)
-      return
-
-    results = execute_query(**data)
-    self.response.headers.add_header("Access-Control-Allow-Origin", "*")
-    self.response.headers.add_header('Content-Type', 'application/json')
-    compressed_json_dump(results, self.response)
