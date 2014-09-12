@@ -190,7 +190,7 @@ class CommitData(Alterable):
                message_lines, footer_lines):
     super(CommitData, self).__init__()
     assert all('\n' not in h and self.HASH_RE.match(h) for h in parents)
-    assert '\n' not in tree and self.HASH_RE.match(tree)
+    assert tree is None or '\n' not in tree and self.HASH_RE.match(tree)
     assert isinstance(author, CommitUser)
     assert isinstance(committer, CommitUser)
     assert all(isinstance(l, str) for l in message_lines)
@@ -200,7 +200,8 @@ class CommitData(Alterable):
                for i in footer_lines)
 
     self._parents = freeze(parents)
-    self._tree = tree
+    # default to the empty tree
+    self._tree = tree or '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
     self._author = author
     self._committer = committer
     self._other_header_lines = freeze(other_header_lines)
