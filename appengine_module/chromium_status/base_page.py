@@ -30,6 +30,8 @@ class GlobalConfig(db.Model):
   app_name = db.StringProperty(required=True)
   # Flag indicating that anonymous viewing is possible.
   public_access = db.BooleanProperty()
+  # Flag indicating that this is a ChromiumOS status page
+  is_chromiumos = db.BooleanProperty(default=False)
 
 
 class BasePage(webapp.RequestHandler):
@@ -39,6 +41,7 @@ class BasePage(webapp.RequestHandler):
   _VALID_PUBLIC_EMAIL = re.compile(r"^.*@(chromium\.org|google\.com)$")
   _VALID_PRIVATE_EMAIL = re.compile(r"^.*@(google\.com)$")
   PUBLIC_ACCESS = False
+  IS_CHROMIUMOS = False
 
   def __init__(self, *args, **kwargs):  # pragma: no cover
     super(BasePage, self).__init__(*args, **kwargs)
@@ -185,6 +188,7 @@ def bootstrap():  # pragma: no cover
       config.put()
   BasePage.APP_NAME = config.app_name
   BasePage.PUBLIC_ACCESS = config.public_access
+  BasePage.IS_CHROMIUMOS = config.is_chromiumos
 
   if db.GqlQuery('SELECT __key__ FROM Passwords').get() is None:
     # Insert a dummy Passwords so it can be edited through the admin console

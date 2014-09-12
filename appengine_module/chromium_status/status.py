@@ -64,28 +64,8 @@ class LinkableText(object):
         (re.compile(regex, flags=flags), target, pretty, is_email))
 
   @classmethod
-  def canonical_app_name(cls, app_name):
-    """Cannoicalize |app_name| by removing prefixes and suffixes."""
-    # Appengine sometimes prefixes the app name, e.g., 'dev~' if you
-    # launch the instance locally. Remove these prefixes.
-    for prefix in cls.APP_PREFIXES:
-      if app_name.startswith(prefix):
-        app_name = app_name[len(prefix):]
-
-    # The existing instance names have the '-hr' suffix due to
-    # migration, etc. Also remove these so users don't have to worry
-    # about them.
-    for suffix in ('-hr', '-status'):
-      if app_name.endswith(suffix):
-        app_name = app_name[:-len(suffix)]
-
-    return app_name
-
-  @classmethod
-  def bootstrap(cls, app_name):
+  def bootstrap(cls, is_chromiumos):
     """Add conversions (possibly specific to |app_name| instance)"""
-    # Canonicalize the app name.
-    app_name = cls.canonical_app_name(app_name)
     # Convert CrOS bug links.  Support the forms:
     # http://crbug.com/1234
     # http://crosbug.com/1234
@@ -129,7 +109,7 @@ class LinkableText(object):
         r'("cbuildbot" on "([^"]+)")',
         r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
 
-    if app_name == 'chromiumos':
+    if is_chromiumos:
       # Match the string '"builder name"-internal/public-buildnumber:'. E.g.,
       #   "Canary master"-i-120:
       # This applies only to the CrOS instance where the builders may update
@@ -144,7 +124,6 @@ class LinkableText(object):
           r'%s/builders/\2/builds/\3' % cls.WATERFALL_URLS['chromiumos'],
           r'\1', False
       )
-
 
   @classmethod
   def parse(cls, text):
@@ -462,4 +441,4 @@ def bootstrap():
   # Guarantee that at least one instance exists.
   if db.GqlQuery('SELECT __key__ FROM Status').get() is None:
     Status(username='none', message='welcome to status').put()
-  LinkableText.bootstrap(BasePage.APP_NAME)
+  LinkableText.bootstrap(BasePage.IS_CHROMIUMOS)
