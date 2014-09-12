@@ -12,7 +12,7 @@ from infra.tools.builder_alerts import buildbot
 # Unused argument - pylint: disable=W0613
 
 
-class TestCaseWithBuildCache(unittest.TestCase):
+class TestCaseWithDiskCache(unittest.TestCase):
   def setUp(self):
     self.cache_path = tempfile.mkdtemp()
 
@@ -20,9 +20,9 @@ class TestCaseWithBuildCache(unittest.TestCase):
     shutil.rmtree(self.cache_path, ignore_errors=True)
 
 
-class BuildCacheTest(TestCaseWithBuildCache):
+class DiskCacheTest(TestCaseWithDiskCache):
   def test_build_cache(self):
-    cache = buildbot.BuildCache(self.cache_path)
+    cache = buildbot.DiskCache(self.cache_path)
 
     test_key = 'foo/bar'
     self.assertFalse(cache.has(test_key))
@@ -245,7 +245,7 @@ class BuildCacheTest(TestCaseWithBuildCache):
       }
       return k_example_build_json
 
-    cache = buildbot.BuildCache(self.cache_path)
+    cache = buildbot.DiskCache(self.cache_path)
     old_fetch_build_json = buildbot.fetch_build_json
     try:
       buildbot.fetch_build_json = mock_fetch_build_json
@@ -349,7 +349,7 @@ class BuildbotTest(unittest.TestCase):
     self.assertEqual(buildbot.is_in_progress({'results': None}), True)
     self.assertEqual(buildbot.is_in_progress({'results': 2}), False)
 
-class RevisionsForMasterTest(TestCaseWithBuildCache):
+class RevisionsForMasterTest(TestCaseWithDiskCache):
   def test_builder_info_for_master(self):
     """
     Tests latest_builder_info_for_master.
@@ -357,7 +357,7 @@ class RevisionsForMasterTest(TestCaseWithBuildCache):
     We have to pre-fill the build json cache to avoid this test hitting the
     network, which accounts for much of the complexity here.
     """
-    cache = buildbot.BuildCache(self.cache_path)
+    cache = buildbot.DiskCache(self.cache_path)
     def cache_set(master_url, builder, build, value):
       key = buildbot.cache_key_for_build(master_url, builder, build)
       cache.set(key, value)

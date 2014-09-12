@@ -4,6 +4,7 @@
 import argparse
 import json
 import logging
+import os
 import re
 import sys
 import urllib
@@ -47,7 +48,7 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
     step_result = step['results'][0]
     if step_result not in NON_FAILING_RESULTS:
       if reason:
-        reasons = reasons_for_failure(step, build, builder, master)
+        reasons = reasons_for_failure(cache, step, build, builder, master)
         # This build doesn't seem to have this step reason, ignore it.
         if not reasons:
           continue
@@ -106,12 +107,18 @@ def failing_steps_for_build(build):  # pragma: no cover
   return [step for step in failing_steps if step['name'] not in IGNORED_STEPS]
 
 
-def reasons_for_failure(step, build, builder_name,
-    master_url):  # pragma: no cover
+def reasons_for_failure(cache, step, build, builder_name, master_url):
+  master_name = buildbot.master_name_from_url(master_url)
+  cache_key = os.path.join(master_name, builder_name, str(build['number']),
+        '%s.json' % step['name'])
+  if cache.has(cache_key):
+    return cache.get(cache_key)
   splitter = reasons_splitter.splitter_for_step(step)
   if not splitter:
     return None
-  return splitter.split_step(step, build, builder_name, master_url)
+  reasons = splitter.split_step(step, build, builder_name, master_url)
+  cache.set(cache_key, reasons)
+  return reasons
 
 
 def alerts_from_step_failure(cache, step_failure, master_url,
@@ -129,7 +136,7 @@ def alerts_from_step_failure(cache, step_failure, master_url,
     'latest_revisions': buildbot.revisions_from_build(build),
   }
   alerts = []
-  reasons = reasons_for_failure(step, build, builder_name, master_url)
+  reasons = reasons_for_failure(cache, step, build, builder_name, master_url)
   if not reasons:
     alert = dict(step_template)
     alert['reason'] = None
@@ -282,7 +289,7 @@ def main(args):  # pragma: no cover
 
   # FIXME: HACK
   CACHE_PATH = 'build_cache'
-  cache = buildbot.BuildCache(CACHE_PATH)
+  cache = buildbot.DiskCache(CACHE_PATH)
 
   master_url = match.group('master_url')
   builder_name = urllib.unquote_plus(match.group('builder_name'))

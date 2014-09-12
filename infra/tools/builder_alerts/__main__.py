@@ -72,7 +72,7 @@ def main(args):
 
   latest_builder_info = {}
 
-  cache = buildbot.BuildCache(CACHE_PATH)
+  cache = buildbot.DiskCache(CACHE_PATH)
 
   old_alerts = {}
   if args.data_url:

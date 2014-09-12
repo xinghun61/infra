@@ -7,6 +7,8 @@ import unittest
 
 from infra.tools.builder_alerts import alert_builder
 from infra.tools.builder_alerts import buildbot
+from infra.tools.builder_alerts import reasons_splitter
+from infra.tools.builder_alerts.test import buildbot_test
 
 
 # Unused argument - pylint: disable=W0613
@@ -117,7 +119,7 @@ class AlertBuilderTest(unittest.TestCase):
     old_reasons_for_failure = alert_builder.reasons_for_failure
     old_fetch_build_json = buildbot.fetch_build_json
 
-    def mock_reasons_for_failure(step, build, builder_name,
+    def mock_reasons_for_failure(cache, step, build, builder_name,
         master_url):  # pragma: no cover
       if build['number'] == 4120:
         return ['Foo.NewFailure', 'Foo.OldFailure']
@@ -366,3 +368,62 @@ class AlertBuilderTest(unittest.TestCase):
       self.assertEqual(step_failures, expected_step_failures)
     finally:
       alert_builder.complete_steps_by_type = old_complete_steps_by_type
+
+
+class AlertBuilderTestWithDiskCache(buildbot_test.TestCaseWithDiskCache):
+  def test_reasons_for_failure(self):
+    cache = buildbot.DiskCache(self.cache_path)
+
+    build = AlertBuilderTest.k_example_failing_build
+    step = build['steps'][0]
+    builder_name = build['builderName']
+    master_url  = 'https://build.chromium.org/p/chromium.lkgr'
+
+    old_splitter_for_step = reasons_splitter.splitter_for_step
+
+    split_step_invoked = [False]
+
+    def mock_splitter_for_step(step):
+      class MockSplitter:
+        @classmethod
+        def split_step(cls, step, build, builder_name, master_url):
+          split_step_invoked[0] = True
+          return {}
+
+      return MockSplitter()
+
+    try:
+      reasons_splitter.splitter_for_step = mock_splitter_for_step
+
+      alert_builder.reasons_for_failure(cache, step, build,
+          builder_name, master_url)
+      self.assertTrue(split_step_invoked[0])
+      split_step_invoked[0] = False
+
+      alert_builder.reasons_for_failure(cache, step, build,
+          builder_name, master_url)
+      self.assertFalse(split_step_invoked[0])
+    finally:
+      reasons_splitter.splitter_for_step = old_splitter_for_step
+
+  def test_reasons_for_failure_no_splitter(self):
+    cache = buildbot.DiskCache(self.cache_path)
+
+    build = AlertBuilderTest.k_example_failing_build
+    step = build['steps'][0]
+    builder_name = build['builderName']
+    master_url  = 'https://build.chromium.org/p/chromium.lkgr'
+
+    old_splitter_for_step = reasons_splitter.splitter_for_step
+
+    def mock_splitter_for_step(step):
+      return None
+
+    try:
+      reasons_splitter.splitter_for_step = mock_splitter_for_step
+
+      reasons = alert_builder.reasons_for_failure(cache, step, build,
+          builder_name, master_url)
+      self.assertTrue(not reasons)
+    finally:
+      reasons_splitter.splitter_for_step = old_splitter_for_step

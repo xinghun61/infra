@@ -20,7 +20,7 @@ from infra.tools.builder_alerts import string_helpers
 CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
 # Unclear if this should be specific to builds.
-class BuildCache(object):
+class DiskCache(object):
   def __init__(self, root_path):
     self.root_path = root_path
 
