@@ -71,6 +71,11 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
 
 
 class Pusher(threading.Thread):
+  # Modified by testing code. Makes this object do all the work in 'get_result'
+  # (instead of a separate thread). That way the order of tasks is deterministic
+  # (and defined by the order 'get_result' calls).
+  FAKE_THREADING = False
+
   def __init__(self, name, dest_repo, pushspec):
     super(Pusher, self).__init__()
     self._name = name
@@ -81,21 +86,27 @@ class Pusher(threading.Thread):
     self._output = None
 
   def run(self):
+    if not self.FAKE_THREADING:  # pragma: no cover
+      self._push()
+
+  def get_result(self):
+    self.join()
+    if self.FAKE_THREADING:  # pragma: no cover
+      self._push()
+    log = logging.info if self._success else logging.error
+    prefix = 'Completed' if self._success else 'FAILED'
+    log('%s push for %r', prefix, self._name)
+    if self._output:
+      log(self._output)  # pragma: no cover
+    return self._success
+
+  def _push(self):
     try:
       self._output = self._repo.fast_forward_push(
           self._pushspec, include_err=True, timeout=PUSH_TIMEOUT)
       self._success = True
     except CalledProcessError as cpe:  # pragma: no cover
       self._output = str(cpe)
-
-  def get_result(self):
-    self.join()
-    log = logging.info if self._success else logging.error
-    prefix = 'Completed' if self._success else 'FAILED'
-    log("%s push for %r", prefix, self._name)
-    if self._output:
-      log(self._output)  # pragma: no cover
-    return self._success
 
 
 def process_path(path, origin_repo, config):

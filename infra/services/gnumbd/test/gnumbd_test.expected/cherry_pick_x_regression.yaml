@@ -23,13 +23,15 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Pushing synthesized commit ''d5c6a86c6c35b279c123704818da2a2eb70a8401''
     for ''22bb28e9668d69ed547ee7ab3ea805ed4996c546'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
   - 'INFO: Pushing synthesized commit ''e515a2c4969533824a86677efe0deb70fe5cc648''
     for ''d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''e515a2c4969533824a86677efe0deb70fe5cc648:refs/heads/master'',
+    ''d21bbf9d2d435df98ba5e03d6b2002e7ce99f92f:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: d5c6a86c6c35b279c123704818da2a2eb70a8401
@@ -142,13 +144,15 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Pushing synthesized commit ''e36353569a94b0e7abfa83c3c7df9cbd35dcc970''
     for ''152149b568bd593283b15c477372eb20c0b079a2'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
   - 'INFO: Pushing synthesized commit ''0735365f97cf1220e8910ba2fba29713614fd5d6''
     for ''757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''0735365f97cf1220e8910ba2fba29713614fd5d6:refs/heads/master'',
+    ''757c96ede9345e4ca5a69d0fb5a326e48d7dfb1c:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: e36353569a94b0e7abfa83c3c7df9cbd35dcc970

@@ -34,7 +34,7 @@ C_PICK = re.compile(r'\(cherry picked from commit [a-fA-F0-9]{40}\)')
 
 
 # How long to wait for 'git push' to complete before forcefully killing it.
-PUSH_TIMEOUT = 10 * 60
+PUSH_TIMEOUT = 18 * 60
 
 ################################################################################
 # ConfigRef
@@ -467,7 +467,7 @@ def process_repo(repo, cref, clock=time):
           success = False
           continue
 
-        LOGGER.info('Processing %r', real_ref)
+        LOGGER.debug('Processing %r', real_ref)
         pending_tag = join(pending_tag_prefix, real_ref)
 
         if pending_tag.commit is git2.INVALID:

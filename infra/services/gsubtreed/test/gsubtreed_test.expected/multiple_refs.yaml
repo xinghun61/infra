@@ -7,7 +7,9 @@
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
 - log output:
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
@@ -15,6 +17,7 @@
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''21890050477c9313c9a5447ba40a13dfc2c350d0'''
   - 'INFO: processing path mirrored_path'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''92c96f11ffe418019c661a1dc933bfca0f6920e3'')'
@@ -23,8 +26,18 @@
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''53eb90f840c9e5fd04b50fb079381620205d3529:refs/heads/master'',
+    ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''92c96f11ffe418019c661a1dc933bfca0f6920e3:refs/subtree-processed/mirrored_path/-/heads/master'',
+    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/-/heads/other'',
+    ''92c96f11ffe418019c661a1dc933bfca0f6920e3:refs/subtree-processed/mirrored_path/subpath/-/heads/master'',
+    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/subpath/-/heads/other'',
+    ''53eb90f840c9e5fd04b50fb079381620205d3529:refs/subtree-synthesized/mirrored_path/-/heads/master'',
+    ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/subtree-synthesized/mirrored_path/-/heads/other'',
+    ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/subtree-synthesized/mirrored_path/subpath/-/heads/other'')'
 - inner_loop success: true
   processed:
     mirrored_path: 2

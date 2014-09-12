@@ -157,9 +157,15 @@ class Repo(object):
       timeout - How long to wait for process to finish before killing it, sec.
       ...    - passes through to subprocess.Popen()
     """
+    assert args, args
     if args[0] == 'push' and self.dry_run:
       self._log.warn('DRY-RUN: Would have pushed %r', args[1:])
       return
+
+    if args[0] in ('fetch', 'push'):
+      log_func = self._log.info
+    else:
+      log_func = self._log.debug
 
     if 'cwd' not in kwargs:
       assert self._repo_path is not None
@@ -181,7 +187,7 @@ class Repo(object):
     timeout = kwargs.pop('timeout', None)
     cmd = ('git',) + args
 
-    self._log.debug('Running %r', cmd)
+    log_func('Running %r', cmd)
     started = time.time()
     process = subprocess.Popen(cmd, **kwargs)
     def kill_proc():
@@ -211,7 +217,7 @@ class Repo(object):
 
     dt = time.time() - started
     if dt > 1:  # pragma: no cover
-      self._log.debug('Finished in %.1f sec', dt)
+      log_func('Finished in %.1f sec', dt)
     if retcode not in ok_ret:
       raise CalledProcessError(retcode, cmd, output, errout)
 
@@ -256,7 +262,8 @@ class Repo(object):
     assert all(r.repo is self for r in refs_and_commits)
     refspec = [
       '%s:%s' % (c.hsh, r.ref)
-      for r, c in refs_and_commits.iteritems()
+      for r, c in sorted(
+          refs_and_commits.iteritems(), key=lambda pair: pair[0].ref)
     ]
     kwargs = {'stderr': sys.stdout} if include_err else {}
     kwargs['timeout'] = timeout

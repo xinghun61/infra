@@ -20,7 +20,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
     ''refs/heads/master''): ''d0168885399a3cfd71ca399347923e166183c704'''
   - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')

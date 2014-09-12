@@ -29,7 +29,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
     ''refs/heads/master''): ''497a51ee3c7cc6826aeca9070a4be56011f8e5f6'''
   - 'ERROR: Commit ''38b859f0a917740e3f427a6aa7d3322ff3934693'' has more than one

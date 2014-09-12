@@ -81,6 +81,9 @@ def RunTest(test_name):
     root_logger.addHandler(shandler)
     shandler.setLevel(logging.INFO)
 
+    # Run pusher threads sequentially and deterministically.
+    gsubtreed.Pusher.FAKE_THREADING = True
+
     success = False
     processed = {}
     try:
@@ -92,6 +95,8 @@ def RunTest(test_name):
     except Exception:  # pragma: no cover
       ret.append(traceback.format_exc().splitlines())
     finally:
+      gsubtreed.Pusher.FAKE_THREADING = False
+
       sys.stdout = stdout
       sys.stderr = stderr
 

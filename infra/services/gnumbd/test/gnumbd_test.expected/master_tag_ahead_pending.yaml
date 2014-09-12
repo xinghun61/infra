@@ -28,7 +28,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: ''refs/pending-tags/heads/master'' doesn''t match ''refs/pending/heads/master'',
     but there are no new_commits?'
 - inner_loop success: false

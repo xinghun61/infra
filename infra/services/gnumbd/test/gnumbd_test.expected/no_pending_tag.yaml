@@ -13,7 +13,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: Missing pending tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
     for Ref(TestRepo(''local''), ''refs/heads/master'')'
 - inner_loop success: false

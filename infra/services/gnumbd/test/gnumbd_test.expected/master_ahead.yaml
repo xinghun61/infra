@@ -18,7 +18,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'') and Ref(TestRepo(''local''),
     ''refs/pending/heads/master'') match, but Ref(TestRepo(''local''), ''refs/heads/master'')''s
     content doesn''t match!'

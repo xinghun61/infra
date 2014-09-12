@@ -18,7 +18,7 @@
         - ''
         - 'git-svn-id: BlobbyGumpus!'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: MalformedPositionFooter in Commit(TestRepo(''local''), ''ebdb2f276652e30cb1421ce8daf90bcd03dfd320''):
     "git-svn-id: BlobbyGumpus!"'
 - inner_loop success: false

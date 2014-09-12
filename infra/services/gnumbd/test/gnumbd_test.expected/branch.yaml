@@ -23,10 +23,12 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Pushing synthesized commit ''dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04''
     for ''4dac15f5702bf197eb2908203a87f43196d3789f'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04:refs/heads/master'',
+    ''4dac15f5702bf197eb2908203a87f43196d3789f:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: dbe9fd0b38eb0cc1ae9d797921655d2718c2cb04
@@ -123,12 +125,13 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Ref(TestRepo(''local''), ''refs/heads/master'') is up to date'
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'')'
   - 'INFO: Pushing synthesized commit ''157f613ec89b70fcc2c142bd7b15d7ad98a08d86''
     for ''04606a0a66f0a88f1199dd78c4fa3915906f4670'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''157f613ec89b70fcc2c142bd7b15d7ad98a08d86:refs/branch-heads/cool_branch'',
+    ''04606a0a66f0a88f1199dd78c4fa3915906f4670:refs/pending-tags/branch-heads/cool_branch'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: 157f613ec89b70fcc2c142bd7b15d7ad98a08d86
@@ -272,12 +275,13 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Ref(TestRepo(''local''), ''refs/heads/master'') is up to date'
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'')'
   - 'INFO: Pushing synthesized commit ''53f6c5ab92997362d568aff7050353676c288d98''
     for ''e3b9742df729c42adf6d5396426b784d3562e694'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''53f6c5ab92997362d568aff7050353676c288d98:refs/branch-heads/cool_branch'',
+    ''e3b9742df729c42adf6d5396426b784d3562e694:refs/pending-tags/branch-heads/cool_branch'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: 53f6c5ab92997362d568aff7050353676c288d98

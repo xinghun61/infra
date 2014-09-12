@@ -18,10 +18,12 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Pushing synthesized commit ''f4806ab03b8fc0f1210307cb750dd974e348a3ad''
     for ''d0168885399a3cfd71ca399347923e166183c704'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''f4806ab03b8fc0f1210307cb750dd974e348a3ad:refs/heads/master'',
+    ''d0168885399a3cfd71ca399347923e166183c704:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: f4806ab03b8fc0f1210307cb750dd974e348a3ad

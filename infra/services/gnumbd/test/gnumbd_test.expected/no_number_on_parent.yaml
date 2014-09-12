@@ -7,7 +7,7 @@
         6cd6eb7d5204d18862b3c8b52d31770ab94e7737:
         - Hello world
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: Missing pending tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
     for Ref(TestRepo(''local''), ''refs/heads/master'')'
 - inner_loop success: false

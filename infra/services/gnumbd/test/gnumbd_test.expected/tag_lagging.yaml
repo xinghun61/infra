@@ -38,7 +38,7 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#99}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
     ''refs/heads/master''): ''044be2ae06ebccb44a60ef3475394b6fb23a0844'''
   - 'WARNING: Skipping already-processed commit on real_ref Ref(TestRepo(''local''),
@@ -48,6 +48,8 @@
   - 'INFO: Pushing synthesized commit ''fac75a9e5b1cc44944ad1f2592d3616256f9693b''
     for ''1121e8253f173d018f662e1a68153bbc754f9b55'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''fac75a9e5b1cc44944ad1f2592d3616256f9693b:refs/heads/master'',
+    ''1121e8253f173d018f662e1a68153bbc754f9b55:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: fac75a9e5b1cc44944ad1f2592d3616256f9693b

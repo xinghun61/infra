@@ -189,14 +189,14 @@
         - ''
         - 'Cr-Commit-Position: refs/heads/master@{#100}'
 - log output:
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: Ref(TestRepo(''local''), ''refs/heads/master'') is up to date'
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'')'
   - 'INFO: Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch'') is up to date'
-  - 'INFO: Processing Ref(TestRepo(''local''), ''refs/branch-heads/cool_branch_yo'')'
   - 'INFO: Pushing synthesized commit ''f449095356acf5ebca83c5f125de03849596b137''
     for ''9212a87dfa78241acf65908f0f56bbb121471d77'' and pending_tag Ref(TestRepo(''local''),
     ''refs/pending-tags/branch-heads/cool_branch_yo'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''f449095356acf5ebca83c5f125de03849596b137:refs/branch-heads/cool_branch_yo'',
+    ''9212a87dfa78241acf65908f0f56bbb121471d77:refs/pending-tags/branch-heads/cool_branch_yo'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: f449095356acf5ebca83c5f125de03849596b137

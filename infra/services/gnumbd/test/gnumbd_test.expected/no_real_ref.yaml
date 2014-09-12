@@ -4,6 +4,7 @@
         f0de3e2de68632f6bfc29e7baba94a3156c30a76:
         - Hello world
 - log output:
+  - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: Missing real ref Ref(TestRepo(''local''), ''refs/heads/master'')'
 - inner_loop success: false
   synthesized_commits: []

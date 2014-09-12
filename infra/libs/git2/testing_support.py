@@ -215,12 +215,12 @@ class TestRepo(git2.Repo):
       include_config - Include the config ref(s). These are refs with the
         word 'config' in them.
     """
-    ret = {}
+    ret = collections.OrderedDict()
     if include_committer:
       fmt = '%H%x00committer %cn <%ce> %ci%n%n%B%x00%x00'
     else:
       fmt = '%H%x00%B%x00%x00'
-    for ref in (r.ref for r in self.refglob('*')):
+    for ref in sorted(r.ref for r in self.refglob('*')):
       if 'config' in ref and not include_config:
         continue
       log = self.run('log', ref, '--format=%s' % fmt)
