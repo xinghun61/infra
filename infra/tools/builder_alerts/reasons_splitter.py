@@ -38,12 +38,18 @@ def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
 
 
 def request_test_results_json(step, build, builder_name, master_url):
+  test_type = step['name']
+  # TODO(ojan): Stop having webkit_tests masquerade as layout-tests
+  # in test-results.appspot.
+  if test_type == 'webkit_tests':
+    test_type = 'layout-tests'
+
   params = {
     'name': 'full_results.json',
     'master': buildbot.master_name_from_url(master_url),
     'builder': builder_name,
     'buildnumber': build['number'],
-    'testtype': step['name'],
+    'testtype': test_type,
   }
   base_url = 'https://test-results.appspot.com/testfile'
   response = requests.get(base_url, params=params)

@@ -81,7 +81,8 @@ class SplitterTests(unittest.TestCase):
     try:
       requests.get = mock_requests_get
       failures = reasons_splitter.LayoutTestsSplitter.split_step(
-          k_mock_step, k_mock_build, k_mock_builder_name, k_mock_master_url)
+          { 'name': 'webkit_tests' }, k_mock_build, k_mock_builder_name,
+          k_mock_master_url)
       self.assertEqual(failures, {'test2': 'FAIL'})
     finally:
       requests.get = old_requests_get
