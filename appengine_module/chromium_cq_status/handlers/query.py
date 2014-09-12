@@ -6,24 +6,20 @@ from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
 from appengine_module.chromium_cq_status.model.record import Record
-from appengine_module.chromium_cq_status.shared.config import MAXIMUM_QUERY_SIZE
 from appengine_module.chromium_cq_status.shared.parsing import (
   parse_cursor,
   parse_url_tags,
   parse_fields,
   parse_key,
-  parse_non_negative_integer,
+  parse_query_count,
   parse_request,
   parse_strings,
   parse_timestamp,
-  use_default,
 )
 from appengine_module.chromium_cq_status.shared.utils import compressed_json_dump  # pylint: disable=C0301
 
 def execute_query(
     key, begin, end, tags, fields, count, cursor): # pragma: no cover
-  count = min(count, MAXIMUM_QUERY_SIZE)
-
   records = []
   next_cursor = ''
   if key and count > 0:
@@ -74,7 +70,7 @@ class Query(webapp2.RequestHandler): # pragma: no cover
         'key': parse_key,
         'tags': parse_strings,
         'fields': parse_fields,
-        'count': use_default(parse_non_negative_integer, 100),
+        'count':  parse_query_count,
         'cursor': parse_cursor,
       })
       data['tags'].extend(parse_url_tags(url_tags))

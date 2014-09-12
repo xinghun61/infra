@@ -47,6 +47,16 @@ class TestCase(unittest.TestCase):
     self.assertRaises(ValueError,
         lambda: parsing.parse_non_negative_integer('-1234'))
 
+  def test_parse_query_count(self):
+    self.assertEqual(100, parsing.parse_query_count(''))
+    self.assertEqual(0, parsing.parse_query_count('0'))
+    self.assertEqual(123, parsing.parse_query_count('123'))
+    self.assertEqual(1000, parsing.parse_query_count('1234'))
+    self.assertRaises(ValueError,
+        lambda: parsing.parse_non_negative_integer('pants'))
+    self.assertRaises(ValueError,
+        lambda: parsing.parse_non_negative_integer('-123'))
+
   def test_parse_cursor(self):
     self.assertEqual(None, parsing.parse_cursor(''))
     self.assertEqual('cursor_value', parsing.parse_cursor('cursor_value'))

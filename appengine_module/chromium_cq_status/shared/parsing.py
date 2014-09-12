@@ -5,6 +5,11 @@
 from datetime import datetime
 import json
 
+from appengine_module.chromium_cq_status.shared.config import (
+  DEFAULT_QUERY_SIZE,
+  MAXIMUM_QUERY_SIZE,
+)
+
 def parse_timestamp(value): # pragma: no cover
   if not value:
     return None
@@ -41,6 +46,12 @@ def parse_non_negative_integer(value): # pragma: no cover
 
 def parse_cursor(value): # pragma: no cover
   return value or None
+
+def parse_query_count(value): # pragma: no cover
+  if not value:
+    return DEFAULT_QUERY_SIZE
+  count = parse_non_negative_integer(value)
+  return min(count, MAXIMUM_QUERY_SIZE)
 
 def use_default(parser, default_value): # pragma: no cover
   def new_parser(value):
