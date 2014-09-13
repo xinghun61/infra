@@ -91,6 +91,7 @@
     text-align: center;
     width: 16px;
     line-height: 16px; /* it adjusts the cell height and centers the text vertically */
+    height: 16px; /* Make sure empty divs also have 16px height since line-height won't work there */
     border-right: 1px solid white;
 }
 .interpolatedResult {
