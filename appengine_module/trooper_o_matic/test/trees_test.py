@@ -24,6 +24,7 @@ class TreesTest(unittest.TestCase):
     super(TreesTest, self).setUp()
     testing_common.StubUrlfetch(URLFETCH_RESPONSES)
 
+
   def testTreesUrlFetch(self):
     masters = trees.GetMastersForTree('chromium')
     self.assertEqual(['chromium',

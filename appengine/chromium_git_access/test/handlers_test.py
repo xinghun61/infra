@@ -80,7 +80,7 @@ class TestAccessCheckHandler(testing.AppengineTestCase):
         ndb.Key(
             'AccessCheckEntryShard_v1',
             '2e',
-            'AccessCheckEntry',
+            handlers.AccessCheckEntry._get_kind(),  #pylint: disable=W0212
             '2e4519cfb784f010c39d85db5525000d1d1b259f'),
         entries[0].key)
     self.assertEquals(

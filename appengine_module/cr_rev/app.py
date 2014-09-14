@@ -4,9 +4,11 @@
 
 import webapp2
 
-import views
+from appengine_module.cr_rev import views
 
 app = webapp2.WSGIApplication([
     ('/_ah/warmup', views.StartPage),
+    ('/_ah/start', views.StartPage),
+    (r'/(\w+)(/.*)?', views.Redirect),
     ('/', views.MainPage),
 ])

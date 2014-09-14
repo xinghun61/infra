@@ -2,10 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import os
 
 import webapp2
 from webapp2_extras import jinja2
+
+from appengine_module.cr_rev import controller
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -43,3 +46,20 @@ class MainPage(BaseHandler):
   def get(self):
     context = {'title': 'cr-rev' }
     self.render_response('main.html', **context)
+
+
+class Redirect(BaseHandler):
+  def get(self, query, extra_paths):
+    if self.request.referer:
+      logging.info('referer is %s' % self.request.referer)
+    redirect = controller.calculate_redirect(query)
+    if redirect:
+      redirect_url = str(redirect.redirect_url)
+      if extra_paths:
+        redirect_url = redirect_url + extra_paths
+      if self.request.query_string:
+        redirect_url = redirect_url + '?' + self.request.query_string
+      logging.info('redirecting to %s' % redirect_url)
+      self.redirect(redirect_url)
+    else:
+      self.abort(404)
