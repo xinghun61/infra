@@ -517,9 +517,17 @@ function showPopup(event)
         var tableData = event.target.parentElement;
         var tableRow = tableData.parentElement;
         var builder = tableRow.attributes.builder.value;
-        var index = Array.prototype.indexOf.call(tableData.children, event.target);
+        var cells = tableData.children;
+        var buildIndex  = -1;
+        for (var i = 0; i < cells.length; ++i) {
+            if (cells[i].classList.contains("interpolatedResult"))
+                continue;
+            ++buildIndex;
+            if (cells[i] === event.target)
+                break;
+        }
         var test = tableRow.attributes.test.value;
-        showPopupForBuild(event, builder, index, test);
+        showPopupForBuild(event, builder, buildIndex, test);
     }
 }
 
@@ -665,9 +673,9 @@ function populateEmptyCells(cells)
 
     cells.forEach(function(cell) {
         if (!cell.html) {
-            var interpolateResult =
+            var interpolatedResult =
                 cell.nextClassName && cell.nextClassName == cell.prevClassName;
-            cell.className = interpolateResult ? cell.nextClassName : "NODATA";
+            cell.className = interpolatedResult ? cell.nextClassName : "NODATA";
             cell.html = '<div'
                 + ' title="Unknown result. Did not run tests."'
                 + ' rev="' + cell.revision + '"'

@@ -437,7 +437,8 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
     resultsObject2.bugs = ["crbug.com/one", "crbug.com/two"];
 
     g_testToResultsMap[test] = [resultsObject1, resultsObject2];
-    equal(htmlForIndividualTestOnAllBuildersWithResultsLinks(test),
+    var html = htmlForIndividualTestOnAllBuildersWithResultsLinks(test);
+    equal(html,
         '<table class=test-table onclick="showPopup(event)"><thead><tr>' +
                 '<th sortValue=test><div class=table-header-content><span></span><span class=header-text>test</span></div></th>' +
                 '<th sortValue=bugs><div class=table-header-content><span></span><span class=header-text>bugs</span></div></th>' +
@@ -484,6 +485,53 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
             '<b>Only shows actual results/diffs from the most recent *failure* on each bot.</b></div>' +
         '</div>');
     g_history.dashboardSpecificState.showChrome = false;
+
+    var div = document.createElement("div");
+    div.innerHTML = html;
+    var table = div.children[0];
+    equal(table.nodeName, "TABLE");
+    var tbody = table.children[1];
+    equal(tbody.nodeName, "TBODY");
+
+    var showPopupForInterpolatedResultOriginal = showPopupForInterpolatedResult;
+    var showPopupForBuildOriginal = showPopupForBuild;
+    var showPopupCalls = [];
+    showPopupForBuild = function(event, builder, buildIndex, test)
+    {
+        showPopupCalls.push("showPopupForBuild('" + builder + "', " + buildIndex + ", '" + test + "')");
+    }
+
+    showPopupForInterpolatedResult = function(event, revision)
+    {
+        showPopupCalls.push("showPopupForInterpolatedResult('" + revision + "')");
+    }
+
+    for (var rowIndex = 0; rowIndex < tbody.children.length; ++rowIndex) {
+        var row = tbody.children[rowIndex];
+        var results = row.children[4];
+        equal(results.className, "results-container");
+        for (var resultIndex = 0; resultIndex < results.children.length; ++resultIndex) {
+            var event = { target: results.children[resultIndex] };
+            showPopup(event);
+        }
+    }
+    equal(showPopupCalls.join(),
+        "showPopupForInterpolatedResult('1236')," +
+        "showPopupForBuild('Master1:WebKit Linux (dbg)', 0, 'dummytest.html')," +
+        "showPopupForBuild('Master1:WebKit Linux (dbg)', 1, 'dummytest.html')," +
+        "showPopupForBuild('Master1:WebKit Linux (dbg)', 2, 'dummytest.html')," +
+        "showPopupForBuild('Master1:WebKit Linux (dbg)', 3, 'dummytest.html')," +
+        "showPopupForBuild('Master1:WebKit Linux (dbg)', 4, 'dummytest.html')," +
+        "showPopupForBuild('Master1:WebKit Win (dbg)', 0, 'dummytest.html')," +
+        "showPopupForInterpolatedResult('1235')," +
+        "showPopupForInterpolatedResult('1235')," +
+        "showPopupForInterpolatedResult('1235')," +
+        "showPopupForBuild('Master1:WebKit Win (dbg)', 1, 'dummytest.html')," +
+        "showPopupForInterpolatedResult('1233')"
+    );
+
+    showPopupForBuild = showPopupForBuildOriginal;
+    showPopupForInterpolatedResult = showPopupForInterpolatedResultOriginal;
 });
 
 test('collapsedRevisionListChromiumWithGitHash', 1, function() {
