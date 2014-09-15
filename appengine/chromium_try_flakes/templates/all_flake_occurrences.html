@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<table>
+<tr>
+<td colspan="3">all flaky occurrences of <b>{{flake.name}}</b></td>
+</tr>
+{% for f in failure_runs %}
+<tr>
+
+{% if not bug_friendly %}
+<td><a href="{{f.getURL}}">try run at {{f.formatted_time}}</a></td>
+<td><a href="{{f.patchset_url}}">patchset</a></td>
+<td>{{f.builder}} </td>
+{% else %}
+<td><a href="{{f.getURL}}">{{f.getURL}}</a></td>
+{% endif %}
+
+</tr>
+{% endfor %}
+
+</tr><tr><td>&nbsp;</td></tr>
+</table>
+{% if not bug_friendly %}
+<a href="/all_flake_occurrences?key={{flake.key.urlsafe}}&bug_friendly=1">
+bug friendly
+</a>
+{% endif %}

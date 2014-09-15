@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<style>
+h1 {
+  font-family: sans-serif;
+}
+p {
+  max-width: 800px;
+}
+
+#range_search {
+  width: 800px;
+}
+</style>
+
+<h1>Chromium Trybot Flakes</h1>
+
+<p>
+This dashboard displays steps which failed in a try run but passed in a second
+try run for the same patchset.
+</p>
+
+<table id="range_search">
+<tr><td width="100%">
+<select id='range'
+        onchange="location = '/?range=' +
+          this.options[this.selectedIndex].value;">
+  <option value="hour">Last hour</option>
+  <option value="day">Last day</option>
+  <option value="week">Last week</option>
+  <option value="month">Last month</option>
+  <option value="all">All time</option>
+</select>
+</td><td>
+<input id="search"
+       type="search"
+       placeholder="exact search"
+       style="width:400px"
+       onkeydown="if (event.keyCode == 13) location = '/search?q=' +
+         document.getElementById('search').value">
+</td></tr>
+</table>
+<br>
+<br>
+
+<table>
+{% for f in flakes %}
+<tr>
+<td colspan="3">
+  <div style=" float: left">
+    <span ><b>{{f.name}}</b></span>
+    <small><a href="/all_flake_occurrences?key={{f.key.urlsafe}}">
+      (all occurrences)
+    </small></a>
+  </div>
+</td>
+</tr>
+<tr>
+<td colspan="3">
+  <input id="step_comment_{{forloop.counter}}"
+         style="width:100%; "
+         data-key="{{f.key.urlsafe}}"
+         placeholder="comment"
+         type="text" value="{{f.comment}}"
+         onblur="PostComment('step_comment_{{forloop.counter}}')">
+</td>
+</tr>
+{% for o in f.filtered_occurrences %}
+<tr>
+<td><a href="{{o.getURL}}">try run at {{o.formatted_time}}</a></td>
+<td><a href="{{o.patchset_url}}">patchset</a></td>
+<td>{{o.builder}} </td>
+
+</tr>
+{% endfor %}
+
+</tr><tr><td>&nbsp;</td></tr>
+{% endfor %}
+</table>
+
+{% if more %}
+<a href='/?range={{range}}&cursor={{cursor}}'>next</a>
+{% endif %}
+
+<br>
+<br>
+TODO:
+<ul>
+<li>compiles are split out by specific failure</li>
+<li>failure rates</li>
+</ul>
+
+
+<script>
+function UpdateSelectedRange(range) {
+  select = document.getElementById('range');
+  for (var i = select.options.length; i-- > 0;) {
+    if (select.options[i].value == range) {
+      select.selectedIndex = i;
+      return;
+    }
+  }
+}
+UpdateSelectedRange('{{range}}')
+
+function PostComment(id) {
+  element = document.getElementById(id);
+  comment = element.value;
+  key = element.dataset['key'];
+
+  var xhr = new XMLHttpRequest();
+
+  var data = new FormData();
+  data.append('key', key);
+  data.append('comment', comment);
+  xhr.open('POST', '/post_comment');
+  xhr.send(data);
+}
+</script>

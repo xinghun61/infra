@@ -1,0 +1,20 @@
+cron:
+- description: Fetch data from chromium-cq-status
+  url: /cron/fetch_cq_status
+  schedule: every 1 minutes
+
+- description: Update the Flake.count_hour counter.
+  url: /cron/update_flake_hour_counter
+  schedule: every 5 minutes
+
+- description: Update the Flake.count_day counter.
+  url: /cron/update_flake_day_counter
+  schedule: every 1 hours
+
+- description: Update the Flake.count_week counter.
+  url: /cron/update_flake_week_counter
+  schedule: every 6 hours
+
+- description: Update the Flake.count_month flags counter.
+  url: /cron/update_flake_month_counter
+  schedule: every 24 hours
