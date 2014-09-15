@@ -7,6 +7,7 @@ import argparse
 import datetime
 import json
 import logging
+import multiprocessing
 import sys
 import os
 
@@ -31,6 +32,34 @@ from slave import gatekeeper_ng_config  # pylint: disable=F0401
 
 
 CACHE_PATH = 'build_cache'
+# We have 13 masters. No point in spawning more processes
+PARALLEL_TASKS = 13
+CONCURRENT_TASKS = 16
+
+
+class SubProcess(object):
+  def __init__(self, cache, old_alerts, builder_filter, jobs):
+    super(SubProcess, self).__init__()
+    self._cache = cache
+    self._old_alerts = old_alerts
+    self._builder_filter = builder_filter
+    self._jobs = jobs
+
+  def __call__(self, master_url):
+    master_json = buildbot.fetch_master_json(master_url)
+    if not master_json:
+      return (None, None)
+
+    master_alerts = alert_builder.alerts_for_master(self._cache,
+        master_url, master_json, self._old_alerts, self._builder_filter,
+        self._jobs)
+
+    # FIXME: This doesn't really belong here. garden-o-matic wants
+    # this data and we happen to have the builder json cached at
+    # this point so it's cheap to compute.
+    builder_info = buildbot.latest_builder_info_for_master(self._cache,
+        master_url, master_json)
+    return (master_alerts, builder_info)
 
 
 def main(args):
@@ -39,6 +68,8 @@ def main(args):
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
+  parser.add_argument('--processes', default=PARALLEL_TASKS, action='store')
+  parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store')
   # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
   parser.add_argument("-v", "--verbose", action='store_true')
 
@@ -70,8 +101,6 @@ def main(args):
   master_urls = gatekeeper_extras.fetch_master_urls(gatekeeper, args)
   start_time = datetime.datetime.now()
 
-  latest_builder_info = {}
-
   cache = buildbot.DiskCache(CACHE_PATH)
 
   old_alerts = {}
@@ -96,23 +125,20 @@ def main(args):
 
         old_alerts[alert_key] = alert
 
+  latest_builder_info = {}
   alerts = []
-  for master_url in master_urls:
-    master_json = buildbot.fetch_master_json(master_url)
-    if not master_json:
+
+  pool = multiprocessing.Pool(processes=args.processes)
+  master_datas = pool.map(SubProcess(cache, old_alerts, args.builder_filter,
+      args.jobs), master_urls)
+  pool.close()
+  pool.join()
+
+  for data in master_datas:
+    if not data[0]:
       continue
-
-    master_alerts = alert_builder.alerts_for_master(cache,
-        master_url, master_json, old_alerts, args.builder_filter)
-    alerts.extend(master_alerts)
-
-    # FIXME: This doesn't really belong here. garden-o-matic wants
-    # this data and we happen to have the builder json cached at
-    # this point so it's cheap to compute.
-    builder_info = buildbot.latest_builder_info_for_master(cache,
-        master_url, master_json)
-    latest_builder_info.update(builder_info)
-
+    alerts.extend(data[0])
+    latest_builder_info.update(data[1])
 
   print "Fetch took: %s" % (datetime.datetime.now() - start_time)
 

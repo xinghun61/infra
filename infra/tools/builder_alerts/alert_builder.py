@@ -4,6 +4,7 @@
 import argparse
 import json
 import logging
+import multiprocessing
 import os
 import re
 import sys
@@ -153,6 +154,7 @@ def alerts_from_step_failure(cache, step_failure, master_url,
 def generate_alert_key(master, builder, step, reason):  # pragma: no cover
   return '%s.%s.%s.%s' % (master, builder, step, reason)
 
+
 def fill_in_transition(cache, alert, recent_build_ids,
     old_alerts):  # pragma: no cover
   master = alert['master_url']
@@ -254,24 +256,35 @@ def alerts_for_builder(cache, master_url, builder_name,
 
 
 def alerts_for_master(cache, master_url, master_json, old_alerts,
-    builder_name_filter=None):  # pragma: no cover
+    builder_name_filter=None, jobs=1):  # pragma: no cover
   active_builds = []
   for slave in master_json['slaves'].values():
     for build in slave['runningBuilds']:
       active_builds.append(build)
 
-  alerts = []
-  for builder_name, builder_json in master_json['builders'].items():
+
+  def process_builder(builder_name):
+    builder_json = master_json['builders'][builder_name]
     if builder_name_filter and builder_name_filter not in builder_name:
-      continue
+      return None
 
     # cachedBuilds will include runningBuilds.
     recent_build_ids = builder_json['cachedBuilds']
 
     buildbot.warm_build_cache(cache, master_url, builder_name,
         recent_build_ids, active_builds)
-    alerts.extend(alerts_for_builder(cache, master_url,
-        builder_name, recent_build_ids, old_alerts))
+    return alerts_for_builder(cache, master_url, builder_name,
+        recent_build_ids, old_alerts)
+
+  pool = multiprocessing.dummy.Pool(processes=jobs)
+  builder_alerts = pool.map(process_builder, master_json['builders'].keys())
+  pool.close()
+  pool.join()
+
+  alerts = []
+  for alert in builder_alerts:
+    if alert:
+      alerts.extend(alert)
 
   return alerts
 
