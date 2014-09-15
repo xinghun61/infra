@@ -30,8 +30,6 @@ MIRRORED_COMMIT = FOOTER_PREFIX + 'Mirrored-Commit'
 class GsubtreedConfigRef(config_ref.ConfigRef):
   CONVERT = {
     'interval': lambda self, val: float(val),
-    'subtree_synthesized_prefix': lambda self, val: str(val),
-    'subtree_processed_prefix': lambda self, val: str(val),
 
     'base_url': lambda self, val: str(val) if val else self.repo.url,
     'enabled_refglobs': lambda self, val: map(str, list(val)),
@@ -40,16 +38,6 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
   }
   DEFAULTS = {
     'interval': 5.0,
-
-    # e.g. while processing the subtree 'b/foo' on refs/heads/master
-    #   refs/heads/master                              <- real commits
-    #   refs/subtree-processed/b/foo/-/heads/master    <- ancestor tag of master
-    #   refs/subtree-synthesized/b/foo/-/heads/master  <- ref with synth commits
-    # For the sake of implementation simplicity, this daemon assumes the
-    # googlesource.com guarantee of transactional multi-ref pushes within a
-    # single repo.
-    'subtree_processed_prefix': 'refs/subtree-processed',
-    'subtree_synthesized_prefix': 'refs/subtree-synthesized',
 
     # The base URL is the url relative to which all mirror repos are assumed to
     # exist. For example, if you mirror the path 'bob', and base_url is
@@ -110,13 +98,6 @@ class Pusher(threading.Thread):
 
 
 def process_path(path, origin_repo, config):
-  def join(prefix, ref):
-    assert ref.ref.startswith('refs/')
-    ref = '/'.join((prefix, path)) + '/-/' + ref.ref[len('refs/'):]
-    return origin_repo[ref]
-
-  origin_push = {}
-
   base_url = config['base_url']
   mirror_url = '[FILE-URL]' if base_url.startswith('file:') else origin_repo.url
 
@@ -128,16 +109,31 @@ def process_path(path, origin_repo, config):
 
   synthed_count = 0
 
+  success = True
+
   for glob in config['enabled_refglobs']:
     for ref in origin_repo.refglob(glob):
       LOGGER.info('processing ref %s', ref)
-      processed = join(config['subtree_processed_prefix'], ref)
-      synthed = join(config['subtree_synthesized_prefix'], ref)
 
-      synth_parent = synthed.commit
-      LOGGER.info('starting with tree %r', synthed.commit.data.tree)
+      # The last thing that was pushed to the subtree_repo
+      synth_parent = subtree_repo[ref.ref].commit
 
-      for commit in processed.to(ref, path):
+      processed = INVALID
+      if synth_parent is not INVALID:
+        processed_commit = synth_parent.data.footers[MIRRORED_COMMIT][0]
+        processed = origin_repo.get_commit(processed_commit)
+        logging.info('got processed commit %s: %r', processed_commit, processed)
+
+        if processed is INVALID:
+          success = False
+          logging.error('Subtree mirror commit %r claims to mirror commit %r, '
+                        'which doesn\'t exist in the origin repo. Halting.',
+                        synth_parent.hsh, processed_commit)
+          continue
+
+      LOGGER.info('starting with tree %r', synth_parent.data.tree)
+
+      for commit in origin_repo[processed.hsh].to(ref, path):
         LOGGER.info('processing commit %s', commit)
         obj_name = '{.hsh}:{}'.format(commit, path)
         typ = origin_repo.run('cat-file', '-t', obj_name).strip()
@@ -174,24 +170,7 @@ def process_path(path, origin_repo, config):
         )
 
       if synth_parent is not INVALID:
-        origin_push[synthed] = synth_parent
         subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
-      origin_push[processed] = ref.commit
-
-  success = True
-  # TODO(iannucci): Return the pushspecs from this method, and then thread
-  # the dispatches to subtree_repo. Additionally, can batch the origin_repo
-  # pushes (and push them serially in batches as the subtree_repo pushes
-  # complete).
-
-  # because the hashes are deterministic based on the real history, the pushes
-  # can happen completely independently. If we miss one, we'll catch it on the
-  # next pass.
-  try:
-    origin_repo.queue_fast_forward(origin_push)
-  except Exception:  # pragma: no cover
-    LOGGER.exception('Caught exception while queuing origin in process_path')
-    success = False
 
   t = Pusher(path, subtree_repo, subtree_repo_push)
   t.start()

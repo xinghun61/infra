@@ -6,6 +6,8 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
+    mirror(mirrored_path): {}
+    mirror(mirrored_path/subpath): {}
 - log output:
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing path mirrored_path/subpath'
@@ -31,13 +33,6 @@
   - 'INFO: Running (''git'', ''push'', ''origin'', ''53eb90f840c9e5fd04b50fb079381620205d3529:refs/heads/master'',
     ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''92c96f11ffe418019c661a1dc933bfca0f6920e3:refs/subtree-processed/mirrored_path/-/heads/master'',
-    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/-/heads/other'',
-    ''92c96f11ffe418019c661a1dc933bfca0f6920e3:refs/subtree-processed/mirrored_path/subpath/-/heads/master'',
-    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/subpath/-/heads/other'',
-    ''53eb90f840c9e5fd04b50fb079381620205d3529:refs/subtree-synthesized/mirrored_path/-/heads/master'',
-    ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/subtree-synthesized/mirrored_path/-/heads/other'',
-    ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/subtree-synthesized/mirrored_path/subpath/-/heads/other'')'
 - inner_loop success: true
   processed:
     mirrored_path: 2
@@ -50,31 +45,21 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
-      refs/subtree-processed/mirrored_path/-/heads/master:
-        92c96f11ffe418019c661a1dc933bfca0f6920e3:
-        - nerd_commit
-      refs/subtree-processed/mirrored_path/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-processed/mirrored_path/subpath/-/heads/master:
-        92c96f11ffe418019c661a1dc933bfca0f6920e3:
-        - nerd_commit
-      refs/subtree-processed/mirrored_path/subpath/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-synthesized/mirrored_path/-/heads/master:
+    mirror(mirrored_path):
+      refs/heads/master:
         53eb90f840c9e5fd04b50fb079381620205d3529:
         - nerd_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: 92c96f11ffe418019c661a1dc933bfca0f6920e3'
-      refs/subtree-synthesized/mirrored_path/-/heads/other:
+      refs/heads/other:
         79af6c5c5a2eda738426be59a8932afecad69e43:
         - what_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: e213bc0ab9d92e8d6fcd9167d1db625516946de5'
-      refs/subtree-synthesized/mirrored_path/subpath/-/heads/other:
+    mirror(mirrored_path/subpath):
+      refs/heads/other:
         c7e96f4cfbd7c45854bba77ff60bb854d867ed76:
         - what_commit
         - ''
@@ -90,31 +75,21 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
-      refs/subtree-processed/mirrored_path/-/heads/master:
-        92c96f11ffe418019c661a1dc933bfca0f6920e3:
-        - nerd_commit
-      refs/subtree-processed/mirrored_path/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-processed/mirrored_path/subpath/-/heads/master:
-        92c96f11ffe418019c661a1dc933bfca0f6920e3:
-        - nerd_commit
-      refs/subtree-processed/mirrored_path/subpath/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-synthesized/mirrored_path/-/heads/master:
+    mirror(mirrored_path):
+      refs/heads/master:
         53eb90f840c9e5fd04b50fb079381620205d3529:
         - nerd_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: 92c96f11ffe418019c661a1dc933bfca0f6920e3'
-      refs/subtree-synthesized/mirrored_path/-/heads/other:
+      refs/heads/other:
         79af6c5c5a2eda738426be59a8932afecad69e43:
         - what_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: e213bc0ab9d92e8d6fcd9167d1db625516946de5'
-      refs/subtree-synthesized/mirrored_path/subpath/-/heads/other:
+    mirror(mirrored_path/subpath):
+      refs/heads/other:
         c7e96f4cfbd7c45854bba77ff60bb854d867ed76:
         - what_commit
         - ''
@@ -127,27 +102,26 @@
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: got processed commit e213bc0ab9d92e8d6fcd9167d1db625516946de5: Commit(TestRepo(''local''),
+    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: starting with tree ''21890050477c9313c9a5447ba40a13dfc2c350d0'''
   - 'INFO: processing path mirrored_path'
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: got processed commit 92c96f11ffe418019c661a1dc933bfca0f6920e3: Commit(TestRepo(''local''),
+    ''92c96f11ffe418019c661a1dc933bfca0f6920e3'')'
   - 'INFO: starting with tree ''ecfc7ffa538dd28d3e6fbfc95fa0352057a1e153'''
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e94f16776be3436ecc0e74520b79d38a8b383b69'')'
   - 'INFO: found new tree ''36d5f31d83dc46f1dd7f52c8f5282a82fed22965'''
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: got processed commit e213bc0ab9d92e8d6fcd9167d1db625516946de5: Commit(TestRepo(''local''),
+    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: starting with tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''673b616ced11a90b15ef256cebdc43f6fa8eb3ce:refs/heads/master'',
     ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''e94f16776be3436ecc0e74520b79d38a8b383b69:refs/subtree-processed/mirrored_path/-/heads/master'',
-    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/-/heads/other'',
-    ''e94f16776be3436ecc0e74520b79d38a8b383b69:refs/subtree-processed/mirrored_path/subpath/-/heads/master'',
-    ''e213bc0ab9d92e8d6fcd9167d1db625516946de5:refs/subtree-processed/mirrored_path/subpath/-/heads/other'',
-    ''673b616ced11a90b15ef256cebdc43f6fa8eb3ce:refs/subtree-synthesized/mirrored_path/-/heads/master'',
-    ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/subtree-synthesized/mirrored_path/-/heads/other'',
-    ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/subtree-synthesized/mirrored_path/subpath/-/heads/other'')'
 - inner_loop success: true
   processed:
     mirrored_path: 1
@@ -162,21 +136,8 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
-      refs/subtree-processed/mirrored_path/-/heads/master:
-        e94f16776be3436ecc0e74520b79d38a8b383b69:
-        - new_commit
-        etc: '...'
-      refs/subtree-processed/mirrored_path/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-processed/mirrored_path/subpath/-/heads/master:
-        e94f16776be3436ecc0e74520b79d38a8b383b69:
-        - new_commit
-        etc: '...'
-      refs/subtree-processed/mirrored_path/subpath/-/heads/other:
-        e213bc0ab9d92e8d6fcd9167d1db625516946de5:
-        - what_commit
-      refs/subtree-synthesized/mirrored_path/-/heads/master:
+    mirror(mirrored_path):
+      refs/heads/master:
         673b616ced11a90b15ef256cebdc43f6fa8eb3ce:
         - new_commit
         - ''
@@ -187,13 +148,14 @@
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: 92c96f11ffe418019c661a1dc933bfca0f6920e3'
-      refs/subtree-synthesized/mirrored_path/-/heads/other:
+      refs/heads/other:
         79af6c5c5a2eda738426be59a8932afecad69e43:
         - what_commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: e213bc0ab9d92e8d6fcd9167d1db625516946de5'
-      refs/subtree-synthesized/mirrored_path/subpath/-/heads/other:
+    mirror(mirrored_path/subpath):
+      refs/heads/other:
         c7e96f4cfbd7c45854bba77ff60bb854d867ed76:
         - what_commit
         - ''

@@ -6,7 +6,29 @@ from infra.libs.git2.util import CalledProcessError
 from infra.libs.git2.util import INVALID
 
 class Ref(object):
-  """Represents a single simple ref in a git Repo."""
+  """Represents a single ref in a git Repo.
+
+  Allowed to hold anything which can resolve to a single commit e.g.:
+
+  >>> r = Repo()
+  >>> r['refs/heads/master'].commit
+  # Commit which is the current value of master
+  >>> r['refs/heads/master~1'].commit
+  # Commit which is the current first parent of master
+  >>> r[raw_git_hash].to(r[other_git_hash])
+  # generator of all Commits from raw_git_hash to other_git_hash
+
+  May also hold INVALID or point to a ref which does not exist yet.
+  >>> r = Repo()
+  >>> r[some.expression.which.returns.INVALID].to(other_ref)
+  # generator of all commits reachable from other_ref
+  >>> r[INVALID].update_to(Commit())
+  # => AssertionError
+  >>> r['/ref/which/does_not/exist_yet'].to(other_ref)
+  # generator of all commits reachable from other_ref
+  >>> r['/ref/which/does_not/exist_yet'].update_to(Commit())
+  # works
+  """
   def __init__(self, repo, ref_str):
     """
     @type repo: Repo
@@ -42,11 +64,13 @@ class Ref(object):
   @property
   def commit(self):
     """Get the Commit at the tip of this Ref."""
+    if self._ref is INVALID:
+      return INVALID
     try:
-      val = self._repo.run('show-ref', '--verify', self._ref)
+      return self._repo.get_commit(
+        self._repo.run('rev-parse', self._ref).strip())
     except CalledProcessError:
       return INVALID
-    return self._repo.get_commit(val.split()[0])
 
   # Methods
   def to(self, other, path=None):
@@ -72,6 +96,7 @@ class Ref(object):
 
   def update_to(self, commit):
     """Update the local copy of the ref to |commit|."""
+    assert self._ref is not INVALID, 'May not update Ref(INVALID)'
     self.repo.run('update-ref', self.ref, commit.hsh)
 
   def fast_forward(self, commit):

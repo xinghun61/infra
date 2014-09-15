@@ -51,9 +51,9 @@ class TestRepo(test_util.TestBasis):
   def testRefglob(self):
     r = self.mkRepo()
     self.assertEqual(
-        {rf.ref for rf in r.refglob('*branch_*')},
+        {rf.ref for rf in r.refglob('**/branch_*')},
         {'refs/heads/branch_'+l for l in 'FOKSZ'})
-    self.assertIs(next(r.refglob('*branch_O')).repo, r)
+    self.assertIs(next(r.refglob('**/branch_O')).repo, r)
     self.assertEqual(list(r.refglob('*atritaosrtientsaroitna*')), [])
 
   def testDryRun(self):
@@ -240,3 +240,8 @@ class TestRepo(test_util.TestBasis):
     out, err = self.capture_stdio(r.queue_fast_forward, {})
     self.assertEqual(out, '')
     self.assertEqual(err, '')
+
+  def testNonExistentCommit(self):
+    r = self.mkRepo()
+    self.assertIs(r.get_commit('deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'),
+                  git2.INVALID)

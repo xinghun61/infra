@@ -1,0 +1,84 @@
+- - a single commit
+  - origin:
+      refs/heads/master:
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path): {}
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path mirrored_path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing commit Commit(TestRepo(''local''), ''7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a'')'
+  - 'INFO: found new tree ''5421190833e254f1483799793aed9306b29fcdf7'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''0a64dfdacf02eaa1ed98b8c30153f3319c1dab24:refs/heads/master'')'
+  - 'INFO: Completed push for ''mirrored_path'''
+- inner_loop success: true
+  processed:
+    mirrored_path: 1
+    mirrored_path/subpath: 0
+- - a single mirrored commit
+  - origin:
+      refs/heads/master:
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        0a64dfdacf02eaa1ed98b8c30153f3319c1dab24:
+        - initial commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a'
+    mirror(mirrored_path/subpath): {}
+- - altered mirrored commit
+  - origin:
+      refs/heads/master:
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        8b7349362b2127db9987da3a81b8c58ad2e582d9:
+        - initial commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path mirrored_path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: got processed commit deadbeefdeadbeefdeadbeefdeadbeefdeadbeef: git2.INVALID'
+  - 'ERROR: Subtree mirror commit ''8b7349362b2127db9987da3a81b8c58ad2e582d9'' claims
+    to mirror commit ''deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'', which doesn''t
+    exist in the origin repo. Halting.'
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Completed push for ''mirrored_path'''
+- inner_loop success: false
+  processed:
+    mirrored_path: 0
+    mirrored_path/subpath: 0
+- - should have bonked out
+  - origin:
+      refs/heads/master:
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        8b7349362b2127db9987da3a81b8c58ad2e582d9:
+        - initial commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+    mirror(mirrored_path/subpath): {}

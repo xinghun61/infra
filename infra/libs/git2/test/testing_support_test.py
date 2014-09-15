@@ -4,7 +4,6 @@
 
 from collections import OrderedDict as OD
 
-from infra.libs import git2
 from infra.libs.git2.test import test_util
 from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import GitFile
@@ -14,12 +13,13 @@ from infra.libs.git2.testing_support import TestRepo
 class TestTestRepo(test_util.TestBasis):
   def testEmptyRepo(self):
     r = TestRepo('foo', TestClock())
-    with self.assertRaises(git2.CalledProcessError):
-      list(r.refglob('*'))  # no refs yet
+    self.assertEqual(list(r.refglob()), [])
     self.assertIsNotNone(r.repo_path)
+    self.assertEquals(r.short_name, 'foo')
+    self.assertEqual(r.snap(), {})
     ref = r['refs/heads/master']
     ref.make_full_tree_commit('Initial Commit')
-    self.assertEqual(list(r.refglob('*')), [ref])
+    self.assertEqual(list(r.refglob()), [ref])
 
   def testInitialCommit(self):
     r = TestRepo('foo', TestClock())
@@ -30,7 +30,7 @@ class TestTestRepo(test_util.TestBasis):
         'crazy times': 'this is awesome'
       }
     })
-    self.assertEqual(list(r.refglob('*')), [ref])
+    self.assertEqual(list(r.refglob()), [ref])
     self.assertEqual(r.snap(include_committer=True), {
       'refs/heads/master': OD([
         ('b7c705ceddb223c09416b78e87dc8c41e7035a36', [
@@ -120,11 +120,10 @@ class TestTestRepo(test_util.TestBasis):
     self.capture_stdio(m.reify)
     ref = r['refs/heads/master']
     ref.make_full_tree_commit('Initial Commit')
-    self.assertEqual(list(r.refglob('*')), [ref])
-    with self.assertRaises(git2.CalledProcessError):
-      list(m.refglob('*'))  # no refs yet in mirror
+    self.assertEqual(list(r.refglob()), [ref])
+    self.assertEqual(list(m.refglob()), [])
     self.capture_stdio(m.run, 'fetch')
-    self.assertEqual(list(m.refglob('*')), [m['refs/heads/master']])
+    self.assertEqual(list(m.refglob()), [m['refs/heads/master']])
     self.assertEqual(r.snap(), m.snap())
 
   def testSpecFor(self):

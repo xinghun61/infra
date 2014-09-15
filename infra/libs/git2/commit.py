@@ -75,5 +75,3 @@ class Commit(object):
     """
     return self.repo.get_commit(
         self.repo.intern(self.data.alter(**kwargs), 'commit'))
-
-

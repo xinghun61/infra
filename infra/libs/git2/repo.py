@@ -4,7 +4,6 @@
 
 import collections
 import errno
-import fnmatch
 import logging
 import os
 import signal
@@ -17,6 +16,7 @@ import urlparse
 
 from infra.libs.git2 import CalledProcessError
 from infra.libs.git2 import Commit
+from infra.libs.git2 import INVALID
 from infra.libs.git2 import Ref
 
 LOGGER = logging.getLogger(__name__)
@@ -127,6 +127,9 @@ class Repo(object):
     |MAX_CACHE_SIZE| before eviction. This cuts down on the number of redundant
     git commands by > 50%, and allows expensive cached_property's to remain
     for the life of the process.
+
+    If the Commit does not exist in this |Repo|, return INVALID and do not cache
+    the result.
     """
     if hsh in self._commit_cache:
       self._log.debug('Hit %s', hsh)
@@ -136,15 +139,21 @@ class Repo(object):
       if len(self._commit_cache) >= self.MAX_CACHE_SIZE:
         self._commit_cache.popitem(last=False)
       r = Commit(self, hsh)
+      if r.data is INVALID:
+        return INVALID
 
     self._commit_cache[hsh] = r
     return r
 
-  def refglob(self, globstring):
-    """Yield every Ref in this repo which matches |globstring|."""
-    for _, ref in (l.split() for l in self.run('show-ref').splitlines()):
-      if fnmatch.fnmatch(ref, globstring):
-        yield self[ref]
+  def refglob(self, *globstrings):
+    """Yield every Ref in this repo which matches a |globstring| according to
+    the rules of git-for-each-ref.
+
+    Defaults to all refs.
+    """
+    refs = self.run('for-each-ref', '--format=%(refname)', *globstrings)
+    for ref in refs.splitlines():
+      yield self[ref]
 
   def run(self, *args, **kwargs):
     """Yet-another-git-subprocess-wrapper.

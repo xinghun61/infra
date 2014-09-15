@@ -14,7 +14,7 @@ def test(f):
 
 
 @test
-def master_mirrored_path(origin, run, checkpoint):
+def master_mirrored_path(origin, run, checkpoint, mirrors):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'unrelated': 'cowabunga'})
@@ -34,15 +34,14 @@ def master_mirrored_path(origin, run, checkpoint):
   run()
   checkpoint('should see stuff')
 
-  synthed = 'refs/subtree-synthesized/mirrored_path/-/heads/master'
-  assert GitEntry.spec_for(origin, synthed) == {
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/master') == {
     'mirror_file': ('awesome sauce', 0644),
     'some_other_file': ('neat', 0644),
   }
 
 
 @test
-def multiple_refs(origin, run, checkpoint):
+def multiple_refs(origin, run, checkpoint, mirrors):
   master = origin['refs/heads/master']
   other = origin['refs/heads/other']
   mc = master.make_commit
@@ -59,14 +58,14 @@ def multiple_refs(origin, run, checkpoint):
   run()
   checkpoint('lots refs')
 
-  synthed = 'refs/subtree-synthesized/mirrored_path/subpath/-/heads/other'
-  assert GitEntry.spec_for(origin, synthed) == {
+  spec = GitEntry.spec_for(mirrors['mirrored_path/subpath'], 'refs/heads/other')
+  assert spec == {
     'nested': ('data in a subdir!?', 0644)
   }
 
 
 @test
-def mirrored_path_is_a_file(origin, run, checkpoint):
+def mirrored_path_is_a_file(origin, run, checkpoint, mirrors):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'unrelated': 'cowabunga'})
@@ -79,14 +78,13 @@ def mirrored_path_is_a_file(origin, run, checkpoint):
   run()
   checkpoint('should see 2 commits in synthesized')
 
-  synthed = 'refs/subtree-synthesized/mirrored_path/-/heads/master'
-  assert GitEntry.spec_for(origin, synthed) == {
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/master') == {
     'what what': ('datars!', 0644)
   }
 
 
 @test
-def multiple_runs(origin, run, checkpoint):
+def multiple_runs(origin, run, checkpoint, mirrors):
   master = origin['refs/heads/master']
   other = origin['refs/heads/other']
   mc = master.make_commit
@@ -103,8 +101,8 @@ def multiple_runs(origin, run, checkpoint):
   run()
   checkpoint('lots refs')
 
-  synthed = 'refs/subtree-synthesized/mirrored_path/subpath/-/heads/other'
-  assert GitEntry.spec_for(origin, synthed) == {
+  spec = GitEntry.spec_for(mirrors['mirrored_path/subpath'], 'refs/heads/other')
+  assert spec == {
     'nested': ('data in a subdir!?', 0644)
   }
 
@@ -115,7 +113,7 @@ def multiple_runs(origin, run, checkpoint):
 
 
 @test
-def fix_footers(origin, run, checkpoint):
+def fix_footers(origin, run, checkpoint, mirrors):
   branch = origin['refs/heads/branch']
   branch.make_commit(
     'sweet commit',
@@ -131,14 +129,41 @@ def fix_footers(origin, run, checkpoint):
   run()
   checkpoint('a really sweet (mirrored) commit')
 
-  synthed = 'refs/subtree-synthesized/mirrored_path/-/heads/branch'
-  assert GitEntry.spec_for(origin, synthed) == {
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/branch') == {
     'sweet': ('totally!', 0644)
   }
-  assert thaw(origin[synthed].commit.data.footers) == OrderedDict([
+  footers = mirrors['mirrored_path']['refs/heads/branch'].commit.data.footers
+  assert thaw(footers) == OrderedDict([
     ('Commit-Id', ['whaaat']),
     ('Cr-Original-Commit-Position', ['refs/heads/branch@{#12345}']),
     ('Cr-Original-Branched-From', ['deadbeef-refs/heads/master@{#12300}']),
     ('Cr-Mirrored-From', ['[FILE-URL]']),
     ('Cr-Mirrored-Commit', ['b404e807c89d3b8f4b255fec1aaa9e123808f63c']),
   ])
+
+
+@test
+def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors):
+  master = origin['refs/heads/master']
+  master.make_commit('initial commit', {'mirrored_path': {'file': 'data'}})
+
+  checkpoint('a single commit')
+  run()
+  checkpoint('a single mirrored commit')
+
+  footers = mirrors['mirrored_path']['refs/heads/master'].commit.data.footers
+  assert thaw(footers) == OrderedDict([
+    ('Cr-Mirrored-From', ['[FILE-URL]']),
+    ('Cr-Mirrored-Commit', ['7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a']),
+  ])
+
+  mhead = mirrors['mirrored_path']['refs/heads/master']
+  mhead.update_to(mhead.commit.alter(
+    footers={
+      'Cr-Mirrored-Commit': ['deadbeefdeadbeefdeadbeefdeadbeefdeadbeef']
+    }
+  ))
+
+  checkpoint('altered mirrored commit')
+  run()
+  checkpoint('should have bonked out')

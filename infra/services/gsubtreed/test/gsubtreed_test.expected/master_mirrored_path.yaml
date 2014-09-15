@@ -7,6 +7,8 @@
         - next commit
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
+    mirror(mirrored_path): {}
+    mirror(mirrored_path/subpath): {}
 - log output:
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing path mirrored_path/subpath'
@@ -22,9 +24,6 @@
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''54ec3957a50fdfd16ced02b78685cf0e117e8141:refs/heads/master'')'
   - 'INFO: Completed push for ''mirrored_path'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:refs/subtree-processed/mirrored_path/-/heads/master'',
-    ''e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:refs/subtree-processed/mirrored_path/subpath/-/heads/master'',
-    ''54ec3957a50fdfd16ced02b78685cf0e117e8141:refs/subtree-synthesized/mirrored_path/-/heads/master'')'
 - inner_loop success: true
   processed:
     mirrored_path: 1
@@ -38,17 +37,11 @@
         - next commit
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
-      refs/subtree-processed/mirrored_path/-/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
-        - unrelated commit
-        etc: '...'
-      refs/subtree-processed/mirrored_path/subpath/-/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
-        - unrelated commit
-        etc: '...'
-      refs/subtree-synthesized/mirrored_path/-/heads/master:
+    mirror(mirrored_path):
+      refs/heads/master:
         54ec3957a50fdfd16ced02b78685cf0e117e8141:
         - next commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: ea9899ff5037bdb48ec4e9b2c52075284010f0a3'
+    mirror(mirrored_path/subpath): {}

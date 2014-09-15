@@ -6,7 +6,6 @@ import collections
 import json
 import logging
 import os
-import subprocess
 import sys
 import tempfile
 import traceback
@@ -45,29 +44,23 @@ def RunTest(test_name):
   cref = TestConfigRef(origin)
   cref.update(enabled_paths=enabled_paths, base_url='file://' + base_repo_path)
 
+  mirrors = {}
   for path in enabled_paths:
     full_path = os.path.join(base_repo_path, path)
     try:
       os.makedirs(full_path)
     except OSError:
       pass
-    with open(os.devnull, 'w') as dn:
-      subprocess.check_call(['git', 'init', '--bare'], cwd=full_path,
-                            stdout=dn, stderr=dn)
+    mirrors[path] = TestRepo('mirror(%s)' % path, clock, 'fake')
+    mirrors[path]._repo_path = full_path
+    mirrors[path].run('init', '--bare')
 
   def checkpoint(message, include_committer=False, include_config=False):
-    osnap = origin.snap(include_committer, include_config)
-    for ref in osnap:
-      # since the subtree-processed refs are actually tags on master, don't
-      # bother showing them in their entirety
-      if 'subtree-processed' in ref:
-        if len(osnap[ref]) <= 1:
-          continue  # pragma: no cover
-        osnap[ref] = collections.OrderedDict([
-          next(osnap[ref].iteritems()),
-          ('etc', '...')
-        ])
-    ret.append([message, {'origin': osnap}])
+    repos = collections.OrderedDict()
+    repos['origin'] = origin.snap(include_committer, include_config)
+    for _, mirror in sorted(mirrors.items()):
+      repos[mirror.short_name] = mirror.snap(include_committer, include_config)
+    ret.append([message, repos])
 
   def run():
     stdout = sys.stdout
@@ -108,7 +101,8 @@ def RunTest(test_name):
         'processed': processed,
       })
 
-  gsubtreed_test_definitions.GSUBTREED_TESTS[test_name](origin, run, checkpoint)
+  gsubtreed_test_definitions.GSUBTREED_TESTS[test_name](
+    origin, run, checkpoint, mirrors)
 
   return expect_tests.Result(ret)
 
