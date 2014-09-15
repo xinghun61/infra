@@ -18,7 +18,7 @@ from appengine_module.chromium_cq_status.shared.parsing import (
 )
 from appengine_module.chromium_cq_status.shared.utils import cross_origin_json
 
-def execute_query(project, interval_days, begin, end, names,
+def execute_query(project, interval_minutes, begin, end, names,
     count, cursor): # pragma: no cover
   stats_list = []
   next_cursor = ''
@@ -27,13 +27,13 @@ def execute_query(project, interval_days, begin, end, names,
     filters = []
     if project:
       filters.append(CQStats.project == project)
-    if interval_days:
-      filters.append(CQStats.interval_days == interval_days)
+    if interval_minutes:
+      filters.append(CQStats.interval_minutes == interval_minutes)
     if begin:
       filters.append(CQStats.begin >= begin)
     if end:
       filters.append(CQStats.begin <= end)
-    query = CQStats.query().filter(*filters).order(CQStats.begin)
+    query = CQStats.query().filter(*filters).order(-CQStats.begin)
     page_stats, next_cursor, more = query.fetch_page(count - len(stats_list),
         start_cursor=Cursor(urlsafe=next_cursor or cursor))
     next_cursor = next_cursor.urlsafe() if next_cursor else ''
@@ -49,11 +49,11 @@ def execute_query(project, interval_days, begin, end, names,
 
 class StatsQuery(webapp2.RequestHandler): # pragma: no cover
   @cross_origin_json
-  def get(self): # pylint: disable-msg=W0221
+  def get(self):
     try:
       params = parse_request(self.request, {
         'project': parse_string,
-        'interval_days': use_default(parse_non_negative_integer, None),
+        'interval_minutes': use_default(parse_non_negative_integer, None),
         'begin': parse_timestamp,
         'end': parse_timestamp,
         'names': parse_strings,

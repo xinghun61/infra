@@ -13,6 +13,7 @@ from appengine_module.chromium_cq_status.model.cq_stats import (
   CQStats,
   ListStats,
 )
+from appengine_module.chromium_cq_status.shared.utils import minutes_per_day  # pylint: disable=C0301
 
 class TestStatsQuery(testing.AppengineTestCase):
   app_module = main.app
@@ -38,16 +39,16 @@ class TestStatsQuery(testing.AppengineTestCase):
     self.assertEquals({
       'more': False,
       'results': [{
-        'project': 'project_a',
-        'interval_days': 40,
-        'begin': 789,
-        'end': 3456789,
-        'stats': [],
-      }, {
         'project': 'project_b',
-        'interval_days': 50,
+        'interval_minutes': 50 * minutes_per_day,
         'begin': 1234,
         'end': 4321234,
+        'stats': [],
+      }, {
+        'project': 'project_a',
+        'interval_minutes': 40 * minutes_per_day,
+        'begin': 789,
+        'end': 3456789,
         'stats': [],
       }],
     }, _parse_body(response))
@@ -67,33 +68,33 @@ class TestStatsQuery(testing.AppengineTestCase):
       'more': False,
       'results': [{
         'project': 'project_b',
-        'interval_days': 40,
-        'begin': 789,
-        'end': 3456789,
+        'interval_minutes': 50 * minutes_per_day,
+        'begin': 1234,
+        'end': 4321234,
         'stats': [],
       }, {
         'project': 'project_b',
-        'interval_days': 50,
-        'begin': 1234,
-        'end': 4321234,
+        'interval_minutes': 40 * minutes_per_day,
+        'begin': 789,
+        'end': 3456789,
         'stats': [],
       }],
     }, _parse_body(response))
 
-  def test_query_interval_days(self):
+  def test_query_interval_minutes(self):
     _clear_stats()
     _add_stats('project_a', 20, 123)
     _add_stats('project_b', 30, 456)
     _add_stats('project_c', 40, 789)
     _add_stats('project_d', 50, 1234)
     response = self.test_app.get('/stats/query', params={
-      'interval_days': 40,
+      'interval_minutes': 40 * minutes_per_day,
     })
     self.assertEquals({
       'more': False,
       'results': [{
         'project': 'project_c',
-        'interval_days': 40,
+        'interval_minutes': 40 * minutes_per_day,
         'begin': 789,
         'end': 3456789,
         'stats': [],
@@ -112,16 +113,16 @@ class TestStatsQuery(testing.AppengineTestCase):
     self.assertEquals({
       'more': False,
       'results': [{
-        'project': 'project_c',
-        'interval_days': 40,
-        'begin': 789,
-        'end': 3456789,
-        'stats': [],
-      }, {
         'project': 'project_d',
-        'interval_days': 50,
+        'interval_minutes': 50 * minutes_per_day,
         'begin': 1234,
         'end': 4321234,
+        'stats': [],
+      }, {
+        'project': 'project_c',
+        'interval_minutes': 40 * minutes_per_day,
+        'begin': 789,
+        'end': 3456789,
         'stats': [],
       }],
     }, _parse_body(response))
@@ -137,7 +138,7 @@ class TestStatsQuery(testing.AppengineTestCase):
       'more': False,
       'results': [{
         'project': 'project_a',
-        'interval_days': 40,
+        'interval_minutes': 40 * minutes_per_day,
         'begin': 789,
         'end': 3456789,
         'stats': [],
@@ -167,7 +168,7 @@ class TestStatsQuery(testing.AppengineTestCase):
       'more': False,
       'results': [{
         'project': 'project_a',
-        'interval_days': 40,
+        'interval_minutes': 40 * minutes_per_day,
         'begin': 789,
         'end': 3456789,
         'stats': [{
@@ -191,12 +192,10 @@ class TestStatsQuery(testing.AppengineTestCase):
           'percentile_90': 0,
           'percentile_95': 0,
           'percentile_99': 0,
-          'best_10': [],
-          'worst_10': [],
         }],
       }, {
         'project': 'project_b',
-        'interval_days': 50,
+        'interval_minutes': 50 * minutes_per_day,
         'begin': 1234,
         'end': 4321234,
         'stats': [{
@@ -221,16 +220,16 @@ class TestStatsQuery(testing.AppengineTestCase):
     self.assertEquals({
       'more': True,
       'results': [{
-        'project': 'project_a',
-        'interval_days': 1,
-        'begin': 0,
-        'end': 86400,
+        'project': 'project_e',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 4,
+        'end': 86404,
         'stats': [],
       }, {
-        'project': 'project_b',
-        'interval_days': 1,
-        'begin': 1,
-        'end': 86401,
+        'project': 'project_d',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 3,
+        'end': 86403,
         'stats': [],
       }],
     }, _parse_body(response))
@@ -243,15 +242,15 @@ class TestStatsQuery(testing.AppengineTestCase):
       'more': True,
       'results': [{
         'project': 'project_c',
-        'interval_days': 1,
+        'interval_minutes': 1 * minutes_per_day,
         'begin': 2,
         'end': 86402,
         'stats': [],
       }, {
-        'project': 'project_d',
-        'interval_days': 1,
-        'begin': 3,
-        'end': 86403,
+        'project': 'project_b',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 1,
+        'end': 86401,
         'stats': [],
       }],
     }, _parse_body(response))
@@ -263,10 +262,10 @@ class TestStatsQuery(testing.AppengineTestCase):
     self.assertEquals({
       'more': False,
       'results': [{
-        'project': 'project_e',
-        'interval_days': 1,
-        'begin': 4,
-        'end': 86404,
+        'project': 'project_a',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 0,
+        'end': 86400,
         'stats': [],
       }],
     }, _parse_body(response))
@@ -277,11 +276,12 @@ def _clear_stats(): # pragma: no cover
   assert CQStats.query().count() == 0
 
 def _add_stats(project, days, begin, stats_list=None): # pragma: no cover
+  minutes = days * minutes_per_day
   cq_stats = CQStats(
     project=project,
-    interval_days=days,
+    interval_minutes=minutes,
     begin=datetime.utcfromtimestamp(begin),
-    end=datetime.utcfromtimestamp(begin) + timedelta(days),
+    end=datetime.utcfromtimestamp(begin) + timedelta(minutes=minutes),
   )
   if stats_list:
     cq_stats.count_stats = [
@@ -294,4 +294,6 @@ def _parse_body(response, preserve_cursor=False): # pragma: no cover
   packet = json.loads(response.body)
   if not preserve_cursor:
     del packet['cursor']
+  for cq_stats in packet['results']:
+    del cq_stats['key']
   return packet

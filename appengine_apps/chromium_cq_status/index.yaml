@@ -12,24 +12,19 @@ indexes:
 
 - kind: CQStats
   properties:
-  - name: interval_days
+  - name: interval_minutes
   - name: begin
 
 - kind: CQStats
   properties:
-  - name: interval_days
-  - name: end
+  - name: interval_minutes
+  - name: project
+  - name: begin
     direction: desc
 
 - kind: CQStats
   properties:
-  - name: interval_days
-  - name: project
-  - name: begin
-
-- kind: CQStats
-  properties:
-  - name: interval_days
+  - name: interval_minutes
   - name: project
   - name: end
 

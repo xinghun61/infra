@@ -10,4 +10,4 @@ from appengine_module.chromium_cq_status.stats.analysis import analyze_interval
 class UpdateStats(webapp2.RequestHandler): # pragma: no cover
   @cronjob
   def get(self):
-    analyze_interval(int(self.request.get('interval_days')))
+    analyze_interval(int(self.request.get('interval_minutes')))

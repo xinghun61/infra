@@ -11,6 +11,7 @@ from google.appengine.api import users
 from appengine_module.chromium_cq_status.shared.config import VALID_EMAIL_RE
 
 compressed_separators = (',', ':')
+minutes_per_day = 24 * 60
 
 def cronjob(cronjob_handler): # pragma: no cover
   def checked_cronjob_handler(self, *args):

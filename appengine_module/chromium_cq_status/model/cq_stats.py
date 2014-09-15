@@ -36,8 +36,8 @@ class ListStats(ndb.Model): # pragma: no cover
   percentile_90 = ndb.FloatProperty(default=0)
   percentile_95 = ndb.FloatProperty(default=0)
   percentile_99 = ndb.FloatProperty(default=0)
-  best_10 = ndb.JsonProperty(default=[])
-  worst_10 = ndb.JsonProperty(default=[])
+  best_100 = ndb.JsonProperty(default=[])
+  worst_100 = ndb.JsonProperty(default=[])
 
   def set_from_points(self, points, lower_is_better=True):
     self.sample_size = len(points)
@@ -45,16 +45,16 @@ class ListStats(ndb.Model): # pragma: no cover
     if points:
       sorted_values = [value for value, _ in sorted_points]
       if lower_is_better:
-        self.best_10 = sorted_points[:10]
-        self.worst_10 = sorted_points[-10:][::-1]
+        self.best_100 = sorted_points[:100]
+        self.worst_100 = sorted_points[-100:][::-1]
       else:
-        self.best_10 = sorted_points[-10:][::-1]
-        self.worst_10 = sorted_points[:10]
+        self.best_100 = sorted_points[-100:][::-1]
+        self.worst_100 = sorted_points[:100]
     else:
       # Use 0 as a default value for the numeric stats.
       sorted_values = [0]
-      self.best_10 = []
-      self.worst_10 = []
+      self.best_100 = []
+      self.worst_100 = []
     self.min = sorted_values[0]
     self.max = sorted_values[-1]
     self.mean = numpy.mean(sorted_values)
@@ -83,13 +83,11 @@ class ListStats(ndb.Model): # pragma: no cover
       'percentile_90': self.percentile_90,
       'percentile_95': self.percentile_95,
       'percentile_99': self.percentile_99,
-      'best_10': self.best_10,
-      'worst_10': self.worst_10,
     }
 
 class CQStats(ndb.Model): # pragma: no cover
   project = ndb.StringProperty(required=True)
-  interval_days = ndb.IntegerProperty(required=True)
+  interval_minutes = ndb.IntegerProperty(required=True)
   begin = ndb.DateTimeProperty(required=True)
   end = ndb.DateTimeProperty(required=True)
   count_stats = ndb.StructuredProperty(CountStats, repeated=True)
@@ -105,7 +103,8 @@ class CQStats(ndb.Model): # pragma: no cover
         if not name_filter or stats.name in name_filter:
           yield stats.to_dict()
     return {
-      'interval_days': self.interval_days,
+      'key': self.key.id(),
+      'interval_minutes': self.interval_minutes,
       'begin': to_unix_timestamp(self.begin),
       'end': to_unix_timestamp(self.end),
       'project': self.project,

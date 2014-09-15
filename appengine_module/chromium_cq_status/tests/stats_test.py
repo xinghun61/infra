@@ -10,6 +10,7 @@ from appengine_module.chromium_cq_status import main
 from appengine_module.chromium_cq_status.model.record import Record
 from appengine_module.chromium_cq_status.model.cq_stats import CQStats
 from appengine_module.chromium_cq_status.shared.config import STATS_START_TIMESTAMP  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.shared.utils import minutes_per_day  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats import analysis
 
 class StatsTest(testing.AppengineTestCase): # pragma: no cover
@@ -32,7 +33,7 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
     for record_params in record_params_list:
       self.add_record(*record_params)
     self.set_last_stats_day(1)
-    analysis.analyze_interval(1)
+    analysis.analyze_interval(minutes_per_day)
 
   @staticmethod
   def clear_records():

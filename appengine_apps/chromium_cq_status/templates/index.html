@@ -22,31 +22,40 @@ Use "<a href="http://commondatastorage.googleapis.com/chrome-infra-docs/flat/dep
 
 Site directory listing:
 
-<a href="/patchset/(issue)/(patchset)">/patchset/(issue)/(patchset)</a>
+&gt;&gt;&gt; <a href="/patchset/<issue>/<patchset>">/patchset/&lt;issue&gt;/&lt;patchset&gt;</a>
 Shows a timeline of CQ activity on a given patch.
+Only accepts GET requests.
 Example: <a href="/patchset/557043002/1">/patchset/557043002/1</a>
 
 
-<a href="/recent">/recent</a>
+&gt;&gt;&gt; <a href="/recent">/recent</a>
 Shows the most recently submitted CQ updates.
 
 
-<a href="/stats/blink/daily">/stats/blink/daily</a>
-<a href="/stats/blink/weekly">/stats/blink/weekly</a>
+&gt;&gt;&gt; <a href="/stats/<project>/(15-minutely|hourly|daily|weekly)">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</a>
+Recent CQ stats for a project aggregated by various time intervals.
+Only accepts GET requests.
+Accepts optional URL param for how many data points to fetch:
+  data_points: int
+
+Examples:
+<a href="/stats/chromium/15-minutely">/stats/chromium/15-minutely</a>
+<a href="/stats/chromium/hourly">/stats/chromium/hourly</a>
 <a href="/stats/chromium/daily">/stats/chromium/daily</a>
 <a href="/stats/chromium/weekly">/stats/chromium/weekly</a>
-Recent CQ stats for the Blink/Chromium projects aggregated by day or week.
-Only accepts GET requests.
-Accepts optional URL param for how many days worth of stats to fetch:
-  days: int=100
+
+<a href="/stats/blink/15-minutely">/stats/blink/15-minutely</a>
+<a href="/stats/blink/hourly">/stats/blink/hourly</a>
+<a href="/stats/blink/daily">/stats/blink/daily</a>
+<a href="/stats/blink/weekly">/stats/blink/weekly</a>
 
 
-<a href="/stats/query">/stats/query</a>
+&gt;&gt;&gt; <a href="/stats/query">/stats/query</a>
 API for querying CQ stats.
 Only accepts GET requests.
 Accepts the following optional URL params:
   project: str
-  interval_days: int
+  interval_minutes: int
   begin: timestamp
   end: timestamp
   names: str (comma separated)
@@ -57,8 +66,9 @@ The returned query results are in the following JSON structure:
 {
   "results": [
     {
+      "key": int,
       "project": str,
-      "interval_days": int,
+      "interval_minutes": int,
       "begin": timestamp,
       "end": timestamp,
       "stats": [
@@ -84,9 +94,7 @@ The returned query results are in the following JSON structure:
           "percentile_75": float,
           "percentile_90": float,
           "percentile_95": float,
-          "percentile_99": float,
-          "best_10": [[float, {}]],
-          "worst_10": [[float, {}]]
+          "percentile_99": float
         }
       ]
     }
@@ -95,11 +103,34 @@ The returned query results are in the following JSON structure:
   "more": bool
 }
 
-Example:
-/stats/query?project=chromium&names=issue_count,patchset_count
+Example: <a href="/stats/query?project=chromium&names=issue_count,patchset_count&count=1">/stats/query?project=chromium&names=issue_count,patchset_count&count=1</a>
+
+The "key" parameter can be used to query the best/worst data points in list stats.
 
 
-<a href="/query">/query</a>
+&gt;&gt;&gt; <a href="/stats/(best|worst)/<list stats name>/<CQ stats key>">/stats/(best|worst)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
+API for querying best/worst data points in list type stats.
+Only accepts GET requests.
+The returned data points in the following JSON structure:
+[
+  [
+    float,
+    {data point metadata}
+  ]
+]
+The data points are ordered starting with the best/worst depending on whether "best" or "worst" was used in the URL.
+Data point metadata is typically of the form:
+{
+  "issue": int,
+  "patchset": int
+}
+
+Examples:
+<a href="/stats/best/attempt_durations/5115330275835904">/stats/best/attempt_durations/5115330275835904</a>
+<a href="/stats/best/attempt_durations/5115330275835904">/stats/worst/attempt_durations/5115330275835904</a>
+
+
+&gt;&gt;&gt; <a href="/query">/query</a>
 API for querying CQ records.
 Only accepts GET requests.
 Accepts the following optional URL params:
@@ -131,7 +162,7 @@ Tags can be specified in the URL, the following is an equivalent example.
 /query/a/b?tags=c&count=10
 
 
-<a href="/post">/post</a>
+&gt;&gt;&gt; <a href="/post">/post</a>
 API for posting CQ records.
 Requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>.
 Only accepts POST requests.

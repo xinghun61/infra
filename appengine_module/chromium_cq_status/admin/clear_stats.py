@@ -23,7 +23,7 @@ def post(handler): # pragma: no cover
           CQStats.begin >= datetime.utcfromtimestamp(float(begin)))
     if end:
       query = query.filter(
-          CQStats.end >= datetime.utcfromtimestamp(float(end)))
+          CQStats.begin <= datetime.utcfromtimestamp(float(end)))
 
   handler.response.write('CQStats removed: [\n')
   for stats in query:

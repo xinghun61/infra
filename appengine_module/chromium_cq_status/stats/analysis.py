@@ -32,43 +32,43 @@ analyzers = (
   TryjobverifierAnalyzer,
 )
 
-def analyze_interval(days): # pragma: no cover
-  """Build and save CQStats for every <days> interval in Records.
+def analyze_interval(minutes): # pragma: no cover
+  """Build and save CQStats for every <minutes> interval in Records.
 
-  Walks forwards through the Records history <days> at a time,
+  Walks forwards through the Records history <minutes> at a time,
   analyzing and saving CQStats for each interval.
   """
   if Record.query().count(1) == 0:
     return
-  logging.debug('Analyzing records %s days at a time' % days)
-  begin, end = next_stats_interval(days)
+  logging.debug('Analyzing records %s minutes at a time' % minutes)
+  begin, end = next_stats_interval(minutes)
   while end <= (utcnow_for_testing or datetime.utcnow()):
     logging.debug('Updating stats from %s to %s.' % (begin, end))
     save_stats(analyze_attempts(attempts_for_interval(begin, end)),
-        days, begin, end)
+        minutes, begin, end)
     logging.debug('Saved stats.')
-    begin = begin + timedelta(days)
-    end = end + timedelta(days)
+    begin = begin + timedelta(minutes=minutes)
+    end = end + timedelta(minutes=minutes)
 
-def next_stats_interval(days): # pragma: no cover
-  """Find the next <days> interval that doesn't have CQStats.
+def next_stats_interval(minutes): # pragma: no cover
+  """Find the next <minutes> interval that doesn't have CQStats.
 
   Finds the next interval of CQStats to analyze, if there are no
   CQStats saved yet then start from the earliest Record.
   """
   last_stats = CQStats.query().filter(
-      CQStats.interval_days == days).order(-CQStats.end).get()
+      CQStats.interval_minutes == minutes).order(-CQStats.end).get()
   if last_stats:
     begin = last_stats.end
   else:
     earliest_record = Record.query().order(Record.timestamp).get()
     stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
-    begin = stats_start + timedelta(days * math.floor(
+    begin = stats_start + timedelta(minutes=minutes * math.floor(
       (earliest_record.timestamp - stats_start).total_seconds() //
-      timedelta(days).total_seconds()))
+      timedelta(minutes=minutes).total_seconds()))
     if begin < stats_start:
       begin = stats_start
-  end = begin + timedelta(days)
+  end = begin + timedelta(minutes=minutes)
   return begin, end
 
 def attempts_for_interval(begin, end): # pragma: no cover
@@ -133,7 +133,7 @@ def analyze_attempts(attempts_iterator): # pragma: no cover
     project_stats[project] = analyzer.build_stats()
   return project_stats
 
-def save_stats(project_stats, days, begin, end): # pragma: no cover
+def save_stats(project_stats, minutes, begin, end): # pragma: no cover
   logging.debug('Saving stats.')
   for project, stats_list in project_stats.iteritems():
     count_stats = []
@@ -146,7 +146,7 @@ def save_stats(project_stats, days, begin, end): # pragma: no cover
         list_stats.append(stats)
     CQStats(
       project=project,
-      interval_days=days,
+      interval_minutes=minutes,
       begin=begin,
       end=end,
       count_stats=count_stats,
