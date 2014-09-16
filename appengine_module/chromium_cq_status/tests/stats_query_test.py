@@ -7,7 +7,7 @@ import json
 
 from appengine_module.testing_utils import testing
 
-from appengine_module.chromium_cq_status import main
+from appengine_module.chromium_cq_status import highend
 from appengine_module.chromium_cq_status.model.cq_stats import (
   CountStats,
   CQStats,
@@ -16,7 +16,7 @@ from appengine_module.chromium_cq_status.model.cq_stats import (
 from appengine_module.chromium_cq_status.shared.utils import minutes_per_day  # pylint: disable=C0301
 
 class TestStatsQuery(testing.AppengineTestCase):
-  app_module = main.app
+  app_module = highend.app
   maxDiff = None
 
   def test_query_headers(self):
