@@ -261,6 +261,13 @@ indexes:
   properties:
   - name: closed
   - name: reviewers
+  - name: created
+    direction: desc
+
+- kind: Issue
+  properties:
+  - name: closed
+  - name: reviewers
   - name: modified
     direction: desc
 
@@ -272,12 +279,25 @@ indexes:
 - kind: Issue
   properties:
   - name: owner
+  - name: created
+    direction: desc
+
+- kind: Issue
+  properties:
+  - name: owner
   - name: modified
 
 - kind: Issue
   properties:
   - name: owner
   - name: modified
+    direction: desc
+
+- kind: Issue
+  properties:
+  - name: owner
+  - name: reviewers
+  - name: created
     direction: desc
 
 - kind: Issue
