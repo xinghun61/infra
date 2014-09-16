@@ -305,3 +305,21 @@ class Repo(object):
     self._queued_refs = {}
     return self.fast_forward_push(
         queued, include_err=include_err, timeout=timeout)
+
+  def notes(self, obj, ref=None):
+    """Get git-notes content for this object.
+
+    See also: Commit.notes
+
+    @param obj str|Ref - the hash of some object or a Ref
+    @param ref str|Ref - a string ref for git-notes or a Ref.
+    @return The notes content as a string, or None if there was no
+            note for this object.
+    """
+    obj = obj.ref if isinstance(obj, Ref) else obj
+    ref = ref.ref if isinstance(ref, Ref) else ref
+    try:
+      args = ['notes'] + (['--ref', ref] if ref else []) + ['show', obj]
+      return self.run(*args)
+    except CalledProcessError:
+      return None

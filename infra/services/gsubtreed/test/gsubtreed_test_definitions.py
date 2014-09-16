@@ -167,3 +167,52 @@ def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors):
   checkpoint('altered mirrored commit')
   run()
   checkpoint('should have bonked out')
+
+
+@test
+def bootstrap_fails_without_footer(origin, run, checkpoint, mirrors):
+  master = origin['refs/heads/master']
+  mirrored_path_repo = mirrors['mirrored_path']
+  mirrored_path = mirrored_path_repo['refs/heads/master']
+  mc = master.make_commit
+  mpc = mirrored_path.make_commit
+
+  mc('initial commit', {'mirrored_path': {'file': 'data'}})
+  mc('second commit', {'mirrored_path': {'other': 'hat'}})
+  mpc('initial commit', {'file': 'data'})
+
+  checkpoint('mirrored_path repo bootstrapped')
+  run()
+  checkpoint('mirrored_path repo should not have changed')
+
+  assert GitEntry.spec_for(mirrored_path_repo, 'refs/heads/master') == {
+    'file': ('data', 0644),
+  }
+
+
+@test
+def bootstrap_history_with_extra_footers(origin, run, checkpoint, mirrors):
+  master = origin['refs/heads/master']
+  mirrored_path_repo = mirrors['mirrored_path']
+  mirrored_path = mirrored_path_repo['refs/heads/master']
+  mc = master.make_commit
+  mpc = mirrored_path.make_commit
+
+  initial = mc('initial commit', {'mirrored_path': {'file': 'data'}})
+  mc('second commit', {'mirrored_path': {'other': 'hat'}})
+  mpc('initial commit', {'file': 'data'})
+
+  # Deterministically create note commit
+  mirrored_path_repo['refs/notes/extra_footers'].make_commit(
+    'Notes added by \'git notes add\'',
+    {mirrored_path.commit.hsh: 'Cr-Mirrored-Commit: %s' % initial.hsh}
+  )
+
+  checkpoint('mirrored_path repo bootstrapped')
+  run()
+  checkpoint('mirrored_path repo should have second commit')
+
+  assert GitEntry.spec_for(mirrored_path_repo, 'refs/heads/master') == {
+    'file': ('data', 0644),
+    'other': ('hat', 0644)
+  }

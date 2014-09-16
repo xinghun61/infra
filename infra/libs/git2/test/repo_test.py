@@ -245,3 +245,11 @@ class TestRepo(test_util.TestBasis):
     r = self.mkRepo()
     self.assertIs(r.get_commit('deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'),
                   git2.INVALID)
+
+  def testNotes(self):
+    r = self.mkRepo()
+    self.assertIsNone(r.notes(r['refs/heads/branch_O'], 'refs/notes/commits'))
+    r.run('notes', 'add', 'refs/heads/branch_O', '-m', 'sup',
+          env=self.repo.get_git_commit_env())
+    self.assertEqual(r.notes(r['refs/heads/branch_O'], 'refs/notes/commits'),
+                     'sup\n')

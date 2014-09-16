@@ -257,17 +257,11 @@ class CommitData(Alterable):
 
   @cached_property
   def footers(self):
-    ret = collections.OrderedDict()
-    for key, value in self.footer_lines:
-      ret.setdefault(key, []).append(value)
-    return freeze(ret)
+    return self.frozen_dict_from_kv_pairs(self.footer_lines)
 
   @cached_property
   def other_headers(self):
-    ret = collections.OrderedDict()
-    for key, value in self.other_header_lines:
-      ret.setdefault(key, []).append(value)
-    return freeze(ret)
+    return self.frozen_dict_from_kv_pairs(self.other_header_lines)
 
   @cached_property
   def hsh(self):
@@ -395,8 +389,16 @@ class CommitData(Alterable):
         other_header_lines.append((header, data))
       i += 1
 
-    raw_message = raw_lines[i+1:]
+    message_lines, footer_lines = cls.parse_raw_message(raw_lines[i+1:])
 
+    if not tree or set(('author', 'committer')).difference(users.keys()):
+      raise PartialCommit(hsh_fn(), data)
+
+    return cls(tree, parents, users['author'], users['committer'],
+               other_header_lines, message_lines, footer_lines)
+
+  @classmethod
+  def parse_raw_message(cls, raw_message_lines):
     # footers are lines in the form:
     #   ...message...
     #   <empty line>
@@ -407,13 +409,13 @@ class CommitData(Alterable):
     # If no empty line is found, they're considered not to exist.
     # If one line in the footers doesn't match the 'key: value' format, none
     #   of the footers are considered to exist.
-    message_lines = raw_message
+    message_lines = raw_message_lines
     footer_lines = []
 
     i = 0
-    for line in reversed(raw_message):
+    for line in reversed(raw_message_lines):
       if not line:
-        message_lines = raw_message[:-(i+1)]
+        message_lines = raw_message_lines[:-(i+1)]
         break
 
       m = cls.FOOTER_RE.match(line)
@@ -431,8 +433,11 @@ class CommitData(Alterable):
 
     footer_lines.reverse()
 
-    if not tree or set(('author', 'committer')).difference(users.keys()):
-      raise PartialCommit(hsh_fn(), data)
+    return message_lines, footer_lines
 
-    return cls(tree, parents, users['author'], users['committer'],
-               other_header_lines, message_lines, footer_lines)
+  @staticmethod
+  def frozen_dict_from_kv_pairs(kv_pairs):
+    ret = collections.OrderedDict()
+    for key, value in kv_pairs:
+      ret.setdefault(key, []).append(value)
+    return freeze(ret)

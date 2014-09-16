@@ -1,0 +1,42 @@
+- - mirrored_path repo bootstrapped
+  - origin:
+      refs/heads/master:
+        0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f:
+        - second commit
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        35533ec8003bfcfcba38d48db90cea0af3b9398c:
+        - initial commit
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path mirrored_path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Getting data from extra_footers. This information isonly as trustworthy
+    as the ACLs.'
+  - 'ERROR: Could not find footers for synthesized commit ''35533ec8003bfcfcba38d48db90cea0af3b9398c'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Completed push for ''mirrored_path'''
+- inner_loop success: false
+  processed:
+    mirrored_path: 0
+    mirrored_path/subpath: 0
+- - mirrored_path repo should not have changed
+  - origin:
+      refs/heads/master:
+        0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f:
+        - second commit
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        35533ec8003bfcfcba38d48db90cea0af3b9398c:
+        - initial commit
+    mirror(mirrored_path/subpath): {}

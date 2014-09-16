@@ -1,0 +1,58 @@
+- - mirrored_path repo bootstrapped
+  - origin:
+      refs/heads/master:
+        0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f:
+        - second commit
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        35533ec8003bfcfcba38d48db90cea0af3b9398c:
+        - initial commit
+      refs/notes/extra_footers:
+        da4e0a398ffa29439ce67d5bf11d9e1eb4a31df3:
+        - Notes added by 'git notes add'
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path mirrored_path/subpath'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path mirrored_path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'WARNING: Getting data from extra_footers. This information isonly as trustworthy
+    as the ACLs.'
+  - 'INFO: got processed commit 7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a: Commit(TestRepo(''local''),
+    ''7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a'')'
+  - 'INFO: starting with tree ''5421190833e254f1483799793aed9306b29fcdf7'''
+  - 'INFO: processing commit Commit(TestRepo(''local''), ''0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f'')'
+  - 'INFO: found new tree ''d59b6cfcf133830708ae417041b4541cb27efb15'''
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''390c5c83978057e0f982f3c15a4437d333097bb5:refs/heads/master'')'
+  - 'INFO: Completed push for ''mirrored_path'''
+- inner_loop success: true
+  processed:
+    mirrored_path: 1
+    mirrored_path/subpath: 0
+- - mirrored_path repo should have second commit
+  - origin:
+      refs/heads/master:
+        0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f:
+        - second commit
+        7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
+        - initial commit
+    mirror(mirrored_path):
+      refs/heads/master:
+        390c5c83978057e0f982f3c15a4437d333097bb5:
+        - second commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 0eb40740cb4e43fb298c1242fd6f0e6d5b6b170f'
+        35533ec8003bfcfcba38d48db90cea0af3b9398c:
+        - initial commit
+      refs/notes/extra_footers:
+        da4e0a398ffa29439ce67d5bf11d9e1eb4a31df3:
+        - Notes added by 'git notes add'
+    mirror(mirrored_path/subpath): {}

@@ -120,7 +120,17 @@ def process_path(path, origin_repo, config):
 
       processed = INVALID
       if synth_parent is not INVALID:
-        processed_commit = synth_parent.data.footers[MIRRORED_COMMIT][0]
+        f = synth_parent.data.footers
+        if MIRRORED_COMMIT not in f:
+          logging.warn('Getting data from extra_footers. This information is'
+                       'only as trustworthy as the ACLs.')
+          f = synth_parent.extra_footers()
+        if MIRRORED_COMMIT not in f:
+          success = False
+          logging.error('Could not find footers for synthesized commit %r',
+                        synth_parent.hsh)
+          continue
+        processed_commit = f[MIRRORED_COMMIT][0]
         processed = origin_repo.get_commit(processed_commit)
         logging.info('got processed commit %s: %r', processed_commit, processed)
 

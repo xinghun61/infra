@@ -75,3 +75,21 @@ class Commit(object):
     """
     return self.repo.get_commit(
         self.repo.intern(self.data.alter(**kwargs), 'commit'))
+
+  def notes(self, ref='refs/notes/commits'):
+    """Get git-notes content for this commit"""
+    return self.repo.notes(self.hsh, ref)
+
+  def extra_footers(self):
+    """Get any extra footers for this commit as an OrderedDict of
+    {footer: [values]}.
+
+    Extra footers are stored as git-notes on the refs/notes/extra_footers ref.
+    """
+    footer_lines = []
+    raw = self.notes('refs/notes/extra_footers')
+    if raw is not None:
+      _, footer_lines = CommitData.parse_raw_message(
+        [''] + raw.rstrip('\n').splitlines()
+      )
+    return CommitData.frozen_dict_from_kv_pairs(footer_lines)
