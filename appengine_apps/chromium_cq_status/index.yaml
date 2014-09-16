@@ -14,6 +14,7 @@ indexes:
   properties:
   - name: interval_minutes
   - name: begin
+    direction: desc
 
 - kind: CQStats
   properties:
@@ -24,19 +25,9 @@ indexes:
 
 - kind: CQStats
   properties:
-  - name: interval_minutes
-  - name: project
-  - name: end
-
-- kind: CQStats
-  properties:
   - name: project
   - name: begin
-
-- kind: CQStats
-  properties:
-  - name: project
-  - name: end
+    direction: desc
 
 - kind: Record
   properties:
