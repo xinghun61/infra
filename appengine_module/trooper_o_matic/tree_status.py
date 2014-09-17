@@ -33,7 +33,7 @@ class TreeStatusHandler(webapp2.RequestHandler):
     project_key = ndb.Key(models.Project, project)
     data_1 = models.TreeOpenStat.query(
         models.TreeOpenStat.num_days == 1, ancestor=project_key).order(
-        -models.TreeOpenStat.timestamp).fetch(limit=500)
+        -models.TreeOpenStat.timestamp).fetch(limit=3000)
     data_1.reverse()
     cols_1 = [
         {'id': 'timestamp', 'label': 'Time', 'type': 'datetime'},
@@ -47,7 +47,7 @@ class TreeStatusHandler(webapp2.RequestHandler):
     graph_1 = {'cols': cols_1, 'rows': rows_1}
     data_7 = models.TreeOpenStat.query(
         models.TreeOpenStat.num_days == 7, ancestor=project_key).order(
-        -models.TreeOpenStat.timestamp).fetch(limit=500)
+        -models.TreeOpenStat.timestamp).fetch(limit=3000)
     data_7.reverse()
     cols_7 = [
         {'id': 'timestamp', 'label': 'Time', 'type': 'datetime'},
