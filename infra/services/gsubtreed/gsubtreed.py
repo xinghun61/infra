@@ -116,7 +116,8 @@ def process_path(path, origin_repo, config):
       LOGGER.info('processing ref %s', ref)
 
       # The last thing that was pushed to the subtree_repo
-      synth_parent = subtree_repo[ref.ref].commit
+      last_push = subtree_repo[ref.ref].commit
+      synth_parent = last_push
 
       processed = INVALID
       if synth_parent is not INVALID:
@@ -179,7 +180,7 @@ def process_path(path, origin_repo, config):
           footers=collections.OrderedDict(footers),
         )
 
-      if synth_parent is not INVALID:
+      if synth_parent is not INVALID and synth_parent != last_push:
         subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
 
   t = Pusher(path, subtree_repo, subtree_repo_push)

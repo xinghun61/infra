@@ -117,10 +117,8 @@
   - 'INFO: got processed commit e213bc0ab9d92e8d6fcd9167d1db625516946de5: Commit(TestRepo(''local''),
     ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: starting with tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''673b616ced11a90b15ef256cebdc43f6fa8eb3ce:refs/heads/master'',
-    ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/heads/other'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''673b616ced11a90b15ef256cebdc43f6fa8eb3ce:refs/heads/master'')'
   - 'INFO: Completed push for ''mirrored_path'''
 - inner_loop success: true
   processed:
