@@ -22,14 +22,10 @@ Use "<a href="http://commondatastorage.googleapis.com/chrome-infra-docs/flat/dep
 
 Site directory listing:
 
-&gt;&gt;&gt; <a href="/patchset/<issue>/<patchset>">/patchset/&lt;issue&gt;/&lt;patchset&gt;</a>
+&gt;&gt;&gt; <a href="/patch-status/<issue>/<patchset>">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</a>
 Shows a timeline of CQ activity on a given patch.
 Only accepts GET requests.
-Example: <a href="/patchset/557043002/1">/patchset/557043002/1</a>
-
-
-&gt;&gt;&gt; <a href="/recent">/recent</a>
-Shows the most recently submitted CQ updates.
+Example: <a href="/patch-status/557043002/1">/patch-status/557043002/1</a>
 
 
 &gt;&gt;&gt; <a href="/stats/<project>/(15-minutely|hourly|daily|weekly)">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</a>
@@ -155,11 +151,11 @@ The returned query results are in the following JSON structure:
 }
 
 Example:
-/query?tags=a,b,c&count=10
+<a href="/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10">/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10</a> shows the 10 most recently started CQ attempts.
 
 Shortcut:
 Tags can be specified in the URL, the following is an equivalent example.
-/query/a/b?tags=c&count=10
+<a href="/query/project=chromium/action=patch_start?count=10">/query/project=chromium/action=patch_start?count=10</a>
 
 
 &gt;&gt;&gt; <a href="/post">/post</a>
