@@ -1,11 +1,12 @@
+var attemptStart = 'patch_start';
+var attemptEnd = 'patch_stop';
+
 var actionInfo = {
   patch_start: {
-    startAttempt: true,
     description: 'CQ started processing patch',
     cls: 'important',
   },
   patch_stop: {
-    stopAttempt: true,
     description: 'CQ stopped processing patch',
     cls: 'important',
   },
@@ -67,14 +68,14 @@ tryjobStatus = [
   'passed',
   'failed',
   'running',
-  'not started',
+  'not-started',
 ];
 
 
 function main() {
   container.textContent = 'Loading patch data...';
   loadPatchsetRecords(function(records) {
-    displayRecords(records);
+    displayAttempts(records);
     scrollToHash();
   });
 }
@@ -103,40 +104,40 @@ function loadPatchsetRecords(callback) {
   queryRecords(null);
 }
 
-function displayRecords(records) {
+function displayAttempts(records) {
   container.textContent = '';
-  var currentAttempt = null;
+  var recordGroups = splitByAttempts(records.filter(function(record) { return 'action' in record.fields; }));
   var attempts = [];
-  records.forEach(function(record) {
-    var action = record.fields.action;
-    var info = actionInfo[action];
-    if (typeof info === 'function') {
-      info = info(record);
-    }
-    if (!info || (info.filter && !info.filter(record))) {
-      return;
-    }
-    if (info.startAttempt) {
-      currentAttempt = {
-        start: record.timestamp,
-        header: newHeader(attempts.length + 1),
-        rows: [],
+  recordGroups.forEach(function(recordGroup, i) {
+    var lastRecord = recordGroup[recordGroup.length - 1];
+    var attempt = {
+      number: i + 1,
+      start: recordGroup[0].timestamp,
+      ended: lastRecord.fields.action == attemptEnd,
+      lastUpdate: lastRecord.timestamp,
+      tryjobs: {},
+      rows: [],
+      header: null,
+    };
+    recordGroup.forEach(function(record) {
+      var info = actionInfo[record.fields.action];
+      if (!info) {
+        console.warn('Unexpected action ' + record.fields.action + ' at timestamp ' + record.timestamp);
+        return;
       }
-      attempts.push(currentAttempt);
-    }
-    if (!currentAttempt) {
-      console.warn('Unexpected record outside of start/end records:', record);
-    }
-    var duration = getDurationString(currentAttempt.start, record.timestamp);
-    currentAttempt.rows.push(newRow(record.timestamp, duration, info.description, record.fields.message, info.cls));
-    if (info.stopAttempt) {
-      currentAttempt.header.addText(' (' + duration + ')');
-      currentAttempt = null;
-    }
+      if (typeof info === 'function') {
+        info = info(attempt, record);
+      }
+      if (!info || (info.filter && !info.filter(record))) {
+        return;
+      }
+      var duration = getDurationString(attempt.start, record.timestamp);
+      attempt.rows.push(newRow(record.timestamp, duration, info.description, record.fields.message, info.cls));
+    });
+    attempt.header = newHeader(attempt);
+    attempts.push(attempt);
   });
-  if (currentAttempt) {
-    currentAttempt.header.addText(' (in progress for ' + getDurationString(currentAttempt.start, Date.now() / 1000) + ')');
-  }
+
   if (attempts.length === 0) {
     container.textContent = 'No attempts found.';
     return;
@@ -151,16 +152,34 @@ function displayRecords(records) {
   });
 }
 
-function newHeader(attemptNumber) {
-  var header = newElement('h3');
-  var anchor = newElement('a', 'Attempt #' + attemptNumber);
-  anchor.name = attemptNumber;
-  anchor.href = '#' + attemptNumber;
-  header.appendChild(anchor);
-  header.addText = function(text) {
-    anchor.textContent += text;
-  };
-  return header;
+function splitByAttempts(records) {
+  var recordGroups = [];
+  var recordGroup = null;
+  records.forEach(function(record) {
+    if (record.fields.action == attemptStart) {
+      if (recordGroup) {
+        console.warn('Attempt group started before previous one ended.')
+      }
+      recordGroup = [];
+    }
+    if (recordGroup) {
+      recordGroup.push(record);
+    } else {
+      console.warn('Attempt record encountered before start signal.')
+    }
+    if (record.fields.action == attemptEnd) {
+      if (recordGroup) {
+        recordGroups.push(recordGroup);
+      } else {
+        console.warn('Attempt group ended before starting.')
+      }
+      recordGroup = null;
+    }
+  });
+  if (recordGroup) {
+    recordGroups.push(recordGroup);
+  }
+  return recordGroups;
 }
 
 function newRow(timestamp, duration, description, message, cls) {
@@ -178,6 +197,38 @@ function newRow(timestamp, duration, description, message, cls) {
     row.appendChild(newElement('message', '(' + message + ')'));
   }
   return row;
+}
+
+function newHeader(attempt) {
+  var header = newElement('header');
+
+  var h3 = newElement('h3');
+  var anchor = newElement('a', 'Attempt #' + attempt.number);
+  anchor.name = attempt.number;
+  anchor.href = '#' + attempt.number;
+  h3.appendChild(anchor);
+  header.appendChild(h3);
+
+  if (attempt.ended) {
+    header.appendChild(newElement('div', 'Total duration: ' + getDurationString(attempt.start, attempt.lastUpdate)));
+  } else {
+    header.appendChild(newElement('div', 'In progress for: ' + getDurationString(attempt.start, Date.now() / 1000)));
+    header.appendChild(newElement('div', 'Last update: ' + getDurationString(attempt.lastUpdate, Date.now() / 1000) + ' ago'));
+  }
+
+  var builders = Object.getOwnPropertyNames(attempt.tryjobs).sort();
+  if (builders.length !== 0) {
+    header.appendChild(newElement('span', (attempt.ended ? 'Last' : 'Current') + ' tryjob statuses: '));
+    builders.forEach(function(builder) {
+      header.appendChild(newTryjobBubble(builder, attempt.tryjobs[builder].status, attempt.tryjobs[builder].url));
+      header.appendChild(newElement('span', ' '));
+    });
+    header.appendChild(newElement('br'));
+  }
+
+  header.appendChild(newElement('div', 'Status update timeline:'));
+
+  return header;
 }
 
 function newElement(tag, text, cls) {
@@ -217,7 +268,7 @@ function simpleTryjobVerifierCheck(record) {
   return record.fields.verifier === 'simple try job';
 }
 
-function startedJobsInfo(record) {
+function startedJobsInfo(attempt, record) {
   var jobs = record.fields.tryjobs;
   var node = newElement('div');
   var builders = [];
@@ -229,8 +280,12 @@ function startedJobsInfo(record) {
   builders.sort();
   node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' triggered: '))
   builders.forEach(function(builder) {
-    node.appendChild(newElement('tryjob', builder, 'triggered'));
+    node.appendChild(newTryjobBubble(builder, 'triggered'));
     node.appendChild(newElement('span', ' '));
+    attempt.tryjobs[builder] = {
+      status: 'triggered',
+      url: null,
+    };
   });
 
   return {
@@ -240,49 +295,55 @@ function startedJobsInfo(record) {
   };
 }
 
-function jobsUpdateInfo(record) {
+function jobsUpdateInfo(attempt, record) {
   var jobs = record.fields.jobs;
   var node = newElement('div');
   var firstLine = true;
-  for (var status = 0; status < tryjobStatus.length; status++) {
+  tryjobStatus.forEach(function(status) {
     var builderURLs = {};
     for (var master in jobs) {
       for (builder in jobs[master]) {
         var data = jobs[master][builder];
-        if (data.status === status) {
+        if (tryjobStatus[data.status] === status) {
           builderURLs[builder] = data.rietveld_results.length > 0 ? data.rietveld_results[0].url : null;
         }
       }
     }
     var builders = Object.getOwnPropertyNames(builderURLs).sort();
     if (builders.length === 0) {
-      continue;
+      return;
     }
     if (!firstLine) {
       node.appendChild(newElement('br'));
     }
     firstLine = false;
-    node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' ' + tryjobStatus[status] + ': '))
+    node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' ' + status + ': '))
     builders.forEach(function(builder) {
       var url = builderURLs[builder];
-      var bubble = newElement('tryjob', '', tryjobStatus[status].replace(' ', '-'));
-      if (url) {
-        var a = newElement('a', builder);
-        a.href = url;
-        bubble.appendChild(a);
-      } else {
-        bubble.textContent = builder;
-      }
-      node.appendChild(bubble);
+      node.appendChild(newTryjobBubble(builder, status, url));
       node.appendChild(newElement('span', ' '));
+      attempt.tryjobs[builder] = {
+        status: status,
+        url: url,
+      };
     });
-  }
+  });
 
   return firstLine ? null : {
     description: node,
     cls: 'normal',
     filter: simpleTryjobVerifierCheck,
   };
+}
+
+function newTryjobBubble(builder, status, url) {
+  var bubble = newElement('a', builder, 'tryjob');
+  bubble.classList.add(status);
+  bubble.title = status;
+  if (url) {
+    bubble.href = url;
+  }
+  return bubble;
 }
 
 function scrollToHash() {
