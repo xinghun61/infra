@@ -343,7 +343,21 @@ function newTryjobBubble(builder, status, url) {
   if (url) {
     bubble.href = url;
   }
+  bubble.addEventListener('mouseenter', bubbleHighlight);
+  bubble.addEventListener('mouseleave', bubbleUnhighlight);
   return bubble;
+}
+
+function bubbleHighlight(event) {
+  [].forEach.call(document.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
+    bubble.classList.add('highlight');
+  });
+}
+
+function bubbleUnhighlight(event) {
+  [].forEach.call(document.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
+    bubble.classList.remove('highlight');
+  });
 }
 
 function scrollToHash() {
