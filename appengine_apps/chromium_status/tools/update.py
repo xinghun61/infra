@@ -19,6 +19,7 @@ INSTANCES = [
   'naclports-status-hrd',
   'nativeclient-status-hrd',
   'o3d-status-hr',
+  'v8-roll',
   'v8-status',
   'webrtc-status',
 ]
