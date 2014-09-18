@@ -15,7 +15,7 @@ class Analyzer(object):
     raise NotImplementedError()
 
   def _get_name(self):  # pragma: no cover
-    return re.sub(r'([a-z])([A-Z])', r'\1_\2', type(self).__name__).lower()
+    return re.sub(r'([a-z])([A-Z])', r'\1-\2', type(self).__name__).lower()
 
 
 class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223

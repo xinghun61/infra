@@ -22,15 +22,15 @@ class PatchsetStatsTest(StatsTest):
   def test_attempt_count(self):
     self.analyze_records(*self.attempt_records)
     self.assertEquals(CountStats(
-        name='attempt_count',
+        name='attempt-count',
         description='Number of CQ attempts made.',
         count=3,
-      ), self.get_stats('attempt_count'))
+      ), self.get_stats('attempt-count'))
 
   def test_attempt_durations(self):
     self.analyze_records(*self.attempt_records)
     list_stats = ListStats(
-      name='attempt_durations',
+      name='attempt-durations',
       description='Total time spent per CQ attempt.',
       unit='seconds',
     )
@@ -39,7 +39,7 @@ class PatchsetStatsTest(StatsTest):
       [hours(10), {'issue': 1, 'patchset': 1}],
       [hours(12), {'issue': 2, 'patchset': 1}],
     ))
-    self.assertEquals(list_stats, self.get_stats('attempt_durations'))
+    self.assertEquals(list_stats, self.get_stats('attempt-durations'))
 
   def test_blocked_on_closed_tree_durations(self):
     self.analyze_records(
@@ -59,7 +59,7 @@ class PatchsetStatsTest(StatsTest):
       (20, {'issue': 4, 'patchset': 2, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='blocked_on_closed_tree_durations',
+      name='blocked-on-closed-tree-durations',
       description='Time spent per committed patchset blocked on a closed tree.',
       unit='seconds',
     )
@@ -69,7 +69,7 @@ class PatchsetStatsTest(StatsTest):
       [hours(0), {'issue': 4, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('blocked_on_closed_tree_durations'))
+        self.get_stats('blocked-on-closed-tree-durations'))
 
   def test_blocked_on_throttled_tree_durations(self):
     self.analyze_records(
@@ -89,7 +89,7 @@ class PatchsetStatsTest(StatsTest):
       (20, {'issue': 4, 'patchset': 2, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='blocked_on_throttled_tree_durations',
+      name='blocked-on-throttled-tree-durations',
       description=('Time spent per committed patchset '
                    'blocked on a throttled tree.'),
       unit='seconds',
@@ -100,7 +100,7 @@ class PatchsetStatsTest(StatsTest):
       [hours(0), {'issue': 4, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('blocked_on_throttled_tree_durations'))
+        self.get_stats('blocked-on-throttled-tree-durations'))
 
   issue_patchset_count_records = (
     (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
@@ -118,18 +118,18 @@ class PatchsetStatsTest(StatsTest):
   def test_issue_count(self):
     self.analyze_records(*self.issue_patchset_count_records)
     self.assertEquals(CountStats(
-        name='issue_count',
+        name='issue-count',
         description='Number of issues processed by the CQ.',
         count=3,
-      ), self.get_stats('issue_count'))
+      ), self.get_stats('issue-count'))
 
   def test_patchset_count(self):
     self.analyze_records(*self.issue_patchset_count_records)
     self.assertEquals(CountStats(
-        name='patchset_count',
+        name='patchset-count',
         description='Number of patchsets processed by the CQ.',
         count=4,
-      ), self.get_stats('patchset_count'))
+      ), self.get_stats('patchset-count'))
 
   patchset_commit_records = (
     (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
@@ -152,15 +152,15 @@ class PatchsetStatsTest(StatsTest):
   def test_patchset_commit_count(self):
     self.analyze_records(*self.patchset_commit_records)
     self.assertEquals(CountStats(
-        name='patchset_commit_count',
+        name='patchset-commit-count',
         description='Number of patchsets committed by the CQ.',
         count=2,
-      ), self.get_stats('patchset_commit_count'))
+      ), self.get_stats('patchset-commit-count'))
 
   def test_patchset_commit_durations(self):
     self.analyze_records(*self.patchset_commit_records)
     list_stats = ListStats(
-      name='patchset_commit_durations',
+      name='patchset-commit-durations',
       description=('Time taken by the CQ to land a patch '
                    'after passing all checks.'),
       unit='seconds',
@@ -170,7 +170,7 @@ class PatchsetStatsTest(StatsTest):
       [hours(4), {'issue': 3, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('patchset_commit_durations'))
+        self.get_stats('patchset-commit-durations'))
 
   def test_patchset_durations(self):
     self.analyze_records(
@@ -186,7 +186,7 @@ class PatchsetStatsTest(StatsTest):
       (20, {'issue': 2, 'patchset': 2, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='patchset_durations',
+      name='patchset-durations',
       description=('Total time spent in the CQ per patchset, '
                    'counts multiple CQ attempts as one.'),
       unit='seconds',
@@ -198,7 +198,7 @@ class PatchsetStatsTest(StatsTest):
       [hours(10), {'issue': 2, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('patchset_durations'))
+        self.get_stats('patchset-durations'))
 
   rejected_patchset_records = (
     (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
@@ -225,17 +225,17 @@ class PatchsetStatsTest(StatsTest):
   def test_patchset_false_reject_count(self):
     self.analyze_records(*self.rejected_patchset_records)
     self.assertEquals(CountStats(
-        name='patchset_false_reject_count',
+        name='patchset-false-reject-count',
         description=('Number of patchsets rejected by the trybots '
                      'that eventually passed.'),
         count=2,
-      ), self.get_stats('patchset_false_reject_count'))
+      ), self.get_stats('patchset-false-reject-count'))
 
   def test_patchset_reject_count(self):
     self.analyze_records(*self.rejected_patchset_records)
     self.assertEquals(CountStats(
-        name='patchset_reject_count',
+        name='patchset-reject-count',
         description=('Number of patchsets rejected by the trybots '
                      'at least once.'),
         count=3,
-      ), self.get_stats('patchset_reject_count'))
+      ), self.get_stats('patchset-reject-count'))

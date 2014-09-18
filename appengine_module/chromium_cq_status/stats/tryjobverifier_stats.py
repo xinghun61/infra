@@ -47,7 +47,7 @@ class TryjobverifierActionCount(CountAnalyzer):  # pragma: no cover
     self.count += count_actions(attempts, 'verifier_' + self.action)
 
   def _get_name(self):
-    return 'tryjobverifier_%s_count' % self.action
+    return 'tryjobverifier-%s-count' % self.action
 
 
 class TryjobverifierActionCountGroup(AnalyzerGroup):  # pragma: no cover

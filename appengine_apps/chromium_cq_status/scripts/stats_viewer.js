@@ -102,8 +102,7 @@ function drawGraphs(graphs) {
   var anyGraphs = false;
   Object.getOwnPropertyNames(graphs).sort().forEach(function(name) {
     anyGraphs = true;
-    var title = name.replace(/_/g, ' ')
-          .replace(/^(\w)|\s(\w)/g, function(c) {return c.toUpperCase();});
+    var title = titleFromName(name);
     var indexLink = createElement('index-link', indexDiv, 'a');
     indexLink.textContent = title;
     indexLink.href = '#' + name;
@@ -158,6 +157,12 @@ function drawGraphs(graphs) {
   if (!anyGraphs) {
     container.textContent = 'No stats found.';
   }
+}
+
+function titleFromName(name) {
+  return name.split('-').map(function(word) {
+    return /_/.test(word) ? word : word[0].toUpperCase() + word.slice(1);
+  }).join(' ');
 }
 
 function createElement(className, parent, tagName) {

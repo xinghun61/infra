@@ -27,7 +27,7 @@ class TryjobverifierStatsTest(StatsTest):
         (6, {'issue': 2, 'patchset': 1, 'action': 'patch_start'}),
         (7, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
       )
-      name = 'tryjobverifier_%s_count' % action
+      name = 'tryjobverifier-%s-count' % action
       self.assertEquals(CountStats(
           name=name,
           description=description,
@@ -55,7 +55,7 @@ class TryjobverifierStatsTest(StatsTest):
       (22, {'issue': 3, 'patchset': 1, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='tryjobverifier_first_run_durations',
+      name='tryjobverifier-first-run-durations',
       description='Time spent on each tryjob verifier first run.',
       unit='seconds',
     )
@@ -66,7 +66,7 @@ class TryjobverifierStatsTest(StatsTest):
       [hours(3), {'issue': 3, 'patchset': 1}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier_first_run_durations'))
+        self.get_stats('tryjobverifier-first-run-durations'))
 
   def test_tryjobverifier_retry_durations(self):
     self.analyze_records(
@@ -93,7 +93,7 @@ class TryjobverifierStatsTest(StatsTest):
       (23, {'issue': 3, 'patchset': 2, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='tryjobverifier_retry_durations',
+      name='tryjobverifier-retry-durations',
       description='Time spent on each tryjob verifier retry.',
       unit='seconds',
     )
@@ -105,7 +105,7 @@ class TryjobverifierStatsTest(StatsTest):
       [hours(1), {'issue': 3, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier_retry_durations'))
+        self.get_stats('tryjobverifier-retry-durations'))
 
   def test_tryjobverifier_total_durations(self):
     self.analyze_records(
@@ -124,7 +124,7 @@ class TryjobverifierStatsTest(StatsTest):
       (21, {'issue': 1, 'patchset': 2, 'action': 'patch_stop'}),
     )
     list_stats = ListStats(
-      name='tryjobverifier_total_durations',
+      name='tryjobverifier-total-durations',
       description='Total time spent per CQ attempt on tryjob verifier runs.',
       unit='seconds',
     )
@@ -134,4 +134,4 @@ class TryjobverifierStatsTest(StatsTest):
       [hours(7), {'issue': 1, 'patchset': 2}],
     ))
     self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier_total_durations'))
+        self.get_stats('tryjobverifier-total-durations'))
