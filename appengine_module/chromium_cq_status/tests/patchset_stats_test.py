@@ -123,6 +123,22 @@ class PatchsetStatsTest(StatsTest):
         count=3,
       ), self.get_stats('issue-count'))
 
+  def test_patchset_attempt_count(self):
+    self.analyze_records(*self.issue_patchset_count_records)
+    list_stats = ListStats(
+      name='patchset-attempts',
+      description='Number of CQ attempts per patchset.',
+      unit='attempts',
+    )
+    list_stats.set_from_points((
+      [1, {'issue': 1, 'patchset': 1}],
+      [1, {'issue': 2, 'patchset': 1}],
+      [1, {'issue': 3, 'patchset': 1}],
+      [2, {'issue': 3, 'patchset': 2}],
+    ))
+    self.assertEquals(list_stats,
+        self.get_stats('patchset-attempts'))
+
   def test_patchset_count(self):
     self.analyze_records(*self.issue_patchset_count_records)
     self.assertEquals(CountStats(

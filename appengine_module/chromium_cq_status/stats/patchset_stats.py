@@ -17,6 +17,7 @@ class PatchsetAnalyzer(AnalyzerGroup):
       BlockedOnClosedTreeDurations,
       BlockedOnThrottledTreeDurations,
       IssueCount,
+      PatchsetAttempts,
       PatchsetCount,
       PatchsetCommitCount,
       PatchsetCommitDurations,
@@ -67,6 +68,16 @@ class IssueCount(CountAnalyzer):  # pragma: no cover
   def new_patchset_attempts(self, issue, patchset, attempts):
     self.issues.add(issue)
     self.count = len(self.issues)
+
+
+class PatchsetAttempts(ListAnalyzer):  # pragma: no cover
+  description = 'Number of CQ attempts per patchset.'
+  unit = 'attempts'
+  def new_patchset_attempts(self, issue, patchset, attempts):
+    self.points.append((len(attempts), {
+      'issue': issue,
+      'patchset': patchset,
+    }))
 
 
 class PatchsetCount(CountAnalyzer):  # pragma: no cover
