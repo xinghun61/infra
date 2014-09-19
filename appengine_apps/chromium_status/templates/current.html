@@ -45,7 +45,9 @@ div.throttled {
   <div class="status-message maintenance">
     <a target="_blank" href="/">Login Required</a></div>
   {% else %}
-  <div class="status-message {{ state }}">{{ message }} </div>
+  <a href="/" target="_blank">
+    <div class="status-message {{ state }}">{{ message }} </div>
+  </a>
   {% endif %}
 </center>
 
