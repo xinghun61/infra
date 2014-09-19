@@ -2,13 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 from itertools import chain
 import re
 
-from appengine_module.chromium_cq_status.model.cq_stats import CountStats, ListStats  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.model.cq_stats import (
+  CountStats,
+  ListStats,
+)
 
 class Analyzer(object):
-  def new_patchset_attempts(self, issue, patchset, attempts):
+  def new_attempts(self, attempts, reference):
     raise NotImplementedError()
 
   def build_stats(self):
@@ -20,20 +24,20 @@ class Analyzer(object):
 
 class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223
   def __init__(self):  # pragma: no cover
-    self.count = 0
+    self.tally = defaultdict(lambda: 0)
 
   def build_stats(self):  # pragma: no cover
-    return (CountStats(
+    count_stats = CountStats(
       name=self._get_name(),
       description=self.description,
-      count=self.count,
-    ),)
+    )
+    count_stats.set_from_tally(self.tally)
+    return (count_stats,)
 
 
 class ListAnalyzer(Analyzer): # pylint: disable-msg=W0223
   def __init__(self):  # pragma: no cover
     self.points = []
-    self.lower_is_better = True
 
   def build_stats(self):  # pragma: no cover
     list_stats = ListStats(
@@ -41,7 +45,7 @@ class ListAnalyzer(Analyzer): # pylint: disable-msg=W0223
       description=self.description,
       unit=self.unit,
     )
-    list_stats.set_from_points(self.points, self.lower_is_better)
+    list_stats.set_from_points(self.points)
     return (list_stats,)
 
 
@@ -49,9 +53,9 @@ class AnalyzerGroup(Analyzer):
   def __init__(self, *analyzer_classes):  # pragma: no cover
     self.analyzers = [cls() for cls in analyzer_classes]
 
-  def new_patchset_attempts(self, issue, patchset, attempts): # pragma: no cover
+  def new_attempts(self, attempts, reference): # pragma: no cover
     for analyzer in self.analyzers:
-      analyzer.new_patchset_attempts(issue, patchset, attempts)
+      analyzer.new_attempts(attempts, reference)
 
   def build_stats(self):  # pragma: no cover
     return chain(*(analyzer.build_stats() for analyzer in self.analyzers))

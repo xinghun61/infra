@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 from datetime import datetime, timedelta
 import logging
 import math
@@ -31,6 +32,8 @@ analyzers = (
   PatchsetAnalyzer,
   TryjobverifierAnalyzer,
 )
+
+PatchsetReference = namedtuple('PatchsetReference', 'issue patchset')
 
 def analyze_interval(minutes): # pragma: no cover
   """Build and save CQStats for every <minutes> interval in Records.
@@ -127,7 +130,8 @@ def analyze_attempts(attempts_iterator): # pragma: no cover
   for project, issue, patchset, attempts in attempts_iterator:
     if project not in project_analyzers:
       project_analyzers[project] = AnalyzerGroup(*analyzers)
-    project_analyzers[project].new_patchset_attempts(issue, patchset, attempts)
+    project_analyzers[project].new_attempts(attempts,
+        PatchsetReference(issue, patchset))
   project_stats = {}
   for project, analyzer in project_analyzers.iteritems():
     project_stats[project] = analyzer.build_stats()

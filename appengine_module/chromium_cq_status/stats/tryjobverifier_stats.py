@@ -43,8 +43,8 @@ class TryjobverifierActionCount(CountAnalyzer):  # pragma: no cover
     self.action = action
     self.description = description
 
-  def new_patchset_attempts(self, issue, patchset, attempts):
-    self.count += count_actions(attempts, 'verifier_' + self.action)
+  def new_attempts(self, attempts, reference):
+    self.tally[reference] += count_actions(attempts, 'verifier_' + self.action)
 
   def _get_name(self):
     return 'tryjobverifier-%s-count' % self.action
@@ -60,7 +60,7 @@ class TryjobverifierActionCountGroup(AnalyzerGroup):  # pragma: no cover
 class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier first run.'
   unit = 'seconds'
-  def new_patchset_attempts(self, issue, patchset, attempts):
+  def new_attempts(self, attempts, reference):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
@@ -74,16 +74,13 @@ class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
           break
       if start_timestamp and end_timestamp:
         duration = (end_timestamp - start_timestamp).total_seconds()
-        self.points.append((duration, {
-          'issue': issue,
-          'patchset': patchset,
-        }))
+        self.points.append((duration, reference))
 
 
 class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier retry.'
   unit = 'seconds'
-  def new_patchset_attempts(self, issue, patchset, attempts):
+  def new_attempts(self, attempts, reference):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
@@ -96,10 +93,7 @@ class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
         elif record.fields.get('action') in tryjobverifier_terminator_actions:
           end_timestamp = record.timestamp
           duration = (end_timestamp - start_timestamp).total_seconds()
-          self.points.append((duration, {
-            'issue': issue,
-            'patchset': patchset,
-          }))
+          self.points.append((duration, reference))
           if record.fields.get('action') == 'verifier_retry':
             start_timestamp = end_timestamp
           else:
@@ -109,7 +103,7 @@ class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
 class TryjobverifierTotalDurations(ListAnalyzer):  # pragma: no cover
   description = 'Total time spent per CQ attempt on tryjob verifier runs.'
   unit = 'seconds'
-  def new_patchset_attempts(self, issue, patchset, attempts):
+  def new_attempts(self, attempts, reference):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
@@ -121,10 +115,7 @@ class TryjobverifierTotalDurations(ListAnalyzer):  # pragma: no cover
         end_timestamp = record.timestamp
       if start_timestamp:
         duration = (end_timestamp - start_timestamp).total_seconds()
-        self.points.append((duration, {
-          'issue': issue,
-          'patchset': patchset,
-        }))
+        self.points.append((duration, reference))
 
 
 def count_actions(attempts, action):  # pragma: no cover

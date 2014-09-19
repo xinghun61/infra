@@ -4,7 +4,8 @@
 
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
 from appengine_module.chromium_cq_status.tests.stats_test import StatsTest, hours  # pylint: disable=C0301
-from appengine_module.chromium_cq_status.model.cq_stats import CountStats, ListStats  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.stats.analysis import PatchsetReference
+from appengine_module.chromium_cq_status.stats.patchset_stats import IssueReference  # pylint: disable=C0301
 
 class PatchsetStatsTest(StatsTest):
   attempt_records = (
@@ -21,25 +22,27 @@ class PatchsetStatsTest(StatsTest):
 
   def test_attempt_count(self):
     self.analyze_records(*self.attempt_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='attempt-count',
         description='Number of CQ attempts made.',
-        count=3,
+        tally={
+          PatchsetReference(1, 1): 2,
+          PatchsetReference(2, 1): 1,
+        },
       ), self.get_stats('attempt-count'))
 
   def test_attempt_durations(self):
     self.analyze_records(*self.attempt_records)
-    list_stats = ListStats(
-      name='attempt-durations',
-      description='Total time spent per CQ attempt.',
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(2), {'issue': 1, 'patchset': 1}],
-      [hours(10), {'issue': 1, 'patchset': 1}],
-      [hours(12), {'issue': 2, 'patchset': 1}],
-    ))
-    self.assertEquals(list_stats, self.get_stats('attempt-durations'))
+    self.assertEquals(self.create_list(
+        name='attempt-durations',
+        description='Total time spent per CQ attempt.',
+        unit='seconds',
+        points=(
+          (hours(2), PatchsetReference(1, 1)),
+          (hours(10), PatchsetReference(1, 1)),
+          (hours(12), PatchsetReference(2, 1)),
+        ),
+      ), self.get_stats('attempt-durations'))
 
   def test_blocked_on_closed_tree_durations(self):
     self.analyze_records(
@@ -58,18 +61,17 @@ class PatchsetStatsTest(StatsTest):
       (19, {'issue': 4, 'patchset': 2, 'action': 'patch_ready_to_commit'}),
       (20, {'issue': 4, 'patchset': 2, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='blocked-on-closed-tree-durations',
-      description='Time spent per committed patchset blocked on a closed tree.',
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 1, 'patchset': 1}],
-      [hours(3), {'issue': 2, 'patchset': 1}],
-      [hours(0), {'issue': 4, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('blocked-on-closed-tree-durations'))
+    self.assertEquals(self.create_list(
+        name='blocked-on-closed-tree-durations',
+        description=('Time spent per committed patchset '
+                     'blocked on a closed tree.'),
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(1, 1)),
+          (hours(3), PatchsetReference(2, 1)),
+          (hours(0), PatchsetReference(4, 2)),
+        ),
+      ), self.get_stats('blocked-on-closed-tree-durations'))
 
   def test_blocked_on_throttled_tree_durations(self):
     self.analyze_records(
@@ -88,19 +90,17 @@ class PatchsetStatsTest(StatsTest):
       (19, {'issue': 4, 'patchset': 2, 'action': 'patch_ready_to_commit'}),
       (20, {'issue': 4, 'patchset': 2, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='blocked-on-throttled-tree-durations',
-      description=('Time spent per committed patchset '
-                   'blocked on a throttled tree.'),
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 1, 'patchset': 1}],
-      [hours(3), {'issue': 2, 'patchset': 1}],
-      [hours(0), {'issue': 4, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('blocked-on-throttled-tree-durations'))
+    self.assertEquals(self.create_list(
+        name='blocked-on-throttled-tree-durations',
+        description=('Time spent per committed patchset '
+                     'blocked on a throttled tree.'),
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(1, 1)),
+          (hours(3), PatchsetReference(2, 1)),
+          (hours(0), PatchsetReference(4, 2)),
+        ),
+      ), self.get_stats('blocked-on-throttled-tree-durations'))
 
   issue_patchset_count_records = (
     (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
@@ -117,34 +117,41 @@ class PatchsetStatsTest(StatsTest):
 
   def test_issue_count(self):
     self.analyze_records(*self.issue_patchset_count_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='issue-count',
         description='Number of issues processed by the CQ.',
-        count=3,
+        tally={
+          IssueReference(1): 1,
+          IssueReference(2): 1,
+          IssueReference(3): 1,
+        },
       ), self.get_stats('issue-count'))
 
-  def test_patchset_attempt_count(self):
+  def test_patchset_attempts(self):
     self.analyze_records(*self.issue_patchset_count_records)
-    list_stats = ListStats(
-      name='patchset-attempts',
-      description='Number of CQ attempts per patchset.',
-      unit='attempts',
-    )
-    list_stats.set_from_points((
-      [1, {'issue': 1, 'patchset': 1}],
-      [1, {'issue': 2, 'patchset': 1}],
-      [1, {'issue': 3, 'patchset': 1}],
-      [2, {'issue': 3, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('patchset-attempts'))
+    self.assertEquals(self.create_list(
+        name='patchset-attempts',
+        description='Number of CQ attempts per patchset.',
+        unit='attempts',
+        points=(
+          (1, PatchsetReference(1, 1)),
+          (1, PatchsetReference(2, 1)),
+          (1, PatchsetReference(3, 1)),
+          (2, PatchsetReference(3, 2)),
+        ),
+      ), self.get_stats('patchset-attempts'))
 
   def test_patchset_count(self):
     self.analyze_records(*self.issue_patchset_count_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='patchset-count',
         description='Number of patchsets processed by the CQ.',
-        count=4,
+        tally={
+          PatchsetReference(1, 1): 1,
+          PatchsetReference(2, 1): 1,
+          PatchsetReference(3, 1): 1,
+          PatchsetReference(3, 2): 1,
+        },
       ), self.get_stats('patchset-count'))
 
   patchset_commit_records = (
@@ -167,26 +174,27 @@ class PatchsetStatsTest(StatsTest):
 
   def test_patchset_commit_count(self):
     self.analyze_records(*self.patchset_commit_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='patchset-commit-count',
         description='Number of patchsets committed by the CQ.',
-        count=2,
+        tally={
+          PatchsetReference(2, 1): 1,
+          PatchsetReference(3, 2): 1,
+        },
       ), self.get_stats('patchset-commit-count'))
 
   def test_patchset_commit_durations(self):
     self.analyze_records(*self.patchset_commit_records)
-    list_stats = ListStats(
-      name='patchset-commit-durations',
-      description=('Time taken by the CQ to land a patch '
-                   'after passing all checks.'),
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 2, 'patchset': 1}],
-      [hours(4), {'issue': 3, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('patchset-commit-durations'))
+    self.assertEquals(self.create_list(
+        name='patchset-commit-durations',
+        description=('Time taken by the CQ to land a patch '
+                     'after passing all checks.'),
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(2, 1)),
+          (hours(4), PatchsetReference(3, 2)),
+        ),
+      ), self.get_stats('patchset-commit-durations'))
 
   def test_patchset_durations(self):
     self.analyze_records(
@@ -201,20 +209,18 @@ class PatchsetStatsTest(StatsTest):
       (10, {'issue': 2, 'patchset': 2, 'action': 'patch_start'}),
       (20, {'issue': 2, 'patchset': 2, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='patchset-durations',
-      description=('Total time spent in the CQ per patchset, '
-                   'counts multiple CQ attempts as one.'),
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 1, 'patchset': 1}],
-      [hours(2), {'issue': 1, 'patchset': 2}],
-      [hours(3), {'issue': 2, 'patchset': 1}],
-      [hours(10), {'issue': 2, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('patchset-durations'))
+    self.assertEquals(self.create_list(
+        name='patchset-durations',
+        description=('Total time spent in the CQ per patchset, '
+                     'counts multiple CQ attempts as one.'),
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(1, 1)),
+          (hours(2), PatchsetReference(1, 2)),
+          (hours(3), PatchsetReference(2, 1)),
+          (hours(10), PatchsetReference(2, 2)),
+        ),
+      ), self.get_stats('patchset-durations'))
 
   rejected_patchset_records = (
     (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
@@ -240,18 +246,25 @@ class PatchsetStatsTest(StatsTest):
 
   def test_patchset_false_reject_count(self):
     self.analyze_records(*self.rejected_patchset_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='patchset-false-reject-count',
         description=('Number of patchsets rejected by the trybots '
                      'that eventually passed.'),
-        count=2,
+        tally={
+          PatchsetReference(1, 2): 1,
+          PatchsetReference(2, 2): 1,
+        },
       ), self.get_stats('patchset-false-reject-count'))
 
   def test_patchset_reject_count(self):
     self.analyze_records(*self.rejected_patchset_records)
-    self.assertEquals(CountStats(
+    self.assertEquals(self.create_count(
         name='patchset-reject-count',
         description=('Number of patchsets rejected by the trybots '
                      'at least once.'),
-        count=3,
+        tally={
+          PatchsetReference(1, 1): 1,
+          PatchsetReference(1, 2): 1,
+          PatchsetReference(2, 2): 1,
+        },
       ), self.get_stats('patchset-reject-count'))

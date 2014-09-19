@@ -17,7 +17,7 @@ handlers = [
   (r'/patchset/(.*)/(.*)', PatchStatus),  # Legacy URL for old links.
   (r'/patch-status/(.*)/(.*)', PatchStatus),
   (r'/post', Post),
-  (r'/stats/(best|worst)/(.*)/(.*)', StatsDataPoints),
+  (r'/stats/(highest|lowest)/(.*)/(.*)', StatsDataPoints),
   (r'/stats/(.*)/(.*)', StatsViewer),
 ]
 

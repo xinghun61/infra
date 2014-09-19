@@ -4,7 +4,8 @@
 
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
 from appengine_module.chromium_cq_status.tests.stats_test import StatsTest, hours  # pylint: disable=C0301
-from appengine_module.chromium_cq_status.model.cq_stats import CountStats, ListStats  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.stats.analysis import PatchsetReference
+
 
 class TryjobverifierStatsTest(StatsTest):
   def test_tryjobverifier_simple_count(self):
@@ -28,10 +29,10 @@ class TryjobverifierStatsTest(StatsTest):
         (7, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
       )
       name = 'tryjobverifier-%s-count' % action
-      self.assertEquals(CountStats(
+      self.assertEquals(self.create_count(
           name=name,
           description=description,
-          count=1,
+          tally={PatchsetReference(1, 1): 1},
         ), self.get_stats(name))
 
   def test_tryjobverifier_first_run_durations(self):
@@ -54,19 +55,17 @@ class TryjobverifierStatsTest(StatsTest):
       (21, {'issue': 3, 'patchset': 1, 'action': 'verifier_pass'}),
       (22, {'issue': 3, 'patchset': 1, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='tryjobverifier-first-run-durations',
-      description='Time spent on each tryjob verifier first run.',
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 1, 'patchset': 1}],
-      [hours(1), {'issue': 2, 'patchset': 1}],
-      [hours(4), {'issue': 2, 'patchset': 1}],
-      [hours(3), {'issue': 3, 'patchset': 1}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier-first-run-durations'))
+    self.assertEquals(self.create_list(
+        name='tryjobverifier-first-run-durations',
+        description='Time spent on each tryjob verifier first run.',
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(1, 1)),
+          (hours(1), PatchsetReference(2, 1)),
+          (hours(4), PatchsetReference(2, 1)),
+          (hours(3), PatchsetReference(3, 1)),
+        ),
+      ), self.get_stats('tryjobverifier-first-run-durations'))
 
   def test_tryjobverifier_retry_durations(self):
     self.analyze_records(
@@ -92,20 +91,18 @@ class TryjobverifierStatsTest(StatsTest):
       (22, {'issue': 3, 'patchset': 2, 'action': 'verifier_pass'}),
       (23, {'issue': 3, 'patchset': 2, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='tryjobverifier-retry-durations',
-      description='Time spent on each tryjob verifier retry.',
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(3), {'issue': 2, 'patchset': 1}],
-      [hours(1), {'issue': 3, 'patchset': 2}],
-      [hours(1), {'issue': 3, 'patchset': 2}],
-      [hours(1), {'issue': 3, 'patchset': 2}],
-      [hours(1), {'issue': 3, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier-retry-durations'))
+    self.assertEquals(self.create_list(
+        name='tryjobverifier-retry-durations',
+        description='Time spent on each tryjob verifier retry.',
+        unit='seconds',
+        points=(
+          (hours(3), PatchsetReference(2, 1)),
+          (hours(1), PatchsetReference(3, 2)),
+          (hours(1), PatchsetReference(3, 2)),
+          (hours(1), PatchsetReference(3, 2)),
+          (hours(1), PatchsetReference(3, 2)),
+        ),
+      ), self.get_stats('tryjobverifier-retry-durations'))
 
   def test_tryjobverifier_total_durations(self):
     self.analyze_records(
@@ -123,15 +120,13 @@ class TryjobverifierStatsTest(StatsTest):
       (20, {'issue': 1, 'patchset': 2, 'action': 'verifier_timeout'}),
       (21, {'issue': 1, 'patchset': 2, 'action': 'patch_stop'}),
     )
-    list_stats = ListStats(
-      name='tryjobverifier-total-durations',
-      description='Total time spent per CQ attempt on tryjob verifier runs.',
-      unit='seconds',
-    )
-    list_stats.set_from_points((
-      [hours(1), {'issue': 1, 'patchset': 1}],
-      [hours(4), {'issue': 1, 'patchset': 1}],
-      [hours(7), {'issue': 1, 'patchset': 2}],
-    ))
-    self.assertEquals(list_stats,
-        self.get_stats('tryjobverifier-total-durations'))
+    self.assertEquals(self.create_list(
+        name='tryjobverifier-total-durations',
+        description='Total time spent per CQ attempt on tryjob verifier runs.',
+        unit='seconds',
+        points=(
+          (hours(1), PatchsetReference(1, 1)),
+          (hours(4), PatchsetReference(1, 1)),
+          (hours(7), PatchsetReference(1, 2)),
+        ),
+      ), self.get_stats('tryjobverifier-total-durations'))

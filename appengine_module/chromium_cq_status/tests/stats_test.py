@@ -8,7 +8,7 @@ from appengine_module.testing_utils import testing
 
 from appengine_module.chromium_cq_status import main
 from appengine_module.chromium_cq_status.model.record import Record
-from appengine_module.chromium_cq_status.model.cq_stats import CQStats
+from appengine_module.chromium_cq_status.model.cq_stats import CountStats, CQStats, ListStats  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.shared.config import STATS_START_TIMESTAMP  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.shared.utils import minutes_per_day  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats import analysis
@@ -56,6 +56,32 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
     analysis.utcnow_for_testing = (
         datetime.utcfromtimestamp(STATS_START_TIMESTAMP) +
         timedelta(days=days_from_start))
+
+  @staticmethod
+  def create_count(name, description, tally):
+    count_stats = CountStats(
+      name=name,
+      description=description,
+    )
+    count_stats.set_from_tally(tally)
+    # Force JSON properties to get serialised
+    count_stats.put()
+    # Hide key for equality comparison
+    count_stats.key = None
+    return count_stats
+
+  @staticmethod
+  def create_list(name, description, unit, points):
+    list_stats = ListStats(
+      name=name,
+      description=description,
+      unit=unit,
+    )
+    list_stats.set_from_points(points)
+    # Same hacks here as create_count().
+    list_stats.put()
+    list_stats.key = None
+    return list_stats
 
   @staticmethod
   def get_stats(name):

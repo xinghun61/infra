@@ -11,7 +11,17 @@ from appengine_module.chromium_cq_status.shared.utils import to_unix_timestamp
 class CountStats(ndb.Model): # pragma: no cover
   name = ndb.StringProperty(required=True)
   description = ndb.StringProperty(required=True)
-  count = ndb.IntegerProperty(required=True)
+  count = ndb.IntegerProperty(default=0)
+  lowest_100 = ndb.JsonProperty(default=[])
+  highest_100 = ndb.JsonProperty(default=[])
+
+  def set_from_tally(self, tally):
+    """|tally| is expected to be a dict from namedtuple to int."""
+    self.count = sum(tally.itervalues())
+    points = sorted((count, reference._asdict()) # pylint: disable-msg=W0212
+        for reference, count in tally.iteritems() if count > 0)
+    self.lowest_100 = points[:100]
+    self.highest_100 = points[-100:][::-1]
 
   def to_dict(self):
     return {
@@ -36,25 +46,24 @@ class ListStats(ndb.Model): # pragma: no cover
   percentile_90 = ndb.FloatProperty(default=0)
   percentile_95 = ndb.FloatProperty(default=0)
   percentile_99 = ndb.FloatProperty(default=0)
-  best_100 = ndb.JsonProperty(default=[])
-  worst_100 = ndb.JsonProperty(default=[])
+  lowest_100 = ndb.JsonProperty(default=[])
+  highest_100 = ndb.JsonProperty(default=[])
 
-  def set_from_points(self, points, lower_is_better=True):
+  def set_from_points(self, points):
+    """|points| is expected to be a list of (float, namedtuple) pairs."""
     self.sample_size = len(points)
-    sorted_points = sorted(points)
+    # pylint: disable-msg=W0212
+    sorted_points = sorted((value, reference._asdict())
+        for value, reference in points)
     if points:
       sorted_values = [value for value, _ in sorted_points]
-      if lower_is_better:
-        self.best_100 = sorted_points[:100]
-        self.worst_100 = sorted_points[-100:][::-1]
-      else:
-        self.best_100 = sorted_points[-100:][::-1]
-        self.worst_100 = sorted_points[:100]
+      self.lowest_100 = sorted_points[:100]
+      self.highest_100 = sorted_points[-100:][::-1]
     else:
       # Use 0 as a default value for the numeric stats.
       sorted_values = [0]
-      self.best_100 = []
-      self.worst_100 = []
+      self.lowest_100 = []
+      self.highest_100 = []
     self.min = sorted_values[0]
     self.max = sorted_values[-1]
     self.mean = numpy.mean(sorted_values)

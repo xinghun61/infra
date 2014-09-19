@@ -101,20 +101,21 @@ The returned query results are in the following JSON structure:
 
 Example: <a href="/stats/query?project=chromium&names=issue_count,patchset_count&count=1">/stats/query?project=chromium&names=issue_count,patchset_count&count=1</a>
 
-The "key" parameter can be used to query the best/worst data points in list stats.
+The "key" parameter can be used to query the lowest/highest data points in individual stats.
 
 
-&gt;&gt;&gt; <a href="/stats/(best|worst)/<list stats name>/<CQ stats key>">/stats/(best|worst)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
-API for querying best/worst data points in list type stats.
+&gt;&gt;&gt; <a href="/stats/(lowest|highest)/<list stats name>/<CQ stats key>">/stats/(lowest|highest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
+API for querying highest/lowest data points in individual stats.
 Only accepts GET requests.
-The returned data points in the following JSON structure:
+Data points are returned in the following JSON structure:
 [
   [
     float,
     {data point metadata}
   ]
 ]
-The data points are ordered starting with the best/worst depending on whether "best" or "worst" was used in the URL.
+The highest data points are given in descending order.
+The lowest data points are given in ascending order.
 Data point metadata is typically of the form:
 {
   "issue": int,
@@ -122,8 +123,8 @@ Data point metadata is typically of the form:
 }
 
 Examples:
-<a href="/stats/best/attempt_durations/5115330275835904">/stats/best/attempt_durations/5115330275835904</a>
-<a href="/stats/best/attempt_durations/5115330275835904">/stats/worst/attempt_durations/5115330275835904</a>
+<a href="/stats/lowest/attempt_durations/5115330275835904">/stats/lowest/attempt_durations/5115330275835904</a>
+<a href="/stats/highest/attempt_durations/5115330275835904">/stats/highest/attempt_durations/5115330275835904</a>
 
 
 &gt;&gt;&gt; <a href="/query">/query</a>
