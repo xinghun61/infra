@@ -16,6 +16,7 @@ import logging
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -115,9 +116,17 @@ def remove_directory(path):
   """Recursively removes a directory."""
   assert isinstance(path, (list, tuple))
   p = os.path.join(*path)
-  if os.path.exists(p):
-    LOGGER.info('Removing %s', p)
-    shutil.rmtree(p)
+  if not os.path.exists(p):
+    return
+  LOGGER.info('Removing %s', p)
+  # Crutch to remove read-only file (.git/* in particular) on Windows.
+  def onerror(func, path, _exc_info):
+    if not os.access(path, os.W_OK):
+      os.chmod(path, stat.S_IWUSR)
+      func(path)
+    else:
+      raise
+  shutil.rmtree(p, onerror=onerror if sys.platform == 'win32' else None)
 
 
 def install_toolset(toolset_root, url):
@@ -166,7 +175,7 @@ def temp_dir(path):
   try:
     yield tmp
   finally:
-    shutil.rmtree(tmp)
+    remove_directory([tmp])
 
 
 def check_hello_world(toolset_root):
@@ -220,9 +229,12 @@ def ensure_goop_installed(toolset_root):
         cwd=tmp,
         env=get_go_environ(toolset_root, tmp, [], []),
         stdout=sys.stderr)
-    os.rename(
-        os.path.join(tmp, 'bin', 'goop' + EXE_SFX),
-        os.path.join(toolset_root, 'go', 'bin', 'goop' + EXE_SFX))
+
+    # Windows os.rename doesn't support overwrites.
+    dest = os.path.join(toolset_root, 'go', 'bin', 'goop' + EXE_SFX)
+    if os.path.exists(dest):
+      os.remove(dest)
+    os.rename(os.path.join(tmp, 'bin', 'goop' + EXE_SFX), dest)
 
   LOGGER.info('goop tool is installed')
   write_file([toolset_root, 'INSTALLED_GOOP'], available_goop)
@@ -230,8 +242,9 @@ def ensure_goop_installed(toolset_root):
 
 def fetch_goop_code(workspace, spec):
   """Fetches Goop source code with dependencies."""
+  git_exe = 'git.bat' if sys.platform == 'win32' else 'git'
   def git(cmd, cwd):
-    subprocess.check_call(['git'] + cmd, cwd=cwd, stdout=sys.stderr)
+    subprocess.check_call([git_exe] + cmd, cwd=cwd, stdout=sys.stderr)
   for path, repo in sorted(spec.iteritems()):
     path = os.path.join(workspace, path.replace('/', os.sep))
     os.makedirs(path)
@@ -346,13 +359,32 @@ def bootstrap(vendor_paths, logging_level):
     update_vendor_packages(TOOLSET_ROOT, p)
 
 
-def prepare_go_environ():
+def prepare_go_environ(skip_goop_update=False):
   """Returns dict with environment variables to set to use Go toolset.
 
   Installs or updates the toolset if necessary.
   """
-  bootstrap([WORKSPACE], logging.INFO)
-  return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], [WORKSPACE])
+  vendor_paths = [] if skip_goop_update else [WORKSPACE]
+  bootstrap(vendor_paths, logging.INFO)
+  return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], vendor_paths)
+
+
+def find_executable(name, workspaces):
+  """Returns full path to an executable in some bin/ (in GOROOT or GOBIN)."""
+  basename = name
+  if basename.endswith(EXE_SFX):
+    basename = basename[:-len(EXE_SFX)]
+  roots = [os.path.join(TOOLSET_ROOT, 'go', 'bin')]
+  for path in workspaces:
+    roots.extend([
+      os.path.join(path, '.vendor', 'bin'),
+      os.path.join(path, 'bin'),
+    ])
+  for root in roots:
+    full_path = os.path.join(root, basename + EXE_SFX)
+    if os.path.exists(full_path):
+      return full_path
+  return name
 
 
 def main(args):

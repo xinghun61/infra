@@ -25,14 +25,20 @@ import sys
 bootstrap = imp.load_source(
     'bootstrap', os.path.join(os.path.dirname(__file__), 'bootstrap.py'))
 
+# Do not bring in vendor paths when running goop itself. Goop gets confused.
+running_goop = len(sys.argv) > 1 and sys.argv[1] == 'goop'
+
 old = os.environ.copy()
-new = bootstrap.prepare_go_environ()
+new = bootstrap.prepare_go_environ(skip_goop_update=running_goop)
 
 if len(sys.argv) == 1:
   for key, value in sorted(new.iteritems()):
     if old.get(key) != value:
       print 'export %s="%s"' % (key, value)
 else:
-  if sys.argv[1] == 'python':
-    sys.argv[1] = sys.executable
-  sys.exit(subprocess.call(sys.argv[1:], env=new))
+  exe = sys.argv[1]
+  if exe == 'python':
+    exe = sys.executable
+  else:
+    exe = bootstrap.find_executable(exe, [bootstrap.WORKSPACE])
+  sys.exit(subprocess.call([exe] + sys.argv[2:], env=new))
