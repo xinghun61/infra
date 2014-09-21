@@ -372,7 +372,7 @@ def prepare_go_environ(skip_goop_update=False):
 def find_executable(name, workspaces):
   """Returns full path to an executable in some bin/ (in GOROOT or GOBIN)."""
   basename = name
-  if basename.endswith(EXE_SFX):
+  if EXE_SFX and basename.endswith(EXE_SFX):
     basename = basename[:-len(EXE_SFX)]
   roots = [os.path.join(TOOLSET_ROOT, 'go', 'bin')]
   for path in workspaces:

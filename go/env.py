@@ -40,5 +40,8 @@ else:
   if exe == 'python':
     exe = sys.executable
   else:
-    exe = bootstrap.find_executable(exe, [bootstrap.WORKSPACE])
+    # Help Windows to find the executable in new PATH, do it only when
+    # executable is referenced by name (and not by path).
+    if os.sep not in exe:
+      exe = bootstrap.find_executable(exe, [bootstrap.WORKSPACE])
   sys.exit(subprocess.call([exe] + sys.argv[2:], env=new))
