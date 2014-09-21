@@ -18,9 +18,6 @@ class Analyzer(object):
   def build_stats(self):
     raise NotImplementedError()
 
-  def _get_name(self):  # pragma: no cover
-    return re.sub(r'([a-z])([A-Z])', r'\1-\2', type(self).__name__).lower()
-
 
 class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223
   def __init__(self):  # pragma: no cover
@@ -33,6 +30,9 @@ class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223
     )
     count_stats.set_from_tally(self.tally)
     return (count_stats,)
+
+  def _get_name(self):  # pragma: no cover
+    return dashed_class_name(self)
 
 
 class ListAnalyzer(Analyzer): # pylint: disable-msg=W0223
@@ -48,6 +48,9 @@ class ListAnalyzer(Analyzer): # pylint: disable-msg=W0223
     list_stats.set_from_points(self.points)
     return (list_stats,)
 
+  def _get_name(self):  # pragma: no cover
+    return dashed_class_name(self)
+
 
 class AnalyzerGroup(Analyzer):
   def __init__(self, *analyzer_classes):  # pragma: no cover
@@ -59,3 +62,6 @@ class AnalyzerGroup(Analyzer):
 
   def build_stats(self):  # pragma: no cover
     return chain(*(analyzer.build_stats() for analyzer in self.analyzers))
+
+def dashed_class_name(obj):  # pragma: no cover
+  return re.sub(r'([a-z])([A-Z])', r'\1-\2', type(obj).__name__).lower()

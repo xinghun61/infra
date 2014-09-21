@@ -18,6 +18,7 @@ from appengine_module.chromium_cq_status.model.record import Record
 from appengine_module.chromium_cq_status.shared.config import STATS_START_TIMESTAMP  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats.analyzer import AnalyzerGroup
 from appengine_module.chromium_cq_status.stats.patchset_stats import PatchsetAnalyzer  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.stats.trybot_stats import TrybotAnalyzer  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats.tryjobverifier_stats import TryjobverifierAnalyzer  # pylint: disable=C0301
 
 start_tag = 'action=patch_start'
@@ -30,6 +31,7 @@ utcnow_for_testing = None
 
 analyzers = (
   PatchsetAnalyzer,
+  TrybotAnalyzer,
   TryjobverifierAnalyzer,
 )
 
