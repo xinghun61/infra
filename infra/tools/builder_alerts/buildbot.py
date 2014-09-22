@@ -11,11 +11,15 @@ import os
 import re
 import urllib
 import urlparse
+import time
 
 import requests
 
 from infra.tools.builder_alerts import string_helpers
 
+HUNG_BUILDER_ALERT_THRESHOLD = 3 * 60 * 60
+OFFLINE_BUILDER_ALERT_THRESHOLD = 0.5 * 60 * 60
+IDLE_BUILDER_PENDING_ALERT_THRESHOLD = 5
 
 CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
@@ -199,24 +203,44 @@ def latest_update_time_for_builder(last_build):
         last_update = max(float(step_time), last_update)
   return last_update
 
+def create_stale_builder_alert_if_needed(master_url, builder_name, state, pending_builds, last_update_time):
+  alert = None
+  current_time = int(time.time())
+  if ((state == "building" and current_time - last_update_time > HUNG_BUILDER_ALERT_THRESHOLD)
+      or (state == "offline" and current_time - last_update_time > OFFLINE_BUILDER_ALERT_THRESHOLD)
+      or (state == "idle" and pending_builds > IDLE_BUILDER_PENDING_ALERT_THRESHOLD)):
+    alert = {
+      'master_url': master_url,
+      'builder_name': builder_name,
+      'state': state,
+      'last_update_time': last_update_time,
+      'pending_builds': pending_builds,
+    }
+  return alert
 
 # "line too long" pylint: disable=C0301
-def latest_builder_info_for_master(cache, master_url, master_json):
+def latest_builder_info_and_alerts_for_master(cache, master_url, master_json):
   latest_builder_info = collections.defaultdict(dict)
+  stale_builder_alerts = []
   master_name = master_name_from_url(master_url)
   for builder_name, builder_json in master_json['builders'].items():
-    # recent_builds can include current builds
-    recent_builds = set(builder_json['cachedBuilds'])
-    active_builds = set(builder_json['currentBuilds'])
-    last_finished_id = sorted(recent_builds - active_builds, reverse=True)[0]
+    latest_build_id = sorted(
+        builder_json['cachedBuilds'] + builder_json['currentBuilds'])[-1]
     last_build = fetch_build_json(cache,
-        master_url, builder_name, last_finished_id)
+        master_url, builder_name, latest_build_id)
+    last_update_time = latest_update_time_for_builder(last_build)
+    state = builder_json['state']
     latest_builder_info[master_name][builder_name] = {
       'revisions': revisions_from_build(last_build),
-      'state': builder_json['state'],
+      'state': state,
       'lastUpdateTime': latest_update_time_for_builder(last_build),
     }
-  return latest_builder_info
+
+    stale_builder_alert = create_stale_builder_alert_if_needed(master_url,
+        builder_name, state, builder_json['pendingBuilds'], last_update_time)
+    if stale_builder_alert:
+      stale_builder_alerts.append(stale_builder_alert)
+  return (latest_builder_info, stale_builder_alerts)
 
 
 def warm_build_cache(cache, master_url, builder_name,

@@ -4,6 +4,7 @@
 
 import shutil
 import tempfile
+import time
 import unittest
 
 from infra.tools.builder_alerts import buildbot
@@ -38,7 +39,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
     self.assertIsNone(cache.get('does_not_exist'))
     self.assertIsNotNone(cache.key_age(test_key))
 
-  def test_latest_builder_info_for_master(self):
+  def test_latest_builder_info_and_alerts_for_master(self):
     k_example_master_json = {
       "builders": {
         "Win Builder": {
@@ -71,6 +72,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
         "currentStep": None,
         "eta": None,
         "number": 1771,
+        "pendingBuilds": 7,
         "properties": [
           [
             "build_archive_url",
@@ -250,8 +252,9 @@ class DiskCacheTest(TestCaseWithDiskCache):
     try:
       buildbot.fetch_build_json = mock_fetch_build_json
 
-      builder_info = buildbot.latest_builder_info_for_master(cache,
-          'http://build.chromium.org/p/chromium.webkit', k_example_master_json)
+      builder_info = buildbot.latest_builder_info_and_alerts_for_master(cache,
+          'http://build.chromium.org/p/chromium.webkit',
+          k_example_master_json)[0]
       expected_builder_info = {
         'chromium.webkit': {
           'Win Builder': {
@@ -269,6 +272,38 @@ class DiskCacheTest(TestCaseWithDiskCache):
       self.assertEqual(builder_info, expected_builder_info)
     finally:
       buildbot.fetch_build_json = old_fetch_build_json
+
+  def test_create_stale_builder_alert_if_needed(self):
+    master_url = "https://build.chromium.org/p/chromium.mac"
+    current_time = int(time.time())
+
+    failing_build_time = current_time - (3.1 * 60 * 60)
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "building", 50, failing_build_time)
+    self.assertIsNotNone(alert)
+
+    passing_build_time = current_time - (60 * 60)
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "building", 50, passing_build_time)
+    self.assertIsNone(alert)
+
+    failing_offline_time = current_time - (0.6 * 60 * 60)
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "offline", 50, failing_offline_time)
+    self.assertIsNotNone(alert)
+
+    passing_offline_time = current_time - (0.3 * 60 * 60)
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "offline", 50, passing_offline_time)
+    self.assertIsNone(alert)
+
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "idle", 50, current_time)
+    self.assertIsNotNone(alert)
+
+    alert = buildbot.create_stale_builder_alert_if_needed(master_url,
+        "Linux", "idle", 2, current_time)
+    self.assertIsNone(alert)
 
   def test_latest_update_time_for_builder(self):
     k_example_last_build_times = {
@@ -293,13 +328,15 @@ class DiskCacheTest(TestCaseWithDiskCache):
     }
 
     # Test that we use end time when it's present,
-    time = buildbot.latest_update_time_for_builder(k_example_last_build_times)
-    self.assertEqual(time, 11)
+    latest_time = buildbot.latest_update_time_for_builder(
+        k_example_last_build_times)
+    self.assertEqual(latest_time, 11)
 
     # And test that we iterate across step start times when it isn't.
     k_example_last_build_times["times"][1] = None
-    time = buildbot.latest_update_time_for_builder(k_example_last_build_times)
-    self.assertEqual(time, 22)
+    latest_time = buildbot.latest_update_time_for_builder(
+        k_example_last_build_times)
+    self.assertEqual(latest_time, 22)
 
   def test_latest_update_time_for_builder_none_values(self):
     # Test that a step that hasn't started yet doesn't throw an error.
@@ -324,8 +361,9 @@ class DiskCacheTest(TestCaseWithDiskCache):
       ]
     }
 
-    time = buildbot.latest_update_time_for_builder(k_example_last_build_times)
-    self.assertEqual(time, 21)
+    latest_time = buildbot.latest_update_time_for_builder(
+        k_example_last_build_times)
+    self.assertEqual(latest_time, 21)
 
 
 class BuildbotTest(unittest.TestCase):
@@ -352,7 +390,7 @@ class BuildbotTest(unittest.TestCase):
 class RevisionsForMasterTest(TestCaseWithDiskCache):
   def test_builder_info_for_master(self):
     """
-    Tests latest_builder_info_for_master.
+    Tests latest_builder_info_and_alerts_for_master.
 
     We have to pre-fill the build json cache to avoid this test hitting the
     network, which accounts for much of the complexity here.
@@ -380,12 +418,14 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
         'builder0': {
           'cachedBuilds': [0, 1],
           'currentBuilds': [2],
-          'state': 'happy'
+          'state': 'happy',
+          "pendingBuilds": 1,
         },
         'builder1': {
           'cachedBuilds': [2, 3, 4, 5, 7],
           'currentBuilds': [4, 5, 6, 7],
-          'state': 'sad'
+          'state': 'sad',
+          "pendingBuilds": 1,
         }
       }
     }
@@ -393,23 +433,23 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     for b in builds:
       cache_set(master0_url, 'builder0', b['index'], b)
       cache_set(master0_url, 'builder1', b['index'], b)
-    latest = buildbot.latest_builder_info_for_master(cache, master0_url,
-        master0)
+    latest = buildbot.latest_builder_info_and_alerts_for_master(cache,
+        master0_url, master0)[0]
     self.assertIn('master0', latest)
     self.assertIn('builder0', latest['master0'])
     self.assertIn('builder1', latest['master0'])
-    # b0's latest cached build is 1
+    # b0's latest build is 1
     b0 = latest['master0']['builder0']['revisions']
-    self.assertEqual(b0['chromium'], 101)
-    self.assertEqual(b0['blink'], 201)
-    self.assertEqual(b0['v8'], 301)
-    self.assertEqual(b0['nacl'], 401)
-    # b1's latest cached build is 3
+    self.assertEqual(b0['chromium'], 102)
+    self.assertEqual(b0['blink'], 202)
+    self.assertEqual(b0['v8'], 302)
+    self.assertEqual(b0['nacl'], 402)
+    # b1's latest build is 7
     b1 = latest['master0']['builder1']['revisions']
-    self.assertEqual(b1['chromium'], 103)
-    self.assertEqual(b1['blink'], 203)
-    self.assertEqual(b1['v8'], 303)
-    self.assertEqual(b1['nacl'], 403)
+    self.assertEqual(b1['chromium'], 107)
+    self.assertEqual(b1['blink'], 207)
+    self.assertEqual(b1['v8'], 307)
+    self.assertEqual(b1['nacl'], 407)
 
   # This is a silly test to get 100% code coverage. This
   # never actually happens.

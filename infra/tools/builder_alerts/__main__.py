@@ -54,12 +54,13 @@ class SubProcess(object):
         master_url, master_json, self._old_alerts, self._builder_filter,
         self._jobs)
 
-    # FIXME: This doesn't really belong here. garden-o-matic wants
-    # this data and we happen to have the builder json cached at
-    # this point so it's cheap to compute.
-    builder_info = buildbot.latest_builder_info_for_master(self._cache,
-        master_url, master_json)
-    return (master_alerts, builder_info)
+    # FIXME: The builder info doesn't really belong here. The builder revisions
+    # tool uses this and we happen to have the builder json cached at
+    # this point so it's cheap to compute, but it should be moved
+    # to a different feed.
+    data = buildbot.latest_builder_info_and_alerts_for_master(
+        self._cache, master_url, master_json)
+    return (master_alerts, data[0], data[1])
 
 
 def main(args):
@@ -126,6 +127,7 @@ def main(args):
         old_alerts[alert_key] = alert
 
   latest_builder_info = {}
+  stale_builder_alerts = []
   alerts = []
 
   pool = multiprocessing.Pool(processes=args.processes)
@@ -139,6 +141,7 @@ def main(args):
       continue
     alerts.extend(data[0])
     latest_builder_info.update(data[1])
+    stale_builder_alerts.extend(data[2])
 
   print "Fetch took: %s" % (datetime.datetime.now() - start_time)
 
@@ -153,6 +156,7 @@ def main(args):
       'reason_groups': reason_groups,
       'range_groups': range_groups,
       'latest_builder_info': latest_builder_info,
+      'stale_builder_alerts': stale_builder_alerts,
   })}
 
   if not args.data_url:
