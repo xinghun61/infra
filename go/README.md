@@ -79,14 +79,17 @@ and nowhere else.
 Building everything and installing binaries into infra/go/bin:
 
     cd infra/go
-    ./go.py install ./...
+    ./env.py go install ./...
 
 Running all tests:
 
     cd infra/go
-    ./go.py test ./...
+    ./env.py go test ./...
 
-(You've got the idea, ./go.py just wraps 'go').
+OR, to also grab code coverage report:
+
+    cd infra/go
+    ./env.py ./test.py
 
 
 ## Dependencies
