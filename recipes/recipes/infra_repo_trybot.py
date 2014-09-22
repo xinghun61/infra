@@ -42,7 +42,7 @@ def GenSteps(api):
   if any(f.startswith('go/') for f in files):
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python(
-        'go/test.py', api.path['checkout'].join('go', 'env.py'),
+        'go test.py', api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
   api.python('presubmit',

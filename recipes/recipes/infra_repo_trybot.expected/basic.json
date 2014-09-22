@@ -97,7 +97,7 @@
       "python",
       "[SLAVE_BUILD]/infra/go/test.py"
     ],
-    "name": "go/test.py"
+    "name": "go test.py"
   },
   {
     "cmd": [
