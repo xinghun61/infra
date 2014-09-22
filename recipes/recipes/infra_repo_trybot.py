@@ -10,7 +10,7 @@ DEPS = [
   'path',
   'properties',
   'python',
-  'properties',
+  'raw_io',
 ]
 
 
@@ -27,7 +27,23 @@ def GenSteps(api):
           name='commit git patch',
           cwd=api.path['checkout'])
   api.gclient.runhooks()
-  api.python('test.py', api.path['checkout'].join('test.py'))
+
+  # Grab a list of changed files.
+  result = api.git(
+      'diff', '--name-only', 'HEAD', 'HEAD~',
+      name='get change list',
+      cwd=api.path['checkout'],
+      stdout=api.raw_io.output())
+  files = result.stdout.splitlines()
+
+  if not all(f.startswith('go/') for f in files):
+    api.python('test.py', api.path['checkout'].join('test.py'))
+
+  if any(f.startswith('go/') for f in files):
+    # Note: env.py knows how to expand 'python' into sys.executable.
+    api.python(
+        'go/test.py', api.path['checkout'].join('go', 'env.py'),
+        ['python', api.path['checkout'].join('go', 'test.py')])
 
   api.python('presubmit',
       api.path['depot_tools'].join('presubmit_support.py'),
@@ -47,10 +63,33 @@ def GenSteps(api):
 
 
 def GenTests(api):
+  def diff(*files):
+    return api.step_data(
+        'get change list', api.raw_io.stream_output('\n'.join(files)))
+
   yield (
     api.test('basic') +
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
         buildername='infra_tester',
-        repo_name='infra')
+        repo_name='infra') +
+    diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('only_go') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        repo_name='infra') +
+    diff('go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('only_python') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        repo_name='infra') +
+    diff('infra/stuff.py')
   )

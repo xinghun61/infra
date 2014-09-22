@@ -85,14 +85,6 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/test.py"
-    ],
-    "name": "test.py"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "[SLAVE_BUILD]/infra/go/env.py",
       "python",
       "[SLAVE_BUILD]/infra/go/test.py"
