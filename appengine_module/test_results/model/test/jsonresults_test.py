@@ -1187,7 +1187,7 @@ class JsonResultsTest(unittest.TestCase):
                 'SKIP': 0,
                 'PASS': 1
             },
-            'chromium_revision': '67890',
+            'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
         },
         {
             'tests': {
@@ -1207,7 +1207,7 @@ class JsonResultsTest(unittest.TestCase):
                 'SKIP': 0,
                 'PASS': 0
             },
-            'chromium_revision': '98765',
+            'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d5',
         },
     ]
 
@@ -1228,6 +1228,148 @@ class JsonResultsTest(unittest.TestCase):
       self.assertItemsEqual(j[builder]['blinkRevision'], ['12345', '54321'])
 
     tb.deactivate()
+
+  def test_is_invalid_full_results_json_not_dict(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json([]))
+    self.assertFalse(JsonResults.is_valid_full_results_json("foo"))
+
+  def test_is_invalid_full_results_json_missing_required_fields(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({}))
+
+  def test_is_invalid_full_results_json_incorrect_int_fields(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': 'foobar',
+      'blink_revision': 'foobar',
+      'build_number': 'foobar',
+      'version': 'foobar',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': 'foobar',
+      'num_failures_by_type': 'foobar',
+      'tests': 'foobar',
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_dict_fields(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': 'foobar',
+      'tests': 'foobar',
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_failure_type_value(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {10: 123},
+      'tests': {},
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_failure_type_count(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': 'foobar'},
+      'tests': {},
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_test_name(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {10: 123},
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_test_config_type(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': 123},
+    }))
+
+  def test_is_invalid_full_results_json_missing_required_fields_in_test(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': {'actual': '10'}},
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_actual_expected_type(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': {'actual': 10, 'expected': 20}},
+    }))
+
+  def test_is_invalid_full_results_json_incorrect_time_type(self):
+    self.assertFalse(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': {'actual': 'FAIL', 'expected': 'FAIL',
+                         'time': 'foobar'}},
+    }))
+
+  # Some projects still report numeric chromium_revision in their json.
+  def test_is_valid_full_results_json_numeric_chromium_revision(self):
+    self.assertTrue(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '12345',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': {'actual': 'FAIL', 'expected': 'PASS',
+                         'time': '10'}},
+    }))
+
+  def test_is_valid_full_results_json(self):
+    self.assertTrue(JsonResults.is_valid_full_results_json({
+      'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+      'blink_revision': '12345',
+      'build_number': '12345',
+      'version': '5',
+      'builder_name': 'foobar',
+      'seconds_since_epoch': '12345',
+      'num_failures_by_type': {'FAIL': '123'},
+      'tests': {'test': {'actual': 'FAIL', 'expected': 'PASS', 'time': '10'}},
+    }))
 
   @staticmethod
   def test_normalize_results_with_top_level_results_key_does_not_crash():

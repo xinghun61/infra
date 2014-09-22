@@ -528,10 +528,80 @@ class JsonResults(object):
     return record
 
   @classmethod
+  def is_valid_full_results_json(cls, file_json):
+    if not isinstance(file_json, dict):
+      return False
+    required_fields = ['chromium_revision', 'blink_revision',
+                       'build_number', 'version', 'builder_name',
+                       'seconds_since_epoch', 'num_failures_by_type',
+                       'tests']
+    for required_field in required_fields:
+      if required_field not in file_json:
+        return False
+
+    def is_convertable_to_int(value):
+      try:
+        int(value)
+        return True
+      except ValueError:
+        return False
+
+    int_fields = ['blink_revision', 'build_number', 'version',
+                  'seconds_since_epoch']
+    for int_field in int_fields:
+      if not is_convertable_to_int(file_json[int_field]):
+        return False
+
+    def is_git_hash(value):
+      return (isinstance(value, basestring) and len(value) == 40 and
+              all([ch.lower() in '0123456789abcdef' for ch in value]))
+
+    if not is_git_hash(file_json['chromium_revision']):
+      pass # some projects still return numeric chromium revision
+
+    if (not isinstance(file_json['num_failures_by_type'], dict) or
+        not isinstance(file_json['tests'], dict)):
+      return False
+
+    for failure_type, num in file_json['num_failures_by_type'].iteritems():
+      if not isinstance(failure_type, basestring):
+        return False
+      if not is_convertable_to_int(num):
+        return False
+
+    def validate_tests_tree(node):
+      leaf = 'actual' in node or 'expected' in node
+      if leaf:
+        if 'actual' not in node or 'expected' not in node:
+          return False
+        if (not isinstance(node['actual'], basestring) or
+            not isinstance(node['expected'], basestring)):
+          return False
+        if 'time' in node and not is_convertable_to_int(node['time']):
+          return False
+      else:
+        for key, child_node in node.iteritems():
+          if not isinstance(key, basestring):
+            return False
+          if not isinstance(child_node, dict):
+            return False
+          if not validate_tests_tree(child_node):
+            return False
+      return True
+
+    if not validate_tests_tree(file_json['tests']):
+      return False
+
+    return True
+
+  @classmethod
   def update(cls, master, builder, test_type, results_json, deprecated_master,
         is_full_results_format):  # pragma: no cover
     logging.info("Updating %s and %s." %
                  (JSON_RESULTS_FILE_SMALL, JSON_RESULTS_FILE))
+    if (is_full_results_format and
+        not cls.is_valid_full_results_json(results_json)):
+      return ('Invalid full_results.json file.', 500)
     small_file = cls._get_aggregate_file(
         master, builder, test_type, JSON_RESULTS_FILE_SMALL, deprecated_master)
     large_file = cls._get_aggregate_file(
