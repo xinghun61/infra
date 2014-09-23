@@ -37,13 +37,15 @@ class GatekeeperExtrasTest(unittest.TestCase):
          'step_name': 'bot_update'},
         {'master_url': 'http://build.chromium.org/p/chromium',
          'builder_name': 'Win',
-         'step_name': 'bot_update'}
+         'step_name': 'bot_update'},
+        {'master_url': 'http://build.chromium.org/p/chromium',
+         'builder_name': 'Mac'}
     ]
 
     filtered_alerts = gatekeeper_extras.apply_gatekeeper_rules(
         alerts, gatekeeper_cfg, gatekeeper_trees_cfg)
 
-    self.assertEqual(len(filtered_alerts), 2)
+    self.assertEqual(len(filtered_alerts), 3)
     self.assertIn({'master_url': 'http://build.chromium.org/p/chromium',
                    'builder_name': 'Win',
                    'step_name': 'bot_update',
@@ -53,6 +55,11 @@ class GatekeeperExtrasTest(unittest.TestCase):
         {'master_url': 'http://build.chromium.org/p/project.without.config',
          'builder_name': 'Linux',
          'step_name': 'test_xyz'},
+        filtered_alerts)
+    self.assertIn(
+        {'master_url': 'http://build.chromium.org/p/chromium',
+         'builder_name': 'Mac',
+         'tree': 'test-tree'},
         filtered_alerts)
 
   def test_tree_for_master_returns_tree_name(self):

@@ -146,7 +146,9 @@ def main(args):
   print "Fetch took: %s" % (datetime.datetime.now() - start_time)
 
   alerts = gatekeeper_extras.apply_gatekeeper_rules(alerts, gatekeeper,
-                                                    gatekeeper_trees)
+      gatekeeper_trees)
+  stale_builder_alerts = gatekeeper_extras.apply_gatekeeper_rules(
+      stale_builder_alerts, gatekeeper, gatekeeper_trees)
 
   alerts = analysis.assign_keys(alerts)
   reason_groups = analysis.group_by_reason(alerts)
