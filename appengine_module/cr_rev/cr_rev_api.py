@@ -9,7 +9,11 @@ from protorpc import remote
 from appengine_module.cr_rev import controller
 from appengine_module.cr_rev import models
 
-# pylint: disable=R0201,C0322
+# False positive with 'Method could be a function.'.
+# pylint: disable=R0201
+
+# False positive with 'Operator not preceded by a space.'.
+# pylint: disable=C0322
 
 package = 'CrRev'
 

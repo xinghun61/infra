@@ -8,6 +8,11 @@ builtins:
 - appstats: on
 
 handlers:
+# Endpoints handler.
+- url: /_ah/spi/.*
+  script: appengine_module.trooper_o_matic.trooper_o_api.APPLICATION
+  secure: always
+
 - url: /images
   static_dir: images
 
@@ -29,3 +34,5 @@ libraries:
   version: latest
 - name: numpy
   version: latest
+- name: endpoints
+  version: 1.0

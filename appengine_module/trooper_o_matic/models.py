@@ -4,6 +4,10 @@
 
 from google.appengine.ext import ndb
 
+from appengine_module.trooper_o_matic.endpoints_proto_datastore.ndb import (
+    EndpointsModel)
+
+
 SLO_BUILDTIME_MEDIAN = 30 * 60  # 30 minutes
 SLO_BUILDTIME_MAX = 60 * 60  # 60 minutes
 
@@ -12,7 +16,7 @@ class Project(ndb.Model):
   pass
 
 
-class CqStat(ndb.Model):
+class CqStat(EndpointsModel):
   timestamp = ndb.DateTimeProperty(auto_now_add=True)
   length = ndb.IntegerProperty(required=True)
   min = ndb.FloatProperty()

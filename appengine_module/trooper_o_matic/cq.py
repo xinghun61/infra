@@ -6,9 +6,7 @@ import jinja2
 import os
 import webapp2
 
-from google.appengine.ext import ndb
-
-from appengine_module.trooper_o_matic import models
+from appengine_module.trooper_o_matic import controller
 from appengine_module.trooper_o_matic import timezones
 
 
@@ -39,19 +37,7 @@ class CqHandler(webapp2.RequestHandler):
             ]} for stat in data]
 
   def get(self, project):
-    project_key = ndb.Key(models.Project, project)
-    single_run_data = models.CqStat.query(ancestor=project_key).order(
-        -models.CqStat.timestamp).fetch(limit=100)
-    single_run_data = [run for run in single_run_data if run.p50]
-    single_run_data.reverse()
-    queue_time_data = models.CqTimeInQueueForPatchStat.query(
-        ancestor=project_key).order(-models.CqStat.timestamp).fetch(limit=100)
-    queue_time_data = [run for run in queue_time_data if run.p50]
-    queue_time_data.reverse()
-    total_time_data = models.CqTotalTimeForPatchStat.query(
-        ancestor=project_key).order(-models.CqStat.timestamp).fetch(limit=100)
-    total_time_data = [run for run in total_time_data if run.p50]
-    total_time_data.reverse()
+    cq_data = controller.get_cq_stats(project)
     length_cols = [
         {'id': 'timestamp', 'label': 'Time', 'type': 'datetime'},
         {'id': 'length', 'label': 'Commit Queue Length', 'type': 'number'},
@@ -60,7 +46,7 @@ class CqHandler(webapp2.RequestHandler):
         'c': [
             {'v': self._FormatGoogleChartsDateTime(stat.timestamp)},
             {'v': stat.length},
-            ]} for stat in single_run_data]
+            ]} for stat in cq_data['single_run_data']]
     length_graph = {'cols': length_cols, 'rows': length_rows}
     run_cols = [
         {'id': 'timestamp', 'label': 'Time', 'type': 'datetime'},
@@ -70,11 +56,11 @@ class CqHandler(webapp2.RequestHandler):
         {'id': 'p90', 'label': '90th', 'type': 'number'},
         {'id': 'p99', 'label': '99th', 'type': 'number'},
     ]
-    single_run_rows = self._CreateGoogleChartRows(single_run_data)
+    single_run_rows = self._CreateGoogleChartRows(cq_data['single_run_data'])
     single_run_graph = {'cols': run_cols, 'rows': single_run_rows}
-    queue_time_rows = self._CreateGoogleChartRows(queue_time_data)
+    queue_time_rows = self._CreateGoogleChartRows(cq_data['queue_time_data'])
     queue_time_graph = {'cols': run_cols, 'rows': queue_time_rows}
-    total_time_rows = self._CreateGoogleChartRows(total_time_data)
+    total_time_rows = self._CreateGoogleChartRows(cq_data['total_time_data'])
     total_time_graph = {'cols': run_cols, 'rows': total_time_rows}
 
     template = JINJA_ENVIRONMENT.get_template('cq.html')
