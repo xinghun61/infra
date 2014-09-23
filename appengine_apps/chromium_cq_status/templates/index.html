@@ -104,7 +104,7 @@ Example: <a href="/stats/query?project=chromium&names=issue-count,patchset-*&cou
 The "key" parameter can be used to query the lowest/highest data points in individual stats.
 
 
-&gt;&gt;&gt; <a href="/stats/(lowest|highest)/<list stats name>/<CQ stats key>">/stats/(lowest|highest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
+&gt;&gt;&gt; <a href="/stats/(highest|lowest)/<list stats name>/<CQ stats key>">/stats/(highest|lowest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
 API for querying highest/lowest data points in individual stats.
 Only accepts GET requests.
 Data points are returned in the following JSON structure:
@@ -123,8 +123,8 @@ Data point metadata is typically of the form:
 }
 
 Examples:
-<a href="/stats/lowest/attempt_durations/5115330275835904">/stats/lowest/attempt_durations/5115330275835904</a>
-<a href="/stats/highest/attempt_durations/5115330275835904">/stats/highest/attempt_durations/5115330275835904</a>
+<a href="/stats/highest/attempt-durations/5717456370794496">/stats/highest/attempt-durations/5717456370794496</a>
+<a href="/stats/lowest/attempt-durations/5717456370794496">/stats/lowest/attempt-durations/5717456370794496</a>
 
 
 &gt;&gt;&gt; <a href="/query">/query</a>
