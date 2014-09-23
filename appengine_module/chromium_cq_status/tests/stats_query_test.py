@@ -145,28 +145,35 @@ class TestStatsQuery(testing.AppengineTestCase):
       }],
     }, _parse_body(response))
 
-  # crbug.com/411050
-  def disabled_test_query_names(self):  # pragma: no cover
+  def test_query_names(self):  # pragma: no cover
     _clear_stats()
     _add_stats('project_a', 40, 789, [
-      CountStats(name='match_a', count=100),
-      ListStats(name='match_b', unit='in'),
+      CountStats(name='match_a', description='', count=100),
+      ListStats(name='match_b', description='', unit='in'),
       CountStats(name='mismatch_a', description='', count=0),
     ])
     _add_stats('project_b', 50, 1234, [
-      CountStats(name='match_a', count=200),
-      ListStats(name='mismatch_b', unit=''),
+      CountStats(name='match_a', description='', count=200),
+      ListStats(name='mismatch_b', description='', unit=''),
     ])
     _add_stats('project_c', 60, 5678, [
-      CountStats(name='mismatch_c', count=0),
-      ListStats(name='mismatch_d', unit=''),
+      CountStats(name='mismatch_c', description='', count=0),
+      ListStats(name='mismatch_d', description='', unit=''),
     ])
-    response = self.test_app.get('/stats/query', params={
-      'names': 'match_a,match_b',
-    })
-    self.assertEquals({
+    expectation = {
       'more': False,
       'results': [{
+        'project': 'project_b',
+        'interval_minutes': 50 * minutes_per_day,
+        'begin': 1234,
+        'end': 4321234,
+        'stats': [{
+          'type': 'count',
+          'name': 'match_a',
+          'description': '',
+          'count': 200,
+        }],
+      }, {
         'project': 'project_a',
         'interval_minutes': 40 * minutes_per_day,
         'begin': 789,
@@ -193,19 +200,18 @@ class TestStatsQuery(testing.AppengineTestCase):
           'percentile_95': 0,
           'percentile_99': 0,
         }],
-      }, {
-        'project': 'project_b',
-        'interval_minutes': 50 * minutes_per_day,
-        'begin': 1234,
-        'end': 4321234,
-        'stats': [{
-          'type': 'count',
-          'name': 'match_a',
-          'description': '',
-          'count': 200,
-        }],
       }],
-    }, _parse_body(response))
+    }
+
+    response = self.test_app.get('/stats/query', params={
+      'names': 'match_a,match_b',
+    })
+    self.assertEquals(expectation, _parse_body(response))
+
+    response = self.test_app.get('/stats/query', params={
+      'names': 'match_*',
+    })
+    self.assertEquals(expectation, _parse_body(response))
 
   def test_query_count_cursor(self):
     _clear_stats()

@@ -54,7 +54,7 @@ Accepts the following optional URL params:
   interval_minutes: int
   begin: timestamp
   end: timestamp
-  names: str (comma separated)
+  names: str (comma separated globs where * and ? are permitted for fuzzy matching)
   count: int=100 (max 1000)
   cursor: str=''
 
@@ -99,7 +99,7 @@ The returned query results are in the following JSON structure:
   "more": bool
 }
 
-Example: <a href="/stats/query?project=chromium&names=issue_count,patchset_count&count=1">/stats/query?project=chromium&names=issue_count,patchset_count&count=1</a>
+Example: <a href="/stats/query?project=chromium&names=issue-count,patchset-*&count=1">/stats/query?project=chromium&names=issue-count,patchset-*&count=1</a>
 
 The "key" parameter can be used to query the lowest/highest data points in individual stats.
 

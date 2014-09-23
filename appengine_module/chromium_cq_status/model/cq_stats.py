@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from fnmatch import fnmatch
 import numpy
 
 from google.appengine.ext import ndb
@@ -109,7 +110,7 @@ class CQStats(ndb.Model): # pragma: no cover
     """
     def combined_stats():
       for stats in self.count_stats + self.list_stats:
-        if not name_filter or stats.name in name_filter:
+        if not name_filter or self.stats_matches_names(stats, name_filter):
           yield stats.to_dict()
     return {
       'key': self.key.id(),
@@ -122,6 +123,10 @@ class CQStats(ndb.Model): # pragma: no cover
 
   def has_any_names(self, names):
     for stats in self.count_stats + self.list_stats:
-      if stats.name in names:
+      if self.stats_matches_names(stats, names):
         return True
     return False
+
+  @staticmethod
+  def stats_matches_names(stats, names):
+    return any(fnmatch(stats.name, name) for name in names)
