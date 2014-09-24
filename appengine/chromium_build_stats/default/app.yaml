@@ -30,5 +30,7 @@ handlers:
   login: required
 - url: /ninja_log.*
   script: _go_app
+- url: /compiler_proxy_log.*
+  script: _go_app
 - url: /.*
   script: _go_app

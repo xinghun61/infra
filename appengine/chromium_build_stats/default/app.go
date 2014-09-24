@@ -8,6 +8,7 @@ package chromiumbuildstats
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -38,8 +39,16 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	gsuri := req.FormValue("gsuri")
 	if gsuri != "" {
 		if strings.HasPrefix(gsuri, "gs://chrome-goma-log") {
-			http.Redirect(w, req, "/ninja_log"+strings.TrimPrefix(gsuri, "gs://chrome-goma-log"), http.StatusSeeOther)
-			return
+			logPath := strings.TrimPrefix(gsuri, "gs://chrome-goma-log")
+			basename := path.Base(gsuri)
+			switch {
+			case strings.HasPrefix(basename, "ninja_log."):
+				http.Redirect(w, req, "/ninja_log"+logPath, http.StatusSeeOther)
+				return
+			case strings.HasPrefix(basename, "compiler_proxy."):
+				http.Redirect(w, req, "/compiler_proxy_log"+logPath, http.StatusSeeOther)
+				return
+			}
 		}
 		http.NotFound(w, req)
 		return
