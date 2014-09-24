@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
-
 from appengine_module.chromium_cq_status.model.cq_stats import CQStats
 
 def get(handler): # pragma: no cover
@@ -11,22 +9,16 @@ def get(handler): # pragma: no cover
 
 def post(handler): # pragma: no cover
   if handler.request.get('all'):
-    query = CQStats.query()
+    stats_list = CQStats.query()
   else:
-    projects = handler.request.get('projects').split(',')
-    begin = handler.request.get('begin')
-    end = handler.request.get('end')
-
-    query = CQStats.query(CQStats.project.IN(projects))
-    if begin:
-      query = query.filter(
-          CQStats.begin >= datetime.utcfromtimestamp(float(begin)))
-    if end:
-      query = query.filter(
-          CQStats.begin <= datetime.utcfromtimestamp(float(end)))
+    stats_list = []
+    for key in handler.request.get('keys').split(','):
+      stats = CQStats.get_by_id(int(key))
+      assert stats, '%s must exist.' % key
+      stats_list.append(stats)
 
   handler.response.write('CQStats removed: [\n')
-  for stats in query:
+  for stats in stats_list:
     handler.response.write('  %s,\n' % stats)
     stats.key.delete()
   handler.response.write(']\n')
