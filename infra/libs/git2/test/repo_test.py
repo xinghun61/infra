@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import hashlib
 import os
 import shutil
@@ -22,6 +23,30 @@ class TestRepo(test_util.TestBasis):
     self.assertEqual(
         self.repo.git('rev-parse', 'branch_O').stdout.strip(),
         self.repo['S'])
+
+  @contextlib.contextmanager
+  def runReifyCustomNetRcTest(self, fake_git_config):
+    netrc_file = os.path.join(self.repos_dir, 'custom_netrc')
+    with open(netrc_file, 'wt') as f:
+      f.write('machine localhost login test-username password test-password\n')
+    fake_home = os.path.abspath(os.path.join(self.repos_dir, 'fake_home'))
+    os.makedirs(fake_home)
+    if fake_git_config:
+      with open(os.path.join(fake_home, '.gitconfig'), 'wt') as f:
+        f.write(fake_git_config)
+    prev_env = os.environ.copy()
+    os.environ['HOME'] = fake_home
+    try:
+      r = self.mkRepo()
+      # make a mirror of THAT, .netrc is not actually used, but whatever, code
+      # path is covered, which is good.
+      r2 = git2.Repo('file://' + r.repo_path)
+      r2.repos_dir = os.path.join(self.repos_dir, 'repos')
+      r2.netrc_file = netrc_file
+      self.capture_stdio(r2.reify)
+      yield r2
+    finally:
+      os.environ = prev_env
 
   def testEmptyRepo(self):
     r = git2.Repo('doesnt_exist')
@@ -145,6 +170,19 @@ class TestRepo(test_util.TestBasis):
     out, err = self.capture_stdio(r.fast_forward_push, {})
     self.assertEqual(out, '')
     self.assertEqual(err, '')
+
+  def testCustomNetRcWithoutConfig(self):
+    with self.runReifyCustomNetRcTest(None):
+      pass
+
+  def testCustomNetRcWithConfig(self):
+    fake_git_config = '\n'.join([
+      '[user]',
+      '\tname = James Bond',
+      '',
+    ])
+    with self.runReifyCustomNetRcTest(fake_git_config) as r:
+      self.assertEqual('James Bond', r.run('config', 'user.name').strip())
 
   def testShareObjectsFrom(self):
     r = self.mkRepo()

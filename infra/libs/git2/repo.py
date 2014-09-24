@@ -6,6 +6,7 @@ import collections
 import errno
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -32,6 +33,7 @@ class Repo(object):
   def __init__(self, url):
     self.dry_run = False
     self.repos_dir = None
+    self.netrc_file = None
 
     self._url = url
     self._repo_path = None
@@ -84,18 +86,24 @@ class Repo(object):
         share_from = share_from.repo_path
       share_objects = os.path.join(share_from, 'objects')
 
-    if not os.path.isdir(rpath):
-      self._log.debug('initializing %r -> %r', self, rpath)
-      tmp_path = tempfile.mkdtemp(dir=self.repos_dir)
-      args = ['clone', '--mirror', self.url, os.path.basename(tmp_path)]
+    def ensure_config(path):
+      if self.netrc_file:
+        home = os.path.expanduser('~')
+        fake_home = os.path.join(path, 'fake_home')
+        try:
+          os.makedirs(fake_home)
+        except OSError as e:  # pragma: no cover
+          if e.errno != errno.EEXIST:
+            raise
+        if os.path.exists(os.path.join(home, '.gitconfig')):
+          shutil.copy(
+              os.path.join(home, '.gitconfig'),
+              os.path.join(fake_home, '.gitconfig'))
+        shutil.copy(self.netrc_file, os.path.join(fake_home, '.netrc'))
+        os.chmod(os.path.join(fake_home, '.netrc'), 0600)
+
       if share_objects:
-        args.extend(('--reference', os.path.dirname(share_objects)))
-      self.run(*args, stdout=sys.stdout, stderr=sys.stderr, cwd=self.repos_dir)
-      os.rename(os.path.join(self.repos_dir, tmp_path),
-                os.path.join(self.repos_dir, folder))
-    else:
-      if share_objects:
-        altfile = os.path.join(rpath, 'objects', 'info', 'alternates')
+        altfile = os.path.join(path, 'objects', 'info', 'alternates')
         try:
           os.makedirs(os.path.dirname(altfile))
         except OSError as e:
@@ -109,11 +117,23 @@ class Repo(object):
         if add_entry:
           with open(altfile, 'a') as f:
             print >> f, share_objects
-      self._log.debug('%r already initialized', self)
-    self._repo_path = rpath
 
-    # This causes pushes to fail, so unset it.
-    self.run('config', '--unset', 'remote.origin.mirror', ok_ret={0, 5})
+    if not os.path.isdir(rpath):
+      self._log.debug('initializing %r -> %r', self, rpath)
+      tmp_path = tempfile.mkdtemp(dir=self.repos_dir)
+      self.run('init', '--bare', os.path.basename(tmp_path), cwd=self.repos_dir)
+      self.run(
+          'remote', 'add', '--mirror=fetch', 'origin', self.url, cwd=tmp_path)
+      ensure_config(tmp_path)
+      self.run(
+          'fetch', stdout=sys.stdout, stderr=sys.stderr,
+          cwd=tmp_path, silent=True)
+      os.rename(tmp_path, os.path.join(self.repos_dir, folder))
+    else:
+      ensure_config(rpath)
+      self._log.debug('%r already initialized', self)
+
+    self._repo_path = rpath
 
   # Representation
   def __repr__(self):
@@ -171,7 +191,8 @@ class Repo(object):
       self._log.warn('DRY-RUN: Would have pushed %r', args[1:])
       return
 
-    if args[0] in ('fetch', 'push'):
+    silent = kwargs.pop('silent', False)
+    if args[0] in ('fetch', 'push') and not silent:
       log_func = self._log.info
     else:
       log_func = self._log.debug
@@ -186,6 +207,16 @@ class Repo(object):
     if indata:
       assert 'stdin' not in kwargs
       kwargs['stdin'] = subprocess.PIPE
+
+    # Point git to a fake HOME with custom .netrc. An alternative is to use
+    # credential.helper == 'store --file=...', but git always tries to use
+    # HOME/.netrc before credential helper. So faking home is necessary anyway.
+    if self.netrc_file:
+      fake_home = os.path.abspath(os.path.join(kwargs['cwd'], 'fake_home'))
+      if os.path.exists(fake_home):
+        env = kwargs.get('env', os.environ).copy()
+        env['HOME'] = fake_home
+        kwargs['env'] = env
 
     # Git spawns subprocesses, we want to be able to kill them all.
     assert 'preexec_fn' not in kwargs
