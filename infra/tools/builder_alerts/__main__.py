@@ -8,8 +8,9 @@ import datetime
 import json
 import logging
 import multiprocessing
-import sys
 import os
+import sys
+import traceback
 
 import requests
 import requests_cache
@@ -46,21 +47,26 @@ class SubProcess(object):
     self._jobs = jobs
 
   def __call__(self, master_url):
-    master_json = buildbot.fetch_master_json(master_url)
-    if not master_json:
-      return (None, None)
+    try:
+      master_json = buildbot.fetch_master_json(master_url)
+      if not master_json:
+        return (None, None)
 
-    master_alerts = alert_builder.alerts_for_master(self._cache,
-        master_url, master_json, self._old_alerts, self._builder_filter,
-        self._jobs)
+      master_alerts = alert_builder.alerts_for_master(self._cache,
+          master_url, master_json, self._old_alerts, self._builder_filter,
+          self._jobs)
 
-    # FIXME: The builder info doesn't really belong here. The builder revisions
-    # tool uses this and we happen to have the builder json cached at
-    # this point so it's cheap to compute, but it should be moved
-    # to a different feed.
-    data = buildbot.latest_builder_info_and_alerts_for_master(
-        self._cache, master_url, master_json)
-    return (master_alerts, data[0], data[1])
+      # FIXME: The builder info doesn't really belong here. The builder
+      # revisions tool uses this and we happen to have the builder json cached
+      # at this point so it's cheap to compute, but it should be moved
+      # to a different feed.
+      data = buildbot.latest_builder_info_and_alerts_for_master(
+          self._cache, master_url, master_json)
+      return (master_alerts, data[0], data[1])
+    except:
+      # Put all exception text into an exception and raise that so it doesn't
+      # get eaten by the multiprocessing code.
+      raise Exception("".join(traceback.format_exception(*sys.exc_info())))
 
 
 def main(args):

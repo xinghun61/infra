@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import shutil
 import tempfile
 import time
@@ -23,6 +24,11 @@ class TestCaseWithDiskCache(unittest.TestCase):
 
 class DiskCacheTest(TestCaseWithDiskCache):
   def test_build_cache(self):
+    def write_garbage(key):
+      path = os.path.join(self.cache_path, key)
+      with open(path, 'w') as cached:
+        cached.write("foo")
+
     cache = buildbot.DiskCache(self.cache_path)
 
     test_key = 'foo/bar'
@@ -38,6 +44,9 @@ class DiskCacheTest(TestCaseWithDiskCache):
 
     self.assertIsNone(cache.get('does_not_exist'))
     self.assertIsNotNone(cache.key_age(test_key))
+
+    write_garbage(test_key)
+    self.assertIsNone(cache.get(test_key))
 
   def test_latest_builder_info_and_alerts_for_master(self):
     k_example_master_json = {

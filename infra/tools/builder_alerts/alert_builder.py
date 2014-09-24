@@ -8,6 +8,7 @@ import multiprocessing
 import os
 import re
 import sys
+import traceback
 import urllib
 
 from infra.tools.builder_alerts import buildbot
@@ -264,17 +265,22 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
 
 
   def process_builder(builder_name):
-    builder_json = master_json['builders'][builder_name]
-    if builder_name_filter and builder_name_filter not in builder_name:
-      return None
+    try:
+      builder_json = master_json['builders'][builder_name]
+      if builder_name_filter and builder_name_filter not in builder_name:
+        return None
 
-    # cachedBuilds will include runningBuilds.
-    recent_build_ids = builder_json['cachedBuilds']
+      # cachedBuilds will include runningBuilds.
+      recent_build_ids = builder_json['cachedBuilds']
 
-    buildbot.warm_build_cache(cache, master_url, builder_name,
-        recent_build_ids, active_builds)
-    return alerts_for_builder(cache, master_url, builder_name,
-        recent_build_ids, old_alerts)
+      buildbot.warm_build_cache(cache, master_url, builder_name,
+          recent_build_ids, active_builds)
+      return alerts_for_builder(cache, master_url, builder_name,
+          recent_build_ids, old_alerts)
+    except:
+      # Put all exception text into an exception and raise that so it doesn't
+      # get eaten by the multiprocessing code.
+      raise Exception("".join(traceback.format_exception(*sys.exc_info())))
 
   pool = multiprocessing.dummy.Pool(processes=jobs)
   builder_alerts = pool.map(process_builder, master_json['builders'].keys())

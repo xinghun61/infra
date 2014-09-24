@@ -43,7 +43,12 @@ class DiskCache(object):
       return None
     path = os.path.join(self.root_path, key)
     with open(path) as cached:
-      return json.load(cached)
+      try:
+        return json.load(cached)
+      except ValueError:
+        logging.critical('Key exists, but is not valid json: %s' + key)
+        # Somehow the disk cache got a non json entry and we'd crash here.
+        return None
 
   # Could be attr setter.
   def set(self, key, json_object):
