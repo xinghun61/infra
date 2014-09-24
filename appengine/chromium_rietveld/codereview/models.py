@@ -41,7 +41,18 @@ from codereview import utils
 from codereview.exceptions import FetchError
 
 
+REQUIRED_REVIEWER_PREFIX = '*'
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
+
+
+def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
+  """Adds the required prefix if the reviewer is a required reviewer."""
+  # Use a trivial function that returns the reviewer if none has been specified.
+  reviewer_func = reviewer_func if reviewer_func else lambda r: r
+  if reviewer in required_reviewers:
+    return '%s%s' % (REQUIRED_REVIEWER_PREFIX, reviewer_func(reviewer))
+  else:
+    return reviewer_func(reviewer)
 
 
 def is_privileged_user(user):
@@ -71,6 +82,8 @@ class Issue(ndb.Model):
   created = ndb.DateTimeProperty(auto_now_add=True)
   modified = ndb.DateTimeProperty(auto_now=True)
   reviewers = ndb.StringProperty(repeated=True)
+  required_reviewers = ndb.StringProperty(repeated=True)
+  all_required_reviewers_approved = ndb.BooleanProperty(default=True)
   cc = ndb.StringProperty(repeated=True)
   closed = ndb.BooleanProperty(default=False)
   private = ndb.BooleanProperty(default=False)
@@ -305,6 +318,11 @@ class Issue(ndb.Model):
       self.modified = msg.date
     self.updates_for = updates_for_set
     self.reviewer_approval = json.dumps(approval_dict)
+
+    # If required reviewers have been specified then check to see if they have
+    # all approved the issue.
+    self.all_required_reviewers_approved = all(
+        approval_dict.get(rr) for rr in self.required_reviewers)
 
   def calculate_and_save_updates_if_None(self):
     """If this Issue doesn't have a valid updates_for or n_messages_sent,

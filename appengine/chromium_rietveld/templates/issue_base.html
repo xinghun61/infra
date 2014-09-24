@@ -91,7 +91,7 @@
             {{issue.modified|timesince}} ago
           </div>
           <div><b>Reviewers:</b><br/>
-            {{issue.formatted_reviewers|show_reviewers}}
+            {{issue.formatted_reviewers|show_reviewers:issue.required_reviewers}}
           </div>
           {%if issue.cc%}
           <div><b>CC:</b><br/>

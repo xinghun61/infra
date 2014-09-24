@@ -32,6 +32,7 @@ import tempfile
 import time
 import urllib
 from cStringIO import StringIO
+from functools import partial
 from xml.etree import ElementTree
 
 from google.appengine.api import app_identity
@@ -1263,11 +1264,11 @@ def _make_new(request, form):
     return (None, None)
   data, url, separate_patches = data_url
 
-  reviewers = _get_emails(form, 'reviewers')
+  reviewers, required_reviewers = _get_emails(form, 'reviewers')
   if not form.is_valid() or reviewers is None:
     return (None, None)
 
-  cc = _get_emails(form, 'cc')
+  cc, _ = _get_emails(form, 'cc')
   if not form.is_valid():
     return (None, None)
 
@@ -1284,6 +1285,7 @@ def _make_new(request, form):
                        base=base,
                        repo_guid=form.cleaned_data.get('repo_guid', None),
                        reviewers=reviewers,
+                       required_reviewers=required_reviewers,
                        cc=cc,
                        private=form.cleaned_data.get('private', False),
                        n_comments=0,
@@ -1404,18 +1406,20 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     ndb.put_multi(patches)
 
   if emails_add_only:
-    emails = _get_emails(form, 'reviewers')
+    emails, required_reviewers = _get_emails(form, 'reviewers')
     if not form.is_valid():
       return None
     issue.reviewers += [reviewer for reviewer in emails
                         if reviewer not in issue.reviewers]
-    emails = _get_emails(form, 'cc')
+    issue.required_reviewers += [reviewer for reviewer in required_reviewers
+                                 if reviewer not in issue.required_reviewers]
+    emails, _ = _get_emails(form, 'cc')
     if not form.is_valid():
       return None
     issue.cc += [cc for cc in emails if cc not in issue.cc]
   else:
-    issue.reviewers = _get_emails(form, 'reviewers')
-    issue.cc = _get_emails(form, 'cc')
+    issue.reviewers, issue.required_reviewers = _get_emails(form, 'reviewers')
+    issue.cc, _ = _get_emails(form, 'cc')
   issue.commit = False
   issue.calculate_updates_for()
   issue.put()
@@ -1427,18 +1431,20 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     notify_xmpp.notify_issue(request, issue, 'Updated')
   return patchset
 
-
 def _get_emails(form, label):
-  """Helper to return the list of reviewers, or None for error."""
+  """Returns (reviewers, required_reviewers) or (None, None) for error."""
   raw_emails = form.cleaned_data.get(label)
   if raw_emails:
     return _get_emails_from_raw(raw_emails.split(','), form=form, label=label)
-  return []
+  return ([], [])
 
 def _get_emails_from_raw(raw_emails, form=None, label=None):
   emails = []
+  required_emails = []  # Emails marked as required.
   for email in raw_emails:
     email = email.strip()
+    required_email = email.startswith(models.REQUIRED_REVIEWER_PREFIX)
+    email = email.lstrip(models.REQUIRED_REVIEWER_PREFIX)
     if email:
       try:
         if '@' not in email:
@@ -1456,17 +1462,25 @@ def _get_emails_from_raw(raw_emails, form=None, label=None):
       except db.BadValueError as err:
         if form:
           form.errors[label] = [unicode(err)]
-        return None
+        return (None, None)
       if db_email not in emails:
         emails.append(db_email)
+      if required_email and db_email not in required_emails:
+        required_emails.append(db_email)
   # Remove blocked accounts
+  _remove_blocked_emails(emails)
+  _remove_blocked_emails(required_emails)
+  return (emails, required_emails)
+
+
+def _remove_blocked_emails(emails):
+  """Remove blocked accounts from the specified list of emails."""
   for account in models.Account.get_multiple_accounts_by_email(emails).values():
     if account.blocked:
       try:
         emails.remove(account.email)
       except IndexError:
         pass
-  return emails
 
 
 def replace_bug(message):
@@ -1602,6 +1616,8 @@ def account(request):
   """/account/?q=blah&limit=10&timestamp=blah - Used for autocomplete."""
   def searchAccounts(prop, domain, added, response):
     prefix = request.GET.get('q').lower()
+    required_reviewer = prefix.startswith(models.REQUIRED_REVIEWER_PREFIX)
+    prefix = prefix.lstrip(models.REQUIRED_REVIEWER_PREFIX)
     limit = _clean_int(request.GET.get('limit'), 10, 10, 100)
 
     accounts_query = models.Account.query(
@@ -1616,6 +1632,8 @@ def account(request):
       if len(added) >= limit:
         break
       added.add(account.key)
+      if required_reviewer:
+        response += models.REQUIRED_REVIEWER_PREFIX
       response += '%s (%s)\n' % (account.email, account.nickname)
     return added, response
 
@@ -1637,7 +1655,7 @@ def account(request):
   return HttpTextResponse(response)
 
 
-def _log_reviewers_if_changed(request, orig_reviewers, new_reviewers):
+def _log_reviewers_if_changed(request, orig_reviewers, new_reviewers, label):
   """Adds a comment to the Rietveld issue if the reviewers have changed."""
   orig_reviewers_set = set(orig_reviewers)
   new_reviewers_set = set(new_reviewers)
@@ -1648,14 +1666,19 @@ def _log_reviewers_if_changed(request, orig_reviewers, new_reviewers):
   # The list of reviewers have changed, log what changed and who changed it.
   additions_set = new_reviewers_set - orig_reviewers_set
   removals_set = orig_reviewers_set - new_reviewers_set
-  reviewers_msg = '%s changed reviewers:\n' % (
-      request.user.email().lower())
+  reviewers_msg = '%s changed %s:\n' % (
+      request.user.email().lower(), label)
   if additions_set:
     reviewers_msg += '+ %s\n' % ', '.join(sorted(additions_set))
   if removals_set:
     reviewers_msg += '- %s\n' % ', '.join(sorted(removals_set))
   make_message(request, request.issue, reviewers_msg, send_mail=False,
                auto_generated=True).put()
+
+
+def _get_reviewers_with_required_prefix(reviewers, required_reviewers):
+  """Adds the required prefix for all required reviewers in reviewers."""
+  return [models.format_reviewer(r, required_reviewers) for r in reviewers]
 
 
 @deco.issue_editor_required
@@ -1669,12 +1692,18 @@ def edit(request):
     reviewers = [models.Account.get_nickname_for_email(reviewer,
                                                        default=reviewer)
                  for reviewer in issue.reviewers]
+    required_reviewers = [models.Account.get_nickname_for_email(
+                              required_reviewer, default=required_reviewer)
+                          for required_reviewer in issue.required_reviewers]
+    reviewers_with_required_prefix = _get_reviewers_with_required_prefix(
+        reviewers, required_reviewers)
     ccs = [models.Account.get_nickname_for_email(cc, default=cc)
            for cc in issue.cc]
     form = EditLocalBaseForm(initial={'subject': issue.subject,
                              'description': issue.description,
                              'base': base,
-                             'reviewers': ', '.join(reviewers),
+                             'reviewers': ', '.join(
+                                 reviewers_with_required_prefix),
                              'cc': ', '.join(ccs),
                              'closed': issue.closed,
                              'private': issue.private,
@@ -1689,10 +1718,10 @@ def edit(request):
   form = EditLocalBaseForm(request.POST)
 
   if form.is_valid():
-    reviewers = _get_emails(form, 'reviewers')
+    reviewers, required_reviewers = _get_emails(form, 'reviewers')
 
   if form.is_valid():
-    cc = _get_emails(form, 'cc')
+    cc, _ = _get_emails(form, 'cc')
 
   if not form.is_valid():
     return respond(request, 'edit.html', {'issue': issue, 'form': form})
@@ -1708,9 +1737,14 @@ def edit(request):
   base_changed = (issue.base != base)
   issue.base = base
 
-  _log_reviewers_if_changed(request=request, orig_reviewers=issue.reviewers,
-                            new_reviewers=reviewers)
+  _log_reviewers_if_changed(
+      request=request, orig_reviewers=issue.reviewers, new_reviewers=reviewers,
+      label='reviewers')
+  _log_reviewers_if_changed(
+      request=request, orig_reviewers=issue.required_reviewers,
+      new_reviewers=required_reviewers, label='required reviewers')
   issue.reviewers = reviewers
+  issue.required_reviewers = required_reviewers
   issue.cc = cc
   if base_changed:
     for patchset in issue.patchsets:
@@ -1945,7 +1979,8 @@ def fields(request):
   if 'description' in fields:
     issue.description = fields['description']
   if 'reviewers' in fields:
-    issue.reviewers = _get_emails_from_raw(fields['reviewers'])
+    issue.reviewers, issue.required_reviewers = _get_emails_from_raw(
+        fields['reviewers'])
     issue.calculate_updates_for()
   if 'subject' in fields:
     issue.subject = fields['subject']
@@ -2020,6 +2055,7 @@ def _issue_as_dict(issue, messages, request=None):
     'closed': issue.closed,
     'cc': issue.cc,
     'reviewers': issue.reviewers,
+    'all_required_reviewers_approved': issue.all_required_reviewers_approved,
     'patchsets': [p.key.id() for p in issue.patchsets],
     'description': issue.description,
     'subject': issue.subject,
@@ -2799,6 +2835,11 @@ def publish(request):
     reviewers = [models.Account.get_nickname_for_email(reviewer,
                                                        default=reviewer)
                  for reviewer in reviewers]
+    required_reviewers = [models.Account.get_nickname_for_email(
+                              required_reviewer, default=required_reviewer)
+                          for required_reviewer in issue.required_reviewers]
+    reviewers_with_required_prefix = _get_reviewers_with_required_prefix(
+        reviewers, required_reviewers)
     ccs = [models.Account.get_nickname_for_email(cc, default=cc) for cc in cc]
     tbd, comments = _get_draft_comments(request, issue, True)
     preview = _get_draft_details(request, comments)
@@ -2807,7 +2848,8 @@ def publish(request):
     else:
       msg = draft_message.text
     form = form_class(initial={'subject': issue.subject,
-                               'reviewers': ', '.join(reviewers),
+                               'reviewers': ', '.join(
+                                   reviewers_with_required_prefix),
                                'cc': ', '.join(ccs),
                                'send_mail': True,
                                'message': msg,
@@ -2833,9 +2875,10 @@ def publish(request):
   if issue.edit_allowed:
     issue.subject = form.cleaned_data['subject']
   if form.is_valid() and not form.cleaned_data.get('message_only', False):
-    reviewers = _get_emails(form, 'reviewers')
+    reviewers, required_reviewers = _get_emails(form, 'reviewers')
   else:
     reviewers = issue.reviewers
+    required_reviewers = issue.required_reviewers
   if (form.is_valid() and form.cleaned_data.get('add_as_reviewer', True) and
       request.user != issue.owner and
       request.user.email() not in reviewers and
@@ -2843,7 +2886,7 @@ def publish(request):
     reviewers.append(request.user.email())
 
   if form.is_valid() and not form.cleaned_data.get('message_only', False):
-    cc = _get_emails(form, 'cc')
+    cc, _ = _get_emails(form, 'cc')
   else:
     cc = issue.cc
     # The user is in the reviewer list, remove them from CC if they're there.
@@ -2852,9 +2895,15 @@ def publish(request):
   if not form.is_valid():
     return respond(request, 'publish.html', {'form': form, 'issue': issue})
 
-  _log_reviewers_if_changed(request=request, orig_reviewers=issue.reviewers,
-      new_reviewers=reviewers)
+  _log_reviewers_if_changed(
+      request=request, orig_reviewers=issue.reviewers, new_reviewers=reviewers,
+      label='reviewers')
+  _log_reviewers_if_changed(
+      request=request, orig_reviewers=issue.required_reviewers,
+      new_reviewers=required_reviewers,
+      label='required reviewers')
   issue.reviewers = reviewers
+  issue.required_reviewers = required_reviewers
   issue.cc = cc
   if form.cleaned_data['commit'] and not issue.closed:
     issue.commit = True
@@ -3114,9 +3163,13 @@ def make_message(request, issue, message, comments=None, send_mail=False,
       del context['files'][200:]
       context['files'].append('[[ %d additional files ]]' % num_trimmed)
     url = request.build_absolute_uri(reverse(show, args=[issue.key.id()]))
-    reviewer_nicknames = ', '.join(library.get_nickname(rev_temp, True,
-                                                        request)
-                                   for rev_temp in issue.reviewers)
+
+    reviewer_nicknames_list = [
+        models.format_reviewer(r, issue.required_reviewers, partial(
+            library.get_nickname, never_me=True, request=request))
+        for r in issue.reviewers]
+    reviewer_nicknames = ', '.join(reviewer_nicknames_list)
+
     cc_nicknames = ', '.join(library.get_nickname(cc_temp, True, request)
                              for cc_temp in cc)
     my_nickname = library.get_nickname(request.user, True, request)

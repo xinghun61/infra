@@ -102,7 +102,7 @@ def show_user(email, arg=None, _autoescape=None, _memcache_results=None):
 
 
 @register.filter
-def show_reviewers(reviewer_list, arg=None):
+def show_reviewers(reviewer_list, required_reviewers, arg=None):
   """Render list of links to each reviewer's dashboard with color."""
 
   email_list = []
@@ -119,8 +119,11 @@ def show_reviewers(reviewer_list, arg=None):
     if user is not None:
       links[user.email()] = 'me'
 
-  return django.utils.safestring.mark_safe(', '.join(
-      format_approval_text(links[r], a) for r, a in reviewer_list.items()))
+  formatted_reviewers = [
+      format_approval_text(
+          models.format_reviewer(r, required_reviewers, links.get), a)
+      for r, a in reviewer_list.items()]
+  return django.utils.safestring.mark_safe(', '.join(formatted_reviewers))
 
 
 def format_approval_text(text, approval):
