@@ -21,10 +21,25 @@
     'build': '0',
     'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
   },
+  'docutils': {
+    'version': '0.12',
+    'build': '0',
+    'rev': 'fa395d839ba1fe8363f48487067374f7aff658f2',
+  },
+  'Jinja2': {
+    'version': '2.7.3dev_20140923',
+    'build': '0',
+    'rev': '762c612e7276889aac265645da00e62e33d1573c',
+  },
   'mock': {
     'version': '1.0.1',
     'build': '0',
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
+  },
+  'MarkupSafe': {
+    'version': '0.23',
+    'build': '0',
+    'rev': 'feb1d70c16df62f60dcb521d127fdad8819fc036',
   },
   'numpy': {
     'version': '1.10.0.dev_7e53e9b',
@@ -40,6 +55,11 @@
     'version': '1.2',
     'build': '0',
     'rev': 'd02b317af0313dcf66755844f5421651af5eb356'
+  },
+  'Pygments': {
+    'version': '1.6dev_20140923',
+    'build': '0',
+    'rev': '39eadad652f2a4c39a6ee163d03c52c078644dc6',
   },
   'pytz': {
     'version': '2014.4',
@@ -72,6 +92,11 @@
     'version': '1.7.3',
     'build': '0',
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
+  },
+  'Sphinx': {
+    'version': '1.2.3dev_20140923',
+    'build': '0',
+    'rev': '1a9c572c4cc5306029a35734afd63797fbe86f4d',
   },
   'testing_support': {
     'version': '0.1.5',
