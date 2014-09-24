@@ -26,7 +26,7 @@ def cross_origin_json(handler): # pragma: no cover
     if result:
       self.response.headers.add_header("Access-Control-Allow-Origin", "*")
       self.response.headers.add_header('Content-Type', 'application/json')
-      compressed_json_dump(result, self.response)
+      self.response.write(compressed_json_dumps(result))
   return headered_json_handler
 
 def filter_dict(d, keys): # pragma: no cover
@@ -43,9 +43,6 @@ def password_sha1(password): # pragma: no cover
 
 def to_unix_timestamp(datetime): # pragma: no cover
   return calendar.timegm(datetime.timetuple()) + datetime.microsecond / 1e6
-
-def compressed_json_dump(value, writer): # pragma: no cover
-  return json.dump(value, writer, separators=compressed_separators)
 
 def compressed_json_dumps(value): # pragma: no cover
   return json.dumps(value, separators=compressed_separators)

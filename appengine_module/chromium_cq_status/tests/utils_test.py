@@ -57,15 +57,6 @@ class TestUtils(testing.AppengineTestCase):
     self.assertEquals(-100.1,
         utils.to_unix_timestamp(datetime.utcfromtimestamp(-100.1)))
 
-  def test_compressed_json_dump(self):
-    class MockWriter(object):
-      text = ''
-      def write(self, s):
-        self.text += s
-    writer = MockWriter()
-    utils.compressed_json_dump({'a': ['0', 1, 2.5], 'b': None}, writer)
-    self.assertEquals('{"a":["0",1,2.5],"b":null}', writer.text)
-
   def test_compressed_json_dumps(self):
     self.assertEquals('{"a":["0",1,2.5],"b":null}',
         utils.compressed_json_dumps({'a': ['0', 1, 2.5], 'b': None}))
