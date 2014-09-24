@@ -19,7 +19,7 @@ from infra.tools.builder_alerts import string_helpers
 
 HUNG_BUILDER_ALERT_THRESHOLD = 3 * 60 * 60
 OFFLINE_BUILDER_ALERT_THRESHOLD = 0.5 * 60 * 60
-IDLE_BUILDER_PENDING_ALERT_THRESHOLD = 5
+IDLE_BUILDER_PENDING_ALERT_THRESHOLD = 50
 
 CBE_BASE = 'https://chrome-build-extract.appspot.com'
 

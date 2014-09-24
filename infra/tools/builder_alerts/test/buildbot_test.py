@@ -298,7 +298,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
     self.assertIsNone(alert)
 
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "idle", 50, current_time)
+        "Linux", "idle", 55, current_time)
     self.assertIsNotNone(alert)
 
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
