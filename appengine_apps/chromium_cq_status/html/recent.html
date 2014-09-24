@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<title>Chromium CQ Status recent logs</title>
+<script src="/scripts/recent.js"></script>
+<style>
+:root {
+  font-family: monospace;
+  white-space: pre;
+}
+h1 {
+  font-family: sans-serif;
+}
+a {
+  text-decoration: none;
+}
+h1 > a {
+  color: black;
+}
+table {
+  border-spacing: 0;
+}
+tr:hover {
+  background-color: aliceblue;
+}
+tr.selected {
+  background-color: lightskyblue;
+}
+th {
+  border-bottom: solid 1px black;
+}
+td {
+  max-width: 400px;
+  overflow-wrap: break-word;
+  border-top: solid 1px grey;
+}
+td ~ td, th ~ th {
+  border-left: solid 1px black;
+  padding: 1px 4px;
+}
+.hide {
+  visibility: hidden;
+}
+dialog {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+textarea {
+  width: 600px;
+  height: 400px;
+}
+flex {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+</style>
+
+<h1><a href='/'>Chromium CQ Status</a> recent logs</h1>
+Filters: <span id="filterList"></span>
+<br>
+<table>
+  <tbody id="table">
+    <tr>
+      <th>Timestamp</th>
+      <th>Project</th>
+      <th>Owner</th>
+      <th>Issue</th>
+      <th>Patchset</th>
+      <th>Action</th>
+      <th>Message</th>
+      <th></th>
+    </tr>
+  </tbody>
+</table>
+<flex>
+  <div id="loading">Loading...</div>
+  <button id="loadMore" disabled>Load More</button>
+</flex>
+<br>

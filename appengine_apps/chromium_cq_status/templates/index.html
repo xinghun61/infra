@@ -22,6 +22,12 @@ Use "<a href="http://commondatastorage.googleapis.com/chrome-infra-docs/flat/dep
 
 Site directory listing:
 
+&gt;&gt;&gt; <a href="/recent">/recent</a>
+Shows a table of recently received records.
+Tags to filter by are specified as a comma separated list after the #.
+Example: <a href="/recent#project=chromium,action=patch_start">/recent#project=chromium,action=patch_start</a>
+
+
 &gt;&gt;&gt; <a href="/patch-status/<issue>/<patchset>">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</a>
 Shows a timeline of CQ activity on a given patch.
 Only accepts GET requests.
