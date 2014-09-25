@@ -19,6 +19,8 @@ class Project(ndb.Model):
 class CqStat(EndpointsModel):
   timestamp = ndb.DateTimeProperty(auto_now_add=True)
   length = ndb.IntegerProperty(required=True)
+  # TODO(alancutter): Remove these fields now that we query them from
+  # chromium-cq-status.
   min = ndb.FloatProperty()
   max = ndb.FloatProperty()
   mean = ndb.FloatProperty()
