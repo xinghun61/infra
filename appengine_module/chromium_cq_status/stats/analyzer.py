@@ -12,7 +12,7 @@ from appengine_module.chromium_cq_status.model.cq_stats import (
 )
 
 class Analyzer(object):
-  def new_attempts(self, attempts, reference):
+  def new_attempts(self, attempts, reference, project):
     raise NotImplementedError()
 
   def build_stats(self):
@@ -56,9 +56,9 @@ class AnalyzerGroup(Analyzer):
   def __init__(self, *analyzer_classes):  # pragma: no cover
     self.analyzers = [cls() for cls in analyzer_classes]
 
-  def new_attempts(self, attempts, reference): # pragma: no cover
+  def new_attempts(self, attempts, reference, project): # pragma: no cover
     for analyzer in self.analyzers:
-      analyzer.new_attempts(attempts, reference)
+      analyzer.new_attempts(attempts, reference, project)
 
   def build_stats(self):  # pragma: no cover
     return chain(*(analyzer.build_stats() for analyzer in self.analyzers))

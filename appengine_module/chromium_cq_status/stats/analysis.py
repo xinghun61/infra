@@ -15,17 +15,18 @@ from appengine_module.chromium_cq_status.model.cq_stats import (
   ListStats,
 )
 from appengine_module.chromium_cq_status.model.record import Record
-from appengine_module.chromium_cq_status.shared.config import STATS_START_TIMESTAMP  # pylint: disable=C0301
+from appengine_module.chromium_cq_status.shared.config import (
+  STATS_START_TIMESTAMP,
+  TAG_START,
+  TAG_STOP,
+  TAG_PROJECT,
+  TAG_ISSUE,
+  TAG_PATCHSET,
+)
 from appengine_module.chromium_cq_status.stats.analyzer import AnalyzerGroup
 from appengine_module.chromium_cq_status.stats.patchset_stats import PatchsetAnalyzer  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats.trybot_stats import TrybotAnalyzer  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.stats.tryjobverifier_stats import TryjobverifierAnalyzer  # pylint: disable=C0301
-
-start_tag = 'action=patch_start'
-stop_tag = 'action=patch_stop'
-project_tag = 'project=%s'
-issue_tag = 'issue=%s'
-patchset_tag = 'patchset=%s'
 
 utcnow_for_testing = None
 
@@ -78,7 +79,7 @@ def next_stats_interval(minutes): # pragma: no cover
 
 def attempts_for_interval(begin, end): # pragma: no cover
   finished_in_interval = Record.query().filter(
-      Record.tags == stop_tag,
+      Record.tags == TAG_STOP,
       Record.timestamp >= begin,
       Record.timestamp < end)
   finish_timestamps = {}
@@ -99,9 +100,9 @@ def attempts_for_interval(begin, end): # pragma: no cover
     last_finish_timestamp = max(finish_timestamps[key])
     project, issue, patchset = key
     earliest_start_record = Record.query().order(Record.timestamp).filter(
-      Record.tags == project_tag % project,
-      Record.tags == issue_tag % issue,
-      Record.tags == patchset_tag % patchset).get()
+      Record.tags == TAG_PROJECT % project,
+      Record.tags == TAG_ISSUE % issue,
+      Record.tags == TAG_PATCHSET % patchset).get()
     if not earliest_start_record:
       logging.warning(
           'No start message found for project %s, '
@@ -110,21 +111,26 @@ def attempts_for_interval(begin, end): # pragma: no cover
     interval_query = Record.query().order(Record.timestamp).filter(
         Record.timestamp >= earliest_start_record.timestamp,
         Record.timestamp <= last_finish_timestamp,
-        Record.tags == project_tag % project,
-        Record.tags == issue_tag % issue,
-        Record.tags == patchset_tag % patchset)
+        Record.tags == TAG_PROJECT % project,
+        Record.tags == TAG_ISSUE % issue,
+        Record.tags == TAG_PATCHSET % patchset)
     attempts = []
     attempt = None
     for record in interval_query:
-      if start_tag in record.tags:
+      if TAG_START in record.tags:
         attempt = []
       if attempt != None:
         attempt.append(record)
-        if stop_tag in record.tags:
+        if TAG_STOP in record.tags:
           if record.timestamp >= begin:
             attempts.append(attempt)
           attempt = None
+    if len(attempts) == 0:
+      logging.warning('No attempts found for %s issue %s patchset %s at %s' %
+          (project, issue, patchset, begin))
+      continue
     yield project, issue, patchset, attempts
+
 
 def analyze_attempts(attempts_iterator): # pragma: no cover
   logging.debug('Analyzing CQ attempts.')
@@ -133,7 +139,7 @@ def analyze_attempts(attempts_iterator): # pragma: no cover
     if project not in project_analyzers:
       project_analyzers[project] = AnalyzerGroup(*analyzers)
     project_analyzers[project].new_attempts(attempts,
-        PatchsetReference(issue, patchset))
+        PatchsetReference(issue, patchset), project)
   project_stats = {}
   for project, analyzer in project_analyzers.iteritems():
     project_stats[project] = analyzer.build_stats()

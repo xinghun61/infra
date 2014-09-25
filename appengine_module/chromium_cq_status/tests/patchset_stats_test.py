@@ -268,3 +268,42 @@ class PatchsetStatsTest(StatsTest):
           PatchsetReference(2, 2): 1,
         },
       ), self.get_stats('patchset-reject-count'))
+
+  historical_records = (
+    (-50, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
+    (-45, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
+    (-30, {'issue': 1, 'patchset': 2, 'action': 'patch_start'}),
+    (-25, {'issue': 1, 'patchset': 2, 'action': 'patch_stop'}),
+    (-10, {'issue': 1, 'patchset': 2, 'action': 'patch_start'}),
+    (-5, {'issue': 1, 'patchset': 2, 'action': 'patch_stop'}),
+    (5, {'issue': 1, 'patchset': 2, 'action': 'patch_start'}),
+    (6, {'issue': 1, 'patchset': 2, 'action': 'patch_stop'}),
+    (10, {'issue': 1, 'patchset': 3, 'action': 'patch_start'}),
+    (15, {'issue': 1, 'patchset': 3, 'action': 'patch_stop'}),
+    (25, {'issue': 1, 'patchset': 3, 'action': 'patch_start'}),
+    (30, {'issue': 1, 'patchset': 3, 'action': 'patch_stop'}),
+  )
+
+  def test_patchset_total_commit_queue_durations(self):
+    self.analyze_records(*self.historical_records)
+    self.assertEquals(self.create_list(
+      name='patchset-total-commit-queue-durations',
+      description='Total time spent in the CQ per patch.',
+      unit='seconds',
+      points=(
+        (hours(11), PatchsetReference(1, 2)),
+        (hours(5), PatchsetReference(1, 3)),
+      ),
+    ), self.get_stats('patchset-total-commit-queue-durations'))
+
+  def test_patchset_total_wall_time_durations(self):
+    self.analyze_records(*self.historical_records)
+    self.assertEquals(self.create_list(
+      name='patchset-total-wall-time-durations',
+      description='Total time per patch since their commit box was checked.',
+      unit='seconds',
+      points=(
+        (hours(36), PatchsetReference(1, 2)),
+        (hours(5), PatchsetReference(1, 3)),
+      ),
+    ), self.get_stats('patchset-total-wall-time-durations'))

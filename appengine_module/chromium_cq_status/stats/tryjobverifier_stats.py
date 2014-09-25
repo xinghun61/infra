@@ -43,7 +43,7 @@ class TryjobverifierActionCount(CountAnalyzer):  # pragma: no cover
     self.action = action
     self.description = description
 
-  def new_attempts(self, attempts, reference):
+  def new_attempts(self, attempts, reference, project):
     self.tally[reference] += count_actions(attempts, 'verifier_' + self.action)
 
   def _get_name(self):
@@ -60,7 +60,7 @@ class TryjobverifierActionCountGroup(AnalyzerGroup):  # pragma: no cover
 class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier first run.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference):
+  def new_attempts(self, attempts, reference, project):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
@@ -80,7 +80,7 @@ class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
 class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier retry.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference):
+  def new_attempts(self, attempts, reference, project):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
@@ -103,7 +103,7 @@ class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
 class TryjobverifierTotalDurations(ListAnalyzer):  # pragma: no cover
   description = 'Total time spent per CQ attempt on tryjob verifier runs.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference):
+  def new_attempts(self, attempts, reference, project):
     for attempt in attempts:
       start_timestamp = None
       end_timestamp = None
