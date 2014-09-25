@@ -245,7 +245,8 @@ class LayoutTestsSplitter(object):
     tests = request_test_results_json(step, build, builder_name, master_url)
     if not tests:
       return None
-    return decode_results(tests)
+    failures = decode_results(tests)
+    return ['%s:%s' % (name, types) for name, types in failures.items()]
 
 
 class CompileSplitter(object):
