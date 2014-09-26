@@ -272,7 +272,7 @@ class TestDailyStats(TestCase):
     self.trigger_request('2011-03-01', text, expected)
 
   def test_selfreview(self):
-    # Someone lgtm himself.
+    # Someone lgtm'd themselves.
     issue = self.create_issue('01 01:00')
     self.add_message(issue, self.author, [self.reviewer1], '01 01:01', '')
     self.add_message(issue, self.author, [self.author], '01 01:03', 'lgtm')
@@ -291,7 +291,7 @@ class TestDailyStats(TestCase):
     self.trigger_request('2011-03-01', text, expected)
 
   def setup_selfreview_multiday(self):
-    # Someone lgtm himself after waiting one day.
+    # Someone lgtm'd themselves after waiting one day.
     issue = self.create_issue('01 01:00')
     self.add_message(issue, self.author, [self.reviewer1], '01 01:01', '')
     self.add_message(issue, self.author, [self.author], '02 01:03', 'lgtm')
@@ -632,8 +632,8 @@ class TestDailyStats(TestCase):
     self.add_message(issue, self.author, [self.reviewer1], '01 01:01', '')
     self.add_message(
         issue, self.reviewer1, [self.author], '02 01:01', 'blah')
-    # reviewer1 added reviewer2. That's when his latency will start. Note that
-    # it is a third party that added him!
+    # reviewer1 added reviewer2. That's when the latency will start. Note that
+    # it is a third party that added reviewer2!
     self.add_message(
         issue, self.reviewer1, [self.author, self.reviewer2], '03 01:01',
         'I don\'t care.')

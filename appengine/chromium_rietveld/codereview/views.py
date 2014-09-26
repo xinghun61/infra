@@ -840,7 +840,7 @@ def _show_user(request):
         draft_key.parent().parent().parent()
         for draft_key in draft_query.fetch(100, keys_only=True)}
     draft_issues = ndb.get_multi(draft_issue_keys)
-    # Reduce the chance of someone trying to block himself.
+    # Reduce the chance of someone trying to block themselves.
     show_block = False
   else:
     draft_issues = draft_issue_keys = []

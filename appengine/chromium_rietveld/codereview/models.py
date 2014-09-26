@@ -1557,7 +1557,7 @@ class AccountStatsBase(ndb.Model):
 
   @property
   def nb_not_requested(self):
-    """Number of issues where the reviewer sent his comments without the author
+    """Number of issues where the reviewer sent comments without the author
     even asking for a review. This can happen if the author asked for a review
     out of band, like by IM.
     """
@@ -1570,7 +1570,7 @@ class AccountStatsBase(ndb.Model):
 
   @property
   def self_love(self):
-    """How much the user likes to auto-congratulate himself on his own reviews.
+    """How much the user likes to auto-congratulate on their own reviews.
     """
     # self.self_love + self.nb_lgtmed == sum(l > 0 for l in self.lgtms[i])
     return sum(
