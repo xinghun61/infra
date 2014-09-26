@@ -217,21 +217,18 @@ def duration_between_actions(attempts, action_start, action_end,
   The end action must be present for the duration to be recorded.
   It is optional whether the start action needs to be present.
   An absent start action counts as a 0 duration.'''
-  start_found = False
   duration_valid = False
   duration = 0
   for attempt in attempts:
     start_timestamp = None
     for record in attempt:
       if not start_timestamp and record.fields.get('action') == action_start:
-        start_found = True
         start_timestamp = record.timestamp
-      if ((start_found or not requires_start) and
+      if ((start_timestamp or not requires_start) and
           record.fields.get('action') == action_end):
         duration_valid = True
-        if start_found:
+        if start_timestamp:
           duration += (record.timestamp - start_timestamp).total_seconds()
-          start_found = False
           start_timestamp = None
   if duration_valid:
     return duration
