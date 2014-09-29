@@ -182,6 +182,21 @@ def DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths):
   return dirty_roots
 
 
+def BrokenLinksChecks(input_api, output_api):  # pragma: no cover
+  """Complains if there are broken committed symlinks."""
+  stdout = input_api.subprocess.check_output(['git', 'ls-files'])
+  files = stdout.splitlines()
+  output = []
+  infra_root = input_api.PresubmitLocalPath()
+  for filename in files:
+    fullname = input_api.os_path.join(infra_root, filename)
+    if (input_api.os_path.lexists(fullname)
+        and not input_api.os_path.exists(fullname)):
+      output.append(output_api.PresubmitError('Broken symbolic link: %s'
+                                              % filename))
+  return output
+
+
 def PylintChecks(input_api, output_api):  # pragma: no cover
   # FIXME: I would define these paths at the top of the file, but
   # PresubmitExecutor tries hard to prevent you from accessing __file__, etc.
@@ -233,8 +248,9 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
 
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
-  tests = PylintChecks(input_api, output_api)
-  return input_api.RunTests(tests)
+  output = input_api.RunTests(PylintChecks(input_api, output_api))
+  output.extend(BrokenLinksChecks(input_api, output_api))
+  return output
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
