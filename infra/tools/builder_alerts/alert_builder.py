@@ -266,12 +266,16 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
 
   def process_builder(builder_name):
     try:
-      builder_json = master_json['builders'][builder_name]
       if builder_name_filter and builder_name_filter not in builder_name:
         return None
 
+      builder_json = master_json['builders'][builder_name]
+
       # cachedBuilds will include runningBuilds.
       recent_build_ids = builder_json['cachedBuilds']
+
+      if not recent_build_ids:
+        return None
 
       buildbot.warm_build_cache(cache, master_url, builder_name,
           recent_build_ids, active_builds)

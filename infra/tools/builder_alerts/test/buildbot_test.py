@@ -67,6 +67,19 @@ class DiskCacheTest(TestCaseWithDiskCache):
             "build2-m1"
           ],
           "state": "building"
+        },
+        "Not Running Builder": {
+          "basedir": "Not_Running_Builder",
+          "cachedBuilds": [
+          ],
+          "category": "2windows",
+          "currentBuilds": [
+          ],
+          "pendingBuilds": 7,
+          "slaves": [
+            "build2-m1"
+          ],
+          "state": "idle"
         }
       }
     }

@@ -229,8 +229,12 @@ def latest_builder_info_and_alerts_for_master(cache, master_url, master_json):
   stale_builder_alerts = []
   master_name = master_name_from_url(master_url)
   for builder_name, builder_json in master_json['builders'].items():
-    latest_build_id = sorted(
-        builder_json['cachedBuilds'] + builder_json['currentBuilds'])[-1]
+    build_ids = sorted(
+        builder_json['cachedBuilds'] + builder_json['currentBuilds'])
+    if not build_ids:
+      continue
+
+    latest_build_id = build_ids[-1]
     last_build = fetch_build_json(cache,
         master_url, builder_name, latest_build_id)
     last_update_time = latest_update_time_for_builder(last_build)
