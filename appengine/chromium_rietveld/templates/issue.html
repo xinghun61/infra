@@ -231,7 +231,7 @@
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
         <div id="trybot-popup-checkboxes">
         {% for tryserver, categories in default_builders.items|sort %}
-          {% if categories.items|length == 1 %}
+          {% if categories.items|length == 1 and categories.keys.0 == "null" %}
             <div class="trybot-popup-builders">
             <b>{{ tryserver }}</b><br>
             {% for builder in categories.values.0|sort %}
