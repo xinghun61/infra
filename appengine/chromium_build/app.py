@@ -1029,6 +1029,11 @@ URLS = [
 
   # Sheriff URLs.
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium/trooper.js',
+    'localpath': 'chromium/trooper.js',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium/sheriff.js',
     'localpath': 'chromium/sheriff.js',
     'maxage': 15*60,  # 15 mins
