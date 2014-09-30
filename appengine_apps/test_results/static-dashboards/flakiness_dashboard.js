@@ -757,7 +757,7 @@ function htmlForSingleTestRow(test, showBuilderNames, revisions)
         var header = headers[i];
         if (string.startsWith(header, 'test') || string.startsWith(header, 'builder')) {
             var testCellClassName = 'test-link' + (showBuilderNames ? ' builder-name' : '');
-            var testCellHTML = showBuilderNames ? test.builder.key() : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
+            var testCellHTML = showBuilderNames ? test.builder.builderName : '<span class="link" onclick="g_history.setQueryParameter(\'tests\',\'' + test.test +'\');">' + test.test + '</span>';
             html += '<tr builder="' + test.builder.key() + '" test="' + test.test + '">';
             html += '<td class="' + testCellClassName + '">' + testCellHTML;
         } else if (string.startsWith(header, 'bugs'))
@@ -933,14 +933,29 @@ function htmlForIndividualTestOnAllBuilders(test)
     if (!testResults)
         return '<div class="not-found">Test not found. Either it does not exist, is skipped or passes on all recorded runs.</div>';
 
+    var masters = {};
+    testResults.forEach(function(testResult) {
+        var masterName = testResult.builder.masterName;
+        var masterResults = masters[masterName];
+        if (!masterResults) {
+            masterResults = [];
+            masters[masterName] = masterResults;
+        }
+        masterResults.push(testResult);
+    });
+
     var html = '';
     var shownBuilderKeys = [];
     var revisions = collapsedRevisionList(testResults);
-    for (var j = 0; j < testResults.length; j++) {
-        shownBuilderKeys.push(testResults[j].builder.key());
-        var showBuilderNames = true;
-        html += htmlForSingleTestRow(testResults[j], showBuilderNames, revisions);
-    }
+    Object.keys(masters).sort().forEach(function(masterName) {
+        html += '<tr><td class="master-name" colspan=5>' + masterName + '</td></tr>';
+        var masterResults = masters[masterName];
+        for (var j = 0; j < masterResults.length; j++) {
+            shownBuilderKeys.push(masterResults[j].builder.key());
+            var showBuilderNames = true;
+            html += htmlForSingleTestRow(masterResults[j], showBuilderNames, revisions);
+        }
+    });
 
     var skippedBuilderKeys = []
     _currentBuilders().forEach(function(builder) {

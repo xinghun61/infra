@@ -319,3 +319,11 @@ pre.expectation {
     content: '';
 }
 
+td.master-name {
+    font-style: italic;
+    background-color: ghostwhite;
+}
+
+td.builder-name {
+    padding-left: 15px;
+}

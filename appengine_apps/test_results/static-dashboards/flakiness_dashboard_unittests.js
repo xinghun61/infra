@@ -129,8 +129,10 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr builder="DummyMaster:WebKit Linux" test="dummytest.html">' +
-                '<td class="test-link builder-name">DummyMaster:WebKit Linux' +
+            '<tbody>' +
+                '<tr><td class="master-name" colspan=5>DummyMaster</td></tr>' +
+                '<tr builder="DummyMaster:WebKit Linux" test="dummytest.html">' +
+                '<td class="test-link builder-name">WebKit Linux' +
                 '<td class=options-container>' +
                     '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<div><a href="http://webkit.org/5678">webkit.org/5678</a></div>' +
@@ -446,33 +448,35 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
-                '<td class="test-link builder-name">Master1:WebKit Linux (dbg)' +
-                '<td class=options-container>' +
-                    '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
-                    '<div><a href="http://crbug.com/5678">crbug.com/5678</a></div>' +
-                    '<div><a href="http://crbug.com/9101112">crbug.com/9101112</a></div>' +
-                '<td class=options-container><td><td class="results-container">' +
-                    '<div title="Unknown result. Did not run tests." rev="1236" class="results interpolatedResult NODATA">?</div>' +
-                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
-                    '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
-                    '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
-                    '<div title="PASS. Click for more info." class="results PASS"></div>' +
-                    '<div title="PASS. Click for more info." class="results PASS"></div>' +
-                '</td>' +
+            '<tbody>' +
+                '<tr><td class="master-name" colspan=5>Master1</td></tr>' +
+                '<tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
+                    '<td class="test-link builder-name">WebKit Linux (dbg)' +
+                    '<td class=options-container>' +
+                        '<div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
+                        '<div><a href="http://crbug.com/5678">crbug.com/5678</a></div>' +
+                        '<div><a href="http://crbug.com/9101112">crbug.com/9101112</a></div>' +
+                    '<td class=options-container><td><td class="results-container">' +
+                        '<div title="Unknown result. Did not run tests." rev="1236" class="results interpolatedResult NODATA">?</div>' +
+                        '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                        '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
+                        '<div title="IMAGE. Click for more info." class="results IMAGE"></div>' +
+                        '<div title="PASS. Click for more info." class="results PASS"></div>' +
+                        '<div title="PASS. Click for more info." class="results PASS"></div>' +
+                    '</td>' +
                 '<tr builder="Master1:WebKit Win (dbg)" test="dummytest.html">' +
-                '<td class="test-link builder-name">Master1:WebKit Win (dbg)' +
-                '<td class=options-container>' +
-                    '<div><a href="http://crbug.com/one">crbug.com/one</a></div>' +
-                    '<div><a href="http://crbug.com/two">crbug.com/two</a></div>' +
-                '<td class=options-container><td><td class="results-container">' +
-                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
-                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
-                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
-                    '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
-                    '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
-                    '<div title="Unknown result. Did not run tests." rev="1233" class="results interpolatedResult NODATA">?</div>' +
-                '</td>' +
+                    '<td class="test-link builder-name">WebKit Win (dbg)' +
+                    '<td class=options-container>' +
+                        '<div><a href="http://crbug.com/one">crbug.com/one</a></div>' +
+                        '<div><a href="http://crbug.com/two">crbug.com/two</a></div>' +
+                    '<td class=options-container><td><td class="results-container">' +
+                        '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                        '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                        '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                        '<div title="Unknown result. Did not run tests." rev="1235" class="results interpolatedResult TEXT">?</div>' +
+                        '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+                        '<div title="Unknown result. Did not run tests." rev="1233" class="results interpolatedResult NODATA">?</div>' +
+                    '</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
@@ -508,6 +512,8 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
 
     for (var rowIndex = 0; rowIndex < tbody.children.length; ++rowIndex) {
         var row = tbody.children[rowIndex];
+        if (row.children.length === 1)  // skip builder name row.
+            continue;
         var results = row.children[4];
         equal(results.className, "results-container");
         for (var resultIndex = 0; resultIndex < results.children.length; ++resultIndex) {
@@ -557,11 +563,13 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
                 '<th sortValue=slowest><div class=table-header-content><span></span><span class=header-text>slowest run</span></div></th>' +
                 '<th sortValue=flakiness colspan=10000><div class=table-header-content><span></span><span class=header-text>flakiness (numbers are runtimes in seconds)</span></div></th>' +
             '</tr></thead>' +
-            '<tbody><tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
-                '<td class="test-link builder-name">Master1:WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
-                '<td class=options-container><td><td class="results-container">' +
-                    '<div title="Unknown result. Did not run tests." rev="b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b" class="results interpolatedResult NODATA">?</div>' +
-                '</td>' +
+            '<tbody>' +
+                '<tr><td class="master-name" colspan=5>Master1</td></tr>' +
+                '<tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
+                    '<td class="test-link builder-name">WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
+                    '<td class=options-container><td><td class="results-container">' +
+                        '<div title="Unknown result. Did not run tests." rev="b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b" class="results interpolatedResult NODATA">?</div>' +
+                    '</td>' +
             '</tbody>' +
         '</table>' +
         '<div>The following builders either don\'t run this test (e.g. it\'s skipped) or all recorded runs passed:</div>' +
