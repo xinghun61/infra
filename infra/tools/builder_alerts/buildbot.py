@@ -265,6 +265,12 @@ def warm_build_cache(cache, master_url, builder_name,
   # recent_build_ids includes active ones.
   finished_build_ids = [b for b in recent_build_ids
       if b not in active_build_ids]
+
+  # This happens when the builder is a new builder and it's only
+  # build is the active build.
+  if not finished_build_ids:
+    return
+
   last_build_id = max(finished_build_ids)
   cache_key = cache_key_for_build(master_url, builder_name, last_build_id)
 
