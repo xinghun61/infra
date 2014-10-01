@@ -2,15 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import inspect
-import os
-import sys
-
-import infra
-ROOT_PATH = os.path.abspath(os.path.dirname(infra.__file__))
-GAE_PATH = os.path.join(ROOT_PATH, os.pardir, os.pardir, 'google_appengine')
-sys.path.insert(0, GAE_PATH)
-
+# appengine sdk is supposed to be on the path.
 import dev_appserver
 dev_appserver.fix_sys_path()
 
@@ -19,60 +11,6 @@ from google.appengine.ext import testbed
 
 import webtest
 from testing_support import auto_stub
-
-
-def prevent_ndb_collisions():
-  """This monkeypatches ndb's Model's _get_kind method to include the package.
-
-  Normally, ndb uses class.__name__ as an identifier for object<->class mapping.
-  This allows one to move model definitions around the application without
-  breaking production data. However, it is unsuitable when testing multiple apps
-  simultaneously (as expect_tests does), because two apps naming a model the
-  same name will result in collisions (and incorrect tests). This method
-  monkeypatches the _get_kind() method to include the package in which the
-  class was defined -- guaranteeing there will be no collisions between apps.
-
-  Additionally, it overrides __new__ on ndb.Key to prevent tests from using
-  string-based types (ndb.Key('Project', ...) instead of ndb.Key(models.Project,
-  ...)).
-  """
-  @classmethod
-  def filename_kind(cls):
-    """Disambiguates types in ndb's _kind_map by adding the class package."""
-    return '%s.%s' % (inspect.getmodule(cls).__package__, cls.__name__)
-  ndb.Model._get_kind = filename_kind
-
-  @staticmethod
-  def check_new(*args, **kwargs):  # pragma: no cover
-    """Override ndb.Key's __new__ to prevent string-based types."""
-    # First we call the real __new__ to get the newly created ndb.Key.
-    new_obj = ndb.Key.__old__new__(*args, **kwargs)
-    # Then we loop through the (kind, id) pairs to make sure each kind is in the
-    # _kind_map. If it's not, that means that someone specified a string-based
-    # key type, or it means someone loaded a module before loading testing.py.
-    for (kind, _) in new_obj.pairs():
-      # pylint: disable=W0212
-      if kind not in ndb.Model._kind_map:
-        raise TypeError(
-            'The infra appengine test module does not support string ndb.Key '
-            'types. Please use class-based types instead (models.Project '
-            'instead of \'Project\'. The offending type is %s. This error may '
-            'also be caused by not importing testing_utils.testing before '
-            'importing models.' % (kind.split(':')[-1],))
-    return new_obj
-
-  # __new__ is specially cased to be a static method and somehow loses its
-  # staticness when moved elsewhere. We wrap it in @staticmethod here.
-  old_new = ndb.Key.__new__
-  @staticmethod
-  def wrapped_old_new(*args, **kwargs):  # pragma: no cover
-    return old_new(*args, **kwargs)
-
-  ndb.Key.__old__new__ = wrapped_old_new
-  ndb.Key.__new__ = check_new
-
-
-prevent_ndb_collisions()
 
 
 class AppengineTestCase(auto_stub.TestCase): # pragma: no cover

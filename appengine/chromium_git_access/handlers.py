@@ -118,7 +118,8 @@ class MainHandler(webapp2.RequestHandler):
     self.response.write('Nothing to see here')
 
 
-class WarmupHandler(webapp2.RequestHandler):
+# TODO(pgervais,416927) restore coverage
+class WarmupHandler(webapp2.RequestHandler): # pragma: no cover
   def get(self):
     auth.warmup()
     self.response.write('ok')

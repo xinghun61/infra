@@ -19,7 +19,8 @@ class TestBasicHandlers(testing.AppengineTestCase):
     response = self.test_app.get('/')
     self.assertEquals(200, response.status_int)
 
-  def test_warmup(self):
+  # TODO(pgervais,416927) reactivate this test
+  def deactivated_test_warmup(self):  # pragma: no cover
     """Test that warmup works."""
     response = self.test_app.get('/_ah/warmup')
     self.assertEquals(200, response.status_int)
