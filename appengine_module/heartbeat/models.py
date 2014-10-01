@@ -7,15 +7,34 @@
 from google.appengine.ext import ndb
 
 
+class Alert(ndb.Model):
+  """Datastore model of the alerts sent out by this app.
+
+  Properties:
+    sender: The sender we haven't received a heartbeat email from in awhile.
+    timestamp: The most recent time the app alerted the watchlist.
+    total: The total number of alert emails that have been sent.
+  """
+  # Only index on sender because the only input to this app is a sender email.
+  sender = ndb.StringProperty()
+  timestamp = ndb.DateTimeProperty(auto_now=True, indexed=False)
+  total = ndb.IntegerProperty(indexed=False)
+
+
+class MostRecentAlert(Alert):
+  """Datastore model of a most recent alert."""
+  pass
+
+
 class Config(ndb.Model):
   """Datastore model of a configuration.
 
   Properties:
     sender: The sender email address.
-    timeout: The maximum number of seconds between heartbeats before notifying
+    timeout: The maximum number of minutes between heartbeats before notifying
       the watchlist.
     watchlist: A set of email addresses to notify if an email hasn't been
-      received in a number of seconds exceeding the given timeout.
+      received in a number of minutes exceeding the given timeout.
   """
   # Only index on sender because the only input to this app is a sender email.
   sender = ndb.StringProperty()
@@ -33,7 +52,7 @@ class Heartbeat(ndb.Model):
   """
   # Only index on sender because the only input to this app is a sender email.
   sender = ndb.StringProperty()
-  timestamp = ndb.TimeProperty(indexed=False)
+  timestamp = ndb.DateTimeProperty(auto_now_add=True, indexed=False)
 
 
 class MostRecentHeartbeat(Heartbeat):
