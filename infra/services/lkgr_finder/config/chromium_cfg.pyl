@@ -34,7 +34,6 @@
         'Linux Tests (dbg)(1)(32)',
         'Linux Tests (dbg)(2)(32)',
         'Linux Tests (dbg)(1)',
-        'Linux Tests (dbg)(2)',
         'Android Builder (dbg)',
         'Android Tests (dbg)',
         'Android Builder',
@@ -54,11 +53,8 @@
       'builders': [
         'Linux ChromiumOS Builder',
         'Linux ChromiumOS Tests (1)',
-        'Linux ChromiumOS Tests (2)',
         'Linux ChromiumOS Builder (dbg)',
         'Linux ChromiumOS Tests (dbg)(1)',
-        'Linux ChromiumOS Tests (dbg)(2)',
-        'Linux ChromiumOS Tests (dbg)(3)',
       ],
     },  # chromium.chromiumos
   },
