@@ -891,7 +891,12 @@ def _show_user(request):
   unsent_issues = [issue for issue in my_issues if not issue.num_messages]
   _load_users_for_issues(all_issues)
   _optimize_draft_counts(all_issues)
-  account = models.Account.get_account_for_user(request.user_to_show)
+  account = models.Account.get_account_for_user(
+    request.user_to_show, autocreate=False)
+  if not account:
+    return HttpTextResponse(
+      'No such user (%s)' % request.user_to_show.email(), status=404)
+
   return respond(request, 'user.html',
                  {'viewed_account': account,
                   'outgoing_issues': outgoing_issues,

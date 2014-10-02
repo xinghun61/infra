@@ -1203,8 +1203,8 @@ class Account(ndb.Model):
     return '<%s>' % email
 
   @classmethod
-  def get_account_for_user(cls, user):
-    """Get the Account for a user, creating a default one if needed."""
+  def get_account_for_user(cls, user, autocreate=True):
+    """Get the Account for a user, creating a default one if desired."""
     email = user.email()
     assert email
     id_str = cls.get_id_for_email(email)
@@ -1213,6 +1213,8 @@ class Account(ndb.Model):
     account = cls.get_by_id(id_str)
     if account is not None:
       return account
+    if not autocreate:
+      return None
     nickname = cls.create_nickname_for_user(user)
     return cls.get_or_insert(
       id_str, user=user, email=email, nickname=nickname, fresh=True)
