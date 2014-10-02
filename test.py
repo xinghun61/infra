@@ -60,9 +60,6 @@ ABOVE_INFRA_ROOT = os.path.dirname(INFRA_ROOT)
 APPENGINE_ENV_PATH = os.path.join(ABOVE_INFRA_ROOT, 'google_appengine')
 
 appengine_paths = appengine_library_paths(APPENGINE_ENV_PATH)
-
-if os.environ.get('PYTHONPATH'):
-  appengine_paths.append(os.environ['PYTHONPATH'])
 os.environ['PYTHONPATH'] = os.pathsep.join(appengine_paths).encode('utf8')
 
 # Parse command-line arguments
