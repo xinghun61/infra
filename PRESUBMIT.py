@@ -182,6 +182,27 @@ def DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths):
   return dirty_roots
 
 
+def EmptiedFilesCheck(input_api, output_api): # pragma: no cover
+  """Warns if a CL empties a file.
+
+  This is not handled properly by apply_patch from depot_tools: the
+  file would not exist at all on trybot checkouts.
+  """
+  empty_files = []
+  infra_root = input_api.PresubmitLocalPath()
+  for filename in input_api.AffectedTextFiles():
+    fullname = input_api.os_path.join(infra_root, filename.LocalPath())
+    if not input_api.os_stat(fullname).st_size:
+      empty_files.append(filename.LocalPath())
+  if empty_files:
+    return [output_api.PresubmitPromptWarning(
+      'Empty files found in the CL. This can cause trouble on trybots\n'
+      + 'if your change depends on the existence of those files:\n%s'
+      % '\n'.join(empty_files)
+      )]
+  return []
+
+
 def BrokenLinksChecks(input_api, output_api):  # pragma: no cover
   """Complains if there are broken committed symlinks."""
   stdout = input_api.subprocess.check_output(['git', 'ls-files'])
@@ -254,7 +275,9 @@ def CommonChecks(input_api, output_api):  # pragma: no cover
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
-  return CommonChecks(input_api, output_api)
+  output = CommonChecks(input_api, output_api)
+  output.extend(EmptiedFilesCheck(input_api, output_api))
+  return output
 
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
