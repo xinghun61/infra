@@ -117,20 +117,23 @@ def main(args):
     except ValueError:
       logging.debug('No old alerts found.')
     else:
-      for alert in old_alerts_raw['alerts']:
-        master = alert['master_url']
-        builder = alert['builder_name']
-        step = alert['step_name']
-        reason = alert['reason']
-        alert_key = alert_builder.generate_alert_key(
-            master, builder, step, reason)
+      # internal-alerts will have a redirect instead of alerts if you're
+      # signed in.
+      if 'alerts' in old_alerts_raw:
+        for alert in old_alerts_raw['alerts']:
+          master = alert['master_url']
+          builder = alert['builder_name']
+          step = alert['step_name']
+          reason = alert['reason']
+          alert_key = alert_builder.generate_alert_key(
+              master, builder, step, reason)
 
-        if alert_key in old_alerts:
-          logging.critical('Incorrectly overwriting an alert reason from the'
-              ' old alert data. master: %s, builder: %s, step: %s, reason:'
-              ' %s' % (master, builder, step, reason))
+          if alert_key in old_alerts:
+            logging.critical('Incorrectly overwriting an alert reason from the'
+                ' old alert data. master: %s, builder: %s, step: %s, reason:'
+                ' %s' % (master, builder, step, reason))
 
-        old_alerts[alert_key] = alert
+          old_alerts[alert_key] = alert
 
   latest_builder_info = {}
   stale_builder_alerts = []
