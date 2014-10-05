@@ -28,7 +28,7 @@ def GetTreeStatusDict(project): # pragma: no cover
       'percent_open': stat.percent_open,
       'details': ('Tree %.2f%% open over last 7 days (must be > 80.0)' %
                   stat.percent_open),
-      'url': ('http://trooper-o-matic.appspot.com/tree-status/%s' %
+      'url': ('https://trooper-o-matic.appspot.com/tree-status/%s' %
               project.id()),
   }
 
@@ -42,7 +42,7 @@ def GetCqLatencyDict(project): # pragma: no cover
         'p90': None,
         'length': stat.length,
         'details': 'No CQ jobs in last hour',
-        'url': 'http://trooper-o-matic.appspot.com/cq/%s' % project.id(),
+        'url': 'https://trooper-o-matic.appspot.com/cq/%s' % project.id(),
     }
   return {
       'should_alert': stat.p50 > 60 or stat.p90 > 180,
@@ -52,7 +52,7 @@ def GetCqLatencyDict(project): # pragma: no cover
       'details': ('CQ latency is median %dm and 90th %dm '
                   '(must be less than median 60m and 90th 180m' % (
                       stat.p50, stat.p90)),
-      'url': 'http://trooper-o-matic.appspot.com/cq/%s' % project.id(),
+      'url': 'https://trooper-o-matic.appspot.com/cq/%s' % project.id(),
   }
 
 def _GetPercent(numerator, denominator): # pragma: no cover
@@ -77,7 +77,7 @@ def GetCycleTimeDict(tree): # pragma: no cover
                                           stat.num_builds),
       'details': ('%d builds over maximum 60m, %d builds over median 30m' % (
           stat.num_over_max_slo, stat.num_over_median_slo)),
-      'url': 'http://trooper-o-matic.appspot.com/tree/%s' % tree.id()
+      'url': 'https://trooper-o-matic.appspot.com/tree/%s' % tree.id()
   }
 
 def UpdateJsonForProject(name, status_dict): # pragma: no cover
