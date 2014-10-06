@@ -67,6 +67,15 @@ If you want run.py to auto-complete, just run:
 
 And that's it. You may want to put that in your .bashrc somewhere.
 
+When debugging, one may prefer to invoke scripts directly without going through
+a wrapper layer.  Doing this from the bash prompt:
+
+    $ source /path/to/infra/misc/testenv.bashrc
+
+... will modify the shell environment to match what test.py does.  After that,
+scripts can be invoked directly from the shell:
+
+    $ /path/to/infra/appengine_module/test_results/test/datastorefile_test.py
 
 AppEngine
 ---------
