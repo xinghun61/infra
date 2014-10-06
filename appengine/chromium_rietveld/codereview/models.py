@@ -795,7 +795,6 @@ class Patch(ndb.Model):
   # Ids of patchsets that have a different version of this file.
   delta = ndb.IntegerProperty(repeated=True)
   delta_calculated = ndb.BooleanProperty(default=False)
-  lint_error_count = ndb.IntegerProperty(default=-1)
 
   _lines = None
 

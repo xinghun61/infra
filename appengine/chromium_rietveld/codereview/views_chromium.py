@@ -34,8 +34,6 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.http import HttpResponseServerError
 from django.utils import simplejson as json
 
-from codereview import cpplint
-from codereview import cpplint_chromium
 from codereview import decorators as deco
 from codereview import decorators_chromium as deco_cr
 from codereview import exceptions
@@ -44,11 +42,6 @@ from codereview import models_chromium
 from codereview import patching
 from codereview import responses
 from codereview import views
-
-
-# This is the number of patches to lint in each task run.  It has 10 minutes
-# to run.  Linting on large files can take ~10s per file.
-LINT_BATCH_SIZE = 50
 
 
 ### Forms ###
@@ -98,43 +91,6 @@ def string_to_datetime(text):
   if len(items) > 1:
     result = result.replace(microsecond=int(items[1]))
   return result
-
-
-def _lint_patch(patch):
-  patch.lint_error_count = 0
-  patch.lint_errors = {}
-  if patch.is_binary or patch.no_base_file:
-    return False
-
-  if os.path.splitext(patch.filename)[1] not in ['.c', '.cc', '.cpp', '.h']:
-    return False
-
-  try:
-    patch.get_patched_content()
-  except exceptions.FetchError:
-    return False
-
-  patch.parsed_lines = patching.ParsePatchToLines(patch.lines)
-  if patch.parsed_lines is None:
-    return False
-
-  new_line_numbers = set()
-  for old_line_no, new_line_no, _ in patch.parsed_lines:
-    if old_line_no == 0 and new_line_no != 0:
-      # Line is newly added, so check lint errors in it.
-      new_line_numbers.add(new_line_no)
-
-  def error(_filename, linenum, _category, _confidence, message):
-    if linenum in new_line_numbers:
-      patch.lint_errors.setdefault(linenum, []).append(message)
-
-  file_extension = os.path.splitext(patch.filename)[1]
-  lines = patch.get_patched_content().text.splitlines()
-  extra_check_functions = [cpplint_chromium.CheckPointerDeclarationWhitespace]
-  cpplint.ProcessFileData(
-      patch.filename, file_extension, lines, error, extra_check_functions)
-
-  return True
 
 
 def unpack_result(result):
@@ -529,77 +485,6 @@ def conversions(request):
     logging.info(new_map)
     new_map.put()
   return HttpResponseRedirect(reverse(conversions))
-
-
-@deco.patchset_required
-def lint(request):
-  """/lint/<issue>_<patchset> - Lint a patch set."""
-  # TODO(jrobbins): it might be better to always lint every patchset without
-  # requiring the client to request it.  That would take some refactoring.
-  # In fact, it might be better to make the linter external and use an API.
-  patches = list(request.patchset.patches)
-  while patches:
-    patch_batch = patches[:LINT_BATCH_SIZE]
-    patches = patches[LINT_BATCH_SIZE:]
-    taskqueue.add(
-      url=reverse(task_lint_patch_batch),
-      params={
-        'patch_keys': ','.join([p.key.urlsafe() for p in patch_batch]),
-      },
-      queue_name='lint-patch-batch')
-
-  return HttpResponse('Done', content_type='text/plain')
-
-
-def task_lint_patch_batch(request):
-  """Precalculate lint messages for a batch of patches."""
-  patch_keys_str = request.POST.get('patch_keys')
-  patch_keys = [ndb.Key(urlsafe=key_str)
-                for key_str in patch_keys_str.split(',')]
-  patches = ndb.get_multi(patch_keys)
-  logging.info('Linting %d patches', len(patches))
-
-  for patch in patches:
-    if not _lint_patch(patch):
-      continue
-
-    for line in patch.lint_errors:
-      patch.lint_error_count += len(patch.lint_errors[line])
-
-  ndb.put_multi(patches)
-  return HttpResponse('Done', content_type='text/plain')
-
-
-@deco.patch_required
-def lint_patch(request):
-  """/<issue>/lint/<patchset>/<patch> - View lint results for a patch."""
-  if not _lint_patch(request.patch):
-    return HttpResponseNotFound('Can\'t lint file')
-
-  result = [
-      ( '<html><head>'
-        '<link type="text/css" rel="stylesheet" href="/static/styles.css" />'
-        '</head><body>'),
-      ( '<div class="code" style="margin-top: .8em; display: table; '
-        'margin-left: auto; margin-right: auto;">'),
-      '<table style="padding: 5px;" cellpadding="0" cellspacing="0"'
-  ]
-  error_count = 0
-  for old_line_no, new_line_no, line in request.patch.parsed_lines:
-    result.append('<tr><td class="udiff">%s</td></tr>' % cgi.escape(line))
-    if old_line_no == 0 and new_line_no in request.patch.lint_errors:
-      for error in request.patch.lint_errors[new_line_no]:
-        result.append('<tr><td style="color:red">%s</td></tr>' % error)
-        error_count += 1
-
-  result.append('</table></div>')
-  result.append('</body></html>')
-
-  if request.patch.lint_error_count != error_count:
-    request.patch.lint_error_count = error_count
-    request.patch.put()
-
-  return HttpResponse(''.join(result))
 
 
 @deco_cr.key_required
