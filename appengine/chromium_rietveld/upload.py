@@ -102,22 +102,18 @@ VCS_CVS = "CVS"
 VCS_UNKNOWN = "Unknown"
 
 VCS = [
-{
-    'name': VCS_MERCURIAL,
-    'aliases': ['hg', 'mercurial'],
-}, {
-    'name': VCS_SUBVERSION,
-    'aliases': ['svn', 'subversion'],
-}, {
-    'name': VCS_PERFORCE,
-    'aliases': ['p4', 'perforce'],
-}, {
-    'name': VCS_GIT,
-    'aliases': ['git'],
-}, {
-    'name': VCS_CVS,
-    'aliases': ['cvs'],
-}]
+  {'name': VCS_MERCURIAL,
+   'aliases': ['hg', 'mercurial']},
+  {'name': VCS_SUBVERSION,
+   'aliases': ['svn', 'subversion'],},
+  {'name': VCS_PERFORCE,
+   'aliases': ['p4', 'perforce']},
+  {'name': VCS_GIT,
+   'aliases': ['git']},
+  {'name': VCS_CVS,
+   'aliases': ['cvs']},
+  ]
+
 
 VCS_SHORT_NAMES = []    # hg, svn, ...
 VCS_ABBREVIATIONS = {}  # alias: name, ...
@@ -217,7 +213,7 @@ def StatusUpdate(msg):
 
 def ErrorExit(msg):
   """Print an error message to stderr and exit."""
-  print >>sys.stderr, msg
+  print >> sys.stderr, msg
   sys.exit(1)
 
 
@@ -380,41 +376,41 @@ class AbstractRpcServer(object):
       try:
         auth_token = self._GetAuthToken(credentials[0], credentials[1])
       except ClientLoginError, e:
-        print >>sys.stderr, ''
+        print >> sys.stderr, ''
         if e.reason == "BadAuthentication":
           if e.info == "InvalidSecondFactor":
-            print >>sys.stderr, (
+            print >> sys.stderr, (
                 "Use an application-specific password instead "
                 "of your regular account password.\n"
                 "See http://www.google.com/"
                 "support/accounts/bin/answer.py?answer=185833")
           else:
-            print >>sys.stderr, "Invalid username or password."
+            print >> sys.stderr, "Invalid username or password."
         elif e.reason == "CaptchaRequired":
-          print >>sys.stderr, (
+          print >> sys.stderr, (
               "Please go to\n"
               "https://www.google.com/accounts/DisplayUnlockCaptcha\n"
               "and verify you are a human.  Then try again.\n"
               "If you are using a Google Apps account the URL is:\n"
               "https://www.google.com/a/yourdomain.com/UnlockCaptcha")
         elif e.reason == "NotVerified":
-          print >>sys.stderr, "Account not verified."
+          print >> sys.stderr, "Account not verified."
         elif e.reason == "TermsNotAgreed":
-          print >>sys.stderr, "User has not agreed to TOS."
+          print >> sys.stderr, "User has not agreed to TOS."
         elif e.reason == "AccountDeleted":
-          print >>sys.stderr, "The user account has been deleted."
+          print >> sys.stderr, "The user account has been deleted."
         elif e.reason == "AccountDisabled":
-          print >>sys.stderr, "The user account has been disabled."
+          print >> sys.stderr, "The user account has been disabled."
           break
         elif e.reason == "ServiceDisabled":
-          print >>sys.stderr, ("The user's access to the service has been "
+          print >> sys.stderr, ("The user's access to the service has been "
                                "disabled.")
         elif e.reason == "ServiceUnavailable":
-          print >>sys.stderr, "The service is not available; try again later."
+          print >> sys.stderr, "The service is not available; try again later."
         else:
           # Unknown error.
           raise
-        print >>sys.stderr, ''
+        print >> sys.stderr, ''
         continue
       self._GetAuthCookie(auth_token)
       return
@@ -546,33 +542,33 @@ class CondensedHelpFormatter(optparse.IndentedHelpFormatter):
       options and collapsing arguments between short and long, e.g.
       '-o ARG, --opt=ARG' to -o --opt ARG"""
 
-   def format_heading(self, heading):
-     return "%s:\n" % heading
+ def format_heading(self, heading):
+   return "%s:\n" % heading
 
-   def format_option(self, option):
-     self.dedent()
-     res = optparse.HelpFormatter.format_option(self, option)
-     self.indent()
-     return res
+ def format_option(self, option):
+   self.dedent()
+   res = optparse.HelpFormatter.format_option(self, option)
+   self.indent()
+   return res
 
-   def format_option_strings(self, option):
-     self.set_long_opt_delimiter(" ")
-     optstr = optparse.HelpFormatter.format_option_strings(self, option)
-     optlist = optstr.split(", ")
-     if len(optlist) > 1:
-       if option.takes_value():
-         # strip METAVAR from all but the last option
-         optlist = [x.split()[0] for x in optlist[:-1]] + optlist[-1:]
-       optstr = " ".join(optlist)
-     return optstr
+ def format_option_strings(self, option):
+   self.set_long_opt_delimiter(" ")
+   optstr = optparse.HelpFormatter.format_option_strings(self, option)
+   optlist = optstr.split(", ")
+   if len(optlist) > 1:
+     if option.takes_value():
+       # strip METAVAR from all but the last option
+       optlist = [x.split()[0] for x in optlist[:-1]] + optlist[-1:]
+     optstr = " ".join(optlist)
+   return optstr
 
 
 parser = optparse.OptionParser(
-    usage=("%prog [options] [-- diff_options] [path...]\n"
-           "See also: http://code.google.com/p/rietveld/wiki/UploadPyUsage"),
-    add_help_option=False,
-    formatter=CondensedHelpFormatter()
-)
+  usage=("%prog [options] [-- diff_options] [path...]\n"
+         "See also: http://code.google.com/p/rietveld/wiki/UploadPyUsage"),
+  add_help_option=False,
+  formatter=CondensedHelpFormatter()
+  )
 parser.add_option("-h", "--help", action="store_true",
                   help="Show this help message and exit.")
 parser.add_option("-y", "--assume_yes", action="store_true",
@@ -1010,7 +1006,7 @@ use_shell = sys.platform.startswith("win")
 def RunShellWithReturnCodeAndStderr(command, print_output=False,
                            universal_newlines=True,
                            env=os.environ):
-  """Executes a command and returns the output from stdout, stderr and the return code.
+  """Run a command and return output from stdout, stderr and the return code.
 
   Args:
     command: Command to execute.
@@ -1041,7 +1037,7 @@ def RunShellWithReturnCodeAndStderr(command, print_output=False,
   p.wait()
   errout = p.stderr.read()
   if print_output and errout:
-    print >>sys.stderr, errout
+    print >> sys.stderr, errout
   p.stdout.close()
   p.stderr.close()
   return output, errout, p.returncode
@@ -1049,7 +1045,7 @@ def RunShellWithReturnCodeAndStderr(command, print_output=False,
 def RunShellWithReturnCode(command, print_output=False,
                            universal_newlines=True,
                            env=os.environ):
-  """Executes a command and returns the output from stdout and the return code."""
+  """Run a command and return output from stdout and the return code."""
   out, err, retcode = RunShellWithReturnCodeAndStderr(command, print_output,
                            universal_newlines, env)
   return out, retcode
@@ -1224,7 +1220,8 @@ class VersionControlSystem(object):
     mimetype =  mimetypes.guess_type(filename)[0]
     if not mimetype:
       return False
-    return mimetype.startswith("image/") and not mimetype.startswith("image/svg")
+    return (mimetype.startswith("image/") and
+            not mimetype.startswith("image/svg"))
 
   def IsBinaryData(self, data):
     """Returns true if data contains a null byte."""
@@ -1270,21 +1267,21 @@ class SubversionVCS(VersionControlSystem):
     """
     url = self._GetInfo("URL")
     if url:
-        scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
-        guess = ""
-        # TODO(anatoli) - repository specific hacks should be handled by server
-        if netloc == "svn.python.org" and scheme == "svn+ssh":
-          path = "projects" + path
-          scheme = "http"
-          guess = "Python "
-        elif netloc.endswith(".googlecode.com"):
-          scheme = "http"
-          guess = "Google Code "
-        path = path + "/"
-        base = urlparse.urlunparse((scheme, netloc, path, params,
-                                    query, fragment))
-        LOGGER.info("Guessed %sbase = %s", guess, base)
-        return base
+      scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+      guess = ""
+      # TODO(anatoli) - repository specific hacks should be handled by server
+      if netloc == "svn.python.org" and scheme == "svn+ssh":
+        path = "projects" + path
+        scheme = "http"
+        guess = "Python "
+      elif netloc.endswith(".googlecode.com"):
+        scheme = "http"
+        guess = "Google Code "
+      path = path + "/"
+      base = urlparse.urlunparse((scheme, netloc, path, params,
+                                  query, fragment))
+      LOGGER.info("Guessed %sbase = %s", guess, base)
+      return base
     if required:
       ErrorExit("Can't find URL in output from svn info")
     return None
@@ -1339,9 +1336,10 @@ class SubversionVCS(VersionControlSystem):
     }
 
     def repl(m):
-       if m.group(2):
-         return "$%s::%s$" % (m.group(1), " " * len(m.group(3)))
-       return "$%s$" % m.group(1)
+      if m.group(2):
+        return "$%s::%s$" % (m.group(1), " " * len(m.group(3)))
+      return "$%s$" % m.group(1)
+
     keywords = [keyword
                 for name in keyword_str.split(" ")
                 for keyword in svn_keywords.get(name, [])]
@@ -1394,7 +1392,8 @@ class SubversionVCS(VersionControlSystem):
         if returncode:
           # Directory might not yet exist at start revison
           # svn: Unable to find repository location for 'abc' in revision nnn
-          if re.match('^svn: Unable to find repository location for .+ in revision \d+', err):
+          if re.match('^svn: Unable to find repository location '
+                      'for .+ in revision \d+', err):
             old_files = ()
           else:
             ErrorExit("Failed to get status for %s:\n%s" % (filename, err))
@@ -2088,7 +2087,7 @@ class PerforceVCS(VersionControlSystem):
       line_count = len(diffData.file_body.splitlines())
       diffData.change_summary = "@@ -0,0 +1"
       if line_count > 1:
-          diffData.change_summary += ",%d" % line_count
+        diffData.change_summary += ",%d" % line_count
       diffData.change_summary += " @@"
       diffData.prefix = "+"
       return diffData

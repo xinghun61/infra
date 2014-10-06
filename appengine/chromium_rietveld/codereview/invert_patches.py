@@ -15,9 +15,7 @@
 """Contains utilities to invert a patch."""
 
 import difflib
-import os
 import re
-import sys
 
 import patching
 
@@ -205,28 +203,28 @@ class InvertGitPatches(object):
 
     # Do status specific header inversion operations.
     if self._status == COPIED_AND_MODIFIED_STATUS:
-       # Need to completely revamp the header for 'A +'.
-       new_header = []
-       # The first index line does not change.
-       new_header.append(inverted_header.split('\n')[0])
-       new_header.append('diff --git a/%s b/%s' % (self._filename,
-                                                   self._filename))
-       # Get the mode of the file to delete.
-       if original_new_mode:
-         new_header.append('deleted file mode %s' % original_new_mode.group(1))
-       elif unchanged_file_mode:
-         new_header.append('deleted file mode %s' % unchanged_file_mode)
+      # Need to completely revamp the header for 'A +'.
+      new_header = []
+      # The first index line does not change.
+      new_header.append(inverted_header.split('\n')[0])
+      new_header.append('diff --git a/%s b/%s' % (self._filename,
+                                                  self._filename))
+      # Get the mode of the file to delete.
+      if original_new_mode:
+        new_header.append('deleted file mode %s' % original_new_mode.group(1))
+      elif unchanged_file_mode:
+        new_header.append('deleted file mode %s' % unchanged_file_mode)
 
-       if index_match:
-         new_header.append('index %s..%s' % (index_match.group(2),
+      if index_match:
+        new_header.append('index %s..%s' % (index_match.group(2),
                                              NULL_FILE_HASH))
 
-       # Preserve the 'Binary files..' line if it exists.
-       binary_files_match = re.search(r"(?m)^Binary files .*", inverted_header)
-       if binary_files_match:
-         new_header.append(binary_files_match.group(0))
+      # Preserve the 'Binary files..' line if it exists.
+      binary_files_match = re.search(r"(?m)^Binary files .*", inverted_header)
+      if binary_files_match:
+        new_header.append(binary_files_match.group(0))
        
-       inverted_header = '\n'.join(new_header) + '\n'
+      inverted_header = '\n'.join(new_header) + '\n'
     elif self._status == ADDED_STATUS:
       inverted_header = inverted_header.replace('new file', 'deleted file')
     elif self._status == DELETED_STATUS:

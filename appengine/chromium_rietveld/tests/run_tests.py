@@ -16,7 +16,6 @@
 """Test case runner."""
 
 import os
-import re
 import sys
 import unittest
 

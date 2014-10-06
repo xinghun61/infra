@@ -40,7 +40,6 @@ import logging
 
 from google.appengine.api import oauth
 from google.appengine.api import users
-from google.appengine.ext import db
 from google.appengine.ext import ndb
 from google.appengine.runtime import apiproxy_errors
 
@@ -155,7 +154,7 @@ def get_current_user():
 class AnyAuthUserProperty(ndb.UserProperty):
   """An extension of the UserProperty which also accepts OAuth users.
 
-  The default db.UserProperty only considers cookie-based Auth users.
+  The default ndb.UserProperty only considers cookie-based Auth users.
   """
 
   def _prepare_for_put(self, entity):

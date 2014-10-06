@@ -17,21 +17,21 @@ def webapp_add_wsgi_middleware(app):
 
 # Custom Appstats path normalization.
 def appstats_normalize_path(path):
-    if path.startswith('/user/'):
-        return '/user/X'
-    if path.startswith('/user_popup/'):
-        return '/user_popup/X'
-    if '/diff/' in path:
-      return '/X/diff/...'
-    if '/diff2/' in path:
-      return '/X/diff2/...'
-    if '/patch/' in path:
-      return '/X/patch/...'
-    if path.startswith('/rss/'):
-        i = path.find('/', 5)
-        if i > 0:
-            return path[:i] + '/X'
-    return re.sub(r'\d+', 'X', path)
+  if path.startswith('/user/'):
+    return '/user/X'
+  if path.startswith('/user_popup/'):
+    return '/user_popup/X'
+  if '/diff/' in path:
+    return '/X/diff/...'
+  if '/diff2/' in path:
+    return '/X/diff2/...'
+  if '/patch/' in path:
+    return '/X/patch/...'
+  if path.startswith('/rss/'):
+    i = path.find('/', 5)
+    if i > 0:
+      return path[:i] + '/X'
+  return re.sub(r'\d+', 'X', path)
 
 # Segregate Appstats by runtime (python vs. python27).
 appstats_KEY_NAMESPACE = '__appstats_%s__' % os.getenv('APPENGINE_RUNTIME')

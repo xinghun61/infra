@@ -18,7 +18,6 @@ import cgi
 import difflib
 import re
 
-from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 from django.conf import settings

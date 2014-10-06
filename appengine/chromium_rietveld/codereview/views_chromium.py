@@ -23,7 +23,6 @@ import re
 from google.appengine.api import taskqueue
 from google.appengine.api import users
 from google.appengine.datastore import datastore_query
-from google.appengine.ext import db
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 
@@ -179,9 +178,9 @@ def inner_handle(reason, base_url, timestamp, packet, result, properties):
     if parent_build_key:
       # Dereference the parent Patchset object. Luckily, this is in the key.
       patchset_key = parent_build_key.parent()
-      if not patchset:
+      if not patchset_id:
         patchset_id = patchset_key.id()
-      if not issue:
+      if not issue_id:
         issue_id = patchset_key.parent().id()
       logging.info('Dereferenced %d/%d' % (issue_id, patchset_id))
       try_job_key = None
@@ -453,10 +452,11 @@ def conversions(request):
       del_key = key[4:]
       urlmap_query = models_chromium.UrlMap.query(
           models_chromium.UrlMap.base_url_template == del_key)
+      urlmap = urlmap_query.fetch(keys_only=True)
       if not urlmap:
         logging.error('No map for %s found' % del_key)
         continue
-      ndb.delete_multi(urlmap_query.fetch(keys_only=True))
+      ndb.delete_multi(urlmap)
   base_url = request.POST.get('base_url_template')
   src_url = request.POST.get('source_code_url_template')
   if base_url and src_url:

@@ -1299,7 +1299,8 @@ def _make_new(request, form):
 
   first_ps_id, _ = models.PatchSet.allocate_ids(1, parent=issue.key)
   ps_key = ndb.Key(models.PatchSet, first_ps_id, parent=issue.key)
-  patchset = models.PatchSet(issue_key=issue.key, data=data, url=url, key=ps_key)
+  patchset = models.PatchSet(
+    issue_key=issue.key, data=data, url=url, key=ps_key)
   patchset.put()
 
   if not separate_patches:
@@ -3732,7 +3733,7 @@ def _process_incoming_mail(raw_message, recipients):
 
 
 def _absolute_url_in_preferred_domain(handler, args=None):
-  """Return a URL for the given handler via our preferred domain name, if possible."""
+  """Return a URL for handler via our preferred domain name, if possible."""
   handler_url_path = reverse(handler, args=args)
   app_id = app_identity.get_application_id()
   canonical_host = '%s.appspot.com' % app_id

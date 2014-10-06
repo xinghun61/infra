@@ -16,47 +16,47 @@ from codereview import models
 
 
 def fetch_accounts():
-    query = models.Account.query()
-    accounts = {}
-    results = query.fetch(100)
-    while results:
-        last = None
-        for account in results:
-            if account.lower_nickname in accounts:
-                accounts[account.lower_nickname].append(account)
-            else:
-                accounts[account.lower_nickname] = [account]
-            last = account
-        if last is None:
-            break
-        results = models.Account.query().filter(
-            models.Account.key > last.key).fetch(100)
-    return accounts
+  query = models.Account.query()
+  accounts = {}
+  results = query.fetch(100)
+  while results:
+    last = None
+    for account in results:
+      if account.lower_nickname in accounts:
+        accounts[account.lower_nickname].append(account)
+      else:
+        accounts[account.lower_nickname] = [account]
+      last = account
+    if last is None:
+      break
+    results = models.Account.query().filter(
+      models.Account.key > last.key).fetch(100)
+  return accounts
 
 
 def find_duplicates(accounts):
-    tbd = []
-    while accounts:
-        _, entries = accounts.popitem()
-        if len(entries) > 1:
-            # update accounts, except the fist: it's the lucky one
-            for num, account in enumerate(entries[1:]):
-                account.nickname = '%s%d' % (account.nickname, num+1)
-                account.lower_nickname = account.nickname.lower()
-                account.fresh = True  # display "change nickname..."
-                tbd.append(account)
-    return tbd
+  tbd = []
+  while accounts:
+    _, entries = accounts.popitem()
+    if len(entries) > 1:
+      # update accounts, except the fist: it's the lucky one
+      for num, account in enumerate(entries[1:]):
+        account.nickname = '%s%d' % (account.nickname, num+1)
+        account.lower_nickname = account.nickname.lower()
+        account.fresh = True  # display "change nickname..."
+        tbd.append(account)
+  return tbd
 
 
 def run():
-    accounts = fetch_accounts()
-    print '%d accounts fetched' % len(accounts)
+  accounts = fetch_accounts()
+  print '%d accounts fetched' % len(accounts)
 
-    tbd = find_duplicates(accounts)
-    print 'Updating %d accounts' % len(tbd)
+  tbd = find_duplicates(accounts)
+  print 'Updating %d accounts' % len(tbd)
 
-    ndb.put_multi(tbd)
+  ndb.put_multi(tbd)
 
-    print 'Updated accounts:'
-    for account in tbd:
-        print ' %s' % account.email
+  print 'Updated accounts:'
+  for account in tbd:
+    print ' %s' % account.email

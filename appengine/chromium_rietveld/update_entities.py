@@ -16,39 +16,39 @@ from codereview import models
 import urllib2
 
 def run(model_class, batch_size=100, last_key=None):
+  while True:
+    q = model_class.query()
+    if last_key:
+      q = q.filter(model_class.key > last_key)
+    q = q.order(model_class.key)
+    this_batch_size = batch_size
+
     while True:
-      q = model_class.query()
-      if last_key:
-        q = q.filter(model_class.key > last_key)
-      q = q.order(model_class.key)
-      this_batch_size = batch_size
-
-      while True:
+      try:
         try:
-          try:
-            batch = q.fetch(this_batch_size)
-          except urllib2.URLError, err:
-            if 'timed out' in str(err):
-              raise datastore_errors.Timeout
-            else:
-              raise
-          break
-        except datastore_errors.Timeout:
-          logging.warn("Query timed out, retrying")
-          if this_batch_size == 1:
-            logging.critical("Unable to update entities, aborting")
-            return
-          this_batch_size //= 2
-
-      if not batch:
+          batch = q.fetch(this_batch_size)
+        except urllib2.URLError, err:
+          if 'timed out' in str(err):
+            raise datastore_errors.Timeout
+          else:
+            raise
         break
+      except datastore_errors.Timeout:
+        logging.warn("Query timed out, retrying")
+        if this_batch_size == 1:
+          logging.critical("Unable to update entities, aborting")
+          return
+        this_batch_size //= 2
 
-      keys = None
-      while not keys:
-        try:
-          keys = ndb.put_multi(batch)
-        except datastore_errors.Timeout:
-          logging.warn("Put timed out, retrying")
+    if not batch:
+      break
 
-      last_key = keys[-1]
-      print "Updated %d records" % (len(keys),)
+    keys = None
+    while not keys:
+      try:
+        keys = ndb.put_multi(batch)
+      except datastore_errors.Timeout:
+        logging.warn("Put timed out, retrying")
+
+    last_key = keys[-1]
+    print "Updated %d records" % (len(keys),)

@@ -24,7 +24,6 @@ from codereview import models
 from codereview import views
 from codereview.responses import HttpTextResponse
 
-from google.appengine.ext import db
 from google.appengine.ext import ndb
 from google.appengine.runtime import DeadlineExceededError
 
@@ -182,7 +181,7 @@ def revert_patchset(request):
                        n_comments=0,
                        commit=False,  # Do not check the commit box yet.
                        key=issue_key)
-  pending_commits.append(issue);
+  pending_commits.append(issue)
 
   # Create the new revert patchset to use as the key in the new patches.
   ps_id, _ = models.PatchSet.allocate_ids(1, parent=issue.key)

@@ -29,7 +29,8 @@ from google.appengine.api import app_identity
 ## Rietveld will be down for maintenance on
 ## Thursday November 17
 ## from
-## <a href="http://www.timeanddate.com/worldclock/fixedtime.html?iso=20111117T17&ah=6">
+## <a href=
+## "http://www.timeanddate.com/worldclock/fixedtime.html?iso=20111117T17&ah=6">
 ## 17:00 - 23:00 UTC
 ## </a>
 ## """
@@ -89,11 +90,11 @@ RIETVELD_INCOMING_MAIL_MAX_SIZE = 500 * 1024  # 500K
 RIETVELD_INCOMING_MAIL_RECOGNIZE_LGTM = False
 RIETVELD_REVISION = '<unknown>'
 try:
-    RIETVELD_REVISION = open(
-        os.path.join(os.path.dirname(__file__), 'REVISION')
+  RIETVELD_REVISION = open(
+    os.path.join(os.path.dirname(__file__), 'REVISION')
     ).read()
 except:
-    pass
+  pass
 
 # When sending an email in response to an email, we don't know which domain
 # name is the preferred one for accessing the site, so we use this dict to build

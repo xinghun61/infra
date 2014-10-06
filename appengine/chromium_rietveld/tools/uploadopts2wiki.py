@@ -11,54 +11,54 @@ import upload
 
 
 class GCWikiHelpFormatter (HelpFormatter):
-    """Format help with wiki markup for Google Code."""
+  """Format help with wiki markup for Google Code."""
 
-    def __init__(self,
-                 indent_increment=2,
-                 max_help_position=24,
-                 width=None,
-                 short_first=1):
-        HelpFormatter.__init__(
-            self, indent_increment, max_help_position, width, short_first)
-        self._dl_open = False
+  def __init__(self,
+         indent_increment=2,
+         max_help_position=24,
+         width=None,
+         short_first=1):
+    HelpFormatter.__init__(
+      self, indent_increment, max_help_position, width, short_first)
+    self._dl_open = False
 
-    def indent(self):
-        self._pending = 'INDENT'
-        HelpFormatter.indent(self)
+  def indent(self):
+    self._pending = 'INDENT'
+    HelpFormatter.indent(self)
 
-    def dedent(self):
-        self._pending = 'DEDENT'
-        HelpFormatter.dedent(self)
+  def dedent(self):
+    self._pending = 'DEDENT'
+    HelpFormatter.dedent(self)
 
-    def format_usage(self, usage):
-        return "*Usage summary:* `%s`\n" % usage
+  def format_usage(self, usage):
+    return "*Usage summary:* `%s`\n" % usage
 
-    def format_heading(self, heading):
-        if self._dl_open:
-            pre = '\n</dl>\n'
-        else:
-            pre = ''
-        markup = '='*(self.current_indent+2)
-        self._dl_open = True
-        return "%s%s %s %s\n<dl>\n" % (pre, markup, heading, markup)
+  def format_heading(self, heading):
+    if self._dl_open:
+      pre = '\n</dl>\n'
+    else:
+      pre = ''
+    markup = '='*(self.current_indent+2)
+    self._dl_open = True
+    return "%s%s %s %s\n<dl>\n" % (pre, markup, heading, markup)
 
-    def format_option(self, option):
-        result = []
-        opts = self.option_strings[option]
-        result.append('<dt>`%s`</dt>\n' % opts)
-        if option.help:
-            help_text = '<dd>%s</dd>\n' % self.expand_default(option)
-            result.append(help_text)
-        return ''.join(result)
+  def format_option(self, option):
+    result = []
+    opts = self.option_strings[option]
+    result.append('<dt>`%s`</dt>\n' % opts)
+    if option.help:
+      help_text = '<dd>%s</dd>\n' % self.expand_default(option)
+      result.append(help_text)
+    return ''.join(result)
 
 
 def main():
-    upload.parser.formatter = GCWikiHelpFormatter()
-    print HEADER
-    print upload.parser.format_option_help()
-    print '</dl>'  # TODO: Formatter should do this
-    print FOOTER
-    print
+  upload.parser.formatter = GCWikiHelpFormatter()
+  print HEADER
+  print upload.parser.format_option_help()
+  print '</dl>'  # TODO: Formatter should do this
+  print FOOTER
+  print
 
 HEADER = """#summary upload.py usage and options.
 <wiki:comment>
@@ -100,4 +100,4 @@ Replace /PATH/TO/ with the location of upload.py, and MY_SERVER with the rietvel
 """
 
 if __name__ == '__main__':
-    main()
+  main()

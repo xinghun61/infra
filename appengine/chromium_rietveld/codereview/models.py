@@ -34,7 +34,6 @@ from google.appengine.ext import ndb
 from django.conf import settings
 
 from codereview import auth_utils
-from codereview import exceptions
 from codereview import invert_patches
 from codereview import patching
 from codereview import utils
@@ -347,7 +346,8 @@ class Issue(ndb.Model):
       self.calculate_updates_for()
     if self._original_subject is not None:
       return self._original_subject
-    return '%s (issue %d by %s)' % (self.subject, self.key.id(), self.owner.email())
+    return '%s (issue %d by %s)' % (
+      self.subject, self.key.id(), self.owner.email())
 
   def get_patchset_info(self, user, patchset_id):
     """Returns a list of patchsets for the issue, and calculates/caches data
@@ -929,8 +929,8 @@ class Patch(ndb.Model):
     """
     # Only git patches are supported.
     diff_header = invert_patches.split_header(self.text)[0]
-    assert (invert_patches.is_git_diff_header(diff_header),
-            'Can only invert Git patches.')
+    assert invert_patches.is_git_diff_header(diff_header), \
+        'Can only invert Git patches.'
 
     # Find the content and the patched content to use for inverse diffing.
     if self.is_binary:
