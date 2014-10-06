@@ -1181,6 +1181,7 @@ class Account(ndb.Model):
                                         choices=CONTEXT_CHOICES)
   default_column_width = ndb.IntegerProperty(
       default=settings.DEFAULT_COLUMN_WIDTH)
+  default_tab_spaces = ndb.IntegerProperty(default=settings.DEFAULT_TAB_SPACES)
   created = ndb.DateTimeProperty(auto_now_add=True)
   modified = ndb.DateTimeProperty(auto_now=True)
   stars = ndb.IntegerProperty(repeated=True)  # Issue ids of all starred issues

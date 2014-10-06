@@ -3233,8 +3233,9 @@ function M_expandSkipped(id_before, id_after, where, id_skip) {
   }
 
   colwidth = document.getElementById('id_column_width').value;
+  tabspaces = document.getElementById('id_tab_spaces').value;
 
-  url = skipped_lines_url+id_before+'/'+id_after+'/'+where+'/'+colwidth;
+  url = skipped_lines_url+id_before+'/'+id_after+'/'+where+'/'+colwidth+'/'+tabspaces;
   if (context) {
     url += '?context='+context;
   }
@@ -3357,8 +3358,9 @@ function M_jumpToPatch(select, issue, patchset, unified, opt_part) {
   var url = base_url+issue+'/'+part+'/'+patchset+'/'+select.value;
   var context = document.getElementById('id_context');
   var colwidth = document.getElementById('id_column_width');
-  if (context && colwidth) {
-    url = url+'?context='+context.value+'&column_width='+colwidth.value;
+  var tabspaces = document.getElementById('id_tab_spaces');
+  if (context && colwidth && tab_spaces) {
+    url = url+'?context='+context.value+'&column_width='+colwidth.value+'&tab_spaces='+tabspaces.value;
   }
   document.location.href = url;
 }

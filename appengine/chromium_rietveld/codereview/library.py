@@ -155,7 +155,7 @@ def show_users(email_list, arg=None):
 
 
 class UrlAppendViewSettingsNode(django.template.Node):
-  """Django template tag that appends context and column_width parameter.
+  """Django template tag that appends context, column_width, tab_spaces params.
 
   This tag should be used after any URL that requires view settings.
 
@@ -172,6 +172,7 @@ class UrlAppendViewSettingsNode(django.template.Node):
     super(UrlAppendViewSettingsNode, self).__init__()
     self.view_context = django.template.Variable('context')
     self.view_colwidth = django.template.Variable('column_width')
+    self.view_tabspaces = django.template.Variable('tab_spaces')
 
   def render(self, context):
     """Returns a HTML fragment."""
@@ -194,6 +195,14 @@ class UrlAppendViewSettingsNode(django.template.Node):
       pass
     if current_colwidth is not None:
       url_params.append('column_width=%d' % current_colwidth)
+
+    current_tabspaces = None
+    try:
+      current_tabspaces = self.view_tabspaces.resolve(context)
+    except django.template.VariableDoesNotExist:
+      pass
+    if current_tabspaces is not None:
+      url_params.append('tab_spaces=%d' % current_tabspaces)
 
     if url_params:
       return '?%s' % '&'.join(url_params)

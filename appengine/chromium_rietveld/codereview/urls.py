@@ -51,11 +51,17 @@ urlpatterns = patterns(
     (r'^(\d+)/image/(\d+)/(\d+)/(\d+)$', 'image'),
     (r'^(\d+)/diff/(\d+)/(.+)$', 'diff'),
     (r'^(\d+)/diff2/(\d+):(\d+)/(.+)$', 'diff2'),
+    # The last path element is optional till the polymer UI supports it.
     (r'^(\d+)/diff_skipped_lines/(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)$',
+     'diff_skipped_lines'),
+    (r'^(\d+)/diff_skipped_lines/(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)/(\d+)$',
      'diff_skipped_lines'),
     (r'^(\d+)/diff_skipped_lines/(\d+)/(\d+)/$',
      django.views.defaults.page_not_found, {}, 'diff_skipped_lines_prefix'),
+    # The last path element is optional till the polymer UI supports it.
     (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)$',
+     'diff2_skipped_lines'),
+    (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)/(\d+)$',
      'diff2_skipped_lines'),
     (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/$',
      django.views.defaults.page_not_found, {}, 'diff2_skipped_lines_prefix'),

@@ -340,6 +340,10 @@ class SettingsForm(forms.Form):
       initial=django_settings.DEFAULT_COLUMN_WIDTH,
       min_value=django_settings.MIN_COLUMN_WIDTH,
       max_value=django_settings.MAX_COLUMN_WIDTH)
+  tab_spaces = forms.IntegerField(
+      initial=django_settings.DEFAULT_TAB_SPACES,
+      min_value=django_settings.MIN_TAB_SPACES,
+      max_value=django_settings.MAX_TAB_SPACES)
   notify_by_email = forms.BooleanField(required=False,
                                        widget=forms.HiddenInput())
   notify_by_chat = forms.BooleanField(
@@ -2207,6 +2211,20 @@ def _get_column_width_for_user(request):
   return column_width
 
 
+def _get_tab_spaces_for_user(request):
+  """Returns the tab spaces setting for a user."""
+  if request.user:
+    account = models.Account.current_user_account
+    default_tab_spaces = account.default_tab_spaces
+  else:
+    default_tab_spaces = django_settings.DEFAULT_TAB_SPACES
+  tab_spaces = _clean_int(request.GET.get('tab_spaces'),
+                          default_tab_spaces,
+                          django_settings.MIN_TAB_SPACES,
+                          django_settings.MAX_TAB_SPACES)
+  return tab_spaces
+
+
 @deco.patch_filename_required
 def diff(request):
   """/<issue>/diff/<patchset>/<patch> - View a patch as a side-by-side diff"""
@@ -2222,13 +2240,16 @@ def diff(request):
 
   context = _get_context_for_user(request)
   column_width = _get_column_width_for_user(request)
+  tab_spaces = _get_tab_spaces_for_user(request)
   if patch.filename.startswith('webkit/api'):
     column_width = django_settings.MAX_COLUMN_WIDTH
+    tab_spaces = django_settings.MAX_TAB_SPACES
   if patch.is_binary:
     rows = None
   else:
     try:
-      rows = _get_diff_table_rows(request, patch, context, column_width)
+      rows = _get_diff_table_rows(request, patch, context, column_width,
+                                  tab_spaces)
     except FetchError as err:
       return HttpTextResponse(str(err), status=404)
 
@@ -2245,12 +2266,13 @@ def diff(request):
                   'context': context,
                   'context_values': models.CONTEXT_CHOICES,
                   'column_width': column_width,
+                  'tab_spaces': tab_spaces,
                   'patchsets': patchsets,
                   'src_url': src_url,
                   })
 
 
-def _get_diff_table_rows(request, patch, context, column_width):
+def _get_diff_table_rows(request, patch, context, column_width, tab_spaces):
   """Helper function that returns rendered rows for a patch.
 
   Raises:
@@ -2266,7 +2288,8 @@ def _get_diff_table_rows(request, patch, context, column_width):
   rows = list(engine.RenderDiffTableRows(request, content.lines,
                                          chunks, patch,
                                          context=context,
-                                         colwidth=column_width))
+                                         colwidth=column_width,
+                                         tabspaces=tab_spaces))
   if rows and rows[-1] is None:
     del rows[-1]
     # Get rid of content, which may be bad
@@ -2286,7 +2309,8 @@ def _get_diff_table_rows(request, patch, context, column_width):
 
 @deco.patch_required
 @deco.json_response
-def diff_skipped_lines(request, id_before, id_after, where, column_width):
+def diff_skipped_lines(request, id_before, id_after, where, column_width,
+                       tab_spaces=None):
   """/<issue>/diff/<patchset>/<patch> - Returns a fragment of skipped lines.
 
   *where* indicates which lines should be expanded:
@@ -2303,9 +2327,12 @@ def diff_skipped_lines(request, id_before, id_after, where, column_width):
   column_width = _clean_int(column_width, django_settings.DEFAULT_COLUMN_WIDTH,
                             django_settings.MIN_COLUMN_WIDTH,
                             django_settings.MAX_COLUMN_WIDTH)
+  tab_spaces = _clean_int(tab_spaces, django_settings.DEFAULT_TAB_SPACES,
+                          django_settings.MIN_TAB_SPACES,
+                          django_settings.MAX_TAB_SPACES)
 
   try:
-    rows = _get_diff_table_rows(request, patch, None, column_width)
+    rows = _get_diff_table_rows(request, patch, None, column_width, tab_spaces)
   except FetchError as err:
     return HttpTextResponse('Error: %s; please report!' % err, status=500)
   return _get_skipped_lines_response(rows, id_before, id_after, where, context)
@@ -2367,7 +2394,7 @@ def _get_skipped_lines_response(rows, id_before, id_after, where, context):
 
 
 def _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
-                    column_width, patch_filename=None):
+                    column_width, tab_spaces, patch_filename=None):
   """Helper function that returns objects for diff2 views"""
   ps_left = models.PatchSet.get_by_id(int(ps_left_id), parent=request.issue.key)
   if ps_left is None:
@@ -2419,7 +2446,8 @@ def _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
                                      lines_left, patch_left,
                                      lines_right, patch_right,
                                      context=context,
-                                     colwidth=column_width)
+                                     colwidth=column_width,
+                                     tabspaces=tab_spaces)
   rows = list(rows)
   if rows and rows[-1] is None:
     del rows[-1]
@@ -2433,6 +2461,7 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
   """/<issue>/diff2/... - View the delta between two different patch sets."""
   context = _get_context_for_user(request)
   column_width = _get_column_width_for_user(request)
+  tab_spaces = _get_tab_spaces_for_user(request)
 
   ps_right = models.PatchSet.get_by_id(
     int(ps_right_id), parent=request.issue.key)
@@ -2452,7 +2481,7 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
     patch_id = None
 
   data = _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
-                         column_width, patch_filename)
+                         column_width, tab_spaces, patch_filename)
   if isinstance(data, HttpResponse) and data.status_code != 302:
     return data
 
@@ -2471,6 +2500,7 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
                   'context': context,
                   'context_values': models.CONTEXT_CHOICES,
                   'column_width': column_width,
+                  'tab_spaces': tab_spaces,
                   'patchsets': patchsets,
                   'filename': patch_filename,
                   })
@@ -2479,11 +2509,15 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
 @deco.issue_required
 @deco.json_response
 def diff2_skipped_lines(request, ps_left_id, ps_right_id, patch_id,
-                        id_before, id_after, where, column_width):
+                        id_before, id_after, where, column_width,
+                        tab_spaces=None):
   """/<issue>/diff2/... - Returns a fragment of skipped lines"""
   column_width = _clean_int(column_width, django_settings.DEFAULT_COLUMN_WIDTH,
                             django_settings.MIN_COLUMN_WIDTH,
                             django_settings.MAX_COLUMN_WIDTH)
+  tab_spaces = _clean_int(tab_spaces, django_settings.DEFAULT_TAB_SPACES,
+                          django_settings.MIN_TAB_SPACES,
+                          django_settings.MAX_TAB_SPACES)
 
   if where == 'a':
     context = None
@@ -2491,7 +2525,7 @@ def diff2_skipped_lines(request, ps_left_id, ps_right_id, patch_id,
     context = _get_context_for_user(request) or 100
 
   data = _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, 10000,
-                         column_width)
+                         column_width, tab_spaces)
   if isinstance(data, HttpResponse) and data.status_code != 302:
     return data
   return _get_skipped_lines_response(data["rows"], id_before, id_after,
@@ -3484,9 +3518,11 @@ def settings(request):
     nickname = account.nickname
     default_context = account.default_context
     default_column_width = account.default_column_width
+    default_tab_spaces = account.default_tab_spaces
     form = SettingsForm(initial={'nickname': nickname,
                                  'context': default_context,
                                  'column_width': default_column_width,
+                                 'tab_spaces': default_tab_spaces,
                                  'notify_by_email': account.notify_by_email,
                                  'notify_by_chat': account.notify_by_chat,
                                  })
@@ -3500,6 +3536,7 @@ def settings(request):
     account.nickname = form.cleaned_data.get('nickname')
     account.default_context = form.cleaned_data.get('context')
     account.default_column_width = form.cleaned_data.get('column_width')
+    account.default_tab_spaces = form.cleaned_data.get('tab_spaces')
     account.notify_by_email = form.cleaned_data.get('notify_by_email')
     notify_by_chat = form.cleaned_data.get('notify_by_chat')
     must_invite = notify_by_chat and not account.notify_by_chat

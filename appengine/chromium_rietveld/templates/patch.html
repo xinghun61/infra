@@ -64,9 +64,10 @@ login_warned = false;
     {%endif%}
   </div>
 </div>
-{%if column_width and context%}
+{%if column_width and context and tab_spaces%}
   <input type="hidden" id="id_context" value="{{context}}" />
   <input type="hidden" id="id_column_width" value="{{column_width}}" />
+  <input type="hidden" id="id_tab_spaces" value="{{tab_spaces}}" />
 {%endif%}
 <div style="float: right; color: #333333; background-color: #eeeeec; border: 1px solid lightgray; -moz-border-radius: 5px 5px 5px 5px; padding: 5px;">
   <div>

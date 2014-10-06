@@ -96,7 +96,8 @@ def ParsePatchSet(patchset):
 
 
 def RenderDiffTableRows(request, old_lines, chunks, patch,
-                        colwidth=settings.DEFAULT_COLUMN_WIDTH, debug=False,
+                        colwidth=settings.DEFAULT_COLUMN_WIDTH,
+                        tabspaces=settings.DEFAULT_TAB_SPACES, debug=False,
                         context=settings.DEFAULT_CONTEXT):
   """Render the HTML table rows for a side-by-side diff for a patch.
 
@@ -108,6 +109,7 @@ def RenderDiffTableRows(request, old_lines, chunks, patch,
     colwidth: Optional column width (default 80).
     debug: Optional debugging flag (default False).
     context: Maximum number of rows surrounding a change (default CONTEXT).
+    tabspaces: Optional tab spaces (default 8).
 
   Yields:
     Strings, each of which represents the text rendering one complete
@@ -115,12 +117,13 @@ def RenderDiffTableRows(request, old_lines, chunks, patch,
     Each yielded string may consist of several <tr> elements.
   """
   rows = _RenderDiffTableRows(request, old_lines, chunks, patch,
-                              colwidth, debug)
+                              colwidth, tabspaces, debug)
   return _CleanupTableRowsGenerator(rows, context)
 
 
 def RenderDiff2TableRows(request, old_lines, old_patch, new_lines, new_patch,
-                         colwidth=settings.DEFAULT_COLUMN_WIDTH, debug=False,
+                         colwidth=settings.DEFAULT_COLUMN_WIDTH,
+                         tabspaces=settings.DEFAULT_TAB_SPACES, debug=False,
                          context=settings.DEFAULT_CONTEXT):
   """Render the HTML table rows for a side-by-side diff between two patches.
 
@@ -141,7 +144,7 @@ def RenderDiff2TableRows(request, old_lines, old_patch, new_lines, new_patch,
     Each yielded string may consist of several <tr> elements.
   """
   rows = _RenderDiff2TableRows(request, old_lines, old_patch,
-                               new_lines, new_patch, colwidth, debug)
+                               new_lines, new_patch, colwidth, tabspaces, debug)
   return _CleanupTableRowsGenerator(rows, context)
 
 
@@ -230,7 +233,8 @@ def _ShortenBuffer(buf, context):
 
 
 def _RenderDiff2TableRows(request, old_lines, old_patch, new_lines, new_patch,
-                          colwidth=settings.DEFAULT_COLUMN_WIDTH, debug=False):
+                          colwidth=settings.DEFAULT_COLUMN_WIDTH,
+                          tabspaces=settings.DEFAULT_TAB_SPACES, debug=False):
   """Internal version of RenderDiff2TableRows().
 
   Args:
@@ -255,7 +259,7 @@ def _RenderDiff2TableRows(request, old_lines, old_patch, new_lines, new_patch,
   return _TableRowGenerator(old_patch, old_dict, len(old_lines)+1, 'new',
                             new_patch, new_dict, len(new_lines)+1, 'new',
                             _GenerateTriples(old_lines, new_lines),
-                            colwidth, debug, request)
+                            colwidth, tabspaces, debug, request)
 
 
 def _GenerateTriples(old_lines, new_lines):
@@ -302,7 +306,8 @@ def _GetComments(request):
 
 
 def _RenderDiffTableRows(request, old_lines, chunks, patch,
-                         colwidth=settings.DEFAULT_COLUMN_WIDTH, debug=False):
+                         colwidth=settings.DEFAULT_COLUMN_WIDTH,
+                         tabspaces=settings.DEFAULT_TAB_SPACES, debug=False):
   """Internal version of RenderDiffTableRows().
 
   Args:
@@ -319,13 +324,14 @@ def _RenderDiffTableRows(request, old_lines, chunks, patch,
   return _TableRowGenerator(patch, old_dict, old_max, 'old',
                             patch, new_dict, new_max, 'new',
                             patching.PatchChunks(old_lines, chunks),
-                            colwidth, debug, request)
+                            colwidth, tabspaces, debug, request)
 
 
 def _TableRowGenerator(old_patch, old_dict, old_max, old_snapshot,
                        new_patch, new_dict, new_max, new_snapshot,
                        triple_iterator, colwidth=settings.DEFAULT_COLUMN_WIDTH,
-                       debug=False, request=None):
+                       tabspaces=settings.DEFAULT_TAB_SPACES, debug=False,
+                       request=None):
   """Helper function to render side-by-side table rows.
 
   Args:
@@ -339,6 +345,7 @@ def _TableRowGenerator(old_patch, old_dict, old_max, old_snapshot,
     new_snapshot: A tag used in the comments form.
     triple_iterator: Iterator that yields (tag, old, new) triples.
     colwidth: Optional column width (default 80).
+    tabspaces: Optional tab spaces (default 8).
     debug: Optional debugging flag (default False).
 
   Yields:
@@ -420,9 +427,9 @@ def _TableRowGenerator(old_patch, old_dict, old_max, old_snapshot,
       else:
         # We render line by line as usual if do_ir_diff is false
         old_intra_diff = intra_region_diff.Break(
-          old_intra_diff, 0, colwidth, "\n" + " "*indent)
+          old_intra_diff, 0, colwidth, "\n" + " "*indent, tabspaces)
         new_intra_diff = intra_region_diff.Break(
-          new_intra_diff, 0, colwidth, "\n" + " "*indent)
+          new_intra_diff, 0, colwidth, "\n" + " "*indent, tabspaces)
         old_buff_out = [[old_valid, old_lineno,
                          (old_intra_diff, True, None)]]
         new_buff_out = [[new_valid, new_lineno,
@@ -450,11 +457,11 @@ def _TableRowGenerator(old_patch, old_dict, old_max, old_snapshot,
 
       old_diff_out = intra_region_diff.RenderIntraRegionDiff(
         old_lines, old_chunks, old_tag, ratio,
-        limit=colwidth, indent=indent, mark_tabs=True,
+        limit=colwidth, indent=indent, tabsize=tabspaces, mark_tabs=True,
         dbg=debug)
       new_diff_out = intra_region_diff.RenderIntraRegionDiff(
         new_lines, new_chunks, new_tag, ratio,
-        limit=colwidth, indent=indent, mark_tabs=True,
+        limit=colwidth, indent=indent, tabsize=tabspaces, mark_tabs=True,
         dbg=debug)
       for (i, b) in enumerate(old_buff):
         b[2] = old_diff_out[i]
