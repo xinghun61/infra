@@ -55,11 +55,12 @@ class DataStoreFileTest(unittest.TestCase):
     self.assertTrue(self.test_file.save_data(test_data))
     self.assertEqual(test_data, self.test_file.data)
 
-    self.assertEqual(test_data, self.test_file.load_data())
+    self.test_file.load_data()
     self.assertEqual(test_data, self.test_file.data)
 
     self.test_file.delete_data()
-    self.assertFalse(self.test_file.load_data())
+    self.test_file.load_data()
+    self.assertFalse(self.test_file.data)
 
   def testLoadDataInvalidKey(self):
     test_data = 'x' * datastorefile.MAX_ENTRY_LEN * 3
@@ -68,11 +69,13 @@ class DataStoreFileTest(unittest.TestCase):
     self.assertEqual(test_data, self.test_file.data)
 
     self.test_file.delete_data()
-    self.assertEqual('', self.test_file.load_data())
+    self.test_file.load_data()
+    self.assertEqual('', self.test_file.data)
 
   def testLoadDataNoKeys(self):
     # This should never happen.
-    self.assertEqual(None, self.test_file.load_data())
+    self.test_file.load_data()
+    self.assertEqual(None, self.test_file.data)
 
   def testSaveData(self):
     self.assertFalse(self.test_file.save_data(None))

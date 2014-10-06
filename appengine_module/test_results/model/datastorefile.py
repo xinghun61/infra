@@ -197,9 +197,9 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
         # In the meantime, return empty string so we at least start collecting
         # results from new runs even though it'll mean that the old data is
         # lost. crbug.com/377594
-        return ''
+        self.data = ""
+        return
+
       data.append(result)
 
     self.data = "".join([d.data for d in data])
-
-    return self.data
