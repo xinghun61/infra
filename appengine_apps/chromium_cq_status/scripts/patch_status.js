@@ -272,20 +272,15 @@ function startedJobsInfo(attempt, record) {
   var jobs = record.fields.tryjobs;
   var node = newElement('div');
   var builders = [];
-  for (var master in jobs) {
-    for (builder in jobs[master]) {
-      builders.push(builder);
-    }
-  }
+  forEachBuilder(jobs, function(builder) {
+    builders.push(builder);
+  });
   builders.sort();
   node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' triggered: '))
   builders.forEach(function(builder) {
     node.appendChild(newTryjobBubble(builder, 'triggered'));
     node.appendChild(newElement('span', ' '));
-    attempt.tryjobs[builder] = {
-      status: 'triggered',
-      url: null,
-    };
+    attempt.tryjobs[builder] = initialTryjobState();
   });
 
   return {
@@ -298,18 +293,27 @@ function startedJobsInfo(attempt, record) {
 function jobsUpdateInfo(attempt, record) {
   var jobs = record.fields.jobs;
   var node = newElement('div');
+  // Update latest attempt tryjob state.
+  forEachBuilder(jobs, function(builder, data) {
+    if (!attempt.tryjobs[builder]) {
+      attempt.tryjobs[builder] = initialTryjobState();
+    }
+    if ('status' in data) {
+      attempt.tryjobs[builder].status = tryjobStatus[data.status];
+    }
+    if (data.rietveld_results && data.rietveld_results.length > 0) {
+      attempt.tryjobs[builder].url = data.rietveld_results[0].url;
+    }
+  });
+  // Scan for status changes to display.
   var firstLine = true;
   tryjobStatus.forEach(function(status) {
-    var builderURLs = {};
-    for (var master in jobs) {
-      for (builder in jobs[master]) {
-        var data = jobs[master][builder];
-        if (tryjobStatus[data.status] === status) {
-          builderURLs[builder] = data.rietveld_results.length > 0 ? data.rietveld_results[0].url : null;
-        }
+    var builders = [];
+    forEachBuilder(jobs, function(builder, data) {
+      if (tryjobStatus[data.status] === status) {
+        builders.push(builder);
       }
-    }
-    var builders = Object.getOwnPropertyNames(builderURLs).sort();
+    });
     if (builders.length === 0) {
       return;
     }
@@ -319,13 +323,8 @@ function jobsUpdateInfo(attempt, record) {
     firstLine = false;
     node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' ' + status + ': '))
     builders.forEach(function(builder) {
-      var url = builderURLs[builder];
-      node.appendChild(newTryjobBubble(builder, status, url));
+      node.appendChild(newTryjobBubble(builder, status, attempt.tryjobs[builder].url));
       node.appendChild(newElement('span', ' '));
-      attempt.tryjobs[builder] = {
-        status: status,
-        url: url,
-      };
     });
   });
 
@@ -334,6 +333,21 @@ function jobsUpdateInfo(attempt, record) {
     cls: 'normal',
     filter: simpleTryjobVerifierCheck,
   };
+}
+
+function initialTryjobState() {
+  return {
+    status: 'triggered',
+    url: null,
+  };
+}
+
+function forEachBuilder(jobs, callback) {
+  for (var master in jobs) {
+    for (var builder in jobs[master]) {
+      callback(builder, jobs[master][builder]);
+    }
+  }
 }
 
 function newTryjobBubble(builder, status, url) {
