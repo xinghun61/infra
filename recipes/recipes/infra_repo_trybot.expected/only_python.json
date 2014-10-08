@@ -20,6 +20,8 @@
       "12853011",
       "--patchset",
       "1",
+      "--rietveld_server",
+      "https://codereview.chromium.org",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
