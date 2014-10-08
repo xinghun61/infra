@@ -2,7 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Utilities for logging."""
+"""Utilities for logging.
+
+Example usage:
+
+.. code-block:: python
+
+    import logging
+    import infra.libs import logs
+    logger = logging.getLogger('foo')
+    logs.add_handler(logger, timezone='US/Pacific')
+    logger.info('test message')
+
+The last line should print something like::
+
+  [I2014-06-27T11:42:32.418716-07:00 7082 logs:71] test message
+
+"""
 
 import datetime
 import logging
@@ -14,8 +30,12 @@ class InfraFilter(logging.Filter):
   """Adds fields used by the infra-specific formatter.
 
   Fields added:
+
   - 'iso8601': timestamp
   - 'severity': one-letter indicator of log level (first letter of levelname).
+
+  Args:
+    timezone (str): timezone in which timestamps should be printed.
   """
   def __init__(self, timezone):
     super(InfraFilter, self).__init__()
@@ -31,7 +51,7 @@ class InfraFilter(logging.Filter):
 class InfraFormatter(logging.Formatter):
   """Formats log messages in a standard way.
 
-  Works together with InfraFilter.
+  This object processes fields added by :class:`InfraFilter`.
   """
   def __init__(self):
     super(InfraFormatter, self).__init__('[%(severity)s%(iso8601)s %(process)d '
@@ -39,27 +59,27 @@ class InfraFormatter(logging.Formatter):
 
 
 def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
-  """Configures and adds a handler to a logger, the standard way for infra.
+  """Configures and adds a handler to a logger the standard way for infra.
 
-  Arguments:
-    logger: a Logger object obtained from logging.getLogger().
-    handler: a handler object from the logging module
-       (defaults to logging.StreamHandler) to add to the logger.
-    timezone: timezone from pytz to use for timestamps.
-    level: logging level.
+  Args:
+    logger (logging.Logger): logger object obtained from logging.getLogger().
+    handler (logging.Handler): handler to add to the logger (defaults to
+      logging.StreamHandler).
+    timezone (str): timezone to use for timestamps.
 
-  Returns:
-    None
+    level (int): logging level. Could be one of DEBUG, INFO, WARN, CRITICAL
 
-  Example usage:
+  Example usage::
+
     import logging
     import infra.libs import logs
     logger = logging.getLogger('foo')
     logs.add_handler(logger, timezone='US/Pacific')
     logger.info('test message')
 
-  The last line should print something like
-  [I2014-06-27T11:42:32.418716-07:00 7082 logs:71] test message
+  The last line should print something like::
+
+    [I2014-06-27T11:42:32.418716-07:00 7082 logs:71] test message
 
   """
   handler = handler or logging.StreamHandler()

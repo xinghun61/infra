@@ -1,0 +1,31 @@
+Contributing to infra/
+======================
+
+Standard workflow
+-----------------
+Starting with an configured checkout, here's the standard workflow to make a
+modification to the source code:
+
+* make sure your code is up-to-date: run ``gclient sync`` anywhere in infra/
+* create a new branch: ``git new-branch``
+* make modifications, commit them using ``git commit``.
+* upload your modification for review by running ``git cl upload``. This step
+  runs the tests, which must pass. If it's not the case, go back to the previous
+  step to fix any issue. You can use ``test.py`` to run tests anytime.
+  Make sure you've added reviewers for your modifications.
+* once your code has been approved, you can commit it by clicking the 'commit'
+  checkbox on the code review tool, or by running ``git cl land`` if you're
+  a Chromium committer.
+
+
+Deployment process
+------------------
+As of September 2014 there is no formal deployment process. To make your changes
+live, you have to ask on chrome-troopers@google.com.
+
+
+How to add a dependency
+-----------------------
+Sometimes it is necessary to add a new Python package to the virtual
+environment. See instruction in ``bootstrap/README.md``.
+

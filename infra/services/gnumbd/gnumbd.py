@@ -26,7 +26,9 @@ LOGGER = logging.getLogger(__name__)
 
 FOOTER_PREFIX = 'Cr-'
 COMMIT_POSITION = FOOTER_PREFIX + 'Commit-Position'
-# takes a Ref and a number
+
+# Takes a Ref and a integer and returns a formatted string
+#:
 FMT_COMMIT_POSITION = '{.ref}@{{#{:d}}}'.format
 BRANCHED_FROM = FOOTER_PREFIX + 'Branched-From'
 GIT_SVN_ID = 'git-svn-id'
@@ -308,27 +310,27 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
   Mutates pending_tag under some circumstances, see below.
 
-  Ideally, real_ref, pending_tag and pending_tip should look something like:
+  Ideally, real_ref, pending_tag and pending_tip should look something like::
 
-        v  pending_tag
-  A  B  C  D  E  F  <- pending_tip
-  A' B' C' <- master
+          v  pending_tag
+    A  B  C  D  E  F  <- pending_tip
+    A' B' C' <- master
 
   And this method would return [D E F].
 
   If this arrangement is NOT the case, then this method can error out in a
   variety of ways, depending on how the repo is mangled. The most common cases
-  are:
+  are::
 
-     v  pending_tag
-  A  B  C  D  E  F  <- pending_tip
-  A' B' C' <- master
+       v  pending_tag
+    A  B  C  D  E  F  <- pending_tip
+    A' B' C' <- master
 
-  AND
+  AND::
 
-     v  pending_tag
-  A  B  C  D  E  F  <- pending_tip
-  A' B' C' D' E' F' <- master
+       v  pending_tag
+    A  B  C  D  E  F  <- pending_tip
+    A' B' C' D' E' F' <- master
 
   In either case, pending_tag would be advanced, and the method would return
   the commits between the tag's proper position and the tip.
@@ -390,15 +392,15 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
 
   Given:
 
-        v  pending_tag
-  A  B  C  D  E  F  <- pending_tip
-  A' B' C' <- master
+          v  pending_tag
+    A  B  C  D  E  F  <- pending_tip
+    A' B' C' <- master
 
   This function will produce:
 
-                 v  pending_tag
-  A  B  C  D  E  F  <- pending_tip
-  A' B' C' D' E' F' <- master
+                   v  pending_tag
+    A  B  C  D  E  F  <- pending_tip
+    A' B' C' D' E' F' <- master
 
   @type real_ref: git2.Ref
   @type pending_tag: git2.Ref
