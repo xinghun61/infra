@@ -473,6 +473,36 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     self.assertEqual(b1['v8'], 307)
     self.assertEqual(b1['nacl'], 407)
 
+  def test_builder_info_for_master_no_build(self):
+    """Test that we don't crash when the buildbot/CBE both don't have a build
+    for a given build ID.
+    """
+    cache = buildbot.DiskCache(self.cache_path)
+    master0_url = 'http://foo/bar/master0'
+    master0 = {
+      'builders': {
+        'builder0': {
+          'cachedBuilds': [0],
+          'currentBuilds': [],
+          'state': 'happy',
+          "pendingBuilds": 1,
+        }
+      }
+    }
+
+    def fetch(cache, master_url, builder_name, latest_build_id):
+      return None
+
+    old_fetch = buildbot.fetch_build_json
+
+    try:
+      buildbot.fetch_build_json = fetch
+      latest = buildbot.latest_builder_info_and_alerts_for_master(cache,
+          master0_url, master0)[0]
+      self.assertEqual(latest, {})
+    finally:
+      buildbot.fetch_build_json = old_fetch
+
   # This is a silly test to get 100% code coverage. This
   # never actually happens.
   def test_revisions_from_build_no_properties(self):

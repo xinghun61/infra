@@ -36,6 +36,10 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
   last_pass = None
   builds_missing_steps = []
   for build in previous_builds:
+    if not build:
+      # fetch_build_json will already log critical in this case.
+      continue
+
     matching_steps = [s for s in build['steps'] if s['name'] == step]
     if len(matching_steps) != 1:
       if not matching_steps:
@@ -127,6 +131,7 @@ def alerts_from_step_failure(cache, step_failure, master_url,
     builder_name):  # pragma: no cover
   build = buildbot.fetch_build_json(cache, master_url,
       builder_name, step_failure['build_number'])
+
   step = next((s for s in build['steps']
       if s['name'] == step_failure['step_name']), None)
   step_template = {
@@ -177,7 +182,11 @@ def fill_in_transition(cache, alert, recent_build_ids,
     last_pass_build, first_fail_build = \
       compute_transition(cache, alert, recent_build_ids)
 
-    failing = buildbot.revisions_from_build(first_fail_build)
+    if first_fail_build:
+      failing = buildbot.revisions_from_build(first_fail_build)
+    else:
+      failing = None
+
     if last_pass_build:
       passing = buildbot.revisions_from_build(last_pass_build)
     else:
@@ -185,7 +194,7 @@ def fill_in_transition(cache, alert, recent_build_ids,
 
     update_data = {
       'passing_build': last_pass_build['number'] if last_pass_build else None,
-      'failing_build': first_fail_build['number'],
+      'failing_build': first_fail_build['number'] if first_fail_build else None,
       'failing_revisions': failing,
       'passing_revisions': passing,
     }
@@ -200,6 +209,11 @@ def find_current_step_failures(fetch_function, recent_build_ids):
 
   for build_id in recent_build_ids:
     build = fetch_function(build_id)
+
+    if not build:
+      # fetch_build_json will already log critical in this case.
+      continue
+
     passing, failing = complete_steps_by_type(build)
 
     passing_names = set(map(lambda s: s['name'], passing))

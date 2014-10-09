@@ -235,6 +235,18 @@ class AlertBuilderTest(unittest.TestCase):
     self.assertEqual(step_failures, [])
 
 
+  def test_find_current_step_failures_no_build(self):
+    '''Test that we don't crash when the buildbot/CBE both don't have a build
+    for a given build ID.
+    '''
+    def fetch(build_id):
+      return None
+
+    step_failures = alert_builder.find_current_step_failures(fetch, [4119])
+    expected_step_failures = []
+    self.assertEqual(step_failures, expected_step_failures)
+
+
   def test_find_current_step_failures_only_ignored_steps(self):
     '''Test that when the only failing steps are ignored steps, we return those
     as the list of step failures.

@@ -164,6 +164,9 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
         '%s/builds/%s') % (master_name, builder_name, build_number)
     build = fetch_and_cache_build(cache, buildbot_url, cache_key)
 
+  if not build:
+    logging.critical('Could not get json for build: %s' % buildbot_url)
+
   return build
 
 
@@ -237,6 +240,11 @@ def latest_builder_info_and_alerts_for_master(cache, master_url, master_json):
     latest_build_id = build_ids[-1]
     last_build = fetch_build_json(cache,
         master_url, builder_name, latest_build_id)
+
+    if not last_build:
+      # fetch_build_json will already log critical in this case.
+      continue
+
     last_update_time = latest_update_time_for_builder(last_build)
     state = builder_json['state']
     latest_builder_info[master_name][builder_name] = {
