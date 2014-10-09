@@ -2033,6 +2033,7 @@ def patch_helper(request, nav_type='patch'):
                   'context': _clean_int(request.GET.get('context'), -1),
                   'column_width': _clean_int(request.GET.get('column_width'),
                                              None),
+                  'tab_spaces': _clean_int(request.GET.get('tab_spaces'), None),
                   })
 
 

@@ -3359,7 +3359,7 @@ function M_jumpToPatch(select, issue, patchset, unified, opt_part) {
   var context = document.getElementById('id_context');
   var colwidth = document.getElementById('id_column_width');
   var tabspaces = document.getElementById('id_tab_spaces');
-  if (context && colwidth && tab_spaces) {
+  if (context && colwidth && tabspaces) {
     url = url+'?context='+context.value+'&column_width='+colwidth.value+'&tab_spaces='+tabspaces.value;
   }
   document.location.href = url;
