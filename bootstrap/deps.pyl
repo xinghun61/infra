@@ -98,6 +98,11 @@
     'build': '0',
     'rev': '1a9c572c4cc5306029a35734afd63797fbe86f4d',
   },
+  'sphinxcontrib_napoleon': {
+    'version': '0.2.8',
+    'build': '0',
+    'rev': 'bd5bdacd4b364f582258ce0bdfcd507ab3b71270',
+  },
   'testing_support': {
     'version': '0.1.5',
     'build': '0',
