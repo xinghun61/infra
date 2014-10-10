@@ -1,4 +1,4 @@
-.. infra documentation master file, should at least contain the root 
+.. infra documentation master file, should at least contain the root
    `toctree` directive.
 
 Chrome Infra infra/ Repository
@@ -20,13 +20,14 @@ General Information
 -------------------
 * :doc:`installation`
 * :doc:`usage` (start here)
-* :doc:`structure` - describes the general repository layout
+* :doc:`structure` - describes the general repository layout.
 * :doc:`contributing`
-
+* :doc:`reference/modules` - reference documentation, extracted from docstrings.
 
 Contributer's Guides
 --------------------
 
+* :doc:`documenting` - what and how to document.
 * How to add a new tool - also gives example usage of
   :doc:`reference/infra.libs`
 * How to develop an appengine app in infra/
@@ -40,7 +41,6 @@ This section (will) explains some technical choices.
 
 * Testing in infra/ - tools used, how and why.
 * Dependency handling - how it works and why it's structured this way.
-* Documentation - what and how to document.
 
 Indices and Tables
 ------------------

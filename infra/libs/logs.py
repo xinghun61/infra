@@ -62,9 +62,9 @@ def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
   """Configures and adds a handler to a logger the standard way for infra.
 
   Args:
-    logger (logging.Logger): logger object obtained from logging.getLogger().
-    handler (logging.Handler): handler to add to the logger (defaults to
-      logging.StreamHandler).
+    logger (logging.Logger): logger object obtained from `logging.getLogger`.
+    handler (logging.Handler): handler to add to the logger. defaults to
+       logging.StreamHandler.
     timezone (str): timezone to use for timestamps.
 
     level (int): logging level. Could be one of DEBUG, INFO, WARN, CRITICAL
