@@ -28,6 +28,7 @@ class PatchsetAnalyzer(AnalyzerGroup):
     super(PatchsetAnalyzer, self).__init__(
       AttemptCount,
       AttemptDurations,
+      AttemptFalseRejectCount,
       BlockedOnClosedTreeDurations,
       BlockedOnThrottledTreeDurations,
       IssueCount,
@@ -56,6 +57,32 @@ class AttemptDurations(ListAnalyzer):  # pragma: no cover
     for attempt in attempts:
       delta = attempt[-1].timestamp - attempt[0].timestamp
       self.points.append((delta.total_seconds(), reference))
+
+
+class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
+  description = ('Number of failed attempts on a committed patch that passed '
+                 'presubmit, had all LGTMs and were not manually cancelled.')
+  def new_attempts(self, attempts, reference, project):
+    patch_committed = False
+    false_reject_count = 0
+    for attempt in attempts:
+      for record in attempt:
+        action = record.fields.get('action')
+        if action == 'patch_committed':
+          patch_committed = True
+          break
+        if action == 'patch_stop':
+          # TODO(alancutter): Make the CQ indicate these directly instead of
+          # fishing the patch_stop message for arbitrary human phrases.
+          message = record.fields.get('message', '')
+          if ('CQ bit was unchecked on CL' in message or
+             'No LGTM' in message or
+             ('Try jobs failed' in message and 'presubmit' in message)):
+            break
+      else:
+        false_reject_count += 1
+    if patch_committed:
+      self.tally[reference] = false_reject_count
 
 
 class BlockedOnClosedTreeDurations(ListAnalyzer):  # pragma: no cover

@@ -44,6 +44,58 @@ class PatchsetStatsTest(StatsTest):
         ),
       ), self.get_stats('attempt-durations'))
 
+  false_reject_attempt_records = (
+    (0, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
+    (2, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
+    (3, {'issue': 1, 'patchset': 1, 'action': 'patch_committed'}),
+    (4, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (0, {'issue': 2, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (0, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 3, 'patchset': 1, 'action': 'patch_stop',
+        'message': 'CQ bit was unchecked on CL'}),
+    (2, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
+    (3, {'issue': 3, 'patchset': 1, 'action': 'patch_committed'}),
+    (4, {'issue': 3, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (0, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 4, 'patchset': 1, 'action': 'patch_stop',
+        'message': 'No LGTM'}),
+    (2, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
+    (3, {'issue': 4, 'patchset': 1, 'action': 'patch_committed'}),
+    (4, {'issue': 4, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (0, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 5, 'patchset': 1, 'action': 'patch_stop',
+        'message': 'Try jobs failed: project_presubmit'}),
+    (2, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
+    (3, {'issue': 5, 'patchset': 1, 'action': 'patch_committed'}),
+    (4, {'issue': 5, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (0, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 6, 'patchset': 1, 'action': 'patch_stop',
+        'message': 'Try jobs failed: project_trybot'}),
+    (2, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
+    (3, {'issue': 6, 'patchset': 1, 'action': 'patch_committed'}),
+    (4, {'issue': 6, 'patchset': 1, 'action': 'patch_stop'}),
+  )
+
+  def test_attempt_false_reject_count(self):
+    self.analyze_records(*self.false_reject_attempt_records)
+    self.assertEquals(self.create_count(
+        name='attempt-false-reject-count',
+        description=('Number of failed attempts on a committed '
+                     'patch that passed presubmit, had all LGTMs '
+                     'and were not manually cancelled.'),
+        tally={
+          PatchsetReference(1, 1): 1,
+          PatchsetReference(6, 1): 1,
+        },
+      ), self.get_stats('attempt-false-reject-count'))
+
   def test_blocked_on_closed_tree_durations(self):
     self.analyze_records(
       (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
