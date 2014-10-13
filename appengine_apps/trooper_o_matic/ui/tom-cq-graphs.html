@@ -1,0 +1,40 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../model/json-graph-data.html">
+<link rel="import" href="../model/cqstats-graph-data.html">
+<link rel="import" href="./tom-cq-graph.html">
+
+<polymer-element name="tom-cq-graphs" attributes="project">
+  <template>
+    <h1>Commit Queue Status</h1>
+    <template repeat="{{ graphData in graphDataList }}">
+      <tom-cq-graph graphData="{{ graphData }}"></tom-cq-graph>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      ready: function() {
+        var intervalMinutes = 60;
+        var cqStatsCount = 25;
+        this.graphDataList = CQStatsGraphData.createBatch(
+            this.project, intervalMinutes, cqStatsCount, [{
+              heading: 'Times: Single Run',
+              name: 'attempt-durations',
+            }, {
+              heading: 'Times: Time in Queue Over All Runs',
+              name: 'patchset-total-commit-queue-durations',
+            }, {
+              heading: 'Times: Time from Checking "Commit" Box to Complete',
+              name: 'patchset-total-wall-time-durations',
+            }]).slice();
+        this.graphDataList.push(new JSONGraphData(
+            'Commit Queue Length',
+            '/project/' + this.project + '/cq-length'));
+      },
+    });
+  </script>
+</polymer-element>

@@ -21,6 +21,12 @@ handlers:
 - url: /bower_components
   static_dir: bower_components
 
+- url: /lib
+  static_dir: lib
+
+- url: /model
+  static_dir: model
+
 - url: /ui
   static_dir: ui
 

@@ -1,0 +1,118 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../../lib/network-simulator.html">
+<link rel="import" href="../cqstats-graph-data.html">
+
+<script>
+(function() {
+
+var assert = chai.assert;
+
+var testCQStats = {
+  results: [{
+    key: '2002',
+    begin: 1500,
+    interval_minutes: 500,
+    stats: [{
+      name: 'test-stat-a',
+      max: 600,
+      percentile_99: 540,
+      percentile_90: 480,
+      percentile_50: 420,
+      min: 360,
+      mean: 420,
+    }, {
+      name: 'test-stat-b',
+      max: 6000,
+      percentile_99: 5400,
+      percentile_90: 4800,
+      percentile_50: 4200,
+      min: 3600,
+      mean: 4200,
+    }],
+  }, {
+    key: '1001',
+    begin: 1000,
+    interval_minutes: 500,
+    stats: [{
+      name: 'test-stat-a',
+      max: 6000,
+      percentile_99: 5400,
+      percentile_90: 4800,
+      percentile_50: 4200,
+      min: 3600,
+      mean: 4200,
+    }, {
+      name: 'test-stat-b',
+      max: 600,
+      percentile_99: 540,
+      percentile_90: 480,
+      percentile_50: 420,
+      min: 360,
+      mean: 420,
+    }],
+  }],
+};
+
+describe('CQStatsGraphData.createBatch', function() {
+  it('should create CQStatsGraphData objects that get data', function(done) {
+    var simulator = new NetworkSimulator(assert);
+    simulator.json = function(options) {
+      if (options.url === 'https://chromium-cq-status.appspot.com/stats/query?project=testProject&interval_minutes=500&names=test-stat-a%2Ctest-stat-b&count=1000') {
+        return Promise.resolve(testCQStats);
+      }
+      console.log('Unexpected url: ' + options.url);
+    }
+
+    var batch;
+    simulator.runTest(function() {
+      batch = CQStatsGraphData.createBatch(
+          'testProject', 500, 1000, [
+          {
+            heading: 'Test Heading A',
+            name: 'test-stat-a',
+          }, {
+            heading: 'Test Heading B',
+            name: 'test-stat-b',
+          }]);
+    }).then(function() {
+      assert.equal(batch.length, 2);
+      assert.equal(batch[0].name, 'test-stat-a');
+      assert.equal(batch[1].name, 'test-stat-b');
+      return Promise.all([
+        batch[0].getData().then(function(data) {
+          assert.deepEqual(data, {
+            cols: ['timestamp', 'max', 'p99', 'p90', 'p50', 'min', 'mean'],
+            rows: [
+              [new Date((1000 + 500 * 60) * 1000), 100, 90, 80, 70, 60, 70],
+              [new Date((1500 + 500 * 60) * 1000), 10, 9, 8, 7, 6, 7],
+            ],
+            unit: 'minutes',
+          });
+        }),
+        batch[1].getData().then(function(data) {
+          assert.deepEqual(data, {
+            cols: ['timestamp', 'max', 'p99', 'p90', 'p50', 'min', 'mean'],
+            rows: [
+              [new Date((1000 + 500 * 60) * 1000), 10, 9, 8, 7, 6, 7],
+              [new Date((1500 + 500 * 60) * 1000), 100, 90, 80, 70, 60, 70],
+            ],
+            unit: 'minutes',
+          });
+        }),
+      ]);
+    }).then(function() {
+      done();
+    }).catch(function(e) {
+      console.log(e);
+    });
+  });
+});
+
+})();
+</script>
+

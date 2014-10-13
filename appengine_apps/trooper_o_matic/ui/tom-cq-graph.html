@@ -1,0 +1,97 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/dygraph.html">
+<link rel="import" href="../lib/log.html">
+<link rel="import" href="../model/cq-graph-item.html">
+<link rel="import" href="./tom-cq-graph-item.html">
+
+<polymer-element name="tom-cq-graph" attributes="graphData">
+  <template>
+    <style>
+      ul, .loading {
+        font-weight: bold;
+      }
+      tom-cq-graph-item {
+        font-weight: normal;
+      }
+      #graphContainer {
+        position: relative;
+        height: 200px;
+      }
+      #graphDiv {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+      }
+    </style>
+    <h2>{{ graphData.heading }}</h2>
+    <div id="graphContainer"><div id="graphDiv"></div></div>
+    <ul>
+      <template if="{{ list.length }}">
+        Worst patches between {{ listBegin }} and {{ listEnd }}:
+      </template>
+      <template repeat="{{ item in list }}">
+        <tom-cq-graph-item item="{{ item }}"></tom-cq-graph-item>
+      </template>
+    </ul>
+    <template if="{{ loading }}"><span class="loading">Loading...</span></template>
+  </template>
+  <script>
+    (function() {
+    Polymer({
+      ready: function() {
+        this.list = [];
+        this.loading = true;
+        var self = this;
+        this.graphData.getData().then(function(data) {
+          self.loading = false;
+          var graph = self.drawGraph(data);
+          if (!self.graphData.rowItemsAvailable) {
+            return;
+          }
+          self.$.graphDiv.addEventListener('click', function() {
+            self.list = [];
+            var row = graph.getSelection();
+            if (row !== -1) {
+              self.loading = true;
+              self.graphData.getRowItems(row).then(function(rowItems) {
+                self.loading = false;
+                self.list = rowItems.items.map(function(item) {
+                  return new CQGraphItem(
+                      item[0], item[1].issue, item[1].patchset);
+                });
+                self.listBegin = rowItems.begin;
+                self.listEnd = rowItems.end;
+              });
+            }
+          });
+        }).catch(log);
+      },
+      drawGraph: function(data) {
+        var graph = new Dygraph(this.$.graphDiv, data.rows, {
+          labels: data.cols,
+          legend: 'always',
+          highlightSeriesOpts: {
+            strokeWidth: 2,
+            highlightCircleSize: 3,
+          },
+          highlightSeriesBackgroundAlpha: 1,
+          hideOverlayOnMouseOut: false,
+          ylabel: data.unit,
+          colors: ['#f00', '#f40', '#f80', '#fc0', '#08f', '#000'],
+        });
+        // Overwrite default white legend background to be translucent.
+        this.$.graphDiv.querySelector('.dygraph-legend').style.backgroundColor =
+            'rgba(255, 255, 255, 0.8)';
+        return graph;
+      },
+    });
+    })();
+  </script>
+</polymer-element>

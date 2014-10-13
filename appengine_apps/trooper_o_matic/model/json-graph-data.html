@@ -1,0 +1,25 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/net.html">
+
+<script>
+function JSONGraphData(heading, url) {
+  this.rowItemsAvailable = false;
+  this.heading = heading;
+  this.url = url;
+}
+
+JSONGraphData.prototype.getData = function() {
+  return net.json({url: this.url}).then(function(data) {
+    // Convert timestamps to Date objects.
+    data.rows.forEach(function(row) {
+      row[0] = new Date(row[0] * 1000);
+    });
+    return data;
+  });
+};
+</script>

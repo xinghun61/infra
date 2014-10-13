@@ -33,7 +33,7 @@ def date_from_str(string, base_format):  # pragma: no cover
     return datetime.datetime.strptime(string, base_format)
 
 
-class CheckCqHandler(webapp2.RequestHandler):  # pragma: no cover
+class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
   """Collect commit queue length and run times."""
 
   patch_stop_list = ('http://chromium-cq-status.appspot.com/query/action='

@@ -1,0 +1,106 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/log.html">
+<link rel="import" href="../lib/net.html">
+<link rel="import" href="../lib/sugar.html">
+
+<script>
+function CQStatsGraphData(heading, name) {
+  this.rowItemsAvailable = true;
+  this.heading = heading;
+  this.name = name;
+  this.cqStatsList = null;
+  this.pendingGetData = [];
+}
+
+(function() {
+var cqLogHost = 'https://chromium-cq-status.appspot.com';
+
+CQStatsGraphData.createBatch = function(project, intervalMinutes, count, jobs) {
+  graphDataList = [];
+  var names = [];
+  jobs.forEach(function(job) {
+    names.push(job.name);
+    graphDataList.push(new CQStatsGraphData(job.heading, job.name));
+  });
+  var url = cqLogHost + '/stats/query?' + Object.toQueryString({
+    project: project,
+    interval_minutes: intervalMinutes,
+    names: names.join(','),
+    count: count,
+  });
+  net.json({url: url}).then(function(json) {
+    var cqStatsList = json.results.reverse();
+    graphDataList.forEach(function(graphData) {
+      graphData.setData(cqStatsList);
+    });
+  }).catch(log);
+  return graphDataList;
+};
+
+CQStatsGraphData.prototype.setData = function(cqStatsList) {
+  this.cqStatsList = cqStatsList;
+  this.pendingGetData.forEach(function(getDataResolver) {
+    getDataResolver();
+  });
+}
+
+CQStatsGraphData.prototype.getData = function() {
+  var self = this;
+  return new Promise(function(resolve) {
+    function resolveData() {
+      resolve({
+        cols: ['timestamp', 'max', 'p99', 'p90', 'p50', 'min', 'mean'],
+        rows: self.cqStatsList.map(function(cqStats) {
+          var stat = null;
+          cqStats.stats.forEach(function(testStat) {
+            if (testStat.name === self.name) {
+              stat = testStat;
+            }
+          });
+          // Convert timestamps to Date objects and seconds to minutes.
+          return [
+            new Date((cqStats.begin + cqStats.interval_minutes * 60) * 1000),
+            stat.max / 60,
+            stat.percentile_99 / 60,
+            stat.percentile_90 / 60,
+            stat.percentile_50 / 60,
+            stat.min / 60,
+            stat.mean / 60,
+          ];
+        }),
+        unit: 'minutes',
+      });
+    }
+    if (!self.cqStatsList) {
+      self.pendingGetData.push(resolveData);
+    } else {
+      resolveData();
+    }
+  });
+};
+
+// Gets the highest ranking items that contributed to a particular row in the
+// data.
+CQStatsGraphData.prototype.getRowItems = function(index) {
+  console.assert(this.cqStatsList);
+  var cqStats = this.cqStatsList[index];
+  var url =
+      cqLogHost + '/stats/highest/' +
+      this.name + '/' + cqStats.key;
+  return net.json({url: url, cache: true}).then(function(items) {
+    // Convert seconds to minutes.
+    items.forEach(function(item) { item[0] /= 60; });
+    return {
+      items: items,
+      begin: new Date(cqStats.begin * 1000),
+      end: new Date((cqStats.begin + cqStats.interval_minutes * 60) * 1000),
+    };
+  });
+};
+})();
+</script>

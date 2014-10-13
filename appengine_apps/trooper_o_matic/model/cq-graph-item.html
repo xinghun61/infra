@@ -1,0 +1,26 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/log.html">
+<link rel="import" href="../lib/net.html">
+<link rel="import" href="../lib/sugar.html">
+
+<script>
+function CQGraphItem(minutes, issue, patchset) {
+  this.minutes = minutes;
+  this.issue = issue;
+  this.patchset = patchset;
+
+  var reviewHost = 'https://codereview.chromium.org';
+  this.reviewURL = '{1}/{2}#{3}'.assign(reviewHost, this.issue, this.patchset);
+  this.reviewTitle = null;
+  var issueURL = '{1}/api/{2}'.assign(reviewHost, this.issue);
+  var self = this;
+  net.json({url: issueURL, cache: true}).then(function(json) {
+    self.reviewTitle = json.subject;
+  }).catch(log);
+}
+</script>
