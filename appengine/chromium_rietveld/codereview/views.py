@@ -91,6 +91,8 @@ django.template.add_to_builtins('codereview.library')
 
 ### Constants ###
 
+REQUIRED_REVIEWERS_HELP_TEXT = (
+    'Use asterisks to specify required reviewers. Eg: *xyz, abc')
 
 OAUTH_DEFAULT_ERROR_MESSAGE = 'OAuth 2.0 error occurred.'
 _ACCESS_TOKEN_TEMPLATE_ROOT = 'http://localhost:%(port)d?'
@@ -246,9 +248,11 @@ class EditLocalBaseForm(forms.Form):
   description = forms.CharField(required=False,
                                 max_length=MAX_DESCRIPTION,
                                 widget=forms.Textarea(attrs={'cols': 60}))
-  reviewers = forms.CharField(required=False,
-                              max_length=MAX_REVIEWERS,
-                              widget=AccountInput(attrs={'size': 60}))
+  reviewers = forms.CharField(
+      required=False,
+      max_length=MAX_REVIEWERS,
+      widget=AccountInput(attrs={'size': 60}),
+      help_text=REQUIRED_REVIEWERS_HELP_TEXT)
   cc = forms.CharField(required=False,
                        max_length=MAX_CC,
                        label = 'CC',
@@ -270,9 +274,11 @@ class PublishForm(forms.Form):
 
   subject = forms.CharField(max_length=MAX_SUBJECT,
                             widget=forms.TextInput(attrs={'size': 60}))
-  reviewers = forms.CharField(required=False,
-                              max_length=MAX_REVIEWERS,
-                              widget=AccountInput(attrs={'size': 60}))
+  reviewers = forms.CharField(
+      required=False,
+      max_length=MAX_REVIEWERS,
+      widget=AccountInput(attrs={'size': 60}),
+      help_text=REQUIRED_REVIEWERS_HELP_TEXT)
   cc = forms.CharField(required=False,
                        max_length=MAX_CC,
                        label = 'CC',
@@ -297,9 +303,11 @@ class PublishForm(forms.Form):
 
 class MiniPublishForm(forms.Form):
 
-  reviewers = forms.CharField(required=False,
-                              max_length=MAX_REVIEWERS,
-                              widget=AccountInput(attrs={'size': 60}))
+  reviewers = forms.CharField(
+      required=False,
+      max_length=MAX_REVIEWERS,
+      widget=AccountInput(attrs={'size': 60}),
+      help_text=REQUIRED_REVIEWERS_HELP_TEXT)
   cc = forms.CharField(required=False,
                        max_length=MAX_CC,
                        label = 'CC',
