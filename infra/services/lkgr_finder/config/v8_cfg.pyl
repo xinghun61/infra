@@ -20,7 +20,9 @@
         'V8 Linux64 - debug builder',
         'V8 Linux64',
         'V8 Linux64 - debug',
+        'V8 Linux clang',
         'V8 Linux64 ASAN',
+        'V8 Linux64 TSAN',
         # TODO(machenbach): Enable once crbug.com/382930 is resolved.
         # 'V8 Linux - nosnap',
         # 'V8 Linux - nosnap - debug',
@@ -32,8 +34,7 @@
         'V8 Linux - debug - nosse4',
         'V8 Linux - deadcode',
         'V8 Linux - gcmole',
-        # TODO(machenbach): Disabled until enough slaves are available.
-        # 'V8 Linux - interpreted regexp',
+        'V8 Linux - memcheck',
         'V8 Win32 - builder',
         'V8 Win32 - 1',
         'V8 Win32 - 2',
@@ -41,14 +42,19 @@
         'V8 Win32 - debug - 1',
         'V8 Win32 - debug - 2',
         'V8 Win32 - debug - 3',
+        'V8 Win32 - nosnap - shared',
         'V8 Win64',
+        'V8 Win64 - debug',
         'V8 Mac',
         'V8 Mac - debug',
         'V8 Mac64',
         'V8 Mac64 - debug',
         'V8 Arm - builder',
+        'V8 Arm - debug builder',
+        'V8 Android Arm - builder',
         'V8 Arm',
-        'V8 Arm - debug',
+        'V8 Arm - debug - 1',
+        'V8 Arm - debug - 2',
         'V8 Linux - arm - sim',
         'V8 Linux - arm - sim - debug',
         'V8 Linux - arm64 - sim',
@@ -62,15 +68,8 @@
         # 'Linux ASAN Builder',
         # 'Android Builder',
         'V8 Linux GN',
-        # TODO(machenbach): Disabled until stability issues with the
-        # windows bot are resolved.
-        # 'Webkit',
-        # TODO(machenbach): Disabled until layout tests are more
-        # reliable.
-        # 'Webkit Mac',
-        # 'Webkit Linux',
-        # 'Webkit Linux 64',
-        # 'Webkit Linux - dbg',
+        'V8-Blink Linux 32',
+        'V8-Blink Linux 64 (dbg)',
       ],
     },  # client.v8
   },
