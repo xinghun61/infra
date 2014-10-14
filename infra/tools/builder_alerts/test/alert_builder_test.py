@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import copy
+import time
 import unittest
 
 from infra.tools.builder_alerts import alert_builder
@@ -206,6 +207,36 @@ class AlertBuilderTest(unittest.TestCase):
     finally:
       alert_builder.compute_transition = old_compute_transition
 
+  def test_alert_for_stale_master_data(self):
+    stale_master_json = {
+      'created': '2013-10-03T19:01:09.337330',
+      'created_timestamp': '1423592',
+      'builders': {},
+      'change_sources': {},
+      'changes': {},
+      'metrics': None,
+      'project': {},
+      'slaves': {},
+    }
+    master_url = 'https://build.chromium.org/p/chromium.lkgr'
+    alert = alert_builder.alert_for_stale_master_data(
+        master_url, stale_master_json)
+    self.assertTrue(alert != None)
+    self.assertEqual(alert['master_url'], master_url)
+    self.assertEqual(alert['master_name'], 'chromium.lkgr')
+
+    fresh_master_json = stale_master_json
+    fresh_master_json['created_timestamp'] = time.time()
+    alert = alert_builder.alert_for_stale_master_data(
+        master_url, stale_master_json)
+    self.assertEqual(alert, None)
+
+    # If CBE doesn't have the data, we go to the master, which
+    # doesn't have a created timestamp.
+    stale_master_json.pop('created_timestamp', None)
+    alert = alert_builder.alert_for_stale_master_data(
+        master_url, stale_master_json)
+    self.assertEqual(alert, None)
 
   def test_complete_steps_by_type(self):
     build = {

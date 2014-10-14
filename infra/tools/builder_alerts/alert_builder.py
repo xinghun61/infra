@@ -8,6 +8,7 @@ import multiprocessing
 import os
 import re
 import sys
+import time
 import traceback
 import urllib
 
@@ -18,6 +19,8 @@ from infra.tools.builder_alerts import string_helpers
 
 # Success or Warnings or None (didn't run) don't count as 'failing'.
 NON_FAILING_RESULTS = (0, 1, None)
+
+STALE_MASTER_ALERT_THRESHOLD = 10 * 60
 
 
 def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
@@ -269,6 +272,26 @@ def alerts_for_builder(cache, master_url, builder_name,
   return [fill_in_transition(cache, alert, recent_build_ids, old_alerts)
       for alert in alerts]
 
+def alert_for_stale_master_data(master_url, master_json): # pragma: no cover
+  # We only have a created timestamp when we get the master_json from
+  # Chrome Build Extract.
+  if 'created_timestamp' not in master_json:
+    return None
+
+  update_time_from_master = int(master_json['created_timestamp'])
+  time_since_update = int(time.time()) - update_time_from_master
+  if time_since_update < STALE_MASTER_ALERT_THRESHOLD:
+    if time_since_update <= 0:
+      logging.critical('Master data timestamp (%d) is newer than current time '
+          '(%d). Delta %d.' % (update_time_from_master, int(time.time()),
+              time_since_update))
+    return None
+
+  return {
+    'last_update_time': update_time_from_master,
+    'master_url': master_url,
+    'master_name': buildbot.master_name_from_url(master_url),
+  }
 
 def alerts_for_master(cache, master_url, master_json, old_alerts,
     builder_name_filter=None, jobs=1):  # pragma: no cover
@@ -310,7 +333,8 @@ def alerts_for_master(cache, master_url, master_json, old_alerts,
     if alert:
       alerts.extend(alert)
 
-  return alerts
+  stale_master_data_alert = alert_for_stale_master_data(master_url, master_json)
+  return (alerts, stale_master_data_alert)
 
 
 def main(args):  # pragma: no cover
@@ -333,7 +357,7 @@ def main(args):  # pragma: no cover
   master_json = buildbot.fetch_master_json(master_url)
   # This is kinda a hack, but uses more of our existing code this way:
   alerts = alerts_for_master(cache, master_url, master_json, builder_name)
-  print json.dumps(alerts, indent=1)
+  print json.dumps(alerts[0], indent=1)
 
 
 if __name__ == '__main__':
