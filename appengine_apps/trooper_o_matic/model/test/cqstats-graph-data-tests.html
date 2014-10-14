@@ -4,6 +4,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
+<link rel="import" href="../../lib/log.html">
 <link rel="import" href="../../lib/network-simulator.html">
 <link rel="import" href="../cqstats-graph-data.html">
 
@@ -16,6 +17,7 @@ var testCQStats = {
   results: [{
     key: '2002',
     begin: 1500,
+    end: 1500 + 500 * 60,
     interval_minutes: 500,
     stats: [{
       name: 'test-stat-a',
@@ -37,6 +39,7 @@ var testCQStats = {
   }, {
     key: '1001',
     begin: 1000,
+    end: 1000 + 500 * 60,
     interval_minutes: 500,
     stats: [{
       name: 'test-stat-a',
@@ -68,38 +71,31 @@ describe('CQStatsGraphData.createBatch', function() {
       console.log('Unexpected url: ' + options.url);
     }
 
-    var batch;
+    var dataList;
     simulator.runTest(function() {
-      batch = CQStatsGraphData.createBatch(
-          'testProject', 500, 1000, [
-          {
-            heading: 'Test Heading A',
-            name: 'test-stat-a',
-          }, {
-            heading: 'Test Heading B',
-            name: 'test-stat-b',
-          }]);
+      dataList = CQStatsGraphData.createBatch(
+          'testProject', 500, 1000, ['test-stat-a', 'test-stat-b']);
     }).then(function() {
-      assert.equal(batch.length, 2);
-      assert.equal(batch[0].name, 'test-stat-a');
-      assert.equal(batch[1].name, 'test-stat-b');
+      assert.equal(dataList.length, 2);
+      assert.equal(dataList[0]._name, 'test-stat-a');
+      assert.equal(dataList[1]._name, 'test-stat-b');
       return Promise.all([
-        batch[0].getData().then(function(data) {
+        dataList[0].get().then(function(data) {
           assert.deepEqual(data, {
-            cols: ['timestamp', 'max', 'p99', 'p90', 'p50', 'min', 'mean'],
+            cols: ['timestamp', 'max', 'p90', 'p50', 'min', 'mean'],
             rows: [
-              [new Date((1000 + 500 * 60) * 1000), 100, 90, 80, 70, 60, 70],
-              [new Date((1500 + 500 * 60) * 1000), 10, 9, 8, 7, 6, 7],
+              [new Date((1000 + 500 * 60) * 1000), 100, 80, 70, 60, 70],
+              [new Date((1500 + 500 * 60) * 1000), 10, 8, 7, 6, 7],
             ],
             unit: 'minutes',
           });
         }),
-        batch[1].getData().then(function(data) {
+        dataList[1].get().then(function(data) {
           assert.deepEqual(data, {
-            cols: ['timestamp', 'max', 'p99', 'p90', 'p50', 'min', 'mean'],
+            cols: ['timestamp', 'max', 'p90', 'p50', 'min', 'mean'],
             rows: [
-              [new Date((1000 + 500 * 60) * 1000), 10, 9, 8, 7, 6, 7],
-              [new Date((1500 + 500 * 60) * 1000), 100, 90, 80, 70, 60, 70],
+              [new Date((1000 + 500 * 60) * 1000), 10, 8, 7, 6, 7],
+              [new Date((1500 + 500 * 60) * 1000), 100, 80, 70, 60, 70],
             ],
             unit: 'minutes',
           });
@@ -107,9 +103,7 @@ describe('CQStatsGraphData.createBatch', function() {
       ]);
     }).then(function() {
       done();
-    }).catch(function(e) {
-      console.log(e);
-    });
+    }).catch(log);
   });
 });
 

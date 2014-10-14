@@ -9,7 +9,7 @@ found in the LICENSE file.
 <link rel="import" href="../model/cq-graph-item.html">
 <link rel="import" href="./tom-cq-graph-item.html">
 
-<polymer-element name="tom-cq-graph" attributes="graphData">
+<polymer-element name="tom-cq-graph" attributes="graph">
   <template>
     <style>
       ul, .loading {
@@ -30,66 +30,106 @@ found in the LICENSE file.
         bottom: 0;
       }
     </style>
-    <h2>{{ graphData.heading }}</h2>
+    <h2>{{ graph.heading }}</h2>
+    <template if="{{ _hasAlerts() }}">
+      Alert thresholds: {{ _alertText() }}
+    </template>
     <div id="graphContainer"><div id="graphDiv"></div></div>
     <ul>
-      <template if="{{ list.length }}">
-        Worst patches between {{ listBegin }} and {{ listEnd }}:
+      <template if="{{ _list.length }}">
+        Worst patches between {{ _listBegin }} and {{ _listEnd }}:
       </template>
-      <template repeat="{{ item in list }}">
+      <template repeat="{{ item in _list }}">
         <tom-cq-graph-item item="{{ item }}"></tom-cq-graph-item>
       </template>
     </ul>
-    <template if="{{ loading }}"><span class="loading">Loading...</span></template>
+    <template if="{{ _loading }}"><span class="loading">Loading...</span></template>
   </template>
   <script>
     (function() {
     Polymer({
       ready: function() {
-        this.list = [];
-        this.loading = true;
+        this._list = [];
+        this._loading = true;
+        this._dygraph = null;
         var self = this;
-        this.graphData.getData().then(function(data) {
-          self.loading = false;
-          var graph = self.drawGraph(data);
-          if (!self.graphData.rowItemsAvailable) {
-            return;
-          }
-          self.$.graphDiv.addEventListener('click', function() {
-            self.list = [];
-            var row = graph.getSelection();
-            if (row !== -1) {
-              self.loading = true;
-              self.graphData.getRowItems(row).then(function(rowItems) {
-                self.loading = false;
-                self.list = rowItems.items.map(function(item) {
-                  return new CQGraphItem(
-                      item[0], item[1].issue, item[1].patchset);
-                });
-                self.listBegin = rowItems.begin;
-                self.listEnd = rowItems.end;
-              });
-            }
-          });
+        this.graph.data.get().then(function(data) {
+          self._loading = false;
+          self._drawGraph(data);
         }).catch(log);
+        this.$.graphDiv.addEventListener('click',
+            this._onGraphClick.bind(this));
       },
-      drawGraph: function(data) {
-        var graph = new Dygraph(this.$.graphDiv, data.rows, {
+      _drawGraph: function(data) {
+        this._dygraph = new Dygraph(this.$.graphDiv, data.rows, {
           labels: data.cols,
           legend: 'always',
           highlightSeriesOpts: {
-            strokeWidth: 2,
-            highlightCircleSize: 3,
+            strokeWidth: 3,
+            highlightCircleSize: 4,
           },
           highlightSeriesBackgroundAlpha: 1,
           hideOverlayOnMouseOut: false,
           ylabel: data.unit,
-          colors: ['#f00', '#f40', '#f80', '#fc0', '#08f', '#000'],
+          strokeWidth: 2,
+          colors: ['purple', 'orange', 'lightblue', 'green', 'black'],
+          underlayCallback: this._onGraphDrawUnderlay.bind(this),
         });
         // Overwrite default white legend background to be translucent.
-        this.$.graphDiv.querySelector('.dygraph-legend').style.backgroundColor =
-            'rgba(255, 255, 255, 0.8)';
-        return graph;
+        var legend = this.$.graphDiv.querySelector('.dygraph-legend');
+        legend.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      },
+      _onGraphClick: function() {
+        if (!this._dygraph || !this.graph.data.rowItemsAvailable) {
+          return;
+        }
+        this._list = [];
+        var row = this._dygraph.getSelection();
+        if (row !== -1) {
+          this._loading = true;
+          var self = this;
+          this.graph.data.rowItems(row).then(function(rowItems) {
+            self._loading = false;
+            self._list = rowItems.items.map(function(item) {
+              return new CQGraphItem(item[0], item[1].issue, item[1].patchset,
+                  self.graph.valueBreaching(item[0]));
+            });
+            self._listBegin = rowItems.begin;
+            self._listEnd = rowItems.end;
+          });
+        }
+      },
+      _onGraphDrawUnderlay: function(context, area, dygraph) {
+        var self = this;
+        Object.keys(this.graph.alerts, function(col, threshold) {
+          self.graph.breachedItems(col, threshold).then(function(items) {
+            context.strokeStyle = 'red';
+            context.lineWidth = 5;
+            context.lineCap = 'round';
+            context.beginPath();
+            var radius = 6;
+            items.forEach(function(item) {
+              var x = dygraph.toDomXCoord(item.timestamp);
+              var valueY = dygraph.toDomYCoord(item.value);
+              var thresholdY = Math.max(
+                  dygraph.toDomYCoord(threshold), valueY + radius);
+              context.moveTo(x, thresholdY);
+              context.lineTo(x, valueY + radius);
+              context.arc(x, valueY, radius, Math.PI * 0.5, Math.PI * 2.5);
+            });
+            context.stroke();
+          });
+        });
+      },
+      _hasAlerts: function() {
+        return Object.keys(this.graph.alerts).length > 0;
+      },
+      _alertText: function() {
+        var items = [];
+        Object.keys(this.graph.alerts, function(col, threshold) {
+          items.push('{1} ≥ {2}'.assign(col, threshold));
+        });
+        return items.join(', ');
       },
     });
     })();

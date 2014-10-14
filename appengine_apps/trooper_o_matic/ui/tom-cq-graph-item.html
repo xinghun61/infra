@@ -10,9 +10,12 @@ found in the LICENSE file.
       a {
         text-decoration: none;
       }
+      .value {
+        color: {{ item.alertBreached ? 'red' : 'black' }};
+      }
     </style>
     <li>
-      {{ item.minutes | toFixed }} minutes:
+      <span class="value">{{ item.minutes | toFixed }} minutes</span>:
       <a href="{{ item.reviewURL }}">{{ item.reviewTitle ? item.reviewTitle : item.reviewURL }}</a>
        -
       <a href="//chromium-cq-status.appspot.com/patch-status/{{ item.issue }}/{{ item.patchset }}">[CQ Status]</a>
