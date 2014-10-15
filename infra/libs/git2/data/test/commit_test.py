@@ -159,7 +159,8 @@ class TestCommitData(unittest.TestCase):
             data.CommitTimestamp(1399330903, '-', 7, 0)),
         'message_lines': ('Cool commit message',),
         'footer_lines': (),
-        'other_header_lines': ()
+        'other_header_lines': (),
+        'no_trailing_nl': False,
     })
     self.assertEqual(
         repr(d),
@@ -170,7 +171,7 @@ class TestCommitData(unittest.TestCase):
         "CommitTimestamp(1399330903, '-', 7, 0)), "
         "CommitUser('Jane January', 'jane@chromium.org', "
         "CommitTimestamp(1399330903, '-', 7, 0)), (), "
-        "('Cool commit message',), ())"
+        "('Cool commit message',), (), False)"
     )
     self.assertEqual(str(d), COMMIT)
 
@@ -440,3 +441,16 @@ class TestCommitData(unittest.TestCase):
   def testEmpty(self):
     with self.assertRaises(data.PartialCommit):
       data.CommitData.from_raw('')
+
+  def testMissingNewline(self):
+    COMMIT = textwrap.dedent("""\
+    tree b966f77e58b8a3cf7c02dd0271a4d636c0857af4
+    parent 1b346cb5145e1fe4c074611e335d8ac96e18c686
+    author Bob Boberton <bob@chromium.org> 1399330903 -0700
+    committer Jane January <jane@chromium.org> 1399330903 -0700
+
+    Cool commit message
+    with: missing newline""")
+    c = data.CommitData.from_raw(COMMIT)
+    self.assertTrue(c.no_trailing_nl)
+    self.assertEqual(str(c), COMMIT)

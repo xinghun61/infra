@@ -248,7 +248,7 @@ class TestRepo(git2.Repo):
 
     return self.get_commit(self.intern(data.CommitData(
         tree_hash, parents, user, user, (), message.splitlines(),
-        data.CommitData.merge_lines([], footers or {})
+        data.CommitData.merge_lines([], footers or {}), False
     ), 'commit'))
 
 

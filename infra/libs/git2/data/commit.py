@@ -187,7 +187,7 @@ class CommitData(Alterable):
   HASH_RE = re.compile(r'[0-9a-f]{40}')
 
   def __init__(self, tree, parents, author, committer, other_header_lines,
-               message_lines, footer_lines):
+               message_lines, footer_lines, no_trailing_nl):
     super(CommitData, self).__init__()
     assert all('\n' not in h and self.HASH_RE.match(h) for h in parents)
     assert tree is None or '\n' not in tree and self.HASH_RE.match(tree)
@@ -207,6 +207,7 @@ class CommitData(Alterable):
     self._other_header_lines = freeze(other_header_lines)
     self._message_lines = freeze(message_lines)
     self._footer_lines = freeze(footer_lines)
+    self._no_trailing_nl = no_trailing_nl
 
   # Comparison & Representation
   def __eq__(self, other):
@@ -222,7 +223,8 @@ class CommitData(Alterable):
   def __repr__(self):
     return (
         'CommitData({tree!r}, {parents!r}, {author!r}, {committer!r}, '
-        '{other_header_lines!r}, {message_lines!r}, {footer_lines!r})'
+        '{other_header_lines!r}, {message_lines!r}, {footer_lines!r}, '
+        '{no_trailing_nl!r})'
     ).format(**self.to_dict())
 
   def __str__(self):
@@ -243,7 +245,10 @@ class CommitData(Alterable):
       print >> ret
     for key, value in self.footer_lines:
       print >> ret, '%s: %s' % (key, value)
-    return ret.getvalue()
+    v = ret.getvalue()
+    if self.no_trailing_nl:
+      v = v[:-1]
+    return v
 
   # Accessors
   # pylint: disable=W0212
@@ -254,6 +259,7 @@ class CommitData(Alterable):
   other_header_lines = property(lambda self: self._other_header_lines)
   parents = property(lambda self: self._parents)
   tree = property(lambda self: self._tree)
+  no_trailing_nl = property(lambda self: self._no_trailing_nl)
 
   @cached_property
   def footers(self):
@@ -272,7 +278,8 @@ class CommitData(Alterable):
     return {
         k: getattr(self, k)
         for k in ['parents', 'tree', 'author', 'committer',
-                  'other_header_lines', 'message_lines', 'footer_lines']
+                  'other_header_lines', 'message_lines', 'footer_lines',
+                  'no_trailing_nl']
     }
 
   def alter(self, **kwargs):
@@ -363,8 +370,8 @@ class CommitData(Alterable):
         hsh_ref.append(hashlib.sha1(data).hexdigest())
       return hsh_ref[0]
 
-    if data[-1:] != '\n':
-      raise PartialCommit(hsh_fn(), data)
+    # use slice since data may be empty
+    no_trailing_nl = data[-1:] != '\n'
 
     i = 0
     raw_lines = data.splitlines()
@@ -395,7 +402,7 @@ class CommitData(Alterable):
       raise PartialCommit(hsh_fn(), data)
 
     return cls(tree, parents, users['author'], users['committer'],
-               other_header_lines, message_lines, footer_lines)
+               other_header_lines, message_lines, footer_lines, no_trailing_nl)
 
   @classmethod
   def parse_raw_message(cls, raw_message_lines):
