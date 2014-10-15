@@ -52,7 +52,7 @@ class CronTest(unittest.TestCase):
     testing_common.StubUrlfetch(test_data.URLFETCH_RESPONSES,
                                 stub=self.testbed.get_stub('urlfetch'))
     app = webapp2.WSGIApplication([
-        ('/check-cq', cron.CheckCqHandler),
+        ('/check-cq', cron.CheckCQHandler),
         ('/check-tree/(.*)', cron.CheckTreeHandler),
         ('/check-tree-status/([^/]*)/(.*)', cron.CheckTreeStatusHandler),
     ])

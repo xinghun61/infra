@@ -51,7 +51,7 @@ class CoverageTest(testing.AppengineTestCase):
     project = 'chromium'
     cron_app = webtest.TestApp(
         webapp2.WSGIApplication([
-          ('/check-cq', cron.CheckCqHandler),
+          ('/check-cq', cron.CheckCQHandler),
         ])
     )
     cron_app.get('/check-cq')
