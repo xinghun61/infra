@@ -85,19 +85,6 @@ class TryserverBuilders(ndb.Model):
     'tryserver.chromium.gpu': [
       'http://build.chromium.org/p/tryserver.chromium.gpu/json/builders'
     ],
-    'tryserver.skia': [
-      # These servers are owned by skiabot@google.com .
-      # TODO(rmistry): Remove tryserver.skia once
-      # https://code.google.com/p/skia/issues/detail?id=761 is resolved.
-      'http://skia-tree-status-staging.appspot.com/redirect/' +
-          'buildbots/json/trybots',
-      'http://skia-tree-status-staging.appspot.com/redirect/' +
-          'android-buildbots/json/trybots',
-      'http://skia-tree-status-staging.appspot.com/redirect/' +
-          'compile-buildbots/json/trybots',
-      'http://skia-tree-status-staging.appspot.com/redirect/' +
-          'fyi-buildbots/json/trybots',
-    ],
     'client.skia': [
       'http://build.chromium.org/p/client.skia/json/trybots'
     ],
