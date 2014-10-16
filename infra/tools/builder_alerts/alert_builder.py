@@ -22,6 +22,7 @@ NON_FAILING_RESULTS = (0, 1, None)
 
 STALE_MASTER_ALERT_THRESHOLD = 10 * 60
 
+PER_BOT_TIME_LIMIT_FOR_COMPUTING_TRANSITIONS = 30
 
 def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
   master = alert['master_url']
@@ -172,7 +173,9 @@ def fill_in_transition(cache, alert, recent_build_ids,
   reason = alert['reason']
   alert_key = generate_alert_key(master, builder, step, reason)
 
-  if alert_key in old_alerts:
+  old_alert = old_alerts.get(alert_key)
+  # failing_build will be None if a previous run didn't fill in the transition.
+  if old_alert and old_alert['failing_build'] is not None:
     logging.debug('Using old alert data. master: %s, builder: %s, step: %s,'
         ' reason: %s' % (master, builder, step, reason))
     update_data = { k: old_alerts[alert_key][k] for k in [
@@ -269,8 +272,33 @@ def alerts_for_builder(cache, master_url, builder_name,
   for step_failure in step_failures:
     alerts += alerts_from_step_failure(cache, step_failure,
         master_url, builder_name)
-  return [fill_in_transition(cache, alert, recent_build_ids, old_alerts)
-      for alert in alerts]
+
+  start_time = time.time()
+  filled_in_alerts = []
+  should_fill_in_remaining_alerts = True
+  for alert in alerts:
+    old_should_fill_in_remaining_alerts = should_fill_in_remaining_alerts
+    should_fill_in_remaining_alerts = (
+        time.time() - start_time < PER_BOT_TIME_LIMIT_FOR_COMPUTING_TRANSITIONS)
+
+    if old_should_fill_in_remaining_alerts != should_fill_in_remaining_alerts:
+      logging.debug('Filled in transitions for %d/%s alerts for %s:%s' % (
+          len(filled_in_alerts), len(alerts), master_url, builder_name))
+
+    if should_fill_in_remaining_alerts:
+      filled_in_alerts.append(
+          fill_in_transition(cache, alert, recent_build_ids, old_alerts))
+    else:
+      update_data = {
+        'passing_build': None,
+        'failing_build': None,
+        'failing_revisions': None,
+        'passing_revisions': None,
+      }
+      alert.update(update_data)
+
+      filled_in_alerts.append(alert)
+  return filled_in_alerts
 
 def alert_for_stale_master_data(master_url, master_json): # pragma: no cover
   # We only have a created timestamp when we get the master_json from

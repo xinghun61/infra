@@ -132,14 +132,18 @@ def group_by_reason(alerts):  # pragma: no cover
 def range_key_for_group(group):
   last_passing = group['merged_last_passing']
   first_failing = group['merged_first_failing']
+
   if last_passing:
     range_key = ' '.join(flatten_to_commit_list(last_passing, first_failing))
-  else:
+  elif first_failing:
     # Even regressions where we don't know when they started can be
     # merged by our earliest known failure.
     parts = ['<=%s:%s' % (name, commit)
         for name, commit in first_failing.items()]
     range_key = ' '.join(parts)
+  else:
+    range_key = 'no_first_failing'
+
   # sort_key is a heuristic to avoid merging failiures like
   # gclient revert + webkit_tests which just happened to pull
   # exact matching revisions when failing.

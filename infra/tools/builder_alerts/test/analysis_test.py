@@ -94,6 +94,15 @@ class FailureAnalysisTest(unittest.TestCase):
     range_key = analysis.range_key_for_group(group)
     self.assertEquals(range_key, 'foo<=v8:2 <=chromium:4')
 
+  def test_range_key_for_group_no_first_failure(self):
+    group = {
+        'merged_last_passing': None,
+        'merged_first_failing': None,
+        'sort_key': 'foobar',
+    }
+    range_key = analysis.range_key_for_group(group)
+    self.assertEquals(range_key, 'foono_first_failing')
+
   MERGE_BY_RANGE_JSON = """
 [
   {
