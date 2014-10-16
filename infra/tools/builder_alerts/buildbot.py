@@ -149,25 +149,26 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     # Round for display.
     cache_age = datetime.timedelta(seconds=round(cache_age.total_seconds()))
     if cache_age.total_seconds() < 120:
-      return build
+      return build, 'disk cache'
     logging.debug('Expired (%s) %s %s %s' % (cache_age,
         master_name, builder_name, build_number))
     build = None
 
-  if not build:
-    cbe_url = ('https://chrome-build-extract.appspot.com/p/%s/builders/'
-        '%s/builds/%s?json=1') % (master_name, builder_name, build_number)
-    build = fetch_and_cache_build(cache, cbe_url, cache_key)
+  build_source = 'chrome-build-extract'
+  cbe_url = ('https://chrome-build-extract.appspot.com/p/%s/builders/'
+      '%s/builds/%s?json=1') % (master_name, builder_name, build_number)
+  build = fetch_and_cache_build(cache, cbe_url, cache_key)
 
   if not build:
     buildbot_url = ('https://build.chromium.org/p/%s/json/builders/'
         '%s/builds/%s') % (master_name, builder_name, build_number)
     build = fetch_and_cache_build(cache, buildbot_url, cache_key)
+    build_source = 'master'
 
   if not build:
     logging.critical('Could not get json for build: %s' % buildbot_url)
 
-  return build
+  return build, build_source
 
 
 # This effectively extracts the 'configuration' of the build
@@ -198,20 +199,24 @@ def revisions_from_build(build_json):
     revisions[repo_name] = _revision(build_json, buildbot_property)
   return revisions
 
-def latest_update_time_for_builder(last_build):
+def latest_update_time_and_step_for_builder(last_build):
   last_update = None
+  step_name = None
   if last_build['times'][1] != None:
     last_update = float(last_build['times'][1])
+    step_name = 'completed run'
   else:
     for step in last_build['steps']:
       # A None value for the first step time means the step hasn't started yet.
       # A None value for the second step time means it hasn't finished yet.
       step_time = step['times'][1] or step['times'][0]
-      if step_time:
-        last_update = max(float(step_time), last_update)
-  return last_update
+      if step_time and float(step_time) > last_update:
+        last_update = step_time
+        step_name = step['name']
+  return (last_update, step_name)
 
-def create_stale_builder_alert_if_needed(master_url, builder_name, state, pending_builds, last_update_time):
+def create_stale_builder_alert_if_needed(master_url, builder_name, state,
+    pending_builds, last_update_time, last_step, latest_build_id):
   alert = None
   current_time = int(time.time())
   if ((state == "building" and current_time - last_update_time > HUNG_BUILDER_ALERT_THRESHOLD)
@@ -223,11 +228,13 @@ def create_stale_builder_alert_if_needed(master_url, builder_name, state, pendin
       'state': state,
       'last_update_time': last_update_time,
       'pending_builds': pending_builds,
+      'step': last_step,
+      'latest_build': latest_build_id,
     }
   return alert
 
 # "line too long" pylint: disable=C0301
-def latest_builder_info_and_alerts_for_master(cache, master_url, master_json):
+def latest_builder_info_and_alerts_for_master(cache, master_url, master_json): # pragma: no cover
   latest_builder_info = collections.defaultdict(dict)
   stale_builder_alerts = []
   master_name = master_name_from_url(master_url)
@@ -238,23 +245,29 @@ def latest_builder_info_and_alerts_for_master(cache, master_url, master_json):
       continue
 
     latest_build_id = build_ids[-1]
-    last_build = fetch_build_json(cache,
+    last_build, build_source = fetch_build_json(cache,
         master_url, builder_name, latest_build_id)
 
     if not last_build:
       # fetch_build_json will already log critical in this case.
       continue
 
-    last_update_time = latest_update_time_for_builder(last_build)
+    last_update_time, last_step = latest_update_time_and_step_for_builder(
+        last_build)
     state = builder_json['state']
+    if builder_name in latest_builder_info[master_name]:
+      logging.critical('Processing builder %s on %s twice in one iteration,'
+          'overwriting the old value.' % (builder_name, master_name))
     latest_builder_info[master_name][builder_name] = {
       'revisions': revisions_from_build(last_build),
       'state': state,
-      'lastUpdateTime': latest_update_time_for_builder(last_build),
+      'lastUpdateTime': last_update_time,
+      'build_source': build_source,
     }
 
     stale_builder_alert = create_stale_builder_alert_if_needed(master_url,
-        builder_name, state, builder_json['pendingBuilds'], last_update_time)
+        builder_name, state, builder_json['pendingBuilds'], last_update_time,
+        last_step, latest_build_id)
     if stale_builder_alert:
       stale_builder_alerts.append(stale_builder_alert)
   return (latest_builder_info, stale_builder_alerts)

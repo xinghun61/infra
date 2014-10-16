@@ -267,7 +267,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
           2.2
         ],
       }
-      return k_example_build_json
+      return k_example_build_json, 'chrome-build-extract'
 
     cache = buildbot.DiskCache(self.cache_path)
     old_fetch_build_json = buildbot.fetch_build_json
@@ -281,6 +281,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
         'chromium.webkit': {
           'Win Builder': {
             'state': 'building',
+            'build_source': 'chrome-build-extract',
             'lastUpdateTime': 2.2,
             'revisions': {
               'v8': 23117,
@@ -298,33 +299,35 @@ class DiskCacheTest(TestCaseWithDiskCache):
   def test_create_stale_builder_alert_if_needed(self):
     master_url = "https://build.chromium.org/p/chromium.mac"
     current_time = int(time.time())
+    step = "step name"
+    latest_build_id = 1
 
     failing_build_time = current_time - (3.1 * 60 * 60)
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "building", 50, failing_build_time)
+        "Linux", "building", 50, failing_build_time, step, latest_build_id)
     self.assertIsNotNone(alert)
 
     passing_build_time = current_time - (60 * 60)
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "building", 50, passing_build_time)
+        "Linux", "building", 50, passing_build_time, step, latest_build_id)
     self.assertIsNone(alert)
 
     failing_offline_time = current_time - (0.6 * 60 * 60)
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "offline", 50, failing_offline_time)
+        "Linux", "offline", 50, failing_offline_time, step, latest_build_id)
     self.assertIsNotNone(alert)
 
     passing_offline_time = current_time - (0.3 * 60 * 60)
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "offline", 50, passing_offline_time)
+        "Linux", "offline", 50, passing_offline_time, step, latest_build_id)
     self.assertIsNone(alert)
 
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "idle", 55, current_time)
+        "Linux", "idle", 55, current_time, step, latest_build_id)
     self.assertIsNotNone(alert)
 
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
-        "Linux", "idle", 2, current_time)
+        "Linux", "idle", 2, current_time, step, latest_build_id)
     self.assertIsNone(alert)
 
   def test_latest_update_time_for_builder(self):
@@ -335,12 +338,14 @@ class DiskCacheTest(TestCaseWithDiskCache):
       ],
       "steps": [
         {
+          "name": "earlier",
           "times": [
             20,
             21
           ]
         },
         {
+          "name": "later",
           "times": [
             22,
             None
@@ -350,15 +355,17 @@ class DiskCacheTest(TestCaseWithDiskCache):
     }
 
     # Test that we use end time when it's present,
-    latest_time = buildbot.latest_update_time_for_builder(
+    latest_time, step_name = buildbot.latest_update_time_and_step_for_builder(
         k_example_last_build_times)
     self.assertEqual(latest_time, 11)
+    self.assertEqual(step_name, 'completed run')
 
     # And test that we iterate across step start times when it isn't.
     k_example_last_build_times["times"][1] = None
-    latest_time = buildbot.latest_update_time_for_builder(
+    latest_time, step_name = buildbot.latest_update_time_and_step_for_builder(
         k_example_last_build_times)
     self.assertEqual(latest_time, 22)
+    self.assertEqual(step_name, 'later')
 
   def test_latest_update_time_for_builder_none_values(self):
     # Test that a step that hasn't started yet doesn't throw an error.
@@ -369,12 +376,14 @@ class DiskCacheTest(TestCaseWithDiskCache):
       ],
       "steps": [
         {
+          "name": "later",
           "times": [
             20,
             21
           ]
         },
         {
+          "name": "earlier",
           "times": [
             None,
             None
@@ -383,9 +392,10 @@ class DiskCacheTest(TestCaseWithDiskCache):
       ]
     }
 
-    latest_time = buildbot.latest_update_time_for_builder(
+    latest_time, step_name = buildbot.latest_update_time_and_step_for_builder(
         k_example_last_build_times)
     self.assertEqual(latest_time, 21)
+    self.assertEqual(step_name, 'later')
 
 
 class BuildbotTest(unittest.TestCase):
@@ -491,7 +501,7 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     }
 
     def fetch(cache, master_url, builder_name, latest_build_id):
-      return None
+      return None, None
 
     old_fetch = buildbot.fetch_build_json
 
