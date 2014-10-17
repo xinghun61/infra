@@ -309,7 +309,7 @@ def alert_for_stale_master_data(master_url, master_json): # pragma: no cover
   update_time_from_master = int(master_json['created_timestamp'])
   time_since_update = int(time.time()) - update_time_from_master
   if time_since_update < STALE_MASTER_ALERT_THRESHOLD:
-    if time_since_update <= 0:
+    if time_since_update < 0:
       logging.critical('Master data timestamp (%d) is newer than current time '
           '(%d). Delta %d.' % (update_time_from_master, int(time.time()),
               time_since_update))

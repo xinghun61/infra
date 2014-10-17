@@ -149,6 +149,8 @@ def main(args):
   pool.join()
 
   for data in master_datas:
+    # TODO(ojan): We should put an alert in the JSON for this master so
+    # we can show that the master is down in the sheriff-o-matic UI.
     if not data[0]:
       continue
     alerts.extend(data[0])

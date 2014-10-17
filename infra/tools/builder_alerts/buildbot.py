@@ -75,14 +75,32 @@ def cache_key_for_build(master_url, builder_name, build_number):
   return os.path.join(master_name, builder_name, "%s.json" % build_number)
 
 
+def fetch_json(url):  # pragma: no cover
+  response = requests.get(url)
+  if response.status_code != 200:
+    logging.error('Failed (%.1fs, %s) %s', response.elapsed.total_seconds(),
+        response.status_code, url)
+    return None
+
+  try:
+    logging.debug('Fetched (%.1fs) %s', response.elapsed.total_seconds(),
+        url)
+    return response.json()
+  except ValueError, e:
+    logging.error('Fetched invalid json: %s (%s): %s\n%s' % (url,
+        response.status_code, e, response.text))
+    return None
+
+
 def fetch_master_json(master_url):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   url = '%s/get_master/%s' % (CBE_BASE, master_name)
-  try:
-    return requests.get(url).json()
-  except ValueError:
-    logging.critical('Failed to parse master json file from %s.' % url)
-    return {}
+  response = fetch_json(url)
+
+  if not json:
+    response = fetch_json('%s/json' % master_url)
+
+  return response
 
 
 def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
@@ -94,7 +112,7 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   try:
     builds = response.json()['builds']
   except ValueError:
-    logging.critical(
+    logging.error(
         'Failed to parse JSON response from master: %s, builder: %s' % (
             master_name, builder_name))
   for build in builds:
@@ -115,20 +133,9 @@ def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
 
 
 def fetch_and_cache_build(cache, url, cache_key):  # pragma: no cover
-  response = requests.get(url)
-  if response.status_code != 200:
-    logging.error('Failed (%.1fs, %s) %s' % (response.elapsed.total_seconds(),
-        response.status_code, response.url))
+  build = fetch_json(url)
+  if not build:
     return None
-
-  try:
-    build = response.json()
-  except ValueError, e:
-    logging.error('Not caching invalid json: %s (%s): %s\n%s' % (url,
-        response.status_code, e, response.text))
-    return None
-
-  logging.debug('Fetched (%.1fs) %s' % (response.elapsed.total_seconds(), url))
   cache.set(cache_key, build)
   return build
 
@@ -155,8 +162,8 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     build = None
 
   build_source = 'chrome-build-extract'
-  cbe_url = ('https://chrome-build-extract.appspot.com/p/%s/builders/'
-      '%s/builds/%s?json=1') % (master_name, builder_name, build_number)
+  cbe_url = ('%s/p/%s/builders/%s/builds/%s?json=1') % (
+      CBE_BASE, master_name, builder_name, build_number)
   build = fetch_and_cache_build(cache, cbe_url, cache_key)
 
   if not build:
