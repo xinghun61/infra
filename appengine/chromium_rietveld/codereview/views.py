@@ -4082,7 +4082,7 @@ def update_stats(request):
   else:
     tasks = []
     for task in tasks_to_trigger:
-      if task in ('monthly', '30'):
+      if task in ('monthly', '30', '7'):
         tasks.append(task)
       elif models.verify_account_statistics_name(task):
         if task.count('-') == 2:
@@ -4128,7 +4128,7 @@ def cron_update_yesterday_stats(_request):
   """
   today = datetime.datetime.utcnow().date()
   day = str(today - datetime.timedelta(days=1))
-  tasks = [day, '30', 'monthly']
+  tasks = [day, '7', '30', 'monthly']
   taskqueue.add(
       url=reverse(task_update_stats),
       params={'tasks': json.dumps(tasks), 'date': str(today)},
@@ -4446,11 +4446,11 @@ def task_update_stats(request):
       # day.
       day = datetime.datetime.strptime(date_str, DATE_FORMAT)
       out, cursor = update_monthly_stats(cursor, day)
-    elif task == '30':
+    elif task in ('7', '30'):
       yesterday = (
           datetime.datetime.strptime(date_str, DATE_FORMAT)
           - datetime.timedelta(days=1)).date()
-      out, cursor = update_rolling_stats(cursor, yesterday)
+      out, cursor = update_rolling_stats(cursor, yesterday, duration=task)
     else:
       msg = 'Unknown task %s, ignoring.' % task
       cursor = ''
@@ -4596,8 +4596,8 @@ def update_daily_stats(cursor, day_to_process):
   return HttpTextResponse(out, status=result), ''
 
 
-def update_rolling_stats(cursor, reference_day):
-  """Looks at all accounts and recreates all the rolling 30 days
+def update_rolling_stats(cursor, reference_day, duration='30'):
+  """Looks at all accounts and recreates all the rolling duration days
   AccountStatsMulti summaries.
 
   Note that during the update, the leaderboard will be inconsistent.
@@ -4611,7 +4611,6 @@ def update_rolling_stats(cursor, reference_day):
   total_deleted = 0
   try:
     # Process *all* the accounts.
-    duration = '30'
     chunk_size = 10
     futures = []
     items = []

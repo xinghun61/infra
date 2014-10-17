@@ -1722,8 +1722,8 @@ def quarter_to_months(when):
 def verify_account_statistics_name(name):
   """Returns True if the key name is valid for an entity."""
   if name.isdigit():
-    # Only allows 30 rolling days for now.
-    return name == '30'
+    # Only allows 7 or 30 rolling days for now.
+    return name in ('7', '30')
 
   if not re.match(r'^\d\d\d\d-\d\d(|-\d\d)$', name):
     return False
