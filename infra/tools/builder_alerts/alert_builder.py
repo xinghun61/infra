@@ -34,7 +34,7 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
       if num < alert['last_failing_build']]
   fetch_function = lambda num: buildbot.fetch_build_json(
       cache, master, builder, num)
-  first_fail = fetch_function(alert['last_failing_build'])
+  first_fail = fetch_function(alert['last_failing_build'])[0]
   previous_builds = map(fetch_function, previous_build_ids)
 
   last_pass = None
@@ -44,21 +44,24 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
       # fetch_build_json will already log critical in this case.
       continue
 
-    matching_steps = [s for s in build['steps'] if s['name'] == step]
+    # build is a tuple of the json and the origin of the data
+    build_data = build[0]
+
+    matching_steps = [s for s in build_data['steps'] if s['name'] == step]
     if len(matching_steps) != 1:
       if not matching_steps:
         # This case is pretty common, so just warn all at once at the end.
-        builds_missing_steps.append(build['number'])
+        builds_missing_steps.append(build_data['number'])
       else:
         logging.error("%s has unexpected number of %s steps: %s" % (
-            build['number'], step, matching_steps))
+            build_data['number'], step, matching_steps))
       continue
 
     step = matching_steps[0]
     step_result = step['results'][0]
     if step_result not in NON_FAILING_RESULTS:
       if reason:
-        reasons = reasons_for_failure(cache, step, build, builder, master)
+        reasons = reasons_for_failure(cache, step, build_data, builder, master)
         # This build doesn't seem to have this step reason, ignore it.
         if not reasons:
           continue
@@ -66,17 +69,17 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
         # FIXME: This is wrong for compile failures, and possibly
         # for test failures as well if not all tests are run...
         if reason not in reasons:
-          last_pass = build
+          last_pass = build_data
           break
 
-      first_fail = build
+      first_fail = build_data
       continue
 
     # None is 'didn't run', not a passing result.
     if step_result is None:
       continue
 
-    last_pass = build
+    last_pass = build_data
     break
 
   if builds_missing_steps:
@@ -134,7 +137,7 @@ def reasons_for_failure(cache, step, build, builder_name, master_url):
 def alerts_from_step_failure(cache, step_failure, master_url,
     builder_name):  # pragma: no cover
   build = buildbot.fetch_build_json(cache, master_url,
-      builder_name, step_failure['build_number'])
+      builder_name, step_failure['build_number'])[0]
 
   step = next((s for s in build['steps']
       if s['name'] == step_failure['step_name']), None)
@@ -214,7 +217,7 @@ def find_current_step_failures(fetch_function, recent_build_ids):
   completed_step_names = set()
 
   for build_id in recent_build_ids:
-    build = fetch_function(build_id)
+    build = fetch_function(build_id)[0]
 
     if not build:
       # fetch_build_json will already log critical in this case.

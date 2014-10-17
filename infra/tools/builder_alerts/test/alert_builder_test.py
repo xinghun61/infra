@@ -129,7 +129,7 @@ class AlertBuilderTest(unittest.TestCase):
     def mock_fetch_build_json(cache, master, builder, num):  # pragma: no cover
       build = copy.deepcopy(AlertBuilderTest.k_example_failing_build)
       build['number'] = num
-      return build
+      return build, 'cache'
 
     try:
       alert_builder.reasons_for_failure = mock_reasons_for_failure
@@ -271,7 +271,7 @@ class AlertBuilderTest(unittest.TestCase):
     for a given build ID.
     '''
     def fetch(build_id):
-      return None
+      return None, None
 
     step_failures = alert_builder.find_current_step_failures(fetch, [4119])
     expected_step_failures = []
@@ -286,7 +286,7 @@ class AlertBuilderTest(unittest.TestCase):
       return {
         'number': 4119,
         'results': 2,
-      }
+      }, 'cache'
 
     def mock_complete_steps_by_type(build):
       passing = []
@@ -317,7 +317,7 @@ class AlertBuilderTest(unittest.TestCase):
       return {
         'number': build_id,
         'results': results,
-      }
+      }, 'cache'
 
     def mock_complete_steps_by_type(build):
       passing = []
@@ -354,7 +354,7 @@ class AlertBuilderTest(unittest.TestCase):
       return {
         'number': build_id,
         'results': results,
-      }
+      }, 'cache'
 
     def mock_complete_steps_by_type(build):
       passing = []
@@ -390,7 +390,7 @@ class AlertBuilderTest(unittest.TestCase):
       return {
         'number': build_id,
         'results': results,
-      }
+      }, 'cache'
 
     def mock_complete_steps_by_type(build):
       passing = [{'name': 'foo_tests'}]
