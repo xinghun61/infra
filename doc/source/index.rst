@@ -42,6 +42,10 @@ This section (will) explains some technical choices.
 * Testing in infra/ - tools used, how and why.
 * Dependency handling - how it works and why it's structured this way.
 
+Other topics
+-------------------
+* :doc:`steps` - list of infra steps on waterfall and tryserver
+
 Indices and Tables
 ------------------
 
