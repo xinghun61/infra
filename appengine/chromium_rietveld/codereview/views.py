@@ -3752,7 +3752,8 @@ def _process_incoming_mail(raw_message, recipients):
                        recipients=[x for x in recipients],
                        date=datetime.datetime.now(),
                        text=body,
-                       draft=False)
+                       draft=False,
+                       issue_was_closed=issue.closed)
   if msg.approval:
     publish_url = _absolute_url_in_preferred_domain(
         publish, args=[issue.key.id()])
