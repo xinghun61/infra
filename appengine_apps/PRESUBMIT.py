@@ -2,16 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Top-level presubmit script for buildbot.
-
-See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts for
-details on the presubmit API built into gcl.
+"""appengine-specific presubmit for running pylint.
 """
-
-DISABLED_TESTS = [
-    '.*appengine/chromium_status/tests/main_test.py',
-    '.*appengine/chromium_build/app_test.py',
-]
 
 # LGTM FROM iannucci@ REQUIRED TO EDIT THIS LIST:
 DISABLED_PYLINT_WARNINGS = [
@@ -20,10 +12,7 @@ DISABLED_PYLINT_WARNINGS = [
 ]
 
 DISABLED_PROJECTS = [
-    # Taken care of by appengine/PRESUBMIT.py
-    'appengine/*',
-    'infra/services/lkgr_finder',
-    'infra/services/gnumbd',
+    # Swarming components hacks sys.path to thus skip tools/
 
     # Don't bother pylinting (these could also move to .gitignore):
     '.*/__pycache__',
@@ -80,36 +69,6 @@ def EnvAddingPythonPath(input_api, extra_python_paths):
   return env
 
 
-# Forked with prejudice from depot_tools/presubmit_canned_checks.py
-def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
-      extra_python_paths):  # pragma: no cover
-  input_api.logging.debug('Running pylint on: %s', files)
-
-  # FIXME: depot_tools should be right next to infra, however DEPS
-  # recursion into build/DEPS does not seem to be working: crbug.com/410070
-  canned_checks_path = input_api.canned_checks.__file__
-  canned_checks_path = input_api.os_path.abspath(canned_checks_path)
-  depot_tools_path = input_api.os_path.dirname(canned_checks_path)
-
-  pylintrc_path = input_api.os_path.join(depot_tools_path, 'pylintrc')
-  pylint_args = ['--rcfile=%s' % pylintrc_path]
-  pylint_args.extend(['-d', ','.join(disabled_warnings)])
-
-  env = EnvAddingPythonPath(input_api, extra_python_paths)
-
-  pytlint_path = input_api.os_path.join(depot_tools_path,
-      'third_party', 'pylint.py')
-
-  # Pass args via stdin, because windows (command line limit).
-  return input_api.Command(
-      name='Pylint (%s files under %s)' % (len(files), pylint_root),
-      cmd=[input_api.python_executable,
-           pytlint_path,
-           '--args-on-stdin'],
-      kwargs={'env': env, 'stdin': '\n'.join(pylint_args + files)},
-      message=output_api.PresubmitError)
-
-
 def IgnoredPaths(input_api): # pragma: no cover
   # This computes the list if repository-root-relative paths which are
   # ignored by .gitignore files. There is probably a faster way to do this.
@@ -159,45 +118,72 @@ def DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths):
   return dirty_roots
 
 
-def EmptiedFilesCheck(input_api, output_api): # pragma: no cover
-  """Warns if a CL empties a file.
-
-  This is not handled properly by apply_patch from depot_tools: the
-  file would not exist at all on trybot checkouts.
-  """
-  empty_files = []
-  infra_root = input_api.PresubmitLocalPath()
-  for filename in input_api.AffectedTextFiles():
-    fullname = input_api.os_path.join(infra_root, filename.LocalPath())
-    if not input_api.os_stat(fullname).st_size:
-      empty_files.append(filename.LocalPath())
-  if empty_files:
-    return [output_api.PresubmitPromptWarning(
-      'Empty files found in the CL. This can cause trouble on trybots\n'
-      + 'if your change depends on the existence of those files:\n%s'
-      % '\n'.join(empty_files)
-      )]
-  return []
+def GetAppEngineLibraryPaths(input_api, appengine_env_path):  # pragma: no cover
+  # AppEngine has a wrapper_util module which knows where the various
+  # appengine libraries are stored inside the SDK. All AppEngine scripts
+  # 'import wrapper_util' and then call its various methods to get those
+  # paths to fix their sys.path. Since AppEngine isn't in our sys.path yet
+  # we use imp.load_source to load wrapper_util from an absolute path
+  # and then call its methods to get all the paths to the AppEngine-provided
+  # libraries to add to sys.path when calling pylint.
+  import imp
+  wrapper_util_path = input_api.os_path.join(appengine_env_path,
+      'wrapper_util.py')
+  wrapper_util = imp.load_source('wrapper_util', wrapper_util_path)
+  wrapper_util_paths = wrapper_util.Paths(appengine_env_path)
+  appengine_lib_paths = wrapper_util_paths.script_paths('dev_appserver.py')
+  # Unclear if v2_extra_paths is correct here, it contains endpoints
+  # and protorpc which several apps seem to depend on.
+  return appengine_lib_paths + wrapper_util_paths.v2_extra_paths
 
 
-def BrokenLinksChecks(input_api, output_api):  # pragma: no cover
-  """Complains if there are broken committed symlinks."""
-  stdout = input_api.subprocess.check_output(['git', 'ls-files'])
-  files = stdout.splitlines()
-  output = []
-  infra_root = input_api.PresubmitLocalPath()
+# Forked with prejudice from depot_tools/presubmit_canned_checks.py
+def PylintFiles(input_api, output_api, files, pylint_root, disabled_warnings,
+      extra_python_paths):  # pragma: no cover
+  input_api.logging.debug('Running pylint on: %s', files)
+
+  # FIXME: depot_tools should be right next to infra, however DEPS
+  # recursion into build/DEPS does not seem to be working: crbug.com/410070
+  canned_checks_path = input_api.canned_checks.__file__
+  canned_checks_path = input_api.os_path.abspath(canned_checks_path)
+  depot_tools_path = input_api.os_path.dirname(canned_checks_path)
+
+  pylintrc_path = input_api.os_path.join(depot_tools_path, 'pylintrc')
+  pylint_args = ['--rcfile=%s' % pylintrc_path]
+  pylint_args.extend(['-d', ','.join(disabled_warnings)])
+
+  env = EnvAddingPythonPath(input_api, extra_python_paths)
+
+  pylint_path = input_api.os_path.join(depot_tools_path,
+      'third_party', 'pylint.py')
+
+  # Make paths relative to pylint_root
   for filename in files:
-    fullname = input_api.os_path.join(infra_root, filename)
-    if (input_api.os_path.lexists(fullname)
-        and not input_api.os_path.exists(fullname)):
-      output.append(output_api.PresubmitError('Broken symbolic link: %s'
-                                              % filename))
-  return output
+    assert(filename.startswith(pylint_root + '/') if pylint_root else True)
+  files = [filename[len(pylint_root)+1:] if pylint_root else filename
+           for filename in files]
+
+  kwargs = {'env': env, 'stdin': '\n'.join(pylint_args + files)}
+  if pylint_root:
+    kwargs['cwd'] = pylint_root
+
+  # Pass args via stdin, because windows (command line limit).
+  return input_api.Command(
+      name='Pylint (%s files under %s)' % (len(files), pylint_root),
+      cmd=[input_api.python_executable,
+           pylint_path,
+           '--args-on-stdin'],
+      kwargs=kwargs,
+      message=output_api.PresubmitError)
 
 
 def PylintChecks(input_api, output_api):  # pragma: no cover
-  infra_root = input_api.PresubmitLocalPath()
-  # DEPS specifies depot_tools, as sibling of infra.
+  infra_root = input_api.os_path.dirname(input_api.PresubmitLocalPath())
+
+  # DEPS specifies depot_tools, google_appengine as siblings of infra.
+  appengine_env_path = input_api.os_path.join(
+      input_api.os_path.dirname(infra_root),
+      'google_appengine')
   venv_path = input_api.os_path.join(infra_root, 'ENV', 'lib', 'python2.7')
 
   # Cause all pylint commands to execute in the virtualenv
@@ -209,7 +195,8 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   black_list += DISABLED_PROJECTS
   black_list += IgnoredPaths(input_api)
 
-  extra_syspaths = [venv_path]
+  appengine_lib_paths = GetAppEngineLibraryPaths(input_api, appengine_env_path)
+  extra_syspaths = [appengine_env_path, venv_path] + appengine_lib_paths
 
   # FIXME: FetchAllFiles is extremely slow (35s on my Mac Book Pro)
   # we need to profile this and make it much faster.
@@ -218,19 +205,20 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   source_filter = lambda path: input_api.FilterSourceFile(path,
       white_list=white_list, black_list=black_list)
-  changed_py_files = [f.LocalPath()
+  # Compute paths of changed files relative to the present file.
+  changed_py_files = [
+      f.AbsoluteLocalPath()[len(input_api.PresubmitLocalPath())+1:]
       for f in input_api.AffectedSourceFiles(source_filter)]
+
   dirty_roots = DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths)
 
   tests = []
   for root_path in sorted(dirty_roots):
     python_files = root_to_paths[root_path]
-    if root_path == '':
-      root_path = input_api.PresubmitLocalPath()
-    input_api.logging.info('Running pylint on %d files under %s',
+    root_path = input_api.os_path.dirname(root_path)
+    input_api.logging.info('Running appengine_apps pylint on %d files under %s',
         len(python_files), root_path)
-
-    syspaths = extra_syspaths + [root_path]
+    syspaths = extra_syspaths
 
     tests.append(PylintFiles(input_api, output_api, python_files, root_path,
       DISABLED_PYLINT_WARNINGS, syspaths))
@@ -239,26 +227,14 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
 
 def CommonChecks(input_api, output_api):  # pragma: no cover
   output = input_api.RunTests(PylintChecks(input_api, output_api))
-  output.extend(BrokenLinksChecks(input_api, output_api))
   return output
 
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
-  output.extend(EmptiedFilesCheck(input_api, output_api))
   return output
 
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
-  output.extend(input_api.canned_checks.CheckOwners(input_api, output_api))
   return output
-
-
-# Unused argument - pylint: disable=W0613
-def GetPreferredTryMasters(project, change):  # pragma: no cover
-  return {
-    'tryserver.chromium.linux': {
-      'infra_tester': set(['defaulttests']),
-    }
-  }
