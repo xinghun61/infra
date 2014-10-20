@@ -83,6 +83,7 @@ def run_slave(root_dir):
   run_slave_path = os.path.join(slave_dir, 'run_slave.py')
   env = os.environ.copy()
   env['DISPLAY'] = ':0.0'
+  env['LANG'] = 'en_US.UTF-8'
 
   # Observant infra members will notice that we are not using "make start" to
   # start the run_slave.py process.  We use make start for a couple of reasons:
