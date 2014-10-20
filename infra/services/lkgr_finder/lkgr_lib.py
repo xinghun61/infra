@@ -306,17 +306,18 @@ def EvaluateBuildData(build_data):  # pragma: no cover
 def CollateRevisionHistory(build_data, lkgr_builders, repo):  # pragma: no cover
   """Organize complex build data into a simpler form.
 
-  Returns:
-    A dict of the following form:
-      build_history = {master: {builder: [(revision, status, build_num), ...]}}
-    And a list of revisions:
-      revisions = [revision, ...]
-    With revisions and build_history[master][builder] sorted by their revkeys.
-
   Args:
     build_data: json-formatted build data returned by buildbot.
     lkgr_builders: List of interesting builders.
-    repo: VCSWraper instance in which the revisions occur
+    repo (VCSWrapper): repository in which the revision occurs.
+
+  Returns:
+    A dict of the following form:
+    ``build_history =
+    {master: {builder: [(revision, status, build_num), ...]}}``, and a list of
+    revisions: ``revisions = [revision, ...]``, with revisions and
+    ``build_history[master][builder]`` sorted by their revkeys.
+
   """
   build_history = {}
   revisions = set()

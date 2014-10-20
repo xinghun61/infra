@@ -173,13 +173,15 @@ class CommitData(Alterable):
   have no implied ordering, other than the ordering in the commit. Consider the
   footers:
 
+  .. code::
+
     A: 1
     B: 2
     A: 3
 
   In order to represent this as something better than a list which maintains the
-  round-trip invariant, we would need a (Frozen)OrderedMultiDict, which would be
-  tricky to implement.
+  round-trip invariant, we would need a ``(Frozen)OrderedMultiDict``, which
+  would be tricky to implement.
 
   Author and committer are treated as the format defined by CommitUser
   """
@@ -284,11 +286,11 @@ class CommitData(Alterable):
 
   def alter(self, **kwargs):
     """In addition to the normal fields on this class, you may also provide
-    'footers' and 'other_headers' instead of 'footer_lines' and
-    'other_header_lines' respectively.
+    ``footers`` and ``other_headers`` instead of ``footer_lines`` and
+    ``other_header_lines`` respectively.
 
-    These are an OrderedDict, which will be merged into the existing *_lines
-    as described by merge_lines.
+    These are ``OrderedDict``, which will be merged into the existing \*_lines
+    as described by ``merge_lines``.
     """
     new_args = self.to_dict()
     if 'footers' in kwargs:
@@ -308,7 +310,11 @@ class CommitData(Alterable):
     """Produces new footer or other_header_lines given the old lines and the
     new dictionary.
 
-    Preserves the order of |old_lines| as much as possible.
+    Preserves the order of ``old_lines`` as much as possible.
+
+    Args:
+      old_lines: a sequence of ``(key, value)`` pairs
+      new_dict: an OrderedDict of ``{key: [values]} or {key: None}``
 
     Rules:
       * If a key is in new_dict, but the key is not in old_lines, the new
@@ -319,9 +325,6 @@ class CommitData(Alterable):
         inserted at the location of the first line in old_lines for that key
         (and any other lines in old_lines with that key are removed).
 
-    Args:
-      old_lines - a sequence of (key, value) pairs
-      new_dict - an OrderedDict of {key: [values]} or {key: None}
     """
     old_dict = collections.OrderedDict()
     for key, value in old_lines:
@@ -360,7 +363,7 @@ class CommitData(Alterable):
 
   @classmethod
   def from_raw(cls, data):
-    """Turns the raw output of `git cat-file commit` into a CommitData."""
+    """Turns the raw output of ``git cat-file commit`` into a ``CommitData``."""
     users = {}
     parents = []
     tree = None

@@ -141,15 +141,15 @@ class Repo(object):
 
   # Methods
   def get_commit(self, hsh):
-    """Creates a new |Commit| object for this |Repo|.
+    """Creates a new ``Commit`` object for this ``Repo``.
 
     Uses a very basic LRU cache for commit objects, keeping up to
-    |MAX_CACHE_SIZE| before eviction. This cuts down on the number of redundant
-    git commands by > 50%, and allows expensive cached_property's to remain
-    for the life of the process.
+    ``MAX_CACHE_SIZE`` before eviction. This cuts down on the number of
+    redundant git commands by > 50%, and allows expensive cached_property's to
+    remain for the life of the process.
 
-    If the Commit does not exist in this |Repo|, return INVALID and do not cache
-    the result.
+    If the ``Commit`` does not exist in this ``Repo``, return INVALID and do
+    not cache the result.
     """
     if hsh in self._commit_cache:
       self._log.debug('Hit %s', hsh)
@@ -166,7 +166,7 @@ class Repo(object):
     return r
 
   def refglob(self, *globstrings):
-    """Yield every Ref in this repo which matches a |globstring| according to
+    """Yield every Ref in this repo which matches a ``globstring`` according to
     the rules of git-for-each-ref.
 
     Defaults to all refs.
@@ -178,13 +178,15 @@ class Repo(object):
   def run(self, *args, **kwargs):
     """Yet-another-git-subprocess-wrapper.
 
-    Args: argv tokens. 'git' is always argv[0]
+    Args:
+      args (list): argv tokens. 'git' is always argv[0]
 
-    Kwargs:
-      indata - String data to feed to communicate()
-      ok_ret - A set() of valid return codes. Defaults to {0}.
-      timeout - How long to wait for process to finish before killing it, sec.
-      ...    - passes through to subprocess.Popen()
+    Keyword Args:
+      indata (str): data to feed to communicate()
+      ok_ret (set): valid return codes. Defaults to {0}.
+      timeout (number): How long to wait for process to finish before killing
+        it, sec.
+      kwargs: passed through to subprocess.Popen()
     """
     assert args, args
     if args[0] == 'push' and self.dry_run:
@@ -283,14 +285,14 @@ class Repo(object):
     """Push commits to refs on the remote, and also update refs' local copies.
 
     Refs names are specified as refs on remote, i.e. push to
-    Ref('refs/heads/master') would update 'refs/heads/master' on remote (and on
-    local repo mirror), no ref name translation is happening.
+    ``Ref('refs/heads/master')`` would update 'refs/heads/master' on remote
+    (and on local repo mirror), no ref name translation is happening.
 
     Optionally captures the stderror output of the push command and returns
     it as a string.
 
     Returns the stdout of the push command, or the stdout+stderr of the push
-    command if |include_err| is specified.
+    command if ``include_err`` is specified.
 
     Args:
       refs_and_commits: dict {Ref object -> Commit to push to the ref}.
@@ -340,12 +342,14 @@ class Repo(object):
   def notes(self, obj, ref=None):
     """Get git-notes content for this object.
 
-    See also: Commit.notes
+    See also: ``Commit.notes``.
 
-    @param obj str|Ref - the hash of some object or a Ref
-    @param ref str|Ref - a string ref for git-notes or a Ref.
-    @return The notes content as a string, or None if there was no
-            note for this object.
+    Args:
+      obj (str|Ref): the hash of some object or a Ref.
+      ref (str|Ref): a string ref for git-notes or a Ref.
+
+    Returns:
+    The notes content as a string, or None if there was no note for this object.
     """
     obj = obj.ref if isinstance(obj, Ref) else obj
     ref = ref.ref if isinstance(ref, Ref) else ref

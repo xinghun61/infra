@@ -148,18 +148,19 @@ class JUnitSplitter(object):
 # gtests' results json doesn't have the is_unexpected field or, vice versa,
 # once we make layout tests results json not need the is_unexpected field.
 def decode_results(tests):
-  """
-  Decode test results and generates failures if any failures exist.
+  """Decode test results and generates failures if any failures exist.
 
   Each test has an expected result, an actual result, and a flag indicating
   whether the test harness considered the result unexpected. For example, an
   individual test result might look like:
 
-  {
-    'actual': 'PASS foobar',
-    'expected': 'foobar',
-    'is_unexpected': True,
-  }
+  .. code:: python
+
+    {
+      'actual': 'PASS foobar',
+      'expected': 'foobar',
+      'is_unexpected': True,
+    }
 
   A result is considered a pass if the actual result is just the string 'PASS'.
   A result is considered a flake if the actual result has a value attached and
@@ -184,40 +185,43 @@ def decode_results(tests):
 
 
 def flatten_test_results(trie, prefix=None):
-  """
-  Flattens a trie structure of test results into a single-level map.
+  """Flattens a trie structure of test results into a single-level map.
 
   This function flattens a trie to a single-level map, stopping when it reaches
   a nonempty node that has either 'actual' or 'expected' as child keys. For
   example:
 
-  {
-    'foo': {
-      'bar': {
+  .. code-block:: python
+
+    {
+      'foo': {
+        'bar': {
+          'expected': 'something good',
+          'actual': 'something bad'
+        },
+        'baz': {
+          'expected': 'something else good',
+          'actual': 'something else bad',
+          'quxx': 'some other test metadata'
+        }
+      }
+    }
+
+  would flatten to:
+
+  .. code-block:: python
+
+    {
+      'foo/bar': {
         'expected': 'something good',
         'actual': 'something bad'
       },
-      'baz': {
+      'foo/baz': {
         'expected': 'something else good',
         'actual': 'something else bad',
         'quxx': 'some other test metadata'
       }
     }
-  }
-
-  would flatten to:
-
-  {
-    'foo/bar': {
-      'expected': 'something good',
-      'actual': 'something bad'
-    },
-    'foo/baz': {
-      'expected': 'something else good',
-      'actual': 'something else bad',
-      'quxx': 'some other test metadata'
-    }
-  }
   """
   # Cloned from webkitpy.layout_tests.layout_package.json_results_generator
   # so that this code can stand alone.

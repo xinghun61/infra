@@ -14,8 +14,9 @@ class GitEntry(object):
   mode = None
 
   def intern(self, repo):
-    """Makes this GitEntry exist in |repo| (written to the git CAS), and return
-    the hash of the interned object.
+    """Makes this GitEntry exist in ``repo`` (written to the git CAS),
+
+    Return the hash of the interned object.
 
     If this GitEntry contains other GitEntries, the implementation of intern
     should call intern on those sub-entries.
@@ -26,10 +27,11 @@ class GitEntry(object):
   def from_spec(spec):
     """Factory to produce a GitEntry from a spec.
 
-    A spec is either a:
-      tree - {dir: spec / GitEntry} - Produces a GitTree.
-      content - str - Produces a GitFile with the default mode.
-      (content, mode) - (str, int) - Produces a GitFile with the specified mode.
+    ``spec`` can be one of:
+      - tree - {dir: spec / GitEntry} - Produces a GitTree.
+      - content - str - Produces a GitFile with the default mode.
+      - (content, mode) - (str, int) - Produces a GitFile with the specified
+        mode.
     """
     # TODO(iannucci): Implement links, commits, etc.
     if isinstance(spec, GitEntry):
@@ -177,10 +179,10 @@ class TestClock(object):
 class TestRepo(git2.Repo):
   """A testing version of git2.Repo, which adds a couple useful methods:
 
-    __init__          - initialize without a remote
-    make_*_commit     - allow the synthesis of new commits in the repo
-    snap              - Get a dict representation of the state of the refs in
-                        the repo.
+  - __init__        - initialize without a remote
+  - make\_\*_commit  - allow the synthesis of new commits in the repo
+  - snap            - Get a dict representation of the state of the refs in
+    the repo.
   """
 
   def __init__(self, short_name, clock, mirror_of=None):
@@ -272,16 +274,16 @@ class TestRepo(git2.Repo):
 
   def make_commit(self, parent, message, tree_diff=None, footers=None):
     """Synthesize and add a new commit object to the repo, where the tree is
-    described differentially from |parent|'s tree.
+    described differentially from ``parent``'s tree.
 
     Args:
-      parent    - a Commit object, or INVALID.
-      message   - the message of the commit.
-      tree_diff - a mergable GitEntry-style spec which will be merged into the
-                  spec retrieved from |parent| as the right side using
-                  GitEntry.merge_specs. If |parent| is INVALID, tree_diff is
-                  taken as a full tree spec.
-      footers   - a dictionary-like listing of {footer_name: [values]}.
+      parent (Commit or INVALID): parent commit.
+      message (str): commit message
+      tree_diff: a mergable GitEntry-style spec which will be merged into the
+        spec retrieved from ``parent`` as the right side using
+        ``GitEntry.merge_specs``. If ``parent`` is ``INVALID``, ``tree_diff``
+        is taken as a full tree spec.
+      footers (dict-like): listing of ``{footer_name: [values]}``.
     """
     parent_spec = {}
     if parent is not git2.INVALID:

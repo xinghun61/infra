@@ -19,6 +19,7 @@ class Ref(object):
   # generator of all Commits from raw_git_hash to other_git_hash
 
   May also hold INVALID or point to a ref which does not exist yet.
+
   >>> r = Repo()
   >>> r[some.expression.which.returns.INVALID].to(other_ref)
   # generator of all commits reachable from other_ref
@@ -95,12 +96,12 @@ class Ref(object):
       yield self.repo.get_commit(hsh)
 
   def update_to(self, commit):
-    """Update the local copy of the ref to |commit|."""
+    """Update the local copy of the ref to ``commit``."""
     assert self._ref is not INVALID, 'May not update Ref(INVALID)'
     self.repo.run('update-ref', self.ref, commit.hsh)
 
   def fast_forward(self, commit):
-    """Fast forward the local copy of the ref to |commit|.
+    """Fast forward the local copy of the ref to ``commit``.
 
     Allows fast forward from undefined to a value as well.
     """

@@ -56,6 +56,8 @@ Indices and Tables
    usage
    structure
    contributing
+   documenting
+   steps
    reference/modules
 
 * :ref:`genindex`

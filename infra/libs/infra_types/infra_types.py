@@ -7,7 +7,7 @@ import operator
 
 
 def freeze(obj):
-  """Takes a generic object |obj|, and returns an immutable version of it.
+  """Takes a generic object ``obj``, and returns an immutable version of it.
 
   Supported types:
     * dict / OrderedDict -> FrozenDict

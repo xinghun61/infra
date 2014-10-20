@@ -24,7 +24,7 @@ LoopResults = collections.namedtuple(
 def loop(task, sleep_timeout, duration=None, max_errors=None):
   """Runs the task in a loop for a given duration.
 
-  Handles and logs all uncaught exceptions. |task| callback should return True
+  Handles and logs all uncaught exceptions. ``task`` callback should return True
   on success, and False (or raise an exception) in error.
 
   Doesn't leak any exceptions (including KeyboardInterrupt).

@@ -109,7 +109,7 @@ def tweak_cherry_pick(commit_data):
 
 
 def content_of(commit):
-  """Calculates the content of |commit| such that a gnumbd-landed commit and
+  """Calculates the content of ``commit`` such that a gnumbd-landed commit and
   the original commit will compare as equals. Returns the content as a
   git2.CommitData object.
 
@@ -120,7 +120,7 @@ def content_of(commit):
     * the 'git-svn-id' footer.
     * the '(cherry picked from ...)' line.
 
-  Stores a cached copy of the result data on the |commit| instance itself.
+  Stores a cached copy of the result data on the ``commit`` instance itself.
   """
   if commit is None:
     return git2.INVALID
@@ -146,7 +146,9 @@ def content_of(commit):
 def get_git_svn_rev(commit):
   """Extracts SVN revision from git-svn-id footer of a commit.
 
-  Raises NoPositionData or MalformedPositionFooter on errors.
+  Raises:
+    NoPositionData
+    MalformedPositionFooter
   """
   svn_pos = commit.data.footers.get(GIT_SVN_ID)
   if not svn_pos:
@@ -160,13 +162,15 @@ def get_git_svn_rev(commit):
 
 
 def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
-  """Returns (ref, position number) for the given |commit|.
+  """Returns (ref, position number) for the given ``commit``.
 
   Extracts them from Cr-Commit-Position footer (that looks like
-  refs/heads/master@{#287136}). If it falls back to git-svn-id, it passes back
+  refs/heads/master\@{#287136}). If it falls back to git-svn-id, it passes back
   None for ref, and relies on the caller to make its best guess.
 
-  May raise the MalformedPositionFooter or NoPositionData exceptions.
+  Raises:
+    MalformedPositionFooter
+    NoPositionData
   """
   current_pos = commit.data.footers.get(COMMIT_POSITION)
   if current_pos:
@@ -187,7 +191,7 @@ def get_position(commit, _position_re=re.compile('^(.*)@{#(\d*)}$')):
 
 
 def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
-  """Synthesizes a new Commit given |new_parent| and ref.
+  """Synthesizes a new Commit given ``new_parent`` and ref.
 
   The new commit will contain a Cr-Commit-Position footer, and possibly
   Cr-Branched-From footers (if commit is on a branch).
@@ -203,11 +207,15 @@ def synthesize_commit(commit, new_parent, ref, git_svn_mode, clock=time):
   If git_svn_mode is True, uses SVN revision from git-svn-id footer: it sets
   the commit position number equal to the svn revision. Keeps git-svn-id footer.
 
-  @type commit: git2.Commit
-  @type new_parent: git2.Commit
-  @type ref: git2.Ref
-  @type git_svn_mode: bool
-  @kind clock: implements .time(), used for testing determinism.
+  Args:
+    commit: git2.Commit
+    new_parent: git2.Commit
+    ref: git2.Ref
+    git_svn_mode: bool
+    clock: implements .time(), used for testing determinism.
+
+  Returns:
+    synthesized commit.
   """
   repo = commit.repo
   d = commit.data
@@ -266,7 +274,8 @@ def generate_footers_from_parent(new_parent, ref):
 
   Uses parent's footers to derive new values.
 
-  @returns OrderedDict.
+  Returns
+    OrderedDict
   """
   # TODO(iannucci): See if there are any other footers we want to carry over
   # between new_parent and commit
@@ -293,7 +302,8 @@ def generate_footers_from_git_svn_id(commit, _new_parent, ref):
 
   Will never generate Cr-Branched-From footer.
 
-  @returns OrderedDict.
+  Returns
+    OrderedDict
   """
   svn_rev = get_git_svn_rev(commit)
   footers = collections.OrderedDict()
@@ -337,10 +347,13 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
   Other discrepancies are errors and this method will return an empty list.
 
-  @type pending_tag: git2.Ref
-  @type pending_tip: git2.Ref
-  @type real_ref: git2.Ref
-  @returns [git2.Commit] or None
+  Args:
+    pending_tag (git2.Ref):
+    pending_tip (git2.Ref):
+    real_ref (git2.Ref):
+
+  Returns:
+    [git2.Commit] or None
   """
   assert pending_tag.commit != pending_tip.commit
   new_commits = list(pending_tag.to(pending_tip))
@@ -383,30 +396,34 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
 
 def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
                 push_synth_extras, clock=time):
-  """Given a |real_ref|, its corresponding |pending_tag|, and a list of
-  |new_commits|, copy the |new_commits| to |real_ref|, and advance |pending_tag|
+  """Given a ``real_ref``, its corresponding ``pending_tag``, and a list of
+  ``new_commits``, copy the ``new_commits`` to ``real_ref``, and advance
+  ``pending_tag``
   to match.
 
   Assumes that pending_tag starts at the equivalent of real_ref, and that
   all commits in new_commits exist on pending_tag..pending_tip.
 
-  Given:
+  Given::
 
           v  pending_tag
     A  B  C  D  E  F  <- pending_tip
     A' B' C' <- master
 
-  This function will produce:
+  This function will produce::
 
                    v  pending_tag
     A  B  C  D  E  F  <- pending_tip
     A' B' C' D' E' F' <- master
 
-  @type real_ref: git2.Ref
-  @type pending_tag: git2.Ref
-  @type new_commits: [git2.Commit]
-  @kind clock: implements .time(), used for testing determinism.
-  @yields synthesized git2.Commit, pushes them to the remote as a side-effect.
+  Args:
+    real_ref (git2.Ref):
+    pending_tag (git2.Ref)
+    new_commits ([git2.Commit]):
+    clock: implements .time(), used for testing determinism.
+
+  Yields:
+    synthesized git2.Commit, pushes them to the remote as a side-effect.
   """
   # TODO(iannucci): use push --force-with-lease to reset pending to the real
   # ref?
@@ -440,10 +457,10 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
 def process_repo(repo, cref, clock=time):
   """Execute a single pass over a fetched Repo.
 
-  Will call |process_ref| for every branch indicated by the enabled_refglobs
+  Will call ``process_ref`` for every branch indicated by the enabled_refglobs
   config option.
 
-  @returns tuple (bool success status, list of synthesized commits).
+  Returns: tuple (bool success status, list of synthesized commits).
   """
   git_svn_mode = cref['git_svn_mode']
   pending_tag_prefix = cref['pending_tag_prefix']
@@ -505,7 +522,8 @@ def process_repo(repo, cref, clock=time):
 def inner_loop(repo, cref, clock=time):
   """Fetches the config ref and runs single iteration of processing.
 
-  @returns tuple (bool success status, list of synthesized commits).
+  Returns:
+    tuple (bool success status, list of synthesized commits).
   """
   repo.fetch()
   cref.evaluate()
