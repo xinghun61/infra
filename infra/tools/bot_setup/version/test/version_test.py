@@ -11,6 +11,10 @@ from infra.tools.bot_setup.version import version
 
 ENABLED_SLAVES = [
   'slave100-c4',
+  'slave250-c4',
+  'slave260-c4',
+  'swarm1-c4',
+  'swarm11-c4',
 ]
 
 DISABLED_SLAVES = [

@@ -1,3 +1,7 @@
 [
-  "Slave slave100-c4 is on version origin/master"
+  "Slave slave100-c4 is on version 04485c941228a26808cc878b30543d9f5fe91322",
+  "Slave slave250-c4 is on version origin/master",
+  "Slave slave260-c4 is on version 04485c941228a26808cc878b30543d9f5fe91322",
+  "Slave swarm1-c4 is on version origin/master",
+  "Slave swarm11-c4 is on version 04485c941228a26808cc878b30543d9f5fe91322"
 ]
