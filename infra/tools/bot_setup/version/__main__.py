@@ -8,32 +8,20 @@ import argparse
 import sys
 
 
-DISABLED_BUILDERS = [
-    'test_disabled_slave'
-]
-
-
-class BuilderDisabled(Exception):
-  """This is raised when a builder should be disabled.
-
-  By raising an exeception, the startup sequence becomes interrupted.
-  """
-  pass
+from infra.tools.bot_setup.version import version
 
 
 def parse_args():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--slave_name')
-  parser.add_argument('--image_name')
+  parser.add_argument('--slave_name', '--slave-name')
+  parser.add_argument('--image_name', '--image-name')
 
   return parser.parse_args()
 
 
 def main():
   args = parse_args()
-  if args.slave_name and args.slave_name in DISABLED_BUILDERS:
-    raise BuilderDisabled()
-  print 'origin/master'
+  print version.get_version(args.slave_name, args.image_name)
 
 if __name__ == '__main__':
   sys.exit(main())
