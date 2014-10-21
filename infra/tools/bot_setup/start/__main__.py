@@ -28,7 +28,7 @@ def main():
   root_dir = args.root_dir
   depot_tools = args.depot_tools
   password_file = args.password_file
-  slave_name = args.slave_name
+  slave_name = args.slave_name or ''
 
   if re.match(r'^swarm.*', slave_name):
     swarming.start(slave_name, root_dir)
