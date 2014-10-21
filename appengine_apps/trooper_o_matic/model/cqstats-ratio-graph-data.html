@@ -1,0 +1,60 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/log.html">
+<link rel="import" href="../lib/net.html">
+<link rel="import" href="../lib/cqstats-util.html">
+
+<script>
+function CQStatsRatioGraphData(columnName, project, intervalMinutes,
+    numeratorName, denominatorName, count) {
+  this.rowItemsAvailable = true;
+  this._numeratorName = numeratorName;
+  this._denominatorName = denominatorName;
+  this._columnName = columnName;
+
+  this._cqStatsListPromise = cqStatsUtil.loadStats(project, intervalMinutes,
+      [numeratorName, denominatorName], count);
+  this._formattedDataPromise = this._cqStatsListPromise.then(
+      this._formatCQStatsList.bind(this));
+}
+
+CQStatsRatioGraphData.prototype._formatCQStatsList = function(cqStatsList) {
+  var numeratorName = this._numeratorName;
+  var denominatorName = this._denominatorName;
+  return {
+    cols: ['timestamp', this._columnName],
+    rows: cqStatsList.map(function(cqStats) {
+      var numeratorStat = cqStatsUtil.namedStat(numeratorName, cqStats);
+      var denominatorStat = cqStatsUtil.namedStat(denominatorName, cqStats);
+      console.assert(numeratorStat.type === 'count');
+      console.assert(denominatorStat.type === 'count');
+      return [
+        new Date(cqStats.end * 1000),
+        100 * numeratorStat.count / denominatorStat.count,
+      ];
+    }),
+  };
+}
+
+CQStatsRatioGraphData.prototype.get = function() {
+  return this._formattedDataPromise;
+};
+
+CQStatsRatioGraphData.prototype.rowItems = function(index) {
+  var name = this._numeratorName;
+  return this._cqStatsListPromise.then(function(cqStatsList) {
+    var cqStats = cqStatsList[index];
+    return cqStatsUtil.loadStatItems(name, cqStats.key).then(function(items) {
+      return {
+        items: items,
+        begin: new Date(cqStats.begin * 1000),
+        end: new Date(cqStats.end * 1000),
+      };
+    });
+  })
+};
+</script>

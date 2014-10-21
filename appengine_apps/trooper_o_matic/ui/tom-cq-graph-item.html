@@ -11,11 +11,11 @@ found in the LICENSE file.
         text-decoration: none;
       }
       .value {
-        color: {{ item.alertBreached ? 'red' : 'black' }};
+        color: {{ item.value >= item.alertThreshold ? 'red' : 'black' }};
       }
     </style>
     <li>
-      <span class="value">{{ item.minutes | toFixed }} minutes</span>:
+      <span class="value">{{ item.value | toFixed }} {{ item.unit }}</span>:
       <a href="{{ item.reviewURL }}">{{ item.reviewTitle ? item.reviewTitle : item.reviewURL }}</a>
        -
       <a href="//chromium-cq-status.appspot.com/patch-status/{{ item.issue }}/{{ item.patchset }}">[CQ Status]</a>
@@ -24,7 +24,7 @@ found in the LICENSE file.
   <script>
     Polymer({
       toFixed: function(value) {
-        return value.toFixed(2);
+        return value.toFixed(0);
       },
     });
   </script>

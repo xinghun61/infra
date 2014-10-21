@@ -1,0 +1,38 @@
+<!--
+Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/sugar.html">
+
+<script>
+var cqStatsUtil = cqStatsUtil || {};
+
+(function() {
+var cqLogHost = 'https://chromium-cq-status.appspot.com';
+
+cqStatsUtil.loadStats = function(project, intervalMinutes, names, count) {
+  var url = '{1}/stats/query?{2}'.assign(cqLogHost, Object.toQueryString({
+    project: project,
+    interval_minutes: intervalMinutes,
+    names: names.join(','),
+    count: count,
+  }));
+  return net.json({url: url}).then(function(json) {
+    return json.results.reverse();
+  });
+};
+
+cqStatsUtil.loadStatItems = function(statName, cqStatsKey) {
+  var url = '{1}/stats/highest/{2}/{3}'.assign(cqLogHost, statName, cqStatsKey);
+  return net.json({url: url, cache: true});
+};
+
+cqStatsUtil.namedStat = function(name, cqStats) {
+  return cqStats.stats.find(function(stat) {
+    return stat.name === name;
+  });
+};
+})();
+</script>

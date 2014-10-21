@@ -74,7 +74,7 @@ describe('CQStatsGraphData.createBatch', function() {
     var dataList;
     simulator.runTest(function() {
       dataList = CQStatsGraphData.createBatch(
-          'testProject', 500, 1000, ['test-stat-a', 'test-stat-b']);
+          'testProject', 500, ['test-stat-a', 'test-stat-b'], 1000);
     }).then(function() {
       assert.equal(dataList.length, 2);
       assert.equal(dataList[0]._name, 'test-stat-a');
@@ -87,7 +87,6 @@ describe('CQStatsGraphData.createBatch', function() {
               [new Date((1000 + 500 * 60) * 1000), 100, 80, 70, 60, 70],
               [new Date((1500 + 500 * 60) * 1000), 10, 8, 7, 6, 7],
             ],
-            unit: 'minutes',
           });
         }),
         dataList[1].get().then(function(data) {
@@ -97,7 +96,6 @@ describe('CQStatsGraphData.createBatch', function() {
               [new Date((1000 + 500 * 60) * 1000), 10, 8, 7, 6, 7],
               [new Date((1500 + 500 * 60) * 1000), 100, 80, 70, 60, 70],
             ],
-            unit: 'minutes',
           });
         }),
       ]);

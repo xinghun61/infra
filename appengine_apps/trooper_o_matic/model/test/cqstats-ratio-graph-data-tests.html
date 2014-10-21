@@ -1,0 +1,77 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../../lib/log.html">
+<link rel="import" href="../../lib/network-simulator.html">
+<link rel="import" href="../cqstats-ratio-graph-data.html">
+
+<script>
+(function() {
+
+var assert = chai.assert;
+
+var testCQStats = {
+  results: [{
+    key: '2002',
+    begin: 1500,
+    end: 1500 + 500 * 60,
+    interval_minutes: 500,
+    stats: [{
+      name: 'test-stat-a',
+      count: 50,
+    }, {
+      name: 'test-stat-b',
+      count: 100,
+    }],
+  }, {
+    key: '1001',
+    begin: 1000,
+    end: 1000 + 500 * 60,
+    interval_minutes: 500,
+    stats: [{
+      name: 'test-stat-a',
+      count: 25,
+    }, {
+      name: 'test-stat-b',
+      count: 200,
+    }],
+  }],
+};
+
+describe('CQStatsRatioGraphData', function() {
+  it('should create a CQStatsRatioGraphData combines two CQStats', function(done) {
+    var simulator = new NetworkSimulator(assert);
+    simulator.json = function(options) {
+      if (options.url === 'https://chromium-cq-status.appspot.com/stats/query?project=testProject&interval_minutes=500&names=test-stat-a%2Ctest-stat-b&count=1000') {
+        return Promise.resolve(testCQStats);
+      }
+      console.log('Unexpected url: ' + options.url);
+    }
+
+    var ratioData;
+    simulator.runTest(function() {
+      ratioData = new CQStatsRatioGraphData(
+          'testColumn', 'testProject', 500, 'test-stat-a', 'test-stat-b', 1000);
+    }).then(function() {
+      assert.ok(ratioData);
+      assert.ok(ratioData.rowItemsAvailable);
+      return ratioData.get().then(function(data) {
+        assert.deepEqual(data, {
+          cols: ['timestamp', 'testColumn'],
+          rows: [
+            [new Date((1000 + 500 * 60) * 1000), 12.5],
+            [new Date((1500 + 500 * 60) * 1000), 50],
+          ],
+        });
+      });
+    }).then(function() {
+      done();
+    }).catch(log);
+  });
+});
+
+})();
+</script>

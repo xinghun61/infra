@@ -6,48 +6,34 @@ found in the LICENSE file.
 
 <link rel="import" href="../lib/log.html">
 <link rel="import" href="../lib/net.html">
-<link rel="import" href="../lib/sugar.html">
+<link rel="import" href="../lib/cqstats-util.html">
 
 <script>
-function CQStatsGraphData(name) {
+function CQStatsGraphData(name, cqStatsListPromise) {
   this.rowItemsAvailable = true;
   this._name = name;
-  this._cqStatsList = null;
-  this._formattedDataCache = null;
-  this._pendingResolvers = [];
+  this._cqStatsListPromise = cqStatsListPromise;
+  this._formattedDataPromise = cqStatsListPromise.then(
+      this._formatCQStatsList.bind(this));
 }
 
-(function() {
-var cqLogHost = 'https://chromium-cq-status.appspot.com';
-
-CQStatsGraphData.createBatch = function(project, intervalMinutes, count, names) {
-  var dataList = names.map(function(name) {
-    return new CQStatsGraphData(name);
+CQStatsGraphData.createBatch = function(
+    project, intervalMinutes, names, count) {
+  var cqStatsListPromise = cqStatsUtil.loadStats(
+      project, intervalMinutes, names, count).catch(log);
+  return names.map(function(name) {
+    return new CQStatsGraphData(name, cqStatsListPromise);
   });
-  var url = cqLogHost + '/stats/query?' + Object.toQueryString({
-    project: project,
-    interval_minutes: intervalMinutes,
-    names: names.join(','),
-    count: count,
-  });
-  net.json({url: url}).then(function(json) {
-    var cqStatsList = json.results.reverse();
-    dataList.forEach(function(data) {
-      data._set(cqStatsList);
-    });
-  }).catch(log);
-  return dataList.slice();
 };
 
-CQStatsGraphData.prototype._set = function(cqStatsList) {
-  this._cqStatsList = cqStatsList;
-  var self = this;
-  this._formattedDataCache = {
+CQStatsGraphData.prototype._formatCQStatsList = function(cqStatsList) {
+  var name = this._name;
+  return {
     cols: ['timestamp', 'max', 'p90', 'p50', 'min', 'mean'],
     rows: cqStatsList.map(function(cqStats) {
       var stat = null;
       cqStats.stats.forEach(function(testStat) {
-        if (testStat.name === self._name) {
+        if (testStat.name === name) {
           stat = testStat;
         }
       });
@@ -61,41 +47,26 @@ CQStatsGraphData.prototype._set = function(cqStatsList) {
         stat.mean / 60,
       ];
     }),
-    unit: 'minutes',
-  };
-  while (this._pendingResolvers.length) {
-    this._pendingResolvers.pop()(this._formattedDataCache);
   };
 }
 
 CQStatsGraphData.prototype.get = function() {
-  var self = this;
-  return new Promise(function(resolve) {
-    if (self._formattedDataCache) {
-      resolve(self._formattedDataCache);
-    } else {
-      self._pendingResolvers.push(resolve);
-    }
-  });
+  return this._formattedDataPromise;
 };
 
-// Gets the highest ranking items that contributed to a particular row in the
-// data.
 CQStatsGraphData.prototype.rowItems = function(index) {
-  console.assert(this._cqStatsList);
-  var cqStats = this._cqStatsList[index];
-  var url =
-      cqLogHost + '/stats/highest/' +
-      this._name + '/' + cqStats.key;
-  return net.json({url: url, cache: true}).then(function(items) {
-    // Convert seconds to minutes.
-    items.forEach(function(item) { item[0] /= 60; });
-    return {
-      items: items,
-      begin: new Date(cqStats.begin * 1000),
-      end: new Date(cqStats.end * 1000),
-    };
-  });
+  var name = this._name;
+  return this._cqStatsListPromise.then(function(cqStatsList) {
+    var cqStats = cqStatsList[index];
+    return cqStatsUtil.loadStatItems(name, cqStats.key).then(function(items) {
+      // Convert seconds to minutes.
+      items.forEach(function(item) { item[0] /= 60; });
+      return {
+        items: items,
+        begin: new Date(cqStats.begin * 1000),
+        end: new Date(cqStats.end * 1000),
+      };
+    });
+  })
 };
-})();
 </script>

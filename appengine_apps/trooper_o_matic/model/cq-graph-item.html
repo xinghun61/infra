@@ -9,11 +9,12 @@ found in the LICENSE file.
 <link rel="import" href="../lib/sugar.html">
 
 <script>
-function CQGraphItem(minutes, issue, patchset, alertBreached) {
-  this.minutes = minutes;
+function CQGraphItem(value, unit, issue, patchset, alertThreshold) {
+  this.value = value;
+  this.unit = unit;
   this.issue = issue;
   this.patchset = patchset;
-  this.alertBreached = alertBreached;
+  this.alertThreshold = alertThreshold;
 
   var reviewHost = 'https://codereview.chromium.org';
   this.reviewURL = '{1}/{2}#{3}'.assign(reviewHost, this.issue, this.patchset);

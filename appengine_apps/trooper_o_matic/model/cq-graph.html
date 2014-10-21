@@ -5,10 +5,14 @@ found in the LICENSE file.
 -->
 
 <script>
-function CQGraph(heading, data, alerts) {
+function CQGraph(heading, unit, itemUnit, data, alerts, itemAlertThreshold) {
   this.heading = heading;
+  this.unit = unit;
+  this.itemUnit = itemUnit;
   this.data = data;
-  this.alerts = alerts;
+  this.alerts = alerts || {};
+  this.itemAlertThreshold =
+      itemAlertThreshold !== undefined ? itemAlertThreshold : Infinity;
 }
 
 CQGraph.prototype.breachedItems = function(col, threshold) {
@@ -26,14 +30,5 @@ CQGraph.prototype.breachedItems = function(col, threshold) {
     });
     return items;
   });
-};
-
-CQGraph.prototype.valueBreaching = function(value) {
-  for (var col in this.alerts) {
-    if (this.alerts[col] < value) {
-      return true;
-    }
-  }
-  return false;
 };
 </script>
