@@ -80,15 +80,6 @@ def seed_passwords(root_dir, password_file):
   with open(bot_password_path, 'wb') as f:
     f.write(passwords['bot_password'])
 
-  # Seed boto file.
-  # TODO(hinoka): Remove this crbug.com/425753
-  if 'boto' in passwords:
-    boto_path = os.path.join(
-        root_dir, 'build', 'site_config', '.boto')
-    with open(boto_path, 'wb') as f:
-      f.write(passwords['boto'])
-    os.chmod(boto_path, 0600)
-
 
 def run_slave(root_dir):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
