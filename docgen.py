@@ -43,8 +43,12 @@ def cmd_clean():
   paths = (os.path.join(INFRA_ROOT, 'doc', 'source', 'reference'),
            os.path.join(INFRA_ROOT, 'doc', 'html'))
   for path in paths:
-    print 'Removing %s ...' % path
-    shutil.rmtree(path)
+    try:
+      shutil.rmtree(path)
+    except OSError:
+      pass
+    else:
+      print 'Removing %s ...' % path
 
 
 def main():
