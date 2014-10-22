@@ -31,6 +31,10 @@ SVN_URLS = [
     'svn://svn.chromium.org/chrome-try'
 ]
 
+# BUG(hinoka): This is a temp fix for crbug.com/426081
+# TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
+SYSTEM_PYTHON = '/usr/bin/python'
+
 
 def call(args, **kwargs):
   print 'Running %s' % ' '.join(args)
@@ -103,7 +107,7 @@ def run_slave(root_dir):
   #      Daemonizing is not a priority.
   #   2. The limits are already set in /etc/security/limits.conf.
   # This is why we can explicitly call run_slave.py
-  cmd = [sys.executable, run_slave_path, '--no_save',
+  cmd = [SYSTEM_PYTHON, run_slave_path, '--no_save',
          '--python', 'buildbot.tac', '--nodaemon', '--logfile', 'twistd.log']
   call(cmd, cwd=slave_dir, env=env)
   print 'run_slave.py died'
