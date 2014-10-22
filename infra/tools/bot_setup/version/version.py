@@ -6,7 +6,7 @@
 """Returns the canonical version of bot setup scripts for hostname and image."""
 
 
-LKGR = 'ec90a306d1b2796d8f2b7b5770ea604e4a173bb1'
+LKGR = '1013a4d4cd1a3c88aac6754ec2beae2dd8583503'
 DISABLED_BUILDERS = [
     'test_disabled_slave'
 ]
