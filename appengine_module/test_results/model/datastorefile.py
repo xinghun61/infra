@@ -38,7 +38,7 @@ MAX_ENTRY_LEN = 1000 * 1000
 
 class ChunkData:
 
-  def __init__(self):  # pragma: no cover
+  def __init__(self):
     self.reused_key = None
     self.data_entry = None
     self.entry_future = None
@@ -83,22 +83,22 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
   data = None
 
   @staticmethod
-  def _get_chunk_indices(data_length):  # pragma: no cover
+  def _get_chunk_indices(data_length):
     nchunks = math.ceil(float(data_length) / MAX_ENTRY_LEN)
     return xrange(0, int(nchunks) * MAX_ENTRY_LEN, MAX_ENTRY_LEN)
 
   @staticmethod
-  def _convert_blob_keys(keys):  # pragma: no cover
+  def _convert_blob_keys(keys):
     converted_keys = []
     for key in keys:
       new_key = blobstore.BlobMigrationRecord.get_new_blob_key(key)
       if new_key:
-        converted_keys.append(new_key)
+        converted_keys.append(new_key)  # pragma: no cover
       else:
         converted_keys.append(key)
     return keys
 
-  def delete_data(self, keys=None):  # pragma: no cover
+  def delete_data(self, keys=None):
     if not keys:
       keys = self._convert_blob_keys(self.data_keys)
     logging.info('Doing async delete of keys: %s', keys)
@@ -107,13 +107,13 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
     delete_futures = []
     for get_future in get_futures:
       result = get_future.get_result()
-      if result:
+      if result:  # pragma: no branch
         delete_futures.append(DataEntry.delete_async(result.key()))
 
     for delete_future in delete_futures:
       delete_future.get_result()
 
-  def save_data(self, data):  # pragma: no cover
+  def save_data(self, data):
     if not data:
       logging.warning("No data to save.")
       return False
@@ -150,7 +150,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
     for chunk in chunk_data:
       if chunk.entry_future:
         data_entry = chunk.entry_future.get_result()
-        if not data_entry:
+        if not data_entry:  # pragma: no cover
           logging.warning("Found key, but no data entry: %s", chunk.reused_key)
           data_entry = DataEntry()
         chunk.data_entry = data_entry
@@ -164,7 +164,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
       try:
         key = future.get_result()
         self.new_data_keys.append(key)
-      except Exception, err:
+      except Exception, err:  # pragma: no cover
         logging.error("Failed to save data store entry: %s", err)
         self.delete_data(keys)
         return False
@@ -179,7 +179,7 @@ class DataStoreFile(db.Model):  # pylint: disable=W0232
 
     return True
 
-  def load_data(self):  # pragma: no cover
+  def load_data(self):
     if not self.data_keys:
       logging.warning("No data to load.")
       return None

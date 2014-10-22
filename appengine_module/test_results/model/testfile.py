@@ -41,15 +41,15 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
   build_number = db.IntegerProperty()
 
   @property
-  def file_information(self):  # pragma: no cover
+  def file_information(self):
     return ("master: %s, builder: %s, test_type: %s, build_number: %r, "
             "name: %s.") % (self.master, self.builder, self.test_type,
             self.build_number, self.name)
 
   @classmethod
   def delete_file(cls, key, master, builder, test_type, build_number, name,
-      before, limit):  # pragma: no cover
-    if key:
+      before, limit):
+    if key:  # pragma: no cover
       record = db.get(key)
       if not record:
         logging.warning("File not found, key: %s.", key)
@@ -73,7 +73,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
 
   @classmethod
   def get_files(cls, master, builder, test_type, build_number, name,
-      before=None, load_data=True, limit=1):  # pragma: no cover
+      before=None, load_data=True, limit=1):
     query = TestFile.all()
     if master:
       query = query.filter("master =", master)
@@ -82,7 +82,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     if test_type:
       query = query.filter("test_type =", test_type)
     if build_number == 'latest':
-      query = query.sort('-build_number')
+      query = query.order('-build_number')
     elif build_number is not None and build_number != 'None':
       # TestFile objects that were added to the persistent DB before the
       # build_number
@@ -113,7 +113,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     return files
 
   @classmethod
-  def save_file(cls, record, data):  # pragma: no cover
+  def save_file(cls, record, data):
     if record.save(data):
       status_string = "Saved file. %s" % record.file_information
       status_code = 200
@@ -124,7 +124,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
 
   @classmethod
   def add_file(cls, master, builder, test_type, build_number, name,
-        data):  # pragma: no cover
+        data):
     record = TestFile()
     record.master = master
     record.builder = builder
@@ -133,7 +133,7 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
     record.name = name
     return cls.save_file(record, data)
 
-  def save(self, data):  # pragma: no cover
+  def save(self, data):
     if not self.save_data(data):
       return False
 
@@ -142,6 +142,6 @@ class TestFile(DataStoreFile):  # pylint: disable=W0232
 
     return True
 
-  def delete_all(self):  # pragma: no cover
+  def delete_all(self):
     self.delete_data()
     self.delete()

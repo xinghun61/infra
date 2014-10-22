@@ -109,7 +109,7 @@ class StepResult(ndb.Model):
     for test_name, test_result in test_json.iteritems():
       try:
         test_name_key = TestName.getKey(test_name)
-      except:
+      except:  # pragma: no cover
         logging.error('Could not get global key for test name %s', test_name)
         raise
       try:
@@ -117,14 +117,14 @@ class StepResult(ndb.Model):
         actual = tuple(
             [cls.STR2RESULT[a] for a in test_result['actual'].split()][:255])
         elapsed = float(test_result['time'])
-      except:
+      except:  # pragma: no cover
         logging.error('Could not parse numeric values from test result json')
         raise
       try:
         result += struct.pack(
             cls.TEST_PACK_FORMAT, test_name_key, elapsed, expected, len(actual))
         result += struct.pack('%dB' % len(actual), *actual)
-      except:
+      except:  # pragma: no cover
         logging.error('Could not struct pack test result')
         raise
     return result
@@ -196,6 +196,6 @@ class StepResult(ndb.Model):
     The returned StepResult has NOT been saved to the datastore.
     """
     if not test_file.data:
-      test_file.load_data()
+      test_file.load_data() #  pragma: no cover
     j = JsonResults.load_json(test_file.data)
     return cls.fromJson(test_file.master, test_file.test_type, j)

@@ -16,6 +16,8 @@ class TestNameTest(testing.AppengineTestCase):
     k = TestName.getKey('bar')
     self.assertTrue(k)
     self.assertEqual(TestName.getAllKeys('bar'), [k])
+    self.assertEquals(TestName.getTestName(k), 'bar')
+
 
 if __name__ == '__main__':
   unittest.main()

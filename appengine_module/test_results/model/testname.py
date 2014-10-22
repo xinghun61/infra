@@ -42,7 +42,7 @@ class TestName(ndb.Model):
     # then it will be present in the DB but missing from the cache.
     q = cls.query(cls.name == testName)
     entity = q.get()
-    if entity is None:
+    if entity is None:  # pragma: no branch
       first, _ = cls.allocate_ids(1)
       entity = cls(name=testName, key=ndb.Key(cls, first))
       entity.put()
@@ -52,7 +52,7 @@ class TestName(ndb.Model):
   @classmethod
   def hasTestName(cls, testName):
     cls._guaranteeNameCache()
-    if testName in cls.NAME_CACHE:
+    if testName in cls.NAME_CACHE:  # pragma: no cover
       return True
     q = cls.query(cls.name == testName)
     return q.count(1) == 1
@@ -92,5 +92,5 @@ class TestName(ndb.Model):
       ndb_key = ndb.Key(cls, key)
       entity = ndb_key.get()
       assert entity
-      cls._insertCacheEntry(entity)
+      cls._insertCacheEntry(entity)  # pragma: no cover
     return cls.NAME_REVERSE_CACHE[key]

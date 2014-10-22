@@ -50,7 +50,7 @@ class StepResultTest(testing.AppengineTestCase):
   @staticmethod
   def _massage_json(j):
     for t in j['tests'].values():
-      if 'time' in t:
+      if 'time' in t:  # pragma: no branch
         t['time'] = '%.5f' % float(t['time'])
     for key in StepResult.RESULT2STR:
       j['num_failures_by_type'].setdefault(key, 0)

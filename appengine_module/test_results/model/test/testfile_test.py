@@ -100,6 +100,17 @@ class DataStoreFileTest(unittest.TestCase):
                 f.build_number, f.name, f.data]
       self.assertIn(fields, TEST_DATA)
 
+    # Smoke tests here
+    files = testfile.TestFile.get_files(None, None, None, 'latest',
+                                        None, limit=None)
+    self.assertEqual(len(files), len(TEST_DATA))
+
+    files = testfile.TestFile.get_files(None, None, None, None,
+                                        None, limit=None,
+                                        before='2014-04-05T01:02:03Z')
+    # must return empty list since the above date is in the past.
+    self.assertEqual(len(files), 0)
+
   def testDeleteFile(self):
     file_contents = 'x' * datastorefile.MAX_ENTRY_LEN * 2
     file_data = ['ChromiumWebKit', 'WebKit Linux',
@@ -110,6 +121,11 @@ class DataStoreFileTest(unittest.TestCase):
         'WebKit Linux', 'layout-tests', 1, 'results.json', None, None)
     self.assertEqual(
         1, ndeleted, 'Expected exactly one file to have been deleted.')
+
+    ndeleted = testfile.TestFile.delete_file(None, 'ChromiumWebKit',
+        'WebKit Linux', 'layout-tests', 'invalid', 'results.json', None, None)
+    self.assertEqual(
+        0, ndeleted, 'Expected exactly zero files to have been deleted.')
 
     nfiles = testfile.TestFile.all().count()
     self.assertEqual(
