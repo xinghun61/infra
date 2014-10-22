@@ -3,13 +3,19 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 import logging
 import numpy
+import random
 import re
+import time
 
 from google.appengine.ext import ndb
+from google.appengine.api import urlfetch
 
 from appengine_module.cr_rev import models
+from appengine_module.cr_rev.appengine_third_party_pipeline_src_pipeline \
+    import pipeline
 
 
 # Repos excluded from scanning.
@@ -58,6 +64,29 @@ def get_active_repos(project):
   return included_repos
 
 
+def make_gitiles_json_call(url, n=10000):
+  full_url = url + '?format=json&n=%d' % n
+
+  backoff = 10
+  attempts = 4
+  for i in range(attempts):
+    logging.info('scanning %s', full_url)
+    result = urlfetch.fetch(full_url, deadline=60)
+    if result.status_code == 200:
+      # Gitiles serves JSONP, so we strip it out here.
+      assert result.content[0:5] == ')]}\'\n'
+      return json.loads(result.content[5:])
+    elif result.status_code != 429:
+      raise pipeline.PipelineUserError(
+          'urlfetch returned %d' % result.status_code)
+
+    sleep = backoff  * (2 ** i)
+    logging.info('got 429, sleeping %d secs...', sleep)
+    time.sleep(sleep + random.random())
+  raise pipeline.PipelineUserError(
+      'urlfetch returned 429 after %d attempts, timing out!' % attempts)
+
+
 GIT_SVN_ID_REGEX = re.compile(r'git-svn-id: (.*)@(\d+) ')
 GIT_COMMIT_POSITION_REGEX = re.compile(r'Cr-Commit-Position: (.*)@{#(\d+)}')
 
@@ -66,10 +95,10 @@ def fetch_by_number(number, numbering_type, repo=None, project=None, ref=None):
   """Given a repository and a commit number, fetch the commit."""
   fetch_key = models.NumberingMap.get_key_by_id(
         number, numbering_type, repo=repo, project=project, ref=ref)
-  logging.info('looking for %s' % fetch_key)
+  logging.info('looking for %s', fetch_key)
   fetch_obj = fetch_key.get()
   if fetch_obj:
-    logging.info('success: redirect to %s' % fetch_obj.redirect_url)
+    logging.info('success: redirect to %s', fetch_obj.redirect_url)
   else:
     logging.info('not found')
   return fetch_obj

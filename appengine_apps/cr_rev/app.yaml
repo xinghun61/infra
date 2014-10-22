@@ -11,15 +11,15 @@ automatic_scaling:
 handlers:
 # Endpoints handler.
 - url: /_ah/spi/.*
-  script: appengine.cr_rev.cr_rev_api.APPLICATION
+  script: appengine_module.cr_rev.cr_rev_api.APPLICATION
   secure: always
 
 - url: /css
-  static_dir: appengine/cr_rev/css
+  static_dir: appengine_module/cr_rev/css
   secure: always
 
 - url: /.*
-  script: appengine.cr_rev.app.app
+  script: appengine_module.cr_rev.app.app
   secure: always
 
 builtins:

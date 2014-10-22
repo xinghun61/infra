@@ -10,7 +10,6 @@ from webapp2_extras import jinja2
 
 from appengine_module.cr_rev import controller
 
-
 class BaseHandler(webapp2.RequestHandler):
   """Provide a cached Jinja environment to each request."""
 

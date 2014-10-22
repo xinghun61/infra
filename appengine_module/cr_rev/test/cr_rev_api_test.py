@@ -165,7 +165,7 @@ class TestCrRevApi(testing.AppengineTestCase):
 
     svn_numbering = my_numberings[0]
     git_numbering = my_numberings[1]
-    
+
     response = self._make_api_call('get_numbering', params={
       'number': git_numbering.number,
       'numbering_type': 'COMMIT_POSITION',
@@ -249,3 +249,35 @@ class TestCrRevApi(testing.AppengineTestCase):
       u'redirect_type': u'GIT_SHORT',
     }
     self.assertEqual(expected, response.json)
+
+  def test_insert_project_unauthenticated(self):
+    # This should be a _make_api_call(..., status=401). Unfortunately, Cloud
+    # Endpoints doesn't interact with webtest properly. See
+    # https://code.google.com/p/googleappengine/issues/detail?id=10544 and
+    # http://stackoverflow.com/questions/24219654/content-length-error-in-
+    #   google-cloud-endpoints-testing
+    with self.assertRaises(AssertionError):
+      self._make_api_call('insert_project', params={
+          'name': 'cool',
+      })
+
+  def test_insert_project_not_admin(self):
+    # This should be a _make_api_call(..., status=403). Unfortunately, Cloud
+    # Endpoints doesn't interact with webtest properly. See
+    # https://code.google.com/p/googleappengine/issues/detail?id=10544 and
+    # http://stackoverflow.com/questions/24219654/content-length-error-in-
+    #   google-cloud-endpoints-testing
+    self.mock_endpoints_user(user_id='cool@whatever.nothing')
+    with self.assertRaises(AssertionError):
+      self._make_api_call('insert_project', params={
+          'name': 'cool',
+      })
+
+  def test_insert_project(self):
+    self.mock_endpoints_user(user_id='cool@whatever.nothing', is_admin=True)
+    self._make_api_call('insert_project', params={
+        'name': 'cool',
+    })
+    projects = list(models.Project.query())
+    self.assertEqual(1, len(projects))
+    self.assertEqual('cool', projects[0].name)

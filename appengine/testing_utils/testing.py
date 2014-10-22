@@ -2,10 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from contextlib import contextmanager
+import collections
+import time
+
 # appengine sdk is supposed to be on the path.
 import dev_appserver
 dev_appserver.fix_sys_path()
 
+import endpoints
+from google.appengine.api import oauth
+from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 
@@ -76,3 +83,33 @@ class AppengineTestCase(auto_stub.TestCase): # pragma: no cover
       USER_EMAIL=user_email,
       USER_IS_ADMIN=str(int(is_admin)),
       overwrite=True)
+
+  def mock_endpoints_user(self, user_id='', is_admin=False):
+    self.mock(endpoints, 'get_current_user', lambda: user_id)
+    self.mock(oauth, 'is_current_user_admin', lambda _: is_admin)
+
+
+  @contextmanager
+  def mock_urlfetch(self):
+    class UrlHandlers:
+      def __init__(self):
+        self.response_class = collections.namedtuple(
+            'response', ['content', 'status_code'])
+
+        self.urls = collections.defaultdict(lambda: self.response_class(
+            content=None, status_code=404))
+
+      def register_handler(self, url, content, status_code=200):
+        self.urls[url] = self.response_class(
+            content=content, status_code=status_code)
+
+      def handle_url(self, url, **_kwargs):
+        return self.urls[url]
+
+
+    url_handlers = UrlHandlers()
+    yield url_handlers
+    self.mock(urlfetch, 'fetch', url_handlers.handle_url)
+
+  def mock_sleep(self):
+    self.mock(time, 'sleep', lambda _: None)

@@ -3,15 +3,23 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 
 from appengine_module.testing_utils import testing
 
 from appengine_module.cr_rev import controller
 from appengine_module.cr_rev import models
+from appengine_module.cr_rev.appengine_third_party_pipeline_src_pipeline \
+    import pipeline
 from appengine_module.cr_rev.test import model_helpers
 
 
 class TestController(testing.AppengineTestCase):
+  @staticmethod
+  def _gitiles_json(data):
+    """Return json-encoded data with a gitiles header."""
+    return ')]}\'\n' + json.dumps(data)
+
   def test_get_projects(self):
     my_project = model_helpers.create_project()
     my_project.put()
@@ -234,3 +242,36 @@ class TestController(testing.AppengineTestCase):
     generated = controller.calculate_redirect('291562')
 
     self.assertEqual(generated, None)
+
+  def test_gitiles_call(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '?format=json&n=10000',
+          self._gitiles_json({'test': 3}))
+
+    result = controller.make_gitiles_json_call(gitiles_base_url)
+    self.assertEqual({'test': 3}, result)
+
+  def test_gitiles_call_error(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '/404',
+          self._gitiles_json({'test': 3}),
+          status_code=404)
+
+    with self.assertRaises(pipeline.PipelineUserError):
+      controller.make_gitiles_json_call(gitiles_base_url)
+
+  def test_gitiles_call_429(self):
+    self.mock_sleep()
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '?format=json&n=10000',
+          self._gitiles_json({'test': 3}),
+          status_code=429)
+
+    with self.assertRaises(pipeline.PipelineUserError):
+      controller.make_gitiles_json_call(gitiles_base_url)

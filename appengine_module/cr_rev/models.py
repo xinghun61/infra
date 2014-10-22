@@ -7,7 +7,6 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
-
 from appengine_module.cr_rev.endpoints_proto_datastore.ndb import EndpointsModel
 
 

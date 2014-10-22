@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
 import endpoints
+from google.appengine.api import oauth
 from google.appengine.ext import ndb
 from protorpc import remote
 
@@ -20,9 +23,38 @@ package = 'CrRev'
 
 ### Api methods.
 
+def check_for_admin():
+  endpoints_user = endpoints.get_current_user()
+  if endpoints_user is None:
+    raise endpoints.UnauthorizedException(
+        'This method requires authentication')
+
+  # See https://goo.gl/YTYNP6 for why we use os.getenv() here.
+  is_admin = oauth.is_current_user_admin(os.getenv('OAUTH_LAST_SCOPE'))
+  if not is_admin and not os.environ['APPLICATION_ID'].startswith('dev'):
+    raise endpoints.ForbiddenException(
+        'This method requires administrator privileges')
+
+
+AUTH_CLIENT_IDS = [
+    endpoints.API_EXPLORER_CLIENT_ID,
+]
+
+
 @endpoints.api(name='crrev', version='v1')
 class CrRevApi(remote.Service):
   """CrRev API v1."""
+
+  @models.Project.method(path='projects', http_method='POST',
+                  name='projects.insert', request_fields=('name',),
+                  allowed_client_ids=AUTH_CLIENT_IDS)
+  def insert_project(self, project):
+    """Adds a googlecode.com project to scan."""
+    check_for_admin()
+    proj_key = ndb.Key(models.Project, project.name)
+    project.key = proj_key
+    project.put()
+    return project
 
   @models.Project.query_method(path='projects', name='projects.list',
       query_fields=('limit', 'pageToken',))
@@ -30,7 +62,7 @@ class CrRevApi(remote.Service):
     """List all scanned projects."""
     return query
 
-  @models.Repo.query_method(path='repos', name='repos.list',
+  @models.Repo.query_method(path='repos/{project}', name='repos.list',
     query_fields=('limit', 'project', 'pageToken'))
   def get_repos(self, query):
     """List all scanned repositories for a project."""
@@ -93,7 +125,6 @@ class CrRevApi(remote.Service):
       raise endpoints.NotFoundException('commit not found.')  # pragma: no cover
     return commit_obj
 
-
   @models.NumberingMap.method(
       request_fields=('number', 'numbering_type', 'project', 'repo',
         'numbering_identifier'),
@@ -126,7 +157,6 @@ class CrRevApi(remote.Service):
       raise endpoints.NotFoundException('commit not found.')  # pragma: no cover
     return numbering_obj
 
-
   @models.Redirect.method(request_fields=('query',),
                       path='redirect/{query}', http_method='GET',
                       name='redirect.get')
@@ -153,7 +183,6 @@ class CrRevApi(remote.Service):
     if not redirect:
       raise endpoints.NotFoundException('commit not found.')  # pragma: no cover
     return redirect
-
 
   @models.ExcludedRepoList.method(request_fields=(),
                       path='excluded_repos', http_method='GET',
@@ -194,7 +223,6 @@ class CrRevApi(remote.Service):
       most_lagging_repo:  the project:repo that has the most scan lag.
     """
     return controller.calculate_lag_stats(generated=request.generated)
-
 
 
 APPLICATION = endpoints.api_server([CrRevApi])
