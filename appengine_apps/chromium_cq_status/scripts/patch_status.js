@@ -184,7 +184,7 @@ function splitByAttempts(records) {
 
 function newRow(timestamp, duration, description, message, cls) {
   var row = newElement('row', '', cls);
-  row.appendChild(newElement('timestamp', getTimestampString(timestamp)));
+  row.appendChild(newElement('timestamp', new Date(timestamp)));
   row.appendChild(newElement('duration', '(' + duration + ')'));
   var descriptionNode = newElement('description')
   if (typeof description === 'string') {
@@ -240,10 +240,6 @@ function newElement(tag, text, cls) {
     element.classList.add(cls);
   }
   return element;
-}
-
-function getTimestampString(timestamp) {
-  return new Date(timestamp * 1000).toISOString().replace('T', ' ').slice(0, 19);
 }
 
 function getDurationString(startTimestamp, timestamp) {
