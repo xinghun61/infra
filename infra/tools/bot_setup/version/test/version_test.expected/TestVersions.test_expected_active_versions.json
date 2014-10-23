@@ -1,7 +1,7 @@
 [
-  "Slave slave100-c4 is on version 1013a4d4cd1a3c88aac6754ec2beae2dd8583503",
+  "Slave slave100-c4 is on version 9fe83604a4c98a77c4bbbfe9ca5ae9391960dfec",
   "Slave slave250-c4 is on version origin/master",
-  "Slave slave260-c4 is on version 1013a4d4cd1a3c88aac6754ec2beae2dd8583503",
+  "Slave slave260-c4 is on version 9fe83604a4c98a77c4bbbfe9ca5ae9391960dfec",
   "Slave swarm1-c4 is on version origin/master",
-  "Slave swarm11-c4 is on version 1013a4d4cd1a3c88aac6754ec2beae2dd8583503"
+  "Slave swarm11-c4 is on version 9fe83604a4c98a77c4bbbfe9ca5ae9391960dfec"
 ]
