@@ -17,6 +17,11 @@ a {
 h1, h3 > a, tryjob > a {
   color: black;
 }
+a.raw {
+  font-family: monospace;
+  font-size: 90%%;
+  color: gray;
+}
 h3 {
   margin-top: 2em;
 }
@@ -100,5 +105,6 @@ message {
 <a href="/"><h1>Chromium CQ Status</h1></a>
 <h2>CQ status timeline for issue <a href="http://codereview.chromium.org/%(issue)s">%(issue)s</a> patch <a href="http://codereview.chromium.org/%(issue)s#ps%(patchset)s">%(patchset)s</a></h2>
 Status updates are shown in reverse chronological order.<br>
+<a href="/recent#issue=%(issue)s,patchset=%(patchset)s" class="raw">[Raw CQ logs]</a><br>
 <br>
 <div id="container"></div>
