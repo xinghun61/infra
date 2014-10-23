@@ -4,8 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from appengine_module.trooper_o_matic.endpoints_proto_datastore.ndb import (
-    EndpointsModel)
+from endpoints_proto_datastore.ndb import EndpointsModel
 
 
 SLO_BUILDTIME_MEDIAN = 30 * 60  # 30 minutes
