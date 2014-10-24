@@ -27,7 +27,8 @@ General Information
 Contributer's Guides
 --------------------
 
-* :doc:`documenting` - what and how to document.
+* :doc:`documenting` - what and how to document, plus some technical information
+  on the compilation/deployment pipeline.
 * How to add a new tool - also gives example usage of
   :doc:`reference/infra.libs`
 * How to develop an appengine app in infra/

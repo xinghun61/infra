@@ -11,6 +11,7 @@ Top-level commands
   repository in parallel, including those in appengine applications.
 
 - Regenerating this documentation from source is achieved with ``docgen.py``.
+  (see :doc:`documenting` for more details)
 
 - ``run.py`` is used to run a command located inside the infra package. See
   next section for details.
