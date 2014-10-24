@@ -81,6 +81,20 @@ class PatchsetStatsTest(StatsTest):
     (2, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
     (3, {'issue': 6, 'patchset': 1, 'action': 'patch_committed'}),
     (4, {'issue': 6, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (-4, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
+    (-3, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
+    (-2, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
+    (-1, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
+    (0, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
+    (1, {'issue': 7, 'patchset': 1, 'action': 'patch_committed'}),
+    (2, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
+
+    (20, {'issue': 8, 'patchset': 1, 'action': 'patch_start'}),
+    (21, {'issue': 8, 'patchset': 1, 'action': 'patch_stop'}),
+    (22, {'issue': 8, 'patchset': 1, 'action': 'patch_start'}),
+    (23, {'issue': 8, 'patchset': 1, 'action': 'patch_committed'}),
+    (24, {'issue': 8, 'patchset': 1, 'action': 'patch_stop'}),
   )
 
   def test_attempt_false_reject_count(self):
@@ -93,6 +107,7 @@ class PatchsetStatsTest(StatsTest):
         tally={
           PatchsetReference(1, 1): 1,
           PatchsetReference(6, 1): 1,
+          PatchsetReference(7, 1): 2,
         },
       ), self.get_stats('attempt-false-reject-count'))
 

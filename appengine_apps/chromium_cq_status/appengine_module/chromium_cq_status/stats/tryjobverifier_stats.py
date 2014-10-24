@@ -43,8 +43,9 @@ class TryjobverifierActionCount(CountAnalyzer):  # pragma: no cover
     self.action = action
     self.description = description
 
-  def new_attempts(self, attempts, reference, project):
-    self.tally[reference] += count_actions(attempts, 'verifier_' + self.action)
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    self.tally[reference] += count_actions(
+        interval_attempts, 'verifier_' + self.action)
 
   def _get_name(self):
     return 'tryjobverifier-%s-count' % self.action
@@ -60,8 +61,8 @@ class TryjobverifierActionCountGroup(AnalyzerGroup):  # pragma: no cover
 class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier first run.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference, project):
-    for attempt in attempts:
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    for attempt in interval_attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:
@@ -80,8 +81,8 @@ class TryjobverifierFirstRunDurations(ListAnalyzer):  # pragma: no cover
 class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
   description = 'Time spent on each tryjob verifier retry.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference, project):
-    for attempt in attempts:
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    for attempt in interval_attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:
@@ -103,8 +104,8 @@ class TryjobverifierRetryDurations(ListAnalyzer):  # pragma: no cover
 class TryjobverifierTotalDurations(ListAnalyzer):  # pragma: no cover
   description = 'Total time spent per CQ attempt on tryjob verifier runs.'
   unit = 'seconds'
-  def new_attempts(self, attempts, reference, project):
-    for attempt in attempts:
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    for attempt in interval_attempts:
       start_timestamp = None
       end_timestamp = None
       for record in attempt:

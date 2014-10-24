@@ -21,11 +21,11 @@ class TrybotAnalyzer(Analyzer):  # pragma: no cover
     self.false_rejects = {'total': TrybotFalseRejectCount(None)}
     self.passes = {'total': TrybotPassCount(None)}
 
-  def new_attempts(self, attempts, reference, project):
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
     # counts maps from (master, builder) to [pass count, fail count].
     counts = defaultdict(lambda: [0, 0])
 
-    for attempt in attempts:
+    for attempt in interval_attempts:
       for record in attempt:
         if record.fields.get('verifier') != TRYJOBVERIFIER:
           continue

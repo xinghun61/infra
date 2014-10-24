@@ -99,22 +99,23 @@ def attempts_for_interval(begin, end): # pragma: no cover
 
     last_finish_timestamp = max(finish_timestamps[key])
     project, issue, patchset = key
-    earliest_start_record = Record.query().order(Record.timestamp).filter(
+    earliest_record = Record.query().order(Record.timestamp).filter(
       Record.tags == TAG_PROJECT % project,
       Record.tags == TAG_ISSUE % issue,
       Record.tags == TAG_PATCHSET % patchset).get()
-    if not earliest_start_record:
+    if not earliest_record:
       logging.warning(
           'No start message found for project %s, '
           'issue %s, patchset %s.' % (project, issue, patchset))
       continue
     interval_query = Record.query().order(Record.timestamp).filter(
-        Record.timestamp >= earliest_start_record.timestamp,
+        Record.timestamp >= earliest_record.timestamp,
         Record.timestamp <= last_finish_timestamp,
         Record.tags == TAG_PROJECT % project,
         Record.tags == TAG_ISSUE % issue,
         Record.tags == TAG_PATCHSET % patchset)
-    attempts = []
+    all_attempts = []
+    interval_attempts = []
     attempt = None
     for record in interval_query:
       if TAG_START in record.tags:
@@ -123,23 +124,24 @@ def attempts_for_interval(begin, end): # pragma: no cover
         attempt.append(record)
         if TAG_STOP in record.tags:
           if record.timestamp >= begin:
-            attempts.append(attempt)
+            interval_attempts.append(attempt)
+          all_attempts.append(attempt)
           attempt = None
-    if len(attempts) == 0:
+    if len(all_attempts) == 0:
       logging.warning('No attempts found for %s issue %s patchset %s at %s' %
           (project, issue, patchset, begin))
       continue
-    yield project, issue, patchset, attempts
+    yield project, issue, patchset, all_attempts, interval_attempts
 
 
 def analyze_attempts(attempts_iterator): # pragma: no cover
   logging.debug('Analyzing CQ attempts.')
   project_analyzers = {}
-  for project, issue, patchset, attempts in attempts_iterator:
+  for project, issue, patchset, all_attempts, interval_attempts in attempts_iterator: # pylint: disable=C0301
     if project not in project_analyzers:
       project_analyzers[project] = AnalyzerGroup(*analyzers)
-    project_analyzers[project].new_attempts(attempts,
-        PatchsetReference(issue, patchset), project)
+    project_analyzers[project].new_attempts(project,
+        PatchsetReference(issue, patchset), all_attempts, interval_attempts)
   project_stats = {}
   for project, analyzer in project_analyzers.iteritems():
     project_stats[project] = analyzer.build_stats()
