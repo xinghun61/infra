@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 from datetime import datetime
 import json
 import logging
@@ -46,6 +47,7 @@ def get_projects():
 
 
 def calculate_repo_url(repo_obj):
+  """Constructs a url to the repository using the project template."""
   return repo_obj.canonical_url_template % {
       'project': repo_obj.project,
       'repo': repo_obj.repo
@@ -65,6 +67,16 @@ def get_active_repos(project):
 
 
 def make_gitiles_json_call(url, n=10000):
+  """Make a JSON call to gitiles and decode the result.
+
+  This makes a gitiles call with exponential backoff in the case of 429s. When
+  it gets a result, it decodes and returns the resulting object. If the
+  exponential backoff times out, it raises pipeline.PipelineUserError.
+
+  Args:
+    url (str): the url to query
+    n (int): the number of items to get (this is appended to the query string)
+  """
   full_url = url + '?format=json&n=%d' % n
 
   backoff = 10
@@ -87,8 +99,147 @@ def make_gitiles_json_call(url, n=10000):
       'urlfetch returned 429 after %d attempts, timing out!' % attempts)
 
 
+def crawl_log(repo_url, start='master', until=None, n=10000):
+  """Crawls the commit log of a specific branch of a repository."""
+  crawl_url = repo_url + '+log/%s' % start
+  crawl_json = make_gitiles_json_call(crawl_url, n=n)
+  commits = []
+  finished = False
+  for commit in crawl_json.get('log', []):
+    if until and commit['commit'] == until:
+      finished = True
+      break
+    commits.append(commit)
+  if not commits or 'next' not in crawl_json:
+    finished = True
+
+  return commits, finished
+
+
 GIT_SVN_ID_REGEX = re.compile(r'git-svn-id: (.*)@(\d+) ')
 GIT_COMMIT_POSITION_REGEX = re.compile(r'Cr-Commit-Position: (.*)@{#(\d+)}')
+
+
+def parse_commit_message(msg, project, repo):
+  """Take a commit message and parse out any numberings."""
+  numberings = []
+  lines = msg.split('\n')
+  for line in lines:
+    git_svn_match = GIT_SVN_ID_REGEX.match(line)
+    if git_svn_match:
+      full_url = git_svn_match.group(1)
+      revision = int(git_svn_match.group(2))
+
+      # SVN folders can be individually checked out, so we add them all here:
+      #   svn.chromium.org/chrome
+      #   svn.chromium.org/chrome/trunk
+      #   svn.chromium.org/chrome/trunk/src
+      for i in range(len(full_url.split('/')) - 3):
+        url = '/'.join(full_url.split('/')[0:i+4])
+        numberings.append(
+          models.NumberingMap(
+            numbering_type=models.NumberingType.SVN,
+            numbering_identifier=url,
+            number=revision,
+            key=ndb.Key(models.NumberingMap,
+              models.NumberingMap.svn_unique_id(url, revision))
+          )
+        )
+
+    else:
+      git_commit_position_match = GIT_COMMIT_POSITION_REGEX.match(line)
+      if git_commit_position_match:
+        git_ref = git_commit_position_match.group(1)
+        commit_position = int(git_commit_position_match.group(2))
+        numberings.append(
+          models.NumberingMap(
+            numbering_type=models.NumberingType.COMMIT_POSITION,
+            numbering_identifier=git_ref,
+            number=commit_position,
+            key=ndb.Key(models.NumberingMap,
+              models.NumberingMap.git_unique_id(
+                project, repo, git_ref, commit_position))
+          )
+        )
+
+  return numberings
+
+
+def convert_commit_json_to_commit(project, repo, commit_json):
+  """Take a commit from the gitiles log and return a commit object.
+
+  This function parses out all the numberings present in the commit message,
+  writes those numberings to the database, and constructs a models.RevisionMap
+  object to be committed representing the commit itself.
+
+  Args:
+    project (models.Project): the current project object
+    repo (models.Repo): the current repo object
+    commit_json (dict): the single commit JSON as returned by gitiles
+  """
+  commit_pos = None
+  git_svn_pos = None
+
+  repo_obj = models.Repo.get_key_by_id(project, repo).get()
+  redirect_url = calculate_repo_url(repo_obj)
+  redirect_url = redirect_url + '+/%s' % commit_json['commit']
+
+  numberings = parse_commit_message(commit_json['message'], project, repo)
+  full_model_numberings = copy.deepcopy(numberings)
+  for numbering in full_model_numberings:
+    numbering.project = project
+    numbering.repo = repo
+    numbering.git_sha = commit_json['commit']
+    numbering.redirect_url = redirect_url
+  map_futures = []
+  if full_model_numberings:
+    map_futures = ndb.put_multi_async(full_model_numberings)
+
+  for numbering in numberings:
+    if numbering.numbering_type == models.NumberingType.COMMIT_POSITION:
+      commit_pos = numbering.number
+    else:  # SVN numbering.
+      git_svn_pos = numbering.number
+
+  number = commit_pos or git_svn_pos or None
+
+  commit = models.RevisionMap(
+      numberings=numberings,
+      number=number,
+      project=project,
+      repo=repo,
+      git_sha=commit_json['commit'],
+      redirect_url = redirect_url,
+      key=ndb.Key(models.RevisionMap, commit_json['commit'])
+  )
+
+  return commit, map_futures
+
+
+def write_commits_to_db(commits, project, repo, batch=100):
+  """Write provided commits to the database (chunked in batches).
+
+  Args:
+    commits (list): a list of commit dictionaries returned by gitiles
+    project (models.Project): the current project object
+    repo (models.Repo): the current repo object
+    batch (int): the number of commits to write at a time
+  """
+
+  futures = []
+  # Batch our writes so we don't blow our memory limit.
+  for chunk in (commits[i:i+batch] for i in range(0, len(commits), batch)):
+    converted_tuples = [convert_commit_json_to_commit(project, repo, c)
+                   for c in chunk]
+    commit_objs, map_futures = zip(*converted_tuples)
+    for future_list in map_futures:
+      futures.extend(future_list)
+    futures.extend(ndb.put_multi_async(commit_objs))
+    logging.info('%d commits dispatched for write' % len(commit_objs))
+    ndb.get_context().clear_cache()
+
+  ndb.Future.wait_all(futures)
+  logging.info('all set.')
 
 
 def fetch_by_number(number, numbering_type, repo=None, project=None, ref=None):

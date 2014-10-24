@@ -244,7 +244,7 @@ class TestController(testing.AppengineTestCase):
     self.assertEqual(generated, None)
 
   def test_gitiles_call(self):
-    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
           gitiles_base_url + '?format=json&n=10000',
@@ -254,10 +254,10 @@ class TestController(testing.AppengineTestCase):
     self.assertEqual({'test': 3}, result)
 
   def test_gitiles_call_error(self):
-    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '/404',
+          gitiles_base_url + '404',
           self._gitiles_json({'test': 3}),
           status_code=404)
 
@@ -265,8 +265,8 @@ class TestController(testing.AppengineTestCase):
       controller.make_gitiles_json_call(gitiles_base_url)
 
   def test_gitiles_call_429(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     self.mock_sleep()
-    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com'
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
           gitiles_base_url + '?format=json&n=10000',
@@ -275,3 +275,114 @@ class TestController(testing.AppengineTestCase):
 
     with self.assertRaises(pipeline.PipelineUserError):
       controller.make_gitiles_json_call(gitiles_base_url)
+
+  def test_crawl_log(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
+    log_data = {u'log': [
+        {u'commit': u'deadbeef' * 5},
+        {u'commit': u'deadbb0b' * 5},
+        {u'commit': u'dead3b0b' * 5},
+    ]}
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '+log/master?format=json&n=10000',
+          self._gitiles_json(log_data))
+
+    commits, finished = controller.crawl_log(gitiles_base_url)
+    self.assertTrue(finished)
+    self.assertEqual(log_data['log'], commits)
+
+  def test_crawl_log_until(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
+    log_data = {u'log': [
+        {u'commit': u'deadbeef' * 5},
+        {u'commit': u'deadbb0b' * 5},
+        {u'commit': u'dead3b0b' * 5},
+    ]}
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '+log/master?format=json&n=10000',
+          self._gitiles_json(log_data))
+
+    commits, finished = controller.crawl_log(
+        gitiles_base_url, until=u'deadbb0b' * 5)
+    self.assertTrue(finished)
+    self.assertEqual(log_data['log'][0:-2], commits)
+
+  def test_crawl_empty_log(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
+    log_data = {u'log': []}
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '+log/master?format=json&n=10000',
+          self._gitiles_json(log_data))
+
+    commits, finished = controller.crawl_log(gitiles_base_url)
+    self.assertTrue(finished)
+    self.assertEqual(log_data['log'], commits)
+
+  def test_crawl_log_not_finished(self):
+    gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
+    log_data = {
+        u'log': [{u'commit': u'deadbeef' * 5}],
+        u'next': 'beefdead' * 5,
+    }
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          gitiles_base_url + '+log/master?format=json&n=10000',
+          self._gitiles_json(log_data))
+
+    _, finished = controller.crawl_log(gitiles_base_url)
+    self.assertFalse(finished)
+
+  def test_conversion_to_commit(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    my_commit = model_helpers.create_commit()
+    my_commit.put()
+    commit_json = {
+        'commit': 'deadbeef' * 5,
+        'message': 'Cr-Commit-Position: refs/heads/master@{#298664}',
+    }
+
+    controller.write_commits_to_db( [commit_json], 'cool', 'cool_src')
+    commit = models.NumberingMap.get_key_by_id(
+        298664,
+        models.NumberingType.COMMIT_POSITION,
+        repo='cool_src',
+        project='cool',
+        ref='refs/heads/master').get()
+    self.assertIsNotNone(commit)
+
+  def test_conversion_to_svn_commit(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    my_commit = model_helpers.create_commit()
+    my_commit.put()
+    commit_json = {
+        'commit': 'deadbeef' * 5,
+        'message': 'git-svn-id: svn://svn.chromium.org/chrome/trunk/src@200000 '
+                   '0039d316-1c4b-4281-b951-d872f2087c98',
+    }
+
+    controller.write_commits_to_db( [commit_json], 'cool', 'cool_src')
+    for ref in ('svn://svn.chromium.org/chrome',
+                'svn://svn.chromium.org/chrome/trunk',
+                'svn://svn.chromium.org/chrome/trunk/src'):
+      commit = models.NumberingMap.get_key_by_id(
+          200000,
+          models.NumberingType.SVN,
+          ref=ref).get()
+      self.assertIsNotNone(commit)
+
+  def test_conversion_to_no_commit(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    my_commit = model_helpers.create_commit()
+    my_commit.put()
+    commit_json = {
+        'commit': 'deadbeef' * 5,
+        'message': '',
+    }
+    controller.write_commits_to_db( [commit_json], 'cool', 'cool_src')
+    self.assertEqual(0, len(list(models.NumberingMap.query())))
