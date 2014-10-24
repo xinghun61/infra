@@ -10,8 +10,8 @@ from appengine_module.chromium_cq_status.shared.parsing import (
   parse_cursor,
   parse_url_tags,
   parse_fields,
-  parse_key,
   parse_query_count,
+  parse_record_key,
   parse_request,
   parse_strings,
   parse_timestamp,
@@ -68,7 +68,7 @@ class Query(webapp2.RequestHandler): # pragma: no cover
       params = parse_request(self.request, {
         'begin': parse_timestamp,
         'end': parse_timestamp,
-        'key': parse_key,
+        'key': parse_record_key,
         'tags': parse_strings,
         'fields': parse_fields,
         'count':  parse_query_count,

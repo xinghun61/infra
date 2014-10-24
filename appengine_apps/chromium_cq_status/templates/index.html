@@ -56,6 +56,7 @@ Examples:
 API for querying CQ stats.
 Only accepts GET requests.
 Accepts the following optional URL params:
+  key: int
   project: str
   interval_minutes: int
   begin: timestamp
@@ -105,9 +106,9 @@ The returned query results are in the following JSON structure:
   "more": bool
 }
 
-Example: <a href="/stats/query?project=chromium&names=issue-count,patchset-*&count=1">/stats/query?project=chromium&names=issue-count,patchset-*&count=1</a>
-
-The "key" parameter can be used to query the lowest/highest data points in individual stats.
+Examples:
+<a href="/stats/query?project=chromium&names=issue-count,patchset-*&count=3">/stats/query?project=chromium&names=issue-count,patchset-*&count=3</a>
+<a href="/stats/query?key=6361816489787392&names=attempt-durations">/stats/query?key=6361816489787392&names=attempt-durations</a>
 
 
 &gt;&gt;&gt; <a href="/stats/(highest|lowest)/<list stats name>/<CQ stats key>">/stats/(highest|lowest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>

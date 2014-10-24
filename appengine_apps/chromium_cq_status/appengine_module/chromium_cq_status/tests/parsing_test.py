@@ -15,11 +15,16 @@ class TestCase(unittest.TestCase):
         parsing.parse_timestamp('1234.56').strftime('%Y-%m-%d %H:%M:%S'))
     self.assertRaises(ValueError, lambda: parsing.parse_timestamp('invalid'))
 
-  def test_parse_key(self):
-    self.assertEqual(None, parsing.parse_key(''))
-    self.assertEqual('test_key', parsing.parse_key('test_key'))
-    self.assertRaises(ValueError, lambda: parsing.parse_key('1234'))
-    self.assertRaises(ValueError, lambda: parsing.parse_key('1234L'))
+  def test_parse_cqstats_key(self):
+    self.assertEqual(None, parsing.parse_cqstats_key(''))
+    self.assertEqual(12345678, parsing.parse_cqstats_key('12345678'))
+    self.assertRaises(ValueError, lambda: parsing.parse_cqstats_key('invalid'))
+
+  def test_parse_record_key(self):
+    self.assertEqual(None, parsing.parse_record_key(''))
+    self.assertEqual('test_key', parsing.parse_record_key('test_key'))
+    self.assertRaises(ValueError, lambda: parsing.parse_record_key('1234'))
+    self.assertRaises(ValueError, lambda: parsing.parse_record_key('1234L'))
 
   def test_parse_string(self):
     self.assertEqual('', parsing.parse_string(None))
@@ -85,10 +90,10 @@ class TestCase(unittest.TestCase):
     }))
     self.assertRaises(ValueError, lambda: parsing.parse_request(
         MockRequest({'a': '1234'}),
-        {'a': parsing.parse_key}))
+        {'a': parsing.parse_record_key}))
     self.assertRaises(ValueError, lambda: parsing.parse_request(
         MockRequest({'a': 'valid', 'b': 'invalid'}),
-        {'a': parsing.parse_key}))
+        {'a': parsing.parse_record_key}))
 
   def test_parse_url_tags(self):
     self.assertEqual([], parsing.parse_url_tags(None))

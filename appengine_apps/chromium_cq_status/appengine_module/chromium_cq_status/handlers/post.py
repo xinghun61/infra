@@ -11,7 +11,7 @@ from appengine_module.chromium_cq_status.shared import utils
 from appengine_module.chromium_cq_status.shared.config import AUTO_TAGGED_FIELDS, CQ_BOT_PASSWORD_KEY  # pylint: disable=C0301
 from appengine_module.chromium_cq_status.shared.parsing import (
   parse_fields,
-  parse_key,
+  parse_record_key,
   parse_request,
   parse_strings,
 )
@@ -39,7 +39,7 @@ class Post(webapp2.RequestHandler): # pragma: no cover
 
     try:
       update_record(**parse_request(self.request, {
-        'key': parse_key,
+        'key': parse_record_key,
         'tags': parse_strings,
         'fields': parse_fields,
       }))

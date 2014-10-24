@@ -15,12 +15,17 @@ def parse_timestamp(value): # pragma: no cover
     return None
   return datetime.utcfromtimestamp(float(value))
 
-def parse_key(value): # pragma: no cover
+def parse_record_key(value): # pragma: no cover
   try:
     long(value)
   except ValueError:
     return value or None
   raise ValueError('Numeric key values are reserved for keyless entries')
+
+def parse_cqstats_key(value): # pragma: no cover
+  if not value:
+    return None
+  return long(value)
 
 def parse_string(value): # pragma: no cover
   return value or ''

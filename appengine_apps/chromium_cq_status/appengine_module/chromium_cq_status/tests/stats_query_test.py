@@ -53,6 +53,40 @@ class TestStatsQuery(testing.AppengineTestCase):
       }],
     }, _parse_body(response))
 
+  def test_query_key(self):
+    _clear_stats()
+    key_a = _add_stats('project_a', 50, 1234).key.id()
+    key_b = _add_stats('project_b', 40, 789).key.id()
+
+    response = self.test_app.get('/stats/query', params={
+      'key': key_a,
+    })
+    self.assertEquals({
+      'more': False,
+      'results': [{
+        'project': 'project_a',
+        'interval_minutes': 50 * minutes_per_day,
+        'begin': 1234,
+        'end': 4321234,
+        'stats': [],
+      }],
+    }, _parse_body(response))
+
+    response = self.test_app.get('/stats/query', params={
+      'key': key_b,
+    })
+    self.assertEquals({
+      'more': False,
+      'results': [{
+        'project': 'project_b',
+        'interval_minutes': 40 * minutes_per_day,
+        'begin': 789,
+        'end': 3456789,
+        'stats': [],
+      }],
+    }, _parse_body(response))
+
+
   def test_query_project(self):
     _clear_stats()
     _add_stats('project_a', 40, 789)
@@ -295,6 +329,7 @@ def _add_stats(project, days, begin, stats_list=None): # pragma: no cover
     cq_stats.list_stats = [
         stats for stats in stats_list if type(stats) == ListStats]
   cq_stats.put()
+  return cq_stats
 
 def _parse_body(response, preserve_cursor=False): # pragma: no cover
   packet = json.loads(response.body)
