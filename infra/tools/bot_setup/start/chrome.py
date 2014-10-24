@@ -84,9 +84,18 @@ def seed_passwords(root_dir, password_file):
 def run_slave(root_dir):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
   run_slave_path = os.path.join(slave_dir, 'run_slave.py')
+  twistd_pid_path = os.path.join(slave_dir, 'twistd.pid')
   env = os.environ.copy()
   env['DISPLAY'] = ':0.0'
   env['LANG'] = 'en_US.UTF-8'
+
+  # Clean up the PID file.
+  try:
+    os.remove(twistd_pid_path)
+  except OSError:
+    pass
+  else:
+    print 'Removed stale pid file %s' % twistd_pid_path
 
   # Observant infra members will notice that we are not using "make start" to
   # start the run_slave.py process.  We use make start for a couple of reasons:
