@@ -129,7 +129,7 @@ class GitWrapper(VCSWrapper):
       else:
         key = None
       keys.append(key)
-    self._position_cache.update(dict(zip(revs, keys)))
+    self._position_cache.update(dict(zip(unknown_revs, keys)))
 
   def keyfunc(self, r):  # pragma: no cover
     # Returns a tuple (commit-position-number, commit-position-ref).
