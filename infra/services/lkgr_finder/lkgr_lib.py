@@ -118,7 +118,8 @@ class GitWrapper(VCSWrapper):
     return bool(self._GIT_HASH_RE.match(r))
 
   def _cache(self, *revs):  # pragma: no cover
-    positions = self._git.number(*revs)
+    unknown_revs = [r for r in revs if r not in self._position_cache]
+    positions = self._git.number(*unknown_revs)
     # We know we only care about revisions along a single branch.
     keys = []
     for pos in positions:

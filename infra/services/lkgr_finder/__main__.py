@@ -170,6 +170,10 @@ def main(argv):
       os.path.join(os.path.dirname(os.path.abspath(__file__)),
                    'workdir', args.project))
 
+  monkeypatch_rev_map = config.get('monkeypatch_rev_map')
+  if monkeypatch_rev_map:
+    repo._position_cache.update(monkeypatch_rev_map)
+
   if args.manual:
     candidate = args.manual
     LOGGER.info('Using manually specified candidate %s', args.manual)
