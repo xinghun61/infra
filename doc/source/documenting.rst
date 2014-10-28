@@ -1,12 +1,12 @@
-Documenting in infra/
-=====================
+Documenting in infra.git
+========================
 
-Documentation in `infra/` should cover these subjects:
+Documentation in `infra.git` should cover these subjects:
 
 - Introductory material, to help newcomers use and contribute to the codebase.
-- design documents, explaining decisions and overall structure. The point of
+- Design documents, explaining decisions and overall structure. The point of
   these docs is to give a high-level view of the organisation and inner working.
-- reference documentation, extracted from docstrings
+- Reference documentation, extracted from docstrings.
 
 Note:
   We only cover Python right now, more to come for Go and Javascript. Feel free

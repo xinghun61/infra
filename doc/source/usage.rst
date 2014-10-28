@@ -1,7 +1,7 @@
-Using the infra/ repository
-===========================
+Using the infra.git repository
+==============================
 
-This page supposes that infra/ has been checked out and configured. See
+This page supposes that infra.git has been checked out and configured. See
 :doc:`installation` for more details.
 
 Top-level commands
@@ -21,9 +21,9 @@ Invoking tools
 
 Mixing modules and scripts in the same hierarchy can sometimes be a pain in
 Python, because it usually requires updating the Python path. The goal for
-infra/ is to be able to check out the repository and be able to run code right
-away, without setting up anything. The adopted solution is to use __main__.py
-files everywhere.
+infra.git is to be able to check out the repository and be able to run code
+right away, without setting up anything. The adopted solution is to use
+__main__.py files everywhere.
 
 Example: ``python -m infra.services.lkgr_finder`` will run the lkgr_finder
 script.

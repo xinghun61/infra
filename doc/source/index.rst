@@ -1,11 +1,11 @@
 .. infra documentation master file, should at least contain the root
    `toctree` directive.
 
-Chrome Infra infra/ Repository
-==============================
-This documentation describes the new (as of September 2014) repository
-containing the public code for the Chrome infrastructure: infra/. The old
-repository is called build/.
+Chrome Infra infra.git Repository
+=================================
+This documentation describes the new (as of March 2014) repository containing
+the public code for the Chrome infrastructure: infra.git. The old repository is
+called build/, and is based in SVN.
 
 If you want to contribute to the Chromium browser, you're in the wrong place.
 See
@@ -31,16 +31,15 @@ Contributer's Guides
   on the compilation/deployment pipeline.
 * How to add a new tool - also gives example usage of
   :doc:`reference/infra.libs`
-* How to develop an appengine app in infra/
+* How to develop an appengine app in infra.git
 * How to handle authentication
-
 
 Technical Background
 --------------------
 
 This section (will) explains some technical choices.
 
-* Testing in infra/ - tools used, how and why.
+* Testing in infra.git - tools used, how and why.
 * Dependency handling - how it works and why it's structured this way.
 
 Other topics
