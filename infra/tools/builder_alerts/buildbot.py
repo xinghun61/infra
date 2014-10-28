@@ -46,7 +46,7 @@ class DiskCache(object):
       try:
         return json.load(cached)
       except ValueError:
-        logging.critical('Key exists, but is not valid json: %s' + key)
+        logging.critical('Key exists, but is not valid json: %s' % key)
         # Somehow the disk cache got a non json entry and we'd crash here.
         return None
 

@@ -64,7 +64,7 @@ class SubProcess(object):
           buildbot.latest_builder_info_and_alerts_for_master(
               self._cache,master_url, master_json))
       if stale_master_alert:
-        stale_builder_alerts.extend(stale_master_alert)
+        stale_builder_alerts.append(stale_master_alert)
       return (master_alerts, data, stale_builder_alerts)
     except:
       # Put all exception text into an exception and raise that so it doesn't

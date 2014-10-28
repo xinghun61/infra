@@ -30,12 +30,16 @@ def apply_gatekeeper_rules(alerts, gatekeeper, gatekeeper_trees):
       # alert['would_close_tree'] = False
       filtered_alerts.append(alert)
       continue
-    if alert['builder_name'] in excluded_builders(config):
-      continue
-    # Only apply tree closer logic for step failures
-    if 'step_name' in alert:
-      alert['would_close_tree'] = would_close_tree(
-          config, alert['builder_name'], alert['step_name'])
+
+    builder = alert.get('builder_name')
+    if builder:
+      if builder in excluded_builders(config):
+        continue
+      # Only apply tree closer logic for step failures
+      if 'step_name' in alert:
+        alert['would_close_tree'] = would_close_tree(
+            config, builder, alert['step_name'])
+
     alert['tree'] = tree_for_master(master_url, gatekeeper_trees)
     filtered_alerts.append(alert)
   return filtered_alerts

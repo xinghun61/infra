@@ -39,13 +39,29 @@ class GatekeeperExtrasTest(unittest.TestCase):
          'builder_name': 'Win',
          'step_name': 'bot_update'},
         {'master_url': 'http://build.chromium.org/p/chromium',
-         'builder_name': 'Mac'}
+         'builder_name': 'Mac'},
+        # stale master alert
+        {
+          'last_update_time': 1234,
+          'master_url': 'http://build.chromium.org/p/chromium',
+          'master_name': 'chromium',
+        },
+        # stale builder alert
+        {
+          'master_url': 'http://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'state': 'offline',
+          'last_update_time': 1234,
+          'pending_builds': [],
+          'step': 'bot_update',
+          'latest_build': 1234,
+        }
     ]
 
     filtered_alerts = gatekeeper_extras.apply_gatekeeper_rules(
         alerts, gatekeeper_cfg, gatekeeper_trees_cfg)
 
-    self.assertEqual(len(filtered_alerts), 3)
+    self.assertEqual(len(filtered_alerts), 5)
     self.assertIn({'master_url': 'http://build.chromium.org/p/chromium',
                    'builder_name': 'Win',
                    'step_name': 'bot_update',
@@ -60,6 +76,26 @@ class GatekeeperExtrasTest(unittest.TestCase):
         {'master_url': 'http://build.chromium.org/p/chromium',
          'builder_name': 'Mac',
          'tree': 'test-tree'},
+        filtered_alerts)
+    self.assertIn(
+        {
+          'last_update_time': 1234,
+          'master_url': 'http://build.chromium.org/p/chromium',
+          'master_name': 'chromium',
+          'tree': 'test-tree',
+        },
+        filtered_alerts)
+    self.assertIn(
+        {
+          'master_url': 'http://build.chromium.org/p/chromium',
+          'builder_name': 'Linux',
+          'state': 'offline',
+          'last_update_time': 1234,
+          'pending_builds': [],
+          'step': 'bot_update',
+          'latest_build': 1234,
+          'tree': 'test-tree',
+        },
         filtered_alerts)
 
   def test_tree_for_master_returns_tree_name(self):
