@@ -83,7 +83,7 @@
         # 'Android Builder',
         'V8 Linux GN',
         'V8-Blink Linux 32',
-        'V8-Blink Linux 64 (dbg)',
+        'V8-Blink Linux 64',
       ],
     },  # client.v8
   },
