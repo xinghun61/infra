@@ -79,15 +79,15 @@ def IgnoredPaths(input_api): # pragma: no cover
 
 
 def PythonRootForPath(input_api, path):
-  # For each path, walk up dirtories until find no more __init__.py
-  # The directory with the last __init__.py is considered our root.
+  # For each path, walk up directories until find no more __init__.py
+  # The directory above the last __init__.py is considered our root.
   root = input_api.os_path.dirname(path)
   while True:
-    root_parent = input_api.os_path.dirname(root)
-    parent_init = input_api.os_path.join(root_parent, '__init__.py')
-    if not input_api.os_path.isfile(parent_init):
+    init_file = input_api.os_path.join(root, '__init__.py')
+    if not input_api.os_path.isfile(init_file):
       break
-    root = root_parent
+    root = input_api.os_path.dirname(root)
+
   return root
 
 
@@ -215,7 +215,7 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   tests = []
   for root_path in sorted(dirty_roots):
     python_files = root_to_paths[root_path]
-    root_path = input_api.os_path.dirname(root_path)
+
     input_api.logging.info('Running appengine_apps pylint on %d files under %s',
         len(python_files), root_path)
     syspaths = extra_syspaths
