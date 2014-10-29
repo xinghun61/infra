@@ -75,17 +75,7 @@ def attempts_for_interval(begin, end): # pragma: no cover
 
     last_finish_timestamp = max(finish_timestamps[key])
     project, issue, patchset = key
-    earliest_record = Record.query().order(Record.timestamp).filter(
-      Record.tags == TAG_PROJECT % project,
-      Record.tags == TAG_ISSUE % issue,
-      Record.tags == TAG_PATCHSET % patchset).get()
-    if not earliest_record:
-      logging.warning(
-          'No start message found for project %s, '
-          'issue %s, patchset %s.' % (project, issue, patchset))
-      continue
     interval_query = Record.query().order(Record.timestamp).filter(
-        Record.timestamp >= earliest_record.timestamp,
         Record.timestamp <= last_finish_timestamp,
         Record.tags == TAG_PROJECT % project,
         Record.tags == TAG_ISSUE % issue,
