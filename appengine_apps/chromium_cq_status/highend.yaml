@@ -12,7 +12,7 @@ basic_scaling:
 
 handlers:
 - url: /.*
-  script: appengine_module.chromium_cq_status.highend.app
+  script: highend.app
 
 libraries:
 - name: webapp2

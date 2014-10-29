@@ -8,13 +8,13 @@ builtins:
 - remote_api: on
 
 handlers:
-- url: /scripts
-  static_dir: scripts
+- url: /js
+  static_dir: js
 - url: /recent
   static_files: html/recent.html
   upload: html/recent.html
 - url: /.*
-  script: appengine_module.chromium_cq_status.main.app
+  script: main.app
 
 
 libraries:
