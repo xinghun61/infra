@@ -11,7 +11,10 @@ from model.record import Record
 from model.cq_stats import CountStats, CQStats, ListStats
 from shared.config import STATS_START_TIMESTAMP
 from shared.utils import minutes_per_day
-from stats import analysis
+from handlers import update_stats
+
+stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
+test_analysis_end = stats_start + timedelta(days=1)
 
 class StatsTest(testing.AppengineTestCase): # pragma: no cover
   '''Utility class for stats tests that want to load/clear test Record data.'''
@@ -32,8 +35,7 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
     self.clear_all()
     for record_params in record_params_list:
       self.add_record(*record_params)
-    self.set_last_stats_day(1)
-    analysis.analyze_interval(minutes_per_day)
+    update_stats.update_missing_cq_stats(minutes_per_day, test_analysis_end)
 
   @staticmethod
   def clear_records():
@@ -50,12 +52,6 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
   def clear_all(self):
     self.clear_records()
     self.clear_cq_stats()
-
-  @staticmethod
-  def set_last_stats_day(days_from_start):
-    analysis.utcnow_for_testing = (
-        datetime.utcfromtimestamp(STATS_START_TIMESTAMP) +
-        timedelta(days=days_from_start))
 
   @staticmethod
   def create_count(name, description, tally):
@@ -85,8 +81,7 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
 
   @staticmethod
   def get_stats(name):
-    assert CQStats.query().count() == 1
-    cq_stats = CQStats.query().get()
+    cq_stats = CQStats.query(CQStats.begin == stats_start).get()
     for stats in cq_stats.count_stats + cq_stats.list_stats:
       if stats.name == name:
         return stats

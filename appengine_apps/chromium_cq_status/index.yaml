@@ -19,6 +19,12 @@ indexes:
 - kind: CQStats
   properties:
   - name: interval_minutes
+  - name: end
+    direction: desc
+
+- kind: CQStats
+  properties:
+  - name: interval_minutes
   - name: project
   - name: begin
     direction: desc

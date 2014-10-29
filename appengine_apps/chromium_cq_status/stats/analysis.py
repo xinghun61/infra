@@ -24,58 +24,34 @@ from shared.config import (
   TAG_PATCHSET,
 )
 from stats.analyzer import AnalyzerGroup
-from stats.patchset_stats import PatchsetAnalyzer
-from stats.trybot_stats import TrybotAnalyzer
-from stats.tryjobverifier_stats import TryjobverifierAnalyzer
-
-utcnow_for_testing = None
-
-analyzers = (
-  PatchsetAnalyzer,
-  TrybotAnalyzer,
-  TryjobverifierAnalyzer,
-)
 
 PatchsetReference = namedtuple('PatchsetReference', 'issue patchset')
+stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
 
-def analyze_interval(minutes): # pragma: no cover
-  """Build and save CQStats for every <minutes> interval in Records.
+def intervals_in_range(minutes, begin, end): # pragma: no cover
+  """Return all analysis intervals of length <minutes> that lie inside
+  <begin> and <end> inclusive."""
+  interval_begin = stats_start + timedelta(minutes=minutes * math.ceil(
+      (begin - stats_start).total_seconds() / (minutes * 60.0)))
+  intervals = []
+  while True:
+    interval_end = interval_begin + timedelta(minutes=minutes)
+    if interval_end > end:
+      return intervals
+    intervals.append((interval_begin, interval_end))
+    interval_begin = interval_end
 
-  Walks forwards through the Records history <minutes> at a time,
-  analyzing and saving CQStats for each interval.
+def update_interval(minutes, begin, end, analyzer_classes): # pragma: no cover
+  """Analyze stats over the given interval for all projects and update CQStats.
   """
-  if Record.query().count(1) == 0:
-    return
-  logging.debug('Analyzing records %s minutes at a time' % minutes)
-  begin, end = next_stats_interval(minutes)
-  while end <= (utcnow_for_testing or datetime.utcnow()):
-    logging.debug('Updating stats from %s to %s.' % (begin, end))
-    save_stats(analyze_attempts(attempts_for_interval(begin, end)),
-        minutes, begin, end)
-    logging.debug('Saved stats.')
-    begin = begin + timedelta(minutes=minutes)
-    end = end + timedelta(minutes=minutes)
-
-def next_stats_interval(minutes): # pragma: no cover
-  """Find the next <minutes> interval that doesn't have CQStats.
-
-  Finds the next interval of CQStats to analyze, if there are no
-  CQStats saved yet then start from the earliest Record.
-  """
-  last_stats = CQStats.query().filter(
-      CQStats.interval_minutes == minutes).order(-CQStats.end).get()
-  if last_stats:
-    begin = last_stats.end
-  else:
-    earliest_record = Record.query().order(Record.timestamp).get()
-    stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
-    begin = stats_start + timedelta(minutes=minutes * math.floor(
-      (earliest_record.timestamp - stats_start).total_seconds() //
-      timedelta(minutes=minutes).total_seconds()))
-    if begin < stats_start:
-      begin = stats_start
-  end = begin + timedelta(minutes=minutes)
-  return begin, end
+  logging.debug('Updating stats from %s to %s using analyzers: %s.' % (
+      begin, end, analyzer_classes))
+  stats = analyze_attempts(attempts_for_interval(begin, end), analyzer_classes)
+  logging.debug('Analyzed stats.')
+  update_cq_stats(stats, minutes, begin, end)
+  logging.debug('Saved stats.')
+  begin = begin + timedelta(minutes=minutes)
+  end = end + timedelta(minutes=minutes)
 
 def attempts_for_interval(begin, end): # pragma: no cover
   finished_in_interval = Record.query().filter(
@@ -133,13 +109,13 @@ def attempts_for_interval(begin, end): # pragma: no cover
       continue
     yield project, issue, patchset, all_attempts, interval_attempts
 
-
-def analyze_attempts(attempts_iterator): # pragma: no cover
-  logging.debug('Analyzing CQ attempts.')
+def analyze_attempts(attempts_iterator, analyzer_classes): # pragma: no cover
+  """Split attempts by project and feed to project specific analyzer instances.
+  """
   project_analyzers = {}
   for project, issue, patchset, all_attempts, interval_attempts in attempts_iterator: # pylint: disable=C0301
     if project not in project_analyzers:
-      project_analyzers[project] = AnalyzerGroup(*analyzers)
+      project_analyzers[project] = AnalyzerGroup(*analyzer_classes)
     project_analyzers[project].new_attempts(project,
         PatchsetReference(issue, patchset), all_attempts, interval_attempts)
   project_stats = {}
@@ -147,22 +123,43 @@ def analyze_attempts(attempts_iterator): # pragma: no cover
     project_stats[project] = analyzer.build_stats()
   return project_stats
 
-def save_stats(project_stats, minutes, begin, end): # pragma: no cover
-  logging.debug('Saving stats.')
+def update_cq_stats(project_stats, minutes, begin, end): # pragma: no cover
+  """Ensure CQStats are updated or created as necessary with new stats data."""
+  assert (end - begin).total_seconds() == 60 * minutes
+  assert (begin - stats_start).total_seconds() % (60 * minutes) == 0, (
+      'Interval must be aligned with %s.' % stats_start)
   for project, stats_list in project_stats.iteritems():
-    count_stats = []
-    list_stats = []
+    count_stats_dict = {}
+    list_stats_dict = {}
     for stats in stats_list:
       if type(stats) == CountStats:
-        count_stats.append(stats)
+        count_stats_dict[stats.name] = stats
       else:
         assert type(stats) == ListStats
-        list_stats.append(stats)
-    CQStats(
-      project=project,
-      interval_minutes=minutes,
-      begin=begin,
-      end=end,
-      count_stats=count_stats,
-      list_stats=list_stats,
-    ).put()
+        list_stats_dict[stats.name] = stats
+
+    cq_stats = CQStats.query().filter(
+        CQStats.project == project,
+        CQStats.interval_minutes == minutes,
+        CQStats.begin == begin).get()
+    if cq_stats:
+      update_stats_list(cq_stats.count_stats, count_stats_dict)
+      update_stats_list(cq_stats.list_stats, list_stats_dict)
+      cq_stats.put()
+    else:
+      CQStats(
+        project=project,
+        interval_minutes=minutes,
+        begin=begin,
+        end=end,
+        count_stats=count_stats_dict.values(),
+        list_stats=list_stats_dict.values(),
+      ).put()
+
+def update_stats_list(existing_stats_list, new_stats_dict): # pragma: no cover
+  for i, stats in enumerate(existing_stats_list):
+    name = stats.name
+    if name in new_stats_dict:
+      existing_stats_list[i] = new_stats_dict[name]
+      del new_stats_dict[name]
+  existing_stats_list.extend(new_stats_dict.values())
