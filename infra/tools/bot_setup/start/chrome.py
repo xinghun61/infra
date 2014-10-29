@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 
 SLAVE_DEPS_URL = (
@@ -51,11 +52,28 @@ def call(args, **kwargs):
   return proc.wait()
 
 
+def clean_git_locks(dirname):
+  """Delete all .git/index.lock files."""
+  count = 0
+  start_time = time.time()
+  for dirpath, dirnames, filenames in os.walk(dirname):
+    count += 1
+    if dirpath.endswith('.git'):
+      if 'index.lock' in filenames:
+        target = os.path.join(dirpath, 'index.lock')
+        print 'Deleting %s' % target
+        os.remove(target)
+      del(dirnames[:])  # Delete dirnames so we don't recurse into a .git dir.
+  print 'Git Locks traversed through %d directories' % count
+  print 'Took %.2f seconds' % (time.time() - start_time)
+
+
 def ensure_checkout(root_dir, gclient):
   """Ensure that /b/.gclient is correct and the build checkout is there."""
   gclient_file = os.path.join(root_dir, '.gclient')
   with open(gclient_file, 'wb') as f:
     f.write(GCLIENT_FILE)
+  clean_git_locks(root_dir)
   call([gclient, 'sync'], cwd=root_dir)
 
 
