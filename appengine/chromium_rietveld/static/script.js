@@ -1941,7 +1941,7 @@ M_HookState.prototype.gotoHook = function(direction) {
       diffs = diffs[0];
     }
     if (diffs && direction != 0) {
-      window.scrollTo(0, M_getPageOffsetTop(diffs));
+      window.scrollTo(0, M_getPageOffsetTop(diffs) || 0);
     }
     this.updateIndicator_(document.getElementById("thecode").rows[0]);
   } else {
