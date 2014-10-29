@@ -184,7 +184,7 @@ function splitByAttempts(records) {
 
 function newRow(timestamp, duration, description, message, cls) {
   var row = newElement('row', '', cls);
-  row.appendChild(newElement('timestamp', new Date(timestamp)));
+  row.appendChild(newElement('timestamp', new Date(timestamp * 1000)));
   row.appendChild(newElement('duration', '(' + duration + ')'));
   var descriptionNode = newElement('description')
   if (typeof description === 'string') {
