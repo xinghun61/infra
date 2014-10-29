@@ -3004,7 +3004,7 @@ M_DashboardState.prototype.initialize = function() {
     for (var i=0; i<cookie_values.length; i++) {
       name = cookie_values[i].split("=")[0].replace(/ /g, '');
       if (name == this.cookieName) {
-	pos = cookie_values[i].split("=")[1];
+	pos = cookie_values[i].split("=")[1] || 0;
 	/* Make sure that the saved position is valid. */
 	if (pos > this.trCache.length-1) {
 	  pos = 0;
