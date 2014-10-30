@@ -45,11 +45,10 @@
     ''refs/heads/master''): ''6af19948514842550195296888195ed268385a7d'''
   - 'WARNING: Catching up pending_tag Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'')
     (was 2 behind)'
-  - 'INFO: Pushing synthesized commit ''fac75a9e5b1cc44944ad1f2592d3616256f9693b''
-    for ''1121e8253f173d018f662e1a68153bbc754f9b55'' and pending_tag Ref(TestRepo(''local''),
-    ''refs/pending-tags/heads/master'')'
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''fac75a9e5b1cc44944ad1f2592d3616256f9693b:refs/heads/master'',
-    ''1121e8253f173d018f662e1a68153bbc754f9b55:refs/pending-tags/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''6af19948514842550195296888195ed268385a7d:refs/pending-tags/heads/master'')'
+  - 'INFO: Synthesized 1 commits for Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''fac75a9e5b1cc44944ad1f2592d3616256f9693b:refs/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''1121e8253f173d018f662e1a68153bbc754f9b55:refs/pending-tags/heads/master'')'
 - inner_loop success: true
   synthesized_commits:
   - commit: fac75a9e5b1cc44944ad1f2592d3616256f9693b

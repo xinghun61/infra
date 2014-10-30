@@ -279,7 +279,6 @@ def multi_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
 #   * master > tag > pending
 #   * tag > pending > master
 #   * tag > master > pending
-#   * tag > pending == master
 @gnumbd_test
 def master_tag_ahead_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
   base_commit = origin[REAL].make_full_tree_commit(
@@ -292,6 +291,23 @@ def master_tag_ahead_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
 
   origin[PEND].update_to(base_commit)
   CHECKPOINT('Master and tag ahead of pending')
+  RUN()
+  CHECKPOINT('Should see errors and no change')
+
+
+# tag == pending > master
+@gnumbd_test
+def tag_ahead_master_pending(origin, _local, _config_ref, RUN, CHECKPOINT):
+  base_commit = origin[REAL].make_full_tree_commit(
+    'Base commit', footers=gnumbd_footers(origin[REAL], 100))
+  for ref in (PEND, PEND_TAG):
+    origin[ref].fast_forward(base_commit)
+
+  origin[PEND].make_full_tree_commit('Hello world')
+  RUN(include_log=False)
+
+  origin[REAL].update_to(base_commit)
+  CHECKPOINT('Tag+pending ahead of master')
   RUN()
   CHECKPOINT('Should see errors and no change')
 

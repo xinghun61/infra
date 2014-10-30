@@ -384,7 +384,7 @@ def get_new_commits(real_ref, pending_tag, pending_tip):
                    new_tag_val.hsh, real_ref.commit.hsh)
       return None
     new_commits = new_commits[i:]
-    pending_tag.repo.queue_fast_forward({pending_tag: new_tag_val})
+    pending_tag.repo.fast_forward_push({pending_tag: new_tag_val})
 
   if not new_commits:
     LOGGER.warn('Tag was lagging for %r by %d, but no new commits are pending',
@@ -403,6 +403,8 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
 
   Assumes that pending_tag starts at the equivalent of real_ref, and that
   all commits in new_commits exist on pending_tag..pending_tip.
+
+  Assumes that new_commits is not empty.
 
   Given::
 
@@ -429,29 +431,32 @@ def process_ref(real_ref, pending_tag, new_commits, git_svn_mode,
   # ref?
   # TODO(iannucci): The ACL rejection message for the real ref should point
   # users to the pending ref.
+  assert new_commits, "process_ref called with no commits to process"
   assert content_of(pending_tag.commit) == content_of(real_ref.commit)
   assert real_ref.repo is pending_tag.repo
   repo = real_ref.repo
   real_parent = real_ref.commit
+  ret = []
+
+  commit = None
+  synth_commit = None
+
   for commit in new_commits:
     assert content_of(commit.parent) == content_of(real_parent)
     synth_commit = synthesize_commit(
         commit, real_parent, real_ref, git_svn_mode, clock)
 
-    logging.info(
-        'Pushing synthesized commit %r for %r and pending_tag %r',
-        synth_commit.hsh, commit.hsh, pending_tag)
-    to_push = {
-      real_ref: synth_commit,
-      pending_tag: commit,
-    }
-    for extra_ref in push_synth_extras:
-      # convert the extra_refs to Ref's on the local repo
-      to_push[repo[extra_ref.ref]] = synth_commit
-    repo.queue_fast_forward(to_push)
-
+    ret.append(synth_commit)
     real_parent = synth_commit
-    yield synth_commit
+
+  logging.info('Synthesized %d commits for %r', len(ret), real_ref)
+  to_push = { real_ref: synth_commit, }
+  to_push.update((repo[r.ref], synth_commit) for r in push_synth_extras)
+  repo.fast_forward_push(to_push)
+
+  repo.fast_forward_push({pending_tag: commit})
+
+  return ret
 
 
 def process_repo(repo, cref, clock=time):
@@ -527,6 +532,4 @@ def inner_loop(repo, cref, clock=time):
   """
   repo.fetch()
   cref.evaluate()
-  commits = process_repo(repo, cref, clock)
-  repo.push_queued_fast_forwards(timeout=PUSH_TIMEOUT)
-  return commits
+  return process_repo(repo, cref, clock)
