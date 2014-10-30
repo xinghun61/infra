@@ -207,7 +207,7 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   white_list = ['.*\.py$']
   black_list = list(input_api.DEFAULT_BLACK_LIST)
   black_list += DISABLED_PROJECTS
-  black_list += IgnoredPaths(input_api)
+  black_list += [input_api.re.escape(path) for path in IgnoredPaths(input_api)]
 
   extra_syspaths = [venv_path]
 
