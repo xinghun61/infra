@@ -28,6 +28,22 @@ class NoWheelException(Exception):
         (name, version, build, source_sha))
 
 
+def check_pydistutils():
+  if os.path.exists(os.path.expanduser('~/.pydistutils.cfg')):
+    print >> sys.stderr, '\n'.join([
+      '',
+      '',
+      '=========== ERROR ===========',
+      'You have a ~/.pydistutils.cfg file, which interferes with the ',
+      'infra virtualenv environment. Please move it to the side and bootstrap ',
+      'again. Once infra has bootstrapped, you may move it back.',
+      '',
+      'Upstream bug: https://github.com/pypa/virtualenv/issues/88/',
+      ''
+    ])
+    sys.exit(1)
+
+
 def ls(prefix):
   from pip._vendor import requests  # pylint: disable=E0611
   data = requests.get(STORAGE_URL, params=dict(
@@ -137,6 +153,8 @@ def activate_env(env, deps):
     cur_deps = None
 
   if cur_deps is None:
+    check_pydistutils()
+
     print '  Building new environment'
     # Add in bundled virtualenv lib
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'virtualenv'))
