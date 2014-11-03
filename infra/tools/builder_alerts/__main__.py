@@ -78,8 +78,10 @@ def main(args):
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
-  parser.add_argument('--processes', default=PARALLEL_TASKS, action='store')
-  parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store')
+  parser.add_argument('--processes', default=PARALLEL_TASKS, action='store',
+                      type=int)
+  parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store',
+                      type=int)
   # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
   parser.add_argument("-v", "--verbose", action='store_true')
 
