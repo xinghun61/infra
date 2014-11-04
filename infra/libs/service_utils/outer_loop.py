@@ -107,9 +107,11 @@ def add_argparse_options(parser):  # pragma: no cover
   parser.add_argument('--duration', metavar='SEC', type=int,
                       help=('How long to run the service loop '
                             '(default: forever)'))
-  parser.add_argument('--max_errors', metavar='COUNT', type=int,
+  parser.add_argument('--max-errors', metavar='COUNT', type=int,
                       help=('Number of consecutive errors after which the '
                             'service loop is aborted (default: +inf)'))
+  parser.add_argument('--max_errors', metavar='COUNT', type=int,
+                      help=('Deprecated. See "--max-errors".'))
 
 
 def process_argparse_options(opts):  # pragma: no cover

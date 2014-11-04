@@ -15,6 +15,8 @@ import traceback
 import requests
 import requests_cache
 
+from infra.libs.service_utils import outer_loop
+
 from infra.services.builder_alerts import analysis
 from infra.services.builder_alerts import buildbot
 from infra.services.builder_alerts import gatekeeper_extras
@@ -72,25 +74,7 @@ class SubProcess(object):
       raise Exception("".join(traceback.format_exception(*sys.exc_info())))
 
 
-def main(args):
-  parser = argparse.ArgumentParser(prog='run.py %s' % __package__)
-  parser.add_argument('data_url', action='store', nargs='*')
-  parser.add_argument('--use-cache', action='store_true')
-  parser.add_argument('--master-filter', action='store')
-  parser.add_argument('--builder-filter', action='store')
-  parser.add_argument('--processes', default=PARALLEL_TASKS, action='store',
-                      type=int)
-  parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store',
-                      type=int)
-  # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
-  parser.add_argument("-v", "--verbose", action='store_true')
-
-  gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
-  parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
-  args = parser.parse_args(args)
-
-  logging.basicConfig(level=logging.DEBUG if args.verbose else logging.CRITICAL)
-
+def inner_loop(args):
   if not args.data_url:
     logging.warn("No /data url passed, will write to builder_alerts.json")
 
@@ -184,6 +168,40 @@ def main(args):
   for url in args.data_url:
     logging.info('POST %s alerts to %s' % (len(alerts), url))
     requests.post(url, data=data)
+
+  return True
+
+
+def main(args):
+  parser = argparse.ArgumentParser(prog='run.py %s' % __package__)
+  parser.add_argument('data_url', action='store', nargs='*')
+  parser.add_argument('--use-cache', action='store_true')
+  parser.add_argument('--master-filter', action='store')
+  parser.add_argument('--builder-filter', action='store')
+  parser.add_argument('--processes', default=PARALLEL_TASKS, action='store',
+                      type=int)
+  parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store',
+                      type=int)
+  outer_loop.add_argparse_options(parser)
+  # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
+  parser.add_argument("-v", "--verbose", action='store_true')
+
+  gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
+  parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
+  args = parser.parse_args(args)
+  loop_args = outer_loop.process_argparse_options(args)
+
+  logging.basicConfig(level=logging.DEBUG if args.verbose else logging.CRITICAL)
+
+  def outer_loop_iteration():
+    return inner_loop(args)
+
+  loop_results = outer_loop.loop(
+      task=outer_loop_iteration,
+      sleep_timeout=lambda: 5,
+      **loop_args)
+
+  return 0 if loop_results.success else 1
 
 
 if __name__ == '__main__':
