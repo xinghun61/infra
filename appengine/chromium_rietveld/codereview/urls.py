@@ -35,6 +35,7 @@ urlpatterns = patterns(
 
     (r'^all$', 'view_all'),
     (r'^mine$', 'mine'),
+    (r'^api/mine$', 'api_mine'),
     (r'^starred$', 'starred'),
     (r'^upload$', 'upload'),
     (r'^(\d+)$', 'show', {}, 'show_bare_issue_number'),
@@ -78,8 +79,10 @@ urlpatterns = patterns(
     (r'^api/(\d+)/(\d+)/draft_comments$', 'api_draft_comments'),
     (r'^tarball/(\d+)/(\d+)$', 'tarball'),
     (r'^user/([^/]+)$', 'show_user'),
+    (r'^api/user/([^/]+)$', 'api_show_user'),
     (r'^inline_draft$', 'inline_draft'),
     (r'^settings$', 'settings'),
+    (r'^api/settings$', 'api_settings'),
     (r'^account_delete$', 'account_delete'),
     (r'^migrate_entities$', 'migrate_entities'),
     (r'^user_popup/(.+)$', 'user_popup'),

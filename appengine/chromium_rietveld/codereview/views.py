@@ -814,6 +814,13 @@ def mine(request):
 
 
 @deco.login_required
+@deco.json_response
+def api_mine(request):
+  """/api/mine - JSON dict of lists of issues for the user's dashboard."""
+  return _json_show_user(request)
+
+
+@deco.login_required
 def starred(request):
   """/starred - Show a list of issues starred by the current user."""
   stars = models.Account.current_user_account.stars
@@ -827,6 +834,7 @@ def starred(request):
     _optimize_draft_counts(issues)
   return respond(request, 'starred.html', {'issues': issues})
 
+
 def _load_users_for_issues(issues):
   """Load all user links for a list of issues in one go."""
   user_dict = {}
@@ -837,13 +845,41 @@ def _load_users_for_issues(issues):
 
   library.get_links_for_users(user_dict.keys())
 
+
 @deco.user_key_required
 def show_user(request):
   """/user - Show the user's dashboard"""
   return _show_user(request)
 
 
-def _show_user(request):
+@deco.user_key_required
+@deco.json_response
+def api_show_user(request):
+  """/api/user/USER - JSON dict of lists of issues for the user's dashboard."""
+  return _json_show_user(request)
+
+
+def _json_show_user(request):
+  """Return a dict {section_name: [issue_dict]} for the user's dashboard."""
+  def issue_to_json(issue, request):
+    """Get the JSON for an issue, then add draft and comment counts."""
+    json_dict = _issue_as_dict(issue, False, request)
+    # Add in some fields that are not in the regular issue API because they are
+    # potentially expensive to compute and not needed by the CQ.
+    json_dict.update(
+      num_comments=issue.num_comments,
+      num_drafts=issue.get_num_drafts(request.user))
+    return json_dict
+
+  dashboard_dict = _get_dashboard_issue_lists(request)
+  result = {
+    key: [issue_to_json(issue, request) for issue in issue_list]
+    for key, issue_list in dashboard_dict.iteritems()}
+  return result
+
+
+def _get_dashboard_issue_lists(request):
+  """Return a dict {string: [issue]} of the issues to show on a dashboard."""
   user = request.user_to_show
   if user == request.user:
     draft_query = models.Comment.query(
@@ -852,11 +888,9 @@ def _show_user(request):
         draft_key.parent().parent().parent()
         for draft_key in draft_query.fetch(100, keys_only=True)}
     draft_issues = ndb.get_multi(draft_issue_keys)
-    # Reduce the chance of someone trying to block themselves.
-    show_block = False
   else:
     draft_issues = draft_issue_keys = []
-    show_block = request.user_is_admin
+
   my_issues = [
       issue for issue in models.Issue.query(
           models.Issue.closed == False, models.Issue.owner == user).order(
@@ -903,22 +937,31 @@ def _show_user(request):
   unsent_issues = [issue for issue in my_issues if not issue.num_messages]
   _load_users_for_issues(all_issues)
   _optimize_draft_counts(all_issues)
+
+  return {
+    'outgoing_issues': outgoing_issues,
+    'unsent_issues': unsent_issues,
+    'review_issues': review_issues,
+    'closed_issues': closed_issues,
+    'cc_issues': cc_issues,
+    'draft_issues': draft_issues,
+    }
+
+
+def _show_user(request):
+  dashboard_dict = _get_dashboard_issue_lists(request)
   account = models.Account.get_account_for_user(
     request.user_to_show, autocreate=False)
   if not account:
     return HttpTextResponse(
       'No such user (%s)' % request.user_to_show.email(), status=404)
 
-  return respond(request, 'user.html',
-                 {'viewed_account': account,
-                  'outgoing_issues': outgoing_issues,
-                  'unsent_issues': unsent_issues,
-                  'review_issues': review_issues,
-                  'closed_issues': closed_issues,
-                  'cc_issues': cc_issues,
-                  'draft_issues': draft_issues,
-                  'show_block': show_block,
-                  })
+  show_block = request.user_is_admin and request.user_to_show != request.user
+  dashboard_dict.update({
+      'viewed_account': account,
+      'show_block': show_block,
+      })
+  return respond(request, 'user.html', dashboard_dict)
 
 
 @deco.require_methods('POST')
@@ -3558,6 +3601,21 @@ def settings(request):
     return respond(request, 'settings.html', {'form': form})
   return HttpResponseRedirect(reverse(mine))
 
+
+@deco.login_required
+@deco.json_response
+def api_settings(request):
+  """Repond with user prefs in JSON."""
+  account = models.Account.current_user_account
+  return {
+    'nickname': account.nickname,
+    'default_context': account.default_context,
+    'default_column_width': account.default_column_width,
+    'default_tab_spaces': account.default_tab_spaces,
+    'notify_by_email': account.notify_by_email,
+    'notify_by_chat': account.notify_by_chat
+    }
+  
 
 @deco.require_methods('POST')
 @deco.login_required
