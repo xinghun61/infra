@@ -358,6 +358,11 @@ class SettingsForm(forms.Form):
       required=False,
       help_text='You must accept the invite for this to work.')
 
+  add_plus_role = forms.BooleanField(
+      required=False,
+      help_text=('Add +owner, +reviewer, or +cc to my email address '
+                 'when sending notifications.'))
+
   def clean_nickname(self):
     nickname = self.cleaned_data.get('nickname')
     # Check for allowed characters
@@ -3265,7 +3270,6 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     cc_nicknames = ', '.join(library.get_nickname(cc_temp, True, request)
                              for cc_temp in cc)
     my_nickname = library.get_nickname(request.user, True, request)
-    reply_to = ', '.join(reply_to)
     description = (issue.description or '').replace('\r\n', '\n')
     home = request.build_absolute_uri(reverse(index))
     modified_added_count, modified_removed_count = _get_modified_counts(issue)
@@ -3287,6 +3291,17 @@ def make_message(request, issue, message, comments=None, send_mail=False,
           context[key] = value.decode('ascii', 'replace')
     body = django.template.loader.render_to_string(
       template, context, context_instance=RequestContext(request))
+
+    # Add +owner, +reviewer, or +cc to addresses based on the role the account
+    # plays in the issue and user preferences.
+    accounts = models.Account.get_multiple_accounts_by_email(
+      [my_email] + to + cc)
+    my_email = _add_plus_addr(my_email, accounts, issue)
+    to = [_add_plus_addr(addr, accounts, issue) for addr in to]
+    cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
+    reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
+    reply_to = ', '.join(reply_to)
+
     logging.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
     send_args = {'sender': my_email,
                  'to': [_encode_safely(address) for address in to],
@@ -3324,6 +3339,24 @@ def make_message(request, issue, message, comments=None, send_mail=False,
       logging.warning("Retried sending email %s times", attempts)
 
   return msg
+
+
+def _add_plus_addr(addr, accounts, issue):
+  """Maybe add +owner, +cc, or +reviewer to the email address."""
+  acct = accounts.get(addr)
+  if not acct or not acct.add_plus_role:
+    return addr  # No account set up, or didn't opt-in
+
+  username, domain = addr.split('@', 1)
+  if addr == issue.owner.email():
+    return '%s+owner@%s' % (username, domain)
+  if addr in issue.reviewers:
+    return '%s+reviewer@%s' % (username, domain)
+  if addr in issue.cc:
+    return '%s+cc@%s' % (username, domain)
+
+  # Catch-all for collaborators and any automatically added addresses.
+  return addr
 
 
 @deco.require_methods('POST')
@@ -3577,6 +3610,7 @@ def settings(request):
                                  'tab_spaces': default_tab_spaces,
                                  'notify_by_email': account.notify_by_email,
                                  'notify_by_chat': account.notify_by_chat,
+                                 'add_plus_role': account.add_plus_role,
                                  })
     chat_status = None
     if account.notify_by_chat:
@@ -3593,6 +3627,7 @@ def settings(request):
     notify_by_chat = form.cleaned_data.get('notify_by_chat')
     must_invite = notify_by_chat and not account.notify_by_chat
     account.notify_by_chat = notify_by_chat
+    account.add_plus_role = form.cleaned_data.get('add_plus_role')
     account.fresh = False
     account.put()
     if must_invite:

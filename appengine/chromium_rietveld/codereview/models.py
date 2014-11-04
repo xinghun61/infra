@@ -1198,6 +1198,10 @@ class Account(ndb.Model):
   lower_nickname = ndb.ComputedProperty(lambda self: self.nickname.lower())
   xsrf_secret = ndb.BlobProperty()
 
+  # The user can opt-in to adding +foo to the end of their email username
+  # where foo is one of owner, reviewer, cc.
+  add_plus_role = ndb.BooleanProperty()
+
   @classmethod
   def get_id_for_email(cls, email):
     return '<%s>' % email
