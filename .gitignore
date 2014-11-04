@@ -6,5 +6,5 @@ appengine/swarming
 .DS_Store
 /doc/html
 /doc/source/reference
-# build_cache is used by infra.tools.builder_alerts
+# build_cache is used by infra.services.builder_alerts
 build_cache

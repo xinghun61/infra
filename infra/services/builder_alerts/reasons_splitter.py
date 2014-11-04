@@ -12,7 +12,7 @@ import urllib
 
 import requests_cache
 
-from infra.tools.builder_alerts import buildbot
+from infra.services.builder_alerts import buildbot
 
 requests_cache.install_cache('reasons')
 

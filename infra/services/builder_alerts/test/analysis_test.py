@@ -5,7 +5,7 @@
 import unittest
 import json
 
-from infra.tools.builder_alerts import analysis
+from infra.services.builder_alerts import analysis
 
 class FailureAnalysisTest(unittest.TestCase):
   # v8 stays the same, chromium differs, nacl is reduced.

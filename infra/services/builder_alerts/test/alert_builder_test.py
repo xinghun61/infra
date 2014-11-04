@@ -6,10 +6,10 @@ import copy
 import time
 import unittest
 
-from infra.tools.builder_alerts import alert_builder
-from infra.tools.builder_alerts import buildbot
-from infra.tools.builder_alerts import reasons_splitter
-from infra.tools.builder_alerts.test import buildbot_test
+from infra.services.builder_alerts import alert_builder
+from infra.services.builder_alerts import buildbot
+from infra.services.builder_alerts import reasons_splitter
+from infra.services.builder_alerts.test import buildbot_test
 
 
 # Unused argument - pylint: disable=W0613

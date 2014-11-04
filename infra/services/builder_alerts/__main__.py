@@ -15,10 +15,10 @@ import traceback
 import requests
 import requests_cache
 
-from infra.tools.builder_alerts import analysis
-from infra.tools.builder_alerts import buildbot
-from infra.tools.builder_alerts import gatekeeper_extras
-from infra.tools.builder_alerts import alert_builder
+from infra.services.builder_alerts import analysis
+from infra.services.builder_alerts import buildbot
+from infra.services.builder_alerts import gatekeeper_extras
+from infra.services.builder_alerts import alert_builder
 
 
 import infra

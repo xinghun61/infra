@@ -5,7 +5,7 @@
 import mock
 import unittest
 
-from infra.tools.builder_alerts import gatekeeper_extras
+from infra.services.builder_alerts import gatekeeper_extras
 
 
 class GatekeeperExtrasTest(unittest.TestCase):
@@ -19,12 +19,15 @@ class GatekeeperExtrasTest(unittest.TestCase):
             }}]),
         set(['test_builder1', 'test_builder2']))
 
-  @mock.patch('infra.tools.builder_alerts.gatekeeper_extras.excluded_builders',
-              lambda config: ['Ignored'])
-  @mock.patch('infra.tools.builder_alerts.gatekeeper_extras.would_close_tree',
-              lambda config, builder, step: True)
-  @mock.patch('infra.tools.builder_alerts.gatekeeper_extras.tree_for_master',
-              lambda master_url, trees_config: 'test-tree')
+  @mock.patch(
+      'infra.services.builder_alerts.gatekeeper_extras.excluded_builders',
+      lambda config: ['Ignored'])
+  @mock.patch(
+      'infra.services.builder_alerts.gatekeeper_extras.would_close_tree',
+      lambda config, builder, step: True)
+  @mock.patch(
+      'infra.services.builder_alerts.gatekeeper_extras.tree_for_master',
+      lambda master_url, trees_config: 'test-tree')
   def test_apply_gatekeeper_rules(self):
     gatekeeper_cfg = {'http://build.chromium.org/p/chromium': {'key': 'value'}}
     gatekeeper_trees_cfg = {}
@@ -120,7 +123,7 @@ class GatekeeperExtrasTest(unittest.TestCase):
         'https://build.chromium.org/p/chromium.lkgr', gatekeeper_trees))
 
   @mock.patch( # pragma: no cover (decorators are run before coverage is loaded)
-      'infra.tools.builder_alerts.buildbot.master_name_from_url',
+      'infra.services.builder_alerts.buildbot.master_name_from_url',
       lambda url: 'foo.bar')
   def test_tree_for_master_falls_back_to_master_name(self):
     self.assertEqual('foo.bar', gatekeeper_extras.tree_for_master(

@@ -5,7 +5,7 @@
 import collections
 import operator
 
-from infra.tools.builder_alerts import string_helpers
+from infra.services.builder_alerts import string_helpers
 
 
 # Git ready, but only implemented for SVN atm.

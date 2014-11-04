@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import unittest
-from infra.tools.builder_alerts import string_helpers
+from infra.services.builder_alerts import string_helpers
 
 
 class StringHelpersTest(unittest.TestCase):

@@ -6,7 +6,7 @@ import unittest
 
 import requests
 
-from infra.tools.builder_alerts import reasons_splitter
+from infra.services.builder_alerts import reasons_splitter
 
 
 class MockJsonResponse():

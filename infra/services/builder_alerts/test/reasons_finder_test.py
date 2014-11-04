@@ -4,7 +4,7 @@
 
 import unittest
 
-from infra.tools.builder_alerts import reasons_splitter
+from infra.services.builder_alerts import reasons_splitter
 
 
 class JUnitSplitterTest(unittest.TestCase):

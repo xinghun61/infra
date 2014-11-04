@@ -6,7 +6,7 @@
 
 import logging
 
-from infra.tools.builder_alerts.buildbot import master_name_from_url
+from infra.services.builder_alerts.buildbot import master_name_from_url
 
 def excluded_builders(master_config):
   return master_config[0].get('*', {}).get('excluded_builders', set())

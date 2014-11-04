@@ -12,9 +12,9 @@ import time
 import traceback
 import urllib
 
-from infra.tools.builder_alerts import buildbot
-from infra.tools.builder_alerts import reasons_splitter
-from infra.tools.builder_alerts import string_helpers
+from infra.services.builder_alerts import buildbot
+from infra.services.builder_alerts import reasons_splitter
+from infra.services.builder_alerts import string_helpers
 
 
 # Success or Warnings or None (didn't run) don't count as 'failing'.

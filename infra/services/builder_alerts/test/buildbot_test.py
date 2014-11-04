@@ -8,7 +8,7 @@ import tempfile
 import time
 import unittest
 
-from infra.tools.builder_alerts import buildbot
+from infra.services.builder_alerts import buildbot
 
 
 # Unused argument - pylint: disable=W0613
