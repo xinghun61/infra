@@ -269,8 +269,6 @@ def parse_cq_data(json_data):
     issue = fields['issue']
     jobs = fields['jobs']
     for master in jobs:
-      if master == 'tryserver.blink':
-        continue  # look at chromium try jobs only for now
       for job in jobs[master]:
         if not 'status' in jobs[master][job] or not 'rietveld_results' in jobs[master][job]:
           continue
