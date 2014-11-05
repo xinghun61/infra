@@ -337,7 +337,7 @@ class CategoriesNode(django.template.Node):
             id='%s-%s-builders' % (tryserver, full_category),
             style='display:none')
 
-      for builder in builders:
+      for builder in sorted(builders):
         builder_div_attrib = {
             'class': 'trybot-popup-input',
             'style': 'padding-left:2em',
