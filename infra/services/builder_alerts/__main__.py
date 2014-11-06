@@ -193,6 +193,17 @@ def main(args):
   logs.process_argparse_options(args)
   loop_args = outer_loop.process_argparse_options(args)
 
+  # Suppress all logging from connectionpool; it is too verbose at info level.
+  if args.log_level != logging.DEBUG:
+    class _ConnectionpoolFilter(object):
+      @staticmethod
+      def filter(record):
+        if record.levelno == logging.INFO:
+          return False
+        return True
+    logging.getLogger('requests.packages.urllib3.connectionpool').addFilter(
+      _ConnectionpoolFilter())
+
   def outer_loop_iteration():
     return inner_loop(args)
 
