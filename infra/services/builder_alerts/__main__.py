@@ -15,6 +15,7 @@ import traceback
 import requests
 import requests_cache
 
+from infra.libs import logs
 from infra.libs.service_utils import outer_loop
 
 from infra.services.builder_alerts import analysis
@@ -143,7 +144,7 @@ def inner_loop(args):
     latest_builder_info.update(data[1])
     stale_builder_alerts.extend(data[2])
 
-  print "Fetch took: %s" % (datetime.datetime.now() - start_time)
+  logging.info('Fetch took: %s', (datetime.datetime.now() - start_time))
 
   alerts = gatekeeper_extras.apply_gatekeeper_rules(alerts, gatekeeper,
       gatekeeper_trees)
@@ -182,16 +183,15 @@ def main(args):
                       type=int)
   parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store',
                       type=int)
+  logs.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
-  # FIXME: Ideally we'd have adjustable logging instead of just DEBUG vs. CRIT.
-  parser.add_argument("-v", "--verbose", action='store_true')
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
-  args = parser.parse_args(args)
-  loop_args = outer_loop.process_argparse_options(args)
 
-  logging.basicConfig(level=logging.DEBUG if args.verbose else logging.CRITICAL)
+  args = parser.parse_args(args)
+  logs.process_argparse_options(args)
+  loop_args = outer_loop.process_argparse_options(args)
 
   def outer_loop_iteration():
     return inner_loop(args)
