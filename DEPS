@@ -25,6 +25,11 @@ deps = {
      "appengine-pipeline.git"
      "@aebc176319885bb7b6372229999b893947248694"),
 
+  "infra/appengine/third_party/google-api-python-client":
+    ("https://chromium.googlesource.com/external/github.com/google/"
+     "google-api-python-client.git"
+     "@49d45a6c3318b75e551c3022020f46c78655f365"),
+
   ## external deps
   # v1.11.6
   "infra/bootstrap/virtualenv":
