@@ -1,6 +1,11 @@
+// Variables for console Javascript access to the currently visible/selected records.
+var records = [];
+var selectedRecords = [];
+
 (function(){
 'use strict';
 
+var indexSelected = {};
 var logServer = '//chromium-cq-status.appspot.com';
 var reviewServer = '//codereview.chromium.org';
 var tags = [];
@@ -22,6 +27,9 @@ function loadTags() {
 }
 
 function clearTable() {
+  records = [];
+  selectedRecords = [];
+  indexSelected = {};
   [].forEach.call(table.querySelectorAll('tr ~ tr'), function(row) {
     row.remove();
   });
@@ -64,6 +72,8 @@ function loadJSON(url, callback) {
 }
 
 function addRow(record) {
+  var index = records.length;
+  records.push(record);
   var row = newElement('tr');
   var items = [
     newElement('span', new Date(record.timestamp * 1000)),
@@ -83,6 +93,8 @@ function addRow(record) {
   row.addEventListener('click', function(event) {
     if (event.target.tagName !== 'A') {
       row.classList.toggle('selected');
+      indexSelected[index] = !indexSelected[index];
+      updateSelectedRecords();
     }
   })
   table.appendChild(row);
@@ -179,6 +191,15 @@ function newElement(tag, text) {
     element.textContent = text;
   }
   return element;
+}
+
+function updateSelectedRecords() {
+  selectedRecords = [];
+  for (var i in indexSelected) {
+    if (indexSelected[i]) {
+      selectedRecords.push(records[i]);
+    }
+  }
 }
 
 window.addEventListener('load', main);
