@@ -8,6 +8,29 @@ from tests.testing_utils import testing
 from shared import utils
 
 
+class MockWebApp(object):
+  def __init__(self):
+    self.response = MockResponse()
+
+class MockResponse(object):
+  def __init__(self):
+    self.body = ''
+    self.headers = MockHeaders()
+
+  def write(self, text):
+    self.body += text
+
+class MockHeaders(object):
+  def __init__(self):
+    self.is_cross_origin = False
+    self.is_json_content = False
+
+  def add_header(self, key, value): # pragma: no cover
+    if key == "Access-Control-Allow-Origin":
+      self.is_cross_origin = (value == "*")
+    elif key == 'Content-Type':
+      self.is_json_content = (value == 'application/json')
+
 class TestUtils(testing.AppengineTestCase):
   def test_filter_dict(self):
     self.assertEquals(
@@ -60,3 +83,23 @@ class TestUtils(testing.AppengineTestCase):
   def test_compressed_json_dumps(self):
     self.assertEquals('{"a":["0",1,2.5],"b":null}',
         utils.compressed_json_dumps({'a': ['0', 1, 2.5], 'b': None}))
+
+  def test_cross_origin_json_success(self):
+    webapp = MockWebApp()
+    @utils.cross_origin_json
+    def produce_json(self): # pylint: disable-msg=W0613
+      return {'valid': True}
+    produce_json(webapp)
+    self.assertEquals('{"valid":true}', webapp.response.body)
+    self.assertTrue(webapp.response.headers.is_cross_origin)
+    self.assertTrue(webapp.response.headers.is_json_content)
+
+  def test_cross_origin_json_fail(self):
+    webapp = MockWebApp()
+    @utils.cross_origin_json
+    def produce_no_json(self): # pylint: disable-msg=W0613
+      pass
+    produce_no_json(webapp)
+    self.assertEquals('', webapp.response.body)
+    self.assertTrue(webapp.response.headers.is_cross_origin)
+    self.assertFalse(webapp.response.headers.is_json_content)

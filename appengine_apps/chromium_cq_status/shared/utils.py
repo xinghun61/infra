@@ -22,9 +22,9 @@ def cronjob(cronjob_handler): # pragma: no cover
 
 def cross_origin_json(handler): # pragma: no cover
   def headered_json_handler(self, *args):
+    self.response.headers.add_header("Access-Control-Allow-Origin", "*")
     result = handler(self, *args)
     if result:
-      self.response.headers.add_header("Access-Control-Allow-Origin", "*")
       self.response.headers.add_header('Content-Type', 'application/json')
       self.response.write(compressed_json_dumps(result))
   return headered_json_handler
