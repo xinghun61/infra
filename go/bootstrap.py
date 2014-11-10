@@ -41,7 +41,7 @@ WORKSPACE = os.path.join(ROOT, 'go')
 EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 
 # Pinned version of Go toolset to download.
-TOOLSET_VERSION = 'go1.3.1'
+TOOLSET_VERSION = 'go1.3.3'
 
 # Platform dependent portion of a download URL. See http://golang.org/dl/.
 TOOLSET_VARIANTS = {
@@ -197,12 +197,15 @@ def check_hello_world(toolset_root):
 
 
 def ensure_toolset_installed(toolset_root):
-  """Installs or updates Go toolset if necessary."""
+  """Installs or updates Go toolset if necessary.
+
+  Returns True if new toolset was installed.
+  """
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
   available = get_toolset_url()
   if installed == available:
     LOGGER.debug('Go toolset is up-to-date: %s', TOOLSET_VERSION)
-    return
+    return False
 
   LOGGER.info('Installing Go toolset.')
   LOGGER.info('  Old toolset is %s', installed)
@@ -211,6 +214,7 @@ def ensure_toolset_installed(toolset_root):
   install_toolset(toolset_root, available)
   LOGGER.info('Go toolset installed: %s', TOOLSET_VERSION)
   write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
+  return True
 
 
 def ensure_goop_installed(toolset_root):
@@ -253,13 +257,14 @@ def fetch_goop_code(workspace, spec):
     git(['checkout', 'FETCH_HEAD'], cwd=path)
 
 
-def update_vendor_packages(toolset_root, workspace):
+def update_vendor_packages(toolset_root, workspace, force=False):
   """Runs goop to update external pinned packages."""
-  installed = read_file([workspace, '.vendor', 'Goopfile.lock'])
   required = read_file([workspace, 'Goopfile.lock'])
-  if installed == required:
-    LOGGER.debug('Third party dependencies in %s are up-to-date', workspace)
-    return
+  if not force:
+    installed = read_file([workspace, '.vendor', 'Goopfile.lock'])
+    if installed == required:
+      LOGGER.debug('Third party dependencies in %s are up-to-date', workspace)
+      return
 
   LOGGER.info('Updating third party dependencies in %s...', workspace)
   remove_directory([workspace, '.vendor'])
@@ -353,10 +358,10 @@ def bootstrap(vendor_paths, logging_level):
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
-  ensure_toolset_installed(TOOLSET_ROOT)
+  updated = ensure_toolset_installed(TOOLSET_ROOT)
   ensure_goop_installed(TOOLSET_ROOT)
   for p in vendor_paths:
-    update_vendor_packages(TOOLSET_ROOT, p)
+    update_vendor_packages(TOOLSET_ROOT, p, force=updated)
 
 
 def prepare_go_environ(skip_goop_update=False):
