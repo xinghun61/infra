@@ -1,0 +1,12 @@
+Name: momentjs
+URL: https://github.com/moment/moment/
+Version: 2.8.3
+Revision: d5ff2cf
+License: MIT
+
+Description:
+A lightweight javascript date library for parsing, validating, manipulating,
+and formatting dates.
+
+Local Modifications:
+No modification
