@@ -154,7 +154,7 @@
         <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
         <input type="hidden" name="revert_reason" value="">
         <input type="hidden" name="revert_cq" value="">
-        <input type="button" value="Revert Patchset" onclick="M_toggleRevertReasonPopup(true);" {%if issue.closed %}>{%else%}disabled> Issue must be closed to Revert{%endif%}
+        <input type="button" value="Revert Patchset" onclick="M_toggleRevertReasonPopup(true);" {%if issue.closed %}> <a href='https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriff-details-chromium?pli=1#TOC-Revert-Patchset-button-in-Rietveld'>More info</a>{%else%}disabled> Issue must be closed to Revert{%endif%}
         <div id="revert-reason-popup-div" style="background: transparent; margin: 4px 0px; display: none;">
           Enter the reason for reverting this patchset (Please be descriptive, include what broke and what needs to be done to reland):<br/>
           <textarea rows="10" cols="50" id="revert_reason_textarea"></textarea><br/>
