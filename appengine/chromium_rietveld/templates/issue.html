@@ -107,7 +107,7 @@
 
     {%for message in messages%}
       <div class="message {%if message.issue_was_closed%}issue_was_closed{%endif%} {%if message.approval%}approval{%endif%} {%if message.disapproval%}disapproval{%endif%} {%if message.auto_generated %}generated{%endif%}"
-           {%if message.auto_generated and messages|length != generated_messages|length %}style="display: none"{%endif%}
+           {%if message.auto_generated and messages|length != generated_messages|length and not display_generated_msgs %}style="display: none"{%endif%}
            id="{%if message.auto_generated %}generated-{%endif%}msg{{forloop.counter}}"
            name="{{forloop.counter0}}">
         <div class="header">

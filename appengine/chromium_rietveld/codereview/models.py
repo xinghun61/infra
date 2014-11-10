@@ -1202,6 +1202,9 @@ class Account(ndb.Model):
   # where foo is one of owner, reviewer, cc.
   add_plus_role = ndb.BooleanProperty()
 
+  # The user can opt-in to displaying generated messages by default.
+  display_generated_msgs = ndb.BooleanProperty(default=False)
+
   @classmethod
   def get_id_for_email(cls, email):
     return '<%s>' % email

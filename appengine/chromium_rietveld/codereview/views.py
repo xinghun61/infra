@@ -363,6 +363,10 @@ class SettingsForm(forms.Form):
       help_text=('Add +owner, +reviewer, or +cc to my email address '
                  'when sending notifications.'))
 
+  display_generated_msgs = forms.BooleanField(
+      required=False,
+      help_text='Display generated messages by default.')
+
   def clean_nickname(self):
     nickname = self.cleaned_data.get('nickname')
     # Check for allowed characters
@@ -1642,6 +1646,10 @@ def show(request):
     if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
       try_job.builder = try_job.parent_name + ':' + try_job.builder
 
+  display_generated_msgs = False
+  if request.user:
+    account = models.Account.current_user_account
+    display_generated_msgs = account.display_generated_msgs
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1656,6 +1664,7 @@ def show(request):
     'num_patchsets': num_patchsets,
     'patchsets': patchsets,
     'src_url': src_url,
+    'display_generated_msgs': display_generated_msgs,
     'trybot_documentation_link':
       models_chromium.DefaultBuilderList.get_doc_link(issue.base),
   })
@@ -3611,6 +3620,8 @@ def settings(request):
                                  'notify_by_email': account.notify_by_email,
                                  'notify_by_chat': account.notify_by_chat,
                                  'add_plus_role': account.add_plus_role,
+                                 'display_generated_msgs':
+                                     account.display_generated_msgs,
                                  })
     chat_status = None
     if account.notify_by_chat:
@@ -3628,6 +3639,8 @@ def settings(request):
     must_invite = notify_by_chat and not account.notify_by_chat
     account.notify_by_chat = notify_by_chat
     account.add_plus_role = form.cleaned_data.get('add_plus_role')
+    account.display_generated_msgs = form.cleaned_data.get(
+        'display_generated_msgs')
     account.fresh = False
     account.put()
     if must_invite:
@@ -3650,7 +3663,7 @@ def api_settings(request):
     'notify_by_email': account.notify_by_email,
     'notify_by_chat': account.notify_by_chat
     }
-  
+
 
 @deco.require_methods('POST')
 @deco.login_required
