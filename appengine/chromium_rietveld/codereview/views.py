@@ -3192,14 +3192,19 @@ def _get_modified_counts(issue):
 
 
 def make_message(request, issue, message, comments=None, send_mail=False,
-                  draft=None, in_reply_to=None, auto_generated=False):
+                 draft=None, in_reply_to=None, auto_generated=False,
+                 email_only_owner=False):
   """Helper to create a Message instance and optionally send an email."""
   attach_patch = request.POST.get("attach_patch") == "yes"
   template, context = _get_mail_template(request, issue, full_diff=attach_patch)
   # Decide who should receive mail
   my_email = request.user.email()
-  to = [issue.owner.email()] + issue.reviewers + issue.collaborator_emails()
-  cc = issue.cc[:]
+  if email_only_owner:
+    to = [issue.owner.email()]
+    cc = []
+  else:
+    to = [issue.owner.email()] + issue.reviewers + issue.collaborator_emails()
+    cc = issue.cc[:]
   # Chromium's instance adds reply@chromiumcodereview.appspotmail.com to the
   # Google Group which is CCd on all reviews.
   #cc.append(django_settings.RIETVELD_INCOMING_MAIL_ADDRESS)

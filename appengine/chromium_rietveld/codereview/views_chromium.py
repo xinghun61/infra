@@ -395,8 +395,14 @@ def edit_flags(request):
     # spam by not emailing users.
     action = 'checked' if request.issue.commit else 'unchecked'
     commit_checked_msg = 'The CQ bit was %s by %s' % (action, user_email)
+    # Mail just the owner if the CQ bit was unchecked by someone other than the
+    # owner. More details in
+    # https://code.google.com/p/skia/issues/detail?id=3093
+    unchecked_by_non_owner = (user_email != request.issue.owner.email() and
+                              not request.issue.commit)
     views.make_message(request, request.issue, commit_checked_msg,
-                       send_mail=False, auto_generated=True).put()
+                       send_mail=unchecked_by_non_owner, auto_generated=True,
+                       email_only_owner=unchecked_by_non_owner).put()
     request.issue.put()
 
   if 'builders' in request.POST:
