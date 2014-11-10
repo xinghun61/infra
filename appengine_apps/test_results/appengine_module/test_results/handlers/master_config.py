@@ -48,6 +48,10 @@ _masters = {
         'name': 'V8',
         'groups': ['@ToT V8']
     },
+    'client.webrtc': {
+        'name': 'WebRTC',
+        'groups': ['@ToT WebRTC']
+    },
 }
 
 _master_name_to_url_name = dict((v['name'], k) for k, v in _masters.items())
