@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from appengine_module.findit.base_handler import BaseHandler
-from appengine_module.findit.base_handler import Permission
+from base_handler import BaseHandler
+from base_handler import Permission
 
 
 class BuildFailure(BaseHandler):

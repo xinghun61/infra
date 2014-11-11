@@ -6,7 +6,7 @@ import time
 import unittest
 import urllib
 
-from appengine_module.findit.common import retry_http_client
+from common import retry_http_client
 
 
 class DummyHttpClientImpl(retry_http_client.RetryHttpClient):

@@ -8,10 +8,10 @@ import urllib
 import webapp2
 import webtest
 
-from appengine_module.testing_utils import testing
+from testing_utils import testing
 
-from appengine_module.findit.base_handler import BaseHandler
-from appengine_module.findit.base_handler import Permission
+from base_handler import BaseHandler
+from base_handler import Permission
 
 
 class PermissionLevelHandler(BaseHandler):

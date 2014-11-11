@@ -6,7 +6,7 @@ import logging
 
 from google.appengine.api import urlfetch
 
-from appengine_module.findit.common.retry_http_client import RetryHttpClient
+from common.retry_http_client import RetryHttpClient
 
 
 class HttpClientAppengine(RetryHttpClient):  # pragma: no cover

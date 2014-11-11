@@ -6,12 +6,12 @@ import base64
 import json
 import re
 
-from appengine_module.findit.common.blame import Blame
-from appengine_module.findit.common.blame import Region
-from appengine_module.findit.common.change_log import ChangeLog
-from appengine_module.findit.common.change_log import FileChangeInfo
-from appengine_module.findit.common import diff
-from appengine_module.findit.common.repository import Repository
+from common.blame import Blame
+from common.blame import Region
+from common.change_log import ChangeLog
+from common.change_log import FileChangeInfo
+from common import diff
+from common.repository import Repository
 
 
 SVN_REVISION_PATTERN = re.compile(

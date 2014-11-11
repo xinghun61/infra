@@ -4,8 +4,8 @@
 
 import unittest
 
-from appengine_module.findit.common import diff
-from appengine_module.findit.common.diff import ChangeType
+from common import diff
+from common.diff import ChangeType
 
 class DiffTest(unittest.TestCase):
   def testKnownChangeTypes(self):

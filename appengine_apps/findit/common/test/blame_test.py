@@ -4,8 +4,8 @@
 
 import unittest
 
-from appengine_module.findit.common.blame import Blame
-from appengine_module.findit.common.blame import Region
+from common.blame import Blame
+from common.blame import Region
 
 class BlameTest(unittest.TestCase):
   REGION1 = Region(1, 5, 'abc', 'a', 'a@email.com', '2014-08-14 19:38:42')

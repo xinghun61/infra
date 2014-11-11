@@ -7,8 +7,8 @@ import json
 import re
 import unittest
 
-from appengine_module.findit.common import git_repository
-from appengine_module.findit.common import retry_http_client
+from common import git_repository
+from common import retry_http_client
 
 
 class HttpClientForGit(retry_http_client.RetryHttpClient):

@@ -4,13 +4,13 @@
 
 import webapp2
 
-from appengine_module.findit.handlers import analyze_build_failure
-from appengine_module.findit.handlers import build_failure
-from appengine_module.findit.handlers import home
-from appengine_module.findit.handlers import list_build
-from appengine_module.findit.handlers import read_entity
-from appengine_module.findit.handlers import triage_analysis
-from appengine_module.findit.handlers import verify_analysis
+from handlers import analyze_build_failure
+from handlers import build_failure
+from handlers import home
+from handlers import list_build
+from handlers import read_entity
+from handlers import triage_analysis
+from handlers import verify_analysis
 
 
 handler_mappings = [

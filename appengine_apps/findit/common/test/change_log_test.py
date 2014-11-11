@@ -4,8 +4,8 @@
 
 import unittest
 
-from appengine_module.findit.common.change_log import FileChangeInfo
-from appengine_module.findit.common.change_log import ChangeLog
+from common.change_log import FileChangeInfo
+from common.change_log import ChangeLog
 
 class ChangeLogTest(unittest.TestCase):
   def testFileChangeinfo(self):
