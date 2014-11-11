@@ -48,7 +48,7 @@ class Build(ndb.Model):
   namespace = ndb.StringProperty(required=True)
   properties = ndb.StructuredProperty(BuildProperties)
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
-  url = ndb.StringProperty(index=False)
+  url = ndb.StringProperty(indexed=False)
   available_since = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
   @property
