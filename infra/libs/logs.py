@@ -9,7 +9,7 @@ Example usage:
 .. code-block:: python
 
     import logging
-    import infra.libs import logs
+    from infra.libs import logs
     logger = logging.getLogger('foo')
     logs.add_handler(logger, timezone='US/Pacific')
     logger.info('test message')
@@ -72,7 +72,7 @@ def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
   Example usage::
 
     import logging
-    import infra.libs import logs
+    from infra.libs import logs
     logger = logging.getLogger('foo')
     logs.add_handler(logger, timezone='US/Pacific')
     logger.info('test message')
@@ -93,7 +93,10 @@ def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
 
 
 def add_argparse_options(parser, default_level=logging.WARN):
-  """Adds logging related options to an argparse.ArgumentParser."""
+  """Adds logging related options to an argparse.ArgumentParser.
+
+  See also: :func:`process_argparse_options`
+  """
   g = parser.add_mutually_exclusive_group()
   g.set_defaults(log_level=default_level)
   g.add_argument('--quiet', action='store_const', const=logging.ERROR,
@@ -111,6 +114,22 @@ def process_argparse_options(options, logger=None):
   """Handles logging argparse options added in 'add_argparse_options'.
 
   Configures 'logging' module.
+
+  Args:
+    options: return value of argparse.ArgumentParser.parse_args.
+    logger (logging.Logger): logger to apply the configuration to. 
+
+  Example usage::
+
+    import argparse
+    import sys
+    import infra.libs.logs
+
+    parser = argparse.ArgumentParser()
+    infra.libs.logs.add_argparse_options(parser)
+
+    options = parser.parse_args(sys.path[1:])
+    infra.libs.logs.process_argparse_options(options)
   """
   if logger is None:
     logger = logging.root
