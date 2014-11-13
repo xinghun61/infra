@@ -87,7 +87,6 @@ class TagModel(ndb.Model):
 ############
 # Decorators
 ############
-
 def render(template_filename):
   def _render(fn):
     def wrapper(self, *args, **kwargs):
@@ -136,10 +135,11 @@ def _is_cq_job(build_info):
   return 'commit-bot@chromium.org' == properties.get('requester')
 
 
-def add_stats(graph_name, data, prefix='', config={}, *args, **kwargs):
+def add_stats(graph_name, data, prefix='', config=None, *args, **kwargs):
   """Given a list of values, break it down to to stats and graph it.
 
   Emits min, q1, median, q3, max, and mean of a series of data."""
+  config = config or {}
 
   if data:
     data = sorted(data)
@@ -163,11 +163,13 @@ def add_stats(graph_name, data, prefix='', config={}, *args, **kwargs):
   add_points(graph_name, points, *args, config=config, **kwargs)
 
 
-def add_points(graph_name, points, y_label=None, tags=None, config={}):
+def add_points(graph_name, points, y_label=None, tags=None, config=None):
   """Add a set of new points to a graph.
 
   Creates the graph if it does not yet exist.
   """
+  config = config or {}
+
   graph_q = GraphModel.query(GraphModel.name == graph_name).fetch(1)
   if not graph_q:
     graph = GraphModel(name=graph_name, config={})
@@ -221,7 +223,7 @@ def get_builders(master):
       time.sleep(2 ** (max_retries - retries))
       continue
   if not data:
-    raise DownloadError('Could not fetch %s' % url)
+    raise urlfetch.DownloadError('Could not fetch %s' % url)
   platforms = ['ios', 'android', 'cros', 'win', 'mac', 'linux']
   results = []
   for builder in data['builders']:
@@ -337,8 +339,6 @@ class ViewGraph(webapp2.RequestHandler):
                                 PointModel.timestamp > since)
     points_q = points_q.order(-PointModel.timestamp)
     point_names = graph.config['point_names']
-    point_name_to_index = dict([point_names[i], i]
-                               for i in range(len(point_names)))
     all_points = []  # List of list, aka a matrix.
     Point = collections.namedtuple('Point', ['time'] + point_names)
     for point in points_q.fetch(num_points):
