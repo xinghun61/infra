@@ -20,28 +20,30 @@ LOGGER = logging.getLogger(__name__)
 
 
 class GitException(UserWarning):
+  """Indicate that an error occured in the infra.libs.git module."""
   pass
 
 
 class Git(object):
-  """Wrapper class to abstract git operations against a single repository."""
+  """Wrapper class to abstract git operations against a single repository.
+
+  Args:
+    path (str): The absolute or relative path to the repository on disk.
+  """
 
   def __init__(self, path):  # pragma: no cover
-    """Creates the Git object, pointed at the on-disk repo.
-
-    Args:
-      @param path: The absolute or relative path to the repository on disk.
-      @type path: string
-    Returns:
-      @type string
-    Raises:
-      @type TypeError
-      @type subprocess.CalledProcessError
-    """
     self.path = os.path.abspath(path)
 
   def __call__(self, *args, **kwargs):  # pragma: no cover
-    """Run a git command and returns its combined stdout and stderr."""
+    """Run a git command and returns its combined stdout and stderr.
+
+    Args:
+       args (list): passed as argument to the 'git' command.
+       kwargs (dict): passed to subprocess.check_output
+
+    Returns:
+       output (str): combined stdout and stderr.
+    """
     cmd = ['git'] + [str(arg) for arg in args]
     kwargs.setdefault('cwd', self.path)
     LOGGER.debug('Running `%s` with %s', ' '.join(cmd), kwargs)
@@ -58,10 +60,12 @@ class Git(object):
     """Get the contents of a Git object (blob, tree, tag, or commit).
 
     Args:
-      @param ref: The ref at which to show the object. Can be ''.
-      @type ref: string
-      @param path: The path to the blob or tree, relative to repository root.
-      @type path: string
+      ref (string): The ref at which to show the object. 
+        Can be an empty string.
+      path (string): The path to the blob or tree, relative to repository root.
+
+    Returns:
+      content (str): the requested object.
     """
     treeish = ref + (':%s' % path if path else '')
     cmd = ['show', treeish] + list(args)
@@ -71,10 +75,10 @@ class Git(object):
     """Get the commit position of each input ref.
 
     Args:
-      @param refs: tuple of refishes to number
-      @type refs: tuple
+      refs (tuple of refishes): refishes to number.
+ 
     Returns:
-      @type list of [str|None]
+      positions (list of [str|None]): respective numbers.
     """
     positions = []
     for ref in refs:
@@ -96,19 +100,18 @@ def NewGit(url, path, bare=False):  # pragma: no cover
 
   Ensures the given path exists. If a git repository is already present
   ensures that it points at the given url; otherwise, creates a git repository
-  from the given url. Returns a Git object pointing at the local directory.
+  from the given url.
 
   Args:
-    @param url: The url of the remote repository.
-    @type url: string
-    @param path: The path to the local version of the repository.
-    @type path: string
-    @param bare: Whether or not the local repo should be a bare clone.
-    @type bare: bool
+    url (str): The url of the remote repository.
+    path (str): The path to the local version of the repository.
+    bare (str, optional): Whether or not the local repo should be a bare clone.
+
   Returns:
-    @type Git
+    repo (:class:`Git`): object representing the local git repository.
+
   Raises:
-    @type GitException
+    GitException
   """
   # If the directory doesn't exist, create it.
   if not os.path.isdir(path):
@@ -156,12 +159,11 @@ def TmpGit(url, bare=False):  # pragma: no cover
   will clean up after itself by deleting the temporary directory.
 
   Args:
-    @param url: The url of the remote repository.
-    @type url: string
-    @param bare: Whether or not the local repo should be a bare clone.
-    @type bare: bool
+    url (str): The url of the remote repository.
+    bare (bool): Whether or not the local repo should be a bare clone.
+
   Returns:
-    @type Git
+    git_repo (:class:`Git`): the local temporary git clone.
   """
   path = tempfile.mkdtemp()
   git = NewGit(url, path, bare)
