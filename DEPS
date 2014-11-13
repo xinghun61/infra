@@ -20,6 +20,10 @@ deps = {
      "endpoints-proto-datastore.git"
      "@971bca8e31a4ab0ec78b823add5a47394d78965a"),
 
+  "infra/appengine/third_party/npm_modules":
+    ("https://chromium.googlesource.com/infra/third_party/npm_modules.git"
+     "@e7396f39cd50de4419362fc2bc48360cb85ce555"),
+
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
      "appengine-pipeline.git"
