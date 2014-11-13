@@ -89,8 +89,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/test.py"
+      "test.py"
     ],
+    "cwd": "[SLAVE_BUILD]/infra",
     "name": "test.py"
   },
   {
