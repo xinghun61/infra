@@ -27,7 +27,8 @@ class HeartbeatRunner(object):
       self.testing = False
     self.heartbeat = heartbeat_cls
     self.name = slave_name
-    self.secret_file = os.path.join(root_dir, SECRET_FILE)
+    self.root_dir = root_dir
+    self.secret_file = os.path.join(self.root_dir, SECRET_FILE)
     self.secret = self.heartbeat.get_secret(self.secret_file)
     self.thread = None
     self.extra_data = {}
@@ -42,6 +43,7 @@ class HeartbeatRunner(object):
       return copy.copy(self.extra_data)
 
   def get_psutil_data(self):  # pragma: no cover
+    # TODO(hinoka): Split this out into a module and add coverage.
     if self.testing:
       return {}
     disk_usage = psutil.disk_usage(self.root_dir)
