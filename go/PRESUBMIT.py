@@ -11,8 +11,9 @@ Verifies all files are properly formatted.
 def GoFmtChecks(input_api, output_api):  # pragma: no cover
   # Grab a list of modified *.go files.
   affected_files = sorted([
-    p for p in input_api.AbsoluteLocalPaths()
-    if p.endswith('.go')
+    f.AbsoluteLocalPath()
+    for f in input_api.AffectedFiles(include_deletes=False)
+    if f.AbsoluteLocalPath().endswith('.go')
   ])
   if not affected_files:
     return []
