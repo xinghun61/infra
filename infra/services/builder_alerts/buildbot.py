@@ -148,6 +148,7 @@ def is_in_progress(build):
 def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: no cover
   cache_key = cache_key_for_build(master_url, builder_name, build_number)
   build = cache.get(cache_key)
+  build_source = 'disk cache'
   master_name = master_name_from_url(master_url)
 
   # We will cache in-progress builds, but only for 2 minutes.
@@ -155,16 +156,16 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     cache_age = datetime.datetime.now() - cache.key_age(cache_key)
     # Round for display.
     cache_age = datetime.timedelta(seconds=round(cache_age.total_seconds()))
-    if cache_age.total_seconds() < 120:
-      return build, 'disk cache'
-    logging.debug('Expired (%s) %s %s %s' % (cache_age,
-        master_name, builder_name, build_number))
-    build = None
+    if cache_age.total_seconds() > 120:
+      logging.debug('Expired (%s) %s %s %s',
+                    cache_age, master_name, builder_name, build_number)
+      build = None
 
-  build_source = 'chrome-build-extract'
-  cbe_url = ('%s/p/%s/builders/%s/builds/%s?json=1') % (
-      CBE_BASE, master_name, builder_name, build_number)
-  build = fetch_and_cache_build(cache, cbe_url, cache_key)
+  if not build:
+    build_source = 'chrome-build-extract'
+    cbe_url = ('%s/p/%s/builders/%s/builds/%s?json=1') % (
+        CBE_BASE, master_name, builder_name, build_number)
+    build = fetch_and_cache_build(cache, cbe_url, cache_key)
 
   if not build:
     buildbot_url = ('https://build.chromium.org/p/%s/json/builders/'

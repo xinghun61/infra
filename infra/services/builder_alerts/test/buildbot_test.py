@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import os
 import shutil
 import tempfile
@@ -17,8 +18,10 @@ from infra.services.builder_alerts import buildbot
 class TestCaseWithDiskCache(unittest.TestCase):
   def setUp(self):
     self.cache_path = tempfile.mkdtemp()
+    self.cache = buildbot.DiskCache(self.cache_path)
 
   def tearDown(self):
+    self.cache = None
     shutil.rmtree(self.cache_path, ignore_errors=True)
 
 
@@ -29,24 +32,22 @@ class DiskCacheTest(TestCaseWithDiskCache):
       with open(path, 'w') as cached:
         cached.write("foo")
 
-    cache = buildbot.DiskCache(self.cache_path)
-
     test_key = 'foo/bar'
-    self.assertFalse(cache.has(test_key))
+    self.assertFalse(self.cache.has(test_key))
 
     test_data = ['test']
-    cache.set(test_key, test_data)
+    self.cache.set(test_key, test_data)
     # Set it a second time to hit the "already there" case.
-    cache.set(test_key, test_data)
+    self.cache.set(test_key, test_data)
 
-    self.assertTrue(cache.has(test_key))
-    self.assertEquals(cache.get(test_key), test_data)
+    self.assertTrue(self.cache.has(test_key))
+    self.assertEquals(self.cache.get(test_key), test_data)
 
-    self.assertIsNone(cache.get('does_not_exist'))
-    self.assertIsNotNone(cache.key_age(test_key))
+    self.assertIsNone(self.cache.get('does_not_exist'))
+    self.assertIsNotNone(self.cache.key_age(test_key))
 
     write_garbage(test_key)
-    self.assertIsNone(cache.get(test_key))
+    self.assertIsNone(self.cache.get(test_key))
 
   def test_latest_builder_info_and_alerts_for_master(self):
     k_example_master_json = {
@@ -269,12 +270,12 @@ class DiskCacheTest(TestCaseWithDiskCache):
       }
       return k_example_build_json, 'chrome-build-extract'
 
-    cache = buildbot.DiskCache(self.cache_path)
     old_fetch_build_json = buildbot.fetch_build_json
     try:
       buildbot.fetch_build_json = mock_fetch_build_json
 
-      builder_info = buildbot.latest_builder_info_and_alerts_for_master(cache,
+      builder_info = buildbot.latest_builder_info_and_alerts_for_master(
+          self.cache,
           'http://build.chromium.org/p/chromium.webkit',
           k_example_master_json)[0]
       expected_builder_info = {
@@ -419,6 +420,74 @@ class BuildbotTest(unittest.TestCase):
     self.assertEqual(buildbot.is_in_progress({'results': None}), True)
     self.assertEqual(buildbot.is_in_progress({'results': 2}), False)
 
+
+class FetchBuildJsonTest(TestCaseWithDiskCache):
+  # Note that the self.cache is rebuilt for every test case; no data sharing.
+
+  def test_fetch_from_cache(self):
+    # When a build is in the cache, we return that build from the cache.
+    cache_key = buildbot.cache_key_for_build('foo', 'bar', 1)
+    self.cache.set(cache_key, {'men': 'at work'})
+    build, source = buildbot.fetch_build_json(self.cache, 'foo', 'bar', 1)
+    self.assertEqual(build, {'men': 'at work'})
+    self.assertEqual(source, 'disk cache')
+
+  def test_ignore_expired_cache(self):
+    # When a build is in the cache but expired, we hit the network instead.
+    cache_key = buildbot.cache_key_for_build('foo', 'bar', 1)
+    self.cache.set(cache_key, {'men': 'at work'})
+
+    def _mock_key_age(cache_key):
+      return datetime.datetime.now() - datetime.timedelta(seconds=121)
+    _real_key_age = self.cache.key_age
+
+    def _mock_fetch_and_cache_build(cache, url, cache_key):
+      return {'I come': 'from a land down under'}
+    _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
+
+    try:
+      self.cache.key_age = _mock_key_age
+      buildbot.fetch_and_cache_build = _mock_fetch_and_cache_build
+      build, source = buildbot.fetch_build_json(self.cache, 'foo', 'bar', 1)
+      self.assertEqual(build, {'I come': 'from a land down under'})
+      self.assertEqual(source, 'chrome-build-extract')
+    finally:
+      self.cache.key_age = _real_key_age
+      buildbot.fetch_and_cache_build = _real_fetch_and_cache_build
+
+  def test_fetch_from_cbe(self):
+    # If a build is available on chrome-build-extract, use that.
+    def _mock_fetch_and_cache_build(cache, url, cache_key):
+      if buildbot.CBE_BASE in url:
+        return {'I come': 'from a land down under'}
+    _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
+
+    try:
+      buildbot.fetch_and_cache_build = _mock_fetch_and_cache_build
+      build, source = buildbot.fetch_build_json(self.cache, 'foo', 'bar', 1)
+      self.assertEqual(build, {'I come': 'from a land down under'})
+      self.assertEqual(source, 'chrome-build-extract')
+    finally:
+      buildbot.fetch_and_cache_build = _real_fetch_and_cache_build
+
+  def test_fetch_from_master(self):
+    # If both the cache and CBE fall through, go straight to the master.
+    def _mock_fetch_and_cache_build(cache, url, cache_key):
+      if buildbot.CBE_BASE in url:
+        return None
+      if 'build.chromium.org' in url:
+        return {'Can you hear': 'the thunder'}
+    _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
+
+    try:
+      buildbot.fetch_and_cache_build = _mock_fetch_and_cache_build
+      build, source = buildbot.fetch_build_json(self.cache, 'foo', 'bar', 1)
+      self.assertEqual(build, {'Can you hear': 'the thunder'})
+      self.assertEqual(source, 'master')
+    finally:
+      buildbot.fetch_and_cache_build = _real_fetch_and_cache_build
+
+
 class RevisionsForMasterTest(TestCaseWithDiskCache):
   def test_builder_info_for_master(self):
     """
@@ -427,10 +496,9 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     We have to pre-fill the build json cache to avoid this test hitting the
     network, which accounts for much of the complexity here.
     """
-    cache = buildbot.DiskCache(self.cache_path)
     def cache_set(master_url, builder, build, value):
       key = buildbot.cache_key_for_build(master_url, builder, build)
-      cache.set(key, value)
+      self.cache.set(key, value)
     def build(index):
       commit_position = 'refs/heads/master@{#%d}'
       return {
@@ -465,8 +533,8 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     for b in builds:
       cache_set(master0_url, 'builder0', b['index'], b)
       cache_set(master0_url, 'builder1', b['index'], b)
-    latest = buildbot.latest_builder_info_and_alerts_for_master(cache,
-        master0_url, master0)[0]
+    latest = buildbot.latest_builder_info_and_alerts_for_master(
+        self.cache, master0_url, master0)[0]
     self.assertIn('master0', latest)
     self.assertIn('builder0', latest['master0'])
     self.assertIn('builder1', latest['master0'])
@@ -487,7 +555,6 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
     """Test that we don't crash when the buildbot/CBE both don't have a build
     for a given build ID.
     """
-    cache = buildbot.DiskCache(self.cache_path)
     master0_url = 'http://foo/bar/master0'
     master0 = {
       'builders': {
@@ -507,8 +574,8 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
 
     try:
       buildbot.fetch_build_json = fetch
-      latest = buildbot.latest_builder_info_and_alerts_for_master(cache,
-          master0_url, master0)[0]
+      latest = buildbot.latest_builder_info_and_alerts_for_master(
+          self.cache, master0_url, master0)[0]
       self.assertEqual(latest, {})
     finally:
       buildbot.fetch_build_json = old_fetch

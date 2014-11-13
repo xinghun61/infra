@@ -32,20 +32,23 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
 
   previous_build_ids = [num for num in recent_build_ids
       if num < alert['last_failing_build']]
-  fetch_function = lambda num: buildbot.fetch_build_json(
-      cache, master, builder, num)
+
+  def fetch_function(num):
+    return buildbot.fetch_build_json(cache, master, builder, num)
+
   first_fail = fetch_function(alert['last_failing_build'])[0]
-  previous_builds = map(fetch_function, previous_build_ids)
 
   last_pass = None
   builds_missing_steps = []
-  for build in previous_builds:
-    if not build:
-      # fetch_build_json will already log critical in this case.
-      continue
+  for build_id in previous_build_ids:
+    build = fetch_function(build_id)
 
     # build is a tuple of the json and the origin of the data
     build_data = build[0]
+
+    if not build_data:
+      # fetch_build_json will already log critical in this case.
+      continue
 
     matching_steps = [s for s in build_data['steps'] if s['name'] == step]
     if len(matching_steps) != 1:
@@ -57,11 +60,12 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
             build_data['number'], step, matching_steps))
       continue
 
-    step = matching_steps[0]
-    step_result = step['results'][0]
+    step_data = matching_steps[0]
+    step_result = step_data['results'][0]
     if step_result not in NON_FAILING_RESULTS:
       if reason:
-        reasons = reasons_for_failure(cache, step, build_data, builder, master)
+        reasons = reasons_for_failure(
+            cache, step_data, build_data, builder, master)
         # This build doesn't seem to have this step reason, ignore it.
         if not reasons:
           continue
@@ -83,8 +87,9 @@ def compute_transition(cache, alert, recent_build_ids):  # pragma: no cover
     break
 
   if builds_missing_steps:
-    logging.warn("Builds %s missing %s step" % (
-        string_helpers.re_range(builds_missing_steps), step))
+    logging.warn("Builds %s missing step %s (%s %s).",
+                 string_helpers.re_range(builds_missing_steps),
+                 step, master, builder)
 
   return last_pass, first_fail
 
