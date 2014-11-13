@@ -11,6 +11,7 @@ import sys
 
 # pylint: disable=F0401
 from infra.tools.bot_setup.start import chrome
+from infra.tools.bot_setup.start import bot_hb as heartbeat
 from infra.tools.bot_setup.start import swarming
 
 
@@ -29,6 +30,9 @@ def main():
   depot_tools = args.depot_tools
   password_file = args.password_file
   slave_name = args.slave_name or ''
+
+  hb = heartbeat.HeartbeatRunner(slave_name, root_dir)
+  hb.run()
 
   if re.match(r'^swarm.*', slave_name):
     swarming.start(slave_name, root_dir)

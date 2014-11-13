@@ -1,5 +1,8 @@
 # Copyright 2012 Google Inc. All Rights Reserved.
 
+# TODO(hinoka): Add coverage crbug.com/432638
+# pragma: no cover
+
 import base64
 import datetime
 import hashlib
