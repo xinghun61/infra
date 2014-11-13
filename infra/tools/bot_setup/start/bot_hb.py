@@ -6,8 +6,9 @@
 
 import copy
 import os
-import time
+import psutil
 import threading
+import time
 
 # pylint: disable=F0401
 
@@ -18,10 +19,12 @@ URLS = ['https://chrome-heartbeats.appspot.com/heartbeat']
 
 class HeartbeatRunner(object):
   def __init__(self, slave_name, root_dir, heartbeat_cls=None):
+    self.testing = True  # Set true if we're in testing mode.
     if not heartbeat_cls:  # pragma: no cover
       # TODO(hinoka): Hearbeat doesn't have coverage right now crbug.com/432638
       from infra.tools.heartbeat import heartbeat
       heartbeat_cls = heartbeat
+      self.testing = False
     self.heartbeat = heartbeat_cls
     self.name = slave_name
     self.secret_file = os.path.join(root_dir, SECRET_FILE)
@@ -38,6 +41,20 @@ class HeartbeatRunner(object):
     with self.extra_data_lock:
       return copy.copy(self.extra_data)
 
+  def get_psutil_data(self):  # pragma: no cover
+    if self.testing:
+      return {}
+    disk_usage = psutil.disk_usage(self.root_dir)
+    return {
+        'cpu_percent': psutil.cpu_percent(),
+        'disk_root_dir': self.root_dir,
+        'disk_total': disk_usage.total,
+        'disk_used': disk_usage.used,
+        'disk_free': disk_usage.free,
+        'disk_percent': disk_usage.percent,
+    }
+
+
   def _send_heartbeat(self):
     data = {
         'name': self.name,
@@ -46,6 +63,7 @@ class HeartbeatRunner(object):
         'time': time.time(),
         'id': self.heartbeat.get_id(),
     }
+    data.update(self.get_psutil_data())
     data.update(self.get_extra_data())
     signed_message = self.heartbeat.get_hashed_message(data, self.secret)
     result = self.heartbeat.send(signed_message, URLS)

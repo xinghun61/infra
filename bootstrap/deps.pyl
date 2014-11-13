@@ -56,6 +56,11 @@
     'build': '0',
     'rev': 'd02b317af0313dcf66755844f5421651af5eb356'
   },
+  'psutil': {
+    'version': '2.1.3',
+    'build': '0',
+    'gs': 'aae4725eb33cf56d4480bc60f50c147870d607ba.tar.gz'
+  },
   'Pygments': {
     'version': '1.6dev_20140923',
     'build': '0',
