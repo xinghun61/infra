@@ -3,3 +3,4 @@
 # found in the LICENSE file.
 
 from gitiles.client import GitilesClient
+from gitiles.commit import GitilesCommit
