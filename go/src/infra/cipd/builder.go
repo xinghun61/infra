@@ -14,6 +14,8 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+
+	"infra/cipd/internal/keys"
 )
 
 // BuildPackageOptions defines options for BuildPackage function.
@@ -86,7 +88,7 @@ func SignPackage(opts SignPackageOptions) error {
 	if err != nil {
 		return err
 	}
-	keyFingerprint, err := publicKeyFingerprint(&opts.PrivateKey.PublicKey)
+	keyFingerprint, err := keys.PublicKeyFingerprint(&opts.PrivateKey.PublicKey)
 	if err != nil {
 		return err
 	}
