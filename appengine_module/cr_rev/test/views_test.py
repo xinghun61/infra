@@ -38,6 +38,14 @@ class TestViews(testing.AppengineTestCase):
         response.location,
         'https://codereview.chromium.org/10000000')
 
+  def test_scan_projects(self):
+    """Test that the project scan cron job."""
+    self.test_app.get('/cron/scan_projects')
+
+  def test_scan_repos(self):
+    """Test that the repo scan cron job."""
+    self.test_app.get('/cron/scan_repos')
+
   def test_redirect_paths(self):
     """Test that a redirect retains extra path information."""
     response = self.test_app.get('/10000000/bananas', status=302)

@@ -50,6 +50,8 @@ class AppengineTestCase(auto_stub.TestCase): # pragma: no cover
     # Test app is lazily initialized on a first use from app_module.
     self._test_app = None
 
+    self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
+
   def tearDown(self):
     try:
       self.testbed.deactivate()
@@ -113,3 +115,28 @@ class AppengineTestCase(auto_stub.TestCase): # pragma: no cover
 
   def mock_sleep(self):
     self.mock(time, 'sleep', lambda _: None)
+
+  def execute_queued_tasks(self):
+    tasks = self.taskqueue_stub.get_filtered_tasks()
+
+    responses = []
+    while tasks:  # Some tasks spawn more tasks, we execute until empty.
+      for queue in self.taskqueue_stub.GetQueues():
+        self.taskqueue_stub.FlushQueue(queue['name'])
+
+      for task in tasks:
+        params = task.extract_params()
+        extra_environ = {
+            'HTTP_X_APPENGINE_TASKNAME': str(task.name),
+            'HTTP_X_APPENGINE_QUEUENAME': str(task.queue_name or 'default'),
+        }
+
+        method = {
+             'GET': self.test_app.get,
+             'POST': self.test_app.post,
+        }[task.method]
+
+        responses.append(method(task.url, params, extra_environ=extra_environ))
+
+      tasks = self.taskqueue_stub.get_filtered_tasks()
+    return responses

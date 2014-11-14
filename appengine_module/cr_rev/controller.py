@@ -11,33 +11,35 @@ import random
 import re
 import time
 
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.api import urlfetch
 
+from appengine_module.pipeline_utils import pipelines
+
 from appengine_module.cr_rev import models
-from appengine_module.cr_rev.appengine_third_party_pipeline_src_pipeline \
+from appengine_module.pipeline_utils.\
+    appengine_third_party_pipeline_src_pipeline \
     import pipeline
+from appengine_module.pipeline_utils.\
+    appengine_third_party_pipeline_src_pipeline \
+    import common
 
 
 # Repos excluded from scanning.
 REPO_EXCLUSIONS = {
     'chromium': [
-      'chromium/blink',  # gitiles bug
       'chromium/chromium',  # conflicts with chromium/src
-      'chromiumos/third_party/mesa',  # gitiles bug
-      'chromiumos/third_party/wayland-demos',  # gitiles bug
+      'dart/dartium/blink',  # conflicts with chromium/blink
       'dart/dartium/src',  # conflicts with chromium/src
       'experimental/chromium/blink',  # conflicts with chromium/blink
       'experimental/chromium/src',  # conflicts with chromium/src
       'experimental/chromium/tools/build',  # conflicts with tools/build
       'experimental/external/gyp',  # conflicts with external/gyp
       'experimental/external/v8',  # conflicts with external/v8
-      'external/WebKit_submodule',  # gitiles bug
-      'external/Webkit',  # gitiles bug
-      'external/naclports',  # gitiles bug
-      'external/w3c/csswg-test',  # gitiles bug
-      'native_client/nacl-binutils',  # gitiles bug
-      'native_client/pnacl-llvm-testsuite',  # gitiles bug
+      'experimental/src-pruned-refs',  # conflicts with chromium/src
+      'external/WebKit_submodule',  # conflicts with chromium/blink (?)
+      'external/Webkit',  # conflicts with chromium/blink (? crbug.com/432761)
     ]
 }
 
@@ -66,7 +68,7 @@ def get_active_repos(project):
   return included_repos
 
 
-def make_gitiles_json_call(url, n=10000):
+def make_gitiles_json_call(url, n=1000):
   """Make a JSON call to gitiles and decode the result.
 
   This makes a gitiles call with exponential backoff in the case of 429s. When
@@ -99,7 +101,7 @@ def make_gitiles_json_call(url, n=10000):
       'urlfetch returned 429 after %d attempts, timing out!' % attempts)
 
 
-def crawl_log(repo_url, start='master', until=None, n=10000):
+def crawl_log(repo_url, start='master', until=None, n=1000):
   """Crawls the commit log of a specific branch of a repository."""
   crawl_url = repo_url + '+log/%s' % start
   crawl_json = make_gitiles_json_call(crawl_url, n=n)
@@ -240,6 +242,270 @@ def write_commits_to_db(commits, project, repo, batch=100):
 
   ndb.Future.wait_all(futures)
   logging.info('all set.')
+
+
+def spawn_pipelines(pipeline_class, arg_sets, target='scan-backend'):
+  urls = []
+  for args in arg_sets:
+    pipe = pipeline_class(*args)
+    pipe.target = target
+    pipe.start()
+    logging.info('started %s pipeline for %s: %s' % (
+      pipe.description, ','.join(args),
+      pipe.pipeline_status_url()))
+    urls.append(pipe.pipeline_status_url())
+  return urls
+
+
+class ProjectScanningPipeline(pipelines.AppenginePipeline):
+  @property
+  def description(self):
+    return 'project scanning'
+
+  def run(self, project):
+    project_key = ndb.Key(models.Project, project)
+    project_obj = project_key.get()
+    url = project_obj.canonical_url_template % {'project': project_obj.name}
+
+    result_json = make_gitiles_json_call(url)
+    seen_repos = list(models.Repo.query(models.Repo.project == project))
+    seen_repo_names = [x.repo for x in seen_repos]
+    active_repo_names = [x.repo for x in seen_repos if x.active]
+
+    for repo in result_json:
+      logging.info('analyzing repo: %s' % repo)
+      repo_key = models.Repo.get_key_by_id(project, repo)
+      if repo in seen_repo_names:
+        if repo not in active_repo_names:
+          repo_obj = repo_key.get()
+          repo_obj.active = True
+          repo_obj.put()
+      else:
+        repo_obj = models.Repo(
+            repo=repo,
+            project=project,
+            active=True,
+            key = repo_key)
+
+        # Test if it's not a 'fake' repo like All-Users by testing its log for
+        # 404.
+        try:
+          repo_url = calculate_repo_url(repo_obj)
+          crawl_url = repo_url + '+log/master'
+          make_gitiles_json_call(crawl_url, n=1)
+          repo_obj.real = True
+        except pipeline.PipelineUserError:
+          pass
+        repo_obj.put()
+
+    for repo in active_repo_names:
+      if repo not in result_json:
+        repo_key = models.Repo.get_key_by_id(project, repo)
+        repo_obj = repo_key.get()
+        repo_obj.active = False
+        repo_obj.put()
+
+
+    project_obj.last_scanned = datetime.now()
+    project_obj.put()
+
+
+class RepoWritingPipeline(pipelines.AppenginePipeline):
+  @property
+  def description(self):  # pragma: no cover
+    return 'repo writing'
+
+  def run(self, project, repo, repo_url, start, n):
+    crawled_commits, _ = crawl_log(repo_url, start=start, n=n)
+    write_commits_to_db(crawled_commits, project, repo)
+    return True
+
+
+MEMCACHE_REPO_SCAN_LOCK = 'repo-scan-lock-%s'
+MEMCACHE_REPO_SCAN_EXPIRATION = 90 * 60
+
+
+def obtain_repo_scan_lock(project, repo, pipeline_id):  # pragma: no cover
+  client = memcache.Client()
+  key = MEMCACHE_REPO_SCAN_LOCK % models.Repo.repo_id(project, repo)
+  logging.info('obtaining lock on %s' % key)
+  counter = client.gets(key)
+  if counter:
+    if counter['counter'] != 0 and counter['pipeline_id'] != pipeline_id:
+      logging.info('pipeline_id %s doesn\'t match %s' % (
+        counter['pipeline_id'], pipeline_id))
+      return False
+    while True:
+      new_counter = {
+          'pipeline_id': pipeline_id,
+          'counter': 1,
+      }
+      if client.cas(key, new_counter, time=MEMCACHE_REPO_SCAN_EXPIRATION):
+        logging.info('cas succeeded')
+        return True
+
+      counter = client.gets(key)
+      if counter is not None:
+        raise pipeline.PipelineUserError('Uninitialized counter')
+  else:
+    new_counter = {
+        'pipeline_id': pipeline_id,
+        'counter': 1,
+    }
+    return client.add(
+        MEMCACHE_REPO_SCAN_LOCK % models.Repo.repo_id(project, repo),
+        new_counter,
+        time=MEMCACHE_REPO_SCAN_EXPIRATION)
+
+
+def release_repo_scan_lock(project, repo, pipeline_id):  # pragma: no cover
+  client = memcache.Client()
+  key = MEMCACHE_REPO_SCAN_LOCK % models.Repo.repo_id(project, repo)
+  while True:
+    counter = client.gets(key)
+    if not counter:
+      logging.info('tried to release %s but it doesn\'t exist' % key)
+      return
+    if counter['counter'] == 0 or counter['pipeline_id'] != pipeline_id:
+      logging.info('counter is 0 or pipeline %s doesn\'t match: %s' % (
+        pipeline_id, counter))
+      return
+    new_counter = {
+        'pipeline_id': pipeline_id,
+        'counter': 0,
+    }
+    if client.cas(key, new_counter, time=MEMCACHE_REPO_SCAN_EXPIRATION):
+      logging.info('cas succeeded %s' % new_counter)
+      return
+
+
+class FinalizeRepoObjPipeline(pipelines.AppenginePipeline):
+  @property
+  def description(self):  # pragma: no cover
+    return 'repo finalization'
+
+  def run(self, finalize, project, repo, latest_commit, first_commit,
+      root_commit_scanned):
+    repo_obj = models.Repo.get_key_by_id(project, repo).get()
+    repo_obj.latest_commit = latest_commit
+    repo_obj.first_commit = first_commit
+    repo_obj.root_commit_scanned = root_commit_scanned
+    repo_obj.last_scanned = datetime.now()
+    repo_obj.put()
+
+
+class RepoScanningPipeline(pipelines.AppenginePipeline):
+  @property
+  def description(self):
+    return 'repo scanning'
+
+  def finalized(self):
+    release_repo_scan_lock(self.args[0], self.args[1], self.root_pipeline_id)
+
+  def run(self, project, repo):
+    if not obtain_repo_scan_lock(project, repo, self.root_pipeline_id):
+      logging.info('pipeline already running.')  # pragma: no cover
+      return  # pragma: no cover
+
+
+    models.RepoScanPipeline(
+        project=project,
+        repo=repo,
+        pipeline_url=self.pipeline_status_url(),
+        key=ndb.Key(
+            models.RepoScanPipeline, models.Repo.repo_id(project, repo))).put()
+
+
+    # TODO(stip): change to use commit..commit syntax like gitilespoller.
+    repo_obj = models.Repo.get_key_by_id(project, repo).get()
+    repo_url = calculate_repo_url(repo_obj)
+
+    child_pipelines = []
+
+    crawled_commits, finished = crawl_log(
+        repo_url, until=repo_obj.latest_commit)
+
+    # Crawl master, keep writing commits until we hit the last crawled commit
+    # we've seen (if we've seen one, otherwise keep going until we hit the
+    # bottom).
+    if crawled_commits:
+      new_latest_commit = crawled_commits[0]['commit']
+      top_level_lowest = crawled_commits[-1]['commit']
+
+      writer = yield RepoWritingPipeline(
+          project, repo, repo_url, new_latest_commit,
+          len(crawled_commits))
+      child_pipelines.append(writer)
+
+      while crawled_commits and not finished:
+        crawled_commits, finished = crawl_log(
+            repo_url, start=top_level_lowest,
+            until=repo_obj.latest_commit)
+        # TODO(stip): write tests for this or consolidate code
+        if crawled_commits:  # pragma: no cover
+          writer = yield RepoWritingPipeline(
+              project, repo, repo_url, crawled_commits[0]['commit'],
+              len(crawled_commits))
+          child_pipelines.append(writer)
+          top_level_lowest = crawled_commits[-1]['commit']
+
+      repo_obj.latest_commit = new_latest_commit
+      if not repo_obj.first_commit:
+        repo_obj.first_commit = top_level_lowest
+
+    # If we have top level commits but haven't seen the bottom, keep crawling
+    # down until we hit it.
+    if not repo_obj.root_commit_scanned and repo_obj.first_commit:
+      crawled_commits, finished = crawl_log(
+          repo_url, start=repo_obj.first_commit)
+      # TODO(stip): write tests for this or consolidate code
+      if crawled_commits: # pragma: no cover
+        writer = yield RepoWritingPipeline(
+            project, repo, repo_url, crawled_commits[0]['commit'],
+            len(crawled_commits))
+        child_pipelines.append(writer)
+        repo_obj.first_commit = crawled_commits[-1]['commit']
+        while crawled_commits and not finished:
+          crawled_commits, finished = crawl_log(
+              repo_url, start=repo_obj.first_commit)
+          writer = yield RepoWritingPipeline(
+              project, repo, repo_url, crawled_commits[0]['commit'],
+              len(crawled_commits))
+          child_pipelines.append(writer)
+          repo_obj.first_commit = crawled_commits[-1]['commit']
+        # TODO(stip) write tests for this or consolidate code
+        if finished:  # pragma: no cover
+          repo_obj.root_commit_scanned = True
+
+    all_writers_succeeded = True
+    if child_pipelines:
+      all_writers_succeeded = yield common.All(*child_pipelines)
+    yield FinalizeRepoObjPipeline(all_writers_succeeded, project, repo,
+        repo_obj.latest_commit, repo_obj.first_commit,
+        repo_obj.root_commit_scanned)
+
+
+def scan_projects_for_repos():
+  projects = get_projects()
+  project_name_args = [[p.name] for p in projects]
+  return spawn_pipelines(ProjectScanningPipeline, project_name_args)
+
+
+def scan_repos():
+  urls = []
+  projects = get_projects()
+  for project in projects:
+    active_repo_objs = get_active_repos(project.name)
+    scanned_repos = [r for r in active_repo_objs if r.root_commit_scanned]
+    unscanned_repos = [r for r in active_repo_objs if not r.root_commit_scanned]
+    scanned_repo_name_args = [[project.name, r.repo] for r in scanned_repos]
+    urls.extend(spawn_pipelines(RepoScanningPipeline, scanned_repo_name_args))
+    unscanned_repo_name_args = [[project.name, r.repo] for r in unscanned_repos]
+    urls.extend(spawn_pipelines(
+      RepoScanningPipeline,
+      unscanned_repo_name_args,
+      target='bulk-load-backend'))
+  return urls
 
 
 def fetch_by_number(number, numbering_type, repo=None, project=None, ref=None):

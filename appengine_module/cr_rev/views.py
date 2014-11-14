@@ -47,6 +47,22 @@ class MainPage(BaseHandler):
     self.render_response('main.html', **context)
 
 
+class ScanProjects(BaseHandler):
+  def get(self):
+    projects = controller.scan_projects_for_repos()
+    for project in projects:  # pragma: no cover
+      logging.info('launching pipeline: %s' % project)
+    self.response.write('pipelines: %s' % '<br>'.join(projects))
+
+
+class ScanRepos(BaseHandler):
+  def get(self):
+    projects = controller.scan_repos()
+    for project in projects:  # pragma: no cover
+      logging.info('launching pipeline: %s' % project)
+    self.response.write('pipelines: %s' % '<br>'.join(projects))
+
+
 class Redirect(BaseHandler):
   def get(self, query, extra_paths):
     if self.request.referer:

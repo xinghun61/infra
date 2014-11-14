@@ -9,6 +9,8 @@ from appengine_module.cr_rev import views
 app = webapp2.WSGIApplication([
     ('/_ah/warmup', views.StartPage),
     ('/_ah/start', views.StartPage),
+    ('/cron/scan_projects', views.ScanProjects),
+    ('/cron/scan_repos', views.ScanRepos),
     (r'/(\w+)(/.*)?', views.Redirect),
     ('/', views.MainPage),
 ])

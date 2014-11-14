@@ -1,0 +1,6 @@
+queue:
+- name: default
+  rate: 100/s
+  retry_parameters:
+    task_age_limit: 2h
+

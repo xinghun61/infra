@@ -9,12 +9,18 @@ from appengine_module.testing_utils import testing
 
 from appengine_module.cr_rev import controller
 from appengine_module.cr_rev import models
-from appengine_module.cr_rev.appengine_third_party_pipeline_src_pipeline \
+from appengine_module.pipeline_utils.\
+    appengine_third_party_pipeline_src_pipeline \
+    import handlers
+from appengine_module.pipeline_utils.\
+    appengine_third_party_pipeline_src_pipeline \
     import pipeline
 from appengine_module.cr_rev.test import model_helpers
 
 
 class TestController(testing.AppengineTestCase):
+  app_module = handlers._APP
+
   @staticmethod
   def _gitiles_json(data):
     """Return json-encoded data with a gitiles header."""
@@ -247,7 +253,7 @@ class TestController(testing.AppengineTestCase):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '?format=json&n=10000',
+          gitiles_base_url + '?format=json&n=1000',
           self._gitiles_json({'test': 3}))
 
     result = controller.make_gitiles_json_call(gitiles_base_url)
@@ -269,7 +275,7 @@ class TestController(testing.AppengineTestCase):
     self.mock_sleep()
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '?format=json&n=10000',
+          gitiles_base_url + '?format=json&n=1000',
           self._gitiles_json({'test': 3}),
           status_code=429)
 
@@ -285,7 +291,7 @@ class TestController(testing.AppengineTestCase):
     ]}
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '+log/master?format=json&n=10000',
+          gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
     commits, finished = controller.crawl_log(gitiles_base_url)
@@ -301,7 +307,7 @@ class TestController(testing.AppengineTestCase):
     ]}
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '+log/master?format=json&n=10000',
+          gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
     commits, finished = controller.crawl_log(
@@ -314,7 +320,7 @@ class TestController(testing.AppengineTestCase):
     log_data = {u'log': []}
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '+log/master?format=json&n=10000',
+          gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
     commits, finished = controller.crawl_log(gitiles_base_url)
@@ -329,7 +335,7 @@ class TestController(testing.AppengineTestCase):
     }
     with self.mock_urlfetch() as handlers:
       handlers.register_handler(
-          gitiles_base_url + '+log/master?format=json&n=10000',
+          gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
     _, finished = controller.crawl_log(gitiles_base_url)
@@ -386,3 +392,280 @@ class TestController(testing.AppengineTestCase):
     }
     controller.write_commits_to_db( [commit_json], 'cool', 'cool_src')
     self.assertEqual(0, len(list(models.NumberingMap.query())))
+
+  def test_project_repo_scan(self):
+    my_project = model_helpers.create_project()
+    my_project.put()
+    base_url = my_project.canonical_url_template % {'project': my_project.name}
+
+    repo_data = {'cool_src': {}}
+    log_data = {u'log': []}
+
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + '?format=json&n=1000',
+          self._gitiles_json(repo_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+
+    controller.scan_projects_for_repos()
+    self.execute_queued_tasks()
+    self.assertEquals(1, len(controller.get_active_repos(my_project.name)))
+
+  def test_project_repo_scan_active(self):
+    my_project = model_helpers.create_project()
+    my_project.put()
+    base_url = my_project.canonical_url_template % {'project': my_project.name}
+
+    repo_data = {
+      'cool_src': {},
+      'cooler_src': {},
+      'uncool_src': {},
+    }
+    log_data = {u'log': []}
+
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + '?format=json&n=1000',
+          self._gitiles_json(repo_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cooler_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+      # Don't handle uncool_src, making it nonreal.
+
+    controller.scan_projects_for_repos()
+    self.execute_queued_tasks()
+    self.assertEquals(2, len(controller.get_active_repos(my_project.name)))
+
+    # Now test that active repos are inactive when they go away.
+    repo_data = {
+      'cooler_src': {},
+    }
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + '?format=json&n=1000',
+          self._gitiles_json(repo_data))
+      handlers.register_handler(
+          base_url + 'cooler_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+
+    controller.scan_projects_for_repos()
+    self.execute_queued_tasks()
+    self.assertEquals(1, len(controller.get_active_repos(my_project.name)))
+
+    # And test that they can come back.
+    repo_data = {
+      'cool_src': {},
+      'cooler_src': {},
+    }
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + '?format=json&n=1000',
+          self._gitiles_json(repo_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cooler_src/+log/master?format=json&n=1',
+          self._gitiles_json(log_data))
+    controller.scan_projects_for_repos()
+    self.execute_queued_tasks()
+    self.assertEquals(2, len(controller.get_active_repos(my_project.name)))
+
+  def test_repo_scan_for_commits(self):
+    my_project = model_helpers.create_project()
+    my_project.put()
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    base_url = my_project.canonical_url_template % {'project': my_project.name}
+
+    repo_data = {
+      my_repo.repo: {},
+    }
+    log_data = {u'log': [
+        {
+            'commit': 'deadbeef' * 5,
+            'message': 'git-svn-id: svn://svn.chromium.org/chrome/trunk/'
+                       'src@200000 0039d316-1c4b-4281-b951-d872f2087c98\n'
+                       'Cr-Commit-Position: refs/heads/master@{#301813}',
+        },
+    ]}
+
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1000',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+    controller.scan_repos()
+    self.execute_queued_tasks()
+    self.assertEqual(1, len(list(models.RevisionMap.query())))
+    self.assertEqual(
+        'deadbeef' * 5,
+        models.RevisionMap.query().fetch()[0].git_sha)
+    self.assertEqual(4, len(list(models.NumberingMap.query())))
+
+
+  def test_repo_scan_for_new_commits(self):
+    """Test all forms of new commits, before and after what has been seen."""
+    my_project = model_helpers.create_project()
+    my_project.put()
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    base_url = my_project.canonical_url_template % {'project': my_project.name}
+
+    commits = [
+        {
+            'commit': 'f007beef' * 5,
+            'message': '',
+        },
+        {
+            'commit': '000fbeef' * 5,
+            'message': '',
+        },
+        {
+            'commit': '700fbeef' * 5,
+            'message': '',
+        },
+        {
+            'commit': 'deadbeef' * 5,
+            'message': '',
+        },
+        {
+            'commit': 'feedbeef' * 5,
+            'message': '',
+        },
+        {
+            'commit': 'f00fbeef' * 5,
+            'message': '',
+        },
+        {
+            'commit': 'f33dbeef' * 5,
+            'message': '',
+        },
+    ]
+
+    repo_data = {
+      my_repo.repo: {},
+    }
+    log_data = {u'log': [
+        commits[3],
+    ]}
+
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1000',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+
+    controller.scan_repos()
+    self.execute_queued_tasks()
+
+    repo_data = {
+      my_repo.repo: {},
+    }
+    log_data = {u'log': [
+        commits[3],
+    ]}
+
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1000',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
+          self._gitiles_json(log_data))
+
+    controller.scan_repos()
+    self.execute_queued_tasks()
+
+    my_repo = models.Repo.get_key_by_id(my_project.name, my_repo.repo).get()
+    my_repo.root_commit_scanned = False
+    my_repo.first_commit = None
+    my_repo.put()
+
+    log_data = {
+        u'log': commits[0:2],
+        'next': '000fbeef' * 5,
+    }
+    ooofbeef_data = {
+        u'log': commits[1:3],
+        'next': 'deadbeef',
+    }
+    deadbeef_data = {
+        u'log': commits[3:5],
+        'next': 'feedbeef' * 5,
+    }
+    feedbeef_data = {
+        u'log':  commits[-3:-1],
+        'next': 'f00fbeef' * 5,
+    }
+    toofbeef_data = {
+        u'log': commits[2:4],
+        'next': 'feedbeef' * 5,
+    }
+    foofbeef_data = {
+        u'log': commits[-2:],
+    }
+    with self.mock_urlfetch() as handlers:
+      handlers.register_handler(
+          base_url + 'cool_src/+log/master?format=json&n=1000',
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('f007beef' * 5,),
+          self._gitiles_json(log_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('000fbeef' * 5,),
+          self._gitiles_json(ooofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('000fbeef' * 5,),
+          self._gitiles_json(ooofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
+          self._gitiles_json(deadbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('deadbeef' * 5,),
+          self._gitiles_json(deadbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('700fbeef' * 5,),
+          self._gitiles_json(toofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1' % ('700fbeef' * 5,),
+          self._gitiles_json(toofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('700fbeef' * 5,),
+          self._gitiles_json(toofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('feedbeef' * 5,),
+          self._gitiles_json(feedbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('feedbeef' * 5,),
+          self._gitiles_json(feedbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=1000' % ('f00fbeef' * 5,),
+          self._gitiles_json(foofbeef_data))
+      handlers.register_handler(
+          base_url + 'cool_src/+log/%s?format=json&n=2' % ('f00fbeef' * 5,),
+          self._gitiles_json(foofbeef_data))
+    controller.scan_repos()
+    self.execute_queued_tasks()
+
+    self.assertEqual(7, len(list(models.RevisionMap.query())))
+    my_repo = models.Repo.get_key_by_id(my_project.name, my_repo.repo).get()
+    self.assertTrue(my_repo.root_commit_scanned)

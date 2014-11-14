@@ -27,7 +27,7 @@ deps = {
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
      "appengine-pipeline.git"
-     "@aebc176319885bb7b6372229999b893947248694"),
+     "@e79945156a7a3a48eecb29b792a9b7925631aadf"),
 
   "infra/appengine/third_party/google-api-python-client":
     ("https://chromium.googlesource.com/external/github.com/google/"

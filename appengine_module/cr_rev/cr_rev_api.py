@@ -198,7 +198,6 @@ class CrRevApi(remote.Service):
         ))
     return models.ExcludedRepoList(exclusions=exclusions)
 
-
   @models.ProjectLagList.method(request_fields=('generated',),
       path='project_scan_lag', http_method='GET',
       name='project_scan_lag.get')
@@ -223,6 +222,16 @@ class CrRevApi(remote.Service):
       most_lagging_repo:  the project:repo that has the most scan lag.
     """
     return controller.calculate_lag_stats(generated=request.generated)
+
+  @models.RepoScanPipelineList.method(request_fields=('project',),
+      path='repo_scan_pipeline_list/{project}', http_method='GET',
+      name='repo_scan_pipeline_list.get')
+  def get_repo_scan_pipeline_list(self, request):  # pragma: no cover
+    return models.RepoScanPipelineList(
+        project=request.project,
+        repos=list(models.RepoScanPipeline.query(
+          models.RepoScanPipeline.project == request.project).order(
+            models.RepoScanPipeline.started)))
 
 
 APPLICATION = endpoints.api_server([CrRevApi])

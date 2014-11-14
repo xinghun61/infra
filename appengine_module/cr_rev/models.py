@@ -161,3 +161,16 @@ class ProjectLagStats(EndpointsModel):
 class ProjectLagList(EndpointsModel):
   projects = ndb.StructuredProperty(ProjectLagStats, repeated=True)
   generated = ndb.DateTimeProperty()
+
+
+class RepoScanPipeline(EndpointsModel):
+  project = ndb.StringProperty()
+  repo = ndb.StringProperty()
+  pipeline_url = ndb.StringProperty()
+  started = ndb.DateTimeProperty(auto_now=True)
+
+
+class RepoScanPipelineList(EndpointsModel):
+  project = ndb.StringProperty()
+  repos = ndb.StructuredProperty(RepoScanPipeline, repeated=True)
+

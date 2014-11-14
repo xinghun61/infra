@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 
 from appengine_module.cr_rev import models
+from google.appengine.ext import ndb
 from protorpc import protojson
 
 
@@ -16,6 +17,7 @@ def create_project():  # pragma: no cover
   my_project = models.Project()
   my_project.name = 'cool'
   my_project.last_scanned = datetime(1970, 01, 01)
+  my_project.key = ndb.Key(models.Project, my_project.name)
   return my_project
 
 
