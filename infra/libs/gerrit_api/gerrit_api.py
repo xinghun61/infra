@@ -40,7 +40,15 @@ class UnexpectedResponseException(GerritException):
 
 
 class Gerrit(object):  # pragma: no cover
-  """Wrapper around single Gerrit host."""
+  """Wrapper around a single Gerrit host.
+
+  Args:
+    host (str): gerrit host name
+    netrc_path (str): path to local netrc file. Is None, default location for
+      the current OS is used.
+    throttle_delay_sec (int): minimal time delay between two requests, to
+      avoid hammering the Gerrit server.
+  """
 
   def __init__(self, host, netrc_path=None, throttle_delay_sec=0):
     auth = _load_netrc(netrc_path).authenticators(host)
@@ -123,7 +131,7 @@ class Gerrit(object):  # pragma: no cover
       None
 
     Raises:
-      UnexpectedResponseException if call failed.
+      UnexpectedResponseException: if call failed.
     """
     if '/' in group:
       raise ValueError('Invalid group name: %s' % group)
@@ -147,7 +155,14 @@ class Gerrit(object):  # pragma: no cover
     raise UnexpectedResponseException(code, body)
 
   def activate_account(self, account_id):
-    """Sets account state to 'active'."""
+    """Sets account state to 'active'.
+ 
+    Args:
+      account_id (str): account to update
+
+    Raises:
+      UnexpectedResponseException: if gerrit does not answer the way we expected.
+    """
     if '/' in account_id:
       raise ValueError('Invalid account id: %s' % account_id)
     code, body = self._request(
@@ -164,10 +179,10 @@ def _load_netrc(path=None):  # pragma: no cover
     path: path to .netrc or None to use default path.
 
   Returns:
-    netrc.netrc instance.
+    netrc_obj (:class:`netrc.netrc`):
 
   Raises:
-    NetrcException.
+    NetrcException: if the netrc file can't be read, for any reason.
   """
   if not path:
     # HOME might not be set on Windows.
@@ -192,7 +207,14 @@ def _load_netrc(path=None):  # pragma: no cover
 
 
 def _is_response_cached(method, full_url):  # pragma: no cover
-  """Returns True if response to GET request is in requests_cache."""
+  """Returns True if response to GET request is in requests_cache.
+
+  Args:
+    method (str): http verb ('GET', 'POST', etc.)
+    full_url (str): url, including the protocol
+  Returns:
+    is_cached (bool):
+"""
   if method != 'GET':
     return False
   try:
@@ -200,3 +222,4 @@ def _is_response_cached(method, full_url):  # pragma: no cover
   except AttributeError:
     cache = None
   return cache.has_url(full_url) if cache else False
+
