@@ -30,15 +30,36 @@ jinja_environment.filters['json_dumps'] = json.dumps
 # Seed the default masters to watch.
 CBE_MASTER_URL = 'http://chrome-build-extract.appspot.com/get_master/%s'
 DEFAULT_MASTER = [
+    'chromium',
+    'chromium.chrome',
+    'chromium.chromedriver',
+    'chromium.chromiumos',
+    'chromium.endure',
+    'chromium.fyi',
+    'chromium.gatekeeper',
+    'chromium.git',
+    'chromium.gpu',
+    'chromium.gpu.fyi',
+    'chromium.linux',
+    'chromium.lkgr',
+    'chromium.mac',
+    'chromium.memory',
+    'chromium.memory.fyi',
+    'chromium.perf',
+    'chromium.swarm',
+    'chromium.webkit',
+    'chromium.webrtc',
+    'chromium.webrtc.fyi',
+    'chromium.win',
+    'tryserver.blink',
     'tryserver.chromium',
+    'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
     'tryserver.chromium.win',
-    'tryserver.chromium.gpu',
-    'tryserver.blink',
 ]
 
-# These are the steps that we will catagorize as "update".
+# These are the steps that we will categorize as "update"
 UPDATE_STEPS = [
     'update_scripts',
     'update',
