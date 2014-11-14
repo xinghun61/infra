@@ -11,6 +11,7 @@ DEPS = [
   'properties',
   'python',
   'raw_io',
+  'step',
 ]
 
 
@@ -36,14 +37,15 @@ def GenSteps(api):
       stdout=api.raw_io.output())
   files = result.stdout.splitlines()
 
-  if not all(f.startswith('go/') for f in files):
-    api.python('test.py', 'test.py', cwd=api.path['checkout'])
+  with api.step.defer_results():
+    if not all(f.startswith('go/') for f in files):
+      api.python('test.py', 'test.py', cwd=api.path['checkout'])
 
-  if any(f.startswith('go/') for f in files):
-    # Note: env.py knows how to expand 'python' into sys.executable.
-    api.python(
-        'go test.py', api.path['checkout'].join('go', 'env.py'),
-        ['python', api.path['checkout'].join('go', 'test.py')])
+    if any(f.startswith('go/') for f in files):
+      # Note: env.py knows how to expand 'python' into sys.executable.
+      api.python(
+          'go test.py', api.path['checkout'].join('go', 'env.py'),
+          ['python', api.path['checkout'].join('go', 'test.py')])
 
   api.python('presubmit',
       api.path['depot_tools'].join('presubmit_support.py'),

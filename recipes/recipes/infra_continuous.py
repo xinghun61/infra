@@ -11,6 +11,7 @@ DEPS = [
   'properties',
   'python',
   'raw_io',
+  'step',
 ]
 
 
@@ -22,12 +23,12 @@ def GenSteps(api):
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
 
-  api.python('test.py', 'test.py', cwd=api.path['checkout'])
-
-  # Note: env.py knows how to expand 'python' into sys.executable.
-  api.python(
-    'go test.py', api.path['checkout'].join('go', 'env.py'),
-    ['python', api.path['checkout'].join('go', 'test.py')])
+  with api.step.defer_results():
+    api.python('test.py', 'test.py', cwd=api.path['checkout'])
+    # Note: env.py knows how to expand 'python' into sys.executable.
+    api.python(
+      'go test.py', api.path['checkout'].join('go', 'env.py'),
+      ['python', api.path['checkout'].join('go', 'test.py')])
 
 
 def GenTests(api):
