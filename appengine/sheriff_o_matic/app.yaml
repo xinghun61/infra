@@ -5,6 +5,7 @@ api_version: 1
 threadsafe: true
 
 handlers:
+# API Endpoints.
 - url: /alerts
   script: alerts.app
   secure: always
@@ -21,6 +22,7 @@ handlers:
   script: internal_alerts.app
   secure: always
 
+# Static resources.
 - url: /favicon.ico
   static_files: favicon.ico
   upload: favicon.ico
@@ -50,12 +52,11 @@ handlers:
   static_dir: ui
   secure: always
 
-# FIXME: Write a script to do the appcfg update so that we can error out
-# if there is no bower_components, or, even better just run "bower update".
 - url: /bower_components
   static_dir: bower_components
   secure: always
 
+# Application root.
 - url: /.*
   static_files: sheriff-o-matic.html
   upload: sheriff-o-matic.html

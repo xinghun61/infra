@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://chromium.googlesource.com/chromium/blink"
+    "url": "https://chromium.googlesource.com/infra/infra"
   },
   "devDependencies": {
     "karma": "~0.12.17",

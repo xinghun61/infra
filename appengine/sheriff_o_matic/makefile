@@ -14,14 +14,10 @@ ifndef BOWER_VERSION
 	npm install -g bower
 endif
 
-update: check
-	bower update
-	npm update
-
 test: check
 	./node_modules/karma/bin/karma start
 
 single-test: check
 	./node_modules/karma/bin/karma start --single-run
 
-.PHONY: check update test single-test
+.PHONY: check test single-test
