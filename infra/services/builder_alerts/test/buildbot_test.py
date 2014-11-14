@@ -85,7 +85,8 @@ class DiskCacheTest(TestCaseWithDiskCache):
       }
     }
 
-    def mock_fetch_build_json(cache, master_url, builder_name, build_number):
+    def mock_fetch_build_json(_cache, _master_url,
+                              _builder_name, _build_number):
       k_example_build_json = {
         "blame": [
           "alexhenrie24@gmail.com@0039d316-1c4b-4281-b951-d872f2087c98",
@@ -282,6 +283,8 @@ class DiskCacheTest(TestCaseWithDiskCache):
         'chromium.webkit': {
           'Win Builder': {
             'state': 'building',
+            'monitor_url': 'https://chrome-monitor.appspot.com/view_graph' +
+                '/chromium.webkit Win Builder Times (Last 100 Builds)',
             'build_source': 'chrome-build-extract',
             'lastUpdateTime': 2.2,
             'revisions': {
@@ -567,7 +570,7 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
       }
     }
 
-    def fetch(cache, master_url, builder_name, latest_build_id):
+    def fetch(_cache, _master_url, _builder_name, _latest_build_id):
       return None, None
 
     old_fetch = buildbot.fetch_build_json

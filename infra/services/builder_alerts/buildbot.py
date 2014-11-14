@@ -241,8 +241,9 @@ def create_stale_builder_alert_if_needed(master_url, builder_name, state,
     }
   return alert
 
-# "line too long" pylint: disable=C0301
-def latest_builder_info_and_alerts_for_master(cache, master_url, master_json): # pragma: no cover
+
+def latest_builder_info_and_alerts_for_master(
+    cache, master_url, master_json):  # pragma: no cover
   latest_builder_info = collections.defaultdict(dict)
   stale_builder_alerts = []
   master_name = master_name_from_url(master_url)
@@ -266,11 +267,17 @@ def latest_builder_info_and_alerts_for_master(cache, master_url, master_json): #
     if builder_name in latest_builder_info[master_name]:
       logging.critical('Processing builder %s on %s twice in one iteration,'
           'overwriting the old value.' % (builder_name, master_name))
+    monitor_url = 'https://chrome-monitor.appspot.com/view_graph/%s %s %s' % (
+      master_name, builder_name,
+      {'offline': 'Queue/Running',
+      'building': 'Times (Last 100 Builds)',
+      'idle': 'Queue/Running'}.get(state, 'Times (Last 100 Builds)'))
     latest_builder_info[master_name][builder_name] = {
       'revisions': revisions_from_build(last_build),
       'state': state,
       'lastUpdateTime': last_update_time,
       'build_source': build_source,
+      'monitor_url': monitor_url,
     }
 
     stale_builder_alert = create_stale_builder_alert_if_needed(master_url,
