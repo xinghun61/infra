@@ -49,7 +49,7 @@ class CronWorker(webapp2.RequestHandler):
         alert = models.MostRecentAlert.get_by_id(
           '%s-latest' % config.sender)
 
-        if alert is not None and alert.total > 0:
+        if alert is not None and alert.total > 0:  # pragma: no cover
           # This means we already alerted for this particular problem. Check
           # how many times we've alerted as well as the most recent time to
           # determine if we should alert again. Here we exponentially back off
@@ -105,7 +105,7 @@ class CronWorker(webapp2.RequestHandler):
         new_total = 1
       else:
         # We've sent one more alert.
-        new_total = alert.total + 1
+        new_total = alert.total + 1  # pragma: no cover
 
       # Write this alert to the datastore again with a known ID, for fast
       # retrieval of the latest alert. We use a different class so that this

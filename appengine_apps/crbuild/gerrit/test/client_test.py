@@ -58,3 +58,7 @@ class GerritClientTestCase(CrBuildTestCase):
     self.assertEqual(change.owner.name, 'John Doe')
     self.assertEqual(change.current_revision,
                     '404d1697dca23824bc1130061a5bd2be4e073922')
+
+    # smoke test for branch coverage
+    change = client.get_change(gerrit_id, include_owner_details=True,
+                               include_all_revisions=False)

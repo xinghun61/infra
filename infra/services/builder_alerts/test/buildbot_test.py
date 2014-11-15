@@ -461,7 +461,7 @@ class FetchBuildJsonTest(TestCaseWithDiskCache):
   def test_fetch_from_cbe(self):
     # If a build is available on chrome-build-extract, use that.
     def _mock_fetch_and_cache_build(cache, url, cache_key):
-      if buildbot.CBE_BASE in url:
+      if buildbot.CBE_BASE in url:  # pragma: no branch
         return {'I come': 'from a land down under'}
     _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
 
@@ -478,7 +478,7 @@ class FetchBuildJsonTest(TestCaseWithDiskCache):
     def _mock_fetch_and_cache_build(cache, url, cache_key):
       if buildbot.CBE_BASE in url:
         return None
-      if 'build.chromium.org' in url:
+      if 'build.chromium.org' in url:  # pragma: no branch
         return {'Can you hear': 'the thunder'}
     _real_fetch_and_cache_build = buildbot.fetch_and_cache_build
 

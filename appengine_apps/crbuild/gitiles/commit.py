@@ -24,7 +24,7 @@ class GitContributor(ndb.Model):
   @classmethod
   def from_client_contributor(cls, contributor):
     """Converts from gitiles.client.GitContributor."""
-    if contributor is None:
+    if contributor is None:  #pragma: no cover
       return None
     return cls(
         name=contributor.name,
@@ -70,15 +70,15 @@ class GitilesCommit(ndb.Model, RegexIdMixin):
     return self.get_key_component(1)
 
   @property
-  def revision(self):
+  def revision(self):  #pragma: no cover
     return self.get_key_component(2)
 
   @property
-  def repo_url(self):
+  def repo_url(self):  #pragma: no cover
     return 'https://%s/%s' % (self.hostname, self.project)
 
   @property
-  def viewable_url(self):
+  def viewable_url(self):  #pragma: no cover
     return '%s/+/%s' % (self.repo_url, self.revision)
 
   @classmethod
@@ -91,7 +91,7 @@ class GitilesCommit(ndb.Model, RegexIdMixin):
                                                 revision)
     return 'gitiles~%s~%s~%s' % (hostname, project, revision)
 
-  def guess_gerrit_hostname(self):
+  def guess_gerrit_hostname(self):  #pragma: no cover
     """Tries to guess Gerrit hostname."""
     parts = self.host.split('.')
     parts[0] += '-review'
@@ -108,12 +108,12 @@ class GitilesCommit(ndb.Model, RegexIdMixin):
     client_factory = client_factory or GitilesClient
     entity_id = cls.make_id(hostname, project, revision)
     commit = cls.get_by_id(entity_id)
-    if commit is not None:
+    if commit is not None:  # pragma: no cover
       return commit
 
     client = client_factory(hostname)
     commit = client.get_commit(project, revision)
-    if not commit:
+    if not commit:  # pragma: no cover
       return None
 
     return cls.get_or_insert(

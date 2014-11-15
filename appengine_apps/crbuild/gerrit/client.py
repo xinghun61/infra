@@ -62,7 +62,7 @@ class GerritClient(GoogleSourceServiceClient):
 
     owner = None
     ownerData = data.get('owner')
-    if ownerData:
+    if ownerData:  # pragma: no branch
       owner = Owner(
           name=ownerData.get('name'),
           email=ownerData.get('email'),
@@ -88,7 +88,7 @@ class GerritClient(GoogleSourceServiceClient):
     )
 
   def set_review(self, change_id, revision, message=None, labels=None,
-                 notify=True):
+                 notify=True):  # pragma: no cover
     """Sets review on a revision.
 
     Args:

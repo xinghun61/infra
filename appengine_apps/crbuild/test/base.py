@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(pgervais): this file has no tests
+
 import base64
 import pickle
 import traceback
@@ -12,7 +14,7 @@ from test.testing_utils import testing
 import main
 
 
-class CrBuildTestCase(testing.AppengineTestCase):
+class CrBuildTestCase(testing.AppengineTestCase):  # pragma: no cover
   app_module = main.app
 
   def setUp(self):

@@ -4,13 +4,15 @@
 
 """Gitiles client for GAE environment."""
 
+# TODO(pgervais): This file is not tested at all.
+
 from datetime import datetime
 
 from gitiles.client import GitContributor, Commit
 
 
 # pylint: disable=W0613, W0622, R0201
-class GitilesClientStub(object):
+class GitilesClientStub(object):  #pragma: no cover
   def __init__(self, *args, **kwargs):
     pass
 

@@ -4,7 +4,7 @@
 
 from gitiles import GitilesCommit
 from test import CrBuildTestCase
-from test.gitiles_client_stub import GitilesClientStub
+from gitiles.test.gitiles_client_stub import GitilesClientStub
 
 
 class GitilesCommitTest(CrBuildTestCase):

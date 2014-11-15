@@ -52,10 +52,10 @@ class Build(ndb.Model):
   available_since = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
   @property
-  def builder_name(self):
+  def builder_name(self):  #pragma: no cover
     return self.properties.builder_name if self.properties else None
 
-  def set_status(self, value):
+  def set_status(self, value):  #pragma: no cover
     """Changes build status and notifies interested parties."""
     if self.status == value:
       return
@@ -66,17 +66,17 @@ class Build(ndb.Model):
     # elif value in (BuildStatus.SUCCESS, BuildStatus.FAILURE):
     #  BuildCompleted().add_to(self)
 
-  def modify_lease(self, lease_seconds):
+  def modify_lease(self, lease_seconds):  #pragma: no cover
     """Changes build's lease, updates |available_since|."""
     self.available_since = datetime.utcnow() + timedelta(seconds=lease_seconds)
 
   @property
-  def key_string(self):
+  def key_string(self):  #pragma: no cover
     """Returns an opaque key string."""
     return self.key.urlsafe() if self.key else None
 
   @classmethod
-  def parse_key_string(cls, key_string):
+  def parse_key_string(cls, key_string):  #pragma: no cover
     """Parses an opaque key string."""
     key = ndb.Key(urlsafe=key_string)
     assert key.kind() == cls
@@ -109,11 +109,11 @@ class Build(ndb.Model):
     new_available_since = now + timedelta(seconds=lease_seconds)
 
     @ndb.transactional
-    def lease_build(build):
+    def lease_build(build):  #pragma: no branch
       if build.status not in (BuildStatus.SCHEDULED, BuildStatus.BUILDING):
-        return False
-      if build.available_since > now:
-        return False
+        return False  #pragma: no cover
+      if build.available_since > now:  #pragma: no branch
+        return False  #pragma: no cover
       build.available_since = new_available_since
       build.put()
       return True
@@ -122,7 +122,7 @@ class Build(ndb.Model):
     # TODO(nodir): either optimize this query using memcache, or return builds
     # without leasing and then lease builds one by one.
     for b in q.fetch(max_builds):
-      if lease_build(b):
+      if lease_build(b):  #pragma: no branch
         builds.append(b)
     return builds
 

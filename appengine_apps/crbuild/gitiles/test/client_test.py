@@ -66,6 +66,7 @@ class GitilesClientTestCase(CrBuildTestCase):
     self.assertEqual(commit.author.email, 'john.doe@chromium.org')
 
   def test_parse_time(self):
+    # TODO(pgervais, crbug.com/433514) Test the case where there's a timezone.
     time_str = 'Fri Nov 07 17:09:03 2014'
     expected = datetime(2014, 11, 07, 17, 9, 3)
     actual = parse_time(time_str)

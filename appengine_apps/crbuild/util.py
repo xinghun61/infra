@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(pgervais): this file as no tests
+
 from calendar import timegm
 import os
 
@@ -10,11 +12,11 @@ DEV_SERVER = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 PRODUCTION = not DEV_SERVER
 
 
-def datetime_to_timestamp(dt):
+def datetime_to_timestamp(dt):  #pragma: no cover
   return float(timegm(dt.timetuple()))
 
 
-class RegexIdMixin(object):
+class RegexIdMixin(object):  #pragma: no cover
   """RegexIdMixin enforces an entity id to match a regular expression.
 
   Can be mixed into an entity, like this:

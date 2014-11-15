@@ -4,6 +4,8 @@
 
 """Base classes for Gerrit/Gitiles services hosted at googlesource.com."""
 
+# TODO(pgervais): this file is not tested at all.
+
 import httplib
 import json
 import logging
@@ -17,7 +19,7 @@ AUTH_SCOPE = 'https://www.googleapis.com/auth/gerritcodereview'
 RESPONSE_PREFIX = ")]}'"
 
 
-class Error(Exception):
+class Error(Exception):  #pragma: no cover
   """Exception class for errors commuicating with a Google Source service."""
   def __init__(self, http_status, *args, **kwargs):
     super(Error, self).__init__(*args, **kwargs)
@@ -30,7 +32,7 @@ class AuthenticationError(Error):
   """Exception class for authentication errors with a Google Source service."""
 
 
-class GoogleSourceServiceClient(object):
+class GoogleSourceServiceClient(object):  #pragma: no cover
   """Base class for GerritClient and GitilesClient hosted at googlesource.com.
 
   Requests are authenticated, blocking and not retried. If you need retries, use
@@ -94,4 +96,3 @@ class GoogleSourceServiceClient(object):
       raise Error(response.status_code, msg)
     content = content[len(RESPONSE_PREFIX):]
     return json.loads(content)
-
