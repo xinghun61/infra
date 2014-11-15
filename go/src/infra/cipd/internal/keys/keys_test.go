@@ -5,6 +5,8 @@
 package keys
 
 import (
+	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
 	"strings"
@@ -121,4 +123,85 @@ UFzBFAy3uJJ1AgMBAAE=
 		So(fp, ShouldEqual, testFingerprint)
 		So(err, ShouldBeNil)
 	})
+
+	Convey("PublicKeyToPEM -> PublicKeyFromPEM roundtrip", t, func() {
+		pem, err := PublicKeyToPEM(&testKey)
+		So(err, ShouldBeNil)
+		key, err := PublicKeyFromPEM(pem)
+		So(err, ShouldBeNil)
+		So(key, ShouldResemble, &testKey)
+	})
+
+	Convey("CheckRSASignature works", t, func() {
+		// Get key pair.
+		private, public := genKey()
+
+		// Hash.
+		h := crypto.SHA1.New()
+		h.Write([]byte("abcdef"))
+		digest := h.Sum([]byte{})
+
+		// Sign.
+		sign, err := rsa.SignPKCS1v15(nil, private, crypto.SHA1, digest)
+		So(err, ShouldBeNil)
+		So(len(sign), ShouldNotEqual, 0)
+
+		// Check.
+		ok := CheckRSASignature(public, crypto.SHA1, digest, sign)
+		So(ok, ShouldBeTrue)
+	})
+
+	Convey("CheckRSASignature no key", t, func() {
+		ok := CheckRSASignature(&PublicKey{}, crypto.SHA1, []byte{}, []byte{})
+		So(ok, ShouldBeFalse)
+	})
+
+	Convey("CheckRSASignature broken key", t, func() {
+		pubkey := &PublicKey{
+			Valid:       true,
+			Name:        "name",
+			Fingerprint: "fingerprint",
+			PEM:         string(testKeyPEMWithGarbage),
+		}
+		ok := CheckRSASignature(pubkey, crypto.SHA1, []byte{}, []byte{})
+		So(ok, ShouldBeFalse)
+	})
+
+	Convey("CheckRSASignature wrong key", t, func() {
+		// Get key pairs.
+		private_1, _ := genKey()
+		_, public_2 := genKey()
+
+		// Hash.
+		h := crypto.SHA1.New()
+		h.Write([]byte("abcdef"))
+		digest := h.Sum([]byte{})
+
+		// Sign with key 1.
+		sign, err := rsa.SignPKCS1v15(nil, private_1, crypto.SHA1, digest)
+		So(err, ShouldBeNil)
+		So(len(sign), ShouldNotEqual, 0)
+
+		// Check with key 2.
+		ok := CheckRSASignature(public_2, crypto.SHA1, digest, sign)
+		So(ok, ShouldBeFalse)
+	})
+}
+
+func genKey() (*rsa.PrivateKey, *PublicKey) {
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic("Can't generate RSA key")
+	}
+	publicPem, err := PublicKeyToPEM(&key.PublicKey)
+	if err != nil {
+		panic("Can't encode public key to PEM")
+	}
+	pubKey := &PublicKey{
+		Valid:       true,
+		Name:        "name",
+		Fingerprint: "fingerprint",
+		PEM:         string(publicPem),
+	}
+	return key, pubKey
 }

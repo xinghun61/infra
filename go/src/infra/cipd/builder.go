@@ -7,15 +7,10 @@ package cipd
 import (
 	"archive/zip"
 	"bytes"
-	"crypto/rsa"
-	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
-
-	"infra/cipd/internal/keys"
 )
 
 // BuildPackageOptions defines options for BuildPackage function.
@@ -26,18 +21,6 @@ type BuildPackageOptions struct {
 	Output io.Writer
 	// Package name, e.g. 'infra/cipd'.
 	PackageName string
-}
-
-// BuildPackageOptions defines options for SignPackage function.
-type SignPackageOptions struct {
-	// Reads package data (excluding any existing inline signatures!).
-	Package io.Reader
-	// Where to write the signature data to.
-	Output io.Writer
-	// Private key to sign the package with.
-	PrivateKey *rsa.PrivateKey
-	// Source of randomness for the signing.
-	Random io.Reader
 }
 
 // BuildPackage builds a new package (named opts.PackageName) by archiving
@@ -71,36 +54,6 @@ func BuildPackage(opts BuildPackageOptions) error {
 
 	// Write the final zip file.
 	return zipInputFiles(files, opts.Output)
-}
-
-// SignPackage generates a signature given package file.
-func SignPackage(opts SignPackageOptions) error {
-	// Hash.
-	hash := sigBlockHash.New()
-	_, err := io.Copy(hash, opts.Package)
-	if err != nil {
-		return err
-	}
-	digest := hash.Sum(nil)
-
-	// Sign the hash with the private key to get the signature.
-	sig, err := rsa.SignPKCS1v15(opts.Random, opts.PrivateKey, sigBlockHash, digest)
-	if err != nil {
-		return err
-	}
-	keyFingerprint, err := keys.PublicKeyFingerprint(&opts.PrivateKey.PublicKey)
-	if err != nil {
-		return err
-	}
-
-	// Append PEM encoded signature block to the end, reader will scan for PEM
-	// header and footer to figure out how to read it.
-	block, err := makeSignatureBlock(digest, sig, keyFingerprint)
-	if err != nil {
-		return err
-	}
-	_, err = opts.Output.Write(block)
-	return err
 }
 
 // zipInputFiles deterministically builds a zip archive out of input files and
@@ -178,30 +131,4 @@ func makeManifestFile(opts BuildPackageOptions) (File, error) {
 	}
 	out := manifestFile(buf.Bytes())
 	return &out, nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// makeSignatureBlock produces byte buffer with PEM encoded signature JSON.
-func makeSignatureBlock(digest []byte, sig []byte, keyFingerprint string) ([]byte, error) {
-	// To JSON byte array.
-	block := SignatureBlock{
-		HashAlgo:      sigBlockHashName,
-		Hash:          digest,
-		SignatureAlgo: sigBlockSigName,
-		SignatureKey:  keyFingerprint,
-		Signature:     sig,
-	}
-	data, err := json.Marshal(block)
-	if err != nil {
-		return nil, err
-	}
-
-	// To PEM encoded byte array.
-	asPem := pem.EncodeToMemory(&pem.Block{
-		Type:  sigBlockPEMType,
-		Bytes: data,
-	})
-
-	return asPem, nil
 }

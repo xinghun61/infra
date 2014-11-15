@@ -14,7 +14,7 @@ import (
 )
 
 func TestScanFileSystem(t *testing.T) {
-	Convey("Given an temp directory", t, func() {
+	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
 		Reset(func() { os.RemoveAll(tempDir) })
@@ -106,4 +106,174 @@ func writeFile(root string, path string, data string, mode os.FileMode) {
 	if err != nil {
 		panic("Failed to write a temp file")
 	}
+}
+
+func TestFileSystemDestination(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		destDir := filepath.Join(tempDir, "dest")
+		So(err, ShouldBeNil)
+		dest := NewFileSystemDestination(destDir)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		writeToDest := func(name string, executable bool, data string) {
+			writer, err := dest.CreateFile(name, executable)
+			if writer != nil {
+				defer writer.Close()
+			}
+			So(err, ShouldBeNil)
+			_, err = writer.Write([]byte(data))
+			So(err, ShouldBeNil)
+		}
+
+		Convey("Empty success write works", func() {
+			So(dest.Begin(), ShouldBeNil)
+			So(dest.End(true), ShouldBeNil)
+
+			// Should create a new directory.
+			stat, err := os.Stat(destDir)
+			So(err, ShouldBeNil)
+			So(stat.IsDir(), ShouldBeTrue)
+
+			// And it should be empty.
+			files, err := ScanFileSystem(destDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 0)
+		})
+
+		Convey("Empty failed write works", func() {
+			So(dest.Begin(), ShouldBeNil)
+			So(dest.End(false), ShouldBeNil)
+
+			// Doesn't create a directory.
+			_, err := os.Stat(destDir)
+			So(os.IsNotExist(err), ShouldBeTrue)
+		})
+
+		Convey("Double begin or double end fails", func() {
+			So(dest.Begin(), ShouldBeNil)
+			So(dest.Begin(), ShouldNotBeNil)
+			So(dest.End(true), ShouldBeNil)
+			So(dest.End(true), ShouldNotBeNil)
+		})
+
+		Convey("CreateFile works only when destination is open", func() {
+			wr, err := dest.CreateFile("testing", true)
+			So(wr, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Committing bunch of files works", func() {
+			So(dest.Begin(), ShouldBeNil)
+			writeToDest("a", false, "a data")
+			writeToDest("exe", true, "exe data")
+			writeToDest("dir/c", false, "dir/c data")
+			writeToDest("dir/dir/d", false, "dir/dir/c data")
+			So(dest.End(true), ShouldBeNil)
+
+			// Ensure everything is there.
+			files, err := ScanFileSystem(destDir)
+			So(err, ShouldBeNil)
+			names := []string{}
+			for _, f := range files {
+				names = append(names, f.Name())
+			}
+			So(names, ShouldResemble, []string{
+				"a",
+				"dir/c",
+				"dir/dir/d",
+				"exe",
+			})
+
+			// Ensure data is valid.
+			r, err := files[0].Open()
+			if r != nil {
+				defer r.Close()
+			}
+			So(err, ShouldBeNil)
+			data, err := ioutil.ReadAll(r)
+			So(err, ShouldBeNil)
+			So(data, ShouldResemble, []byte("a data"))
+
+			// Ensure file mode is valid.
+			So(files[3].Name(), ShouldEqual, "exe")
+			So(files[3].Executable(), ShouldBeTrue)
+
+			// Ensure no temp files left.
+			allFiles, err := ScanFileSystem(tempDir)
+			So(len(allFiles), ShouldEqual, len(files))
+		})
+
+		Convey("Rolling back bunch of files works", func() {
+			So(dest.Begin(), ShouldBeNil)
+			writeToDest("a", false, "a data")
+			writeToDest("dir/c", false, "dir/c data")
+			So(dest.End(false), ShouldBeNil)
+
+			// No dest directory.
+			_, err := os.Stat(destDir)
+			So(os.IsNotExist(err), ShouldBeTrue)
+
+			// Ensure no temp files left.
+			allFiles, err := ScanFileSystem(tempDir)
+			So(len(allFiles), ShouldEqual, 0)
+		})
+
+		Convey("Overwriting a directory works", func() {
+			// Create dest directory manually with some stuff.
+			err := os.Mkdir(destDir, 0777)
+			So(err, ShouldBeNil)
+			err = ioutil.WriteFile(filepath.Join(destDir, "data"), []byte("data"), 0666)
+			So(err, ShouldBeNil)
+
+			// Now deploy something to it.
+			So(dest.Begin(), ShouldBeNil)
+			writeToDest("a", false, "a data")
+			So(dest.End(true), ShouldBeNil)
+
+			// Overwritten.
+			files, err := ScanFileSystem(destDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 1)
+			So(files[0].Name(), ShouldEqual, "a")
+		})
+
+		Convey("Not overwriting a directory works", func() {
+			// Create dest directory manually with some stuff.
+			err := os.Mkdir(destDir, 0777)
+			So(err, ShouldBeNil)
+			err = ioutil.WriteFile(filepath.Join(destDir, "data"), []byte("data"), 0666)
+			So(err, ShouldBeNil)
+
+			// Now attempt deploy something to it, but roll back.
+			So(dest.Begin(), ShouldBeNil)
+			writeToDest("a", false, "a data")
+			So(dest.End(false), ShouldBeNil)
+
+			// Kept as it.
+			files, err := ScanFileSystem(destDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 1)
+			So(files[0].Name(), ShouldEqual, "data")
+		})
+
+		Convey("Opening file twice fails", func() {
+			So(dest.Begin(), ShouldBeNil)
+			writeToDest("a", false, "a data")
+			w, err := dest.CreateFile("a", false)
+			So(w, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+			So(dest.End(true), ShouldBeNil)
+		})
+
+		Convey("End with opened files fail", func() {
+			So(dest.Begin(), ShouldBeNil)
+			w, err := dest.CreateFile("a", false)
+			So(w, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+			So(dest.End(true), ShouldNotBeNil)
+			w.Close()
+			So(dest.End(true), ShouldBeNil)
+		})
+	})
 }

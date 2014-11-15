@@ -96,3 +96,19 @@ func PublicKeyFingerprint(k *rsa.PublicKey) (string, error) {
 	h.Write(blob)
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
+
+// CheckRSASignature verifies the signature on a given digest.
+func CheckRSASignature(publicKey *PublicKey, hash crypto.Hash, digest []byte, sig []byte) bool {
+	if !publicKey.Valid {
+		return false
+	}
+	key, err := PublicKeyFromPEM([]byte(publicKey.PEM))
+	if err != nil {
+		return false
+	}
+	err = rsa.VerifyPKCS1v15(key, hash, digest, sig)
+	if err != nil {
+		return false
+	}
+	return true
+}
