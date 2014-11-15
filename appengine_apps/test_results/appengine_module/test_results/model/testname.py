@@ -30,7 +30,7 @@ class TestName(ndb.Model):
     cls.NAME_REVERSE_CACHE[e.key.integer_id()] = e.name
 
   @classmethod
-  def _guaranteeNameCache(cls):
+  def _guaranteeNameCache(cls):  # pragma: no cover
     if cls.NAME_CACHE:
       return
     q = cls.query()
