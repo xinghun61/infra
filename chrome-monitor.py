@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import time
+import urllib
 import webapp2
 
 from google.appengine.api import memcache
@@ -425,10 +426,16 @@ class UpdateBuildQueue(webapp2.RequestHandler):
       data['running'] = 0
 
     for builder_name, builder_data in master_data['builders'].iteritems():
-      taskqueue.add(url='/tasks/update_builder_success_rate/%s/%s/100' % (
-          master, builder_name))
-      taskqueue.add(url='/tasks/update_builder_times/%s/%s/100' % (
-          master, builder_name))
+      urls = [
+          '/tasks/update_builder_success_rate/%s/%s/100' % (
+              master, builder_name),
+          '/tasks/update_builder_times/%s/%s/100' % (
+              master, builder_name)
+      ]
+      for url in urls:
+        url = urllib.quote(url)
+        logging.debug('Adding %s' % url)
+        taskqueue.add(url=url)
 
       pending = builder_data['pendingBuilds']
       current = len(builder_data['currentBuilds'])
@@ -518,9 +525,10 @@ class UpdateBuilderTimes(webapp2.RequestHandler):
   """
   @render_json
   def get(self, master, builder, num_builds):
-    url = ('https://chrome-build-extract.appspot.com/get_builds'
-           '?master=%s&builder=%s&num_builds=%s' % (
-               master, builder, num_builds))
+    url = urllib.quote(
+        'https://chrome-build-extract.appspot.com/get_builds'
+        '?master=%s&builder=%s&num_builds=%s' % (
+            master, builder, num_builds))
     builds_data = json.loads(urlfetch.fetch(url, deadline=600).content)
 
     times = []
@@ -665,17 +673,12 @@ class UpdateAll(webapp2.RequestHandler):
     """
     for master in DEFAULT_MASTER:
       # Populate the build queue graphs for each master.
-      taskqueue.add('/tasks/update_build_queue/%s' %  master)
+      url = '/tasks/update_build_queue/%s' %  master
+      logging.debug('Adding %s' % url)
+      taskqueue.add(url=url)
 
     # Update CQ statistics.
     taskqueue.add(url='/tasks/update_cq')
-
-    # Now we get into the grungier, datastore maintaince cases.
-    # We want to prune all the graphs so that they take up less space.
-    for graph in GraphModel.query().fetch():
-      url = '/tasks/prune_graph/%s' % graph.key.id()
-      logging.debug('Adding %s' % url)
-      taskqueue.add(url=url, queue_name='graphs')
 
 
 app = webapp2.WSGIApplication([
