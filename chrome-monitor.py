@@ -52,12 +52,14 @@ DEFAULT_MASTER = [
     'chromium.webrtc',
     'chromium.webrtc.fyi',
     'chromium.win',
+    'client.v8',
     'tryserver.blink',
     'tryserver.chromium',
     'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
     'tryserver.chromium.win',
+    'tryserver.v8',
 ]
 
 # These are the steps that we will categorize as "update"
