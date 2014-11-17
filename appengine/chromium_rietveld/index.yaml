@@ -401,3 +401,9 @@ indexes:
   properties:
   - name: result
   - name: timestamp
+
+- kind: TryJobResult
+  properties:
+  - name: result
+  - name: timestamp
+    direction: desc
