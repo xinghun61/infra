@@ -21,6 +21,10 @@ class PatchsetAnalyzer(AnalyzerGroup):
       AttemptCount,
       AttemptDurations,
       AttemptFalseRejectCount,
+      AttemptFalseRejectCommitCount,
+      AttemptFalseRejectCQPresubmitCount,
+      AttemptFalseRejectTriggerCount,
+      AttemptFalseRejectTryjobCount,
       BlockedOnClosedTreeDurations,
       BlockedOnThrottledTreeDurations,
       IssueCount,
@@ -55,26 +59,51 @@ class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed attempts on a committed patch that passed '
                  'presubmit, had all LGTMs and were not manually cancelled.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    patch_committed = False
-    false_reject_count = 0
-    for attempt in all_attempts:
-      for record in attempt:
-        action = record.fields.get('action')
-        if action == 'patch_committed':
-          patch_committed = True
-          break
-        if action == 'patch_stop':
-          # TODO(alancutter): Make the CQ indicate these directly instead of
-          # fishing the patch_stop message for arbitrary human phrases.
-          message = record.fields.get('message', '')
-          if ('CQ bit was unchecked on CL' in message or
-             'No LGTM' in message or
-             ('Try jobs failed' in message and 'presubmit' in message)):
-            break
-      else:
-        false_reject_count += 1
-    if patch_committed:
-      self.tally[reference] = false_reject_count
+    if has_any_actions(all_attempts, 'patch_committed'):
+      self.tally[reference] = sum(1
+          for attempt in all_attempts
+          for record in attempt
+          if is_flaky_failure_record(record))
+
+
+class AttemptFalseRejectCommitCount(CountAnalyzer):  # pragma: no cover
+  description = ('Number of failed commit attempts on a committed patch.')
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    if has_any_actions(all_attempts, 'patch_committed'):
+      self.tally[reference] = sum(1
+          for attempt in all_attempts
+          for record in attempt
+          if is_failure_record('failed_commit', record))
+
+
+class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):  # pragma: no cover
+  description = ('Number of failed CQ presubmit checks on a committed patch.')
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    if has_any_actions(all_attempts, 'patch_committed'):
+      self.tally[reference] = sum(1
+          for attempt in all_attempts
+          for record in attempt
+          if is_failure_record('failed_presubmit_check', record))
+
+
+class AttemptFalseRejectTriggerCount(CountAnalyzer):  # pragma: no cover
+  description = ('Number of failed job trigger attempts on a committed patch.')
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    if has_any_actions(all_attempts, 'patch_committed'):
+      self.tally[reference] = sum(1
+          for attempt in all_attempts
+          for record in attempt
+          if is_failure_record('failed_to_trigger_jobs', record))
+
+
+class AttemptFalseRejectTryjobCount(CountAnalyzer):  # pragma: no cover
+  description = ('Number of failed job attempts on a committed patch.')
+  def new_attempts(self, project, reference, all_attempts, interval_attempts):
+    if has_any_actions(all_attempts, 'patch_committed'):
+      self.tally[reference] = sum(1
+          for attempt in all_attempts
+          for record in attempt
+          if is_failure_record('failed_jobs', record))
 
 
 class BlockedOnClosedTreeDurations(ListAnalyzer):  # pragma: no cover
@@ -229,3 +258,31 @@ def duration_between_actions(attempts, action_start, action_end,
   if duration_valid:
     return duration
   return None
+
+
+def is_flaky_failure_record(record):  # pragma: no cover
+  if record.fields.get('action') == 'patch_failed':
+    fail_type = record.fields.get('reason', {}).get('fail_type')
+    valid_fail = fail_type in (
+      'failed_presubmit_bot',
+      'missing_lgtm',
+      'not_lgtm',
+    )
+    if valid_fail:
+      return False
+    message = record.fields.get('message')
+    valid_fail = message and (
+      'No LGTM' in message or
+      'A disapproval has been posted' in message or
+      'Failed to apply' in message or
+      'Presubmit check' in message or
+      'Transient error: Invalid delimiter' in message or
+      ('Try jobs failed' in message and 'presubmit' in message))
+    return not valid_fail
+  return False
+
+
+def is_failure_record(fail_type_check, record):  # pragma: no cover
+  action = record.fields.get('action')
+  fail_type = record.fields.get('reason', {}).get('fail_type')
+  return action == 'patch_failed' and fail_type == fail_type_check

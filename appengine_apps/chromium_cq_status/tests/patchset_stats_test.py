@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import itertools
+
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
 from tests.stats_test import StatsTest, hours
 from stats.analysis import PatchsetReference
@@ -44,57 +46,87 @@ class PatchsetStatsTest(StatsTest):
         ),
       ), self.get_stats('attempt-durations'))
 
-  false_reject_attempt_records = (
-    (0, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
-    (2, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
-    (3, {'issue': 1, 'patchset': 1, 'action': 'patch_committed'}),
-    (4, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
+  def false_reject_message_records(issue, message): # pylint: disable-msg=E0213
+    return (
+      (0, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': issue, 'patchset': 1, 'action': 'patch_failed',
+          'message': message}),
+      (2, {'issue': issue, 'patchset': 1, 'action': 'patch_stop'}),
+      (3, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
+      (4, {'issue': issue, 'patchset': 1, 'action': 'patch_committed'}),
+      (5, {'issue': issue, 'patchset': 1, 'action': 'patch_stop'}),
+    )
 
-    (0, {'issue': 2, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
+  def false_reject_fail_type_records(issue, fail_type): # pylint: disable-msg=E0213,C0301
+    return (
+      (0, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': issue, 'patchset': 1, 'action': 'patch_failed',
+          'reason': {'fail_type': fail_type}}),
+      (2, {'issue': issue, 'patchset': 1, 'action': 'patch_stop'}),
+      (3, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
+      (4, {'issue': issue, 'patchset': 1, 'action': 'patch_committed'}),
+      (5, {'issue': issue, 'patchset': 1, 'action': 'patch_stop'}),
+    )
 
-    (0, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 3, 'patchset': 1, 'action': 'patch_stop',
-        'message': 'CQ bit was unchecked on CL'}),
-    (2, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
-    (3, {'issue': 3, 'patchset': 1, 'action': 'patch_committed'}),
-    (4, {'issue': 3, 'patchset': 1, 'action': 'patch_stop'}),
+  false_reject_attempt_records = itertools.chain((
+      (0, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': 1, 'patchset': 1, 'action': 'patch_failed'}),
+      (2, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
+      (3, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
+      (4, {'issue': 1, 'patchset': 1, 'action': 'patch_committed'}),
+      (5, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
 
-    (0, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 4, 'patchset': 1, 'action': 'patch_stop',
-        'message': 'No LGTM'}),
-    (2, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
-    (3, {'issue': 4, 'patchset': 1, 'action': 'patch_committed'}),
-    (4, {'issue': 4, 'patchset': 1, 'action': 'patch_stop'}),
+      (0, {'issue': 2, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': 2, 'patchset': 1, 'action': 'patch_failed'}),
+      (2, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
+      (3, {'issue': 2, 'patchset': 1, 'action': 'patch_start'}),
+      (4, {'issue': 2, 'patchset': 1, 'action': 'patch_stop'}),
 
-    (0, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 5, 'patchset': 1, 'action': 'patch_stop',
-        'message': 'Try jobs failed: project_presubmit'}),
-    (2, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
-    (3, {'issue': 5, 'patchset': 1, 'action': 'patch_committed'}),
-    (4, {'issue': 5, 'patchset': 1, 'action': 'patch_stop'}),
+      (0, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': 3, 'patchset': 1, 'action': 'patch_stop',
+          'message': 'CQ bit was unchecked on CL'}),
+      (2, {'issue': 3, 'patchset': 1, 'action': 'patch_start'}),
+      (3, {'issue': 3, 'patchset': 1, 'action': 'patch_committed'}),
+      (4, {'issue': 3, 'patchset': 1, 'action': 'patch_stop'}),
 
-    (0, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 6, 'patchset': 1, 'action': 'patch_stop',
-        'message': 'Try jobs failed: project_trybot'}),
-    (2, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
-    (3, {'issue': 6, 'patchset': 1, 'action': 'patch_committed'}),
-    (4, {'issue': 6, 'patchset': 1, 'action': 'patch_stop'}),
+      (0, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': 4, 'patchset': 1, 'action': 'patch_stop',
+          'message': 'A disapproval has been posted'}),
+      (2, {'issue': 4, 'patchset': 1, 'action': 'patch_start'}),
+      (3, {'issue': 4, 'patchset': 1, 'action': 'patch_committed'}),
+      (4, {'issue': 4, 'patchset': 1, 'action': 'patch_stop'}),
 
-    (-4, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
-    (-3, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
-    (-2, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
-    (-1, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
-    (0, {'issue': 7, 'patchset': 1, 'action': 'patch_start'}),
-    (1, {'issue': 7, 'patchset': 1, 'action': 'patch_committed'}),
-    (2, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
+      (-6, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
+      (-5, {'issue': 5, 'patchset': 1, 'action': 'patch_failed'}),
+      (-4, {'issue': 5, 'patchset': 1, 'action': 'patch_stop'}),
+      (-3, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
+      (-2, {'issue': 5, 'patchset': 1, 'action': 'patch_failed'}),
+      (-1, {'issue': 5, 'patchset': 1, 'action': 'patch_stop'}),
+      (0, {'issue': 5, 'patchset': 1, 'action': 'patch_start'}),
+      (1, {'issue': 5, 'patchset': 1, 'action': 'patch_committed'}),
+      (2, {'issue': 5, 'patchset': 1, 'action': 'patch_stop'}),
 
-    (20, {'issue': 8, 'patchset': 1, 'action': 'patch_start'}),
-    (21, {'issue': 8, 'patchset': 1, 'action': 'patch_stop'}),
-    (22, {'issue': 8, 'patchset': 1, 'action': 'patch_start'}),
-    (23, {'issue': 8, 'patchset': 1, 'action': 'patch_committed'}),
-    (24, {'issue': 8, 'patchset': 1, 'action': 'patch_stop'}),
+      (20, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
+      (21, {'issue': 6, 'patchset': 1, 'action': 'patch_stop'}),
+      (22, {'issue': 6, 'patchset': 1, 'action': 'patch_start'}),
+      (23, {'issue': 6, 'patchset': 1, 'action': 'patch_committed'}),
+      (24, {'issue': 6, 'patchset': 1, 'action': 'patch_stop'}),
+    ),
+    false_reject_message_records(7, 'Presubmit check'),
+    false_reject_message_records(8, 'Transient error: Invalid delimiter'),
+    false_reject_message_records(9, 'Try jobs failed: project_tester'),
+    false_reject_message_records(10, 'Try jobs failed: project_presubmit'),
+    false_reject_message_records(11, 'No LGTM'),
+    false_reject_message_records(12, 'Failed to apply'),
+    false_reject_message_records(13, ''),
+    false_reject_fail_type_records(14, 'failed_commit'),
+    false_reject_fail_type_records(15, 'failed_presubmit_check'),
+    false_reject_fail_type_records(16, 'failed_presubmit_bot'),
+    false_reject_fail_type_records(17, 'failed_jobs'),
+    false_reject_fail_type_records(18, 'failed_to_trigger_jobs'),
+    false_reject_fail_type_records(19, 'missing_lgtm'),
+    false_reject_fail_type_records(20, 'not_lgtm'),
+    false_reject_fail_type_records(21, ''),
   )
 
   def test_attempt_false_reject_count(self):
@@ -106,10 +138,42 @@ class PatchsetStatsTest(StatsTest):
                      'and were not manually cancelled.'),
         tally={
           PatchsetReference(1, 1): 1,
-          PatchsetReference(6, 1): 1,
-          PatchsetReference(7, 1): 2,
+          PatchsetReference(5, 1): 2,
+          PatchsetReference(9, 1): 1,
+          PatchsetReference(13, 1): 1,
+          PatchsetReference(14, 1): 1,
+          PatchsetReference(15, 1): 1,
+          PatchsetReference(17, 1): 1,
+          PatchsetReference(18, 1): 1,
+          PatchsetReference(21, 1): 1,
         },
       ), self.get_stats('attempt-false-reject-count'))
+
+    self.assertEquals(self.create_count(
+        name='attempt-false-reject-commit-count',
+        description='Number of failed commit attempts on a committed patch.',
+        tally={PatchsetReference(14, 1): 1},
+      ), self.get_stats('attempt-false-reject-commit-count'))
+
+    self.assertEquals(self.create_count(
+        name='attempt-false-reject-cq-presubmit-count',
+        description=('Number of failed CQ presubmit checks on a committed '
+                     'patch.'),
+        tally={PatchsetReference(15, 1): 1},
+      ), self.get_stats('attempt-false-reject-cq-presubmit-count'))
+
+    self.assertEquals(self.create_count(
+        name='attempt-false-reject-trigger-count',
+        description=('Number of failed job trigger attempts on a committed '
+                     'patch.'),
+        tally={PatchsetReference(18, 1): 1},
+      ), self.get_stats('attempt-false-reject-trigger-count'))
+
+    self.assertEquals(self.create_count(
+        name='attempt-false-reject-tryjob-count',
+        description='Number of failed job attempts on a committed patch.',
+        tally={PatchsetReference(17, 1): 1},
+      ), self.get_stats('attempt-false-reject-tryjob-count'))
 
   def test_blocked_on_closed_tree_durations(self):
     self.analyze_records(

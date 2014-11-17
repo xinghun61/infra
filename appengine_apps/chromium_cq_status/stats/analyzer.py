@@ -64,4 +64,7 @@ class AnalyzerGroup(Analyzer):  # pragma: no cover
     return chain(*(analyzer.build_stats() for analyzer in self.analyzers))
 
 def dashed_class_name(obj):  # pragma: no cover
-  return re.sub(r'([a-z])([A-Z])', r'\1-\2', type(obj).__name__).lower()
+  name = type(obj).__name__
+  name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
+  name = re.sub(r'([A-Z])([A-Z][a-z])', r'\1-\2', name)
+  return name.lower()
