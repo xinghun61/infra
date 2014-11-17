@@ -16,8 +16,9 @@ from shared.parsing import (
   parse_strings,
   parse_timestamp,
 )
-from shared.utils import cross_origin_json
+from shared import utils
 
+@utils.memcachize(use_cache_check=utils.has_end_timestamp)
 def execute_query(
     key, begin, end, tags, fields, count, cursor): # pragma: no cover
   records = []
@@ -62,7 +63,7 @@ def matches_fields(fields, record): # pragma: no cover
   return True
 
 class Query(webapp2.RequestHandler): # pragma: no cover
-  @cross_origin_json
+  @utils.cross_origin_json
   def get(self, url_tags): # pylint: disable-msg=W0221
     try:
       params = parse_request(self.request, {

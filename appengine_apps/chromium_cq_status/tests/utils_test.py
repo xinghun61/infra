@@ -103,3 +103,28 @@ class TestUtils(testing.AppengineTestCase):
     self.assertEquals('', webapp.response.body)
     self.assertTrue(webapp.response.headers.is_cross_origin)
     self.assertFalse(webapp.response.headers.is_json_content)
+
+  def test_memcachize(self):
+    c = 0
+    @utils.memcachize()
+    def test(a, b):
+      return a + b + c
+    self.assertEquals(test(a=1, b=2), 3)
+    c = 1
+    self.assertEquals(test(a=1, b=2), 3)
+    self.assertEquals(test(a=2, b=1), 4)
+
+  def test_memcachize_check(self):
+    def check(**kwargs):
+      return kwargs['use_cache']
+    c = 0
+    @utils.memcachize(use_cache_check=check)
+    def test(a, b, use_cache): # pylint: disable-msg=W0613
+      return a + b + c
+    self.assertEquals(test(a=1, b=2, use_cache=False), 3)
+    c = 1
+    self.assertEquals(test(a=1, b=2, use_cache=True), 4)
+    c = 2
+    self.assertEquals(test(a=1, b=2, use_cache=True), 4)
+    self.assertEquals(test(a=2, b=1, use_cache=True), 5)
+    self.assertEquals(test(a=1, b=2, use_cache=False), 5)

@@ -17,8 +17,9 @@ from shared.parsing import (
   parse_timestamp,
   use_default,
 )
-from shared.utils import cross_origin_json
+from shared import utils
 
+@utils.memcachize(use_cache_check=utils.has_end_timestamp)
 def execute_query(key, project, interval_minutes, begin, end, names,
     count, cursor): # pragma: no cover
   stats_list = []
@@ -60,7 +61,7 @@ def execute_query(key, project, interval_minutes, begin, end, names,
   }
 
 class StatsQuery(webapp2.RequestHandler): # pragma: no cover
-  @cross_origin_json
+  @utils.cross_origin_json
   def get(self):
     try:
       params = parse_request(self.request, {
