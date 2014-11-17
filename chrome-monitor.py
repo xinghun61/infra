@@ -52,6 +52,7 @@ DEFAULT_MASTER = [
     'chromium.webrtc',
     'chromium.webrtc.fyi',
     'chromium.win',
+    'client.chromeoffice',
     'client.v8',
     'tryserver.blink',
     'tryserver.chromium',
