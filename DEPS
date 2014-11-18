@@ -4,7 +4,7 @@ deps = {
 
   "infra/appengine/swarming":
     ("https://chromium.googlesource.com/infra/swarming.git"
-     "@71e23671771113b6ddb69ac11735ad651e42460c"),
+     "@2c27b4c2c4c206ebb2bb6563054128e006b4069a"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
