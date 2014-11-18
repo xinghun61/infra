@@ -263,7 +263,8 @@ def duration_between_actions(attempts, action_start, action_end,
 
 def is_flaky_failure_record(record):  # pragma: no cover
   if record.fields.get('action') == 'patch_failed':
-    fail_type = record.fields.get('reason', {}).get('fail_type')
+    reason = record.fields.get('reason') or {}
+    fail_type = reason.get('fail_type')
     valid_fail = fail_type in (
       'failed_presubmit_bot',
       'missing_lgtm',
@@ -285,5 +286,6 @@ def is_flaky_failure_record(record):  # pragma: no cover
 
 def is_failure_record(fail_type_check, record):  # pragma: no cover
   action = record.fields.get('action')
-  fail_type = record.fields.get('reason', {}).get('fail_type')
+  reason = record.fields.get('reason') or {}
+  fail_type = reason.get('fail_type')
   return action == 'patch_failed' and fail_type == fail_type_check
