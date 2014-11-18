@@ -59,7 +59,7 @@ class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed attempts on a committed patch that passed '
                  'presubmit, had all LGTMs and were not manually cancelled.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if has_any_actions(all_attempts, 'patch_committed'):
+    if has_any_actions(all_attempts, ('patch_committed',)):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
@@ -69,7 +69,7 @@ class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
 class AttemptFalseRejectCommitCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed commit attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if has_any_actions(all_attempts, 'patch_committed'):
+    if has_any_actions(all_attempts, ('patch_committed',)):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
@@ -79,7 +79,7 @@ class AttemptFalseRejectCommitCount(CountAnalyzer):  # pragma: no cover
 class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed CQ presubmit checks on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if has_any_actions(all_attempts, 'patch_committed'):
+    if has_any_actions(all_attempts, ('patch_committed',)):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
@@ -89,7 +89,7 @@ class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):  # pragma: no cover
 class AttemptFalseRejectTriggerCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed job trigger attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if has_any_actions(all_attempts, 'patch_committed'):
+    if has_any_actions(all_attempts, ('patch_committed',)):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
@@ -99,7 +99,7 @@ class AttemptFalseRejectTriggerCount(CountAnalyzer):  # pragma: no cover
 class AttemptFalseRejectTryjobCount(CountAnalyzer):  # pragma: no cover
   description = ('Number of failed job attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if has_any_actions(all_attempts, 'patch_committed'):
+    if has_any_actions(all_attempts, ('patch_committed',)):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
@@ -224,6 +224,7 @@ class PatchsetTotalWallTimeDurations(ListAnalyzer):  # pragma: no cover
 
 
 def has_any_actions(attempts, actions):  # pragma: no cover
+  assert type(actions) in (tuple, list)
   for attempt in attempts:
     for record in attempt:
       action = record.fields.get('action')
