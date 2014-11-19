@@ -2,6 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# R0201: Method could be a function
+# W0223: Method %r is abstract in class %r but is not overridden
+# W0221: Arguments number differs from %s method
+# pylint: disable=R0201,W0223,W0221
+
 import copy
 from datetime import datetime
 import json
@@ -259,10 +264,10 @@ def spawn_pipelines(pipeline_class, arg_sets, target='scan-backend'):
 
 class ProjectScanningPipeline(pipelines.AppenginePipeline):
   @property
-  def description(self):
+  def description(self):  # pylint: disable=R0201
     return 'project scanning'
 
-  def run(self, project):
+  def run(self, project):  # pylint: disable=W0221
     project_key = ndb.Key(models.Project, project)
     project_obj = project_key.get()
     url = project_obj.canonical_url_template % {'project': project_obj.name}
@@ -384,8 +389,8 @@ class FinalizeRepoObjPipeline(pipelines.AppenginePipeline):
   def description(self):  # pragma: no cover
     return 'repo finalization'
 
-  def run(self, finalize, project, repo, latest_commit, first_commit,
-      root_commit_scanned):
+  def run(self, _finalize, project, repo, latest_commit, # pylint: disable=R0201
+          first_commit, root_commit_scanned):
     repo_obj = models.Repo.get_key_by_id(project, repo).get()
     repo_obj.latest_commit = latest_commit
     repo_obj.first_commit = first_commit

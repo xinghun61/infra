@@ -19,7 +19,7 @@ from appengine_module.cr_rev.test import model_helpers
 
 
 class TestController(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = handlers._APP  # pylint: disable=W0212
 
   @staticmethod
   def _gitiles_json(data):
@@ -251,8 +251,8 @@ class TestController(testing.AppengineTestCase):
 
   def test_gitiles_call(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '?format=json&n=1000',
           self._gitiles_json({'test': 3}))
 
@@ -261,8 +261,8 @@ class TestController(testing.AppengineTestCase):
 
   def test_gitiles_call_error(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '404',
           self._gitiles_json({'test': 3}),
           status_code=404)
@@ -273,8 +273,8 @@ class TestController(testing.AppengineTestCase):
   def test_gitiles_call_429(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     self.mock_sleep()
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '?format=json&n=1000',
           self._gitiles_json({'test': 3}),
           status_code=429)
@@ -289,8 +289,8 @@ class TestController(testing.AppengineTestCase):
         {u'commit': u'deadbb0b' * 5},
         {u'commit': u'dead3b0b' * 5},
     ]}
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
@@ -305,8 +305,8 @@ class TestController(testing.AppengineTestCase):
         {u'commit': u'deadbb0b' * 5},
         {u'commit': u'dead3b0b' * 5},
     ]}
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
@@ -318,8 +318,8 @@ class TestController(testing.AppengineTestCase):
   def test_crawl_empty_log(self):
     gitiles_base_url = 'https://chromium.definitely_real_gitiles.com/'
     log_data = {u'log': []}
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
@@ -333,8 +333,8 @@ class TestController(testing.AppengineTestCase):
         u'log': [{u'commit': u'deadbeef' * 5}],
         u'next': 'beefdead' * 5,
     }
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           gitiles_base_url + '+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
 
@@ -401,11 +401,11 @@ class TestController(testing.AppengineTestCase):
     repo_data = {'cool_src': {}}
     log_data = {u'log': []}
 
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + '?format=json&n=1000',
           self._gitiles_json(repo_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
 
@@ -425,14 +425,14 @@ class TestController(testing.AppengineTestCase):
     }
     log_data = {u'log': []}
 
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + '?format=json&n=1000',
           self._gitiles_json(repo_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cooler_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
       # Don't handle uncool_src, making it nonreal.
@@ -445,11 +445,11 @@ class TestController(testing.AppengineTestCase):
     repo_data = {
       'cooler_src': {},
     }
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + '?format=json&n=1000',
           self._gitiles_json(repo_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cooler_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
 
@@ -462,14 +462,14 @@ class TestController(testing.AppengineTestCase):
       'cool_src': {},
       'cooler_src': {},
     }
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + '?format=json&n=1000',
           self._gitiles_json(repo_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cooler_src/+log/master?format=json&n=1',
           self._gitiles_json(log_data))
     controller.scan_projects_for_repos()
@@ -483,9 +483,6 @@ class TestController(testing.AppengineTestCase):
     my_repo.put()
     base_url = my_project.canonical_url_template % {'project': my_project.name}
 
-    repo_data = {
-      my_repo.repo: {},
-    }
     log_data = {u'log': [
         {
             'commit': 'deadbeef' * 5,
@@ -495,14 +492,14 @@ class TestController(testing.AppengineTestCase):
         },
     ]}
 
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
     controller.scan_repos()
@@ -553,42 +550,36 @@ class TestController(testing.AppengineTestCase):
         },
     ]
 
-    repo_data = {
-      my_repo.repo: {},
-    }
     log_data = {u'log': [
         commits[3],
     ]}
 
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
 
     controller.scan_repos()
     self.execute_queued_tasks()
 
-    repo_data = {
-      my_repo.repo: {},
-    }
     log_data = {u'log': [
         commits[3],
     ]}
 
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1' % ('deadbeef' * 5,),
           self._gitiles_json(log_data))
 
@@ -623,44 +614,44 @@ class TestController(testing.AppengineTestCase):
     foofbeef_data = {
         u'log': commits[-2:],
     }
-    with self.mock_urlfetch() as handlers:
-      handlers.register_handler(
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/master?format=json&n=1000',
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('f007beef' * 5,),
           self._gitiles_json(log_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('000fbeef' * 5,),
           self._gitiles_json(ooofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('000fbeef' * 5,),
           self._gitiles_json(ooofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('deadbeef' * 5,),
           self._gitiles_json(deadbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('deadbeef' * 5,),
           self._gitiles_json(deadbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('700fbeef' * 5,),
           self._gitiles_json(toofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1' % ('700fbeef' * 5,),
           self._gitiles_json(toofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('700fbeef' * 5,),
           self._gitiles_json(toofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('feedbeef' * 5,),
           self._gitiles_json(feedbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('feedbeef' * 5,),
           self._gitiles_json(feedbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=1000' % ('f00fbeef' * 5,),
           self._gitiles_json(foofbeef_data))
-      handlers.register_handler(
+      urlfetch.register_handler(
           base_url + 'cool_src/+log/%s?format=json&n=2' % ('f00fbeef' * 5,),
           self._gitiles_json(foofbeef_data))
     controller.scan_repos()
