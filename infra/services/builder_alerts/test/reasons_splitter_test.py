@@ -9,7 +9,7 @@ import requests
 from infra.services.builder_alerts import reasons_splitter
 
 
-class MockJsonResponse():
+class MockJsonResponse(object):
   def __init__(self, data=None, status_code=200):
     self.data = data
     self.status_code = status_code
@@ -18,8 +18,8 @@ class MockJsonResponse():
     return self.data
 
 
-k_mock_step = { 'name': 'foo_step' }
-k_mock_build = { 'number': 123 }
+k_mock_step = {'name': 'foo_step'}
+k_mock_build = {'number': 123}
 k_mock_builder_name = 'foo_builder'
 k_mock_master_url = 'http://dummydomain.com/foo.master'
 
@@ -81,7 +81,7 @@ class SplitterTests(unittest.TestCase):
     try:
       requests.get = mock_requests_get
       failures = reasons_splitter.LayoutTestsSplitter.split_step(
-          { 'name': 'webkit_tests' }, k_mock_build, k_mock_builder_name,
+          {'name': 'webkit_tests'}, k_mock_build, k_mock_builder_name,
           k_mock_master_url)
       self.assertEqual(failures, ['test2:FAIL'])
     finally:
@@ -143,7 +143,7 @@ class SplitterTests(unittest.TestCase):
     self.assertEqual(flatten({'a': {}}, 'foo'), {'foo/a': {}})
     # single-component names flatten to themselves
     self.assertEqual(flatten({'a': {'actual': '1'}}),
-                     {'a': { 'actual': '1'}})
+                     {'a': {'actual': '1'}})
     # >1 component names flatten properly
     self.assertEqual(flatten({'a': {'b': {'actual': '3'}}}),
                      {'a/b': {'actual': '3'}})

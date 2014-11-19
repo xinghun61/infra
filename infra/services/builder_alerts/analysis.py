@@ -23,8 +23,10 @@ def ids_after_first_including_second(first, second):
 def is_ancestor_of(older, younger):
   return int(older) < int(younger)
 
+
 def is_descendant_of(younger, older):
   return is_ancestor_of(older, younger)
+
 
 def flatten_to_commit_list(passing, failing):
   # Flatten two commit dicts to a list of 'name:commit'
@@ -39,15 +41,15 @@ def flatten_to_commit_list(passing, failing):
 
 # FIXME: Perhaps this should be done by the feeder?
 def assign_keys(alerts):
-  """
-  Assign identifying keys to each alert in alerts.
+  """Assign identifying keys to each alert in alerts.
 
   Keys must be comparable for sorting, but can otherwise have arbitrary
   structure.
   """
   for key, alert in enumerate(alerts):
     # We could come up with something more sophisticated if necessary.
-    alert['key'] = 'f%s' % key # Just something so it doesn't look like a number
+    # Just something so it doesn't look like a number
+    alert['key'] = 'f%s' % key
   return alerts
 
 
@@ -92,8 +94,7 @@ def merge_regression_ranges(alerts):
 
 
 def reason_key_for_alert(alert):
-  """
-  Computes the reason key for an alert.
+  """Computes the reason key for an alert.
 
   The reason key for an alert is used to group related alerts together. Alerts
   for the same step name and reason are grouped together, and alerts for the
@@ -120,11 +121,11 @@ def group_by_reason(alerts):  # pragma: no cover
     blame_list = flatten_to_commit_list(last_passing, first_failing)
     # FIXME: blame_list isn't filtered yet, but should be.
     reason_groups.append({
-      'sort_key': reason_key,
-      'merged_last_passing': last_passing,
-      'merged_first_failing': first_failing,
-      'likely_revisions': blame_list,
-      'failure_keys': map(operator.itemgetter('key'), alerts),
+        'sort_key': reason_key,
+        'merged_last_passing': last_passing,
+        'merged_first_failing': first_failing,
+        'likely_revisions': blame_list,
+        'failure_keys': map(operator.itemgetter('key'), alerts),
     })
   return reason_groups
 
@@ -139,7 +140,7 @@ def range_key_for_group(group):
     # Even regressions where we don't know when they started can be
     # merged by our earliest known failure.
     parts = ['<=%s:%s' % (name, commit)
-        for name, commit in first_failing.items()]
+             for name, commit in first_failing.items()]
     range_key = ' '.join(parts)
   else:
     range_key = 'no_first_failing'
@@ -165,11 +166,11 @@ def merge_by_range(reason_groups):
     # We only care about these two keys, the rest should be the same.
     # I guess we could assert that...
     sort_key = string_helpers.longest_substring(existing['sort_key'],
-        group['sort_key'])
-    faliure_keys = sorted(set(existing['failure_keys'] + group['failure_keys']))
+                                                group['sort_key'])
+    failure_keys = sorted(set(existing['failure_keys'] + group['failure_keys']))
     by_range[range_key].update({
-      'sort_key': sort_key,
-      'failure_keys': faliure_keys,
+        'sort_key': sort_key,
+        'failure_keys': failure_keys,
     })
 
   return sorted(by_range.values(), key=operator.itemgetter('sort_key'))

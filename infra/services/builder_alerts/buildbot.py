@@ -24,7 +24,10 @@ IDLE_BUILDER_PENDING_ALERT_THRESHOLD = 50
 CBE_BASE = 'https://chrome-build-extract.appspot.com'
 
 # Unclear if this should be specific to builds.
+
+
 class DiskCache(object):
+
   def __init__(self, root_path):
     self.root_path = root_path
 
@@ -67,28 +70,29 @@ def master_name_from_url(master_url):
 def build_url(master_url, builder_name, build_number):
   quoted_name = urllib.pathname2url(builder_name)
   args = (master_url, quoted_name, build_number)
-  return "%s/builders/%s/builds/%s" % args
+  return '%s/builders/%s/builds/%s' % args
 
 
 def cache_key_for_build(master_url, builder_name, build_number):
   master_name = master_name_from_url(master_url)
-  return os.path.join(master_name, builder_name, "%s.json" % build_number)
+  return os.path.join(master_name, builder_name, '%s.json' % build_number)
 
 
 def fetch_json(url):  # pragma: no cover
   response = requests.get(url)
   if response.status_code != 200:
     logging.error('Failed (%.1fs, %s) %s', response.elapsed.total_seconds(),
-        response.status_code, url)
+                  response.status_code, url)
     return None
 
   try:
     logging.debug('Fetched (%.1fs) %s', response.elapsed.total_seconds(),
-        url)
+                  url)
     return response.json()
   except ValueError, e:
-    logging.error('Fetched invalid json: %s (%s): %s\n%s' % (url,
-        response.status_code, e, response.text))
+    logging.error(
+        'Fetched invalid json: %s (%s): %s\n%s', url, response.status_code, e,
+        response.text)
     return None
 
 
@@ -106,29 +110,29 @@ def fetch_master_json(master_url):  # pragma: no cover
 def prefill_builds_cache(cache, master_url, builder_name):  # pragma: no cover
   master_name = master_name_from_url(master_url)
   builds_url = '%s/get_builds' % CBE_BASE
-  params = { 'master': master_name, 'builder': builder_name }
+  params = {'master': master_name, 'builder': builder_name}
   response = requests.get(builds_url, params=params)
   builds = []
   try:
     builds = response.json()['builds']
   except ValueError:
     logging.error(
-        'Failed to parse JSON response from master: %s, builder: %s' % (
-            master_name, builder_name))
+        'Failed to parse JSON response from master: %s, builder: %s',
+        master_name, builder_name)
   for build in builds:
     if not build.get('number'):
       index = builds.index(build)
-      logging.error('build at index %s in %s missing number?' % (index,
-          response.url))
+      logging.error(
+          'build at index %s in %s missing number?', index, response.url)
       continue
     build_number = build['number']
     key = cache_key_for_build(master_url, builder_name, build_number)
     cache.set(key, build)
   build_numbers = map(operator.itemgetter('number'), builds)
-  logging.debug('Prefilled (%.1fs) %s for %s %s' %
-      (response.elapsed.total_seconds(),
-      string_helpers.re_range(build_numbers),
-      master_name, builder_name))
+  logging.debug('Prefilled (%.1fs) %s for %s %s',
+                response.elapsed.total_seconds(),
+                string_helpers.re_range(build_numbers),
+                master_name, builder_name)
   return build_numbers
 
 
@@ -157,8 +161,9 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
     # Round for display.
     cache_age = datetime.timedelta(seconds=round(cache_age.total_seconds()))
     if cache_age.total_seconds() > 120:
-      logging.debug('Expired (%s) %s %s %s',
-                    cache_age, master_name, builder_name, build_number)
+      logging.debug(
+          'Expired (%s) %s %s %s',
+          cache_age, master_name, builder_name, build_number)
       build = None
 
   if not build:
@@ -169,7 +174,7 @@ def fetch_build_json(cache, master_url, builder_name, build_number):  # pragma: 
 
   if not build:
     buildbot_url = ('https://build.chromium.org/p/%s/json/builders/'
-        '%s/builds/%s') % (master_name, builder_name, build_number)
+                    '%s/builds/%s') % (master_name, builder_name, build_number)
     build = fetch_and_cache_build(cache, buildbot_url, cache_key)
     build_source = 'master'
 
@@ -188,24 +193,25 @@ def revisions_from_build(build_json):
       if prop_tuple[0] == property_name:
         value = prop_tuple[1]
         # refs/heads/master@{#291569}
-        match = re.search('@\{\#(\d+)\}', value)
+        match = re.search(r'@\{\#(\d+)\}', value)
         return int(match.group(1))
 
   # TODO(ojan): Use the git hashes. That involves fixing all the code
   # that does arithmetic on revisions in analysis.py.
   REVISION_VARIABLES = [
-    ('chromium', 'got_revision_cp'),
-    ('blink', 'got_webkit_revision_cp'),
-    ('v8', 'got_v8_revision_cp'),
-    ('nacl', 'got_nacl_revision_cp'),
-    # Skia, for whatever reason, isn't exposed in the buildbot properties so
-    # don't bother to include it here.
+      ('chromium', 'got_revision_cp'),
+      ('blink', 'got_webkit_revision_cp'),
+      ('v8', 'got_v8_revision_cp'),
+      ('nacl', 'got_nacl_revision_cp'),
+      # Skia, for whatever reason, isn't exposed in the buildbot properties so
+      # don't bother to include it here.
   ]
 
   revisions = {}
   for repo_name, buildbot_property in REVISION_VARIABLES:
     revisions[repo_name] = _revision(build_json, buildbot_property)
   return revisions
+
 
 def latest_update_time_and_step_for_builder(last_build):
   last_update = None
@@ -223,21 +229,23 @@ def latest_update_time_and_step_for_builder(last_build):
         step_name = step['name']
   return (last_update, step_name)
 
-def create_stale_builder_alert_if_needed(master_url, builder_name, state,
-    pending_builds, last_update_time, last_step, latest_build_id):
+
+def create_stale_builder_alert_if_needed(
+    master_url, builder_name, state, pending_builds, last_update_time,
+    last_step, latest_build_id):
   alert = None
   current_time = int(time.time())
-  if ((state == "building" and current_time - last_update_time > HUNG_BUILDER_ALERT_THRESHOLD)
-      or (state == "offline" and current_time - last_update_time > OFFLINE_BUILDER_ALERT_THRESHOLD)
-      or (state == "idle" and pending_builds > IDLE_BUILDER_PENDING_ALERT_THRESHOLD)):
+  if ((state == 'building' and current_time - last_update_time > HUNG_BUILDER_ALERT_THRESHOLD)
+      or (state == 'offline' and current_time - last_update_time > OFFLINE_BUILDER_ALERT_THRESHOLD)
+      or (state == 'idle' and pending_builds > IDLE_BUILDER_PENDING_ALERT_THRESHOLD)):
     alert = {
-      'master_url': master_url,
-      'builder_name': builder_name,
-      'state': state,
-      'last_update_time': last_update_time,
-      'pending_builds': pending_builds,
-      'step': last_step,
-      'latest_build': latest_build_id,
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'state': state,
+        'last_update_time': last_update_time,
+        'pending_builds': pending_builds,
+        'step': last_step,
+        'latest_build': latest_build_id,
     }
   return alert
 
@@ -254,8 +262,8 @@ def latest_builder_info_and_alerts_for_master(
       continue
 
     latest_build_id = build_ids[-1]
-    last_build, build_source = fetch_build_json(cache,
-        master_url, builder_name, latest_build_id)
+    last_build, build_source = fetch_build_json(
+        cache, master_url, builder_name, latest_build_id)
 
     if not last_build:
       # fetch_build_json will already log critical in this case.
@@ -265,31 +273,33 @@ def latest_builder_info_and_alerts_for_master(
         last_build)
     state = builder_json['state']
     if builder_name in latest_builder_info[master_name]:
-      logging.critical('Processing builder %s on %s twice in one iteration,'
+      logging.critical(
+          'Processing builder %s on %s twice in one iteration,'
           'overwriting the old value.' % (builder_name, master_name))
     monitor_url = 'https://chrome-monitor.appspot.com/view_graph/%s %s %s' % (
-      master_name, builder_name,
-      {'offline': 'Queue/Running',
-      'building': 'Times (Last 100 Builds)',
-      'idle': 'Queue/Running'}.get(state, 'Times (Last 100 Builds)'))
+        master_name, builder_name, {
+            'offline': 'Queue/Running',
+            'building': 'Times (Last 100 Builds)',
+            'idle': 'Queue/Running',
+        }.get(state, 'Times (Last 100 Builds)'))
     latest_builder_info[master_name][builder_name] = {
-      'revisions': revisions_from_build(last_build),
-      'state': state,
-      'lastUpdateTime': last_update_time,
-      'build_source': build_source,
-      'monitor_url': monitor_url,
+        'revisions': revisions_from_build(last_build),
+        'state': state,
+        'lastUpdateTime': last_update_time,
+        'build_source': build_source,
+        'monitor_url': monitor_url,
     }
 
-    stale_builder_alert = create_stale_builder_alert_if_needed(master_url,
-        builder_name, state, builder_json['pendingBuilds'], last_update_time,
-        last_step, latest_build_id)
+    stale_builder_alert = create_stale_builder_alert_if_needed(
+        master_url, builder_name, state, builder_json['pendingBuilds'],
+        last_update_time, last_step, latest_build_id)
     if stale_builder_alert:
       stale_builder_alerts.append(stale_builder_alert)
   return (latest_builder_info, stale_builder_alerts)
 
 
 def warm_build_cache(cache, master_url, builder_name,
-    recent_build_ids, active_builds):  # pragma: no cover
+                     recent_build_ids, active_builds):  # pragma: no cover
   # Cache active (in-progress) builds:
   match_builder_name = lambda build: build['builderName'] == builder_name
   actives = filter(match_builder_name, active_builds)
@@ -300,7 +310,7 @@ def warm_build_cache(cache, master_url, builder_name,
   active_build_ids = [b['number'] for b in active_builds]
   # recent_build_ids includes active ones.
   finished_build_ids = [b for b in recent_build_ids
-      if b not in active_build_ids]
+                        if b not in active_build_ids]
 
   # This happens when the builder is a new builder and it's only
   # build is the active build.

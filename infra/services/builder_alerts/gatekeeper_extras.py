@@ -8,6 +8,7 @@ import logging
 
 from infra.services.builder_alerts.buildbot import master_name_from_url
 
+
 def excluded_builders(master_config):
   return master_config[0].get('*', {}).get('excluded_builders', set())
 
@@ -70,7 +71,7 @@ def would_close_tree(master_config, builder_name, step_name):
   # Excluded steps never close.
   excluded_steps = set(builder_config.get('excluded_steps', []))
   if step_name in excluded_steps:
-    logging.debug('%s is an excluded_step' % step_name)
+    logging.debug('%s is an excluded_step', step_name)
     return False
 
   # See gatekeeper_ng_config.py for documentation of
@@ -80,9 +81,9 @@ def would_close_tree(master_config, builder_name, step_name):
   # this function assumes the step is present and failing
   # and thus doesn't care between these 4 types:
   closing_steps = (builder_config.get('forgiving_steps', set()) |
-    builder_config.get('forgiving_optional', set()) |
-    builder_config.get('closing_steps', set()) |
-    builder_config.get('closing_optional', set()))
+                   builder_config.get('forgiving_optional', set()) |
+                   builder_config.get('closing_steps', set()) |
+                   builder_config.get('closing_optional', set()))
 
   # A '*' in any of the above types means it applies to all steps.
   if '*' in closing_steps:
@@ -91,5 +92,5 @@ def would_close_tree(master_config, builder_name, step_name):
   if step_name in closing_steps:
     return True
 
-  logging.debug('%s not in closing_steps: %s' % (step_name, closing_steps))
+  logging.debug('%s not in closing_steps: %s', step_name, closing_steps)
   return False

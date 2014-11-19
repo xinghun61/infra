@@ -63,29 +63,29 @@ class FailureAnalysisTest(unittest.TestCase):
   def test_merge_regression_ranges(self):
     alerts = json.loads(self.MERGE_REGRESSION_RANGES_JSON)
     passing, failing = analysis.merge_regression_ranges(alerts)
-    expected_pass = { 'v8': '22263', 'chromium': '281989', 'nacl': '13441' }
-    expected_fail = { 'v8': '22263', 'chromium': '282006', 'nacl': '13441' }
+    expected_pass = {'v8': '22263', 'chromium': '281989', 'nacl': '13441'}
+    expected_fail = {'v8': '22263', 'chromium': '282006', 'nacl': '13441'}
     self.assertEquals(expected_fail, failing)
     self.assertEquals(expected_pass, passing)
 
     alerts = json.loads(self.MERGE_REGRESSION_RANGES_JSON_NULL)
     passing, failing = analysis.merge_regression_ranges(alerts)
     expected_pass = None
-    expected_fail = { 'v8': '22263', 'nacl': '13441' }
+    expected_fail = {'v8': '22263', 'nacl': '13441'}
     self.assertEquals(expected_fail, failing)
     self.assertEquals(expected_pass, passing)
 
 
   def test_flatten_to_commit_list(self):
-    passing = { 'v8': '1', 'chromium': '4'}
-    failing = { 'v8': '2', 'chromium': '4'}
+    passing = {'v8': '1', 'chromium': '4'}
+    failing = {'v8': '2', 'chromium': '4'}
     commit_list = analysis.flatten_to_commit_list(passing, failing)
     self.assertEquals(commit_list, ['v8:2'])
     self.assertEquals(analysis.flatten_to_commit_list(passing, []), [])
     self.assertEquals(analysis.flatten_to_commit_list([], failing), [])
 
   def test_range_key_for_group(self):
-    failing = { 'v8': '2', 'chromium': '4'}
+    failing = {'v8': '2', 'chromium': '4'}
     group = {
         'merged_last_passing': None,
         'merged_first_failing': failing,
@@ -130,7 +130,7 @@ class FailureAnalysisTest(unittest.TestCase):
     self.assertEqual(analysis.merge_by_range([]), [])
 
   def test_assign_keys(self):
-    alerts = [ { 'foo': 1 }, { 'foo': 1 } ]
+    alerts = [{'foo': 1}, {'foo': 1}]
     alerts = analysis.assign_keys(alerts)
     # keys assigned...
     self.assertIn('key', alerts[0])

@@ -103,15 +103,15 @@ class GatekeeperExtrasTest(unittest.TestCase):
 
   def test_tree_for_master_returns_tree_name(self):
     gatekeeper_trees = {
-        "blink": { "masters": [
-            "https://build.chromium.org/p/chromium.webkit"
+        'blink': {'masters': [
+            'https://build.chromium.org/p/chromium.webkit'
         ]},
-        "chromium": { "masters": [
-            "https://build.chromium.org/p/chromium.linux",
-            "https://build.chromium.org/p/chromium.gpu",
+        'chromium': {'masters': [
+            'https://build.chromium.org/p/chromium.linux',
+            'https://build.chromium.org/p/chromium.gpu',
         ]},
-        "non-closers": { "masters": [
-            "https://build.chromium.org/p/chromium.lkgr",
+        'non-closers': {'masters': [
+            'https://build.chromium.org/p/chromium.lkgr',
         ]}
     }
 
@@ -130,7 +130,7 @@ class GatekeeperExtrasTest(unittest.TestCase):
         'https://build.chromium.org/p/foo.bar', {}))
 
   def test_fetch_master_urls(self):
-    class MockArgs:
+    class MockArgs(object):
       def __init__(self, master_filter):
         self.master_filter = master_filter
 

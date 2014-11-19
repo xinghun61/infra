@@ -27,13 +27,13 @@ sys.path.insert(0, os.path.join(top_dir, 'build', 'scripts'))
 def stdio_for_step(master_url, builder_name, build, step):  # pragma: no cover
   # FIXME: Should get this from the step in some way?
   base_url = buildbot.build_url(master_url, builder_name, build['number'])
-  stdio_url = "%s/steps/%s/logs/stdio/text" % (base_url, step['name'])
+  stdio_url = '%s/steps/%s/logs/stdio/text' % (base_url, step['name'])
 
   try:
     return requests.get(stdio_url).text
   except requests.exceptions.ConnectionError, e:
     # Some builders don't save logs for whatever reason.
-    logging.error('Failed to fetch %s: %s' % (stdio_url, e))
+    logging.error('Failed to fetch %s: %s', stdio_url, e)
     return None
 
 
@@ -45,18 +45,19 @@ def request_test_results_json(step, build, builder_name, master_url):
     test_type = 'layout-tests'
 
   params = {
-    'name': 'full_results.json',
-    'master': buildbot.master_name_from_url(master_url),
-    'builder': builder_name,
-    'buildnumber': build['number'],
-    'testtype': test_type,
+      'name': 'full_results.json',
+      'master': buildbot.master_name_from_url(master_url),
+      'builder': builder_name,
+      'buildnumber': build['number'],
+      'testtype': test_type,
   }
   base_url = 'https://test-results.appspot.com/testfile'
   response = requests.get(base_url, params=params)
 
   if response.status_code != 200:
-    logging.warn('test-results missing %s %s %s %s.' % (
-        master_url, builder_name, build['number'], step['name']))
+    logging.warn(
+        'test-results missing %s %s %s %s.', master_url, builder_name,
+        build['number'], step['name'])
     return None
 
   return flatten_test_results(response.json()['tests'])
@@ -64,6 +65,7 @@ def request_test_results_json(step, build, builder_name, master_url):
 
 # These are reason finders, more than splitters?
 class GTestSplitter(object):
+
   @staticmethod
   def handles_step(step):
     step_name = step['name']
@@ -73,7 +75,7 @@ class GTestSplitter(object):
       return True
 
     KNOWN_STEPS = [
-      # There are probably other gtest steps not named 'tests'.
+        # There are probably other gtest steps not named 'tests'.
     ]
     return step_name in KNOWN_STEPS
 
@@ -109,17 +111,18 @@ class GTestSplitter(object):
 # quite GTestLogParser-compatible (it parse the name of the
 # test as org.chromium).
 
+
 class JUnitSplitter(object):
 
   @staticmethod
   def handles_step(step):
     KNOWN_STEPS = [
-      'androidwebview_instrumentation_tests',
-      'mojotest_instrumentation_tests', # Are these always java?
+        'androidwebview_instrumentation_tests',
+        'mojotest_instrumentation_tests',  # Are these always java?
     ]
     return step['name'] in KNOWN_STEPS
 
-  FAILED_REGEXP = re.compile('\[\s+FAILED\s+\] (?P<test_name>\S+)( \(.*\))?$')
+  FAILED_REGEXP = re.compile(r'\[\s+FAILED\s+\] (?P<test_name>\S+)( \(.*\))?$')
 
   def failed_tests_from_stdio(self, stdio):  # pragma: no cover
     failed_tests = []
@@ -140,7 +143,7 @@ class JUnitSplitter(object):
     if failed_tests:
       return failed_tests
     # Failed to split, just group with the general failures.
-    logging.debug('First Line: %s' % stdio_log.split('\n')[0])
+    logging.debug('First Line: %s', stdio_log.split('\n')[0])
     return None
 
 
@@ -228,9 +231,9 @@ def flatten_test_results(trie, prefix=None):
   result = {}
   for name, data in trie.iteritems():
     if prefix:
-      name = prefix + "/" + name
+      name = prefix + '/' + name
 
-    if len(data) and not "actual" in data and not "expected" in data:
+    if len(data) and not 'actual' in data and not 'expected' in data:
       result.update(flatten_test_results(data, name))
     else:
       result[name] = data
@@ -254,6 +257,7 @@ class LayoutTestsSplitter(object):
 
 
 class CompileSplitter(object):
+
   @staticmethod
   def handles_step(step):
     return step['name'] == 'compile'
@@ -274,7 +278,8 @@ class CompileSplitter(object):
     if not stdio:
       return None
 
-    compile_regexp = re.compile(r'(?P<path>.*):(?P<line>\d+):(?P<column>\d+): error:')
+    compile_regexp = re.compile(
+        r'(?P<path>.*):(?P<line>\d+):(?P<column>\d+): error:')
 
     # FIXME: I'm sure there is a cleaner way to do this.
     next_line_is_failure = False
@@ -293,16 +298,16 @@ class CompileSplitter(object):
 
 
 STEP_SPLITTERS = [
-  CompileSplitter(),
-  LayoutTestsSplitter(),
-  JUnitSplitter(),
-  GTestSplitter(),
+    CompileSplitter(),
+    LayoutTestsSplitter(),
+    JUnitSplitter(),
+    GTestSplitter(),
 ]
 
 
 def splitter_for_step(step):
   return next((splitter for splitter in STEP_SPLITTERS
-      if splitter.handles_step(step)), None)
+               if splitter.handles_step(step)), None)
 
 
 # For testing:
@@ -317,18 +322,19 @@ def main(args):  # pragma: no cover
   # we should add a generic way to do this to buildbot.py
   # pylint: disable=C0301
   # https://build.chromium.org/p/chromium.win/builders/XP%20Tests%20(1)/builds/31886/steps/browser_tests/logs/stdio
-  url_regexp = re.compile('(?P<master_url>.*)/builders/(?P<builder_name>.*)/'
+  url_regexp = re.compile(
+      '(?P<master_url>.*)/builders/(?P<builder_name>.*)/'
       'builds/(?P<build_number>.*)/steps/(?P<step_name>.*)/logs/stdio')
   match = url_regexp.match(args.stdio_url)
   if not match:
-    print "Failed to parse URL: %s" % args.stdio_url
+    print 'Failed to parse URL: %s' % args.stdio_url
     return 1
 
   step = {
-    'name': match.group('step_name'),
+      'name': match.group('step_name'),
   }
   build = {
-    'number': match.group('build_number'),
+      'number': match.group('build_number'),
   }
   builder_name = urllib.unquote_plus(match.group('builder_name'))
   master_url = match.group('master_url')

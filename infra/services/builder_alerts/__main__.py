@@ -42,6 +42,7 @@ CONCURRENT_TASKS = 16
 
 
 class SubProcess(object):
+
   def __init__(self, cache, old_alerts, builder_filter, jobs):
     super(SubProcess, self).__init__()
     self._cache = cache
@@ -65,19 +66,19 @@ class SubProcess(object):
       # to a different feed.
       data, stale_builder_alerts = (
           buildbot.latest_builder_info_and_alerts_for_master(
-              self._cache,master_url, master_json))
+              self._cache, master_url, master_json))
       if stale_master_alert:
         stale_builder_alerts.append(stale_master_alert)
       return (master_alerts, data, stale_builder_alerts)
     except:
       # Put all exception text into an exception and raise that so it doesn't
       # get eaten by the multiprocessing code.
-      raise Exception("".join(traceback.format_exception(*sys.exc_info())))
+      raise Exception(''.join(traceback.format_exception(*sys.exc_info())))
 
 
 def inner_loop(args):
   if not args.data_url:
-    logging.warn("No /data url passed, will write to builder_alerts.json")
+    logging.warn('No /data url passed, will write to builder_alerts.json')
 
   if args.use_cache:
     requests_cache.install_cache('failure_stats')
@@ -86,7 +87,7 @@ def inner_loop(args):
 
   # FIXME: gatekeeper_config should find gatekeeper.json for us.
   gatekeeper_path = os.path.abspath(args.gatekeeper)
-  logging.debug("Processsing gatekeeper json: %s", gatekeeper_path)
+  logging.debug('Processsing gatekeeper json: %s', gatekeeper_path)
   gatekeeper = gatekeeper_ng_config.load_gatekeeper_config(gatekeeper_path)
 
   gatekeeper_trees_path = os.path.join(os.path.dirname(gatekeeper_path),
@@ -119,7 +120,8 @@ def inner_loop(args):
               master, builder, step, reason)
 
           if alert_key in old_alerts:
-            logging.critical('Incorrectly overwriting an alert reason from the'
+            logging.critical(
+                'Incorrectly overwriting an alert reason from the'
                 ' old alert data. master: %s, builder: %s, step: %s, reason:'
                 ' %s' % (master, builder, step, reason))
 
@@ -131,7 +133,7 @@ def inner_loop(args):
 
   pool = multiprocessing.Pool(processes=args.processes)
   master_datas = pool.map(SubProcess(cache, old_alerts, args.builder_filter,
-      args.jobs), master_urls)
+                                     args.jobs), master_urls)
   pool.close()
   pool.join()
 
@@ -147,14 +149,14 @@ def inner_loop(args):
   logging.info('Fetch took: %s', (datetime.datetime.now() - start_time))
 
   alerts = gatekeeper_extras.apply_gatekeeper_rules(alerts, gatekeeper,
-      gatekeeper_trees)
+                                                    gatekeeper_trees)
   stale_builder_alerts = gatekeeper_extras.apply_gatekeeper_rules(
       stale_builder_alerts, gatekeeper, gatekeeper_trees)
 
   alerts = analysis.assign_keys(alerts)
   reason_groups = analysis.group_by_reason(alerts)
   range_groups = analysis.merge_by_range(reason_groups)
-  data = { 'content': json.dumps({
+  data = {'content': json.dumps({
       'alerts': alerts,
       'reason_groups': reason_groups,
       'range_groups': range_groups,
@@ -167,7 +169,7 @@ def inner_loop(args):
       f.write(json.dumps(data, indent=1))
 
   for url in args.data_url:
-    logging.info('POST %s alerts to %s' % (len(alerts), url))
+    logging.info('POST %s alerts to %s', len(alerts), url)
     requests.post(url, data=data)
 
   return True
@@ -196,13 +198,14 @@ def main(args):
   # Suppress all logging from connectionpool; it is too verbose at info level.
   if args.log_level != logging.DEBUG:
     class _ConnectionpoolFilter(object):
+
       @staticmethod
       def filter(record):
         if record.levelno == logging.INFO:
           return False
         return True
     logging.getLogger('requests.packages.urllib3.connectionpool').addFilter(
-      _ConnectionpoolFilter())
+        _ConnectionpoolFilter())
 
   def outer_loop_iteration():
     return inner_loop(args)

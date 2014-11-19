@@ -241,10 +241,10 @@ class AlertBuilderTest(unittest.TestCase):
   def test_complete_steps_by_type(self):
     build = {
       'steps': [
-        { 'isFinished': True, 'name': 'finished_pass_step', 'results': [0] },
-        { 'isFinished': True, 'name': 'finished_fail_step', 'results': [2] },
-        { 'isFinished': False, 'name': 'unfinished_pass_step', 'results': [0] },
-        { 'isFinished': False, 'name': 'unfinished_fail_step', 'results': [2] },
+        {'isFinished': True, 'name': 'finished_pass_step', 'results': [0]},
+        {'isFinished': True, 'name': 'finished_fail_step', 'results': [2]},
+        {'isFinished': False, 'name': 'unfinished_pass_step', 'results': [0]},
+        {'isFinished': False, 'name': 'unfinished_fail_step', 'results': [2]},
       ]
     }
 
@@ -420,14 +420,14 @@ class AlertBuilderTestWithDiskCache(buildbot_test.TestCaseWithDiskCache):
     build = AlertBuilderTest.k_example_failing_build
     step = build['steps'][0]
     builder_name = build['builderName']
-    master_url  = 'https://build.chromium.org/p/chromium.lkgr'
+    master_url = 'https://build.chromium.org/p/chromium.lkgr'
 
     old_splitter_for_step = reasons_splitter.splitter_for_step
 
     split_step_invoked = [False]
 
     def mock_splitter_for_step(step):
-      class MockSplitter:
+      class MockSplitter(object):
         @classmethod
         def split_step(cls, step, build, builder_name, master_url):
           split_step_invoked[0] = True
@@ -455,7 +455,7 @@ class AlertBuilderTestWithDiskCache(buildbot_test.TestCaseWithDiskCache):
     build = AlertBuilderTest.k_example_failing_build
     step = build['steps'][0]
     builder_name = build['builderName']
-    master_url  = 'https://build.chromium.org/p/chromium.lkgr'
+    master_url = 'https://build.chromium.org/p/chromium.lkgr'
 
     old_splitter_for_step = reasons_splitter.splitter_for_step
 

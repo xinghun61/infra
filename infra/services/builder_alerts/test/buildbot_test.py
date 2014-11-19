@@ -511,7 +511,7 @@ class RevisionsForMasterTest(TestCaseWithDiskCache):
           ['got_v8_revision_cp', commit_position % (300 + index)],
           ['got_nacl_revision_cp', commit_position % (400 + index)]
         ],
-        'times': [ 1.0, 2.0 ],
+        'times': [1.0, 2.0],
         'index': index
       }
     builds = map(build, range(0, 10))
