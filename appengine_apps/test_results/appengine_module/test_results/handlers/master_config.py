@@ -44,6 +44,10 @@ _masters = {
         'name': 'GpuTryServer',
         'groups': ['TryServers']
     },
+    'client.mojo': {
+        'name': 'client.mojo',
+        'groups': ['ThisIsUnused']
+    },
     'client.v8': {
         'name': 'V8',
         'groups': ['@ToT V8']
