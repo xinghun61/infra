@@ -60,7 +60,7 @@ environment and invokes some other process, e.g.
     cd infra/go
     ./env.py go fmt ./...
 
-It is particularly useful on Window.
+It is particularly useful on Windows.
 
 
 ## Code structure
