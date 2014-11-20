@@ -62,8 +62,8 @@ urlpatterns = patterns(
     # The last path element is optional till the polymer UI supports it.
     (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)$',
      'diff2_skipped_lines'),
-    (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/(\d+)/(\d+)/([tba])/(\d+)/(\d+)$',
-     'diff2_skipped_lines'),
+    (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/(\d+)/(\d+)/([tba])'
+     '/(\d+)/(\d+)$', 'diff2_skipped_lines'),
     (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/$',
      django.views.defaults.page_not_found, {}, 'diff2_skipped_lines_prefix'),
     (r'^(\d+)/upload_content/(\d+)/(\d+)$', 'upload_content'),

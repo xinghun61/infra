@@ -82,6 +82,7 @@ from codereview import utils
 from codereview.common import IS_DEV
 from codereview.exceptions import FetchError
 from codereview.responses import HttpTextResponse, HttpHtmlResponse, respond
+from codereview.responses import HttpResponseBadRequest
 import codereview.decorators as deco
 
 
@@ -1111,8 +1112,6 @@ def upload(request):
           base_hashes[filename] = checksum
 
         logging.info('base_hashes is %r', base_hashes)
-        content_entities = []
-        new_content_entities = []
         patches = list(patchset.patches)
         logging.info('len(patches) = %r', len(patches))
 
@@ -1370,7 +1369,7 @@ def _make_new(request, form):
   if not separate_patches:
     try:
       patches = engine.ParsePatchSet(patchset)
-    except:
+    except Exception:
       # catch all exceptions happening in engine.ParsePatchSet,
       # engine.SplitPatch. With malformed diffs a variety of exceptions could
       # happen there.
@@ -1802,7 +1801,6 @@ def edit(request):
     return respond(request, 'edit.html', {'issue': issue, 'form': form})
   cleaned_data = form.cleaned_data
 
-  was_closed = issue.closed
   issue.subject = cleaned_data['subject']
   issue.description = cleaned_data['description']
   issue.closed = cleaned_data['closed']
@@ -1962,7 +1960,7 @@ def tarball(request):
   temp = tempfile.TemporaryFile()
   tar = tarfile.open(mode="w|bz2", fileobj=temp)
 
-  def add_entry(prefix, content):
+  def add_entry(prefix, content, patch):
     data = content.data
     if data is None:
       data = content.text
@@ -1983,12 +1981,12 @@ def tarball(request):
   for patch in patches:
     if not patch.no_base_file:
       try:
-        add_entry('a/', patch.get_content())  # before
+        add_entry('a/', patch.get_content(), patch)  # before
       except FetchError:  # I/O problem?
         logging.exception('tarball: patch(%s, %s).get_content failed' %
                           (patch.key.id(), patch.filename))
     try:
-      add_entry('b/', patch.get_patched_content())  # after
+      add_entry('b/', patch.get_patched_content(), patch)  # after
     except FetchError:  # file deletion?  I/O problem?
       logging.exception('tarball: patch(%s, %s).get_patched_content failed' %
                         (patch.key.id(), patch.filename))
@@ -2766,22 +2764,23 @@ def api_draft_comments(request):
       patch = models.Patch.get_by_id(int(comment.patch_id),
                                      parent=request.patchset.key)
       assert not patch is None
-      message_id = str(comment.message_id) if message_id in comment else None,
+      message_id = str(comment.message_id
+                       ) if hasattr(comment, "message_id") else None
       return {
-        user: request.user,
-        issue: request.issue,
-        patch: patch,
-        lineno: int(comment.lineno),
-        left: bool(comment.left),
-        text: str(comment.text),
-        message_id: message_id,
+        'user': request.user,
+        'issue': request.issue,
+        'patch': patch,
+        'lineno': int(comment.lineno),
+        'left': bool(comment.left),
+        'text': str(comment.text),
+        'message_id': message_id,
       }
     return [
-      {message_id: _add_or_update_comment(**comment).message_id}
+      {"message_id": _add_or_update_comment(**comment).message_id}
       for comment in map(sanitize, json.load(request.data))
     ]
   except Exception as err:
-    return HttpTextResponse('An error occurred.', status=500)
+    return HttpTextResponse('An error occurred. %s' % str(err), status=500)
 
 
 @deco.require_methods('POST')
@@ -3657,7 +3656,7 @@ def settings(request):
 
 @deco.login_required
 @deco.json_response
-def api_settings(request):
+def api_settings(_request):
   """Repond with user prefs in JSON."""
   account = models.Account.current_user_account
   return {
@@ -4447,7 +4446,7 @@ def yield_people_issue_to_update(day_to_process, issues, messages_looked_up):
         models.Message.date)
     # Someone sane would ask: why the hell do this? I don't know either but
     # that's the only way to not have it throw an exception after 60 seconds.
-    message_keys, cursor, more = query.fetch_page(100, start_cursor=cursor)
+    message_keys, cursor, _ = query.fetch_page(100, start_cursor=cursor)
     if not message_keys:
       # We're done, no more cursor.
       break
@@ -4591,7 +4590,7 @@ def task_update_stats(request):
   return out
 
 
-def update_daily_stats(cursor, day_to_process):
+def update_daily_stats(_cursor, day_to_process):
   """Updates the statistics about every reviewer for the day.
 
   Note that joe@google != joe@chromium, so make sure to always review with the
@@ -4730,7 +4729,7 @@ def update_rolling_stats(cursor, reference_day, duration='30'):
     accounts = 0
     while True:
       query = models.Account.query()
-      account_keys, next_cursor, more = query.fetch_page(
+      account_keys, next_cursor, _more = query.fetch_page(
         100, keys_only=True, start_cursor=cursor)
       if not account_keys:
         # We're done, no more cursor.
@@ -4825,7 +4824,7 @@ def update_monthly_stats(cursor, day_to_process):
         default_options=ndb.QueryOptions(keys_only=True))
     months_to_regenerate = set()
     while True:
-      day_stats_keys, cursor, more = q.fetch_page(100, start_cursor=cursor)
+      day_stats_keys, cursor, _more = q.fetch_page(100, start_cursor=cursor)
       if not day_stats_keys:
         cursor = None
         break

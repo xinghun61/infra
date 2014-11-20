@@ -14,10 +14,8 @@
 
 """Views for Chromium port of Rietveld."""
 
-import cgi
 import datetime
 import logging
-import os
 import re
 
 from google.appengine.api import taskqueue
@@ -28,17 +26,15 @@ from google.appengine.runtime import DeadlineExceededError
 
 from django import forms
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseRedirect
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.http import HttpResponseServerError
 from django.utils import simplejson as json
 
 from codereview import decorators as deco
 from codereview import decorators_chromium as deco_cr
-from codereview import exceptions
 from codereview import models
 from codereview import models_chromium
-from codereview import patching
 from codereview import responses
 from codereview import views
 
@@ -119,7 +115,7 @@ def handle_build_finished(base_url, timestamp, packet, payload):
       build.get('properties', []))
 
 
-def inner_handle(reason, base_url, timestamp, packet, result, properties):
+def inner_handle(reason, base_url, _timestamp, packet, result, properties):
   """Handles one event coming from HttpStatusPush and update the relevant
   TryJobResult object.
 

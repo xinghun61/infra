@@ -14,6 +14,8 @@
 
 """Custom middleware.  Some of this may be generally useful."""
 
+#pylint: disable=R0201
+
 import logging
 
 from google.appengine.runtime import apiproxy_errors

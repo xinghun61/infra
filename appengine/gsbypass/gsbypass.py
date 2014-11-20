@@ -6,7 +6,6 @@
 
 import cloudstorage as gcs
 import logging
-import re
 import webapp2
 
 from google.appengine.api import users

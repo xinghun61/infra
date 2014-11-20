@@ -57,7 +57,8 @@ def to_dict(self):
       return item.email()
     else:
       return unicode(item)
-  result = dict([(p, convert(getattr(self, p))) for p in self._properties])
+  result = dict([(p, convert(getattr(self, p)))
+                 for p in self._properties]) #pylint: disable=W0212
   try:
     result['key'] = self.key.urlsafe()
   except db.NotSavedError:

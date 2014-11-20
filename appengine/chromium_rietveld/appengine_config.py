@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-from google.appengine.ext.appstats import recording
+# from google.appengine.ext.appstats import recording
 
 logging.info('Loading %s from %s', __name__, __file__)
 

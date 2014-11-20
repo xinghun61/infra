@@ -37,7 +37,7 @@ import appengine_config
 from google.appengine.ext.webapp import util
 
 # Import webapp.template.  This makes most Django setup issues go away.
-from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp import template  #pylint: disable=F0401
 
 # Django 1.2+ requires DJANGO_SETTINGS_MODULE environment variable to be set
 # http://code.google.com/appengine/docs/python/tools/libraries.html#Django
@@ -51,7 +51,7 @@ import django.dispatch.dispatcher
 import django.forms
 
 
-def log_exception(*args, **kwds):
+def log_exception(*_args, **_kwds):
   """Django signal handler to log an exception."""
   cls, err = sys.exc_info()[:2]
   logging.exception('Exception in request: %s: %s', cls.__name__, err)

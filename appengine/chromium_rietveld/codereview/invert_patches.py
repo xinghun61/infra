@@ -17,8 +17,7 @@
 import difflib
 import re
 
-import patching
-
+from codereview import patching
 
 # Listing of supported patch statuses.
 ADDED_STATUS = 'A'
@@ -36,22 +35,22 @@ def is_git_diff_header(diff_header):
   return any(l.startswith('diff --git') for l in diff_header.splitlines())
 
 
-def split_header(diff):                                                      
-  """Splits a diff in two: the header and the chunks."""                      
-  header = []                                                                 
-  chunks = diff.splitlines(True)                                              
-  while chunks:                                                               
-    if chunks[0].startswith('--- '):                                          
-      break                                                                   
-    header.append(chunks.pop(0))                                              
-  else:                                                                       
+def split_header(diff):
+  """Splits a diff in two: the header and the chunks."""
+  header = []
+  chunks = diff.splitlines(True)
+  while chunks:
+    if chunks[0].startswith('--- '):
+      break
+    header.append(chunks.pop(0))
+  else:
     # Some diff may not have a ---/+++ set like a git rename with no change or
-    # a permissions change.                                                   
-    pass                                                                      
+    # a permissions change.
+    pass
 
-  if chunks:                                                                  
-    assert chunks[0].startswith('--- '), 'Inconsistent header'                
-  return ''.join(header), ''.join(chunks)      
+  if chunks:
+    assert chunks[0].startswith('--- '), 'Inconsistent header'
+  return ''.join(header), ''.join(chunks)
 
 
 class InvertGitPatches(object):
@@ -69,7 +68,7 @@ class InvertGitPatches(object):
       filename: (str) The file the patch applies to.
     """
     self._filename = filename
-    self._diff_header, unused_diff_chunks = split_header(patch_text)
+    self._diff_header, _diff_chunks = split_header(patch_text)
     # Make sure it is a git patch.
     assert is_git_diff_header(self._diff_header), 'Not a Git patch'
     self._status = self.get_patch_status(self._diff_header)
@@ -223,7 +222,7 @@ class InvertGitPatches(object):
       binary_files_match = re.search(r"(?m)^Binary files .*", inverted_header)
       if binary_files_match:
         new_header.append(binary_files_match.group(0))
-       
+
       inverted_header = '\n'.join(new_header) + '\n'
     elif self._status == ADDED_STATUS:
       inverted_header = inverted_header.replace('new file', 'deleted file')

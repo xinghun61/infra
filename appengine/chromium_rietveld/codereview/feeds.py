@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=R0201
+
 import md5
 
 from django.contrib.syndication.views import Feed

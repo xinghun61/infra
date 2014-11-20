@@ -542,25 +542,25 @@ class CondensedHelpFormatter(optparse.IndentedHelpFormatter):
       options and collapsing arguments between short and long, e.g.
       '-o ARG, --opt=ARG' to -o --opt ARG"""
 
- def format_heading(self, heading):
-   return "%s:\n" % heading
+  def format_heading(self, heading):
+    return "%s:\n" % heading
 
- def format_option(self, option):
-   self.dedent()
-   res = optparse.HelpFormatter.format_option(self, option)
-   self.indent()
-   return res
+  def format_option(self, option):
+    self.dedent()
+    res = optparse.HelpFormatter.format_option(self, option)
+    self.indent()
+    return res
 
- def format_option_strings(self, option):
-   self.set_long_opt_delimiter(" ")
-   optstr = optparse.HelpFormatter.format_option_strings(self, option)
-   optlist = optstr.split(", ")
-   if len(optlist) > 1:
-     if option.takes_value():
-       # strip METAVAR from all but the last option
-       optlist = [x.split()[0] for x in optlist[:-1]] + optlist[-1:]
-     optstr = " ".join(optlist)
-   return optstr
+  def format_option_strings(self, option):
+    self.set_long_opt_delimiter(" ")
+    optstr = optparse.HelpFormatter.format_option_strings(self, option)
+    optlist = optstr.split(", ")
+    if len(optlist) > 1:
+      if option.takes_value():
+        # strip METAVAR from all but the last option
+        optlist = [x.split()[0] for x in optlist[:-1]] + optlist[-1:]
+      optstr = " ".join(optlist)
+    return optstr
 
 
 parser = optparse.OptionParser(
