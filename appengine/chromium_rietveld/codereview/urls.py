@@ -23,7 +23,23 @@ from codereview import feeds
 
 urlpatterns = patterns(
     'codereview.views',
+
+    # TODO(ojan): Remove the scrape urls once there are JSON APIs for them.
+    (r'^scrape/?$', 'index'),
     (r'^$', 'index'),
+
+    (r'^scrape/(\d+)/?$', 'show', {}, 'show_bare_issue_number'),
+    (r'^(\d+)/?$', 'show', {}, 'show_bare_issue_number'),
+
+    # TODO(ojan): Use the api and remove the scrape URL.
+    (r'^scrape/settings$', 'settings'),
+    (r'^settings$', 'settings'),
+    (r'^api/settings$', 'api_settings'),
+
+    # TODO(ojan): Use the api and remove the scrape URL.
+    (r'^scrape/user/([^/]+)$', 'show_user'),
+    (r'^user/([^/]+)$', 'show_user'),
+    (r'^api/user/([^/]+)$', 'api_show_user'),
 
     (r'^leaderboard/?$', RedirectView.as_view(url='/leaderboard/30')),
     (r'^leaderboard_json/(.+)$', 'leaderboard_json'),
@@ -33,13 +49,15 @@ urlpatterns = patterns(
     (r'^user/([^/]+)/stats/([^/]+)$', 'show_user_stats'),
     (r'^user/([^/]+)/stats_json/([^/]+)$', 'show_user_stats_json'),
 
+    # TODO(ojan): all/mine/starred/show are not useful. Remove them once
+    # we remove the deprecated UI.
     (r'^all$', 'view_all'),
     (r'^mine$', 'mine'),
     (r'^api/mine$', 'api_mine'),
     (r'^starred$', 'starred'),
-    (r'^upload$', 'upload'),
-    (r'^(\d+)$', 'show', {}, 'show_bare_issue_number'),
     (r'^(\d+)/(?:show)?$', 'show'),
+
+    (r'^upload$', 'upload'),
     (r'^(\d+)/edit$', 'edit'),
     (r'^(\d+)/delete$', 'delete'),
     (r'^(\d+)/close$', 'close'),
@@ -78,11 +96,7 @@ urlpatterns = patterns(
     (r'^api/(\d+)/(\d+)/?$', 'api_patchset'),
     (r'^api/(\d+)/(\d+)/draft_comments$', 'api_draft_comments'),
     (r'^tarball/(\d+)/(\d+)$', 'tarball'),
-    (r'^user/([^/]+)$', 'show_user'),
-    (r'^api/user/([^/]+)$', 'api_show_user'),
     (r'^inline_draft$', 'inline_draft'),
-    (r'^settings$', 'settings'),
-    (r'^api/settings$', 'api_settings'),
     (r'^account_delete$', 'account_delete'),
     (r'^migrate_entities$', 'migrate_entities'),
     (r'^user_popup/(.+)$', 'user_popup'),

@@ -1186,6 +1186,7 @@ class Account(ndb.Model):
   modified = ndb.DateTimeProperty(auto_now=True)
   stars = ndb.IntegerProperty(repeated=True)  # Issue ids of all starred issues
   fresh = ndb.BooleanProperty()
+  deprecated_ui = ndb.BooleanProperty(default=True)
   notify_by_email = ndb.BooleanProperty(default=True)
   notify_by_chat = ndb.BooleanProperty(default=False)
   # Spammer; only blocks sending messages, not uploading issues.

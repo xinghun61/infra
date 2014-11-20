@@ -36,6 +36,11 @@ handlers:
   static_dir: static
 #  secure: always
 
+# TODO(ojan): s/new_static/static/ once the static directory is no longer used.
+- url: /new_static
+  static_dir: new_static
+#  secure: always
+
 # Admin-only URLs like tasks or cron jobs. See cron.yaml and queue.yaml.
 - url: /restricted/.*
   script: main.application

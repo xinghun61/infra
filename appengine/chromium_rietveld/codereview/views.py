@@ -353,6 +353,7 @@ class SettingsForm(forms.Form):
       initial=django_settings.DEFAULT_TAB_SPACES,
       min_value=django_settings.MIN_TAB_SPACES,
       max_value=django_settings.MAX_TAB_SPACES)
+  deprecated_ui = forms.BooleanField(required=False)
   notify_by_email = forms.BooleanField(required=False,
                                        widget=forms.HiddenInput())
   notify_by_chat = forms.BooleanField(
@@ -593,11 +594,29 @@ def _clean_int(value, default, min_value=None, max_value=None):
   return value
 
 
+def _use_new_ui(request):
+  if (not models.Account.current_user_account or
+      models.Account.current_user_account.deprecated_ui):
+    return False
+  if request.path.find('scrape') != -1:
+    return False
+  return True
+
+
+def _serve_new_ui(request):
+  return respond(request, "new_ui.html", {
+    'raw': request.GET.get('raw')
+  })
+
+
 ### Request handlers ###
 
 
 def index(request):
   """/ - Show a list of review issues"""
+  if _use_new_ui(request):
+    return _serve_new_ui(request)
+
   if request.user is None:
     return view_all(request, index_call=True)
   else:
@@ -959,6 +978,9 @@ def _get_dashboard_issue_lists(request):
 
 
 def _show_user(request):
+  if _use_new_ui(request):
+    return _serve_new_ui(request)
+
   dashboard_dict = _get_dashboard_issue_lists(request)
   account = models.Account.get_account_for_user(
     request.user_to_show, autocreate=False)
@@ -1599,6 +1621,9 @@ def _map_base_url(base):
 @deco.issue_required
 def show(request):
   """/<issue> - Show an issue."""
+  if _use_new_ui(request):
+    return _serve_new_ui(request)
+
   patchsets = request.issue.get_patchset_info(request.user, None)
   last_patchset = first_patch = None
   if patchsets:
@@ -3612,7 +3637,11 @@ def search(request):
 @deco.xsrf_required
 def settings(request):
   account = models.Account.current_user_account
+
   if request.method != 'POST':
+    if _use_new_ui(request):
+      return _serve_new_ui(request)
+
     nickname = account.nickname
     default_context = account.default_context
     default_column_width = account.default_column_width
@@ -3620,6 +3649,7 @@ def settings(request):
     form = SettingsForm(initial={'nickname': nickname,
                                  'context': default_context,
                                  'column_width': default_column_width,
+                                 'deprecated_ui': account.deprecated_ui,
                                  'tab_spaces': default_tab_spaces,
                                  'notify_by_email': account.notify_by_email,
                                  'notify_by_chat': account.notify_by_chat,
@@ -3637,6 +3667,7 @@ def settings(request):
     account.nickname = form.cleaned_data.get('nickname')
     account.default_context = form.cleaned_data.get('context')
     account.default_column_width = form.cleaned_data.get('column_width')
+    account.deprecated_ui = form.cleaned_data.get('deprecated_ui')
     account.default_tab_spaces = form.cleaned_data.get('tab_spaces')
     account.notify_by_email = form.cleaned_data.get('notify_by_email')
     notify_by_chat = form.cleaned_data.get('notify_by_chat')
@@ -3651,7 +3682,7 @@ def settings(request):
       notify_xmpp.must_invite(account)
   else:
     return respond(request, 'settings.html', {'form': form})
-  return HttpResponseRedirect(reverse(mine))
+  return HttpResponseRedirect(reverse(index))
 
 
 @deco.login_required
