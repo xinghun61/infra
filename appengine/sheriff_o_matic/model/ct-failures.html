@@ -163,14 +163,22 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
     });
   });
 
+  var trooper_fyi_failures = [];
   Object.keys(all_failures, function(tree, failuresByTree) {
+    // By default, we put non chromium and blink waterfalls into 'trooper-fyi'.
+    // As other waterfalls become more stable, they can be moved to 'trooper.'
+    var failure_array = trooper_fyi_failures;
+    if (tree == 'chromium' || tree == 'blink'){
+      failure_array = trooper_failures;
+    }
     failuresByTree.forEach(function(failure) {
       if (failure.category == 'builder' || failure.category == 'master') {
-        trooper_failures.push(failure);
+        failure_array.push(failure);
       }
     });
   });
   this.failures['trooper'] = trooper_failures;
+  this.failures['trooper-fyi'] = trooper_fyi_failures;
 };
 
 CTFailures.prototype._groupFailuresByTreeAndReason = function(failures, annotations) {
