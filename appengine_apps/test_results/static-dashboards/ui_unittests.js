@@ -52,6 +52,12 @@ test('chromiumRevisionLinkOneRevision', 1, function() {
     equal(html, '<a href="https://crrev.com/2">r2</a>');
 });
 
+test('chromiumRevisionLinkGitHash', 1, function() {
+    var testResults = {};
+    testResults[results.CHROME_REVISIONS] = ['hashhere'];
+    equal(ui.html.chromiumRevisionLink(testResults, 1), null);
+});
+
 test('chromiumRevisionLinkAtRevision', 1, function() {
     var testResults = {};
     testResults[results.CHROME_REVISIONS] = [3, 2, 2];
@@ -64,6 +70,12 @@ test('chromiumRevisionLinkRevisionRange', 1, function() {
     testResults[results.CHROME_REVISIONS] = [5, 2];
     var html = ui.html.chromiumRevisionLink(testResults, 0);
     equal(html, '<a href="../../revision_range?start=2&end=5">r3 to r5</a>');
+});
+
+test('blinkRevisionLinkGitHash', 1, function() {
+    var testResults = {};
+    testResults[results.BLINK_REVISIONS] = ['hashhere'];
+    equal(ui.html.blinkRevisionLink(testResults, 1), null);
 });
 
 test('blinkRevisionLinkOneRevision', 1, function() {

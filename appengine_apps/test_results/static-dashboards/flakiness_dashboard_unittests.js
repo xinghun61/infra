@@ -416,7 +416,26 @@ test('collapsedRevisionListChromium', 1, function() {
     equal(result, expected, 'collapsedRevisionList result should be the unique chromium builds, sorted in descending order');
 });
 
-test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
+test('collapsedRevisionListChromiumGitHashes', 1, function() {
+    resetGlobals();
+    var test = 'dummytest.html';
+
+    var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
+    // Note: r1235 results were generated twice by two separate builds.
+    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: ['1234', 'asdf', '1111', '2222'], failure_map: FAILURE_MAP};
+
+    var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
+    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: ['asdf', '2345'], failure_map: FAILURE_MAP};
+
+    var resultsObject1 = createResultsObjectForTest(test, builder1);
+    var resultsObject2 = createResultsObjectForTest(test, builder2);
+
+    var result = collapsedRevisionList([resultsObject1, resultsObject2]);
+    equal(result, null, 'collapsedRevisionList result should be null if there are git hashes');
+});
+
+
+test('htmlForTestsWithMultipleRunsAtTheSameRevision', 6, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
     var test = 'dummytest.html';
@@ -540,7 +559,7 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 1, function() {
     showPopupForInterpolatedResult = showPopupForInterpolatedResultOriginal;
 });
 
-test('collapsedRevisionListChromiumWithGitHash', 1, function() {
+test('htmlForTestsWithMultipleRunsWithGitHash', 1, function() {
     resetGlobals();
     g_history.dashboardSpecificState.showChrome = true;
     var test = 'dummytest.html';
@@ -568,7 +587,7 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
                 '<tr builder="Master1:WebKit Linux (dbg)" test="dummytest.html">' +
                     '<td class="test-link builder-name">WebKit Linux (dbg)<td class=options-container><div><a href="http://crbug.com/1234">crbug.com/1234</a></div>' +
                     '<td class=options-container><td><td class="results-container">' +
-                        '<div title="Unknown result. Did not run tests." rev="b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b" class="results interpolatedResult NODATA">?</div>' +
+                        '<div title="PASS. Click for more info." class="results PASS"></div>' +
                     '</td>' +
             '</tbody>' +
         '</table>' +
@@ -589,4 +608,85 @@ test('collapsedRevisionListChromiumWithGitHash', 1, function() {
             '</div>' +
         '</div>');
     g_history.dashboardSpecificState.showChrome = false;
+});
+
+test('htmlForPopupForBuild', 2, function() {
+    resetGlobals();
+
+    var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
+    g_resultsByBuilder[builder.key()] = {
+        buildNumbers: [4, 3],
+        blinkRevision: [1235, 1233],
+        chromeRevision: [1235, 1233],
+        secondsSinceEpoch: [1234, 1234],
+        failure_map: FAILURE_MAP
+    };
+
+    var tests = {}
+    var basePath = 'http://build.chromium.org/p/';
+    var name = 'Master1';
+    builders.masters[name] = new builders.Master({name: name, url_name: name, tests: tests});
+
+    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 4:20:34 PM' +
+        '<ul>' +
+            '<li>' +
+                '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/4" target="_blank">' +
+                    'Build log' +
+                '</a>' +
+            '</li>' +
+            '<li>Blink: <a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range=1234:1235&mode=html">r1234 to r1235</a></li>' +
+            '<li>Chromium: <a href="../../revision_range?start=1233&end=1235">r1234 to r1235</a></li>' +
+            '<li>' +
+                '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/4/layout-test-results.zip">' +
+                    'layout-test-results.zip' +
+                '</a>' +
+            '</li>' +
+        '</ul>');
+
+    // This lacks a previous revision, so it can't show the right regression ranges.
+    equal(htmlForPopupForBuild(builder.key(), 1), '12/31/1969 4:20:34 PM' +
+        '<ul>' +
+            '<li>' +
+                '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/3" target="_blank">' +
+                    'Build log' +
+                '</a>' +
+            '</li>' +
+            '<li>' +
+                '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/3/layout-test-results.zip">' +
+                    'layout-test-results.zip' +
+                '</a>' +
+            '</li>' +
+        '</ul>');
+});
+
+test('htmlForPopupForBuildWithGitHashes', 1, function() {
+    resetGlobals();
+
+    var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
+    g_resultsByBuilder[builder.key()] = {
+        buildNumbers: [4, 3],
+        blinkRevision: ['asdf', 'qwer'],
+        chromeRevision: ['asdf', 'qwer'],
+        secondsSinceEpoch: [1234, 1234],
+        failure_map: FAILURE_MAP
+    };
+
+    var tests = {}
+    var basePath = 'http://build.chromium.org/p/';
+    var name = 'Master1';
+    builders.masters[name] = new builders.Master({name: name, url_name: name, tests: tests});
+
+    equal(htmlForPopupForBuild(builder.key(), 0), '12/31/1969 4:20:34 PM' +
+        '<ul>' +
+            '<li>' +
+                '<a href="http://build.chromium.org/p/Master1/builders/WebKit Linux (dbg)/builds/4" target="_blank">' +
+                    'Build log' +
+                '</a>' +
+            '</li>' +
+            '<li>' +
+                '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/4/layout-test-results.zip">' +
+                    'layout-test-results.zip' +
+                '</a>' +
+            '</li>' +
+        '</ul>');
 });

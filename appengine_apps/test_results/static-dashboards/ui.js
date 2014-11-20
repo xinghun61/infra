@@ -172,8 +172,10 @@ ui.html._dashboardLink = function(html, fileName)
 
 ui.html._revisionLink = function(resultsKey, testResults, index)
 {
-    var currentRevision = parseInt(testResults[resultsKey][index], 10);
-    var previousRevision = parseInt(testResults[resultsKey][index + 1], 10);
+    // TODO(ojan): Support git hashes instead of only commit positions or SVN revisions.
+    var currentRevision = Number(testResults[resultsKey][index]);
+    if (!currentRevision)
+        return null;
 
     // TODO(ojan): chromium/src is the only repository supported by crrev.com.
     // Once blink is supported, send all code down the isChrome codepath.
@@ -184,6 +186,10 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
         singleUrl = 'https://crrev.com/' + currentRevision;
     else
         singleUrl = 'http://src.chromium.org/viewvc/blink?view=rev&revision=' + currentRevision;
+
+    var previousRevision = Number(testResults[resultsKey][index + 1]);
+    if (!previousRevision)
+        return null;
 
     if (currentRevision == previousRevision)
         return 'At <a href="' + singleUrl + '">r' + currentRevision    + '</a>';

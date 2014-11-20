@@ -531,7 +531,7 @@ function showPopup(event)
     }
 }
 
-function showPopupForBuild(e, builderKey, index, opt_testName)
+function htmlForPopupForBuild(builderKey, index, opt_testName)
 {
     var html = '';
     var builder = builders.builderFromKey(builderKey);
@@ -546,12 +546,17 @@ function showPopupForBuild(e, builderKey, index, opt_testName)
     var master = builder.master();
     var buildBasePath = master.logPath(builder.builderName, buildNumber);
 
-    html += '<ul><li>' + linkHTMLToOpenWindow(buildBasePath, 'Build log');
+    html += '<ul><li>' + linkHTMLToOpenWindow(buildBasePath, 'Build log') + '</li>';
 
-    if (g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS])
-        html += '</li><li>Blink: ' + ui.html.blinkRevisionLink(g_resultsByBuilder[builder.key()], index) + '</li>';
+    if (g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS]) {
+        var blinkLink = ui.html.blinkRevisionLink(g_resultsByBuilder[builder.key()], index);
+        if (blinkLink)
+            html += '<li>Blink: ' + blinkLink + '</li>';
+    }
 
-    html += '</li><li>Chromium: ' + ui.html.chromiumRevisionLink(g_resultsByBuilder[builder.key()], index) + '</li>';
+    var chromiumLink = ui.html.chromiumRevisionLink(g_resultsByBuilder[builder.key()], index);
+    if (chromiumLink)
+        html += '<li>Chromium: ' + chromiumLink + '</li>';
 
     var chromeRevision = g_resultsByBuilder[builder.key()].chromeRevision[index];
     if (chromeRevision && g_history.isLayoutTestResults()) {
@@ -563,7 +568,12 @@ function showPopupForBuild(e, builderKey, index, opt_testName)
         html += '<li>' + linkHTMLToOpenWindow(buildBasePath + pathToFailureLog(opt_testName), 'Failure log') + '</li>';
 
     html += '</ul>';
-    ui.popup.show(e.target, html);
+    return html;
+}
+
+function showPopupForBuild(e, builderKey, index, opt_testName)
+{
+    ui.popup.show(e.target, htmlForPopupForBuild(builderKey, index, opt_testName));
 }
 
 function showPopupForInterpolatedResult(e, revision)
@@ -590,8 +600,10 @@ function htmlForTestResults(test, revisions)
         results.BLINK_REVISIONS : results.CHROME_REVISIONS;
 
     var cells = [];
-    for (var index = 0; index < revisions.length; index++)
-        cells.push({revision: revisions[index]});
+    if (revisions) {
+        for (var index = 0; index < revisions.length; index++)
+            cells.push({revision: revisions[index]});
+    }
 
     var indexToReplaceCurrentResult = -1;
     var indexToReplaceCurrentTime = -1;
@@ -619,16 +631,22 @@ function htmlForTestResults(test, revisions)
               indexToReplaceCurrentTime += buildNumbers.length;
         }
 
-        var revision = parseInt(
-            g_resultsByBuilder[builder.key()][revisionType][i], 10);
+        var rawRevision = g_resultsByBuilder[builder.key()][revisionType][i];
+        var revision = Number(rawRevision) || rawRevision;
 
         // Locate the empty cell corresponding to this blink revision.
-        var cell = undefined;
-        for (var index = 0; index < cells.length; index++) {
-            if (cells[index].revision == revision && !cells[index].html) {
-                cell = cells[index];
-                break;
+        var cell;
+
+        if (revisions) {
+            for (var index = 0; index < cells.length; index++) {
+                if (cells[index].revision == revision && !cells[index].html) {
+                    cell = cells[index];
+                    break;
+                }
             }
+        } else {
+            cell = {revision: revision};
+            cells.push(cell);
         }
 
         if (!cell) {
@@ -904,6 +922,10 @@ function collapsedRevisionList(testResults)
         var builderRevisionsCountedSet = {};
         for (var i = 0; i < buildNumbers.length; i++) {
             var revision = build[revisionType][i];
+
+            if (!Number(revision))
+                return null;
+
             builderRevisionsCountedSet[revision] =
                 (builderRevisionsCountedSet[revision] || 0) + 1;
         }
@@ -922,6 +944,7 @@ function collapsedRevisionList(testResults)
     revisionsArray.sort(function(a, b) {
         return (b - a);
     });
+
     return revisionsArray;
 }
 
