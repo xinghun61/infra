@@ -1,0 +1,74 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../bower_components/polymer-ui-collapsible/polymer-ui-collapsible.html">
+
+<link rel="import" href="cr-issue-list.html">
+
+<polymer-element name="cr-issue-inbox-section" attributes="issues weeks">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            .polymer-ui-collapsible-header {
+                padding: 0.5em 16px;
+                display: block;
+            }
+        </style>
+
+        <cr-issue-list issues="{{ visibleIssues }}"></cr-issue-list>
+        <template if="{{ hiddenIssues.length }}">
+            <polymer-ui-collapsible active="{{ showingHiddenIssues }}">
+                <cr-action class="polymer-ui-collapsible-header">
+                    {{ hiddenIssues.length }} older
+                    {{ "issue" | pluralize(hiddenIssues.length) }}
+                </cr-action>
+                <template if="{{ showingHiddenIssues }}">
+                    <cr-issue-list issues="{{ hiddenIssues }}"></cr-issue-list>
+                </template>
+            </polymer-ui-collapsible>
+        </template>
+    </template>
+    <script>
+        Polymer("cr-issue-inbox-section", {
+            weeks: "all",
+            issues: null,
+            visibleIssues: [],
+            hiddenIssues: [],
+            showingHiddenIssues: false,
+            computed: {
+                state: "[issues, weeks]",
+            },
+            stateChanged: function() {
+                var self = this;
+                this.visibleIssues = [];
+                this.hiddenIssues = [];
+                if (this.weeks == "all") {
+                    this.visibleIssues = this.issues;
+                    return;
+                }
+                if (!this.issues)
+                    return;
+                var date = this.filterDate();
+                this.issues.forEach(function(issue) {
+                    if (issue.lastModified >= date)
+                        self.visibleIssues.push(issue);
+                    else
+                        self.hiddenIssues.push(issue);
+                });
+            },
+            filterDate: function() {
+                if (this.weeks == "today")
+                    return Date.create().rewind({days: 1});
+                return Date.create().rewind({
+                    weeks: parseInt(this.weeks, 10) + 1,
+                });
+            },
+            pluralize: function(text, value) {
+                if (value > 1)
+                    return text.pluralize();
+                return text;
+            },
+        });
+    </script>
+</polymer-element>

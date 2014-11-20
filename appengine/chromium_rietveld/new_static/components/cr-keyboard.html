@@ -1,0 +1,137 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<!--
+    Use to add keyboard shortcuts to your components. The last inserted component
+    will always receive the events (and others will not). This prevents the
+    common bug where you have two listeners and multiple actions are taken for
+    the same keyboard shortcut.
+
+    <cr-keyboard
+        on-key-j="{{ forward }}"
+        on-key-k="{{ backwards }}"
+        on-key-delete="{{ remove }}"></cr-keyboard>
+
+    or
+
+    keyboard.addEventListener("key-left", previousSlide);
+    keyboard.addEventListener("key-right", nextSlide);
+
+    The "global" attribute configures this keyboard listener to be a global key
+    binding which means the <cr-keyboard> instances is assumed to exist all the
+    time but only apply when a non-editable element is focused and no dialogs
+    are open.
+-->
+<polymer-element name="cr-keyboard" attributes="global">
+    <template>
+        <style>
+            :host { display: none; }
+        </style>
+    </template>
+    <script>
+    (function() {
+        var instances = [];
+
+        // TODO(esprehn): Remove once M35 is stable.
+        var globalSupported = !navigator.userAgent.contains("Chrome/35.");
+
+        Polymer("cr-keyboard", {
+            global: false,
+            attached: function() {
+                instances.unshift(this);
+            },
+            detached: function() {
+                var i = instances.indexOf(this);
+                if (i >= 0)
+                    instances.splice(i, 1);
+            },
+            isActive: function() {
+                if (!this.global)
+                    return true;
+                if (!globalSupported)
+                    return false;
+                // TODO(esprehn): This doesn't support contenteditable, but we don't use
+                // that yet so there's no need to add the complexity.
+                var activeElement = document.querySelector("* /deep/ :focus");
+                if (activeElement && (activeElement.tagName == "INPUT" || activeElement.tagName == "TEXTAREA"))
+                    return false;
+                var activeDialog = document.querySelector("* /deep/ dialog[open]");
+                if (activeDialog)
+                    return activeDialog.contains(this);
+                return true;
+            },
+        });
+
+        var KEY_CODES = {
+            8: "delete",
+            9: "tab",
+            20: "space",
+            27: "escape",
+        };
+
+        var KEY_NAMES = {
+            "!": "exclamation",
+            "@": "at",
+            "#": "pound",
+            "$": "dollar",
+            "%": "percent",
+            "^": "caret",
+            "&": "amp",
+            "*": "asterisk",
+            "(": "open-paren",
+            ")": "close-paren",
+            "-": "dash",
+            "_": "underscore",
+            "+": "plus",
+            "=": "equals",
+            "{": "open-brace",
+            "}": "close-brace",
+            "[": "open-bracket",
+            "]": "close-bracket",
+            "|": "pipe",
+            "\\": "backslash",
+            "\"": "double-quote",
+            "'": "single-quote",
+            ";": "semi-colon",
+            ":": "colon",
+            "?": "question-mark",
+            "/": "forward-slash",
+            ">": "greater-than",
+            ".": "period",
+            "<": "less-than",
+            "`": "backtick",
+            "~": "tilde",
+        };
+
+        function convertKey(event) {
+            var key = event.keyIdentifier || event.key;
+            if (key.indexOf("U+") != -1) {
+                var code = parseInt(key.replace("U+", "0x"), 16);
+                var chr = String.fromCharCode(code).toLowerCase()
+                if (KEY_CODES[code])
+                    return KEY_CODES[code];
+                if (KEY_NAMES[chr])
+                    return KEY_NAMES[chr];
+                return chr;
+            }
+            if (KEY_NAMES[key])
+                return KEY_NAMES[key];
+            return key.toLowerCase();
+        }
+
+        function handleKeyDown(event) {
+            var key = convertKey(event);
+            if (!key)
+                return;
+            var instance = instances.find(function(instance) {
+                return instance.isActive() && instance.hasAttribute("on-key-" + key);
+            });
+            if (instance && instance.fire("key-" + key, event).defaultPrevented)
+                event.preventDefault();
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+    })();
+    </script>
+</polymer-element>

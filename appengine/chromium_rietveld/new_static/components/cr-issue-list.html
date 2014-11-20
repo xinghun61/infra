@@ -1,0 +1,133 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-view-handler.html">
+
+<polymer-element name="cr-issue-list" attributes="issues">
+    <template>
+        <cr-view-handler></cr-view-handler>
+        <style>
+            :host {
+                display: table;
+            }
+
+            .issue {
+                border-bottom: 1px solid #E6E6E6;
+                display: table-row;
+                text-decoration: none;
+                color: black;
+                -webkit-user-select: none;
+                cursor: default;
+            }
+
+            .issue:nth-child(2n) .issue-data {
+                background-color: #F8F8F8;
+            }
+
+            .issue:hover .issue-data {
+                background-color: #F9F3E4;
+            }
+
+            .issue-data {
+                display: table-cell;
+                padding: 0.5em 16px;
+                vertical-align: middle;
+            }
+
+            .issue-date,
+            .issue-id,
+            .issue-owner {
+                white-space: nowrap;
+            }
+
+            .issue-subject {
+                width: 100%;
+            }
+
+            .issue-date {
+                min-width: 8em;
+            }
+
+            .issue-owner {
+                min-width: 11em;
+                overflow: hidden;
+            }
+
+            .chip {
+                border-radius: 4px;
+                width: 1em;
+                height: 1em;
+                display: block;
+                border: 1px solid #dcdcdc;
+            }
+
+            .issue-approval,
+            .issue-disapproval {
+                min-width: 1em;
+            }
+
+            .issue-approval {
+                padding-right: 4px;
+            }
+
+            .issue-disapproval {
+                padding-left: 0;
+            }
+
+            .issue-approval .chip {
+                background-color: #8fdf5f;
+            }
+
+            .issue-disapproval .chip {
+                background-color: #E75D54;
+            }
+
+            .updated {
+                font-weight: bold;
+            }
+
+            .owner {
+                max-width: 11em;
+                display: block;
+                overflow: hidden;
+            }
+        </style>
+        <template repeat="{{ issue in issues }}">
+            <a href="/{{ issue.id }}" class="issue {{ {updated: issue.recentActivity} | tokenList }}">
+                <span class="issue-id issue-data">{{ issue.id }}</span>
+                <span class="issue-subject issue-data">{{ issue.subject }}</span>
+                <span class="issue-owner issue-data"><span class="owner" title="{{ issue.owner.displayName }}">{{ issue.owner.displayName }}</span></span>
+                <span class="issue-date issue-data">{{ issue.lastModified | formatDate }}</span>
+                <span class="issue-approval issue-data">
+                    <template if="{{ issue.approvalCount }}">
+                        <span class="chip" title="lgtm by {{ issue.scores | selectKeys(1) }}"></span>
+                    </template>
+                </span>
+                <span class="issue-disapproval issue-data">
+                    <template if="{{ issue.disapprovalCount }}">
+                        <span class="chip" title="not lgtm by {{ issue.scores | selectKeys(-1) }}"></span>
+                    </template>
+                </span>
+            </a>
+        </template>
+    </template>
+    <script>
+        Polymer("cr-issue-list", {
+            issues: null,
+            formatDate: function(date) {
+                if (!date)
+                    return "";
+                return date.relative();
+            },
+            selectKeys: function(scores, selectedScore) {
+                var users = [];
+                Object.keys(scores, function(name, score) {
+                    if (score == selectedScore)
+                        users.push(name);
+                });
+                return users.sort().join(", ");
+            },
+        });
+    </script>
+</polymer-element>

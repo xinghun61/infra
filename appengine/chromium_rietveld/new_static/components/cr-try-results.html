@@ -1,0 +1,86 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<polymer-element name="cr-try-results" attributes="results">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            :host {
+                display: block;
+            }
+
+            #builders {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                margin: 0.5em 16px;
+            }
+
+            .builder {
+                display: flex;
+                margin: 0.25em 4px;
+            }
+
+            .job {
+                max-width: 16px;
+                overflow: hidden;
+                border: 1px solid #dcdcdc;
+                margin-right: 1px;
+            }
+
+            .job:last-child {
+                max-width: none;
+                margin-right: none;
+            }
+
+            .try-job:link,
+            .try-job:visited {
+                color: black;
+            }
+
+            .try-job {
+                display: block;
+                padding: 0.25em 16px;
+                background-color: #E0E0E0;
+            }
+
+            .try-job.pending {
+                background-color: #F9EDBE;
+            }
+
+            .try-job.success {
+                background-color: #8fdf5f;
+                color: #222121;
+            }
+
+            .try-job.warnings,
+            .try-job.exception,
+            .try-job.failure {
+                background-color: #E75D54;
+                color: #F4F4F4;
+            }
+        </style>
+        <div id="builders">
+            <template repeat="{{ set in results }}">
+                <div class="builder">
+                    <template repeat="{{ job, i in set.results }}">
+                        <div class="job">
+                            <template if="{{ job.url }}">
+                                <a class="try-job {{ job.result }}" href="{{ job.url }}" title="{{ job.result }}" target="_blank">{{ job.builder }}</a>
+                            </template>
+                            <template if="{{ !job.url }}">
+                                <div class="try-job" title="unscheduled">{{ job.builder }}</div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+    <script>
+        Polymer("cr-try-results", {
+            results: null
+        });
+    </script>
+</polymer-element>

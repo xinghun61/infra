@@ -1,0 +1,50 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<!--
+    Use to observe to dynamically observe changes to the hash in the url.
+
+    ex.
+        <cr-hash-observer on-hash-changed="{{ handleHashChange }}"></cr-hash-observer>
+-->
+<polymer-element name="cr-hash-observer">
+    <template>
+        <style>
+            :host { display: none; }
+        </style>
+    </template>
+    <script>
+    (function() {
+        var instances = [];
+
+        Polymer("cr-hash-observer", {
+            attached: function() {
+                instances.push(this);
+            },
+            detached: function() {
+                var i = instances.indexOf(this);
+                if (i >= 0)
+                    instances.splice(i, 1);
+            },
+        });
+
+        var currentHash = "";
+        function notifyInstancesIfNeeded() {
+            if (window.location.hash == currentHash)
+                return;
+            currentHash = window.location.hash;
+            instances.forEach(function(instance) {
+                instance.asyncFire("hash-changed");
+            });
+        }
+
+        function handleHashChange() {
+            setTimeout(notifyInstancesIfNeeded);
+        }
+
+        document.addEventListener("navigate", handleHashChange);
+        window.addEventListener("hashchange", handleHashChange);
+    })();
+    </script>
+</polymer-element>

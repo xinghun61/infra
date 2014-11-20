@@ -1,0 +1,82 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-toolbar.html">
+<link rel="import" href="cr-button.html">
+
+<polymer-element name="cr-issue-message-reply" attributes="message expanded value">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            :host {
+                display: block;
+            }
+
+            .reply-input {
+                margin: 0.5em 16px 0 16px;
+            }
+
+            :host-context(.no-login) cr-toolbar {
+                display: none;
+            }
+        </style>
+        <template if="{{ !expanded }}">
+            <cr-toolbar>
+                <cr-action on-tap="{{ expand }}">Reply</cr-action>
+            </cr-toolbar>
+        </template>
+        <template if="{{ expanded }}">
+            <fieldset class="reply-input" disabled?="{{ sending }}">
+                <textarea id="textarea" rows="20" value="{{ value }}"></textarea>
+            </fieldset>
+            <cr-toolbar>
+                <cr-button primary on-tap="{{ sendMessage }}">Send Message</cr-button>
+                <cr-button on-tap="{{ discardMessage }}">Discard</cr-button>
+            </cr-toolbar>
+        </template>
+    </template>
+    <script>
+    Polymer("cr-issue-message-reply", {
+        message: null,
+        expanded: false,
+        value: "",
+        sending: false,
+        expand: function() {
+            this.expanded = true;
+            this.async(this.showReply);
+        },
+        sendMessage: function() {
+            this.sending = true;
+            this.fire("message-save", {
+                messageText: this.value,
+            });
+        },
+        discardMessage: function() {
+            this.expanded = false;
+            this.value = "";
+        },
+        showReply: function() {
+            if (!this.expanded)
+                return;
+            var textarea = this.shadowRoot.getElementById("textarea");
+            textarea.scrollIntoView(true);
+            textarea.focus();
+            if (this.message) {
+                var date = this.message.date.utc(true).format("On {yyyy}/{MM}/{dd} at {HH}:{mm}:{ss}");
+                var value = date + ", " + this.message.author.name + " wrote:\n";
+                this.message.text.split("\n").forEach(function(line) {
+                    value += "> " + line + "\n";
+                });
+                value += "\n";
+                this.value = value;
+            }
+            this.async(function() {
+                // Need to scroll at raf time to make sure the text area is filled in.
+                textarea.scrollTop = textarea.scrollHeight;
+            });
+        },
+    });
+    </script>
+</polymer-element>

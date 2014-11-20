@@ -1,0 +1,152 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-button.html">
+<link rel="import" href="cr-linkified-text.html">
+<link rel="import" href="cr-toolbar.html">
+<link rel="import" href="cr-keyboard.html">
+
+<polymer-element name="cr-patch-file-message" attributes="message expanded">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            :host {
+                display: block;
+            }
+
+            .message-edit {
+                margin: 0.5em 16px 0 16px;
+            }
+
+            .message-text {
+                padding: 0.5em 16px;
+            }
+
+            .message-header {
+                padding: 0.5em 16px;
+                display: flex;
+            }
+
+            .message-title {
+                flex: 1;
+                display: flex;
+            }
+
+            .message-author {
+                flex-shrink: 0;
+                font-weight: bold;
+            }
+        </style>
+
+        <div class="message-header">
+            <div class="message-title">
+                <div class="message-author" title="{{ message.author.email }}">
+                    <template if="{{ message.draft }}">
+                        (Draft)
+                    </template>
+                    {{ message.author.displayName }}
+                </div>
+            </div>
+            <div class="message-date">
+                {{ message.date | formatDate }}
+            </div>
+        </div>
+        <template if="{{ !expanded }}">
+            <div class="message-text">
+                <cr-linkified-text text="{{ message.text }}" pre></cr-linkified-text>
+            </div>
+        </template>
+        <template if="{{ !message.draft }}">
+            <cr-toolbar>
+                <cr-action on-tap="{{ reply }}">Reply</cr-action>
+            </cr-toolbar>
+        </template>
+        <template if="{{ message.draft }}">
+            <template if="{{ !expanded }}">
+                <cr-toolbar>
+                    <cr-action on-tap="{{ expand }}">Edit</cr-action>
+                </cr-toolbar>
+            </template>
+            <template if="{{ expanded }}">
+                <fieldset class="message-edit" disabled?="{{ saving }}">
+                    <textarea id="textarea" rows="10" value="{{ text }}"></textarea>
+                </fieldset>
+                <cr-toolbar>
+                    <cr-button primary on-tap="{{ save }}">Save</cr-button>
+                    <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                    <template if="{{ message.date }}">
+                        <cr-button on-tap="{{ discard }}">Discard</cr-button>
+                    </template>
+                </cr-toolbar>
+                <cr-keyboard on-key-escape="{{ handleCancelKey }}"></cr-keyboard>
+            </template>
+        </template>
+    </template>
+    <script>
+        Polymer("cr-patch-file-message", {
+            message: null,
+            expanded: false,
+            text: "",
+            expand: function() {
+                if (this.expanded)
+                    return;
+                this.text = this.message.text;
+                this.expanded = true;
+                this.saving = false;
+            },
+            reply: function() {
+                this.fire("file-message-reply");
+            },
+            expandedChanged: function() {
+                this.async(this.focusInput);
+            },
+            focusInput: function() {
+                if (!this.expanded)
+                    return;
+                this.scrollIntoViewIfNeeded();
+                var textarea = this.shadowRoot.getElementById("textarea");
+                if (textarea)
+                    textarea.focus();
+            },
+            save: function() {
+                if (!this.text.trim()) {
+                    this.discard();
+                    return;
+                }
+                this.saving = true;
+                this.fire("file-message-save", {
+                    text: this.text,
+                    message: this.message,
+                });
+            },
+            cancel: function() {
+                this.text = "";
+                this.expanded = false;
+                this.fire("file-message-cancel", {
+                    message: this.message,
+                });
+            },
+            discard: function() {
+                if (!this.message.date) {
+                    this.cancel();
+                }
+                this.fire("file-message-discard", {
+                    message: this.message,
+                });
+            },
+            formatDate: function(date) {
+                if (!date)
+                    return "";
+                return date.relative();
+            },
+            handleCancelKey: function(event) {
+                if (!this.shadowRoot.querySelector("* /deep/ :focus"))
+                    return;
+                event.preventDefault();
+                this.cancel();
+            },
+        });
+    </script>
+</polymer-element>

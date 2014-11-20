@@ -1,0 +1,109 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-hash-observer.html">
+<link rel="import" href="cr-issue-message.html">
+
+<polymer-element name="cr-issue-messages" attributes="messages" on-message-show="{{ revealMessage }}">
+    <template>
+        <cr-hash-observer on-hash-changed="{{ hashChanged }}"></cr-hash-observer>
+        <style>
+            :host { display: block; }
+
+            cr-toolbar {
+                margin: 0;
+                margin-bottom: 1em;
+                padding: 0;
+            }
+        </style>
+
+        <template if="{{ !showOlderMessages && olderMessages.length }}">
+            <cr-toolbar>
+                <cr-action on-tap="{{ handleShowOlderMessages }}">
+                    Show {{ olderMessages.length }} older
+                    {{ "message" | pluralize(olderMessages.length) }}
+                </cr-action>
+            </cr-toolbar>
+        </template>
+
+        <div id="messages">
+            <template if="{{ olderMessages.length }}">
+                <polymer-ui-collapsible active="{{ showOlderMessages }}">
+                    <template if="{{ showOlderMessages }}">
+                        <template repeat="{{ message in olderMessages }}">
+                            <cr-issue-message
+                                id="message-{{ message.sequence"
+                                message="{{ message }}"
+                                selected="{{ message.sequence == selectionId }}"></cr-issue-message>
+                        </template>
+                    </template>
+                </polymer-ui-collapsible>
+            </template>
+            <template repeat="{{ message in visibleMessages }}">
+                <cr-issue-message
+                    id="message-{{ message.sequence"
+                    message="{{ message }}"
+                    selected="{{ message.sequence == selectionId }}"></cr-issue-message>
+            </template>
+        </div>
+    </template>
+    <script>
+    (function() {
+        var SELECTION_PREFIX = "#msg";
+        var MAX_MESSAGES = 5;
+
+        Polymer("cr-issue-messages", {
+            messages: null,
+            olderMessages: null,
+            visibleMessages: null,
+            selectionId: null,
+            messagesChanged: function() {
+                var index = Math.max(this.messages.length - MAX_MESSAGES, 0);
+                this.olderMessages = this.messages.to(index);
+                this.visibleMessages = this.messages.from(index);
+                var lastMessage = this.messages.last();
+                if (lastMessage)
+                    lastMessage.active = true;
+                this.hashChanged();
+            },
+            hashChanged: function() {
+                if (!window.location.hash.startsWith(SELECTION_PREFIX))
+                    return;
+                var num = window.location.hash.replace(SELECTION_PREFIX, "");
+                if (/^[0-9]+$/.test(num) && num > 0 && num <= this.messages.length) {
+                    this.selectionId = num;
+                    this.async(function() {
+                        var message = this.$.messages.getElementById("message-" + this.selectionId);
+                        if (message)
+                            this.scrollMessageToVisibleIfNeeded(message);
+                    });
+                }
+            },
+            handleShowOlderMessages: function() {
+                this.showOlderMessages = true;
+            },
+            pluralize: function(text, count) {
+                if (!count)
+                    return "";
+                if (count == 1)
+                    return text;
+                return text.pluralize();
+            },
+            revealMessage: function(event) {
+                this.scrollMessageToVisibleIfNeeded(event.target);
+            },
+            scrollMessageToVisibleIfNeeded: function(message) {
+                // If you click the header then scroll the message until you can read it. This is
+                // racy with the <polymer-ui-collapsible> animation but it's the best we have
+                // until polymer exposes some events. We could listen for on-transitionend but
+                // then expand/collapse all would make us do this for each item.
+                this.async(function() {
+                    message.scrollIntoViewIfNeeded();
+                }, null, 350);
+            },
+        });
+    })();
+    </script>
+</polymer-element>

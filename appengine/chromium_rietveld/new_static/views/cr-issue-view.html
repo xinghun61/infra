@@ -1,0 +1,73 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../components/cr-issue.html">
+
+<polymer-element name="cr-issue-view" attributes="issueId">
+    <template>
+        <style>
+            :host { display: block; }
+
+            p {
+                padding: 1em;
+                font-size: 2em;
+            }
+
+            h1 {
+                margin: 0;
+                padding: 0.5em 16px;
+                font-size: 1.5em;
+            }
+        </style>
+        <template if="{{ !issue && !failed }}">
+            <p>
+                Loading issue {{ issueId }}...
+            </p>
+        </template>
+        <template if="{{ failed }}">
+            <p>
+                Failed to load issue {{ issueId }}. :(
+            </p>
+        </template>
+        <template if="{{ issue && !failed }}">
+            <cr-issue
+                issue="{{ issue }}"
+                on-issue-refresh="{{ loadIssue }}"></cr-issue>
+        </template>
+    </template>
+    <script>
+        Polymer("cr-issue-view", {
+            issue: null,
+            issueId: 0,
+            attached: function() {
+                var self = this;
+                User.loadCurrentUser({cached: true}).either(function() {
+                    self.loadIssue();
+                });
+            },
+            loadIssue: function() {
+                var self = this;
+                this.fire("title-change", {
+                    value: "Issue " + this.issueId
+                });
+                var issue = new Issue(this.issueId);
+                return issue.loadDetails().then(function() {
+                    self.fire("title-change", {
+                        value: "Issue " + issue.id + ": " + issue.subject
+                    });
+                    self.issue = issue;
+                    issue.patchsets.forEach(function(patchset) {
+                        patchset.loadDetails().catch(function(e) {
+                            // TODO(esprehn): We should show an error message.
+                            console.log(e);
+                        });
+                    });
+                }).catch(function(error) {
+                    console.log(error);
+                    self.failed = true;
+                });
+            },
+        });
+    </script>
+</polymer-element>

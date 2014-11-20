@@ -1,0 +1,47 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<polymer-element name="cr-butterbar" attributes="message action">
+    <template>
+        <style>
+            span {
+                background-color: #F9EDBE;
+                border: 1px solid #F0C36D;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                border-radius: 2px;
+                padding: 0.25em 16px;
+                display: block;
+                position: fixed;
+                margin: 0 auto;
+                right: 0;
+                left: 0;
+                top: 0.5em;
+                max-width: -webkit-min-content;
+                white-space: nowrap;
+                z-index: 1;
+            }
+
+            :host-context(dialog) span {
+                position: absolute;
+            }
+        </style>
+        <template if="{{ message }}">
+            <span>
+                {{ message }}
+                <template if="{{ action }}">
+                    <cr-action on-tap="{{ activate }}">{{ action }}</cr-action>
+                </template>
+            </span>
+        </template>
+    </template>
+    <script>
+        Polymer("cr-butterbar", {
+            message: "",
+            action: "",
+            activate: function() {
+                this.fire("action-activate");
+            },
+        });
+    </script>
+</polymer-element>

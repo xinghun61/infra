@@ -1,0 +1,96 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+:host {
+    display: block;
+}
+
+.header,
+.header .line-number {
+    color: #849;
+    background-color: #fef;
+}
+
+.line-number::before {
+    content: attr(value);
+}
+
+.remove .text {
+    background-color: #fdd;
+}
+
+.add .text {
+    background-color: #dfd;
+}
+
+.row {
+    display: flex;
+}
+
+.text {
+    flex: 1;
+    border-left: 1px solid #dcdcdc;
+}
+
+.text,
+.row cr-action {
+    padding: 0 16px;
+}
+
+.line-number,
+.text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: Monaco, monospace;
+    flex-shrink: 0;
+}
+
+.line-number {
+    min-width: 3em;
+    text-align: right;
+    color: #444;
+    padding-right: 16px;
+    cursor: default;
+}
+
+.add .line-number:hover,
+.remove .line-number:hover,
+.both .line-number:hover {
+    text-decoration: underline;
+    color: #1155CC;
+    background-color: #F1F4F8;
+    cursor: pointer;
+}
+
+cr-diff-image {
+    margin-left: 108px;
+}
+
+.messages {
+    border-color: #dcdcdc;
+    border-style: solid;
+    border-width: 1px 0 1px 1px;
+    margin-left: calc(6em + 32px);
+}
+
+cr-patch-file-message {
+    background-color: #ffd;
+    border-bottom: 1px solid #dcdcdc;
+}
+
+cr-patch-file-message:last-child {
+    border-bottom: none;
+}
+
+.spinner {
+    margin: 0.5em auto;
+    display: block;
+}
+
+/* TODO(esprehn): This selector is bad, we shouldn't use it. */
+.messages:empty {
+    display: none;
+}

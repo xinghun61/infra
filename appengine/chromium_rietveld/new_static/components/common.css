@@ -1,0 +1,103 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+:host { display: block; }
+
+h1, h2 {
+    padding: 0;
+    margin: 0.5em 16px;
+    color: #222222;
+}
+
+h1 {
+    font-size: 1.5em;
+}
+
+h2 {
+    font-size: 1.3em;
+}
+
+dialog {
+    max-width: 800px;
+    width: 100%;
+    padding: 0;
+    border: 1px solid #dcdcdc;
+    box-shadow: 0 0 5px 3px rgba(0, 0, 0, 0.2);
+    color: #222;
+}
+
+dialog h1 {
+    -webkit-user-select: none;
+    cursor: default;
+}
+
+label {
+    -webkit-user-select: none;
+}
+
+h1.app-header {
+    margin: 0;
+    padding: 0.5em 16px;
+    font-size: 1.5em;
+    color: #DD4B39;
+}
+
+fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+a:link,
+a:visited {
+    color: #1155CC;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+select,
+input {
+    margin: 0;
+}
+
+input[type=text] {
+    padding: 0.5em;
+}
+
+textarea,
+input[type=text] {
+    display: block;
+    background-color: white;
+    border-radius: 1px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-top: 1px solid rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    font-family: Monaco, monospace;
+    font-size: 1em;
+    margin: 0;
+    width: 100%;
+}
+
+textarea:hover,
+input[type=text]:hover {
+  border: 1px solid #b9b9b9;
+  border-top-color: #a0a0a0;
+}
+
+textarea:focus,
+input[type=text]:focus {
+    border: 1px solid #4d90fe;
+    outline: none;
+}
+
+input.invalid,
+textarea.invalid {
+    border: 1px solid #DD4B39;
+}

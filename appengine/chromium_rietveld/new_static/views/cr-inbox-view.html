@@ -1,0 +1,141 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../components/cr-action.html">
+<link rel="import" href="../components/cr-butterbar.html">
+<link rel="import" href="../components/cr-issue-inbox.html">
+
+<polymer-element name="cr-inbox-view">
+    <template>
+        <link rel="stylesheet" href="../components/common.css">
+        <style>
+            :host { display: block; }
+
+            header {
+                display: flex;
+                align-items: center;
+            }
+
+            .app-header {
+                flex: 1;
+            }
+
+            .filter-form {
+                display: flex;
+                margin: 0 16px;
+                align-items: center;
+            }
+
+            .filter-form label {
+                font-weight: bold;
+                color: #959595;
+                -webkit-user-select: none;
+                cursor: default;
+                white-space: nowrap;
+                margin-right: 8px;
+            }
+
+            .form-field {
+                margin: 0 8px;
+            }
+
+            .login-prompt {
+                text-align: center;
+                display: none;
+                padding: 1em;
+                font-size: 1.8em;
+            }
+            :host-context(.no-login) .login-prompt {
+                display: block;
+            }
+        </style>
+        <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
+        <div class="login-prompt">
+            <p><cr-action on-tap="{{ login }}">Login</cr-action> to view your issues.</p>
+        </div>
+        <template if="{{ issues && !failed }}">
+            <header>
+                <h1 class="app-header">My Issues</h1>
+                <div class="filter-form">
+                    <div class="form-field">
+                        <label for="recent-activity">
+                            Highlight activity
+                        </label>
+                        <input id="recent-activity" type="checkbox" checked="{{ showRecentActivity }}">
+                    </div>
+                    <div class="form-field">
+                        <label for="filter">
+                            Filter
+                        </label>
+                        <select id="filter" value="{{ filter }}">
+                            <option value="today">Today</option>
+                            <option value="0">Past week</option>
+                            <option value="2">2 weeks</option>
+                            <option value="4">4 weeks</option>
+                            <option value="all">All issues</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+            <cr-issue-inbox issues="{{ issues }}" weeks="{{ filter }}"></cr-issue-inbox>
+        </template>
+    </template>
+    <script>
+    (function() {
+        var FILTER_KEY = "cr-inbox-view.filter";
+        var SHOW_RECENT_ACTIVITY_KEY = "cr-inbox-view.showRecentActivity";
+
+        Polymer("cr-inbox-view", {
+            filter: "2",
+            showRecentActivity: false,
+            issues: null,
+            loading: true,
+            failed: false,
+            butterbarMessage: "",
+            attached: function() {
+                var self = this;
+                this.fire("title-change", {
+                    value: "My issues"
+                });
+                User.loadCurrentUser({cached: true}).then(function() {
+                    self.loadInbox();
+                });
+            },
+            loadInbox: function() {
+                this.filter = localStorage.getItem(FILTER_KEY) || this.filter;
+                this.showRecentActivity = localStorage.getItem(SHOW_RECENT_ACTIVITY_KEY) == "true";
+                this.issues = new IssueList({
+                    cached: true,
+                    recentActivity: this.showRecentActivity,
+                });
+                this.loadIssues();
+            },
+            filterChanged: function() {
+                localStorage.setItem(FILTER_KEY, this.filter);
+            },
+            showRecentActivityChanged: function(oldValue, newValue) {
+                // TODO(esprehn): We shouldn't reload issues just to toggle this status,
+                // but it's a lot plumbing to pass it down otherwise.
+                this.issues.recentActivity = this.showRecentActivity;
+                this.loadIssues();
+                localStorage.setItem(SHOW_RECENT_ACTIVITY_KEY, this.showRecentActivity);
+            },
+            loadIssues: function() {
+                var self = this;
+                this.butterbarMessage = "Loading your issues.";
+                this.issues.loadIssues().then(function() {
+                    self.butterbarMessage = "";
+                }).catch(function(error) {
+                    console.log(error);
+                    self.failed = true;
+                    self.butterbarMessage = "Failed to load your issues. :(";
+                });
+            },
+            login: function() {
+                this.fire("login");
+            },
+        });
+    })();
+    </script>
+</polymer-element>

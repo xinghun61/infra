@@ -1,0 +1,167 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<script src="../lib/sugar.js"></script>
+<script src="../bower_components/gif.js/dist/gif.js"></script>
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-router/app-router.html">
+
+<script src="../base.js"></script>
+<script src="../diff_builder.js"></script>
+<script src="../diff_line.js"></script>
+<script src="../diff_parser.js"></script>
+<script src="../gif_recorder.js"></script>
+<script src="../resources.js"></script>
+
+<script src="../model/draft_patch_set.js"></script>
+<script src="../model/issue.js"></script>
+<script src="../model/issue_list.js"></script>
+<script src="../model/issue_message.js"></script>
+<script src="../model/patch_file.js"></script>
+<script src="../model/patch_file_message.js"></script>
+<script src="../model/patch_set.js"></script>
+<script src="../model/search.js"></script>
+<script src="../model/search_result.js"></script>
+<script src="../model/try_job_result.js"></script>
+<script src="../model/try_job_result_set.js"></script>
+<script src="../model/try_job_result_step.js"></script>
+<script src="../model/try_servers.js"></script>
+<script src="../model/user.js"></script>
+<script src="../model/user_settings.js"></script>
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-title-handler.html">
+<link rel="import" href="cr-view-handler.html">
+
+<link rel="import" href="../views/cr-inbox-view.html">
+<link rel="import" href="../views/cr-issue-view.html">
+<link rel="import" href="../views/cr-settings-view.html">
+<link rel="import" href="../views/cr-user-view.html">
+
+<polymer-element name="cr-app" on-navigate="{{ handleNavigate }}" on-login="{{ handleLogin }}">
+    <template>
+        <cr-view-handler></cr-view-handler>
+        <cr-title-handler titlesuffix="Code Review"></cr-title-handler>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            :host { display: block; }
+
+            header {
+                background-color: #212121;
+                font-size: 1.1em;
+                -webkit-user-select: none;
+                cursor: default;
+                display: flex;
+                align-items: center;
+            }
+
+            header span,
+            header img {
+                vertical-align: middle;
+            }
+
+            .title {
+                flex: 1;
+            }
+
+            .title a:link,
+            .title a:visited {
+                padding: 0.25em 4px;
+                display: inline-block;
+                color: white;
+                text-decoration: none;
+            }
+
+            .view-links {
+                display: flex;
+            }
+
+            .view-links a,
+            cr-action {
+                color: white;
+                flex-shrink: 0;
+                margin-right: 16px;
+                display: block;
+            }
+
+            .view-links .bug-report {
+                color: #D99E05;
+            }
+
+            header img {
+                width: 25px;
+            }
+
+            app-router,
+            active-route {
+                display: block;
+            }
+
+            app-route {
+                display: none;
+            }
+
+            .view-links .login-link,
+            .view-links .settings-link {
+                display: none;
+            }
+
+            :host-context(.login) .settings-link {
+                display: block;
+            }
+
+            :host-context(.no-login) .login-link {
+                display: block;
+            }
+        </style>
+        <header>
+            <div class="title">
+                <a href="/">
+                    <img src="../images/chromium-logo.png">
+                    <span>Chromium Code Review</span>
+                </a>
+            </div>
+            <div class="view-links">
+                <a class="bug-report" href="https://github.com/esprehn/chromium-codereview/issues/new" target="_blank">Report a bug</a>
+                <a href="/settings" class="settings-link">Settings</a>
+                <cr-action on-tap="{{ handleLogin }}" class="login-link" white>Login</cr-action>
+            </div>
+        </header>
+        <app-router id="router" trailingSlash="ignore">
+            <app-route path="/" element="cr-inbox-view"></app-route>
+            <app-route path="/settings" element="cr-settings-view"></app-route>
+            <app-route path="/user/:username" element="cr-user-view"></app-route>
+            <app-route path="/:issueId" element="cr-issue-view"></app-route>
+        </cr-view>
+    </template>
+    <script>
+        Polymer({
+            attached: function() {
+                var self = this;
+                this.replaceInitialUrl();
+                User.loadCurrentUser().then(function() {
+                    self.classList.add("login");
+                }).catch(function(e) {
+                    self.classList.add("no-login");
+                });
+            },
+            replaceInitialUrl: function() {
+                var self = this;
+                var path = window.location.pathname + window.location.search + window.location.hash;
+                path = path.replace("/static/app", "") || "/";
+                window.history.replaceState(null, null, path);
+                self.$.router.go();
+            },
+            handleNavigate: function(event) {
+                if (window.location.pathname != event.detail.url)
+                    window.history.pushState(null, null, event.detail.url);
+                this.$.router.go();
+            },
+            handleLogin: function() {
+                window.location.href = User.getLoginUrl();
+            },
+        });
+    </script>
+</polymer-element>

@@ -1,0 +1,52 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<script src="../lib/ba-linkify.js"></script>
+<script src="../link_text_parser.js"></script>
+
+<polymer-element name="cr-linkified-text" attributes="text">
+    <template><link rel="stylesheet" href="common.css"><style>
+        :host([pre]) {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: Monaco, monospace;
+        }
+
+        img {
+            margin: 0.5em 16px;
+        }
+    </style><div id="output"></div></template>
+    <script>
+    Polymer("cr-linkified-text", {
+        text: "",
+        textChanged: function(oldValue, newValue) {
+            var output = this.$.output;
+
+            while (output.firstChild)
+                output.firstChild.remove();
+
+            if (!newValue)
+                return;
+
+            var parser = new LinkTextParser(function(text, href) {
+                if (href && href.startsWith("http://i.imgur.com/")) {
+                    var div = document.createElement("div");
+                    var img = div.appendChild(document.createElement("img"));
+                    img.src = href;
+                    output.appendChild(div);
+                } else if (href) {
+                    var a = document.createElement("a");
+                    a.href = href;
+                    a.textContent = text;
+                    a.target = "_blank";
+                    output.appendChild(a);
+                } else {
+                    output.appendChild(document.createTextNode(text));
+                }
+            });
+            parser.parse(newValue);
+        },
+    });
+  </script>
+</polymer-element>

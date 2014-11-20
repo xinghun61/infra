@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+:host {
+    display: block;
+    min-width: -webkit-min-content;
+}
+
+.file {
+    padding: 0.25em 16px;
+    display: flex;
+}
+
+.file-name {
+    padding: 0.25em 4px;
+    flex: 1;
+}
+
+.file-messages,
+.file-status,
+.file-added,
+.file-removed {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 0.25em 0;
+}
+
+.file-status {
+    min-width: 2em;
+}
+
+.file-added,
+.file-removed {
+    min-width: 3em;
+}
+
+.file-added {
+    color: #009933;
+}
+
+.file-removed {
+    color: #DD4B39;
+}
+
+.file-messages {
+    margin-left: 1em;
+}
+
+cr-diff[active] {
+    margin: 0.25em 16px;
+    border: 1px solid #dcdcdc;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}

@@ -1,0 +1,232 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-butterbar.html">
+<link rel="import" href="cr-button.html">
+<link rel="import" href="cr-dialog.html">
+<link rel="import" href="cr-issue-editor.html">
+<link rel="import" href="cr-toolbar.html">
+<link rel="import" href="cr-gif-selfie.html">
+
+<polymer-element name="cr-issue-publish-dialog" attributes="issue addAsReviewer">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            .issue-publish-label {
+                font-weight: bold;
+                color: #959595;
+                -webkit-user-select: none;
+                cursor: default;
+            }
+
+            .issue-publish-field,
+            .issue-publish-label {
+                padding: 0.5em 16px;
+                display: flex;
+            }
+
+            h2 {
+                font-size: 1em;
+                color: #959595;
+                margin: 0;
+            }
+
+            .polymer-ui-collapsible-header {
+                margin: 0.5em 16px;
+            }
+
+            .file-header {
+                margin: 0;
+                padding: 0 16px;
+                font-size: 1.1em;
+                display: flex;
+            }
+
+            .file-header .file-name {
+                flex: 1;
+            }
+
+            .messages {
+                border: 1px solid #dcdcdc;
+                margin: 0.5em 16px;
+            }
+
+            .message {
+                background-color: #ffd;
+                border-bottom: 1px solid #dcdcdc;
+                padding: 0.5em 16px;
+            }
+
+            .message:last-child {
+                border-bottom: none;
+            }
+
+            .message-header {
+                margin: 0;
+                font-size: 1em;
+            }
+
+            .message-text {
+                margin-top: 0.5em;
+            }
+
+            cr-toolbar label {
+                margin-right: 16px;
+            }
+
+            cr-gif-selfie {
+                min-width: 300px;
+                flex-shrink: 0;
+            }
+        </style>
+
+        <dialog is="cr-dialog" id="dialog" on-cancel="{{ cancel }}">
+            <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
+
+            <h1>Publish Comments</h1>
+
+            <cr-issue-editor
+                id="editor"
+                fields="cc reviewers"
+                issue="{{ issue }}"
+                errors="{{ errors }}"
+                disabled?="{{ saving }}"></cr-issue-editor>
+
+            <fieldset class="issue-publish-fields" disabled?="{{ sending }}">
+                <label class="issue-publish-label" for="message">Message</label>
+                <div class="issue-publish-field">
+                    <textarea id="message" value="{{ message }}" rows="{{ issue.draftCount | editorHeight }}"></textarea>
+                    <template if="{{ addSelfie }}">
+                        <cr-gif-selfie on-gif-save="{{ handleGifSave }}"></cr-gif-selfie>
+                    </template>
+                </div>
+            </fieldset>
+
+            <template if="{{ issue.draftCount }}">
+                <div id="drafts">
+                    <polymer-ui-collapsible active="{{ draftsVisible }}">
+                        <div class="polymer-ui-collapsible-header">
+                            <cr-action>
+                                <template if="{{ !draftsVisible }}">
+                                    Show Drafts
+                                </template>
+                                <template if="{{ draftsVisible }}">
+                                    Hide Drafts
+                                </template>
+                            </cr-action>
+                        </div>
+                        <!-- TODO(esprehn): This should use <cr-patch-file-message> and allow editing. -->
+                        <template repeat="{{ draftPatchset in issue.draftPatchsets }}">
+                            <template repeat="{{ file in draftPatchset.files }}">
+                                <h3 class="file-header">
+                                    <span class="file-name">{{ file.name }}</span>
+                                    <span class="patchset">Patch {{ file.patchset.sequence }}</span>
+                                </h3>
+                                <div class="messages">
+                                    <template repeat="{{ draft in file.drafts }}">
+                                        <div class="message">
+                                            <h4 class="message-header">Line {{ draft.line }}</h4>
+                                            <div class="message-text">
+                                                <cr-linkified-text text="{{ draft.text }}" pre></cr-linkified-text>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </template>
+                    </polymer-ui-collapsible>
+                </div>
+            </template>
+
+            <cr-toolbar>
+                <cr-button primary on-tap="{{ send }}">Send</cr-button>
+                <template if="{{ !issue.closed }}">
+                    <cr-button  on-tap="{{ sendAndCommit }}">Send + CQ</cr-button>
+                </template>
+                <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                <template if="{{ !userIsOwner }}">
+                    <label>
+                        <input type="checkbox" checked="{{ addAsReviewer }}">
+                        Add as reviewer
+                    </label>
+                </template>
+                <label>
+                    <input type="checkbox" checked="{{ addSelfie }}">
+                    Add a selfie!
+                </label>
+            </cr-toolbar>
+        </dialog>
+    </template>
+    <script>
+        Polymer("cr-issue-publish-dialog", {
+            issue: null,
+            message: "",
+            butterbarMessage: "",
+            sending: false,
+            addAsReviewer: true,
+            userIsOwner: true,
+            draftsVisible: false,
+            addSelfie: false,
+            cancel: function(event) {
+                if (this.$.editor.dismissAutocomplete()) {
+                    event.preventDefault();
+                    return;
+                }
+                this.close();
+            },
+            reset: function() {
+                this.$.editor.reset();
+                this.sending = false;
+                this.addAsReviewer = true;
+                this.butterbarMessage = "";
+                this.message = "";
+                this.$.editor.dismissAutocomplete();
+                this.userIsOwner = this.issue.owner.isCurrentUser();
+                this.draftsVisible = false;
+            },
+            close: function() {
+                this.reset();
+                this.$.dialog.close();
+            },
+            sendAndCommit: function() {
+                this.send({commit: true});
+            },
+            send: function(options) {
+                var data = this.$.editor.createEditData();
+                data.message = this.message;
+                data.addAsReviewer = this.addAsReviewer;
+                data.publishDrafts = true;
+                data.commit = options.commit;
+                this.sending = true;
+                this.butterbarMessage = "Saving...";
+                this.issue.publish(data)
+                    .then(this.saveSuccess.bind(this))
+                    .catch(this.saveFailure.bind(this));
+            },
+            saveSuccess: function() {
+                this.fire("issue-refresh");
+                this.close();
+            },
+            saveFailure: function(error) {
+                // TODO(esprehn): We should show an better error message.
+                this.sending = false;
+                this.butterbarMessage = "Error: " + error.message;
+            },
+            showModal: function() {
+                if (!this.issue)
+                    return;
+                this.issue.updateDraftFiles();
+                this.reset();
+                this.$.dialog.showModal();
+            },
+            editorHeight: function(draftCount) {
+                return draftCount ? 15 : 20;
+            },
+            handleGifSave: function(event) {
+                var text = "\n\nThis is how I feel about this patch: " + event.detail.url;
+                this.message = (this.message + text).trim();
+            },
+        });
+    </script>
+</polymer-element>

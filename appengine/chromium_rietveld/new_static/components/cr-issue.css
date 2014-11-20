@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+:host { display: block; }
+
+h2 {
+    -webkit-user-select: none;
+    cursor: default;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+.commit-status {
+    margin: 0.5em 16px;
+}
+
+.issue-subject {
+    margin-bottom: 0;
+}
+
+.issue-description {
+    margin: 1em 16px;
+}
+
+.issue-content {
+    flex: 1;
+}
+
+.issue-body {
+    display: flex;
+}
+
+.issue-toolbar {
+    border-bottom: 1px #e5e5e5 solid;
+}
+
+cr-issue-patchsets,
+cr-issue-messages {
+    padding: 0.5em 16px;
+}
+
+cr-issue-meta {
+    flex-shrink: 0;
+    width: 300px;
+    padding: 0.5em 16px;
+}
+
+header {
+    align-items: center;
+    display: flex;
+}
+
+header .ui-actions {
+    padding: 0 16px;
+    flex-shrink: 0;
+}
+
+header h2 {
+    flex: 1;
+}
+
+.issue-toolbar .ui-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+@media (max-width: 800px) {
+    .issue-body {
+        flex-direction: column;
+    }
+
+    .issue-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .issue-toolbar cr-button {
+        margin: 8px;
+        flex: 1;
+    }
+
+    .issue-toolbar cr-action {
+        margin: 8px;
+        flex: 1;
+        text-align: center;
+    }
+}
+
+:host-context(.no-login) .issue-toolbar {
+    display: none;
+}
+
+:host-context(.no-login) .issue-content {
+    margin-top: 1em;
+}

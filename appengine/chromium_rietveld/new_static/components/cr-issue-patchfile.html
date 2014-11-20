@@ -1,0 +1,50 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-diff.html">
+
+<polymer-element name="cr-issue-patchfile" attributes="file">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <link rel="stylesheet" href="cr-issue-patchfile.css">
+
+        <div class="file">
+            <div class="file-status">{{ file.status }}</div>
+            <div class="file-removed">-{{ file.removed }}</div>
+            <div class="file-added">+{{ file.added }}</div>
+            <div class="file-name"><cr-action on-tap="{{ toggleDiff }}" selectable>{{ file.name }}</cr-action></div>
+            <div class="file-messages">
+                {{ file.messageCount - file.draftCount | pluralize("comment") }}
+                <template if="{{ file.draftCount }}">
+                    <template if="{{ file.messageCount - file.draftCount }}">,</template>
+                    {{ file.draftCount | pluralize("draft") }}
+                </template>
+            </div>
+        </div>
+
+        <cr-diff id="diff" file="{{ file }}"></cr-diff>
+    </template>
+    <script>
+        Polymer("cr-issue-patchfile", {
+            file: null,
+            showDiff: function() {
+                return this.$.diff.showDiff();
+            },
+            hideDiff: function() {
+                return this.$.diff.hideDiff();
+            },
+            toggleDiff: function() {
+                return this.$.diff.toggleDiff();
+            },
+            pluralize: function(count, text) {
+                if (!count)
+                    return "";
+                if (count == 1)
+                    return count + " " + text;
+                return count + " " + text.pluralize();
+            },
+        });
+    </script>
+</polymer-element>

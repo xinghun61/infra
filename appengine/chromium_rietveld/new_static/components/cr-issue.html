@@ -1,0 +1,208 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-action.html">
+<link rel="import" href="cr-butterbar.html">
+<link rel="import" href="cr-button.html">
+<link rel="import" href="cr-issue-discard-drafts-dialog.html">
+<link rel="import" href="cr-issue-edit-dialog.html">
+<link rel="import" href="cr-issue-messages.html">
+<link rel="import" href="cr-issue-meta.html">
+<link rel="import" href="cr-issue-patchsets.html">
+<link rel="import" href="cr-issue-publish-dialog.html">
+<link rel="import" href="cr-issue-revert-dialog.html">
+<link rel="import" href="cr-keyboard.html">
+<link rel="import" href="cr-linkified-text.html">
+<link rel="import" href="cr-toolbar.html">
+<link rel="import" href="cr-try-dialog.html">
+<link rel="import" href="cr-try-results.html">
+<link rel="import" href="cr-view-handler.html">
+
+<polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}">
+    <template>
+        <cr-view-handler></cr-view-handler>
+        <link rel="stylesheet" href="common.css">
+        <link rel="stylesheet" href="cr-issue.css">
+
+        <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
+
+        <h1 class="issue-subject">
+            Issue <a href="/{{ issue.id }}">{{ issue.id }}</a><template if="{{ issue.closed }}"> (Closed)</template>: {{ issue.subject }}
+        </h1>
+
+        <div class="issue-body">
+            <cr-issue-meta issue="{{ issue }}"></cr-issue-meta>
+
+            <div class="issue-content">
+                <cr-toolbar class="issue-toolbar">
+                    <cr-button on-tap="{{ showPublishDialog }}" create>Publish</cr-button>
+                    <cr-button on-tap="{{ quickLgtm }}">Quick LGTM</cr-button>
+                    <template if="{{ !issue.closed }}">
+                        <cr-button on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</cr-button>
+                        <template if="{{ !issue.commit }}">
+                            <cr-button on-tap="{{ toggleCommit }}">Commit</cr-button>
+                        </template>
+                        <cr-button on-tap="{{ toggleClosed }}">Close</cr-button>
+                    </template>
+                    <template if="{{ issue.closed }}">
+                        <cr-button on-tap="{{ toggleClosed }}">Reopen</cr-button>
+                        <cr-button on-tap="{{ showRevertDialog }}">Revert</cr-button>
+                    </template>
+                    <div class="ui-actions">
+                        <cr-action on-tap="{{ showEditDialog }}">Edit</cr-action>
+                    </div>
+                </cr-toolbar>
+
+                <template if="{{ issue.commit }}">
+                    <h2>Commit status</h2>
+                    <cr-try-results results="{{ issue.patchsets[issue.patchsets.length - 1].tryJobResults }}" showmore></cr-try-results>
+                    <cr-toolbar class="issue-toolbar">
+                        <cr-button on-tap="{{ toggleCommit }}">Cancel commit</cr-button>
+                    </cr-toolbar>
+                </template>
+
+                <div class="issue-description">
+                    <cr-linkified-text text="{{ issue.description }}" pre></cr-linkified-text>
+                </div>
+            </div>
+        </div>
+
+        <header>
+            <h2>Patches</h2>
+            <div class="ui-actions">
+                <template if="{{ issue.draftCount }}">
+                    <cr-action on-tap="{{ discardAllDrafts }}">Discard all drafts</cr-action>
+                </template>
+            </div>
+        </header>
+
+        <cr-issue-patchsets patchsets="{{ issue.patchsets }}"></cr-issue-patchsets>
+
+        <template if="{{ issue.messages.length }}">
+            <header>
+                <h2>Messages</h2>
+                <div class="ui-actions">
+                    <cr-action on-tap="{{ expandAllMessages }}">Expand all</cr-action> /
+                    <cr-action on-tap="{{ collapseAllMessages }}">Collapse all</cr-action>
+                </div>
+            </header>
+        </template>
+
+        <cr-issue-messages messages="{{ issue.messages }}" id="messages" on-message-save="{{ saveMessage }}"></cr-issue-messages>
+
+        <div id="dialogs"></div>
+
+        <cr-keyboard on-key-m="{{ handlePublishKey }}" global></cr-keyboard>
+    </template>
+    <script>
+        Polymer("cr-issue", {
+            issue: null,
+            butterbarMessage: "",
+            updateButterbar: function(event) {
+                this.butterbarMessage = event.detail.message;
+            },
+            toggleCommit: function() {
+                var self = this;
+                this.butterbarMessage = "Saving...";
+                this.issue.setFlags({commit: !this.issue.commit}).then(function() {
+                    self.butterbarMessage = "";
+                    self.fire("issue-refresh");
+                }).catch(function(e) {
+                    self.butterbarMessage = "";
+                    console.log(e);
+                });
+            },
+            toggleClosed: function() {
+                var self = this;
+                this.butterbarMessage = "Saving...";
+                this.issue.toggleClosed().then(function() {
+                    self.butterbarMessage = "";
+                    self.fire("issue-refresh");
+                }).catch(function(e) {
+                    self.butterbarMessage = "";
+                    console.log(e);
+                });
+            },
+            showDialog: function(dialog) {
+                this.$.dialogs.appendChild(dialog);
+                dialog.addEventListener("close", function() {
+                    dialog.remove();
+                });
+                dialog.showModal();
+            },
+            showTryDialog: function() {
+                var dialog = document.createElement("cr-try-dialog");
+                dialog.issue = this.issue;
+                this.showDialog(dialog);
+            },
+            showEditDialog: function() {
+                var dialog = document.createElement("cr-issue-edit-dialog");
+                dialog.issue = this.issue;
+                this.showDialog(dialog);
+            },
+            showPublishDialog: function() {
+                var dialog = document.createElement("cr-issue-publish-dialog");
+                dialog.issue = this.issue;
+                this.showDialog(dialog);
+            },
+            showRevertDialog: function() {
+                if (!this.issue.closed || this.issue.patchsets.isEmpty())
+                    return;
+                var dialog = document.createElement("cr-issue-revert-dialog");
+                dialog.patchset = this.issue.patchsets.last();
+                this.showDialog(dialog);
+            },
+            collapseAllMessages: function() {
+                this.issue.messages.forEach(function(message) {
+                    message.active = false;
+                });
+            },
+            expandAllMessages: function() {
+                this.issue.messages.forEach(function(message) {
+                    message.active = true;
+                });
+                this.async(function() {
+                    this.$.messages.scrollIntoViewIfNeeded();
+                }, null, 350);
+            },
+            discardAllDrafts: function() {
+                var dialog = document.createElement("cr-issue-discard-drafts-dialog");
+                dialog.issue = this.issue;
+                this.showDialog(dialog);
+            },
+            saveMessage: function(event) {
+                if (event.detail.messageText)
+                    this.publish({message: event.detail.messageText});
+            },
+            quickLgtm: function(options) {
+                this.publish({lgtm: true});
+            },
+            quickLgtmAndCommit: function(options) {
+                this.publish({
+                    lgtm: true,
+                    commit: true,
+                });
+            },
+            handlePublishKey: function(event) {
+                event.preventDefault();
+                this.showPublishDialog();
+            },
+            handleShowTryDialog: function() {
+                this.showTryDialog();
+            },
+            publish: function(options) {
+                this.butterbarMessage = "Saving...";
+                var self = this;
+                this.issue.publish(options).then(function() {
+                    self.butterbarMessage = "";
+                    self.fire("issue-refresh");
+                }).catch(function(e) {
+                    self.butterbarMessage = "";
+                    console.log(e);
+                    // TODO(esprehn): We should show an error message.
+                });
+            },
+        });
+    </script>
+</polymer-element>
