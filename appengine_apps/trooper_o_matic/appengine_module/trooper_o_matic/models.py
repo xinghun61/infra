@@ -7,8 +7,8 @@ from google.appengine.ext import ndb
 from endpoints_proto_datastore.ndb import EndpointsModel
 
 
-SLO_BUILDTIME_MEDIAN = 30 * 60  # 30 minutes
-SLO_BUILDTIME_MAX = 60 * 60  # 60 minutes
+SLO_BUILDTIME_MEDIAN = 90 * 60  # 90 minutes
+SLO_BUILDTIME_MAX = 180 * 60  # 180 minutes
 
 
 class Project(ndb.Model):
