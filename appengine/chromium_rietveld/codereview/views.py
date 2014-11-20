@@ -51,6 +51,7 @@ from django import forms
 # Import settings as django_settings to avoid name conflict with settings().
 from django.conf import settings as django_settings
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponseBadRequest
 from django.shortcuts import render_to_response
 import django.template
 from django.template import RequestContext
@@ -82,7 +83,6 @@ from codereview import utils
 from codereview.common import IS_DEV
 from codereview.exceptions import FetchError
 from codereview.responses import HttpTextResponse, HttpHtmlResponse, respond
-from codereview.responses import HttpResponseBadRequest
 import codereview.decorators as deco
 
 
