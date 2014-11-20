@@ -15,10 +15,9 @@ import threading
 import time
 import urlparse
 
-from infra.libs.git2 import CalledProcessError
-from infra.libs.git2 import Commit
-from infra.libs.git2 import INVALID
-from infra.libs.git2 import Ref
+from infra.libs.git2.commit import Commit
+from infra.libs.git2.ref import Ref
+from infra.libs.git2.util import CalledProcessError, INVALID
 
 LOGGER = logging.getLogger(__name__)
 

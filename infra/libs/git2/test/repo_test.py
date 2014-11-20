@@ -27,12 +27,12 @@ class TestRepo(test_util.TestBasis):
   @contextlib.contextmanager
   def runReifyCustomNetRcTest(self, fake_git_config):
     netrc_file = os.path.join(self.repos_dir, 'custom_netrc')
-    with open(netrc_file, 'wt') as f:
+    with open(netrc_file, 'w') as f:
       f.write('machine localhost login test-username password test-password\n')
     fake_home = os.path.abspath(os.path.join(self.repos_dir, 'fake_home'))
     os.makedirs(fake_home)
     if fake_git_config:
-      with open(os.path.join(fake_home, '.gitconfig'), 'wt') as f:
+      with open(os.path.join(fake_home, '.gitconfig'), 'w') as f:
         f.write(fake_git_config)
     prev_env = os.environ.copy()
     os.environ['HOME'] = fake_home

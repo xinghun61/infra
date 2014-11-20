@@ -63,7 +63,7 @@ def clean_git_locks(dirname):
         target = os.path.join(dirpath, 'index.lock')
         print 'Deleting %s' % target
         os.remove(target)
-      del(dirnames[:])  # Delete dirnames so we don't recurse into a .git dir.
+      del dirnames[:]  # Delete dirnames so we don't recurse into a .git dir.
   print 'Git Locks traversed through %d directories' % count
   print 'Took %.2f seconds' % (time.time() - start_time)
 

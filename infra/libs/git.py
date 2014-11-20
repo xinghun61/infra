@@ -60,7 +60,7 @@ class Git(object):
     """Get the contents of a Git object (blob, tree, tag, or commit).
 
     Args:
-      ref (string): The ref at which to show the object. 
+      ref (string): The ref at which to show the object.
         Can be an empty string.
       path (string): The path to the blob or tree, relative to repository root.
 
@@ -76,7 +76,7 @@ class Git(object):
 
     Args:
       refs (tuple of refishes): refishes to number.
- 
+
     Returns:
       positions (list of [str|None]): respective numbers.
     """

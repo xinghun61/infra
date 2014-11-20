@@ -117,7 +117,7 @@ def process_argparse_options(options, logger=None):
 
   Args:
     options: return value of argparse.ArgumentParser.parse_args.
-    logger (logging.Logger): logger to apply the configuration to. 
+    logger (logging.Logger): logger to apply the configuration to.
 
   Example usage::
 

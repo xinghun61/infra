@@ -156,12 +156,12 @@ class Gerrit(object):  # pragma: no cover
 
   def activate_account(self, account_id):
     """Sets account state to 'active'.
- 
+
     Args:
       account_id (str): account to update
 
     Raises:
-      UnexpectedResponseException: if gerrit does not answer the way we expected.
+      UnexpectedResponseException: if gerrit does not answer as expected.
     """
     if '/' in account_id:
       raise ValueError('Invalid account id: %s' % account_id)

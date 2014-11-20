@@ -18,6 +18,7 @@ from infra.libs import logs
 
 from infra.libs.git2 import Repo, INVALID, CalledProcessError
 
+
 def main(argv):
   p = argparse.ArgumentParser()
   p.add_argument(

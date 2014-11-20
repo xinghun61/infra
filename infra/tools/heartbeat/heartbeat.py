@@ -109,7 +109,7 @@ def get_hashed_message(data, secret):
   """Hashes the message with the timestamp and the preshared key, and return
   a dict of the message, timestamp, and hash."""
   auth_method = 'HMAC-SHA256'
-  message = json.dumps(data, separators=(',',':'))
+  message = json.dumps(data, separators=(',', ':'))
   results = {
       'auth_method': auth_method,
       'message': message,
