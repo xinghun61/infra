@@ -8,7 +8,8 @@ from endpoints_proto_datastore.ndb import EndpointsModel
 
 
 SLO_BUILDTIME_MEDIAN = 90 * 60  # 90 minutes
-SLO_BUILDTIME_MAX = 180 * 60  # 180 minutes
+SLO_BUILDTIME_MAX = 8 * 60 * 60  # 480 minutes, lower when crbug.com/434965
+                                 # is fixed.
 
 
 class Project(ndb.Model):

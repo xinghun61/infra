@@ -75,7 +75,7 @@ def GetCycleTimeDict(tree): # pragma: no cover
       'num_over_max_slo': stat.num_over_max_slo,
       'percent_over_max_slo': _GetPercent(stat.num_over_max_slo,
                                           stat.num_builds),
-      'details': ('%d builds over maximum 60m, %d builds over median 30m' % (
+      'details': ('%d builds over maximum 480m, %d builds over median 90m' % (
           stat.num_over_max_slo, stat.num_over_median_slo)),
       'url': 'https://trooper-o-matic.appspot.com/tree/%s' % tree.id()
   }

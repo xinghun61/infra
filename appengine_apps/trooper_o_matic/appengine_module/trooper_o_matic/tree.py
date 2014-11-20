@@ -38,8 +38,8 @@ class TreeHandler(webapp2.RequestHandler):
     builds_cols = [
         {'id': 'timestamp', 'label': 'Time', 'type': 'datetime'},
         {'id': 'num_builds', 'label': 'Number of Builds', 'type': 'number'},
-        {'id': 'num_over_median', 'label': 'Builds over 30m', 'type': 'number'},
-        {'id': 'num_over_max', 'label': 'Builds over 60m', 'type': 'number'},
+        {'id': 'num_over_median', 'label': 'Builds over 90m', 'type': 'number'},
+        {'id': 'num_over_max', 'label': 'Builds over 480m', 'type': 'number'},
     ]
     builds_rows = [{
         'c': [
