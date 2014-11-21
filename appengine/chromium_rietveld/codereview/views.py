@@ -1691,6 +1691,7 @@ def show(request):
     'display_generated_msgs': display_generated_msgs,
     'trybot_documentation_link':
       models_chromium.DefaultBuilderList.get_doc_link(issue.base),
+    'offer_cq': request.issue.is_cq_available,
   })
 
 

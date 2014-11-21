@@ -42,6 +42,8 @@ from codereview.exceptions import FetchError
 
 REQUIRED_REVIEWER_PREFIX = '*'
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
+PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
+PROJECTS_WITHOUT_CQ = ('webrtc',)
 
 
 def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
@@ -59,7 +61,7 @@ def is_privileged_user(user):
   if not user:
     return False
   email = user.email().lower()
-  return email.endswith(('@chromium.org', '@google.com', '@webrtc.org'))
+  return email.endswith(PRIVILEGED_USER_DOMAINS)
 
 
 ### Issues, PatchSets, Patches, Contents, Comments, Messages ###
@@ -104,6 +106,11 @@ class Issue(ndb.Model):
   _is_starred = None
   _has_updates_for_current_user = None
   _original_subject = None
+
+  @property
+  def is_cq_available(self):
+    """Return true if this issue is part of a project that has a CQ."""
+    return self.project not in PROJECTS_WITHOUT_CQ
 
   @property
   def is_starred(self):
