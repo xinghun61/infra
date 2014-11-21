@@ -1,0 +1,55 @@
+application: chrome-infra-packages-dev
+module: default
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /_ah/spi/.*
+  script: frontend.apis_app
+
+- url: /internal.*
+  script: frontend.html_app
+  secure: always
+  login: admin
+
+- url: /.*
+  script: frontend.html_app
+  secure: always
+
+inbound_services:
+- warmup
+
+builtins:
+- remote_api: on
+
+includes:
+- components/auth
+- components/static_third_party.yaml
+
+libraries:
+- name: endpoints
+  version: "1.0"
+- name: jinja2
+  version: "2.6"
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+- name: yaml
+  version: "3.10"
+
+skip_files:
+- ^(.*/)?#.*#
+- ^(.*/)?.*~
+- ^(.*/)?.*\.py[co]
+- ^(.*/)?\..*
+- ^tests.*
+- ^tools.*
+- ^(.*/)?.*\.orig
+- ^(.*/)?.*\.rej
+- ^[A-Z]+
+- ^[A-Z]+\.[a-z]+
