@@ -35,11 +35,11 @@ CTFailures.prototype._failureByTreeListComparator = function(tree, a, b) {
     tree = 'chromium';
 
   // Always bubble master alerts to the top
-  if (a.category =='master') {
-    if (b.category == 'master')
+  if (a.data.category =='master') {
+    if (b.data.category == 'master')
       return 0;
     return -1;
-  } else if (b.category == 'master') {
+  } else if (b.data.category == 'master') {
     return 1;
   }
 
@@ -244,21 +244,18 @@ CTFailures.prototype._processBuilderFailure = function(newFailures, alert) {
 
   var failure;
   var data;
-  var category;
   if (alert.hasOwnProperty('builder_name')) {
-    category = 'builder';
     failure = new CTBuilderFailure(alert.tree, alert.master_url, alert.builder_name, alert.state,
         timeSinceLastUpdate, alert.pending_builds, alert.hasOwnProperty('isMaster'));
     data = new CTBuilderFailureGroupData(failure, alert.builder_name,
         alert.master_url + "/builders/" + alert.builder_name);
   } else {
-    category = 'master';
     failure = new CTMasterFailure(alert.tree, alert.master_url, timeSinceLastUpdate);
     data = new CTMasterFailureGroupData(failure, alert.master_url);
   }
   if (!newFailures[alert.tree])
     newFailures[alert.tree] = [];
-  newFailures[alert.tree].push(new CTFailureGroup(alert.tree, data, category));
+  newFailures[alert.tree].push(new CTFailureGroup(alert.tree, data, 'builder'));
 };
 
 })();
