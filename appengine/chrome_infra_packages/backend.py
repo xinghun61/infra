@@ -14,15 +14,17 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'components', 'third_party'))
 from components import ereporter2
 from components import utils
 
+import cas
+
 
 def create_application():
   """Bootstraps the global state and creates WSGI application."""
-  # Collect and send exception reports.
   ereporter2.register_formatter()
   ereporter2.configure()
 
   routes = []
   routes.extend(ereporter2.get_backend_routes())
+  routes.extend(cas.get_backend_routes())
   return webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
 
 

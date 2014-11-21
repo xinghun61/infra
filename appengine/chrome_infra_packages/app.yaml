@@ -53,3 +53,4 @@ skip_files:
 - ^(.*/)?.*\.rej
 - ^[A-Z]+
 - ^[A-Z]+\.[a-z]+
+- ^local_dev_config.*

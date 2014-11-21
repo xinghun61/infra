@@ -2,15 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
+# test_env should be loaded before any other app module.
+from . import test_env
 
 from testing_utils import testing
-
-# TODO(vadimsh): Figure out why this is required. Without it warmup test fails.
-os.environ['APPLICATION_ID'] = 'test_app'
-os.environ['SERVER_SOFTWARE'] = 'Development unittest'
-os.environ['CURRENT_VERSION_ID'] = 'default-version.123'
-
 import frontend
 
 
@@ -22,7 +17,7 @@ class TestFrontendHandlers(testing.AppengineTestCase):
   def test_main_page(self):
     """Test that the root page renders."""
     response = self.test_app.get('/')
-    self.assertEquals(200, response.status_int)
+    self.assertEquals(302, response.status_int)
 
   def test_warmup(self):
     """Test that warmup works."""

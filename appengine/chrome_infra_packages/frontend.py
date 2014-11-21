@@ -16,18 +16,20 @@ from components import ereporter2
 from components import utils
 from components import auth
 
+import admin
 import cas
+import config
 
 
 class MainHandler(webapp2.RequestHandler):
   def get(self):
-    self.response.write('Nothing to see here')
+    self.redirect('/_ah/api/explorer')
 
 
 class WarmupHandler(webapp2.RequestHandler):
   def get(self):
     auth.warmup()
-    self.response.write('ok')
+    config.warmup()
 
 
 def create_html_app():
@@ -42,12 +44,17 @@ def create_html_app():
 
 def create_endpoints_app():
   """Returns WSGI app that serves cloud endpoints requests."""
-  return endpoints.api_server([cas.CASServiceApi])
+  apis = [
+    admin.AdminApi,
+    cas.CASServiceApi,
+  ]
+  # 'restricted=False' is needed for unittests, it allows direct calls to
+  # /_ah/spi/* backend.
+  return endpoints.api_server(apis, restricted=not utils.is_local_dev_server())
 
 
 def initialize():
   """Bootstraps the global state and creates WSGI applications."""
-  # Collect and send exception reports.
   ereporter2.register_formatter()
   ereporter2.configure()
   return create_html_app(), create_endpoints_app()

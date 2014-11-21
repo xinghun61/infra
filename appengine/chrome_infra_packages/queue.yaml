@@ -1,0 +1,6 @@
+queue:
+- name: cas-verify
+  bucket_size: 100
+  rate: 50/s
+  retry_parameters:
+    task_age_limit: 6h

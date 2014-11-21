@@ -4,11 +4,15 @@
 
 """CAS is Content Addressable Store implementation on top of Cloud Storage.
 
-It's main focus is consistency: if object named X is in the store (e.g. visible
-by clients), then it's content hash is guaranteed to be X at all times.
+It's main focus is consistency: if an object named X is in the store (e.g.
+visible by clients), then its content hash is guaranteed to be X at all times.
+
+The protocol is optimized for uploads of small number of large and mostly unique
+files. For storing large number of small files use Isolate Server instead.
 
 We do not trust uploading clients, hashes are verified on the server side
 before making an object visible.
 """
 
 from .api import CASServiceApi
+from .impl import get_backend_routes
