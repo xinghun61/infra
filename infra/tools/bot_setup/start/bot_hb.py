@@ -47,8 +47,26 @@ class HeartbeatRunner(object):
     if self.testing:
       return {}
     disk_usage = psutil.disk_usage(self.root_dir)
+    cpu = psutil.cpu_times_percent()
+    mem = psutil.virtual_memory()
+    net = psutil.net_io_counters()
+    proc = psutil.Process()
+    max_pid = max([proc.pid] + [p.pid for p in proc.children(recursive=True)])
+    boot_time = psutil.boot_time()
     return {
+        'boot_time': boot_time,
+        'uptime': time.time() - boot_time,
+        'cpu_count': psutil.cpu_count(),
         'cpu_percent': psutil.cpu_percent(),
+        'cpu_user': cpu.user,
+        'cpu_system': cpu.system,
+        'cpu_idle': cpu.idle,
+        'mem_total': mem.total,
+        'mem_available': mem.available,
+        'mem_percent': mem.percent,
+        'max_pid': max_pid,
+        'net_sent': net.bytes_sent,
+        'net_recv': net.bytes_recv,
         'disk_root_dir': self.root_dir,
         'disk_total': disk_usage.total,
         'disk_used': disk_usage.used,
