@@ -7,9 +7,9 @@ from google.appengine.ext import ndb
 from endpoints_proto_datastore.ndb import EndpointsModel
 
 
-SLO_BUILDTIME_MEDIAN = 90 * 60  # 90 minutes
-SLO_BUILDTIME_MAX = 8 * 60 * 60  # 480 minutes, lower when crbug.com/434965
-                                 # is fixed.
+SLO_BUILDTIME_MEDIAN = float(90 * 60)   # 90 minutes
+SLO_BUILDTIME_MAX = float(8 * 60 * 60)  # 480 minutes, lower when
+                                        # crbug.com/434965 is fixed.
 
 SLO_BUILDTIME_PER_BOT_MEDIAN = {}
 SLO_BUILDTIME_PER_BOT_MAX = {}
@@ -54,7 +54,7 @@ class Tree(ndb.Model):
   pass
 
 
-class BuildSLOOffender(ndb.Model):
+class BuildSLOOffender(EndpointsModel):
   tree = ndb.StringProperty()
   master = ndb.StringProperty()
   builder = ndb.StringProperty()
@@ -66,6 +66,7 @@ class BuildSLOOffender(ndb.Model):
   # what SLO was not met.
   slo_median_buildtime = ndb.FloatProperty(default=SLO_BUILDTIME_MEDIAN)
   slo_max_buildtime = ndb.FloatProperty(default=SLO_BUILDTIME_MAX)
+  generated = ndb.DateTimeProperty(auto_now_add=True)
 
 
 class BuildTimeStat(ndb.Model):

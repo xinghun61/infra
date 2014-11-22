@@ -65,5 +65,6 @@ class TreeHandler(webapp2.RequestHandler):
         'offenders': json.dumps(offenders),
         'builds': json.dumps(builds_graph),
         'tree': tree.title(),
+        'tree_key': tree,
         'slo_buildtime_max': models.SLO_BUILDTIME_MAX,
     }))

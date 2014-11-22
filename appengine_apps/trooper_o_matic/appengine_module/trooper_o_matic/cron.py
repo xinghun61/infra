@@ -14,6 +14,7 @@ import numpy
 import webapp2
 
 from google.appengine.api import urlfetch
+from google.appengine.ext import ndb
 
 from appengine_module.trooper_o_matic import models
 from appengine_module.trooper_o_matic import trees
@@ -206,6 +207,7 @@ class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
           stat.slo_offenders.append(v)
           if record['step_time'] > buildtime_max:
             stat.num_over_max_slo += 1
+    ndb.put_multi(stat.slo_offenders)
     stat.put()
 
 
