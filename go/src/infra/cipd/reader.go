@@ -182,6 +182,11 @@ type signatureInfo struct {
 
 // open reads and verifies signatures.
 func (p *packageImpl) open(keyGetter PublicKeyProvider) error {
+	// Use hardcoded public keys by default.
+	if keyGetter == nil {
+		keyGetter = keys.KnownPublicKey
+	}
+
 	// Read all signatures from the file tail.
 	signatures, signaturesOffset, err := ReadSignatureList(p.data)
 	p.dataSize = signaturesOffset
