@@ -17,8 +17,9 @@ from components import utils
 from components import auth
 
 import admin
-import cas
 import config
+
+from cas import api as cas_api
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -46,7 +47,7 @@ def create_endpoints_app():
   """Returns WSGI app that serves cloud endpoints requests."""
   apis = [
     admin.AdminApi,
-    cas.CASServiceApi,
+    cas_api.CASServiceApi,
   ]
   # 'restricted=False' is needed for unittests, it allows direct calls to
   # /_ah/spi/* backend.
