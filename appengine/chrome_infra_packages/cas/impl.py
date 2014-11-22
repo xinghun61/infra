@@ -72,6 +72,10 @@ SUPPORTED_HASH_ALGOS = {
   'SHA1': (hashlib.sha1, 40),
 }
 
+# Return values of task queue task handling function.
+TASK_DONE = 1
+TASK_RETRY = 2
+
 
 def is_supported_hash_algo(hash_algo):
   """True if given algorithm is supported by CAS service."""
@@ -236,14 +240,14 @@ class CASService(object):
       unsigned_upload_id: long int ID of upload session to check.
 
     Returns:
-      False if the task should be retried, True if not.
+      TASK_RETRY if task should be retried, TASK_DONE if not.
     """
     upload_session = UploadSession.get_by_id(unsigned_upload_id)
     if upload_session is None:
       logging.error('Verifying missing upload session:\n%d', unsigned_upload_id)
-      return True
+      return TASK_DONE
     if upload_session.status != UploadSession.STATUS_VERIFYING:
-      return True
+      return TASK_DONE
 
     # Moves upload_session to some state if it's still in VERIFYING state.
     @ndb.transactional
@@ -274,7 +278,7 @@ class CASService(object):
     if self._is_gs_file_present(upload_session.final_gs_location):
       self._cleanup_temp(upload_session)
       set_status(UploadSession.STATUS_PUBLISHED)
-      return True
+      return TASK_DONE
 
     # Client MUST finalize GS upload before invoking verification. If client
     # fails to do so, abort the protocol. Also 'cloudstorage.open' verifies
@@ -288,7 +292,7 @@ class CASService(object):
           retry_params=self._retry_params)
     except errors.NotFoundError:
       set_error('Google Storage upload wasn\'t finalized.')
-      return True
+      return TASK_DONE
 
     # ETag MUST be available by this moment, since cloudstorage.open() performs
     # blocking HEAD call. Also for some weird reason _etag is wrapped in "".
@@ -318,7 +322,7 @@ class CASService(object):
       set_error(
           'Invalid %s hash: expected %s, got %s.' %
           (upload_session.hash_algo, upload_session.hash_digest, digest))
-      return True
+      return TASK_DONE
 
     # Copy to the final destination verifying the ETag is the same.
     try:
@@ -329,16 +333,16 @@ class CASService(object):
     except errors.NotFoundError:  # pragma: no cover
       # Probably some concurrent finalization removed temp_gs_location already.
       # Retry the task to check this.
-      return False
+      return TASK_RETRY
     except errors.FatalError as err:  # pragma: no cover
       # Precondition failed, i.e. temp file was modified after verification.
       set_error(str(err))
-      return True
+      return TASK_DONE
 
     # Everything is in place. Cleanup temp garbage.
     set_status(upload_session.STATUS_PUBLISHED)
     self._cleanup_temp(upload_session)
-    return True
+    return TASK_DONE
 
   def _verified_gs_path(self, hash_algo, hash_digest):
     """Google Storage path to a verified file."""
@@ -457,8 +461,11 @@ class VerifyTaskQueueHandler(webapp2.RequestHandler):  # pragma: no cover
     service = get_cas_service()
     if service is None:
       self.abort(500, detail='CAS service is misconfigured')
-    if not service.verify_pending_upload(int(unsigned_upload_id)):
+    result = service.verify_pending_upload(int(unsigned_upload_id))
+    if result == TASK_RETRY:
       self.abort(500, detail='Retry')
+    elif result != TASK_DONE:
+      logging.error('Unexpected return value from task function')
 
 
 def get_backend_routes():  # pragma: no cover
