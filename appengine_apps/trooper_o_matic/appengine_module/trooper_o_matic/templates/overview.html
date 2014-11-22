@@ -46,28 +46,36 @@
           <tr><th colspan="2">Tree Open Time, Last 7 days</th></tr>
           <tr><td>Chromium</td><td>Blink</td></tr>
           <tr>
+            {% if tree_status.chromium %}
             <td {{alert(tree_status.chromium.should_alert)}}>
               <div>{{"%.2f"|format(tree_status.chromium.percent_open)}}</div>
               <a href="/tree-status/chromium">graphs</a>
             </td>
+            {% endif %}
+            {% if tree_status.blink %}
             <td {{alert(tree_status.blink.should_alert)}}>
               <div>{{"%.2f"|format(tree_status.blink.percent_open)}}</div>
               <a href="/tree-status/blink">graphs</a>
             </td>
+            {% endif %}
           </tr>
           <tr><th colspan="2">Build times, last hour</th></tr>
           <tr><td>Chromium</td><td>Blink</td></tr>
           <tr>
+            {% if cycle_time.chromium %}
             <td {{alert(cycle_time.chromium.should_alert)}}>
               <div>{{cycle_time.chromium.num_over_median_slo}} / {{cycle_time.chromium.num_builds}} ({{cycle_time.chromium.percent_over_median_slo}}) over 30 min</div>
               <div>{{cycle_time.chromium.num_over_max_slo}} / {{cycle_time.chromium.num_builds}} ({{cycle_time.chromium.percent_over_max_slo}}) over 60 min</div>
               <a href="/tree/chromium">graphs</a>
             </td>
+            {% endif %}
+            {% if cycle_time.blink %}
             <td {{alert(cycle_time.blink.should_alert)}}>
               <div>{{cycle_time.blink.num_over_median_slo}} / {{cycle_time.blink.num_builds}} ({{cycle_time.blink.percent_over_median_slo}}) over 30 min</div>
               <div>{{cycle_time.blink.num_over_max_slo}} / {{cycle_time.blink.num_builds}} ({{cycle_time.blink.percent_over_max_slo}}) over 60 min</div>
               <a href="/tree/blink">graphs</a>
             </td>
+            {% endif %}
           </tr>
       </table>
     </body>

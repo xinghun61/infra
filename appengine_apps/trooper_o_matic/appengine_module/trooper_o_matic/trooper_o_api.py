@@ -25,7 +25,7 @@ class CqProjectStats(messages.Message):
   total_time_data = messages.MessageField(
       models.CqTotalTimeForPatchStat.ProtoModel(), 3, repeated=True)
 
-  
+
 ### Api methods.
 
 @endpoints.api(name='trooper_o_matic', version='v1')

@@ -11,6 +11,9 @@ SLO_BUILDTIME_MEDIAN = 90 * 60  # 90 minutes
 SLO_BUILDTIME_MAX = 8 * 60 * 60  # 480 minutes, lower when crbug.com/434965
                                  # is fixed.
 
+SLO_BUILDTIME_PER_BOT_MEDIAN = {}
+SLO_BUILDTIME_PER_BOT_MAX = {}
+
 
 class Project(ndb.Model):
   pass

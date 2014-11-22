@@ -23,6 +23,8 @@ def GetTreeStatusDict(project): # pragma: no cover
   stat = models.TreeOpenStat.query(
       models.TreeOpenStat.num_days == 7, ancestor=project).order(
           -models.TreeOpenStat.timestamp).get()
+  if not stat:
+    return {}
   return {
       'should_alert': stat.percent_open < 80.0,
       'percent_open': stat.percent_open,
@@ -35,6 +37,8 @@ def GetTreeStatusDict(project): # pragma: no cover
 def GetCqLatencyDict(project): # pragma: no cover
   stat = models.CqStat.query(ancestor=project).order(
       -models.CqStat.timestamp).get()
+  if not stat:
+    return {}
   if not stat.p50:
     return {
         'should_alert': False,
@@ -64,6 +68,8 @@ def _GetPercent(numerator, denominator): # pragma: no cover
 def GetCycleTimeDict(tree): # pragma: no cover
   stat = models.BuildTimeStat.query(ancestor=tree).order(
       -models.BuildTimeStat.timestamp).get()
+  if not stat:
+    return {}
   # TODO(sullivan): Make this account for clobber time.
   return {
       'should_alert': (stat.num_over_max_slo > 0 or
@@ -75,7 +81,7 @@ def GetCycleTimeDict(tree): # pragma: no cover
       'num_over_max_slo': stat.num_over_max_slo,
       'percent_over_max_slo': _GetPercent(stat.num_over_max_slo,
                                           stat.num_builds),
-      'details': ('%d builds over maximum 480m, %d builds over median 90m' % (
+      'details': ('%d builds over their max, %d builds over their median' % (
           stat.num_over_max_slo, stat.num_over_median_slo)),
       'url': 'https://trooper-o-matic.appspot.com/tree/%s' % tree.id()
   }

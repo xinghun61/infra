@@ -187,16 +187,24 @@ class CheckTreeHandler(webapp2.RequestHandler): # pragma: no cover
         if now - generated_time > last_hour:
           continue
         stat.num_builds += 1
-        if record['step_time'] > models.SLO_BUILDTIME_MEDIAN:
+        buildtime_median = models.SLO_BUILDTIME_PER_BOT_MEDIAN.get(
+            master, {}).get(record['builder'], models.SLO_BUILDTIME_MEDIAN)
+        buildtime_max = models.SLO_BUILDTIME_PER_BOT_MAX.get(
+            master, {}).get(record['builder'], models.SLO_BUILDTIME_MAX)
+        buildtime_max = max(buildtime_max, buildtime_median)
+
+        if record['step_time'] > buildtime_median:
           stat.num_over_median_slo += 1
           v = models.BuildSLOOffender(tree=tree, master=master,
                                       builder=record['builder'],
                                       buildnumber=int(record['buildnumber']),
                                       buildtime=float(record['step_time']),
                                       result=int(record['result']),
-                                      revision=record['revision'])
+                                      revision=record['revision'],
+                                      slo_median_buildtime=buildtime_median,
+                                      slo_max_buildtime=buildtime_max)
           stat.slo_offenders.append(v)
-          if record['step_time'] > models.SLO_BUILDTIME_MAX:
+          if record['step_time'] > buildtime_max:
             stat.num_over_max_slo += 1
     stat.put()
 
