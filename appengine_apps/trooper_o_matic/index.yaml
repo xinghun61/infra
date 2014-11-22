@@ -40,3 +40,9 @@ indexes:
   - name: num_days
   - name: timestamp
     direction: desc
+
+- kind: BuildSLOOffender
+  properties:
+  - name: tree
+  - name: generated
+    direction: desc
