@@ -22,8 +22,7 @@ somewhere in your path) to run:
 
     mkdir chrome_infra   # or whatever name you please
     cd chrome_infra
-    gclient config https://chromium.googlesource.com/infra/infra.git
-    gclient sync
+    fetch infra
 
 This will check out the base repository (infra/) and its dependencies.
 
