@@ -8,12 +8,17 @@ import (
 	"crypto"
 	_ "crypto/sha512"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 )
 
-// NAme of the directory inside the package reserved for cipd stuff.
+// Name of the directory inside the package reserved for cipd stuff.
 const packageServiceDir = ".cipdpkg"
+
+// Name of the directory inside an installation root reserved for cipd stuff.
+const siteServiceDir = ".cipd"
 
 // Name of the manifest file inside the package.
 const manifestName = packageServiceDir + "/manifest.json"
@@ -55,6 +60,29 @@ type SignatureBlock struct {
 	SignatureKey string
 	// The actual signature.
 	Signature []byte
+}
+
+// ValidatePackageName returns error if a string doesn't look like a valid package name.
+func ValidatePackageName(name string) error {
+	// TODO: implement.
+	if name == "" || strings.Contains(name, "..") || name[0] == '/' {
+		return fmt.Errorf("Invalid package name: %s", name)
+	}
+	return nil
+}
+
+// ValidateInstanceID returns error if a string doesn't look like a valid package instance id.
+func ValidateInstanceID(s string) error {
+	// Instance id is SHA1 hex digest currently.
+	if len(s) != 40 {
+		return fmt.Errorf("Not a valid package instance ID \"%s\": not 40 bytes", s)
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			return fmt.Errorf("Not a valid package instance ID \"%s\": wrong char %c", s, c)
+		}
+	}
+	return nil
 }
 
 // readManifest reads and decodes manifest JSON from io.Reader.

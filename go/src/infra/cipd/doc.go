@@ -48,3 +48,8 @@ TODO: expand more when there's server-side package data model (labels
 and stuff).
 */
 package cipd
+
+import "github.com/Sirupsen/logrus"
+
+// Default package level logger.
+var log = logrus.New()

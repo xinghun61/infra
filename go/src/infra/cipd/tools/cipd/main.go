@@ -182,6 +182,57 @@ func buildPackage(packageName string, inputDir string, outFile string, sigingKey
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'deploy' subcommand.
+
+var cmdDeploy = &subcommands.Command{
+	UsageLine: "pkg-deploy <package file>",
+	ShortDesc: "deploys a package file",
+	LongDesc:  "Deployed a signed *.cipd package into a site root.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &deployRun{}
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
+		return c
+	},
+}
+
+type deployRun struct {
+	subcommands.CommandRunBase
+
+	rootDir string
+}
+
+func (c *deployRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	packagePath := args[0]
+	err := deployPackage(c.rootDir, packagePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: error while deploying the package - %s.\n", a.GetName(), err)
+		return 1
+	}
+	return 0
+}
+
+func deployPackage(root string, packagePath string) error {
+	pkg, err := cipd.OpenPackageFile(packagePath, nil)
+	if err != nil {
+		return err
+	}
+	defer pkg.Close()
+
+	fmt.Printf("Name:        %s\n", pkg.Name())
+	fmt.Printf("Instance ID: %s\n", pkg.InstanceID())
+	fmt.Printf("Signed:      %v\n", pkg.Signed())
+	if !pkg.Signed() {
+		return fmt.Errorf("Package is not signed, refusing to deploy")
+	}
+
+	_, err = cipd.Deploy(root, pkg)
+	return err
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'inspect' subcommand.
 
 var cmdInspect = &subcommands.Command{
@@ -240,6 +291,7 @@ var application = &subcommands.DefaultApplication{
 		subcommands.CmdHelp,
 
 		cmdBuild,
+		cmdDeploy,
 		cmdInspect,
 	},
 }

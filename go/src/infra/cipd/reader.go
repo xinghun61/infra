@@ -116,7 +116,9 @@ func ExtractPackage(p Package, dest Destination) error {
 		return err
 	}
 
-	for _, f := range p.Files() {
+	files := p.Files()
+	for i, f := range files {
+		log.Infof("[%d/%d] inflating %s", i+1, len(files), f.Name())
 		err = extractOne(f)
 		if err != nil {
 			break
@@ -132,20 +134,6 @@ func ExtractPackage(p Package, dest Destination) error {
 	}
 
 	return err
-}
-
-// ValidateInstanceID returns true if a string looks like a valid package instance id.
-func ValidateInstanceID(s string) bool {
-	// Instance id is SHA1 hex digest currently.
-	if len(s) != 40 {
-		return false
-	}
-	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-			return false
-		}
-	}
-	return true
 }
 
 ////////////////////////////////////////////////////////////////////////////////

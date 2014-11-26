@@ -118,6 +118,15 @@ func TestBuildPackage(t *testing.T) {
 		})
 		So(err, ShouldNotBeNil)
 	})
+
+	Convey("Bad name fails", t, func() {
+		err := BuildPackage(BuildPackageOptions{
+			Output:      &bytes.Buffer{},
+			PackageName: "../../asdad",
+		})
+		So(err, ShouldNotBeNil)
+	})
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

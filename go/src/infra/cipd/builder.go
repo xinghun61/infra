@@ -28,6 +28,11 @@ type BuildPackageOptions struct {
 // opts.Output. Some output may be written even if BuildPackage eventually
 // returns an error.
 func BuildPackage(opts BuildPackageOptions) error {
+	err := ValidatePackageName(opts.PackageName)
+	if err != nil {
+		return err
+	}
+
 	// Make sure no files are written to package service directory.
 	for _, f := range opts.Input {
 		if strings.HasPrefix(f.Name(), packageServiceDir+"/") {

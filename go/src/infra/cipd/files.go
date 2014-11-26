@@ -158,13 +158,18 @@ func (d *fileSystemDestination) CreateFile(name string, executable bool) (io.Wri
 	if d.tempDir == "" {
 		return nil, fmt.Errorf("Destination is not open")
 	}
+
+	path := filepath.Join(d.outDir, filepath.FromSlash(name))
+	if !filepath.IsAbs(path) {
+		return nil, fmt.Errorf("Invalid relative file name: %s", name)
+	}
+
 	_, ok := d.openFiles[name]
 	if ok {
 		return nil, fmt.Errorf("File %s is already open", name)
 	}
 
 	// Make sure full path exists.
-	path := filepath.Join(d.outDir, filepath.FromSlash(name))
 	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
 		return nil, err

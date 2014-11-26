@@ -317,18 +317,6 @@ func TestPackageReading(t *testing.T) {
 	})
 }
 
-func TestValidateInstanceID(t *testing.T) {
-	Convey("ValidateInstanceID works", t, func() {
-		So(ValidateInstanceID(""), ShouldBeFalse)
-		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeTrue)
-		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeFalse)
-		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeFalse)
-		So(ValidateInstanceID("0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeTrue)
-		So(ValidateInstanceID("gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeFalse)
-		So(ValidateInstanceID("AAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeFalse)
-	})
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Nop readerSeekerCloser, since ioutil.NopClose works only with io.Reader,
 // but not with io.ReadSeeker.

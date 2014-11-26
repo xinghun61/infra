@@ -43,3 +43,26 @@ func TestReadManifest(t *testing.T) {
 		So(string(buf.Bytes()), ShouldEqual, goodManifest)
 	})
 }
+
+func TestValidatePackageName(t *testing.T) {
+	Convey("ValidatePackageName works", t, func() {
+		// TODO: more cases.
+		So(ValidatePackageName("good/name"), ShouldBeNil)
+		So(ValidatePackageName(""), ShouldNotBeNil)
+		So(ValidatePackageName("../../yeah"), ShouldNotBeNil)
+		So(ValidatePackageName("/yeah"), ShouldNotBeNil)
+	})
+}
+
+func TestValidateInstanceID(t *testing.T) {
+	Convey("ValidateInstanceID works", t, func() {
+		So(ValidateInstanceID(""), ShouldNotBeNil)
+		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeNil)
+		So(ValidateInstanceID("0123456789abcdefaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeNil)
+		So(ValidateInstanceID("€aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+		So(ValidateInstanceID("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+		So(ValidateInstanceID("gaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+		So(ValidateInstanceID("AAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+	})
+}
