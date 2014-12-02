@@ -24,7 +24,7 @@ def GenSteps(api):
   api.gclient.runhooks()
 
   with api.step.defer_results():
-    api.python('test.py', 'test.py', cwd=api.path['checkout'])
+    api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python(
       'go test.py', api.path['checkout'].join('go', 'env.py'),

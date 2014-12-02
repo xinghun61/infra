@@ -60,7 +60,8 @@
     "cmd": [
       "python",
       "-u",
-      "test.py"
+      "test.py",
+      "test"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "test.py"
