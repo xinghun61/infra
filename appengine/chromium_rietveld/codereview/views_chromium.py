@@ -752,6 +752,7 @@ def get_pending_try_patchsets(request):
       description['root'] = 'trunk'
     else:
       description['root'] = 'src'
+    description['patch_project'] = issue.project
     description['patchset'] = patchset.key.id()
     description['issue'] = issue.key.id()
     description['baseurl'] = issue.base
