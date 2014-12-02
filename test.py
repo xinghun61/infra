@@ -23,14 +23,11 @@ def usage():
   Run all tests:
     ./test.py test
   Run all tests in the infra package:
-    ./test.py test --package infra
+    ./test.py test infra
   Run one given test in the infra package:
-    ./test.py test --package infra \
-        infra.libs.git2.test.ref_test.TestRef.testCommitBogus
+    ./test.py test infra/libs/git2/test:*testCommitBogus
 
   See expect_tests documentation for more details
-
-  If no arguments are provided, run all tests in all packages.
   """ % sys.argv[0]
   sys.exit(1)
 
@@ -64,29 +61,26 @@ os.environ['PYTHONPATH'] = os.pathsep.join(appengine_paths).encode('utf8')
 
 # Parse command-line arguments
 if len(sys.argv) == 1:
-  args = ['test']
+  usage()
 else:
   if not sys.argv[1] in ('list', 'train', 'test', 'debug'):
     usage()
-  args = [sys.argv[1]]
 
+args = sys.argv[1:]
 
 # Set up default list of packages/directories if none have been provided.
-if '--package' not in sys.argv and '--directory' not in sys.argv:
-  args.extend(['--package', 'infra', '--package', 'test'])
+if all([arg.startswith('--') for arg in sys.argv[2:]]):
+  args.extend(['infra'])  # TODO(pgervais): add 'test/'
   appengine_dirs = [os.path.join('appengine', d)
                     for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))]
   appengine_dirs.extend([os.path.join('appengine_apps', d)
                          for d in os.listdir(os.path.join(INFRA_ROOT,
                                                           'appengine_apps'))])
   # Use relative paths to shorten the command-line
-  args.extend(itertools.chain(*[
-    ('--directory', d)
+  args.extend(itertools.chain([d
     for d in appengine_dirs
     if os.path.isfile(os.path.join(d, 'app.yaml'))])
               )
-else:
-  args = sys.argv[1:]
 
 os.chdir(INFRA_ROOT)
 subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
