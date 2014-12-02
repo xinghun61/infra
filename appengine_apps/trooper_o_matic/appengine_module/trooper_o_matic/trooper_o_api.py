@@ -49,10 +49,10 @@ class TrooperOMaticAPI(remote.Service):
         total_time_data=total_time_data,
     )
 
-  @models.BuildSLOOffender.query_method(  # pragma: no cover
+  @models.BuildSLOOffender.query_method(
       path='build_slo_offenders', name='build_slo_offenders.list',
       query_fields=('limit', 'pageToken', 'tree', 'master', 'builder'))
-  def get_build_slo_offenders(self, query):
+  def get_build_slo_offenders(self, query):  # pragma: no cover
     return query.order(-models.BuildSLOOffender.generated)
 
 
