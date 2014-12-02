@@ -25,14 +25,16 @@ def MockNow():
 
 
 class CoverageTest(testing.AppengineTestCase):
-  # restricted=False is needed for testing.
-  app_module = endpoints.api_server(
-      [trooper_o_api.TrooperOMaticAPI],
-      restricted=False
-  )
 
   def setUp(self):  # pylint: disable=E1002
     super(CoverageTest, self).setUp()
+    # restricted=False is needed for testing.
+    # Initialized here because setUp() has to be run first.
+    self.app_module = endpoints.api_server(
+        [trooper_o_api.TrooperOMaticAPI],
+        restricted=False
+    )
+
     testing_common.StubUrlfetch(test_data.URLFETCH_RESPONSES,
                                 stub=self.testbed.get_stub('urlfetch'))
 
