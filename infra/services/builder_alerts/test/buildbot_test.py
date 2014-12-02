@@ -316,7 +316,7 @@ class DiskCacheTest(TestCaseWithDiskCache):
         "Linux", "building", 50, passing_build_time, step, latest_build_id)
     self.assertIsNone(alert)
 
-    failing_offline_time = current_time - (0.6 * 60 * 60)
+    failing_offline_time = current_time - (1.6 * 60 * 60)
     alert = buildbot.create_stale_builder_alert_if_needed(master_url,
         "Linux", "offline", 50, failing_offline_time, step, latest_build_id)
     self.assertIsNotNone(alert)
