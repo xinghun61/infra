@@ -184,7 +184,7 @@ CHROMIUM_MASTER_TREE = {
     }, {
         # Over median, under max SLO
         'generated': '2014-01-01T11:50:00.000000',
-        'step_time': 2000,
+        'step_time': 5500,
         'builder': 'Linux',
         'buildnumber': 500,
         'result': 0,
@@ -192,7 +192,7 @@ CHROMIUM_MASTER_TREE = {
     }, {
         # Over max SLO
         'generated': '2014-01-01T12:00:00.000000',
-        'step_time': 5500,
+        'step_time': 28900,
         'builder': 'Android',
         'buildnumber': 2500,
         'result': 0,
@@ -205,7 +205,7 @@ CHROMIUM_WIN_MASTER_TREE = {
     'step_records': [{
         # Ignored -- generated too long ago
         'generated': '2014-01-01T08:00:00.000000',
-        'step_time': 5500,
+        'step_time': 2200,
         'builder': 'Win XP',
         'buildnumber': 500,
         'result': 0,
@@ -213,7 +213,7 @@ CHROMIUM_WIN_MASTER_TREE = {
     }, {
         # Over median, under max SLO
         'generated': '2014-01-01T12:00:00.000000',
-        'step_time': 2200,
+        'step_time': 5500,
         'builder': 'Windows 8',
         'buildnumber': 5500,
         'result': 1,
@@ -226,7 +226,7 @@ CHROMIUM_WIN_MASTER_TREE_24H = {
     'step_records': [{
         # Over median, under max SLO
         'generated': '2014-01-01T11:59:00.0000',
-        'step_time': 1900,
+        'step_time': 5500,
         'builder': 'Windows 7',
         'buildnumber': 55,
         'result': 0,

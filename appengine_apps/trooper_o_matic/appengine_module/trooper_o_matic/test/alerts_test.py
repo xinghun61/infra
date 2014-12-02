@@ -83,11 +83,11 @@ class AlertsTest(unittest.TestCase):
     self.assertIn('cycle_time', data)
     self.assertIn('blink', data['cycle_time'])
     self.assertEqual(True, data['cycle_time']['blink']['should_alert'])
-    self.assertEqual('0 builds over maximum 480m, 15 builds over median 90m',
+    self.assertEqual('0 builds over their max, 15 builds over their median',
                      data['cycle_time']['blink']['details'])
     self.assertIn('chromium', data['cycle_time'])
     self.assertEqual(True, data['cycle_time']['chromium']['should_alert'])
-    self.assertEqual('1 builds over maximum 480m, 5 builds over median 90m',
+    self.assertEqual('1 builds over their max, 5 builds over their median',
                      data['cycle_time']['chromium']['details'])
 
   def testAlertsExitCriteriaMet(self):
