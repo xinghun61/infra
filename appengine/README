@@ -1,9 +1,0 @@
-This directory contains not-yet-ported appengine apps.
-
-All of these applications should be split into their respective python vs.
-static file parts.
-
-appengine_module is an python package and will hold all of the Python files
-appengine_apps will hold all the static files including app.yaml.
-appengine_apps contains symlinks into appengine_module to expose
-the necessary python files for the application.
