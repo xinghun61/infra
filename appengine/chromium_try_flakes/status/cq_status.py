@@ -159,6 +159,8 @@ def get_flakes(step):
     for failure in failures:
       if not failure:
         continue
+      if failure == 'ignored:':
+        break  # layout test output
       results.append(failure)
     return results
       
@@ -313,14 +315,12 @@ def parse_cq_data(json_data):
               ancestor=patchset_builder_runs.key).fetch()
 
           duplicate = False
-          # If there's an existing entry for this builder and patchset, and its
-          # result matches this one then there's no need to add this. It could
-          # be the same try run, or another one, but we just use the first one
-          # that we saw.
-          # TODO(jam): if there are multiple flaky failures, get errors from all
-          # and not just the first one.
           for previous_run in previous_runs:
-            if previous_run.is_success == build_run.is_success:
+            # We saw this build run already or there are multiple green runs,
+            # in which case we ignore subsequent ones to avoid showing failures
+            # multiple times.
+            if (previous_run.buildnumber == buildnumber) or \
+               (build_run.is_success and previous_run.is_success) :
               duplicate = True
               break
 
@@ -329,13 +329,9 @@ def parse_cq_data(json_data):
 
           build_run.put()
 
-          # At this point, if previous_runs is not empty we know the entry there
-          # has a different success flag than the current one.
-
-          if len(previous_runs):
-            previous_run = previous_runs[0]
-            flaky_run = None
-            # If there's an existing entry at this point, we must have a flake.
+          for previous_run in previous_runs:
+            if previous_run.is_success == build_run.is_success:
+              continue
             if success:
               # We saw the flake and then the pass.
               flaky_run = FlakyRun(
@@ -412,8 +408,12 @@ def fetch_cq_status():
       params.append('begin=' + begin)
     if end:
       params.append('end=' + end)
-    # Tried count of 200 or more but would get OOM or deadline errors. So keep
-    # at default of 100.
+    # Tried count of 200 or more but would get OOM or deadline errors. Even 50
+    # sometimes gives:
+    # "Values may not be more than 1000000 bytes in length; received 2118015
+    # bytes"
+    params.append('count=10')
+   
     
     if params:
       url += '?' + '&'.join(params)
