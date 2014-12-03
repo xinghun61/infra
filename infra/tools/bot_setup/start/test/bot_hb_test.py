@@ -61,7 +61,11 @@ class TestHeartbeats(unittest.TestCase):
     self.hb_mock.expect('get_secret', 'Totally a secret')
     self.hb = bot_hb.HeartbeatRunner(
         'test_slave', '/some/dir', heartbeat_cls=self.hb_mock)
+    self.old_time_time = time.time
     setattr(time, 'time', lambda: 999999.0)
+
+  def tearDown(self):
+    setattr(time, 'time', self.old_time_time)
 
   def test_send_heartbeat(self):
     self.hb_mock.expect('get_id', 'Fake ID')

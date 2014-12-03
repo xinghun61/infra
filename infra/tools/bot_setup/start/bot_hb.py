@@ -50,7 +50,7 @@ class HeartbeatRunner(object):
     cpu = psutil.cpu_times_percent()
     mem = psutil.virtual_memory()
     net = psutil.net_io_counters()
-    proc = psutil.Process()
+    proc = psutil.Process()  # pragma: pylint: disable=no-value-for-parameter
     max_pid = max([proc.pid] + [p.pid for p in proc.children(recursive=True)])
     boot_time = psutil.boot_time()
     return {
