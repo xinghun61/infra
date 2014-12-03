@@ -88,9 +88,9 @@
     'rev': 'b347a9c516f1b7c1d65c376ce255eca274b88999',
   },
   'expect_tests': {
-    'version': '0.3.1',
+    'version': '0.3.2',
     'build': '0',
-    'rev': 'cd566a06dda3b2cd8823fad41ec9b927befdaeac',
+    'rev': '42af3ac25910a7452c0d7fd29daacbbc445b78ea',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'six': {
