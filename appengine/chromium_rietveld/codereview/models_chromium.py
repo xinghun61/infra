@@ -104,6 +104,9 @@ class TryserverBuilders(ndb.Model):
     'tryserver.webrtc': [
       'http://build.chromium.org/p/tryserver.webrtc/json/builders'
     ],
+    'tryserver.client.mojo': [
+      'http://build.chromium.org/p/tryserver.client.mojo/json/builders'
+    ],
   }
 
   MEMCACHE_KEY = 'default_builders'
