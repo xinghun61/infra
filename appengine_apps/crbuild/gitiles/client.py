@@ -34,10 +34,10 @@ def parse_time(tm):
     assert m, 'Could not parse time zone information from "%s"' % timezone
     timezone_delta = timedelta(
         hours=int(m.group(2)), minutes=int(m.group(3) or '0'))
-    if m.group(1) == '-':  # pragma: no branch
+    if m.group(1) == '-':
       dt += timezone_delta
     else:
-      dt -= timezone_delta  # pragma: no cover
+      dt -= timezone_delta
   return dt
 
 
@@ -49,16 +49,14 @@ class GitilesClient(GoogleSourceServiceClient):
 
     Returns Commit object, or None if the commit was not found.
     """
-    path = '%s/+/%s?format=json' % (project, commit_sha)
+    path = '%s/+/%s' % (project, commit_sha)
     data = self._fetch(path)
-    if data is None:  # pragma: no cover
+    if data is None:
       return None
 
     def parse_contributor(data):
-      if data is None:  # pragma: no cover
-        return None
       time = data.get('time')
-      if time is not None:  #pragma: no branch
+      if time is not None:  # pragma: no branch
         time = parse_time(time)
       return GitContributor(
           name=data.get('name'),

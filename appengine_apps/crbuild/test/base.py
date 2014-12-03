@@ -4,23 +4,40 @@
 
 # TODO(pgervais): this file has no tests
 
+from contextlib import contextmanager
 import base64
 import pickle
 import traceback
 
 from google.appengine.ext import testbed
+from google.appengine.api import urlfetch
 
+from mock import Mock
 from test.testing_utils import testing
 import main
+
+
+def fake_urlfetch_fetch():  # pragma: no cover
+  fetch = Mock()
+  fetch.return_value.status_code = 404
+  fetch.return_value.headers = {}
+  fetch.return_value.content = ''
+  return fetch
 
 
 class CrBuildTestCase(testing.AppengineTestCase):  # pragma: no cover
   app_module = main.app
 
+  def __init__(self, *args, **kwargs):
+    super(CrBuildTestCase, self).__init__(*args, **kwargs)
+    self.urlfetch_fetch = None
+
   def setUp(self):
     super(CrBuildTestCase, self).setUp()
     self.tear_downs = []
     self.mock_current_user(user_id='johndoe', user_email='johndoe@chromium.org')
+    self.urlfetch_fetch = fake_urlfetch_fetch()
+    self.mock(urlfetch, 'fetch', self.urlfetch_fetch)
 
   def _run_tear_downs(self):
     some_failed = False

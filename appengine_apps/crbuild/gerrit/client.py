@@ -88,7 +88,7 @@ class GerritClient(GoogleSourceServiceClient):
     )
 
   def set_review(self, change_id, revision, message=None, labels=None,
-                 notify=True):  # pragma: no cover
+                 notify=None):
     """Sets review on a revision.
 
     Args:
@@ -114,4 +114,4 @@ class GerritClient(GoogleSourceServiceClient):
     body = {k:v for k, v in body.iteritems() if v is not None}
 
     path = 'changes/%s/revisions/%s/review' % (change_id, revision)
-    self._fetch(path, 'POST', body=body)
+    self._fetch(path, method='POST', body=body)

@@ -9,12 +9,19 @@ from google.appengine.ext.ndb import msgprop
 from protorpc import messages
 
 
+MAX_LEASE_BUILDS = 100
+MAX_LEASE_SECONDS = 3 * 60 * 60  # 3 hours
+
+
 class BuildStatus(messages.Enum):
   SCHEDULED = 1
   BUILDING = 2
   SUCCESS = 3
   FAILURE = 4
   EXCEPTION = 5  # Infrastructure failure.
+
+
+LEASABLE_STATUSES = (BuildStatus.SCHEDULED, BuildStatus.BUILDING)
 
 
 class BuildProperties(ndb.Expando):
@@ -52,10 +59,10 @@ class Build(ndb.Model):
   available_since = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
   @property
-  def builder_name(self):  #pragma: no cover
+  def builder_name(self):
     return self.properties.builder_name if self.properties else None
 
-  def set_status(self, value):  #pragma: no cover
+  def set_status(self, value):
     """Changes build status and notifies interested parties."""
     if self.status == value:
       return
@@ -66,24 +73,27 @@ class Build(ndb.Model):
     # elif value in (BuildStatus.SUCCESS, BuildStatus.FAILURE):
     #  BuildCompleted().add_to(self)
 
-  def modify_lease(self, lease_seconds):  #pragma: no cover
+  def is_available(self):
+    return self.available_since <= datetime.utcnow()
+
+  def modify_lease(self, lease_seconds):
     """Changes build's lease, updates |available_since|."""
     self.available_since = datetime.utcnow() + timedelta(seconds=lease_seconds)
 
   @property
-  def key_string(self):  #pragma: no cover
+  def key_string(self):
     """Returns an opaque key string."""
     return self.key.urlsafe() if self.key else None
 
   @classmethod
-  def parse_key_string(cls, key_string):  #pragma: no cover
+  def parse_key_string(cls, key_string):
     """Parses an opaque key string."""
     key = ndb.Key(urlsafe=key_string)
-    assert key.kind() == cls
+    assert key.kind() == cls.__name__
     return key
 
   @classmethod
-  def lease(cls, lease_seconds, max_builds, namespaces):
+  def lease(cls, namespaces, lease_seconds=10, max_builds=10):
     """Leases builds.
 
     Builds are sorted by available_since attribute, oldest first.
@@ -97,7 +107,20 @@ class Build(ndb.Model):
     Returns:
       A list of Builds.
     """
-    assert max_builds <= 100, 'max_builds must not be greater than 100'
+    assert isinstance(namespaces, list)
+    assert namespaces, 'No namespaces specified'
+    assert all(isinstance(n, basestring) for n in namespaces), (
+        'namespaces must be strings'
+    )
+    assert isinstance(lease_seconds, (int, float))
+    assert lease_seconds < MAX_LEASE_SECONDS, (
+        'lease_seconds must not exceed %d' % MAX_LEASE_BUILDS
+    )
+    assert isinstance(max_builds, int)
+    assert max_builds <= MAX_LEASE_BUILDS, (
+        'max_builds must not be greater than %s' % MAX_LEASE_BUILDS
+    )
+
     now = datetime.utcnow()
     q = cls.query(
         cls.status.IN([BuildStatus.SCHEDULED, BuildStatus.BUILDING]),
@@ -109,11 +132,11 @@ class Build(ndb.Model):
     new_available_since = now + timedelta(seconds=lease_seconds)
 
     @ndb.transactional
-    def lease_build(build):  #pragma: no branch
-      if build.status not in (BuildStatus.SCHEDULED, BuildStatus.BUILDING):
-        return False  #pragma: no cover
-      if build.available_since > now:  #pragma: no branch
-        return False  #pragma: no cover
+    def lease_build(build):
+      if build.status not in LEASABLE_STATUSES:  # pragma: no cover
+        return False
+      if not build.is_available():  # pragma: no cover
+        return False
       build.available_since = new_available_since
       build.put()
       return True
@@ -122,7 +145,7 @@ class Build(ndb.Model):
     # TODO(nodir): either optimize this query using memcache, or return builds
     # without leasing and then lease builds one by one.
     for b in q.fetch(max_builds):
-      if lease_build(b):  #pragma: no branch
+      if lease_build(b):  # pragma: no branch
         builds.append(b)
     return builds
 
