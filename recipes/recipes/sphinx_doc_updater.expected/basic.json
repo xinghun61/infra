@@ -12,8 +12,6 @@
       "fake",
       "--spec",
       "cache_dir = '[ROOT]/git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
-      "--root",
-      "infra",
       "--revision_mapping_file",
       "{\"infra\": \"got_revision\"}",
       "--output_json",
