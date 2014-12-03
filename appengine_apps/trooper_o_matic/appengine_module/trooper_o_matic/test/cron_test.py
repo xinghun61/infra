@@ -45,6 +45,8 @@ class CronTest(unittest.TestCase):
   def setUp(self):
     super(CronTest, self).setUp()
     self.testbed = testbed.Testbed()
+    # needed because some appengine libraries expects a . in this value
+    self.testbed.setup_env(current_version_id='testbed.version')
     self.testbed.activate()
     self.testbed.init_datastore_v3_stub()
     self.testbed.init_memcache_stub()
