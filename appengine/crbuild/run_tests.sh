@@ -1,3 +1,3 @@
 #!/bin/sh
 cd ../..
-./test.py test --directory appengine_apps/crbuild $@
+./test.py test appengine_apps/crbuild $@
