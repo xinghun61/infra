@@ -26,6 +26,24 @@
     'build': '0',
     'rev': 'fa395d839ba1fe8363f48487067374f7aff658f2',
   },
+  'expect_tests': {
+    'version': '0.3.2',
+    'build': '0',
+    'rev': '42af3ac25910a7452c0d7fd29daacbbc445b78ea',
+    'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
+  },
+  'google_api_python_client': {
+    'version': '1.3.1',
+    'build': 0,
+    'rev': '49d45a6c3318b75e551c3022020f46c78655f365',
+    'repo': 'https://chromium.googlesource.com/external/github.com/google/google-api-python-client',
+  },
+  'httplib2': {
+    'version': '0.9',
+    'build': '0',
+    'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
+    'implicit': True,   # Deps for oauth2client
+  },
   'Jinja2': {
     'version': '2.7.3dev_20140923',
     'build': '0',
@@ -45,6 +63,18 @@
     'version': '1.10.0.dev_7e53e9b',
     'build': '0',
     'rev': '7e53e9b6f50ba98aafb73147917dfc39743fffd0',
+  },
+  'pyasn1': {
+    'version': '0.1.7',
+    'build': '0',
+    'gs': 'e32b91c5a5d9609fb1d07d8685a884bab22ca6d0.tar.gz',
+    'implicit': True,  # Deps for oauth2client
+  },
+  'pyasn1_modules': {
+    'version': '0.0.5',
+    'build': '0',
+    'gs': '108bdef1b3ca7050ff93c59e7ef7225c9c1a8b07.tar.gz',
+    'implicit': True,  # Deps for oauth2client
   },
   'python_dateutil': {
     'version': '1.5',
@@ -87,11 +117,18 @@
     'build': '0',
     'rev': 'b347a9c516f1b7c1d65c376ce255eca274b88999',
   },
-  'expect_tests': {
-    'version': '0.3.2',
+  'rsa': {
+    'version': '3.1.4',
     'build': '0',
-    'rev': '42af3ac25910a7452c0d7fd29daacbbc445b78ea',
-    'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
+    'gs': '208583c49489b7ab415a4455eae7618b7055feca.tar.gz',
+    'implicit': True,  # Deps for oauth2client
+  },
+  'simplejson': {
+    'version': '3.6.5',
+    'build': '0',
+    'rev': 'd52cd59d28766c72314537e2a087665b8b54fa9b',
+    'repo': 'https://chromium.googlesource.com/external/github.com/simplejson/simplejson',
+    'implicit': True,  # required by uritemplate
   },
   'six': {
     'version': '1.7.3',
@@ -114,6 +151,13 @@
     'rev': '86d39fcee75b7bb3a7c788e5553e68a3fc14d886',
     'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
+  'uritemplate': {
+    'version': '0.6',
+    'build': '0',
+    'rev': '1e780a49412cdbb273e9421974cb91845c124f3f',
+    'repo': 'https://chromium.googlesource.com/external/github.com/uri-templates/uritemplate-py',
+    'implicit': True,  # required by google_api_python_client
+  },
   'waitress': {
     'version': '0.8.10dev',
     'build': '0',
@@ -128,31 +172,5 @@
     'version': '1.4.1dev',
     'build': '0',
     'rev': 'ec67aba9d62d0e32dc5154c940a2214441bf0a9e',
-  },
-
-  # Deps for oauth2client
-  'httplib2': {
-    'version': '0.9',
-    'build': '0',
-    'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
-    'implicit': True,
-  },
-  'pyasn1': {
-    'version': '0.1.7',
-    'build': '0',
-    'gs': 'e32b91c5a5d9609fb1d07d8685a884bab22ca6d0.tar.gz',
-    'implicit': True,
-  },
-  'pyasn1_modules': {
-    'version': '0.0.5',
-    'build': '0',
-    'gs': '108bdef1b3ca7050ff93c59e7ef7225c9c1a8b07.tar.gz',
-    'implicit': True,
-  },
-  'rsa': {
-    'version': '3.1.4',
-    'build': '0',
-    'gs': '208583c49489b7ab415a4455eae7618b7055feca.tar.gz',
-    'implicit': True,
   },
 }
