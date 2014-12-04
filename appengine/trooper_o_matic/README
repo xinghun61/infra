@@ -1,17 +1,13 @@
 INSTALLING TROOPER-O-MATIC
 ==========================
 
-1. Install the App Engine SDK for Python
-   (https://developers.google.com/appengine/downloads)
+1. Install nodejs (the npm command must be available)
 
 2. Install bower
-   (npm install bower)
+   (npm install bower) or (make check)
 
 3. Install dependencies
    (bower install)
-
-4. Install WebTest
-   (sudo easy_install WebTest)
 
 UPDATING TROOPER-O-MATIC
 ========================
@@ -19,16 +15,11 @@ UPDATING TROOPER-O-MATIC
 In addition to updating your git repository, be sure to update any bower
 dependencies (bower update).
 
-RUNNING TROOPER-O-MATIC LOCALLY
-===============================
-
-dev_appserver.py .
-
 TESTING
 =======
 
 From the infra/ directory:
-./test.py "*trooper_o_matic*"
+./test.py test appengine/trooper_o_matic
 
 Mocha (new-style) tests
 -----------------------
@@ -48,8 +39,8 @@ $ make single-test
 
 Or, you can start karma manually:
 
-$ ./node_modules/karma/bin/karma start
+$ ../third_party/npm_modules/node_modules/karma/bin/karma start
 
 You can shorten this command to 'karma start' if you run
-'npm install -g karma-cli'.
+'npm install [-g] karma-cli'.
 
