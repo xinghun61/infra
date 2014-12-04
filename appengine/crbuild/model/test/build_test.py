@@ -24,11 +24,6 @@ class BuildTest(CrBuildTestCase):
     self.test_build.set_status(BuildStatus.SUCCESS)
     self.assertEqual(self.test_build.status, BuildStatus.SUCCESS)
 
-  def test_key_string(self):
-    self.assertTrue(self.test_build.key_string)
-    key = self.test_build.parse_key_string(self.test_build.key_string)
-    self.assertEqual(key, self.test_build.key)
-
   def test_lease(self):
     leased_builds = Build.lease([self.test_build.namespace])
     self.assertEqual(len(leased_builds), 1)

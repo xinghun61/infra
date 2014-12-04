@@ -80,18 +80,6 @@ class Build(ndb.Model):
     """Changes build's lease, updates |available_since|."""
     self.available_since = datetime.utcnow() + timedelta(seconds=lease_seconds)
 
-  @property
-  def key_string(self):
-    """Returns an opaque key string."""
-    return self.key.urlsafe() if self.key else None
-
-  @classmethod
-  def parse_key_string(cls, key_string):
-    """Parses an opaque key string."""
-    key = ndb.Key(urlsafe=key_string)
-    assert key.kind() == cls.__name__
-    return key
-
   @classmethod
   def lease(cls, namespaces, lease_seconds=10, max_builds=10):
     """Leases builds.
