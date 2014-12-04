@@ -538,9 +538,9 @@ class HttpRpcServer(AbstractRpcServer):
 
 
 class CondensedHelpFormatter(optparse.IndentedHelpFormatter):
-   """Frees more horizontal space by removing indentation from group
-      options and collapsing arguments between short and long, e.g.
-      '-o ARG, --opt=ARG' to -o --opt ARG"""
+  """Frees more horizontal space by removing indentation from group
+     options and collapsing arguments between short and long, e.g.
+     '-o ARG, --opt=ARG' to -o --opt ARG"""
 
   def format_heading(self, heading):
     return "%s:\n" % heading
@@ -1614,7 +1614,8 @@ class GitVCS(VersionControlSystem):
     # review when a file is renamed. So, get a diff with ONLY deletes, then
     # append a diff (with rename detection), without deletes.
     cmd = [
-        "git", "diff", "--no-color", "--no-ext-diff", "--full-index",
+        "git", "-c", "diff.noprefix=false", "-c", "diff.mnemonicprefix=false",
+        "diff", "--no-color", "--no-ext-diff", "--full-index",
         "--ignore-submodules", "--src-prefix=a/", "--dst-prefix=b/",
     ]
     diff = RunShell(
