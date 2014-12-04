@@ -73,9 +73,7 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
   args.extend(['infra'])  # TODO(pgervais): add 'test/'
   appengine_dirs = [os.path.join('appengine', d)
                     for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))]
-  appengine_dirs.extend([os.path.join('appengine_apps', d)
-                         for d in os.listdir(os.path.join(INFRA_ROOT,
-                                                          'appengine_apps'))])
+
   # Use relative paths to shorten the command-line
   args.extend(itertools.chain([d
     for d in appengine_dirs
