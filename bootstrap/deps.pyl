@@ -9,82 +9,108 @@
   'argcomplete': {
     'version': '0.8.0',
     'build': '0',
+    'repo': 'external/github.com/kislyuk/argcomplete',
     'rev': 'a88dcaae3132003ae123d39a2cd9924113b8f985',
+    'implicit': True,  # Required by expect_tests
   },
   'beautifulsoup4': {
     'version': '4.3.2',
     'build': '0',
+    'repo': 'external/code.launchpad.net/beautifulsoup',
     'rev': '372c827cb1d38e418163d6b3fa5f550bdc5a8ec7',
+    'implicit': True,  # Required by WebTest
   },
   'coverage': {
     'version': '3.7.1',
     'build': '0',
+    'repo': 'external/github.com/nedbat/coveragepy',
     'rev': '8da39d5389c602bb838363563bd2e31ecbb53754',
+    'implicit': True,  # Required by expect_tests
   },
   'docutils': {
     'version': '0.12',
     'build': '0',
+    'repo': 'infra/third_party/docutils',
     'rev': 'fa395d839ba1fe8363f48487067374f7aff658f2',
+    'implicit': True,  # Required by Sphinx
   },
   'expect_tests': {
     'version': '0.3.2',
     'build': '0',
+    'repo': 'infra/testing/expect_tests',
     'rev': '42af3ac25910a7452c0d7fd29daacbbc445b78ea',
-    'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'google_api_python_client': {
     'version': '1.3.1',
-    'build': 0,
+    'build': '0',
+    'repo': 'external/github.com/google/google-api-python-client',
     'rev': '49d45a6c3318b75e551c3022020f46c78655f365',
-    'repo': 'https://chromium.googlesource.com/external/github.com/google/google-api-python-client',
+    # TODO(agable): Mark implicit when monitoring deps land.
   },
   'httplib2': {
     'version': '0.9',
     'build': '0',
+    'repo': 'external/github.com/jcgregorio/httplib2',
     'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
-    'implicit': True,   # Deps for oauth2client
+    'implicit': True,  # Required by oauth2client and google_api_python_client
   },
   'Jinja2': {
-    'version': '2.7.3dev_20140923',
+    'version': '2.7.3dev_20141205',
     'build': '0',
+    'repo': 'external/github.com/mitsuhiko/jinja2',
     'rev': '762c612e7276889aac265645da00e62e33d1573c',
+    # Bug(https://www.python.org/dev/peps/pep-0440/#handling-of-pre-releases):
+    # When a dev release is the only available release, it SHOULD be used to
+    # satisfy a requirement. However, that does not work here. So the package
+    # has to be installed directly since already-installed dev releases are
+    # used to satisfy requirements.
+    # 'implicit': True,  # Required by Sphinx
   },
   'mock': {
     'version': '1.0.1',
     'build': '0',
+    'repo': 'external/code.google.com/p/mock',
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
   },
   'MarkupSafe': {
     'version': '0.23',
     'build': '0',
+    'repo': 'external/github.com/mitsuhiko/markupsafe',
     'rev': 'feb1d70c16df62f60dcb521d127fdad8819fc036',
+    'implicit': True,  # Required by Jinja2
   },
   'numpy': {
     'version': '1.10.0.dev_7e53e9b',
     'build': '0',
+    'repo': 'external/github.com/numpy/numpy',
     'rev': '7e53e9b6f50ba98aafb73147917dfc39743fffd0',
+    # TODO(agable): Figure out whether this is actually necessary.
+  },
+  'oauth2client': {
+    'version': '1.4',
+    'build': '0',
+    'repo': 'external/github.com/google/oauth2client',
+    'rev': 'd01a8b67f97211c46d5f78ff125387a32c4bc584',
+    'implicit': True,  # Required by google_api_python_client
   },
   'pyasn1': {
     'version': '0.1.7',
     'build': '0',
     'gs': 'e32b91c5a5d9609fb1d07d8685a884bab22ca6d0.tar.gz',
-    'implicit': True,  # Deps for oauth2client
+    'implicit': True,  # Required by oauth2client
   },
   'pyasn1_modules': {
     'version': '0.0.5',
     'build': '0',
     'gs': '108bdef1b3ca7050ff93c59e7ef7225c9c1a8b07.tar.gz',
-    'implicit': True,  # Deps for oauth2client
+    'implicit': True,  # Required by oauth2client
   },
   'python_dateutil': {
     'version': '1.5',
     'build': '0',
+    'repo': 'external/code.launchpad.net/dateutil',
     'rev': '30af0028a6633dc415a6c41bf2f2a67bda9bb68a',
-  },
-  'oauth2client': {
-    'version': '1.2',
-    'build': '0',
-    'rev': 'd02b317af0313dcf66755844f5421651af5eb356'
+    # TODO(agable): Figure out if this is actually necessary. I think it's not.
   },
   'psutil': {
     'version': '2.1.3',
@@ -94,11 +120,14 @@
   'Pygments': {
     'version': '1.6dev_20140923',
     'build': '0',
+    'repo': 'external/bitbucket.org/birkenfeld/pygments-main',
     'rev': '39eadad652f2a4c39a6ee163d03c52c078644dc6',
+    # 'implicit': True,  # Required by Sphinx
   },
   'pytz': {
     'version': '2014.4',
     'build': '1',
+    'repo': 'external/code.launchpad.net/pytz',
     'rev': '056207cdda4a8f01f7f0bd924e89d0df434c7547',
   },
   'PyYAML': {
@@ -106,71 +135,83 @@
     'build': '0',
     'gs': '1a2d5df8b31124573efb9598ec6d54767f3c4cd4.tar.gz',
     'build_options': ['--without-libyaml'],
+    # Soft requirement of expect_tests
   },
   'requests': {
     'version': '2.3.0',
     'build': '0',
+    'repo': 'external/github.com/kennethreitz/requests',
     'rev': '6366d3dd190a9e58ca582955cddf7e2ac5f32dcc',
   },
   'requests_cache': {
     'version': '0.4.4',
     'build': '0',
+    'repo': 'external/github.com/reclosedev/requests-cache',
     'rev': 'b347a9c516f1b7c1d65c376ce255eca274b88999',
   },
   'rsa': {
     'version': '3.1.4',
     'build': '0',
     'gs': '208583c49489b7ab415a4455eae7618b7055feca.tar.gz',
-    'implicit': True,  # Deps for oauth2client
+    'implicit': True,  # Required by oauth2client
   },
   'simplejson': {
     'version': '3.6.5',
     'build': '0',
+    'repo': 'external/github.com/simplejson/simplejson',
     'rev': 'd52cd59d28766c72314537e2a087665b8b54fa9b',
-    'repo': 'https://chromium.googlesource.com/external/github.com/simplejson/simplejson',
-    'implicit': True,  # required by uritemplate
+    'implicit': True,  # Required by uritemplate
   },
   'six': {
     'version': '1.7.3',
     'build': '0',
+    'repo': 'external/bitbucket.org/gutworth/six',
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
+    'implicit': True,  # Required by python_dateutil and webtest
   },
   'Sphinx': {
     'version': '1.2.3dev_20140923',
     'build': '0',
+    'repo': 'external/bitbucket.org/birkenfeld/sphinx',
     'rev': '1a9c572c4cc5306029a35734afd63797fbe86f4d',
   },
   'sphinxcontrib_napoleon': {
     'version': '0.2.8',
     'build': '0',
+    'repo': 'infra/third_party/sphinxcontrib_napoleon',
     'rev': 'bd5bdacd4b364f582258ce0bdfcd507ab3b71270',
   },
   'testing_support': {
     'version': '0.1.5',
     'build': '0',
+    'repo': 'infra/testing/testing_support',
     'rev': '86d39fcee75b7bb3a7c788e5553e68a3fc14d886',
-    'repo': 'https://chromium.googlesource.com/infra/testing/{name}',
   },
   'uritemplate': {
     'version': '0.6',
     'build': '0',
+    'repo': 'external/github.com/uri-templates/uritemplate-py',
     'rev': '1e780a49412cdbb273e9421974cb91845c124f3f',
-    'repo': 'https://chromium.googlesource.com/external/github.com/uri-templates/uritemplate-py',
-    'implicit': True,  # required by google_api_python_client
+    'implicit': True,  # Required by google_api_python_client
   },
   'waitress': {
     'version': '0.8.10dev',
     'build': '0',
+    'repo': 'external/github.com/Pylons/waitress',
     'rev': '77698fbf35376bdd530493e5db262c256ebe87c4',
+    # 'implicit': True,  # Required by webtest
   },
   'WebTest': {
     'version': '2.0.16.dev0',
     'build': '0',
+    'repo': 'external/github.com/Pylons/webtest',
     'rev': '6581ebfe7e1f95b6f2e193723a9e0e1f02337851',
   },
   'WebOb': {
     'version': '1.4.1dev',
     'build': '0',
+    'repo': 'external/github.com/Pylons/webob',
     'rev': 'ec67aba9d62d0e32dc5154c940a2214441bf0a9e',
+    # 'implicit': True,  # Required by webtest
   },
 }

@@ -16,7 +16,7 @@ from util import ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL
 from util import tempdir, tempname, platform_tag, merge_deps, print_deps
 
 
-DEFAULT_REPO = 'https://chromium.googlesource.com/infra/third_party/{name}'
+REPO_HOST = 'git+https://chromium.googlesource.com/'
 
 
 def has_custom_build(name):
@@ -86,9 +86,7 @@ def process_git(name, rev, build, build_options, repo):
   print
   print 'Processing (git)', name, rev
 
-  url = repo.format(name=name) + '@' + rev
-  if not url.startswith('git+'):
-    url = 'git+' + url
+  url = REPO_HOST + repo + '@' + rev
 
   if not has_custom_build(name):
     wheel(url, rev, build, build_options)
@@ -173,10 +171,10 @@ def main(args):
   for name, options in missing_deps.iteritems():
     clear_wheelhouse()
     # TODO(iannucci):  skip entries which already exist in gs
-    if 'rev' in options:
+    if 'repo' in options and 'rev' in options:
       process_git(name, options['rev'], options['build'],
                   options.get('build_options', ()),
-                  options.get('repo', DEFAULT_REPO))
+                  options['repo'])
     elif 'gs' in options:
       process_gs(name, options['gs'], options['build'],
                  options.get('build_options', ()))
