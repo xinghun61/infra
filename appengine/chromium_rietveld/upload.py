@@ -1616,8 +1616,7 @@ class GitVCS(VersionControlSystem):
     # review when a file is renamed. So, get a diff with ONLY deletes, then
     # append a diff (with rename detection), without deletes.
     cmd = [
-        "git", "-c", "diff.noprefix=false", "-c", "diff.mnemonicprefix=false",
-        "diff", "--no-color", "--no-ext-diff", "--full-index",
+        "git", "diff", "--no-color", "--no-ext-diff", "--full-index",
         "--ignore-submodules", "--src-prefix=a/", "--dst-prefix=b/",
     ]
     diff = RunShell(
