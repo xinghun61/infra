@@ -30,7 +30,14 @@ found in the LICENSE file.
     </style>
     <template repeat="{{ repository in commitList.repositories }}">
       <div class="repository-info">
-        <span style="font-weight: bold">{{ repository.name }}</span> {{ repository.range }}
+        <span style="font-weight: bold">{{ repository.name }}</span>
+        <template if="{{ repository.name == 'chromium' }}">
+          <a href="http://test-results.appspot.com/revision_range?start={{ repository.firstRevision }}&end={{ repository.lastRevision }}">{{ repository.range }}</a>
+        </template>
+        <template if="{{ repository.name == 'blink' }}">
+          <a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range={{ repository.firstRevision }}:{{ repository.lastRevision }}&mode=html">{{ repository.range }}</a>
+        </template>
+        <template if="{{ repository.name != 'blink' && repository.name != 'chromium'}}">{{ repository.range }}</template>
         <paper-icon-button icon="unfold-more"
             on-click="{{ _toggle }}" repository="{{ repository.name }}"></paper-icon-button>
         <template if="{{ repository.expanded }}">

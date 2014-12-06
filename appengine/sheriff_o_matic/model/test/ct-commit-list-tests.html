@@ -20,13 +20,15 @@ describe('ct-commit-list', function() {
     });
 
     it ('returns repositories', function() {
-      var revisions = ['blink:158545'];
+      var revisions = ['blink:158545', 'blink:158666'];
       var cl = new CTCommitList(new CTCommitLogMock(), revisions);
       var repos = cl.repositories;
       assert.lengthOf(repos, 1);
       assert.equal(repos[0].name, 'blink');
-      assert.lengthOf(repos[0].commits, 1);
-      assert.equal(repos[0].range, '158545 : 158545')
+      assert.lengthOf(repos[0].commits, 2);
+      assert.equal(repos[0].range, '158545 : 158666');
+      assert.equal(repos[0].firstRevision, '158545');
+      assert.equal(repos[0].lastRevision, '158666');
     });
   });
 });

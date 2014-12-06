@@ -8,14 +8,12 @@ found in the LICENSE file.
 function CTRepositoryCommitList(repository, commits) {
   this.name = repository;
   this.key = repository;
-  this.range = this._displayRange(commits);
+  this.firstRevision = commits.first().revision;
+  this.lastRevision = commits.last().revision;
+  this.range = this.firstRevision + " : " + this.lastRevision;
   this.commits = commits;
   this.expanded = false;
 }
-
-CTRepositoryCommitList.prototype._displayRange = function(commits) {
-  return commits.first().revision + " : " + commits.last().revision;
-};
 
 CTRepositoryCommitList.transientProperties = ['expanded'];
 
