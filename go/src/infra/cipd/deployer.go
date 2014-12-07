@@ -74,9 +74,9 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	}
 
 	// Remember currently deployed version (to remove it later). Do not freak out
-	// if it's not there (prevId is "" in that case).
+	// if it's not there (prevID is "" in that case).
 	oldFiles := makeStringSet()
-	prevId := findDeployedInstance(root, p.Name(), oldFiles)
+	prevID := findDeployedInstance(root, p.Name(), oldFiles)
 
 	// Extract new version to a final destination.
 	newFiles := makeStringSet()
@@ -97,11 +97,11 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	// Asynchronously remove previous version (best effort).
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
-	if prevId != "" && prevId != p.InstanceID() {
+	if prevID != "" && prevID != p.InstanceID() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ensureDirectoryGone(packagePath(root, p.Name(), prevId))
+			ensureDirectoryGone(packagePath(root, p.Name(), prevID))
 		}()
 	}
 
@@ -114,7 +114,7 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	linkFilesToRoot(root, mainSymlinkPath, newFiles)
 
 	// Delete symlinks to files no longer needed i.e. set(old) - set(new).
-	for relPath, _ := range oldFiles.diff(newFiles) {
+	for relPath := range oldFiles.diff(newFiles) {
 		absPath := filepath.Join(root, relPath)
 		err = os.Remove(absPath)
 		if err != nil {
@@ -219,7 +219,7 @@ func deployInstance(root string, p Package, files stringSet) (string, error) {
 // All targets are specified by 'files' as paths relative to packageRoot. This
 // function is best effort and thus doesn't return errors.
 func linkFilesToRoot(root string, packageRoot string, files stringSet) {
-	for relPath, _ := range files {
+	for relPath := range files {
 		// E.g <root>/bin/tool.
 		symlinkAbs := filepath.Join(root, relPath)
 		// E.g. <root>/.cipd/pkgs/name/_current/bin/tool.
@@ -356,7 +356,7 @@ func (a stringSet) add(elem string) {
 // diff returns set(a) - set(b).
 func (a stringSet) diff(b stringSet) stringSet {
 	out := makeStringSet()
-	for elem, _ := range a {
+	for elem := range a {
 		if _, ok := b[elem]; !ok {
 			out.add(elem)
 		}

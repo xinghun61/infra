@@ -169,8 +169,8 @@ UFzBFAy3uJJ1AgMBAAE=
 
 	Convey("CheckRSASignature wrong key", t, func() {
 		// Get key pairs.
-		private_1, _ := genKey()
-		_, public_2 := genKey()
+		private1, _ := genKey()
+		_, public2 := genKey()
 
 		// Hash.
 		h := crypto.SHA1.New()
@@ -178,12 +178,12 @@ UFzBFAy3uJJ1AgMBAAE=
 		digest := h.Sum([]byte{})
 
 		// Sign with key 1.
-		sign, err := rsa.SignPKCS1v15(nil, private_1, crypto.SHA1, digest)
+		sign, err := rsa.SignPKCS1v15(nil, private1, crypto.SHA1, digest)
 		So(err, ShouldBeNil)
 		So(len(sign), ShouldNotEqual, 0)
 
 		// Check with key 2.
-		ok := CheckRSASignature(public_2, crypto.SHA1, digest, sign)
+		ok := CheckRSASignature(public2, crypto.SHA1, digest, sign)
 		So(ok, ShouldBeFalse)
 	})
 }

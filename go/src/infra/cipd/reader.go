@@ -8,8 +8,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto"
-	_ "crypto/sha1"
-	_ "crypto/sha512"
+	_ "crypto/sha1"   // required for crypto.SHA1.New
+	_ "crypto/sha512" // required for crypto.SHA512.New
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -205,7 +205,7 @@ func (p *packageImpl) open(keyGetter PublicKeyProvider) error {
 
 	// Calculate requested hashes.
 	workers := []io.Writer{}
-	for algoName, _ := range hashes {
+	for algoName := range hashes {
 		hashes[algoName] = knownHashAlgos[algoName].New()
 		workers = append(workers, hashes[algoName])
 	}

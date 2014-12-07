@@ -78,7 +78,7 @@ func TestUtilities(t *testing.T) {
 			err := scanPackageDir(filepath.Join(tempDir, "dir"), files)
 			So(err, ShouldBeNil)
 			names := sort.StringSlice{}
-			for n, _ := range files {
+			for n := range files {
 				names = append(names, filepath.ToSlash(n))
 			}
 			names.Sort()

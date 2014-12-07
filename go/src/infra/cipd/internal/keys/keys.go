@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 /*
-Package infra.cipd.internal.keys contains hardcoded RSA public keys used to
-validate signatures of packages or replies from a server.
+Package keys contains hardcoded RSA public keys used to validate signatures
+of packages or replies from a server.
 
 There are two set of keys: testing and release. Testing keys are used when
 building cipd by default and their corresponding private keys are committed into
@@ -19,7 +19,6 @@ package keys
 import (
 	"crypto"
 	"crypto/rsa"
-	_ "crypto/sha1"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"

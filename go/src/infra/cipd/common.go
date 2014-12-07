@@ -6,7 +6,7 @@ package cipd
 
 import (
 	"crypto"
-	_ "crypto/sha512"
+	_ "crypto/sha512" // required for crypto.SHA512.New
 	"encoding/json"
 	"fmt"
 	"io"

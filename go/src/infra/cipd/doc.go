@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 /*
-Package infra/cipd implements client side of Chrome Infra Package Deployer.
+Package cipd implements client side of Chrome Infra Package Deployer.
 
 TODO: write more.
 

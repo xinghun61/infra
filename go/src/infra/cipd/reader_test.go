@@ -348,7 +348,7 @@ type testDestinationFile struct {
 func (d *testDestinationFile) Close() error { return nil }
 
 func (d *testDestination) Begin() error {
-	d.beginCalls += 1
+	d.beginCalls++
 	return nil
 }
 
@@ -362,7 +362,7 @@ func (d *testDestination) CreateFile(name string, executable bool) (io.WriteClos
 }
 
 func (d *testDestination) End(success bool) error {
-	d.endCalls += 1
+	d.endCalls++
 	return nil
 }
 
