@@ -90,10 +90,26 @@ def GoVetChecks(input_api, output_api):  # pragma: no cover
   ]
 
 
+def GoLintChecks(input_api, output_api):  # pragma: no cover
+  golint_cmd = [
+    input_api.python_executable,
+    input_api.os_path.join(input_api.PresubmitLocalPath(), 'check_golint.py')
+  ]
+  return [
+    CommandInEnv(
+        input_api, output_api,
+        name='Check golint %s' % pkg,
+        cmd=golint_cmd + [pkg],
+        kwargs={})
+    for pkg in GetAffectedGoPackages(input_api)
+  ]
+
+
 def CommonChecks(input_api, output_api):  # pragma: no cover
   tests = []
   tests.extend(GoFmtChecks(input_api, output_api))
   tests.extend(GoVetChecks(input_api, output_api))
+  tests.extend(GoLintChecks(input_api, output_api))
   return input_api.RunTests(tests)
 
 
