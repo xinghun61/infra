@@ -88,7 +88,6 @@ func UnmarshalSignature(b []byte) (sig SignatureBlock, err error) {
 	if pemBlock.Type != sigBlockPEMType {
 		// PEM type already has been verified by validating header.
 		panic("Impossible PEM block type")
-		return
 	}
 	if len(rest) != 0 {
 		err = fmt.Errorf("Not a valid signature PEM block: undecoded data left")

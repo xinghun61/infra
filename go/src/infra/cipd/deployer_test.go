@@ -303,12 +303,10 @@ func (f *testPackage) Files() []File      { return f.files }
 
 func (f *testPackage) Signatures() []SignatureBlock {
 	panic("Not implemented")
-	return []SignatureBlock{}
 }
 
 func (f *testPackage) DataReader() (io.Reader, error) {
 	panic("Not implemented")
-	return nil, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

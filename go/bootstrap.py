@@ -99,7 +99,7 @@ def read_file(path):
   """Returns contents of a given file or None if not readable."""
   assert isinstance(path, (list, tuple))
   try:
-    with open(os.path.join(*path), 'rt') as f:
+    with open(os.path.join(*path), 'r') as f:
       return f.read()
   except IOError:
     return None
@@ -108,7 +108,7 @@ def read_file(path):
 def write_file(path, data):
   """Writes |data| to a file."""
   assert isinstance(path, (list, tuple))
-  with open(os.path.join(*path), 'wt') as f:
+  with open(os.path.join(*path), 'w') as f:
     f.write(data)
 
 
