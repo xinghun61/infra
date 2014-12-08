@@ -6,7 +6,7 @@
 """Prepares a local hermetic Go installation.
 
 - Downloads and unpacks the Go toolset in ../../golang.
-- Downloads and installs goop.
+- Downloads and installs goop and golint.
 - Fetches code dependencies via goop.
 """
 
@@ -24,6 +24,8 @@ import tempfile
 import urllib
 import zipfile
 
+# TODO(vadimsh): Migrate to new golang.org/x/ paths once Golang moves to
+# git completely.
 
 LOGGER = logging.getLogger(__name__)
 
@@ -56,13 +58,20 @@ TOOLSET_VARIANTS = {
 # Download URL root.
 DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
 
-# Describes how to fetch 'goop' tool, with dependencies.
-GOOP_SOURCE = {
+# Describes how to fetch 'goop' and 'golint' tools, with dependencies. In theory
+# it is possible to fetch golint via goop, but in practice it's not worth it:
+# a second copy of go.tools will be fetched, along with _ALL_ dependencies
+# (not only ones needed by golint), e.g. go.net and google-api-go-client. Tons
+# of unnecessary code that is difficult to mirror to our git repos (since it is
+# hosted in Hg currently). Also revisions of go.tools repo in TOOLS_SOURCE and
+# Goopfile.lock would have to be kept in sync.
+TOOLS_SOURCE = {
   'src/code.google.com/p/go.tools': {
     'url': (
       'https://chromium.googlesource.com/infra/third_party/go/'
       'code.google.com/p/go.tools'
     ),
+    'ref': 'refs/heads/master',
     'rev': '769e3df57984a798ef0b939485db1d954122c130',
   },
   'src/github.com/nitrous-io/goop': {
@@ -70,7 +79,16 @@ GOOP_SOURCE = {
       'https://chromium.googlesource.com/infra/third_party/go/'
       'github.com/nitrous-io/goop'
     ),
+    'ref': 'refs/heads/chromium',
     'rev': 'a42caf29ee8bf072e981fde447c9348635429ef7',
+  },
+  'src/github.com/golang/lint': {
+    'url': (
+        'https://chromium.googlesource.com/external/'
+        'github.com/golang/lint.git'
+    ),
+    'ref': 'refs/heads/master',
+    'rev': '8ca23475bcb43213a55dd8210b69363f6b0e09c1',
   },
 }
 
@@ -217,35 +235,39 @@ def ensure_toolset_installed(toolset_root):
   return True
 
 
-def ensure_goop_installed(toolset_root):
-  """Installs or updates 'goop' tool."""
-  installed_goop = read_file([toolset_root, 'INSTALLED_GOOP'])
-  available_goop = json.dumps(GOOP_SOURCE, sort_keys=True)
-  if installed_goop == available_goop:
-    LOGGER.debug('goop tool is up-to-date')
+def ensure_tools_installed(toolset_root):
+  """Installs or updates 'goop' and 'golint' tools."""
+  installed_tools = read_file([toolset_root, 'INSTALLED_TOOLS'])
+  available_tools = json.dumps(TOOLS_SOURCE, sort_keys=True)
+  if installed_tools == available_tools:
+    LOGGER.debug('tools are up-to-date')
     return
 
-  LOGGER.info('Installing goop...')
-  with temp_dir(toolset_root) as tmp:
-    fetch_goop_code(tmp, GOOP_SOURCE)
+  def install(workspace, pkg):
     subprocess.check_call(
-        [get_go_exe(toolset_root), 'install', 'github.com/nitrous-io/goop'],
+        [get_go_exe(toolset_root), 'install', pkg],
         cwd=tmp,
-        env=get_go_environ(toolset_root, tmp, [], []),
+        env=get_go_environ(toolset_root, workspace, [], []),
         stdout=sys.stderr)
-
     # Windows os.rename doesn't support overwrites.
-    dest = os.path.join(toolset_root, 'go', 'bin', 'goop' + EXE_SFX)
+    name = pkg[pkg.rfind('/')+1:]
+    dest = os.path.join(toolset_root, 'go', 'bin', name + EXE_SFX)
     if os.path.exists(dest):
       os.remove(dest)
-    os.rename(os.path.join(tmp, 'bin', 'goop' + EXE_SFX), dest)
+    os.rename(os.path.join(workspace, 'bin', name + EXE_SFX), dest)
 
-  LOGGER.info('goop tool is installed')
-  write_file([toolset_root, 'INSTALLED_GOOP'], available_goop)
+  LOGGER.info('Installing tools...')
+  with temp_dir(toolset_root) as tmp:
+    fetch_tools_code(tmp, TOOLS_SOURCE)
+    install(tmp, 'github.com/nitrous-io/goop')
+    install(tmp, 'github.com/golang/lint/golint')
+
+  LOGGER.info('tools are installed')
+  write_file([toolset_root, 'INSTALLED_TOOLS'], available_tools)
 
 
-def fetch_goop_code(workspace, spec):
-  """Fetches Goop source code with dependencies."""
+def fetch_tools_code(workspace, spec):
+  """Fetches goop and golint source code with dependencies."""
   git_exe = 'git.bat' if sys.platform == 'win32' else 'git'
   def git(cmd, cwd):
     subprocess.check_call([git_exe] + cmd, cwd=cwd, stdout=sys.stderr)
@@ -253,8 +275,8 @@ def fetch_goop_code(workspace, spec):
     path = os.path.join(workspace, path.replace('/', os.sep))
     os.makedirs(path)
     git(['init', '.'], cwd=path)
-    git(['fetch', repo['url'], repo['rev']], cwd=path)
-    git(['checkout', 'FETCH_HEAD'], cwd=path)
+    git(['fetch', repo['url'], repo['ref']], cwd=path)
+    git(['checkout', repo['rev']], cwd=path)
 
 
 def update_vendor_packages(toolset_root, workspace, force=False):
@@ -359,7 +381,7 @@ def bootstrap(vendor_paths, logging_level):
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
   updated = ensure_toolset_installed(TOOLSET_ROOT)
-  ensure_goop_installed(TOOLSET_ROOT)
+  ensure_tools_installed(TOOLSET_ROOT)
   for p in vendor_paths:
     update_vendor_packages(TOOLSET_ROOT, p, force=updated)
 
