@@ -40,7 +40,8 @@ Technical Background
 This section (will) explains some technical choices.
 
 * Testing in infra.git - tools used, how and why.
-* Dependency handling - how it works and why it's structured this way.
+* :doc:`bootstrap` - Dependency handling. How it works and why it's structured
+  this way. 
 
 Other topics
 -------------------

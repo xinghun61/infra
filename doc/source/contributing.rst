@@ -27,5 +27,5 @@ live, you have to ask on chrome-troopers@google.com.
 How to add a dependency
 -----------------------
 Sometimes it is necessary to add a new Python package to the virtual
-environment. See instruction in ``bootstrap/README.md``.
+environment. See instructions in :doc:`bootstrap`.
 

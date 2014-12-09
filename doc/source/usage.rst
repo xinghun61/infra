@@ -7,14 +7,14 @@ This page supposes that infra.git has been checked out and configured. See
 Top-level commands
 ------------------
 
-- Launching ``test.py`` without any parameters runs all tests in the infra
-  repository in parallel, including those in appengine applications.
-
-- Regenerating this documentation from source is achieved with ``docgen.py``.
-  (see :doc:`documenting` for more details)
+- Launching ``test.py test`` runs all tests in the infra repository in parallel, 
+  including those in appengine applications. 
 
 - ``run.py`` is used to run a command located inside the infra package. See
   next section for details.
+
+- Regenerating this documentation from source is achieved with ``docgen.py``.
+  (see :doc:`documenting` for more details)
 
 Invoking tools
 --------------
@@ -44,7 +44,6 @@ If you want run.py to auto-complete, just run::
     eval "$(/path/to/infra/ENV/bin/register-python-argcomplete test.py)"
 
 And that's it. You may want to put that in your .bashrc somewhere.
-
 
 How it works on bots
 --------------------

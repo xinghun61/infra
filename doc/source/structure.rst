@@ -23,7 +23,8 @@ Entry points
 
 Miscellaneous technical stuff
 -----------------------------
-* bootstrap/: utilities to set up a proper Python virtual environment.
+* bootstrap/: utilities to set up a proper Python virtual environment. More
+  details about it can be found on this page: :doc:`bootstrap`.
 * infra/path_hacks: submodules of this modules give access to modules in the
   build/ repository (``from infra.path_hacks.common import <stg>`` is actually
   getting ``<stg>`` from build/scripts/common).
@@ -41,5 +42,13 @@ infra/services/
 
 appengine/ and appengine_modules/
 ---------------------------------
-Contains all appengine applications.
+appengine/ should only contain appengine applications (i.e. directories
+containing an app.yaml file), appengine_modules/ should contain python packages
+that can be shared between appengine apps. The correct way to use one of them is
+to symlink the directory inside the application directory. 
+
+Example: the `myapp` application should live in `appengine/myapp`. To use
+`appengine_module/testing_utils`, create a symlink to it in
+`appengine/myapp/testing_utils`. The name should remain the same as Python
+relies on directory names for its import system.
 
