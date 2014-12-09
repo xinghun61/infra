@@ -77,6 +77,7 @@ class Issue(ndb.Model):
   project = ndb.StringProperty()
   #: in Subversion - repository path (URL) for files in patch set
   base = ndb.StringProperty()
+  target_ref = ndb.StringProperty()
   repo_guid = ndb.StringProperty()
   owner = auth_utils.AnyAuthUserProperty(auto_current_user_add=True,
                                          required=True)

@@ -174,6 +174,7 @@ def revert_patchset(request):
                        description=description,
                        project=original_issue.project,
                        base=original_issue.base,
+                       target_ref=original_issue.target_ref,
                        repo_guid=original_issue.repo_guid,
                        reviewers=reviewers,
                        cc=original_issue.cc,

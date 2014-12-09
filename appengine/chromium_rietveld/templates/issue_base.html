@@ -109,6 +109,11 @@
             {%endif%}
           </div>
           {%endif%}
+          {%if issue.target_ref%}
+          <div><b>Target Ref:</b><br/>
+            {{issue.target_ref}}
+          </div>
+          {%endif%}
           {%if issue.project%}
           <div><b>Project:</b><br/>
             <a href="{%url codereview.views.search%}?project={{issue.project}}">

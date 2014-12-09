@@ -17,6 +17,7 @@ function Issue(id)
     this.owner = null; // User
     this.private = false;
     this.baseUrl = "";
+    this.targetRef = "";
     this.subject = "";
     this.created = ""; // Date
     this.patchsets = []; // Array<PatchSet>
@@ -97,6 +98,7 @@ Issue.prototype.parseData = function(data)
     if (this.id !== data.issue)
         throw new Error("Incorrect issue loaded " + this.id + " != " + data.issue);
     this.baseUrl = data.base_url || "";
+    this.targetRef = data.target_ref || "";
     this.closed = data.closed || false;
     this.commit = data.commit || false;
     this.created = Date.utc.create(data.created);

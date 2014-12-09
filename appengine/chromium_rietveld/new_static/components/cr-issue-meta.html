@@ -23,7 +23,8 @@ found in the LICENSE file. -->
                 display: table-cell;
             }
 
-            .issue-base-url {
+            .issue-base-url,
+            .issue-target-ref {
                 word-break: break-word;
             }
 
@@ -88,6 +89,12 @@ found in the LICENSE file. -->
                     {{ issue.baseUrl }}
                 </div>
             </div>
+            <template if="{{ issue.targetRef }}">
+                <div class="issue-target-ref issue-meta-item">
+                    <div class="issue-meta-type">Target ref</div>
+                    <div class="issue-meta-value">{{ issue.targetRef }}</div>
+                </div>
+            </template>
             <template if="{{ issue.private }}">
                 <div class="issue-private issue-meta-item">
                     <div class="issue-meta-type">Private</div>
