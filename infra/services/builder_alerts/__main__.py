@@ -90,8 +90,7 @@ def inner_loop(args):
   logging.debug('Processsing gatekeeper json: %s', gatekeeper_path)
   gatekeeper = gatekeeper_ng_config.load_gatekeeper_config(gatekeeper_path)
 
-  gatekeeper_trees_path = os.path.join(os.path.dirname(gatekeeper_path),
-                                       'gatekeeper_trees.json')
+  gatekeeper_trees_path = os.path.abspath(args.gatekeeper_trees)
   logging.debug('Processing gatekeeper trees json: %s', gatekeeper_trees_path)
   gatekeeper_trees = gatekeeper_ng_config.load_gatekeeper_tree_config(
       gatekeeper_trees_path)
@@ -190,6 +189,10 @@ def main(args):
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
   parser.add_argument('--gatekeeper', action='store', default=gatekeeper_json)
+  gatekeeper_trees_json = os.path.join(build_scripts_dir, 'slave',
+                                       'gatekeeper_trees.json')
+  parser.add_argument('--gatekeeper-trees', action='store',
+                      default=gatekeeper_trees_json)
 
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
