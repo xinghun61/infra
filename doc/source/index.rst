@@ -31,7 +31,7 @@ Contributer's Guides
   on the compilation/deployment pipeline.
 * How to add a new tool - also gives example usage of
   :doc:`reference/infra.libs`
-* How to develop an appengine app in infra.git
+* :doc:`appengine` - How to develop an appengine app in infra.git
 * How to handle authentication
 
 Technical Background

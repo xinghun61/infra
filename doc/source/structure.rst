@@ -42,13 +42,16 @@ infra/services/
 
 appengine/ and appengine_modules/
 ---------------------------------
-appengine/ should only contain appengine applications (i.e. directories
-containing an app.yaml file), appengine_modules/ should contain python packages
-that can be shared between appengine apps. The correct way to use one of them is
-to symlink the directory inside the application directory. 
+``appengine/`` is meant to contain appengine applications, one per directory
+(the testing framework relies on this assumption to list all tests).
+To be consistent with appengine principles, each of these directories must
+contain everything it needs to work. Code shared between several applications
+should live in ``appengine_modules/`` and be symlinked into each application
+directory that need it.
 
 Example: the `myapp` application should live in `appengine/myapp`. To use
 `appengine_module/testing_utils`, create a symlink to it in
 `appengine/myapp/testing_utils`. The name should remain the same as Python
 relies on directory names for its import system.
 
+For more details, see :doc:`appengine`
