@@ -64,7 +64,7 @@ def matches_fields(fields, record): # pragma: no cover
 
 class Query(webapp2.RequestHandler): # pragma: no cover
   @utils.cross_origin_json
-  def get(self, url_tags): # pylint: disable-msg=W0221
+  def get(self, url_tags): # pylint: disable=W0221
     try:
       params = parse_request(self.request, {
         'begin': parse_timestamp,

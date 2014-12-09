@@ -19,7 +19,7 @@ class CountStats(ndb.Model): # pragma: no cover
   def set_from_tally(self, tally):
     """|tally| is expected to be a dict from namedtuple to int."""
     self.count = sum(tally.itervalues())
-    points = sorted((count, reference._asdict()) # pylint: disable-msg=W0212
+    points = sorted((count, reference._asdict()) # pylint: disable=W0212
         for reference, count in tally.iteritems() if count > 0)
     self.lowest_100 = points[:100]
     self.highest_100 = points[-100:][::-1]
@@ -53,7 +53,7 @@ class ListStats(ndb.Model): # pragma: no cover
   def set_from_points(self, points):
     """|points| is expected to be a list of (float, namedtuple) pairs."""
     self.sample_size = len(points)
-    # pylint: disable-msg=W0212
+    # pylint: disable=W0212
     sorted_points = sorted((value, reference._asdict())
         for value, reference in points)
     if points:

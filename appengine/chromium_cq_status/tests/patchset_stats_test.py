@@ -46,7 +46,7 @@ class PatchsetStatsTest(StatsTest):
         ),
       ), self.get_stats('attempt-durations'))
 
-  def false_reject_message_records(issue, message): # pylint: disable-msg=E0213
+  def false_reject_message_records(issue, message): # pylint: disable=E0213
     return (
       (0, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
       (1, {'issue': issue, 'patchset': 1, 'action': 'patch_failed',
@@ -57,7 +57,7 @@ class PatchsetStatsTest(StatsTest):
       (5, {'issue': issue, 'patchset': 1, 'action': 'patch_stop'}),
     )
 
-  def false_reject_fail_type_records(issue, fail_type): # pylint: disable-msg=E0213,C0301
+  def false_reject_fail_type_records(issue, fail_type): # pylint: disable=E0213,C0301
     return (
       (0, {'issue': issue, 'patchset': 1, 'action': 'patch_start'}),
       (1, {'issue': issue, 'patchset': 1, 'action': 'patch_failed',

@@ -59,7 +59,7 @@ class TrybotAnalyzer(Analyzer):  # pragma: no cover
     return stats
 
 class TrybotFalseRejectCount(CountAnalyzer):  # pragma: no cover
-  # pylint: disable-msg=W0223
+  # pylint: disable=W0223
   def __init__(self, builder):
     super(TrybotFalseRejectCount, self).__init__()
     trybot = 'by the %s trybot' % builder if builder else 'across all trybots'
@@ -74,7 +74,7 @@ class TrybotFalseRejectCount(CountAnalyzer):  # pragma: no cover
     return 'trybot-false-reject-count'
 
 class TrybotPassCount(CountAnalyzer):  # pragma: no cover
-  # pylint: disable-msg=W0223
+  # pylint: disable=W0223
   def __init__(self, builder):
     super(TrybotPassCount, self).__init__()
     trybot = 'by the %s trybot' % builder if builder else 'across all trybots'

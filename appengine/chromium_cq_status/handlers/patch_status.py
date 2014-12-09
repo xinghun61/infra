@@ -5,7 +5,7 @@
 import webapp2
 
 class PatchStatus(webapp2.RequestHandler): # pragma: no cover
-  def get(self, issue, patchset): # pylint: disable-msg=W0221
+  def get(self, issue, patchset): # pylint: disable=W0221
     self.response.write(open('templates/patch_status.html').read() % {
       'issue': issue,
       'patchset': patchset,

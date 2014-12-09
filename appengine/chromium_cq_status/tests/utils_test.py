@@ -87,7 +87,7 @@ class TestUtils(testing.AppengineTestCase):
   def test_cross_origin_json_success(self):
     webapp = MockWebApp()
     @utils.cross_origin_json
-    def produce_json(self): # pylint: disable-msg=W0613
+    def produce_json(self): # pylint: disable=W0613
       return {'valid': True}
     produce_json(webapp)
     self.assertEquals('{"valid":true}', webapp.response.body)
@@ -97,7 +97,7 @@ class TestUtils(testing.AppengineTestCase):
   def test_cross_origin_json_fail(self):
     webapp = MockWebApp()
     @utils.cross_origin_json
-    def produce_no_json(self): # pylint: disable-msg=W0613
+    def produce_no_json(self): # pylint: disable=W0613
       pass
     produce_no_json(webapp)
     self.assertEquals('', webapp.response.body)
@@ -119,7 +119,7 @@ class TestUtils(testing.AppengineTestCase):
       return kwargs['use_cache']
     c = 0
     @utils.memcachize(use_cache_check=check)
-    def test(a, b, use_cache): # pylint: disable-msg=W0613
+    def test(a, b, use_cache): # pylint: disable=W0613
       return a + b + c
     self.assertEquals(test(a=1, b=2, use_cache=False), 3)
     c = 1

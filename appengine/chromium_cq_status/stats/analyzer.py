@@ -19,7 +19,7 @@ class Analyzer(object):
     raise NotImplementedError()
 
 
-class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223
+class CountAnalyzer(Analyzer): # pylint: disable=W0223
   def __init__(self):  # pragma: no cover
     self.tally = defaultdict(lambda: 0)
 
@@ -35,7 +35,7 @@ class CountAnalyzer(Analyzer): # pylint: disable-msg=W0223
     return dashed_class_name(self)
 
 
-class ListAnalyzer(Analyzer): # pylint: disable-msg=W0223
+class ListAnalyzer(Analyzer): # pylint: disable=W0223
   def __init__(self):  # pragma: no cover
     self.points = []
 
