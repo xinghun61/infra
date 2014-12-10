@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(__name__)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Where to install Go toolset to. GOROOT would be <TOOLSET_ROOT>/go.
-TOOLSET_ROOT = os.path.abspath(os.path.join(os.path.dirname(ROOT), 'golang'))
+TOOLSET_ROOT = os.path.join(os.path.dirname(ROOT), 'golang')
 
 # Default workspace with infra go code.
 WORKSPACE = os.path.join(ROOT, 'go')
@@ -91,6 +91,10 @@ TOOLS_SOURCE = {
     'rev': '8ca23475bcb43213a55dd8210b69363f6b0e09c1',
   },
 }
+
+# The set of directories to copy from the go_appengine SDK's goroot into our
+# toolchain's root. See patch_appengine_sdk for more details.
+GAE_DIRS = frozenset(('appengine', 'appengine_internal', 'code.google.com'))
 
 
 class Failure(Exception):
@@ -214,6 +218,46 @@ def check_hello_world(toolset_root):
     return True
 
 
+def maybe_patch_appengine_sdk(toolset_root):
+  """Copies GAE_DIRS dirs into toolset_root.
+
+  This is necessary to convince go-get/goop to consider the appengine code as
+  'system' level. Otherwise simply putting them on GOPATH would have been
+  sufficient.
+
+  If Appengine SDK provides a better way to play nice in the go ecosystem at
+  some point, we should probably do that instead.
+  """
+  go_appengine = os.path.join(os.path.dirname(ROOT), 'go_appengine')
+  if not os.path.exists(go_appengine):
+    raise Failure(
+      '%s SDK not present... did you `gclient runhooks`?' % go_appengine)
+
+  sdk_version = read_file([go_appengine, 'VERSION'])
+  patched_version = read_file([toolset_root, 'INSTALLED_GAE_SDK'])
+
+  new = None if sdk_version is None else sdk_version.splitlines()[0]
+  old = None if patched_version is None else patched_version.splitlines()[0]
+
+  if sdk_version == patched_version:  # compares whole VERSION because why not?
+    LOGGER.debug('Appengine code patch up-to-date: %s', old)
+    return False
+  else:
+    LOGGER.info('Patching Appengine code into Go toolset:')
+    LOGGER.info('  Old Appengine version is %s', old)
+    LOGGER.info('  New Appengine version is %s', new)
+
+    for d in GAE_DIRS:
+      sdk_dir = os.path.join(go_appengine, 'goroot', 'src', 'pkg', d)
+      tool_dir = os.path.join(toolset_root, 'go', 'src', 'pkg', d)
+      remove_directory([tool_dir])
+      LOGGER.info('Copying %s -> %s', sdk_dir, tool_dir)
+      shutil.copytree(sdk_dir, tool_dir)
+
+    write_file([toolset_root, 'INSTALLED_GAE_SDK'], sdk_version)
+    return True
+
+
 def ensure_toolset_installed(toolset_root):
   """Installs or updates Go toolset if necessary.
 
@@ -222,6 +266,8 @@ def ensure_toolset_installed(toolset_root):
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
   available = get_toolset_url()
   if installed == available:
+    if maybe_patch_appengine_sdk(toolset_root):
+      return True
     LOGGER.debug('Go toolset is up-to-date: %s', TOOLSET_VERSION)
     return False
 
@@ -230,6 +276,7 @@ def ensure_toolset_installed(toolset_root):
   LOGGER.info('  New toolset is %s', available)
   remove_directory([toolset_root])
   install_toolset(toolset_root, available)
+  maybe_patch_appengine_sdk(toolset_root)
   LOGGER.info('Go toolset installed: %s', TOOLSET_VERSION)
   write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
   return True
