@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict, namedtuple
+from itertools import chain
 
 from shared.config import TRYJOBVERIFIER
 from stats.analyzer import (
@@ -20,6 +21,7 @@ class TrybotAnalyzer(Analyzer):  # pragma: no cover
   def __init__(self):
     self.false_rejects = {'total': TrybotFalseRejectCount(None)}
     self.passes = {'total': TrybotPassCount(None)}
+    self.failures = {'total': TrybotFailCount(None)}
 
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     # counts maps from (master, builder) to [pass count, fail count].
@@ -44,17 +46,25 @@ class TrybotAnalyzer(Analyzer):  # pragma: no cover
         self.false_rejects[(master, builder)] = TrybotFalseRejectCount(builder)
       if (master, builder) not in self.passes:
         self.passes[(master, builder)] = TrybotPassCount(builder)
+      if (master, builder) not in self.failures:
+        self.failures[(master, builder)] = TrybotFailCount(builder)
 
       trybotReference = TrybotReference(master, builder)
       self.passes[(master, builder)].tally[reference] += pass_count
       self.passes['total'].tally[trybotReference] += pass_count
+      self.failures[(master, builder)].tally[reference] += fail_count
+      self.failures['total'].tally[trybotReference] += fail_count
       if pass_count > 0 and fail_count > 0:
         self.false_rejects[(master, builder)].tally[reference] += fail_count
         self.false_rejects['total'].tally[trybotReference] += fail_count
 
   def build_stats(self):
     stats = []
-    for analyzer in self.false_rejects.values() + self.passes.values():
+    analyzers = chain(
+        self.false_rejects.itervalues(),
+        self.passes.itervalues(),
+        self.failures.itervalues())
+    for analyzer in analyzers:
       stats.extend(analyzer.build_stats())
     return stats
 
@@ -77,7 +87,7 @@ class TrybotPassCount(CountAnalyzer):  # pragma: no cover
   # pylint: disable=W0223
   def __init__(self, builder):
     super(TrybotPassCount, self).__init__()
-    trybot = 'by the %s trybot' % builder if builder else 'across all trybots'
+    trybot = ('by the %s trybot' % builder) if builder else 'across all trybots'
     self.description = 'Number of passing runs %s.' % trybot
     self.builder = builder
 
@@ -85,3 +95,16 @@ class TrybotPassCount(CountAnalyzer):  # pragma: no cover
     if self.builder:
       return 'trybot-%s-pass-count' % self.builder
     return 'trybot-pass-count'
+
+class TrybotFailCount(CountAnalyzer):  # pragma: no cover
+  # pylint: disable=W0223
+  def __init__(self, builder):
+    super(TrybotFailCount, self).__init__()
+    trybot = ('by the %s trybot' % builder) if builder else 'across all trybots'
+    self.description = 'Number of failing runs %s.' % trybot
+    self.builder = builder
+
+  def _get_name(self):
+    if self.builder:
+      return 'trybot-%s-fail-count' % self.builder
+    return 'trybot-fail-count'

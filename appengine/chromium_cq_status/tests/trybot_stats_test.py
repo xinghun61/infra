@@ -80,6 +80,32 @@ class TrybotStatsTest(StatsTest):
         tally={TrybotReference('test_master_b', 'test_builder_ffp'): 2},
       ), self.get_stats('trybot-false-reject-count'))
 
+  def test_trybot_failed_run_count(self):
+    self.analyze_records(*self.trybot_records)
+    self.assertEquals(self.create_count(
+        name='trybot-test_builder_ppp-fail-count',
+        description = 'Number of failing runs by the test_builder_ppp trybot.',
+        tally={PatchsetReference(1, 1): 0},
+      ), self.get_stats('trybot-test_builder_ppp-fail-count'))
+    self.assertEquals(self.create_count(
+        name='trybot-test_builder_fff-fail-count',
+        description = 'Number of failing runs by the test_builder_fff trybot.',
+        tally={PatchsetReference(1, 1): 3},
+      ), self.get_stats('trybot-test_builder_fff-fail-count'))
+    self.assertEquals(self.create_count(
+        name='trybot-test_builder_ffp-fail-count',
+        description = 'Number of failing runs by the test_builder_ffp trybot.',
+        tally={PatchsetReference(1, 1): 2},
+      ), self.get_stats('trybot-test_builder_ffp-fail-count'))
+    self.assertEquals(self.create_count(
+        name='trybot-fail-count',
+        description = 'Number of failing runs across all trybots.',
+        tally={
+          TrybotReference('test_master_a', 'test_builder_ppp'): 0,
+          TrybotReference('test_master_a', 'test_builder_fff'): 3,
+          TrybotReference('test_master_b', 'test_builder_ffp'): 2,
+        },
+      ), self.get_stats('trybot-fail-count'))
 
   def test_trybot_successful_run_count(self):
     self.analyze_records(*self.trybot_records)
