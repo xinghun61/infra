@@ -87,10 +87,10 @@
     # TODO(agable): Figure out whether this is actually necessary.
   },
   'oauth2client': {
-    'version': '1.4',
+    'version': '1.4.1',
     'build': '0',
     'repo': 'external/github.com/google/oauth2client',
-    'rev': 'd01a8b67f97211c46d5f78ff125387a32c4bc584',
+    'rev': '00c4c8057a34ee142e9729dbeb51855e0282f82e',
     'implicit': True,  # Required by google_api_python_client
   },
   'pyasn1': {
