@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Suppression query - {% endblock %}
+
+{% block content %}
+<form action="/suppression_query" method="get">
+<input type="text" name="suppression_query" value="{{ suppression_query }}" />
+<input type="submit" value="search" />
+</form>
+
+<a href="/suppression_query?suppression_query={{ suppression_query|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table>
+<tr>
+  <th>timestamp</th>
+  <th>step name</th>
+  <th>builder</th>
+  <th>logs</th>
+</tr>
+{% for result in suppression_results %}
+<tr>
+  <td>{{ result.time_finished }}</td>
+  <td>{{ result.step_name }}</td>
+  <td>{{ result.parent.builder }}</td>
+  <td>
+    {% if result.parent.log_gs %}
+    <a href="https://commondatastorage.googleapis.com{{ result.parent.log_gs|urlencode }}">log</a>
+    {% else %}
+    <a href="/viewlog/raw/{{ result.parent.log_stdio.key|urlencode }}">log</a>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+<a href="/suppression_query?suppression_query={{ suppression_query|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

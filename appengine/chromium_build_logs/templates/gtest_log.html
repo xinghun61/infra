@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}GTest Log - {% endblock %}
+
+{% block content %}
+<table>
+<tr>
+  <th>prefix</th>
+  <th>name</th>
+  <th>successful?</th>
+  <th>crash/hang?</th>
+  <th>run time (ms)</th>
+  <th>log</th>
+</tr>
+{% for test in test_data %}
+<tr>
+  <td>{{ test.test_prefix }}</td>
+  <td>{{ test.fullname }}</td>
+  <td>{{ test.is_successful }}</td>
+  <td>{{ test.is_crash_or_hang }}</td>
+  <td>{{ test.run_time_ms }}</td>
+  <td><pre>{{ test.log }}</pre></td>
+</tr>
+{% endfor %}
+{% endblock %}

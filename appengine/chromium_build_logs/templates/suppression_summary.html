@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Memory suppression summary report - {% endblock %}
+
+{% block content %}
+<a href="/suppression_summary?sort={{ sort|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table class="gtest-details">
+<tr>
+  <th>name</th>
+  <th><a href="/suppression_summary?sort=count">count</a>{% if sort == "count" %} &#x25bc;{% endif %}</th>
+  <th>step name</th>
+  <th>builder</th>
+</tr>
+{% for summary in suppression_summaries %}
+<tr>
+  <td>{{ summary.name }}</td>
+  <td>{{ summary.count }}</td>
+  <td>{{ summary.step_name }}</td>
+  <td>{{ summary.builder }}</td>
+</tr>
+{% endfor %}
+</table>
+<a href="/suppression_summary?sort={{ sort|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

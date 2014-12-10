@@ -1,0 +1,93 @@
+input[type=text] {
+    min-width: 500px;
+}
+
+.gtest-details {
+    border-collapse: collapse;
+    margin: 5px;
+}
+
+.gtest-details td, .gtest-details th {
+    border: 1px solid black;
+    padding: 5px;
+}
+
+.gtest-details pre {
+    max-width: 750px;
+    max-height: 250px;
+    overflow: auto;
+}
+
+.summary-table td, .summary-table th {
+    white-space: nowrap;
+    border: 1px solid black;
+    padding: 5px;
+}
+
+.summary-table {
+    border-collapse: collapse;
+    margin: 5px;
+}
+
+.step-status {
+    border: 1px solid black;
+    width: 60px;
+    height: 20px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.step-status-small {
+    border: 1px solid black;
+    width: 5px;
+    height: 10px;
+    display: inline-block;
+    margin: 1px;
+    vertical-align: middle;
+}
+
+.step-status-success {
+    background-color: #8d4;
+}
+
+.step-status-warnings {
+    background-color: #fa3;
+}
+
+.step-status-failure {
+    background-color: #e88;
+}
+
+.step-status-skipped {
+    background-color: white;
+}
+
+.step-status-exception {
+    background-color: #c6c;
+}
+
+.step-status-retry {
+    background-color: #c6c;
+}
+
+.filter-chooser {
+    float: left;
+    margin: 10px;
+}
+
+.filter-chooser ul {
+    height: 300px;
+    overflow: auto;
+}
+
+.end-filters {
+    clear: both;
+}
+
+.run-time-error {
+    background-color: #e88;
+}
+
+.run-time-warning {
+    background-color: #fa3;
+}

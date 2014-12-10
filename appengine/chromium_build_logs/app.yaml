@@ -1,0 +1,27 @@
+application: chromium-build-logs
+version: 7
+runtime: python27
+threadsafe: no
+api_version: 1
+
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /flakiness/gtest
+  script: gtest_flakiness.py
+
+- url: /tasks/.*
+  script: handler.py
+  login: admin
+
+- url: /.*
+  script: handler.py
+
+builtins:
+- appstats: on
+- deferred: on
+
+libraries:
+- name: django
+  version: 1.2

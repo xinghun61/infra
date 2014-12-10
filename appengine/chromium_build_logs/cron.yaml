@@ -1,0 +1,8 @@
+cron:
+# Tasks below are fallbacks: if the regular fetching process
+# doesn't work, they should kick in.
+# TODO(phajdan.jr): Temporarily disabled because of performance concerns.
+#- url: /tasks/fetch_steps
+#  schedule: every 24 hours
+#- url: /tasks/fetch_builders
+#  schedule: every 24 hours

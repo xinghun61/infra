@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}GTest summary report - {% endblock %}
+
+{% block content %}
+<form action="/gtest_summary" method="get">
+<input type="text" name="gtest_summary_query" value="{{ gtest_summary_query }}" />
+<input type="submit" value="search" />
+</form>
+
+{% if gtest_summary_query %}
+<div>
+<a href="/gtest_query?gtest_query={{ gtest_summary_query|urlencode }}">history of failures</a></td>
+</div>
+{% endif %}
+
+<div>
+<i>Please take crash/hang count with a grain of salt. Due to mixed-up logs
+we may sometimes erronously mark some tests as crashing/hanging even if they pass.</i>
+</div>
+
+<a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode }}&amp;sort={{ sort|urlencode }}&amp;step_name={{ step_name|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table class="gtest-details">
+<tr>
+  <th>fullname</th>
+  <th></th>
+  <th><a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode}}&amp;step_name={{ step_name|urlencode }}&amp;sort=run_time_ms">avg run time</a>{% if sort == "run_time_ms" %} &#x25bc;{% endif %}</th>
+  <th><a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode}}&amp;step_name={{ step_name|urlencode }}&amp;sort=max_run_time_ms">max run time</a>{% if sort == "max_run_time_ms" %} &#x25bc;{% endif %}</th>
+  <th><a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode}}&amp;step_name={{ step_name|urlencode }}&amp;sort=failure_rate">failure rate</a>{% if sort == "failure_rate" %} &#x25bc;{% endif %}</th>
+  <th><a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode}}&amp;step_name={{ step_name|urlencode }}&amp;sort=crash_or_hang_rate">crash/hang rate</a>{% if sort == "crash_or_hang_rate" %} &#x25bc;{% endif %}</th>
+  <th>samples</th>
+  <th>step name</th>
+  <th>builder</th>
+</tr>
+{% for summary in gtest_summaries %}
+<tr>
+  <td>{{ summary.fullname }}</td>
+  <td><a href="/gtest_summary?gtest_summary_query={{ summary.fullname|urlencode }}">summary</a></td>
+  <td
+     {% if summary.run_time_s > 45 %}class="run-time-error"
+     {% else %}{% if summary.run_time_s > 30 %}class="run-time-warning"{% endif %}
+     {% endif %}
+     >{{ summary.run_time_s }} s</td>
+  <td
+     {% if summary.max_run_time_s > 45 %}class="run-time-error"
+     {% else %}{% if summary.max_run_time_s > 30 %}class="run-time-warning"{% endif %}
+     {% endif %}
+     >{{ summary.max_run_time_s }} s</td>
+  <td
+     {% if summary.failure_rate_percent > 10 %}class="run-time-error"
+     {% else %}{% if summary.failure_rate_percent > 0 %}class="run-time-warning"{% endif %}
+     {% endif %}
+     >{{ summary.failure_rate_percent }} %</td>
+  <td
+     {% if summary.crash_or_hang_rate_percent > 10 %}class="run-time-error"
+     {% else %}{% if summary.crash_or_hang_rate_percent > 0 %}class="run-time-warning"{% endif %}
+     {% endif %}
+     >{{ summary.crash_or_hang_rate_percent }} %</td>
+  <td>{{ summary.result_count }}</td>
+  <td><a href="/gtest_summary?sort={{ sort|urlencode }}&amp;step_name={{ summary.step_name|urlencode}}">{{ summary.step_name }}</a></td>
+  <td>{{ summary.builder }}</td>
+</tr>
+{% endfor %}
+</table>
+<a href="/gtest_summary?gtest_summary_query={{ gtest_summary_query|urlencode}}&amp;sort={{ sort|urlencode }}&amp;step_name={{ step_name|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

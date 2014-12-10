@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}GTest gtest_query - {% endblock %}
+
+{% block content %}
+<form action="/gtest_query" method="get">
+<input type="text" name="gtest_query" value="{{ gtest_query }}" />
+<input type="submit" value="search" />
+</form>
+
+<i>Showing test failures in reverse-chronological order.</i>
+<a href="/gtest_query?gtest_query={{ gtest_query|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table class="gtest-details">
+<tr>
+  <th>timestamp</th>
+  <th>waterfall</th>
+  <th>builder</th>
+  <th>build</th>
+  <th>log</th>
+</tr>
+{% for result in gtest_results %}
+<tr>
+  <td>{{ result.time_finished }}</td>
+  <td>{{ result.get_build_step.buildbot_root }}</td>
+  <td>{{ result.get_build_step.builder }}</td>
+  <td>{{ result.get_build_step.build_number }}</td>
+  <td class="gtest-log">
+    <pre>{{ result.log }}</pre>
+    {% if result.get_build_step.log_gs %}
+    <a href="https://commondatastorage.googleapis.com{{ result.get_build_step.log_gs|urlencode }}">full log</a>
+    {% else %}
+    <a href="/viewlog/raw/{{ result.get_build_step.log_stdio.key|urlencode }}">full log</a>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</table>
+<a href="/gtest_query?gtest_query={{ gtest_query|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

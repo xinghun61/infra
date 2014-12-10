@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Builder step summary report - {% endblock %}
+
+{% block content %}
+<a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode }}&amp;builder={{ builder|urlencode }}&amp;step_name={{ step_name|urlencode}}&amp;sort={{ sort|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table class="gtest-details">
+<tr>
+  <th>buildbot root</th>
+  <th><a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode}}&amp;builder={{ builder|urlencode }}&amp;step_name={{ step_name|urlencode}}&amp;sort=build_time s">avg build time</a>{% if sort == "build_time_s" %} &#x25bc;{% endif %}</th>
+  <th><a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode}}&amp;builder={{ builder|urlencode }}&amp;step_name={{ step_name|urlencode}}&amp;sort=max_build_time_s">max build time</a>{% if sort == "max_build_time_s" %} &#x25bc;{% endif %}</th>
+  <th><a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode}}&amp;builder={{ builder|urlencode }}&amp;step_name={{ step_name|urlencode}}&amp;sort=error_rate">error rate</a>{% if sort == "error_rate" %} &#x25bc;{% endif %}</th>
+  <th>samples</th>
+  <th>builder</th>
+  <th>step</th>
+  <th></th>
+</tr>
+{% for summary in builder_step_summaries %}
+<tr>
+  <td><a href="/builder_step_summary?buildbot_root={{ summary.buildbot_root|urlencode }}&amp;sort={{ sort|urlencode }}">{{ summary.buildbot_root }}</a></td>
+  <td>{{ summary.build_time_min }} min</td>
+  <td>{{ summary.max_build_time_min }} min</td>
+  <td>{{ summary.error_rate_percent }} %</td>
+  <td>{{ summary.build_count }}</td>
+  <td><a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode }}&amp;builder={{ summary.builder|urlencode }}&amp;sort={{ sort|urlencode }}">{{ summary.builder }}</a></td>
+  <td><a href="/builder_step_summary?step_name={{ summary.step_name|urlencode }}&amp;sort={{ sort|urlencode }}">{{ summary.step_name }}</a></td>
+  <td><a href="/list?buildbot_root={{ summary.buildbot_root|urlencode }}&amp;builder={{ summary.builder|urlencode }}&amp;step_name={{ summary.step_name|urlencode }}">logs</a></td>
+</tr>
+{% endfor %}
+</table>
+<a href="/builder_step_summary?buildbot_root={{ buildbot_root|urlencode}}&amp;builder={{ builder|urlencode }}&amp;step_name={{ step_name|urlencode}}&amp;sort={{ sort|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

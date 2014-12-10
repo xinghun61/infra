@@ -1,0 +1,30 @@
+total_storage_limit: 20G
+queue:
+- name: default
+  rate: 50/s
+
+# For slow tasks that would otherwise slow down the execution rate
+# of the main queue and prevent faster tasks from executing.
+- name: slow
+  rate: 1/s
+  max_concurrent_requests: 25
+
+- name: background
+  rate: 50/s
+  max_concurrent_requests: 100
+
+# For fast tasks that should have guaranteed very low processing time
+# (i.e. buildbot http status push proxy).
+- name: fast
+  rate: 50/s
+
+# For buildbot fetch tasks, we can't overload it.
+# The infrastructure team requested that we don't make
+# more requests than below.
+- name: buildbotfetch
+  rate: 20/m
+  max_concurrent_requests: 3
+
+- name: gtest-summaries
+  rate: 100/s
+  max_concurrent_requests: 25

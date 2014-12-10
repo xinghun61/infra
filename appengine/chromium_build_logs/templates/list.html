@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}List - {% endblock %}
+
+{% block content %}
+<div class="filter-chooser">
+  <h3>Filter by waterfall</h3>
+  <ul>
+    <li><a href="/list?buildbot_root=&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status={{ filter_status|urlencode }}">(no filter)</a></li>
+    {% for buildbot_root in buildbot_roots %}
+    <li><a href="/list?buildbot_root={{ buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status={{ filter_status|urlencode }}">{{ buildbot_root }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+<div class="filter-chooser">
+  <h3>Filter by step name</h3>
+  <ul>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name=&amp;status={{ filter_status|urlencode }}">(no filter)</a></li>
+    {% for step_name in step_names %}
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ step_name.name|urlencode }}&amp;status={{ filter_status|urlencode }}">{{ step_name.name }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+<div class="filter-chooser">
+  <h3>Filter by result</h3>
+  <ul>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=">(no filter)</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=0">success</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=1">warnings</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=2">failure</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=3">skipped</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=4">exception</a></li>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status=5">retry</a></li>
+  </ul>
+</div>
+<div class="filter-chooser">
+  <h3>Filter by builder</h3>
+  <ul>
+    <li><a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder=&amp;step_name={{ filter_step_name|urlencode }}&amp;status={{ filter_status|urlencode }}">(no filter)</a></li>
+{% if filter_builder %}
+    <li>{{ filter_builder }}</li>
+{% endif %}
+  </ul>
+</div>
+<div class="end-filters"></div>
+
+<h3>Latest logs</h3>
+<a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status={{ filter_status|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+<table>
+<tr>
+  <th>date</th>
+  <th>builder</th>
+  <th>build</th>
+  <th></th>
+  <th>step</th>
+  <th>time</th>
+</tr>
+{% for step in steps %}
+<tr>
+  <td>{{ step.time_finished|date }}</td>
+  <td>{{ step.builder }}</td>
+  <td>{{ step.build_number }}</td>
+  <td><div class="step-status
+{% if step.status == 0 %}step-status-success{% endif %}
+{% if step.status == 1 %}step-status-warnings{% endif %}
+{% if step.status == 2 %}step-status-failure{% endif %}
+{% if step.status == 3 %}step-status-skipped{% endif %}
+{% if step.status == 4 %}step-status-exception{% endif %}
+{% if step.status == 5 %}step-status-retry{% endif %}
+">
+{% if step.status == 0 %}success{% endif %}
+{% if step.status == 1 %}warnings{% endif %}
+{% if step.status == 2 %}failure{% endif %}
+{% if step.status == 3 %}skipped{% endif %}
+{% if step.status == 4 %}exception{% endif %}
+{% if step.status == 5 %}retry{% endif %}
+</td>
+  <td>
+    {% if step.is_fetched and not step.is_too_large %}
+      {% if step.log_gs %}
+      <a href="https://commondatastorage.googleapis.com{{ step.log_gs|urlencode }}">{{ step.step_name }}</a>
+      {% else %}
+      <a href="/viewlog/raw/{{ step.log_stdio.key|urlencode }}">{{ step.step_name }}</a>
+      {% endif %}
+    {% else %}
+    {{ step.step_name }}
+    {% endif %}
+  </td>
+  <td>{% if step.is_fetched %}{{ step.time_started|timesince:step.time_finished }}{% else %}N/A{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+<a href="/list?buildbot_root={{ filter_buildbot_root|urlencode }}&amp;builder={{ filter_builder|urlencode }}&amp;step_name={{ filter_step_name|urlencode }}&amp;status={{ filter_status|urlencode }}&amp;cursor={{ cursor|urlencode }}">next page</a>
+{% endblock %}

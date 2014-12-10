@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table>
+<tr>
+  <th>GTest test name</th>
+  <td>
+    <form action="/gtest_query" method="get">
+    <input type="text" name="gtest_query" />
+    <input type="submit" value="search" />
+    </form>
+  </td>
+</tr>
+<tr>
+  <th>Memory suppression name</th>
+  <td>
+    <form action="/suppression_query" method="get">
+    <input type="text" name="suppression_query" />
+    <input type="submit" value="search" />
+    </form>
+  </td>
+</tr>
+<tr>
+  <th>Browse logs</th>
+  <td>
+    <a href="/list">browse</a>
+  </td>
+</tr>
+<tr>
+  <th>GTest summary report</th>
+  <td>
+    <a href="/gtest_summary">view</a>
+  </td>
+</tr>
+</table>
+{% endblock %}
