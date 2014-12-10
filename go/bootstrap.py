@@ -36,6 +36,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Where to install Go toolset to. GOROOT would be <TOOLSET_ROOT>/go.
 TOOLSET_ROOT = os.path.join(os.path.dirname(ROOT), 'golang')
 
+# Where Go GAE SDK is supposedly installed.
+GO_APPENGINE = os.path.join(os.path.dirname(ROOT), 'go_appengine')
+
 # Default workspace with infra go code.
 WORKSPACE = os.path.join(ROOT, 'go')
 
@@ -218,7 +221,7 @@ def check_hello_world(toolset_root):
     return True
 
 
-def maybe_patch_appengine_sdk(toolset_root):
+def maybe_patch_appengine_sdk(toolset_root, go_appengine):
   """Copies GAE_DIRS dirs into toolset_root.
 
   This is necessary to convince go-get/goop to consider the appengine code as
@@ -228,7 +231,6 @@ def maybe_patch_appengine_sdk(toolset_root):
   If Appengine SDK provides a better way to play nice in the go ecosystem at
   some point, we should probably do that instead.
   """
-  go_appengine = os.path.join(os.path.dirname(ROOT), 'go_appengine')
   if not os.path.exists(go_appengine):
     raise Failure(
       '%s SDK not present... did you `gclient runhooks`?' % go_appengine)
@@ -258,7 +260,7 @@ def maybe_patch_appengine_sdk(toolset_root):
     return True
 
 
-def ensure_toolset_installed(toolset_root):
+def ensure_toolset_installed(toolset_root, go_appengine):
   """Installs or updates Go toolset if necessary.
 
   Returns True if new toolset was installed.
@@ -266,7 +268,7 @@ def ensure_toolset_installed(toolset_root):
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
   available = get_toolset_url()
   if installed == available:
-    if maybe_patch_appengine_sdk(toolset_root):
+    if maybe_patch_appengine_sdk(toolset_root, go_appengine):
       return True
     LOGGER.debug('Go toolset is up-to-date: %s', TOOLSET_VERSION)
     return False
@@ -276,7 +278,7 @@ def ensure_toolset_installed(toolset_root):
   LOGGER.info('  New toolset is %s', available)
   remove_directory([toolset_root])
   install_toolset(toolset_root, available)
-  maybe_patch_appengine_sdk(toolset_root)
+  maybe_patch_appengine_sdk(toolset_root, go_appengine)
   LOGGER.info('Go toolset installed: %s', TOOLSET_VERSION)
   write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
   return True
@@ -351,7 +353,8 @@ def update_vendor_packages(toolset_root, workspace, force=False):
   write_file([workspace, '.vendor', 'Goopfile.lock'], required)
 
 
-def get_go_environ(toolset_root, workspace, go_paths, vendor_paths):
+def get_go_environ(
+    toolset_root, workspace, go_paths, vendor_paths, go_appengine_path=None):
   """Returns a copy of os.environ with added GO* environment variables.
 
   Overrides GOROOT, GOPATH and GOBIN. Keeps everything else. Idempotent.
@@ -361,6 +364,7 @@ def get_go_environ(toolset_root, workspace, go_paths, vendor_paths):
     workspace: main workspace directory.
     go_paths: additional paths to add to GOPATH.
     vendor_paths: directories with .vendor files (created by goop).
+    go_appengine_path: path to GAE Go SDK to add to PATH.
   """
   env = os.environ.copy()
   env['GOROOT'] = os.path.join(toolset_root, 'go')
@@ -385,17 +389,29 @@ def get_go_environ(toolset_root, workspace, go_paths, vendor_paths):
     return True
   path = filter(should_keep, path)
 
+  # New PATH entries.
+  paths_to_add = [
+    os.path.join(env['GOROOT'], 'bin'),
+    env['GOBIN'],
+  ]
+  paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
+  if go_appengine_path:
+    paths_to_add.append(go_appengine_path)
+
   # Make sure not to add duplicates entries to PATH over and over again when
   # get_go_environ is invoked multiple times.
-  def add_path(p):
-    if p not in path:
-      path.insert(0, p)
-  add_path(os.path.join(env['GOROOT'], 'bin'))
-  add_path(env['GOBIN'])
-  for p in vendor_paths:
-    add_path(os.path.join(p, '.vendor', 'bin'))
+  paths_to_add = [p for p in paths_to_add if p not in path]
+  env['PATH'] = os.pathsep.join(paths_to_add + path)
 
-  env['PATH'] = os.pathsep.join(path)
+  # APPENGINE_DEV_APPSERVER is used by "appengine/aetest" package. If it's
+  # missing, aetest will scan PATH looking for dev_appserver.py, possibly
+  # finding it in some other place.
+  if go_appengine_path:
+    env['APPENGINE_DEV_APPSERVER'] = os.path.join(
+        go_appengine_path, 'dev_appserver.py')
+  else:
+    env.pop('APPENGINE_DEV_APPSERVER', None)
+
   return env
 
 
@@ -427,7 +443,7 @@ def bootstrap(vendor_paths, logging_level):
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
-  updated = ensure_toolset_installed(TOOLSET_ROOT)
+  updated = ensure_toolset_installed(TOOLSET_ROOT, GO_APPENGINE)
   ensure_tools_installed(TOOLSET_ROOT)
   for p in vendor_paths:
     update_vendor_packages(TOOLSET_ROOT, p, force=updated)
@@ -440,7 +456,7 @@ def prepare_go_environ(skip_goop_update=False):
   """
   vendor_paths = [] if skip_goop_update else [WORKSPACE]
   bootstrap(vendor_paths, logging.INFO)
-  return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], vendor_paths)
+  return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], vendor_paths, GO_APPENGINE)
 
 
 def find_executable(name, workspaces):
