@@ -1,0 +1,180 @@
+{
+  "attempt_count": 2,
+  "attempt_fail_count": 1,
+  "attempts": [
+    {
+      "begin": 20000.0,
+      "durations": {
+        "blocked_on_closed_tree": 198.0,
+        "blocked_on_throttled_tree": 100.0,
+        "committing": 9.0,
+        "running_all_jobs": 100.0,
+        "total": 412.0
+      },
+      "end": 20412.0,
+      "fail_reason": null,
+      "jobs": {
+        "failed": [],
+        "passed": [
+          {
+            "begin": 20010.0,
+            "build_number": 1022,
+            "builder": "test_suite_b_2",
+            "duration": 90.0,
+            "end": 20100.0,
+            "master": "tryserver.b",
+            "retry": false,
+            "slave": "slave-b2",
+            "state": "passed",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1022"
+          }
+        ],
+        "running": []
+      },
+      "success": true
+    },
+    {
+      "begin": 10000.0,
+      "durations": {
+        "blocked_on_closed_tree": 0,
+        "blocked_on_throttled_tree": 0,
+        "committing": 0,
+        "running_all_jobs": 500.0,
+        "total": 503.0
+      },
+      "end": 10503.0,
+      "fail_reason": {
+        "fail_details": [
+          {
+            "builder": "test_suite_b_2",
+            "master": "tryserver.b",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012"
+          }
+        ],
+        "fail_type": "failed_jobs",
+        "verifier": "simple try job"
+      },
+      "jobs": {
+        "failed": [
+          {
+            "begin": 10310.0,
+            "build_number": 1012,
+            "builder": "test_suite_b_2",
+            "duration": 190.0,
+            "end": 10500.0,
+            "master": "tryserver.b",
+            "retry": true,
+            "slave": "slave-b2",
+            "state": "failed",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012"
+          },
+          {
+            "begin": 10010.0,
+            "build_number": 1001,
+            "builder": "test_suite_b_1",
+            "duration": 190.0,
+            "end": 10200.0,
+            "master": "tryserver.b",
+            "retry": false,
+            "slave": "slave-b1",
+            "state": "failed",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_1/builds/1001"
+          },
+          {
+            "begin": 10010.0,
+            "build_number": 1002,
+            "builder": "test_suite_b_2",
+            "duration": 290.0,
+            "end": 10300.0,
+            "master": "tryserver.b",
+            "retry": false,
+            "slave": "slave-b2",
+            "state": "failed",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1002"
+          }
+        ],
+        "passed": [
+          {
+            "begin": 10210.0,
+            "build_number": 1011,
+            "builder": "test_suite_b_1",
+            "duration": 190.0,
+            "end": 10400.0,
+            "master": "tryserver.b",
+            "retry": true,
+            "slave": "slave-b1",
+            "state": "passed",
+            "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_1/builds/1011"
+          },
+          {
+            "begin": 10010.0,
+            "build_number": 1000,
+            "builder": "test_suite_a",
+            "duration": 90.0,
+            "end": 10100.0,
+            "master": "tryserver.a",
+            "retry": false,
+            "slave": "slave-a1",
+            "state": "passed",
+            "url": "http://build.chromium.org/p/tryserver.a/builders/test_suite_a/builds/1000"
+          }
+        ],
+        "running": []
+      },
+      "success": false
+    }
+  ],
+  "begin": 10000.0,
+  "durations": {
+    "blocked_on_closed_tree": 198.0,
+    "blocked_on_throttled_tree": 100.0,
+    "committing": 9.0,
+    "running_all_jobs": 600.0,
+    "total": 915.0
+  },
+  "end": 20412.0,
+  "flaky_jobs": [
+    {
+      "begin": 10310.0,
+      "build_number": 1012,
+      "builder": "test_suite_b_2",
+      "duration": 190.0,
+      "end": 10500.0,
+      "master": "tryserver.b",
+      "retry": true,
+      "slave": "slave-b2",
+      "state": "failed",
+      "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1012"
+    },
+    {
+      "begin": 10010.0,
+      "build_number": 1001,
+      "builder": "test_suite_b_1",
+      "duration": 190.0,
+      "end": 10200.0,
+      "master": "tryserver.b",
+      "retry": false,
+      "slave": "slave-b1",
+      "state": "failed",
+      "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_1/builds/1001"
+    },
+    {
+      "begin": 10010.0,
+      "build_number": 1002,
+      "builder": "test_suite_b_2",
+      "duration": 290.0,
+      "end": 10300.0,
+      "master": "tryserver.b",
+      "retry": false,
+      "slave": "slave-b2",
+      "state": "failed",
+      "url": "http://build.chromium.org/p/tryserver.b/builders/test_suite_b_2/builds/1002"
+    }
+  ],
+  "job_counts": {
+    "failed": 3,
+    "passed": 3,
+    "running": 0
+  },
+  "success": true
+}

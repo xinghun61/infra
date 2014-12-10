@@ -1,0 +1,2032 @@
+[
+  {
+    "timestamp": 1417097355.04618,
+    "fields": {
+      "status": "stop",
+      "timestamp": 1417097354.728033,
+      "project": "blink",
+      "state": "",
+      "done": true,
+      "verification": "abort",
+      "owner": "commit-bot@chromium.org",
+      "patchset": 1,
+      "issue": 765763002,
+      "payload": {
+        "output": "CQ bit was unchecked on CL. Ignoring."
+      }
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "verification=abort",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417097354.87433,
+    "fields": {
+      "status": "stop",
+      "timestamp": 1417097354.72792,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "reason": null,
+      "done": true,
+      "action": "patch_stop",
+      "patchset": 1,
+      "issue": 765763002,
+      "message": "CQ bit was unchecked on CL. Ignoring."
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "action=patch_stop",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417097348.21452,
+    "fields": {
+      "status": "ready_to_commit",
+      "timestamp": 1417097348.076081,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "reason": null,
+      "done": true,
+      "action": "patch_ready_to_commit",
+      "patchset": 1,
+      "issue": 765763002,
+      "message": ""
+    },
+    "key": null,
+    "tags": [
+      "action=patch_ready_to_commit",
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417097347.4906,
+    "fields": {
+      "status": "start",
+      "timestamp": 1417097347.216691,
+      "verifier": "simple try job",
+      "project": "blink",
+      "action": "verifier_pass",
+      "state": "",
+      "done": true,
+      "owner": "commit-bot@chromium.org",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "action=verifier_pass",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417097347.33093,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "win_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm782-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38792",
+                "timestamp": "2014-11-27 14:09:02.139120",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMD6kwoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38792,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"9a70eb191eb88c30f299c31e103de13d9045339c\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMD6kwoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"3241284d363fb1f802c9951abc63224060c8b742\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm782-m4\", \"got_revision_cp\": \"refs/heads/master@{#305979}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"got_webkit_revision\": 186114, \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186114}\", \"buildnumber\": 38792, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              },
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm500-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38773",
+                "timestamp": "2014-11-27 13:25:11.607480",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 2,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38773,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm500-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 38773, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              38792
+            ],
+            "timestamp": "2014-11-27 14:09:02.139120",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417097347.215202,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417094743.46613,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "win_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm782-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38792",
+                "timestamp": "2014-11-27 13:25:35.759750",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMD6kwoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38792,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMD6kwoM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 38792, \"slavename\": \"vm782-m4\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              },
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm500-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38773",
+                "timestamp": "2014-11-27 13:25:11.607480",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 2,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38773,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm500-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 38773, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38792",
+            "timestamp": "2014-11-27 13:25:35.759750",
+            "has_pending": true
+          },
+          "linux_blink_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave609-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_dbg/builds/35022",
+                "timestamp": "2014-11-27 13:25:30.960230",
+                "builder": "linux_blink_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 35022,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QkM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave609-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"linux_blink_dbg\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 35022, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              35022
+            ],
+            "timestamp": "2014-11-27 13:25:30.960230",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417094743.361905,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417094717.71403,
+    "fields": {
+      "status": "start",
+      "timestamp": 1417094717.559635,
+      "verifier": "simple try job",
+      "project": "blink",
+      "action": "verifier_retry",
+      "state": "",
+      "done": false,
+      "owner": "commit-bot@chromium.org",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_retry",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417094717.65896,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "win_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm500-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38773",
+                "timestamp": "2014-11-27 13:25:11.607480",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 2,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38773,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm500-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 38773, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 1,
+            "timestamp": "2014-11-27 13:25:11.607480",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417094717.559011,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417092893.36209,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "win_gpu_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "win_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build145-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu_triggered_tests/builds/80163",
+                "timestamp": "2014-11-27 12:54:44.205770",
+                "builder": "win_gpu_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMCcggoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 80163,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"vm844-m4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"win_gpu\", \"parent_buildnumber\": \"91943\", \"slavename\": \"build145-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"C:\\\\b\\\\build\\\\slave/win_gpu_triggered_tests\", \"repository\": \"\", \"buildername\": \"win_gpu_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"win_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"win_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 80163, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"vm844-m4\", \"swarm_hashes\": {\"content_gl_tests\": \"873993e97554864497de8aec1c902ad052360e4c\", \"content_unittests\": \"2790d8d53aaffb770204043be8f0d24aa58e0bc1\", \"gles2_conform_test\": \"d4ba91f05989ba4096c8ffcc5855a764aad9a1fb\", \"gl_tests\": \"fd19d72b815b7bc91c2c37faf7a6f598c2bde4dc\", \"tab_capture_end2end_tests\": \"9b70930e0058c5b97f7ea0a2378407d5b327cd2d\", \"angle_unittests\": \"624b55ba6face8820b2a452d2c9b965d47bda9b2\", \"media_unittests\": \"ddf4541679053b4b33d3ea3f13bb43c1803f2e75\", \"gpu_unittests\": \"18bdfc2c542151d7dddb5bb47f669e5f4c3a6845\", \"telemetry_gpu_test\": \"4d286cb33edf0cfed44793e967fc7b311b97fb6c\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              80163
+            ],
+            "timestamp": "2014-11-27 12:54:44.205770",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417092893.266183,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417092685.32786,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "mac_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm601-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_rel/builds/32943",
+                "timestamp": "2014-11-27 12:51:22.802500",
+                "builder": "mac_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 32943,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQsM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm601-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/Volumes/data/b/build/slave/mac_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"mac_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 32943, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              32943
+            ],
+            "timestamp": "2014-11-27 12:51:22.802500",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417092685.231871,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417092173.32538,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "mac_gpu_retina_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "mac_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build174-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu_retina_triggered_tests/builds/74670",
+                "timestamp": "2014-11-27 12:42:42.015010",
+                "builder": "mac_gpu_retina_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMCInQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 74670,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"vm62-a4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"mac_gpu\", \"parent_buildnumber\": \"87284\", \"slavename\": \"build174-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/mac_gpu_retina_triggered_tests\", \"repository\": \"\", \"buildername\": \"mac_gpu_retina_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"mac_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"mac_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 74670, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"vm62-a4\", \"swarm_hashes\": {\"content_gl_tests\": \"5118a3ed002f84af333e99aa507f719685273cc4\", \"content_unittests\": \"d48cd6602ce8abb43e8bb73b8a0ad2d606407637\", \"gles2_conform_test\": \"819e0e42a65a23ca4f5021254febd258ffd7ca14\", \"gl_tests\": \"66376cc7277fdf0a763d6c6de52b39d5832cbbe6\", \"tab_capture_end2end_tests\": \"a0e833588c94adf8640fcb5f4c453e99283d1547\", \"angle_unittests\": \"88085a9a1cb02382a7009f071306a90112165f85\", \"media_unittests\": \"ac183314f7cc71570dbf83ea9fd3037cc05ce4a5\", \"gpu_unittests\": \"f60958486450d2e31c770506752121ee504c184c\", \"telemetry_gpu_test\": \"8040bdeeb2b4f1d15ab25b305ab3dd9c45db7e54\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              74670
+            ],
+            "timestamp": "2014-11-27 12:42:42.015010",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417092173.190661,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417092108.23805,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "linux_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave606-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_rel/builds/35860",
+                "timestamp": "2014-11-27 12:41:46.469300",
+                "builder": "linux_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QgM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 35860,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QgM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave606-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"linux_blink_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 35860, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              35860
+            ],
+            "timestamp": "2014-11-27 12:41:46.469300",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417092108.124693,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091780.57065,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "linux_gpu_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "linux_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build155-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu_triggered_tests/builds/85097",
+                "timestamp": "2014-11-27 12:36:17.293800",
+                "builder": "linux_gpu_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDXjAoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 85097,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"slave435-c4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"linux_gpu\", \"parent_buildnumber\": \"97406\", \"slavename\": \"build155-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_gpu_triggered_tests\", \"repository\": \"\", \"buildername\": \"linux_gpu_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"linux_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"linux_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 85097, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"slave435-c4\", \"swarm_hashes\": {\"content_gl_tests\": \"e6134a8dbfcd1fc7b0d418afe6aaefb9e6bc3654\", \"content_unittests\": \"a07608dee9f277c2e570a3ea10b3282177b59c82\", \"gles2_conform_test\": \"4d260ea3ea243765d9db79d8bb90378d01b0cc57\", \"gl_tests\": \"70fba42bfeb010c84b9d55d0b0413757e21d9146\", \"tab_capture_end2end_tests\": \"3a68dea9124ba081df4fd35d47c2acb46bed9ead\", \"angle_unittests\": \"f308346160dddd345ba0caa4be6b761a810f7f84\", \"media_unittests\": \"14cee136fe6e271ed971e2f1261eab38f60fdb41\", \"gpu_unittests\": \"23b63613c652d080f914e783bbc277f3114620c0\", \"telemetry_gpu_test\": \"b29de7da81a9cbdf1b99cf1e630f19868e013adf\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              85097
+            ],
+            "timestamp": "2014-11-27 12:36:17.293800",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417091780.476526,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091696.94858,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "win_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm844-m4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu/builds/91943",
+                "timestamp": "2014-11-27 12:34:49.074780",
+                "builder": "win_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 91943,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"chrome\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm844-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_gpu\", \"got_webkit_revision\": 186112, \"buildername\": \"win_gpu\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.chromium.gpu\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 91943, \"swarm_hashes\": {\"content_gl_tests\": \"873993e97554864497de8aec1c902ad052360e4c\", \"tab_capture_end2end_tests\": \"9b70930e0058c5b97f7ea0a2378407d5b327cd2d\", \"gles2_conform_test\": \"d4ba91f05989ba4096c8ffcc5855a764aad9a1fb\", \"gl_tests\": \"fd19d72b815b7bc91c2c37faf7a6f598c2bde4dc\", \"content_unittests\": \"2790d8d53aaffb770204043be8f0d24aa58e0bc1\", \"angle_unittests\": \"624b55ba6face8820b2a452d2c9b965d47bda9b2\", \"media_unittests\": \"ddf4541679053b4b33d3ea3f13bb43c1803f2e75\", \"gpu_unittests\": \"18bdfc2c542151d7dddb5bb47f669e5f4c3a6845\", \"telemetry_gpu_test\": \"4d286cb33edf0cfed44793e967fc7b311b97fb6c\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              91943
+            ],
+            "timestamp": "2014-11-27 12:34:49.074780",
+            "has_pending": false
+          },
+          "win_gpu_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "win_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build145-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu_triggered_tests/builds/80163",
+                "timestamp": "2014-11-27 12:34:49.151030",
+                "builder": "win_gpu_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMCcggoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 80163,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"vm844-m4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"win_gpu\", \"parent_buildnumber\": \"91943\", \"slavename\": \"build145-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"C:\\\\b\\\\build\\\\slave/win_gpu_triggered_tests\", \"repository\": \"\", \"buildername\": \"win_gpu_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"win_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"win_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 80163, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"vm844-m4\", \"swarm_hashes\": {\"content_gl_tests\": \"873993e97554864497de8aec1c902ad052360e4c\", \"content_unittests\": \"2790d8d53aaffb770204043be8f0d24aa58e0bc1\", \"gles2_conform_test\": \"d4ba91f05989ba4096c8ffcc5855a764aad9a1fb\", \"gl_tests\": \"fd19d72b815b7bc91c2c37faf7a6f598c2bde4dc\", \"tab_capture_end2end_tests\": \"9b70930e0058c5b97f7ea0a2378407d5b327cd2d\", \"angle_unittests\": \"624b55ba6face8820b2a452d2c9b965d47bda9b2\", \"media_unittests\": \"ddf4541679053b4b33d3ea3f13bb43c1803f2e75\", \"gpu_unittests\": \"18bdfc2c542151d7dddb5bb47f669e5f4c3a6845\", \"telemetry_gpu_test\": \"4d286cb33edf0cfed44793e967fc7b311b97fb6c\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu_triggered_tests/builds/80163",
+            "timestamp": "2014-11-27 12:34:49.151030",
+            "has_pending": true,
+            "parent_buildnumbers": [
+              91943
+            ]
+          }
+        }
+      },
+      "timestamp": 1417091696.840483,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091527.42972,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "mac_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm62-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu/builds/87284",
+                "timestamp": "2014-11-27 12:31:56.793160",
+                "builder": "mac_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 87284,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"chrome\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm62-a4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/Volumes/data/b/build/slave/mac_gpu\", \"got_webkit_revision\": 186112, \"buildername\": \"mac_gpu\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.chromium.gpu\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 87284, \"swarm_hashes\": {\"content_gl_tests\": \"5118a3ed002f84af333e99aa507f719685273cc4\", \"tab_capture_end2end_tests\": \"a0e833588c94adf8640fcb5f4c453e99283d1547\", \"gles2_conform_test\": \"819e0e42a65a23ca4f5021254febd258ffd7ca14\", \"gl_tests\": \"66376cc7277fdf0a763d6c6de52b39d5832cbbe6\", \"content_unittests\": \"d48cd6602ce8abb43e8bb73b8a0ad2d606407637\", \"angle_unittests\": \"88085a9a1cb02382a7009f071306a90112165f85\", \"media_unittests\": \"ac183314f7cc71570dbf83ea9fd3037cc05ce4a5\", \"gpu_unittests\": \"f60958486450d2e31c770506752121ee504c184c\", \"telemetry_gpu_test\": \"8040bdeeb2b4f1d15ab25b305ab3dd9c45db7e54\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              87284
+            ],
+            "timestamp": "2014-11-27 12:31:56.793160",
+            "has_pending": false
+          },
+          "mac_gpu_retina_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "mac_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build174-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu_retina_triggered_tests/builds/74670",
+                "timestamp": "2014-11-27 12:31:56.855090",
+                "builder": "mac_gpu_retina_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgMCInQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 74670,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"vm62-a4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"mac_gpu\", \"parent_buildnumber\": \"87284\", \"slavename\": \"build174-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/mac_gpu_retina_triggered_tests\", \"repository\": \"\", \"buildername\": \"mac_gpu_retina_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"mac_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"mac_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 74670, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"vm62-a4\", \"swarm_hashes\": {\"content_gl_tests\": \"5118a3ed002f84af333e99aa507f719685273cc4\", \"content_unittests\": \"d48cd6602ce8abb43e8bb73b8a0ad2d606407637\", \"gles2_conform_test\": \"819e0e42a65a23ca4f5021254febd258ffd7ca14\", \"gl_tests\": \"66376cc7277fdf0a763d6c6de52b39d5832cbbe6\", \"tab_capture_end2end_tests\": \"a0e833588c94adf8640fcb5f4c453e99283d1547\", \"angle_unittests\": \"88085a9a1cb02382a7009f071306a90112165f85\", \"media_unittests\": \"ac183314f7cc71570dbf83ea9fd3037cc05ce4a5\", \"gpu_unittests\": \"f60958486450d2e31c770506752121ee504c184c\", \"telemetry_gpu_test\": \"8040bdeeb2b4f1d15ab25b305ab3dd9c45db7e54\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu_retina_triggered_tests/builds/74670",
+            "timestamp": "2014-11-27 12:31:56.855090",
+            "has_pending": true,
+            "parent_buildnumbers": [
+              87284
+            ]
+          }
+        }
+      },
+      "timestamp": 1417091527.210239,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091497.96632,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "win_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm794-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_compile_dbg/builds/27458",
+                "timestamp": "2014-11-27 12:31:30.108000",
+                "builder": "win_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 27458,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQsM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm794-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"win_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 27458, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              27458
+            ],
+            "timestamp": "2014-11-27 12:31:30.108000",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417091497.873292,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091307.68397,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "android_chromium_gn_compile_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave607-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_chromium_gn_compile_rel/builds/18366",
+                "timestamp": "2014-11-27 12:28:17.652870",
+                "builder": "android_chromium_gn_compile_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 18366,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave607-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/android_chromium_gn\", \"got_webkit_revision\": 186112, \"buildername\": \"android_chromium_gn_compile_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 18366, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              18366
+            ],
+            "timestamp": "2014-11-27 12:28:17.652870",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417091307.452849,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091075.50166,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "linux_gpu_triggered_tests": {
+            "rietveld_results": [
+              {
+                "parent_name": "linux_gpu",
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "build155-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu_triggered_tests/builds/85097",
+                "timestamp": "2014-11-27 12:24:33.712460",
+                "builder": "linux_gpu_triggered_tests",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "765763002-1: None",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDXjAoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 85097,
+                "build_properties": "{\"parent_wk_revision\": \"186112\", \"parent_got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"parent_got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"parent_build_archive_url\": \"\", \"parent_revision\": \"HEAD\", \"parent_slavename\": \"slave435-c4\", \"project\": \"chrome\", \"parent_scheduler\": \"try_job_rietveld\", \"parentname\": \"linux_gpu\", \"parent_buildnumber\": \"97406\", \"slavename\": \"build155-a4\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": \"1\", \"issue\": \"765763002\", \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_gpu_triggered_tests\", \"repository\": \"\", \"buildername\": \"linux_gpu_triggered_tests\", \"parent_try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM\", \"mastername\": \"tryserver.chromium.gpu\", \"parent_got_webkit_revision\": \"186112\", \"parent_builddir\": \"\", \"parent_branch\": \"\", \"scheduler\": \"linux_gpu\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"parent_cr_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"rietveld\": \"https://codereview.chromium.org\", \"parent_got_nacl_revision\": \"14147\", \"testfilter\": [\"defaulttests\"], \"parent_buildername\": \"linux_gpu\", \"parent_got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"buildnumber\": 85097, \"patch_url\": \"\", \"parent_git_number\": \"\", \"parentslavename\": \"slave435-c4\", \"swarm_hashes\": {\"content_gl_tests\": \"e6134a8dbfcd1fc7b0d418afe6aaefb9e6bc3654\", \"content_unittests\": \"a07608dee9f277c2e570a3ea10b3282177b59c82\", \"gles2_conform_test\": \"4d260ea3ea243765d9db79d8bb90378d01b0cc57\", \"gl_tests\": \"70fba42bfeb010c84b9d55d0b0413757e21d9146\", \"tab_capture_end2end_tests\": \"3a68dea9124ba081df4fd35d47c2acb46bed9ead\", \"angle_unittests\": \"f308346160dddd345ba0caa4be6b761a810f7f84\", \"media_unittests\": \"14cee136fe6e271ed971e2f1261eab38f60fdb41\", \"gpu_unittests\": \"23b63613c652d080f914e783bbc277f3114620c0\", \"telemetry_gpu_test\": \"b29de7da81a9cbdf1b99cf1e630f19868e013adf\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu_triggered_tests/builds/85097",
+            "timestamp": "2014-11-27 12:24:33.712460",
+            "has_pending": true,
+            "parent_buildnumbers": [
+              97406
+            ]
+          },
+          "linux_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave435-c4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu/builds/97406",
+                "timestamp": "2014-11-27 12:24:33.646950",
+                "builder": "linux_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 97406,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"chrome\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave435-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_gpu\", \"got_webkit_revision\": 186112, \"buildername\": \"linux_gpu\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.chromium.gpu\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 97406, \"swarm_hashes\": {\"content_gl_tests\": \"e6134a8dbfcd1fc7b0d418afe6aaefb9e6bc3654\", \"tab_capture_end2end_tests\": \"3a68dea9124ba081df4fd35d47c2acb46bed9ead\", \"gles2_conform_test\": \"4d260ea3ea243765d9db79d8bb90378d01b0cc57\", \"gl_tests\": \"70fba42bfeb010c84b9d55d0b0413757e21d9146\", \"content_unittests\": \"a07608dee9f277c2e570a3ea10b3282177b59c82\", \"angle_unittests\": \"f308346160dddd345ba0caa4be6b761a810f7f84\", \"media_unittests\": \"14cee136fe6e271ed971e2f1261eab38f60fdb41\", \"gpu_unittests\": \"23b63613c652d080f914e783bbc277f3114620c0\", \"telemetry_gpu_test\": \"b29de7da81a9cbdf1b99cf1e630f19868e013adf\"}, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              97406
+            ],
+            "timestamp": "2014-11-27 12:24:33.646950",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417091075.275589,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417091021.74005,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "mac_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm648-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_compile_dbg/builds/27199",
+                "timestamp": "2014-11-27 12:23:34.891200",
+                "builder": "mac_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 27199,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQkM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"vm648-m4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/Volumes/data/b/build/slave/mac_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"mac_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 27199, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              27199
+            ],
+            "timestamp": "2014-11-27 12:23:34.891200",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417091021.628304,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090948.37631,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "linux_chromium_gn_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave658-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_chromium_gn_rel/builds/18258",
+                "timestamp": "2014-11-27 12:22:25.109860",
+                "builder": "linux_chromium_gn_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQgM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 18258,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQgM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave658-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/linux_chromium_gn\", \"got_webkit_revision\": 186112, \"buildername\": \"linux_chromium_gn_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 18258, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              18258
+            ],
+            "timestamp": "2014-11-27 12:22:25.109860",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417090948.134388,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090884.19936,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "android_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave653-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_dbg/builds/20429",
+                "timestamp": "2014-11-27 12:21:14.066000",
+                "builder": "android_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20429,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQkM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave653-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/android_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"android_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 20429, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              20429
+            ],
+            "timestamp": "2014-11-27 12:21:14.066000",
+            "has_pending": false
+          },
+          "android_blink_compile_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave620-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_rel/builds/20447",
+                "timestamp": "2014-11-27 12:21:21.348760",
+                "builder": "android_blink_compile_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20447,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QsM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave620-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/android_layout\", \"got_webkit_revision\": 186112, \"buildername\": \"android_blink_compile_rel\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 20447, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              20447
+            ],
+            "timestamp": "2014-11-27 12:21:21.348760",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417090884.083429,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090652.12488,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.blink": {
+          "blink_presubmit": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave608-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/20874",
+                "timestamp": "2014-11-27 12:17:29.350950",
+                "builder": "blink_presubmit",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": 0,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20874,
+                "build_properties": "{\"got_nacl_revision\": 14147, \"got_swarming_client_revision\": \"2558daf70a0eb67cc15eb8f7b7f885347523e77c\", \"got_revision\": \"390dc708e612b2a28261a0e139ad54d9bb8588c5\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQoM\", \"got_webrtc_revision_cp\": \"trunk/webrtc@{#7756}\", \"got_webkit_revision_git\": \"42bc96665a1113c8526f763b0ed4f80aaab3dd53\", \"got_webrtc_revision_git\": \"2755e82b1aed6700e5175f5030853aeda49aba6d\", \"project\": \"blink\", \"repository\": \"\", \"got_nacl_revision_cp\": \"refs/heads/master@{#14147}\", \"slavename\": \"slave608-c4\", \"got_revision_cp\": \"refs/heads/master@{#305977}\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\", \"workdir\": \"/b/build/slave/presubmit_blink\", \"got_webkit_revision\": 186112, \"buildername\": \"blink_presubmit\", \"testfilter\": [\"defaulttests\"], \"got_webrtc_revision\": 7756, \"mastername\": \"tryserver.blink\", \"patch_storage\": \"rietveld\", \"got_v8_revision\": \"6376da563b3879663af50abf1c4ba40b41216351\", \"got_v8_revision_cp\": \"refs/heads/candidates@{#25299}\", \"got_nacl_revision_git\": \"d4e59afe284b4aad20a361859c23e50df94fdbd2\", \"scheduler\": \"try_job_rietveld\", \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"orig_revision\": \"HEAD\", \"rietveld\": \"https://codereview.chromium.org\", \"got_webkit_revision_cp\": \"refs/heads/master@{#186112}\", \"buildnumber\": 20874, \"root\": \"src/third_party/WebKit\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 0,
+            "successful_buildnumbers": [
+              20874
+            ],
+            "timestamp": "2014-11-27 12:17:29.350950",
+            "has_pending": false
+          }
+        }
+      },
+      "timestamp": 1417090651.769095,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090593.23031,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "linux_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave435-c4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu/builds/97406",
+                "timestamp": "2014-11-27 12:16:28.121340",
+                "builder": "linux_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 97406,
+                "build_properties": "{\"project\": \"chrome\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"linux_gpu\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAoM\", \"mastername\": \"tryserver.chromium.gpu\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 97406, \"slavename\": \"slave435-c4\", \"workdir\": \"/b/build/slave/linux_gpu\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/linux_gpu/builds/97406",
+            "timestamp": "2014-11-27 12:16:28.121340",
+            "has_pending": true
+          },
+          "mac_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm62-a4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu/builds/87284",
+                "timestamp": "2014-11-27 12:16:28.251940",
+                "builder": "mac_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 87284,
+                "build_properties": "{\"project\": \"chrome\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"mac_gpu\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAkM\", \"mastername\": \"tryserver.chromium.gpu\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 87284, \"slavename\": \"vm62-a4\", \"workdir\": \"/Volumes/data/b/build/slave/mac_gpu\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/mac_gpu/builds/87284",
+            "timestamp": "2014-11-27 12:16:28.251940",
+            "has_pending": true
+          },
+          "win_gpu": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm844-m4",
+                "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu/builds/91943",
+                "timestamp": "2014-11-27 12:16:28.189170",
+                "builder": "win_gpu",
+                "clobber": false,
+                "project": "Chromium GPU Try Server",
+                "reason": "CQ",
+                "master": "tryserver.chromium.gpu",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 91943,
+                "build_properties": "{\"project\": \"chrome\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"win_gpu\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIC5hAsM\", \"mastername\": \"tryserver.chromium.gpu\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 91943, \"slavename\": \"vm844-m4\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_gpu\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.chromium.gpu/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.chromium.gpu/builders/win_gpu/builds/91943",
+            "timestamp": "2014-11-27 12:16:28.189170",
+            "has_pending": true
+          }
+        },
+        "tryserver.blink": {
+          "win_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm500-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38773",
+                "timestamp": "2014-11-27 12:16:26.067290",
+                "builder": "win_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 38773,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"win_blink_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQoM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 38773, \"slavename\": \"vm500-m4\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/38773",
+            "timestamp": "2014-11-27 12:16:26.067290",
+            "has_pending": true
+          },
+          "mac_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm648-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_compile_dbg/builds/27199",
+                "timestamp": "2014-11-27 12:16:26.131820",
+                "builder": "mac_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 27199,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"mac_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQkM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 27199, \"slavename\": \"vm648-m4\", \"workdir\": \"/Volumes/data/b/build/slave/mac_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_compile_dbg/builds/27199",
+            "timestamp": "2014-11-27 12:16:26.131820",
+            "has_pending": true
+          },
+          "mac_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm601-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_rel/builds/32943",
+                "timestamp": "2014-11-27 12:16:26.208540",
+                "builder": "mac_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 32943,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"mac_blink_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDlQsM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 32943, \"slavename\": \"vm601-m4\", \"workdir\": \"/Volumes/data/b/build/slave/mac_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/mac_blink_rel/builds/32943",
+            "timestamp": "2014-11-27 12:16:26.208540",
+            "has_pending": true
+          },
+          "linux_blink_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave606-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_rel/builds/35860",
+                "timestamp": "2014-11-27 12:16:26.344580",
+                "builder": "linux_blink_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QgM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 35860,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"linux_blink_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QgM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 35860, \"slavename\": \"slave606-c4\", \"workdir\": \"/b/build/slave/linux_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_rel/builds/35860",
+            "timestamp": "2014-11-27 12:16:26.344580",
+            "has_pending": true
+          },
+          "android_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave653-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_dbg/builds/20429",
+                "timestamp": "2014-11-27 12:16:27.068710",
+                "builder": "android_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20429,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"android_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQkM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 20429, \"slavename\": \"slave653-c4\", \"workdir\": \"/b/build/slave/android_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_dbg/builds/20429",
+            "timestamp": "2014-11-27 12:16:27.068710",
+            "has_pending": true
+          },
+          "linux_blink_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave609-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_dbg/builds/35022",
+                "timestamp": "2014-11-27 12:16:26.737650",
+                "builder": "linux_blink_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QkM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 35022,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"linux_blink_dbg\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QkM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 35022, \"slavename\": \"slave609-c4\", \"workdir\": \"/b/build/slave/linux_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_blink_dbg/builds/35022",
+            "timestamp": "2014-11-27 12:16:26.737650",
+            "has_pending": true
+          },
+          "android_blink_compile_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave620-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_rel/builds/20447",
+                "timestamp": "2014-11-27 12:16:26.809100",
+                "builder": "android_blink_compile_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20447,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"android_blink_compile_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QsM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 20447, \"slavename\": \"slave620-c4\", \"workdir\": \"/b/build/slave/android_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/android_blink_compile_rel/builds/20447",
+            "timestamp": "2014-11-27 12:16:26.809100",
+            "has_pending": true
+          },
+          "linux_chromium_gn_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave658-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_chromium_gn_rel/builds/18258",
+                "timestamp": "2014-11-27 12:16:26.880070",
+                "builder": "linux_chromium_gn_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQgM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 18258,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"linux_chromium_gn_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQgM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 18258, \"slavename\": \"slave658-c4\", \"workdir\": \"/b/build/slave/linux_chromium_gn\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/linux_chromium_gn_rel/builds/18258",
+            "timestamp": "2014-11-27 12:16:26.880070",
+            "has_pending": true
+          },
+          "blink_presubmit": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave608-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/20874",
+                "timestamp": "2014-11-27 12:16:26.935750",
+                "builder": "blink_presubmit",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 20874,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"blink_presubmit\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQoM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 20874, \"slavename\": \"slave608-c4\", \"workdir\": \"/b/build/slave/presubmit_blink\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/20874",
+            "timestamp": "2014-11-27 12:16:26.935750",
+            "has_pending": true
+          },
+          "android_chromium_gn_compile_rel": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "slave607-c4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/android_chromium_gn_compile_rel/builds/18366",
+                "timestamp": "2014-11-27 12:16:26.416130",
+                "builder": "android_chromium_gn_compile_rel",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QoM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 18366,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"android_chromium_gn_compile_rel\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDD1QoM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 18366, \"slavename\": \"slave607-c4\", \"workdir\": \"/b/build/slave/android_chromium_gn\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/android_chromium_gn_compile_rel/builds/18366",
+            "timestamp": "2014-11-27 12:16:26.416130",
+            "has_pending": true
+          },
+          "win_blink_compile_dbg": {
+            "rietveld_results": [
+              {
+                "parent_name": null,
+                "tests": [
+                  "defaulttests"
+                ],
+                "slave": "vm794-m4",
+                "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_compile_dbg/builds/27458",
+                "timestamp": "2014-11-27 12:16:26.997420",
+                "builder": "win_blink_compile_dbg",
+                "clobber": false,
+                "project": "Blink Try Server",
+                "reason": "CQ",
+                "master": "tryserver.blink",
+                "result": -1,
+                "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQsM",
+                "requester": "commit-bot@chromium.org",
+                "buildnumber": 27458,
+                "build_properties": "{\"project\": \"blink\", \"rietveld\": \"https://codereview.chromium.org\", \"scheduler\": \"try_job_rietveld\", \"repository\": \"\", \"buildername\": \"win_blink_compile_dbg\", \"testfilter\": [\"defaulttests\"], \"orig_revision\": \"HEAD\", \"try_job_key\": \"ahdzfmNocm9taXVtY29kZXJldmlldy1ocnI2CxIFSXNzdWUYuruS7QIMCxIIUGF0Y2hTZXQYAQwLEgxUcnlKb2JSZXN1bHQYgICAgIDDtQsM\", \"mastername\": \"tryserver.blink\", \"root\": \"src/third_party/WebKit\", \"patch_storage\": \"rietveld\", \"buildnumber\": 27458, \"slavename\": \"vm794-m4\", \"workdir\": \"E:\\\\b\\\\build\\\\slave/win_layout\", \"blamelist\": [\"commit-bot@chromium.org\"], \"branch\": null, \"requester\": \"commit-bot@chromium.org\", \"buildbotURL\": \"http://build.chromium.org/p/tryserver.blink/\", \"patchset\": 1, \"issue\": 765763002, \"revision\": \"HEAD\"}",
+                "revision": "HEAD"
+              }
+            ],
+            "status": 2,
+            "url": "http://build.chromium.org/p/tryserver.blink/builders/win_blink_compile_dbg/builds/27458",
+            "timestamp": "2014-11-27 12:16:26.997420",
+            "has_pending": true
+          }
+        }
+      },
+      "timestamp": 1417090593.036095,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090578.31275,
+    "fields": {
+      "status": "start",
+      "jobs": {
+        "tryserver.chromium.gpu": {
+          "linux_gpu_triggered_tests": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "win_gpu": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "win_gpu_triggered_tests": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "linux_gpu": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "mac_gpu": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "mac_gpu_retina_triggered_tests": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          }
+        },
+        "tryserver.blink": {
+          "win_blink_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "mac_blink_compile_dbg": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "mac_blink_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "linux_blink_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "android_chromium_gn_compile_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "linux_blink_dbg": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "android_blink_compile_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "linux_chromium_gn_rel": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "blink_presubmit": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "android_blink_compile_dbg": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          },
+          "win_blink_compile_dbg": {
+            "rietveld_results": [],
+            "status": 3,
+            "url": null,
+            "timestamp": null,
+            "has_pending": false,
+            "successful_buildnumbers": [],
+            "parent_buildnumbers": []
+          }
+        }
+      },
+      "timestamp": 1417090578.216159,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_jobs_update",
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=verifier_jobs_update",
+      "patchset=1",
+      "verifier=simple try job",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090559.0819,
+    "fields": {
+      "status": "start",
+      "timestamp": 1417090558.762129,
+      "project": "blink",
+      "state": "",
+      "done": false,
+      "verification": "initial",
+      "owner": "commit-bot@chromium.org",
+      "patchset": 1,
+      "issue": 765763002,
+      "payload": {
+        "revision": null
+      }
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "verification=initial",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090559.01127,
+    "fields": {
+      "status": "start",
+      "timestamp": 1417090558.761945,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "verifier": "simple try job",
+      "done": false,
+      "action": "verifier_start",
+      "tryjobs": {
+        "tryserver.chromium.gpu": {
+          "linux_gpu_triggered_tests": [
+            "defaulttests"
+          ],
+          "win_gpu": [
+            "defaulttests"
+          ],
+          "win_gpu_triggered_tests": [
+            "defaulttests"
+          ],
+          "linux_gpu": [
+            "defaulttests"
+          ],
+          "mac_gpu": [
+            "defaulttests"
+          ],
+          "mac_gpu_retina_triggered_tests": [
+            "defaulttests"
+          ]
+        },
+        "tryserver.blink": {
+          "win_blink_rel": [
+            "defaulttests"
+          ],
+          "mac_blink_compile_dbg": [
+            "defaulttests"
+          ],
+          "mac_blink_rel": [
+            "defaulttests"
+          ],
+          "linux_blink_rel": [
+            "defaulttests"
+          ],
+          "android_blink_compile_dbg": [
+            "defaulttests"
+          ],
+          "linux_blink_dbg": [
+            "defaulttests"
+          ],
+          "android_blink_compile_rel": [
+            "defaulttests"
+          ],
+          "linux_chromium_gn_rel": [
+            "defaulttests"
+          ],
+          "blink_presubmit": [
+            "defaulttests"
+          ],
+          "android_chromium_gn_compile_rel": [
+            "defaulttests"
+          ],
+          "win_blink_compile_dbg": [
+            "defaulttests"
+          ]
+        }
+      },
+      "patchset": 1,
+      "issue": 765763002
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "patchset=1",
+      "verifier=simple try job",
+      "action=verifier_start",
+      "project=blink"
+    ]
+  },
+  {
+    "timestamp": 1417090557.92796,
+    "fields": {
+      "status": "start",
+      "timestamp": 1417090557.815668,
+      "state": "",
+      "project": "blink",
+      "owner": "commit-bot@chromium.org",
+      "reason": null,
+      "done": false,
+      "action": "patch_start",
+      "patchset": 1,
+      "issue": 765763002,
+      "message": ""
+    },
+    "key": null,
+    "tags": [
+      "owner=commit-bot@chromium.org",
+      "issue=765763002",
+      "action=patch_start",
+      "patchset=1",
+      "project=blink"
+    ]
+  }
+]

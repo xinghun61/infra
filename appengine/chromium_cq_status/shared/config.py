@@ -14,6 +14,16 @@ AUTO_TAGGED_FIELDS = (
 CQ_BOT_PASSWORD_KEY = 'cq_bot'
 DEFAULT_QUERY_SIZE = 100
 MAXIMUM_QUERY_SIZE = 1000
+# This mapping matches PatchSet.try_job_results() in the chromium_rietveld repo.
+RIETVELD_JOB_STATE = {
+  -1: 'running',
+  0: 'passed',
+  2: 'failed',
+  # 6 is intended to be a value internal to Rietveld,
+  # we should not depend on it here.
+  # 6: 'trypending',
+}
+RIETVELD_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 STATS_START_TIMESTAMP = 374400 # 1970-01-05T00:00-0800 (midnight Monday PST)
 TAG_START = 'action=patch_start'
 TAG_STOP = 'action=patch_stop'

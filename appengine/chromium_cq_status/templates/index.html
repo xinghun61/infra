@@ -34,6 +34,63 @@ Only accepts GET requests.
 Example: <a href="/patch-status/557043002/1">/patch-status/557043002/1</a>
 
 
+&gt;&gt;&gt; <a href="/patch-summary/<issue>/<patchset>">/patch-summary/&lt;issue&gt;/&lt;patchset&gt;</a>
+API for getting a summary of the activity on a patch.
+Only accepts GET requests.
+Patch summary format (all duration values are in seconds):
+{
+  "success": bool,
+  "begin": timestamp,
+  "end": timestamp,
+  "durations": &gt;durations summary&lt;,
+  "job_counts": {
+    "passed": int,
+    "failed": int,
+    "running": int,
+  },
+  "flaky_jobs": [&gt;job summary&lt;],
+  "attempt_count": int,
+  "attempt_fail_count": int,
+  "attempts": [{
+    "success": bool,
+    "fail_reason": json,
+    "begin": timestamp,
+    "end": timestamp,
+    "durations": &gt;durations summary&lt;,
+    "jobs": {
+      "passed": [&gt;job summary&lt;],
+      "failed": [&gt;job summary&lt;],
+      "running": [&gt;job summary&lt;],
+    }
+  }]
+}
+
+Durations summary format:
+{
+  "running_all_jobs": float,
+  "blocked_on_closed_tree": float,
+  "blocked_on_throttled_tree": float,
+  "committing": float,
+  "total": float
+}
+
+Job summary format:
+{
+  "success": bool,
+  "retry": bool,
+  "begin": timestamp,
+  "end": timestamp,
+  "duration": float,
+  "master": string,
+  "builder": string,
+  "slave": string,
+  "buildnumber": int,
+  "url": string
+}
+
+Example: <a href="/patch-summary/557043002/1">/patch-summary/557043002/1</a>
+
+
 &gt;&gt;&gt; <a href="/stats/<project>/(15-minutely|hourly|daily|weekly)">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</a>
 Recent CQ stats for a project aggregated by various time intervals.
 Only accepts GET requests.
@@ -61,8 +118,8 @@ Accepts the following optional URL params:
   interval_minutes: int
   begin: timestamp
   end: timestamp
-  names: str (comma separated globs where * and ? are permitted for fuzzy matching)
-  count: int=100 (max 1000)
+  names: str // Comma separated globs where * and ? are permitted for fuzzy matching.
+  count: int=100 // Max 1000.
   cursor: str=''
 
 The returned query results are in the following JSON structure:
