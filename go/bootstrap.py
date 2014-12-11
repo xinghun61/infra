@@ -97,7 +97,13 @@ TOOLS_SOURCE = {
 
 # The set of directories to copy from the go_appengine SDK's goroot into our
 # toolchain's root. See patch_appengine_sdk for more details.
-GAE_DIRS = frozenset(('appengine', 'appengine_internal', 'code.google.com'))
+GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'code.google.com'))
+
+# Counter-hacks against GAE's hacks :). The init module writes a gae-added
+# boolean into the os package to disable file writes, and overwrites the
+# http.DefaultTransport to prevent usage. Since we're still using the real
+# GAE SDK for running apps locally and doing app uploads, remove their hacks.
+GAE_HACK_PKGS = frozenset(('appengine_internal/init',))
 
 
 class Failure(Exception):
@@ -222,7 +228,7 @@ def check_hello_world(toolset_root):
 
 
 def maybe_patch_appengine_sdk(toolset_root, go_appengine):
-  """Copies GAE_DIRS dirs into toolset_root.
+  """Copies GAE_PKGS dirs into toolset_root.
 
   This is necessary to convince go-get/goop to consider the appengine code as
   'system' level. Otherwise simply putting them on GOPATH would have been
@@ -249,15 +255,40 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
     LOGGER.info('  Old Appengine version is %s', old)
     LOGGER.info('  New Appengine version is %s', new)
 
-    for d in GAE_DIRS:
-      sdk_dir = os.path.join(go_appengine, 'goroot', 'src', 'pkg', d)
-      tool_dir = os.path.join(toolset_root, 'go', 'src', 'pkg', d)
+    base_sdk_dir = os.path.join(go_appengine, 'goroot', 'src', 'pkg')
+    base_tool_dir = os.path.join(toolset_root, 'go', 'src', 'pkg')
+
+    for d in GAE_PKGS:
+      sdk_dir = os.path.join(base_sdk_dir, d)
+      tool_dir = os.path.join(base_tool_dir, d)
       remove_directory([tool_dir])
       LOGGER.info('Copying %s -> %s', sdk_dir, tool_dir)
       shutil.copytree(sdk_dir, tool_dir)
 
+    for pkg in GAE_HACK_PKGS:
+      shutil.rmtree(os.path.join(base_tool_dir, pkg))
+
+    to_build = []
+    for d in GAE_PKGS:
+      to_build.extend(discover_targets(base_tool_dir, d))
+
+    LOGGER.info('Building %d Appengine libs', len(to_build))
+    subprocess.check_call(
+        [get_go_exe(toolset_root), 'build'] + to_build,
+        env=get_go_environ(
+          toolset_root, os.path.join(toolset_root, 'go'), [], []))
+
+
     write_file([toolset_root, 'INSTALLED_GAE_SDK'], sdk_version)
     return True
+
+
+def discover_targets(src_dir, pkg):
+  ret = []
+  for root, _, fnames in os.walk(os.path.join(src_dir, pkg)):
+    if any(n.endswith('.go') for n in fnames):
+      ret.append(root[len(src_dir)+1:])
+  return ret
 
 
 def ensure_toolset_installed(toolset_root, go_appengine):
