@@ -75,7 +75,10 @@ def IgnoredPaths(input_api): # pragma: no cover
   status_output = input_api.subprocess.check_output(
       ['git', 'status', '--porcelain', '--ignored'])
   statuses = [(line[:2], line[3:]) for line in status_output.splitlines()]
-  return [path for (mode, path) in statuses if mode in ('!!', '??')]
+  return [
+    input_api.re.escape(path) for (mode, path) in statuses
+    if mode in ('!!', '??') and not path.endswith('.pyc')
+  ]
 
 
 def PythonRootForPath(input_api, path):
@@ -193,22 +196,26 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   white_list = ['.*\.py$']
   black_list = list(input_api.DEFAULT_BLACK_LIST)
   black_list += DISABLED_PROJECTS
+  black_list += ['.*\.pyc$']
   black_list += IgnoredPaths(input_api)
 
   appengine_lib_paths = GetAppEngineLibraryPaths(input_api, appengine_env_path)
   extra_syspaths = [appengine_env_path, venv_path] + appengine_lib_paths
 
-  # FIXME: FetchAllFiles is extremely slow (35s on my Mac Book Pro)
-  # we need to profile this and make it much faster.
   all_python_files = FetchAllFiles(input_api, white_list, black_list)
 
   root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
   source_filter = lambda path: input_api.FilterSourceFile(path,
       white_list=white_list, black_list=black_list)
-  # Compute paths of changed files relative to the present file.
-  changed_py_files = [
-      f.AbsoluteLocalPath()[len(input_api.PresubmitLocalPath())+1:]
-      for f in input_api.AffectedSourceFiles(source_filter)]
+
+  # Compute paths of changed files relative to the present file. Ignore files
+  # outside of PresubmitLocalPath().
+  changed_py_files = []
+  for f in input_api.AffectedSourceFiles(source_filter):
+    abs_path = f.AbsoluteLocalPath()
+    rel = input_api.os_path.relpath(abs_path, input_api.PresubmitLocalPath())
+    if not rel.startswith('..'):
+      changed_py_files.append(abs_path[len(input_api.PresubmitLocalPath())+1:])
 
   dirty_roots = DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths)
 

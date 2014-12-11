@@ -116,7 +116,10 @@ def IgnoredPaths(input_api): # pragma: no cover
   status_output = input_api.subprocess.check_output(
       ['git', 'status', '--porcelain', '--ignored'])
   statuses = [(line[:2], line[3:]) for line in status_output.splitlines()]
-  return [path for (mode, path) in statuses if mode in ('!!', '??')]
+  return [
+    input_api.re.escape(path) for (mode, path) in statuses
+    if mode in ('!!', '??') and not path.endswith('.pyc')
+  ]
 
 
 def PythonRootForPath(input_api, path):
@@ -207,12 +210,11 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   white_list = ['.*\.py$']
   black_list = list(input_api.DEFAULT_BLACK_LIST)
   black_list += DISABLED_PROJECTS
-  black_list += [input_api.re.escape(path) for path in IgnoredPaths(input_api)]
+  black_list += ['.*\.pyc$']
+  black_list += IgnoredPaths(input_api)
 
   extra_syspaths = [venv_path]
 
-  # FIXME: FetchAllFiles is extremely slow (35s on my Mac Book Pro)
-  # we need to profile this and make it much faster.
   all_python_files = FetchAllFiles(input_api, white_list, black_list)
 
   root_to_paths = GroupPythonFilesByRoot(input_api, all_python_files)
