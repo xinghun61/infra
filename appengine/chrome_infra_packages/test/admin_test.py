@@ -5,9 +5,10 @@
 # test_env should be loaded before any other app module.
 from . import test_env
 
+from testing_utils import testing
 from components import auth_testing
 
-import frontend
+import admin
 import config
 
 
@@ -23,14 +24,14 @@ GS_CONFIG = {
 }
 
 
-class TestAdminHandlers(test_env.EndpointsApiTestCase):
-  API_CLASS_NAME = 'AdminApi'
+class TestAdminHandlers(testing.EndpointsTestCase):
+  api_service_cls = admin.AdminApi
 
   def test_require_auth(self):
     auth_testing.mock_is_admin(self, False)
-    with self.should_fail(403):
+    with self.call_should_fail(403):
       self.call_api('service_account', SERVICE_ACCOUNT_INFO)
-    with self.should_fail(403):
+    with self.call_should_fail(403):
       self.call_api('gs_config', GS_CONFIG)
 
   def test_service_account(self):
@@ -59,7 +60,7 @@ class TestAdminHandlers(test_env.EndpointsApiTestCase):
 
   def test_gs_config_bad(self):
     auth_testing.mock_is_admin(self, True)
-    with self.should_fail(400):
+    with self.call_should_fail(400):
       self.call_api('gs_config', {
         'cas_gs_path': 'bucket/gs_path',
         'cas_gs_temp': '/bucket/gs_temp/'

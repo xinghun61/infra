@@ -5,16 +5,19 @@
 # test_env should be loaded before any other app module.
 from test import test_env
 
+from testing_utils import testing
 from components import auth_testing
 
+from cas import api
 from cas import impl
+
 from . import common
 
 
-class CASServiceApiTest(test_env.EndpointsApiTestCase):
+class CASServiceApiTest(testing.EndpointsTestCase):
   """Tests for API layer ONLY."""
 
-  API_CLASS_NAME = 'CASServiceApi'
+  api_service_cls = api.CASServiceApi
 
   def setUp(self):
     super(CASServiceApiTest, self).setUp()
@@ -36,14 +39,14 @@ class CASServiceApiTest(test_env.EndpointsApiTestCase):
     })
 
   def test_begin_upload_bad_algo(self):
-    with self.should_fail(400):
+    with self.call_should_fail(400):
       self.call_api('begin_upload', {
         'hash_algo': 'UBERHASH',
         'file_hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       })
 
   def test_begin_upload_bad_digest(self):
-    with self.should_fail(400):
+    with self.call_should_fail(400):
       self.call_api('begin_upload', {
         'hash_algo': 'SHA1',
         'file_hash': 'aaaa',
@@ -51,7 +54,7 @@ class CASServiceApiTest(test_env.EndpointsApiTestCase):
 
   def test_begin_upload_no_service(self):
     self.cas_service = None
-    with self.should_fail(500):
+    with self.call_should_fail(500):
       self.call_api('begin_upload', {
         'hash_algo': 'SHA1',
         'file_hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -73,7 +76,7 @@ class CASServiceApiTest(test_env.EndpointsApiTestCase):
 
   def test_finish_upload_no_service(self):
     self.cas_service = None
-    with self.should_fail(500):
+    with self.call_should_fail(500):
       self.call_api('finish_upload', {'upload_session_id': 'signed_id'})
 
   def test_finish_upload_missing_upload(self):

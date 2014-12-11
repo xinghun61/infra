@@ -143,3 +143,47 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
 
       tasks = self.taskqueue_stub.get_filtered_tasks()
     return responses
+
+
+class EndpointsTestCase(AppengineTestCase):  # pragma: no cover
+  """Base class for a test case that tests Cloud Endpoint Service.
+
+  Usage:
+    class MyTestCase(testing.EndpointsTestCase):
+      api_service_cls = MyEndpointsService
+
+      def test_stuff(self):
+        response = self.call_api('my_method')
+        self.assertEqual(...)
+
+      def test_expected_fail(self):
+        with self.call_should_fail(403):
+          self.call_api('protected_method')
+  """
+
+  # Should be set in subclasses to a subclass of remote.Service.
+  api_service_cls = None
+
+  @property
+  def app_module(self):
+    """WSGI module that wraps the API class, used by AppengineTestCase."""
+    return endpoints.api_server([self.api_service_cls], restricted=False)
+
+  def call_api(self, method, body=None, status=None):
+    """Calls endpoints API method identified by its name."""
+    self.assertTrue(hasattr(self.api_service_cls, method))
+    return self.test_app.post_json(
+        '/_ah/spi/%s.%s' % (self.api_service_cls.__name__, method),
+        body or {},
+        status=status)
+
+  @contextmanager
+  def call_should_fail(self, _status):
+    """Asserts that Endpoints call inside the guarded region of code fails."""
+    # This should be a call_api(..., status=<something>). Unfortunately,
+    # Cloud Endpoints doesn't interact with webtest properly. See
+    # https://code.google.com/p/googleappengine/issues/detail?id=10544 and
+    # http://stackoverflow.com/questions/24219654/content-length-error-in-
+    #   google-cloud-endpoints-testing
+    with self.assertRaises(AssertionError):
+      yield
