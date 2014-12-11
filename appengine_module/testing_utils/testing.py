@@ -68,7 +68,8 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
       app = self.app_module
       if app is None:
         self.fail('self.app_module is not provided by the test class')
-      self._test_app = webtest.TestApp(app)
+      self._test_app = webtest.TestApp(
+          app, extra_environ={'REMOTE_ADDR': '127.0.0.1'})
     return self._test_app
 
   def mock_now(self, now):
