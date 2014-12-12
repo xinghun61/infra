@@ -1,0 +1,4 @@
+cron:
+- description: Run full update
+  url: /tasks/update_all
+  schedule: every 1 minutes
