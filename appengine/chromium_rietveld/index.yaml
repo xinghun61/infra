@@ -30,6 +30,11 @@ indexes:
 
 - kind: Issue
   properties:
+  - name: project
+  - name: target_ref
+
+- kind: Issue
+  properties:
   - name: closed
   - name: commit
   - name: project
