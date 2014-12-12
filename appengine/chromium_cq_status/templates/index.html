@@ -10,6 +10,12 @@ textarea {
   width: calc(100%% - 10px);
   height: 50vh;
 }
+.item {
+  font-weight: bold;
+}
+.item:before {
+  content: '>>> ';
+}
 </style>
 
 <h1>Chromium CQ Status</h1>
@@ -22,19 +28,20 @@ Use "<a href="http://commondatastorage.googleapis.com/chrome-infra-docs/flat/dep
 
 Site directory listing:
 
-&gt;&gt;&gt; <a href="/recent">/recent</a>
+<span class="item"><a href="/recent">/recent</a></span>
+Example: <a href="/recent#project=chromium,action=patch_start">/recent#project=chromium,action=patch_start</a>
 Shows a table of recently received records.
 Tags to filter by are specified as a comma separated list after the #.
-Example: <a href="/recent#project=chromium,action=patch_start">/recent#project=chromium,action=patch_start</a>
 
 
-&gt;&gt;&gt; <a href="/patch-status/<issue>/<patchset>">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</a>
+<span class="item">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/patch-status/557043002/1">/patch-status/557043002/1</a>
 Shows a timeline of CQ activity on a given patch.
 Only accepts GET requests.
-Example: <a href="/patch-status/557043002/1">/patch-status/557043002/1</a>
 
 
-&gt;&gt;&gt; <a href="/patch-summary/<issue>/<patchset>">/patch-summary/&lt;issue&gt;/&lt;patchset&gt;</a>
+<span class="item">/patch-summary/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/patch-summary/557043002/1">/patch-summary/557043002/1</a>
 API for getting a summary of the activity on a patch.
 Only accepts GET requests.
 Patch summary format (all duration values are in seconds):
@@ -42,13 +49,13 @@ Patch summary format (all duration values are in seconds):
   "success": bool,
   "begin": timestamp,
   "end": timestamp,
-  "durations": &gt;durations summary&lt;,
+  "durations": &lt;durations summary&gt;,
   "job_counts": {
     "passed": int,
     "failed": int,
-    "running": int,
+    "running": int
   },
-  "flaky_jobs": [&gt;job summary&lt;],
+  "flaky_jobs": [&lt;job summary&gt;],
   "attempt_count": int,
   "attempt_fail_count": int,
   "attempts": [{
@@ -56,11 +63,11 @@ Patch summary format (all duration values are in seconds):
     "fail_reason": json,
     "begin": timestamp,
     "end": timestamp,
-    "durations": &gt;durations summary&lt;,
+    "durations": &lt;durations summary&gt;,
     "jobs": {
-      "passed": [&gt;job summary&lt;],
-      "failed": [&gt;job summary&lt;],
-      "running": [&gt;job summary&lt;],
+      "passed": [&lt;job summary&gt;],
+      "failed": [&lt;job summary&gt;],
+      "running": [&lt;job summary&gt;]
     }
   }]
 }
@@ -88,28 +95,29 @@ Job summary format:
   "url": string
 }
 
-Example: <a href="/patch-summary/557043002/1">/patch-summary/557043002/1</a>
 
-
-&gt;&gt;&gt; <a href="/stats/<project>/(15-minutely|hourly|daily|weekly)">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</a>
-Recent CQ stats for a project aggregated by various time intervals.
-Only accepts GET requests.
-Accepts optional URL param for how many data points to fetch:
-  data_points: int
-
+<span class="item">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</span>
 Examples:
 <a href="/stats/chromium/15-minutely">/stats/chromium/15-minutely</a>
 <a href="/stats/chromium/hourly">/stats/chromium/hourly</a>
 <a href="/stats/chromium/daily">/stats/chromium/daily</a>
 <a href="/stats/chromium/weekly">/stats/chromium/weekly</a>
-
 <a href="/stats/blink/15-minutely">/stats/blink/15-minutely</a>
 <a href="/stats/blink/hourly">/stats/blink/hourly</a>
 <a href="/stats/blink/daily">/stats/blink/daily</a>
 <a href="/stats/blink/weekly">/stats/blink/weekly</a>
 
+Recent CQ stats for a project aggregated by various time intervals.
+Only accepts GET requests.
+Accepts optional URL param for how many data points to fetch:
+  data_points: int
 
-&gt;&gt;&gt; <a href="/stats/query">/stats/query</a>
+
+<span class="item"><a href="/stats/query">/stats/query</a></span>
+Examples:
+<a href="/stats/query?project=chromium&names=issue-count,patchset-*&count=3">/stats/query?project=chromium&names=issue-count,patchset-*&count=3</a>
+<a href="/stats/query?key=6361816489787392&names=attempt-durations">/stats/query?key=6361816489787392&names=attempt-durations</a>
+
 API for querying CQ stats.
 Only accepts GET requests.
 Accepts the following optional URL params:
@@ -163,12 +171,12 @@ The returned query results are in the following JSON structure:
   "more": bool
 }
 
+
+<span class="item">/stats/(highest|lowest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</span>
 Examples:
-<a href="/stats/query?project=chromium&names=issue-count,patchset-*&count=3">/stats/query?project=chromium&names=issue-count,patchset-*&count=3</a>
-<a href="/stats/query?key=6361816489787392&names=attempt-durations">/stats/query?key=6361816489787392&names=attempt-durations</a>
+<a href="/stats/highest/attempt-durations/6361816489787392">/stats/highest/attempt-durations/6361816489787392</a>
+<a href="/stats/lowest/attempt-durations/6361816489787392">/stats/lowest/attempt-durations/6361816489787392</a>
 
-
-&gt;&gt;&gt; <a href="/stats/(highest|lowest)/<list stats name>/<CQ stats key>">/stats/(highest|lowest)/&lt;list stats name&gt;/&lt;CQ stats key&gt;</a>
 API for querying highest/lowest data points in individual stats.
 Only accepts GET requests.
 Data points are returned in the following JSON structure:
@@ -186,12 +194,12 @@ Data point metadata is typically of the form:
   "patchset": int
 }
 
+
+<span class="item"><a href="/query">/query</a></span>
 Examples:
-<a href="/stats/highest/attempt-durations/6361816489787392">/stats/highest/attempt-durations/6361816489787392</a>
-<a href="/stats/lowest/attempt-durations/6361816489787392">/stats/lowest/attempt-durations/6361816489787392</a>
+<a href="/query/project=chromium/action=patch_start?count=10">/query/project=chromium/action=patch_start?count=10</a>
+<a href="/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10">/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10</a>
 
-
-&gt;&gt;&gt; <a href="/query">/query</a>
 API for querying CQ records.
 Only accepts GET requests.
 Accepts the following optional URL params:
@@ -215,15 +223,10 @@ The returned query results are in the following JSON structure:
   "cursor": str
 }
 
-Example:
-<a href="/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10">/query?tags=project%%3Dchromium,action%%3Dpatch_start&count=10</a> shows the 10 most recently started CQ attempts.
-
-Shortcut:
-Tags can be specified in the URL, the following is an equivalent example.
-<a href="/query/project=chromium/action=patch_start?count=10">/query/project=chromium/action=patch_start?count=10</a>
+Tags may be specified directly in the URL e.g. /query/tag_a/tag_b.
 
 
-&gt;&gt;&gt; <a href="/post">/post</a>
+<span class="item">/post</span>
 API for posting CQ records.
 Requires @chromium.org/@google.com <a href="%(login_url)s">sign in</a>.
 Only accepts POST requests.
