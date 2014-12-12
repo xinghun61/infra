@@ -13,14 +13,7 @@ from protorpc import messages
 class BuildStatus(messages.Enum):
   SCHEDULED = 1
   BUILDING = 2
-  SUCCESS = 3
-  FAILURE = 4
-  EXCEPTION = 5  # Infrastructure failure.
-
-
-LEASABLE_STATUSES = (BuildStatus.SCHEDULED, BuildStatus.BUILDING)
-FINAL_STATUSES = (BuildStatus.SUCCESS, BuildStatus.FAILURE,
-                  BuildStatus.EXCEPTION)
+  COMPLETE = 3
 
 
 class Callback(ndb.Model):
@@ -44,13 +37,12 @@ class Build(ndb.Model):
       namespaces have different permissions.
     properties (dict): arbitrary build properties.
     status (BuildStatus): status of the build.
-    url (str): a URL to a build-system-specific build, viewable by a human.
     available_since (datetime): the earliest time the build can be leased.
       The moment the build is leased, |available_since| is set to
       (utcnow + lease_duration). On build creation, is set to utcnow.
     lease_key (int): a random value, changes every time a build is leased.
       Can be used to verify that a client is the leaseholder.
-    callback_url (str): callback URL to create a push task when build status
+    callback (Callback): parameters for a push task creation on build status
       changes.
   """
 
@@ -58,19 +50,13 @@ class Build(ndb.Model):
   namespace = ndb.StringProperty(required=True)
   properties = ndb.JsonProperty()
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
-  url = ndb.StringProperty(indexed=False)
   available_since = ndb.DateTimeProperty(required=True, auto_now_add=True)
   lease_key = ndb.IntegerProperty(indexed=False)
   callback = ndb.StructuredProperty(Callback, indexed=False)
 
-  def is_available(self):
-    return self.available_since <= datetime.datetime.utcnow()
-
   def is_leasable(self):
-    return self.is_available() and self.status in LEASABLE_STATUSES
-
-  def is_status_final(self):
-    return self.status in FINAL_STATUSES
+    return (self.available_since <= datetime.datetime.utcnow() and
+            self.status == BuildStatus.SCHEDULED)
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random integer."""

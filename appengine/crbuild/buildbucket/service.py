@@ -87,7 +87,7 @@ class BuildBucketService(object):
 
     # This predicate must be in sync with Build.is_leasable()
     q = model.Build.query(
-        model.Build.status.IN(model.LEASABLE_STATUSES),
+        model.Build.status == model.BuildStatus.SCHEDULED,
         model.Build.namespace.IN(namespaces),
         model.Build.available_since <= datetime.datetime.utcnow(),
     )
@@ -210,7 +210,7 @@ class BuildBucketService(object):
 
       status_change = False
       if status is not None and build.status != status:
-        if build.is_status_final():
+        if build.status == model.BuildStatus.COMPLETE:
           raise StatusIsFinalError(
               'Build status cannot be changed from status %s' % build.status)
         build.status = status
@@ -220,4 +220,5 @@ class BuildBucketService(object):
 
       if status_change and build.callback:
         self._enqueue_callback_task(build)
+      return build
     return do_update()

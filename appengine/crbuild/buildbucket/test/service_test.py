@@ -36,6 +36,8 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.current_user = mock.Mock()
     self.mock(acl, 'current_user', mock.Mock(return_value=self.current_user))
 
+  ##################################### ADD ####################################
+
   def test_add(self):
     build = self.test_build
     self.service.add(build)
@@ -46,6 +48,8 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.current_user.can_add_build_to_namespace.return_value = False
     with self.assertRaises(auth.AuthorizationError):
       self.service.add(self.test_build)
+
+  ##################################### GET ####################################
 
   def test_get(self):
     self.test_build.put()
@@ -60,6 +64,8 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.service.get(self.test_build.key.id())
+
+  ##################################### PEEK ###################################
 
   def test_peek(self):
     self.test_build.put()
@@ -82,20 +88,23 @@ class BuildBucketServiceTest(CrBuildTestCase):
     with self.assertRaises(AssertionError):
       self.service.peek([self.test_build.namespace], max_builds=1000)
 
-  def lease(self):
-    success, self.test_build = self.service.lease(self.test_build.key.id())
+  #################################### LEASE ###################################
+
+  def lease(self, duration=None):
+    success, self.test_build = self.service.lease(
+        self.test_build.key.id(),
+        duration=duration,
+    )
     return success
 
   def test_lease_build_with_auth_error(self):
     self.current_user.can_lease_build.return_value = False
-    build = self.test_build
-    build.put()
+    self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.lease()
 
   def test_cannot_lease_a_leased_build(self):
-    build = self.test_build
-    build.put()
+    self.test_build.put()
     self.assertTrue(self.lease())
     self.assertFalse(self.lease())
 
@@ -106,10 +115,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
   def test_cannot_lease_for_whole_day(self):
     self.test_build.put()
     with self.assertRaises(AssertionError):
-      self.service.lease(
-          self.test_build.key.id(),
-          duration=datetime.timedelta(days=1),
-      )
+      self.lease(duration=datetime.timedelta(days=1))
 
   def test_leasing_changes_lease_key(self):
     self.test_build.put()
@@ -118,17 +124,22 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.assertNotEqual(self.test_build.lease_key, orig_lease_key)
 
   def test_cannot_lease_completed_build(self):
-    build = self.test_build
-    build.status = model.BuildStatus.SUCCESS
-    build.put()
+    self.test_build.status = model.BuildStatus.COMPLETE
+    self.test_build.put()
     self.assertFalse(self.lease())
+
+  #################################### UPDATE ##################################
 
   def test_unlease(self):
     self.test_build.put()
     build_id = self.test_build.key.id()
-    _, build = self.service.lease(build_id)
-    self.service.update(build_id, build.lease_key,
-        lease_duration=datetime.timedelta(seconds=0))
+    self.lease()
+    build = self.service.update(
+        build_id,
+        lease_key=self.test_build.lease_key,
+        lease_duration=datetime.timedelta(0),
+    )
+    self.assertIsNone(build.lease_key)
     self.assertTrue(self.lease())
 
   def test_cannot_update_nonexistent_build(self):
@@ -139,15 +150,13 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.test_build.put()
     self.service.update(self.test_build.key.id(),
                         url='http://a.com',
-                        status=model.BuildStatus.SUCCESS)
+                        status=model.BuildStatus.COMPLETE)
     build = self.test_build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.SUCCESS)
+    self.assertEqual(build.status, model.BuildStatus.COMPLETE)
     self.assertEqual(build.url, 'http://a.com')
 
   def test_update_with_auth_error(self):
     self.test_build.put()
-    self.lease()
-
     self.current_user.can_lease_build.return_value = False
     with self.assertRaises(auth.AuthorizationError):
       self.service.update(self.test_build.key.id(), lease_key=321)
@@ -157,16 +166,14 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.lease()
     with self.assertRaises(service.BadLeaseKeyError):
       self.service.update(self.test_build.key.id(),
-                          self.test_build.lease_key + 1, url='http://a.com')
+                          self.test_build.lease_key + 1,
+                          url='http://a.com')
 
   def test_cannot_transition_build_from_final_state(self):
+    self.test_build.status = model.BuildStatus.COMPLETE
     self.test_build.put()
-    self.lease()
-    self.test_build.status = model.BuildStatus.SUCCESS
-    self.test_build.put()
-
     with self.assertRaises(service.StatusIsFinalError):
-      self.service.update(self.test_build.key.id(), self.test_build.lease_key,
+      self.service.update(self.test_build.key.id(),
                           status=model.BuildStatus.BUILDING)
 
   def test_status_changes_creates_notification_task(self):
@@ -177,7 +184,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.test_build.status = model.BuildStatus.BUILDING
     self.test_build.put()
     self.service.update(self.test_build.key.id(),
-                        status=model.BuildStatus.SUCCESS)
+                        status=model.BuildStatus.COMPLETE)
 
     taskq = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
     tasks = taskq.GetTasks('default')

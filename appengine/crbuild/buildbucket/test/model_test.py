@@ -13,35 +13,22 @@ class BuildTest(CrBuildTestCase):
     super(BuildTest, self).setUp()
     self.test_build = model.Build(
         namespace='chromium',
+        status=model.BuildStatus.SCHEDULED,
         properties={'builder_name': 'linux_rel'},
     )
     self.test_build.put()
 
-  def test_is_available(self):
-    self.assertTrue(self.test_build.is_available())
+  def test_scheduled_is_leasable(self):
+    self.assertTrue(self.test_build.is_leasable())
+
+  def test_complete_build_is_not_leasable(self):
+    self.test_build.status = model.BuildStatus.COMPLETE
+    self.assertFalse(self.test_build.is_leasable())
+
+  def test_unavailable_build_is_not_leasable(self):
     tomorrow = datetime.datetime.utcnow() + datetime.timedelta(days=1)
     self.test_build.available_since = tomorrow
-    self.assertFalse(self.test_build.is_available())
-
-  def test_is_leasable(self):
-    self.test_build.status = model.BuildStatus.SUCCESS
     self.assertFalse(self.test_build.is_leasable())
-
-    self.test_build.status = model.BuildStatus.EXCEPTION
-    self.assertFalse(self.test_build.is_leasable())
-
-    self.test_build.status = model.BuildStatus.FAILURE
-    self.assertFalse(self.test_build.is_leasable())
-
-  def test_final_statuses(self):
-    self.test_build.status = model.BuildStatus.SUCCESS
-    self.assertTrue(self.test_build.is_status_final())
-
-    self.test_build.status = model.BuildStatus.EXCEPTION
-    self.assertTrue(self.test_build.is_status_final())
-
-    self.test_build.status = model.BuildStatus.FAILURE
-    self.assertTrue(self.test_build.is_status_final())
 
   def test_regenerate_lease_key(self):
     orig_lease_key = 0
