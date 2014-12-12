@@ -3338,7 +3338,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     # plays in the issue and user preferences.
     accounts = models.Account.get_multiple_accounts_by_email(
       [my_email] + to + cc)
-    my_email = _add_plus_addr(my_email, accounts, issue)
+    # Don't add +role to my_email because GAE may not allow us to use
+    # that as the message sender in certain cases.
     to = [_add_plus_addr(addr, accounts, issue) for addr in to]
     cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
     reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
