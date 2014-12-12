@@ -48,7 +48,7 @@ help:
 
 run: serve
 
-serve: update_revision mapreduce
+serve: update_revision
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) .
 
@@ -65,15 +65,9 @@ update_revision:
 	@echo "---[Updating REVISION]---"
 	@echo "$(VERSION_TAG)" >REVISION
 
-update_frontend: update_revision mapreduce
+update: update_revision
 	@echo "---[Updating $(APPID)]---"
 	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(APPID) --version $(VERSION)
-
-update_backend: update_revision mapreduce
-	@echo "---[Updating backend $(APPID)]---"
-	$(APPCFG) $(APPCFG_FLAGS) backends update . --oauth2 --application $(APPID) --version $(VERSION)
-
-update: update_frontend update_backend
 
 upload: update
 
@@ -92,24 +86,13 @@ coverage:
 	$(COVERAGE) run --branch tests/run_tests.py $(SDK_PATH)
 	$(COVERAGE) html --include="codereview/*"
 
-# Checkout mapreduce library and apply a little patch.
-# See https://code.google.com/p/appengine-mapreduce/issues/detail?id=174
-mapreduce:
-	svn co -r 491 http://appengine-mapreduce.googlecode.com/svn/trunk/python/src/mapreduce
-	cd mapreduce/ && patch < ../mapreduce.patch
-
-
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or something
 # that might clutter the real datastore.
-stage: update_revision mapreduce stage_backend
+stage: update_revision
 	@echo "---[Staging $(STAGEID)]---"
 	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(STAGEID) --version $(VERSION)
-
-stage_backend: update_revision mapreduce
-	@echo "---[Staging backend $(STAGEID)]---"
-	$(APPCFG) $(APPCFG_FLAGS) backends update . --oauth2 --application $(STAGEID) --version $(VERSION)
 
 stage_indexes:
 	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --oauth2 --application $(STAGEID)

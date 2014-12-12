@@ -4,9 +4,6 @@ runtime: python27
 api_version: 1
 threadsafe: false
 
-includes:
-- mapreduce/include.yaml
-
 default_expiration: 7d  # This is good for images, which never change
 
 # The commented "secure: always" handler can't be enabled for appspot.com
@@ -44,11 +41,6 @@ handlers:
 # Admin-only URLs like tasks or cron jobs. See cron.yaml and queue.yaml.
 - url: /restricted/.*
   script: main.application
-  login: admin
-
-# These seem to be hit over http and cannot deal with a 302 to https.
-- url: /_ah/(start|stop)
-  script: backends.app
   login: admin
 
 - url: /.*
