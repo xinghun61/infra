@@ -1,0 +1,7 @@
+indexes:
+
+- kind: Build
+  properties:
+  - name: namespace
+  - name: status
+  - name: available_since

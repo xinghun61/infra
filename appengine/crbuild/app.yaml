@@ -14,8 +14,11 @@ handlers:
   upload: static_files/favicon.ico
   secure: always
 
+- url: /_ah/spi/.*
+  script: apps.apis
+
 - url: /.*
-  script: main.app
+  script: apps.html
   login: required
   secure: always
 
@@ -25,16 +28,22 @@ libraries:
 - name: jinja2
   version: latest
 - name: webapp2
-  version: latest
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
 
 builtins:
 - deferred: on
 - remote_api: on
+
+includes:
+- components/auth
 
 skip_files:
 - ^(.*/)?.*\.(orig|rej|py[co])
 - ^(.*/)?#.*#
 - ^(.*/)?.*~
 - ^(.*/)?\..*
-- ^tests.*
+- ^test.*
+- ^tools.*
 - ^[A-Z]+(\.[a-z]+)?

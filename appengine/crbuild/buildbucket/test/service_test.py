@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 
 from google.appengine.ext import testbed
 import mock
@@ -12,6 +13,7 @@ from buildbucket import service
 from components import auth
 from test import CrBuildTestCase
 import acl
+
 
 class BuildBucketServiceTest(CrBuildTestCase):
   def __init__(self, *args, **kwargs):
@@ -39,15 +41,28 @@ class BuildBucketServiceTest(CrBuildTestCase):
   ##################################### ADD ####################################
 
   def test_add(self):
-    build = self.test_build
-    self.service.add(build)
+    props = {'buildername': 'linux_rel'}
+    build = self.service.add(
+        namespace='chromium',
+        properties=props,
+    )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
+    self.assertEqual(build.namespace, 'chromium')
+    self.assertEqual(build.properties, props)
+
+  def test_add_with_leasing(self):
+    build = self.service.add(
+        namespace='chromium',
+        lease_duration=datetime.timedelta(seconds=1)
+    )
+    self.assertGreater(build.available_since, datetime.datetime.utcnow())
+    self.assertIsNotNone(build.lease_key)
 
   def test_add_with_auth_error(self):
     self.current_user.can_add_build_to_namespace.return_value = False
     with self.assertRaises(auth.AuthorizationError):
-      self.service.add(self.test_build)
+      self.service.add(self.test_build.namespace)
 
   ##################################### GET ####################################
 
@@ -91,20 +106,23 @@ class BuildBucketServiceTest(CrBuildTestCase):
   #################################### LEASE ###################################
 
   def lease(self, duration=None):
+    if self.test_build.key is None:
+      self.test_build.put()
     success, self.test_build = self.service.lease(
         self.test_build.key.id(),
         duration=duration,
     )
     return success
 
+  def test_can_lease(self):
+    self.assertTrue(self.lease())
+
   def test_lease_build_with_auth_error(self):
     self.current_user.can_lease_build.return_value = False
-    self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.lease()
 
   def test_cannot_lease_a_leased_build(self):
-    self.test_build.put()
     self.assertTrue(self.lease())
     self.assertFalse(self.lease())
 
@@ -113,13 +131,19 @@ class BuildBucketServiceTest(CrBuildTestCase):
       self.service.lease(build_id=42)
 
   def test_cannot_lease_for_whole_day(self):
-    self.test_build.put()
-    with self.assertRaises(AssertionError):
+    with self.assertRaises(service.BadLeaseDurationError):
       self.lease(duration=datetime.timedelta(days=1))
 
-  def test_leasing_changes_lease_key(self):
-    self.test_build.put()
-    orig_lease_key = self.test_build.lease_key
+  def test_cannot_lease_for_negative_duration(self):
+    with self.assertRaises(service.BadLeaseDurationError):
+      self.lease(duration=datetime.timedelta(days=-1))
+
+  def test_cannot_lease_for_non_timedelta_duration(self):
+    with self.assertRaises(service.BadLeaseDurationError):
+      self.lease(duration=2)
+
+  def test_leasing_regenerates_lease_key(self):
+    orig_lease_key = 42
     self.lease()
     self.assertNotEqual(self.test_build.lease_key, orig_lease_key)
 
@@ -128,14 +152,13 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.test_build.put()
     self.assertFalse(self.lease())
 
-  #################################### UPDATE ##################################
+  ################################### UPDATE ###################################
 
   def test_unlease(self):
     self.test_build.put()
-    build_id = self.test_build.key.id()
     self.lease()
     build = self.service.update(
-        build_id,
+        self.test_build.key.id(),
         lease_key=self.test_build.lease_key,
         lease_duration=datetime.timedelta(0),
     )
@@ -175,6 +198,8 @@ class BuildBucketServiceTest(CrBuildTestCase):
     with self.assertRaises(service.StatusIsFinalError):
       self.service.update(self.test_build.key.id(),
                           status=model.BuildStatus.BUILDING)
+
+  ################################# OTHER STUFF ################################
 
   def test_status_changes_creates_notification_task(self):
     self.test_build.callback = model.Callback(

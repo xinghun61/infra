@@ -14,7 +14,6 @@ from google.appengine.api import urlfetch
 
 from mock import Mock
 from test.testing_utils import testing
-import main
 
 
 def fake_urlfetch_fetch():  # pragma: no cover
@@ -26,8 +25,6 @@ def fake_urlfetch_fetch():  # pragma: no cover
 
 
 class CrBuildTestCase(testing.AppengineTestCase):  # pragma: no cover
-  app_module = main.app
-
   def __init__(self, *args, **kwargs):
     super(CrBuildTestCase, self).__init__(*args, **kwargs)
     self.urlfetch_fetch = None

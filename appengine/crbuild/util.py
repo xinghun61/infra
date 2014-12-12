@@ -8,16 +8,13 @@ from calendar import timegm
 import os
 
 
-DEV_SERVER = os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
-PRODUCTION = not DEV_SERVER
-
-
 def datetime_to_timestamp(dt):
   return float(timegm(dt.timetuple()))
 
 
 class BadIdError(Exception):
   """Raised when Entity id is malformed."""
+
 
 class RegexIdMixin(object):
   """RegexIdMixin enforces an entity id to match a regular expression.

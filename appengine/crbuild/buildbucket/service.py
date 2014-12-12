@@ -22,6 +22,10 @@ class BuildNotFoundError(Exception):
   pass
 
 
+class BadLeaseDurationError(Exception):
+  pass
+
+
 class StatusIsFinalError(Exception):
   pass
 
@@ -30,20 +34,55 @@ class BadLeaseKeyError(Exception):
   pass
 
 
+def validate_lease_duration(duration):
+  """Raises BadLeaseDurationError if |duration| is invalid."""
+  if duration is None:
+    return
+  if not isinstance(duration, datetime.timedelta):
+    raise BadLeaseDurationError('Lease duration must be datetime.timedelta')
+  if duration < datetime.timedelta(0):
+    raise BadLeaseDurationError('Lease duration cannot be negative')
+  if duration > MAX_LEASE_DURATION:
+    raise BadLeaseDurationError(
+        'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
+
+
 class BuildBucketService(object):
-  def add(self, build):
+  def add(self, namespace, properties=None, lease_duration=None):
     """Adds the build entity to the build bucket.
 
-    Requires the current user to have permissions add to builds to the
-    |build.namespace| namespace.
+    Requires the current user to have permissions to add builds to the
+    |namespace|.
+
+    Args:
+      namespace (str): build namespace. Required.
+      properties (dict): arbitrary build properties.
+      lease_duration (datetime.timedelta): if not None, the build is created as
+        leased and its lease_key is not None.
+
+    Returns:
+      A new Build.
     """
-    assert build
-    assert build.namespace
+    assert namespace, 'Namespace not specified'
+    assert isinstance(namespace, basestring), 'Namespace must be a string'
+    assert properties is None or isinstance(properties, dict)
+    validate_lease_duration(lease_duration)
+    lease_duration = lease_duration or datetime.timedelta(0)
+
     acl_user = acl.current_user()
-    if not acl_user.can_add_build_to_namespace(build.namespace):
-      raise auth.AuthorizationError('namespace %s is not allowed for %s' %
-                                    (build.namespace, acl_user))
+    if not acl_user.can_add_build_to_namespace(namespace):
+      raise auth.AuthorizationError(
+          'namespace %s is not allowed for %s' % (namespace, acl_user))
+
+    build = model.Build(
+        namespace=namespace,
+        properties=properties or {},
+        available_since = datetime.datetime.utcnow() + lease_duration,
+    )
+    if lease_duration:
+      build.regenerate_lease_key()
     build.put()
+    return build
 
   def get(self, build_id):
     """Gets a build by |build_id|.
@@ -57,14 +96,14 @@ class BuildBucketService(object):
       raise auth.AuthorizationError()
     return build
 
-  def peek(self, namespaces, max_builds=10):
+  def peek(self, namespaces, max_builds=None):
     """Returns builds available for leasing in the specified |namespaces|.
 
     Builds are sorted by available_since attribute, oldest first.
 
     Args:
       namespaces (list of string): fetch only builds in any of |namespaces|.
-      max_builds (int): maximum number of builds to return.
+      max_builds (int): maximum number of builds to return. Defaults to 10.
 
     Returns:
       A list of Builds.
@@ -74,6 +113,7 @@ class BuildBucketService(object):
     assert all(isinstance(n, basestring) for n in namespaces), (
         'namespaces must be strings'
     )
+    max_builds = max_builds or 10
     assert isinstance(max_builds, int)
     assert max_builds <= MAX_PEEK_BUILDS, (
         'max_builds must not be greater than %s' % MAX_PEEK_BUILDS
@@ -118,10 +158,7 @@ class BuildBucketService(object):
     """
     if duration is None:
       duration = datetime.timedelta(seconds=10)
-    assert isinstance(duration, datetime.timedelta)
-    assert duration < MAX_LEASE_DURATION, (
-        'duration must not exceed %s' % MAX_LEASE_DURATION
-    )
+    validate_lease_duration(duration)
 
     acl_user = acl.current_user()
     new_available_since = datetime.datetime.utcnow() + duration
@@ -177,9 +214,7 @@ class BuildBucketService(object):
       status (model.BuildStatus): if not None, the new value of build status.
         Defaults to None.
     """
-    assert lease_key is None or isinstance(lease_key, int)
-    assert (lease_duration is None or
-            isinstance(lease_duration, datetime.timedelta))
+    validate_lease_duration(lease_duration)
     assert url is None or isinstance(url, basestring)
     assert status is None or isinstance(status, model.BuildStatus)
 
