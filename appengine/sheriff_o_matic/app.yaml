@@ -58,11 +58,8 @@ handlers:
 
 # Application root.
 - url: /.*
-  static_files: sheriff-o-matic.html
-  upload: sheriff-o-matic.html
+  script: main.app
   secure: always
-  http_headers:
-      Strict-Transport-Security: max-age=10886400; includeSubDomains
 
 skip_files:
 - ^(.*/)?#.*#$
