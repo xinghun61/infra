@@ -35,7 +35,10 @@ class Build(ndb.Model):
       the build. For example, this might be a buildset or Gerrit revision.
     namespace (string): a generic way to distinguish builds. Different build
       namespaces have different permissions.
-    properties (dict): arbitrary build properties.
+    parameters (dict): immutable arbitrary build parameters.
+    state (dict): mutable build state, a dictionary with arbitrary keys.
+      Build state is reset to {} when an expired build is transitioned from
+      BUILDING back to SCHEDULED status by a cleanup cron job.
     status (BuildStatus): status of the build.
     available_since (datetime): the earliest time the build can be leased.
       The moment the build is leased, |available_since| is set to
@@ -48,7 +51,8 @@ class Build(ndb.Model):
 
   owner = ndb.StringProperty()
   namespace = ndb.StringProperty(required=True)
-  properties = ndb.JsonProperty()
+  parameters = ndb.JsonProperty()
+  state = ndb.JsonProperty()
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
   available_since = ndb.DateTimeProperty(required=True, auto_now_add=True)
   lease_key = ndb.IntegerProperty(indexed=False)

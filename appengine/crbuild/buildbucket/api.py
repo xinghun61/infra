@@ -26,7 +26,8 @@ class BuildMessage(messages.Message):
       variant=messages.Variant.INT32)
   lease_key = messages.IntegerField(4)
   status = messages.EnumField(model.BuildStatus, 5)
-  properties_json = messages.StringField(6)
+  parameters_json = messages.StringField(6)
+  state_json = messages.StringField(7)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -40,7 +41,8 @@ def build_to_message(build, include_lease_key=False):
       id=build.key.id(),
       namespace=build.namespace,
       status=build.status,
-      properties_json=json.dumps(build.properties or {}, sort_keys=True),
+      parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
+      state_json=json.dumps(build.state or {}, sort_keys=True),
       lease_duration_seconds=max(0, int(lease_duration.total_seconds())),
       lease_key=build.lease_key if include_lease_key else None,
   )
@@ -106,17 +108,17 @@ class BuildBucketApi(remote.Service):
     if not request.namespace:
       raise endpoints.BadRequestException('Build namespace not specified')
 
-    properties = None
-    if request.properties_json:  # pragma: no branch
+    parameters = None
+    if request.parameters_json:  # pragma: no branch
       try:
-        properties = json.loads(request.properties_json)
+        parameters = json.loads(request.parameters_json)
       except ValueError as ex:
         raise endpoints.BadRequestException(
-            'Could not parse properties_json: %s'% ex)
+            'Could not parse parameters_json: %s'% ex)
 
     build = self.service.add(
         namespace=request.namespace,
-        properties=properties,
+        parameters=parameters,
         lease_duration=datetime.timedelta(
             seconds=request.lease_duration_seconds or 0),
     )

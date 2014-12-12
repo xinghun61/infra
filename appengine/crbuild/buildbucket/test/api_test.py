@@ -37,7 +37,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
     self.test_build = model.Build(
         namespace='chromium',
-        properties={
+        parameters={
             'buildername': 'linux_rel',
         },
     )
@@ -71,7 +71,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertLessEqual(
         resp['lease_duration_seconds'], lease_duration_seconds)
     self.assertEqual(resp['status'], 'SCHEDULED')
-    self.assertEqual(resp['properties_json'], '{"buildername": "linux_rel"}')
+    self.assertEqual(resp['parameters_json'], '{"buildername": "linux_rel"}')
 
   def test_get_nonexistent_build(self):
     self.service.get.return_value = None
@@ -87,18 +87,19 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service.add.return_value = self.test_build
     req = {
         'namespace': self.test_build.namespace,
-        'properties_json': json.dumps(self.test_build.properties),
+        'parameters_json': json.dumps(self.test_build.parameters),
         'lease_duration_seconds': 10,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
-        properties=self.test_build.properties,
+        parameters=self.test_build.parameters,
         lease_duration=datetime.timedelta(seconds=10),
     )
     self.assertEqual(resp['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['namespace'], req['namespace'])
-    self.assertEqual(resp['properties_json'], req['properties_json'])
+    self.assertEqual(resp['parameters_json'], req['parameters_json'])
+    self.assertEqual(resp['state_json'], '{}')
     self.assertGreater(resp['lease_duration_seconds'], 9)
 
   def test_put_with_id(self):
@@ -109,11 +110,11 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(httplib.BAD_REQUEST):
       self.call_api('put', {'namespace': ''})
 
-  def test_put_with_malformed_properties_json(self):
+  def test_put_with_malformed_parameters_json(self):
     with self.call_should_fail(httplib.BAD_REQUEST):
       self.call_api('put', {
           'namespace':'chromium',
-          'properties_json': '}non-json',
+          'parameters_json': '}non-json',
       })
 
   ##################################### PEEK ###################################

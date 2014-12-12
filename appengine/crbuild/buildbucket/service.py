@@ -48,7 +48,7 @@ def validate_lease_duration(duration):
 
 
 class BuildBucketService(object):
-  def add(self, namespace, properties=None, lease_duration=None):
+  def add(self, namespace, parameters=None, lease_duration=None):
     """Adds the build entity to the build bucket.
 
     Requires the current user to have permissions to add builds to the
@@ -56,7 +56,8 @@ class BuildBucketService(object):
 
     Args:
       namespace (str): build namespace. Required.
-      properties (dict): arbitrary build properties.
+      parameters (dict): arbitrary build parameters. Cannot be changed after
+        build creation.
       lease_duration (datetime.timedelta): if not None, the build is created as
         leased and its lease_key is not None.
 
@@ -65,7 +66,7 @@ class BuildBucketService(object):
     """
     assert namespace, 'Namespace not specified'
     assert isinstance(namespace, basestring), 'Namespace must be a string'
-    assert properties is None or isinstance(properties, dict)
+    assert parameters is None or isinstance(parameters, dict)
     validate_lease_duration(lease_duration)
     lease_duration = lease_duration or datetime.timedelta(0)
 
@@ -76,7 +77,7 @@ class BuildBucketService(object):
 
     build = model.Build(
         namespace=namespace,
-        properties=properties or {},
+        parameters=parameters,
         available_since = datetime.datetime.utcnow() + lease_duration,
     )
     if lease_duration:
@@ -199,8 +200,8 @@ class BuildBucketService(object):
       add_kwargs['queue_name'] = build.callback.queue_name
     task.add(transactional=True, **add_kwargs)
 
-  def update(self, build_id, lease_key=None, lease_duration=None, url=None,
-             status=None):
+  def update(self, build_id, lease_key=None, lease_duration=None,
+             status=None, state=None):
     """Updates build properties.
 
     Args:
@@ -210,13 +211,13 @@ class BuildBucketService(object):
         leased, the current lease key is None.
       lease_duration (datetime.timedelta): if not None, new value of lease
         duration. Defaults to None.
-      url (str): if not None, new value of build url. Defaults to None.
       status (model.BuildStatus): if not None, the new value of build status.
         Defaults to None.
+      state (dict): if not None, the new value of build state.
     """
     validate_lease_duration(lease_duration)
-    assert url is None or isinstance(url, basestring)
     assert status is None or isinstance(status, model.BuildStatus)
+    assert state is None or isinstance(state, dict)
 
     unlease = lease_duration is not None and not lease_duration
     new_available_since = None
@@ -235,9 +236,6 @@ class BuildBucketService(object):
         raise BadLeaseKeyError('lease_key is incorrect. '
                                'Your lease might be expired.')
 
-      if url is not None:
-        build.url = url
-
       if new_available_since:
         build.available_since = new_available_since
         if unlease:  # pragma: no branch
@@ -250,6 +248,9 @@ class BuildBucketService(object):
               'Build status cannot be changed from status %s' % build.status)
         build.status = status
         status_change = True
+
+      if state is not None:
+        build.state = state
 
       build.put()
 

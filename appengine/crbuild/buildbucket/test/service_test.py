@@ -26,7 +26,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.test_build = model.Build(
         owner='owner',
         namespace='chromium',
-        properties={
+        parameters={
             'buildername': 'infra',
             'changes': [{
                 'author': 'nodir@google.com',
@@ -41,15 +41,15 @@ class BuildBucketServiceTest(CrBuildTestCase):
   ##################################### ADD ####################################
 
   def test_add(self):
-    props = {'buildername': 'linux_rel'}
+    params = {'buildername': 'linux_rel'}
     build = self.service.add(
         namespace='chromium',
-        properties=props,
+        parameters=params,
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
     self.assertEqual(build.namespace, 'chromium')
-    self.assertEqual(build.properties, props)
+    self.assertEqual(build.parameters, params)
 
   def test_add_with_leasing(self):
     build = self.service.add(
@@ -172,11 +172,11 @@ class BuildBucketServiceTest(CrBuildTestCase):
   def test_update(self):
     self.test_build.put()
     self.service.update(self.test_build.key.id(),
-                        url='http://a.com',
-                        status=model.BuildStatus.COMPLETE)
+                        status=model.BuildStatus.COMPLETE,
+                        state={'result': 'success'})
     build = self.test_build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETE)
-    self.assertEqual(build.url, 'http://a.com')
+    self.assertEqual(build.state, {'result': 'success'})
 
   def test_update_with_auth_error(self):
     self.test_build.put()
@@ -190,7 +190,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
     with self.assertRaises(service.BadLeaseKeyError):
       self.service.update(self.test_build.key.id(),
                           self.test_build.lease_key + 1,
-                          url='http://a.com')
+                          status=model.BuildStatus.BUILDING)
 
   def test_cannot_transition_build_from_final_state(self):
     self.test_build.status = model.BuildStatus.COMPLETE

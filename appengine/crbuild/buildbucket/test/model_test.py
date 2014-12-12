@@ -14,7 +14,6 @@ class BuildTest(CrBuildTestCase):
     self.test_build = model.Build(
         namespace='chromium',
         status=model.BuildStatus.SCHEDULED,
-        properties={'builder_name': 'linux_rel'},
     )
     self.test_build.put()
 
