@@ -23,7 +23,7 @@ func TestGoVersion(t *testing.T) {
 	Convey("Make sure using pinned Go version", t, func() {
 		// Change this when rolling pinned Go version. Some tests here may depend
 		// on zlib implementation details compiled in Go stdlib.
-		So(runtime.Version(), ShouldEqual, "go1.3.3")
+		So(runtime.Version(), ShouldEqual, "go1.4")
 	})
 }
 

@@ -46,7 +46,7 @@ WORKSPACE = os.path.join(ROOT, 'go')
 EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 
 # Pinned version of Go toolset to download.
-TOOLSET_VERSION = 'go1.3.3'
+TOOLSET_VERSION = 'go1.4'
 
 # Platform dependent portion of a download URL. See http://golang.org/dl/.
 TOOLSET_VARIANTS = {
@@ -219,7 +219,7 @@ def check_hello_world(toolset_root):
     """)
     out = subprocess.check_output(
         [get_go_exe(toolset_root), 'run', path],
-        env=get_go_environ(toolset_root, tmp, [], []),
+        env=get_go_environ(toolset_root, tmp),
         stderr=subprocess.STDOUT)
     if out.strip() != 'hello, world':
       LOGGER.error('Failed to run sample program:\n%s', out)
@@ -256,7 +256,7 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
     LOGGER.info('  New Appengine version is %s', new)
 
     base_sdk_dir = os.path.join(go_appengine, 'goroot', 'src', 'pkg')
-    base_tool_dir = os.path.join(toolset_root, 'go', 'src', 'pkg')
+    base_tool_dir = os.path.join(toolset_root, 'go', 'src')
 
     for d in GAE_PKGS:
       sdk_dir = os.path.join(base_sdk_dir, d)
@@ -275,9 +275,7 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
     LOGGER.info('Building %d Appengine libs', len(to_build))
     subprocess.check_call(
         [get_go_exe(toolset_root), 'build'] + to_build,
-        env=get_go_environ(
-          toolset_root, os.path.join(toolset_root, 'go'), [], []))
-
+        env=get_go_environ(toolset_root))
 
     write_file([toolset_root, 'INSTALLED_GAE_SDK'], sdk_version)
     return True
@@ -327,7 +325,7 @@ def ensure_tools_installed(toolset_root):
     subprocess.check_call(
         [get_go_exe(toolset_root), 'install', pkg],
         cwd=tmp,
-        env=get_go_environ(toolset_root, workspace, [], []),
+        env=get_go_environ(toolset_root, workspace),
         stdout=sys.stderr)
     # Windows os.rename doesn't support overwrites.
     name = pkg[pkg.rfind('/')+1:]
@@ -385,25 +383,33 @@ def update_vendor_packages(toolset_root, workspace, force=False):
 
 
 def get_go_environ(
-    toolset_root, workspace, go_paths, vendor_paths, go_appengine_path=None):
+    toolset_root,
+    workspace=None,
+    go_paths=(),
+    vendor_paths=(),
+    go_appengine_path=None):
   """Returns a copy of os.environ with added GO* environment variables.
 
   Overrides GOROOT, GOPATH and GOBIN. Keeps everything else. Idempotent.
 
   Args:
     toolset_root: GOROOT would be <toolset_root>/go.
-    workspace: main workspace directory.
+    workspace: main workspace directory or None if compiling in GOROOT.
     go_paths: additional paths to add to GOPATH.
     vendor_paths: directories with .vendor files (created by goop).
     go_appengine_path: path to GAE Go SDK to add to PATH.
   """
   env = os.environ.copy()
   env['GOROOT'] = os.path.join(toolset_root, 'go')
-  env['GOBIN'] = os.path.join(workspace, 'bin')
+  if workspace:
+    env['GOBIN'] = os.path.join(workspace, 'bin')
+  else:
+    env.pop('GOBIN', None)
 
   all_go_paths = [os.path.join(p, '.vendor') for p in vendor_paths]
   all_go_paths.extend(go_paths)
-  all_go_paths.append(workspace)
+  if workspace:
+    all_go_paths.append(workspace)
   env['GOPATH'] = os.pathsep.join(all_go_paths)
 
   # Remove preexisting bin/ paths (including .vendor/bin) pointing to infra
@@ -423,7 +429,7 @@ def get_go_environ(
   # New PATH entries.
   paths_to_add = [
     os.path.join(env['GOROOT'], 'bin'),
-    env['GOBIN'],
+    env.get('GOBIN'),
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
   if go_appengine_path:
@@ -431,7 +437,7 @@ def get_go_environ(
 
   # Make sure not to add duplicates entries to PATH over and over again when
   # get_go_environ is invoked multiple times.
-  paths_to_add = [p for p in paths_to_add if p not in path]
+  paths_to_add = [p for p in paths_to_add if p and p not in path]
   env['PATH'] = os.pathsep.join(paths_to_add + path)
 
   # APPENGINE_DEV_APPSERVER is used by "appengine/aetest" package. If it's
