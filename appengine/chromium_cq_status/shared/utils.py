@@ -27,7 +27,7 @@ def cross_origin_json(handler): # pragma: no cover
   def headered_json_handler(self, *args):
     self.response.headers.add_header("Access-Control-Allow-Origin", "*")
     result = handler(self, *args)
-    if result:
+    if result is not None:
       self.response.headers.add_header('Content-Type', 'application/json')
       self.response.write(compressed_json_dumps(result))
   return headered_json_handler

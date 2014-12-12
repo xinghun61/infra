@@ -94,6 +94,16 @@ class TestUtils(testing.AppengineTestCase):
     self.assertTrue(webapp.response.headers.is_cross_origin)
     self.assertTrue(webapp.response.headers.is_json_content)
 
+  def test_cross_origin_json_falsey_success(self):
+    webapp = MockWebApp()
+    @utils.cross_origin_json
+    def produce_falsey_json(self): # pylint: disable=W0613
+      return False
+    produce_falsey_json(webapp)
+    self.assertEquals('false', webapp.response.body)
+    self.assertTrue(webapp.response.headers.is_cross_origin)
+    self.assertTrue(webapp.response.headers.is_json_content)
+
   def test_cross_origin_json_fail(self):
     webapp = MockWebApp()
     @utils.cross_origin_json
