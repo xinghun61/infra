@@ -19,6 +19,10 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
   def SetResponseForUrl(self, url, response):
     self.response_for_url[url] = response
 
+  def WaitForNextRetry(self, *_):
+    """Override to avoid sleep."""
+    pass
+
   def _Get(self, url, timeout):
     response = self.response_for_url.get(url)
     if response is None:

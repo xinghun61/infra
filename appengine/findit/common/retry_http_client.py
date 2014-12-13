@@ -19,6 +19,12 @@ class RetryHttpClient(object):
     """
     raise NotImplementedError()  # pragma: no cover
 
+  def WaitForNextRetry(self, retry_interval, execution_count):
+    if retry_interval > 1:
+      time.sleep(retry_interval ** execution_count)
+    else:
+      time.sleep(retry_interval)
+
   def Get(self, url, params=None, timeout=60, retries=5, retry_interval=0.5):
     """Send a GET request to the url with the given parameters and headers.
 
@@ -41,9 +47,6 @@ class RetryHttpClient(object):
       elif count >= retries:
         break
       else:
-        if retry_interval > 1:
-          time.sleep(retry_interval ** count)
-        else:
-          time.sleep(retry_interval)
+        self.WaitForNextRetry(retry_interval, count)
 
     return status_code, content
