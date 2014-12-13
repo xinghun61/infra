@@ -9,6 +9,7 @@ import string
 import unittest
 import webtest
 
+from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
 
@@ -33,29 +34,36 @@ class AlertsTest(unittest.TestCase):
   def test_get_no_data_cached(self):
     res = self.testapp.get('/alerts')
     self.check_json_headers(res)
-    self.assertEqual(res.body, '')
+    self.assertEqual(res.body, '{}')
 
   def test_happy_path(self):
     # Set it.
     params = {'content': '{"alerts": ["hello", "world"]}'}
     self.testapp.post('/alerts', params)
 
-    # Get it.
-    res = self.testapp.get('/alerts')
-    self.check_json_headers(res)
-    data = json.loads(res.body)
+    def happy_path():
+      # Get it.
+      res = self.testapp.get('/alerts')
+      self.check_json_headers(res)
+      data = json.loads(res.body)
 
-    # The server should have stuck a 'date' on there.
-    self.assertTrue('date' in data)
-    self.assertEqual(type(data['date']), int)
+      # The server should have stuck a 'date' on there.
+      self.assertTrue('date' in data)
+      self.assertEqual(type(data['date']), int)
 
-    self.assertEqual(data['alerts'], ['hello', 'world'])
+      self.assertEqual(data['alerts'], ['hello', 'world'])
+
+    happy_path()
+
+    memcache.Client().flush_all()
+
+    happy_path()
 
   def test_post_invalid_data_not_reflected(self):
     params = {'content': '[{"this is not valid JSON'}
     self.testapp.post('/alerts', params, status=400)
     res = self.testapp.get('/alerts')
-    self.assertEqual(res.body, '')
+    self.assertEqual(res.body, '{}')
 
   def test_post_invalid_data_does_not_overwrite_valid_data(self):
     # Populate the cache with something valid

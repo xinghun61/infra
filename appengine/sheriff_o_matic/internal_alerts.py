@@ -35,7 +35,7 @@ class InternalAlertsHandler(alerts.AlertsHandler):
       self.response.set_status(403, 'invalid user')
       return
 
-    super(InternalAlertsHandler, self).get_from_memcache(
+    super(InternalAlertsHandler, self).get_alerts(
         InternalAlertsHandler.INTERNAL_ALERTS_TYPE)
 
   def post(self):

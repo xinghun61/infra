@@ -51,20 +51,38 @@ class AlertsHandler(webapp2.RequestHandler):
   def generate_json_dump(alerts):
     return json.dumps(alerts, cls=DateTimeEncoder, indent=1)
 
+  @staticmethod
+  def get_last_datastore(alerts_type):
+    #TODO(stip): rewrite to use hardcoded '-last' key to avoid race condition.
+    last_query = AlertsJSON.query().filter(AlertsJSON.type == alerts_type)
+    return last_query.order(-AlertsJSON.date).get()
+
+  def get_from_datastore(self, alerts_type):
+    last_entry = self.get_last_datastore(alerts_type)
+    if last_entry:
+      self.send_json_data(last_entry.json)
+      return True
+    return False
+
   def get_from_memcache(self, memcache_key):
     compressed = memcache.get(memcache_key)
-    if not compressed:
-      self.send_json_headers()
-      return
-    uncompressed = zlib.decompress(compressed)
-    self.send_json_data(uncompressed)
+    if compressed:
+      uncompressed = zlib.decompress(compressed)
+      self.send_json_data(uncompressed)
+      return True
+    return False
+
+  def get_alerts(self, alerts_type):
+    self.send_json_headers()
+    if not self.get_from_memcache(alerts_type):
+      if not self.get_from_datastore(alerts_type):
+        self.send_json_data({})
 
   def get(self):
-    self.get_from_memcache(AlertsHandler.ALERTS_TYPE)
+    self.get_alerts(AlertsHandler.ALERTS_TYPE)
 
   def post_to_history(self, alerts_type, alerts):
-    last_query = AlertsJSON.query().filter(AlertsJSON.type == alerts_type)
-    last_entry = last_query.order(-AlertsJSON.date).get()
+    last_entry = self.get_last_datastore(alerts_type)
     last_alerts = json.loads(last_entry.json) if last_entry else {}
 
     # Only changes to the fields with 'alerts' in the name should cause a
