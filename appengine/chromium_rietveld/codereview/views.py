@@ -1370,11 +1370,24 @@ def _make_new(request, form):
   first_issue_id, _ = models.Issue.allocate_ids(1)
   issue_key = ndb.Key(models.Issue, first_issue_id)
 
+  project = form.cleaned_data['project']
+  target_ref = form.cleaned_data.get('target_ref', None)
+  # The following is a hack to ensure that all target_refs for chromium and v8
+  # start with 'refs/pending/'. More context here:
+  # https://code.google.com/p/chromium/issues/detail?id=435702#c10
+  # TODO(rmistry): Remove the below hack when the logged warning stops showing
+  # up.
+  if (target_ref and not target_ref.startswith('refs/pending/') and
+      project in ('chromium', 'v8')):
+    target_ref = target_ref.replace('refs/', 'refs/pending/')
+    logging.warn('Issue %d for %s did not start with refs/pending/',
+                 issue_key.id(), project)
+
   issue = models.Issue(subject=form.cleaned_data['subject'],
                        description=form.cleaned_data['description'],
-                       project=form.cleaned_data['project'],
+                       project=project,
                        base=base,
-                       target_ref=form.cleaned_data.get('target_ref', None),
+                       target_ref=target_ref,
                        repo_guid=form.cleaned_data.get('repo_guid', None),
                        reviewers=reviewers,
                        required_reviewers=required_reviewers,
