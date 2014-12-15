@@ -93,6 +93,13 @@
     'rev': '00c4c8057a34ee142e9729dbeb51855e0282f82e',
     'implicit': True,  # Required by google_api_python_client
   },
+  'protobuf': {
+    'version': '2.6.0',
+    'build': '0',
+    'repo': 'external/github.com/google/protobuf',
+    'rev': '629a556879cc84e0f52546f0484b65b72ce44fe8',
+    # TODO(agable): Make this implicit when monitoring stuff lands.
+  },
   'pyasn1': {
     'version': '0.1.7',
     'build': '0',
