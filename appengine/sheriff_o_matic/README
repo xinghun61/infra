@@ -67,7 +67,8 @@ debug.
 
 In sheriff_o_matic:
 
-1. appcfg.py update . --version `git rev-parse --short HEAD` --oauth2
+0. npm install vulcanize (if you haven't done this before)
+1. make deploy-prod (or deploy-staging) 
 2. Go to appengine.google.com and select the sheriff-o-matic app.
 3. Click on the version tab
 4. Make the new version the default
