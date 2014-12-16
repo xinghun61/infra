@@ -8,6 +8,7 @@ import json
 import mock
 
 from components import auth
+from components import utils
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from protorpc import messages
@@ -20,13 +21,6 @@ from buildbucket import service
 import acl
 
 
-def raiser(exception):
-  """Returns a function that raises the |exception|."""
-  def fn(*_, **__):
-    raise exception
-  return fn
-
-
 class BuildBucketApiTest(testing.EndpointsTestCase):
   api_service_cls = api.BuildBucketApi
 
@@ -36,17 +30,17 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.mock(api.BuildBucketApi, 'service_factory', lambda _: self.service)
 
     self.test_build = model.Build(
+        id=1,
         namespace='chromium',
         parameters={
             'buildername': 'linux_rel',
         },
     )
 
-  def test_unavailable_build_to_message(self):
-    yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-    self.test_build.available_since = yesterday
-    self.test_build.put()
-
+  def test_expired_build_to_message(self):
+    yesterday = utils.utcnow() - datetime.timedelta(days=1)
+    self.test_build.lease_key = 1
+    self.test_build.lease_expiration_date = yesterday
     msg = api.build_to_message(self.test_build)
     self.assertEqual(msg.lease_duration_seconds, 0)
 
@@ -55,10 +49,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_get(self):
     lease_duration = datetime.timedelta(days=1)
     lease_duration_seconds = int(lease_duration.total_seconds())
-    self.test_build.available_since = (
-        datetime.datetime.utcnow() + lease_duration)
+    self.test_build.lease_expiration_date = (
+        utils.utcnow() + lease_duration)
 
-    self.test_build.put()
     build_id = self.test_build.key.id()
     self.service.get.return_value = self.test_build
 
@@ -81,26 +74,43 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   ##################################### PUT ####################################
 
   def test_put(self):
-    self.test_build.available_since = (
-        datetime.datetime.utcnow() + datetime.timedelta(hours=1))
-    self.test_build.put()
+    self.service.add.return_value = self.test_build
+    req = {
+        'namespace': self.test_build.namespace,
+    }
+    resp = self.call_api('put', req).json_body
+    self.service.add.assert_called_once_with(
+        namespace=self.test_build.namespace,
+        parameters=None,
+        lease_duration=datetime.timedelta(0),
+    )
+    self.assertEqual(resp['id'], str(self.test_build.key.id()))
+    self.assertEqual(resp['namespace'], req['namespace'])
+
+  def test_put_with_parameters(self):
     self.service.add.return_value = self.test_build
     req = {
         'namespace': self.test_build.namespace,
         'parameters_json': json.dumps(self.test_build.parameters),
+    }
+    resp = self.call_api('put', req).json_body
+    self.assertEqual(resp['parameters_json'], req['parameters_json'])
+
+  def test_put_with_leasing(self):
+    self.test_build.lease_expiration_date = (
+        utils.utcnow() + datetime.timedelta(seconds=10))
+    self.service.add.return_value = self.test_build
+    req = {
+        'namespace': self.test_build.namespace,
         'lease_duration_seconds': 10,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
-        parameters=self.test_build.parameters,
+        parameters=None,
         lease_duration=datetime.timedelta(seconds=10),
     )
-    self.assertEqual(resp['id'], str(self.test_build.key.id()))
-    self.assertEqual(resp['namespace'], req['namespace'])
-    self.assertEqual(resp['parameters_json'], req['parameters_json'])
-    self.assertEqual(resp['state_json'], '{}')
-    self.assertGreater(resp['lease_duration_seconds'], 9)
+    self.assertGreaterEqual(resp['lease_duration_seconds'], 9)
 
   def test_put_with_id(self):
     with self.call_should_fail(httplib.BAD_REQUEST):
@@ -136,14 +146,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### LEASE ###################################
 
   def test_lease(self):
-    self.test_build.put()
-
-    def lease(*_, **__):
-      self.test_build.regenerate_lease_key()
-      self.test_build.put()
-      return True, self.test_build
-
-    self.service.lease.side_effect = lease
+    self.test_build.lease_key = 42
+    self.service.lease.return_value = True, self.test_build
 
     req = {
         'id': self.test_build.key.id(),
@@ -158,14 +162,6 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
 
-  def test_lease_with_bad_duration(self):
-    self.service.lease.side_effect = raiser(service.BadLeaseDurationError())
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('lease', {
-          'id': 1,
-          'duration_seconds': -1,
-      })
-
   def test_lease_unsuccessful(self):
     self.test_build.put()
     self.service.lease.return_value = (False, self.test_build)
@@ -176,14 +172,92 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('lease', req).json_body
     self.assertFalse(res['success'])
 
+  #################################### START ###################################
+
+  def test_start(self):
+    self.test_build.url = 'http://localhost/build/1'
+    self.service.start.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'url': self.test_build.url,
+    }
+    res = self.call_api('start', req).json_body
+    self.service.start.assert_called_once_with(
+        req['id'], req['lease_key'], url=req['url'])
+    self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(res['url'], req['url'])
+
+  #################################### HEATBEAT ################################
+
+  def test_heartbeat(self):
+    self.service.heartbeat.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'lease_duration_seconds': 10,
+    }
+    res = self.call_api('hearbeat', req).json_body
+    self.service.heartbeat.assert_called_once_with(
+        req['id'], req['lease_key'], datetime.timedelta(seconds=10))
+    self.assertEqual(int(res['id']), req['id'])
+
+  ################################## SUCCEED ###################################
+
+  def test_succeed(self):
+    self.service.succeed.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'success': True,
+    }
+    res = self.call_api('succeed', req).json_body
+    self.service.succeed.assert_called_once_with(req['id'], req['lease_key'])
+    self.assertEqual(int(res['id']), req['id'])
+
+  #################################### FAIL ####################################
+
+  def test_infra_failure(self):
+    self.service.fail.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'failure_reason': 'INFRA_FAILURE',
+    }
+    res = self.call_api('fail', req).json_body
+    self.service.fail.assert_called_once_with(
+        req['id'], req['lease_key'],
+        failure_reason=model.FailureReason.INFRA_FAILURE)
+    self.assertEqual(int(res['id']), req['id'])
+
+  #################################### CANCEL ##################################
+
+  def test_cancel(self):
+    self.service.cancel.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+    }
+    res = self.call_api('cancel', req).json_body
+    self.service.cancel.assert_called_once_with(req['id'])
+    self.assertEqual(int(res['id']), req['id'])
+
   #################################### ERRORS ##################################
 
-  def test_auth_error(self):
-    self.service.get.side_effect = raiser(auth.AuthorizationError())
-    with self.call_should_fail(httplib.FORBIDDEN):
+  def error_test(self, service_error_class, status_code):
+    def raise_service_error(*_, **__):
+      raise service_error_class()
+    self.service.get.side_effect = raise_service_error
+    with self.call_should_fail(status_code):
       self.call_api('get', {'id': 123})
 
+  def test_auth_error(self):
+    self.error_test(auth.AuthorizationError, httplib.FORBIDDEN)
+
   def test_build_not_found_error(self):
-    self.service.get.side_effect = raiser(service.BuildNotFoundError())
-    with self.call_should_fail(httplib.NOT_FOUND):
-      self.call_api('get', {'id': 123})
+    self.error_test(service.BuildNotFoundError, httplib.NOT_FOUND)
+
+  def test_invalid_input_error(self):
+    self.error_test(service.InvalidInputError, httplib.BAD_REQUEST)
+
+  def test_invalid_build_state_error(self):
+    self.error_test(service.InvalidBuildStateError, httplib.BAD_REQUEST)

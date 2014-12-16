@@ -7,6 +7,7 @@ import functools
 import json
 
 from components import auth
+from components import utils
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -22,12 +23,15 @@ class BuildMessage(messages.Message):
   # that generates build id during build creation.
   id = messages.IntegerField(1)
   namespace = messages.StringField(2, required=True)
-  lease_duration_seconds = messages.IntegerField(3,
-      variant=messages.Variant.INT32)
-  lease_key = messages.IntegerField(4)
-  status = messages.EnumField(model.BuildStatus, 5)
-  parameters_json = messages.StringField(6)
-  state_json = messages.StringField(7)
+  parameters_json = messages.StringField(3)
+  status = messages.EnumField(model.BuildStatus, 4)
+  result = messages.EnumField(model.BuildResult, 5)
+  failure_reason = messages.EnumField(model.FailureReason, 6)
+  cancelation_reason = messages.EnumField(model.CancelationReason, 7)
+  lease_duration_seconds = messages.IntegerField(
+      8, variant=messages.Variant.INT32)
+  lease_key = messages.IntegerField(9)
+  url = messages.StringField(10)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -36,15 +40,27 @@ def build_to_message(build, include_lease_key=False):
   assert build.key
   assert build.key.id()
 
-  lease_duration = build.available_since - datetime.datetime.utcnow()
-  return BuildMessage(
+  msg = BuildMessage(
       id=build.key.id(),
       namespace=build.namespace,
-      status=build.status,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
-      state_json=json.dumps(build.state or {}, sort_keys=True),
-      lease_duration_seconds=max(0, int(lease_duration.total_seconds())),
+      status=build.status,
+      result=build.result,
+      cancelation_reason=build.cancelation_reason,
+      failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
+      url=build.url,
+  )
+  if build.lease_expiration_date is not None:
+    lease_duration = build.lease_expiration_date - utils.utcnow()
+    msg.lease_duration_seconds=max(0, int(lease_duration.total_seconds()))
+  return msg
+
+
+def id_resource_container(body_message_class=message_types.VoidMessage):
+  return endpoints.ResourceContainer(
+      body_message_class,
+      id=messages.IntegerField(1, required=True),
   )
 
 
@@ -56,10 +72,19 @@ def convert_service_errors(fn):
       return fn(*args, **kwargs)
     except service.BuildNotFoundError:
       raise endpoints.NotFoundException()
-    except (service.BadLeaseDurationError, service.BadLeaseKeyError,
-            service.StatusIsFinalError) as ex:
+    except (service.InvalidInputError, service.InvalidBuildStateError) as ex:
       raise endpoints.BadRequestException(ex.message)
   return decorated
+
+
+def parse_json(json_data, param_name):
+  if not json_data:
+    return None
+  try:
+    return json.loads(json_data)
+  except ValueError as ex:
+    raise endpoints.BadRequestException(
+        'Could not parse %s: %s' % (param_name, ex))
 
 
 @auth.endpoints_api(
@@ -79,13 +104,8 @@ class BuildBucketApi(remote.Service):
 
   ###################################  GET  ####################################
 
-  GET_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      id=messages.IntegerField(1, required=True),
-  )
-
   @auth.endpoints_method(
-      GET_REQUEST_RESOURCE_CONTAINER, BuildMessage,
+      id_resource_container(), BuildMessage,
       path='builds/{id}', http_method='GET')
   @convert_service_errors
   def get(self, request):
@@ -108,17 +128,9 @@ class BuildBucketApi(remote.Service):
     if not request.namespace:
       raise endpoints.BadRequestException('Build namespace not specified')
 
-    parameters = None
-    if request.parameters_json:  # pragma: no branch
-      try:
-        parameters = json.loads(request.parameters_json)
-      except ValueError as ex:
-        raise endpoints.BadRequestException(
-            'Could not parse parameters_json: %s'% ex)
-
     build = self.service.add(
         namespace=request.namespace,
-        parameters=parameters,
+        parameters=parse_json(request.parameters_json, 'parameters_json'),
         lease_duration=datetime.timedelta(
             seconds=request.lease_duration_seconds or 0),
     )
@@ -129,8 +141,8 @@ class BuildBucketApi(remote.Service):
   PEEK_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
       namespace=messages.StringField(1, repeated=True),
-      max_builds=messages.IntegerField(2, variant=messages.Variant.INT32,
-                                       default=10),
+      max_builds=messages.IntegerField(
+          2, variant=messages.Variant.INT32, default=10),
   )
 
   class PeekResponseMessage(messages.Message):
@@ -153,20 +165,15 @@ class BuildBucketApi(remote.Service):
   ##################################  LEASE  ###################################
 
   class LeaseRequestBodyMessage(messages.Message):
-    duration_seconds = messages.IntegerField(2, variant=messages.Variant.INT32,
-                                             required=True)
-
-  LEASE_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      LeaseRequestBodyMessage,
-      id=messages.IntegerField(1, required=True),
-  )
+    duration_seconds = messages.IntegerField(
+        1, variant=messages.Variant.INT32, required=True)
 
   class LeaseResponseMessage(messages.Message):
     success = messages.BooleanField(1, required=True)
     build = messages.MessageField(BuildMessage, 2)
 
   @auth.endpoints_method(
-      LEASE_REQUEST_RESOURCE_CONTAINER, LeaseResponseMessage,
+      id_resource_container(LeaseRequestBodyMessage), LeaseResponseMessage,
       path='builds/{id}/lease', http_method='POST')
   @convert_service_errors
   def lease(self, request):
@@ -184,4 +191,79 @@ class BuildBucketApi(remote.Service):
         build=build_to_message(build, include_lease_key=True)
     )
 
-  # TODO(nodir): add "building", "completed" and "hearbeat" methods.
+  #################################  STARTED  ##################################
+
+
+  class StartRequestBodyMessage(messages.Message):
+    lease_key = messages.IntegerField(1)
+    url = messages.StringField(2)
+
+  @auth.endpoints_method(
+      id_resource_container(StartRequestBodyMessage), BuildMessage,
+      path='builds/{id}/start', http_method='POST')
+  @convert_service_errors
+  def start(self, request):
+    """Marks a build as started."""
+    build = self.service.start(request.id, request.lease_key, url=request.url)
+    return build_to_message(build)
+
+  #################################  HEARTBEAT  ################################
+
+  class HeartbeatRequestBodyMessage(messages.Message):
+    lease_key = messages.IntegerField(1)
+    lease_duration_seconds = messages.IntegerField(
+        2, variant=messages.Variant.INT32, required=True)
+
+  @auth.endpoints_method(
+      id_resource_container(HeartbeatRequestBodyMessage), BuildMessage,
+      path='builds/{id}/heartbeat', http_method='POST')
+  @convert_service_errors
+  def hearbeat(self, request):
+    """Updates build lease."""
+    build = self.service.heartbeat(
+        request.id, request.lease_key,
+        datetime.timedelta(seconds=request.lease_duration_seconds))
+    return build_to_message(build)
+
+  #################################  SUCCEED  ##################################
+
+  class SucceedRequestBodyMessage(messages.Message):
+    lease_key = messages.IntegerField(1)
+
+  @auth.endpoints_method(
+      id_resource_container(SucceedRequestBodyMessage), BuildMessage,
+      path='builds/{id}/succeed', http_method='POST')
+  @convert_service_errors
+  def succeed(self, request):
+    """Marks a build as succeeded."""
+    build = self.service.succeed(request.id, request.lease_key)
+    return build_to_message(build)
+
+  ###################################  FAIL  ###################################
+
+  class FailRequestBodyMessage(messages.Message):
+    lease_key = messages.IntegerField(1)
+    failure_reason = messages.EnumField(model.FailureReason, 2)
+
+  @auth.endpoints_method(
+      id_resource_container(FailRequestBodyMessage), BuildMessage,
+      path='builds/{id}/fail', http_method='POST')
+  @convert_service_errors
+  def fail(self, request):
+    """Marks a build as failed."""
+    build = self.service.fail(
+        request.id, request.lease_key,
+        failure_reason=request.failure_reason,
+    )
+    return build_to_message(build)
+
+  ##################################  CANCEL  ##################################
+
+  @auth.endpoints_method(
+      id_resource_container(message_types.VoidMessage), BuildMessage,
+      path='builds/{id}/cancel', http_method='POST')
+  @convert_service_errors
+  def cancel(self, request):
+    """Cancels a build."""
+    build = self.service.cancel(request.id)
+    return build_to_message(build)

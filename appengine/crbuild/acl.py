@@ -48,6 +48,9 @@ class CrbuildUser(object):  # pragma: no cover
   def can_lease_build(self, build):
     return self.is_admin
 
+  def can_cancel_build(self, build):
+    return self.is_admin
+
   def can_view_cl(self, cl):
     return self.is_admin
 

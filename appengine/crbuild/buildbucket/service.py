@@ -5,46 +5,61 @@
 import datetime
 import itertools
 import json
+import urlparse
 
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from components import auth
+from components import utils
 from . import model
 import acl
 
 
 MAX_PEEK_BUILDS = 100
-MAX_LEASE_DURATION = datetime.timedelta(hours=3)
+MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
 
 
 class BuildNotFoundError(Exception):
   pass
 
 
-class BadLeaseDurationError(Exception):
-  pass
+class InvalidBuildStateError(Exception):
+  """Build status is final and cannot be changed."""
 
 
-class StatusIsFinalError(Exception):
-  pass
+class InvalidInputError(Exception):
+  """Raised when service method argument value is invalid."""
 
 
-class BadLeaseKeyError(Exception):
-  pass
+def validate_lease_key(lease_key):
+  if lease_key is None:
+    raise InvalidInputError('Lease key is not provided')
 
 
 def validate_lease_duration(duration):
-  """Raises BadLeaseDurationError if |duration| is invalid."""
+  """Raises InvalidInputError if |duration| is invalid."""
   if duration is None:
     return
   if not isinstance(duration, datetime.timedelta):
-    raise BadLeaseDurationError('Lease duration must be datetime.timedelta')
+    raise InvalidInputError('Lease duration must be datetime.timedelta')
   if duration < datetime.timedelta(0):
-    raise BadLeaseDurationError('Lease duration cannot be negative')
+    raise InvalidInputError('Lease duration cannot be negative')
   if duration > MAX_LEASE_DURATION:
-    raise BadLeaseDurationError(
+    raise InvalidInputError(
         'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
+
+
+def validate_url(url):
+  if url is None:
+    return
+  if not isinstance(url, basestring):
+    raise InvalidInputError('url must be string')
+  parsed = urlparse.urlparse(url)
+  if not parsed.netloc:
+    raise InvalidInputError('url must be absolute')
+  if parsed.scheme.lower() not in ('http', 'https'):
+    raise InvalidInputError('Unexpected url scheme: "%s"' % parsed.scheme)
 
 
 class BuildBucketService(object):
@@ -78,9 +93,10 @@ class BuildBucketService(object):
     build = model.Build(
         namespace=namespace,
         parameters=parameters,
-        available_since = datetime.datetime.utcnow() + lease_duration,
+        status=model.BuildStatus.SCHEDULED,
     )
     if lease_duration:
+      build.lease_expiration_date = utils.utcnow() + lease_duration
       build.regenerate_lease_key()
     build.put()
     return build
@@ -100,7 +116,7 @@ class BuildBucketService(object):
   def peek(self, namespaces, max_builds=None):
     """Returns builds available for leasing in the specified |namespaces|.
 
-    Builds are sorted by available_since attribute, oldest first.
+    Builds are sorted by creation time, oldest first.
 
     Args:
       namespaces (list of string): fetch only builds in any of |namespaces|.
@@ -126,27 +142,40 @@ class BuildBucketService(object):
             'User %s cannot peek builds in namespace %s' %
             (acl_user, namespace))
 
-    # This predicate must be in sync with Build.is_leasable()
     q = model.Build.query(
         model.Build.status == model.BuildStatus.SCHEDULED,
+        model.Build.is_leased == False,
         model.Build.namespace.IN(namespaces),
-        model.Build.available_since <= datetime.datetime.utcnow(),
     )
-    q = q.order(model.Build.available_since) # oldest first.
+    q = q.order(model.Build.create_time) # oldest first.
 
     # Check once again locally because an ndb query may return an entity not
-    # satisfying the query. Assume build namespace never changes.
+    # satisfying the query.
     builds = (b for b in q.iter()
-              if b.is_leasable() and acl_user.can_view_build(b))
+              if (b.status == model.BuildStatus.SCHEDULED and
+                  not b.is_leased and
+                  b.namespace in namespaces and
+                  acl_user.can_view_build(b))
+             )
     builds = list(itertools.islice(builds, max_builds))
-    builds = sorted(builds, key=lambda b: b.available_since)
+    builds = sorted(builds, key=lambda b: b.create_time)
     return builds
 
-  def lease(self, build_id, duration=None):
-    """Leases the build, makes it unavailable for the lease duration.
+  def _get_leasable_build(self, build_id):
+    build = model.Build.get_by_id(build_id)
+    if build is None:
+      raise BuildNotFoundError()
+    acl_user = acl.current_user()
+    if not acl_user.can_lease_build(build):
+      raise auth.AuthorizationError()
+    return build
 
-    After the lease expires, the build can be leased again.
+  def lease(self, build_id, duration=None):
+    """Leases the build, makes it unavailable for the leasing.
+
     Changes lease_key to a different value.
+
+    After the lease expires, a cron task will make the build leasable again.
 
     Args:
       build_id (int): build id.
@@ -161,33 +190,58 @@ class BuildBucketService(object):
       duration = datetime.timedelta(seconds=10)
     validate_lease_duration(duration)
 
-    acl_user = acl.current_user()
-    new_available_since = datetime.datetime.utcnow() + duration
+    lease_expiration_date = utils.utcnow() + duration
 
     @ndb.transactional
     def try_lease():
-      build = model.Build.get_by_id(build_id)
-      if not build:
-        raise BuildNotFoundError()
-      if not acl_user.can_lease_build(build):
-        raise auth.AuthorizationError(
-            'User %s cannot lease build %s' % (acl_user, build_id))
+      build = self._get_leasable_build(build_id)
 
-      if not build.is_leasable():
+      if build.status != model.BuildStatus.SCHEDULED or build.is_leased:
         return False, build
 
-      build.available_since = new_available_since
+      build.lease_expiration_date = lease_expiration_date
       build.regenerate_lease_key()
       build.put()
       return True, build
 
     return try_lease()
 
+  def _check_lease(self, build, lease_key):
+    if not build.is_leased:
+      raise InvalidBuildStateError('Build %s is not leased.' % build.key.id())
+    if lease_key != build.lease_key:
+      raise InvalidInputError('lease_key is incorrect. '
+                              'Your lease might be expired.')
+
+  @ndb.transactional
+  def unlease(self, build_id, lease_key):
+    """Unleases the build and resets its state. Idempotent.
+
+    Resets status, url and lease_key.
+
+    Returns:
+      The unleased Build.
+    """
+    validate_lease_key(lease_key)
+    build = self._get_leasable_build(build_id)
+    if build.lease_key is None:
+      if build.status == model.BuildStatus.SCHEDULED:
+        return build
+      raise InvalidBuildStateError('Cannot unlease a non-leased build')
+    self._check_lease(build, lease_key)
+    build.status = model.BuildStatus.SCHEDULED
+    build.lease_key = None  # unlease.
+    build.lease_expiration_date = None
+    build.url = None
+    build.put()
+    return build
+
   @staticmethod
-  def _enqueue_callback_task(build):
+  def _enqueue_callback_task_if_needed(build):
     assert ndb.in_transaction()
     assert build
-    assert build.callback
+    if not build.callback:
+      return
     task = taskqueue.Task(
         url=build.callback.url,
         headers=build.callback.headers,
@@ -200,61 +254,136 @@ class BuildBucketService(object):
       add_kwargs['queue_name'] = build.callback.queue_name
     task.add(transactional=True, **add_kwargs)
 
-  def update(self, build_id, lease_key=None, lease_duration=None,
-             status=None, state=None):
-    """Updates build properties.
+  @ndb.transactional
+  def start(self, build_id, lease_key, url=None):
+    """Marks build as STARTED. Idempotent.
 
     Args:
-      build_id (int): id of the build.
-      lease_key (int): lease key obtained from calling BuildBucketService.lease.
-        The lease_key must match current build lease key. If the build is not
-        leased, the current lease key is None.
-      lease_duration (datetime.timedelta): if not None, new value of lease
-        duration. Defaults to None.
-      status (model.BuildStatus): if not None, the new value of build status.
-        Defaults to None.
-      state (dict): if not None, the new value of build state.
+      build_id: id of the started build.
+      lease_key: current lease key.
+      url (str): a URL to a build-system-specific build, viewable by a human.
+
+    Returns:
+      The updated Build.
     """
+    validate_lease_key(lease_key)
+    validate_url(url)
+    build = self._get_leasable_build(build_id)
+
+    if build.status == model.BuildStatus.STARTED:
+      if build.url == url:
+        return build
+      raise InvalidBuildStateError('Build %s is already started' % build_id)
+    elif build.status == model.BuildStatus.COMPLETED:
+      raise InvalidBuildStateError('Cannot start a compelted build')
+    assert build.status == model.BuildStatus.SCHEDULED
+    self._check_lease(build, lease_key)
+
+    build.status = model.BuildStatus.STARTED
+    build.url = url
+    build.put()
+    self._enqueue_callback_task_if_needed(build)
+    return build
+
+  @ndb.transactional
+  def heartbeat(self, build_id, lease_key, lease_duration):
+    """Extends build lease.
+
+    Args:
+      build_id: id of the build.
+      lease_key: current lease key.
+      lease_duration (datetime.timedelta): new lease duration.
+
+    Returns:
+      The updated Build.
+    """
+    validate_lease_key(lease_key)
+    if lease_duration is None:
+      raise InvalidInputError('Lease duration not specified')
     validate_lease_duration(lease_duration)
-    assert status is None or isinstance(status, model.BuildStatus)
-    assert state is None or isinstance(state, dict)
+    build = self._get_leasable_build(build_id)
+    self._check_lease(build, lease_key)
+    build.lease_expiration_date = utils.utcnow() + lease_duration
+    build.put()
+    return build
 
-    unlease = lease_duration is not None and not lease_duration
-    new_available_since = None
-    if lease_duration is not None:
-      new_available_since = datetime.datetime.utcnow() + lease_duration
+  @ndb.transactional
+  def _complete(self, build_id, lease_key, result, failure_reason=None):
+    """Marks a build as completed. Used by succeed and fail methods."""
+    validate_lease_key(lease_key)
+    assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
+    build = self._get_leasable_build(build_id)
 
-    @ndb.transactional
-    def do_update():
-      build = model.Build.get_by_id(build_id)
-      if build is None:
-        raise BuildNotFoundError()
-      acl_user = acl.current_user()
-      if not acl_user.can_lease_build(build):
-        raise auth.AuthorizationError()
-      if build.lease_key is not None and lease_key != build.lease_key:
-        raise BadLeaseKeyError('lease_key is incorrect. '
-                               'Your lease might be expired.')
+    if build.status == model.BuildStatus.COMPLETED:
+      if build.result == result and build.failure_reason == failure_reason:
+        return build
+      raise InvalidBuildStateError('Build %s has already completed' % build_id)
+    elif build.status != model.BuildStatus.STARTED:
+      raise InvalidBuildStateError(
+          'Cannot mark a non-started build as completed')
+    self._check_lease(build, lease_key)
 
-      if new_available_since:
-        build.available_since = new_available_since
-        if unlease:  # pragma: no branch
-          build.lease_key = None
+    build.status = model.BuildStatus.COMPLETED
+    build.result = result
+    build.failure_reason = failure_reason
+    build.lease_key = None  # unlease
+    build.lease_expiration_date = None
+    build.put()
+    self._enqueue_callback_task_if_needed(build)
+    return build
 
-      status_change = False
-      if status is not None and build.status != status:
-        if build.status == model.BuildStatus.COMPLETE:
-          raise StatusIsFinalError(
-              'Build status cannot be changed from status %s' % build.status)
-        build.status = status
-        status_change = True
+  def succeed(self, build_id, lease_key):
+    """Marks a build as succeeded. Idempotent.
 
-      if state is not None:
-        build.state = state
+    Args:
+      build_id: id of the build to complete.
+      lease_key: current lease key.
 
-      build.put()
+    Returns:
+      The succeeded Build.
+    """
+    return self._complete(build_id, lease_key, model.BuildResult.SUCCESS)
 
-      if status_change and build.callback:
-        self._enqueue_callback_task(build)
-      return build
-    return do_update()
+  def fail(self, build_id, lease_key, failure_reason=None):
+    """Marks a build as failed. Idempotent.
+
+    Args:
+      build_id: id of the build to complete.
+      lease_key: current lease key.
+      failure_reason (model.FailureReason): why the build failed.
+        Defaults to model.FailureReason.BUILD_FAILURE.
+
+    Returns:
+      The failed Build.
+    """
+    failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
+    return self._complete(
+        build_id, lease_key, model.BuildResult.FAILURE, failure_reason)
+
+  @ndb.transactional
+  def cancel(self, build_id):
+    """Cancels build. Does not require a lease key.
+
+    The current user has to have a permission to cancel a build in the
+    build namespace.
+
+    Returns:
+      Canceled Build.
+    """
+    build = model.Build.get_by_id(build_id)
+    if build is None:
+      raise BuildNotFoundError()
+    acl_user = acl.current_user()
+    if not acl_user.can_cancel_build(build):
+      raise auth.AuthorizationError()
+    if build.status == model.BuildStatus.COMPLETED:
+      if build.result == model.BuildResult.CANCELED:
+        return build
+      raise InvalidBuildStateError('Cannot cancel a completed build')
+    build.status = model.BuildStatus.COMPLETED
+    build.result = model.BuildResult.CANCELED
+    build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+    build.lease_key = None  # unlease
+    build.lease_expiration_date = None
+    build.put()
+    return build
