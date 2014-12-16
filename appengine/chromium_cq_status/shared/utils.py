@@ -35,39 +35,38 @@ def cross_origin_json(handler): # pragma: no cover
 def filter_dict(d, keys): # pragma: no cover
   return {key: d[key] for key in d if key in keys}
 
-def has_end_timestamp(**kwargs): # pragma: no cover
-  end = kwargs.get('end')
-  return end and end < datetime.utcnow()
-
 def is_valid_user(): # pragma: no cover
   if users.is_current_user_admin():
     return True
   user = users.get_current_user()
   return user and VALID_EMAIL_RE.match(user.email())
 
-def memcachize(use_cache_check=None): # pragma: no cover
+def memcachize(cache_check): # pragma: no cover
   def decorator(f):
     def memcachized(**kwargs):
-      if use_cache_check and not use_cache_check(**kwargs):
-        return f(**kwargs)
       key = '%s.%s(%s)' % (
         f.__module__,
         f.__name__,
         ', '.join('%s=%r' % i for i in sorted(kwargs.items())),
       )
-      result = memcache.get(key)
-      if result == None:
-        result = f(**kwargs)
-        if result != None:
-          memcache.add(key, result)
-      else:
+      cache = memcache.get(key)
+      if cache is not None and cache_check(cache['timestamp'], kwargs):
         logging.debug('Memcache hit: ' + key)
-      return result
+      else:
+        cache = {
+          'value': f(**kwargs),
+          'timestamp': timestamp_now(),
+        }
+        memcache.set(key, cache)
+      return cache['value']
     return memcachized
   return decorator
 
 def password_sha1(password): # pragma: no cover
   return hashlib.sha1(password).hexdigest()
+
+def timestamp_now(): # pragma: no cover
+  return to_unix_timestamp(datetime.utcnow())
 
 def to_unix_timestamp(dt): # pragma: no cover
   return calendar.timegm(dt.timetuple()) + dt.microsecond / 1e6

@@ -12,6 +12,8 @@ AUTO_TAGGED_FIELDS = (
   'verification',
 )
 CQ_BOT_PASSWORD_KEY = 'cq_bot'
+LAST_CQ_STATS_INTERVAL_CHANGE_KEY = 'last_cqstats_interval_minutes_%s_change'
+LAST_CQ_STATS_CHANGE_KEY = 'last_cqstats_change'
 DEFAULT_QUERY_SIZE = 100
 MAXIMUM_QUERY_SIZE = 1000
 # This mapping matches PatchSet.try_job_results() in the chromium_rietveld repo.

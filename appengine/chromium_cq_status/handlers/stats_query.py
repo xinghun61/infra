@@ -6,6 +6,10 @@ from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
 from model.cq_stats import CQStats
+from shared.config import (
+  LAST_CQ_STATS_INTERVAL_CHANGE_KEY,
+  LAST_CQ_STATS_CHANGE_KEY,
+)
 from shared.parsing import (
   parse_cqstats_key,
   parse_cursor,
@@ -19,7 +23,28 @@ from shared.parsing import (
 )
 from shared import utils
 
-@utils.memcachize(use_cache_check=utils.has_end_timestamp)
+from google.appengine.api import memcache
+
+def check_last_change(cache_timestamp, kwargs): # pragma: no cover
+  last_change_key = get_last_change_key(kwargs.get('interval_minutes'))
+  last_change_timestamp = memcache.get(last_change_key)
+  if last_change_timestamp is None:
+    return False
+  return cache_timestamp >= last_change_timestamp
+
+def get_last_change_key(interval_minutes): # pragma: no cover
+  if interval_minutes:
+    return LAST_CQ_STATS_INTERVAL_CHANGE_KEY % interval_minutes
+  return LAST_CQ_STATS_CHANGE_KEY
+
+def ensure_last_change_timestamp(interval_minutes): # pragma: no cover
+  """Ensure a memcache timestamp is set for the last CQStats change."""
+  last_change_key = get_last_change_key(interval_minutes)
+  last_change_timestamp = memcache.get(last_change_key)
+  if last_change_timestamp is None:
+    memcache.set(last_change_key, utils.timestamp_now())
+
+@utils.memcachize(cache_check=check_last_change)
 def execute_query(key, project, interval_minutes, begin, end, names,
     count, cursor): # pragma: no cover
   stats_list = []
@@ -53,6 +78,8 @@ def execute_query(key, project, interval_minutes, begin, end, names,
       for stats in page_stats:
         if not names or stats.has_any_names(names):
           stats_list.append(stats)
+
+  ensure_last_change_timestamp(interval_minutes)
 
   return {
     'results': [stats.to_dict(names) for stats in stats_list],

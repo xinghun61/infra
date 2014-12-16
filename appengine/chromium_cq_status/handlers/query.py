@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
@@ -18,7 +20,13 @@ from shared.parsing import (
 )
 from shared import utils
 
-@utils.memcachize(use_cache_check=utils.has_end_timestamp)
+def has_end_timestamp(
+      cache_timestamp, # pylint: disable=W0613
+      kwargs): # pragma: no cover
+  end = kwargs.get('end')
+  return end and end < datetime.utcnow()
+
+@utils.memcachize(cache_check=has_end_timestamp)
 def execute_query(
     key, begin, end, tags, fields, count, cursor): # pragma: no cover
   records = []

@@ -5,6 +5,8 @@
 from datetime import datetime, timedelta
 import json
 
+from google.appengine.api import memcache
+
 from tests.testing_utils import testing
 
 import highend
@@ -13,7 +15,8 @@ from model.cq_stats import (
   CQStats,
   ListStats,
 )
-from shared.utils import minutes_per_day
+from shared.config import LAST_CQ_STATS_CHANGE_KEY
+from shared.utils import minutes_per_day, timestamp_now
 
 class TestStatsQuery(testing.AppengineTestCase):
   app_module = highend.app
@@ -33,6 +36,7 @@ class TestStatsQuery(testing.AppengineTestCase):
       'cursor': '',
     }, json.loads(response.body))
 
+    _clear_stats()
     _add_stats('project_a', 40, 789)
     _add_stats('project_b', 50, 1234)
     response = self.test_app.get('/stats/query')
@@ -310,10 +314,53 @@ class TestStatsQuery(testing.AppengineTestCase):
       }],
     }, _parse_body(response))
 
+  def test_query_cache(self):
+    _clear_stats()
+    cq_stats = _add_stats('project_a', 1, 0)
+    response = self.test_app.get('/stats/query')
+    self.assertEquals({
+      'more': False,
+      'results': [{
+        'project': 'project_a',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 0,
+        'end': 86400,
+        'stats': [],
+      }],
+    }, _parse_body(response))
+
+    cq_stats.project = 'project_b'
+    cq_stats.put()
+    response = self.test_app.get('/stats/query')
+    self.assertEquals({
+      'more': False,
+      'results': [{
+        'project': 'project_a',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 0,
+        'end': 86400,
+        'stats': [],
+      }],
+    }, _parse_body(response))
+
+    memcache.set(LAST_CQ_STATS_CHANGE_KEY, timestamp_now())
+    response = self.test_app.get('/stats/query')
+    self.assertEquals({
+      'more': False,
+      'results': [{
+        'project': 'project_b',
+        'interval_minutes': 1 * minutes_per_day,
+        'begin': 0,
+        'end': 86400,
+        'stats': [],
+      }],
+    }, _parse_body(response))
+
 def _clear_stats(): # pragma: no cover
   for cq_stats in CQStats.query():
     cq_stats.key.delete()
   assert CQStats.query().count() == 0
+  memcache.flush_all()
 
 def _add_stats(project, days, begin, stats_list=None): # pragma: no cover
   minutes = days * minutes_per_day

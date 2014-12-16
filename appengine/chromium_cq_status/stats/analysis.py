@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import logging
 import math
 
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 from model.cq_stats import (
@@ -16,6 +17,8 @@ from model.cq_stats import (
 )
 from model.record import Record
 from shared.config import (
+  LAST_CQ_STATS_INTERVAL_CHANGE_KEY,
+  LAST_CQ_STATS_CHANGE_KEY,
   STATS_START_TIMESTAMP,
   TAG_START,
   TAG_STOP,
@@ -23,6 +26,7 @@ from shared.config import (
   TAG_ISSUE,
   TAG_PATCHSET,
 )
+from shared.utils import timestamp_now
 from stats.analyzer import AnalyzerGroup
 
 PatchsetReference = namedtuple('PatchsetReference', 'issue patchset')
@@ -145,6 +149,7 @@ def update_cq_stats(project_stats, minutes, begin, end): # pragma: no cover
         count_stats=count_stats_dict.values(),
         list_stats=list_stats_dict.values(),
       ).put()
+  update_last_cq_stats_change_timestamp(minutes)
 
 def update_stats_list(existing_stats_list, new_stats_dict): # pragma: no cover
   for i, stats in enumerate(existing_stats_list):
@@ -153,3 +158,8 @@ def update_stats_list(existing_stats_list, new_stats_dict): # pragma: no cover
       existing_stats_list[i] = new_stats_dict[name]
       del new_stats_dict[name]
   existing_stats_list.extend(new_stats_dict.values())
+
+def update_last_cq_stats_change_timestamp(minutes): # pragma: no cover
+  now = timestamp_now()
+  memcache.set(LAST_CQ_STATS_INTERVAL_CHANGE_KEY % minutes, now)
+  memcache.set(LAST_CQ_STATS_CHANGE_KEY, now)
