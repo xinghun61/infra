@@ -15,7 +15,7 @@ handlers:
   secure: always
 
 - url: /_ah/spi/.*
-  script: apps.apis
+  script: apps.endpoints
 
 - url: /.*
   script: apps.html
@@ -38,6 +38,7 @@ builtins:
 
 includes:
 - components/auth
+- components/ereporter2
 
 skip_files:
 - ^(.*/)?.*\.(orig|rej|py[co])

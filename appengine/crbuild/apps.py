@@ -8,6 +8,6 @@ Function 'frontend.initialize' must be called from a separate module
 not imported in tests.
 """
 
-import frontend
+import main
 
-html, apis = frontend.initialize_apps()
+html, endpoints, backend = main.initialize()

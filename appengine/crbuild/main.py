@@ -8,6 +8,7 @@ import sys
 import endpoints
 import webapp2
 
+from components import ereporter2
 from components import utils
 
 import buildbucket
@@ -34,6 +35,13 @@ def create_endpoints_app():
   return endpoints.api_server(apis)
 
 
-def initialize_apps():
+def create_backend_app():
+  """Returns WSGI app for backend."""
+  routes = []
+  return webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
+
+
+def initialize():
   """Bootstraps the global state and creates WSGI applications."""
-  return create_html_app(), create_endpoints_app()
+  ereporter2.register_formatter()
+  return create_html_app(), create_endpoints_app(), create_backend_app()
