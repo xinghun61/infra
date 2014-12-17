@@ -5,3 +5,4 @@ indexes:
   - name: status
   - name: is_leased
   - name: namespace
+  - name: create_time
