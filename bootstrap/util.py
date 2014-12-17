@@ -17,6 +17,9 @@ WHEELHOUSE = os.path.join(ROOT, 'wheelhouse')
 BUCKET = 'chrome-python-wheelhouse'
 STORAGE_URL = 'https://www.googleapis.com/storage/v1/b/{}/o'.format(BUCKET)
 OBJECT_URL = 'https://storage.googleapis.com/{}/{{}}#md5={{}}'.format(BUCKET)
+LOCAL_OBJECT_URL = 'file://{}'
+
+LOCAL_STORAGE_PATH = os.path.join(ROOT, 'wheelhouse_cache')
 
 SOURCE_URL = 'gs://{}/sources/{{}}'.format(BUCKET)
 WHEELS_URL = 'gs://{}/wheels/'.format(BUCKET)

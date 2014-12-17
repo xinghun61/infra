@@ -5,6 +5,7 @@
 
 import argparse
 import contextlib
+import glob
 import logging
 import os
 import shutil
@@ -12,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 
-from util import STORAGE_URL, OBJECT_URL
+from util import STORAGE_URL, OBJECT_URL, LOCAL_STORAGE_PATH, LOCAL_OBJECT_URL
 from util import read_deps, merge_deps, print_deps, platform_tag
 
 LOGGER = logging.getLogger(__name__)
@@ -50,7 +51,16 @@ def ls(prefix):
       prefix=prefix,
       fields='items(name,md5Hash)'
   )).json()
-  return data.get('items', ())
+  entries = data.get('items', [])
+  for entry in entries:
+    entry['md5Hash'] = entry['md5Hash'].decode('base64').encode('hex')
+    entry['local'] = False
+  # Also look in the local cache
+  entries.extend([
+    {'name': fname, 'md5Hash': None, 'local': True}
+    for fname in glob.glob(os.path.join(LOCAL_STORAGE_PATH,
+                                        prefix.split('/')[-1] + '*'))])
+  return entries
 
 
 def sha_for(deps_entry):
@@ -62,7 +72,6 @@ def sha_for(deps_entry):
 
 def get_links(deps):
   import pip.wheel  # pylint: disable=E0611
-
   plat_tag = platform_tag()
 
   links = []
@@ -73,17 +82,23 @@ def get_links(deps):
                                          source_sha)
     generic_link = None
     binary_link = None
+    local_link = None
 
     for entry in ls(prefix):
       fname = entry['name'].split('/')[-1]
-      md5hash = entry['md5Hash'].decode('base64').encode('hex')
+      md5hash = entry['md5Hash']
       wheel_info = pip.wheel.Wheel.wheel_file_re.match(fname)
       if not wheel_info:
         LOGGER.warn('Skipping invalid wheel: %r', fname)
         continue
 
       if pip.wheel.Wheel(fname).supported():
-        link = OBJECT_URL.format(entry['name'], md5hash)
+        if entry['local']:
+          link = LOCAL_OBJECT_URL.format(entry['name'])
+          local_link = link
+          continue
+        else:
+          link = OBJECT_URL.format(entry['name'], md5hash)
         if fname.endswith('none-any.whl'):
           if generic_link:
             LOGGER.error(
@@ -99,10 +114,10 @@ def get_links(deps):
             continue
           binary_link = link
 
-    if not binary_link and not generic_link:
+    if not binary_link and not generic_link and not local_link:
       raise NoWheelException(name, version, dep['build'], source_sha)
 
-    links.append(binary_link or generic_link)
+    links.append(local_link or binary_link or generic_link)
 
   return links
 

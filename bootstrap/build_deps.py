@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 import argparse
+import glob
 import hashlib
 import os
 import shutil
@@ -12,7 +13,7 @@ import sys
 
 import bootstrap
 
-from util import ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL
+from util import ROOT, WHEELHOUSE, WHEELS_URL, SOURCE_URL, LOCAL_STORAGE_PATH
 from util import tempdir, tempname, platform_tag, merge_deps, print_deps
 
 
@@ -119,8 +120,15 @@ def clear_wheelhouse():
 
 
 def push_wheelhouse():
-  return subprocess.call(['gsutil', '-m', 'cp', WHEELHOUSE + '/*', WHEELS_URL])
-
+  status = subprocess.call(['gsutil', '-m', 'cp', os.path.join(WHEELHOUSE, '*'),
+                            WHEELS_URL])
+  if status:
+    print('Failed to upload wheels, falling back to local cache')
+    if not os.path.isdir(LOCAL_STORAGE_PATH):
+      os.makedirs(LOCAL_STORAGE_PATH)
+    for filename in glob.glob(os.path.join(WHEELHOUSE, '*')):
+      shutil.copy(filename, LOCAL_STORAGE_PATH)
+  return status
 
 def main(args):
   parser = argparse.ArgumentParser()
