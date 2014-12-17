@@ -37,8 +37,11 @@ class BuildBucketServiceTest(CrBuildTestCase):
         }
     )
 
+    self.current_identity = auth.Identity('service', 'unittest')
+    self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.current_user = mock.Mock()
-    self.mock(acl, 'current_user', mock.Mock(return_value=self.current_user))
+    self.mock(acl, 'current_user', lambda: self.current_user)
+
 
   #################################### ADD #####################################
 
@@ -158,6 +161,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.assertTrue(self.lease())
     self.assertTrue(self.test_build.is_leased)
     self.assertGreater(self.test_build.lease_expiration_date, utils.utcnow())
+    self.assertEqual(self.test_build.leasee, self.current_identity)
 
   def test_lease_build_with_auth_error(self):
     self.current_user.can_lease_build.return_value = False
@@ -208,6 +212,8 @@ class BuildBucketServiceTest(CrBuildTestCase):
         self.test_build.key.id(), self.test_build.lease_key)
     self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
     self.assertIsNone(build.lease_key)
+    self.assertIsNone(build.lease_expiration_date)
+    self.assertIsNone(build.leasee)
     self.assertTrue(self.lease())
 
   def test_unlease_is_idempotent(self):

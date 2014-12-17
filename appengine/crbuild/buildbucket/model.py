@@ -5,6 +5,7 @@
 import datetime
 import random
 
+from components import auth
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from protorpc import messages
@@ -91,6 +92,7 @@ class Build(ndb.Model):
   lease_expiration_date = ndb.DateTimeProperty()
   lease_key = ndb.IntegerProperty(indexed=False)
   is_leased = ndb.ComputedProperty(lambda self: self.lease_key is not None)
+  leasee = auth.IdentityProperty()
 
   # Start time attributes.
   url = ndb.StringProperty(indexed=False)
@@ -109,8 +111,10 @@ class Build(ndb.Model):
     is_failure = self.result == BuildResult.FAILURE
     assert (self.cancelation_reason is not None) == is_canceled
     assert (self.failure_reason is not None) == is_failure
-    assert not is_completed or self.lease_key is None
-    assert (self.lease_key is None) == (self.lease_expiration_date is None)
+    is_leased = self.lease_key is not None
+    assert not (is_completed and is_leased)
+    assert (self.lease_expiration_date is not None) == is_leased
+    assert (self.leasee is not None) == is_leased
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""

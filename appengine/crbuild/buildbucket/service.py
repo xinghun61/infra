@@ -97,6 +97,7 @@ class BuildBucketService(object):
     )
     if lease_duration:
       build.lease_expiration_date = utils.utcnow() + lease_duration
+      build.leasee = auth.get_current_identity()
       build.regenerate_lease_key()
     build.put()
     return build
@@ -201,6 +202,7 @@ class BuildBucketService(object):
 
       build.lease_expiration_date = lease_expiration_date
       build.regenerate_lease_key()
+      build.leasee = auth.get_current_identity()
       build.put()
       return True, build
 
@@ -212,6 +214,11 @@ class BuildBucketService(object):
     if lease_key != build.lease_key:
       raise InvalidInputError('lease_key is incorrect. '
                               'Your lease might be expired.')
+  def _clear_lease(self, build):
+    """Clears build's lease attributes."""
+    build.lease_key = None
+    build.lease_expiration_date = None
+    build.leasee = None
 
   @ndb.transactional
   def unlease(self, build_id, lease_key):
@@ -230,8 +237,7 @@ class BuildBucketService(object):
       raise InvalidBuildStateError('Cannot unlease a non-leased build')
     self._check_lease(build, lease_key)
     build.status = model.BuildStatus.SCHEDULED
-    build.lease_key = None  # unlease.
-    build.lease_expiration_date = None
+    self._clear_lease(build)
     build.url = None
     build.put()
     return build
@@ -326,8 +332,7 @@ class BuildBucketService(object):
     build.status = model.BuildStatus.COMPLETED
     build.result = result
     build.failure_reason = failure_reason
-    build.lease_key = None  # unlease
-    build.lease_expiration_date = None
+    self._clear_lease(build)
     build.put()
     self._enqueue_callback_task_if_needed(build)
     return build
@@ -383,7 +388,6 @@ class BuildBucketService(object):
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
-    build.lease_key = None  # unlease
-    build.lease_expiration_date = None
+    self._clear_lease(build)
     build.put()
     return build
