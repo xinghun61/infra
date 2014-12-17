@@ -5,11 +5,10 @@
 import os
 import sys
 
+from components import utils
+from components import ereporter2
 import endpoints
 import webapp2
-
-from components import ereporter2
-from components import utils
 
 import buildbucket
 

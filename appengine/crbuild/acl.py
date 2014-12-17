@@ -4,10 +4,10 @@
 
 # TODO(nodir): write tests for ACL
 
+from components import auth
 from google.appengine.api import users
 import endpoints
 
-from components import auth
 
 
 HOSTNAME_WHITELIST = {

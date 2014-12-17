@@ -2,15 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(pgervais): this file as no tests
-
-from calendar import timegm
-import os
-
-
-def datetime_to_timestamp(dt):
-  return float(timegm(dt.timetuple()))
-
 
 class BadIdError(Exception):
   """Raised when Entity id is malformed."""

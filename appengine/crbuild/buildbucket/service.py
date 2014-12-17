@@ -7,11 +7,11 @@ import itertools
 import json
 import urlparse
 
+from components import auth
+from components import utils
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
-from components import auth
-from components import utils
 from . import model
 import acl
 

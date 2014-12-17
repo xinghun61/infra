@@ -6,13 +6,13 @@ import contextlib
 import datetime
 import json
 
+from components import auth
+from components import utils
 from google.appengine.ext import testbed
 import mock
 
 from buildbucket import model
 from buildbucket import service
-from components import auth
-from components import utils
 from test import CrBuildTestCase
 import acl
 

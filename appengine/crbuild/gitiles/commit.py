@@ -9,7 +9,7 @@ import re
 from google.appengine.ext import ndb
 
 from gitiles.client import GitilesClient
-from util import RegexIdMixin
+import regexid
 
 
 class GitContributor(ndb.Model):
@@ -31,7 +31,7 @@ class GitContributor(ndb.Model):
     )
 
 
-class GitilesCommit(ndb.Model, RegexIdMixin):
+class GitilesCommit(ndb.Model, regexid.RegexIdMixin):
   """GitilesCommit is a Git commit hosted on a Gitiles server.
 
   The entity is immutable. It should not be modified.
