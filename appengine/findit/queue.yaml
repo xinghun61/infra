@@ -1,0 +1,6 @@
+queue:
+- name: build-failure-analysis-queue
+  mode: push
+  rate: 10/s
+  bucket_size: 100
+  max_concurrent_requests: 20

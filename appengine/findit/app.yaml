@@ -5,8 +5,15 @@ api_version: 1
 threadsafe: true
 
 handlers:
+- url: /_ah/pipeline(/.*)?
+  script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\
+           handlers._APP"
+  secure: always
+  login: admin
+
 - url: /.*
-  script: appengine_module.findit.main.application
+  script: main.application
+  secure: always
 
 libraries:
 - name: webapp2
