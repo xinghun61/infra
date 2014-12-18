@@ -10,7 +10,8 @@ import webapp2
 
 # In development mode, use the un-vulcanized templates:
 main_file = ('sheriff-o-matic.html' if
-  os.environ['SERVER_SOFTWARE'].startswith("Development") else 'gen/index.html')
+    os.environ['SERVER_SOFTWARE'].startswith("Development")
+    else 'gen/index.html')
 path = os.path.join(os.path.dirname(__file__), main_file)
 
 f = open(path, 'rb')
@@ -18,11 +19,11 @@ main = f.read()
 f.close()
 
 class MainPage(webapp2.RequestHandler):
-    def get(self):
-        self.response.headers['Strict-Transport-Security'] = (
-            'max-age=10886400; includeSubDomains')
-        self.response.headers['Content-Type'] = 'text/html'
-        self.response.out.write(main)
+  def get(self):
+    self.response.headers['Strict-Transport-Security'] = (
+        'max-age=10886400; includeSubDomains')
+    self.response.headers['Content-Type'] = 'text/html'
+    self.response.out.write(main)
 
 app = webapp2.WSGIApplication([
     ('/.*', MainPage),
