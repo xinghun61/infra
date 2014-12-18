@@ -109,10 +109,6 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     )
     self.assertEqual(resp['lease_expiration_ts'], req['lease_expiration_ts'])
 
-  def test_put_with_id(self):
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('put', {'id': 123, 'namespace': 'chromium'})
-
   def test_put_with_empty_namespace(self):
     with self.call_should_fail(httplib.BAD_REQUEST):
       self.call_api('put', {'namespace': ''})
@@ -223,26 +219,45 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     req = {
         'id': self.test_build.key.id(),
         'lease_key': 42,
-        'success': True,
     }
     res = self.call_api('succeed', req).json_body
-    self.service.succeed.assert_called_once_with(req['id'], req['lease_key'])
+    self.service.succeed.assert_called_once_with(
+        req['id'], req['lease_key'], None)
     self.assertEqual(int(res['id']), req['id'])
+
+  def test_succeed_with_result_details(self):
+    self.test_build.result_details = {'test_coverage': 100}
+    self.service.succeed.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'result_details_json': json.dumps(self.test_build.result_details),
+    }
+    res = self.call_api('succeed', req).json_body
+    self.service.succeed.assert_called_once_with(
+        req['id'], req['lease_key'], self.test_build.result_details)
+    self.assertEqual(res['result_details_json'], req['result_details_json'])
 
   #################################### FAIL ####################################
 
   def test_infra_failure(self):
+    self.test_build.result_details = {'transient_error': True}
+    self.test_build.failure_reason = model.FailureReason.INFRA_FAILURE
     self.service.fail.return_value = self.test_build
     req = {
         'id': self.test_build.key.id(),
         'lease_key': 42,
         'failure_reason': 'INFRA_FAILURE',
+        'result_details_json': json.dumps(self.test_build.result_details),
     }
     res = self.call_api('fail', req).json_body
     self.service.fail.assert_called_once_with(
         req['id'], req['lease_key'],
+        self.test_build.result_details,
         failure_reason=model.FailureReason.INFRA_FAILURE)
     self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(res['failure_reason'], req['failure_reason'])
+    self.assertEqual(res['result_details_json'], req['result_details_json'])
 
   #################################### CANCEL ##################################
 

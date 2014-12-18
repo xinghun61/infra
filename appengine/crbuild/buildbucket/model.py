@@ -99,6 +99,7 @@ class Build(ndb.Model):
 
   # Completion time attributes.
   result = msgprop.EnumProperty(BuildResult)
+  result_details = ndb.JsonProperty()
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
   failure_reason = msgprop.EnumProperty(FailureReason)
 

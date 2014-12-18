@@ -372,9 +372,18 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.lease()
     self.start()
     self.test_build = self.service.fail(
-    self.test_build.key.id(), self.test_build.lease_key)
+        self.test_build.key.id(), self.test_build.lease_key)
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.result, model.BuildResult.FAILURE)
+
+  def test_fail_with_details(self):
+    self.lease()
+    self.start()
+    result_details = {'transient_failure': True}
+    self.test_build = self.service.fail(
+        self.test_build.key.id(), self.test_build.lease_key,
+        result_details=result_details)
+    self.assertEqual(self.test_build.result_details, result_details)
 
   def test_complete_not_started_build(self):
     self.lease()

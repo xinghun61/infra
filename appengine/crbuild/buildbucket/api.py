@@ -19,18 +19,17 @@ from . import service
 
 class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
-  # Build id. Not required because BuildMessage is used in 'put' service method
-  # that generates build id during build creation.
-  id = messages.IntegerField(1)
+  id = messages.IntegerField(1, required=True)
   namespace = messages.StringField(2, required=True)
   parameters_json = messages.StringField(3)
   status = messages.EnumField(model.BuildStatus, 4)
   result = messages.EnumField(model.BuildResult, 5)
-  failure_reason = messages.EnumField(model.FailureReason, 6)
-  cancelation_reason = messages.EnumField(model.CancelationReason, 7)
-  lease_expiration_ts = messages.IntegerField(8)
-  lease_key = messages.IntegerField(9)
-  url = messages.StringField(10)
+  result_details_json = messages.StringField(6)
+  failure_reason = messages.EnumField(model.FailureReason, 7)
+  cancelation_reason = messages.EnumField(model.CancelationReason, 8)
+  lease_expiration_ts = messages.IntegerField(9)
+  lease_key = messages.IntegerField(10)
+  url = messages.StringField(11)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -45,6 +44,7 @@ def build_to_message(build, include_lease_key=False):
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,
       result=build.result,
+      result_details_json=json.dumps(build.result_details),
       cancelation_reason=build.cancelation_reason,
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
@@ -126,14 +126,17 @@ class BuildBucketApi(remote.Service):
 
   ###################################  PUT  ####################################
 
+  class PutRequestMessage(messages.Message):
+    namespace = messages.StringField(1, required=True)
+    parameters_json = messages.StringField(2)
+    lease_expiration_ts = messages.IntegerField(3)
+
   @auth.endpoints_method(
-      BuildMessage, BuildMessage,
+      PutRequestMessage, BuildMessage,
       path='builds', http_method='PUT')
   @convert_service_errors
   def put(self, request):
     """Creates a new build."""
-    if request.id:
-      raise endpoints.BadRequestException('Build id must not be specified')
     if not request.namespace:
       raise endpoints.BadRequestException('Build namespace not specified')
 
@@ -234,6 +237,7 @@ class BuildBucketApi(remote.Service):
 
   class SucceedRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
+    result_details_json = messages.StringField(2)
 
   @auth.endpoints_method(
       id_resource_container(SucceedRequestBodyMessage), BuildMessage,
@@ -241,14 +245,17 @@ class BuildBucketApi(remote.Service):
   @convert_service_errors
   def succeed(self, request):
     """Marks a build as succeeded."""
-    build = self.service.succeed(request.id, request.lease_key)
+    build = self.service.succeed(
+        request.id, request.lease_key,
+        parse_json(request.result_details_json, 'result_details_json'))
     return build_to_message(build)
 
   ###################################  FAIL  ###################################
 
   class FailRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
-    failure_reason = messages.EnumField(model.FailureReason, 2)
+    result_details_json = messages.StringField(2)
+    failure_reason = messages.EnumField(model.FailureReason, 3)
 
   @auth.endpoints_method(
       id_resource_container(FailRequestBodyMessage), BuildMessage,
@@ -258,6 +265,7 @@ class BuildBucketApi(remote.Service):
     """Marks a build as failed."""
     build = self.service.fail(
         request.id, request.lease_key,
+        parse_json(request.result_details_json, 'result_details_json'),
         failure_reason=request.failure_reason,
     )
     return build_to_message(build)

@@ -316,14 +316,17 @@ class BuildBucketService(object):
     return build
 
   @ndb.transactional
-  def _complete(self, build_id, lease_key, result, failure_reason=None):
+  def _complete(
+      self, build_id, lease_key, result, result_details, failure_reason=None):
     """Marks a build as completed. Used by succeed and fail methods."""
     validate_lease_key(lease_key)
     assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
     build = self._get_leasable_build(build_id)
 
     if build.status == model.BuildStatus.COMPLETED:
-      if build.result == result and build.failure_reason == failure_reason:
+      if (build.result == result and
+          build.failure_reason == failure_reason and
+          build.result_details == result_details):
         return build
       raise InvalidBuildStateError('Build %s has already completed' % build_id)
     elif build.status != model.BuildStatus.STARTED:
@@ -333,25 +336,28 @@ class BuildBucketService(object):
 
     build.status = model.BuildStatus.COMPLETED
     build.result = result
+    build.result_details = result_details
     build.failure_reason = failure_reason
     self._clear_lease(build)
     build.put()
     self._enqueue_callback_task_if_needed(build)
     return build
 
-  def succeed(self, build_id, lease_key):
+  def succeed(self, build_id, lease_key, result_details=None):
     """Marks a build as succeeded. Idempotent.
 
     Args:
       build_id: id of the build to complete.
       lease_key: current lease key.
+      result_details (dict): build result description.
 
     Returns:
       The succeeded Build.
     """
-    return self._complete(build_id, lease_key, model.BuildResult.SUCCESS)
+    return self._complete(
+        build_id, lease_key, model.BuildResult.SUCCESS, result_details)
 
-  def fail(self, build_id, lease_key, failure_reason=None):
+  def fail(self, build_id, lease_key, result_details=None, failure_reason=None):
     """Marks a build as failed. Idempotent.
 
     Args:
@@ -359,13 +365,15 @@ class BuildBucketService(object):
       lease_key: current lease key.
       failure_reason (model.FailureReason): why the build failed.
         Defaults to model.FailureReason.BUILD_FAILURE.
+      result_details (dict): build result description.
 
     Returns:
       The failed Build.
     """
     failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
     return self._complete(
-        build_id, lease_key, model.BuildResult.FAILURE, failure_reason)
+        build_id, lease_key, model.BuildResult.FAILURE, result_details,
+        failure_reason)
 
   @ndb.transactional
   def cancel(self, build_id):
