@@ -18,22 +18,28 @@ def google_login_required(fn):
     _, _, domain = user.email().partition('@')
     if domain == 'google.com':
       return fn(self, *args, **kwargs)
-    self.error(403)  # Unrecognized email or unauthroized domain.
-    self.response.out.write('unauthroized email %s' % user.user_id())
+    self.error(403)  # Unrecognized email or unauthorized domain.
+    self.response.out.write('unauthorized email %s' % user.user_id())
   return wrapper
 
 
 class ProxyPage(webapp2.RequestHandler):
   @google_login_required
   def get(self, bucket, obj):
-    gcs_file = gcs.open('/%s/%s' % (bucket, obj))
-    gcs_stat = gcs.stat('/%s/%s' % (bucket, obj))
-    logging.info('Opening /%s/%s' % (bucket, obj))
+    BLOCK_SIZE = 16 * 1024
+    filename = '/%s/%s' % (bucket, obj)
+    gcs_file = gcs.open(filename)
+    gcs_stat = gcs.stat(filename)
+    logging.info('Opening %s using BLOCK_SIZE=%d' % (filename, BLOCK_SIZE))
     self.response.headers["Content-Type"] = gcs_stat.content_type
+
+    block_num = 0
     while True:
-      block = gcs_file.read(16 * 1024)
+      block = gcs_file.read(BLOCK_SIZE)
       if not block:
+        logging.info('Finished reading %d blocks' % block_num)
         return
+      block_num += 1
       self.response.write(block)
 
 
