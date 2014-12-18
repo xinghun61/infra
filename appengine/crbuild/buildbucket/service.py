@@ -5,6 +5,7 @@
 import datetime
 import itertools
 import json
+import logging
 import urlparse
 
 from components import auth
@@ -214,6 +215,7 @@ class BuildBucketService(object):
     if lease_key != build.lease_key:
       raise InvalidInputError('lease_key is incorrect. '
                               'Your lease might be expired.')
+
   def _clear_lease(self, build):
     """Clears build's lease attributes."""
     build.lease_key = None
@@ -391,3 +393,30 @@ class BuildBucketService(object):
     self._clear_lease(build)
     build.put()
     return build
+
+  @ndb.transactional
+  def _reset_expired_build(self, build_key):
+    build = build_key.get()
+    if not build or build.lease_expiration_date is None:  # pragma: no cover
+      return False
+    is_expired = build.lease_expiration_date <= utils.utcnow()
+    if not is_expired:  # pragma: no cover
+      return False
+
+    assert build.status != model.BuildStatus.COMPLETED, (
+        'Completed build is leased')
+    self._clear_lease(build)
+    build.status = model.BuildStatus.SCHEDULED
+    build.url = None
+    build.put()
+    return True
+
+  def reset_expired_builds(self):
+    """For all building expired builds, resets their lease_key and state."""
+    q = model.Build.query(
+        model.Build.is_leased == True,
+        model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
+    )
+    for key in q.iter(keys_only=True):
+      if self._reset_expired_build(key):  # pragma: no branch
+        logging.info('Reset expired build %s successfully' % key.id())

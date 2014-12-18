@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from .api import BuildBucketApi
+from .handlers import get_backend_routes
 from .model import Build, BuildStatus, BuildResult, CancelationReason
 from .service import BuildBucketService
-from .api import BuildBucketApi

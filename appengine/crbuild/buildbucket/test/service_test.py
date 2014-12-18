@@ -386,3 +386,24 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.start()
     with self.callback_test():
       self.succeed()
+
+  ########################## RESET EXPIRED BUILDS ##############################
+
+  def test_reschedule_expired_builds(self):
+    self.test_build.lease_expiration_date = utils.utcnow()
+    self.test_build.lease_key = 1
+    self.test_build.leasee = self.current_identity
+    self.test_build.put()
+
+    self.service.reset_expired_builds()
+    build = self.test_build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
+    self.assertIsNone(build.lease_key)
+
+  def test_completed_builds_are_not_reset(self):
+    self.test_build.status = model.BuildStatus.COMPLETED
+    self.test_build.result = model.BuildResult.SUCCESS
+    self.test_build.put()
+    self.service.reset_expired_builds()
+    build = self.test_build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
