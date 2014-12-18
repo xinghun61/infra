@@ -59,7 +59,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
   def test_add_with_leasing(self):
     build = self.service.add(
         namespace='chromium',
-        lease_duration=datetime.timedelta(seconds=10)
+        lease_expiration_date=utils.utcnow () + datetime.timedelta(seconds=10),
     )
     self.assertTrue(build.is_leased)
     self.assertGreater(build.lease_expiration_date, utils.utcnow())
@@ -148,17 +148,18 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   #################################### LEASE ###################################
 
-  def lease(self, duration=None):
+  def lease(self, lease_expiration_date=None):
     if self.test_build.key is None:
       self.test_build.put()
     success, self.test_build = self.service.lease(
         self.test_build.key.id(),
-        duration=duration,
+        lease_expiration_date=lease_expiration_date,
     )
     return success
 
   def test_lease(self):
-    self.assertTrue(self.lease())
+    expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    self.assertTrue(self.lease(lease_expiration_date=expiration_date))
     self.assertTrue(self.test_build.is_leased)
     self.assertGreater(self.test_build.lease_expiration_date, utils.utcnow())
     self.assertEqual(self.test_build.leasee, self.current_identity)
@@ -182,15 +183,17 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   def test_cannot_lease_for_whole_day(self):
     with self.assertRaises(service.InvalidInputError):
-      self.lease(duration=datetime.timedelta(days=1))
+      self.lease(
+          lease_expiration_date=utils.utcnow() + datetime.timedelta(days=1))
 
-  def test_cannot_lease_for_negative_duration(self):
+  def test_cannot_set_expiration_date_to_past(self):
     with self.assertRaises(service.InvalidInputError):
-      self.lease(duration=datetime.timedelta(days=-1))
+      yesterday = utils.utcnow() - datetime.timedelta(days=1)
+      self.lease(lease_expiration_date=yesterday)
 
-  def test_cannot_lease_for_non_timedelta_duration(self):
+  def test_cannot_lease_with_non_datetime_expiration_date(self):
     with self.assertRaises(service.InvalidInputError):
-      self.lease(duration=2)
+      self.lease(lease_expiration_date=1)
 
   def test_leasing_regenerates_lease_key(self):
     orig_lease_key = 42
@@ -322,19 +325,19 @@ class BuildBucketServiceTest(CrBuildTestCase):
   ################################## HEARTBEAT #################################
 
   def test_heartbeat(self):
-    self.lease(duration=datetime.timedelta(seconds=1))
+    self.lease()
+    new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     build = self.service.heartbeat(
         self.test_build.key.id(), self.test_build.lease_key,
-        lease_duration=datetime.timedelta(minutes=1))
-    actual_duration = build.lease_expiration_date - utils.utcnow()
-    self.assertGreaterEqual(actual_duration, datetime.timedelta(seconds=59))
+        lease_expiration_date=new_expiration_date)
+    self.assertEqual(build.lease_expiration_date, new_expiration_date)
 
-  def test_heartbeat_without_duration(self):
-    self.lease(duration=datetime.timedelta(seconds=1))
+  def test_heartbeat_without_expiration_date(self):
+    self.lease()
     with self.assertRaises(service.InvalidInputError):
       self.service.heartbeat(
           self.test_build.key.id(), self.test_build.lease_key,
-          lease_duration=None)
+          lease_expiration_date=None)
 
   ################################### COMPLETE #################################
 

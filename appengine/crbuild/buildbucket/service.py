@@ -18,6 +18,7 @@ import acl
 
 MAX_PEEK_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
+DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 
 
 class BuildNotFoundError(Exception):
@@ -37,14 +38,15 @@ def validate_lease_key(lease_key):
     raise InvalidInputError('Lease key is not provided')
 
 
-def validate_lease_duration(duration):
-  """Raises InvalidInputError if |duration| is invalid."""
-  if duration is None:
+def validate_lease_expiration_date(expiration_date):
+  """Raises InvalidInputError if |expiration_date| is invalid."""
+  if expiration_date is None:
     return
-  if not isinstance(duration, datetime.timedelta):
-    raise InvalidInputError('Lease duration must be datetime.timedelta')
-  if duration < datetime.timedelta(0):
-    raise InvalidInputError('Lease duration cannot be negative')
+  if not isinstance(expiration_date, datetime.datetime):
+    raise InvalidInputError('Lease expiration date must be datetime.datetime')
+  duration = expiration_date - utils.utcnow()
+  if duration <= datetime.timedelta(0):
+    raise InvalidInputError('Lease expiration date cannot be in the past')
   if duration > MAX_LEASE_DURATION:
     raise InvalidInputError(
         'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
@@ -63,7 +65,7 @@ def validate_url(url):
 
 
 class BuildBucketService(object):
-  def add(self, namespace, parameters=None, lease_duration=None):
+  def add(self, namespace, parameters=None, lease_expiration_date=None):
     """Adds the build entity to the build bucket.
 
     Requires the current user to have permissions to add builds to the
@@ -73,8 +75,8 @@ class BuildBucketService(object):
       namespace (str): build namespace. Required.
       parameters (dict): arbitrary build parameters. Cannot be changed after
         build creation.
-      lease_duration (datetime.timedelta): if not None, the build is created as
-        leased and its lease_key is not None.
+      lease_expiration_date (datetime.datetime): if not None, the build is
+        created as leased and its lease_key is not None.
 
     Returns:
       A new Build.
@@ -82,8 +84,7 @@ class BuildBucketService(object):
     assert namespace, 'Namespace not specified'
     assert isinstance(namespace, basestring), 'Namespace must be a string'
     assert parameters is None or isinstance(parameters, dict)
-    validate_lease_duration(lease_duration)
-    lease_duration = lease_duration or datetime.timedelta(0)
+    validate_lease_expiration_date(lease_expiration_date)
 
     acl_user = acl.current_user()
     if not acl_user.can_add_build_to_namespace(namespace):
@@ -95,8 +96,8 @@ class BuildBucketService(object):
         parameters=parameters,
         status=model.BuildStatus.SCHEDULED,
     )
-    if lease_duration:
-      build.lease_expiration_date = utils.utcnow() + lease_duration
+    if lease_expiration_date is not None:
+      build.lease_expiration_date = lease_expiration_date
       build.leasee = auth.get_current_identity()
       build.regenerate_lease_key()
     build.put()
@@ -171,7 +172,7 @@ class BuildBucketService(object):
       raise auth.AuthorizationError()
     return build
 
-  def lease(self, build_id, duration=None):
+  def lease(self, build_id, lease_expiration_date=None):
     """Leases the build, makes it unavailable for the leasing.
 
     Changes lease_key to a different value.
@@ -180,18 +181,17 @@ class BuildBucketService(object):
 
     Args:
       build_id (int): build id.
-      duration (datetime.timedelta): lease duration. Defaults to 10 seonds.
+      lease_expiration_date (datetime.datetime): lease expiration date.
+        Defaults to 10 seconds from now.
 
     Returns:
       Tuple:
         success (bool): True if the build was leased
         build (ndb.Build)
     """
-    if duration is None:
-      duration = datetime.timedelta(seconds=10)
-    validate_lease_duration(duration)
-
-    lease_expiration_date = utils.utcnow() + duration
+    validate_lease_expiration_date(lease_expiration_date)
+    if lease_expiration_date is None:
+      lease_expiration_date = utils.utcnow() + DEFAULT_LEASE_DURATION
 
     @ndb.transactional
     def try_lease():
@@ -292,24 +292,24 @@ class BuildBucketService(object):
     return build
 
   @ndb.transactional
-  def heartbeat(self, build_id, lease_key, lease_duration):
+  def heartbeat(self, build_id, lease_key, lease_expiration_date):
     """Extends build lease.
 
     Args:
       build_id: id of the build.
       lease_key: current lease key.
-      lease_duration (datetime.timedelta): new lease duration.
+      lease_expiration_date (datetime.timedelta): new lease expiration date.
 
     Returns:
       The updated Build.
     """
     validate_lease_key(lease_key)
-    if lease_duration is None:
-      raise InvalidInputError('Lease duration not specified')
-    validate_lease_duration(lease_duration)
+    if lease_expiration_date is None:
+      raise InvalidInputError('Lease expiration date not specified')
+    validate_lease_expiration_date(lease_expiration_date)
     build = self._get_leasable_build(build_id)
     self._check_lease(build, lease_key)
-    build.lease_expiration_date = utils.utcnow() + lease_duration
+    build.lease_expiration_date = lease_expiration_date
     build.put()
     return build
 

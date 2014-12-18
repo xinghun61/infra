@@ -28,8 +28,7 @@ class BuildMessage(messages.Message):
   result = messages.EnumField(model.BuildResult, 5)
   failure_reason = messages.EnumField(model.FailureReason, 6)
   cancelation_reason = messages.EnumField(model.CancelationReason, 7)
-  lease_duration_seconds = messages.IntegerField(
-      8, variant=messages.Variant.INT32)
+  lease_expiration_ts = messages.IntegerField(8)
   lease_key = messages.IntegerField(9)
   url = messages.StringField(10)
 
@@ -52,8 +51,8 @@ def build_to_message(build, include_lease_key=False):
       url=build.url,
   )
   if build.lease_expiration_date is not None:
-    lease_duration = build.lease_expiration_date - utils.utcnow()
-    msg.lease_duration_seconds=max(0, int(lease_duration.total_seconds()))
+    msg.lease_expiration_ts = utils.datetime_to_timestamp(
+        build.lease_expiration_date)
   return msg
 
 
@@ -85,6 +84,16 @@ def parse_json(json_data, param_name):
   except ValueError as ex:
     raise endpoints.BadRequestException(
         'Could not parse %s: %s' % (param_name, ex))
+
+
+def parse_datetime(timestamp):
+  if timestamp is None:
+    return None
+  try:
+    return utils.timestamp_to_datetime(timestamp)
+  except OverflowError:
+    raise endpoints.BadRequestException(
+        'Could not parse timestamp: %s' % timestamp)
 
 
 @auth.endpoints_api(
@@ -131,8 +140,7 @@ class BuildBucketApi(remote.Service):
     build = self.service.add(
         namespace=request.namespace,
         parameters=parse_json(request.parameters_json, 'parameters_json'),
-        lease_duration=datetime.timedelta(
-            seconds=request.lease_duration_seconds or 0),
+        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
     return build_to_message(build, include_lease_key=True)
 
@@ -165,8 +173,7 @@ class BuildBucketApi(remote.Service):
   ##################################  LEASE  ###################################
 
   class LeaseRequestBodyMessage(messages.Message):
-    duration_seconds = messages.IntegerField(
-        1, variant=messages.Variant.INT32, required=True)
+    lease_expiration_ts = messages.IntegerField(1, required=True)
 
   class LeaseResponseMessage(messages.Message):
     success = messages.BooleanField(1, required=True)
@@ -180,7 +187,7 @@ class BuildBucketApi(remote.Service):
     """Leases a build."""
     success, build = self.service.lease(
         request.id,
-        duration=datetime.timedelta(seconds=request.duration_seconds or 0),
+        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
     if not success:
       return self.LeaseResponseMessage(success=False)
@@ -192,7 +199,6 @@ class BuildBucketApi(remote.Service):
     )
 
   #################################  STARTED  ##################################
-
 
   class StartRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
@@ -211,8 +217,7 @@ class BuildBucketApi(remote.Service):
 
   class HeartbeatRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
-    lease_duration_seconds = messages.IntegerField(
-        2, variant=messages.Variant.INT32, required=True)
+    lease_expiration_ts = messages.IntegerField(2, required=True)
 
   @auth.endpoints_method(
       id_resource_container(HeartbeatRequestBodyMessage), BuildMessage,
@@ -222,7 +227,7 @@ class BuildBucketApi(remote.Service):
     """Updates build lease."""
     build = self.service.heartbeat(
         request.id, request.lease_key,
-        datetime.timedelta(seconds=request.lease_duration_seconds))
+        parse_datetime(request.lease_expiration_ts))
     return build_to_message(build)
 
   #################################  SUCCEED  ##################################

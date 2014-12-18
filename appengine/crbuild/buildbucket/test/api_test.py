@@ -29,6 +29,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service = mock.Mock()
     self.mock(api.BuildBucketApi, 'service_factory', lambda _: self.service)
 
+    self.future_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    # future_ts is str because INT64 values are formatted as strings.
+    self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
     self.test_build = model.Build(
         id=1,
         namespace='chromium',
@@ -39,18 +42,16 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_expired_build_to_message(self):
     yesterday = utils.utcnow() - datetime.timedelta(days=1)
+    yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
     self.test_build.lease_key = 1
     self.test_build.lease_expiration_date = yesterday
     msg = api.build_to_message(self.test_build)
-    self.assertEqual(msg.lease_duration_seconds, 0)
+    self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
   ##################################### GET ####################################
 
   def test_get(self):
-    lease_duration = datetime.timedelta(days=1)
-    lease_duration_seconds = int(lease_duration.total_seconds())
-    self.test_build.lease_expiration_date = (
-        utils.utcnow() + lease_duration)
+    self.test_build.lease_expiration_date = self.future_date
 
     build_id = self.test_build.key.id()
     self.service.get.return_value = self.test_build
@@ -59,10 +60,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service.get.assert_called_once_with(build_id)
     self.assertEqual(resp['id'], str(build_id))
     self.assertEqual(resp['namespace'], self.test_build.namespace)
-    self.assertGreaterEqual(
-        resp['lease_duration_seconds'], lease_duration_seconds - 1)
-    self.assertLessEqual(
-        resp['lease_duration_seconds'], lease_duration_seconds)
+    self.assertEqual(resp['lease_expiration_ts'], self.future_ts)
     self.assertEqual(resp['status'], 'SCHEDULED')
     self.assertEqual(resp['parameters_json'], '{"buildername": "linux_rel"}')
 
@@ -82,7 +80,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
         parameters=None,
-        lease_duration=datetime.timedelta(0),
+        lease_expiration_date=None,
     )
     self.assertEqual(resp['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['namespace'], req['namespace'])
@@ -97,20 +95,19 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['parameters_json'], req['parameters_json'])
 
   def test_put_with_leasing(self):
-    self.test_build.lease_expiration_date = (
-        utils.utcnow() + datetime.timedelta(seconds=10))
+    self.test_build.lease_expiration_date = self.future_date
     self.service.add.return_value = self.test_build
     req = {
         'namespace': self.test_build.namespace,
-        'lease_duration_seconds': 10,
+        'lease_expiration_ts': self.future_ts,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
         parameters=None,
-        lease_duration=datetime.timedelta(seconds=10),
+        lease_expiration_date=self.future_date,
     )
-    self.assertGreaterEqual(resp['lease_duration_seconds'], 9)
+    self.assertEqual(resp['lease_expiration_ts'], req['lease_expiration_ts'])
 
   def test_put_with_id(self):
     with self.call_should_fail(httplib.BAD_REQUEST):
@@ -146,28 +143,40 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### LEASE ###################################
 
   def test_lease(self):
+    self.test_build.lease_expiration_date = self.future_date
     self.test_build.lease_key = 42
     self.service.lease.return_value = True, self.test_build
 
     req = {
         'id': self.test_build.key.id(),
-        'duration_seconds': 10,
+        'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('lease', req).json_body
     self.service.lease.assert_called_once_with(
         self.test_build.key.id(),
-        duration=datetime.timedelta(seconds=10),
+        lease_expiration_date=self.future_date,
     )
     self.assertTrue(res['success'])
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
+    self.assertEqual(
+        res['build']['lease_expiration_ts'],
+        req['lease_expiration_ts'])
+
+  def test_lease_with_negative_expiration_date(self):
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_expiration_ts': 242894728472423847289472398,
+    }
+    with self.call_should_fail(httplib.BAD_REQUEST):
+      self.call_api('lease', req)
 
   def test_lease_unsuccessful(self):
     self.test_build.put()
     self.service.lease.return_value = (False, self.test_build)
     req = {
         'id': self.test_build.key.id(),
-        'duration_seconds': 10,
+        'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('lease', req).json_body
     self.assertFalse(res['success'])
@@ -191,16 +200,21 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   #################################### HEATBEAT ################################
 
   def test_heartbeat(self):
+    self.test_build.lease_expiration_date = self.future_date
     self.service.heartbeat.return_value = self.test_build
     req = {
         'id': self.test_build.key.id(),
         'lease_key': 42,
-        'lease_duration_seconds': 10,
+        'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('hearbeat', req).json_body
     self.service.heartbeat.assert_called_once_with(
-        req['id'], req['lease_key'], datetime.timedelta(seconds=10))
+        req['id'], req['lease_key'], self.future_date)
     self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(
+        res['lease_expiration_ts'],
+        req['lease_expiration_ts'],
+    )
 
   ################################## SUCCEED ###################################
 
