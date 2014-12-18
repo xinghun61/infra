@@ -17,7 +17,7 @@ from . import model
 import acl
 
 
-MAX_PEEK_BUILDS = 100
+MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 
@@ -65,8 +65,32 @@ def validate_url(url):
     raise InvalidInputError('Unexpected url scheme: "%s"' % parsed.scheme)
 
 
+def validate_max_builds(max_builds):
+  max_builds = max_builds or 10
+  if not isinstance(max_builds, int):
+    raise InvalidInputError('max_builds must be an integer')
+  if max_builds < 0:
+    raise InvalidInputError('max_builds must be positive')
+  if max_builds >= MAX_RETURN_BUILDS:
+    raise InvalidInputError(
+        'max_builds must not be greater than %s' % MAX_RETURN_BUILDS)
+
+
+def validate_tags(tags):
+  if tags is None:
+    return
+  if not isinstance(tags, list):
+    raise InvalidInputError('tags must be a list')
+  for t in tags:
+    if not isinstance(t, basestring):
+      raise InvalidInputError('Invalid tag "%s": must be a string')
+    if ':' not in t:
+      raise InvalidInputError('Invalid tag "%s": does not contain ":"')
+
+
 class BuildBucketService(object):
-  def add(self, namespace, parameters=None, lease_expiration_date=None):
+  def add(
+      self, namespace, tags=None, parameters=None, lease_expiration_date=None):
     """Adds the build entity to the build bucket.
 
     Requires the current user to have permissions to add builds to the
@@ -74,6 +98,7 @@ class BuildBucketService(object):
 
     Args:
       namespace (str): build namespace. Required.
+      tags (model.Tags): build tags.
       parameters (dict): arbitrary build parameters. Cannot be changed after
         build creation.
       lease_expiration_date (datetime.datetime): if not None, the build is
@@ -86,6 +111,8 @@ class BuildBucketService(object):
     assert isinstance(namespace, basestring), 'Namespace must be a string'
     assert parameters is None or isinstance(parameters, dict)
     validate_lease_expiration_date(lease_expiration_date)
+    validate_tags(tags)
+    tags = tags or []
 
     acl_user = acl.current_user()
     if not acl_user.can_add_build_to_namespace(namespace):
@@ -94,6 +121,7 @@ class BuildBucketService(object):
 
     build = model.Build(
         namespace=namespace,
+        tags=tags,
         parameters=parameters,
         status=model.BuildStatus.SCHEDULED,
     )
@@ -116,6 +144,39 @@ class BuildBucketService(object):
       raise auth.AuthorizationError()
     return build
 
+  def search_by_tags(self, tags, max_builds=None, start_cursor=None):
+    """Searches for builds by tags.
+
+    Args:
+      tags (list of str): a list of tags that a build must have.
+        All of the |tags| must be present in a build.
+      max_builds (int): maximum number of builds to return.
+      start_cursor (string): a value of "next" cursor returned by previous
+        search_by_tags call. If not None, return next builds in the query.
+
+    Returns:
+      A tuple:
+        builds (list of Build): query result.
+        next_cursor (string): cursor for the next page.
+          None if there is no more builds.
+    """
+    max_builds = max_builds or 10
+    validate_max_builds(max_builds)
+    validate_tags(tags)
+    tags = tags or []
+    curs = None
+    if start_cursor:
+      curs = ndb.Cursor(urlsafe=start_cursor)
+
+    q = model.Build.query()
+    for t in tags:
+      q = q.filter(model.Build.tags == t)
+    builds, next_curs, more = q.fetch_page(max_builds, start_cursor=curs)
+    next_curs_str = None
+    if more and next_curs is not None:
+      next_curs_str = next_curs.urlsafe()
+    return builds, next_curs_str
+
   def peek(self, namespaces, max_builds=None):
     """Returns builds available for leasing in the specified |namespaces|.
 
@@ -128,16 +189,15 @@ class BuildBucketService(object):
     Returns:
       A list of Builds.
     """
+    # TODO(nodir): accept and return a cursor for paging.
+
     assert isinstance(namespaces, list)
     assert namespaces, 'No namespaces specified'
     assert all(isinstance(n, basestring) for n in namespaces), (
         'namespaces must be strings'
     )
     max_builds = max_builds or 10
-    assert isinstance(max_builds, int)
-    assert max_builds <= MAX_PEEK_BUILDS, (
-        'max_builds must not be greater than %s' % MAX_PEEK_BUILDS
-    )
+    validate_max_builds(max_builds)
     acl_user = acl.current_user()
     for namespace in namespaces:
       if not acl_user.can_peek_namespace(namespace):

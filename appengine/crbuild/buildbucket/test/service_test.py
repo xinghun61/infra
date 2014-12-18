@@ -26,7 +26,6 @@ class BuildBucketServiceTest(CrBuildTestCase):
     super(BuildBucketServiceTest, self).setUp()
     self.service = service.BuildBucketService()
     self.test_build = model.Build(
-        owner='owner',
         namespace='chromium',
         parameters={
             'buildername': 'infra',
@@ -123,6 +122,64 @@ class BuildBucketServiceTest(CrBuildTestCase):
     with self.assertRaises(service.InvalidBuildStateError):
       self.service.cancel(self.test_build.key.id())
 
+  #################################### SEARCH ##################################
+
+  def test_search(self):
+    self.test_build.tags = ['important:true']
+    self.test_build.put()
+    builds, _ = self.service.search_by_tags(self.test_build.tags)
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_many_tags(self):
+    self.test_build.tags = ['important:true', 'author:ivan']
+    self.test_build.put()
+    build2 = model.Build(
+        namespace=self.test_build.namespace,
+        tags=self.test_build.tags[:1],  # only one of two tags.
+    )
+    build2.put()
+
+    # Search by both tags.
+    builds, _ = self.service.search_by_tags(self.test_build.tags)
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_all(self):
+    self.test_build.put()
+    builds, _ = self.service.search_by_tags(None)
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_with_paging(self):
+    tags = ['important:true']
+    for _ in xrange(100):
+      b = model.Build(
+          namespace=self.test_build.namespace,
+          tags=tags)
+      b.put()
+
+    first_page, next_cursor = self.service.search_by_tags(tags, max_builds=10)
+    self.assertEqual(len(first_page), 10)
+    self.assertTrue(next_cursor)
+
+    second_page, _ = self.service.search_by_tags(tags, start_cursor=next_cursor)
+    self.assertEqual(len(second_page), 10)
+    self.assertTrue(any(new not in first_page for new in second_page))
+
+  def test_search_with_bad_tags(self):
+    with self.assertRaises(service.InvalidInputError):
+      self.service.search_by_tags({})
+    with self.assertRaises(service.InvalidInputError):
+      self.service.search_by_tags(['x'])
+    with self.assertRaises(service.InvalidInputError):
+      self.service.search_by_tags([1])
+
+  def test_search_with_non_number_max_builds(self):
+    with self.assertRaises(service.InvalidInputError):
+      self.service.search_by_tags(['a:b'], max_builds='a')
+
+  def test_search_with_negative_max_builds(self):
+    with self.assertRaises(service.InvalidInputError):
+      self.service.search_by_tags(['a:b'], max_builds=-2)
+
   #################################### PEEK ####################################
 
   def test_peek(self):
@@ -143,7 +200,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.assertFalse(builds)
 
   def test_cannot_peek_1000_builds(self):
-    with self.assertRaises(AssertionError):
+    with self.assertRaises(service.InvalidInputError):
       self.service.peek([self.test_build.namespace], max_builds=1000)
 
   #################################### LEASE ###################################

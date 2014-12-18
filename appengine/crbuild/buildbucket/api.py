@@ -21,15 +21,16 @@ class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
   id = messages.IntegerField(1, required=True)
   namespace = messages.StringField(2, required=True)
-  parameters_json = messages.StringField(3)
-  status = messages.EnumField(model.BuildStatus, 4)
-  result = messages.EnumField(model.BuildResult, 5)
-  result_details_json = messages.StringField(6)
-  failure_reason = messages.EnumField(model.FailureReason, 7)
-  cancelation_reason = messages.EnumField(model.CancelationReason, 8)
-  lease_expiration_ts = messages.IntegerField(9)
-  lease_key = messages.IntegerField(10)
-  url = messages.StringField(11)
+  tags = messages.StringField(3, repeated=True)
+  parameters_json = messages.StringField(4)
+  status = messages.EnumField(model.BuildStatus, 5)
+  result = messages.EnumField(model.BuildResult, 6)
+  result_details_json = messages.StringField(7)
+  failure_reason = messages.EnumField(model.FailureReason, 8)
+  cancelation_reason = messages.EnumField(model.CancelationReason, 9)
+  lease_expiration_ts = messages.IntegerField(10)
+  lease_key = messages.IntegerField(11)
+  url = messages.StringField(12)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -41,6 +42,7 @@ def build_to_message(build, include_lease_key=False):
   msg = BuildMessage(
       id=build.key.id(),
       namespace=build.namespace,
+      tags=build.tags,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,
       result=build.result,
@@ -128,8 +130,9 @@ class BuildBucketApi(remote.Service):
 
   class PutRequestMessage(messages.Message):
     namespace = messages.StringField(1, required=True)
-    parameters_json = messages.StringField(2)
-    lease_expiration_ts = messages.IntegerField(3)
+    tags = messages.StringField(2, repeated=True)
+    parameters_json = messages.StringField(3)
+    lease_expiration_ts = messages.IntegerField(4)
 
   @auth.endpoints_method(
       PutRequestMessage, BuildMessage,
@@ -142,20 +145,54 @@ class BuildBucketApi(remote.Service):
 
     build = self.service.add(
         namespace=request.namespace,
+        tags=request.tags,
         parameters=parse_json(request.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
     return build_to_message(build, include_lease_key=True)
+
+  ##################################  SEARCH   #################################
+
+  SEARCH_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
+      message_types.VoidMessage,
+      start_cursor=messages.StringField(1),
+      # All specified tags must be present in a build.
+      tag=messages.StringField(2, repeated=True),
+      max_builds=messages.IntegerField(3, variant=messages.Variant.INT32),
+  )
+
+  class SearchResponseMessage(messages.Message):
+    builds = messages.MessageField(BuildMessage, 1, repeated=True)
+    next_cursor = messages.StringField(2)
+
+  @auth.endpoints_method(
+      SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
+      path='search', http_method='GET')
+  @convert_service_errors
+  def search(self, request):
+    """Searches for builds.
+
+    Currently only search by tag(s) is supported. Tags must contain ":".
+    """
+    assert isinstance(request.tag, list)
+    builds, next_cursor = self.service.search_by_tags(
+      request.tag,
+      max_builds=request.max_builds,
+      start_cursor=request.start_cursor)
+    return self.SearchResponseMessage(
+        builds=map(build_to_message, builds),
+        next_cursor=next_cursor,
+    )
 
   ###################################  PEEK  ###################################
 
   PEEK_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
       namespace=messages.StringField(1, repeated=True),
-      max_builds=messages.IntegerField(
-          2, variant=messages.Variant.INT32, default=10),
+      max_builds=messages.IntegerField(2, variant=messages.Variant.INT32),
   )
 
+  # Replace this with SearchResponseMessage
   class PeekResponseMessage(messages.Message):
     builds = messages.MessageField(BuildMessage, 1, repeated=True)
 

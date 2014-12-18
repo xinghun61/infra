@@ -61,10 +61,10 @@ class Build(ndb.Model):
 
   Attributes:
     status (BuildStatus): status of the build.
-    owner (string): opaque indexed optional string that identifies the owner of
-      the build. For example, this might be a buildset or Gerrit revision.
     namespace (string): a generic way to distinguish builds. Different build
       namespaces have different permissions.
+    tags (list of string): a list of tags, where each tag is a string with ":"
+      symbol. The first occurance of ":" splits tag name and tag value.
     parameters (dict): immutable arbitrary build parameters.
     callback (Callback): push task parameters for build status changes.
     lease_expiration_date (datetime): current lease expiration date.
@@ -83,8 +83,8 @@ class Build(ndb.Model):
 
   # Creation time attributes.
   create_time = ndb.DateTimeProperty(auto_now_add=True)
-  owner = ndb.StringProperty()
   namespace = ndb.StringProperty(required=True)
+  tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()
   callback = ndb.StructuredProperty(Callback, indexed=False)
 
@@ -116,6 +116,7 @@ class Build(ndb.Model):
     assert not (is_completed and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
+    assert not self.tags or all(':' in t for t in self.tags)
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""

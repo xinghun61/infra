@@ -72,18 +72,22 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   ##################################### PUT ####################################
 
   def test_put(self):
+    self.test_build.tags = ['owner=ivan']
     self.service.add.return_value = self.test_build
     req = {
         'namespace': self.test_build.namespace,
+        'tags': self.test_build.tags,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
+        tags=req['tags'],
         parameters=None,
         lease_expiration_date=None,
     )
     self.assertEqual(resp['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['namespace'], req['namespace'])
+    self.assertEqual(resp['tags'], req['tags'])
 
   def test_put_with_parameters(self):
     self.service.add.return_value = self.test_build
@@ -104,6 +108,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
         namespace=self.test_build.namespace,
+        tags=[],
         parameters=None,
         lease_expiration_date=self.future_date,
     )
@@ -120,12 +125,22 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
           'parameters_json': '}non-json',
       })
 
+  #################################### SEARCH ##################################
+
+  def test_search_by_tags(self):
+    self.test_build.put()
+    self.service.search_by_tags.return_value = ([self.test_build], 'the cursor')
+    req = {'tag': ['important']}
+    res = self.call_api('search', req).json_body
+    self.assertEqual(len(res['builds']), 1)
+    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['next_cursor'], 'the cursor')
+
   ##################################### PEEK ###################################
 
   def test_peek(self):
     self.test_build.put()
     self.service.peek.return_value = [self.test_build]
-    self.test_build.put()
     req = {'namespace': [self.test_build.namespace]}
     res = self.call_api('peek', req).json_body
     self.assertEqual(len(res['builds']), 1)
