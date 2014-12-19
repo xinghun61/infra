@@ -38,7 +38,7 @@ class AlertsHandler(webapp2.RequestHandler):
   # Has no 'response' member.
   # pylint: disable=E1101
   def send_json_headers(self):
-    self.response.headers.add_header('Access-Control-Allow-Origin', '*')
+    self.response.headers['Access-Control-Allow-Origin'] = '*'
     self.response.headers['Content-Type'] = 'application/json'
 
   # Has no 'response' member.
