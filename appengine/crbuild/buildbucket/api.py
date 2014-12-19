@@ -23,6 +23,7 @@ class ErrorReason(messages.Enum):
   BUILD_NOT_FOUND = 3
   INVALID_INPUT = 4
   INVALID_BUILD_STATE = 5
+  BUILD_IS_COMPLETED = 6
 
 
 ERROR_REASON_MAP = {
@@ -30,6 +31,7 @@ ERROR_REASON_MAP = {
     service.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
     service.InvalidInputError: ErrorReason.INVALID_INPUT,
     service.InvalidBuildStateError: ErrorReason.INVALID_BUILD_STATE,
+    service.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
 }
 
 
@@ -308,6 +310,7 @@ class BuildBucketApi(remote.Service):
   class SucceedRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
     result_details_json = messages.StringField(2)
+    url = messages.StringField(3)
 
   @buildbucket_api_method(
       id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
@@ -316,7 +319,9 @@ class BuildBucketApi(remote.Service):
     """Marks a build as succeeded."""
     build = self.service.succeed(
         request.id, request.lease_key,
-        parse_json(request.result_details_json, 'result_details_json'))
+        result_details=parse_json(
+            request.result_details_json, 'result_details_json'),
+        url=request.url)
     return build_to_response_message(build)
 
   ###################################  FAIL  ###################################
@@ -325,6 +330,7 @@ class BuildBucketApi(remote.Service):
     lease_key = messages.IntegerField(1)
     result_details_json = messages.StringField(2)
     failure_reason = messages.EnumField(model.FailureReason, 3)
+    url = messages.StringField(4)
 
   @buildbucket_api_method(
       id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
@@ -333,8 +339,10 @@ class BuildBucketApi(remote.Service):
     """Marks a build as failed."""
     build = self.service.fail(
         request.id, request.lease_key,
-        parse_json(request.result_details_json, 'result_details_json'),
+        result_details=parse_json(
+            request.result_details_json, 'result_details_json'),
         failure_reason=request.failure_reason,
+        url=request.url,
     )
     return build_to_response_message(build)
 

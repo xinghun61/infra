@@ -31,7 +31,11 @@ class BuildNotFoundError(Error):
 
 
 class InvalidBuildStateError(Error):
-  """Build status is final and cannot be changed."""
+  """Operation is invalid given the current build state."""
+
+
+class BuildIsCompletedError(InvalidBuildStateError):
+  """Build is complete and cannot be changed."""
 
 
 class InvalidInputError(Error):
@@ -368,7 +372,7 @@ class BuildBucketService(object):
         return build
       raise InvalidBuildStateError('Build %s is already started' % build_id)
     elif build.status == model.BuildStatus.COMPLETED:
-      raise InvalidBuildStateError('Cannot start a compelted build')
+      raise BuildIsCompletedError('Cannot start a compelted build')
     assert build.status == model.BuildStatus.SCHEDULED
     self._check_lease(build, lease_key)
 
@@ -402,25 +406,27 @@ class BuildBucketService(object):
 
   @ndb.transactional
   def _complete(
-      self, build_id, lease_key, result, result_details, failure_reason=None):
+        self, build_id, lease_key, result, result_details, failure_reason=None,
+        url=None):
     """Marks a build as completed. Used by succeed and fail methods."""
     validate_lease_key(lease_key)
+    validate_url(url)
     assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
     build = self._get_leasable_build(build_id)
 
     if build.status == model.BuildStatus.COMPLETED:
       if (build.result == result and
           build.failure_reason == failure_reason and
-          build.result_details == result_details):
+          build.result_details == result_details and
+          build.url == url):
         return build
       raise InvalidBuildStateError('Build %s has already completed' % build_id)
-    elif build.status != model.BuildStatus.STARTED:
-      raise InvalidBuildStateError(
-          'Cannot mark a non-started build as completed')
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
     build.result = result
+    if url is not None:  # pragma: no branch
+      build.url = url
     build.result_details = result_details
     build.failure_reason = failure_reason
     self._clear_lease(build)
@@ -428,7 +434,7 @@ class BuildBucketService(object):
     self._enqueue_callback_task_if_needed(build)
     return build
 
-  def succeed(self, build_id, lease_key, result_details=None):
+  def succeed(self, build_id, lease_key, result_details=None, url=None):
     """Marks a build as succeeded. Idempotent.
 
     Args:
@@ -440,9 +446,11 @@ class BuildBucketService(object):
       The succeeded Build.
     """
     return self._complete(
-        build_id, lease_key, model.BuildResult.SUCCESS, result_details)
+        build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url)
 
-  def fail(self, build_id, lease_key, result_details=None, failure_reason=None):
+  def fail(
+        self, build_id, lease_key, result_details=None, failure_reason=None,
+        url=None):
     """Marks a build as failed. Idempotent.
 
     Args:
@@ -458,7 +466,7 @@ class BuildBucketService(object):
     failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
     return self._complete(
         build_id, lease_key, model.BuildResult.FAILURE, result_details,
-        failure_reason)
+        failure_reason, url=url)
 
   @ndb.transactional
   def cancel(self, build_id):

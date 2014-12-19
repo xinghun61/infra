@@ -216,6 +216,17 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['url'], req['url'])
 
+  def test_start_completed_build(self):
+    def raise_completed(*_, **__):
+      raise service.BuildIsCompletedError()
+    self.service.start.side_effect = raise_completed
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+    }
+    res = self.call_api('start', req).json_body
+    self.assertEqual(res['error']['reason'], 'BUILD_IS_COMPLETED')
+
   #################################### HEATBEAT ################################
 
   def test_heartbeat(self):
@@ -244,7 +255,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     }
     res = self.call_api('succeed', req).json_body
     self.service.succeed.assert_called_once_with(
-        req['id'], req['lease_key'], None)
+        req['id'], req['lease_key'], result_details=None, url=None)
     self.assertEqual(int(res['build']['id']), req['id'])
 
   def test_succeed_with_result_details(self):
@@ -256,10 +267,11 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'result_details_json': json.dumps(self.test_build.result_details),
     }
     res = self.call_api('succeed', req).json_body
-    self.service.succeed.assert_called_once_with(
-        req['id'], req['lease_key'], self.test_build.result_details)
+    _, kwargs = self.service.succeed.call_args
     self.assertEqual(
-        res['build']['result_details_json'], req['result_details_json'])
+            kwargs['result_details'], self.test_build.result_details)
+    self.assertEqual(
+            res['build']['result_details_json'], req['result_details_json'])
 
   #################################### FAIL ####################################
 
@@ -276,8 +288,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('fail', req).json_body
     self.service.fail.assert_called_once_with(
         req['id'], req['lease_key'],
-        self.test_build.result_details,
-        failure_reason=model.FailureReason.INFRA_FAILURE)
+        result_details=self.test_build.result_details,
+        failure_reason=model.FailureReason.INFRA_FAILURE,
+        url=None)
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
     self.assertEqual(

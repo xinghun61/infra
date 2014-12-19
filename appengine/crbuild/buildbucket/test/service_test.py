@@ -412,9 +412,9 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   ################################### COMPLETE #################################
 
-  def succeed(self):
+  def succeed(self, **kwargs):
     self.test_build = self.service.succeed(
-        self.test_build.key.id(), self.test_build.lease_key)
+        self.test_build.key.id(), self.test_build.lease_key, **kwargs)
 
   def test_succeed(self):
     self.lease()
@@ -456,10 +456,16 @@ class BuildBucketServiceTest(CrBuildTestCase):
         result_details=result_details)
     self.assertEqual(self.test_build.result_details, result_details)
 
+  def test_complete_with_url(self):
+    self.lease()
+    self.start()
+    url = 'http://localhost/1'
+    self.succeed(url=url)
+    self.assertEqual(self.test_build.url, url)
+
   def test_complete_not_started_build(self):
     self.lease()
-    with self.assertRaises(service.InvalidBuildStateError):
-      self.succeed()
+    self.succeed()
 
   def test_completion_callback_works(self):
     self.lease()
