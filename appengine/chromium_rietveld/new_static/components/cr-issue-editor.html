@@ -93,9 +93,20 @@ found in the LICENSE file. -->
                     return;
                 this.subject = this.issue.subject;
                 this.description = this.issue.description;
-                this.reviewers = this.issue.reviewerEmails();
                 this.cc = this.issue.ccEmails();
                 this.private = this.issue.private;
+
+                // Mark required reviewers with a "*" prefix.
+                var reviewerTokens = this.issue.reviewerEmails().split(", ");
+                var formattedReviewerTokens = [];
+                for (i = 0; i<reviewerTokens.length; i++) {
+                  var reviewerEmail = reviewerTokens[i];
+                  if (this.contains(this.issue.requiredReviewers, reviewerTokens[i])) {
+                    reviewerEmail = "*" + reviewerEmail;
+                  }
+                  formattedReviewerTokens[i] = reviewerEmail;
+                }
+                this.reviewers = formattedReviewerTokens.join(", ");
             },
             dismissAutocomplete: function() {
                 if (this.$.reviewerAutocomplete.active || this.$.ccAutocomplete.active) {

@@ -2179,6 +2179,7 @@ def _issue_as_dict(issue, messages, request=None):
     'closed': issue.closed,
     'cc': issue.cc,
     'reviewers': issue.reviewers,
+    'required_reviewers': issue.required_reviewers,
     'all_required_reviewers_approved': issue.all_required_reviewers_approved,
     'patchsets': [p.key.id() for p in issue.patchsets],
     'description': issue.description,

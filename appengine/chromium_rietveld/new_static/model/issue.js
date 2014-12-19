@@ -11,6 +11,7 @@ function Issue(id)
     this.description = "";
     this.cc = []; // Array<User>
     this.reviewers = []; // Array<User>
+    this.requiredReviewers = []; // Array<String>
     this.messages = []; // Array<IssueMessage>
     this.messageCount = 0;
     this.draftCount = 0;
@@ -113,6 +114,7 @@ Issue.prototype.parseData = function(data)
     this.reviewers = (data.reviewers || []).map(function(email) {
         return User.forMailingListEmail(email);
     });
+    this.requiredReviewers = data.required_reviewers || [];
     this.patchsets = (data.patchsets || []).map(function(patchsetId, i) {
         return new PatchSet(issue, patchsetId, i + 1);
     });
