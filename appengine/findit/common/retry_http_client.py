@@ -9,7 +9,7 @@ import urllib
 class RetryHttpClient(object):
   """Represent a http client to send http/https request to a remote server."""
 
-  def _Get(self, url, timeout):  # pylint: disable=W0613, R0201
+  def _Get(self, url, timeout_seconds):  # pylint: disable=W0613, R0201
     """Send the actual HTTP GET request.
 
     Returns:
@@ -25,7 +25,8 @@ class RetryHttpClient(object):
     else:
       time.sleep(retry_interval)
 
-  def Get(self, url, params=None, timeout=60, retries=5, retry_interval=0.5):
+  def Get(self, url, params=None, timeout_seconds=60,
+          max_retries=5, retry_interval=0.5):
     """Send a GET request to the url with the given parameters and headers.
 
     Returns:
@@ -40,11 +41,11 @@ class RetryHttpClient(object):
     while True:
       count += 1
 
-      status_code, content = self._Get(url, timeout)
+      status_code, content = self._Get(url, timeout_seconds)
 
-      if status_code == 200:
+      if status_code in (200, 302, 401, 403, 404, 501):
         break
-      elif count >= retries:
+      elif count >= max_retries:
         break
       else:
         self.WaitForNextRetry(retry_interval, count)

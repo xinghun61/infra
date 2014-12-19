@@ -17,7 +17,7 @@ class DummyHttpClient(RetryHttpClient):
     self.response_content = response_content
     self.requests = []
 
-  def WaitForNextRetry(self, *_):
+  def WaitForNextRetry(self, *_):  # pragma: no cover
     """Override to avoid sleep."""
     pass
 
@@ -96,7 +96,7 @@ class BuildBotTest(unittest.TestCase):
     data = buildbot.GetBuildData(
         master_name, builder_name, build_number, http_client)
     self.assertIsNone(data)
-    self.assertEqual(5, len(http_client.requests))
+    self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
   def testGetStepStdioSuccess(self):
@@ -124,7 +124,7 @@ class BuildBotTest(unittest.TestCase):
     data = buildbot.GetStepStdio(
         master_name, builder_name, build_number, step_name, http_client)
     self.assertIsNone(data)
-    self.assertEqual(5, len(http_client.requests))
+    self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
   def testGetBuildProperty(self):

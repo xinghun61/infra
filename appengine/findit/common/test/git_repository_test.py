@@ -11,6 +11,221 @@ from common import git_repository
 from common import retry_http_client
 
 
+COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
+                  'Review URL: https://codereview.chromium.org/320423004\n\n'
+                  'Review URL: https://codereview.chromium.org/328113005\n\n'
+                  'git-svn-id: svn://svn.chromium.org/blink/trunk@175976 '
+                  'bbb929c8-8fbe-4397-9dbb-9b2b20218538\n')
+
+COMMIT_LOG = """)]}'
+{
+  "commit": "bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb",
+  "tree": "481fd0f3bdf6eda5ca29ec6cbc6aa476b3684143",
+  "parents": [
+    "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
+  ],
+  "author": {
+    "name": "malch@chromium.org",
+    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "time": "Wed Jun 11 19:35:32 2014"
+  },
+  "committer": {
+    "name": "malch@chromium.org",
+    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "time": "Wed Jun 11 19:35:32 2014"
+  },
+  "message": %s,
+  "tree_diff": [
+    {
+      "type": "add",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd2",
+      "old_mode": 33188,
+      "old_path": "/dev/null",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda0",
+      "new_mode": 33188,
+      "new_path": "Source/devtools/front_end/layers/added_file.js"
+    },
+    {
+      "type": "delete",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd3",
+      "old_mode": 33188,
+      "old_path": "Source/devtools/front_end/layers/deleted_file.js",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda1",
+      "new_mode": 33188,
+      "new_path": "/dev/null"
+    },
+    {
+      "type": "modify",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd1",
+      "old_mode": 33188,
+      "old_path": "Source/devtools/front_end/layers/modified_file.js",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda9",
+      "new_mode": 33188,
+      "new_path": "Source/devtools/front_end/layers/modified_file.js"
+    },
+    {
+      "type": "copy",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd4",
+      "old_mode": 33188,
+      "old_path": "Source/devtools/front_end/layers/file.js",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda2",
+      "new_mode": 33188,
+      "new_path": "Source/devtools/front_end/layers/copied_file.js"
+    },
+    {
+      "type": "rename",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd5",
+      "old_mode": 33188,
+      "old_path": "Source/devtools/front_end/layers/file.js",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda3",
+      "new_mode": 33188,
+      "new_path": "Source/devtools/front_end/layers/renamed_file.js"
+    }
+  ]
+}""" % json.JSONEncoder().encode(COMMIT_MESSAGE)
+
+EXPECTED_CHANGE_LOG_JSON = {
+    'author_name': 'malch@chromium.org',
+    'message': COMMIT_MESSAGE,
+    'committer_email': 'malch@chromium.org',
+    'commit_position': 175976,
+    'author_email': 'malch@chromium.org',
+    'touched_files': [
+      {
+        'change_type': 'add',
+        'new_path': 'Source/devtools/front_end/layers/added_file.js',
+        'old_path': '/dev/null'
+      },
+      {
+        'change_type': 'delete',
+        'new_path': '/dev/null',
+        'old_path': 'Source/devtools/front_end/layers/deleted_file.js'
+      },
+      {
+        'change_type': 'modify',
+        'new_path': 'Source/devtools/front_end/layers/modified_file.js',
+        'old_path': 'Source/devtools/front_end/layers/modified_file.js'
+      },
+      {
+        'change_type': 'copy',
+        'new_path': 'Source/devtools/front_end/layers/copied_file.js',
+        'old_path': 'Source/devtools/front_end/layers/file.js'
+      },
+      {
+        'change_type': 'rename',
+        'new_path': 'Source/devtools/front_end/layers/renamed_file.js',
+        'old_path': 'Source/devtools/front_end/layers/file.js'
+      }
+    ],
+    'author_time': 'Wed Jun 11 19:35:32 2014',
+    'committer_time': 'Wed Jun 11 19:35:32 2014',
+    'code_review_url': 'https://codereview.chromium.org/328113005',
+    'committer_name': 'malch@chromium.org',
+    'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'
+}
+
+COMMIT_LOG_WITH_UNKNOWN_FILE_CHANGE_TYPE = """)]}'
+{
+  "commit": "bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb",
+  "tree": "481fd0f3bdf6eda5ca29ec6cbc6aa476b3684143",
+  "parents": [
+    "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
+  ],
+  "author": {
+    "name": "malch@chromium.org",
+    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "time": "Wed Jun 11 19:35:32 2014"
+  },
+  "committer": {
+    "name": "malch@chromium.org",
+    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "time": "Wed Jun 11 19:35:32 2014"
+  },
+  "message": "message",
+  "tree_diff": [
+    {
+      "type": "unknown_change_type",
+      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd2",
+      "old_mode": 33188,
+      "old_path": "/dev/null",
+      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda0",
+      "new_mode": 33188,
+      "new_path": "Source/devtools/front_end/layers/added_file.js"
+    }
+  ]
+}"""
+
+GITILES_FILE_BLAME_RESULT = """)]}'
+{
+  "regions": [
+    {
+      "start": 1,
+      "count": 6,
+      "path": "chrome/test/chromedriver/element_commands.cc",
+      "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
+      "author": {
+        "name": "chrisgao@chromium.org",
+        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "time": "2013-02-11 20:18:51"
+      }
+    },
+    {
+      "start": 7,
+      "count": 1,
+      "path": "chrome/test/chromedriver/element_commands.cc",
+      "commit": "030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076",
+      "author": {
+        "name": "jbudorick@chromium.org",
+        "email": "jbudorick@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "time": "2014-02-06 09:02:09"
+      }
+    },
+    {
+      "start": 8,
+      "count": 1,
+      "path": "chrome/test/chromedriver/element_commands.cc",
+      "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
+      "author": {
+        "name": "chrisgao@chromium.org",
+        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "time": "2013-02-11 20:18:51"
+      }
+    }
+  ]
+}"""
+
+EXPECTED_FILE_BLAME_JSON = {
+    'regions': [
+      {
+        'count': 6,
+        'author_email': u'chrisgao@chromium.org',
+        'author_time': u'2013-02-11 20:18:51',
+        'author_name': u'chrisgao@chromium.org',
+        'start': 1,
+        'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
+      },
+      {
+        'count': 1,
+        'author_email': u'jbudorick@chromium.org',
+        'author_time': u'2014-02-06 09:02:09',
+        'author_name': u'jbudorick@chromium.org',
+        'start': 7,
+        'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
+      },
+      {
+        'count': 1,
+        'author_email': u'chrisgao@chromium.org',
+        'author_time': u'2013-02-11 20:18:51',
+        'author_name': u'chrisgao@chromium.org',
+        'start': 8,
+        'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
+      }
+    ],
+    'path': 'a/b/c.cc',
+    'revision': 'dummy_abcd1234'
+}
+
+
 class HttpClientForGit(retry_http_client.RetryHttpClient):
   def __init__(self):
     super(HttpClientForGit, self).__init__()
@@ -19,11 +234,11 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
   def SetResponseForUrl(self, url, response):
     self.response_for_url[url] = response
 
-  def WaitForNextRetry(self, *_):
+  def WaitForNextRetry(self, *_):  # pragma: no cover
     """Override to avoid sleep."""
     pass
 
-  def _Get(self, url, timeout):
+  def _Get(self, url, _):
     response = self.response_for_url.get(url)
     if response is None:
       return 404, 'Not Found'
@@ -114,163 +329,23 @@ class GitRepositoryTest(unittest.TestCase):
         self.git_repo.GetChangeLog, 'aaa')
 
   def testGetChangeLog(self):
-    message = ('Add popover for snapshot canvas log.\n\n'
-               'Review URL: https://codereview.chromium.org/320423004\n\n'
-               'Review URL: https://codereview.chromium.org/328113005\n\n'
-               'git-svn-id: svn://svn.chromium.org/blink/trunk@175976 '
-               'bbb929c8-8fbe-4397-9dbb-9b2b20218538\n')
-
     self.http_client_for_git.SetResponseForUrl(
         '%s/+/%s?format=json' % (
             self.repo_url, 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'),
-        """)]}'
-{
-  "commit": "bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb",
-  "tree": "481fd0f3bdf6eda5ca29ec6cbc6aa476b3684143",
-  "parents": [
-    "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
-  ],
-  "author": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
-    "time": "Wed Jun 11 19:35:32 2014"
-  },
-  "committer": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
-    "time": "Wed Jun 11 19:35:32 2014"
-  },
-  "message": %s,
-  "tree_diff": [
-    {
-      "type": "add",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd2",
-      "old_mode": 33188,
-      "old_path": "/dev/null",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda0",
-      "new_mode": 33188,
-      "new_path": "Source/devtools/front_end/layers/added_file.js"
-    },
-    {
-      "type": "delete",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd3",
-      "old_mode": 33188,
-      "old_path": "Source/devtools/front_end/layers/deleted_file.js",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda1",
-      "new_mode": 33188,
-      "new_path": "/dev/null"
-    },
-    {
-      "type": "modify",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd1",
-      "old_mode": 33188,
-      "old_path": "Source/devtools/front_end/layers/modified_file.js",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda9",
-      "new_mode": 33188,
-      "new_path": "Source/devtools/front_end/layers/modified_file.js"
-    },
-    {
-      "type": "copy",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd4",
-      "old_mode": 33188,
-      "old_path": "Source/devtools/front_end/layers/file.js",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda2",
-      "new_mode": 33188,
-      "new_path": "Source/devtools/front_end/layers/copied_file.js"
-    },
-    {
-      "type": "rename",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd5",
-      "old_mode": 33188,
-      "old_path": "Source/devtools/front_end/layers/file.js",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda3",
-      "new_mode": 33188,
-      "new_path": "Source/devtools/front_end/layers/renamed_file.js"
-    }
-  ]
-}""" % json.dumps(message))
-
-    expected_change_log_json = {
-        'author_name': 'malch@chromium.org',
-        'message': message,
-        'committer_email': 'malch@chromium.org',
-        'commit_position': 175976,
-        'author_email': 'malch@chromium.org',
-        'touched_files': [
-          {
-            'change_type': 'add',
-            'new_path': 'Source/devtools/front_end/layers/added_file.js',
-            'old_path': '/dev/null'
-          },
-          {
-            'change_type': 'delete',
-            'new_path': '/dev/null',
-            'old_path': 'Source/devtools/front_end/layers/deleted_file.js'
-          },
-          {
-            'change_type': 'modify',
-            'new_path': 'Source/devtools/front_end/layers/modified_file.js',
-            'old_path': 'Source/devtools/front_end/layers/modified_file.js'
-          },
-          {
-            'change_type': 'copy',
-            'new_path': 'Source/devtools/front_end/layers/copied_file.js',
-            'old_path': 'Source/devtools/front_end/layers/file.js'
-          },
-          {
-            'change_type': 'rename',
-            'new_path': 'Source/devtools/front_end/layers/renamed_file.js',
-            'old_path': 'Source/devtools/front_end/layers/file.js'
-          }
-        ],
-        'author_time': 'Wed Jun 11 19:35:32 2014',
-        'committer_time': 'Wed Jun 11 19:35:32 2014',
-        'code_review_url': 'https://codereview.chromium.org/328113005',
-        'committer_name': 'malch@chromium.org',
-        'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'
-    }
+        COMMIT_LOG)
 
     self.assertIsNone(self.git_repo.GetChangeLog('not_existing_revision'))
 
     change_log = self.git_repo.GetChangeLog(
         'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb')
 
-    self.assertEqual(expected_change_log_json, change_log.ToJson())
+    self.assertEqual(EXPECTED_CHANGE_LOG_JSON, change_log.ToJson())
 
   def testUnknownChangeType(self):
     self.http_client_for_git.SetResponseForUrl(
         '%s/+/%s?format=json' % (
             self.repo_url, 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'),
-        """)]}'
-{
-  "commit": "bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb",
-  "tree": "481fd0f3bdf6eda5ca29ec6cbc6aa476b3684143",
-  "parents": [
-    "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
-  ],
-  "author": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
-    "time": "Wed Jun 11 19:35:32 2014"
-  },
-  "committer": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
-    "time": "Wed Jun 11 19:35:32 2014"
-  },
-  "message": "message",
-  "tree_diff": [
-    {
-      "type": "unknown_change_type",
-      "old_id": "f71f1167c2204626057d26912b8a2ff096fe4bd2",
-      "old_mode": 33188,
-      "old_path": "/dev/null",
-      "new_id": "165fb11e0658f41d66038199056a53bcfab5dda0",
-      "new_mode": 33188,
-      "new_path": "Source/devtools/front_end/layers/added_file.js"
-    }
-  ]
-}""")
+        COMMIT_LOG_WITH_UNKNOWN_FILE_CHANGE_TYPE)
     self.assertRaisesRegexp(
         Exception, 'Unknown change type "unknown_change_type"',
         self.git_repo.GetChangeLog, 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb')
@@ -293,78 +368,10 @@ class GitRepositoryTest(unittest.TestCase):
     git_revision = 'dummy_abcd1234'
     self.http_client_for_git.SetResponseForUrl(
         '%s/+blame/%s/%s?format=json' % (self.repo_url, git_revision, path),
-        """)]}'
-{
-  "regions": [
-    {
-      "start": 1,
-      "count": 6,
-      "path": "chrome/test/chromedriver/element_commands.cc",
-      "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
-      "author": {
-        "name": "chrisgao@chromium.org",
-        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
-        "time": "2013-02-11 20:18:51"
-      }
-    },
-    {
-      "start": 7,
-      "count": 1,
-      "path": "chrome/test/chromedriver/element_commands.cc",
-      "commit": "030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076",
-      "author": {
-        "name": "jbudorick@chromium.org",
-        "email": "jbudorick@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
-        "time": "2014-02-06 09:02:09"
-      }
-    },
-    {
-      "start": 8,
-      "count": 1,
-      "path": "chrome/test/chromedriver/element_commands.cc",
-      "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
-      "author": {
-        "name": "chrisgao@chromium.org",
-        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
-        "time": "2013-02-11 20:18:51"
-      }
-    }
-  ]
-}""")
-
-    expected_blame_json = {
-        'regions': [
-          {
-            'count': 6,
-            'author_email': u'chrisgao@chromium.org',
-            'author_time': u'2013-02-11 20:18:51',
-            'author_name': u'chrisgao@chromium.org',
-            'start': 1,
-            'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
-          },
-          {
-            'count': 1,
-            'author_email': u'jbudorick@chromium.org',
-            'author_time': u'2014-02-06 09:02:09',
-            'author_name': u'jbudorick@chromium.org',
-            'start': 7,
-            'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
-          },
-          {
-            'count': 1,
-            'author_email': u'chrisgao@chromium.org',
-            'author_time': u'2013-02-11 20:18:51',
-            'author_name': u'chrisgao@chromium.org',
-            'start': 8,
-            'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
-          }
-        ],
-        'path': path,
-        'revision': git_revision
-    }
+        GITILES_FILE_BLAME_RESULT)
 
     blame = self.git_repo.GetBlame(path, git_revision)
-    self.assertEqual(expected_blame_json, blame.ToJson())
+    self.assertEqual(EXPECTED_FILE_BLAME_JSON, blame.ToJson())
 
   def testGetSource(self):
     self.assertIsNone(self.git_repo.GetSource('path', 'not_existing_revision'))
