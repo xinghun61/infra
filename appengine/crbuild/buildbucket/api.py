@@ -250,7 +250,7 @@ class BuildBucketApi(remote.Service):
   ##################################  LEASE  ###################################
 
   class LeaseRequestBodyMessage(messages.Message):
-    lease_expiration_ts = messages.IntegerField(1, required=True)
+    lease_expiration_ts = messages.IntegerField(1)
 
   @buildbucket_api_method(
       id_resource_container(LeaseRequestBodyMessage), BuildResponseMessage,
