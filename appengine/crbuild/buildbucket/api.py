@@ -190,14 +190,11 @@ class BuildBucketApi(remote.Service):
       message_types.VoidMessage,
       namespace=messages.StringField(1, repeated=True),
       max_builds=messages.IntegerField(2, variant=messages.Variant.INT32),
+      start_cursor=messages.StringField(3),
   )
 
-  # Replace this with SearchResponseMessage
-  class PeekResponseMessage(messages.Message):
-    builds = messages.MessageField(BuildMessage, 1, repeated=True)
-
   @auth.endpoints_method(
-      PEEK_REQUEST_RESOURCE_CONTAINER, PeekResponseMessage,
+      PEEK_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='peek', http_method='GET')
   @convert_service_errors
   def peek(self, request):
@@ -205,10 +202,14 @@ class BuildBucketApi(remote.Service):
     assert isinstance(request.namespace, list)
     if not request.namespace:
       raise endpoints.BadRequestException('Namespace not specified')
-    builds = self.service.peek(
+    builds, next_cursor = self.service.peek(
         request.namespace,
-        max_builds=request.max_builds)
-    return self.PeekResponseMessage(builds=map(build_to_message, builds))
+        max_builds=request.max_builds,
+        start_cursor=request.start_cursor,
+    )
+    return self.SearchResponseMessage(
+        builds=map(build_to_message, builds),
+        next_cursor=next_cursor)
 
   ##################################  LEASE  ###################################
 

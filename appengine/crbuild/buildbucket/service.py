@@ -144,6 +144,28 @@ class BuildBucketService(object):
       raise auth.AuthorizationError()
     return build
 
+  def _fetch_page(self, query, page_size, start_cursor, predicate=None):
+    assert query
+    assert isinstance(page_size, int)
+    assert start_cursor is None or isinstance(start_cursor, str)
+
+    curs = None
+    if start_cursor:
+      curs = ndb.Cursor(urlsafe=start_cursor)
+
+    query_iter = query.iter(start_cursor=curs, produce_cursors=True)
+    entities = []
+    for entity in query_iter:
+      if predicate is None or predicate(entity):  # pragma: no branch
+        entities.append(entity)
+        if len(entities) >= page_size:
+          break
+
+    next_cursor_str = None
+    if query_iter.probably_has_next():
+      next_cursor_str = query_iter.cursor_after().urlsafe()
+    return entities, next_cursor_str
+
   def search_by_tags(self, tags, max_builds=None, start_cursor=None):
     """Searches for builds by tags.
 
@@ -158,26 +180,19 @@ class BuildBucketService(object):
       A tuple:
         builds (list of Build): query result.
         next_cursor (string): cursor for the next page.
-          None if there is no more builds.
+          None if there are no more builds.
     """
     max_builds = max_builds or 10
     validate_max_builds(max_builds)
     validate_tags(tags)
     tags = tags or []
-    curs = None
-    if start_cursor:
-      curs = ndb.Cursor(urlsafe=start_cursor)
 
     q = model.Build.query()
     for t in tags:
       q = q.filter(model.Build.tags == t)
-    builds, next_curs, more = q.fetch_page(max_builds, start_cursor=curs)
-    next_curs_str = None
-    if more and next_curs is not None:
-      next_curs_str = next_curs.urlsafe()
-    return builds, next_curs_str
+    return self._fetch_page(q, max_builds, start_cursor)
 
-  def peek(self, namespaces, max_builds=None):
+  def peek(self, namespaces, max_builds=None, start_cursor=None):
     """Returns builds available for leasing in the specified |namespaces|.
 
     Builds are sorted by creation time, oldest first.
@@ -185,9 +200,14 @@ class BuildBucketService(object):
     Args:
       namespaces (list of string): fetch only builds in any of |namespaces|.
       max_builds (int): maximum number of builds to return. Defaults to 10.
+      start_cursor (string): a value of "next" cursor returned by previous
+        peek call. If not None, return next builds in the query.
 
     Returns:
-      A list of Builds.
+      A tuple:
+        builds (list of Builds): available builds.
+        next_cursor (str): cursor for the next page.
+          None if there are no more builds.
     """
     # TODO(nodir): accept and return a cursor for paging.
 
@@ -214,15 +234,14 @@ class BuildBucketService(object):
 
     # Check once again locally because an ndb query may return an entity not
     # satisfying the query.
-    builds = (b for b in q.iter()
-              if (b.status == model.BuildStatus.SCHEDULED and
-                  not b.is_leased and
-                  b.namespace in namespaces and
-                  acl_user.can_view_build(b))
-             )
-    builds = list(itertools.islice(builds, max_builds))
-    builds = sorted(builds, key=lambda b: b.create_time)
-    return builds
+    def local_predicate(b):
+      return (b.status == model.BuildStatus.SCHEDULED and
+              not b.is_leased and
+              b.namespace in namespaces and
+              acl_user.can_view_build(b))
+
+    return self._fetch_page(
+        q, max_builds, start_cursor, predicate=local_predicate)
 
   def _get_leasable_build(self, build_id):
     build = model.Build.get_by_id(build_id)

@@ -140,12 +140,18 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_peek(self):
     self.test_build.put()
-    self.service.peek.return_value = [self.test_build]
+    self.service.peek.return_value = ([self.test_build], 'the cursor')
     req = {'namespace': [self.test_build.namespace]}
     res = self.call_api('peek', req).json_body
+    self.service.peek.assert_called_once_with(
+        req['namespace'],
+        max_builds=None,
+        start_cursor=None,
+    )
     self.assertEqual(len(res['builds']), 1)
     peeked_build = res['builds'][0]
     self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['next_cursor'], 'the cursor')
 
   def test_peek_without_namespaces(self):
     with self.call_should_fail(httplib.BAD_REQUEST):

@@ -41,6 +41,12 @@ class BuildBucketServiceTest(CrBuildTestCase):
     self.current_user = mock.Mock()
     self.mock(acl, 'current_user', lambda: self.current_user)
 
+  def put_many_builds(self, tags=None):
+    for _ in xrange(100):
+      b = model.Build(
+          namespace=self.test_build.namespace,
+          tags=tags or [])
+      b.put()
 
   #################################### ADD #####################################
 
@@ -150,11 +156,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   def test_search_with_paging(self):
     tags = ['important:true']
-    for _ in xrange(100):
-      b = model.Build(
-          namespace=self.test_build.namespace,
-          tags=tags)
-      b.put()
+    self.put_many_builds(tags)
 
     first_page, next_cursor = self.service.search_by_tags(tags, max_builds=10)
     self.assertEqual(len(first_page), 10)
@@ -184,8 +186,20 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   def test_peek(self):
     self.test_build.put()
-    builds = self.service.peek(namespaces=[self.test_build.namespace])
+    builds, _ = self.service.peek(namespaces=[self.test_build.namespace])
     self.assertEqual(builds, [self.test_build])
+
+  def test_peek_with_paging(self):
+    self.put_many_builds()
+    first_page, next_cursor = self.service.peek(
+        namespaces=[self.test_build.namespace])
+    self.assertTrue(first_page)
+    self.assertTrue(next_cursor)
+
+    second_page, _ = self.service.peek(
+        namespaces=[self.test_build.namespace], start_cursor=next_cursor)
+
+    self.assertTrue(all(b not in second_page for b in first_page))
 
   def test_peek_with_auth_error(self):
     self.current_user.can_peek_namespace.return_value = False
@@ -196,7 +210,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
   def test_peek_does_not_return_leased_builds(self):
     self.test_build.put()
     self.lease()
-    builds = self.service.peek([self.test_build.namespace])
+    builds, _ = self.service.peek([self.test_build.namespace])
     self.assertFalse(builds)
 
   def test_cannot_peek_1000_builds(self):
