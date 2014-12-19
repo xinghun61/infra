@@ -40,6 +40,11 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         },
     )
 
+  def expect_error(self, method_name, req, error_reason):
+    res = self.call_api(method_name, req).json_body
+    self.assertIsNotNone(res.get('error'))
+    self.assertEqual(res['error']['reason'], error_reason)
+
   def test_expired_build_to_message(self):
     yesterday = utils.utcnow() - datetime.timedelta(days=1)
     yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
@@ -58,16 +63,16 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
     resp = self.call_api('get', {'id': build_id}).json_body
     self.service.get.assert_called_once_with(build_id)
-    self.assertEqual(resp['id'], str(build_id))
-    self.assertEqual(resp['namespace'], self.test_build.namespace)
-    self.assertEqual(resp['lease_expiration_ts'], self.future_ts)
-    self.assertEqual(resp['status'], 'SCHEDULED')
-    self.assertEqual(resp['parameters_json'], '{"buildername": "linux_rel"}')
+    self.assertEqual(resp['build']['id'], str(build_id))
+    self.assertEqual(resp['build']['namespace'], self.test_build.namespace)
+    self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
+    self.assertEqual(resp['build']['status'], 'SCHEDULED')
+    self.assertEqual(
+        resp['build']['parameters_json'], '{"buildername": "linux_rel"}')
 
   def test_get_nonexistent_build(self):
     self.service.get.return_value = None
-    with self.call_should_fail(httplib.NOT_FOUND):
-      self.call_api('get', {'id': 1})
+    self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
 
   ##################################### PUT ####################################
 
@@ -85,9 +90,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         parameters=None,
         lease_expiration_date=None,
     )
-    self.assertEqual(resp['id'], str(self.test_build.key.id()))
-    self.assertEqual(resp['namespace'], req['namespace'])
-    self.assertEqual(resp['tags'], req['tags'])
+    self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(resp['build']['namespace'], req['namespace'])
+    self.assertEqual(resp['build']['tags'], req['tags'])
 
   def test_put_with_parameters(self):
     self.service.add.return_value = self.test_build
@@ -96,7 +101,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'parameters_json': json.dumps(self.test_build.parameters),
     }
     resp = self.call_api('put', req).json_body
-    self.assertEqual(resp['parameters_json'], req['parameters_json'])
+    self.assertEqual(resp['build']['parameters_json'], req['parameters_json'])
 
   def test_put_with_leasing(self):
     self.test_build.lease_expiration_date = self.future_date
@@ -112,18 +117,18 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         parameters=None,
         lease_expiration_date=self.future_date,
     )
-    self.assertEqual(resp['lease_expiration_ts'], req['lease_expiration_ts'])
+    self.assertEqual(
+        resp['build']['lease_expiration_ts'], req['lease_expiration_ts'])
 
   def test_put_with_empty_namespace(self):
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('put', {'namespace': ''})
+    self.expect_error('put', {'namespace': ''}, 'INVALID_INPUT')
 
   def test_put_with_malformed_parameters_json(self):
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('put', {
-          'namespace':'chromium',
-          'parameters_json': '}non-json',
-      })
+    req = {
+        'namespace':'chromium',
+        'parameters_json': '}non-json',
+    }
+    self.expect_error('put', req, 'INVALID_INPUT')
 
   #################################### SEARCH ##################################
 
@@ -154,8 +159,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(res['next_cursor'], 'the cursor')
 
   def test_peek_without_namespaces(self):
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('peek', {})
+    self.expect_error('peek', {}, 'INVALID_INPUT')
 
   #################################### LEASE ###################################
 
@@ -173,7 +177,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         self.test_build.key.id(),
         lease_expiration_date=self.future_date,
     )
-    self.assertTrue(res['success'])
+    self.assertIsNone(res.get('error'))
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
     self.assertEqual(
@@ -185,8 +189,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'id': self.test_build.key.id(),
         'lease_expiration_ts': 242894728472423847289472398,
     }
-    with self.call_should_fail(httplib.BAD_REQUEST):
-      self.call_api('lease', req)
+    self.expect_error('lease', req, 'INVALID_INPUT')
 
   def test_lease_unsuccessful(self):
     self.test_build.put()
@@ -195,8 +198,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'id': self.test_build.key.id(),
         'lease_expiration_ts': self.future_ts,
     }
-    res = self.call_api('lease', req).json_body
-    self.assertFalse(res['success'])
+    self.expect_error('lease', req, 'CANNOT_LEASE_BUILD')
 
   #################################### START ###################################
 
@@ -211,8 +213,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('start', req).json_body
     self.service.start.assert_called_once_with(
         req['id'], req['lease_key'], url=req['url'])
-    self.assertEqual(int(res['id']), req['id'])
-    self.assertEqual(res['url'], req['url'])
+    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['url'], req['url'])
 
   #################################### HEATBEAT ################################
 
@@ -227,10 +229,9 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('hearbeat', req).json_body
     self.service.heartbeat.assert_called_once_with(
         req['id'], req['lease_key'], self.future_date)
-    self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(
-        res['lease_expiration_ts'],
-        req['lease_expiration_ts'],
+        res['build']['lease_expiration_ts'], req['lease_expiration_ts'],
     )
 
   ################################## SUCCEED ###################################
@@ -244,7 +245,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('succeed', req).json_body
     self.service.succeed.assert_called_once_with(
         req['id'], req['lease_key'], None)
-    self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(int(res['build']['id']), req['id'])
 
   def test_succeed_with_result_details(self):
     self.test_build.result_details = {'test_coverage': 100}
@@ -257,7 +258,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     res = self.call_api('succeed', req).json_body
     self.service.succeed.assert_called_once_with(
         req['id'], req['lease_key'], self.test_build.result_details)
-    self.assertEqual(res['result_details_json'], req['result_details_json'])
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json'])
 
   #################################### FAIL ####################################
 
@@ -276,9 +278,10 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         req['id'], req['lease_key'],
         self.test_build.result_details,
         failure_reason=model.FailureReason.INFRA_FAILURE)
-    self.assertEqual(int(res['id']), req['id'])
-    self.assertEqual(res['failure_reason'], req['failure_reason'])
-    self.assertEqual(res['result_details_json'], req['result_details_json'])
+    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json'])
 
   #################################### CANCEL ##################################
 
@@ -289,25 +292,24 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     }
     res = self.call_api('cancel', req).json_body
     self.service.cancel.assert_called_once_with(req['id'])
-    self.assertEqual(int(res['id']), req['id'])
+    self.assertEqual(int(res['build']['id']), req['id'])
 
   #################################### ERRORS ##################################
 
-  def error_test(self, service_error_class, status_code):
+  def error_test(self, service_error_class, reason):
     def raise_service_error(*_, **__):
       raise service_error_class()
     self.service.get.side_effect = raise_service_error
-    with self.call_should_fail(status_code):
-      self.call_api('get', {'id': 123})
-
-  def test_auth_error(self):
-    self.error_test(auth.AuthorizationError, httplib.FORBIDDEN)
+    self.expect_error('get', {'id': 123}, reason)
 
   def test_build_not_found_error(self):
-    self.error_test(service.BuildNotFoundError, httplib.NOT_FOUND)
+    self.error_test(service.BuildNotFoundError, 'BUILD_NOT_FOUND')
 
   def test_invalid_input_error(self):
-    self.error_test(service.InvalidInputError, httplib.BAD_REQUEST)
+    self.error_test(service.InvalidInputError, 'INVALID_INPUT')
 
   def test_invalid_build_state_error(self):
-    self.error_test(service.InvalidBuildStateError, httplib.BAD_REQUEST)
+    self.error_test(service.InvalidBuildStateError, 'INVALID_BUILD_STATE')
+
+  def test_lease_expired_error(self):
+    self.error_test(service.LeaseExpiredError, 'LEASE_EXPIRED')

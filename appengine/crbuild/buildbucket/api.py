@@ -17,6 +17,27 @@ from . import model
 from . import service
 
 
+class ErrorReason(messages.Enum):
+  LEASE_EXPIRED = 1
+  CANNOT_LEASE_BUILD = 2
+  BUILD_NOT_FOUND = 3
+  INVALID_INPUT = 4
+  INVALID_BUILD_STATE = 5
+
+
+ERROR_REASON_MAP = {
+    service.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
+    service.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
+    service.InvalidInputError: ErrorReason.INVALID_INPUT,
+    service.InvalidBuildStateError: ErrorReason.INVALID_BUILD_STATE,
+}
+
+
+class ErrorMessage(messages.Message):
+  reason = messages.EnumField(ErrorReason, 1, required=True)
+  message = messages.StringField(2, required=True)
+
+
 class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
   id = messages.IntegerField(1, required=True)
@@ -31,6 +52,11 @@ class BuildMessage(messages.Message):
   lease_expiration_ts = messages.IntegerField(10)
   lease_key = messages.IntegerField(11)
   url = messages.StringField(12)
+
+
+class BuildResponseMessage(messages.Message):
+  build = messages.MessageField(BuildMessage, 1)
+  error = messages.MessageField(ErrorMessage, 2)
 
 
 def build_to_message(build, include_lease_key=False):
@@ -58,6 +84,10 @@ def build_to_message(build, include_lease_key=False):
   return msg
 
 
+def build_to_response_message(build, include_lease_key=False):
+  return BuildResponseMessage(build=build_to_message(build, include_lease_key))
+
+
 def id_resource_container(body_message_class=message_types.VoidMessage):
   return endpoints.ResourceContainer(
       body_message_class,
@@ -65,17 +95,26 @@ def id_resource_container(body_message_class=message_types.VoidMessage):
   )
 
 
-def convert_service_errors(fn):
-  """Decorates a function, converts service errors to endpoint exceptions."""
-  @functools.wraps(fn)
-  def decorated(*args, **kwargs):
-    try:
-      return fn(*args, **kwargs)
-    except service.BuildNotFoundError:
-      raise endpoints.NotFoundException()
-    except (service.InvalidInputError, service.InvalidBuildStateError) as ex:
-      raise endpoints.BadRequestException(ex.message)
-  return decorated
+def buildbucket_api_method(
+    request_message_class, response_message_class, **kwargs):
+  """Extends auth.endpoints_method by converting service errors."""
+  assert hasattr(response_message_class, 'error')
+
+  endpoints_decorator = auth.endpoints_method(
+      request_message_class, response_message_class, **kwargs)
+
+  def decorator(fn):
+    @functools.wraps(fn)
+    def decorated(*args, **kwargs):
+      try:
+        return fn(*args, **kwargs)
+      except service.Error as ex:
+        return response_message_class(error=ErrorMessage(
+            reason=ERROR_REASON_MAP[type(ex)],
+            message=ex.message,
+        ))
+    return endpoints_decorator(decorated)
+  return decorator
 
 
 def parse_json(json_data, param_name):
@@ -84,8 +123,7 @@ def parse_json(json_data, param_name):
   try:
     return json.loads(json_data)
   except ValueError as ex:
-    raise endpoints.BadRequestException(
-        'Could not parse %s: %s' % (param_name, ex))
+    raise service.InvalidInputError('Could not parse %s: %s' % (param_name, ex))
 
 
 def parse_datetime(timestamp):
@@ -94,7 +132,7 @@ def parse_datetime(timestamp):
   try:
     return utils.timestamp_to_datetime(timestamp)
   except OverflowError:
-    raise endpoints.BadRequestException(
+    raise service.InvalidInputError(
         'Could not parse timestamp: %s' % timestamp)
 
 
@@ -115,16 +153,15 @@ class BuildBucketApi(remote.Service):
 
   ###################################  GET  ####################################
 
-  @auth.endpoints_method(
-      id_resource_container(), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(), BuildResponseMessage,
       path='builds/{id}', http_method='GET')
-  @convert_service_errors
   def get(self, request):
     """Returns a build by id."""
     build = self.service.get(request.id)
     if build is None:
-      raise endpoints.NotFoundException()
-    return build_to_message(build)
+      raise service.BuildNotFoundError()
+    return build_to_response_message(build)
 
   ###################################  PUT  ####################################
 
@@ -134,14 +171,13 @@ class BuildBucketApi(remote.Service):
     parameters_json = messages.StringField(3)
     lease_expiration_ts = messages.IntegerField(4)
 
-  @auth.endpoints_method(
-      PutRequestMessage, BuildMessage,
+  @buildbucket_api_method(
+      PutRequestMessage, BuildResponseMessage,
       path='builds', http_method='PUT')
-  @convert_service_errors
   def put(self, request):
     """Creates a new build."""
     if not request.namespace:
-      raise endpoints.BadRequestException('Build namespace not specified')
+      raise service.InvalidInputError('Build namespace not specified')
 
     build = self.service.add(
         namespace=request.namespace,
@@ -149,7 +185,7 @@ class BuildBucketApi(remote.Service):
         parameters=parse_json(request.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
-    return build_to_message(build, include_lease_key=True)
+    return build_to_response_message(build, include_lease_key=True)
 
   ##################################  SEARCH   #################################
 
@@ -164,11 +200,11 @@ class BuildBucketApi(remote.Service):
   class SearchResponseMessage(messages.Message):
     builds = messages.MessageField(BuildMessage, 1, repeated=True)
     next_cursor = messages.StringField(2)
+    error = messages.MessageField(ErrorMessage, 3)
 
-  @auth.endpoints_method(
+  @buildbucket_api_method(
       SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='search', http_method='GET')
-  @convert_service_errors
   def search(self, request):
     """Searches for builds.
 
@@ -176,9 +212,9 @@ class BuildBucketApi(remote.Service):
     """
     assert isinstance(request.tag, list)
     builds, next_cursor = self.service.search_by_tags(
-      request.tag,
-      max_builds=request.max_builds,
-      start_cursor=request.start_cursor)
+        request.tag,
+        max_builds=request.max_builds,
+        start_cursor=request.start_cursor)
     return self.SearchResponseMessage(
         builds=map(build_to_message, builds),
         next_cursor=next_cursor,
@@ -193,15 +229,15 @@ class BuildBucketApi(remote.Service):
       start_cursor=messages.StringField(3),
   )
 
-  @auth.endpoints_method(
+  @buildbucket_api_method(
       PEEK_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='peek', http_method='GET')
-  @convert_service_errors
   def peek(self, request):
     """Returns available builds."""
     assert isinstance(request.namespace, list)
     if not request.namespace:
-      raise endpoints.BadRequestException('Namespace not specified')
+      raise service.InvalidInputError('Build namespace not specified')
+
     builds, next_cursor = self.service.peek(
         request.namespace,
         max_builds=request.max_builds,
@@ -216,28 +252,26 @@ class BuildBucketApi(remote.Service):
   class LeaseRequestBodyMessage(messages.Message):
     lease_expiration_ts = messages.IntegerField(1, required=True)
 
-  class LeaseResponseMessage(messages.Message):
-    success = messages.BooleanField(1, required=True)
-    build = messages.MessageField(BuildMessage, 2)
-
-  @auth.endpoints_method(
-      id_resource_container(LeaseRequestBodyMessage), LeaseResponseMessage,
+  @buildbucket_api_method(
+      id_resource_container(LeaseRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/lease', http_method='POST')
-  @convert_service_errors
   def lease(self, request):
-    """Leases a build."""
+    """Leases a build.
+
+    Response may contain an error.
+    """
     success, build = self.service.lease(
         request.id,
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
     )
     if not success:
-      return self.LeaseResponseMessage(success=False)
+      return BuildResponseMessage(error=ErrorMessage(
+          message='Could not lease build',
+          reason=ErrorReason.CANNOT_LEASE_BUILD,
+      ))
 
     assert build.lease_key is not None
-    return self.LeaseResponseMessage(
-        success=True,
-        build=build_to_message(build, include_lease_key=True)
-    )
+    return build_to_response_message(build, include_lease_key=True)
 
   #################################  STARTED  ##################################
 
@@ -245,14 +279,13 @@ class BuildBucketApi(remote.Service):
     lease_key = messages.IntegerField(1)
     url = messages.StringField(2)
 
-  @auth.endpoints_method(
-      id_resource_container(StartRequestBodyMessage), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(StartRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/start', http_method='POST')
-  @convert_service_errors
   def start(self, request):
     """Marks a build as started."""
     build = self.service.start(request.id, request.lease_key, url=request.url)
-    return build_to_message(build)
+    return build_to_response_message(build)
 
   #################################  HEARTBEAT  ################################
 
@@ -260,16 +293,15 @@ class BuildBucketApi(remote.Service):
     lease_key = messages.IntegerField(1)
     lease_expiration_ts = messages.IntegerField(2, required=True)
 
-  @auth.endpoints_method(
-      id_resource_container(HeartbeatRequestBodyMessage), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(HeartbeatRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/heartbeat', http_method='POST')
-  @convert_service_errors
   def hearbeat(self, request):
     """Updates build lease."""
     build = self.service.heartbeat(
         request.id, request.lease_key,
         parse_datetime(request.lease_expiration_ts))
-    return build_to_message(build)
+    return build_to_response_message(build)
 
   #################################  SUCCEED  ##################################
 
@@ -277,16 +309,15 @@ class BuildBucketApi(remote.Service):
     lease_key = messages.IntegerField(1)
     result_details_json = messages.StringField(2)
 
-  @auth.endpoints_method(
-      id_resource_container(SucceedRequestBodyMessage), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/succeed', http_method='POST')
-  @convert_service_errors
   def succeed(self, request):
     """Marks a build as succeeded."""
     build = self.service.succeed(
         request.id, request.lease_key,
         parse_json(request.result_details_json, 'result_details_json'))
-    return build_to_message(build)
+    return build_to_response_message(build)
 
   ###################################  FAIL  ###################################
 
@@ -295,10 +326,9 @@ class BuildBucketApi(remote.Service):
     result_details_json = messages.StringField(2)
     failure_reason = messages.EnumField(model.FailureReason, 3)
 
-  @auth.endpoints_method(
-      id_resource_container(FailRequestBodyMessage), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/fail', http_method='POST')
-  @convert_service_errors
   def fail(self, request):
     """Marks a build as failed."""
     build = self.service.fail(
@@ -306,15 +336,14 @@ class BuildBucketApi(remote.Service):
         parse_json(request.result_details_json, 'result_details_json'),
         failure_reason=request.failure_reason,
     )
-    return build_to_message(build)
+    return build_to_response_message(build)
 
   ##################################  CANCEL  ##################################
 
-  @auth.endpoints_method(
-      id_resource_container(message_types.VoidMessage), BuildMessage,
+  @buildbucket_api_method(
+      id_resource_container(message_types.VoidMessage), BuildResponseMessage,
       path='builds/{id}/cancel', http_method='POST')
-  @convert_service_errors
   def cancel(self, request):
     """Cancels a build."""
     build = self.service.cancel(request.id)
-    return build_to_message(build)
+    return build_to_response_message(build)

@@ -315,7 +315,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   def test_cannot_unlease_with_wrong_lease_key(self):
     self.lease()
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(service.LeaseExpiredError):
       self.service.unlease(
           self.test_build.key.id(), self.test_build.lease_key + 1)
 
@@ -365,7 +365,7 @@ class BuildBucketServiceTest(CrBuildTestCase):
 
   def test_start_non_leased_build(self):
     self.test_build.put()
-    with self.assertRaises(service.InvalidBuildStateError):
+    with self.assertRaises(service.LeaseExpiredError):
       self.service.start(self.test_build.key.id(), 42)
 
   def test_start_completed_build(self):

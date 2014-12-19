@@ -22,16 +22,24 @@ MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 
 
-class BuildNotFoundError(Exception):
+class Error(Exception):
   pass
 
 
-class InvalidBuildStateError(Exception):
+class BuildNotFoundError(Error):
+  pass
+
+
+class InvalidBuildStateError(Error):
   """Build status is final and cannot be changed."""
 
 
-class InvalidInputError(Exception):
+class InvalidInputError(Error):
   """Raised when service method argument value is invalid."""
+
+
+class LeaseExpiredError(Error):
+  """Raised when provided lease_key does not match the current one."""
 
 
 def validate_lease_key(lease_key):
@@ -289,10 +297,8 @@ class BuildBucketService(object):
     return try_lease()
 
   def _check_lease(self, build, lease_key):
-    if not build.is_leased:
-      raise InvalidBuildStateError('Build %s is not leased.' % build.key.id())
     if lease_key != build.lease_key:
-      raise InvalidInputError('lease_key is incorrect. '
+      raise LeaseExpiredError('lease_key is incorrect. '
                               'Your lease might be expired.')
 
   def _clear_lease(self, build):
