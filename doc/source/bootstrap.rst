@@ -3,7 +3,7 @@ Bootstrapping the Chromium Infra Repo
 
 The infra/infra repo uses python [wheel files][1], [virtualenv][2] and [pip][3]
 to manage dependencies. The process for bootstrapping these is contained
-entirely within the bootstrap directory.
+entirely within the ``bootstrap`` directory.
 
 1: https://www.python.org/dev/peps/pep-0427/
 2: https://github.com/pypa/virtualenv
@@ -15,8 +15,9 @@ TL;DR - Workflows
 
 Setting up the env with already-built-deps
 ++++++++++++++++++++++++++++++++++++++++++
+Just run::
 
-  gclient sync  
+  gclient sync
   # OR
   gclient runhooks
 
@@ -54,7 +55,7 @@ Then build it::
   $ ./bootstrap/build_deps.py
   # builds and uploads my_pkg-1.2.3-0_deadbeef...-....whl to google storage
 
-**If your dep is not pure-python, you will have to run ``build_deps.py`` for 
+**If your dep is not pure-python, you will have to run ``build_deps.py`` for
 each platform.**
 
 
@@ -74,10 +75,10 @@ See `custom builds`_ below for more detail.
 
 Run ``gclient runhooks``. Under the hood, this runs::
 
-  ./bootstrap/bootstrap.py --deps_file bootstrap/deps.pyl
+  ./bootstrap/bootstrap.py --deps_file bootstrap/deps.pyl ENV
 
 This creates a virtualenv called ``{repo_root}/ENV`` with all the deps contained
-in ``bootstrap/deps.pyl``. You must be online, or must already have the wheels 
+in ``bootstrap/deps.pyl``. You must be online, or must already have the wheels
 for your system cached in ``{repo_root}/.wheelcache``.
 
 If you already have an ``ENV``, ``bootstrap.py`` will check the manifest in
@@ -97,7 +98,7 @@ module dependencies. These versions are the standard upstream package versions
 
 The format of this file is ``{'package_name': <values>}``. This file is a Python
 `ast literal <https://docs.python.org/2/library/ast.html#ast.literal_eval>`_, so
-comments are allowed and encouraged. 
+comments are allowed and encouraged.
 
 Note that the ``package_name`` key is the pip-reported name (the one set in 
 ``setup.py``). It may be different from the name used for import, and for the

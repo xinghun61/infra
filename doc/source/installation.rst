@@ -11,9 +11,7 @@ installed by following instructions
 `here <http://dev.chromium.org/developers/how-tos/install-depot-tools>`_.
 
 The proper way to check out this repository is (assuming you have depot_tools
-somewhere in your path) to run:
-
-::
+somewhere in your path) to run::
 
     mkdir chrome_infra   # or whatever name you please
     cd chrome_infra
@@ -21,15 +19,17 @@ somewhere in your path) to run:
 
 This will check out the base repository (infra.git) and its dependencies.
 
+Troubleshooting
+~~~~~~~~~~~~~~~
+If you're not running a supported distribution, ``fetch infra`` will
+probably fail complaining that it cannot find some packages on Cloud Storage.
+This happens with architecture-dependent packages like numpy, which need to be
+compiled. The workaround is to build the packages for yourself. Just run::
 
-Bootstrapping Dependencies
---------------------------
-The repository aims at being completely self-contained. It's using virtual
-environments extensively to achieve that goal. Creating a environment should be
-done automatically by ``gclient sync`` (or ``gclient runhooks``), but can be
-run manually via::
+   infra/bootstrap/build_deps.py
+   gclient runhooks
 
-  ./bootstrap/bootstrap.py --deps_file bootstrap/deps.pyl
-
-See ``bootstrap/README.md`` in the source code for more details.
+The first command will build the packages are store them locally. The second
+command deploy them into ``infra/ENV``. For more details on this see
+:doc:`bootstrap`.
 
