@@ -266,6 +266,7 @@ def run_tests(package_root, coverage_dir):
     else:
       sys.stdout.write('C')
       bad_cover.append(result)
+    sys.stdout.flush()
   print
 
   if bad_cover:
