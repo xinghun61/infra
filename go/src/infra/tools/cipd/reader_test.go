@@ -281,8 +281,7 @@ func TestPackageReading(t *testing.T) {
 			defer pkg.Close()
 		}
 		So(err, ShouldBeNil)
-		r, err := pkg.DataReader()
-		So(err, ShouldBeNil)
+		r := pkg.DataReader()
 		read, err := ioutil.ReadAll(r)
 		So(err, ShouldBeNil)
 		So(read, ShouldResemble, out.Bytes())
@@ -309,8 +308,7 @@ func TestPackageReading(t *testing.T) {
 			defer pkg.Close()
 		}
 		So(err, ShouldBeNil)
-		r, err := pkg.DataReader()
-		So(err, ShouldBeNil)
+		r := pkg.DataReader()
 		read, err := ioutil.ReadAll(r)
 		So(err, ShouldBeNil)
 		So(read, ShouldResemble, packageData)

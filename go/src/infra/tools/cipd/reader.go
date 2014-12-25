@@ -48,7 +48,7 @@ type Package interface {
 	Signatures() []SignatureBlock
 	// DataReader returns reader that reads only package data block (skipping any signatures).
 	// Note that it moves internal file pointer and thus can't be used at the same time files are extracted.
-	DataReader() (r io.Reader, err error)
+	DataReader() io.ReadSeeker
 }
 
 // PublicKeyProvider can hand out public keys given fingerprints.
@@ -292,12 +292,8 @@ func (p *packageImpl) Signatures() (out []SignatureBlock) {
 	return
 }
 
-func (p *packageImpl) DataReader() (r io.Reader, err error) {
-	_, err = p.data.Seek(0, os.SEEK_SET)
-	if err == nil {
-		r = io.LimitReader(p.data, p.dataSize)
-	}
-	return
+func (p *packageImpl) DataReader() io.ReadSeeker {
+	return io.NewSectionReader(&readerAt{r: p.data}, 0, p.dataSize)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
