@@ -42,7 +42,7 @@ const sigBlockPEMType = "CIPD SIGNATURE"
 type Manifest struct {
 	// Manifest format version, see manifestFormatVersion.
 	FormatVersion string
-	// Name of the package, e.g. 'infra/cipd'.
+	// Name of the package, e.g. 'infra/tools/cipd'.
 	PackageName string
 }
 

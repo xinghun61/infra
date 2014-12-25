@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 /*
-Package infra/cipd/tools/cipd/main is client side of for Chrome Infra Package
-Deployer.
+Client side of for Chrome Infra Package Deployer.
 
 TODO: write more.
 
@@ -23,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"infra/cipd"
+	"infra/tools/cipd"
 
 	"github.com/maruel/subcommands"
 )

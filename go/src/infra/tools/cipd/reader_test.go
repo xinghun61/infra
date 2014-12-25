@@ -13,7 +13,7 @@ import (
 	"os"
 	"testing"
 
-	"infra/cipd/internal/keys"
+	"infra/tools/cipd/internal/keys"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

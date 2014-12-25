@@ -16,7 +16,7 @@ import (
 	"os"
 	"strconv"
 
-	"infra/cipd/internal/keys"
+	"infra/tools/cipd/internal/keys"
 )
 
 // Source of randomness for signing. Can be mocked in tests.

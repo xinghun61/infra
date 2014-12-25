@@ -19,7 +19,7 @@ type BuildPackageOptions struct {
 	Input []File
 	// Where to write the package file to.
 	Output io.Writer
-	// Package name, e.g. 'infra/cipd'.
+	// Package name, e.g. 'infra/tools/cipd'.
 	PackageName string
 }
 

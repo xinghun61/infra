@@ -16,7 +16,7 @@ import (
 	"io"
 	"os"
 
-	"infra/cipd/internal/keys"
+	"infra/tools/cipd/internal/keys"
 )
 
 // Hash algo name -> crypto.Hash.
