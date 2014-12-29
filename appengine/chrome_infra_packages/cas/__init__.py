@@ -13,3 +13,6 @@ files. For storing large number of small files use Isolate Server instead.
 We do not trust uploading clients, hashes are verified on the server side
 before making an object visible.
 """
+
+from .api import CASServiceApi
+from .impl import is_valid_hash_digest, get_cas_service, get_backend_routes

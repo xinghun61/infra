@@ -11,9 +11,6 @@ itself is also publicly visible, so not a big deal).
 Callers have to be in 'administrators' group.
 """
 
-# Pylint doesn't like endpoints.
-# pylint: disable=C0322,R0201
-
 import cloudstorage
 import endpoints
 import logging

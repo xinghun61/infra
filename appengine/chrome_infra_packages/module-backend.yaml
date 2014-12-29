@@ -7,12 +7,12 @@ threadsafe: true
 
 handlers:
 - url: /internal.*
-  script: backend.app
+  script: apps.backend_app
   secure: always
   login: admin
 
 includes:
-- components/auth
+- components/ereporter2
 
 libraries:
 - name: endpoints
@@ -30,13 +30,12 @@ libraries:
 
 skip_files:
 - ^(.*/)?#.*#
-- ^(.*/)?.*~
-- ^(.*/)?.*\.py[co]
-- ^(.*/)?\..*
-- ^tests.*
-- ^tools.*
 - ^(.*/)?.*\.orig
+- ^(.*/)?.*\.py[co]
 - ^(.*/)?.*\.rej
+- ^(.*/)?.*~
+- ^(.*/)?\..*
+- ^(.*/)?test.*
 - ^[A-Z]+
 - ^[A-Z]+\.[a-z]+
-- ^local_dev_config.*
+- ^tools.*

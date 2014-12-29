@@ -4,9 +4,6 @@
 
 """Cloud Endpoints API for Content Addressable Storage."""
 
-# Pylint doesn't like endpoints.
-# pylint: disable=C0322,R0201
-
 import endpoints
 
 from protorpc import message_types

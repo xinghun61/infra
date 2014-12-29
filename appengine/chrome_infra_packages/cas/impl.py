@@ -95,7 +95,7 @@ def get_cas_service():
   If the service is not configured, returns None. Also acts as a mocking point
   for unit tests.
   """
-  conf = config.config()
+  conf = config.cached()
   if not conf.cas_gs_path or not conf.cas_gs_temp:
     return None
   try:

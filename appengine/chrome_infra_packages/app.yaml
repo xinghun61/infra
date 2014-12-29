@@ -7,25 +7,23 @@ threadsafe: true
 
 handlers:
 - url: /_ah/spi/.*
-  script: frontend.apis_app
+  script: apps.endpoints_app
 
 - url: /internal.*
-  script: frontend.html_app
+  script: apps.frontend_app
   secure: always
   login: admin
 
 - url: /.*
-  script: frontend.html_app
+  script: apps.frontend_app
   secure: always
-
-inbound_services:
-- warmup
 
 builtins:
 - remote_api: on
 
 includes:
 - components/auth
+- components/ereporter2
 - components/static_third_party.yaml
 
 libraries:
@@ -44,13 +42,12 @@ libraries:
 
 skip_files:
 - ^(.*/)?#.*#
-- ^(.*/)?.*~
-- ^(.*/)?.*\.py[co]
-- ^(.*/)?\..*
-- ^tests.*
-- ^tools.*
 - ^(.*/)?.*\.orig
+- ^(.*/)?.*\.py[co]
 - ^(.*/)?.*\.rej
+- ^(.*/)?.*~
+- ^(.*/)?\..*
+- ^(.*/)?test.*
 - ^[A-Z]+
 - ^[A-Z]+\.[a-z]+
-- ^local_dev_config.*
+- ^tools.*

@@ -9,9 +9,6 @@
 import hashlib
 import StringIO
 
-# test_env should be loaded before any other app module.
-from test import test_env
-
 from testing_utils import testing
 
 from components import auth_testing
@@ -53,19 +50,19 @@ class CASServiceImplTest(testing.AppengineTestCase):
     conf = config.GlobalConfig(
         cas_gs_path='/cas_gs_path/abc/',
         cas_gs_temp='/cas_gs_temp/def/')
-    self.mock(config, 'config', lambda: conf)
+    self.mock(config, 'cached', lambda: conf)
     self.assertIsNotNone(impl.get_cas_service())
 
   def test_get_cas_service_no_config(self):
     conf = config.GlobalConfig()
-    self.mock(config, 'config', lambda: conf)
+    self.mock(config, 'cached', lambda: conf)
     self.assertIsNone(impl.get_cas_service())
 
   def test_get_cas_service_bad_config(self):
     conf = config.GlobalConfig(
         cas_gs_path='blah',
         cas_gs_temp='/cas_gs_temp/def')
-    self.mock(config, 'config', lambda: conf)
+    self.mock(config, 'cached', lambda: conf)
     self.assertIsNone(impl.get_cas_service())
 
   def test_is_object_present(self):
