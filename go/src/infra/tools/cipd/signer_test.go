@@ -28,7 +28,7 @@ func TestSign(t *testing.T) {
 		sig, err := Sign(bytes.NewReader([]byte("123")), privateKeyForTest())
 		So(err, ShouldBeNil)
 		So(sig.HashAlgo, ShouldEqual, "SHA512")
-		So(len(sig.Hash), ShouldEqual, sigBlockHash.New().Size())
+		So(len(sig.Digest), ShouldEqual, sigBlockHash.New().Size())
 		So(sig.SignatureAlgo, ShouldEqual, "PKCS1v15")
 		So(len(sig.Signature), ShouldEqual, 128)
 	})
@@ -45,10 +45,10 @@ func TestMarshalSignatureList(t *testing.T) {
 		out, err := MarshalSignatureList([]SignatureBlock{SignatureBlock{}})
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `-----BEGIN CIPD SIGNATURE-----
-eyJIYXNoQWxnbyI6IiIsIkhhc2giOm51bGwsIlNpZ25hdHVyZUFsZ28iOiIiLCJT
-aWduYXR1cmVLZXkiOiIiLCJTaWduYXR1cmUiOm51bGx9
+eyJoYXNoX2FsZ28iOiIiLCJkaWdlc3QiOm51bGwsInNpZ25hdHVyZV9hbGdvIjoi
+Iiwic2lnbmF0dXJlX2tleSI6IiIsInNpZ25hdHVyZSI6bnVsbH0=
 -----END CIPD SIGNATURE-----
-170`)
+178`)
 	})
 
 	Convey("MarshalSignatureList two", t, func() {
@@ -57,14 +57,14 @@ aWduYXR1cmVLZXkiOiIiLCJTaWduYXR1cmUiOm51bGx9
 		out, err := MarshalSignatureList([]SignatureBlock{one, two})
 		So(err, ShouldBeNil)
 		So(string(out), ShouldEqual, `-----BEGIN CIPD SIGNATURE-----
-eyJIYXNoQWxnbyI6IiIsIkhhc2giOm51bGwsIlNpZ25hdHVyZUFsZ28iOiIiLCJT
-aWduYXR1cmVLZXkiOiIiLCJTaWduYXR1cmUiOm51bGx9
+eyJoYXNoX2FsZ28iOiIiLCJkaWdlc3QiOm51bGwsInNpZ25hdHVyZV9hbGdvIjoi
+Iiwic2lnbmF0dXJlX2tleSI6IiIsInNpZ25hdHVyZSI6bnVsbH0=
 -----END CIPD SIGNATURE-----
 -----BEGIN CIPD SIGNATURE-----
-eyJIYXNoQWxnbyI6IkFBQUFBQUFBQSIsIkhhc2giOm51bGwsIlNpZ25hdHVyZUFs
-Z28iOiIiLCJTaWduYXR1cmVLZXkiOiIiLCJTaWduYXR1cmUiOm51bGx9
+eyJoYXNoX2FsZ28iOiJBQUFBQUFBQUEiLCJkaWdlc3QiOm51bGwsInNpZ25hdHVy
+ZV9hbGdvIjoiIiwic2lnbmF0dXJlX2tleSI6IiIsInNpZ25hdHVyZSI6bnVsbH0=
 -----END CIPD SIGNATURE-----
-352`)
+368`)
 	})
 }
 
@@ -73,14 +73,14 @@ func TestReadSignatureList(t *testing.T) {
 		someSignatureList := []SignatureBlock{
 			SignatureBlock{
 				HashAlgo:      "hashAlgo",
-				Hash:          []byte{1, 2, 3},
+				Digest:        []byte{1, 2, 3},
 				SignatureAlgo: "signatureAlgo",
 				SignatureKey:  "signatureKey",
 				Signature:     []byte{4, 5, 6},
 			},
 			SignatureBlock{
 				HashAlgo:      "hashAlgo2",
-				Hash:          []byte{1, 2, 3},
+				Digest:        []byte{1, 2, 3},
 				SignatureAlgo: "signatureAlgo2",
 				SignatureKey:  "signatureKey2",
 				Signature:     []byte{4, 5, 6},

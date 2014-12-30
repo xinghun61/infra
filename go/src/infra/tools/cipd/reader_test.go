@@ -20,8 +20,8 @@ import (
 
 func TestPackageReading(t *testing.T) {
 	goodManifest := `{
-  "FormatVersion": "1",
-  "PackageName": "testing"
+  "format_version": "1",
+  "package_name": "testing"
 }`
 
 	sign := func(pkg []byte, pkey *rsa.PrivateKey, out io.Writer) {
@@ -54,14 +54,14 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(pkg.Signed(), ShouldBeTrue)
 		So(pkg.Name(), ShouldEqual, "testing")
-		So(pkg.InstanceID(), ShouldEqual, "4571652804acba0ec97c37c2257d6ac67c87baa1")
+		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(len(pkg.Files()), ShouldEqual, 1)
 		So(len(pkg.Signatures()), ShouldEqual, 1)
 
 		// Contains single manifest file.
 		f := pkg.Files()[0]
 		So(f.Name(), ShouldEqual, ".cipdpkg/manifest.json")
-		So(f.Size(), ShouldEqual, 54)
+		So(f.Size(), ShouldEqual, uint64(len(goodManifest)))
 		So(f.Executable(), ShouldBeFalse)
 		r, err := f.Open()
 		if r != nil {
@@ -91,7 +91,7 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(pkg.Signed(), ShouldBeFalse)
 		So(pkg.Name(), ShouldEqual, "")
-		So(pkg.InstanceID(), ShouldEqual, "4571652804acba0ec97c37c2257d6ac67c87baa1")
+		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(len(pkg.Files()), ShouldEqual, 0)
 	})
 
@@ -118,7 +118,7 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(pkg.Signed(), ShouldBeFalse)
 		So(pkg.Name(), ShouldEqual, "")
-		So(pkg.InstanceID(), ShouldEqual, "4571652804acba0ec97c37c2257d6ac67c87baa1")
+		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(len(pkg.Files()), ShouldEqual, 0)
 	})
 
@@ -156,7 +156,7 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(pkg.Signed(), ShouldBeTrue)
 		So(pkg.Name(), ShouldEqual, "testing")
-		So(pkg.InstanceID(), ShouldEqual, "4571652804acba0ec97c37c2257d6ac67c87baa1")
+		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(len(pkg.Files()), ShouldEqual, 1)
 	})
 

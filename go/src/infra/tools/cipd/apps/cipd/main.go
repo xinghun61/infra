@@ -19,8 +19,12 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
+
+	"infra/libs/auth"
+	"infra/libs/logging"
 
 	"infra/tools/cipd"
 
@@ -75,6 +79,21 @@ func privateKeyFromPEM(data []byte) (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("Expecting \"RSA PRIVATE KEY\" got \"%s\" instead", block.Type)
 	}
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// authenticatedClient performs login and returns http.Client.
+func authenticatedClient() (*http.Client, error) {
+	logging.Infof("Authenticating...")
+	transport, err := auth.LoginIfRequired(nil)
+	if err != nil {
+		return nil, err
+	}
+	ident, err := auth.FetchIdentity(transport)
+	if err != nil {
+		return nil, err
+	}
+	logging.Infof("Authenticated as %s", ident)
+	return &http.Client{Transport: transport}, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -281,6 +300,58 @@ func inspectPackage(path string, listFiles bool) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'upload' subcommand.
+
+var cmdUpload = &subcommands.Command{
+	UsageLine: "pkg-upload <package file>",
+	ShortDesc: "uploads package data blob to the CAS store",
+	LongDesc:  "Uploads package data blob to the CAS store.",
+	CommandRun: func() subcommands.CommandRun {
+		return &uploadRun{}
+	},
+}
+
+type uploadRun struct {
+	subcommands.CommandRunBase
+}
+
+func (c *uploadRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	client, err := authenticatedClient()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error when authenticating: %s.\n", err)
+		return 1
+	}
+	err = uploadPackage(args[0], client)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error while uploading the package: %s.\n", err)
+		return 1
+	}
+	return 0
+}
+
+func uploadPackage(path string, client *http.Client) error {
+	pkg, err := cipd.OpenPackageFile(path, nil)
+	if err != nil {
+		return err
+	}
+	defer pkg.Close()
+	logging.Infof("Uploading package %s:%s", pkg.Name(), pkg.InstanceID())
+	if !pkg.Signed() {
+		return fmt.Errorf("Refusing to upload an unsigned package")
+	}
+	return cipd.UploadToCAS(cipd.UploadToCASOptions{
+		SHA1: pkg.InstanceID(),
+		Data: pkg.DataReader(),
+		CommonOptions: cipd.CommonOptions{
+			Client: client,
+		},
+	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Main.
 
 var application = &subcommands.DefaultApplication{
@@ -292,6 +363,7 @@ var application = &subcommands.DefaultApplication{
 		cmdBuild,
 		cmdDeploy,
 		cmdInspect,
+		cmdUpload,
 	},
 }
 

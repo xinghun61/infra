@@ -29,8 +29,8 @@ func TestGoVersion(t *testing.T) {
 
 func TestBuildPackage(t *testing.T) {
 	const goodManifest = `{
-  "FormatVersion": "1",
-  "PackageName": "testing"
+  "format_version": "1",
+  "package_name": "testing"
 }`
 
 	Convey("Building empty package", t, func() {
@@ -44,7 +44,7 @@ func TestBuildPackage(t *testing.T) {
 
 		// BuildPackage builds deterministic zip. It MUST NOT depend on
 		// the platform, or a time of day, or anything else, only on the input data.
-		So(sha1(&out), ShouldEqual, "4571652804acba0ec97c37c2257d6ac67c87baa1")
+		So(sha1(&out), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 
 		// There should be a single file: the manifest.
 		files := readZip(out.Bytes())
@@ -52,7 +52,7 @@ func TestBuildPackage(t *testing.T) {
 			zippedFile{
 				// See structs.go, manifestName.
 				name: ".cipdpkg/manifest.json",
-				size: 54,
+				size: uint64(len(goodManifest)),
 				mode: 0600,
 				body: []byte(goodManifest),
 			},
@@ -89,7 +89,7 @@ func TestBuildPackage(t *testing.T) {
 			zippedFile{
 				// See structs.go, manifestName.
 				name: ".cipdpkg/manifest.json",
-				size: 54,
+				size: uint64(len(goodManifest)),
 				mode: 0600,
 				body: []byte(goodManifest),
 			},

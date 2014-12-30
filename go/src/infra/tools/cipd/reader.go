@@ -231,12 +231,12 @@ func (p *packageImpl) open(keyGetter PublicKeyProvider) error {
 			continue
 		}
 		digest := p.hashes[info.block.HashAlgo]
-		if !bytes.Equal(digest, info.block.Hash) {
+		if !bytes.Equal(digest, info.block.Digest) {
 			info.mismatch = true
 			continue
 		}
 		algo := knownHashAlgos[info.block.HashAlgo]
-		info.verified = keys.CheckRSASignature(&info.publicKey, algo, info.block.Hash, info.block.Signature)
+		info.verified = keys.CheckRSASignature(&info.publicKey, algo, info.block.Digest, info.block.Signature)
 		if info.verified {
 			p.signed = true
 		}

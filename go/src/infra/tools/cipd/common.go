@@ -12,6 +12,8 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+
+	"infra/libs/build"
 )
 
 // Name of the directory inside the package reserved for cipd stuff.
@@ -40,26 +42,26 @@ const sigBlockPEMType = "CIPD SIGNATURE"
 
 // Manifest defines structure of manifest.json file.
 type Manifest struct {
-	// Manifest format version, see manifestFormatVersion.
-	FormatVersion string
-	// Name of the package, e.g. 'infra/tools/cipd'.
-	PackageName string
+	FormatVersion string `json:"format_version"`
+	PackageName   string `json:"package_name"`
 }
 
 // SignatureBlock is appended to the end of the package as PEM encoded JSON.
 // It can also float on its own as a separate entity.
 type SignatureBlock struct {
-	// Hash algorithm used.
-	HashAlgo string
-	// Package data digest.
-	Hash []byte
+	HashAlgo      string `json:"hash_algo"`
+	Digest        []byte `json:"digest"`
+	SignatureAlgo string `json:"signature_algo"`
+	SignatureKey  string `json:"signature_key"`
+	Signature     []byte `json:"signature"`
+}
 
-	// Signing algorithm used.
-	SignatureAlgo string
-	// Fingerprint of the PEM encoded public key (its SHA1 hex digest).
-	SignatureKey string
-	// The actual signature.
-	Signature []byte
+// Metadata is stored on the server alongside a package (but not as part of the
+// package). It describes when and how the package was built and uploaded.
+type Metadata struct {
+	Date     string `json:"date"`
+	Hostname string `json:"hostname"`
+	User     string `json:"user"`
 }
 
 // ValidatePackageName returns error if a string doesn't look like a valid package name.
@@ -85,6 +87,14 @@ func ValidateInstanceID(s string) error {
 	return nil
 }
 
+// DefaultServiceURL returns URL to a backend to use by default.
+func DefaultServiceURL() string {
+	if build.ReleaseBuild {
+		return "https://chrome-infra-packages.appspot.com"
+	}
+	return "https://chrome-infra-packages-dev.appspot.com"
+}
+
 // readManifest reads and decodes manifest JSON from io.Reader.
 func readManifest(r io.Reader) (Manifest, error) {
 	blob, err := ioutil.ReadAll(r)
@@ -107,4 +117,12 @@ func writeManifest(m *Manifest, w io.Writer) error {
 	}
 	_, err = w.Write(data)
 	return err
+}
+
+// userAgent returns user agent string to send with each request.
+func userAgent() string {
+	if build.ReleaseBuild {
+		return "cipd 1.0 release"
+	}
+	return "cipd 1.0 testing"
 }

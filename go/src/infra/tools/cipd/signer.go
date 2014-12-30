@@ -44,7 +44,7 @@ func Sign(data io.Reader, key *rsa.PrivateKey) (block SignatureBlock, err error)
 	if err == nil {
 		block = SignatureBlock{
 			HashAlgo:      sigBlockHashName,
-			Hash:          digest,
+			Digest:        digest,
 			SignatureAlgo: sigBlockSigName,
 			SignatureKey:  keyFingerprint,
 			Signature:     sig,

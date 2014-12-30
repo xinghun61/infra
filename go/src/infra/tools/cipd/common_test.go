@@ -14,8 +14,8 @@ import (
 
 func TestReadManifest(t *testing.T) {
 	var goodManifest = `{
-  "FormatVersion": "1",
-  "PackageName": "package/name"
+  "format_version": "1",
+  "package_name": "package/name"
 }`
 
 	Convey("readManifest can read valid manifest", t, func() {
