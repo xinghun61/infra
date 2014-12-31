@@ -1,0 +1,13 @@
+indexes:
+
+- kind: Build
+  properties:
+  - name: status
+  - name: is_leased
+  - name: namespace
+  - name: create_time
+
+- kind: Build
+  properties:
+  - name: is_leased
+  - name: lease_expiration_date

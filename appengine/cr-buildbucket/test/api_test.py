@@ -1,0 +1,328 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import datetime
+import httplib
+import json
+import mock
+
+from components import auth
+from components import utils
+from google.appengine.ext import ndb
+from google.appengine.ext import testbed
+from protorpc import messages
+from testing_utils import testing
+import endpoints
+
+import acl
+import api
+import model
+import service
+
+
+class BuildBucketApiTest(testing.EndpointsTestCase):
+  api_service_cls = api.BuildBucketApi
+
+  def setUp(self):
+    super(BuildBucketApiTest, self).setUp()
+    self.service = mock.Mock()
+    self.mock(api.BuildBucketApi, 'service_factory', lambda _: self.service)
+
+    self.future_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    # future_ts is str because INT64 values are formatted as strings.
+    self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
+    self.test_build = model.Build(
+        id=1,
+        namespace='chromium',
+        parameters={
+            'buildername': 'linux_rel',
+        },
+    )
+
+  def expect_error(self, method_name, req, error_reason):
+    res = self.call_api(method_name, req).json_body
+    self.assertIsNotNone(res.get('error'))
+    self.assertEqual(res['error']['reason'], error_reason)
+
+  def test_expired_build_to_message(self):
+    yesterday = utils.utcnow() - datetime.timedelta(days=1)
+    yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
+    self.test_build.lease_key = 1
+    self.test_build.lease_expiration_date = yesterday
+    msg = api.build_to_message(self.test_build)
+    self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
+
+  ##################################### GET ####################################
+
+  def test_get(self):
+    self.test_build.lease_expiration_date = self.future_date
+
+    build_id = self.test_build.key.id()
+    self.service.get.return_value = self.test_build
+
+    resp = self.call_api('get', {'id': build_id}).json_body
+    self.service.get.assert_called_once_with(build_id)
+    self.assertEqual(resp['build']['id'], str(build_id))
+    self.assertEqual(resp['build']['namespace'], self.test_build.namespace)
+    self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
+    self.assertEqual(resp['build']['status'], 'SCHEDULED')
+    self.assertEqual(
+        resp['build']['parameters_json'], '{"buildername": "linux_rel"}')
+
+  def test_get_nonexistent_build(self):
+    self.service.get.return_value = None
+    self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
+
+  ##################################### PUT ####################################
+
+  def test_put(self):
+    self.test_build.tags = ['owner=ivan']
+    self.service.add.return_value = self.test_build
+    req = {
+        'namespace': self.test_build.namespace,
+        'tags': self.test_build.tags,
+    }
+    resp = self.call_api('put', req).json_body
+    self.service.add.assert_called_once_with(
+        namespace=self.test_build.namespace,
+        tags=req['tags'],
+        parameters=None,
+        lease_expiration_date=None,
+    )
+    self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(resp['build']['namespace'], req['namespace'])
+    self.assertEqual(resp['build']['tags'], req['tags'])
+
+  def test_put_with_parameters(self):
+    self.service.add.return_value = self.test_build
+    req = {
+        'namespace': self.test_build.namespace,
+        'parameters_json': json.dumps(self.test_build.parameters),
+    }
+    resp = self.call_api('put', req).json_body
+    self.assertEqual(resp['build']['parameters_json'], req['parameters_json'])
+
+  def test_put_with_leasing(self):
+    self.test_build.lease_expiration_date = self.future_date
+    self.service.add.return_value = self.test_build
+    req = {
+        'namespace': self.test_build.namespace,
+        'lease_expiration_ts': self.future_ts,
+    }
+    resp = self.call_api('put', req).json_body
+    self.service.add.assert_called_once_with(
+        namespace=self.test_build.namespace,
+        tags=[],
+        parameters=None,
+        lease_expiration_date=self.future_date,
+    )
+    self.assertEqual(
+        resp['build']['lease_expiration_ts'], req['lease_expiration_ts'])
+
+  def test_put_with_empty_namespace(self):
+    self.expect_error('put', {'namespace': ''}, 'INVALID_INPUT')
+
+  def test_put_with_malformed_parameters_json(self):
+    req = {
+        'namespace':'chromium',
+        'parameters_json': '}non-json',
+    }
+    self.expect_error('put', req, 'INVALID_INPUT')
+
+  #################################### SEARCH ##################################
+
+  def test_search_by_tags(self):
+    self.test_build.put()
+    self.service.search_by_tags.return_value = ([self.test_build], 'the cursor')
+    req = {'tag': ['important']}
+    res = self.call_api('search', req).json_body
+    self.assertEqual(len(res['builds']), 1)
+    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['next_cursor'], 'the cursor')
+
+  ##################################### PEEK ###################################
+
+  def test_peek(self):
+    self.test_build.put()
+    self.service.peek.return_value = ([self.test_build], 'the cursor')
+    req = {'namespace': [self.test_build.namespace]}
+    res = self.call_api('peek', req).json_body
+    self.service.peek.assert_called_once_with(
+        req['namespace'],
+        max_builds=None,
+        start_cursor=None,
+    )
+    self.assertEqual(len(res['builds']), 1)
+    peeked_build = res['builds'][0]
+    self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['next_cursor'], 'the cursor')
+
+  def test_peek_without_namespaces(self):
+    self.expect_error('peek', {}, 'INVALID_INPUT')
+
+  #################################### LEASE ###################################
+
+  def test_lease(self):
+    self.test_build.lease_expiration_date = self.future_date
+    self.test_build.lease_key = 42
+    self.service.lease.return_value = True, self.test_build
+
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_expiration_ts': self.future_ts,
+    }
+    res = self.call_api('lease', req).json_body
+    self.service.lease.assert_called_once_with(
+        self.test_build.key.id(),
+        lease_expiration_date=self.future_date,
+    )
+    self.assertIsNone(res.get('error'))
+    self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
+    self.assertEqual(
+        res['build']['lease_expiration_ts'],
+        req['lease_expiration_ts'])
+
+  def test_lease_with_negative_expiration_date(self):
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_expiration_ts': 242894728472423847289472398,
+    }
+    self.expect_error('lease', req, 'INVALID_INPUT')
+
+  def test_lease_unsuccessful(self):
+    self.test_build.put()
+    self.service.lease.return_value = (False, self.test_build)
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_expiration_ts': self.future_ts,
+    }
+    self.expect_error('lease', req, 'CANNOT_LEASE_BUILD')
+
+  #################################### START ###################################
+
+  def test_start(self):
+    self.test_build.url = 'http://localhost/build/1'
+    self.service.start.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'url': self.test_build.url,
+    }
+    res = self.call_api('start', req).json_body
+    self.service.start.assert_called_once_with(
+        req['id'], req['lease_key'], url=req['url'])
+    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['url'], req['url'])
+
+  def test_start_completed_build(self):
+    def raise_completed(*_, **__):
+      raise service.BuildIsCompletedError()
+    self.service.start.side_effect = raise_completed
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+    }
+    res = self.call_api('start', req).json_body
+    self.assertEqual(res['error']['reason'], 'BUILD_IS_COMPLETED')
+
+  #################################### HEATBEAT ################################
+
+  def test_heartbeat(self):
+    self.test_build.lease_expiration_date = self.future_date
+    self.service.heartbeat.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'lease_expiration_ts': self.future_ts,
+    }
+    res = self.call_api('hearbeat', req).json_body
+    self.service.heartbeat.assert_called_once_with(
+        req['id'], req['lease_key'], self.future_date)
+    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(
+        res['build']['lease_expiration_ts'], req['lease_expiration_ts'],
+    )
+
+  ################################## SUCCEED ###################################
+
+  def test_succeed(self):
+    self.service.succeed.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+    }
+    res = self.call_api('succeed', req).json_body
+    self.service.succeed.assert_called_once_with(
+        req['id'], req['lease_key'], result_details=None, url=None)
+    self.assertEqual(int(res['build']['id']), req['id'])
+
+  def test_succeed_with_result_details(self):
+    self.test_build.result_details = {'test_coverage': 100}
+    self.service.succeed.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'result_details_json': json.dumps(self.test_build.result_details),
+    }
+    res = self.call_api('succeed', req).json_body
+    _, kwargs = self.service.succeed.call_args
+    self.assertEqual(
+            kwargs['result_details'], self.test_build.result_details)
+    self.assertEqual(
+            res['build']['result_details_json'], req['result_details_json'])
+
+  #################################### FAIL ####################################
+
+  def test_infra_failure(self):
+    self.test_build.result_details = {'transient_error': True}
+    self.test_build.failure_reason = model.FailureReason.INFRA_FAILURE
+    self.service.fail.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+        'lease_key': 42,
+        'failure_reason': 'INFRA_FAILURE',
+        'result_details_json': json.dumps(self.test_build.result_details),
+    }
+    res = self.call_api('fail', req).json_body
+    self.service.fail.assert_called_once_with(
+        req['id'], req['lease_key'],
+        result_details=self.test_build.result_details,
+        failure_reason=model.FailureReason.INFRA_FAILURE,
+        url=None)
+    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json'])
+
+  #################################### CANCEL ##################################
+
+  def test_cancel(self):
+    self.service.cancel.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+    }
+    res = self.call_api('cancel', req).json_body
+    self.service.cancel.assert_called_once_with(req['id'])
+    self.assertEqual(int(res['build']['id']), req['id'])
+
+  #################################### ERRORS ##################################
+
+  def error_test(self, service_error_class, reason):
+    def raise_service_error(*_, **__):
+      raise service_error_class()
+    self.service.get.side_effect = raise_service_error
+    self.expect_error('get', {'id': 123}, reason)
+
+  def test_build_not_found_error(self):
+    self.error_test(service.BuildNotFoundError, 'BUILD_NOT_FOUND')
+
+  def test_invalid_input_error(self):
+    self.error_test(service.InvalidInputError, 'INVALID_INPUT')
+
+  def test_invalid_build_state_error(self):
+    self.error_test(service.InvalidBuildStateError, 'INVALID_BUILD_STATE')
+
+  def test_lease_expired_error(self):
+    self.error_test(service.LeaseExpiredError, 'LEASE_EXPIRED')
