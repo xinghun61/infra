@@ -76,6 +76,11 @@ class LinkableText(object):
         r'\b((http://)?((crbug|crosbug)(\.com)?(/(p/)?[0-9]+)))\b',
         r'http://\4.com\6', r'\1', False)
 
+    # Convert internal b/ bug links.
+    cls.register_converter(
+        r'\b(http://)?(b/([0-9]+))\b',
+        r'https://b.corp.google.com/\3', r'\2', False)
+
     # Convert e-mail addresses.
     cls.register_converter(
         r'(([-+.a-z0-9_!#$%&*/=?^_`{|}~]+)@[-a-z0-9.]+\.[a-z0-9]+)\b',
@@ -90,12 +95,12 @@ class LinkableText(object):
     # Convert public gerrit CL numbers which take the form:
     # CL:1234
     cls.register_converter(
-        r'\b(CL:([0-9]+))\b',
+        r'\b(CL[: ]([0-9]+))\b',
         r'%s/\2' % cls.GERRIT_URLS['chromium'], r'\1', False)
     # Convert internal gerrit CL numbers which take the form:
     # CL:*1234
     cls.register_converter(
-        r'\b(CL:\*([0-9]+))\b',
+        r'\b(CL[: ]\*([0-9]+))\b',
         r'%s/\2' % cls.GERRIT_URLS['chrome'], r'\1', False)
 
     # Match the string:
