@@ -14,7 +14,6 @@ from components import auth
 
 from . import impl
 
-# TODO(vadimsh): Improve authorization scheme.
 
 # This is used by endpoints indirectly.
 package = 'cipd'
@@ -30,7 +29,7 @@ class BeginUploadResponse(messages.Message):
     ERROR = 3
 
   # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField('BeginUploadResponse.Status', 1, required=True)
+  status = messages.EnumField(Status, 1, required=True)
 
   # For SUCCESS status, a unique identifier of the upload operation.
   upload_session_id = messages.StringField(2, required=False)
@@ -55,7 +54,7 @@ class FinishUploadResponse(messages.Message):
     ERROR = impl.UploadSession.STATUS_ERROR
 
   # Status of the upload operation.
-  status = messages.EnumField('FinishUploadResponse.Status', 1, required=True)
+  status = messages.EnumField(Status, 1, required=True)
   # Optional error message for STATUS_ERROR status.
   error_message = messages.StringField(2, required=False)
 
@@ -89,7 +88,7 @@ class CASServiceApi(remote.Service):
       path='upload/{hash_algo}/{file_hash}',
       http_method='POST',
       name='beginUpload')
-  @auth.require(lambda: not auth.get_current_identity().is_anonymous)
+  @auth.require(auth.is_admin)
   def begin_upload(self, request):
     """Initiates an upload operation if file is missing.
 
@@ -98,6 +97,11 @@ class CASServiceApi(remote.Service):
     with call to 'finishUpload'.
 
     If file is already in the store, returns ALREADY_UPLOADED status.
+
+    This method is not intended to be used directly by all clients (only by
+    admins in case some files has to be injected into CAS store directly). Use
+    PackageRepositoryApi.register_package instead to initiate an upload of some
+    package and get upload_url and upload_session_id.
     """
     if not impl.is_supported_hash_algo(request.hash_algo):
       raise endpoints.BadRequestException('Unsupported hash algo')
@@ -141,6 +145,8 @@ class CASServiceApi(remote.Service):
     is finalized and 'finishUpload' is called, the server starts hash
     verification. Uploading client will get 'VERIFYING' status response. It
     can continue polling on this method until server returns 'PUBLISHED' status.
+
+    upload_session_id implicitly authorizes the request.
     """
     service = impl.get_cas_service()
     if service is None:

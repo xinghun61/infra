@@ -19,6 +19,7 @@ class CASServiceApiTest(testing.EndpointsTestCase):
   def setUp(self):
     super(CASServiceApiTest, self).setUp()
     auth_testing.mock_get_current_identity(self)
+    auth_testing.mock_is_admin(self)
     self.cas_service = common.MockedCASService()
     def mocked_get_cas_service():
       return self.cas_service

@@ -20,6 +20,7 @@ from components import utils
 
 import admin
 import cas
+import cipd
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -32,6 +33,7 @@ def create_endpoints_app():
   apis = [
     admin.AdminApi,
     cas.CASServiceApi,
+    cipd.PackageRepositoryApi,
   ]
   return endpoints.api_server(apis, restricted=not utils.is_local_dev_server())
 
