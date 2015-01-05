@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Main{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+  <script src="/static/scripts/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+{% endblock %}
+
+
+{% macro api_link(name) -%}
+  <a href="/_ah/api/explorer/#p/buildbucket/v1/buildbucket.{{ name }}">
+    {{ name }}
+  </a>
+{%- endmacro %}
+
+{% block content %}
+  <h1>Build bucket</h1>
+  <p>Build bucket is a simple build scheduling app. You can schedule a build
+    and some building system, such as Buildbot, can lease it, build and report
+    build result.</p>
+
+  <h2>Concepts</h2>
+  <p>Build consists of:
+    <ul>
+      <li>Namespace: a string that defines what project/subproject a build
+        belongs to. Required.</li>
+      <li>Parameters: an immutable arbitrary JSON blob specific to a build-system.
+        Not reqiured by cr-buildbucket, but may be required by a particular
+        build-system, such as Buildbot (see below).</li>
+      <li>Tags: indexed key-value pairs, such as
+        <code>["issue_id:123", "patchset_id:30042"]</code>.</li>
+      <li>Status, result, failure reason, cancelation reason: fields that
+        represent current state of a build.</li>
+      <li>Url: a URL to a build-system-specific human-viewable page that displays
+        build status.</li>
+      <li>Result details: an immutable arbitrary JSON blob specified when a build
+        is marked as completed.</li>
+    </ul></p>
+
+  <h3>Leasing a build</h3>
+  <p>A build-system is supposed to {{ api_link('lease') }} a build before
+    processing it. A build lease is exclusive and a build cannot be mutated
+    without a lease. A leasee receives a <code>lease_key</code> that it uses for
+    mutation. When a build is leased, it is not returned in
+    {{ api_link('peek') }} API call. When build lease expires, buildbucket makes
+    the build avaiable again.</p>
+
+  <h2>Build requester</h2>
+  <p>A build requester schedules a build and waits for a result.</p>
+
+  <p>APIs for build requesters:
+    <ul>
+      <li>{{ api_link('put') }}: schedule a build.</li>
+      <li>{{ api_link('get') }}: get an existing build(s).</li>
+      <li>{{ api_link('cancel') }}: cancel a build by id.</li>
+      <li>{{ api_link('search') }}: search builds by tags.</li>
+    </ul></p>
+
+  <h2>Build system</h2>
+  <p>A build system peeks available builds, leases a build that it can build,
+  builds it and then marks the build as completed.
+
+  <p>APIs for build systems:
+    <ul>
+      <li>{{ api_link('peek') }}: get a list of scheduled available builds.</li>
+      <li>{{ api_link('lease') }}: lease a build.
+        It becomes unavailable for others. </li>
+      <li>{{ api_link('start') }}: mark a build as started.</li>
+      <li>{{ api_link('heartbeat') }}: let buildbucket know that the build is
+        still being processed by a leasee. </li>
+      <li>{{ api_link('succeed') }}: mark a build as succeeded.</li>
+      <li>{{ api_link('fail') }}: mark a build as failed.</li>
+    </ul></p>
+
+  <h2>Buildbot</h2>
+  <p>Connecting a Buildbot master to buildbucket is easy:</p>
+  <pre><code class="python">from master import <a href="https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/">buildbucket</a>
+
+buildbucket.setup(
+    c,  # Configuration object.
+    build_namespaces=['chromium'],
+    service_json_key_filename='my_secret_key.json',
+)</code></pre>
+
+  <p>Buildbot supports the following parameters:
+    <ul>
+      <li>builder_name (str): required builder name for the build. A builder with
+        the name must exist, otherwise build will not be scheduled.</li>
+      <li>properties (dict): arbitrary build properties.</li>
+      <li>changes (list of dict): changes for the build, each include revision,
+        author, etc.</li>
+    </ul>
+    See details in the
+    <a href="https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/README.md">
+    README.md.</a>.</p>
+
+  <p>Buildbot leases and schedules a build only if it has capacity to run it right
+    away. This allows having multiple buildbot masters polling the same build
+    namespace.</p>
+
+  <h2>Auth</h2>
+  <p>Authentication is done via OAuth2 using
+    <a href="/auth">Chrome-Infra Auth server</a>. Currently, in order to make
+    requests to buildbucket, the requester has to be a member of
+    buildbucket-access group. There are service accounts to be used on buildbot
+    masters. For development,
+    <a href="http://storage.googleapis.com/cr-buildbucket-dev/cr-buildbucket-dev-9c9efb83ec4b.json">
+    cr-buildbucket-dev-9c9efb83ec4b.json</a> can be used to authenticate at
+    <a href="https://cr-buildbucket-dev.appspot.com">cr-buildbucket-dev</a>.
+    For production, <a href="http://go/buildbucket-service-account-bug">
+    file a ticket</a>.</p>
+
+  <h2>Notifications</h2>
+  <p>Currently notifications are not implemented. Build status can be polled using
+    {{ api_link('get') }} API call. Notifications will be enabled once
+    <a href="https://cloud.google.com/pubsub/">Cloud PubSub</a> can be used for
+    production.</p>
+
+{% endblock %}

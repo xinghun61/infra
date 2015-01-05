@@ -3,9 +3,17 @@
 # found in the LICENSE file.
 
 from components import decorators
+import jinja2
 import webapp2
 
 import service
+
+
+ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader('templates'),
+    autoescape=True,
+)
+
 
 def create_service():
   return service.BuildBucketService()
@@ -13,7 +21,8 @@ def create_service():
 
 class MainHandler(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
-    self.redirect('/_ah/api/explorer')
+    tmpl = ENVIRONMENT.get_template('main.html')
+    self.response.out.write(tmpl.render({}))
 
 
 class CronResetExpiredBuilds(webapp2.RequestHandler):
