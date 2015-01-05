@@ -71,9 +71,7 @@
     "cmd": [
       "python",
       "-u",
-      "[DEPOT_TOOLS]/gsutil.py",
-      "--force-version",
-      "3.4",
+      "[DEPOT_TOOLS]/third_party/gsutil/gsutil",
       "cp",
       "-R",
       "[SLAVE_BUILD]/infra/doc/html",
