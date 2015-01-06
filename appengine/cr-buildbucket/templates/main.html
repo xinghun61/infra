@@ -57,6 +57,52 @@
       <li>{{ api_link('search') }}: search builds by tags.</li>
     </ul></p>
 
+  <p><a class="btn btn-primary" data-toggle="collapse" href="#requester-example"
+    aria-expanded="false" aria-controls="collapseExample">
+      Schedule a build example in Python</a></p>
+  <pre class="collapse" id="requester-example"><code class="python"># This example uses Google APIs Client for Python, you can download it here:
+# <a href="https://developers.google.com/api-client-library/python/">https://developers.google.com/api-client-library/python/</a>
+
+import apiclient
+import httplib2
+import json
+import oauth2client
+
+
+# <a href="http://storage.googleapis.com/cr-buildbucket-dev/cr-buildbucket-dev-9c9efb83ec4b.json">http://storage.googleapis.com/cr-buildbucket-dev/cr-buildbucket-dev-9c9efb83ec4b.json</a>
+SECRET_KEY_FILENAME = 'cr-buildbucket-dev-9c9efb83ec4b.json'
+DISCOVERY_URL = (
+    'https://cr-buildbucket-dev.appspot.com/_ah/api/discovery/v1/apis/'
+    '{api}/{apiVersion}/rest')
+AUTH_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
+
+
+def create_authorized_http():
+  with open(SECRET_KEY_FILENAME, 'r') as f:
+    secret_key = json.load(f)
+  creds = oauth2client.client.SignedJwtAssertionCredentials(
+      secret_key['client_email'],
+      secret_key['private_key'],
+      AUTH_SCOPE)
+  return creds.authorize(httplib2.Http())
+
+
+# Create buildbucket client using Google APIs Client for Python
+buildbucket = apiclient.discovery.build(
+    'buildbucket', 'v1',
+    http=create_authorized_http(),
+    discoveryServiceUrl=DISCOVERY_URL,
+)
+
+# Schedule a build in "my_namespace" with builder_name=my_builder parameter.
+req = buildbucket.put(body={
+    'namespace': 'my_namespace',
+    'parameters_json': json.dumps({
+        'builder_name': 'my_builder',
+    }),
+})
+print req.execute()</code></pre>
+
   <h2>Build system</h2>
   <p>A build system peeks available builds, leases a build that it can build,
   builds it and then marks the build as completed.
@@ -93,7 +139,7 @@ buildbucket.setup(
     </ul>
     See details in the
     <a href="https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/README.md">
-    README.md.</a>.</p>
+    README.md</a>.</p>
 
   <p>Buildbot leases and schedules a build only if it has capacity to run it right
     away. This allows having multiple buildbot masters polling the same build
@@ -108,7 +154,9 @@ buildbucket.setup(
     <a href="http://storage.googleapis.com/cr-buildbucket-dev/cr-buildbucket-dev-9c9efb83ec4b.json">
     cr-buildbucket-dev-9c9efb83ec4b.json</a> can be used to authenticate at
     <a href="https://cr-buildbucket-dev.appspot.com">cr-buildbucket-dev</a>.
-    For production, <a href="http://go/buildbucket-service-account-bug">
+    For production,
+    <a href="https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&summary=buildbucket%20service%20account%20for%20[your%20project]&cc=nodir@chromium.org&comment=Project%20[project%20name]%20needs%20buildbucket%20access.%20Please%20provide%20credentials.
+">
     file a ticket</a>.</p>
 
   <h2>Notifications</h2>
