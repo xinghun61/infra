@@ -256,13 +256,6 @@ func TestDeploy(t *testing.T) {
 			_, err := Deploy(tempDir, pkg)
 			So(err, ShouldNotBeNil)
 		})
-
-		Convey("Try to deploy unsigned package", func() {
-			pkg := makeTestPackage("test/package", []File{})
-			pkg.signed = false
-			_, err := Deploy(tempDir, pkg)
-			So(err, ShouldNotBeNil)
-		})
 	})
 }
 
@@ -272,7 +265,6 @@ type testPackage struct {
 	name       string
 	instanceID string
 	files      []File
-	signed     bool
 }
 
 // makeTestPackage returns Package implementation with mocked guts.
@@ -291,27 +283,14 @@ func makeTestPackage(name string, files []File) *testPackage {
 		name:       name,
 		instanceID: "0123456789abcdef00000123456789abcdef0000",
 		files:      files,
-		signed:     true,
 	}
 }
 
-func (f *testPackage) Close() error       { return nil }
-func (f *testPackage) Signed() bool       { return f.signed }
-func (f *testPackage) Name() string       { return f.name }
-func (f *testPackage) InstanceID() string { return f.instanceID }
-func (f *testPackage) Files() []File      { return f.files }
-
-func (f *testPackage) Signatures() []SignatureBlock {
-	panic("Not implemented")
-}
-
-func (f *testPackage) VerifiedSignatures() []SignatureBlock {
-	panic("Not implemented")
-}
-
-func (f *testPackage) DataReader() io.ReadSeeker {
-	panic("Not implemented")
-}
+func (f *testPackage) Close() error              { return nil }
+func (f *testPackage) Name() string              { return f.name }
+func (f *testPackage) InstanceID() string        { return f.instanceID }
+func (f *testPackage) Files() []File             { return f.files }
+func (f *testPackage) DataReader() io.ReadSeeker { panic("Not implemented") }
 
 ////////////////////////////////////////////////////////////////////////////////
 

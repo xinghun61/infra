@@ -5,8 +5,6 @@
 package cipd
 
 import (
-	"crypto"
-	_ "crypto/sha512" // required for crypto.SHA512.New
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,40 +30,10 @@ const manifestName = packageServiceDir + "/manifest.json"
 // Format version to write to the manifest file.
 const manifestFormatVersion = "1"
 
-// Hashing algorithm used to generate the signature.
-const sigBlockHash = crypto.SHA512
-
-// Symbolic name of the algorithm, will show up in the signature block.
-const sigBlockHashName = "SHA512"
-
-// Symbolic name of signature algorithm, will show up in the signature block.
-const sigBlockSigName = "PKCS1v15"
-
-// Name of the signature PEM block.
-const sigBlockPEMType = "CIPD SIGNATURE"
-
 // Manifest defines structure of manifest.json file.
 type Manifest struct {
 	FormatVersion string `json:"format_version"`
 	PackageName   string `json:"package_name"`
-}
-
-// SignatureBlock is appended to the end of the package as PEM encoded JSON.
-// It can also float on its own as a separate entity.
-type SignatureBlock struct {
-	HashAlgo      string `json:"hash_algo"`
-	Digest        []byte `json:"digest"`
-	SignatureAlgo string `json:"signature_algo"`
-	SignatureKey  string `json:"signature_key"`
-	Signature     []byte `json:"signature"`
-}
-
-// Metadata is stored on the server alongside a package (but not as part of the
-// package). It describes when and how the package was built and uploaded.
-type Metadata struct {
-	Date     string `json:"date"`
-	Hostname string `json:"hostname"`
-	User     string `json:"user"`
 }
 
 // ValidatePackageName returns error if a string doesn't look like a valid package name.

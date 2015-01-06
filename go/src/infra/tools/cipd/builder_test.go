@@ -7,8 +7,7 @@ package cipd
 import (
 	"archive/zip"
 	"bytes"
-	"crypto"
-	_ "crypto/sha1"
+	"crypto/sha1"
 	"encoding/hex"
 	"io"
 	"io/ioutil"
@@ -44,7 +43,7 @@ func TestBuildPackage(t *testing.T) {
 
 		// BuildPackage builds deterministic zip. It MUST NOT depend on
 		// the platform, or a time of day, or anything else, only on the input data.
-		So(sha1(&out), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
+		So(getSHA1(&out), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 
 		// There should be a single file: the manifest.
 		files := readZip(out.Bytes())
@@ -131,9 +130,9 @@ func TestBuildPackage(t *testing.T) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// sha1 returns SHA1 hex digest of a byte buffer.
-func sha1(buf *bytes.Buffer) string {
-	h := crypto.SHA1.New()
+// getSHA1 returns SHA1 hex digest of a byte buffer.
+func getSHA1(buf *bytes.Buffer) string {
+	h := sha1.New()
 	h.Write(buf.Bytes())
 	return hex.EncodeToString(h.Sum(nil))
 }

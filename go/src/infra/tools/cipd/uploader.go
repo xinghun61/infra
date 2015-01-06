@@ -49,13 +49,12 @@ type UploadToCASOptions struct {
 	UploadURL string
 }
 
-// UploadToCAS uploads package data blob (and only data blob, no signatures or
-// metadata) to Content Addressed Store if it is not there already. The data is
-// addressed by SHA1 hash (also known as package's InstanceID). It can be used
-// as a standalone function (if UploadSessionID is "") or as a part of more high
-// level upload process (in that case upload session can be opened elsewhere and
-// its properties passed here via UploadSessionID and UploadURL). Returns nil on
-// successful upload.
+// UploadToCAS uploads package data blob to Content Addressed Store if it is not
+// there already. The data is addressed by SHA1 hash (also known as package's
+// InstanceID). It can be used as a standalone function (if UploadSessionID
+// is "") or as a part of more high level upload process (in that case upload
+// session can be opened elsewhere and its properties passed here via
+// UploadSessionID and UploadURL). Returns nil on successful upload.
 func UploadToCAS(options UploadToCASOptions) error {
 	// Fill in default options.
 	if options.ServiceURL == "" {
@@ -134,13 +133,10 @@ type RegisterPackageOptions struct {
 
 	// Package is a package to upload.
 	Package Package
-	// Metadata describes when and how the package was built.
-	Metadata Metadata
 }
 
 // RegisterPackage makes the package instance available for clients by
-// uploading it to the storage (along with metadata and signatures) and
-// registering it in the package repository.
+// uploading it to the storage and registering it in the package repository.
 func RegisterPackage(options RegisterPackageOptions) error {
 	// Fill in default options.
 	if options.ServiceURL == "" {

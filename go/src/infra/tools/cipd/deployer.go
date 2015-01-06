@@ -68,10 +68,6 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	if err != nil {
 		return
 	}
-	if !p.Signed() {
-		err = fmt.Errorf("Package is not signed: %s", p.Name())
-		return
-	}
 
 	// Remember currently deployed version (to remove it later). Do not freak out
 	// if it's not there (prevID is "" in that case).

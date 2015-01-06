@@ -6,14 +6,10 @@ package cipd
 
 import (
 	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"infra/tools/cipd/internal/keys"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -24,16 +20,7 @@ func TestPackageReading(t *testing.T) {
   "package_name": "testing"
 }`
 
-	sign := func(pkg []byte, pkey *rsa.PrivateKey, out io.Writer) {
-		sig, err := Sign(bytes.NewReader(pkg), pkey)
-		So(err, ShouldBeNil)
-		marshaled, err := MarshalSignatureList([]SignatureBlock{sig})
-		So(err, ShouldBeNil)
-		_, err = out.Write(marshaled)
-		So(err, ShouldBeNil)
-	}
-
-	Convey("Open empty signed package works", t, func() {
+	Convey("Open empty package works", t, func() {
 		// Build an empty package.
 		out := bytes.Buffer{}
 		err := BuildPackage(BuildPackageOptions{
@@ -42,21 +29,16 @@ func TestPackageReading(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		// Sign it, append signature to the end.
-		sign(out.Bytes(), privateKeyForTest(), &out)
-
-		// Open it, it will validate the signature.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
+		// Open it.
+		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
 		if pkg != nil {
 			defer pkg.Close()
 		}
 		So(pkg, ShouldNotBeNil)
 		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeTrue)
 		So(pkg.Name(), ShouldEqual, "testing")
 		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(len(pkg.Files()), ShouldEqual, 1)
-		So(len(pkg.Signatures()), ShouldEqual, 1)
 
 		// Contains single manifest file.
 		f := pkg.Files()[0]
@@ -73,29 +55,7 @@ func TestPackageReading(t *testing.T) {
 		So(string(manifest), ShouldEqual, goodManifest)
 	})
 
-	Convey("Open unsigned package works", t, func() {
-		// Build an empty package, do not sign it.
-		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
-			Output:      &out,
-			PackageName: "testing",
-		})
-		So(err, ShouldBeNil)
-
-		// Open it, it will skip body reading since signature is missing.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
-		So(pkg, ShouldNotBeNil)
-		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeFalse)
-		So(pkg.Name(), ShouldEqual, "")
-		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
-		So(len(pkg.Files()), ShouldEqual, 0)
-	})
-
-	Convey("Open package with unknown signatures work", t, func() {
+	Convey("Open empty package with unexpected instance ID", t, func() {
 		// Build an empty package.
 		out := bytes.Buffer{}
 		err := BuildPackage(BuildPackageOptions{
@@ -104,60 +64,18 @@ func TestPackageReading(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		// Sign use some random "unknown" key.
-		pkey, err := rsa.GenerateKey(rand.Reader, 1024)
+		// Attempt to open it, providing correct instance ID, should work.
+		source := newPackageReaderFromBytes(out.Bytes())
+		pkg, err := OpenPackage(source, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(err, ShouldBeNil)
-		sign(out.Bytes(), pkey, &out)
-
-		// Open it, it will skip body reading since signature is invalid.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
 		So(pkg, ShouldNotBeNil)
-		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeFalse)
-		So(pkg.Name(), ShouldEqual, "")
-		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
-		So(len(pkg.Files()), ShouldEqual, 0)
-	})
+		pkg.Close()
 
-	Convey("Open package with two signatures work", t, func() {
-		// Build an empty package.
-		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
-			Output:      &out,
-			PackageName: "testing",
-		})
-		So(err, ShouldBeNil)
-
-		// Generate random key.
-		pkey, err := rsa.GenerateKey(rand.Reader, 1024)
-		So(err, ShouldBeNil)
-
-		// Sign use some random "unknown" key and known key.
-		sig1, err := Sign(bytes.NewReader(out.Bytes()), pkey)
-		So(err, ShouldBeNil)
-		sig2, err := Sign(bytes.NewReader(out.Bytes()), privateKeyForTest())
-		So(err, ShouldBeNil)
-
-		// Write both signatures.
-		marshaled, err := MarshalSignatureList([]SignatureBlock{sig1, sig2})
-		So(err, ShouldBeNil)
-		_, err = out.Write(marshaled)
-		So(err, ShouldBeNil)
-
-		// Signed, should be readable.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
-		So(pkg, ShouldNotBeNil)
-		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeTrue)
-		So(pkg.Name(), ShouldEqual, "testing")
-		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
-		So(len(pkg.Files()), ShouldEqual, 1)
+		// Attempt to open it, providing incorrect instance ID.
+		source = newPackageReaderFromBytes(out.Bytes())
+		pkg, err = OpenPackage(source, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		So(err, ShouldNotBeNil)
+		So(pkg, ShouldBeNil)
 	})
 
 	Convey("OpenPackageFile works", t, func() {
@@ -175,26 +93,13 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		tempFile.Close()
 
-		// Read back the body to sign it.
-		r, err := os.Open(tempFilePath)
-		So(err, ShouldBeNil)
-		data, err := ioutil.ReadAll(r)
-		So(err, ShouldBeNil)
-		r.Close()
-
-		// Append the signature.
-		w, err := os.OpenFile(tempFilePath, os.O_WRONLY|os.O_APPEND, 0660)
-		sign(data, privateKeyForTest(), w)
-		w.Close()
-
 		// Read the package.
-		pkg, err := OpenPackageFile(tempFilePath, testingPublicKeys)
+		pkg, err := OpenPackageFile(tempFilePath, "")
 		if pkg != nil {
 			defer pkg.Close()
 		}
 		So(pkg, ShouldNotBeNil)
 		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeTrue)
 	})
 
 	Convey("ExtractPackage works", t, func() {
@@ -210,11 +115,8 @@ func TestPackageReading(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		// Sign the package.
-		sign(out.Bytes(), privateKeyForTest(), &out)
-
 		// Extract files.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
+		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
 		if pkg != nil {
 			defer pkg.Close()
 		}
@@ -238,80 +140,6 @@ func TestPackageReading(t *testing.T) {
 		})
 		So(string(dest.files[0].Bytes()), ShouldEqual, "12345")
 		So(dest.files[1].executable, ShouldBeTrue)
-	})
-
-	Convey("Extract from unsigned package doesn't work", t, func() {
-		// Build an empty package, do not sign it.
-		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
-			Input:       []File{makeTestFile("testing/qwerty", "12345", false)},
-			Output:      &out,
-			PackageName: "testing",
-		})
-		So(err, ShouldBeNil)
-
-		// No signature.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
-		So(pkg, ShouldNotBeNil)
-		So(err, ShouldBeNil)
-		So(pkg.Signed(), ShouldBeFalse)
-		So(pkg.Name(), ShouldEqual, "")
-		So(len(pkg.Files()), ShouldEqual, 0)
-
-		// ExtractPackage freaks out.
-		err = ExtractPackage(pkg, &testDestination{})
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("Package DataReader works with unsigned package", t, func() {
-		// Build an empty package.
-		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
-			Output:      &out,
-			PackageName: "testing",
-		})
-		So(err, ShouldBeNil)
-
-		// Read it back in its entirety via DataReader, no signatures yet.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
-		So(err, ShouldBeNil)
-		r := pkg.DataReader()
-		read, err := ioutil.ReadAll(r)
-		So(err, ShouldBeNil)
-		So(read, ShouldResemble, out.Bytes())
-	})
-
-	Convey("Package DataReader works with signed package", t, func() {
-		// Build an empty package.
-		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
-			Output:      &out,
-			PackageName: "testing",
-		})
-		So(err, ShouldBeNil)
-
-		// Remember the data without the signature.
-		packageData := out.Bytes()
-
-		// Sign it, append signature to the end.
-		sign(packageData, privateKeyForTest(), &out)
-
-		// Read back package data only.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), testingPublicKeys)
-		if pkg != nil {
-			defer pkg.Close()
-		}
-		So(err, ShouldBeNil)
-		r := pkg.DataReader()
-		read, err := ioutil.ReadAll(r)
-		So(err, ShouldBeNil)
-		So(read, ShouldResemble, packageData)
 	})
 }
 
@@ -362,29 +190,4 @@ func (d *testDestination) CreateFile(name string, executable bool) (io.WriteClos
 func (d *testDestination) End(success bool) error {
 	d.endCalls++
 	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// testingPublicKeys is PublicKeyProvider that knows public key that corresponds
-// to privateKeyForTest().
-func testingPublicKeys(fingerprint string) keys.PublicKey {
-	private := privateKeyForTest()
-	fp, err := keys.PublicKeyFingerprint(&private.PublicKey)
-	if err != nil {
-		panic("Can't get fingerprint")
-	}
-	pem, err := keys.PublicKeyToPEM(&private.PublicKey)
-	if err != nil {
-		panic("Can't convert key to PEM")
-	}
-	if fingerprint == fp {
-		return keys.PublicKey{
-			Valid:       true,
-			Name:        "testing/fake_key",
-			Fingerprint: fp,
-			PEM:         string(pem),
-		}
-	}
-	return keys.PublicKey{}
 }
