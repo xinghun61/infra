@@ -71,7 +71,8 @@
     "cmd": [
       "python",
       "-u",
-      "[DEPOT_TOOLS]/third_party/gsutil/gsutil",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--",
       "cp",
       "-R",
       "[SLAVE_BUILD]/infra/doc/html",
