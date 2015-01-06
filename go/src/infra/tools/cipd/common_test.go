@@ -46,11 +46,17 @@ func TestReadManifest(t *testing.T) {
 
 func TestValidatePackageName(t *testing.T) {
 	Convey("ValidatePackageName works", t, func() {
-		// TODO: more cases.
 		So(ValidatePackageName("good/name"), ShouldBeNil)
+		So(ValidatePackageName("good_name"), ShouldBeNil)
+		So(ValidatePackageName("123-_/also/good/name"), ShouldBeNil)
 		So(ValidatePackageName(""), ShouldNotBeNil)
+		So(ValidatePackageName("BAD/name"), ShouldNotBeNil)
+		So(ValidatePackageName("bad//name"), ShouldNotBeNil)
+		So(ValidatePackageName("bad/name/"), ShouldNotBeNil)
+		So(ValidatePackageName("bad.name"), ShouldNotBeNil)
+		So(ValidatePackageName("/bad/name"), ShouldNotBeNil)
+		So(ValidatePackageName("bad/name\nyeah"), ShouldNotBeNil)
 		So(ValidatePackageName("../../yeah"), ShouldNotBeNil)
-		So(ValidatePackageName("/yeah"), ShouldNotBeNil)
 	})
 }
 

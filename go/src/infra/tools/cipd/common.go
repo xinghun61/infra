@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
+	"regexp"
 
 	"infra/libs/build"
 )
@@ -21,6 +21,10 @@ const packageServiceDir = ".cipdpkg"
 
 // Name of the directory inside an installation root reserved for cipd stuff.
 const siteServiceDir = ".cipd"
+
+// packageNameRe is a Regular expression for a package name: <word>/<word/<word>
+// Package names must be lower case.
+var packageNameRe = regexp.MustCompile(`^([a-z0-9_\-]+/)*[a-z0-9_\-]+$`)
 
 // Name of the manifest file inside the package.
 const manifestName = packageServiceDir + "/manifest.json"
@@ -66,8 +70,7 @@ type Metadata struct {
 
 // ValidatePackageName returns error if a string doesn't look like a valid package name.
 func ValidatePackageName(name string) error {
-	// TODO: implement.
-	if name == "" || strings.Contains(name, "..") || name[0] == '/' {
+	if !packageNameRe.MatchString(name) {
 		return fmt.Errorf("Invalid package name: %s", name)
 	}
 	return nil

@@ -19,7 +19,7 @@ class TestValidators(unittest.TestCase):
     self.assertTrue(impl.is_valid_package_name('a/b'))
     self.assertTrue(impl.is_valid_package_name('a/b/c/1/2/3'))
     self.assertTrue(impl.is_valid_package_name('infra/tools/cipd'))
-    self.assertTrue(impl.is_valid_package_name('./-/_'))
+    self.assertTrue(impl.is_valid_package_name('-/_'))
     self.assertFalse(impl.is_valid_package_name(''))
     self.assertFalse(impl.is_valid_package_name('/a'))
     self.assertFalse(impl.is_valid_package_name('a/'))

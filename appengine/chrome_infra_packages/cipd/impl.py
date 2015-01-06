@@ -42,7 +42,7 @@ import cas
 
 # Regular expression for a package name: <word>/<word/<word>. Package names must
 # be lower case.
-PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-\.]+/)*[a-z0-9_\-\.]+$')
+PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
 
 # Hash algorithm used to derive package instance ID from package data.
 DIGEST_ALGO = 'SHA1'
