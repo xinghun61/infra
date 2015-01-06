@@ -119,53 +119,6 @@ def get_master_config(mastername, dry_run=False):
   return json.loads(stdout)
 
 
-class MemStorage(object):
-  """An in-memory storage, used for testing."""
-  # TODO(pgervais) This class should be dropped while refactoring for better
-  # testability.
-  def __init__(self, master_name):
-    self._master_name = master_name
-    self._refs = set()
-
-  def _get_ref(self, builder_name, build_num=None, log_file=''):
-    return ('%s/%s/%.7d/%s' % (self._master_name,
-                               builder_name,
-                               build_num or -1,
-                               log_file))
-
-  def get_builds(self, _builder_name):  # pylint: disable=R0201
-    return {55, 56}
-
-  def has_build(self, builder_name, build_num):
-    ref = self._get_ref(builder_name, build_num)
-    return ref in self._refs
-
-  def put(self, builder_name, build_num, log_file, source,
-          source_type=None):
-
-    allowed_types = ('filename', 'content')
-    if not source_type in allowed_types:
-      raise ValueError('source_type must be in %s' % str(allowed_types))
-
-    ref = self._get_ref(builder_name, build_num, log_file)
-    if source_type == 'filename':
-      LOGGER.debug('putting %s as %s', source, ref)
-    elif source_type == 'content':
-      LOGGER.debug('putting content as %s', ref)
-    self._refs.add(ref)
-
-  def mark_upload_started(self, builder_name, build_number):
-    ref = self._get_ref(builder_name, build_number)
-    LOGGER.debug('Marking upload as started: %s', ref)
-
-  def mark_upload_ended(self, builder_name, build_number):
-    ref = self._get_ref(builder_name, build_number)
-    LOGGER.debug('Marking upload as done: %s', ref)
-
-  def get_partial_uploads(self, _builder_name):  # pylint: disable=R0201
-    return {55}
-
-
 class GCStorage(object):
   """Google Cloud Storage backend.
 
@@ -534,12 +487,9 @@ def main(options):
   w = Waterfall(options.master_name, url=options.waterfall_url)
   builders = w.get_builder_properties()
 
-  if options.bucket:
-    storage = GCStorage(options.master_name,
-                        options.bucket,
-                        dry_run=options.dry_run)
-  else:
-    storage = MemStorage(options.master_name)
+  storage = GCStorage(options.master_name,
+                      options.bucket,
+                      dry_run=options.dry_run)
 
   builder_names = builders.keys()
   if options.builder_name:
