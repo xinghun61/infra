@@ -305,6 +305,10 @@ func (f *testPackage) Signatures() []SignatureBlock {
 	panic("Not implemented")
 }
 
+func (f *testPackage) VerifiedSignatures() []SignatureBlock {
+	panic("Not implemented")
+}
+
 func (f *testPackage) DataReader() io.ReadSeeker {
 	panic("Not implemented")
 }

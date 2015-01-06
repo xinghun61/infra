@@ -8,11 +8,12 @@ Client side of for Chrome Infra Package Deployer.
 TODO: write more.
 
 Subcommand starting with 'pkg-' are low level commands operating on package
-files on disk (i.e. no interaction with the server at all).
+files on disk.
 */
 package main
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -34,10 +35,13 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // Utility functions.
 
-// isDirectory returns true if path is pointing to an existing directory.
-func isDirectory(p string) bool {
-	stat, err := os.Stat(p)
-	return err == nil && stat.IsDir()
+// reportError writes a error message to stderr and log file.
+func reportError(format string, params ...interface{}) {
+	msg := fmt.Sprintf(format, params...)
+	logging.Errorf("%s", msg)
+	if !logging.IsTerminal {
+		fmt.Fprintf(os.Stderr, msg+"\n")
+	}
 }
 
 // checkCommandLine ensures all required positional and flag-like parameters
@@ -45,11 +49,11 @@ func isDirectory(p string) bool {
 func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) bool {
 	// Check number of expected positional arguments.
 	if positionalCount == 0 && len(args) != 0 {
-		fmt.Fprintf(os.Stderr, "Unexpected arguments %v.\n", args)
+		reportError("Unexpected arguments: %v", args)
 		return false
 	}
 	if len(args) != positionalCount {
-		fmt.Fprintf(os.Stderr, "Expecting %d arguments, got %d.\n", positionalCount, len(args))
+		reportError("Expecting %d arguments, got %d", positionalCount, len(args))
 		return false
 	}
 	// Check required unset flags.
@@ -60,17 +64,22 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 		}
 	})
 	if len(unset) != 0 {
-		fmt.Fprintf(os.Stderr, "Missing required flags:\n")
+		missing := []string{}
 		for _, f := range unset {
-			fmt.Fprintf(os.Stderr, "  -%s: %s\n", f.Name, f.Usage)
+			missing = append(missing, f.Name)
 		}
+		reportError("Missing required flags: %v")
 		return false
 	}
 	return true
 }
 
-// privateKeyFromPEM parses PEM-encode PKCS1 RSA private key.
-func privateKeyFromPEM(data []byte) (*rsa.PrivateKey, error) {
+// readPrivateKey reads PEM encoded file with RSA private key.
+func readPrivateKey(file string) (*rsa.PrivateKey, error) {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
 	block, rest := pem.Decode(data)
 	if len(rest) != 0 {
 		return nil, fmt.Errorf("PEM should have one block only")
@@ -100,7 +109,7 @@ func authenticatedClient() (*http.Client, error) {
 // 'build' subcommand.
 
 var cmdBuild = &subcommands.Command{
-	UsageLine: "pkg-build",
+	UsageLine: "pkg-build [options]",
 	ShortDesc: "builds a package file",
 	LongDesc:  "Builds and signs a package producing *.cipd file.",
 	CommandRun: func() subcommands.CommandRun {
@@ -125,21 +134,17 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := buildPackage(c.packageName, c.inputDir, c.outputFile, c.signingKey)
+	err := buildPackageFile(c.packageName, c.inputDir, c.outputFile, c.signingKey)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while building the package: %s.\n", err)
+		reportError("Error while building the package: %s", err)
 		return 1
 	}
 	return 0
 }
 
-func buildPackage(packageName string, inputDir string, outFile string, sigingKey string) error {
+func buildPackageFile(packageName string, inputDir string, packageFile string, signingKeyFile string) error {
 	// Read and parse signing key.
-	data, err := ioutil.ReadFile(sigingKey)
-	if err != nil {
-		return err
-	}
-	privateKey, err := privateKeyFromPEM(data)
+	privateKey, err := readPrivateKey(signingKeyFile)
 	if err != nil {
 		return err
 	}
@@ -151,59 +156,38 @@ func buildPackage(packageName string, inputDir string, outFile string, sigingKey
 	}
 
 	// Build the package.
-	out, err := os.OpenFile(outFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	out, err := os.OpenFile(packageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 	err = cipd.BuildPackage(cipd.BuildPackageOptions{
 		Input:       files,
 		Output:      out,
 		PackageName: packageName,
 	})
 	if err != nil {
+		out.Close()
+		os.Remove(packageFile)
 		return err
 	}
 
 	// Sign it.
-	_, err = out.Seek(0, os.SEEK_SET)
-	if err != nil {
-		return err
-	}
-	sig, err := cipd.Sign(out, privateKey)
-	if err != nil {
-		return err
-	}
-	asBytes, err := cipd.MarshalSignatureList([]cipd.SignatureBlock{sig})
-	if err != nil {
-		return err
-	}
-
-	// Append the signature to the end.
-	_, err = out.Seek(0, os.SEEK_END)
-	if err != nil {
-		return err
-	}
-	_, err = out.Write(asBytes)
-	if err != nil {
-		return err
-	}
+	err = cipd.SignFile(out, privateKey)
 	out.Close()
-
-	// Print information about built package, also fail if it is not readable.
-	err = inspectPackage(outFile, false)
 	if err != nil {
+		os.Remove(packageFile)
 		return err
 	}
 
-	return nil
+	// Print information about built package, also verify it is readable.
+	return inspectPackageFile(packageFile, false)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 'deploy' subcommand.
 
 var cmdDeploy = &subcommands.Command{
-	UsageLine: "pkg-deploy <package file>",
+	UsageLine: "pkg-deploy [options] <package file>",
 	ShortDesc: "deploys a package file",
 	LongDesc:  "Deployed a signed *.cipd package into a site root.",
 	CommandRun: func() subcommands.CommandRun {
@@ -223,29 +207,24 @@ func (c *deployRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	packagePath := args[0]
-	err := deployPackage(c.rootDir, packagePath)
+	err := deployPackageFile(c.rootDir, args[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: error while deploying the package - %s.\n", a.GetName(), err)
+		reportError("Error while deploying the package: %s", err)
 		return 1
 	}
 	return 0
 }
 
-func deployPackage(root string, packagePath string) error {
-	pkg, err := cipd.OpenPackageFile(packagePath, nil)
+func deployPackageFile(root string, packageFile string) error {
+	pkg, err := cipd.OpenPackageFile(packageFile, nil)
 	if err != nil {
 		return err
 	}
 	defer pkg.Close()
-
-	fmt.Printf("Name:        %s\n", pkg.Name())
-	fmt.Printf("Instance ID: %s\n", pkg.InstanceID())
-	fmt.Printf("Signed:      %v\n", pkg.Signed())
+	inspectPackage(pkg, false)
 	if !pkg.Signed() {
 		return fmt.Errorf("Package is not signed, refusing to deploy")
 	}
-
 	_, err = cipd.Deploy(root, pkg)
 	return err
 }
@@ -270,33 +249,105 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	packageName := args[0]
-	err := inspectPackage(packageName, true)
+	err := inspectPackageFile(args[0], true)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while inspecting the package: %s.\n", err)
+		reportError("Error while inspecting the package: %s", err)
 		return 1
 	}
 	return 0
 }
 
-func inspectPackage(path string, listFiles bool) error {
-	pkg, err := cipd.OpenPackageFile(path, nil)
+func inspectPackageFile(packageFile string, listFiles bool) error {
+	pkg, err := cipd.OpenPackageFile(packageFile, nil)
 	if err != nil {
 		return err
 	}
 	defer pkg.Close()
+	inspectPackage(pkg, listFiles)
+	return nil
+}
 
-	fmt.Printf("Name:        %s\n", pkg.Name())
-	fmt.Printf("Instance ID: %s\n", pkg.InstanceID())
-	fmt.Printf("Signed:      %v\n", pkg.Signed())
-	if listFiles && pkg.Signed() {
-		fmt.Printf("\nPackage files:\n")
-		for _, f := range pkg.Files() {
-			fmt.Printf("  %v\n", f.Name())
+func inspectPackage(pkg cipd.Package, listFiles bool) {
+	// General info. Name is in the manifest that is only accessed when package
+	// signature is verified.
+	if !pkg.Signed() {
+		logging.Infof("Name:        %s", pkg.Name())
+	}
+	logging.Infof("Instance ID: %s", pkg.InstanceID())
+	logging.Infof("Signed:      %v", pkg.Signed())
+
+	// List of public keys used to sign a package.
+	signatures := pkg.Signatures()
+	verifiedSigs := pkg.VerifiedSignatures()
+	if len(signatures) != 0 {
+		logging.Infof("Signed by public keys:")
+		for _, s := range signatures {
+			verified := "not verified"
+			for _, verifiedSig := range verifiedSigs {
+				if bytes.Equal(s.Signature, verifiedSig.Signature) {
+					verified = "verified"
+					break
+				}
+			}
+			logging.Infof("  %s (%s)", s.SignatureKey, verified)
 		}
 	}
 
-	return nil
+	// List of files.
+	if listFiles && pkg.Signed() {
+		logging.Infof("Package files:")
+		for _, f := range pkg.Files() {
+			logging.Infof("  %v", f.Name())
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'sign' subcommand.
+
+var cmdSign = &subcommands.Command{
+	UsageLine: "pkg-sign [options] <package file>",
+	ShortDesc: "signs a package file with a private key",
+	LongDesc:  "Signs a package file with a private key, appending the signature to the end",
+	CommandRun: func() subcommands.CommandRun {
+		c := &signRun{}
+		c.Flags.StringVar(&c.signingKey, "signing-key", "<path>", "path to PEM encoded PKCS1 RSA private key to use for signing")
+		return c
+	},
+}
+
+type signRun struct {
+	subcommands.CommandRunBase
+	signingKey string
+}
+
+func (c *signRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	err := signPackageFile(args[0], c.signingKey)
+	if err != nil {
+		reportError("Error while signing the package: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func signPackageFile(packageFile string, signingKeyFile string) error {
+	privateKey, err := readPrivateKey(signingKeyFile)
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(packageFile, os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	err = cipd.SignFile(file, privateKey)
+	file.Close()
+	if err != nil {
+		return err
+	}
+	return inspectPackageFile(packageFile, false)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -321,27 +372,25 @@ func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 	}
 	client, err := authenticatedClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when authenticating: %s.\n", err)
+		reportError("Error when authenticating: %s", err)
 		return 1
 	}
-	err = uploadPackage(args[0], client)
+	err = uploadPackageFile(args[0], client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while uploading the package: %s.\n", err)
+		reportError("Error while uploading the package: %s", err)
 		return 1
 	}
 	return 0
 }
 
-func uploadPackage(path string, client *http.Client) error {
-	pkg, err := cipd.OpenPackageFile(path, nil)
+func uploadPackageFile(packageFile string, client *http.Client) error {
+	pkg, err := cipd.OpenPackageFile(packageFile, nil)
 	if err != nil {
 		return err
 	}
 	defer pkg.Close()
-	logging.Infof("Uploading package %s:%s", pkg.Name(), pkg.InstanceID())
-	if !pkg.Signed() {
-		return fmt.Errorf("Refusing to upload an unsigned package")
-	}
+	logging.Infof("Uploading package instance %s", pkg.InstanceID())
+	inspectPackage(pkg, false)
 	return cipd.UploadToCAS(cipd.UploadToCASOptions{
 		SHA1: pkg.InstanceID(),
 		Data: pkg.DataReader(),
@@ -363,6 +412,7 @@ var application = &subcommands.DefaultApplication{
 		cmdBuild,
 		cmdDeploy,
 		cmdInspect,
+		cmdSign,
 		cmdUpload,
 	},
 }

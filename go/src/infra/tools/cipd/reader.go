@@ -46,6 +46,8 @@ type Package interface {
 	Files() []File
 	// Signatures returns a list of all package signatures (valid or not).
 	Signatures() []SignatureBlock
+	// VerifiedSignatures returns a list of package signatures that has been verified.
+	VerifiedSignatures() []SignatureBlock
 	// DataReader returns reader that reads only package data block (skipping any signatures).
 	// Note that it moves internal file pointer and thus can't be used at the same time files are extracted.
 	DataReader() io.ReadSeeker
@@ -288,6 +290,15 @@ func (p *packageImpl) Files() []File      { return p.files }
 func (p *packageImpl) Signatures() (out []SignatureBlock) {
 	for _, s := range p.signatures {
 		out = append(out, s.block)
+	}
+	return
+}
+
+func (p *packageImpl) VerifiedSignatures() (out []SignatureBlock) {
+	for _, s := range p.signatures {
+		if s.verified {
+			out = append(out, s.block)
+		}
 	}
 	return
 }

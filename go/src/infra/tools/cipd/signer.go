@@ -16,11 +16,61 @@ import (
 	"os"
 	"strconv"
 
+	"infra/libs/logging"
 	"infra/tools/cipd/internal/keys"
 )
 
 // Source of randomness for signing. Can be mocked in tests.
 var signingEntropy = rand.Reader
+
+// SignFile generates a signature block and appends it to the list of signatures
+// at the end of the file. Does nothing if the file is already signed by the
+// provided key. The file should be open for read and write access.
+func SignFile(file *os.File, key *rsa.PrivateKey) error {
+	// Read existing signatures.
+	sigs, offset, err := ReadSignatureList(file)
+	if err != nil {
+		return err
+	}
+
+	// Grab fingerprint of the signing key.
+	fp, err := keys.PublicKeyFingerprint(&key.PublicKey)
+	if err != nil {
+		return err
+	}
+	logging.Infof("Signing '%s' with key %s", file.Name(), fp)
+
+	// Already signed?
+	for _, sig := range sigs {
+		if sig.SignatureKey == fp {
+			logging.Infof("Already signed")
+			return nil
+		}
+	}
+
+	// Make the new signature.
+	_, err = file.Seek(0, os.SEEK_SET)
+	if err != nil {
+		return err
+	}
+	sig, err := Sign(io.LimitReader(file, offset), key)
+	if err != nil {
+		return err
+	}
+
+	// Append it to the list and serialize the list.
+	asBytes, err := MarshalSignatureList(append(sigs, sig))
+	if err != nil {
+		return err
+	}
+
+	// Overwrite the file tail.
+	_, err = file.WriteAt(asBytes, offset)
+	if err != nil {
+		return err
+	}
+	return file.Truncate(offset + int64(len(asBytes)))
+}
 
 // Sign generates a new signature block given a package data. Multiple such
 // blocks may be serialized together with MarshalSignatureList. Resulting byte

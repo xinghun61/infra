@@ -9,6 +9,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,6 +23,48 @@ func TestPrivateKeyWorks(t *testing.T) {
 		k := privateKeyForTest()
 		So(k, ShouldNotBeNil)
 		So(k.Validate(), ShouldBeNil)
+	})
+}
+
+func TestSignFile(t *testing.T) {
+	// Helper function to sign a file on disk.
+	signFile := func(path string, key *rsa.PrivateKey) {
+		file, err := os.OpenFile(path, os.O_RDWR, 0666)
+		So(err, ShouldBeNil)
+		err = SignFile(file, key)
+		file.Close()
+		So(err, ShouldBeNil)
+	}
+
+	// Helper function to read signature list from a file.
+	readSignatures := func(path string) []SignatureBlock {
+		f, err := os.Open(path)
+		So(err, ShouldBeNil)
+		defer f.Close()
+		sigs, _, err := ReadSignatureList(f)
+		So(err, ShouldBeNil)
+		return sigs
+	}
+
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("Sign file works", func() {
+			// Make an file with some data.
+			path := filepath.Join(tempDir, "file")
+			err := ioutil.WriteFile(path, []byte("data to sign"), 0666)
+			So(err, ShouldBeNil)
+
+			// Sign it, ensure signature is there.
+			signFile(path, privateKeyForTest())
+			So(len(readSignatures(path)), ShouldEqual, 1)
+
+			// Sign it again. Should be noop.
+			signFile(path, privateKeyForTest())
+			So(len(readSignatures(path)), ShouldEqual, 1)
+		})
 	})
 }
 
