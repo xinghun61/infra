@@ -14,48 +14,6 @@ from cipd import api
 from cipd import impl
 
 
-class TestSerialization(testing.AppengineTestCase):
-  def test_signature_from_entity(self):
-    ent = impl.PackageInstanceSignature(
-        hash_algo='SHA1',
-        digest='\x00\x01\x02\x03\x04\x05',
-        signature_algo='sig algo',
-        signature_key='sig key',
-        signature='signature \x00\x01\x02\x03\x04\x05',
-        added_by=auth.Identity.from_bytes('user:abc@example.com'),
-        added_ts=datetime.datetime(2014, 1, 1))
-    msg = api.signature_from_entity(ent)
-    self.assertEqual('SHA1', msg.hash_algo)
-    self.assertEqual('\x00\x01\x02\x03\x04\x05', msg.digest)
-    self.assertEqual('sig algo', msg.signature_algo)
-    self.assertEqual('sig key', msg.signature_key)
-    self.assertEqual('signature \x00\x01\x02\x03\x04\x05', msg.signature)
-    self.assertEqual('user:abc@example.com', msg.added_by)
-    self.assertEqual(1388534400000000, msg.added_ts)
-
-  def test_signature_to_entity(self):
-    msg = api.Signature(
-        hash_algo='SHA1',
-        digest='\x00\x01\x02\x03\x04\x05',
-        signature_algo='sig algo',
-        signature_key='sig key',
-        signature='signature \x00\x01\x02\x03\x04\x05',
-        added_by='user:abc@example.com',
-        added_ts=1388534400000000)
-    ent = api.signature_to_entity(msg)
-    # Ignores added_* fields, they are output only.
-    expected = {
-      'hash_algo': 'SHA1',
-      'digest': '\x00\x01\x02\x03\x04\x05',
-      'signature_algo': 'sig algo',
-      'signature_key': 'sig key',
-      'signature': 'signature \x00\x01\x02\x03\x04\x05',
-      'added_by': None,
-      'added_ts': None,
-    }
-    self.assertEqual(expected, ent.to_dict())
-
-
 class PackageRepositoryApiTest(testing.EndpointsTestCase):
   """Tests for API layer ONLY."""
 
@@ -73,22 +31,6 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     request = {
       'package_name': 'good/name',
       'instance_id': 'a'*40,
-      'signatures': [
-        {
-          'hash_algo': 'SHA1',
-          'digest': 'AAECAwQ=',
-          'signature_algo': 'sig algo',
-          'signature_key': 'sig key 1',
-          'signature': 'c2lnbmF0dXJlIAABAgME',
-        },
-        {
-          'hash_algo': 'SHA1',
-          'digest': 'AAECAwQ=',
-          'signature_algo': 'sig algo',
-          'signature_key': 'sig key 2',
-          'signature': 'c2lnbmF0dXJlIAABAgME',
-        },
-      ],
     }
 
     # Package is not uploaded yet. Should ask to upload.
@@ -118,38 +60,10 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     expected = {
       'registered_by': auth.Identity(kind='user', name='mocked@example.com'),
       'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
-      'signature_keys': ['sig key 1', 'sig key 2'],
-      'signatures': [
-        {
-          'added_by': auth.Identity(kind='user', name='mocked@example.com'),
-          'added_ts': datetime.datetime(2014, 1, 1, 0, 0),
-          'digest': '\x00\x01\x02\x03\x04',
-          'hash_algo': 'SHA1',
-          'signature': 'signature \x00\x01\x02\x03\x04',
-          'signature_algo': 'sig algo',
-          'signature_key': 'sig key 1',
-        },
-        {
-          'added_by': auth.Identity(kind='user', name='mocked@example.com'),
-          'added_ts': datetime.datetime(2014, 1, 1, 0, 0),
-          'digest': '\x00\x01\x02\x03\x04',
-          'hash_algo': 'SHA1',
-          'signature': 'signature \x00\x01\x02\x03\x04',
-          'signature_algo': 'sig algo',
-          'signature_key': 'sig key 2',
-        },
-      ],
     }
     self.assertEqual(expected, pkg.to_dict())
 
-    # Attempt to register it again, with additional signature.
-    request['signatures'].append({
-      'hash_algo': 'SHA1',
-      'digest': 'AAECAwQ=',
-      'signature_algo': 'sig algo',
-      'signature_key': 'sig key 3',
-      'signature': 'c2lnbmF0dXJlIAABAgME',
-    })
+    # Attempt to register it again.
     resp = self.call_api('register_package', request)
     self.assertEqual(200, resp.status_code)
     self.assertEqual({
@@ -157,11 +71,6 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'registered_by': 'user:mocked@example.com',
       'registered_ts': '1388534400000000',
     }, resp.json_body)
-
-    # The signature is added to the list.
-    pkg = self.repo_service.get_instance('good/name', 'a'*40)
-    self.assertTrue(pkg)
-    self.assertEqual(3, len(pkg.signatures))
 
   def test_register_package_bad_name(self):
     resp = self.call_api('register_package', {

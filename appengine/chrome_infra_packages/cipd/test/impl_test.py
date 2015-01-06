@@ -40,50 +40,18 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(impl.cas, 'get_cas_service', lambda: self.mocked_cas_service)
     self.service = impl.get_repo_service()
 
-  @staticmethod
-  def fake_signature(key):
-    return impl.PackageInstanceSignature(
-        hash_algo='SHA1',
-        digest='\x00\x01\x02\x03',
-        signature_algo='sig algo',
-        signature_key=key,
-        signature='signature \x00\x01\x02\x03',
-        added_by=auth.Identity.from_bytes('user:abc@example.com'),
-        added_ts=datetime.datetime(2014, 1, 1))
-
   def test_register_new(self):
-    pkg = self.service.register_instance(
+    pkg, registered = self.service.register_instance(
         package_name='a/b',
         instance_id='a'*40,
-        signatures=[self.fake_signature('key 1'), self.fake_signature('key 2')],
         caller=auth.Identity.from_bytes('user:abc@example.com'),
         now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
     self.assertEqual(
         ndb.Key('Package', 'a/b', 'PackageInstance', 'a'*40), pkg.key)
     expected = {
       'registered_by': auth.Identity(kind='user', name='abc@example.com'),
       'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
-      'signature_keys': ['key 1', 'key 2'],
-      'signatures': [
-        {
-          'added_by': auth.Identity(kind='user', name='abc@example.com'),
-          'added_ts': datetime.datetime(2014, 1, 1, 0, 0),
-          'digest': '\x00\x01\x02\x03',
-          'hash_algo': 'SHA1',
-          'signature': 'signature \x00\x01\x02\x03',
-          'signature_algo': 'sig algo',
-          'signature_key': 'key 1',
-        },
-        {
-          'added_by': auth.Identity(kind='user', name='abc@example.com'),
-          'added_ts': datetime.datetime(2014, 1, 1, 0, 0),
-          'digest': '\x00\x01\x02\x03',
-          'hash_algo': 'SHA1',
-          'signature': 'signature \x00\x01\x02\x03',
-          'signature_algo': 'sig algo',
-          'signature_key': 'key 2',
-        },
-      ],
     }
     self.assertEqual(expected, pkg.to_dict())
     self.assertEqual(
@@ -91,59 +59,18 @@ class TestRepoService(testing.AppengineTestCase):
 
   def test_register_existing(self):
     # First register a package.
-    self.service.register_instance(
+    pkg1, registered = self.service.register_instance(
         package_name='a/b',
         instance_id='a'*40,
-        signatures=[self.fake_signature('key1')],
         caller=auth.Identity.from_bytes('user:abc@example.com'))
+    self.assertTrue(registered)
     # Try to register it again.
-    with self.assertRaises(impl.PackageInstanceExistsError):
-      self.service.register_instance(
+    pkg2, registered = self.service.register_instance(
           package_name='a/b',
           instance_id='a'*40,
-          signatures=[],
-          caller=auth.Identity.from_bytes('user:abc@example.com'))
-
-  def test_add_signatures_missing(self):
-    with self.assertRaises(impl.PackageInstanceNotFoundError):
-      self.service.add_signatures('a/b', 'a'*40, [self.fake_signature('key')])
-
-  def test_add_signatures(self):
-    self.service.register_instance(
-        package_name='a/b',
-        instance_id='a'*40,
-        signatures=[],
-        caller=auth.Identity.from_bytes('user:abc@example.com'))
-
-    expected = lambda key: {
-      'added_by': auth.Identity(kind='user', name='abc@example.com'),
-      'added_ts': datetime.datetime(2014, 1, 1, 0, 0),
-      'digest': '\x00\x01\x02\x03',
-      'hash_algo': 'SHA1',
-      'signature': 'signature \x00\x01\x02\x03',
-      'signature_algo': 'sig algo',
-      'signature_key': key,
-    }
-
-    # Add one.
-    pkg = self.service.add_signatures(
-        'a/b', 'a'*40, [self.fake_signature('key0')])
-    self.assertEqual([expected('key0')], pkg.to_dict()['signatures'])
-    self.assertEqual(['key0'], pkg.to_dict()['signature_keys'])
-
-    # Add exact same one -> no effect.
-    pkg = self.service.add_signatures(
-        'a/b', 'a'*40, [self.fake_signature('key0')])
-    self.assertEqual([expected('key0')], pkg.to_dict()['signatures'])
-    self.assertEqual(['key0'], pkg.to_dict()['signature_keys'])
-
-    # Add another one.
-    pkg = self.service.add_signatures(
-        'a/b', 'a'*40, [self.fake_signature('key1')])
-    self.assertEqual(
-        [expected('key0'), expected('key1')], pkg.to_dict()['signatures'])
-    self.assertEqual(
-        ['key0', 'key1'], pkg.to_dict()['signature_keys'])
+          caller=auth.Identity.from_bytes('user:def@example.com'))
+    self.assertFalse(registered)
+    self.assertEqual(pkg1.to_dict(), pkg2.to_dict())
 
   def test_is_instance_file_uploaded(self):
     self.mocked_cas_service.uploaded.add(('SHA1', 'a'*40))

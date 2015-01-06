@@ -21,44 +21,6 @@ from . import impl
 package = 'cipd'
 
 
-class Signature(messages.Message):
-  """Single signature. Each package instance can have multiple signatures.
-
-  See also SignatureBlock struct in infra/tools/cipd/common.go.
-  """
-  hash_algo = messages.StringField(1, required=True)
-  digest = messages.BytesField(2, required=True)
-  signature_algo = messages.StringField(3, required=True)
-  signature_key = messages.StringField(4, required=True)
-  signature = messages.BytesField(5, required=True)
-
-  # Output only fields.
-  added_by = messages.StringField(6, required=False)
-  added_ts = messages.IntegerField(7, required=False)
-
-
-def signature_from_entity(ent):
-  """PackageInstanceSignature entity -> Signature message."""
-  return Signature(
-      hash_algo=ent.hash_algo,
-      digest=ent.digest,
-      signature_algo=ent.signature_algo,
-      signature_key=ent.signature_key,
-      signature=ent.signature,
-      added_by=ent.added_by.to_bytes(),
-      added_ts=utils.datetime_to_timestamp(ent.added_ts))
-
-
-def signature_to_entity(msg):
-  """Signature message -> PackageInstanceSignature entity."""
-  return impl.PackageInstanceSignature(
-      hash_algo=msg.hash_algo,
-      digest=msg.digest,
-      signature_algo=msg.signature_algo,
-      signature_key=msg.signature_key,
-      signature=msg.signature)
-
-
 class RegisterPackageRequest(messages.Message):
   """Request to add a new package instance if it is not yet present.
 
@@ -70,7 +32,6 @@ class RegisterPackageRequest(messages.Message):
   """
   package_name = messages.StringField(1, required=True)
   instance_id = messages.StringField(2, required=True)
-  signatures = messages.MessageField(Signature, 3, repeated=True)
 
 
 class RegisterPackageResponse(messages.Message):
@@ -151,19 +112,9 @@ class PackageRepositoryApi(remote.Service):
     if service is None:
       raise endpoints.InternalServerErrorException('Service is not configured')
 
-    # Signature list proto -> entity.
-    now = utils.utcnow()
-    signatures = []
-    for sig in request.signatures:
-      ent = signature_to_entity(sig)
-      ent.added_by = caller
-      ent.added_ts = now
-      signatures.append(ent)
-
-    # Already registered? Just attach any new signatures.
+    # Already registered?
     pkg = service.get_instance(package_name, instance_id)
     if pkg is not None:
-      service.add_signatures(package_name, instance_id, signatures)
       return success(pkg, RegisterPackageResponse.Status.ALREADY_REGISTERED)
 
     # Need to upload to CAS first? Open an upload session. Caller must use
@@ -177,12 +128,13 @@ class PackageRepositoryApi(remote.Service):
           upload_url=upload_url)
 
     # Package data is in the store. Make an entity.
-    try:
-      pkg = service.register_instance(
-          package_name, instance_id, signatures, caller, now)
-      return success(pkg, RegisterPackageResponse.Status.REGISTERED)
-    except impl.PackageInstanceExistsError:  # pragma: no cover
-      # Can happen if package was registered since 'get_instance' call by some
-      # other process. Just add new signatures.
-      pkg = service.add_signatures(package_name, instance_id, signatures)
-      return success(pkg, RegisterPackageResponse.Status.ALREADY_REGISTERED)
+    pkg, registered = service.register_instance(
+        package_name=package_name,
+        instance_id=instance_id,
+        caller=caller,
+        now=utils.utcnow())
+    if registered:
+      status = RegisterPackageResponse.Status.REGISTERED
+    else:  # pragma: no cover
+      status = RegisterPackageResponse.Status.ALREADY_REGISTERED
+    return success(pkg, status)
