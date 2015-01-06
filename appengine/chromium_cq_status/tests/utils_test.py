@@ -129,3 +129,11 @@ class TestUtils(testing.AppengineTestCase):
     self.assertEquals(test(a=2, b=1), 4)
     use_cache = False
     self.assertEquals(test(a=1, b=2), 4)
+
+  def test_memcachize_limit(self):
+    large_value = '0' * long(2e6)
+    @utils.memcachize(cache_check=None)
+    def get_large_value():
+      return large_value
+    self.assertEquals(get_large_value(), large_value)
+    self.assertEquals(get_large_value(), large_value)

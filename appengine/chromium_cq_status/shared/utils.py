@@ -57,7 +57,10 @@ def memcachize(cache_check): # pragma: no cover
           'value': f(**kwargs),
           'timestamp': timestamp_now(),
         }
-        memcache.set(key, cache)
+        try:
+          memcache.set(key, cache)
+        except ValueError as e:
+          logging.warning('Error setting memcache for %s: %s' % (key, e))
       return cache['value']
     return memcachized
   return decorator
