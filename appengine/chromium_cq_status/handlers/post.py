@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import json
+import logging
+import traceback
 
 from google.appengine.api import users
 import webapp2
@@ -43,7 +45,8 @@ class Post(webapp2.RequestHandler): # pragma: no cover
         'tags': parse_strings,
         'fields': parse_fields,
       }))
-    except ValueError, e:
+    except ValueError as e:
+      logging.warning(traceback.format_exc())
       self.response.write(e)
 
   def post(self):
@@ -56,14 +59,16 @@ class Post(webapp2.RequestHandler): # pragma: no cover
       for packet in packets:
         if not isinstance(packet, dict):
           raise ValueError('JSON dictionary expected.')
-    except ValueError, e:
+    except ValueError as e:
+      logging.warning(traceback.format_exc())
       self.response.write('Invalid packet: %s' % e)
       return
 
     try:
       for packet in packets:
         update_record(**utils.filter_dict(packet, ('key', 'tags', 'fields')))
-    except ValueError, e:
+    except ValueError as e:
+      logging.warning(traceback.format_exc())
       self.response.write(e)
 
   def _is_cq_bot(self):

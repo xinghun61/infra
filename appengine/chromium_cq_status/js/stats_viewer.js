@@ -23,7 +23,13 @@ function loadCQStatsList(callback) {
     xhr.open('get', queryURL, true);
     xhr.onreadystatechange = function() {
       if (xhr.readyState === XMLHttpRequest.DONE) {
-        response = JSON.parse(xhr.responseText);
+        try {
+          response = JSON.parse(xhr.responseText);
+        } catch (error) {
+          console.warn('Request:', queryURL, '\nResponse:', xhr.responseText);
+          container.textContent = 'Error loading stats: ' + xhr.responseText;
+          throw error;
+        }
         if (!defaultCount) {
           defaultCount = response.results.length;
         }

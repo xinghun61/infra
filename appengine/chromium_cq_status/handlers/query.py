@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import logging
+import traceback
 
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
@@ -85,5 +87,6 @@ class Query(webapp2.RequestHandler): # pragma: no cover
       })
       params['tags'].extend(parse_url_tags(url_tags))
       return execute_query(**params)
-    except ValueError, e:
+    except ValueError as e:
+      logging.warning(traceback.format_exc())
       self.response.write(e)

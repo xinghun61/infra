@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+import traceback
+
+from google.appengine.api import memcache
 from google.appengine.datastore.datastore_query import Cursor
 import webapp2
 
@@ -22,8 +26,6 @@ from shared.parsing import (
   use_default,
 )
 from shared import utils
-
-from google.appengine.api import memcache
 
 def check_last_change(cache_timestamp, kwargs): # pragma: no cover
   last_change_key = get_last_change_key(kwargs.get('interval_minutes'))
@@ -102,5 +104,6 @@ class StatsQuery(webapp2.RequestHandler): # pragma: no cover
         'cursor': parse_cursor,
       })
       return execute_query(**params)
-    except ValueError, e:
+    except ValueError as e:
+      logging.warning(traceback.format_exc())
       self.response.write(e)
