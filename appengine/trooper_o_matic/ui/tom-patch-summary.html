@@ -1,0 +1,66 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../model/patch-summary.html">
+
+<polymer-element name="tom-patch-summary" attributes="model mode">
+  <template>
+    <link rel="stylesheet" href="./tom-patch-summary.css">
+    <div class="row">
+      <div class="metric-cell column">{{ model.value | toFixed }} {{ model.unit }}</div>
+
+      <template bind="{{ model._issueTitle ? model._issueTitle : model._patchURL as title }}">
+        <div class="patch-cell">
+          <a href="{{ model._patchURL }}" title="{{ title }}">{{ title }}</a><br>
+          <a href="{{ model._patchURL }}">#{{ model.patchset }}</a>
+          <a href="//chromium-cq-status.appspot.com/patch-status/{{ model.issue }}/{{ model.patchset }}">[CQ Status]</a>
+          <a href="//chromium-cq-status.appspot.com/recent#issue={{ model.issue }},patchset={{ model.patchset }}">[CQ Logs]</a>
+        </div>
+      </template>
+
+      <template if="{{ !model._summary }}">
+        <div class="column-container">
+          <div class="column">Loading...</div>
+        </div>
+      </template>
+
+      <template if="{{ model._summary }}">
+        <template if="{{ mode == 'Summary' }}">
+          <div class="column-container">
+            <template repeat="{{ value in model._columnValues }}">
+              <div class="column">{{ value }}</div>
+            </template>
+          </div>
+        </template>
+
+        <template if="{{ mode == 'Failed Jobs' }}">
+          <div class="column grow builder-bubbles">
+            <template repeat="{{ builder in model._failingBuilders }}">
+              <span class="builder-bubble">
+                <a href="http://build.chromium.org/p/{{ builder.master }}/builders/{{ builder.name }}" title="{{ builder.master }}">
+                  {{ builder.name }}:
+                </a>
+                <template repeat="{{ build in builder.builds }}">
+                  <a href="{{ build.url }}" title="{{ build.slave }}" class="build-bubble">
+                    #{{ build.number }}
+                  </a>
+                </template>
+              </span>
+              <br>
+            </template>
+          </div>
+        </template>
+      </template>
+    </div class="row">
+  </template>
+  <script>
+    Polymer({
+      toFixed: function(number) {
+        return number.toFixed();
+      },
+    });
+  </script>
+</polymer-element>

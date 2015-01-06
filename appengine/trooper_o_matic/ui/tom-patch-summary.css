@@ -1,0 +1,79 @@
+/*
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+*/
+
+a {
+  text-decoration: none;
+}
+
+.row {
+  padding: 6px;
+  display: flex;
+  border-bottom: solid 1px #aaa;
+  font-size: 16px;
+}
+
+.metric-cell {
+  min-width: 70px;
+}
+
+.patch-cell {
+  flex-grow: 0;
+  min-width: 22em;
+  width: 22em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.column-container {
+  display: flex;
+  flex-grow: 1;
+  justify-content: space-around;
+}
+
+.column {
+  width: 70px;
+  text-align: center;
+}
+
+.column.header {
+  font-weight: bold;
+}
+
+.column.grow {
+  width: auto;
+  flex-grow: 1;
+}
+
+.builder-bubbles {
+  line-height: 180%;
+  text-align: left;
+}
+
+.builder-bubble {
+  text-align: left;
+  box-shadow: 0 1px 3px #888;
+  padding: 3px;
+  border-radius: 3px;
+  margin-bottom: 5px;
+}
+
+.builder-bubble a {
+  color: black;
+}
+
+.build-bubble {
+  background: #e88;
+  padding: 2px;
+  border-radius: 3px;
+  margin-right: 3px;
+  line-height: 140%;
+  transition: box-shadow 200ms;
+}
+
+.build-bubble:hover {
+  box-shadow: 0 1px 3px #888;
+}

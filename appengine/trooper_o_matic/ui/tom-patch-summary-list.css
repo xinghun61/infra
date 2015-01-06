@@ -1,0 +1,58 @@
+/*
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+*/
+
+:host {
+  display: {{ model.list.length ? 'block' : 'none' }};
+}
+
+:root {
+  font-family: RobotoDraft, sans-serif;
+}
+
+.shadow-box {
+  margin: 20px;
+}
+
+.list-box {
+  overflow-x: auto;
+}
+
+.list-header {
+  background: grey;
+  color: white;
+  padding: 10px;
+  padding-top: 20px;
+}
+
+.header-title {
+  font-size: 110%;
+}
+
+paper-button.close {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  min-width: 3em;
+  transition: background-color 0.3s;
+}
+
+paper-button.close:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.view-selector {
+  margin-left: 10px;
+}
+
+.item-rows {
+  max-height: 80vh;
+  overflow-y: scroll;
+}
+
+.row {
+  /* Hacky way to accommodate for scrollbar in item rows. */
+  margin-right: 16px;
+}

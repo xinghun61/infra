@@ -1,0 +1,123 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../lib/cqstats-util.html">
+<link rel="import" href="../lib/log.html">
+<link rel="import" href="../lib/net.html">
+<link rel="import" href="../lib/sugar.html">
+
+<script>
+(function(){
+
+this.PatchSummary = function PatchSummary(value, unit, issue, patchset, alertThreshold) {
+  this.value = value;
+  this.unit = unit;
+  this.issue = issue;
+  this.patchset = patchset;
+  this.alertThreshold = alertThreshold;
+
+  var reviewHost = 'https://codereview.chromium.org';
+  this._patchURL = '{1}/{2}#ps{3}'.assign(reviewHost, this.issue, this.patchset);
+  this._issueTitle = null;
+  this._summary = null;
+  this._columnValues = [];
+  this._failingBuilders = [];
+
+  var self = this;
+  var issueURL = '{1}/api/{2}'.assign(reviewHost, this.issue);
+  net.json({url: issueURL, cache: true}).then(function(json) {
+    self.issueTitle = json.subject;
+  }).catch(log);
+  cqStatsUtil.loadPatchSummary(issue, patchset).then(function(summary) {
+    self._summary = summary;
+    self._columnValues = PatchSummary.summaryColumns.map(function(column) {
+      return column.getter(summary);
+    });
+    self._failingBuilders = getFailingBuilders(summary);
+  }).catch(log);
+};
+
+function secondsToMinutes(seconds) {
+  return (seconds / 60).toFixed(0);
+}
+
+PatchSummary.summaryColumns = [
+  {
+    header: 'False rejects',
+    getter: function(summary) {
+      return summary.success ? summary.attempt_fail_count : 0;
+    },
+  },
+  {
+    header: 'Total minutes',
+    getter: function(summary) {
+      return secondsToMinutes(summary.durations.total);
+    },
+  },
+  {
+    header: 'Blocked minutes',
+    getter: function(summary) {
+      return secondsToMinutes(summary.durations.blocked_on_throttled_tree +
+          summary.durations.blocked_on_closed_tree);
+    },
+  },
+  {
+    header: 'Failed jobs',
+    getter: function(summary) {
+      return summary.job_counts.failed;
+    },
+  },
+  {
+    header: 'Flaky jobs',
+    getter: function(summary) {
+      return summary.flaky_jobs.length;
+    },
+  },
+  {
+    header: 'Failed builders',
+    getter: function(summary) {
+      var builders = new Set();
+      for (var attempt of summary.attempts) {
+        for (var job of attempt.jobs.failed) {
+          builders.add(job.master + ':' + job.builder);
+        }
+      }
+      return builders.size;
+    },
+  },
+];
+
+function getFailingBuilders(summary) {
+  var buildMap = new Map();
+  for (var attempt of summary.attempts) {
+    for (var job of attempt.jobs.failed) {
+      var builderKey = job.master + ':' + job.builder;
+      if (!buildMap.has(builderKey)) {
+        buildMap.set(builderKey, {
+          name: job.builder,
+          master: job.master,
+          builds: [],
+        });
+      }
+      buildMap.get(builderKey).builds.push({
+        number: job.build_number,
+        slave: job.slave,
+        url: job.url,
+      });
+    }
+  }
+  var builders = [];
+  buildMap.forEach(function(builder) {
+    builders.push(builder);
+  });
+  builders.sort(function(builderA, builderB) {
+    return (builderA.name > builderB.name) * 2 - 1;
+  });
+  return builders;
+}
+
+})();
+</script>

@@ -1,0 +1,73 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="../model/patch-summary.html">
+<link rel="import" href="./tom-patch-summary.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-shadow/paper-shadow.html">
+<link rel="import" href="/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/bower_components/paper-dropdown/paper-dropdown.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+
+<polymer-element name="tom-patch-summary-list" attributes="model">
+  <template>
+    <link rel="stylesheet" href="./tom-patch-summary-list.css">
+    <link rel="stylesheet" href="./tom-patch-summary.css">
+    <paper-shadow z="2" class="shadow-box">
+      <div class="list-box">
+        <div class="list-header">
+          <span class="header-title">Worst {{ model.unit }}</span><br>
+          From: {{ model.begin }}<br>
+          Until: {{ model.end }}
+          <paper-button class="close" on-tap="{{ close }}">X</paper-button>
+        </div>
+
+        <paper-dropdown-menu class="view-selector">
+          <paper-dropdown class="dropdown">
+            <core-menu class="menu" id="viewSelector" selected="0">
+              <paper-item>Failed Jobs</paper-item>
+              <paper-item>Summary</paper-item>
+            </core-menu>
+          </paper-dropdown>
+        </paper-dropdown-menu>
+
+        <template bind="{{ $.viewSelector.selectedItem.textContent as mode }}">
+          <div class="row">
+            <div class="metric-cell column header">Graph metric</div>
+            <div class="patch-cell column header">Patch</div>
+            <div class="column-container">
+              <template if="{{ mode == 'Summary' }}">
+                <template repeat="{{ column in _summaryColumns }}">
+                  <div class="column header">{{ column.header }}</div>
+                </template>
+              </template>
+              <template if="{{ mode == 'Failed Jobs' }}">
+                <div class="column grow header">Failed jobs</div>
+              </template>
+            </div>
+          </div>
+
+          <div class="item-rows">
+            <template repeat="{{ patchSummary in model.list }}">
+              <tom-patch-summary model="{{ patchSummary }}" mode="{{ mode }}"></tom-patch-summary>
+            </template>
+          </div>
+        </template>
+      </div>
+    </paper-shadow>
+  </template>
+  <script>
+    Polymer({
+      ready: function() {
+        this._summaryColumns = PatchSummary.summaryColumns;
+      },
+      close: function() {
+        this.model.list = [];
+      },
+    });
+  </script>
+</polymer-element>

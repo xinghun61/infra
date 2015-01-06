@@ -6,8 +6,9 @@ found in the LICENSE file.
 
 <link rel="import" href="../lib/dygraph.html">
 <link rel="import" href="../lib/log.html">
-<link rel="import" href="../model/cq-graph-item.html">
-<link rel="import" href="./tom-cq-graph-item.html">
+<link rel="import" href="../model/patch-summary.html">
+<link rel="import" href="../model/patch-summary-list.html">
+<link rel="import" href="./tom-patch-summary-list.html">
 
 <polymer-element name="tom-cq-graph" attributes="graph">
   <template>
@@ -35,21 +36,18 @@ found in the LICENSE file.
       Alert thresholds: {{ _alertText() }}
     </template>
     <div id="graphContainer"><div id="graphDiv"></div></div>
-    <ul>
-      <template if="{{ _list.length }}">
-        Worst patches between {{ _listBegin }} and {{ _listEnd }}:
-      </template>
-      <template repeat="{{ item in _list }}">
-        <tom-cq-graph-item item="{{ item }}"></tom-cq-graph-item>
-      </template>
-    </ul>
-    <template if="{{ _loading }}"><span class="loading">Loading...</span></template>
+    <template if="{{ graph.data.rowItemsAvailable }}">
+      <tom-patch-summary-list model="{{ _patchSummaryList }}"></tom-patch-summary-list>
+    </template>
+    <template if="{{ _loading }}">
+      <span class="loading">Loading...</span>
+    </template>
   </template>
   <script>
     (function() {
     Polymer({
       ready: function() {
-        this._list = [];
+        this._patchSummaryList = new PatchSummaryList(this.graph.itemUnit);
         this._loading = true;
         this._dygraph = null;
         var self = this;
@@ -83,22 +81,22 @@ found in the LICENSE file.
         if (!this._dygraph || !this.graph.data.rowItemsAvailable) {
           return;
         }
-        this._list = [];
+        this._patchSummaryList.list = [];
         var row = this._dygraph.getSelection();
         if (row !== -1) {
           this._loading = true;
           var self = this;
           this.graph.data.rowItems(row).then(function(rowItems) {
             self._loading = false;
-            self._list = rowItems.items.map(function(item) {
+            self._patchSummaryList.list = rowItems.items.map(function(item) {
               var itemValue = item[0];
               var itemRef = item[1];
-              return new CQGraphItem(itemValue, self.graph.itemUnit,
+              return new PatchSummary(itemValue, self.graph.itemUnit,
                   itemRef.issue, itemRef.patchset,
                   self.graph.itemAlertThreshold);
             });
-            self._listBegin = rowItems.begin;
-            self._listEnd = rowItems.end;
+            self._patchSummaryList.begin = rowItems.begin;
+            self._patchSummaryList.end = rowItems.end;
           }).catch(log);
         }
       },

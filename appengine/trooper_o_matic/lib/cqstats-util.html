@@ -34,5 +34,10 @@ cqStatsUtil.namedStat = function(name, cqStats) {
     return stat.name === name;
   });
 };
+
+cqStatsUtil.loadPatchSummary = function(issue, patch) {
+  var url = '{1}/patch-summary/{2}/{3}'.assign(cqLogHost, issue, patch);
+  return net.json({url: url, cache: true});
+};
 })();
 </script>
