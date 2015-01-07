@@ -63,7 +63,7 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 		for _, f := range unset {
 			missing = append(missing, f.Name)
 		}
-		reportError("Missing required flags: %v")
+		reportError("Missing required flags: %v", missing)
 		return false
 	}
 	return true
@@ -239,6 +239,55 @@ func inspectPackage(pkg cipd.Package, listFiles bool) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'register' subcommand.
+
+var cmdRegister = &subcommands.Command{
+	UsageLine: "pkg-register <package file>",
+	ShortDesc: "uploads and registers package instance in the package repository",
+	LongDesc:  "Uploads and registers package instance in the package repository.",
+	CommandRun: func() subcommands.CommandRun {
+		return &registerRun{}
+	},
+}
+
+type registerRun struct {
+	subcommands.CommandRunBase
+}
+
+func (c *registerRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	client, err := authenticatedClient()
+	if err != nil {
+		reportError("Error when authenticating: %s", err)
+		return 1
+	}
+	err = registerPackageFile(args[0], client)
+	if err != nil {
+		reportError("Error while registering the package: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func registerPackageFile(packageFile string, client *http.Client) error {
+	pkg, err := cipd.OpenPackageFile(packageFile, "")
+	if err != nil {
+		return err
+	}
+	defer pkg.Close()
+	logging.Infof("Registering package %s:%s", pkg.Name(), pkg.InstanceID())
+	inspectPackage(pkg, false)
+	return cipd.RegisterPackage(cipd.RegisterPackageOptions{
+		Package: pkg,
+		CommonOptions: cipd.CommonOptions{
+			Client: client,
+		},
+	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'upload' subcommand.
 
 var cmdUpload = &subcommands.Command{
@@ -300,6 +349,7 @@ var application = &subcommands.DefaultApplication{
 		cmdBuild,
 		cmdDeploy,
 		cmdInspect,
+		cmdRegister,
 		cmdUpload,
 	},
 }

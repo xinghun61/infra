@@ -6,6 +6,7 @@ package cipd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +37,22 @@ func TestRemoteService(t *testing.T) {
 		return remote.finalizeUpload("abc")
 	}
 
+	mockRegisterPackage := func(response string) (*registerPackageResponse, error) {
+		request := registerPackageRequest{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/register_package")
+			var decoded registerPackageRequest
+			err := json.NewDecoder(r.Body).Decode(&decoded)
+			So(err, ShouldBeNil)
+			So(decoded, ShouldResemble, request)
+			w.Write([]byte(response))
+		})
+		return remote.registerPackage(&request)
+	}
+
 	Convey("makeRequest works", t, func() {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
 			So(r.Method, ShouldEqual, "POST")
@@ -45,7 +62,7 @@ func TestRemoteService(t *testing.T) {
 		var reply struct {
 			Value string `json:"value"`
 		}
-		err := remote.makeRequest("cas/v1/method", &reply)
+		err := remote.makeRequest("cas/v1/method", nil, &reply)
 		So(err, ShouldBeNil)
 		So(reply.Value, ShouldEqual, "123")
 	})
@@ -57,7 +74,7 @@ func TestRemoteService(t *testing.T) {
 			w.WriteHeader(403)
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", &reply)
+		err := remote.makeRequest("cas/v1/method", nil, &reply)
 		So(err, ShouldNotBeNil)
 		So(calls, ShouldEqual, 1)
 	})
@@ -74,7 +91,7 @@ func TestRemoteService(t *testing.T) {
 			}
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", &reply)
+		err := remote.makeRequest("cas/v1/method", nil, &reply)
 		So(err, ShouldBeNil)
 		So(calls, ShouldEqual, 2)
 	})
@@ -87,7 +104,7 @@ func TestRemoteService(t *testing.T) {
 			w.WriteHeader(500)
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", &reply)
+		err := remote.makeRequest("cas/v1/method", nil, &reply)
 		So(err, ShouldNotBeNil)
 		So(calls, ShouldEqual, 10)
 	})
@@ -174,39 +191,157 @@ func TestRemoteService(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(finished, ShouldBeFalse)
 	})
+
+	Convey("registerPackage REGISTERED", t, func() {
+		result, err := mockRegisterPackage(`{
+			"status": "REGISTERED",
+			"registered_by": "user:abc@example.com",
+			"registered_ts": "1420244414571500"
+		}`)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, &registerPackageResponse{
+			RegisteredBy: "user:abc@example.com",
+			RegisteredTs: time.Unix(0, 1420244414571500000),
+		})
+	})
+
+	Convey("registerPackage ALREADY_REGISTERED", t, func() {
+		result, err := mockRegisterPackage(`{
+			"status": "ALREADY_REGISTERED",
+			"registered_by": "user:abc@example.com",
+			"registered_ts": "1420244414571500"
+		}`)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, &registerPackageResponse{
+			AlreadyRegistered: true,
+			RegisteredBy:      "user:abc@example.com",
+			RegisteredTs:      time.Unix(0, 1420244414571500000),
+		})
+	})
+
+	Convey("registerPackage UPLOAD_FIRST", t, func() {
+		result, err := mockRegisterPackage(`{
+			"status": "UPLOAD_FIRST",
+			"upload_session_id": "upload_session_id",
+			"upload_url": "http://upload_url"
+		}`)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, &registerPackageResponse{
+			UploadSession: &uploadSession{
+				ID:  "upload_session_id",
+				URL: "http://upload_url",
+			},
+		})
+	})
+
+	Convey("registerPackage ERROR", t, func() {
+		result, err := mockRegisterPackage(`{
+			"status": "ERROR",
+			"error_message": "Some error message"
+		}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("registerPackage unknown status", t, func() {
+		result, err := mockRegisterPackage(`{"status":"???"}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
 }
 
 func TestUploadToCAS(t *testing.T) {
 	Convey("Given a mocked service and clock", t, func() {
-		finalizeCalls := 0
-		finalizeCallsToPublish := 5
 		mockClock(time.Now())
 		mockResumableUpload()
-		mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/_ah/api/cas/v1/upload/SHA1/abc" {
-				resp := `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`
-				w.Write([]byte(resp))
-			} else if r.URL.Path == "/_ah/api/cas/v1/finalize/12345" {
-				finalizeCalls++
-				if finalizeCalls == finalizeCallsToPublish {
-					w.Write([]byte(`{"status":"PUBLISHED"}`))
-				} else {
-					w.Write([]byte(`{"status":"VERIFYING"}`))
-				}
-			} else {
-				t.Errorf("Unexpected URL call: %s", r.URL.Path)
-			}
-		})
 
 		Convey("UploadToCAS full flow", func() {
+			mockRemoteServiceWithExpectations([]expectedHTTPCall{
+				expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/upload/SHA1/abc",
+					Reply: `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
+				},
+				expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/finalize/12345",
+					Reply: `{"status":"VERIFYING"}`,
+				},
+				expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/finalize/12345",
+					Reply: `{"status":"PUBLISHED"}`,
+				},
+			})
 			err := UploadToCAS(UploadToCASOptions{SHA1: "abc"})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("UploadToCAS timeout", func() {
-			finalizeCallsToPublish = -1
+			// Append a bunch of "still verifying" responses at the end.
+			calls := []expectedHTTPCall{
+				expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/upload/SHA1/abc",
+					Reply: `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
+				},
+			}
+			for i := 0; i < 19; i++ {
+				calls = append(calls, expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/finalize/12345",
+					Reply: `{"status":"VERIFYING"}`,
+				})
+			}
+			mockRemoteServiceWithExpectations(calls)
 			err := UploadToCAS(UploadToCASOptions{SHA1: "abc"})
 			So(err, ShouldEqual, ErrFinalizationTimeout)
+		})
+	})
+}
+
+func TestRegisterPackage(t *testing.T) {
+	Convey("Mocking remote service", t, func() {
+		mockClock(time.Now())
+		mockResumableUpload()
+
+		// Build an empty package to be uploaded.
+		out := bytes.Buffer{}
+		err := BuildPackage(BuildPackageOptions{
+			Input:       []File{},
+			Output:      &out,
+			PackageName: "testing",
+		})
+		So(err, ShouldBeNil)
+
+		// Open it for reading.
+		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
+		So(err, ShouldBeNil)
+		Reset(func() { pkg.Close() })
+
+		Convey("RegisterPackage full flow", func() {
+			mockRemoteServiceWithExpectations([]expectedHTTPCall{
+				expectedHTTPCall{
+					URL:   "/_ah/api/repo/v1/register_package",
+					Reply: `{"status":"UPLOAD_FIRST","upload_session_id":"12345","upload_url":"http://localhost"}`,
+				},
+				expectedHTTPCall{
+					URL:   "/_ah/api/cas/v1/finalize/12345",
+					Reply: `{"status":"PUBLISHED"}`,
+				},
+				expectedHTTPCall{
+					URL:   "/_ah/api/repo/v1/register_package",
+					Reply: `{"status":"REGISTERED","registered_by":"user:a@example.com","registered_ts":"0"}`,
+				},
+			})
+			err = RegisterPackage(RegisterPackageOptions{Package: pkg})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("RegisterPackage already registered", func() {
+			mockRemoteServiceWithExpectations([]expectedHTTPCall{
+				expectedHTTPCall{
+					URL:   "/_ah/api/repo/v1/register_package",
+					Reply: `{"status":"ALREADY_REGISTERED","registered_by":"user:a@example.com","registered_ts":"0"}`,
+				},
+			})
+			err = RegisterPackage(RegisterPackageOptions{Package: pkg})
+			So(err, ShouldBeNil)
 		})
 	})
 }
@@ -276,6 +411,11 @@ func TestResumableUpload(t *testing.T) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type expectedHTTPCall struct {
+	URL   string
+	Reply string
+}
+
 type mockedClocked struct {
 	now time.Time
 }
@@ -307,7 +447,7 @@ func mockServerWithHandler(pattern string, handler http.HandlerFunc) (*httptest.
 }
 
 func mockRemoteService(handler http.HandlerFunc) *remoteService {
-	server, client := mockServerWithHandler("/_ah/api/cas/v1/", handler)
+	server, client := mockServerWithHandler("/", handler)
 	remote := &remoteService{
 		client:     client,
 		serviceURL: server.URL,
@@ -319,6 +459,29 @@ func mockRemoteService(handler http.HandlerFunc) *remoteService {
 	}
 	Reset(func() { newRemoteService = prev })
 	return remote
+}
+
+func mockRemoteServiceWithExpectations(expectations []expectedHTTPCall) *remoteService {
+	index := 0
+	return mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+		// Can't use So(...) assertions here. They are not recognized. Return
+		// errors via HTTP instead, to let the main test case catch them.
+		msg := ""
+		if index >= len(expectations) {
+			msg = "Unexpected call"
+		} else if r.URL.Path != expectations[index].URL {
+			msg = fmt.Sprintf("Expecting call to %s, got %s instead", expectations[index].URL, r.URL.Path)
+		}
+		if msg != "" {
+			w.WriteHeader(400)
+			w.Write([]byte(msg))
+		} else {
+			if expectations[index].Reply != "" {
+				w.Write([]byte(expectations[index].Reply))
+			}
+			index++
+		}
+	})
 }
 
 func mockResumableUpload() {

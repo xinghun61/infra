@@ -5,6 +5,7 @@
 package cipd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"infra/libs/logging"
@@ -149,9 +151,48 @@ func RegisterPackage(options RegisterPackageOptions) error {
 		options.Log = logging.DefaultLogger
 	}
 	log := options.Log
-	newRemoteService(options.Client, options.ServiceURL, log)
+	pkg := options.Package
+	remote := newRemoteService(options.Client, options.ServiceURL, log)
 
-	// TODO(vadimsh): Implement.
+	// Attempt to register.
+	request := registerPackageRequest{
+		PackageName: pkg.Name(),
+		InstanceID:  pkg.InstanceID(),
+	}
+	result, err := remote.registerPackage(&request)
+	if err != nil {
+		return err
+	}
+
+	// Asked to upload the package file to CAS first?
+	if result.UploadSession != nil {
+		err = UploadToCAS(UploadToCASOptions{
+			CommonOptions:   options.CommonOptions,
+			SHA1:            pkg.InstanceID(),
+			Data:            pkg.DataReader(),
+			UploadSessionID: result.UploadSession.ID,
+			UploadURL:       result.UploadSession.URL,
+		})
+		if err != nil {
+			return err
+		}
+		// Try again, now that file is uploaded.
+		result, err = remote.registerPackage(&request)
+		if err != nil {
+			return err
+		}
+		if result.UploadSession != nil {
+			return errors.New("Package file is uploaded, but servers asks us to upload it again")
+		}
+	}
+
+	if result.AlreadyRegistered {
+		log.Infof(
+			"cipd: instance %s:%s is already registered by %s on %s",
+			pkg.Name(), pkg.InstanceID(), result.RegisteredBy, result.RegisteredTs)
+	} else {
+		log.Infof("cipd: instance %s:%s was successfully registered", pkg.Name(), pkg.InstanceID())
+	}
 
 	return nil
 }
@@ -171,6 +212,22 @@ type uploadSession struct {
 	URL string
 }
 
+type registerPackageRequest struct {
+	PackageName string `json:"package_name"`
+	InstanceID  string `json:"instance_id"`
+}
+
+type registerPackageResponse struct {
+	// UploadSession is not nil if backend asks the client to upload the file to CAS.
+	UploadSession *uploadSession
+	// AlreadyRegistered is true if such package instance was registered previously.
+	AlreadyRegistered bool
+	// RegisteredBy is ID of whoever registered the package instance.
+	RegisteredBy string
+	// RegisteredTs is timestamp of when the package instance was registered.
+	RegisteredTs time.Time
+}
+
 // newRemoteService is mocked in tests.
 var newRemoteService = func(client *http.Client, url string, log logging.Logger) *remoteService {
 	return &remoteService{
@@ -181,16 +238,31 @@ var newRemoteService = func(client *http.Client, url string, log logging.Logger)
 }
 
 // makeRequest sends POST request with retries.
-func (r *remoteService) makeRequest(path string, response interface{}) error {
+func (r *remoteService) makeRequest(path string, request interface{}, response interface{}) error {
+	var body []byte
+	var err error
+	if request != nil {
+		body, err = json.Marshal(request)
+		if err != nil {
+			return err
+		}
+	}
 	url := fmt.Sprintf("%s/_ah/api/%s", r.serviceURL, path)
 	for attempt := 0; attempt < 10; attempt++ {
 		if attempt != 0 {
 			r.log.Warningf("cipd: retrying request to %s", url)
 			clock.Sleep(2 * time.Second)
 		}
-		req, err := http.NewRequest("POST", url, nil)
+		var bodyReader io.Reader
+		if body != nil {
+			bodyReader = bytes.NewReader(body)
+		}
+		req, err := http.NewRequest("POST", url, bodyReader)
 		if err != nil {
 			return err
+		}
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
 		}
 		req.Header.Set("User-Agent", userAgent())
 		resp, err := r.client.Do(req)
@@ -221,7 +293,7 @@ func (r *remoteService) initiateUpload(sha1 string) (s *uploadSession, err error
 		UploadURL       string `json:"upload_url"`
 		ErrorMessage    string `json:"error_message"`
 	}
-	err = r.makeRequest("cas/v1/upload/SHA1/"+sha1, &reply)
+	err = r.makeRequest("cas/v1/upload/SHA1/"+sha1, nil, &reply)
 	if err != nil {
 		return
 	}
@@ -246,15 +318,14 @@ func (r *remoteService) finalizeUpload(sessionID string) (finished bool, err err
 		Status       string `json:"status"`
 		ErrorMessage string `json:"error_message"`
 	}
-	err = r.makeRequest("cas/v1/finalize/"+sessionID, &reply)
+	err = r.makeRequest("cas/v1/finalize/"+sessionID, nil, &reply)
 	if err != nil {
 		return
 	}
 	switch reply.Status {
 	case "MISSING":
 		err = errors.New("Upload session is unexpectedly missing")
-	case "UPLOADING":
-	case "VERIFYING":
+	case "UPLOADING", "VERIFYING":
 		finished = false
 	case "PUBLISHED":
 		finished = true
@@ -264,6 +335,55 @@ func (r *remoteService) finalizeUpload(sessionID string) (finished bool, err err
 		err = fmt.Errorf("Unexpected upload session status: %s", reply.Status)
 	}
 	return
+}
+
+func (r *remoteService) registerPackage(request *registerPackageRequest) (*registerPackageResponse, error) {
+	err := ValidatePackageName(request.PackageName)
+	if err != nil {
+		return nil, err
+	}
+	err = ValidateInstanceID(request.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status          string `json:"status"`
+		RegisteredBy    string `json:"registered_by"`
+		RegisteredTs    string `json:"registered_ts"`
+		UploadSessionID string `json:"upload_session_id"`
+		UploadURL       string `json:"upload_url"`
+		ErrorMessage    string `json:"error_message"`
+	}
+	err = r.makeRequest("repo/v1/register_package", request, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "REGISTERED", "ALREADY_REGISTERED":
+		// String with int64 timestamp in microseconds since epoch -> time.Time.
+		ts, err := strconv.ParseInt(reply.RegisteredTs, 10, 64)
+		if err != nil {
+			return nil, errors.New("Unexpected timestamp value in the server response")
+		}
+		return &registerPackageResponse{
+			AlreadyRegistered: reply.Status == "ALREADY_REGISTERED",
+			RegisteredBy:      reply.RegisteredBy,
+			RegisteredTs:      time.Unix(0, ts*1000),
+		}, nil
+	case "UPLOAD_FIRST":
+		if reply.UploadSessionID == "" {
+			return nil, errors.New("Server didn't provide upload session ID")
+		}
+		return &registerPackageResponse{
+			UploadSession: &uploadSession{
+				ID:  reply.UploadSessionID,
+				URL: reply.UploadURL,
+			},
+		}, nil
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("Unexpected register package status: %s", reply.Status)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
