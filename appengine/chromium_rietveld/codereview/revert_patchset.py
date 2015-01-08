@@ -63,6 +63,8 @@ def _get_revert_description(request, revert_reason, reviewers, original_issue,
   revert_description.append('')  # Extra new line to separate sections.
   revert_description.append('TBR=%s' % ','.join(
       [str(reviewer) for reviewer in reviewers]))
+  # Do not run presubmit on the revert CL.
+  revert_description.append('NOPRESUBMIT=true')
   # Skip tree status checks.
   revert_description.append('NOTREECHECKS=true')
   # Do not run trybots on the revert CL.
