@@ -102,14 +102,14 @@ def validate_tags(tags):
 
 class BuildBucketService(object):
   def add(
-      self, namespace, tags=None, parameters=None, lease_expiration_date=None):
+      self, bucket, tags=None, parameters=None, lease_expiration_date=None):
     """Adds the build entity to the build bucket.
 
     Requires the current user to have permissions to add builds to the
-    |namespace|.
+    |bucket|.
 
     Args:
-      namespace (str): build namespace. Required.
+      bucket (str): destination bucket. Required.
       tags (model.Tags): build tags.
       parameters (dict): arbitrary build parameters. Cannot be changed after
         build creation.
@@ -119,21 +119,21 @@ class BuildBucketService(object):
     Returns:
       A new Build.
     """
-    assert namespace, 'Namespace not specified'
-    assert isinstance(namespace, basestring), 'Namespace must be a string'
+    assert bucket, 'Bucket not specified'
+    assert isinstance(bucket, basestring), 'Bucket must be a string'
     assert parameters is None or isinstance(parameters, dict)
     validate_lease_expiration_date(lease_expiration_date)
     validate_tags(tags)
     tags = tags or []
 
     identity = auth.get_current_identity()
-    if not acl.can_add_build_to_namespace(namespace, identity):
+    if not acl.can_add_build_to_bucket(bucket, identity):
       raise auth.AuthorizationError(
-          'namespace %s is not allowed for %s' %
-          (namespace, identity.to_bytes()))
+          'Bucket %s is not allowed for %s' %
+          (bucket, identity.to_bytes()))
 
     build = model.Build(
-        namespace=namespace,
+        bucket=bucket,
         tags=tags,
         parameters=parameters,
         status=model.BuildStatus.SCHEDULED,
@@ -206,13 +206,13 @@ class BuildBucketService(object):
       q = q.filter(model.Build.tags == t)
     return self._fetch_page(q, max_builds, start_cursor)
 
-  def peek(self, namespaces, max_builds=None, start_cursor=None):
-    """Returns builds available for leasing in the specified |namespaces|.
+  def peek(self, buckets, max_builds=None, start_cursor=None):
+    """Returns builds available for leasing in the specified |buckets|.
 
     Builds are sorted by creation time, oldest first.
 
     Args:
-      namespaces (list of string): fetch only builds in any of |namespaces|.
+      buckets (list of string): fetch only builds in any of |buckets|.
       max_builds (int): maximum number of builds to return. Defaults to 10.
       start_cursor (string): a value of "next" cursor returned by previous
         peek call. If not None, return next builds in the query.
@@ -225,24 +225,24 @@ class BuildBucketService(object):
     """
     # TODO(nodir): accept and return a cursor for paging.
 
-    assert isinstance(namespaces, list)
-    assert namespaces, 'No namespaces specified'
-    assert all(isinstance(n, basestring) for n in namespaces), (
-        'namespaces must be strings'
+    assert isinstance(buckets, list)
+    assert buckets, 'No buckets specified'
+    assert all(isinstance(n, basestring) for n in buckets), (
+        'Buckets must be strings'
     )
     max_builds = max_builds or 10
     validate_max_builds(max_builds)
     identity = auth.get_current_identity()
-    for namespace in namespaces:
-      if not acl.can_peek_namespace(namespace, identity):
+    for bucket in buckets:
+      if not acl.can_peek_bucket(bucket, identity):
         raise auth.AuthorizationError(
-            'User %s cannot peek builds in namespace %s' %
-            (identity.to_bytes(), namespace))
+            'User %s cannot peek builds in bucket %s' %
+            (identity.to_bytes(), bucket))
 
     q = model.Build.query(
         model.Build.status == model.BuildStatus.SCHEDULED,
         model.Build.is_leased == False,
-        model.Build.namespace.IN(namespaces),
+        model.Build.bucket.IN(buckets),
     )
     q = q.order(model.Build.create_time) # oldest first.
 
@@ -251,7 +251,7 @@ class BuildBucketService(object):
     def local_predicate(b):
       return (b.status == model.BuildStatus.SCHEDULED and
               not b.is_leased and
-              b.namespace in namespaces and
+              b.bucket in buckets and
               acl.can_view_build(b, identity))
 
     return self._fetch_page(
@@ -477,7 +477,7 @@ class BuildBucketService(object):
     """Cancels build. Does not require a lease key.
 
     The current user has to have a permission to cancel a build in the
-    build namespace.
+    bucket.
 
     Returns:
       Canceled Build.

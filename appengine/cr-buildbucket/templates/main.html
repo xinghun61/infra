@@ -23,7 +23,7 @@
   <h2>Concepts</h2>
   <p>Build consists of:
     <ul>
-      <li>Namespace: a string that defines what project/subproject a build
+      <li>Bucket: a string that defines what project/subproject a build
         belongs to. Required.</li>
       <li>Parameters: an immutable arbitrary JSON blob specific to a build-system.
         Not reqiured by cr-buildbucket, but may be required by a particular
@@ -94,9 +94,9 @@ buildbucket = apiclient.discovery.build(
     discoveryServiceUrl=DISCOVERY_URL,
 )
 
-# Schedule a build in "my_namespace" with builder_name=my_builder parameter.
+# Schedule a build in "my_bucket" with builder_name=my_builder parameter.
 req = buildbucket.put(body={
-    'namespace': 'my_namespace',
+    'bucket': 'my_bucket',
     'parameters_json': json.dumps({
         'builder_name': 'my_builder',
     }),
@@ -125,7 +125,7 @@ print req.execute()</code></pre>
 
 buildbucket.setup(
     c,  # Configuration object.
-    build_namespaces=['chromium'],
+    buckets=['chromium'],
     service_json_key_filename='my_secret_key.json',
 )</code></pre>
 
@@ -142,8 +142,8 @@ buildbucket.setup(
     README.md</a>.</p>
 
   <p>Buildbot leases and schedules a build only if it has capacity to run it right
-    away. This allows having multiple buildbot masters polling the same build
-    namespace.</p>
+    away. This allows having multiple buildbot masters polling the same bucket.
+    </p>
 
   <h2>Auth</h2>
   <p>Authentication is done via OAuth2 using

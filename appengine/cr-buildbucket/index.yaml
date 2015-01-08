@@ -4,7 +4,7 @@ indexes:
   properties:
   - name: status
   - name: is_leased
-  - name: namespace
+  - name: bucket
   - name: create_time
 
 - kind: Build

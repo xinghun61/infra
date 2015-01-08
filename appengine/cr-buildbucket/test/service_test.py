@@ -24,8 +24,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def mock_acls(self):
     ops = [
-        'add_build_to_namespace',
-        'peek_namespace',
+        'add_build_to_bucket',
+        'peek_bucket',
         'lease_build',
         'cancel_build',
         'view_build',
@@ -40,7 +40,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     super(BuildBucketServiceTest, self).setUp()
     self.service = service.BuildBucketService()
     self.test_build = model.Build(
-        namespace='chromium',
+        bucket='chromium',
         parameters={
             'buildername': 'infra',
             'changes': [{
@@ -57,7 +57,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def put_many_builds(self, tags=None):
     for _ in xrange(100):
       b = model.Build(
-          namespace=self.test_build.namespace,
+          bucket=self.test_build.bucket,
           tags=tags or [])
       b.put()
 
@@ -66,17 +66,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add(self):
     params = {'buildername': 'linux_rel'}
     build = self.service.add(
-        namespace='chromium',
+        bucket='chromium',
         parameters=params,
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
-    self.assertEqual(build.namespace, 'chromium')
+    self.assertEqual(build.bucket, 'chromium')
     self.assertEqual(build.parameters, params)
 
   def test_add_with_leasing(self):
     build = self.service.add(
-        namespace='chromium',
+        bucket='chromium',
         lease_expiration_date=utils.utcnow () + datetime.timedelta(seconds=10),
     )
     self.assertTrue(build.is_leased)
@@ -84,9 +84,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.lease_key)
 
   def test_add_with_auth_error(self):
-    self.mock_cannot('add_build_to_namespace')
+    self.mock_cannot('add_build_to_bucket')
     with self.assertRaises(auth.AuthorizationError):
-      self.service.add(self.test_build.namespace)
+      self.service.add(self.test_build.bucket)
 
   #################################### GET #####################################
 
@@ -153,7 +153,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.tags = ['important:true', 'author:ivan']
     self.test_build.put()
     build2 = model.Build(
-        namespace=self.test_build.namespace,
+        bucket=self.test_build.bucket,
         tags=self.test_build.tags[:1],  # only one of two tags.
     )
     build2.put()
@@ -199,36 +199,36 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek(self):
     self.test_build.put()
-    builds, _ = self.service.peek(namespaces=[self.test_build.namespace])
+    builds, _ = self.service.peek(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
   def test_peek_with_paging(self):
     self.put_many_builds()
     first_page, next_cursor = self.service.peek(
-        namespaces=[self.test_build.namespace])
+        buckets=[self.test_build.bucket])
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
     second_page, _ = self.service.peek(
-        namespaces=[self.test_build.namespace], start_cursor=next_cursor)
+        buckets=[self.test_build.bucket], start_cursor=next_cursor)
 
     self.assertTrue(all(b not in second_page for b in first_page))
 
   def test_peek_with_auth_error(self):
-    self.mock_cannot('peek_namespace')
+    self.mock_cannot('peek_bucket')
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
-      self.service.peek(namespaces=[self.test_build.namespace])
+      self.service.peek(buckets=[self.test_build.bucket])
 
   def test_peek_does_not_return_leased_builds(self):
     self.test_build.put()
     self.lease()
-    builds, _ = self.service.peek([self.test_build.namespace])
+    builds, _ = self.service.peek([self.test_build.bucket])
     self.assertFalse(builds)
 
   def test_cannot_peek_1000_builds(self):
     with self.assertRaises(service.InvalidInputError):
-      self.service.peek([self.test_build.namespace], max_builds=1000)
+      self.service.peek([self.test_build.bucket], max_builds=1000)
 
   #################################### LEASE ###################################
 

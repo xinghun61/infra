@@ -16,11 +16,11 @@ def is_access_group_member(identity):  # pragma: no cover
   return auth.is_group_member(ACCESS_GROUP, identity)
 
 
-def can_add_build_to_namespace(namespace, identity):  # pragma: no cover
+def can_add_build_to_bucket(bucket, identity):  # pragma: no cover
   return is_access_group_member(identity)
 
 
-def can_peek_namespace(namespace, identity):  # pragma: no cover
+def can_peek_bucket(bucket, identity):  # pragma: no cover
   return is_access_group_member(identity)
 
 

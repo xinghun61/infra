@@ -43,7 +43,7 @@ class ErrorMessage(messages.Message):
 class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
   id = messages.IntegerField(1, required=True)
-  namespace = messages.StringField(2, required=True)
+  bucket = messages.StringField(2, required=True)
   tags = messages.StringField(3, repeated=True)
   parameters_json = messages.StringField(4)
   status = messages.EnumField(model.BuildStatus, 5)
@@ -69,7 +69,7 @@ def build_to_message(build, include_lease_key=False):
 
   msg = BuildMessage(
       id=build.key.id(),
-      namespace=build.namespace,
+      bucket=build.bucket,
       tags=build.tags,
       parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
       status=build.status,
@@ -168,7 +168,7 @@ class BuildBucketApi(remote.Service):
   ###################################  PUT  ####################################
 
   class PutRequestMessage(messages.Message):
-    namespace = messages.StringField(1, required=True)
+    bucket = messages.StringField(1, required=True)
     tags = messages.StringField(2, repeated=True)
     parameters_json = messages.StringField(3)
     lease_expiration_ts = messages.IntegerField(4)
@@ -178,11 +178,11 @@ class BuildBucketApi(remote.Service):
       path='builds', http_method='PUT')
   def put(self, request):
     """Creates a new build."""
-    if not request.namespace:
-      raise service.InvalidInputError('Build namespace not specified')
+    if not request.bucket:
+      raise service.InvalidInputError('Bucket not specified')
 
     build = self.service.add(
-        namespace=request.namespace,
+        bucket=request.bucket,
         tags=request.tags,
         parameters=parse_json(request.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
@@ -226,7 +226,7 @@ class BuildBucketApi(remote.Service):
 
   PEEK_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
-      namespace=messages.StringField(1, repeated=True),
+      bucket=messages.StringField(1, repeated=True),
       max_builds=messages.IntegerField(2, variant=messages.Variant.INT32),
       start_cursor=messages.StringField(3),
   )
@@ -236,12 +236,12 @@ class BuildBucketApi(remote.Service):
       path='peek', http_method='GET')
   def peek(self, request):
     """Returns available builds."""
-    assert isinstance(request.namespace, list)
-    if not request.namespace:
-      raise service.InvalidInputError('Build namespace not specified')
+    assert isinstance(request.bucket, list)
+    if not request.bucket:
+      raise service.InvalidInputError('Bucket not specified')
 
     builds, next_cursor = self.service.peek(
-        request.namespace,
+        request.bucket,
         max_builds=request.max_builds,
         start_cursor=request.start_cursor,
     )

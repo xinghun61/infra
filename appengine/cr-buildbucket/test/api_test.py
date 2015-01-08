@@ -34,7 +34,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
     self.test_build = model.Build(
         id=1,
-        namespace='chromium',
+        bucket='chromium',
         parameters={
             'buildername': 'linux_rel',
         },
@@ -64,7 +64,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     resp = self.call_api('get', {'id': build_id}).json_body
     self.service.get.assert_called_once_with(build_id)
     self.assertEqual(resp['build']['id'], str(build_id))
-    self.assertEqual(resp['build']['namespace'], self.test_build.namespace)
+    self.assertEqual(resp['build']['bucket'], self.test_build.bucket)
     self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
     self.assertEqual(resp['build']['status'], 'SCHEDULED')
     self.assertEqual(
@@ -80,24 +80,24 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.test_build.tags = ['owner=ivan']
     self.service.add.return_value = self.test_build
     req = {
-        'namespace': self.test_build.namespace,
+        'bucket': self.test_build.bucket,
         'tags': self.test_build.tags,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
-        namespace=self.test_build.namespace,
+        bucket=self.test_build.bucket,
         tags=req['tags'],
         parameters=None,
         lease_expiration_date=None,
     )
     self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
-    self.assertEqual(resp['build']['namespace'], req['namespace'])
+    self.assertEqual(resp['build']['bucket'], req['bucket'])
     self.assertEqual(resp['build']['tags'], req['tags'])
 
   def test_put_with_parameters(self):
     self.service.add.return_value = self.test_build
     req = {
-        'namespace': self.test_build.namespace,
+        'bucket': self.test_build.bucket,
         'parameters_json': json.dumps(self.test_build.parameters),
     }
     resp = self.call_api('put', req).json_body
@@ -107,12 +107,12 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.test_build.lease_expiration_date = self.future_date
     self.service.add.return_value = self.test_build
     req = {
-        'namespace': self.test_build.namespace,
+        'bucket': self.test_build.bucket,
         'lease_expiration_ts': self.future_ts,
     }
     resp = self.call_api('put', req).json_body
     self.service.add.assert_called_once_with(
-        namespace=self.test_build.namespace,
+        bucket=self.test_build.bucket,
         tags=[],
         parameters=None,
         lease_expiration_date=self.future_date,
@@ -120,12 +120,12 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(
         resp['build']['lease_expiration_ts'], req['lease_expiration_ts'])
 
-  def test_put_with_empty_namespace(self):
-    self.expect_error('put', {'namespace': ''}, 'INVALID_INPUT')
+  def test_put_with_empty_bucket(self):
+    self.expect_error('put', {'bucket': ''}, 'INVALID_INPUT')
 
   def test_put_with_malformed_parameters_json(self):
     req = {
-        'namespace':'chromium',
+        'bucket':'chromium',
         'parameters_json': '}non-json',
     }
     self.expect_error('put', req, 'INVALID_INPUT')
@@ -146,10 +146,10 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_peek(self):
     self.test_build.put()
     self.service.peek.return_value = ([self.test_build], 'the cursor')
-    req = {'namespace': [self.test_build.namespace]}
+    req = {'bucket': [self.test_build.bucket]}
     res = self.call_api('peek', req).json_body
     self.service.peek.assert_called_once_with(
-        req['namespace'],
+        req['bucket'],
         max_builds=None,
         start_cursor=None,
     )
@@ -158,7 +158,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
 
-  def test_peek_without_namespaces(self):
+  def test_peek_without_buckets(self):
     self.expect_error('peek', {}, 'INVALID_INPUT')
 
   #################################### LEASE ###################################

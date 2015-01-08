@@ -61,8 +61,8 @@ class Build(ndb.Model):
 
   Attributes:
     status (BuildStatus): status of the build.
-    namespace (string): a generic way to distinguish builds. Different build
-      namespaces have different permissions.
+    bucket (string): a generic way to distinguish builds. Different buckets have
+      different permissions.
     tags (list of string): a list of tags, where each tag is a string with ":"
       symbol. The first occurance of ":" splits tag name and tag value.
     parameters (dict): immutable arbitrary build parameters.
@@ -83,7 +83,7 @@ class Build(ndb.Model):
 
   # Creation time attributes.
   create_time = ndb.DateTimeProperty(auto_now_add=True)
-  namespace = ndb.StringProperty(required=True)
+  bucket = ndb.StringProperty(required=True)
   tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()
   callback = ndb.StructuredProperty(Callback, indexed=False)
