@@ -84,16 +84,26 @@ func TestRegisterPackage(t *testing.T) {
 		Convey("RegisterPackage full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
-					URL:   "/_ah/api/repo/v1/register_package",
-					Reply: `{"status":"UPLOAD_FIRST","upload_session_id":"12345","upload_url":"http://localhost"}`,
+					URL: "/_ah/api/repo/v1/register_instance",
+					Reply: `{
+						"status": "UPLOAD_FIRST",
+						"upload_session_id": "12345",
+						"upload_url": "http://localhost"
+					}`,
 				},
 				expectedHTTPCall{
 					URL:   "/_ah/api/cas/v1/finalize/12345",
 					Reply: `{"status":"PUBLISHED"}`,
 				},
 				expectedHTTPCall{
-					URL:   "/_ah/api/repo/v1/register_package",
-					Reply: `{"status":"REGISTERED","registered_by":"user:a@example.com","registered_ts":"0"}`,
+					URL: "/_ah/api/repo/v1/register_instance",
+					Reply: `{
+						"status": "REGISTERED",
+						"instance": {
+							"registered_by": "user:a@example.com",
+							"registered_ts": "0"
+						}
+					}`,
 				},
 			})
 			err = RegisterPackage(RegisterPackageOptions{Package: pkg})
@@ -103,8 +113,14 @@ func TestRegisterPackage(t *testing.T) {
 		Convey("RegisterPackage already registered", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
-					URL:   "/_ah/api/repo/v1/register_package",
-					Reply: `{"status":"ALREADY_REGISTERED","registered_by":"user:a@example.com","registered_ts":"0"}`,
+					URL: "/_ah/api/repo/v1/register_instance",
+					Reply: `{
+						"status": "ALREADY_REGISTERED",
+						"instance": {
+							"registered_by": "user:a@example.com",
+							"registered_ts": "0"
+						}
+					}`,
 				},
 			})
 			err = RegisterPackage(RegisterPackageOptions{Package: pkg})

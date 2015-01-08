@@ -35,20 +35,20 @@ func TestRemoteService(t *testing.T) {
 		return remote.finalizeUpload("abc")
 	}
 
-	mockRegisterPackage := func(response string) (*registerPackageResponse, error) {
-		request := registerPackageRequest{
+	mockRegisterInstance := func(response string) (*registerInstanceResponse, error) {
+		request := registerInstanceRequest{
 			PackageName: "pkgname",
 			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		}
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/register_package")
-			var decoded registerPackageRequest
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/register_instance")
+			var decoded registerInstanceRequest
 			err := json.NewDecoder(r.Body).Decode(&decoded)
 			So(err, ShouldBeNil)
 			So(decoded, ShouldResemble, request)
 			w.Write([]byte(response))
 		})
-		return remote.registerPackage(&request)
+		return remote.registerInstance(&request)
 	}
 
 	Convey("makeRequest works", t, func() {
@@ -190,41 +190,45 @@ func TestRemoteService(t *testing.T) {
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("registerPackage REGISTERED", t, func() {
-		result, err := mockRegisterPackage(`{
-      "status": "REGISTERED",
-      "registered_by": "user:abc@example.com",
-      "registered_ts": "1420244414571500"
-    }`)
+	Convey("registerInstance REGISTERED", t, func() {
+		result, err := mockRegisterInstance(`{
+			"status": "REGISTERED",
+			"instance": {
+				"registered_by": "user:abc@example.com",
+				"registered_ts": "1420244414571500"
+			}
+		}`)
 		So(err, ShouldBeNil)
-		So(result, ShouldResemble, &registerPackageResponse{
+		So(result, ShouldResemble, &registerInstanceResponse{
 			RegisteredBy: "user:abc@example.com",
 			RegisteredTs: time.Unix(0, 1420244414571500000),
 		})
 	})
 
-	Convey("registerPackage ALREADY_REGISTERED", t, func() {
-		result, err := mockRegisterPackage(`{
-      "status": "ALREADY_REGISTERED",
-      "registered_by": "user:abc@example.com",
-      "registered_ts": "1420244414571500"
-    }`)
+	Convey("registerInstance ALREADY_REGISTERED", t, func() {
+		result, err := mockRegisterInstance(`{
+			"status": "ALREADY_REGISTERED",
+			"instance": {
+				"registered_by": "user:abc@example.com",
+				"registered_ts": "1420244414571500"
+			}
+		}`)
 		So(err, ShouldBeNil)
-		So(result, ShouldResemble, &registerPackageResponse{
+		So(result, ShouldResemble, &registerInstanceResponse{
 			AlreadyRegistered: true,
 			RegisteredBy:      "user:abc@example.com",
 			RegisteredTs:      time.Unix(0, 1420244414571500000),
 		})
 	})
 
-	Convey("registerPackage UPLOAD_FIRST", t, func() {
-		result, err := mockRegisterPackage(`{
-      "status": "UPLOAD_FIRST",
-      "upload_session_id": "upload_session_id",
-      "upload_url": "http://upload_url"
-    }`)
+	Convey("registerInstance UPLOAD_FIRST", t, func() {
+		result, err := mockRegisterInstance(`{
+			"status": "UPLOAD_FIRST",
+			"upload_session_id": "upload_session_id",
+			"upload_url": "http://upload_url"
+		}`)
 		So(err, ShouldBeNil)
-		So(result, ShouldResemble, &registerPackageResponse{
+		So(result, ShouldResemble, &registerInstanceResponse{
 			UploadSession: &uploadSession{
 				ID:  "upload_session_id",
 				URL: "http://upload_url",
@@ -232,17 +236,17 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("registerPackage ERROR", t, func() {
-		result, err := mockRegisterPackage(`{
-      "status": "ERROR",
-      "error_message": "Some error message"
-    }`)
+	Convey("registerInstance ERROR", t, func() {
+		result, err := mockRegisterInstance(`{
+			"status": "ERROR",
+			"error_message": "Some error message"
+		}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
 
-	Convey("registerPackage unknown status", t, func() {
-		result, err := mockRegisterPackage(`{"status":"???"}`)
+	Convey("registerInstance unknown status", t, func() {
+		result, err := mockRegisterInstance(`{"status":"???"}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})

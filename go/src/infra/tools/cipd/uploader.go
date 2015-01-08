@@ -151,11 +151,11 @@ func RegisterPackage(options RegisterPackageOptions) error {
 	remote := newRemoteService(options.Client, options.ServiceURL, log)
 
 	// Attempt to register.
-	request := registerPackageRequest{
+	request := registerInstanceRequest{
 		PackageName: pkg.Name(),
 		InstanceID:  pkg.InstanceID(),
 	}
-	result, err := remote.registerPackage(&request)
+	result, err := remote.registerInstance(&request)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func RegisterPackage(options RegisterPackageOptions) error {
 			return err
 		}
 		// Try again, now that file is uploaded.
-		result, err = remote.registerPackage(&request)
+		result, err = remote.registerInstance(&request)
 		if err != nil {
 			return err
 		}

@@ -31,12 +31,20 @@ type uploadSession struct {
 	URL string
 }
 
-type registerPackageRequest struct {
+// packageInstanceInfo corresponds to PackageInstance message on the backend.
+type packageInstanceInfo struct {
+	PackageName  string `json:"package_name"`
+	InstanceID   string `json:"instance_id"`
+	RegisteredBy string `json:"registered_by"`
+	RegisteredTs string `json:"registered_ts"`
+}
+
+type registerInstanceRequest struct {
 	PackageName string `json:"package_name"`
 	InstanceID  string `json:"instance_id"`
 }
 
-type registerPackageResponse struct {
+type registerInstanceResponse struct {
 	// UploadSession is not nil if backend asks the client to upload the file to CAS.
 	UploadSession *uploadSession
 	// AlreadyRegistered is true if such package instance was registered previously.
@@ -156,7 +164,7 @@ func (r *remoteService) finalizeUpload(sessionID string) (finished bool, err err
 	return
 }
 
-func (r *remoteService) registerPackage(request *registerPackageRequest) (*registerPackageResponse, error) {
+func (r *remoteService) registerInstance(request *registerInstanceRequest) (*registerInstanceResponse, error) {
 	err := ValidatePackageName(request.PackageName)
 	if err != nil {
 		return nil, err
@@ -166,34 +174,33 @@ func (r *remoteService) registerPackage(request *registerPackageRequest) (*regis
 		return nil, err
 	}
 	var reply struct {
-		Status          string `json:"status"`
-		RegisteredBy    string `json:"registered_by"`
-		RegisteredTs    string `json:"registered_ts"`
-		UploadSessionID string `json:"upload_session_id"`
-		UploadURL       string `json:"upload_url"`
-		ErrorMessage    string `json:"error_message"`
+		Status          string              `json:"status"`
+		Instance        packageInstanceInfo `json:"instance"`
+		UploadSessionID string              `json:"upload_session_id"`
+		UploadURL       string              `json:"upload_url"`
+		ErrorMessage    string              `json:"error_message"`
 	}
-	err = r.makeRequest("repo/v1/register_package", request, &reply)
+	err = r.makeRequest("repo/v1/register_instance", request, &reply)
 	if err != nil {
 		return nil, err
 	}
 	switch reply.Status {
 	case "REGISTERED", "ALREADY_REGISTERED":
 		// String with int64 timestamp in microseconds since epoch -> time.Time.
-		ts, err := strconv.ParseInt(reply.RegisteredTs, 10, 64)
+		ts, err := strconv.ParseInt(reply.Instance.RegisteredTs, 10, 64)
 		if err != nil {
 			return nil, errors.New("Unexpected timestamp value in the server response")
 		}
-		return &registerPackageResponse{
+		return &registerInstanceResponse{
 			AlreadyRegistered: reply.Status == "ALREADY_REGISTERED",
-			RegisteredBy:      reply.RegisteredBy,
+			RegisteredBy:      reply.Instance.RegisteredBy,
 			RegisteredTs:      time.Unix(0, ts*1000),
 		}, nil
 	case "UPLOAD_FIRST":
 		if reply.UploadSessionID == "" {
 			return nil, errors.New("Server didn't provide upload session ID")
 		}
-		return &registerPackageResponse{
+		return &registerInstanceResponse{
 			UploadSession: &uploadSession{
 				ID:  reply.UploadSessionID,
 				URL: reply.UploadURL,
