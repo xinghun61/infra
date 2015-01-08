@@ -13,14 +13,6 @@ import (
 	"os"
 )
 
-// PackageReader acts as a provider of package's binary data.
-// TODO(vadimsh): Make io.Closer optional and "discover" it using type assertion.
-type PackageReader interface {
-	io.Closer
-	io.Reader
-	io.Seeker
-}
-
 // Package represents a binary package file.
 type Package interface {
 	// Close shuts down the package and its data provider.
@@ -37,9 +29,10 @@ type Package interface {
 
 // OpenPackage verifies package SHA1 hash (instanceID if not empty string) and
 // prepares a package for extraction. If the call succeeds, Package takes
-// ownership of PackageReader and closes it when package.Close() is called.
-// If an error is returned, PackageReader remains open.
-func OpenPackage(r PackageReader, instanceID string) (Package, error) {
+// ownership of io.ReadSeeker. If it also implements io.Closer, it will be
+// closed when package.Close() is called. If an error is returned, io.ReadSeeker
+// remains unowned and caller is responsible for closing it (if required).
+func OpenPackage(r io.ReadSeeker, instanceID string) (Package, error) {
 	out := &packageImpl{data: r}
 	err := out.open(instanceID)
 	if err != nil {
@@ -116,7 +109,7 @@ func ExtractPackage(p Package, dest Destination) error {
 // Package implementation.
 
 type packageImpl struct {
-	data       PackageReader
+	data       io.ReadSeeker
 	dataSize   int64
 	instanceID string
 	zip        *zip.Reader
@@ -166,7 +159,9 @@ func (p *packageImpl) open(instanceID string) error {
 
 func (p *packageImpl) Close() error {
 	if p.data != nil {
-		p.data.Close()
+		if closer, ok := p.data.(io.Closer); ok {
+			closer.Close()
+		}
 		p.data = nil
 	}
 	p.dataSize = 0

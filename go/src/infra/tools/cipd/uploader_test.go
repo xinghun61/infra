@@ -77,7 +77,7 @@ func TestRegisterPackage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Open it for reading.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
+		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
 		So(err, ShouldBeNil)
 		Reset(func() { pkg.Close() })
 

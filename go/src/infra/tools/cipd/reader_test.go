@@ -30,7 +30,7 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Open it.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
+		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
 		if pkg != nil {
 			defer pkg.Close()
 		}
@@ -65,14 +65,13 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Attempt to open it, providing correct instance ID, should work.
-		source := newPackageReaderFromBytes(out.Bytes())
+		source := bytes.NewReader(out.Bytes())
 		pkg, err := OpenPackage(source, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(err, ShouldBeNil)
 		So(pkg, ShouldNotBeNil)
 		pkg.Close()
 
 		// Attempt to open it, providing incorrect instance ID.
-		source = newPackageReaderFromBytes(out.Bytes())
 		pkg, err = OpenPackage(source, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 		So(err, ShouldNotBeNil)
 		So(pkg, ShouldBeNil)
@@ -116,7 +115,7 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Extract files.
-		pkg, err := OpenPackage(newPackageReaderFromBytes(out.Bytes()), "")
+		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
 		if pkg != nil {
 			defer pkg.Close()
 		}
@@ -141,20 +140,6 @@ func TestPackageReading(t *testing.T) {
 		So(string(dest.files[0].Bytes()), ShouldEqual, "12345")
 		So(dest.files[1].executable, ShouldBeTrue)
 	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Nop readerSeekerCloser, since ioutil.NopClose works only with io.Reader,
-// but not with io.ReadSeeker.
-
-type readerSeekerCloser struct {
-	io.ReadSeeker
-}
-
-func (r *readerSeekerCloser) Close() error { return nil }
-
-func newPackageReaderFromBytes(b []byte) PackageReader {
-	return &readerSeekerCloser{bytes.NewReader(b)}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
