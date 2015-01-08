@@ -13,12 +13,12 @@ import (
 	"os"
 )
 
-// Package represents a binary package file.
-type Package interface {
+// PackageInstance represents a binary package file.
+type PackageInstance interface {
 	// Close shuts down the package and its data provider.
 	Close() error
-	// Name returns package name, as defined in the manifest.
-	Name() string
+	// PackageName returns package name, as defined in the manifest.
+	PackageName() string
 	// InstanceID returns id that identifies particular built of the package. It's a hash of the package data.
 	InstanceID() string
 	// Files returns a list of files inside the package.
@@ -27,13 +27,14 @@ type Package interface {
 	DataReader() io.ReadSeeker
 }
 
-// OpenPackage verifies package SHA1 hash (instanceID if not empty string) and
-// prepares a package for extraction. If the call succeeds, Package takes
-// ownership of io.ReadSeeker. If it also implements io.Closer, it will be
-// closed when package.Close() is called. If an error is returned, io.ReadSeeker
-// remains unowned and caller is responsible for closing it (if required).
-func OpenPackage(r io.ReadSeeker, instanceID string) (Package, error) {
-	out := &packageImpl{data: r}
+// OpenInstance verifies package SHA1 hash (instanceID if not empty string) and
+// prepares a package instance for extraction. If the call succeeds,
+// PackageInstance takes ownership of io.ReadSeeker. If it also implements
+// io.Closer, it will be closed when package.Close() is called. If an error is
+// returned, io.ReadSeeker remains unowned and caller is responsible for closing
+// it (if required).
+func OpenInstance(r io.ReadSeeker, instanceID string) (PackageInstance, error) {
+	out := &packageInstance{data: r}
 	err := out.open(instanceID)
 	if err != nil {
 		return nil, err
@@ -41,21 +42,21 @@ func OpenPackage(r io.ReadSeeker, instanceID string) (Package, error) {
 	return out, nil
 }
 
-// OpenPackageFile opens a package file on disk.
-func OpenPackageFile(path string, instanceID string) (pkg Package, err error) {
+// OpenInstanceFile opens a package instance file on disk.
+func OpenInstanceFile(path string, instanceID string) (inst PackageInstance, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return
 	}
-	pkg, err = OpenPackage(file, instanceID)
+	inst, err = OpenInstance(file, instanceID)
 	if err != nil {
 		file.Close()
 	}
 	return
 }
 
-// ExtractPackage extracts all files from a package into a destination.
-func ExtractPackage(p Package, dest Destination) error {
+// ExtractInstance extracts all files from a package instance into a destination.
+func ExtractInstance(inst PackageInstance, dest Destination) error {
 	err := dest.Begin()
 	if err != nil {
 		return err
@@ -85,7 +86,7 @@ func ExtractPackage(p Package, dest Destination) error {
 		return err
 	}
 
-	files := p.Files()
+	files := inst.Files()
 	for i, f := range files {
 		log.Infof("[%d/%d] inflating %s", i+1, len(files), f.Name())
 		err = extractOne(f)
@@ -106,9 +107,9 @@ func ExtractPackage(p Package, dest Destination) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Package implementation.
+// PackageInstance implementation.
 
-type packageImpl struct {
+type packageInstance struct {
 	data       io.ReadSeeker
 	dataSize   int64
 	instanceID string
@@ -118,18 +119,18 @@ type packageImpl struct {
 }
 
 // open reads the package data , verifies SHA1 hash and reads manifest.
-func (p *packageImpl) open(instanceID string) error {
+func (inst *packageInstance) open(instanceID string) error {
 	// Calculate SHA1 of the data to verify it matches expected instanceID.
-	_, err := p.data.Seek(0, os.SEEK_SET)
+	_, err := inst.data.Seek(0, os.SEEK_SET)
 	if err != nil {
 		return err
 	}
 	hash := sha1.New()
-	_, err = io.Copy(hash, p.data)
+	_, err = io.Copy(hash, inst.data)
 	if err != nil {
 		return err
 	}
-	p.dataSize, err = p.data.Seek(0, os.SEEK_CUR)
+	inst.dataSize, err = inst.data.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return err
 	}
@@ -137,18 +138,18 @@ func (p *packageImpl) open(instanceID string) error {
 	if instanceID != "" && instanceID != calculatedSHA1 {
 		return fmt.Errorf("Package SHA1 hash mismatch")
 	}
-	p.instanceID = calculatedSHA1
+	inst.instanceID = calculatedSHA1
 
 	// List files inside and package manifest.
-	p.zip, err = zip.NewReader(&readerAt{r: p.data}, p.dataSize)
+	inst.zip, err = zip.NewReader(&readerAt{r: inst.data}, inst.dataSize)
 	if err != nil {
 		return err
 	}
-	p.files = make([]File, len(p.zip.File))
-	for i, zf := range p.zip.File {
-		p.files[i] = &fileInZip{z: zf}
-		if p.files[i].Name() == manifestName {
-			p.manifest, err = readManifestFile(p.files[i])
+	inst.files = make([]File, len(inst.zip.File))
+	for i, zf := range inst.zip.File {
+		inst.files[i] = &fileInZip{z: zf}
+		if inst.files[i].Name() == manifestName {
+			inst.manifest, err = readManifestFile(inst.files[i])
 			if err != nil {
 				return err
 			}
@@ -157,25 +158,25 @@ func (p *packageImpl) open(instanceID string) error {
 	return nil
 }
 
-func (p *packageImpl) Close() error {
-	if p.data != nil {
-		if closer, ok := p.data.(io.Closer); ok {
+func (inst *packageInstance) Close() error {
+	if inst.data != nil {
+		if closer, ok := inst.data.(io.Closer); ok {
 			closer.Close()
 		}
-		p.data = nil
+		inst.data = nil
 	}
-	p.dataSize = 0
-	p.instanceID = ""
-	p.zip = nil
-	p.files = []File{}
-	p.manifest = Manifest{}
+	inst.dataSize = 0
+	inst.instanceID = ""
+	inst.zip = nil
+	inst.files = []File{}
+	inst.manifest = Manifest{}
 	return nil
 }
 
-func (p *packageImpl) InstanceID() string        { return p.instanceID }
-func (p *packageImpl) Name() string              { return p.manifest.PackageName }
-func (p *packageImpl) Files() []File             { return p.files }
-func (p *packageImpl) DataReader() io.ReadSeeker { return p.data }
+func (inst *packageInstance) InstanceID() string        { return inst.instanceID }
+func (inst *packageInstance) PackageName() string       { return inst.manifest.PackageName }
+func (inst *packageInstance) Files() []File             { return inst.files }
+func (inst *packageInstance) DataReader() io.ReadSeeker { return inst.data }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Utilities.
@@ -204,8 +205,8 @@ func (f *fileInZip) Open() (io.ReadCloser, error) { return f.z.Open() }
 
 ////////////////////////////////////////////////////////////////////////////////
 // ReaderAt implementation via ReadSeeker. Not concurrency safe, moves file
-// pointer around without any locking. Works OK in the context of OpenPackage
-// function though (where OpenPackage takes sole ownership of ReadSeeker).
+// pointer around without any locking. Works OK in the context of OpenInstance
+// function though (where OpenInstance takes sole ownership of io.ReadSeeker).
 
 type readerAt struct {
 	r io.ReadSeeker

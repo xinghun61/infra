@@ -62,14 +62,14 @@ func TestUploadToCAS(t *testing.T) {
 	})
 }
 
-func TestRegisterPackage(t *testing.T) {
+func TestRegisterInstance(t *testing.T) {
 	Convey("Mocking remote service", t, func() {
 		mockClock(time.Now())
 		mockResumableUpload()
 
 		// Build an empty package to be uploaded.
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input:       []File{},
 			Output:      &out,
 			PackageName: "testing",
@@ -77,11 +77,11 @@ func TestRegisterPackage(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Open it for reading.
-		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
+		inst, err := OpenInstance(bytes.NewReader(out.Bytes()), "")
 		So(err, ShouldBeNil)
-		Reset(func() { pkg.Close() })
+		Reset(func() { inst.Close() })
 
-		Convey("RegisterPackage full flow", func() {
+		Convey("RegisterInstance full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
 					URL: "/_ah/api/repo/v1/register_instance",
@@ -106,11 +106,11 @@ func TestRegisterPackage(t *testing.T) {
 					}`,
 				},
 			})
-			err = RegisterPackage(RegisterPackageOptions{Package: pkg})
+			err = RegisterInstance(RegisterInstanceOptions{PackageInstance: inst})
 			So(err, ShouldBeNil)
 		})
 
-		Convey("RegisterPackage already registered", func() {
+		Convey("RegisterInstance already registered", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
 					URL: "/_ah/api/repo/v1/register_instance",
@@ -123,7 +123,7 @@ func TestRegisterPackage(t *testing.T) {
 					}`,
 				},
 			})
-			err = RegisterPackage(RegisterPackageOptions{Package: pkg})
+			err = RegisterInstance(RegisterInstanceOptions{PackageInstance: inst})
 			So(err, ShouldBeNil)
 		})
 	})
@@ -182,7 +182,7 @@ func TestResumableUpload(t *testing.T) {
 		err := resumableUpload(server.URL+"/upl", 3, UploadToCASOptions{
 			SHA1: "abc",
 			Data: bytes.NewReader([]byte(dataToUpload)),
-			CommonOptions: CommonOptions{
+			UploadOptions: UploadOptions{
 				Client: client,
 				Log:    logging.DefaultLogger,
 			},

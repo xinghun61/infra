@@ -26,7 +26,7 @@ func TestGoVersion(t *testing.T) {
 	})
 }
 
-func TestBuildPackage(t *testing.T) {
+func TestBuildInstance(t *testing.T) {
 	const goodManifest = `{
   "format_version": "1",
   "package_name": "testing"
@@ -34,14 +34,14 @@ func TestBuildPackage(t *testing.T) {
 
 	Convey("Building empty package", t, func() {
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input:       []File{},
 			Output:      &out,
 			PackageName: "testing",
 		})
 		So(err, ShouldBeNil)
 
-		// BuildPackage builds deterministic zip. It MUST NOT depend on
+		// BuildInstance builds deterministic zip. It MUST NOT depend on
 		// the platform, or a time of day, or anything else, only on the input data.
 		So(getSHA1(&out), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 
@@ -60,7 +60,7 @@ func TestBuildPackage(t *testing.T) {
 
 	Convey("Building package with a bunch of files", t, func() {
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input: []File{
 				makeTestFile("testing/qwerty", "12345", false),
 				makeTestFile("abc", "duh", true),
@@ -96,7 +96,7 @@ func TestBuildPackage(t *testing.T) {
 	})
 
 	Convey("Duplicate files fail", t, func() {
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input: []File{
 				makeTestFile("a", "12345", false),
 				makeTestFile("a", "12345", false),
@@ -108,7 +108,7 @@ func TestBuildPackage(t *testing.T) {
 	})
 
 	Convey("Writing to service dir fails", t, func() {
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input: []File{
 				makeTestFile(".cipdpkg/stuff", "12345", false),
 			},
@@ -119,7 +119,7 @@ func TestBuildPackage(t *testing.T) {
 	})
 
 	Convey("Bad name fails", t, func() {
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Output:      &bytes.Buffer{},
 			PackageName: "../../asdad",
 		})

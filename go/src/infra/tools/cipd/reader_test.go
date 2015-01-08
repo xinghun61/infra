@@ -23,25 +23,25 @@ func TestPackageReading(t *testing.T) {
 	Convey("Open empty package works", t, func() {
 		// Build an empty package.
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Output:      &out,
 			PackageName: "testing",
 		})
 		So(err, ShouldBeNil)
 
 		// Open it.
-		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
-		if pkg != nil {
-			defer pkg.Close()
+		inst, err := OpenInstance(bytes.NewReader(out.Bytes()), "")
+		if inst != nil {
+			defer inst.Close()
 		}
-		So(pkg, ShouldNotBeNil)
+		So(inst, ShouldNotBeNil)
 		So(err, ShouldBeNil)
-		So(pkg.Name(), ShouldEqual, "testing")
-		So(pkg.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
-		So(len(pkg.Files()), ShouldEqual, 1)
+		So(inst.PackageName(), ShouldEqual, "testing")
+		So(inst.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
+		So(len(inst.Files()), ShouldEqual, 1)
 
 		// Contains single manifest file.
-		f := pkg.Files()[0]
+		f := inst.Files()[0]
 		So(f.Name(), ShouldEqual, ".cipdpkg/manifest.json")
 		So(f.Size(), ShouldEqual, uint64(len(goodManifest)))
 		So(f.Executable(), ShouldBeFalse)
@@ -58,7 +58,7 @@ func TestPackageReading(t *testing.T) {
 	Convey("Open empty package with unexpected instance ID", t, func() {
 		// Build an empty package.
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Output:      &out,
 			PackageName: "testing",
 		})
@@ -66,18 +66,18 @@ func TestPackageReading(t *testing.T) {
 
 		// Attempt to open it, providing correct instance ID, should work.
 		source := bytes.NewReader(out.Bytes())
-		pkg, err := OpenPackage(source, "23f2c4900785ac8faa2f38e473925b840e574ccc")
+		inst, err := OpenInstance(source, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 		So(err, ShouldBeNil)
-		So(pkg, ShouldNotBeNil)
-		pkg.Close()
+		So(inst, ShouldNotBeNil)
+		inst.Close()
 
 		// Attempt to open it, providing incorrect instance ID.
-		pkg, err = OpenPackage(source, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		inst, err = OpenInstance(source, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 		So(err, ShouldNotBeNil)
-		So(pkg, ShouldBeNil)
+		So(inst, ShouldBeNil)
 	})
 
-	Convey("OpenPackageFile works", t, func() {
+	Convey("OpenInstanceFile works", t, func() {
 		// Open temp file.
 		tempFile, err := ioutil.TempFile("", "cipdtest")
 		So(err, ShouldBeNil)
@@ -85,7 +85,7 @@ func TestPackageReading(t *testing.T) {
 		defer os.Remove(tempFilePath)
 
 		// Write empty package to it.
-		err = BuildPackage(BuildPackageOptions{
+		err = BuildInstance(BuildInstanceOptions{
 			Output:      tempFile,
 			PackageName: "testing",
 		})
@@ -93,18 +93,18 @@ func TestPackageReading(t *testing.T) {
 		tempFile.Close()
 
 		// Read the package.
-		pkg, err := OpenPackageFile(tempFilePath, "")
-		if pkg != nil {
-			defer pkg.Close()
+		inst, err := OpenInstanceFile(tempFilePath, "")
+		if inst != nil {
+			defer inst.Close()
 		}
-		So(pkg, ShouldNotBeNil)
+		So(inst, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 	})
 
-	Convey("ExtractPackage works", t, func() {
+	Convey("ExtractInstance works", t, func() {
 		// Add a bunch of files to a package.
 		out := bytes.Buffer{}
-		err := BuildPackage(BuildPackageOptions{
+		err := BuildInstance(BuildInstanceOptions{
 			Input: []File{
 				makeTestFile("testing/qwerty", "12345", false),
 				makeTestFile("abc", "duh", true),
@@ -115,13 +115,13 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Extract files.
-		pkg, err := OpenPackage(bytes.NewReader(out.Bytes()), "")
-		if pkg != nil {
-			defer pkg.Close()
+		inst, err := OpenInstance(bytes.NewReader(out.Bytes()), "")
+		if inst != nil {
+			defer inst.Close()
 		}
 		So(err, ShouldBeNil)
 		dest := &testDestination{}
-		err = ExtractPackage(pkg, dest)
+		err = ExtractInstance(inst, dest)
 		So(err, ShouldBeNil)
 		So(dest.beginCalls, ShouldEqual, 1)
 		So(dest.endCalls, ShouldEqual, 1)

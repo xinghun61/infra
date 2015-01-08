@@ -13,8 +13,8 @@ import (
 	"strings"
 )
 
-// BuildPackageOptions defines options for BuildPackage function.
-type BuildPackageOptions struct {
+// BuildInstanceOptions defines options for BuildInstance function.
+type BuildInstanceOptions struct {
 	// List of files to add to the package.
 	Input []File
 	// Where to write the package file to.
@@ -23,11 +23,11 @@ type BuildPackageOptions struct {
 	PackageName string
 }
 
-// BuildPackage builds a new package (named opts.PackageName) by archiving
-// input files (passed via opts.Input). The final binary is written to
-// opts.Output. Some output may be written even if BuildPackage eventually
+// BuildInstance builds a new package instance for package named opts.PackageName
+// by archiving input files (passed via opts.Input). The final binary is written
+// to opts.Output. Some output may be written even if BuildInstance eventually
 // returns an error.
-func BuildPackage(opts BuildPackageOptions) error {
+func BuildInstance(opts BuildInstanceOptions) error {
 	err := ValidatePackageName(opts.PackageName)
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (m *manifestFile) Open() (io.ReadCloser, error) {
 
 // makeManifestFile generates a package manifest file and returns it as
 // File interface.
-func makeManifestFile(opts BuildPackageOptions) (File, error) {
+func makeManifestFile(opts BuildInstanceOptions) (File, error) {
 	buf := &bytes.Buffer{}
 	err := writeManifest(&Manifest{
 		FormatVersion: manifestFormatVersion,

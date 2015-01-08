@@ -89,8 +89,8 @@ func authenticatedClient() (*http.Client, error) {
 
 var cmdBuild = &subcommands.Command{
 	UsageLine: "pkg-build [options]",
-	ShortDesc: "builds a package file",
-	LongDesc:  "Builds a package producing *.cipd file.",
+	ShortDesc: "builds a package instance file",
+	LongDesc:  "Builds a package instance producing *.cipd file.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &buildRun{}
 		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
@@ -111,7 +111,7 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := buildPackageFile(c.packageName, c.inputDir, c.outputFile)
+	err := buildInstanceFile(c.packageName, c.inputDir, c.outputFile)
 	if err != nil {
 		reportError("Error while building the package: %s", err)
 		return 1
@@ -119,7 +119,7 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildPackageFile(packageName string, inputDir string, packageFile string) error {
+func buildInstanceFile(packageName string, inputDir string, instanceFile string) error {
 	// Read the list of files to add to the package.
 	files, err := cipd.ScanFileSystem(inputDir)
 	if err != nil {
@@ -127,32 +127,32 @@ func buildPackageFile(packageName string, inputDir string, packageFile string) e
 	}
 
 	// Build the package.
-	out, err := os.OpenFile(packageFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	out, err := os.OpenFile(instanceFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	err = cipd.BuildPackage(cipd.BuildPackageOptions{
+	err = cipd.BuildInstance(cipd.BuildInstanceOptions{
 		Input:       files,
 		Output:      out,
 		PackageName: packageName,
 	})
 	out.Close()
 	if err != nil {
-		os.Remove(packageFile)
+		os.Remove(instanceFile)
 		return err
 	}
 
 	// Print information about built package, also verify it is readable.
-	return inspectPackageFile(packageFile, false)
+	return inspectInstanceFile(instanceFile, false)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 'deploy' subcommand.
 
 var cmdDeploy = &subcommands.Command{
-	UsageLine: "pkg-deploy [options] <package file>",
-	ShortDesc: "deploys a package file",
-	LongDesc:  "Deploys a *.cipd package into a site root.",
+	UsageLine: "pkg-deploy [options] <package instance file>",
+	ShortDesc: "deploys a package instance file",
+	LongDesc:  "Deploys a *.cipd package instance into a site root.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &deployRun{}
 		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
@@ -170,7 +170,7 @@ func (c *deployRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := deployPackageFile(c.rootDir, args[0])
+	err := deployInstanceFile(c.rootDir, args[0])
 	if err != nil {
 		reportError("Error while deploying the package: %s", err)
 		return 1
@@ -178,14 +178,14 @@ func (c *deployRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func deployPackageFile(root string, packageFile string) error {
-	pkg, err := cipd.OpenPackageFile(packageFile, "")
+func deployInstanceFile(root string, instanceFile string) error {
+	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
-	defer pkg.Close()
-	inspectPackage(pkg, false)
-	_, err = cipd.Deploy(root, pkg)
+	defer inst.Close()
+	inspectInstance(inst, false)
+	_, err = cipd.DeployInstance(root, inst)
 	return err
 }
 
@@ -193,8 +193,8 @@ func deployPackageFile(root string, packageFile string) error {
 // 'inspect' subcommand.
 
 var cmdInspect = &subcommands.Command{
-	UsageLine: "pkg-inspect <package file>",
-	ShortDesc: "inspects contents of a package file",
+	UsageLine: "pkg-inspect <package instance file>",
+	ShortDesc: "inspects contents of a package instance file",
 	LongDesc:  "Reads contents *.cipd file and prints information about it.",
 	CommandRun: func() subcommands.CommandRun {
 		return &inspectRun{}
@@ -209,7 +209,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := inspectPackageFile(args[0], true)
+	err := inspectInstanceFile(args[0], true)
 	if err != nil {
 		reportError("Error while inspecting the package: %s", err)
 		return 1
@@ -217,22 +217,22 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func inspectPackageFile(packageFile string, listFiles bool) error {
-	pkg, err := cipd.OpenPackageFile(packageFile, "")
+func inspectInstanceFile(instanceFile string, listFiles bool) error {
+	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
-	defer pkg.Close()
-	inspectPackage(pkg, listFiles)
+	defer inst.Close()
+	inspectInstance(inst, listFiles)
 	return nil
 }
 
-func inspectPackage(pkg cipd.Package, listFiles bool) {
-	logging.Infof("Name:        %s", pkg.Name())
-	logging.Infof("Instance ID: %s", pkg.InstanceID())
+func inspectInstance(inst cipd.PackageInstance, listFiles bool) {
+	logging.Infof("Package name: %s", inst.PackageName())
+	logging.Infof("Instance ID:  %s", inst.InstanceID())
 	if listFiles {
 		logging.Infof("Package files:")
-		for _, f := range pkg.Files() {
+		for _, f := range inst.Files() {
 			logging.Infof("  %v", f.Name())
 		}
 	}
@@ -242,7 +242,7 @@ func inspectPackage(pkg cipd.Package, listFiles bool) {
 // 'register' subcommand.
 
 var cmdRegister = &subcommands.Command{
-	UsageLine: "pkg-register <package file>",
+	UsageLine: "pkg-register <package instance file>",
 	ShortDesc: "uploads and registers package instance in the package repository",
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
@@ -263,7 +263,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 		reportError("Error when authenticating: %s", err)
 		return 1
 	}
-	err = registerPackageFile(args[0], client)
+	err = registerInstanceFile(args[0], client)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
 		return 1
@@ -271,17 +271,17 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerPackageFile(packageFile string, client *http.Client) error {
-	pkg, err := cipd.OpenPackageFile(packageFile, "")
+func registerInstanceFile(instanceFile string, client *http.Client) error {
+	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
-	defer pkg.Close()
-	logging.Infof("Registering package %s:%s", pkg.Name(), pkg.InstanceID())
-	inspectPackage(pkg, false)
-	return cipd.RegisterPackage(cipd.RegisterPackageOptions{
-		Package: pkg,
-		CommonOptions: cipd.CommonOptions{
+	defer inst.Close()
+	logging.Infof("Registering package %s:%s", inst.PackageName(), inst.InstanceID())
+	inspectInstance(inst, false)
+	return cipd.RegisterInstance(cipd.RegisterInstanceOptions{
+		PackageInstance: inst,
+		UploadOptions: cipd.UploadOptions{
 			Client: client,
 		},
 	})
@@ -291,7 +291,7 @@ func registerPackageFile(packageFile string, client *http.Client) error {
 // 'upload' subcommand.
 
 var cmdUpload = &subcommands.Command{
-	UsageLine: "pkg-upload <package file>",
+	UsageLine: "pkg-upload <package instance file>",
 	ShortDesc: "uploads package data blob to the CAS store",
 	LongDesc:  "Uploads package data blob to the CAS store.",
 	CommandRun: func() subcommands.CommandRun {
@@ -312,7 +312,7 @@ func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 		reportError("Error when authenticating: %s", err)
 		return 1
 	}
-	err = uploadPackageFile(args[0], client)
+	err = uploadInstanceFile(args[0], client)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
 		return 1
@@ -320,18 +320,18 @@ func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func uploadPackageFile(packageFile string, client *http.Client) error {
-	pkg, err := cipd.OpenPackageFile(packageFile, "")
+func uploadInstanceFile(instanceFile string, client *http.Client) error {
+	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
-	defer pkg.Close()
-	logging.Infof("Uploading package instance %s", pkg.InstanceID())
-	inspectPackage(pkg, false)
+	defer inst.Close()
+	logging.Infof("Uploading package instance %s", inst.InstanceID())
+	inspectInstance(inst, false)
 	return cipd.UploadToCAS(cipd.UploadToCASOptions{
-		SHA1: pkg.InstanceID(),
-		Data: pkg.DataReader(),
-		CommonOptions: cipd.CommonOptions{
+		SHA1: inst.InstanceID(),
+		Data: inst.DataReader(),
+		UploadOptions: cipd.UploadOptions{
 			Client: client,
 		},
 	})

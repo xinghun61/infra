@@ -104,18 +104,18 @@ func TestUtilities(t *testing.T) {
 	})
 }
 
-func TestDeploy(t *testing.T) {
+func TestDeployInstance(t *testing.T) {
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
 		Reset(func() { os.RemoveAll(tempDir) })
 
-		Convey("Deploy new empty package", func() {
-			pkg := makeTestPackage("test/package", []File{})
-			info, err := Deploy(tempDir, pkg)
+		Convey("DeployInstance new empty package instance", func() {
+			inst := makeTestInstance("test/package", []File{})
+			info, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 			So(info, ShouldResemble, DeployedPackageInfo{
-				InstanceID: pkg.InstanceID(),
+				InstanceID: inst.InstanceID(),
 				Manifest: Manifest{
 					FormatVersion: "1",
 					PackageName:   "test/package",
@@ -127,12 +127,12 @@ func TestDeploy(t *testing.T) {
 			})
 		})
 
-		Convey("Deploy new non-empty package", func() {
-			pkg := makeTestPackage("test/package", []File{
+		Convey("DeployInstance new non-empty package instance", func() {
+			inst := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a", false),
 				makeTestFile("some/executable", "data b", true),
 			})
-			_, err := Deploy(tempDir, pkg)
+			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
@@ -149,13 +149,13 @@ func TestDeploy(t *testing.T) {
 		})
 
 		Convey("Redeploy same package instance", func() {
-			pkg := makeTestPackage("test/package", []File{
+			inst := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a", false),
 				makeTestFile("some/executable", "data b", true),
 			})
-			_, err := Deploy(tempDir, pkg)
+			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
-			_, err = Deploy(tempDir, pkg)
+			_, err = DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
@@ -167,8 +167,8 @@ func TestDeploy(t *testing.T) {
 			})
 		})
 
-		Convey("Deploy package update", func() {
-			oldPkg := makeTestPackage("test/package", []File{
+		Convey("DeployInstance package update", func() {
+			oldPkg := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a old", false),
 				makeTestFile("some/executable", "data b old", true),
 				makeTestFile("old only", "data c old", true),
@@ -177,7 +177,7 @@ func TestDeploy(t *testing.T) {
 			})
 			oldPkg.instanceID = "0000000000000000000000000000000000000000"
 
-			newPkg := makeTestPackage("test/package", []File{
+			newPkg := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a new", false),
 				makeTestFile("some/executable", "data b new", true),
 				makeTestFile("mode change 1", "data d", false),
@@ -185,9 +185,9 @@ func TestDeploy(t *testing.T) {
 			})
 			newPkg.instanceID = "1111111111111111111111111111111111111111"
 
-			_, err := Deploy(tempDir, oldPkg)
+			_, err := DeployInstance(tempDir, oldPkg)
 			So(err, ShouldBeNil)
-			_, err = Deploy(tempDir, newPkg)
+			_, err = DeployInstance(tempDir, newPkg)
 			So(err, ShouldBeNil)
 
 			So(scanDir(tempDir), ShouldResemble, []string{
@@ -204,8 +204,8 @@ func TestDeploy(t *testing.T) {
 			})
 		})
 
-		Convey("Deploy two different package", func() {
-			pkg1 := makeTestPackage("test/package", []File{
+		Convey("DeployInstance two different package", func() {
+			pkg1 := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a old", false),
 				makeTestFile("some/executable", "data b old", true),
 				makeTestFile("pkg1 file", "data c", false),
@@ -213,16 +213,16 @@ func TestDeploy(t *testing.T) {
 			pkg1.instanceID = "0000000000000000000000000000000000000000"
 
 			// Nesting in package names is allowed.
-			pkg2 := makeTestPackage("test/package/another", []File{
+			pkg2 := makeTestInstance("test/package/another", []File{
 				makeTestFile("some/file/path", "data a new", false),
 				makeTestFile("some/executable", "data b new", true),
 				makeTestFile("pkg2 file", "data d", false),
 			})
 			pkg2.instanceID = "1111111111111111111111111111111111111111"
 
-			_, err := Deploy(tempDir, pkg1)
+			_, err := DeployInstance(tempDir, pkg1)
 			So(err, ShouldBeNil)
-			_, err = Deploy(tempDir, pkg2)
+			_, err = DeployInstance(tempDir, pkg2)
 			So(err, ShouldBeNil)
 
 			// TODO: Conflicting symlinks point to last installed package, it is not
@@ -245,15 +245,15 @@ func TestDeploy(t *testing.T) {
 			})
 		})
 
-		Convey("Try to deploy package with bad name", func() {
-			_, err := Deploy(tempDir, makeTestPackage("../test/package", []File{}))
+		Convey("Try to deploy package instance with bad package name", func() {
+			_, err := DeployInstance(tempDir, makeTestInstance("../test/package", []File{}))
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Try to deploy package with bad instance ID", func() {
-			pkg := makeTestPackage("test/package", []File{})
-			pkg.instanceID = "../000000000"
-			_, err := Deploy(tempDir, pkg)
+		Convey("Try to deploy package instance with bad instance ID", func() {
+			inst := makeTestInstance("test/package", []File{})
+			inst.instanceID = "../000000000"
+			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -261,14 +261,14 @@ func TestDeploy(t *testing.T) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type testPackage struct {
-	name       string
-	instanceID string
-	files      []File
+type testPackageInstance struct {
+	packageName string
+	instanceID  string
+	files       []File
 }
 
-// makeTestPackage returns Package implementation with mocked guts.
-func makeTestPackage(name string, files []File) *testPackage {
+// makeTestInstance returns PackageInstance implementation with mocked guts.
+func makeTestInstance(name string, files []File) *testPackageInstance {
 	// Generate and append manifest file.
 	out := bytes.Buffer{}
 	err := writeManifest(&Manifest{
@@ -279,18 +279,18 @@ func makeTestPackage(name string, files []File) *testPackage {
 		panic("Failed to write a manifest")
 	}
 	files = append(files, makeTestFile(manifestName, string(out.Bytes()), false))
-	return &testPackage{
-		name:       name,
-		instanceID: "0123456789abcdef00000123456789abcdef0000",
-		files:      files,
+	return &testPackageInstance{
+		packageName: name,
+		instanceID:  "0123456789abcdef00000123456789abcdef0000",
+		files:       files,
 	}
 }
 
-func (f *testPackage) Close() error              { return nil }
-func (f *testPackage) Name() string              { return f.name }
-func (f *testPackage) InstanceID() string        { return f.instanceID }
-func (f *testPackage) Files() []File             { return f.files }
-func (f *testPackage) DataReader() io.ReadSeeker { panic("Not implemented") }
+func (f *testPackageInstance) Close() error              { return nil }
+func (f *testPackageInstance) PackageName() string       { return f.packageName }
+func (f *testPackageInstance) InstanceID() string        { return f.instanceID }
+func (f *testPackageInstance) Files() []File             { return f.files }
+func (f *testPackageInstance) DataReader() io.ReadSeeker { panic("Not implemented") }
 
 ////////////////////////////////////////////////////////////////////////////////
 

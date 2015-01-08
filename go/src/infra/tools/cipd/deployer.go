@@ -48,23 +48,23 @@ type DeployedPackageInfo struct {
 	Manifest Manifest
 }
 
-// Deploy installs a specific instance of a package (identified by InstanceID())
-// into a site root directory. It unpacks the package into <root>/.cipd/pkgs/*,
-// and rearranges symlinks to point to unpacked files. It tries to make it as
-// "atomic" as possibly.
-func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
+// DeployInstance installs a specific instance of a package (identified by
+// InstanceID()) into a site root directory. It unpacks the package into
+// <root>/.cipd/pkgs/*, and rearranges symlinks to point to unpacked files.
+// It tries to make it as "atomic" as possibly.
+func DeployInstance(root string, inst PackageInstance) (info DeployedPackageInfo, err error) {
 	root, err = filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return
 	}
-	log.Infof("Deploying %s:%s into %s", p.Name(), p.InstanceID(), root)
+	log.Infof("Deploying %s:%s into %s", inst.PackageName(), inst.InstanceID(), root)
 
 	// Be paranoid.
-	err = ValidatePackageName(p.Name())
+	err = ValidatePackageName(inst.PackageName())
 	if err != nil {
 		return
 	}
-	err = ValidateInstanceID(p.InstanceID())
+	err = ValidateInstanceID(inst.InstanceID())
 	if err != nil {
 		return
 	}
@@ -72,19 +72,19 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	// Remember currently deployed version (to remove it later). Do not freak out
 	// if it's not there (prevID is "" in that case).
 	oldFiles := makeStringSet()
-	prevID := findDeployedInstance(root, p.Name(), oldFiles)
+	prevID := findDeployedInstance(root, inst.PackageName(), oldFiles)
 
 	// Extract new version to a final destination.
 	newFiles := makeStringSet()
-	destPath, err := deployInstance(root, p, newFiles)
+	destPath, err := deployInstance(root, inst, newFiles)
 	if err != nil {
 		return
 	}
 
 	// Switch '_current' symlink to point to a new package instance. It is a
 	// point of no return. The function must not fail going forward.
-	mainSymlinkPath := packagePath(root, p.Name(), currentSymlink)
-	err = ensureSymlink(mainSymlinkPath, p.InstanceID())
+	mainSymlinkPath := packagePath(root, inst.PackageName(), currentSymlink)
+	err = ensureSymlink(mainSymlinkPath, inst.InstanceID())
 	if err != nil {
 		ensureDirectoryGone(destPath)
 		return
@@ -93,15 +93,15 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	// Asynchronously remove previous version (best effort).
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
-	if prevID != "" && prevID != p.InstanceID() {
+	if prevID != "" && prevID != inst.InstanceID() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ensureDirectoryGone(packagePath(root, p.Name(), prevID))
+			ensureDirectoryGone(packagePath(root, inst.PackageName(), prevID))
 		}()
 	}
 
-	log.Infof("Adjusting symlinks for %s", p.Name())
+	log.Infof("Adjusting symlinks for %s", inst.PackageName())
 
 	// Make symlinks in the site directory for all new files. Reference a package
 	// root via '_current' symlink (instead of direct destPath), to make
@@ -119,14 +119,14 @@ func Deploy(root string, p Package) (info DeployedPackageInfo, err error) {
 	}
 
 	// Verify it's all right, read the manifest.
-	info, err = CheckDeployed(root, p.Name())
-	if err == nil && info.InstanceID != p.InstanceID() {
+	info, err = CheckDeployed(root, inst.PackageName())
+	if err == nil && info.InstanceID != inst.InstanceID() {
 		err = fmt.Errorf("Other package instance (%s) was deployed concurrently", info.InstanceID)
 	}
 	if err == nil {
-		log.Infof("Successfully deployed %s:%s", p.Name(), p.InstanceID())
+		log.Infof("Successfully deployed %s:%s", inst.PackageName(), inst.InstanceID())
 	} else {
-		log.Errorf("Failed to deploy %s:%s: %s", p.Name(), p.InstanceID(), err.Error())
+		log.Errorf("Failed to deploy %s:%s: %s", inst.PackageName(), inst.InstanceID(), err.Error())
 	}
 	return
 }
@@ -193,17 +193,17 @@ func findDeployedInstance(root string, pkg string, files stringSet) string {
 // deployInstance atomically extracts a package instance to its final
 // destination and returns a path to it. It writes a list of extracted files
 // to 'files'. File paths in 'files' are relative to package root.
-func deployInstance(root string, p Package, files stringSet) (string, error) {
-	// Extract new version to a final destination. ExtractPackage knows how to
-	// build full paths and how to atomically extract a package. No need to delete
-	// garbage if it fails.
-	destPath := packagePath(root, p.Name(), p.InstanceID())
-	err := ExtractPackage(p, NewFileSystemDestination(destPath))
+func deployInstance(root string, inst PackageInstance, files stringSet) (string, error) {
+	// Extract new version to a final destination. ExtractPackageInstance knows
+	// how to build full paths and how to atomically extract a package. No need
+	// to delete garbage if it fails.
+	destPath := packagePath(root, inst.PackageName(), inst.InstanceID())
+	err := ExtractInstance(inst, NewFileSystemDestination(destPath))
 	if err != nil {
 		return "", err
 	}
 	// Enumerate files inside. Nuke it and fail if it's unreadable.
-	err = scanPackageDir(packagePath(root, p.Name(), p.InstanceID()), files)
+	err = scanPackageDir(packagePath(root, inst.PackageName(), inst.InstanceID()), files)
 	if err != nil {
 		ensureDirectoryGone(destPath)
 		return "", err

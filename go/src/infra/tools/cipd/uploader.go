@@ -20,9 +20,9 @@ var (
 	ErrFinalizationTimeout = errors.New("Timeout while waiting for CAS service to finalize the upload")
 )
 
-// CommonOptions contains upload related parameters shared by UploadToCAS and
-// RegisterPackage functions.
-type CommonOptions struct {
+// UploadOptions contains upload related parameters shared by UploadToCAS and
+// RegisterInstance functions.
+type UploadOptions struct {
 	// ServiceURL is root URL of the backend service, or "" to use default service.
 	ServiceURL string
 	// FinalizationTimeout is how long to wait for CAS service to finalize the upload, default is 1 min.
@@ -35,7 +35,7 @@ type CommonOptions struct {
 
 // UploadToCASOptions contains parameters for UploadToCAS function.
 type UploadToCASOptions struct {
-	CommonOptions
+	UploadOptions
 
 	// SHA1 is a SHA1 hash of data to upload, usually package's InstanceID().
 	SHA1 string
@@ -125,17 +125,17 @@ func UploadToCAS(options UploadToCASOptions) error {
 	}
 }
 
-// RegisterPackageOptions contains parameters for RegisterPackage function.
-type RegisterPackageOptions struct {
-	CommonOptions
+// RegisterInstanceOptions contains parameters for RegisterInstance function.
+type RegisterInstanceOptions struct {
+	UploadOptions
 
-	// Package is a package to upload.
-	Package Package
+	// PackageInstance is a package to upload.
+	PackageInstance PackageInstance
 }
 
-// RegisterPackage makes the package instance available for clients by
+// RegisterInstance makes the package instance available for clients by
 // uploading it to the storage and registering it in the package repository.
-func RegisterPackage(options RegisterPackageOptions) error {
+func RegisterInstance(options RegisterInstanceOptions) error {
 	// Fill in default options.
 	if options.ServiceURL == "" {
 		options.ServiceURL = DefaultServiceURL()
@@ -147,13 +147,13 @@ func RegisterPackage(options RegisterPackageOptions) error {
 		options.Log = logging.DefaultLogger
 	}
 	log := options.Log
-	pkg := options.Package
+	inst := options.PackageInstance
 	remote := newRemoteService(options.Client, options.ServiceURL, log)
 
 	// Attempt to register.
 	request := registerInstanceRequest{
-		PackageName: pkg.Name(),
-		InstanceID:  pkg.InstanceID(),
+		PackageName: inst.PackageName(),
+		InstanceID:  inst.InstanceID(),
 	}
 	result, err := remote.registerInstance(&request)
 	if err != nil {
@@ -163,9 +163,9 @@ func RegisterPackage(options RegisterPackageOptions) error {
 	// Asked to upload the package file to CAS first?
 	if result.UploadSession != nil {
 		err = UploadToCAS(UploadToCASOptions{
-			CommonOptions:   options.CommonOptions,
-			SHA1:            pkg.InstanceID(),
-			Data:            pkg.DataReader(),
+			UploadOptions:   options.UploadOptions,
+			SHA1:            inst.InstanceID(),
+			Data:            inst.DataReader(),
 			UploadSessionID: result.UploadSession.ID,
 			UploadURL:       result.UploadSession.URL,
 		})
@@ -185,9 +185,9 @@ func RegisterPackage(options RegisterPackageOptions) error {
 	if result.AlreadyRegistered {
 		log.Infof(
 			"cipd: instance %s:%s is already registered by %s on %s",
-			pkg.Name(), pkg.InstanceID(), result.RegisteredBy, result.RegisteredTs)
+			inst.PackageName(), inst.InstanceID(), result.RegisteredBy, result.RegisteredTs)
 	} else {
-		log.Infof("cipd: instance %s:%s was successfully registered", pkg.Name(), pkg.InstanceID())
+		log.Infof("cipd: instance %s:%s was successfully registered", inst.PackageName(), inst.InstanceID())
 	}
 
 	return nil
