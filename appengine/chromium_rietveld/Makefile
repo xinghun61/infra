@@ -39,33 +39,43 @@ VERSION?= `git show --format='%h' --no-patch`$(dirty)
 PYTHON?= python2.7
 COVERAGE?= coverage
 
+NPM_VERSION := $(shell npm --version 2>/dev/null)
 
 default: help
+
+check:
+ifndef NPM_VERSION
+	$(error npm not found. Install from nodejs.org or see README)
+endif
 
 help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_.]*:/s/:.*//p' <Makefile | sort
 
+vulcanize: check
+	mkdir -p ./gen
+	./node_modules/vulcanize/bin/vulcanize new_static/components/cr-app.html -o new_static/components/cr-app.vulcanized.html
+
 run: serve
 
-serve: update_revision
+serve: update_revision vulcanize
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) .
 
-serve_remote: update_revision
+serve_remote: update_revision vulcanize
 	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) --host 0.0.0.0  --admin_host 0.0.0.0 .
 
-serve_email: update_revision
+serve_email: update_revision vulcanize
 	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) --enable_sendmail .
 
-serve_remote_email: update_revision
+serve_remote_email: update_revision vulcanize
 	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) --enable_sendmail --host 0.0.0.0 --admin_host 0.0.0.0 .
 
 update_revision:
 	@echo "---[Updating REVISION]---"
 	@echo "$(VERSION_TAG)" >REVISION
 
-update: update_revision
+update: update_revision vulcanize
 	@echo "---[Updating $(APPID)]---"
 	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(APPID) --version $(VERSION)
 

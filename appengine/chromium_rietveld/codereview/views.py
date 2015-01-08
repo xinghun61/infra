@@ -605,9 +605,7 @@ def _use_new_ui(request):
 
 
 def _serve_new_ui(request):
-  return respond(request, "new_ui.html", {
-    'raw': request.GET.get('raw')
-  })
+  return respond(request, "new_ui.html", {})
 
 
 ### Request handlers ###
