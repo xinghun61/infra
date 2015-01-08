@@ -17,8 +17,8 @@ found in the LICENSE file.
 <link rel="import" href="ct-commit-list.html">
 
 <script>
-function CTFailures(commitLog) {
-  this.commitLog = commitLog;
+function CTFailures(repositories) {
+  this.repositories = repositories;
   // Maps a tree id to an array of CTFailureGroups within that tree.
   this.failures = null;
   this.lastUpdateDate = null;
@@ -234,7 +234,7 @@ CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, range
 
     if (!newFailures[tree])
       newFailures[tree] = [];
-    var commitList = new CTCommitList(this.commitLog, rangeGroup.likely_revisions);
+    var commitList = new CTCommitList(this.repositories, rangeGroup.likely_revisions);
     newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(treeFailures, commitList)));
   }.bind(this));
 };

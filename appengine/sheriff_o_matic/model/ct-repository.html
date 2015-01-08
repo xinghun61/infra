@@ -3,11 +3,88 @@ Copyright 2014 The Chromium Authors. All rights reserved.
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
-
+<link rel='import' href='ct-commit.html'>
 <script>
 function CTRepository(name, dataUrl, repositoryUrl) {
-    this.name = name;
-    this.dataUrl = dataUrl;
-    this.repositoryUrl = repositoryUrl;
+  this.name = name;
+  this.dataUrl = dataUrl;
+  this.repositoryUrl = repositoryUrl;
+  this.commits = {};
+}
+
+CTRepository._endMarker = '__END__';
+
+CTRepository.prototype._getDataUrl = function(opt_start, opt_limit) {
+  var url = this.dataUrl;
+  if (opt_start && opt_start != CTRepository._endMarker) {
+    url += '&s=' + opt_start;
+  }
+  if (opt_limit) {
+    url += '&n=' + opt_limit;
+  }
+  return url;
+};
+
+CTRepository.prototype.update = function() {
+  var responseHandler = this._handleResponse.bind(this);
+  var url = this._getDataUrl();
+  return net.ajax({url: url}).then(responseHandler);
+}
+
+CTRepository.prototype._handleResponse = function(json) {
+  // FIXME: Fix googlesource to not do this outdated JSON XSS mitigation.
+  json = json.substring(')]}\n'.length);
+  var resp = JSON.parse(json);
+  this.nextToken = resp.next;
+
+  resp.log.forEach(function(entry) {
+    var author = entry.author.email;
+    var message = entry.message;
+    var revision = CTCommit.findRevision(message);
+
+    // Check for existing commit for that revision, and possibly complete it.
+    // We update the existing commit instead of creating a new one so that the
+    // data-binding properly updates all the <ct-commit>'s.
+    var existingCommit = this.commits[revision];
+    if (existingCommit && !existingCommit.isComplete) {
+      existingCommit.complete(author, message, revision);
+    } else {
+      var commit = CTCommit.create(author, message, this.repositoryUrl, this.name);
+      this.commits[commit.revision] = commit;
+    }
+  }.bind(this));
+
+  this._updateRevisionRange();
+}
+
+CTRepository.prototype._updateRevisionRange = function() {
+  var sortedCommits = Object.keys(this.commits).sort();
+  this.lastRevision = sortedCommits.last();
+  this.earliestRevision = sortedCommits.first();
+}
+
+CTRepository.prototype.range = function(revisions) {
+  var commits = [];
+  if (this.earliestRevision > revisions.first()) {
+    // The revision is out of the range of previously fetched revisions.
+    // Fetch more revisions from the repository.
+    var delta = this.earliestRevision - revisions.first();
+    var remainderUrl = this._getDataUrl(this.nextToken, delta);
+    var responseHandler = this._handleResponse.bind(this);
+    net.ajax({url: remainderUrl}).then(responseHandler);
+  }
+
+  revisions.forEach(function(revision) {
+    var commit = this.commits[revision];
+    if (!commit) {
+      var url = this.repositoryUrl;
+      var commit = CTCommit.createIncomplete(url, revision, this.name);
+      this.commits[revision] = commit;
+    }
+
+    if (commit)
+      commits.push(commit);
+  }.bind(this));
+  return commits;
 }
 </script>

@@ -5,6 +5,7 @@ found in the LICENSE file.
 -->
 
 <link rel="import" href="../ct-commit-list.html">
+<link rel="import" href="../ct-repositories.html">
 
 <script>
 (function () {
@@ -15,13 +16,13 @@ describe('ct-commit-list', function() {
   describe('commit list Model', function() {
     it('returns commits', function() {
       var revisions = ['blink:158545'];
-      var cl = new CTCommitList(new CTCommitLogMock(), revisions);
+      var cl = new CTCommitList(new CTRepositories(), revisions);
       assert.lengthOf(cl.repositories, 1);
     });
 
     it ('returns repositories', function() {
       var revisions = ['blink:158545', 'blink:158666'];
-      var cl = new CTCommitList(new CTCommitLogMock(), revisions);
+      var cl = new CTCommitList(new CTRepositories(), revisions);
       var repos = cl.repositories;
       assert.lengthOf(repos, 1);
       assert.equal(repos[0].name, 'blink');

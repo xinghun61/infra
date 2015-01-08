@@ -4,7 +4,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
-<link rel="import" href="../ct-commit-log.html">
+<link rel="import" href="../ct-repository.html">
 
 <link rel="import" href="../ct-commit-mock.html">
 
@@ -13,7 +13,7 @@ found in the LICENSE file.
 
 var assert = chai.assert;
 
-describe('ct-commit-log model', function() {
+describe('ct-repository model', function() {
   it('handles response', function() {
     var commit = new CTCommitMock();
     var exampleCommitData = ')]}\n' +
@@ -40,40 +40,38 @@ describe('ct-commit-log model', function() {
         ]
       });
 
-    var repositoryUrl = 'https://mockurl/?{revision}';
-    var repository = 'blink';
+    var repoUrl = 'https://mockurl/?{revision}';
+    var repoName = 'blink';
 
-    var log = new CTCommitLog();
-    log._handleResponse(repositoryUrl, repository, exampleCommitData);
+    var repo = new CTRepository(repoName, '', repoUrl);
+    repo._handleResponse(exampleCommitData);
 
     var expectedCommits = {};
-    log._repositories.names.forEach(function(name) {
-      expectedCommits[name] = {};
-    });
-    expectedCommits[repository][commit.revision] = commit;
-    assert.deepEqual(log.commits, expectedCommits);
+    expectedCommits[commit.revision] = commit;
+
+    assert.deepEqual(repo.commits[commit.revision], expectedCommits[commit.revision]);
 
     var revisions = [commit.revision];
-    assert.deepEqual(log.range(repository, revisions), [commit]);
+    assert.deepEqual(repo.range(revisions), [commit]);
 
     // This url is different than the one above because CTCommitLog gets the url
     // from CTRepositories.
-    var incompleteRepositoryUrl = log._repositories.repositories[repository].repositoryUrl;
+    var incompleteRepositoryUrl = repo.repositoryUrl;
 
     var nextRev = String(commit.revision + 1);
     var incompleteCommitAfter =
-        CTCommit.createIncomplete(incompleteRepositoryUrl, nextRev, repository);
+        CTCommit.createIncomplete(incompleteRepositoryUrl, nextRev, repoName);
     revisions.push(nextRev);
     // Expect an incomplete commit for revision + 1.
-    assert.deepEqual(log.range(repository, revisions), [commit, incompleteCommitAfter]);
+    assert.deepEqual(repo.range(revisions), [commit, incompleteCommitAfter]);
 
     // Expect two incomplete commits: one before and one after.
     var prevRev = String(commit.revision - 1);
     var incompleteCommitBefore =
-        CTCommit.createIncomplete(incompleteRepositoryUrl, prevRev, repository);
+        CTCommit.createIncomplete(incompleteRepositoryUrl, prevRev, repoName);
     // Inserting at the beginning of the list.
     revisions.splice(0, 0, prevRev);
-    assert.deepEqual(log.range(repository, revisions),
+    assert.deepEqual(repo.range(revisions),
                      [incompleteCommitBefore, commit, incompleteCommitAfter]);
   });
 });

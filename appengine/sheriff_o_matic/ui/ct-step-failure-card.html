@@ -49,17 +49,17 @@ found in the LICENSE file.
   <script>
     Polymer({
       group: null,
-      commitLog: null,
+      repositories: null,
       _builderList: null,
 
       observe: {
         group: '_updateCommitList',
-        commitLog: '_updateCommitList',
+        repositories: '_updateCommitList',
       },
 
       _updateCommitList: function() {
-        if (this.group && this.group.commitList && this.commitLog)
-          this.group.commitList.update(this.commitLog);
+        if (this.group && this.group.commitList && this.repositories)
+          this.group.commitList.update(this.repositories);
       },
     });
   </script>

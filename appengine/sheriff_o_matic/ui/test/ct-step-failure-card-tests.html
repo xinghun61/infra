@@ -27,7 +27,7 @@ describe('ct-step-failure-card', function() {
         new CTStepFailure('autobot', 'unknown', {someBuilder: {key: 'a'}}, {'blink':158547},
                       {'blink':158544})], cl));
     card.group = group.data;
-    card.commitLog = new CTCommitLogMock();
+    card.repositories = new CTRepositories();
     setTimeout(done);
   });
 
@@ -41,13 +41,12 @@ describe('ct-step-failure-card', function() {
         var list = card.shadowRoot.querySelector('ct-commit-list');
         var commits = list.shadowRoot.querySelectorAll('ct-commit');
         assert(commits[1].data);
-        assert(commits[1].data.summary);
         done();
       });
     });
 
     it('removing a commit summary', function(done) {
-      card.commitLog.commits['blink']['158545'].summary = undefined;
+      card.repositories.repositories['blink'].commits['158545'].summary = undefined;
       card.group.commitList.repositories[0].expanded = true;
 
       setTimeout(function() {

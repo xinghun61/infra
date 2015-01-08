@@ -30,4 +30,13 @@ function CTRepositories() {
   };
   this.names = Object.keys(this.repositories).sort();
 }
+
+
+CTRepositories.prototype.update = function() {
+  var requests = [];
+  Object.keys(this.repositories, (function(name, repository) {
+    requests.push(repository.update());
+  }.bind(this)));
+  return Promise.all(requests);
+}
 </script>

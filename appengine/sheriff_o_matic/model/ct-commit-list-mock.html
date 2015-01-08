@@ -13,7 +13,7 @@ found in the LICENSE file.
 
 window.CTCommitListMock = function() {
   var revisions = ['blink:158544', 'blink:158545'];
-  return new CTCommitList(new CTCommitLogMock(), revisions);
+  return new CTCommitList(new CTRepositories(), revisions);
 };
 
 })();

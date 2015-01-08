@@ -4,32 +4,28 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
-<link rel="import" href="ct-commit-log.html">
 <link rel="import" href="ct-repository-commit-list.html">
 
 <script>
-function CTCommitList(commitLog, revisions) {
+function CTCommitList(repositories, revisions) {
   this._initRevisions(revisions);
-  this.update(commitLog);
+  this.update(repositories);
 }
 
-CTCommitList.prototype.update = function(commitLog) {
+CTCommitList.prototype.update = function(repos) {
   this.repositories = [];
-  if (!commitLog)
+  if (!repos)
     return;
 
-  var allRepositories = commitLog._repositories.names;
-  for (var i = 0; i < allRepositories.length; i++) {
-    var repository = allRepositories[i];
-    if (!this.revisions[repository])
-      continue;
-
-    var commits = commitLog.range(repository, this.revisions[repository]);
+  Object.keys(repos.repositories, function(repoName, repository) {
+    if (!this.revisions[repoName])
+      return;
+    var commits = repository.range(this.revisions[repoName]);
     if (!commits.length)
-      continue;
+      return;
 
-    this.repositories.push(new CTRepositoryCommitList(repository, commits));
-  }
+    this.repositories.push(new CTRepositoryCommitList(repoName, commits));
+  }.bind(this));
 };
 
 CTCommitList.prototype._initRevisions = function(repoRevisions) {

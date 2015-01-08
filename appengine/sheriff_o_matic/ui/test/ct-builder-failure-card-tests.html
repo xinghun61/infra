@@ -24,7 +24,6 @@ describe('ct-builder-failure-card', function() {
         new CTBuilderFailure('blink', 'https://build.chromium.org/p/chromium.webkit',
             'Linux (dbg)', 'building', 7200, 5), "Linux (dbg)", "http://foo.bar"));
     card.group = group.data;
-    card.commitLog = new CTCommitLogMock();
     setTimeout(done);
   });
 

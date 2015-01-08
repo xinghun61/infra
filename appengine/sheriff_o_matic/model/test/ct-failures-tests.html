@@ -403,7 +403,7 @@ describe('ct-failures', function() {
         }
       };
       simulator.runTest(function() {
-        var analyzer = new CTFailures(CTCommitLogMock());
+        var analyzer = new CTFailures(new CTRepositories());
         return analyzer.update().then(function() {
           assert.property(analyzer.failures, 'chromium');
           assert.lengthOf(analyzer.failures.chromium, 4);
