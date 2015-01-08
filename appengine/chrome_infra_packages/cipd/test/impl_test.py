@@ -41,6 +41,8 @@ class TestRepoService(testing.AppengineTestCase):
     self.service = impl.get_repo_service()
 
   def test_register_new(self):
+    self.assertIsNone(self.service.get_instance('a/b', 'a'*40))
+    self.assertIsNone(self.service.get_package('a/b'))
     pkg, registered = self.service.register_instance(
         package_name='a/b',
         instance_id='a'*40,
@@ -49,6 +51,8 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertTrue(registered)
     self.assertEqual(
         ndb.Key('Package', 'a/b', 'PackageInstance', 'a'*40), pkg.key)
+    self.assertEqual('a/b', pkg.package_name)
+    self.assertEqual('a'*40, pkg.instance_id)
     expected = {
       'registered_by': auth.Identity(kind='user', name='abc@example.com'),
       'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
@@ -56,6 +60,7 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertEqual(expected, pkg.to_dict())
     self.assertEqual(
         expected, self.service.get_instance('a/b', 'a'*40).to_dict())
+    self.assertTrue(self.service.get_package('a/b'))
 
   def test_register_existing(self):
     # First register a package.
@@ -72,6 +77,17 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertFalse(registered)
     self.assertEqual(pkg1.to_dict(), pkg2.to_dict())
 
+  def test_generate_fetch_url(self):
+    pkg, registered = self.service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+    url = self.service.generate_fetch_url(pkg)
+    self.assertEqual(
+        'https://signed-url/SHA1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', url)
+
   def test_is_instance_file_uploaded(self):
     self.mocked_cas_service.uploaded.add(('SHA1', 'a'*40))
     self.assertTrue(self.service.is_instance_file_uploaded('a/b', 'a'*40))
@@ -87,6 +103,12 @@ class TestRepoService(testing.AppengineTestCase):
 class MockedCASService(object):
   def __init__(self):
     self.uploaded = set()
+
+  def is_fetch_configured(self):
+    return True
+
+  def generate_fetch_url(self, algo, digest):
+    return 'https://signed-url/%s/%s' % (algo, digest)
 
   def is_object_present(self, algo, digest):
     return (algo, digest) in self.uploaded

@@ -19,13 +19,34 @@ from . import impl
 package = 'cipd'
 
 
+class HashAlgo(messages.Enum):
+  SHA1 = 1
+
+
+class FetchResponse(messages.Message):
+  class Status(messages.Enum):
+    # File is available for fetch.
+    SUCCESS = 1
+    # No such file uploaded.
+    NOT_FOUND = 2
+    # Some non-transient error happened.
+    ERROR = 3
+
+  # Status of the operation.
+  status = messages.EnumField(Status, 1, required=True)
+  # For SUCCESS status, a signed URL to fetch the file from.
+  fetch_url = messages.StringField(2, required=False)
+  # For ERROR status, an error message.
+  error_message = messages.StringField(3, required=False)
+
+
 class BeginUploadResponse(messages.Message):
   class Status(messages.Enum):
     # New upload session has started.
     SUCCESS = 1
     # Such file is already uploaded to the store.
     ALREADY_UPLOADED = 2
-    # Some unexpected fatal error happened.
+    # Some non-transient error happened.
     ERROR = 3
 
   # Status of this operation, defines what other fields to expect.
@@ -36,7 +57,7 @@ class BeginUploadResponse(messages.Message):
   # For SUCCESS status, URL to PUT file body to via resumable upload protocol.
   upload_url = messages.StringField(3, required=False)
 
-  # For ERROR status, a error message.
+  # For ERROR status, an error message.
   error_message = messages.StringField(4, required=False)
 
 
@@ -50,12 +71,12 @@ class FinishUploadResponse(messages.Message):
     VERIFYING = impl.UploadSession.STATUS_VERIFYING
     # The file is in the store and visible by all clients. Final state.
     PUBLISHED = impl.UploadSession.STATUS_PUBLISHED
-    # Some other unexpected fatal error happened.
+    # Some non-transient error happened.
     ERROR = impl.UploadSession.STATUS_ERROR
 
   # Status of the upload operation.
   status = messages.EnumField(Status, 1, required=True)
-  # Optional error message for STATUS_ERROR status.
+  # For ERROR status, an error message.
   error_message = messages.StringField(2, required=False)
 
 
@@ -64,6 +85,12 @@ _UPLOAD_STATUS_MAPPING = {
   getattr(impl.UploadSession, k): getattr(
       FinishUploadResponse.Status, k[len('STATUS_'):])
   for k in dir(impl.UploadSession) if k.startswith('STATUS_')
+}
+
+# HashAlgo enum field -> hash algo name. Also asserts that all algorithms
+# specified in impl.SUPPORTED_HASH_ALGOS are in the HashAlgo enum.
+_HASH_ALGO_MAPPING = {
+  getattr(HashAlgo, k): k for k in impl.SUPPORTED_HASH_ALGOS
 }
 
 
@@ -75,15 +102,38 @@ class CASServiceApi(remote.Service):
   """Content addressable storage API."""
 
   # Endpoints require use of ResourceContainer if parameters are passed via URL.
-  BEGIN_UPLOAD_RESOURCE_CONTAINER = endpoints.ResourceContainer(
+  ITEM_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
       # Hash algorithm used to identify file contents, e.g. 'SHA1'.
-      hash_algo = messages.StringField(1, required=True),
+      hash_algo = messages.EnumField(HashAlgo, 1, required=True),
       # Hex hash digest of a file client wants to upload.
       file_hash = messages.StringField(2, required=True))
 
   @auth.endpoints_method(
-      BEGIN_UPLOAD_RESOURCE_CONTAINER,
+      ITEM_RESOURCE_CONTAINER,
+      FetchResponse,
+      path='fetch/{hash_algo}/{file_hash}',
+      http_method='GET',
+      name='fetch')
+  @auth.require(auth.is_admin)
+  def fetch(self, request):
+    """Returns a signed URL that can be used to fetch an object."""
+    def error(msg):
+      return FetchResponse(status=FetchResponse.Status.ERROR, error_message=msg)
+
+    hash_algo = _HASH_ALGO_MAPPING[request.hash_algo]
+    if not impl.is_valid_hash_digest(hash_algo, request.file_hash):
+      return error('Invalid hash digest format')
+
+    service = impl.get_cas_service()
+    if service is None or not service.is_fetch_configured():
+      raise endpoints.InternalServerErrorException('Service is not configured')
+
+    url = service.generate_fetch_url(hash_algo, request.file_hash)
+    return FetchResponse(status=FetchResponse.Status.SUCCESS, fetch_url=url)
+
+  @auth.endpoints_method(
+      ITEM_RESOURCE_CONTAINER,
       BeginUploadResponse,
       path='upload/{hash_algo}/{file_hash}',
       http_method='POST',
@@ -103,21 +153,25 @@ class CASServiceApi(remote.Service):
     PackageRepositoryApi.register_package instead to initiate an upload of some
     package and get upload_url and upload_session_id.
     """
-    if not impl.is_supported_hash_algo(request.hash_algo):
-      raise endpoints.BadRequestException('Unsupported hash algo')
-    if not impl.is_valid_hash_digest(request.hash_algo, request.file_hash):
-      raise endpoints.BadRequestException('Invalid hash digest format')
+    def error(msg):
+      return BeginUploadResponse(
+          status=BeginUploadResponse.Status.ERROR,
+          error_message=msg)
+
+    hash_algo = _HASH_ALGO_MAPPING[request.hash_algo]
+    if not impl.is_valid_hash_digest(hash_algo, request.file_hash):
+      return error('Invalid hash digest format')
 
     service = impl.get_cas_service()
     if service is None:
       raise endpoints.InternalServerErrorException('Service is not configured')
 
-    if service.is_object_present(request.hash_algo, request.file_hash):
+    if service.is_object_present(hash_algo, request.file_hash):
       return BeginUploadResponse(
           status=BeginUploadResponse.Status.ALREADY_UPLOADED)
 
     upload_session, upload_session_id = service.create_upload_session(
-        request.hash_algo,
+        hash_algo,
         request.file_hash,
         auth.get_current_identity())
     return BeginUploadResponse(

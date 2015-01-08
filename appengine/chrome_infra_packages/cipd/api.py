@@ -21,21 +21,77 @@ from . import impl
 package = 'cipd'
 
 
-class RegisterPackageRequest(messages.Message):
+class PackageInstance(messages.Message):
+  """Information about some registered package instance."""
+  # Name of the package.
+  package_name = messages.StringField(1, required=True)
+  # ID of the instance (SHA1 of package file content).
+  instance_id = messages.StringField(2, required=True)
+  # Who registered the instance.
+  registered_by = messages.StringField(3, required=True)
+  # When the instance was registered.
+  registered_ts = messages.IntegerField(4, required=True)
+
+
+def instance_to_proto(ent):
+  """PackageInstance entity -> PackageInstance proto message."""
+  return PackageInstance(
+      package_name=ent.package_name,
+      instance_id=ent.instance_id,
+      registered_by=ent.registered_by.to_bytes(),
+      registered_ts=utils.datetime_to_timestamp(ent.registered_ts))
+
+
+class FetchInstanceRequest(messages.Message):
+  """Request to get a signed URL to package instance file.
+
+  TODO(vadimsh): Currently caller is expected to specify instance_id directly.
+  In the future caller can provide a label name instead, e.g 'latest'.
+  """
+  package_name = messages.StringField(1, required=True)
+  instance_id = messages.StringField(2, required=False)
+
+
+class FetchInstanceResponse(messages.Message):
+  """Results of fetchInstance call."""
+
+  class Status(messages.Enum):
+    # Package instance exists, fetch_url is returned.
+    SUCCESS = 1
+    # No such package or access is denied.
+    PACKAGE_NOT_FOUND = 2
+    # Package itself is known, but requested instance_id isn't registered.
+    INSTANCE_NOT_FOUND = 3
+    # Some non-transient error happened.
+    ERROR = 4
+
+  # Status of this operation, defines what other fields to expect.
+  status = messages.EnumField(Status, 1, required=True)
+
+  # For SUCCESS, an information about the package instance.
+  instance = messages.MessageField(PackageInstance, 2, required=False)
+  # For SUCCESS, a signed url to fetch the package instance file from.
+  fetch_url = messages.StringField(3, required=False)
+
+  # For ERROR status, an error message.
+  error_message = messages.StringField(4, required=False)
+
+
+class RegisterInstanceRequest(messages.Message):
   """Request to add a new package instance if it is not yet present.
 
   Callers are expected to execute following protocol:
-    1. Attempt to register a package instance by calling registerPackage(msg).
+    1. Attempt to register a package instance by calling registerInstance(msg).
     2. On UPLOAD_FIRST response, upload package data and finalize the upload by
        using upload_session_id and upload_url and calling cas.finishUpload.
-    3. Once upload is finalized, call registerPackage(msg) again.
+    3. Once upload is finalized, call registerInstance(msg) again.
   """
   package_name = messages.StringField(1, required=True)
   instance_id = messages.StringField(2, required=True)
 
 
-class RegisterPackageResponse(messages.Message):
-  """Results of registerPackage call.
+class RegisterInstanceResponse(messages.Message):
+  """Results of registerInstance call.
 
   upload_session_id and upload_url (if present) can be used with CAS service
   (finishUpload call in particular).
@@ -54,18 +110,16 @@ class RegisterPackageResponse(messages.Message):
   # Status of this operation, defines what other fields to expect.
   status = messages.EnumField(Status, 1, required=True)
 
-  # For REGISTERED and ALREADY_REGISTERED, who registered the package.
-  registered_by = messages.StringField(2, required=False)
-  # For REGISTERED and ALREADY_REGISTERED, when the package was registered.
-  registered_ts = messages.IntegerField(3, required=False)
+  # For REGISTERED or ALREADY_REGISTERED, info about the package instance.
+  instance = messages.MessageField(PackageInstance, 2, required=False)
 
   # For UPLOAD_FIRST status, a unique identifier of the upload operation.
-  upload_session_id = messages.StringField(4, required=False)
+  upload_session_id = messages.StringField(3, required=False)
   # For UPLOAD_FIRST status, URL to PUT file to via resumable upload protocol.
-  upload_url = messages.StringField(5, required=False)
+  upload_url = messages.StringField(4, required=False)
 
-  # For ERROR status, a error message.
-  error_message = messages.StringField(6, required=False)
+  # For ERROR status, an error message.
+  error_message = messages.StringField(5, required=False)
 
 
 @auth.endpoints_api(
@@ -76,36 +130,85 @@ class PackageRepositoryApi(remote.Service):
   """Package Repository API."""
 
   @auth.endpoints_method(
-      RegisterPackageRequest,
-      RegisterPackageResponse,
-      http_method='POST',
-      name='registerPackage')
+      FetchInstanceRequest,
+      FetchInstanceResponse,
+      http_method='GET',
+      name='fetchInstance')
   @auth.require(lambda: not auth.get_current_identity().is_anonymous)
-  def register_package(self, request):
-    """Registers a new package instance in the repository."""
-    # Forms ERROR response.
+  def fetch_instance(self, request):
+    """Returns signed URL that can be used to fetch a package instance."""
     def error(msg):
-      return RegisterPackageResponse(
-          status=RegisterPackageResponse.Status.ERROR,
+      return FetchInstanceResponse(
+          status=FetchInstanceResponse.Status.ERROR,
           error_message=msg)
-
-    # Forms REGISTERED or ALREADY_REGISTERED response.
-    def success(pkg, status):
-      return RegisterPackageResponse(
-          status=status,
-          registered_by=pkg.registered_by.to_bytes(),
-          registered_ts=utils.datetime_to_timestamp(pkg.registered_ts))
 
     package_name = request.package_name
     if not impl.is_valid_package_name(package_name):
       return error('Invalid package name')
 
     instance_id = request.instance_id
-    if not impl.is_valid_instance_id(request.instance_id):
+    if not instance_id or not impl.is_valid_instance_id(instance_id):
+      return error('Invalid package instance ID')
+
+    # An unauthorized user should not be able to prob package namespace and rely
+    # on 403 status to discover what packages exist. Return "not found" instead.
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      return FetchInstanceResponse(
+          status=FetchInstanceResponse.Status.PACKAGE_NOT_FOUND)
+
+    service = impl.get_repo_service()
+    if service is None or not service.is_fetch_configured():
+      raise endpoints.InternalServerErrorException('Service is not configured')
+
+    # TODO(vadimsh): Now would be a good time to resolve label to instance_id.
+
+    # Check that package and instance exist.
+    instance = service.get_instance(package_name, instance_id)
+    if instance is None:
+      pkg = service.get_package(package_name)
+      if pkg is None:
+        return FetchInstanceResponse(
+            status=FetchInstanceResponse.Status.PACKAGE_NOT_FOUND)
+      return FetchInstanceResponse(
+          status=FetchInstanceResponse.Status.INSTANCE_NOT_FOUND)
+
+    # Success.
+    return FetchInstanceResponse(
+        status=FetchInstanceResponse.Status.SUCCESS,
+        instance=instance_to_proto(instance),
+        fetch_url=service.generate_fetch_url(instance))
+
+  @auth.endpoints_method(
+      RegisterInstanceRequest,
+      RegisterInstanceResponse,
+      http_method='POST',
+      name='registerInstance')
+  @auth.require(lambda: not auth.get_current_identity().is_anonymous)
+  def register_instance(self, request):
+    """Registers a new package instance in the repository."""
+    # Forms ERROR response.
+    def error(msg):
+      return RegisterInstanceResponse(
+          status=RegisterInstanceResponse.Status.ERROR,
+          error_message=msg)
+
+    # Forms REGISTERED or ALREADY_REGISTERED response.
+    def success(instance, status):
+      return RegisterInstanceResponse(
+          status=status,
+          instance=instance_to_proto(instance))
+
+    package_name = request.package_name
+    if not impl.is_valid_package_name(package_name):
+      return error('Invalid package name')
+
+    instance_id = request.instance_id
+    if not impl.is_valid_instance_id(instance_id):
       return error('Invalid package instance ID')
 
     caller = auth.get_current_identity()
-    if not acl.can_register_package(package_name, caller):
+    if not acl.can_register_instance(package_name, caller):
       raise auth.AuthorizationError()
 
     service = impl.get_repo_service()
@@ -113,28 +216,29 @@ class PackageRepositoryApi(remote.Service):
       raise endpoints.InternalServerErrorException('Service is not configured')
 
     # Already registered?
-    pkg = service.get_instance(package_name, instance_id)
-    if pkg is not None:
-      return success(pkg, RegisterPackageResponse.Status.ALREADY_REGISTERED)
+    instance = service.get_instance(package_name, instance_id)
+    if instance is not None:
+      return success(
+          instance, RegisterInstanceResponse.Status.ALREADY_REGISTERED)
 
     # Need to upload to CAS first? Open an upload session. Caller must use
-    # CASServiceApi to finish the upload and then call registerPackage again.
+    # CASServiceApi to finish the upload and then call registerInstance again.
     if not service.is_instance_file_uploaded(package_name, instance_id):
       upload_url, upload_session_id = service.create_upload_session(
           package_name, instance_id, caller)
-      return RegisterPackageResponse(
-          status=RegisterPackageResponse.Status.UPLOAD_FIRST,
+      return RegisterInstanceResponse(
+          status=RegisterInstanceResponse.Status.UPLOAD_FIRST,
           upload_session_id=upload_session_id,
           upload_url=upload_url)
 
     # Package data is in the store. Make an entity.
-    pkg, registered = service.register_instance(
+    instance, registered = service.register_instance(
         package_name=package_name,
         instance_id=instance_id,
         caller=caller,
         now=utils.utcnow())
     if registered:
-      status = RegisterPackageResponse.Status.REGISTERED
+      status = RegisterInstanceResponse.Status.REGISTERED
     else:  # pragma: no cover
-      status = RegisterPackageResponse.Status.ALREADY_REGISTERED
-    return success(pkg, status)
+      status = RegisterInstanceResponse.Status.ALREADY_REGISTERED
+    return success(instance, status)

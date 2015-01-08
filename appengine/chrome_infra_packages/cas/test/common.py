@@ -15,8 +15,14 @@ from cas import impl
 class MockedCASService(object):  # pragma: no cover
   """Same interface as impl.CASService, but without implementation."""
 
+  def is_fetch_configured(self):
+    return True
+
   def is_object_present(self, hash_algo, hash_digest):
     return False
+
+  def generate_fetch_url(self, hash_algo, hash_digest):
+    return 'https://signed-url.example.com/%s/%s' % (hash_algo, hash_digest)
 
   def create_upload_session(self, hash_algo, hash_digest, caller):
     return make_fake_session(), 'signed_id'

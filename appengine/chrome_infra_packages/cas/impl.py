@@ -35,9 +35,11 @@ library since it uses its non-public APIs:
   * storage_api._get_storage_api(...) and _StorageApi it returns.
 """
 
+import base64
 import hashlib
 import logging
 import re
+import urllib
 import webapp2
 
 from google.appengine import runtime
@@ -60,6 +62,9 @@ import config
 # TODO(vadimsh): Garbage collect expired UploadSession. Right know only public
 # upload_session_id expires, rendering sessions unreachable by clients. But the
 # entities themselves unnecessarily stay in the datastore.
+
+# How long to keep signed fetch URL alive.
+FETCH_URL_EXPIRATION_SEC = 60 * 60
 
 # How long to keep pending upload session alive.
 SESSION_EXPIRATION_TIME_SEC = 6 * 60 * 60
@@ -104,7 +109,11 @@ def get_cas_service():
   except ValueError as err:
     logging.error("Invalid CAS config: %s", err)
     return None
-  return CASService(conf.cas_gs_path.rstrip('/'), conf.cas_gs_temp.rstrip('/'))
+  return CASService(
+      conf.cas_gs_path.rstrip('/'),
+      conf.cas_gs_temp.rstrip('/'),
+      conf.service_account_email,
+      conf.service_account_pkey)
 
 
 class UploadIdSignature(auth.TokenKind):
@@ -117,18 +126,53 @@ class UploadIdSignature(auth.TokenKind):
 class CASService(object):
   """CAS implementation on top of Google Storage."""
 
-  def __init__(self, gs_path, gs_temp):
+  def __init__(self, gs_path, gs_temp, account_email=None, account_pkey=None):
     self._gs_path = gs_path.rstrip('/')
     self._gs_temp = gs_temp.rstrip('/')
+    self._account_email = account_email
+    self._account_pkey = account_pkey
     self._retry_params = api_utils.RetryParams()
     cloudstorage.validate_file_path(self._gs_path)
     cloudstorage.validate_file_path(self._gs_temp)
+
+  def is_fetch_configured(self):
+    """True if service account credentials are configured."""
+    return bool(self._account_pkey and self._account_email)
 
   def is_object_present(self, hash_algo, hash_digest):
     """True if the given object is in the store."""
     assert is_valid_hash_digest(hash_algo, hash_digest)
     return self._is_gs_file_present(
         self._verified_gs_path(hash_algo, hash_digest))
+
+  def generate_fetch_url(self, hash_algo, hash_digest):
+    """Returns a signed URL that can be used to fetch an object.
+
+    See https://developers.google.com/storage/docs/accesscontrol#Signed-URLs
+    for more info about signed URLs.
+    """
+    assert is_valid_hash_digest(hash_algo, hash_digest)
+    assert self.is_fetch_configured()
+
+    # Generate the signature.
+    gs_path = self._verified_gs_path(hash_algo, hash_digest)
+    expires = str(int(utils.time_time() + FETCH_URL_EXPIRATION_SEC))
+    signature = self._rsa_sign(self._account_pkey, '\n'.join([
+      'GET',
+      '', # Content-MD5, not provided
+      '', # Content-Type, not provided
+      expires,
+      gs_path,
+    ]))
+
+    # Generate the final URL.
+    query_params = urllib.urlencode([
+      ('GoogleAccessId', self._account_email),
+      ('Expires', expires),
+      ('Signature', signature),
+    ])
+    assert gs_path.startswith('/'), gs_path
+    return 'https://storage.googleapis.com%s?%s' % (gs_path, query_params)
 
   def create_upload_session(self, hash_algo, hash_digest, caller):
     """Starts a new upload operation.
@@ -346,13 +390,13 @@ class CASService(object):
 
   def _verified_gs_path(self, hash_algo, hash_digest):
     """Google Storage path to a verified file."""
-    return '%s/%s/%s' % (self._gs_path, hash_algo, hash_digest)
+    return str('%s/%s/%s' % (self._gs_path, hash_algo, hash_digest))
 
   def _temp_gs_path(self, upload_id, timestamp_sec):
     """Path to temporary drop location."""
     # Use timestamp prefix to enable cheap and dirty "time range" queries when
     # listing bucket with a prefix scan.
-    return '%s/%d_%s' % (self._gs_temp, timestamp_sec, upload_id)
+    return str('%s/%d_%s' % (self._gs_temp, timestamp_sec, upload_id))
 
   def _is_gs_file_present(self, gs_path):
     """True if given GS file exists."""
@@ -395,6 +439,17 @@ class CASService(object):
           retry_params=self._retry_params)
     except cloudstorage.NotFoundError:  # pragma: no cover
       pass
+
+  @staticmethod
+  def _rsa_sign(pkey_pem, data):  # pragma: no cover
+    """Returns base64 encoded RSA-SHA256 signature of a string."""
+    # Load crypto modules lazily. For some reason they are not available in unit
+    # test environment (but work on dev server).
+    from Crypto.Hash import SHA256
+    from Crypto.PublicKey import RSA
+    from Crypto.Signature import PKCS1_v1_5
+    signer = PKCS1_v1_5.new(RSA.importKey(pkey_pem))
+    return base64.b64encode(signer.sign(SHA256.new(data)))
 
 
 class UploadSession(ndb.Model):

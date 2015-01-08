@@ -11,6 +11,12 @@ from components import auth
 
 # TODO(vadimsh): Implement.
 
-def can_register_package(package_name, identity):  # pragma: no cover
-  """True if |identity| is allowed to register package with given name."""
+
+def can_fetch_instance(package_name, identity):  # pragma: no cover
+  """True if |identity| is allowed to fetch an instance with given name."""
+  return auth.is_admin(identity)
+
+
+def can_register_instance(package_name, identity):  # pragma: no cover
+  """True if |identity| is allowed to register an instance with given name."""
   return auth.is_admin(identity)

@@ -25,6 +25,36 @@ class CASServiceApiTest(testing.EndpointsTestCase):
       return self.cas_service
     self.mock(impl, 'get_cas_service', mocked_get_cas_service)
 
+  def test_fetch_bad_digest(self):
+    resp = self.call_api('fetch', {
+      'hash_algo': 'SHA1',
+      'file_hash': 'aaaa',
+    })
+    self.assertEqual({
+      'error_message': 'Invalid hash digest format',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_fetch_no_service(self):
+    self.cas_service = None
+    with self.call_should_fail(500):
+      self.call_api('fetch', {
+        'hash_algo': 'SHA1',
+        'file_hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      })
+
+  def test_fetch_ok(self):
+    resp = self.call_api('fetch', {
+      'hash_algo': 'SHA1',
+      'file_hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    })
+    self.assertEqual({
+      'fetch_url': (
+          'https://signed-url.example.com/SHA1/'
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
   def test_begin_upload_ok(self):
     resp = self.call_api('begin_upload', {
       'hash_algo': 'SHA1',
@@ -36,19 +66,15 @@ class CASServiceApiTest(testing.EndpointsTestCase):
       'upload_url': 'https://example.com/upload_url?upload_id=somestuff',
     })
 
-  def test_begin_upload_bad_algo(self):
-    with self.call_should_fail(400):
-      self.call_api('begin_upload', {
-        'hash_algo': 'UBERHASH',
-        'file_hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      })
-
   def test_begin_upload_bad_digest(self):
-    with self.call_should_fail(400):
-      self.call_api('begin_upload', {
-        'hash_algo': 'SHA1',
-        'file_hash': 'aaaa',
-      })
+    resp = self.call_api('begin_upload', {
+      'hash_algo': 'SHA1',
+      'file_hash': 'aaaa',
+    })
+    self.assertEqual({
+      'error_message': 'Invalid hash digest format',
+      'status': 'ERROR',
+    }, resp.json_body)
 
   def test_begin_upload_no_service(self):
     self.cas_service = None

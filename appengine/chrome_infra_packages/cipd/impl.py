@@ -51,6 +51,10 @@ class RepoService(object):
   def __init__(self, cas_service):
     self.cas_service = cas_service
 
+  def is_fetch_configured(self):
+    """True if 'generate_fetch_url' has enough configuration to work."""
+    return self.cas_service.is_fetch_configured()
+
   def get_instance(self, package_name, instance_id):
     """Returns PackageInstance entity if such instance is registered.
 
@@ -62,6 +66,17 @@ class RepoService(object):
       PackageInstance or None.
     """
     return package_instance_key(package_name, instance_id).get()
+
+  def get_package(self, package_name):
+    """Returns Package entity if it exists.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+
+    Returns:
+      Package or None.
+    """
+    return package_key(package_name).get()
 
   @ndb.transactional
   def register_instance(self, package_name, instance_id, caller, now=None):
@@ -90,6 +105,19 @@ class RepoService(object):
         registered_ts=now or utils.utcnow())
     inst.put()
     return inst, True
+
+  def generate_fetch_url(self, instance):
+    """Given PackageInstance returns signed URL to a package file.
+
+    Args:
+      instance: existing PackageInstance entity.
+
+    Returns:
+      Signed URL that can be used by a client to fetch package file.
+    """
+    assert self.is_fetch_configured()
+    return self.cas_service.generate_fetch_url(
+        DIGEST_ALGO, instance.instance_id)
 
   def is_instance_file_uploaded(self, package_name, instance_id):
     """Returns True if package instance file is uploaded to CAS.
@@ -163,6 +191,16 @@ class PackageInstance(ndb.Model):
   registered_by = auth.IdentityProperty()
   # When the instance was registered.
   registered_ts = ndb.DateTimeProperty()
+
+  @property
+  def package_name(self):
+    """Name of the package this instance belongs to."""
+    return self.key.parent().string_id()
+
+  @property
+  def instance_id(self):
+    """Package instance ID (SHA1 of package file content)."""
+    return self.key.string_id()
 
 
 def package_key(package_name):

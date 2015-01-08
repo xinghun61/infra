@@ -65,6 +65,35 @@ class CASServiceImplTest(testing.AppengineTestCase):
     self.mock(config, 'cached', lambda: conf)
     self.assertIsNone(impl.get_cas_service())
 
+  def test_fetch(self):
+    service = impl.CASService(
+        '/bucket/real', '/bucket/temp', 'account@email.com', 'PEM private key')
+
+    # Actual _rsa_sign implementation depends on PyCrypto, that for some reason
+    # is not importable in unit tests. _rsa_sign is small enough to be "tested"
+    # manually on the dev server.
+    calls = []
+    def fake_sign(pkey, data):
+      calls.append((pkey, data))
+      return '+signature+'
+    self.mock(service, '_rsa_sign', fake_sign)
+    self.mock_now(utils.timestamp_to_datetime(1416444987 * 1000000.))
+
+    # Signature and email should be urlencoded.
+    url = service.generate_fetch_url('SHA1', 'a' * 40)
+    self.assertEqual(
+        'https://storage.googleapis.com/bucket/real/SHA1/'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
+        'GoogleAccessId=account%40email.com&'
+        'Expires=1416448587&'
+        'Signature=%2Bsignature%2B', url)
+
+    # Since _rsa_sign is mocked out, at least verify it is called as expected.
+    self.assertEqual([(
+      'PEM private key',
+      'GET\n\n\n1416448587\n/bucket/real/SHA1/' + 'a'*40
+    )], calls)
+
   def test_is_object_present(self):
     service = impl.CASService('/bucket/real', '/bucket/temp')
     self.mock_cloudstorage_stat(['/bucket/real/SHA1/' + 'a' * 40])
