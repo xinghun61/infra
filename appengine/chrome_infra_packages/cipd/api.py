@@ -42,16 +42,6 @@ def instance_to_proto(ent):
       registered_ts=utils.datetime_to_timestamp(ent.registered_ts))
 
 
-class FetchInstanceRequest(messages.Message):
-  """Request to get a signed URL to package instance file.
-
-  TODO(vadimsh): Currently caller is expected to specify instance_id directly.
-  In the future caller can provide a label name instead, e.g 'latest'.
-  """
-  package_name = messages.StringField(1, required=True)
-  instance_id = messages.StringField(2, required=False)
-
-
 class FetchInstanceResponse(messages.Message):
   """Results of fetchInstance call."""
 
@@ -77,24 +67,17 @@ class FetchInstanceResponse(messages.Message):
   error_message = messages.StringField(4, required=False)
 
 
-class RegisterInstanceRequest(messages.Message):
-  """Request to add a new package instance if it is not yet present.
-
-  Callers are expected to execute following protocol:
-    1. Attempt to register a package instance by calling registerInstance(msg).
-    2. On UPLOAD_FIRST response, upload package data and finalize the upload by
-       using upload_session_id and upload_url and calling cas.finishUpload.
-    3. Once upload is finalized, call registerInstance(msg) again.
-  """
-  package_name = messages.StringField(1, required=True)
-  instance_id = messages.StringField(2, required=True)
-
-
 class RegisterInstanceResponse(messages.Message):
   """Results of registerInstance call.
 
   upload_session_id and upload_url (if present) can be used with CAS service
   (finishUpload call in particular).
+
+  Callers are expected to execute following protocol:
+    1. Attempt to register a package instance by calling registerInstance(...).
+    2. On UPLOAD_FIRST response, upload package data and finalize the upload by
+       using upload_session_id and upload_url and calling cas.finishUpload.
+    3. Once upload is finalized, call registerInstance(...) again.
   """
 
   class Status(messages.Enum):
@@ -129,12 +112,18 @@ class RegisterInstanceResponse(messages.Message):
 class PackageRepositoryApi(remote.Service):
   """Package Repository API."""
 
+  # Identified some instance of some package.
+  INSTANCE_RESOURCE_CONTAINER = endpoints.ResourceContainer(
+      message_types.VoidMessage,
+      package_name = messages.StringField(1, required=True),
+      instance_id = messages.StringField(2, required=True))
+
   @auth.endpoints_method(
-      FetchInstanceRequest,
+      INSTANCE_RESOURCE_CONTAINER,
       FetchInstanceResponse,
       http_method='GET',
+      path='instance',
       name='fetchInstance')
-  @auth.require(lambda: not auth.get_current_identity().is_anonymous)
   def fetch_instance(self, request):
     """Returns signed URL that can be used to fetch a package instance."""
     def error(msg):
@@ -161,8 +150,6 @@ class PackageRepositoryApi(remote.Service):
     if service is None or not service.is_fetch_configured():
       raise endpoints.InternalServerErrorException('Service is not configured')
 
-    # TODO(vadimsh): Now would be a good time to resolve label to instance_id.
-
     # Check that package and instance exist.
     instance = service.get_instance(package_name, instance_id)
     if instance is None:
@@ -180,11 +167,11 @@ class PackageRepositoryApi(remote.Service):
         fetch_url=service.generate_fetch_url(instance))
 
   @auth.endpoints_method(
-      RegisterInstanceRequest,
+      INSTANCE_RESOURCE_CONTAINER,
       RegisterInstanceResponse,
+      path='instance',
       http_method='POST',
       name='registerInstance')
-  @auth.require(lambda: not auth.get_current_identity().is_anonymous)
   def register_instance(self, request):
     """Registers a new package instance in the repository."""
     # Forms ERROR response.
