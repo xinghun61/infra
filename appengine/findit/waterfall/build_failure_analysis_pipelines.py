@@ -1,81 +1,84 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import logging
 
 from google.appengine.ext import ndb
 
-from pipeline_utils import pipelines
-
-from model.build import Build
+from model.build_analysis import BuildAnalysis
 from model.build_analysis_status import BuildAnalysisStatus
-
-
-# TODO(stgao): remove BasePipeline after http://crrev.com/810193002 is landed.
-class BasePipeline(pipelines.AppenginePipeline):  # pragma: no cover
-  def run_test(self, *args, **kwargs):
-    pass
-
-  def finalized_test(self, *args, **kwargs):
-    pass
-
-  def callback(self, **kwargs):
-    pass
-
-  def run(self, *args, **kwargs):
-    raise NotImplementedError()
+from waterfall.base_pipeline import BasePipeline
+from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 
 
 class BuildFailurePipeline(BasePipeline):
 
+  def __init__(self, master_name, builder_name, build_number):
+    super(BuildFailurePipeline, self).__init__(
+        master_name, builder_name, build_number)
+    self.master_name = master_name
+    self.builder_name = builder_name
+    self.build_number = build_number
+
+  def finalized(self):
+    analysis = BuildAnalysis.GetBuildAnalysis(
+        self.master_name, self.builder_name, self.build_number)
+    if self.was_aborted:  # pragma: no cover
+      analysis.status = BuildAnalysisStatus.ERROR
+    else:
+      analysis.status = BuildAnalysisStatus.ANALYZED
+    analysis.put()
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
-    build = Build.GetBuild(master_name, builder_name, build_number)
+    analysis = BuildAnalysis.GetBuildAnalysis(
+        master_name, builder_name, build_number)
+    analysis.pipeline_url = self.pipeline_status_url()
+    analysis.status = BuildAnalysisStatus.ANALYZING
+    analysis.start_time = datetime.utcnow()
+    analysis.put()
 
-    # TODO: implement the logic.
-    build.analysis_status = BuildAnalysisStatus.ANALYZED
-    build.put()
+    yield DetectFirstFailurePipeline(master_name, builder_name, build_number)
 
 
 @ndb.transactional
 def NeedANewAnalysis(master_name, builder_name, build_number, force):
-  """Check analysis status of a build and decide if a new analysis is needed.
+  """Checks status of analysis for the build and decides if a new one is needed.
+
+  A BuildAnalysis entity for the given build will be created if none exists.
 
   Returns:
-    (build, need_analysis)
-    build (Build): the build as specified by the input.
-    need_analysis (bool): True if an analysis is needed, otherwise False.
+    True if an analysis is needed, otherwise False.
   """
-  build_key = Build.CreateKey(master_name, builder_name, build_number)
-  build = build_key.get()
+  analysis = BuildAnalysis.GetBuildAnalysis(
+      master_name, builder_name, build_number)
 
-  if not build:
-    build = Build.CreateBuild(master_name, builder_name, build_number)
-    build.analysis_status = BuildAnalysisStatus.PENDING
-    build.put()
-    return build, True
+  if not analysis:
+    analysis = BuildAnalysis.CreateBuildAnalysis(
+        master_name, builder_name, build_number)
+    analysis.status = BuildAnalysisStatus.PENDING
+    analysis.put()
+    return True
   elif force:
     # TODO: avoid concurrent analysis.
-    build.Reset()
-    build.put()
-    return build, True
+    analysis.Reset()
+    analysis.put()
+    return True
   else:
     # TODO: support following cases
     # 1. Automatically retry if last analysis failed with errors.
     # 2. Start another analysis if the build cycle wasn't completed in last
     #    analysis request.
     # 3. Analysis is not complete and no update in the last 5 minutes.
-    return build, False
+    return False
 
 
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
                              queue_name):
-  """Schedule an analysis if needed and return the build."""
-  build, need_new_analysis = NeedANewAnalysis(
-      master_name, builder_name, build_number, force)
-
-  if need_new_analysis:
+  """Schedules an analysis if needed and returns the build analysis."""
+  if NeedANewAnalysis(master_name, builder_name, build_number, force):
     pipeline_job = BuildFailurePipeline(master_name, builder_name, build_number)
     pipeline_job.start(queue_name=queue_name)
 
@@ -85,4 +88,4 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
   else:  # pragma: no cover
     logging.info('Analysis was already triggered or the result is recent.')
 
-  return build
+  return BuildAnalysis.GetBuildAnalysis(master_name, builder_name, build_number)

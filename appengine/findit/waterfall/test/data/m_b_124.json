@@ -1,0 +1,34 @@
+{
+  "properties": [
+    [
+      "git_revision",
+      "some_git_hash",
+      "Change"
+    ]
+  ],
+  "results": null,
+  "sourceStamp": {
+    "changes": [
+      {
+        "revision": "some_git_hash"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "isFinished": true,
+      "name": "a",
+      "results": [
+        2,
+        [
+          "failed",
+          "a"
+        ]
+      ]
+    }
+  ],
+  "times": [
+    1420233837.563434,
+    1420235143.579917
+  ]
+}

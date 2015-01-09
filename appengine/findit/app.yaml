@@ -9,7 +9,6 @@ handlers:
   script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\
            handlers._APP"
   secure: always
-  login: admin
 
 - url: /.*
   script: main.application
