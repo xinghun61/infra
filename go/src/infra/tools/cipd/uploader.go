@@ -151,11 +151,7 @@ func RegisterInstance(options RegisterInstanceOptions) error {
 	remote := newRemoteService(options.Client, options.ServiceURL, log)
 
 	// Attempt to register.
-	request := registerInstanceRequest{
-		PackageName: inst.PackageName(),
-		InstanceID:  inst.InstanceID(),
-	}
-	result, err := remote.registerInstance(&request)
+	result, err := remote.registerInstance(inst.PackageName(), inst.InstanceID())
 	if err != nil {
 		return err
 	}
@@ -173,7 +169,7 @@ func RegisterInstance(options RegisterInstanceOptions) error {
 			return err
 		}
 		// Try again, now that file is uploaded.
-		result, err = remote.registerInstance(&request)
+		result, err = remote.registerInstance(inst.PackageName(), inst.InstanceID())
 		if err != nil {
 			return err
 		}
@@ -185,7 +181,8 @@ func RegisterInstance(options RegisterInstanceOptions) error {
 	if result.AlreadyRegistered {
 		log.Infof(
 			"cipd: instance %s:%s is already registered by %s on %s",
-			inst.PackageName(), inst.InstanceID(), result.RegisteredBy, result.RegisteredTs)
+			inst.PackageName(), inst.InstanceID(),
+			result.Info.RegisteredBy, result.Info.RegisteredTs)
 	} else {
 		log.Infof("cipd: instance %s:%s was successfully registered", inst.PackageName(), inst.InstanceID())
 	}

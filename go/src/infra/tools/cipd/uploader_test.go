@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -25,16 +26,19 @@ func TestUploadToCAS(t *testing.T) {
 		Convey("UploadToCAS full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/upload/SHA1/abc",
-					Reply: `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/upload/SHA1/abc",
+					Reply:  `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
 				},
 				expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/finalize/12345",
-					Reply: `{"status":"VERIFYING"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/finalize/12345",
+					Reply:  `{"status":"VERIFYING"}`,
 				},
 				expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/finalize/12345",
-					Reply: `{"status":"PUBLISHED"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/finalize/12345",
+					Reply:  `{"status":"PUBLISHED"}`,
 				},
 			})
 			err := UploadToCAS(UploadToCASOptions{SHA1: "abc"})
@@ -45,14 +49,16 @@ func TestUploadToCAS(t *testing.T) {
 			// Append a bunch of "still verifying" responses at the end.
 			calls := []expectedHTTPCall{
 				expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/upload/SHA1/abc",
-					Reply: `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/upload/SHA1/abc",
+					Reply:  `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
 				},
 			}
 			for i := 0; i < 19; i++ {
 				calls = append(calls, expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/finalize/12345",
-					Reply: `{"status":"VERIFYING"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/finalize/12345",
+					Reply:  `{"status":"VERIFYING"}`,
 				})
 			}
 			mockRemoteServiceWithExpectations(calls)
@@ -84,7 +90,12 @@ func TestRegisterInstance(t *testing.T) {
 		Convey("RegisterInstance full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
-					URL: "/_ah/api/repo/v1/register_instance",
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/instance",
+					Query: url.Values{
+						"instance_id":  []string{inst.InstanceID()},
+						"package_name": []string{inst.PackageName()},
+					},
 					Reply: `{
 						"status": "UPLOAD_FIRST",
 						"upload_session_id": "12345",
@@ -92,11 +103,17 @@ func TestRegisterInstance(t *testing.T) {
 					}`,
 				},
 				expectedHTTPCall{
-					URL:   "/_ah/api/cas/v1/finalize/12345",
-					Reply: `{"status":"PUBLISHED"}`,
+					Method: "POST",
+					Path:   "/_ah/api/cas/v1/finalize/12345",
+					Reply:  `{"status":"PUBLISHED"}`,
 				},
 				expectedHTTPCall{
-					URL: "/_ah/api/repo/v1/register_instance",
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/instance",
+					Query: url.Values{
+						"instance_id":  []string{inst.InstanceID()},
+						"package_name": []string{inst.PackageName()},
+					},
 					Reply: `{
 						"status": "REGISTERED",
 						"instance": {
@@ -113,7 +130,12 @@ func TestRegisterInstance(t *testing.T) {
 		Convey("RegisterInstance already registered", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
 				expectedHTTPCall{
-					URL: "/_ah/api/repo/v1/register_instance",
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/instance",
+					Query: url.Values{
+						"instance_id":  []string{inst.InstanceID()},
+						"package_name": []string{inst.PackageName()},
+					},
 					Reply: `{
 						"status": "ALREADY_REGISTERED",
 						"instance": {

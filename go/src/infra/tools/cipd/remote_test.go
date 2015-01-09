@@ -5,11 +5,11 @@
 package cipd
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -22,6 +22,7 @@ func TestRemoteService(t *testing.T) {
 	mockInitiateUpload := func(response string) (*uploadSession, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
 			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/upload/SHA1/abc")
+			So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
 		return remote.initiateUpload("abc")
@@ -30,28 +31,35 @@ func TestRemoteService(t *testing.T) {
 	mockFinalizeUpload := func(response string) (bool, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
 			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/finalize/abc")
+			So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
 		return remote.finalizeUpload("abc")
 	}
 
 	mockRegisterInstance := func(response string) (*registerInstanceResponse, error) {
-		request := registerInstanceRequest{
-			PackageName: "pkgname",
-			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		}
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/register_instance")
-			var decoded registerInstanceRequest
-			err := json.NewDecoder(r.Body).Decode(&decoded)
-			So(err, ShouldBeNil)
-			So(decoded, ShouldResemble, request)
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
+			So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
+			So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+			So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
-		return remote.registerInstance(&request)
+		return remote.registerInstance("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	}
 
-	Convey("makeRequest works", t, func() {
+	mockFetchInstance := func(response string) (*fetchInstanceResponse, error) {
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
+			So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
+			So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+			So(r.Method, ShouldEqual, "GET")
+			w.Write([]byte(response))
+		})
+		return remote.fetchInstance("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	}
+
+	Convey("makeRequest POST works", t, func() {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
 			So(r.Method, ShouldEqual, "POST")
 			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
@@ -60,7 +68,21 @@ func TestRemoteService(t *testing.T) {
 		var reply struct {
 			Value string `json:"value"`
 		}
-		err := remote.makeRequest("cas/v1/method", nil, &reply)
+		err := remote.makeRequest("cas/v1/method", "POST", nil, &reply)
+		So(err, ShouldBeNil)
+		So(reply.Value, ShouldEqual, "123")
+	})
+
+	Convey("makeRequest GET works", t, func() {
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			So(r.Method, ShouldEqual, "GET")
+			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
+			w.Write([]byte(`{"value":"123"}`))
+		})
+		var reply struct {
+			Value string `json:"value"`
+		}
+		err := remote.makeRequest("cas/v1/method", "GET", nil, &reply)
 		So(err, ShouldBeNil)
 		So(reply.Value, ShouldEqual, "123")
 	})
@@ -72,7 +94,7 @@ func TestRemoteService(t *testing.T) {
 			w.WriteHeader(403)
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", nil, &reply)
+		err := remote.makeRequest("cas/v1/method", "POST", nil, &reply)
 		So(err, ShouldNotBeNil)
 		So(calls, ShouldEqual, 1)
 	})
@@ -89,7 +111,7 @@ func TestRemoteService(t *testing.T) {
 			}
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", nil, &reply)
+		err := remote.makeRequest("cas/v1/method", "POST", nil, &reply)
 		So(err, ShouldBeNil)
 		So(calls, ShouldEqual, 2)
 	})
@@ -102,7 +124,7 @@ func TestRemoteService(t *testing.T) {
 			w.WriteHeader(500)
 		})
 		var reply struct{}
-		err := remote.makeRequest("cas/v1/method", nil, &reply)
+		err := remote.makeRequest("cas/v1/method", "POST", nil, &reply)
 		So(err, ShouldNotBeNil)
 		So(calls, ShouldEqual, 10)
 	})
@@ -200,8 +222,10 @@ func TestRemoteService(t *testing.T) {
 		}`)
 		So(err, ShouldBeNil)
 		So(result, ShouldResemble, &registerInstanceResponse{
-			RegisteredBy: "user:abc@example.com",
-			RegisteredTs: time.Unix(0, 1420244414571500000),
+			Info: packageInstanceInfo{
+				RegisteredBy: "user:abc@example.com",
+				RegisteredTs: time.Unix(0, 1420244414571500000),
+			},
 		})
 	})
 
@@ -216,8 +240,10 @@ func TestRemoteService(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(result, ShouldResemble, &registerInstanceResponse{
 			AlreadyRegistered: true,
-			RegisteredBy:      "user:abc@example.com",
-			RegisteredTs:      time.Unix(0, 1420244414571500000),
+			Info: packageInstanceInfo{
+				RegisteredBy: "user:abc@example.com",
+				RegisteredTs: time.Unix(0, 1420244414571500000),
+			},
 		})
 	})
 
@@ -250,13 +276,56 @@ func TestRemoteService(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
+
+	Convey("fetchInstance SUCCESS", t, func() {
+		result, err := mockFetchInstance(`{
+			"status": "SUCCESS",
+			"instance": {
+				"registered_by": "user:abc@example.com",
+				"registered_ts": "1420244414571500"
+			},
+			"fetch_url": "https://fetch_url"
+		}`)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, &fetchInstanceResponse{
+			Info: packageInstanceInfo{
+				RegisteredBy: "user:abc@example.com",
+				RegisteredTs: time.Unix(0, 1420244414571500000),
+			},
+			FetchURL: "https://fetch_url",
+		})
+	})
+
+	Convey("fetchInstance PACKAGE_NOT_FOUND", t, func() {
+		result, err := mockFetchInstance(`{"status": "PACKAGE_NOT_FOUND"}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchInstance INSTANCE_NOT_FOUND", t, func() {
+		result, err := mockFetchInstance(`{"status": "INSTANCE_NOT_FOUND"}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchInstance ERROR", t, func() {
+		result, err := mockFetchInstance(`{
+			"status": "ERROR",
+			"error_message": "Some error message"
+		}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 type expectedHTTPCall struct {
-	URL   string
-	Reply string
+	Method string
+	Path   string
+	Reply  string
+	Query  url.Values
+	Status int
 }
 
 func mockServerWithMux(mux *http.ServeMux) (*httptest.Server, *http.Client) {
@@ -297,19 +366,42 @@ func mockRemoteServiceWithExpectations(expectations []expectedHTTPCall) *remoteS
 		// Can't use So(...) assertions here. They are not recognized. Return
 		// errors via HTTP instead, to let the main test case catch them.
 		msg := ""
+		exp := expectedHTTPCall{}
 		if index >= len(expectations) {
 			msg = "Unexpected call"
-		} else if r.URL.Path != expectations[index].URL {
-			msg = fmt.Sprintf("Expecting call to %s, got %s instead", expectations[index].URL, r.URL.Path)
+		} else {
+			// Fill in defaults.
+			exp = expectations[index]
+			if exp.Method == "" {
+				exp.Method = "GET"
+			}
+			if exp.Query == nil {
+				exp.Query = url.Values{}
+			}
+			// Check that request is what it is expected to be.
+			if r.URL.Path != exp.Path {
+				msg = fmt.Sprintf("Expecting call to %s, got %s instead", exp.Path, r.URL.Path)
+			} else if !reflect.DeepEqual(r.URL.Query(), exp.Query) {
+				msg = fmt.Sprintf("Expecting query string %v, got %v instead", exp.Query, r.URL.Query())
+			} else if r.Method != exp.Method {
+				msg = fmt.Sprintf("Expecting %s to %s, got %s instead", exp.Method, exp.Path, r.Method)
+			}
 		}
+
+		// Error?
 		if msg != "" {
 			w.WriteHeader(400)
 			w.Write([]byte(msg))
-		} else {
-			if expectations[index].Reply != "" {
-				w.Write([]byte(expectations[index].Reply))
-			}
-			index++
+			return
 		}
+
+		// Mocked reply.
+		if exp.Status != 0 {
+			w.WriteHeader(exp.Status)
+		}
+		if exp.Reply != "" {
+			w.Write([]byte(exp.Reply))
+		}
+		index++
 	})
 }

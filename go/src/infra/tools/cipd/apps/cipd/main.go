@@ -69,21 +69,6 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 	return true
 }
 
-// authenticatedClient performs login and returns http.Client.
-func authenticatedClient() (*http.Client, error) {
-	logging.Infof("Authenticating...")
-	transport, err := auth.LoginIfRequired(nil)
-	if err != nil {
-		return nil, err
-	}
-	ident, err := auth.FetchIdentity(transport)
-	if err != nil {
-		return nil, err
-	}
-	logging.Infof("Authenticated as %s", ident)
-	return &http.Client{Transport: transport}, nil
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // 'build' subcommand.
 
@@ -190,6 +175,84 @@ func deployInstanceFile(root string, instanceFile string) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'fetch' subcommand.
+
+var cmdFetch = &subcommands.Command{
+	UsageLine: "pkg-fetch [options]",
+	ShortDesc: "fetches a package instance file from the repository",
+	LongDesc:  "Fetches a package instance file from the repository.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &fetchRun{}
+		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
+		c.Flags.StringVar(&c.instanceID, "instance-id", "<instance id>", "package instance ID to fetch")
+		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
+		return c
+	},
+}
+
+type fetchRun struct {
+	subcommands.CommandRunBase
+
+	packageName string
+	instanceID  string
+	outputPath  string
+}
+
+func (c *fetchRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 0) {
+		return 1
+	}
+	client, err := auth.AuthenticatedClient(false, nil)
+	if err != nil {
+		reportError("Error when authenticating: %s", err)
+		return 1
+	}
+	err = fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, client)
+	if err != nil {
+		reportError("Error while fetching the package: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func fetchInstanceFile(packageName, instanceID, instanceFile string, client *http.Client) error {
+	// Fetch it.
+	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	ok := false
+	defer func() {
+		if !ok {
+			out.Close()
+			os.Remove(instanceFile)
+		}
+	}()
+
+	err = cipd.FetchInstance(cipd.FetchInstanceOptions{
+		Client:      client,
+		PackageName: packageName,
+		InstanceID:  instanceID,
+		Output:      out,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Verify it (by checking that instanceID matches the file content).
+	out.Close()
+	ok = true
+	inst, err := cipd.OpenInstanceFile(instanceFile, instanceID)
+	if err != nil {
+		os.Remove(instanceFile)
+		return err
+	}
+	defer inst.Close()
+	inspectInstance(inst, false)
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'inspect' subcommand.
 
 var cmdInspect = &subcommands.Command{
@@ -258,7 +321,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := authenticatedClient()
+	client, err := auth.AuthenticatedClient(true, nil)
 	if err != nil {
 		reportError("Error when authenticating: %s", err)
 		return 1
@@ -307,7 +370,7 @@ func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := authenticatedClient()
+	client, err := auth.AuthenticatedClient(true, nil)
 	if err != nil {
 		reportError("Error when authenticating: %s", err)
 		return 1
@@ -348,6 +411,7 @@ var application = &subcommands.DefaultApplication{
 
 		cmdBuild,
 		cmdDeploy,
+		cmdFetch,
 		cmdInspect,
 		cmdRegister,
 		cmdUpload,

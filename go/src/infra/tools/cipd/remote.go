@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -31,28 +32,32 @@ type uploadSession struct {
 	URL string
 }
 
-// packageInstanceInfo corresponds to PackageInstance message on the backend.
-type packageInstanceInfo struct {
+// packageInstanceMsg corresponds to PackageInstance message on the backend.
+type packageInstanceMsg struct {
 	PackageName  string `json:"package_name"`
 	InstanceID   string `json:"instance_id"`
 	RegisteredBy string `json:"registered_by"`
 	RegisteredTs string `json:"registered_ts"`
 }
 
-type registerInstanceRequest struct {
-	PackageName string `json:"package_name"`
-	InstanceID  string `json:"instance_id"`
+// packageInstance is almost like packageInstanceMsg, but with timestamp as
+// time.Time. See also makePackageInstanceInfo.
+type packageInstanceInfo struct {
+	PackageName  string
+	InstanceID   string
+	RegisteredBy string
+	RegisteredTs time.Time
 }
 
 type registerInstanceResponse struct {
-	// UploadSession is not nil if backend asks the client to upload the file to CAS.
-	UploadSession *uploadSession
-	// AlreadyRegistered is true if such package instance was registered previously.
+	UploadSession     *uploadSession
 	AlreadyRegistered bool
-	// RegisteredBy is ID of whoever registered the package instance.
-	RegisteredBy string
-	// RegisteredTs is timestamp of when the package instance was registered.
-	RegisteredTs time.Time
+	Info              packageInstanceInfo
+}
+
+type fetchInstanceResponse struct {
+	FetchURL string
+	Info     packageInstanceInfo
 }
 
 // newRemoteService is mocked in tests.
@@ -64,8 +69,8 @@ var newRemoteService = func(client *http.Client, url string, log logging.Logger)
 	}
 }
 
-// makeRequest sends POST request with retries.
-func (r *remoteService) makeRequest(path string, request interface{}, response interface{}) error {
+// makeRequest sends POST or GET request with retries.
+func (r *remoteService) makeRequest(path, method string, request, response interface{}) error {
 	var body []byte
 	var err error
 	if request != nil {
@@ -84,7 +89,7 @@ func (r *remoteService) makeRequest(path string, request interface{}, response i
 		if body != nil {
 			bodyReader = bytes.NewReader(body)
 		}
-		req, err := http.NewRequest("POST", url, bodyReader)
+		req, err := http.NewRequest(method, url, bodyReader)
 		if err != nil {
 			return err
 		}
@@ -120,7 +125,7 @@ func (r *remoteService) initiateUpload(sha1 string) (s *uploadSession, err error
 		UploadURL       string `json:"upload_url"`
 		ErrorMessage    string `json:"error_message"`
 	}
-	err = r.makeRequest("cas/v1/upload/SHA1/"+sha1, nil, &reply)
+	err = r.makeRequest("cas/v1/upload/SHA1/"+sha1, "POST", nil, &reply)
 	if err != nil {
 		return
 	}
@@ -145,7 +150,7 @@ func (r *remoteService) finalizeUpload(sessionID string) (finished bool, err err
 		Status       string `json:"status"`
 		ErrorMessage string `json:"error_message"`
 	}
-	err = r.makeRequest("cas/v1/finalize/"+sessionID, nil, &reply)
+	err = r.makeRequest("cas/v1/finalize/"+sessionID, "POST", nil, &reply)
 	if err != nil {
 		return
 	}
@@ -164,37 +169,31 @@ func (r *remoteService) finalizeUpload(sessionID string) (finished bool, err err
 	return
 }
 
-func (r *remoteService) registerInstance(request *registerInstanceRequest) (*registerInstanceResponse, error) {
-	err := ValidatePackageName(request.PackageName)
-	if err != nil {
-		return nil, err
-	}
-	err = ValidateInstanceID(request.InstanceID)
+func (r *remoteService) registerInstance(packageName, instanceID string) (*registerInstanceResponse, error) {
+	endpoint, err := instanceEndpoint(packageName, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	var reply struct {
-		Status          string              `json:"status"`
-		Instance        packageInstanceInfo `json:"instance"`
-		UploadSessionID string              `json:"upload_session_id"`
-		UploadURL       string              `json:"upload_url"`
-		ErrorMessage    string              `json:"error_message"`
+		Status          string             `json:"status"`
+		Instance        packageInstanceMsg `json:"instance"`
+		UploadSessionID string             `json:"upload_session_id"`
+		UploadURL       string             `json:"upload_url"`
+		ErrorMessage    string             `json:"error_message"`
 	}
-	err = r.makeRequest("repo/v1/register_instance", request, &reply)
+	err = r.makeRequest(endpoint, "POST", nil, &reply)
 	if err != nil {
 		return nil, err
 	}
 	switch reply.Status {
 	case "REGISTERED", "ALREADY_REGISTERED":
-		// String with int64 timestamp in microseconds since epoch -> time.Time.
-		ts, err := strconv.ParseInt(reply.Instance.RegisteredTs, 10, 64)
+		info, err := makePackageInstanceInfo(reply.Instance)
 		if err != nil {
-			return nil, errors.New("Unexpected timestamp value in the server response")
+			return nil, err
 		}
 		return &registerInstanceResponse{
 			AlreadyRegistered: reply.Status == "ALREADY_REGISTERED",
-			RegisteredBy:      reply.Instance.RegisteredBy,
-			RegisteredTs:      time.Unix(0, ts*1000),
+			Info:              info,
 		}, nil
 	case "UPLOAD_FIRST":
 		if reply.UploadSessionID == "" {
@@ -210,4 +209,72 @@ func (r *remoteService) registerInstance(request *registerInstanceRequest) (*reg
 		return nil, errors.New(reply.ErrorMessage)
 	}
 	return nil, fmt.Errorf("Unexpected register package status: %s", reply.Status)
+}
+
+func (r *remoteService) fetchInstance(packageName, instanceID string) (*fetchInstanceResponse, error) {
+	endpoint, err := instanceEndpoint(packageName, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status       string             `json:"status"`
+		Instance     packageInstanceMsg `json:"instance"`
+		FetchURL     string             `json:"fetch_url"`
+		ErrorMessage string             `json:"error_message"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		info, err := makePackageInstanceInfo(reply.Instance)
+		if err != nil {
+			return nil, err
+		}
+		return &fetchInstanceResponse{
+			FetchURL: reply.FetchURL,
+			Info:     info,
+		}, nil
+	case "PACKAGE_NOT_FOUND":
+		return nil, fmt.Errorf("Package '%s' is not registered or you do not have permission to fetch it", packageName)
+	case "INSTANCE_NOT_FOUND":
+		return nil, fmt.Errorf("Package '%s' doesn't have instance '%s'", packageName, instanceID)
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("Unexpected reply status: %s", reply.Status)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func instanceEndpoint(packageName, instanceID string) (string, error) {
+	err := ValidatePackageName(packageName)
+	if err != nil {
+		return "", err
+	}
+	err = ValidateInstanceID(instanceID)
+	if err != nil {
+		return "", err
+	}
+	params := url.Values{}
+	params.Add("package_name", packageName)
+	params.Add("instance_id", instanceID)
+	return "repo/v1/instance?" + params.Encode(), nil
+}
+
+func makePackageInstanceInfo(msg packageInstanceMsg) (pi packageInstanceInfo, err error) {
+	// String with int64 timestamp in microseconds since epoch -> time.Time.
+	ts, err := strconv.ParseInt(msg.RegisteredTs, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("Unexpected timestamp value '%s' in the server response", msg.RegisteredTs)
+		return
+	}
+	pi = packageInstanceInfo{
+		PackageName:  msg.PackageName,
+		InstanceID:   msg.InstanceID,
+		RegisteredBy: msg.RegisteredBy,
+		RegisteredTs: time.Unix(0, ts*1000),
+	}
+	return
 }
