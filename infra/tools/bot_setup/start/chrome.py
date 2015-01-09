@@ -4,23 +4,18 @@
 
 """Sets up and starts a Chrome slave."""
 
-import httplib2
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
 
-from oauth2client import gce
 
 SLAVE_DEPS_URL = (
     'https://chrome-internal.googlesource.com/chrome/tools/build/slave.DEPS')
-INTERNAL_DEPS_URL = (
-    'https://chrome-internal.googlesource.com/chrome/tools/build/internal.DEPS')
 GCLIENT_FILE = """
 solutions = [
-  { "name"        : "%s.DEPS",
+  { "name"        : "slave.DEPS",
     "url"         : "%s",
     "deps_file"   : ".DEPS.git",
   },
@@ -57,28 +52,12 @@ def call(args, **kwargs):
   return proc.wait()
 
 
-def write_gclient_file(root_dir, internal):
+def ensure_checkout(root_dir, gclient):
+  """Ensure that /b/.gclient is correct and the build checkout is there."""
   gclient_file = os.path.join(root_dir, '.gclient')
   with open(gclient_file, 'wb') as f:
-    f.write(
-      GCLIENT_FILE % (('internal', INTERNAL_DEPS_URL) if internal
-                      else ('slave', SLAVE_DEPS_URL)))
-
-
-def ensure_checkout(root_dir, gclient, internal):
-  """Ensure that /b/.gclient is correct and the build checkout is there."""
-  write_gclient_file(root_dir, internal)
-  rc = call([gclient, 'sync'], cwd=root_dir)
-  if rc:
-    print 'Gclient sync failed, cleaning and trying again'
-    for filename in os.listdir(root_dir):
-      full_path = os.path.join(root_dir, filename)
-      print 'Deleting %s...' % full_path
-      shutil.rmtree(full_path)
-    write_gclient_file(root_dir, internal)
-    rc = call([gclient, 'sync'], cwd=root_dir)
-    if rc:
-      raise Exception('Could not ensure gclient file is correct.')
+    f.write(GCLIENT_FILE)
+  call([gclient, 'sync'], cwd=root_dir)
 
 
 def seed_passwords(root_dir, password_file):
@@ -135,31 +114,9 @@ def run_slave(root_dir):
   print 'run_slave.py died'
 
 
-def get_botmap_entry(slave_name):
-  credentials = gce.AppAssertionCredentials(
-      scope='https://www.googleapis.com/auth/userinfo.email')
-  http = credentials.authorize(httplib2.Http())
-  botmap = ('https://chrome-infra-botmap.appspot.com/_ah/api/botmap/v1/bots/'
-            '%s' % slave_name)
-  try:
-    response, content = http.request(botmap)
-    if response['status'] != '200':
-      # Request did not succeed. Try again.
-      response, content = http.request(botmap)
-      if response['status'] != '200':
-        raise Exception
-    bot_entry = json.loads(content)
-  except Exception:
-    print 'Error requesting bot map. Host may be missing authentication.'
-    return None
-  return bot_entry
-
-
-def start(root_dir, depot_tools, password_file, slave_name):
+def start(root_dir, depot_tools, password_file):
   gclient = os.path.join(depot_tools, 'gclient')
-  bot_entry = get_botmap_entry(slave_name)
-  is_internal = bot_entry.get('internal', False)
-  ensure_checkout(root_dir, gclient, is_internal)
+  ensure_checkout(root_dir, gclient)
   if password_file:
     seed_passwords(root_dir, password_file)
   run_slave(root_dir)
