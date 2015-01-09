@@ -25,17 +25,17 @@
     <ul>
       <li>Bucket: a string that defines what project/subproject a build
         belongs to. Required.</li>
-      <li>Parameters: an immutable arbitrary JSON blob specific to a build-system.
-        Not reqiured by cr-buildbucket, but may be required by a particular
-        build-system, such as Buildbot (see below).</li>
+      <li>Parameters: an immutable arbitrary JSON blob specific to a
+        build-system. Not reqiured by cr-buildbucket, but may be required by a
+        particular build-system, such as Buildbot (see below).</li>
       <li>Tags: indexed key-value pairs, such as
         <code>["issue_id:123", "patchset_id:30042"]</code>.</li>
       <li>Status, result, failure reason, cancelation reason: fields that
         represent current state of a build.</li>
-      <li>Url: a URL to a build-system-specific human-viewable page that displays
-        build status.</li>
-      <li>Result details: an immutable arbitrary JSON blob specified when a build
-        is marked as completed.</li>
+      <li>Url: a URL to a build-system-specific human-viewable page that
+        displays build status.</li>
+      <li>Result details: an immutable arbitrary JSON blob specified when a
+        build is marked as completed.</li>
     </ul></p>
 
   <h3>Leasing a build</h3>
@@ -125,8 +125,8 @@ print req.execute()</code></pre>
 
 buildbucket.setup(
     c,  # Configuration object.
+    ActiveMaster,
     buckets=['chromium'],
-    service_json_key_filename='my_secret_key.json',
 )</code></pre>
 
   <p>Buildbot supports the following parameters:
