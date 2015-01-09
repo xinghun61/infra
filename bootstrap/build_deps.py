@@ -87,7 +87,9 @@ def process_git(name, rev, build, build_options, repo):
   print
   print 'Processing (git)', name, rev
 
-  url = REPO_HOST + repo + '@' + rev
+  url = repo + '@' + rev
+  if not url.startswith('git+https://'):
+    url = REPO_HOST + url
 
   if not has_custom_build(name):
     wheel(url, rev, build, build_options)

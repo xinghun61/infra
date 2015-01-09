@@ -45,14 +45,15 @@
     'build': '0',
     'repo': 'external/github.com/google/google-api-python-client',
     'rev': '49d45a6c3318b75e551c3022020f46c78655f365',
-    # TODO(agable): Mark implicit when monitoring deps land.
+    'implicit': True,  # Required by monacq
   },
   'httplib2': {
     'version': '0.9',
     'build': '0',
     'repo': 'external/github.com/jcgregorio/httplib2',
     'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
-    'implicit': True,  # Required by oauth2client and google_api_python_client
+    'implicit': True,  # Required by oauth2client, google_api_python_client,
+                       # and monacq.
   },
   'Jinja2': {
     'version': '2.7.3dev_20141205',
@@ -66,18 +67,24 @@
     # used to satisfy requirements.
     # 'implicit': True,  # Required by Sphinx
   },
-  'mock': {
-    'version': '1.0.1',
-    'build': '0',
-    'repo': 'external/code.google.com/p/mock',
-    'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
-  },
   'MarkupSafe': {
     'version': '0.23',
     'build': '0',
     'repo': 'external/github.com/mitsuhiko/markupsafe',
     'rev': 'feb1d70c16df62f60dcb521d127fdad8819fc036',
     'implicit': True,  # Required by Jinja2
+  },
+  'mock': {
+    'version': '1.0.1',
+    'build': '0',
+    'repo': 'external/code.google.com/p/mock',
+    'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
+  },
+  'monacq': {
+    'version': '1.1',
+    'build': '0',
+    'repo': 'git+https://chrome-internal.googlesource.com/infra/third_party/monacq',
+    'rev': 'd9c9a1a96b90f1bec52a7f4b9e89e5b0450056f2',
   },
   'numpy': {
     'version': '1.10.0.dev_7e53e9b',
@@ -98,7 +105,7 @@
     'build': '0',
     'repo': 'external/github.com/google/protobuf',
     'rev': '629a556879cc84e0f52546f0484b65b72ce44fe8',
-    # TODO(agable): Make this implicit when monitoring stuff lands.
+    'implicit': True,  # Required by monacq
   },
   'pyasn1': {
     'version': '0.1.7',
