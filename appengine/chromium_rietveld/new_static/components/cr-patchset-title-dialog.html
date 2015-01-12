@@ -1,0 +1,89 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="cr-butterbar.html">
+<link rel="import" href="cr-button.html">
+<link rel="import" href="cr-dialog.html">
+<link rel="import" href="cr-toolbar.html">
+
+<polymer-element name="cr-patchset-title-dialog" attributes="patchset orig_title">
+    <template>
+        <link rel="stylesheet" href="common.css">
+        <style>
+            .dialog-fields-label {
+                font-weight: bold;
+                color: #959595;
+                -webkit-user-select: none;
+                cursor: default;
+            }
+
+            .dialog-fields-field,
+            .dialog-fields-label {
+                padding: 0.5em 16px;
+            }
+        </style>
+
+        <dialog is="cr-dialog" id="dialog" on-cancel="{{ cancel }}">
+            <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
+
+            <h1>Patchset {{ patchset.sequence }} title</h1>
+
+            <fieldset class="dialog-fields" disabled?="{{ sending }}">
+                <label class="dialog-fields-label" for="title">Enter the new title of Patchset {{ patchset.sequence }}</label>
+                <div class="dialog-fields-field">
+                    <input id="title" value="{{ orig_title }}" size="80">
+                </div>
+            </fieldset>
+
+            <cr-toolbar>
+                <cr-button primary on-tap="{{ editTitle }}">Save</cr-button>
+                <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+            </cr-toolbar>
+        </dialog>
+    </template>
+    <script>
+        Polymer("cr-patchset-title-dialog", {
+            patchset: null,
+            commit: true,
+            butterbarMessage: "",
+            sending: false,
+            cancel: function(event) {
+                this.close();
+            },
+            reset: function() {
+                this.sending = false;
+                this.butterbarMessage = "";
+                this.commit = true;
+            },
+            close: function() {
+                this.reset();
+                this.$.dialog.close();
+            },
+            editTitle: function() {
+                var data = {
+                    new_title: this.$.title.value,
+                };
+                this.sending = true;
+                this.butterbarMessage = "Saving...";
+                this.patchset.editTitle(data)
+                    .then(this.saveSuccess.bind(this))
+                    .catch(this.saveFailure.bind(this));
+            },
+            saveSuccess: function() {
+                this.fire("issue-refresh");
+                this.close();
+            },
+            saveFailure: function(error) {
+                // TODO(esprehn): We should show an better error message.
+                this.sending = false;
+                this.butterbarMessage = "Error: " + error.message;
+            },
+            showModal: function() {
+                if (!this.patchset)
+                    return;
+                this.$.dialog.showModal();
+            },
+        });
+    </script>
+</polymer-element>

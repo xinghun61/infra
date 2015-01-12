@@ -27,6 +27,7 @@ function PatchSet(issue, id, sequence)
 
 PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true"
 PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
+PatchSet.TITLE_URL = "/{1}/patchset/{2}/edit_patchset_title";
 
 PatchSet.prototype.getDetailUrl = function()
 {
@@ -38,6 +39,13 @@ PatchSet.prototype.getDetailUrl = function()
 PatchSet.prototype.getRevertUrl = function()
 {
     return PatchSet.REVERT_URL.assign(
+        encodeURIComponent(this.issue.id),
+        encodeURIComponent(this.id));
+};
+
+PatchSet.prototype.getEditTitleUrl = function()
+{
+    return PatchSet.TITLE_URL.assign(
         encodeURIComponent(this.issue.id),
         encodeURIComponent(this.id));
 };
@@ -68,6 +76,27 @@ PatchSet.prototype.createRevertData = function(options)
             xsrf_token: user.xsrfToken,
             revert_reason: options.reason,
             revert_cq: options.commit ? "1" : "0",
+        };
+    });
+};
+
+PatchSet.prototype.editTitle = function(options)
+{
+    var patchset = this;
+    // Return no-op if new title is the same as the old one.
+    if (options.new_title == patchset.message)
+      return Promise.resolve("");
+    return this.createEditTitleData(options).then(function(data) {
+        return sendFormData(patchset.getEditTitleUrl(), data);
+    });
+};
+
+PatchSet.prototype.createEditTitleData = function(options)
+{
+    return User.loadCurrentUser().then(function(user) {
+        return {
+            xsrf_token: user.xsrfToken,
+            patchset_title: options.new_title,
         };
     });
 };

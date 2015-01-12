@@ -2,6 +2,8 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
+<link rel="import" href="cr-patchset-title-dialog.html">
+
 <polymer-element name="cr-patchset-header" attributes="patchset">
     <template>
         <style>
@@ -22,9 +24,18 @@ found in the LICENSE file. -->
             .patchset-comments {
                 padding: 0 16px;
             }
+
+            .edit-title-link {
+                 font-size: 80%;
+                 cursor: pointer;
+                 vertical-align: top;
+            }
         </style>
         <div class="patchset-title">
             Patch {{ patchset.sequence }}<template if="{{ patchset.message }}">: {{ patchset.message }}</template>
+            <template if="{{ userIsOwner }}">
+              <cr-action class="edit-title-link" on-tap="{{ showEditTitleDialog }}">(edit)</cr-action>
+	    </template>
         </div>
         <div class="patchset-comments">
             {{ patchset.messageCount - patchset.draftCount | pluralize("comment") }}
@@ -34,10 +45,16 @@ found in the LICENSE file. -->
             </template>
         </div>
         <div class="patchset-date">{{ patchset.created | formatDate }}</div>
+
+        <div id="dialogs"></div>
     </template>
     <script>
         Polymer("cr-patchset-header", {
             patchset: null,
+            userIsOwner: false,
+            domReady: function() {
+              this.userIsOwner = this.patchset.issue.owner.isCurrentUser();
+            },
             pluralize: function(count, text) {
                 if (!count)
                     return "";
@@ -49,6 +66,19 @@ found in the LICENSE file. -->
                 if (!date)
                     return "";
                 return date.relative();
+            },
+            showDialog: function(dialog) {
+                this.$.dialogs.appendChild(dialog);
+                dialog.addEventListener("close", function() {
+                    dialog.remove();
+                });
+                dialog.showModal();
+            },
+            showEditTitleDialog: function() {
+                var dialog = document.createElement("cr-patchset-title-dialog");
+                dialog.patchset = this.patchset;
+                dialog.orig_title = this.patchset.message;
+                this.showDialog(dialog);
             },
         });
     </script>
