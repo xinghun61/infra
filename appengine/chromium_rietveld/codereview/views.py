@@ -370,6 +370,13 @@ class SettingsForm(forms.Form):
       required=False,
       help_text='Display generated messages by default.')
 
+  display_exp_tryjob_results = forms.BooleanField(
+      widget=forms.Select(choices=[
+          (False, 'Never'),
+          (True, 'On issues that have experimental results')]),
+      required=False,
+      label='Display experimental tryjob results')
+
   def clean_nickname(self):
     nickname = self.cleaned_data.get('nickname')
     # Check for allowed characters
@@ -1679,23 +1686,32 @@ def show(request):
   issue.description = re.sub(expression, replace_bug, issue.description)
   src_url = _map_base_url(issue.base)
 
+  display_generated_msgs = False
+  display_exp_tryjob_results = False
+  if request.user:
+    account = models.Account.current_user_account
+    display_generated_msgs = account.display_generated_msgs
+    display_exp_tryjob_results = account.display_exp_tryjob_results
+
   # Generate the set of possible parents for every builder name, if a
   # builder could have 2 different parents, then append the parent name to
   # the builder to differentiate them.
   builds_to_parents = {}
+  has_exp_jobs = False
   for try_job in last_patchset.try_job_results:
     if try_job.parent_name:
       builds_to_parents.setdefault(try_job.builder,
                                    set()).add(try_job.parent_name)
+    if try_job.category == 'cq_experimental':
+      has_exp_jobs = True
+
+  if display_exp_tryjob_results and not has_exp_jobs:
+    display_exp_tryjob_results = False
 
   for try_job in last_patchset.try_job_results:
     if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
       try_job.builder = try_job.parent_name + ':' + try_job.builder
 
-  display_generated_msgs = False
-  if request.user:
-    account = models.Account.current_user_account
-    display_generated_msgs = account.display_generated_msgs
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1711,6 +1727,7 @@ def show(request):
     'patchsets': patchsets,
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
+    'display_exp_tryjob_results': display_exp_tryjob_results,
     'trybot_documentation_link':
       models_chromium.DefaultBuilderList.get_doc_link(issue.base),
     'offer_cq': request.issue.is_cq_available,
@@ -1720,16 +1737,31 @@ def show(request):
 @deco.patchset_required
 def patchset(request):
   """/patchset/<key> - Returns patchset information."""
+  display_exp_tryjob_results = False
+  if request.user:
+    account = models.Account.current_user_account
+    display_exp_tryjob_results = account.display_exp_tryjob_results
+  logging.warning('Patchset display_exp_tryjob_results: %r', display_exp_tryjob_results)
   patchsets = request.issue.get_patchset_info(
     request.user, request.patchset.key.id())
   for ps in patchsets:
     if ps.key.id() == request.patchset.key.id():
       patchset = ps
+  if display_exp_tryjob_results:
+    has_exp_jobs = False
+    for try_job in patchset.try_job_results:
+      if try_job.category == 'cq_experimental':
+        has_exp_jobs = True
+        break
+    if not has_exp_jobs:
+      display_exp_tryjob_results = False
+
   return respond(request, 'patchset.html',
                  {'issue': request.issue,
                   'patchset': request.patchset,
                   'patchsets': patchsets,
                   'is_editor': request.issue.edit_allowed,
+                  'display_exp_tryjob_results': display_exp_tryjob_results,
                   })
 
 
@@ -3682,6 +3714,8 @@ def settings(request):
                                  'add_plus_role': account.add_plus_role,
                                  'display_generated_msgs':
                                      account.display_generated_msgs,
+                                 'display_exp_tryjob_results':
+                                     account.display_exp_tryjob_results,
                                  })
     chat_status = None
     if account.notify_by_chat:
@@ -3702,6 +3736,8 @@ def settings(request):
     account.add_plus_role = form.cleaned_data.get('add_plus_role')
     account.display_generated_msgs = form.cleaned_data.get(
         'display_generated_msgs')
+    account.display_exp_tryjob_results = form.cleaned_data.get(
+        'display_exp_tryjob_results')
     account.fresh = False
     account.put()
     if must_invite:

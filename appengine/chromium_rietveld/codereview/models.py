@@ -541,6 +541,7 @@ class TryJobResult(ndb.Model):
   # The user that requested this try job, which may not be the same person
   # that owns the issue.
   requester = ndb.UserProperty(auto_current_user_add=True)
+  category = ndb.StringProperty()
 
   # JSON dictionary of build properties.
   build_properties = ndb.TextProperty(default='{}')
@@ -1213,6 +1214,10 @@ class Account(ndb.Model):
 
   # The user can opt-in to displaying generated messages by default.
   display_generated_msgs = ndb.BooleanProperty(default=False)
+
+  # The user can opt-in to displaying experimental tryjob results 
+  # if available by default.
+  display_exp_tryjob_results = ndb.BooleanProperty(default=False)
 
   @classmethod
   def get_id_for_email(cls, email):

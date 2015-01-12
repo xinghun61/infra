@@ -100,19 +100,22 @@
          style="background: transparent; margin: 4px 0px">
       <span><i>Trybot&nbsp;results:</i></span>
       {%for try_job in patchset.try_job_results%}
-        <a class="build-result build-status-color-{{try_job.status}}"
-        {%if try_job.url %}
-           href="{{try_job.url}}"
-           title="{{try_job.status}} {{try_job.buildnumber}}"
-        {%else%}
-           title="{{try_job.status}} on {{try_job.master}}"
+        {%if try_job.category != 'cq_experimental' %}
+          <a class="build-result build-status-color-{{try_job.status}}"
+          {%if try_job.url %}
+             href="{{try_job.url}}"
+             title="{{try_job.status}} {{try_job.buildnumber}}"
+          {%else%}
+             title="{{try_job.status}} on {{try_job.master}}"
+          {%endif%}
+             status="{{try_job.status}}"
+             category="{{try_job.category}}"
+          {%ifequal last_patchset.key.id patchset.key.id%}
+             style="display:none;"
+          {%endifequal%}
+             target="_blank">
+             &nbsp;{{try_job.builder}}&nbsp;</a>
         {%endif%}
-           status="{{try_job.status}}"
-        {%ifequal last_patchset.key.id patchset.key.id%}
-           style="display:none;"
-        {%endifequal%}
-           target="_blank">
-           &nbsp;{{try_job.builder}}&nbsp;</a>
       {%endfor%}
       <a id="tryjobdiv-{{patchset.key.id}}-morelink" style="display: none;"
          href="#" onclick="M_showTryJobResult('tryjobdiv-{{patchset.key.id}}', true); return false">
@@ -134,6 +137,30 @@
           <a href="{{sign_in}}">Sign in</a> to try more bots
         {%endif%}
       {%endif%}
+
+      <br>
+      <span {%if not display_exp_tryjob_results%}style="display:none;"{%endif%}
+          id="tryjobdiv-{{patchset.key.id}}-exp">
+        <i>Experimental&nbsp;trybot&nbsp;results:</i>
+      </span>
+      {%for try_job in patchset.try_job_results%}
+        {%if try_job.category == 'cq_experimental' %}
+          <a class="build-result build-status-color-{{try_job.status}}"
+          {%if try_job.url %}
+             href="{{try_job.url}}"
+             title="{{try_job.status}} {{try_job.buildnumber}}"
+          {%else%}
+             title="{{try_job.status}} on {{try_job.master}}"
+          {%endif%}
+             status="{{try_job.status}}"
+             category="{{try_job.category}}"
+             {%if not display_exp_tryjob_results%}
+                style="display:none;"
+             {%endif%}
+             target="_blank">
+             &nbsp;{{try_job.builder}}&nbsp;</a>
+        {%endif%}
+      {%endfor%}
   </div>
 
   {%ifequal last_patchset.key.id patchset.key.id%}

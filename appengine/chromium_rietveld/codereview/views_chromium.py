@@ -54,6 +54,7 @@ class TryPatchSetForm(forms.Form):
   clobber = forms.BooleanField(required=False)
   master = forms.CharField(max_length=255, required=False)
   builders = forms.CharField(max_length=16*1024)
+  category = forms.CharField(max_length=255)
 
 
 class TryserversForm(forms.Form):
@@ -665,6 +666,7 @@ def try_patchset(request):
   revision = form.cleaned_data['revision']
   clobber = form.cleaned_data['clobber']
   master = form.cleaned_data['master']
+  category = form.cleaned_data.get('category', 'cq')
 
   try:
     builders = json.loads(form.cleaned_data['builders'])
@@ -679,8 +681,8 @@ def try_patchset(request):
     return HttpResponseBadRequest(content, content_type='text/plain')
 
   logging.debug(
-      'clobber=%s\nrevision=%s\nreason=%s\nmaster=%s\nbuilders=%s',
-      clobber, revision, reason, master, builders)
+      'clobber=%s\nrevision=%s\nreason=%s\nmaster=%s\nbuilders=%s\category=%s',
+      clobber, revision, reason, master, builders, category)
 
   def txn():
     # Get list of existing pending try jobs for this patchset.  Don't create
@@ -697,7 +699,8 @@ def try_patchset(request):
                                     clobber=clobber,
                                     tests=tests,
                                     reason=reason,
-                                    requester=request.user)
+                                    requester=request.user,
+                                    category=category)
       jobs_to_save.append(try_job)
 
     if jobs_to_save:

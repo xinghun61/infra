@@ -691,27 +691,31 @@ function M_showTryJobResult(id, makeVisible) {
   var firstBuilderSet = {};
   var oldBuildersExist = false;
   jQuery('a', document.getElementById(id)).each(function(i) {
-    var self = jQuery(this); 
+    var self = jQuery(this);
     var builder = self.text();
-    if (self.attr('status') == 'try-pending') {
-      // Try pending jobs are always visible.
-      self.css('display', 'inline');
-    } else if (builder in firstBuilderSet) {
-      // This is not the first time we see this builder, so toggle its
-      // visibility.
-      self.css('display', makeVisible ? 'inline' : 'none');
-      oldBuildersExist = true;
-    } else {
-      // The first time we see a builder, its always visible.  Remember the
-      // builder name.
-      self.css('display', 'inline');
-      firstBuilderSet[builder] = true;
+    if (self.attr('category') != 'cq_experimental')
+    {
+      if (self.attr('status') == 'try-pending') {
+        // Try pending jobs are always visible.
+        self.css('display', 'inline');
+      } else if (builder in firstBuilderSet) {
+        // This is not the first time we see this builder, so toggle its
+        // visibility.
+        self.css('display', makeVisible ? 'inline' : 'none');
+        oldBuildersExist = true;
+      } else {
+        // The first time we see a builder, its always visible.  Remember the
+        // builder name.
+        self.css('display', 'inline');
+        firstBuilderSet[builder] = true;
+      }
     }
   });
+
   jQuery('#' + id + '-morelink')
-      .css('display', !oldBuildersExist || makeVisible ? 'none' : '');
+    .css('display', !oldBuildersExist || makeVisible ? 'none' : '');
   jQuery('#' + id + '-lesslink')
-      .css('display', oldBuildersExist && makeVisible ? '' : 'none');
+    .css('display', oldBuildersExist && makeVisible ? '' : 'none');
 }
 
 /**
