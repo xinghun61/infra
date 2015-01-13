@@ -14,18 +14,18 @@ from cipd import impl
 
 
 class TestValidators(unittest.TestCase):
-  def test_is_valid_package_name(self):
-    self.assertTrue(impl.is_valid_package_name('a'))
-    self.assertTrue(impl.is_valid_package_name('a/b'))
-    self.assertTrue(impl.is_valid_package_name('a/b/c/1/2/3'))
-    self.assertTrue(impl.is_valid_package_name('infra/tools/cipd'))
-    self.assertTrue(impl.is_valid_package_name('-/_'))
-    self.assertFalse(impl.is_valid_package_name(''))
-    self.assertFalse(impl.is_valid_package_name('/a'))
-    self.assertFalse(impl.is_valid_package_name('a/'))
-    self.assertFalse(impl.is_valid_package_name('A'))
-    self.assertFalse(impl.is_valid_package_name('a/B'))
-    self.assertFalse(impl.is_valid_package_name('a\\b'))
+  def test_is_valid_package_path(self):
+    self.assertTrue(impl.is_valid_package_path('a'))
+    self.assertTrue(impl.is_valid_package_path('a/b'))
+    self.assertTrue(impl.is_valid_package_path('a/b/c/1/2/3'))
+    self.assertTrue(impl.is_valid_package_path('infra/tools/cipd'))
+    self.assertTrue(impl.is_valid_package_path('-/_'))
+    self.assertFalse(impl.is_valid_package_path(''))
+    self.assertFalse(impl.is_valid_package_path('/a'))
+    self.assertFalse(impl.is_valid_package_path('a/'))
+    self.assertFalse(impl.is_valid_package_path('A'))
+    self.assertFalse(impl.is_valid_package_path('a/B'))
+    self.assertFalse(impl.is_valid_package_path('a\\b'))
 
   def test_is_valid_instance_id(self):
     self.assertTrue(impl.is_valid_instance_id('a'*40))
@@ -40,7 +40,36 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(impl.cas, 'get_cas_service', lambda: self.mocked_cas_service)
     self.service = impl.get_repo_service()
 
-  def test_register_new(self):
+  def test_register_package_new(self):
+    self.assertIsNone(self.service.get_package('a/b'))
+    pkg, registered = self.service.register_package(
+        package_name='a/b',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+    self.assertEqual('a/b', pkg.package_name)
+    self.assertEqual({
+      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0)
+    }, pkg.to_dict())
+
+  def test_register_package_existing(self):
+    pkg, registered = self.service.register_package(
+        package_name='a/b',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+    pkg, registered = self.service.register_package(
+        package_name='a/b',
+        caller=auth.Identity.from_bytes('user:def@example.com'),
+        now=datetime.datetime(2015, 1, 1, 0, 0))
+    self.assertFalse(registered)
+    self.assertEqual({
+      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0)
+    }, pkg.to_dict())
+
+  def test_register_instance_new(self):
     self.assertIsNone(self.service.get_instance('a/b', 'a'*40))
     self.assertIsNone(self.service.get_package('a/b'))
     pkg, registered = self.service.register_instance(
@@ -62,7 +91,7 @@ class TestRepoService(testing.AppengineTestCase):
         expected, self.service.get_instance('a/b', 'a'*40).to_dict())
     self.assertTrue(self.service.get_package('a/b'))
 
-  def test_register_existing(self):
+  def test_register_instance_existing(self):
     # First register a package.
     pkg1, registered = self.service.register_instance(
         package_name='a/b',

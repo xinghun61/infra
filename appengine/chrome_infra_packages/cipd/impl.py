@@ -79,6 +79,24 @@ class RepoService(object):
     return package_key(package_name).get()
 
   @ndb.transactional
+  def register_package(self, package_name, caller, now=None):
+    """Ensures a given package is registered.
+
+    Can be used by callers with OWNER role to create a package, without
+    uploading any concrete instances. Such empty packages later are populated
+    with instances by callers with WRITER role.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      caller: auth.Identity that issued the request.
+      now: datetime when the request was made (or None for current time).
+
+    Returns:
+      Tuple (Package entity, True if registered or False if existed).
+    """
+    return self._register_package(package_name, caller, now)
+
+  @ndb.transactional
   def register_instance(self, package_name, instance_id, caller, now=None):
     """Makes new PackageInstance entity if it is not yet there.
 
@@ -98,11 +116,12 @@ class RepoService(object):
     inst = key.get()
     if inst is not None:
       return inst, False
-    Package(key=key.parent()).put()
+    now = now or utils.utcnow()
+    self._register_package(package_name, caller, now)
     inst = PackageInstance(
         key=key,
         registered_by=caller,
-        registered_ts=now or utils.utcnow())
+        registered_ts=now)
     inst.put()
     return inst, True
 
@@ -129,7 +148,7 @@ class RepoService(object):
     Returns:
       True or False.
     """
-    assert is_valid_package_name(package_name), package_name
+    assert is_valid_package_path(package_name), package_name
     assert is_valid_instance_id(instance_id), instance_id
     return self.cas_service.is_object_present(DIGEST_ALGO, instance_id)
 
@@ -144,14 +163,31 @@ class RepoService(object):
     Returns:
       (upload URL to upload data to, upload session ID to pass to CAS API).
     """
-    assert is_valid_package_name(package_name), package_name
+    assert is_valid_package_path(package_name), package_name
     assert is_valid_instance_id(instance_id), instance_id
     upload_session, upload_session_id = self.cas_service.create_upload_session(
         DIGEST_ALGO, instance_id, caller)
     return upload_session.upload_url, upload_session_id
 
+  def _register_package(self, package_name, caller, now=None):
+    """Implementation of register_package, see its docstring.
 
-def is_valid_package_name(package_name):
+    Expected to be called in a transaction. Reused from register_instance.
+    """
+    assert ndb.in_transaction()
+    key = package_key(package_name)
+    pkg = key.get()
+    if pkg:
+      return pkg, False
+    pkg = Package(
+        key=key,
+        registered_by=caller,
+        registered_ts=now or utils.utcnow())
+    pkg.put()
+    return pkg, True
+
+
+def is_valid_package_path(package_name):
   """True if string looks like a valid package name."""
   return bool(PACKAGE_NAME_RE.match(package_name))
 
@@ -179,6 +215,15 @@ class Package(ndb.Model):
 
   Id is a package name.
   """
+  # Who registered the package.
+  registered_by = auth.IdentityProperty()
+  # When the package was registered.
+  registered_ts = ndb.DateTimeProperty()
+
+  @property
+  def package_name(self):
+    """Name of the package."""
+    return self.key.string_id()
 
 
 class PackageInstance(ndb.Model):
@@ -205,7 +250,7 @@ class PackageInstance(ndb.Model):
 
 def package_key(package_name):
   """Returns ndb.Key corresponding to particular Package entity."""
-  assert is_valid_package_name(package_name), package_name
+  assert is_valid_package_path(package_name), package_name
   return ndb.Key(Package, package_name)
 
 
