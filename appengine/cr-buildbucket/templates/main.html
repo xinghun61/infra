@@ -38,6 +38,42 @@
         build is marked as completed.</li>
     </ul></p>
 
+  <h3>Build status</h3>
+  <p>The following build properties represent build status:
+    <ul>
+      <li><code>Status</code>: current status of the build, can be one of:
+        <ul>
+          <li><code>SCHEDULED</code>: available for processing.</li>
+          <li><code>STARTED</code>: leased and is being processed.</li>
+          <li><code>COMPLETED</code>: completed and cannot be changed.
+            See <code>Result</code> field for more info</li>
+        </ul></li>
+      <li><code>Result</code>: result of build completion. Can be set only in
+        <code>COMPLETED</code> state. Can be one of:
+        <ul>
+          <li><code>SUCCESS</code>: the build has succeeded.</li>
+          <li><code>FAILURE</code>: the build has failed. See
+            <code>FailureReason</code> for more info.</li>
+          <li><code>CANCELED</code>: the build has been canceled. See
+            <code>CancelationReason</code> for more info.</li>
+        </ul></li>
+      <li><code>FailureReason</code>: why the build failed. Can be one of:
+        <ul>
+          <li><code>BUILD_FAILURE</code>: the build has failed normally, not due
+            to infrastructure failure.</li>
+          <li><code>INFRA_FAILURE</code>: infrastructure failure happened.</li>
+          <li><code>BUILDBUCKET_FAILURE</code>: buildbucket failure happened.
+            </li>
+        </ul></li>
+      <li><code>CancelationReason</code>: why the build was canceled. Can be one
+        of:
+        <ul>
+          <li><code>CANCELED_EXPLICITLY</code>: the build canceled was requested
+            externally.</li>
+          <li><code>TIMEOUT</code>: the build was canceled on timeout.</li>
+        </ul></li>
+      </ul>
+
   <h3>Leasing a build</h3>
   <p>A build-system is supposed to {{ api_link('lease') }} a build before
     processing it. A build lease is exclusive and a build cannot be mutated

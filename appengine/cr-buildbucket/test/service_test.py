@@ -45,7 +45,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             'buildername': 'infra',
             'changes': [{
                 'author': 'nodir@google.com',
-                'message': 'crbuild: initial commit'
+                'message': 'buildbucket: initial commit'
             }]
         }
     )

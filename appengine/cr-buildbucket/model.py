@@ -32,16 +32,16 @@ class BuildResult(messages.Enum):
 class FailureReason(messages.Enum):
   # Build failed
   BUILD_FAILURE = 1
-  # Something happened within crbuild
-  CRBUILD_FAILURE = 2
-  # Something happened with build infrastructure, but not crbuild.
+  # Something happened within buildbucket.
+  BUILDBUCKET_FAILURE = 2
+  # Something happened with build infrastructure, but not buildbucket.
   INFRA_FAILURE = 3
 
 
 class CancelationReason(messages.Enum):
   # A build was canceled explicitly, probably by an API call.
   CANCELED_EXPLICITLY = 1
-  # A build was canceled by crbuild due to timeout.
+  # A build was canceled by buildbucket due to timeout.
   TIMEOUT = 2
 
 
