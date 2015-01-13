@@ -60,6 +60,13 @@ type fetchInstanceResponse struct {
 	Info     packageInstanceInfo
 }
 
+// roleChangeMsg corresponds to RoleChange proto message on backend.
+type roleChangeMsg struct {
+	Action    string `json:"action"`
+	Role      string `json:"role"`
+	Principal string `json:"principal"`
+}
+
 // newRemoteService is mocked in tests.
 var newRemoteService = func(client *http.Client, url string, log logging.Logger) *remoteService {
 	return &remoteService{
@@ -246,6 +253,91 @@ func (r *remoteService) fetchInstance(packageName, instanceID string) (*fetchIns
 	return nil, fmt.Errorf("Unexpected reply status: %s", reply.Status)
 }
 
+func (r *remoteService) fetchACL(packagePath string) ([]PackageACL, error) {
+	endpoint, err := aclEndpoint(packagePath)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+		Acls         struct {
+			Acls []struct {
+				PackagePath string   `json:"package_path"`
+				Role        string   `json:"role"`
+				Principals  []string `json:"principals"`
+				ModifiedBy  string   `json:"modified_by"`
+				ModifiedTs  string   `json:"modified_ts"`
+			} `json:"acls"`
+		} `json:"acls"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		out := []PackageACL{}
+		for _, acl := range reply.Acls.Acls {
+			ts, err := convertTimestamp(acl.ModifiedTs)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, PackageACL{
+				PackagePath: acl.PackagePath,
+				Role:        acl.Role,
+				Principals:  acl.Principals,
+				ModifiedBy:  acl.ModifiedBy,
+				ModifiedTs:  ts,
+			})
+		}
+		return out, nil
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("Unexpected reply status: %s", reply.Status)
+}
+
+func (r *remoteService) modifyACL(packagePath string, changes []PackageACLChange) error {
+	endpoint, err := aclEndpoint(packagePath)
+	if err != nil {
+		return err
+	}
+	var request struct {
+		Changes []roleChangeMsg `json:"changes"`
+	}
+	for _, c := range changes {
+		action := ""
+		if c.Action == GrantRole {
+			action = "GRANT"
+		} else if c.Action == RevokeRole {
+			action = "REVOKE"
+		} else {
+			return fmt.Errorf("Unexpected action: %s", action)
+		}
+		request.Changes = append(request.Changes, roleChangeMsg{
+			Action:    action,
+			Role:      c.Role,
+			Principal: c.Principal,
+		})
+	}
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+	}
+	err = r.makeRequest(endpoint, "POST", &request, &reply)
+	if err != nil {
+		return err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		return nil
+	case "ERROR":
+		return errors.New(reply.ErrorMessage)
+	}
+	return fmt.Errorf("Unexpected reply status: %s", reply.Status)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func instanceEndpoint(packageName, instanceID string) (string, error) {
@@ -263,18 +355,36 @@ func instanceEndpoint(packageName, instanceID string) (string, error) {
 	return "repo/v1/instance?" + params.Encode(), nil
 }
 
-func makePackageInstanceInfo(msg packageInstanceMsg) (pi packageInstanceInfo, err error) {
-	// String with int64 timestamp in microseconds since epoch -> time.Time.
-	ts, err := strconv.ParseInt(msg.RegisteredTs, 10, 64)
+func aclEndpoint(packagePath string) (string, error) {
+	err := ValidatePackageName(packagePath)
 	if err != nil {
-		err = fmt.Errorf("Unexpected timestamp value '%s' in the server response", msg.RegisteredTs)
+		return "", err
+	}
+	params := url.Values{}
+	params.Add("package_path", packagePath)
+	return "repo/v1/acl?" + params.Encode(), nil
+}
+
+// convertTimestamp coverts string with int64 timestamp in microseconds since
+// to time.Time
+func convertTimestamp(ts string) (time.Time, error) {
+	i, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("Unexpected timestamp value '%s' in the server response", ts)
+	}
+	return time.Unix(0, i*1000), nil
+}
+
+func makePackageInstanceInfo(msg packageInstanceMsg) (pi packageInstanceInfo, err error) {
+	ts, err := convertTimestamp(msg.RegisteredTs)
+	if err != nil {
 		return
 	}
 	pi = packageInstanceInfo{
 		PackageName:  msg.PackageName,
 		InstanceID:   msg.InstanceID,
 		RegisteredBy: msg.RegisteredBy,
-		RegisteredTs: time.Unix(0, ts*1000),
+		RegisteredTs: ts,
 	}
 	return
 }

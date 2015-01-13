@@ -6,10 +6,12 @@ package cipd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +59,29 @@ func TestRemoteService(t *testing.T) {
 			w.Write([]byte(response))
 		})
 		return remote.fetchInstance("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	}
+
+	mockFetchACL := func(response string) ([]PackageACL, error) {
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
+			So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
+			So(r.Method, ShouldEqual, "GET")
+			w.Write([]byte(response))
+		})
+		return remote.fetchACL("pkgname")
+	}
+
+	mockModifyACL := func(changes []PackageACLChange, request, response string) error {
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
+			So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
+			So(r.Method, ShouldEqual, "POST")
+			body, err := ioutil.ReadAll(r.Body)
+			So(err, ShouldBeNil)
+			So(string(body), ShouldEqual, request)
+			w.Write([]byte(response))
+		})
+		return remote.modifyACL("pkgname", changes)
 	}
 
 	Convey("makeRequest POST works", t, func() {
@@ -315,6 +340,99 @@ func TestRemoteService(t *testing.T) {
 		}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchACL SUCCESS", t, func() {
+		result, err := mockFetchACL(`{
+			"status": "SUCCESS",
+			"acls": {
+				"acls": [
+					{
+						"package_path": "a",
+						"role": "OWNER",
+						"principals": ["user:a", "group:b"],
+						"modified_by": "user:abc@example.com",
+						"modified_ts": "1420244414571500"
+					},
+					{
+						"package_path": "a/b",
+						"role": "READER",
+						"principals": ["group:c"],
+						"modified_by": "user:abc@example.com",
+						"modified_ts": "1420244414571500"
+					}
+				]
+			}
+		}`)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, []PackageACL{
+			PackageACL{
+				PackagePath: "a",
+				Role:        "OWNER",
+				Principals:  []string{"user:a", "group:b"},
+				ModifiedBy:  "user:abc@example.com",
+				ModifiedTs:  time.Unix(0, 1420244414571500000),
+			},
+			PackageACL{
+				PackagePath: "a/b",
+				Role:        "READER",
+				Principals:  []string{"group:c"},
+				ModifiedBy:  "user:abc@example.com",
+				ModifiedTs:  time.Unix(0, 1420244414571500000),
+			},
+		})
+	})
+
+	Convey("fetchACL ERROR", t, func() {
+		result, err := mockFetchACL(`{
+			"status": "ERROR",
+			"error_message": "Some error message"
+		}`)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("modifyACL SUCCESS", t, func() {
+		expected := `{
+			"changes": [
+				{
+					"action": "GRANT",
+					"role": "OWNER",
+					"principal": "user:a@example.com"
+				},
+				{
+					"action": "REVOKE",
+					"role": "READER",
+					"principal": "user:b@example.com"
+				}
+			]
+		}`
+		// Strip " ", "\t" and "\n".
+		expected = strings.Replace(expected, " ", "", -1)
+		expected = strings.Replace(expected, "\n", "", -1)
+		expected = strings.Replace(expected, "\t", "", -1)
+
+		err := mockModifyACL([]PackageACLChange{
+			PackageACLChange{
+				Action:    GrantRole,
+				Role:      "OWNER",
+				Principal: "user:a@example.com",
+			},
+			PackageACLChange{
+				Action:    RevokeRole,
+				Role:      "READER",
+				Principal: "user:b@example.com",
+			},
+		}, expected, `{"status":"SUCCESS"}`)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("modifyACL ERROR", t, func() {
+		err := mockModifyACL([]PackageACLChange{}, `{"changes":null}`, `{
+			"status": "ERROR",
+			"error_message": "Error message"
+		}`)
+		So(err, ShouldNotBeNil)
 	})
 }
 

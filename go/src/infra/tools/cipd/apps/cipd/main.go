@@ -70,7 +70,175 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'build' subcommand.
+// 'acl-list' subcommand.
+
+var cmdListACL = &subcommands.Command{
+	UsageLine: "acl-list <package subpath>",
+	ShortDesc: "lists package path Access Control List",
+	LongDesc:  "Lists package path Access Control List",
+	CommandRun: func() subcommands.CommandRun {
+		return &listACLRun{}
+	},
+}
+
+type listACLRun struct {
+	subcommands.CommandRunBase
+}
+
+func (c *listACLRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	client, err := auth.AuthenticatedClient(true, nil)
+	if err != nil {
+		reportError("Error when authenticating: %s", err)
+		return 1
+	}
+	err = listACL(args[0], client)
+	if err != nil {
+		reportError("Error while listing ACL: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func listACL(packagePath string, client *http.Client) error {
+	acls, err := cipd.FetchACL(cipd.FetchACLOptions{
+		ACLOptions: cipd.ACLOptions{
+			Client:      client,
+			PackagePath: packagePath,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Split by role, drop empty ACLs.
+	byRole := make(map[string][]cipd.PackageACL)
+	for _, a := range acls {
+		if len(a.Principals) != 0 {
+			byRole[a.Role] = append(byRole[a.Role], a)
+		}
+	}
+
+	listRoleACL := func(title string, acls []cipd.PackageACL) {
+		logging.Infof("%s:", title)
+		if len(acls) == 0 {
+			logging.Infof("  none")
+			return
+		}
+		for _, a := range acls {
+			logging.Infof("  via '%s':", a.PackagePath)
+			for _, u := range a.Principals {
+				logging.Infof("    %s", u)
+			}
+		}
+	}
+
+	listRoleACL("Owners", byRole["OWNER"])
+	listRoleACL("Writers", byRole["WRITER"])
+	listRoleACL("Readers", byRole["READER"])
+
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'acl-edit' subcommand.
+
+// principalsList is used as custom flag value. It implements flag.Value.
+type principalsList []string
+
+func (l *principalsList) String() string {
+	return fmt.Sprintf("%v", *l)
+}
+
+func (l *principalsList) Set(value string) error {
+	// Ensure <type>:<id> syntax is used. Let the backend to validate the rest.
+	chunks := strings.Split(value, ":")
+	if len(chunks) != 2 {
+		return fmt.Errorf("The string '%s' doesn't look principal id (<type>:<id>)", value)
+	}
+	*l = append(*l, value)
+	return nil
+}
+
+var cmdEditACL = &subcommands.Command{
+	UsageLine: "acl-edit [options] <package subpath>",
+	ShortDesc: "modifies package path Access Control List",
+	LongDesc:  "Modifies package path Access Control List",
+	CommandRun: func() subcommands.CommandRun {
+		c := &editACLRun{}
+		c.Flags.Var(&c.owner, "owner", "users or groups to grant OWNER role")
+		c.Flags.Var(&c.writer, "writer", "users or groups to grant WRITER role")
+		c.Flags.Var(&c.reader, "reader", "users or groups to grant READER role")
+		c.Flags.Var(&c.revoke, "revoke", "users or groups to remove from all roles")
+		return c
+	},
+}
+
+type editACLRun struct {
+	subcommands.CommandRunBase
+
+	owner  principalsList
+	writer principalsList
+	reader principalsList
+	revoke principalsList
+}
+
+func (c *editACLRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	client, err := auth.AuthenticatedClient(true, nil)
+	if err != nil {
+		reportError("Error when authenticating: %s", err)
+		return 1
+	}
+	err = editACL(args[0], c.owner, c.writer, c.reader, c.revoke, client)
+	if err != nil {
+		reportError("Error while editing ACL: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func editACL(packagePath string, owners, writers, readers, revoke principalsList, client *http.Client) error {
+	changes := []cipd.PackageACLChange{}
+
+	makeChanges := func(action cipd.PackageACLChangeAction, role string, list principalsList) {
+		for _, p := range list {
+			changes = append(changes, cipd.PackageACLChange{
+				Action:    action,
+				Role:      role,
+				Principal: p,
+			})
+		}
+	}
+
+	makeChanges(cipd.GrantRole, "OWNER", owners)
+	makeChanges(cipd.GrantRole, "WRITER", writers)
+	makeChanges(cipd.GrantRole, "READER", readers)
+
+	makeChanges(cipd.RevokeRole, "OWNER", revoke)
+	makeChanges(cipd.RevokeRole, "WRITER", revoke)
+	makeChanges(cipd.RevokeRole, "READER", revoke)
+
+	err := cipd.ModifyACL(cipd.ModifyACLOptions{
+		ACLOptions: cipd.ACLOptions{
+			Client:      client,
+			PackagePath: packagePath,
+		},
+		Changes: changes,
+	})
+	if err != nil {
+		return err
+	}
+	logging.Infof("ACL changes applied.")
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'pkg-build' subcommand.
 
 var cmdBuild = &subcommands.Command{
 	UsageLine: "pkg-build [options]",
@@ -132,7 +300,7 @@ func buildInstanceFile(packageName string, inputDir string, instanceFile string)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'deploy' subcommand.
+// 'pkg-deploy' subcommand.
 
 var cmdDeploy = &subcommands.Command{
 	UsageLine: "pkg-deploy [options] <package instance file>",
@@ -175,7 +343,7 @@ func deployInstanceFile(root string, instanceFile string) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'fetch' subcommand.
+// 'pkg-fetch' subcommand.
 
 var cmdFetch = &subcommands.Command{
 	UsageLine: "pkg-fetch [options]",
@@ -253,7 +421,7 @@ func fetchInstanceFile(packageName, instanceID, instanceFile string, client *htt
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'inspect' subcommand.
+// 'pkg-inspect' subcommand.
 
 var cmdInspect = &subcommands.Command{
 	UsageLine: "pkg-inspect <package instance file>",
@@ -302,7 +470,7 @@ func inspectInstance(inst cipd.PackageInstance, listFiles bool) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'register' subcommand.
+// 'pkg-register' subcommand.
 
 var cmdRegister = &subcommands.Command{
 	UsageLine: "pkg-register <package instance file>",
@@ -351,7 +519,7 @@ func registerInstanceFile(instanceFile string, client *http.Client) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'upload' subcommand.
+// 'pkg-upload' subcommand.
 
 var cmdUpload = &subcommands.Command{
 	UsageLine: "pkg-upload <package instance file>",
@@ -409,6 +577,11 @@ var application = &subcommands.DefaultApplication{
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 
+		// High level commands.
+		cmdListACL,
+		cmdEditACL,
+
+		// Low level pkg-* commands.
 		cmdBuild,
 		cmdDeploy,
 		cmdFetch,
