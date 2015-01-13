@@ -66,7 +66,6 @@ a {
 }
 
 .build-bubble {
-  background: #e88;
   padding: 2px;
   border-radius: 3px;
   margin-right: 3px;
@@ -76,4 +75,20 @@ a {
 
 .build-bubble:hover {
   box-shadow: 0 1px 3px #888;
+}
+
+.build-bubble.triggered {
+  background: #fff;
+}
+
+.build-bubble.running {
+  background: #ff7;
+}
+
+.build-bubble.passed {
+  background: #9e6;
+}
+
+.build-bubble.failed {
+  background: #e88;
 }

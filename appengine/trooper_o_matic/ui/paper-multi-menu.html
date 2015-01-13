@@ -1,0 +1,52 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/bower_components/paper-dropdown/paper-dropdown.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+
+<polymer-element name="paper-multi-menu" attributes="model value text subMenu">
+  <template>
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
+    <paper-dropdown-menu>
+      <paper-dropdown class="dropdown">
+        <core-menu class="menu" selected="0" on-core-select="{{ _select }}">
+          <template repeat="{{ item in model.items }}">
+            <paper-item menuValue="{{ item.value }}">{{ item.text }}</paper-item>
+          </template>
+        </core-menu>
+      </paper-dropdown>
+    </paper-dropdown-menu>
+    <span id="subMenus">
+      <template repeat="{{ item in model.items }}">
+        <template if="{{ item.items }}">
+          <paper-multi-menu id="{{ item.value }}" model="{{ item }}" class="hidden"></paper-multi-menu>
+        </template>
+      </template>
+    </span>
+  </template>
+  <script>
+    Polymer({
+      _select: function(event) {
+        var paperItem = event.detail.item;
+        this.value = paperItem.getAttribute('menuValue');
+        this.text = paperItem.textContent;
+        this._toggleSubMenu();
+        this.subMenu = this.$.subMenus.querySelector('#' + this.value);
+        this._toggleSubMenu();
+      },
+      _toggleSubMenu: function() {
+        if (this.subMenu) {
+          this.subMenu.classList.toggle('hidden');
+        }
+      }
+    });
+  </script>
+</polymer-element>

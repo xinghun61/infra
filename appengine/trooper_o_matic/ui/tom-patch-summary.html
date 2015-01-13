@@ -5,8 +5,9 @@ found in the LICENSE file.
 -->
 
 <link rel="import" href="../model/patch-summary.html">
+<link rel="import" href="../model/patch-summary-list.html">
 
-<polymer-element name="tom-patch-summary" attributes="model mode">
+<polymer-element name="tom-patch-summary" attributes="model viewMenu">
   <template>
     <link rel="stylesheet" href="./tom-patch-summary.css">
     <div class="row">
@@ -28,7 +29,7 @@ found in the LICENSE file.
       </template>
 
       <template if="{{ model._summary }}">
-        <template if="{{ mode == 'Summary' }}">
+        <template if="{{ viewMenu.value == 'summary' }}">
           <div class="column-container">
             <template repeat="{{ value in model._columnValues }}">
               <div class="column">{{ value }}</div>
@@ -36,15 +37,15 @@ found in the LICENSE file.
           </div>
         </template>
 
-        <template if="{{ mode == 'Failed Jobs' }}">
+        <template if="{{ viewMenu.value == 'jobs' }}">
           <div class="column grow builder-bubbles">
-            <template repeat="{{ builder in model._failingBuilders }}">
+            <template repeat="{{ builder in model._jobViewBuilderBuilds[viewMenu.subMenu.value] }}">
               <span class="builder-bubble">
                 <a href="http://build.chromium.org/p/{{ builder.master }}/builders/{{ builder.name }}" title="{{ builder.master }}">
                   {{ builder.name }}:
                 </a>
                 <template repeat="{{ build in builder.builds }}">
-                  <a href="{{ build.url }}" title="{{ build.slave }}" class="build-bubble">
+                  <a href="{{ build.url }}" title="{{ build.slave }}" class="build-bubble {{ build.state }}">
                     #{{ build.number }}
                   </a>
                 </template>

@@ -4,11 +4,27 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
+<link rel="import" href="./multi-menu.html">
+
 <script>
-function PatchSummaryList(unit) {
+(function() {
+
+this.PatchSummaryList = function PatchSummaryList(unit) {
   this.begin = null;
   this.end = null;
   this.list = [];
   this.unit = unit;
-}
+};
+
+PatchSummaryList.viewMenu = new MultiMenu(null, null, [
+  new MultiMenu('jobs', 'Jobs', [
+    new MultiMenu('flaky', 'Flaky'),
+    new MultiMenu('failed', 'Failed'),
+    new MultiMenu('passed', 'Passed'),
+    new MultiMenu('all', 'All'),
+  ]),
+  new MultiMenu('summary', 'Summary'),
+]);
+
+})();
 </script>

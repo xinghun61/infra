@@ -4,14 +4,11 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 <link rel="import" href="../model/patch-summary.html">
+<link rel="import" href="../model/patch-summary-list.html">
 <link rel="import" href="./tom-patch-summary.html">
-<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="./paper-multi-menu.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-shadow/paper-shadow.html">
-<link rel="import" href="/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
-<link rel="import" href="/bower_components/paper-dropdown/paper-dropdown.html">
-<link rel="import" href="/bower_components/core-menu/core-menu.html">
-<link rel="import" href="/bower_components/paper-item/paper-item.html">
 
 <polymer-element name="tom-patch-summary-list" attributes="model">
   <template>
@@ -26,43 +23,38 @@ found in the LICENSE file.
           <paper-button class="close" on-tap="{{ close }}">X</paper-button>
         </div>
 
-        <paper-dropdown-menu class="view-selector">
-          <paper-dropdown class="dropdown">
-            <core-menu class="menu" id="viewSelector" selected="0">
-              <paper-item>Failed Jobs</paper-item>
-              <paper-item>Summary</paper-item>
-            </core-menu>
-          </paper-dropdown>
-        </paper-dropdown-menu>
+        <div class="view-menu">
+          View:
+          <paper-multi-menu id="viewMenu" model="{{ _viewMenu }}"></paper-multi-menu>
+        </div>
 
-        <template bind="{{ $.viewSelector.selectedItem.textContent as mode }}">
-          <div class="row">
-            <div class="metric-cell column header">Graph metric</div>
-            <div class="patch-cell column header">Patch</div>
-            <div class="column-container">
-              <template if="{{ mode == 'Summary' }}">
-                <template repeat="{{ column in _summaryColumns }}">
-                  <div class="column header">{{ column.header }}</div>
-                </template>
+        <div class="row">
+          <div class="metric-cell column header">Graph metric</div>
+          <div class="patch-cell column header">Patch</div>
+          <div class="column-container">
+            <template if="{{ $.viewMenu.value == 'summary' }}">
+              <template repeat="{{ column in _summaryColumns }}">
+                <div class="column header">{{ column.header }}</div>
               </template>
-              <template if="{{ mode == 'Failed Jobs' }}">
-                <div class="column grow header">Failed jobs</div>
-              </template>
-            </div>
-          </div>
-
-          <div class="item-rows">
-            <template repeat="{{ patchSummary in model.list }}">
-              <tom-patch-summary model="{{ patchSummary }}" mode="{{ mode }}"></tom-patch-summary>
+            </template>
+            <template if="{{ $.viewMenu.value == 'jobs' }}">
+              <div class="column grow header">{{ $.viewMenu.subMenu.text }} jobs</div>
             </template>
           </div>
-        </template>
+        </div>
+
+        <div class="item-rows">
+          <template repeat="{{ patchSummary in model.list }}">
+            <tom-patch-summary model="{{ patchSummary }}" viewMenu="{{ $.viewMenu }}"></tom-patch-summary>
+          </template>
+        </div>
       </div>
     </paper-shadow>
   </template>
   <script>
     Polymer({
       ready: function() {
+        this._viewMenu = PatchSummaryList.viewMenu;
         this._summaryColumns = PatchSummary.summaryColumns;
       },
       close: function() {

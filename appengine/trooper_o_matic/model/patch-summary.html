@@ -4,6 +4,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
+<link rel="import" href="./patch-summary-list.html">
 <link rel="import" href="../lib/cqstats-util.html">
 <link rel="import" href="../lib/log.html">
 <link rel="import" href="../lib/net.html">
@@ -24,21 +25,80 @@ this.PatchSummary = function PatchSummary(value, unit, issue, patchset, alertThr
   this._issueTitle = null;
   this._summary = null;
   this._columnValues = [];
-  this._failingBuilders = [];
+  this._jobViewBuilderBuilds = {};
 
   var self = this;
   var issueURL = '{1}/api/{2}'.assign(reviewHost, this.issue);
   net.json({url: issueURL, cache: true}).then(function(json) {
-    self.issueTitle = json.subject;
+    self._issueTitle = json.subject;
   }).catch(log);
   cqStatsUtil.loadPatchSummary(issue, patchset).then(function(summary) {
     self._summary = summary;
+
     self._columnValues = PatchSummary.summaryColumns.map(function(column) {
       return column.getter(summary);
     });
-    self._failingBuilders = getFailingBuilders(summary);
+
+    var jobViews = PatchSummaryList.viewMenu.getSubMenu('jobs').getSubNames();
+    for (var jobView of jobViews) {
+      self._jobViewBuilderBuilds[jobView] = getBuilderBuilds(summary, jobView);
+    };
   }).catch(log);
 };
+
+function getJobs(summary, jobView) {
+  switch (jobView) {
+    case 'flaky':
+      return summary.flaky_jobs;
+    case 'all':
+      return summary.attempts.map(function(attempt) {
+        return Object.values(attempt.jobs).flatten();
+      }).flatten();
+    default:
+      return summary.attempts.map(function(attempt) {
+        return attempt.jobs[jobView];
+      }).flatten();
+  }
+}
+
+function sortBy(array, field) {
+  array.sort(function(itemA, itemB) {
+    var a = itemA[field];
+    var b = itemB[field];
+    return a > b ? 1 : (a < b ? -1 : 0);
+  });
+}
+
+function getBuilderBuilds(summary, jobView) {
+  var jobs = getJobs(summary, jobView);
+  console.assert(jobs);
+
+  var buildMap = new Map();
+  for (var job of jobs) {
+    var builderKey = job.master + ':' + job.builder;
+    if (!buildMap.has(builderKey)) {
+      buildMap.set(builderKey, {
+        name: job.builder,
+        master: job.master,
+        builds: [],
+      });
+    }
+    buildMap.get(builderKey).builds.push({
+      number: job.build_number,
+      slave: job.slave,
+      url: job.url,
+      state: job.state,
+    });
+  }
+
+  var builders = [];
+  buildMap.forEach(function(builder) {
+    sortBy(builder.builds, 'number');
+    builders.push(builder);
+  });
+  sortBy(builders, 'name');
+  return builders;
+}
 
 function secondsToMinutes(seconds) {
   return (seconds / 60).toFixed(0);
@@ -89,35 +149,6 @@ PatchSummary.summaryColumns = [
     },
   },
 ];
-
-function getFailingBuilders(summary) {
-  var buildMap = new Map();
-  for (var attempt of summary.attempts) {
-    for (var job of attempt.jobs.failed) {
-      var builderKey = job.master + ':' + job.builder;
-      if (!buildMap.has(builderKey)) {
-        buildMap.set(builderKey, {
-          name: job.builder,
-          master: job.master,
-          builds: [],
-        });
-      }
-      buildMap.get(builderKey).builds.push({
-        number: job.build_number,
-        slave: job.slave,
-        url: job.url,
-      });
-    }
-  }
-  var builders = [];
-  buildMap.forEach(function(builder) {
-    builders.push(builder);
-  });
-  builders.sort(function(builderA, builderB) {
-    return (builderA.name > builderB.name) * 2 - 1;
-  });
-  return builders;
-}
 
 })();
 </script>
