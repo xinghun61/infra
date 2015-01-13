@@ -377,6 +377,11 @@ class SettingsForm(forms.Form):
       required=False,
       label='Display experimental tryjob results')
 
+  send_from_email_addr = forms.BooleanField(
+      required=False,
+      help_text='Send notification emails from my email address.')
+
+
   def clean_nickname(self):
     nickname = self.cleaned_data.get('nickname')
     # Check for allowed characters
@@ -3397,9 +3402,13 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
     reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
     reply_to = ', '.join(reply_to)
+    if accounts[my_email].send_from_email_addr:
+      sender = my_email
+    else:
+      sender = django_settings.RIETVELD_INCOMING_MAIL_ADDRESS
 
     logging.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
-    send_args = {'sender': my_email,
+    send_args = {'sender': sender,
                  'to': [_encode_safely(address) for address in to],
                  'subject': _encode_safely(subject),
                  'body': _encode_safely(body),
@@ -3704,19 +3713,22 @@ def settings(request):
     default_context = account.default_context
     default_column_width = account.default_column_width
     default_tab_spaces = account.default_tab_spaces
-    form = SettingsForm(initial={'nickname': nickname,
-                                 'context': default_context,
-                                 'column_width': default_column_width,
-                                 'deprecated_ui': account.deprecated_ui,
-                                 'tab_spaces': default_tab_spaces,
-                                 'notify_by_email': account.notify_by_email,
-                                 'notify_by_chat': account.notify_by_chat,
-                                 'add_plus_role': account.add_plus_role,
-                                 'display_generated_msgs':
-                                     account.display_generated_msgs,
-                                 'display_exp_tryjob_results':
-                                     account.display_exp_tryjob_results,
-                                 })
+    form = SettingsForm(initial={
+        'nickname': nickname,
+        'context': default_context,
+        'column_width': default_column_width,
+        'deprecated_ui': account.deprecated_ui,
+        'tab_spaces': default_tab_spaces,
+        'notify_by_email': account.notify_by_email,
+        'notify_by_chat': account.notify_by_chat,
+        'add_plus_role': account.add_plus_role,
+        'display_generated_msgs':
+            account.display_generated_msgs,
+        'display_exp_tryjob_results':
+            account.display_exp_tryjob_results,
+        'send_from_email_addr': account.send_from_email_addr,
+        })
+
     chat_status = None
     if account.notify_by_chat:
       chat_status = notify_xmpp.get_chat_status(account)
@@ -3738,6 +3750,8 @@ def settings(request):
         'display_generated_msgs')
     account.display_exp_tryjob_results = form.cleaned_data.get(
         'display_exp_tryjob_results')
+    account.send_from_email_addr = form.cleaned_data.get('send_from_email_addr')
+
     account.fresh = False
     account.put()
     if must_invite:

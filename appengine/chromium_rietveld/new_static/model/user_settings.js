@@ -12,6 +12,7 @@ function UserSettings()
     this.tabSpaces = 0;
     this.notifyByChat = false;
     this.deprecatedUi = false;
+    this.sendFromEmailAddr = true;
 }
 
 UserSettings.DETAIL_URL = "scrape/settings";
@@ -23,6 +24,7 @@ UserSettings.FIELD_NAME_MAP = {
     "column_width": "columnWidth",
     "tab_spaces": "tabSpaces",
     "context": "context",
+    "send_from_email_address": "sendFromEmailAddr",
 };
 
 UserSettings.prototype.loadDetails = function()
@@ -57,6 +59,10 @@ UserSettings.prototype.parseDocument = function(doc)
     var deprecatedUi = doc.getElementById("id_deprecated_ui");
     if (deprecatedUi)
         this.deprecatedUi = deprecatedUi.checked;
+
+    var sendFromEmailAddr = doc.getElementById("id_send_from_email_addr");
+    if (sendFromEmailAddr)
+        this.sendFromEmailAddr = sendFromEmailAddr.checked;
 };
 
 UserSettings.prototype.save = function()
@@ -91,6 +97,7 @@ UserSettings.prototype.createSaveData = function()
             column_width: settings.columnWidth,
             tab_spaces: settings.tabSpaces,
             context: settings.context,
+            send_from_email_addr: settings.sendFormData,
         };
     });
 };

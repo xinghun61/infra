@@ -1219,6 +1219,13 @@ class Account(ndb.Model):
   # if available by default.
   display_exp_tryjob_results = ndb.BooleanProperty(default=False)
 
+  # Users typically trigger notification emails that are sent from
+  # the user's email address.  However, some legitimate users have
+  # email addresses at domains that are often abused by spammers,
+  # causing their notifications to be classified as spamm.  So,
+  # such users can opt to send from reply@ instead.
+  send_from_email_addr = ndb.BooleanProperty(default=True)
+
   @classmethod
   def get_id_for_email(cls, email):
     return '<%s>' % email

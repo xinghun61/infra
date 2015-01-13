@@ -58,6 +58,14 @@ found in the LICENSE file. -->
                     <div class="form-error">{{ errors.deprecatedUi }}</div>
                 </div>
             </div>
+            <div class="form-row">
+                <label class="form-label" for="sendFromEmailAddr">Send from my address</label>
+                <div class="form-field">
+                    <input type="checkbox" id="sendFromEmailAddr" checked="{{ settings.sendFromEmailAddr }}" class="{{ {invalid: errors.sendFromEmailAddr} | tokenList }}">
+		    Use my email address in the From: line of notification emails that I send.
+                    <div class="form-error">{{ errors.sendFromEmailAddr }}</div>
+                </div>
+            </div>
         </fieldset>
     </template>
     <script>
