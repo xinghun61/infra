@@ -31,7 +31,10 @@ var loader = loader || {};
 
 (function() {
 
-var TEST_RESULTS_SERVER = 'http://test-results.appspot.com/';
+// Avoid protocol-relative URL to avoid upsetting file:// URLs more than
+// necessary.
+var TEST_RESULTS_PROTOCOL = (location.protocol == 'https:') ? 'https:' : 'http:';
+var TEST_RESULTS_SERVER = TEST_RESULTS_PROTOCOL + '//test-results.appspot.com/';
 
 function pathToBuilderResultsFile(builder) {
     return TEST_RESULTS_SERVER + 'testfile?builder=' + builder.builderName +

@@ -80,7 +80,7 @@ loadfailures._htmlForBuilder = function(builder, testType)
 {
     return '<tr class="builder">' +
         '<td>' + builder.key() +
-        '<td><a href="http://test-results.appspot.com/testfile?testtype=' +
+        '<td><a href="https://test-results.appspot.com/testfile?testtype=' +
             testType + '&builder=' + builder.builderName + '&master=' + builder.masterName + '">uploaded results</a>' +
         '<td><a href="' + builder.master().builderPath(builder.builderName) + '">buildbot</a>' +
     '</tr>';
@@ -120,7 +120,7 @@ loadfailures._html = function(failureData)
         var noBuildersHtml = testTypesWithNoSuccessfullLoads.indexOf(testType) != -1 ? '<b>No builders with up to date results.</b>' : '';
 
         html += '<tr>' +
-            '<td><a href="http://test-results.appspot.com/testfile?name=results.json&testtype=' + testType + '" target=_blank>' +
+            '<td><a href="https://test-results.appspot.com/testfile?name=results.json&testtype=' + testType + '" target=_blank>' +
                 testType +
             '</a></td>' +
             '<td>' + noBuildersHtml + '<table>' + failureHtml + '</table></td>' +

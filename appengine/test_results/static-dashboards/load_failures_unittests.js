@@ -12,7 +12,7 @@ test('htmlForBuilder', 1, function() {
 
     equal(html, '<tr class="builder">' +
         '<td>mock.master:Builder1' +
-        '<td><a href="http://test-results.appspot.com/testfile?testtype=layout-tests&builder=Builder1&master=mock.master">uploaded results</a>' +
+        '<td><a href="https://test-results.appspot.com/testfile?testtype=layout-tests&builder=Builder1&master=mock.master">uploaded results</a>' +
         '<td><a href="http://build.chromium.org/p/mock.master/builders/Builder1">buildbot</a>' +
     '</tr>');
 });
