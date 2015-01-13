@@ -55,7 +55,6 @@ DEFAULT_MASTER = [
     'client.chromeoffice',
     'client.v8',
     'tryserver.blink',
-    'tryserver.chromium',
     'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
@@ -80,6 +79,17 @@ PRUNE_CONFIG = [
     (datetime.timedelta(hours=24), datetime.timedelta(minutes=30)),
     # Points older than 7 days have 3 hr resolutions.
     (datetime.timedelta(days=7), datetime.timedelta(hours=3)),
+]
+
+# We whitelist these graphs to enable pruning so that we can view more
+# historical data.
+WHITELIST_FOR_PRUNING = [
+    'tryserver.blink',
+    'tryserver.chromium.gpu',
+    'tryserver.chromium.linux',
+    'tryserver.chromium.mac',
+    'tryserver.chromium.win',
+    'tryserver.v8',
 ]
 
 
@@ -684,8 +694,21 @@ class UpdateAll(webapp2.RequestHandler):
     taskqueue.add(url='/tasks/update_cq')
 
 
+class UpdatePrune(webapp2.RequestHandler):
+  def get(self):
+    """Update graph pruning jobs."""
+    for graph in GraphModel.query().fetch():
+      for tag in graph.tags:
+        if tag in WHITELIST_FOR_PRUNING:
+          url = '/tasks/prune_graph/%s' % graph.key.id()
+          logging.debug('Adding %s' % url)
+          taskqueue.add(url=url, queue_name='graphs')
+          break
+
+
 app = webapp2.WSGIApplication([
     ('/tasks/update_all', UpdateAll),
+    ('/tasks/update_prune', UpdatePrune),
 
     ('/tasks/update_cq', UpdateCQ),
     ('/tasks/prune_graph/(.+)', PruneGraph),
