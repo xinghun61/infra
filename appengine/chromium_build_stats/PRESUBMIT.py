@@ -97,7 +97,9 @@ def CommonChecks(input_api, output_api):
   results += input_api.canned_checks.CheckChangeHasDescription(
       input_api, output_api)
   results += CheckChangeGoFmtClean(input_api, output_api)
-  results += CheckGo('vet', input_api, output_api)
+  # disable vet due to sdk error
+  # https://code.google.com/p/googleappengine/issues/detail?id=11401
+  # results += CheckGo('vet', input_api, output_api)
   results += CheckGo('build', input_api, output_api)
   results += CheckGo('test', input_api, output_api)
   results += input_api.canned_checks.CheckChangeHasNoCrAndHasOnlyOneEol(
