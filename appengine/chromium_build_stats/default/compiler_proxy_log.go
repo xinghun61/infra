@@ -216,7 +216,7 @@ func compilerProxyLogSummary(w http.ResponseWriter, logPath string, cpl *compile
 				D time.Duration
 			}{
 				P: p,
-				D: tasks[int(float64(len(tasks)*p)/100.0)].Duration(),
+				D: tasks[int(float64(len(tasks)*(100-p))/100.0)].Duration(),
 			})
 		}
 		bcm.Min = tasks[len(tasks)-1].Duration()
