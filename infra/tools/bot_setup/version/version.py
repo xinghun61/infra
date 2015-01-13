@@ -29,7 +29,7 @@ def get_version(slave_name=None, _image_name=None):
     raise BuilderDisabled()
   if slave_name in ['slave%d-c7' % index for index in xrange(10, 20)]:
     # Experimental slaves with internal DEPS support
-    return '321ec92c62bf1e0d35e6c736f53374f32bef9b92'
+    return '78edf274b11dc370c0284717b55afb42323873c5'
   if not slave_name or slave_name in CANARY_SLAVES:
     return 'origin/master'
   return LKGR
