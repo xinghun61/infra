@@ -38,6 +38,11 @@ deps = {
      "google-api-python-client.git"
      "@49d45a6c3318b75e551c3022020f46c78655f365"),
 
+  "infra/appengine/third_party/trace-viewer":
+    ("https://chromium.googlesource.com/external/"
+     "trace-viewer.git"
+     '@' + '76a4496033c164d8be9ee8c57f702b0859cb1911'),
+
   ## external deps
   # v1.11.6
   "infra/bootstrap/virtualenv":

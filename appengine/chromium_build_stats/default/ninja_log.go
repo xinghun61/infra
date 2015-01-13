@@ -23,6 +23,7 @@ import (
 
 	"chromegomalog"
 	"ninjalog"
+	"ninjalog/traceviewer"
 )
 
 type outputFunc func(http.ResponseWriter, string, *ninjalog.NinjaLog) error
@@ -33,6 +34,7 @@ var (
 		"table":         outputFunc(table),
 		"metadata.json": outputFunc(metadataJSON),
 		"trace.json":    outputFunc(traceJSON),
+		"trace.html":    outputFunc(traceHTML),
 	}
 
 	// chromegomalog.URL(path) won't be accessible by user.
@@ -42,13 +44,12 @@ var (
  <title>{{.Path}}</title>
 </head>
 <body>
-<h1>{{.Path}}</h1>
+<h1><a href="/file/{{.Path}}">{{.Path}}</a></h1>
 <ul>
- <li><a href="/file/{{.Path}}">original file</a>
  <li><a href="{{.Filename}}/lastbuild">.ninja_log</a>
  <li><a href="{{.Filename}}/table">.ninja_log in table format</a>
  <li><a href="{{.Filename}}/metadata.json">metadata.json</a>
- <li><a href="{{.Filename}}/trace.json">trace.json</a>
+ <li><a href="{{.Filename}}/trace.html">trace viewer</a> [<a href="{{.Filename}}/trace.json">trace.json</a>]
 </ul>
 </body>
 </html>
@@ -87,6 +88,8 @@ Exit:{{.Metadata.Exit}}
 </table>
 </html>
 `))
+
+	traceViewerTmpl = traceviewer.Must(traceviewer.Parse("tmpl/trace-viewer.html"))
 )
 
 func init() {
@@ -203,5 +206,19 @@ func traceJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) er
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(js)
+	return err
+}
+
+func traceHTML(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
+	steps := ninjalog.Dedup(njl.Steps)
+	flow := ninjalog.Flow(steps)
+	traces := ninjalog.ToTraces(flow, 1)
+	b, err := traceViewerTmpl.HTML(logPath, traces)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(b)
 	return err
 }

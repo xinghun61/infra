@@ -7,6 +7,9 @@ default module
 
 How to:
 
+ to generate trace-viewer contents
+  $ ./gen-trace-viewer.sh
+
  to compile
    $ cd default; ../goenv.sh goapp build
 
