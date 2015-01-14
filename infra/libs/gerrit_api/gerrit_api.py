@@ -14,6 +14,7 @@ import requests_cache
 import stat
 import sys
 import time
+import urllib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class Gerrit(object):  # pragma: no cover
   """Wrapper around a single Gerrit host.
 
   Args:
-    host (str): gerrit host name
+    host (str): gerrit host name.
     netrc_path (str): path to local netrc file. Is None, default location for
       the current OS is used.
     throttle_delay_sec (int): minimal time delay between two requests, to
@@ -158,7 +159,7 @@ class Gerrit(object):  # pragma: no cover
     """Sets account state to 'active'.
 
     Args:
-      account_id (str): account to update
+      account_id (str): account to update.
 
     Raises:
       UnexpectedResponseException: if gerrit does not answer as expected.
@@ -168,6 +169,67 @@ class Gerrit(object):  # pragma: no cover
     code, body = self._request(
         method='PUT',
         url='/accounts/%s/active' % account_id)
+    if code not in (200, 201):
+      raise UnexpectedResponseException(code, body)
+
+  def get_projects(self, prefix=''):
+    """Returns list of projects with names starting with a prefix.
+
+    Args:
+      prefix (str): optional project name prefix to limit the listing to.
+
+    Returns:
+      Dict <project name> -> {'state': 'ACTIVE', 'parent': 'All-Projects'}
+
+    Raises:
+      UnexpectedResponseException: if gerrit does not answer as expected.
+    """
+    code, body = self._request(
+        method='GET',
+        url='/projects/?p=%s&t' % urllib.quote(prefix, safe=''))
+    if code not in (200, 201):
+      raise UnexpectedResponseException(code, body)
+    return body
+
+  def get_project_parent(self, project):
+    """Retrieves the name of a project's parent project.
+
+    Returns None If |project| is not registered on Gerrit or doesn't have
+    a parent (like 'All-Projects').
+
+    Args:
+      project (str): project to query.
+
+    Raises:
+      UnexpectedResponseException: if gerrit does not answer as expected.
+    """
+    code, body = self._request(
+        method='GET',
+        url='/projects/%s/parent' % urllib.quote(project, safe=''))
+    if code == 404:
+      return None
+    if code not in (200, 201):
+      raise UnexpectedResponseException(code, body)
+    assert isinstance(body, unicode)
+    return body if body else None
+
+  def set_project_parent(self, project, parent, commit_message=None):
+    """Changes project's parent project.
+
+    Args:
+      project (str): project to change.
+      parent (str): parent to set.
+      commit_message (str): message for corresponding refs/meta/config commit.
+
+    Raises:
+      UnexpectedResponseException: if gerrit does not answer as expected.
+    """
+    commit_message = (
+        commit_message or ('Changing parent project to %s' % parent))
+    code, body = self._request(
+        method='PUT',
+        url='/projects/%s/parent' % urllib.quote(project, safe=''),
+        body={'parent': parent, 'commit_message': commit_message})
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
 
