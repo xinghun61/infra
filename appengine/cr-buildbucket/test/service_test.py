@@ -214,6 +214,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.assertTrue(all(b not in second_page for b in first_page))
 
+  def test_peek_with_bad_cursor(self):
+    self.put_many_builds()
+    with self.assertRaises(service.InvalidInputError):
+      self.service.peek(buckets=[self.test_build.bucket], start_cursor='abc')
+
   def test_peek_with_auth_error(self):
     self.mock_cannot('peek_bucket')
     self.test_build.put()

@@ -11,6 +11,7 @@ import urlparse
 from components import auth
 from components import utils
 from google.appengine.api import taskqueue
+from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 import acl
@@ -161,11 +162,16 @@ class BuildBucketService(object):
   def _fetch_page(self, query, page_size, start_cursor, predicate=None):
     assert query
     assert isinstance(page_size, int)
-    assert start_cursor is None or isinstance(start_cursor, str)
+    assert start_cursor is None or isinstance(start_cursor, basestring)
 
     curs = None
     if start_cursor:
-      curs = ndb.Cursor(urlsafe=start_cursor)
+      try:
+        curs = ndb.Cursor(urlsafe=start_cursor)
+      except db.BadValueError as ex:
+        msg = 'Bad cursor "%s": %s' % (start_cursor, ex)
+        logging.warning(msg)
+        raise InvalidInputError(msg)
 
     query_iter = query.iter(start_cursor=curs, produce_cursors=True)
     entities = []
