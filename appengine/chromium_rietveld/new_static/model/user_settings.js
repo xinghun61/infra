@@ -97,7 +97,7 @@ UserSettings.prototype.createSaveData = function()
             column_width: settings.columnWidth,
             tab_spaces: settings.tabSpaces,
             context: settings.context,
-            send_from_email_addr: settings.sendFormData,
+            send_from_email_addr: settings.sendFromEmailAddr,
         };
     });
 };
