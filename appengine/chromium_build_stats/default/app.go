@@ -6,10 +6,15 @@
 package chromiumbuildstats
 
 import (
+	"bufio"
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
+
+	"appengine"
+	"appengine/urlfetch"
 )
 
 const (
@@ -19,7 +24,7 @@ const (
 <body>
 <h1>chromium-build-stats</h1>
 <form action="/">
-<label for="gsuri">gs URI:</label><input type="text" name="gsuri" />
+<label for="loc">compile step URL or gs URI:</label><input type="text" name="loc" />
 <input type="submit" value="submit"><input type="reset">
 </form>
 
@@ -30,17 +35,44 @@ See <a href="https://docs.google.com/a/chromium.org/document/d/16TdPTIIZbtAarXZI
 `
 )
 
+var ninjaLogRE = regexp.MustCompile(`gs://chrome-goma-log/.*/ninja_log.*\.gz`)
+
 func init() {
 	http.HandleFunc("/", handler)
-
 }
 
 func handler(w http.ResponseWriter, req *http.Request) {
-	gsuri := req.FormValue("gsuri")
-	if gsuri != "" {
-		if strings.HasPrefix(gsuri, "gs://chrome-goma-log") {
-			logPath := strings.TrimPrefix(gsuri, "gs://chrome-goma-log")
-			basename := path.Base(gsuri)
+	loc := req.FormValue("loc")
+	if loc != "" {
+		if strings.HasPrefix(loc, "http://build.chromium.org/") {
+			ctx := appengine.NewContext(req)
+			client := urlfetch.Client(ctx)
+			resp, err := client.Get(loc)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != 200 {
+				http.Error(w, fmt.Sprintf("%s reply %s", loc, resp.Status), resp.StatusCode)
+				return
+			}
+			s := bufio.NewScanner(resp.Body)
+			for s.Scan() {
+				if m := ninjaLogRE.Find(s.Bytes()); m != nil {
+					loc = string(m)
+					break
+				}
+			}
+			if err := s.Err(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if strings.HasPrefix(loc, "gs://chrome-goma-log") {
+			logPath := strings.TrimPrefix(loc, "gs://chrome-goma-log")
+			basename := path.Base(loc)
 			switch {
 			case strings.HasPrefix(basename, "ninja_log."):
 				http.Redirect(w, req, "/ninja_log"+logPath, http.StatusSeeOther)
