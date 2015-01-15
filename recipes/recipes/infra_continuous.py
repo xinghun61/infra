@@ -16,19 +16,18 @@ DEPS = [
 
 
 def GenSteps(api):
-  # FIXME: Much of this code (bot_update, get upstream and commit patch so
-  # presubmit_support doesn't freak out, run presubmit) is copied directly from
-  # the run_presubmit.py recipe. We should instead share code!
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
 
   with api.step.defer_results():
-    api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
+    api.python('infra python tests',
+               'test.py', ['test'], cwd=api.path['checkout'])
     # Note: env.py knows how to expand 'python' into sys.executable.
-    api.python(
-      'go test.py', api.path['checkout'].join('go', 'env.py'),
-      ['python', api.path['checkout'].join('go', 'test.py')])
+    api.python('infra go tests', api.path['checkout'].join('go', 'env.py'),
+               ['python', api.path['checkout'].join('go', 'test.py')])
+    api.step('build tests', ['git', 'cl', 'presubmit', '--force'],
+             cwd=api.path['slave_build'].join('build'))
 
 
 def GenTests(api):
