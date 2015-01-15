@@ -37,7 +37,7 @@ def main():
   if re.match(r'^swarm.*', slave_name):
     swarming.start(slave_name, root_dir)
   else:
-    chrome.start(root_dir, depot_tools, password_file)
+    chrome.start(root_dir, depot_tools, password_file, slave_name)
 
 
 
