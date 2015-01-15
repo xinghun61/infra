@@ -54,7 +54,7 @@ class TryPatchSetForm(forms.Form):
   clobber = forms.BooleanField(required=False)
   master = forms.CharField(max_length=255, required=False)
   builders = forms.CharField(max_length=16*1024)
-  category = forms.CharField(max_length=255)
+  category = forms.CharField(max_length=255, required=False)
 
 
 class TryserversForm(forms.Form):
