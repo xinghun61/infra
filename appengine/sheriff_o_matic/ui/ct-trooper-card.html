@@ -96,6 +96,23 @@ found in the LICENSE file.
               }
             ]};
           break;
+        case 'cq_false_rejection':
+          this.table = {
+            labels: ["Hourly", "Weekly"],
+            datasets: [
+              {
+                title: 'Limit',
+                fillColor: 'grey',
+                data: [this.group.data.hourly_max, this.group.data.weekly_max]
+              },
+              {
+                title: 'Actual',
+                fillColor: [this.group.data.hourly > this.group.data.hourly_max ? 'red' : 'green',
+                    this.group.data.weekly > this.group.data.weekly_max ? 'red' : 'green'],
+                data: [this.group.data.hourly, this.group.data.weekly]
+              }
+           ]};
+          break;
         default:
           console.error('unknown trooper error type');
           return;
