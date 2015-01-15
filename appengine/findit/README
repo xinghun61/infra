@@ -1,0 +1,21 @@
+# Assumption
+
+Infra repo is checked out into SRC_ROOT (eg., /b/chromium).
+Google Appengine SDK is checked out to $SRC_ROOT/google_appengine automatically.
+
+# How to run Findit locally?
+
+From command line, run:
+  cd $SRC_ROOT/infra/appengine/findit
+  $SRC_ROOT/google_appengine/dev_appserver.py .
+
+Then open http://localhost:8080 for the home page.
+
+# How to run test for Findit?
+
+From command line, run:
+  cd $SRC_ROOT/infra
+  python test.py test --html-report /tmp/coverage appengine/findit
+
+If a branch is not tested and no line number is shown in the command line
+output, you could open file:///tmp/coverage/index.html to check.
