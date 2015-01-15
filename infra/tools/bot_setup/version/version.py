@@ -27,7 +27,7 @@ class BuilderDisabled(Exception):
 def get_version(slave_name=None, _image_name=None):
   if slave_name and slave_name in DISABLED_BUILDERS:
     raise BuilderDisabled()
-  if slave_name in ['slave%d-c7' % index for index in xrange(10, 20)]:
+  if slave_name in ['slave%d-c7' % index for index in xrange(30)]:
     # Experimental slaves with internal DEPS support
     return '78edf274b11dc370c0284717b55afb42323873c5'
   if not slave_name or slave_name in CANARY_SLAVES:
