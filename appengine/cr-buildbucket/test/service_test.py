@@ -369,7 +369,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(self.test_build.status, model.BuildStatus.STARTED)
     self.assertEqual(self.test_build.url, 'http://localhost')
 
-  def test_start_is_idempotent(self):
+  def test_start_started_build(self):
     self.lease()
     build_id = self.test_build.key.id()
     lease_key = self.test_build.lease_key
@@ -377,9 +377,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.service.start(build_id, lease_key, url)
     self.service.start(build_id, lease_key, url)
-
-    with self.assertRaises(service.InvalidBuildStateError):
-      self.service.start(build_id, lease_key, url + '/1')
+    self.service.start(build_id, lease_key, url + '1')
 
   def test_start_non_leased_build(self):
     self.test_build.put()

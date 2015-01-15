@@ -378,9 +378,10 @@ class BuildBucketService(object):
     build = self._get_leasable_build(build_id)
 
     if build.status == model.BuildStatus.STARTED:
-      if build.url == url:
-        return build
-      raise InvalidBuildStateError('Build %s is already started' % build_id)
+      if build.url != url:
+        build.url = url
+        build.put()
+      return build
     elif build.status == model.BuildStatus.COMPLETED:
       raise BuildIsCompletedError('Cannot start a compelted build')
     assert build.status == model.BuildStatus.SCHEDULED
