@@ -1,0 +1,11 @@
+{
+  "name": "Sheriff-O-Matic",
+  "short_name": "Sheriff-O-Matic",
+  "icons": [{
+    "src": "favicon.ico",
+    "sizes": "16x16"
+  }],
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
+}
