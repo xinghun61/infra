@@ -164,6 +164,119 @@ CQ_PATCHSET_RESPONSES = [
 ]
 
 
+CQ_BLINK_HOURLY_FALSE_REJECTION_RESPONSE = {
+    'results': [
+        {
+            'begin': 1421373600.0,
+            'end': 1421377200.0,
+            'interval_minutes': 60,
+            'key': 4910980345626624,
+            'project': 'blink',
+            'stats': [
+                {
+                    'count': 0,
+                    'description': ('Number of patchsets rejected by the '
+                                    'trybots that eventually passed.'),
+                    'name': 'patchset-false-reject-count',
+                    'type': 'count'
+                },
+                {
+                    'count': 3,
+                    'description': 'Number of CQ attempts made.',
+                    'name': 'attempt-count',
+                    'type': 'count'
+                }
+            ]
+        }
+    ]
+}
+
+
+CQ_BLINK_WEEKLY_FALSE_REJECTION_RESPONSE = {
+    'results': [
+        {
+            'begin': 1420444800.0,
+            'end': 1421049600.0,
+            'interval_minutes': 10080,
+            'key': 6288129061289984,
+            'project': 'blink',
+            'stats': [
+                {
+                    'count': 158,
+                    'description': ('Number of patchsets rejected by the '
+                                    'trybots that eventually passed.'),
+                    'name': 'patchset-false-reject-count',
+                    'type': 'count'
+                },
+                {
+                    'count': 608,
+                    'description': 'Number of CQ attempts made.',
+                    'name': 'attempt-count',
+                    'type': 'count'
+                }
+            ]
+        }
+    ]
+}
+
+
+
+CQ_CHROMIUM_HOURLY_FALSE_REJECTION_RESPONSE = {
+    'results': [
+        {
+            'begin': 1421373600.0,
+            'end': 1421377200.0,
+            'interval_minutes': 60,
+            'key': 5073502444978176,
+            'project': 'chromium',
+            'stats': [
+                {
+                    'count': 3,
+                    'description': ('Number of patchsets rejected by the '
+                                    'trybots that eventually passed.'),
+                    'name': 'patchset-false-reject-count',
+                    'type': 'count'
+                },
+                {
+                    'count': 15,
+                    'description': 'Number of CQ attempts made.',
+                    'name': 'attempt-count',
+                    'type': 'count'
+                }
+            ]
+        }
+    ]
+}
+
+
+CQ_CHROMIUM_WEEKLY_FALSE_REJECTION_RESPONSE = {
+    'results': [
+        {
+            'begin': 1420444800.0,
+            'end': 1421049600.0,
+            'interval_minutes': 10080,
+            'key': 5665442689449984,
+            'project': 'chromium',
+            'stats': [
+                {
+                    'count': 346,
+                    'description': ('Number of patchsets rejected by the '
+                                    'trybots that eventually passed.'),
+                    'name': 'patchset-false-reject-count',
+                    'type': 'count'
+                },
+                {
+                    'count': 1678,
+                    'description': 'Number of CQ attempts made.',
+                    'name': 'attempt-count',
+                    'type': 'count'
+                }
+            ]
+        }
+    ]
+}
+
+
 CHROMIUM_MASTER_TREE = {
     'step_records': [{
         # Ignored -- generated too long ago
@@ -336,5 +449,29 @@ URLFETCH_RESPONSES = {
      'endTime=1388318400&limit=1000'): {
          'statuscode': 200,
          'content': json.dumps(CHROMIUM_TREE_DATA),
-     }
+     },
+    ('https://chromium-cq-status.appspot.com/stats/query?project=blink&'
+     'names=patchset-false-reject-count,attempt-count&interval_minutes=60&'
+     'count=1'): {
+         'statuscode': 200,
+         'content': json.dumps(CQ_BLINK_HOURLY_FALSE_REJECTION_RESPONSE),
+     },
+    ('https://chromium-cq-status.appspot.com/stats/query?project=blink&'
+     'names=patchset-false-reject-count,attempt-count&interval_minutes=10080&'
+     'count=1'): {
+         'statuscode': 200,
+         'content': json.dumps(CQ_BLINK_WEEKLY_FALSE_REJECTION_RESPONSE),
+     },
+    ('https://chromium-cq-status.appspot.com/stats/query?project=chromium&'
+     'names=patchset-false-reject-count,attempt-count&interval_minutes=60&'
+     'count=1'): {
+         'statuscode': 200,
+         'content': json.dumps(CQ_CHROMIUM_HOURLY_FALSE_REJECTION_RESPONSE),
+     },
+    ('https://chromium-cq-status.appspot.com/stats/query?project=chromium&'
+     'names=patchset-false-reject-count,attempt-count&interval_minutes=10080&'
+     'count=1'): {
+         'statuscode': 200,
+         'content': json.dumps(CQ_CHROMIUM_WEEKLY_FALSE_REJECTION_RESPONSE),
+     },
 }

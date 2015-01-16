@@ -34,6 +34,34 @@ def GetTreeStatusDict(project): # pragma: no cover
               project.id()),
   }
 
+def GetCqFalseRejectionDict(project): # pragma: no cover
+  stat = models.FalseRejectionSLOOffender.query(ancestor=project).order(
+      -models.FalseRejectionSLOOffender.generated).get()
+  if not stat:
+    return {}
+  return {
+    'details': ('CQ false rejection was %.2f%% in the last hour and %.2f%% in '
+                'the last week (must be less than %.2f%% hourly and %.2f%% '
+                'weekly)' % (
+                   stat.hourly,
+                   stat.weekly,
+                   stat.slo_hourly_max,
+                   stat.slo_weekly_max,
+                )),
+    'hourly': stat.hourly,
+    'hourly_attempts': stat.hourly_patchset_attempts,
+    'hourly_rejections': stat.hourly_patchset_rejections,
+    'weekly': stat.weekly,
+    'weekly_attempts': stat.weekly_patchset_attempts,
+    'weekly_rejections': stat.weekly_patchset_rejections,
+    'hourly_max': stat.slo_hourly_max,
+    'weekly_max': stat.slo_weekly_max,
+    'should_alert': (
+        stat.hourly > stat.slo_hourly_max or stat.weekly > stat.slo_weekly_max),
+    'url': ('https://chromium-cq-status.appspot.com/stats/%s/hourly#'
+            'patchset-false-reject-count' % project.id()),
+  }
+
 def GetCqLatencyDict(project): # pragma: no cover
   stat = models.CqStat.query(ancestor=project).order(
       -models.CqStat.timestamp).get()
@@ -92,6 +120,8 @@ def UpdateJsonForProject(name, status_dict): # pragma: no cover
   status_dict.setdefault('tree_status', {})[name] = GetTreeStatusDict(project)
   status_dict.setdefault('cq_latency', {})[name] = GetCqLatencyDict(project)
   status_dict.setdefault('cycle_time', {})[name] = GetCycleTimeDict(tree)
+  status_dict.setdefault(
+      'cq_false_rejection', {})[name] = GetCqFalseRejectionDict(project)
 
 
 class AlertsHandler(webapp2.RequestHandler): # pragma: no cover

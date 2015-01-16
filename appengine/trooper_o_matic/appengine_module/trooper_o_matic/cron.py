@@ -40,6 +40,11 @@ class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
   patch_stop_list = ('http://chromium-cq-status.appspot.com/query/action='
                      'patch_stop/?begin=%d')
 
+  patch_false_rejection_count = ('https://chromium-cq-status.appspot.com/stats/'
+                                 'query?project=%s&names='
+                                 'patchset-false-reject-count,attempt-count&'
+                                 'interval_minutes=%d&count=1')
+
   pending_api_url = 'https://chromium-commit-queue.appspot.com/api/%s/pending'
 
   patchset_details = ('https://chromium-cq-status.appspot.com/query/'
@@ -57,6 +62,49 @@ class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
     stat.p90 = numpy.percentile(times, 90)
     stat.p95 = numpy.percentile(times, 95)
     stat.p99 = numpy.percentile(times, 99)
+
+  def calculate_false_rejections(self, project, project_model):
+    hourly_false_rejection_url = self.patch_false_rejection_count % (
+        project, 60)
+    weekly_false_rejection_url = self.patch_false_rejection_count % (
+        project, 10080)
+
+    logging.info(
+        'crawling hourly false rejections: %s' % hourly_false_rejection_url)
+    logging.info(
+        'crawling weekly false rejections: %s' % weekly_false_rejection_url)
+
+    hourly_result = json.loads(
+        urlfetch.fetch(url=hourly_false_rejection_url, deadline=60).content)
+    weekly_result = json.loads(
+        urlfetch.fetch(url=weekly_false_rejection_url, deadline=60).content)
+    if not hourly_result['results'] or not weekly_result['results']:
+      return
+    hourly_stat = hourly_result['results'][0]['stats']
+    weekly_stat = weekly_result['results'][0]['stats']
+
+    def item_grabber(item, item_list):
+      """ Get an item from the list of item-describing dicts."""
+      for item_dict in item_list:
+        if item_dict['name'] == item:
+          return item_dict['count']
+      return None
+
+    models.FalseRejectionSLOOffender(
+        parent=project_model.key,
+        hourly_patchset_attempts=item_grabber('attempt-count', hourly_stat),
+        hourly_patchset_rejections=item_grabber('patchset-false-reject-count',
+                                                hourly_stat),
+        weekly_patchset_attempts=item_grabber('attempt-count', weekly_stat),
+        weekly_patchset_rejections=item_grabber('patchset-false-reject-count',
+                                                weekly_stat),
+        hourly=(100.0 *
+            float(item_grabber('patchset-false-reject-count', hourly_stat)) /
+            float(item_grabber('attempt-count', hourly_stat) or 1)),
+        weekly=(100.0 *
+            float(item_grabber('patchset-false-reject-count', weekly_stat)) /
+            float(item_grabber( 'attempt-count', weekly_stat) or 1)),
+        ).put()
 
   def get(self):
     # We only care about the last hour.
@@ -87,6 +135,8 @@ class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
       # Ensure there is an ancestor for all the stats for this project.
       project_model = models.Project.get_or_insert(project)
       project_model.put()
+
+      self.calculate_false_rejections(project, project_model)
 
       # CQ exposes an API for its length.
       result = urlfetch.fetch(url=self.pending_api_url % project, deadline=60)

@@ -14,6 +14,12 @@ SLO_BUILDTIME_MAX = float(8 * 60 * 60)  # 480 minutes, lower when
 SLO_BUILDTIME_PER_BOT_MEDIAN = {}
 SLO_BUILDTIME_PER_BOT_MAX = {}
 
+# False rejection percentage limits, from 0.0 to 100.0.
+SLO_WEEKLY_FALSE_REJECTION_MAX = 15.0
+SLO_HOURLY_FALSE_REJECTION_MAX = 15.0
+
+BUILDTIME_PER_BOT_MAX = {}
+
 
 class Project(ndb.Model):
   pass
@@ -75,3 +81,15 @@ class BuildTimeStat(ndb.Model):
   num_builds = ndb.IntegerProperty()
   num_over_median_slo = ndb.IntegerProperty()
   num_over_max_slo = ndb.IntegerProperty()
+
+
+class FalseRejectionSLOOffender(EndpointsModel):
+  hourly_patchset_attempts = ndb.IntegerProperty()
+  hourly_patchset_rejections = ndb.IntegerProperty()
+  weekly_patchset_attempts = ndb.IntegerProperty()
+  weekly_patchset_rejections = ndb.IntegerProperty()
+  weekly = ndb.FloatProperty()  # From 0.0 to 100.0.
+  hourly = ndb.FloatProperty()  # From 0.0 to 100.0.
+  slo_weekly_max = ndb.FloatProperty(default=SLO_WEEKLY_FALSE_REJECTION_MAX)
+  slo_hourly_max = ndb.FloatProperty(default=SLO_HOURLY_FALSE_REJECTION_MAX)
+  generated = ndb.DateTimeProperty(auto_now_add=True)

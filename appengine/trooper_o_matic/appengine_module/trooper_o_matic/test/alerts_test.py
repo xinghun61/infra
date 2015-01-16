@@ -49,9 +49,30 @@ class AlertsTest(unittest.TestCase):
     models.CqStat(
         parent=chromium_project, p50=70, p90=200, length=10,
         timestamp=datetime.datetime.utcnow()-datetime.timedelta(hours=3)).put()
+    models.FalseRejectionSLOOffender(
+        parent=chromium_project,
+        hourly_patchset_rejections=5,
+        hourly_patchset_attempts=100,
+        weekly_patchset_rejections=5,
+        weekly_patchset_attempts=100,
+        weekly=5.0,
+        hourly=5.0,
+        slo_weekly_max=15.0,
+        slo_hourly_max=15.0,
+        generated=datetime.datetime.utcnow()-datetime.timedelta(hours=3)).put()
     # Should use this one
     models.CqStat(parent=chromium_project, p50=30, p90=190, length=5).put()
     models.CqStat(parent=blink_project, p50=70, p90=100, length=8).put()
+    models.FalseRejectionSLOOffender(
+        parent=chromium_project,
+        hourly_patchset_rejections=10,
+        hourly_patchset_attempts=100,
+        weekly_patchset_rejections=10,
+        weekly_patchset_attempts=100,
+        weekly=10.0,
+        hourly=10.0,
+        slo_weekly_max=5.0,
+        slo_hourly_max=15.0).put()
 
     models.BuildTimeStat(
         parent=chromium_tree, num_builds=30,
@@ -91,6 +112,13 @@ class AlertsTest(unittest.TestCase):
     self.assertEqual(True, data['cycle_time']['chromium']['should_alert'])
     self.assertEqual('1 builds over their max, 5 builds over their median',
                      data['cycle_time']['chromium']['details'])
+    self.assertIn('chromium', data['cq_false_rejection'])
+    self.assertEqual(True,
+                     data['cq_false_rejection']['chromium']['should_alert'])
+    self.assertEqual('CQ false rejection was 10.00% in the last hour and 10.00%'
+                     ' in the last week (must be less than 15.00% hourly and '
+                     '5.00% weekly)',
+                     data['cq_false_rejection']['chromium']['details'])
 
   def testAlertsExitCriteriaMet(self):
     chromium_project = models.Project(id='chromium').put()
@@ -101,9 +129,31 @@ class AlertsTest(unittest.TestCase):
     models.TreeOpenStat(
         num_days=7, percent_open=99.9, parent=chromium_project,
         timestamp=datetime.datetime.now() - datetime.timedelta(days=10)).put()
+    models.FalseRejectionSLOOffender(
+        parent=chromium_project,
+        hourly_patchset_rejections=80,
+        hourly_patchset_attempts=100,
+        weekly_patchset_rejections=80,
+        weekly_patchset_attempts=100,
+        weekly=80.0,
+        hourly=80.0,
+        slo_weekly_max=15.0,
+        slo_hourly_max=15.0,
+        generated=datetime.datetime.utcnow()-datetime.timedelta(hours=3)).put()
     # Should use this one
     models.TreeOpenStat(
         num_days=7, percent_open=90, parent=chromium_project).put()
+    models.FalseRejectionSLOOffender(
+        parent=chromium_project,
+        hourly_patchset_rejections=10,
+        hourly_patchset_attempts=100,
+        weekly_patchset_rejections=10,
+        weekly_patchset_attempts=100,
+        weekly=10.0,
+        hourly=10.0,
+        slo_weekly_max=15.0,
+        slo_hourly_max=15.0,
+        generated=datetime.datetime.utcnow()-datetime.timedelta(hours=3)).put()
     # Should use this for blink.
     models.TreeOpenStat(num_days=7, percent_open=99, parent=blink_project).put()
 
@@ -134,6 +184,9 @@ class AlertsTest(unittest.TestCase):
     self.assertEqual(False, data['cycle_time']['blink']['should_alert'])
     self.assertIn('chromium', data['cycle_time'])
     self.assertEqual(False, data['cycle_time']['chromium']['should_alert'])
+    self.assertIn('chromium', data['cq_false_rejection'])
+    self.assertEqual(False,
+                     data['cq_false_rejection']['chromium']['should_alert'])
 
 
 if __name__ == '__main__':
