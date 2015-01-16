@@ -46,3 +46,9 @@ indexes:
   - name: tree
   - name: generated
     direction: desc
+
+- kind: FalseRejectionSLOOffender
+  ancestor: yes
+  properties:
+  - name: generated
+    direction: desc
