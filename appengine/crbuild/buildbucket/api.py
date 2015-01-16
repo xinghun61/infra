@@ -298,7 +298,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(HeartbeatRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/heartbeat', http_method='POST')
-  def hearbeat(self, request):
+  def heartbeat(self, request):
     """Updates build lease."""
     build = self.service.heartbeat(
         request.id, request.lease_key,

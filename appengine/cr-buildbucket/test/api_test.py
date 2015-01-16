@@ -237,7 +237,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         'lease_key': 42,
         'lease_expiration_ts': self.future_ts,
     }
-    res = self.call_api('hearbeat', req).json_body
+    res = self.call_api('heartbeat', req).json_body
     self.service.heartbeat.assert_called_once_with(
         req['id'], req['lease_key'], self.future_date)
     self.assertEqual(int(res['build']['id']), req['id'])
