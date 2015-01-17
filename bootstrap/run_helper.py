@@ -25,6 +25,7 @@ def boot_venv(script, env_path):
     python = os.path.join(env_path, 'bin', 'python')
     if os.path.exists(python):
       os.environ[RUN_PY_RECURSION_BLOCKER] = "1"
+      os.environ.pop('PYTHONPATH', None)
       os.execv(python, [python, script] + sys.argv[1:])
       print >> sys.stderr, "Exec is busted :("
       sys.exit(-1)  # should never reach
