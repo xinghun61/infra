@@ -5,7 +5,11 @@
   {% endif %}
 {%- endmacro %}
 <html>
-    <head><title>Code Yellow Status</title></head>
+    <head>
+      <title>Code Yellow Status</title>
+      <script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+      <link rel="import" href="../lib/analytics.html">
+    </head>
     <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
     <style>
       body {
@@ -78,5 +82,6 @@
             {% endif %}
           </tr>
       </table>
+      <script> new Analytics('UA-55762617-7'); </script>
     </body>
 </html>

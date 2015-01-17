@@ -7,6 +7,8 @@
     <title>{{ tree }} Tree Status</title>
     <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
     <script type='text/javascript' src='//www.google.com/jsapi'></script>
+    <script src="/bower_components/webcomponentsjs/webcomponents.js"></script>
+    <link rel="import" href="../lib/analytics.html">
     <script>
       var BUILD_DATA = {{ builds|safe }};
       var OFFENDER_DATA = {{ offenders|safe }};
@@ -113,5 +115,6 @@
         chart.draw(dataTable, options);
       }
     </script>
+    <script> new Analytics('UA-55762617-7'); </script>
   </body>
 </html>

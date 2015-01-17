@@ -8,6 +8,7 @@
     <link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en' rel='stylesheet' type='text/css'>
     <script src="../bower_components/webcomponentsjs/webcomponents.js"></script>
     <script src="../bower_components/sugar/release/sugar.min.js"></script>
+    <link rel="import" href="../lib/analytics.html">
     <link rel="import" href="../ui/build-table.html">
     <script>
       var BUILD_DATA = {{ builds|safe }};
@@ -27,5 +28,6 @@
       el.builds = BUILD_DATA;
       document.body.appendChild(el);
     </script>
+  <script> new Analytics('UA-55762617-7'); </script>
   </body>
 </html>
