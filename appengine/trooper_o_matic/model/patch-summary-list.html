@@ -10,11 +10,45 @@ found in the LICENSE file.
 (function() {
 
 this.PatchSummaryList = function PatchSummaryList(unit) {
-  this.begin = null;
-  this.end = null;
-  this.list = [];
+  this.graphInterval = {
+    begin: null,
+    end: null,
+  };
+  this.dataInterval = {
+    begin: null,
+    end: null,
+  };
   this.unit = unit;
+
+  this._list = [];
 };
+
+PatchSummaryList.prototype.set = function(begin, end, patchSummaries) {
+  this.graphInterval = {
+    begin: begin,
+    end: end,
+  };
+  this.dataInterval = {
+    begin: begin,
+    end: end,
+  };
+  this._list = patchSummaries;
+
+  for (var patchSummary of patchSummaries) {
+    patchSummary.list = this;
+    var self = this;
+    patchSummary.getSummary().then(function(summary) {
+      self.dataInterval.begin = Math.min(self.dataInterval.begin, summary.begin);
+      if (summary.end) {
+        self.dataInterval.end = Math.max(self.dataInterval.end, summary.end);
+      }
+    });
+  }
+}
+
+PatchSummaryList.prototype.clear = function() {
+  this._list = [];
+}
 
 PatchSummaryList.viewMenu = new MultiMenu(null, null, [
   new MultiMenu('jobs', 'Jobs', [
@@ -22,6 +56,10 @@ PatchSummaryList.viewMenu = new MultiMenu(null, null, [
     new MultiMenu('failed', 'Failed'),
     new MultiMenu('passed', 'Passed'),
     new MultiMenu('all', 'All'),
+  ]),
+  new MultiMenu('timeline', 'Attempts Timeline', [
+    new MultiMenu('graphInterval', 'Show Graph Interval'),
+    new MultiMenu('dataInterval', 'Show All Data'),
   ]),
   new MultiMenu('summary', 'Summary'),
 ]);

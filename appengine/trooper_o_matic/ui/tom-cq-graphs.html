@@ -14,6 +14,7 @@ found in the LICENSE file.
 <polymer-element name="tom-cq-graphs" attributes="project">
   <template>
     <h1>Commit Queue Status</h1>
+    Click on graph points for detailed information.
     <template repeat="{{ graph in graphList }}">
       <tom-cq-graph graph="{{ graph }}"></tom-cq-graph>
     </template>

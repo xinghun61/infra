@@ -18,8 +18,8 @@ found in the LICENSE file.
       <div class="list-box">
         <div class="list-header">
           <span class="header-title">Worst {{ model.unit }}</span><br>
-          From: {{ model.begin }}<br>
-          Until: {{ model.end }}
+          From: {{ model.graphInterval.begin | timestampToDateString }}<br>
+          Until: {{ model.graphInterval.end | timestampToDateString }}
           <paper-button class="close" on-tap="{{ close }}">X</paper-button>
         </div>
 
@@ -32,19 +32,32 @@ found in the LICENSE file.
           <div class="metric-cell column header">Graph metric</div>
           <div class="patch-cell column header">Patch</div>
           <div class="column-container">
+
+            <template if="{{ $.viewMenu.value == 'jobs' }}">
+              <div class="column grow header">{{ $.viewMenu.subMenu.text }} jobs</div>
+            </template>
+
+            <template if="{{ $.viewMenu.value == 'timeline' }}">
+              <template bind="{{ model[$.viewMenu.subMenu.value] as interval }}">
+                <div class="column grow header">
+                  Timeline Interval<br>
+                  {{ interval.begin | timestampToLocaleString }}<br>
+                  {{ interval.end | timestampToLocaleString }}
+                </div>
+              </template>
+            </template>
+
             <template if="{{ $.viewMenu.value == 'summary' }}">
               <template repeat="{{ column in _summaryColumns }}">
                 <div class="column header">{{ column.header }}</div>
               </template>
             </template>
-            <template if="{{ $.viewMenu.value == 'jobs' }}">
-              <div class="column grow header">{{ $.viewMenu.subMenu.text }} jobs</div>
-            </template>
+
           </div>
         </div>
 
         <div class="item-rows">
-          <template repeat="{{ patchSummary in model.list }}">
+          <template repeat="{{ patchSummary in model._list }}">
             <tom-patch-summary model="{{ patchSummary }}" viewMenu="{{ $.viewMenu }}"></tom-patch-summary>
           </template>
         </div>
@@ -58,7 +71,13 @@ found in the LICENSE file.
         this._summaryColumns = PatchSummary.summaryColumns;
       },
       close: function() {
-        this.model.list = [];
+        this.model.clear();
+      },
+      timestampToDateString: function(timestamp) {
+        return new Date(timestamp * 1000).toString();
+      },
+      timestampToLocaleString: function(timestamp) {
+        return new Date(timestamp * 1000).toLocaleString();
       },
     });
   </script>

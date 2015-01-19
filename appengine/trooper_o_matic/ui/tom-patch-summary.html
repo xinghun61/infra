@@ -17,8 +17,8 @@ found in the LICENSE file.
         <div class="patch-cell">
           <a href="{{ model._patchURL }}" title="{{ title }}">{{ title }}</a><br>
           <a href="{{ model._patchURL }}">#{{ model.patchset }}</a>
-          <a href="//chromium-cq-status.appspot.com/patch-status/{{ model.issue }}/{{ model.patchset }}">[CQ Status]</a>
-          <a href="//chromium-cq-status.appspot.com/recent#issue={{ model.issue }},patchset={{ model.patchset }}">[CQ Logs]</a>
+          <a href="{{ model._statusURL }}">[CQ Status]</a>
+          <a href="{{ model._recentURL }}">[CQ Logs]</a>
         </div>
       </template>
 
@@ -29,14 +29,6 @@ found in the LICENSE file.
       </template>
 
       <template if="{{ model._summary }}">
-        <template if="{{ viewMenu.value == 'summary' }}">
-          <div class="column-container">
-            <template repeat="{{ value in model._columnValues }}">
-              <div class="column">{{ value }}</div>
-            </template>
-          </div>
-        </template>
-
         <template if="{{ viewMenu.value == 'jobs' }}">
           <div class="column grow builder-bubbles">
             <template repeat="{{ builder in model._jobViewBuilderBuilds[viewMenu.subMenu.value] }}">
@@ -54,6 +46,33 @@ found in the LICENSE file.
             </template>
           </div>
         </template>
+
+        <template if="{{ viewMenu.value == 'timeline' }}">
+          <template bind="{{ model.list[viewMenu.subMenu.value] as interval }}">
+            <div style="position: relative; width: 100%; overflow: hidden;">
+              <template repeat="{{ attempt in model._summary.attempts }}">
+                <a
+                  href="{{ model._statusURL }}#{{ attempt.number }}"
+                  class="attempt success-{{ attempt.success }}"
+                  style="
+                    left: {{ 100 * (attempt.begin - interval.begin) / (interval.end - interval.begin) }}%;
+                    width: {{ 100 * attempt.durations.total / (interval.end - interval.begin) }}%;"
+                  title="{{ attempt.summaryText }}">
+                  {{ attempt.summaryText }}
+                </a>
+              </template>
+            </div>
+          </template>
+        </template>
+
+        <template if="{{ viewMenu.value == 'summary' }}">
+          <div class="column-container">
+            <template repeat="{{ value in model._columnValues }}">
+              <div class="column">{{ value }}</div>
+            </template>
+          </div>
+        </template>
+
       </template>
     </div class="row">
   </template>

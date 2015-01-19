@@ -63,8 +63,8 @@ CQStatsGraphData.prototype.rowItems = function(index) {
       items.forEach(function(item) { item[0] /= 60; });
       return {
         items: items,
-        begin: new Date(cqStats.begin * 1000),
-        end: new Date(cqStats.end * 1000),
+        begin: cqStats.begin,
+        end: cqStats.end,
       };
     });
   })

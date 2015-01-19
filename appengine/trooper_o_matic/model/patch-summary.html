@@ -19,21 +19,33 @@ this.PatchSummary = function PatchSummary(value, unit, issue, patchset, alertThr
   this.issue = issue;
   this.patchset = patchset;
   this.alertThreshold = alertThreshold;
+  this.list = null;
 
   var reviewHost = 'https://codereview.chromium.org';
   this._patchURL = '{1}/{2}#ps{3}'.assign(reviewHost, this.issue, this.patchset);
   this._issueTitle = null;
-  this._summary = null;
+  var logHost = '//chromium-cq-status.appspot.com';
+  this._statusURL = '{1}/patch-status/{2}/{3}'.assign(
+      logHost, this.issue, this.patchset);
+  this._recentURL = '{1}/recent#issue={2},patchset={3}'.assign(
+      logHost, this.issue, this.patchset);
   this._columnValues = [];
   this._jobViewBuilderBuilds = {};
+  this._summaryPromise = cqStatsUtil.loadPatchSummary(issue, patchset);
+  this._summary = null;
 
   var self = this;
   var issueURL = '{1}/api/{2}'.assign(reviewHost, this.issue);
   net.json({url: issueURL, cache: true}).then(function(json) {
     self._issueTitle = json.subject;
   }).catch(log);
-  cqStatsUtil.loadPatchSummary(issue, patchset).then(function(summary) {
+  self._summaryPromise.then(function(summary) {
     self._summary = summary;
+
+    summary.attempts.forEach(function(attempt, i) {
+      attempt.number = summary.attempts.length - i;
+      attempt.summaryText = getAttemptSummaryText(attempt);
+    });
 
     self._columnValues = PatchSummary.summaryColumns.map(function(column) {
       return column.getter(summary);
@@ -45,6 +57,10 @@ this.PatchSummary = function PatchSummary(value, unit, issue, patchset, alertThr
     };
   }).catch(log);
 };
+
+PatchSummary.prototype.getSummary = function() {
+  return this._summaryPromise;
+}
 
 function getJobs(summary, jobView) {
   switch (jobView) {
@@ -102,6 +118,32 @@ function getBuilderBuilds(summary, jobView) {
 
 function secondsToMinutes(seconds) {
   return (seconds / 60).toFixed(0);
+}
+
+function getAttemptSummaryText(attempt) {
+  var successText = (function(){
+    switch (attempt.success) {
+      case true:
+        return 'Success';
+      case null:
+        return 'Running';
+      default:
+        var text = 'Fail';
+        var reason = attempt.fail_reason;
+        if (reason && reason.fail_type) {
+          text += ': ';
+          if (reason.fail_type === 'failed_jobs') {
+            var getBuilder = function(detail) { return detail.builder };
+            text += reason.fail_details.map(getBuilder).join(' ');
+          } else {
+            text += reason.fail_type;
+          }
+        }
+        return text;
+    }
+  })();
+  return '{1} ({2}min)'.assign(
+      successText, secondsToMinutes(attempt.durations.total));
 }
 
 PatchSummary.summaryColumns = [

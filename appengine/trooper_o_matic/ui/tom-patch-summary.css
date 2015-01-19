@@ -92,3 +92,32 @@ a {
 .build-bubble.failed {
   background: #e88;
 }
+
+.attempt {
+  position: absolute;
+  top: 2px;
+  box-shadow: 0 1px 3px #888;
+  min-width: 5px;
+  padding: 5px;
+  padding-left: 0px;
+  color: black;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.attempt:hover {
+  min-width: -webkit-fit-content;
+  min-width: auto;
+}
+
+.attempt.success-true {
+  background: #9e6;
+}
+
+.attempt.success-false {
+  background: #e88;
+}
+
+.attempt.success-null {
+  background: #ff7;
+}

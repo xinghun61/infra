@@ -51,8 +51,8 @@ CQStatsRatioGraphData.prototype.rowItems = function(index) {
     return cqStatsUtil.loadStatItems(name, cqStats.key).then(function(items) {
       return {
         items: items,
-        begin: new Date(cqStats.begin * 1000),
-        end: new Date(cqStats.end * 1000),
+        begin: cqStats.begin,
+        end: cqStats.end,
       };
     });
   })

@@ -81,22 +81,21 @@ found in the LICENSE file.
         if (!this._dygraph || !this.graph.data.rowItemsAvailable) {
           return;
         }
-        this._patchSummaryList.list = [];
+        this._patchSummaryList.clear();
         var row = this._dygraph.getSelection();
         if (row !== -1) {
           this._loading = true;
           var self = this;
           this.graph.data.rowItems(row).then(function(rowItems) {
             self._loading = false;
-            self._patchSummaryList.list = rowItems.items.map(function(item) {
+            self._patchSummaryList.set(rowItems.begin, rowItems.end,
+                rowItems.items.map(function(item) {
               var itemValue = item[0];
               var itemRef = item[1];
               return new PatchSummary(itemValue, self.graph.itemUnit,
                   itemRef.issue, itemRef.patchset,
                   self.graph.itemAlertThreshold);
-            });
-            self._patchSummaryList.begin = rowItems.begin;
-            self._patchSummaryList.end = rowItems.end;
+            }));
           }).catch(log);
         }
       },
