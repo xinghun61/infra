@@ -6,6 +6,7 @@
 # thus can't use '_' prefix to silence the warming.
 # pylint: disable=unused-argument
 
+import datetime
 import hashlib
 import StringIO
 
@@ -297,7 +298,7 @@ class CASServiceImplTest(testing.AppengineTestCase):
       self.assertEqual(
           dst, '/bucket/real/SHA1/9682248358c830bcb5f8cb867186022acfe6eeb3')
       self.assertEqual(src_etag, 'fake_etag')
-    self.mock(service, '_gs_copy_if_source_matches', mocked_copy)
+    self.mock(service, '_gs_copy', mocked_copy)
 
     self.assertTrue(service.verify_pending_upload(obj.key.id()))
 
@@ -327,3 +328,56 @@ class CASServiceImplTest(testing.AppengineTestCase):
     self.mock(impl.cloudstorage, 'open', mocked_cloudstorage_open)
     with self.assertRaises(impl.NotFoundError):
       service.open('SHA1', 'a'*40, 1234)
+
+  def test_direct_upload(self):
+    service = impl.CASService('/bucket/real', '/bucket/temp')
+    calls = []
+    def mocked_cloudstorage_open(filename, **_kwargs):
+      calls.append(('open', filename))
+      return StringIO.StringIO()
+    self.mock(impl.cloudstorage, 'open', mocked_cloudstorage_open)
+    self.mock(service, '_gs_copy', lambda *a: calls.append(('copy',) + a))
+    self.mock(service, '_gs_delete', lambda *a: calls.append(('delete',) + a))
+    self.mock_now(datetime.datetime(2014, 1, 1))
+    self.mock(impl.random, 'choice', lambda x: x[0])
+
+    with service.start_direct_upload('SHA1') as f:
+      f.write('abc')
+      f.write('def')
+    self.assertEqual(f.hash_digest, '1f8ac10f23c5b5bc1167bda84b833e5c057a77d2')
+    self.assertEqual(f.length, 6)
+    self.assertEqual([
+      (
+        'open',
+        '/bucket/temp/1388534400_direct_aaaaaaaaaaaaaaaaaaaa',
+      ),
+      (
+        'copy',
+        '/bucket/temp/1388534400_direct_aaaaaaaaaaaaaaaaaaaa',
+        '/bucket/real/SHA1/1f8ac10f23c5b5bc1167bda84b833e5c057a77d2',
+      ),
+      (
+        'delete',
+        '/bucket/temp/1388534400_direct_aaaaaaaaaaaaaaaaaaaa'
+      ),
+    ], calls)
+
+    # Code coverage for second noop close.
+    f.close()
+
+    # Code coverage for commit=False code path.
+    del calls[:]
+    with self.assertRaises(ValueError):
+      with service.start_direct_upload('SHA1') as f:
+        f.write('abc')
+        raise ValueError()
+    self.assertEqual([
+      (
+        'open',
+        '/bucket/temp/1388534400_direct_aaaaaaaaaaaaaaaaaaaa',
+      ),
+      (
+        'delete',
+        '/bucket/temp/1388534400_direct_aaaaaaaaaaaaaaaaaaaa'
+      ),
+    ], calls)

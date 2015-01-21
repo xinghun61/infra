@@ -4,8 +4,6 @@
 
 """Post-processing steps applied to uploaded package instances."""
 
-import logging
-
 
 class ProcessingError(Exception):
   """Fatal error during processing.
@@ -47,19 +45,3 @@ class Processor(object):
     retry of the processing task.
     """
     raise NotImplementedError()
-
-
-class DummyProcessor(Processor):  # pragma: no cover
-  """Does nothing, just and example. To be removed later."""
-
-  name = 'dummy:v1'
-
-  def should_process(self, instance):
-    return instance.package_name.startswith('playground/')
-
-  def run(self, instance, data):
-    logging.info('Package files: %s', data.get_packaged_files())
-    return {
-      'instance_id': instance.instance_id,
-      'package_name': instance.package_name,
-    }

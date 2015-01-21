@@ -14,6 +14,7 @@ from components import auth
 from components import utils
 
 from . import acl
+from . import client
 from . import impl
 
 
@@ -284,6 +285,41 @@ class ModifyACLResponse(messages.Message):
   status = messages.EnumField(Status, 1, required=True)
   # For ERROR status, an error message.
   error_message = messages.StringField(2, required=False)
+
+
+class FetchClientBinaryResponse(messages.Message):
+  """Results of fetchClientBinary call."""
+
+  class Status(messages.Enum):
+    # The client binary is extracted, client_binary is returned.
+    SUCCESS = 1
+    # No such package or access is denied.
+    PACKAGE_NOT_FOUND = 2
+    # Package itself is known, but requested instance_id isn't registered.
+    INSTANCE_NOT_FOUND = 3
+    # The client binary is not extracted yet. The call may be retried later.
+    NOT_EXTRACTED_YET = 4
+    # Some non-transient error happened.
+    ERROR = 5
+
+  class ClientBinary(messages.Message):
+    # SHA1 hex digest of the extracted binary, for verification on the client.
+    sha1 = messages.StringField(1, required=True)
+    # Size of the binary file, just for information.
+    size = messages.IntegerField(2, required=True)
+    # A signed url to fetch the binary file from.
+    fetch_url = messages.StringField(3, required=True)
+
+  # Status of this operation, defines what other fields to expect.
+  status = messages.EnumField(Status, 1, required=True)
+
+  # For SUCCESS or NOT_EXTRACTED_YET, an information about the package instance.
+  instance = messages.MessageField(PackageInstance, 2, required=False)
+  # For SUCCESS, an information about the client binary.
+  client_binary = messages.MessageField(ClientBinary, 3, required=False)
+
+  # For ERROR status, an error message.
+  error_message = messages.StringField(4, required=False)
 
 
 @auth.endpoints_api(
@@ -582,3 +618,59 @@ class PackageRepositoryApi(remote.Service):
     # exactly what is needed.
     acl.modify_roles(changes, caller, now)
     return ModifyACLResponse(status=ModifyACLResponse.Status.SUCCESS)
+
+  @auth.endpoints_method(
+      INSTANCE_RESOURCE_CONTAINER,
+      FetchClientBinaryResponse,
+      http_method='GET',
+      path='client',
+      name='fetchClientBinary')
+  def fetch_client_binary(self, request):
+    """Returns signed URL that can be used to fetch CIPD client binary."""
+    def error(msg):
+      return FetchClientBinaryResponse(
+          status=FetchClientBinaryResponse.Status.ERROR,
+          error_message=msg)
+
+    package_name = request.package_name
+    if not impl.is_valid_package_path(package_name):
+      return error('Invalid package name')
+    if not client.is_cipd_client_package(package_name):
+      return error('Not a CIPD client package')
+
+    instance_id = request.instance_id
+    if not instance_id or not impl.is_valid_instance_id(instance_id):
+      return error('Invalid package instance ID')
+
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      return FetchClientBinaryResponse(
+          status=FetchClientBinaryResponse.Status.PACKAGE_NOT_FOUND)
+
+    # Check that package and instance exist.
+    instance = self.service.get_instance(package_name, instance_id)
+    if instance is None:
+      pkg = self.service.get_package(package_name)
+      if pkg is None:
+        return FetchClientBinaryResponse(
+            status=FetchClientBinaryResponse.Status.PACKAGE_NOT_FOUND)
+      return FetchClientBinaryResponse(
+          status=FetchClientBinaryResponse.Status.INSTANCE_NOT_FOUND)
+
+    # Grab the location of the extracted binary.
+    client_info, error_message = self.service.get_client_binary_info(instance)
+    if error_message:
+      return error(error_message)
+    if client_info is None:
+      return FetchClientBinaryResponse(
+        status=FetchClientBinaryResponse.Status.NOT_EXTRACTED_YET,
+        instance=instance_to_proto(instance))
+
+    # Success.
+    return FetchClientBinaryResponse(
+        status=FetchClientBinaryResponse.Status.SUCCESS,
+        instance=instance_to_proto(instance),
+        client_binary=FetchClientBinaryResponse.ClientBinary(
+            sha1=client_info.sha1,
+            size=client_info.size,
+            fetch_url=client_info.fetch_url))

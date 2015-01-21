@@ -38,7 +38,9 @@ library since it uses its non-public APIs:
 import base64
 import hashlib
 import logging
+import random
 import re
+import string
 import urllib
 import webapp2
 
@@ -202,6 +204,35 @@ class CASService(object):
     except cloudstorage.NotFoundError:
       raise NotFoundError()
 
+  def start_direct_upload(self, hash_algo):
+    """Can be used to upload data to CAS directly from an Appengine handler.
+
+    Opens a temp file for writing (and returns wrapper around it). Hashes the
+    data while it is being written, and moves the temp file to an appropriate
+    location in CAS once it is closed.
+
+    Args:
+      hash_algo: algorithm to use to calculate data hash.
+
+    Returns:
+      DirectUpload object to write data to.
+    """
+    assert is_supported_hash_algo(hash_algo)
+    ts_sec = utils.datetime_to_timestamp(utils.utcnow()) / 1000000.
+    temp_path = self._temp_direct_upload_gs_path(ts_sec)
+    temp_file = cloudstorage.open(
+        filename=temp_path,
+        mode='w',
+        retry_params=self._retry_params)
+    def commit_callback(hash_digest, commit):
+      if commit:
+        self._gs_copy(temp_path, self._verified_gs_path(hash_algo, hash_digest))
+      self._gs_delete(temp_path)
+    return DirectUpload(
+        file_obj=temp_file,
+        hasher=SUPPORTED_HASH_ALGOS[hash_algo][0](),
+        callback=commit_callback)
+
   def create_upload_session(self, hash_algo, hash_digest, caller):
     """Starts a new upload operation.
 
@@ -225,8 +256,8 @@ class CASService(object):
     upload_id = UploadSession.allocate_ids(size=1)[0]
 
     # Opening a GCS file and not closing it keeps upload session active.
-    timestamp_sec = utils.datetime_to_timestamp(utils.utcnow()) / 1000000.
-    temp_gs_location = self._temp_gs_path(upload_id, timestamp_sec)
+    ts_sec = utils.datetime_to_timestamp(utils.utcnow()) / 1000000.
+    temp_gs_location = self._temp_upload_session_gs_path(upload_id, ts_sec)
     temp_file = cloudstorage.open(
         filename=temp_gs_location,
         mode='w',
@@ -398,7 +429,7 @@ class CASService(object):
 
     # Copy to the final destination verifying the ETag is the same.
     try:
-      self._gs_copy_if_source_matches(
+      self._gs_copy(
           src=upload_session.temp_gs_location,
           dst=upload_session.final_gs_location,
           src_etag=etag)
@@ -420,11 +451,16 @@ class CASService(object):
     """Google Storage path to a verified file."""
     return str('%s/%s/%s' % (self._gs_path, hash_algo, hash_digest))
 
-  def _temp_gs_path(self, upload_id, timestamp_sec):
-    """Path to temporary drop location."""
+  def _temp_upload_session_gs_path(self, upload_id, timestamp_sec):
+    """Path to a temporary drop location for upload sessions."""
     # Use timestamp prefix to enable cheap and dirty "time range" queries when
     # listing bucket with a prefix scan.
     return str('%s/%d_%s' % (self._gs_temp, timestamp_sec, upload_id))
+
+  def _temp_direct_upload_gs_path(self, timestamp_sec):
+    """Randomized path to a temporary drop location for direct uploads."""
+    rnd_str = ''.join(random.choice(string.ascii_letters) for i in range(20))
+    return str('%s/%d_direct_%s' % (self._gs_temp, timestamp_sec, rnd_str))
 
   def _is_gs_file_present(self, gs_path):
     """True if given GS file exists."""
@@ -436,8 +472,8 @@ class CASService(object):
       return False
     return True
 
-  def _gs_copy_if_source_matches(self, src, dst, src_etag):  # pragma: no cover
-    """Copy |src| file to |dst| if src ETag matches given one.
+  def _gs_copy(self, src, dst, src_etag=None):  # pragma: no cover
+    """Copy |src| file to |dst| optionally checking src ETag.
 
     Raises cloudstorage.FatalError on precondition error.
     """
@@ -446,13 +482,21 @@ class CASService(object):
     cloudstorage.validate_file_path(dst)
     headers = {
       'x-goog-copy-source': src,
-      'x-goog-copy-source-if-match': src_etag,
       'x-goog-metadata-directive': 'COPY',
     }
+    if src_etag is not None:
+      headers['x-goog-copy-source-if-match'] = src_etag
     api = storage_api._get_storage_api(retry_params=self._retry_params)
     status, resp_headers, content = api.put_object(
         api_utils._quote_filename(dst), headers=headers)
     errors.check_status(status, [200], src, headers, resp_headers, body=content)
+
+  def _gs_delete(self, gs_path):
+    """Wrapper around cloudstorage.delete that catches NotFoundError."""
+    try:
+      cloudstorage.delete(filename=gs_path, retry_params=self._retry_params)
+    except cloudstorage.NotFoundError:  # pragma: no cover
+      pass
 
   def _cleanup_temp(self, upload_session):
     """Removes temporary drop file, best effort.
@@ -461,12 +505,7 @@ class CASService(object):
     if this call fails.
     """
     # TODO(vadimsh): Finalize pending upload using upload_session.upload_url.
-    try:
-      cloudstorage.delete(
-          filename=upload_session.temp_gs_location,
-          retry_params=self._retry_params)
-    except cloudstorage.NotFoundError:  # pragma: no cover
-      pass
+    self._gs_delete(upload_session.temp_gs_location)
 
   @staticmethod
   def _rsa_sign(pkey_pem, data):  # pragma: no cover
@@ -524,6 +563,57 @@ class UploadSession(ndb.Model):
   created_by = auth.IdentityProperty(required=True)
   # When the entity was created.
   created_ts = ndb.DateTimeProperty(required=True, auto_now_add=True)
+
+
+class DirectUpload(object):
+  """A wrapper around temp GCS file, used to upload data directly to CAS.
+
+  Returned by CASService.start_direct_upload. Must not be instantiated directly.
+  """
+
+  def __init__(self, file_obj, hasher, callback):
+    self._file_obj = file_obj
+    self._hasher = hasher
+    self._callback = callback
+    self._len = 0
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    self.close(commit=exc_value is None)
+
+  @property
+  def hash_digest(self):
+    """Hash hex digest of the data written so far."""
+    return self._hasher.hexdigest()
+
+  @property
+  def length(self):
+    """Total length of the data written so far."""
+    return self._len
+
+  def write(self, data):
+    """Writes a chunk of data to the temp file."""
+    assert self._file_obj is not None
+    self._file_obj.write(data)
+    self._hasher.update(data)
+    self._len += len(data)
+
+  def close(self, commit=True):
+    """Closes the temp file.
+
+    Args:
+      commit: if True, moves the data to an appropriate location in CAS,
+          otherwise just deletes the temp file.
+    """
+    if self._file_obj is None:
+      return
+    assert self._callback
+    self._file_obj.close()
+    self._file_obj = None
+    self._callback(self.hash_digest, commit)
+    self._callback = None
 
 
 ################################################################################

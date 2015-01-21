@@ -3,13 +3,18 @@
 # found in the LICENSE file.
 
 import datetime
+import hashlib
+import StringIO
 import unittest
+import zipfile
 
 from google.appengine.ext import ndb
 from testing_utils import testing
 
 from components import auth
 from components import utils
+
+from cas import impl as cas_impl
 
 from cipd import impl
 from cipd import processing
@@ -123,7 +128,7 @@ class TestRepoService(testing.AppengineTestCase):
         'https://signed-url/SHA1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', url)
 
   def test_is_instance_file_uploaded(self):
-    self.mocked_cas_service.uploaded.add(('SHA1', 'a'*40))
+    self.mocked_cas_service.uploaded[('SHA1', 'a'*40)] = ''
     self.assertTrue(self.service.is_instance_file_uploaded('a/b', 'a'*40))
     self.assertFalse(self.service.is_instance_file_uploaded('a/b', 'b'*40))
 
@@ -208,10 +213,136 @@ class TestRepoService(testing.AppengineTestCase):
       'success': False,
     }, bad_result.to_dict())
 
+  def test_client_binary_extraction(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+
+    # Prepare fake cipd binary package.
+    out = StringIO.StringIO()
+    zf = zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED)
+    zf.writestr('cipd', 'cipd binary data here')
+    zf.close()
+    zipped = out.getvalue()
+    digest = hashlib.sha1(zipped).hexdigest()
+
+    # Pretend it is uploaded.
+    self.mocked_cas_service.uploaded[('SHA1', digest)] = zipped
+
+    # Register it as a package instance.
+    self.mock(impl.utils, 'enqueue_task', lambda **_args: True)
+    inst, registered = self.service.register_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id=digest,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+    expected = {
+      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+      'processors_failure': [],
+      'processors_pending': ['cipd_client_binary:v1'],
+      'processors_success': [],
+    }
+    self.assertEqual(expected, inst.to_dict())
+
+    # get_client_binary_info indicated that processing is not done yet.
+    instance = self.service.get_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id=digest)
+    info, error_msg = self.service.get_client_binary_info(instance)
+    self.assertIsNone(info)
+    self.assertIsNone(error_msg)
+
+    # Execute post-processing task: it would extract CIPD binary.
+    self.service.process_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id=digest,
+        processors=['cipd_client_binary:v1'])
+
+    # Ensure succeeded.
+    result = self.service.get_processing_result(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id=digest,
+        processor_name='cipd_client_binary:v1')
+    self.assertEqual({
+      'created_ts': datetime.datetime(2014, 1, 1, 0, 0),
+      'success': True,
+      'error': None,
+      'result': {
+        'client_binary': {
+          'hash_algo': 'SHA1',
+          'hash_digest': '5a72c1535f8d132c341585207504d94e68ef8a9d',
+          'size': 21,
+        },
+      },
+    }, result.to_dict())
+
+    # Verify get_client_binary_info works too.
+    instance = self.service.get_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id=digest)
+    info, error_msg = self.service.get_client_binary_info(instance)
+    expected = impl.ClientBinaryInfo(
+        sha1='5a72c1535f8d132c341585207504d94e68ef8a9d',
+        size=21,
+        fetch_url=(
+            'https://signed-url/SHA1/5a72c1535f8d132c341585207504d94e68ef8a9d'))
+    self.assertIsNone(error_msg)
+    self.assertEqual(expected, info)
+
+  def test_client_binary_extract_failure(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+
+    # Pretend some fake data is uploaded.
+    self.mocked_cas_service.uploaded[('SHA1', 'a'*40)] = 'not a zip'
+
+    # Register it as a package instance.
+    self.mock(impl.utils, 'enqueue_task', lambda **_args: True)
+    inst, registered = self.service.register_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+    expected = {
+      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+      'processors_failure': [],
+      'processors_pending': ['cipd_client_binary:v1'],
+      'processors_success': [],
+    }
+    self.assertEqual(expected, inst.to_dict())
+
+    # Execute post-processing task: it would fail extracting CIPD binary.
+    self.service.process_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        processors=['cipd_client_binary:v1'])
+
+    # Ensure error is reported.
+    result = self.service.get_processing_result(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        processor_name='cipd_client_binary:v1')
+    self.assertEqual({
+      'created_ts': datetime.datetime(2014, 1, 1, 0, 0),
+      'success': False,
+      'error': 'File is not a zip file',
+      'result': None,
+    }, result.to_dict())
+
+    # Verify get_client_binary_info reports it too.
+    instance = self.service.get_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40)
+    info, error_msg = self.service.get_client_binary_info(instance)
+    self.assertIsNone(info)
+    self.assertEqual(
+        'Failed to extract the binary: File is not a zip file', error_msg)
+
 
 class MockedCASService(object):
   def __init__(self):
-    self.uploaded = set()
+    self.uploaded = {}
 
   def is_fetch_configured(self):
     return True
@@ -226,6 +357,19 @@ class MockedCASService(object):
     class UploadSession(object):
       upload_url = 'http://upload_url'
     return UploadSession(), 'upload_session_id'
+
+  def open(self, hash_algo, hash_digest, read_buffer_size):
+    assert read_buffer_size > 0
+    if not self.is_object_present(hash_algo, hash_digest):  # pragma: no cover
+      raise cas_impl.NotFoundError()
+    return StringIO.StringIO(self.uploaded[(hash_algo, hash_digest)])
+
+  def start_direct_upload(self, hash_algo):
+    assert hash_algo == 'SHA1'
+    return cas_impl.DirectUpload(
+        file_obj=StringIO.StringIO(),
+        hasher=hashlib.sha1(),
+        callback=lambda *_args: None)
 
 
 class MockedProcessor(processing.Processor):

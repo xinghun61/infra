@@ -493,6 +493,139 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'changes': [],
       })
 
+  def test_fetch_client_binary_ok(self):
+    _, registered = self.repo_service.register_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    self.assertTrue(registered)
+
+    # Mock get_client_binary_info. It is tested separately in impl_test.py.
+    def mocked_get_info(instance):
+      self.assertEqual('infra/tools/cipd/linux-amd64', instance.package_name)
+      self.assertEqual('a'*40, instance.instance_id)
+      return client_binary_info_response
+    self.mock(self.repo_service, 'get_client_binary_info', mocked_get_info)
+
+    # None, None -> still processing.
+    client_binary_info_response = None, None
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'instance': {
+        'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'package_name': 'infra/tools/cipd/linux-amd64',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
+      'status': 'NOT_EXTRACTED_YET',
+    }, resp.json_body)
+
+    # Error message.
+    client_binary_info_response = None, 'Some error message'
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Some error message',
+    }, resp.json_body)
+
+    # Successfully extracted.
+    client_binary_info_response = impl.ClientBinaryInfo(
+          sha1='b'*40,
+          size=123,
+          fetch_url='https://client_url'), None
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'client_binary': {
+        'fetch_url': 'https://client_url',
+        'sha1': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        'size': '123',
+      },
+      'instance': {
+        'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'package_name': 'infra/tools/cipd/linux-amd64',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_fetch_client_binary_no_access(self):
+    _, registered = self.repo_service.register_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    self.assertTrue(registered)
+
+    # Should return PACKAGE_NOT_FOUND even though package exists.
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_fetch_client_binary_no_such_package(self):
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_fetch_client_binary_no_such_instance(self):
+    _, registered = self.repo_service.register_instance(
+        package_name='infra/tools/cipd/linux-amd64',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    self.assertTrue(registered)
+
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'b'*40,
+    })
+    self.assertEqual({'status': 'INSTANCE_NOT_FOUND'}, resp.json_body)
+
+  def test_fetch_client_binary_bad_name(self):
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'bad name',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Invalid package name',
+    }, resp.json_body)
+
+  def test_fetch_client_binary_not_a_client(self):
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'good/name/not/a/client',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Not a CIPD client package',
+    }, resp.json_body)
+
+  def test_fetch_client_binary_bad_instance_id(self):
+    resp = self.call_api('fetch_client_binary', {
+      'package_name': 'infra/tools/cipd/linux-amd64',
+      'instance_id': 'bad instance id',
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Invalid package instance ID',
+    }, resp.json_body)
+
 
 class MockedRepoService(impl.RepoService):
   """Almost like a real one, except CAS part is stubbed."""

@@ -34,6 +34,7 @@ any of two final states: success or failure. Transient errors are retried until
 some definite result is known.
 """
 
+import collections
 import json
 import logging
 import re
@@ -49,6 +50,7 @@ from components import utils
 
 import cas
 
+from . import client
 from . import processing
 from . import reader
 
@@ -59,6 +61,11 @@ PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
 
 # Hash algorithm used to derive package instance ID from package data.
 DIGEST_ALGO = 'SHA1'
+
+
+# Information about extract CIPD client binary, see get_client_binary_info.
+ClientBinaryInfo = collections.namedtuple(
+    'ClientBinaryInfo', ['sha1', 'size', 'fetch_url'])
 
 
 class RepoService(object):
@@ -194,6 +201,46 @@ class RepoService(object):
     assert self.is_fetch_configured()
     return self.cas_service.generate_fetch_url(
         DIGEST_ALGO, instance.instance_id)
+
+  def get_client_binary_info(self, instance):
+    """Returns URL to the client binary, its SHA1 hash and size.
+
+    Used to get a direct URL to a client executable file. The file itself is
+    uploaded by processing.ExtractCIPDClientProcessor step applied to packages
+    for which client.is_cipd_client_package returns True ('infra/tools/cipd/*').
+
+    Args:
+      instance: PackageInstance entity corresponding to some registered and
+          processed cipd client package.
+
+    Returns:
+      Tuple (ClientBinaryInfo, error message) where:
+        a) ClientBinaryInfo is not None, error message is None on success.
+        b) ClientBinaryInfo is None, error message is not None on error.
+        c) Both items are None if client binary is still being extracted.
+    """
+    assert client.is_cipd_client_package(instance.package_name)
+    assert self.is_fetch_configured()
+    processing_result = self.get_processing_result(
+        instance.package_name,
+        instance.instance_id,
+        client.CIPD_BINARY_EXTRACT_PROCESSOR)
+    if processing_result is None:
+      return None, None
+    if not processing_result.success:
+      return None, 'Failed to extract the binary: %s' % processing_result.error
+    # See processing.ExtractCIPDClientProcessor for code that puts this data.
+    # CIPD_BINARY_EXTRACT_PROCESSOR includes a version number that is bumped
+    # whenever format of the data changes, so assume the data is correct.
+    data = processing_result.result.get('client_binary')
+    assert isinstance(data['size'], (int, long))
+    assert data['hash_algo'] == 'SHA1'
+    assert cas.is_valid_hash_digest('SHA1', data['hash_digest'])
+    fetch_url = self.cas_service.generate_fetch_url('SHA1', data['hash_digest'])
+    return ClientBinaryInfo(
+        sha1=data['hash_digest'],
+        size=data['size'],
+        fetch_url=fetch_url), None
 
   def is_instance_file_uploaded(self, package_name, instance_id):
     """Returns True if package instance file is uploaded to CAS.
@@ -331,7 +378,7 @@ def get_repo_service():
     return None
   return RepoService(
       cas_service=cas_service,
-      processors=[processing.DummyProcessor()])
+      processors=[client.ExtractCIPDClientProcessor(cas_service)])
 
 
 ################################################################################
