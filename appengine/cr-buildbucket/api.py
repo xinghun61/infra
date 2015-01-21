@@ -100,7 +100,6 @@ def id_resource_container(body_message_class=message_types.VoidMessage):
 def buildbucket_api_method(
     request_message_class, response_message_class, **kwargs):
   """Extends auth.endpoints_method by converting service errors."""
-  assert hasattr(response_message_class, 'error')
 
   endpoints_decorator = auth.endpoints_method(
       request_message_class, response_message_class, **kwargs)
@@ -111,6 +110,7 @@ def buildbucket_api_method(
       try:
         return fn(*args, **kwargs)
       except service.Error as ex:
+        assert hasattr(response_message_class, 'error')
         return response_message_class(error=ErrorMessage(
             reason=ERROR_REASON_MAP[type(ex)],
             message=ex.message,
@@ -292,7 +292,7 @@ class BuildBucketApi(remote.Service):
   #################################  HEARTBEAT  ################################
 
   class HeartbeatRequestBodyMessage(messages.Message):
-    lease_key = messages.IntegerField(1)
+    lease_key = messages.IntegerField(1, required=True)
     lease_expiration_ts = messages.IntegerField(2, required=True)
 
   @buildbucket_api_method(
@@ -304,6 +304,42 @@ class BuildBucketApi(remote.Service):
         request.id, request.lease_key,
         parse_datetime(request.lease_expiration_ts))
     return build_to_response_message(build)
+
+  class HeartbeatBatchRequestMessage(messages.Message):
+    class OneHeartbeat(messages.Message):
+      build_id = messages.IntegerField(1, required=True)
+      lease_key = messages.IntegerField(2, required=True)
+      lease_expiration_ts = messages.IntegerField(3, required=True)
+    heartbeats = messages.MessageField(OneHeartbeat, 1, repeated=True)
+
+  class HeartbeatBatchResponseMessage(messages.Message):
+    class OneHeartbeatResult(messages.Message):
+      build_id = messages.IntegerField(1, required=True)
+      lease_expiration_ts = messages.IntegerField(2)
+      error = messages.MessageField(ErrorMessage, 3)
+    results = messages.MessageField(OneHeartbeatResult, 1, repeated=True)
+
+  @buildbucket_api_method(
+      HeartbeatBatchRequestMessage, HeartbeatBatchResponseMessage,
+      path='heartbeat', http_method='POST')
+  def heartbeat_batch(self, request):
+    """Updates multiple build leases."""
+    res = self.HeartbeatBatchResponseMessage(results=[])
+    for heartbeat in request.heartbeats:
+      hb_result = res.OneHeartbeatResult(build_id=heartbeat.build_id)
+      try:
+        build = self.service.heartbeat(
+            heartbeat.build_id, heartbeat.lease_key,
+            parse_datetime(heartbeat.lease_expiration_ts))
+        hb_result.lease_expiration_ts = utils.datetime_to_timestamp(
+            build.lease_expiration_date)
+      except service.Error as ex:
+        hb_result.error = ErrorMessage(
+            reason=ERROR_REASON_MAP[type(ex)],
+            message=ex.message,
+        )
+      res.results.append(hb_result)
+    return res
 
   #################################  SUCCEED  ##################################
 

@@ -245,6 +245,45 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         res['build']['lease_expiration_ts'], req['lease_expiration_ts'],
     )
 
+  def test_heartbeat_batch(self):
+    self.test_build.lease_expiration_date = self.future_date
+    build2 = model.Build(
+        id=2,
+        bucket='chromium',
+        lease_expiration_date=self.future_date,
+    )
+
+    def service_heartbeat(build_id, *_, **__):
+      if build_id == self.test_build.key.id():
+        return self.test_build
+      raise service.LeaseExpiredError()
+    self.service.heartbeat.side_effect = service_heartbeat
+
+    req = {
+        'heartbeats': [{
+          'build_id': self.test_build.key.id(),
+          'lease_key': 42,
+          'lease_expiration_ts': self.future_ts,
+        }, {
+          'build_id': build2.key.id(),
+          'lease_key': 42,
+          'lease_expiration_ts': self.future_ts,
+        }],
+    }
+    res = self.call_api('heartbeat_batch', req).json_body
+    self.service.heartbeat_batch.assert_called_any_with(
+        self.test_build.key.id(), 42, self.future_date)
+    self.service.heartbeat_batch.assert_called_any_with(
+        build2.key.id(), 42, self.future_date)
+
+    result1 = res['results'][0]
+    self.assertEqual(int(result1['build_id']), self.test_build.key.id())
+    self.assertEqual(result1['lease_expiration_ts'], self.future_ts)
+
+    result2 = res['results'][1]
+    self.assertEqual(int(result2['build_id']), build2.key.id())
+    self.assertTrue(result2['error']['reason'] == 'LEASE_EXPIRED')
+
   ################################## SUCCEED ###################################
 
   def test_succeed(self):
