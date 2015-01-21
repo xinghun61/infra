@@ -48,6 +48,7 @@ def create_backend_app():
   """Returns WSGI app that serves task queue and cron handlers."""
   routes = []
   routes.extend(cas.get_backend_routes())
+  routes.extend(cipd.get_backend_routes())
   return webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
 
 

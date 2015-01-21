@@ -304,3 +304,26 @@ class CASServiceImplTest(testing.AppengineTestCase):
     # Moved to PUBLISHED.
     obj = obj.key.get()
     self.assertEqual(obj.status, impl.UploadSession.STATUS_PUBLISHED)
+
+  def test_open_ok(self):
+    service = impl.CASService('/bucket/real', '/bucket/temp')
+    calls = []
+    def mocked_cloudstorage_open(**kwargs):
+      calls.append(kwargs)
+      return object()
+    self.mock(impl.cloudstorage, 'open', mocked_cloudstorage_open)
+    service.open('SHA1', 'a'*40, 1234)
+    self.assertEqual(calls, [{
+      'filename': '/bucket/real/SHA1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'mode': 'r',
+      'read_buffer_size': 1234,
+      'retry_params': service._retry_params,
+    }])
+
+  def test_open_not_found(self):
+    service = impl.CASService('/bucket/real', '/bucket/temp')
+    def mocked_cloudstorage_open(**kwargs):
+      raise impl.cloudstorage.NotFoundError()
+    self.mock(impl.cloudstorage, 'open', mocked_cloudstorage_open)
+    with self.assertRaises(impl.NotFoundError):
+      service.open('SHA1', 'a'*40, 1234)

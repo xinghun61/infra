@@ -116,7 +116,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       self.call_api('register_package', {'package_name': 'good/name'})
 
   def test_fetch_instance_ok(self):
-    _, registered = self.repo_service.register_instance(
+    inst, registered = self.repo_service.register_instance(
         package_name='good/name',
         instance_id='a'*40,
         caller=auth.Identity.from_bytes('user:abc@example.com'),
@@ -135,6 +135,34 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'registered_by': 'user:abc@example.com',
         'registered_ts': '1388534400000000',
       },
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+    # Add some fake processors, ensure they appear in the output.
+    inst.processors_pending = ['pending1', 'pending2']
+    inst.processors_success = ['success1', 'success2']
+    inst.processors_failure = ['failure1', 'failure2']
+    inst.put()
+    resp = self.call_api('fetch_instance', {
+      'package_name': 'good/name',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'fetch_url': 'http://signed-url/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'instance': {
+        'instance_id': u'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'package_name': u'good/name',
+        'registered_by': u'user:abc@example.com',
+        'registered_ts': u'1388534400000000',
+      },
+      'processors': [
+        {'status': 'PENDING', 'name': 'pending1'},
+        {'status': 'PENDING', 'name': 'pending2'},
+        {'status': 'SUCCESS', 'name': 'success1'},
+        {'status': 'SUCCESS', 'name': 'success2'},
+        {'status': 'FAILURE', 'name': 'failure1'},
+        {'status': 'FAILURE', 'name': 'failure2'},
+      ],
       'status': 'SUCCESS',
     }, resp.json_body)
 
@@ -241,6 +269,9 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     expected = {
       'registered_by': auth.Identity(kind='user', name='mocked@example.com'),
       'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+      'processors_failure': [],
+      'processors_pending': [],
+      'processors_success': [],
     }
     self.assertEqual(expected, pkg.to_dict())
 

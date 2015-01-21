@@ -116,6 +116,10 @@ def get_cas_service():
       conf.service_account_pkey)
 
 
+class NotFoundError(Exception):
+  """Raised by 'open' when the file is not in CAS."""
+
+
 class UploadIdSignature(auth.TokenKind):
   """Token to use to generate and validate signed upload_session_id."""
   expiration_sec = SESSION_EXPIRATION_TIME_SEC
@@ -173,6 +177,30 @@ class CASService(object):
     ])
     assert gs_path.startswith('/'), gs_path
     return 'https://storage.googleapis.com%s?%s' % (gs_path, query_params)
+
+  def open(self, hash_algo, hash_digest, read_buffer_size=None):
+    """Opens a file in CAS for reading.
+
+    Args:
+      hash_algo: valid supported hash algorithm to use for verification.
+      hash_digest: hex hash digest of the content to be uploaded.
+      read_buffer_size: length of chunk of data to read with each RPC.
+
+    Returns:
+      File-like object, caller takes ownership and should close it.
+
+    Raises:
+      NotFoundError if file is missing.
+    """
+    read_buffer_size = read_buffer_size or READ_BUFFER_SIZE
+    try:
+      return cloudstorage.open(
+          filename=self._verified_gs_path(hash_algo, hash_digest),
+          mode='r',
+          read_buffer_size=read_buffer_size,
+          retry_params=self._retry_params)
+    except cloudstorage.NotFoundError:
+      raise NotFoundError()
 
   def create_upload_session(self, hash_algo, hash_digest, caller):
     """Starts a new upload operation.
@@ -270,7 +298,7 @@ class CASService(object):
           queue_name='cas-verify',
           transactional=True)
       if not success:  # pragma: no cover
-        raise ndb.Rollback()
+        raise datastore_errors.TransactionFailedError()
       refreshed.status = UploadSession.STATUS_VERIFYING
       refreshed.put()
       return refreshed

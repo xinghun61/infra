@@ -15,4 +15,9 @@ before making an object visible.
 """
 
 from .api import CASServiceApi
-from .impl import is_valid_hash_digest, get_cas_service, get_backend_routes
+from .impl import (
+    get_backend_routes,
+    get_cas_service,
+    is_valid_hash_digest,
+    NotFoundError,
+)

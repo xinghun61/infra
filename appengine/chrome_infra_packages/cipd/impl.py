@@ -25,16 +25,32 @@ entity group (with root key derived from package name, see Package entity).
 
 Package entity (even though it is empty) is also instantiated in the datastore
 to make possible querying for a list of known packages.
+
+Once a package instance is uploaded, it may be asynchronously processed by
+a number of "processors" that read and evaluate package contents producing some
+summary. For example, a processor may ensure that the package has a valid format
+and grab a list of package files to display in UI. Processing can finish with
+any of two final states: success or failure. Transient errors are retried until
+some definite result is known.
 """
 
+import json
+import logging
 import re
+import webapp2
 
+from google.appengine import runtime
+from google.appengine.api import datastore_errors
 from google.appengine.ext import ndb
 
 from components import auth
+from components import decorators
 from components import utils
 
 import cas
+
+from . import processing
+from . import reader
 
 
 # Regular expression for a package name: <word>/<word/<word>. Package names must
@@ -48,8 +64,15 @@ DIGEST_ALGO = 'SHA1'
 class RepoService(object):
   """Package repository service."""
 
-  def __init__(self, cas_service):
+  def __init__(self, cas_service, processors=None):
+    """Initializes RepoService.
+
+    Args:
+      cas_service: instance of cas.CASService to use.
+      processors: list of known processing.Processor instances.
+    """
     self.cas_service = cas_service
+    self.processors = processors or []
 
   def is_fetch_configured(self):
     """True if 'generate_fetch_url' has enough configuration to work."""
@@ -60,7 +83,7 @@ class RepoService(object):
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
-      instance_id: identified of the package instance (SHA1 of package content).
+      instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
       PackageInstance or None.
@@ -77,6 +100,20 @@ class RepoService(object):
       Package or None.
     """
     return package_key(package_name).get()
+
+  def get_processing_result(self, package_name, instance_id, processor_name):
+    """Returns results of some asynchronous processor or None if not ready.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      processor_name: name of the processor to retrieve results of.
+
+    Returns:
+      ProcessingResult entity or None.
+    """
+    return processing_result_key(
+        package_name, instance_id, processor_name).get()
 
   @ndb.transactional
   def register_package(self, package_name, caller, now=None):
@@ -105,13 +142,14 @@ class RepoService(object):
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
-      instance_id: identifier of the package instance (SHA1 of package content).
+      instance_id: identifier of the package instance (SHA1 of package file).
       caller: auth.Identity that issued the request.
       now: datetime when the request was made (or None for current time).
 
     Returns:
       Tuple (PackageInstance entity, True if registered or False if existed).
     """
+    # Register the package and the instance if not already registered.
     key = package_instance_key(package_name, instance_id)
     inst = key.get()
     if inst is not None:
@@ -122,6 +160,25 @@ class RepoService(object):
         key=key,
         registered_by=caller,
         registered_ts=now)
+
+    # Trigger post processing, if any.
+    processors = [p.name for p in self.processors if p.should_process(inst)]
+    if processors:
+      # ID in the URL is FYI only, to see what's running now via admin UI.
+      success = utils.enqueue_task(
+          url='/internal/taskqueue/cipd-process/%s' % instance_id,
+          queue_name='cipd-process',
+          payload=json.dumps({
+            'package_name': package_name,
+            'instance_id': instance_id,
+            'processors': processors,
+          }, sort_keys=True),
+          transactional=True)
+      if not success:  # pragma: no cover
+        raise datastore_errors.TransactionFailedError()
+
+    # Store the instance, remember what processors have been triggered.
+    inst.processors_pending = processors
     inst.put()
     return inst, True
 
@@ -143,7 +200,7 @@ class RepoService(object):
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
-      instance_id: identifier of the package instance (SHA1 of package content).
+      instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
       True or False.
@@ -157,7 +214,7 @@ class RepoService(object):
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
-      instance_id: identifier of the package instance (SHA1 of package content).
+      instance_id: identifier of the package instance (SHA1 of package file).
       caller: auth.Identity of whoever is opening an upload session.
 
     Returns:
@@ -168,6 +225,72 @@ class RepoService(object):
     upload_session, upload_session_id = self.cas_service.create_upload_session(
         DIGEST_ALGO, instance_id, caller)
     return upload_session.upload_url, upload_session_id
+
+  def process_instance(self, package_name, instance_id, processors):
+    """Performs the post processing step creating ProcessingResult entities.
+
+    Called asynchronously from a task queue. Skips processors that have already
+    ran. Can be retried by task queue service multiple times.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      processors: names of processors to run.
+    """
+    # The instance should be registered already.
+    inst = self.get_instance(package_name, instance_id)
+    assert inst, 'Instance %s:%s must exist' % (package_name, instance_id)
+
+    # Mapping {name -> Processor} for registered processors.
+    registered = {p.name: p for p in self.processors}
+    # Figure out what processors weren't run yet.
+    to_run = [registered[p] for p in processors if p in inst.processors_pending]
+
+    # Helper function that updates PackageInstance and ProcessingResult.
+    @ndb.transactional
+    def store_result(processor_name, result, error):
+      # Only one must be set.
+      assert (result is None) != (error is None), (result, error)
+      # Do not ever overwrite any existing results.
+      key = processing_result_key(package_name, instance_id, processor_name)
+      if key.get():  # pragma: no cover
+        return
+      # Update package instance's processors_* fields.
+      package_instance = package_instance_key(package_name, instance_id).get()
+      assert package_instance
+      assert processor_name in package_instance.processors_pending
+      assert processor_name not in package_instance.processors_success
+      assert processor_name not in package_instance.processors_failure
+      package_instance.processors_pending.remove(processor_name)
+      if result is not None:
+        package_instance.processors_success.append(processor_name)
+      else:
+        package_instance.processors_failure.append(processor_name)
+      # Prepare the ProcessingResult entity.
+      result_entity = ProcessingResult(key=key, created_ts=utils.utcnow())
+      result_entity.success = result is not None
+      result_entity.result = result
+      result_entity.error = error
+      # Apply the change.
+      ndb.put_multi([package_instance, result_entity])
+
+    # Run the processing.
+    data = reader.PackageReader(self.cas_service, DIGEST_ALGO, instance_id)
+    try:
+      for proc in to_run:
+        logging.info(
+            'Running processor "%s" on %s:%s',
+            proc.name, package_name, instance_id)
+        try:
+          store_result(proc.name, proc.run(inst, data), None)
+        # Let any other exception to propagate to task queue wrapper.
+        except (processing.ProcessingError, reader.ReaderError) as exc:
+          logging.error(
+              'Processor "%s" failed.\nInstance: %s:%s\n\n%s',
+              proc.name, package_name, instance_id, exc)
+          store_result(proc.name, None, str(exc))
+    finally:
+      data.close()
 
   def _register_package(self, package_name, caller, now=None):
     """Implementation of register_package, see its docstring.
@@ -204,10 +327,15 @@ def get_repo_service():
   for unit tests.
   """
   cas_service = cas.get_cas_service()
-  return RepoService(cas_service) if cas_service else None
+  if not cas_service:  # pragma: no cover
+    return None
+  return RepoService(
+      cas_service=cas_service,
+      processors=[processing.DummyProcessor()])
 
 
 ################################################################################
+## Core entities.
 
 
 class Package(ndb.Model):
@@ -237,6 +365,13 @@ class PackageInstance(ndb.Model):
   # When the instance was registered.
   registered_ts = ndb.DateTimeProperty()
 
+  # Names of processors scheduled for an instance or currently running.
+  processors_pending = ndb.StringProperty(repeated=True)
+  # Names of processors that successfully finished the processing.
+  processors_success = ndb.StringProperty(repeated=True)
+  # Names of processors that returned fatal error.
+  processors_failure = ndb.StringProperty(repeated=True)
+
   @property
   def package_name(self):
     """Name of the package this instance belongs to."""
@@ -258,3 +393,70 @@ def package_instance_key(package_name, instance_id):
   """Returns ndb.Key corresponding to particular PackageInstance."""
   assert is_valid_instance_id(instance_id), instance_id
   return ndb.Key(PackageInstance, instance_id, parent=package_key(package_name))
+
+
+################################################################################
+## Package processing (see also cipd/processing.py).
+
+
+class ProcessingResult(ndb.Model):
+  """Contains information extracted from the package instance file.
+
+  Gets extracted in an asynchronous post processing step triggered after
+  the instance is uploaded. Immutable.
+
+  Entity ID is a processor name used to extract it. Parent entity is
+  PackageInstance the information was extracted from.
+  """
+  # When the entity was created.
+  created_ts = ndb.DateTimeProperty()
+  # True if finished successfully, False if failed.
+  success = ndb.BooleanProperty(required=True)
+  # For success==False, an error message.
+  error = ndb.TextProperty(required=False)
+  # For success==True, a result of the processing as returned by Processor.run.
+  result = ndb.JsonProperty(required=False, compressed=True)
+
+
+def processing_result_key(package_name, instance_id, processor_name):
+  """Returns ndb.Key of ProcessingResult entity."""
+  assert isinstance(processor_name, str), processor_name
+  return ndb.Key(
+      ProcessingResult, processor_name,
+      parent=package_instance_key(package_name, instance_id))
+
+
+################################################################################
+## Task queues.
+
+
+class ProcessTaskQueueHandler(webapp2.RequestHandler):  # pragma: no cover
+  """Runs package instance post processing steps."""
+  # pylint: disable=R0201
+  @decorators.silence(
+      datastore_errors.InternalError,
+      datastore_errors.Timeout,
+      datastore_errors.TransactionFailedError,
+      runtime.DeadlineExceededError)
+  @decorators.require_taskqueue('cipd-process')
+  def post(self, instance_id):
+    service = get_repo_service()
+    if service is None:
+      self.abort(500, detail='Repo service is misconfigured')
+    payload = json.loads(self.request.body)
+    if payload['instance_id'] != instance_id:
+      logging.error('Bad cipd-process task, mismatching instance_id')
+      return
+    service.process_instance(
+        package_name=payload['package_name'],
+        instance_id=payload['instance_id'],
+        processors=payload['processors'])
+
+
+def get_backend_routes():  # pragma: no cover
+  """Returns a list of webapp2.Route to add to backend WSGI app."""
+  return [
+    webapp2.Route(
+        r'/internal/taskqueue/cipd-process/<instance_id:.+>',
+        ProcessTaskQueueHandler),
+  ]

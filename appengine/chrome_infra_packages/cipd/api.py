@@ -113,6 +113,16 @@ class FetchInstanceResponse(messages.Message):
     # Some non-transient error happened.
     ERROR = 4
 
+  class Processor(messages.Message):
+    class Status(messages.Enum):
+      PENDING = 1
+      SUCCESS = 2
+      FAILURE = 3
+    # Name of the processor, defines what it does.
+    name = messages.StringField(1, required=True)
+    # Status of th processing.
+    status = messages.EnumField(Status, 2, required=True)
+
   # Status of this operation, defines what other fields to expect.
   status = messages.EnumField(Status, 1, required=True)
 
@@ -120,9 +130,11 @@ class FetchInstanceResponse(messages.Message):
   instance = messages.MessageField(PackageInstance, 2, required=False)
   # For SUCCESS, a signed url to fetch the package instance file from.
   fetch_url = messages.StringField(3, required=False)
+  # For SUCCESS, list of processors applies to the instance.
+  processors = messages.MessageField(Processor, 4, repeated=True)
 
   # For ERROR status, an error message.
-  error_message = messages.StringField(4, required=False)
+  error_message = messages.StringField(5, required=False)
 
 
 class RegisterInstanceResponse(messages.Message):
@@ -398,11 +410,29 @@ class PackageRepositoryApi(remote.Service):
       return FetchInstanceResponse(
           status=FetchInstanceResponse.Status.INSTANCE_NOT_FOUND)
 
+    # Convert list of processors to proto messages.
+    def procs_to_msg(procs, status):
+      return [
+        FetchInstanceResponse.Processor(name=name, status=status)
+        for name in procs
+      ]
+    processors = []
+    processors += procs_to_msg(
+        instance.processors_pending,
+        FetchInstanceResponse.Processor.Status.PENDING)
+    processors += procs_to_msg(
+        instance.processors_success,
+        FetchInstanceResponse.Processor.Status.SUCCESS)
+    processors += procs_to_msg(
+        instance.processors_failure,
+        FetchInstanceResponse.Processor.Status.FAILURE)
+
     # Success.
     return FetchInstanceResponse(
         status=FetchInstanceResponse.Status.SUCCESS,
         instance=instance_to_proto(instance),
-        fetch_url=self.service.generate_fetch_url(instance))
+        fetch_url=self.service.generate_fetch_url(instance),
+        processors=processors)
 
   @auth.endpoints_method(
       INSTANCE_RESOURCE_CONTAINER,

@@ -4,3 +4,9 @@ queue:
   rate: 50/s
   retry_parameters:
     task_age_limit: 6h
+
+- name: cipd-process
+  bucket_size: 100
+  rate: 50/s
+  retry_parameters:
+    task_age_limit: 6h
