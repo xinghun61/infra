@@ -27,6 +27,7 @@ found in the LICENSE file. -->
                         <cr-user-autocomplete id="reviewerAutocomplete" value="{{ reviewers }}">
                             <input type="text" id="reviewers" value="{{ reviewers }}" autocomplete="off" class="{{ {invalid: errors.reviewers} | tokenList }}">
                         </cr-user-autocomplete>
+                        Use asterisks to specify required reviewers. Eg: *xyz, abc
                         <div class="form-error">{{ errors.reviewers }}</div>
                     </div>
                 </div>
