@@ -104,7 +104,7 @@ class AlertsHandler(webapp2.RequestHandler):
   # pylint: disable=E1101
   def post_to_memcache(self, memcache_key, alerts):
     uncompressed = self.generate_json_dump(alerts)
-    compression_level = 1
+    compression_level = 6
     compressed = zlib.compress(uncompressed, compression_level)
     memcache.set(memcache_key, compressed)
 
