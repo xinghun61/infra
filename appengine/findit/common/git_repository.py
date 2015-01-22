@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -22,7 +22,7 @@ CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*)$')
 
 
 def ExtractCommitPositionAndCodeReviewUrl(message):
-  """Return the commit position and code review url in the commit message.
+  """Returns the commit position and code review url in the commit message.
 
   Returns:
     (commit_position, code_review_url)
@@ -54,16 +54,16 @@ def ExtractCommitPositionAndCodeReviewUrl(message):
 
 
 def NormalizeEmail(email):
-  """Normalize the email from git repo.
+  """Normalizes the email from git repo.
 
-  Some email is like: person@@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
+  Some email is like: test@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
   """
   parts = email.split('@')
   return '@'.join(parts[:-1])
 
 
 class GitRepository(Repository):
-  """Represent a git repository on https://chromium.googlesource.com."""
+  """Represents a git repository on https://chromium.googlesource.com."""
 
   def __init__(self, repo_url, http_client):
     super(GitRepository, self).__init__()
@@ -111,7 +111,7 @@ class GitRepository(Repository):
         data['message'], touched_files, code_review_url)
 
   def GetChangeDiff(self, revision):
-    """Return the raw diff of the given revision."""
+    """Returns the raw diff of the given revision."""
     url = '%s/+/%s%%5E%%21/' % (self.repo_url, revision)
 
     status_code, content = self.http_client.Get(url, {'format': 'text'})
@@ -120,7 +120,7 @@ class GitRepository(Repository):
     return base64.b64decode(content)
 
   def GetBlame(self, path, revision):
-    """Return blame information of the file at |path| of the given revision."""
+    """Returns blame information of the file at |path| of the given revision."""
     url = '%s/+blame/%s/%s' % (self.repo_url, revision, path)
 
     data = self._SendJsonRequest(url)
@@ -138,7 +138,7 @@ class GitRepository(Repository):
     return blame
 
   def GetSource(self, path, revision):
-    """Return the source code of the file at |path| of the given revision."""
+    """Returns the source code of the file at |path| of the given revision."""
     url = '%s/+/%s/%s' % (self.repo_url, revision, path)
 
     status_code, content = self.http_client.Get(url, {'format': 'text'})

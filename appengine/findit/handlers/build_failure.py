@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -17,7 +17,7 @@ class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    """Trigger analysis of a build failure on demand and return current result.
+    """Triggers analysis of a build failure on demand and return current result.
 
     If the final analysis result is available, set cache-control to 1 day to
     avoid overload by unnecessary and frequent query from clients; otherwise

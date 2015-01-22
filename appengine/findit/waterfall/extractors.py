@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -25,7 +25,7 @@ class GeneralExtractor(Extractor):
 
 
 class CompileStepExtractor(Extractor):
-  """For compile step, extract files."""
+  """For compile step, extracts files."""
 
   FAILURE_START_LINE_PREFIX = 'FAILED: '
   FAILURE_END_LINE_PREFIX = 'ninja: build stopped'
@@ -48,7 +48,7 @@ class CompileStepExtractor(Extractor):
 
 
 class CheckPermExtractor(Extractor):
-  """For CheckPerm, only extract files."""
+  """For CheckPerm, only extracts files."""
 
   def Extract(self, failure_log, *_):
     signal = FailureSignal()

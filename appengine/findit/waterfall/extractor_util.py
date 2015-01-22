@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -98,7 +98,7 @@ CHROMIUM_SRC_PATTERN = re.compile(
 
 
 def NormalizeFilePath(file_path):
-  """Normalize the file path.
+  """Normalizes the file path.
 
   1. Convert "\", "\\", and "//" to "/"
   2. Resolve ".." and "." from the file path.
@@ -134,7 +134,7 @@ def NormalizeFilePath(file_path):
 
 
 def ShouldIgnoreLine(line):
-  """Return True if the given line from failure log should be ignored.
+  """Returns True if the given line from failure log should be ignored.
 
   Some non-fatal logging messages include a file name and line number, but they
   are not related to the failure at all and could lead to false positive.

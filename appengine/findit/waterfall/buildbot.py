@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -19,7 +19,7 @@ SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
 
 
 def ParseBuildUrl(url):
-  """Parse the given build url.
+  """Parses the given build url.
 
   Return:
     (master_name, builder_name, build_number)
@@ -37,7 +37,7 @@ def ParseBuildUrl(url):
 
 
 def CreateBuildUrl(master_name, builder_name, build_number, json_api=False):
-  """Build the url for the given build."""
+  """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
   if json_api:
     return 'https://build.chromium.org/p/%s/json/builders/%s/builds/%s' % (
@@ -56,7 +56,7 @@ def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
 
 
 def GetBuildData(master_name, builder_name, build_number, http_client):
-  """Return the json-format data of the build through buildbot json API."""
+  """Returns the json-format data of the build through buildbot json API."""
   status_code, data = http_client.Get(
       CreateBuildUrl(master_name, builder_name, build_number, json_api=True))
   if status_code != 200:
@@ -67,7 +67,7 @@ def GetBuildData(master_name, builder_name, build_number, http_client):
 
 def GetStepStdio(master_name, builder_name, build_number,
                  step_name, http_client):
-  """Return the raw string of stdio of the specified step."""
+  """Returns the raw string of stdio of the specified step."""
   status_code, data = http_client.Get(
       CreateStdioLogUrl(master_name, builder_name, build_number, step_name))
   if status_code != 200:
@@ -77,7 +77,7 @@ def GetStepStdio(master_name, builder_name, build_number,
 
 
 def GetStepResult(step_data_json):
-  """Return the result of a step."""
+  """Returns the result of a step."""
   result = step_data_json.get('results')
   if result is None and step_data_json.get('isFinished'):
     # Without parameter filter=0 in the http request to the buildbot json api,
@@ -90,7 +90,7 @@ def GetStepResult(step_data_json):
 
 
 def GetBuildProperty(properties, property_name):
-  """Return the property value from the given build properties."""
+  """Returns the property value from the given build properties."""
   for item in properties:
     if item[0] == property_name:
       return item[1]
@@ -110,7 +110,7 @@ def GetBuildResult(build_data_json):
 
 
 def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
-  """Extract and return build information as an instance of BuildInfo."""
+  """Extracts and returns build information as an instance of BuildInfo."""
   build_info = BuildInfo(master_name, builder_name, build_number)
 
   data_json = json.loads(build_data)

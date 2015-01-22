@@ -1,9 +1,9 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 class FileChangeInfo(object):
-  """Represent a file change (add/delete/modify/rename/copy/etc)."""
+  """Represents a file change (add/delete/modify/rename/copy/etc)."""
   def __init__(self, change_type, old_path, new_path):
     self.change_type = change_type
     self.old_path = old_path
@@ -23,7 +23,7 @@ class FileChangeInfo(object):
 
 
 class ChangeLog(object):
-  """Represent the change log of a revision."""
+  """Represents the change log of a revision."""
 
   def __init__(self, author_name, author_email, author_time, committer_name,
                committer_email, committer_time, revision, commit_position,
@@ -41,7 +41,7 @@ class ChangeLog(object):
     self.code_review_url = code_review_url
 
   def ToJson(self):
-    """Return the change log as a Json object."""
+    """Returns the change log as a Json object."""
     json_data = {
       'author_name': self.author_name,
       'author_email': self.author_email,
@@ -61,7 +61,7 @@ class ChangeLog(object):
 
   @staticmethod
   def FromJson(info):
-    """Return a ChangeLog instance represented by the given Json info."""
+    """Returns a ChangeLog instance represented by the given Json info."""
     touched_files = []
     for touched_file_info in info['touched_files']:
       touched_files.append(FileChangeInfo.FromJson(touched_file_info))

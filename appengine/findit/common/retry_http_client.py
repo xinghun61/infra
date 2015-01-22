@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -7,10 +7,10 @@ import urllib
 
 
 class RetryHttpClient(object):
-  """Represent a http client to send http/https request to a remote server."""
+  """Represents a http client to send http/https request to a remote server."""
 
   def _Get(self, url, timeout_seconds):  # pylint: disable=W0613, R0201
-    """Send the actual HTTP GET request.
+    """Sends the actual HTTP GET request.
 
     Returns:
       (status_code, content)
@@ -27,7 +27,7 @@ class RetryHttpClient(object):
 
   def Get(self, url, params=None, timeout_seconds=60,
           max_retries=5, retry_interval=0.5):
-    """Send a GET request to the url with the given parameters and headers.
+    """Sends a GET request to the url with the given parameters and headers.
 
     Returns:
       (status_code, content)

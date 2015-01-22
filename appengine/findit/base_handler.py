@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -59,7 +59,7 @@ class BaseHandler(webapp2.RequestHandler):
     }
 
   def HandleGet(self):  #pylint: disable=R0201
-    """Handle a GET request.
+    """Handles a GET request.
 
     Returns:
       If overridden, return the following dict (all are optional):
@@ -75,7 +75,7 @@ class BaseHandler(webapp2.RequestHandler):
     return BaseHandler.CreateError('Not implemented yet!', 501)
 
   def HandlePost(self):  #pylint: disable=R0201
-    """Handle a POST request.
+    """Handles a POST request.
 
     Returns:
       Same as HandleGet above.
@@ -83,7 +83,7 @@ class BaseHandler(webapp2.RequestHandler):
     return BaseHandler.CreateError('Not implemented yet!', 501)
 
   def _SendResponse(self, template, data, return_code, cache_expiry=None):
-    """Send the response to the client in json or html as requested.
+    """Sends the response to the client in json or html as requested.
 
     Args:
       template: the template file to use.

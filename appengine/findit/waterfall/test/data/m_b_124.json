@@ -1,7 +1,7 @@
 {
   "properties": [
     [
-      "git_revision",
+      "got_revision",
       "some_git_hash",
       "Change"
     ]
@@ -29,6 +29,6 @@
   ],
   "times": [
     1420233837.563434,
-    1420235143.579917
+    null
   ]
 }

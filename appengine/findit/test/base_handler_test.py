@@ -48,9 +48,9 @@ class PermissionTest(testing.AppengineTestCase):
   def testAccessForAnyone(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
     self._VerifyAuthorizedAccess()
-    self._VerifyAuthorizedAccess('a@gmail.com')
-    self._VerifyAuthorizedAccess('a@chromium.org')
-    self._VerifyAuthorizedAccess('a@google.com')
+    self._VerifyAuthorizedAccess('test@gmail.com')
+    self._VerifyAuthorizedAccess('test@chromium.org')
+    self._VerifyAuthorizedAccess('test@google.com')
 
   def testAccessForAdmin(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ADMIN
@@ -59,23 +59,23 @@ class PermissionTest(testing.AppengineTestCase):
     self._VerifyUnauthorizedAccess()
 
     # Non-admin has no access.
-    self._VerifyUnauthorizedAccess('a@gmail.com')
-    self._VerifyUnauthorizedAccess('b@chromium.org')
-    self._VerifyUnauthorizedAccess('c@google.com')
+    self._VerifyUnauthorizedAccess('test@gmail.com')
+    self._VerifyUnauthorizedAccess('test@chromium.org')
+    self._VerifyUnauthorizedAccess('test@google.com')
 
     # Admin has access.
-    self._VerifyAuthorizedAccess('a@chromium.org', True)
+    self._VerifyAuthorizedAccess('test@chromium.org', True)
 
   def testAccessForCorpUser(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
 
     # Non-member has no access.
-    self._VerifyUnauthorizedAccess('a@gmail.com')
-    self._VerifyUnauthorizedAccess('a@chromium.org')
+    self._VerifyUnauthorizedAccess('test@gmail.com')
+    self._VerifyUnauthorizedAccess('test@chromium.org')
 
     # Corp users and admin has access.
-    self._VerifyAuthorizedAccess('c@google.com')
-    self._VerifyAuthorizedAccess('c@chromium.org', True)
+    self._VerifyAuthorizedAccess('test@google.com')
+    self._VerifyAuthorizedAccess('test@chromium.org', True)
 
   def testAccessByTaskQueue(self):
     for permission in (Permission.ANYONE, Permission.CORP_USER,
@@ -84,11 +84,11 @@ class PermissionTest(testing.AppengineTestCase):
       # Simulation of task queue request by setting the header requires admin
       # login.
       self._VerifyAuthorizedAccess(
-          'a@chromium.org', True, {'X-AppEngine-QueueName': 'task_queue'})
+          'test@chromium.org', True, {'X-AppEngine-QueueName': 'task_queue'})
 
   def testUnknownPermissionLevel(self):
     PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
-    self._VerifyUnauthorizedAccess('c@google.com')
+    self._VerifyUnauthorizedAccess('test@google.com')
 
   def testLoginLinkWithReferer(self):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER

@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -10,7 +10,7 @@ class TriageAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
 
   def HandlePost(self):  #pylint: disable=R0201
-    """Set the manual triage result for the analysis.
+    """Sets the manual triage result for the analysis.
 
     Update the culprit CLs and mark the analysis result as correct/wrong/etc.
     This corresponds to the "Update" button in following page:

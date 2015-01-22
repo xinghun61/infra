@@ -129,7 +129,7 @@ class BuildBotTest(unittest.TestCase):
 
   def testGetBuildProperty(self):
     properties = [
-        ['blamelist', ['a@chromium.org'], 'Build'],
+        ['blamelist', ['test@chromium.org'], 'Build'],
         ['branch', 'master', 'Build'],
         ['got_revision', 'aef91789474be4c6a6ff2b8199be3d56063c0555',
          'Annotation(bot_update)'],
@@ -157,8 +157,9 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(expected_build_start_time, build_start_time)
 
   def testExtractBuildInfo(self):
-    with open(os.path.join(os.path.dirname(__file__), 'sample_build.json'),
-              'r') as f:
+    build_file = os.path.join(
+        os.path.dirname(__file__), 'data', 'sample_build.json')
+    with open(build_file, 'r') as f:
       build_data = f.read()
 
     master_name = 'a'

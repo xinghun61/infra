@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -25,13 +25,13 @@ COMMIT_LOG = """)]}'
     "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
   ],
   "author": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "name": "test1@chromium.org",
+    "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
     "time": "Wed Jun 11 19:35:32 2014"
   },
   "committer": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "name": "test1@chromium.org",
+    "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
     "time": "Wed Jun 11 19:35:32 2014"
   },
   "message": %s,
@@ -85,11 +85,11 @@ COMMIT_LOG = """)]}'
 }""" % json.JSONEncoder().encode(COMMIT_MESSAGE)
 
 EXPECTED_CHANGE_LOG_JSON = {
-    'author_name': 'malch@chromium.org',
+    'author_name': 'test1@chromium.org',
     'message': COMMIT_MESSAGE,
-    'committer_email': 'malch@chromium.org',
+    'committer_email': 'test1@chromium.org',
     'commit_position': 175976,
-    'author_email': 'malch@chromium.org',
+    'author_email': 'test1@chromium.org',
     'touched_files': [
       {
         'change_type': 'add',
@@ -120,7 +120,7 @@ EXPECTED_CHANGE_LOG_JSON = {
     'author_time': 'Wed Jun 11 19:35:32 2014',
     'committer_time': 'Wed Jun 11 19:35:32 2014',
     'code_review_url': 'https://codereview.chromium.org/328113005',
-    'committer_name': 'malch@chromium.org',
+    'committer_name': 'test1@chromium.org',
     'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'
 }
 
@@ -132,13 +132,13 @@ COMMIT_LOG_WITH_UNKNOWN_FILE_CHANGE_TYPE = """)]}'
     "42a94bb5e2ef8525d7dadbd8eae37fe7cb8d77d0"
   ],
   "author": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "name": "test1@chromium.org",
+    "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
     "time": "Wed Jun 11 19:35:32 2014"
   },
   "committer": {
-    "name": "malch@chromium.org",
-    "email": "malch@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "name": "test1@chromium.org",
+    "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
     "time": "Wed Jun 11 19:35:32 2014"
   },
   "message": "message",
@@ -164,8 +164,8 @@ GITILES_FILE_BLAME_RESULT = """)]}'
       "path": "chrome/test/chromedriver/element_commands.cc",
       "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
       "author": {
-        "name": "chrisgao@chromium.org",
-        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "name": "test2@chromium.org",
+        "email": "test2@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
         "time": "2013-02-11 20:18:51"
       }
     },
@@ -175,8 +175,8 @@ GITILES_FILE_BLAME_RESULT = """)]}'
       "path": "chrome/test/chromedriver/element_commands.cc",
       "commit": "030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076",
       "author": {
-        "name": "jbudorick@chromium.org",
-        "email": "jbudorick@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "name": "test3@chromium.org",
+        "email": "test3@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
         "time": "2014-02-06 09:02:09"
       }
     },
@@ -186,8 +186,8 @@ GITILES_FILE_BLAME_RESULT = """)]}'
       "path": "chrome/test/chromedriver/element_commands.cc",
       "commit": "584ae1f26b070150f65a03dba75fc8af6b6f6ece",
       "author": {
-        "name": "chrisgao@chromium.org",
-        "email": "chrisgao@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
+        "name": "test2@chromium.org",
+        "email": "test2@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
         "time": "2013-02-11 20:18:51"
       }
     }
@@ -198,25 +198,25 @@ EXPECTED_FILE_BLAME_JSON = {
     'regions': [
       {
         'count': 6,
-        'author_email': u'chrisgao@chromium.org',
+        'author_email': u'test2@chromium.org',
         'author_time': u'2013-02-11 20:18:51',
-        'author_name': u'chrisgao@chromium.org',
+        'author_name': u'test2@chromium.org',
         'start': 1,
         'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
       },
       {
         'count': 1,
-        'author_email': u'jbudorick@chromium.org',
+        'author_email': u'test3@chromium.org',
         'author_time': u'2014-02-06 09:02:09',
-        'author_name': u'jbudorick@chromium.org',
+        'author_name': u'test3@chromium.org',
         'start': 7,
         'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
       },
       {
         'count': 1,
-        'author_email': u'chrisgao@chromium.org',
+        'author_email': u'test2@chromium.org',
         'author_time': u'2013-02-11 20:18:51',
-        'author_name': u'chrisgao@chromium.org',
+        'author_name': u'test2@chromium.org',
         'start': 8,
         'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
       }
@@ -273,7 +273,7 @@ class GitRepositoryTest(unittest.TestCase):
                 '\n'
                 'balabala...\n'
                 '\n'
-                'R=craigdh@chromium.org\n'
+                'R=test4@chromium.org\n'
                 '\n'
                 'Review URL: https://codereview.chromium.org/469523002\n'
                 '\n'
