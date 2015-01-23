@@ -31,7 +31,7 @@ COMMIT_LOG = """)]}'
   },
   "committer": {
     "name": "test1@chromium.org",
-    "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
+    "email": "test1@chromium.org",
     "time": "Wed Jun 11 19:35:32 2014"
   },
   "message": %s,

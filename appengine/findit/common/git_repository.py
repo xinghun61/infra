@@ -59,7 +59,7 @@ def NormalizeEmail(email):
   Some email is like: test@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
   """
   parts = email.split('@')
-  return '@'.join(parts[:-1])
+  return '@'.join(parts[0:2])
 
 
 class GitRepository(Repository):
