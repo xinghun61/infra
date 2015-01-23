@@ -76,7 +76,12 @@ EXTRACTORS = {
 
 
 def ExtractSignal(master_name, bot_name, step_name, test_name, failure_log):
+  """Uses an appropriate extractor to extract failure signals.
+
+  Returns:
+    A FailureSignal.
+  """
   # Fall back to a general-but-maybe-not-accurate extractor.
   extractor_class = EXTRACTORS.get(step_name, GeneralExtractor)
   return extractor_class().Extract(
-      master_name, bot_name, step_name, test_name, failure_log)
+      failure_log, test_name, step_name, bot_name, master_name)

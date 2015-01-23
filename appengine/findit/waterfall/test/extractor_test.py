@@ -21,6 +21,9 @@ class ExtractorTest(unittest.TestCase):
         'File "telemetry/core/web_contents.py", line 78, in pythonMethod': {
             'telemetry/core/web_contents.py': [78]
         },
+        'File "/b/build/slave/bot/build/src/a/b.py", line 246, in RunPage': {
+            'a/b.py': [246]
+        }
     }
 
     extractor = Extractor()

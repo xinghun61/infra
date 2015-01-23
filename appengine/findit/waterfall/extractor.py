@@ -13,7 +13,9 @@ class Extractor(object):
     match = extractor_util.PYTHON_STACK_TRACE_PATTERN.match(message_line)
     if match:
       trace_line = match.groupdict()
-      failure_signal.AddFile(trace_line['file'], trace_line['line'])
+      failure_signal.AddFile(
+          extractor_util.NormalizeFilePath(trace_line['file']),
+          trace_line['line'])
     else:
       for match in extractor_util.FILE_PATH_LINE_PATTERN.finditer(message_line):
         file_path, line_number = match.groups()
