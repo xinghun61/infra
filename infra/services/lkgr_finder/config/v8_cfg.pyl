@@ -34,7 +34,6 @@
         'V8 Linux64 - debug builder',
         'V8 Linux64',
         'V8 Linux64 - debug',
-        'V8 Linux clang',
         'V8 Linux64 ASAN',
         'V8 Linux64 TSAN',
         # TODO(machenbach): Enable once crbug.com/382930 is resolved.
