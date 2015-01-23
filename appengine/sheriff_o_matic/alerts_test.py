@@ -21,6 +21,9 @@ class AlertsTest(unittest.TestCase):
     self.testbed.init_user_stub()
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
+    self.testbed.init_app_identity_stub()
+    self.testbed.init_urlfetch_stub()
+    self.testbed.init_all_stubs()
     self.testapp = webtest.TestApp(alerts.app)
 
   def tearDown(self):
@@ -220,6 +223,20 @@ class AlertsTest(unittest.TestCase):
     res = self.testapp.get('/alerts')
     got_alerts = json.loads(res.body)
     self.assertEquals(got_alerts['alerts'], put_alerts['alerts'])
+
+  def test_alerts_too_big_for_memcache(self):
+    random.seed(0xf00f00)
+    big_alerts = self.generate_fake_alerts(10000)
+    content = json.dumps(big_alerts)
+    self.assertTrue(len(content) > alerts.AlertsHandler.MAX_JSON_SIZE)
+
+    params = {'content': content}
+
+    self.testapp.post('/alerts', params)
+    res = self.testapp.get('/alerts')
+    got_alerts = json.loads(res.body)
+    self.assertEquals(got_alerts['alerts'], big_alerts['alerts'])
+    self.assertEquals(memcache.get(alerts.AlertsHandler.ALERTS_TYPE), None)
 
   def generate_fake_alerts(self, n):
     return {'alerts': [self.generate_fake_alert() for _ in range(n)]}

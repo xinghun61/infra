@@ -3,11 +3,14 @@
 # found in the LICENSE file.
 
 import calendar
+import contextlib
 import datetime
 import json
 import logging
 import webapp2
 import zlib
+
+import cloudstorage as gcs
 
 from google.appengine.api import memcache
 from google.appengine.api import users
@@ -30,10 +33,13 @@ class AlertsJSON(ndb.Model):
   type = ndb.StringProperty()
   json = ndb.BlobProperty(compressed=True)
   date = ndb.DateTimeProperty(auto_now_add=True)
+  use_gcs = ndb.BooleanProperty()
 
 
 class AlertsHandler(webapp2.RequestHandler):
   ALERTS_TYPE = 'alerts'
+  # Max number of bytes that AppEngine allows writing to Memcache
+  MAX_JSON_SIZE = 10**6 - 10**5
 
   # Has no 'response' member.
   # pylint: disable=E1101
@@ -57,10 +63,23 @@ class AlertsHandler(webapp2.RequestHandler):
     last_query = AlertsJSON.query().filter(AlertsJSON.type == alerts_type)
     return last_query.order(-AlertsJSON.date).get()
 
+  def get_from_gcs(self, alerts_type):
+    with contextlib.closing(gcs.open("/bucket/" + alerts_type)) as gcs_file:
+      return gcs_file.read()
+
+  def post_to_gcs(self, alerts_type, data):
+    # Create a GCS file with GCS client.
+    with contextlib.closing(gcs.open("/bucket/" + alerts_type, 'w')) as f:
+      f.write(data)
+
   def get_from_datastore(self, alerts_type):
     last_entry = self.get_last_datastore(alerts_type)
     if last_entry:
-      self.send_json_data(last_entry.json)
+      if last_entry.use_gcs:
+        blob = self.get_from_gcs(alerts_type)
+        self.send_json_data(blob)
+      else:
+        self.send_json_data(last_entry.json)
       return True
     return False
 
@@ -95,18 +114,24 @@ class AlertsHandler(webapp2.RequestHandler):
       return filtered_json
 
     if alert_fields(last_alerts) != alert_fields(alerts):
-      new_entry = AlertsJSON(
-          json=self.generate_json_dump(alerts),
-          type=alerts_type)
-      new_entry.put()
+      json_data = self.generate_json_dump(alerts)
 
-  # Has no 'response' member.
-  # pylint: disable=E1101
-  def post_to_memcache(self, memcache_key, alerts):
-    uncompressed = self.generate_json_dump(alerts)
-    compression_level = 9
-    compressed = zlib.compress(uncompressed, compression_level)
-    memcache.set(memcache_key, compressed)
+      compression_level = 9
+      compressed = zlib.compress(json_data, compression_level)
+
+      if len(compressed) < self.MAX_JSON_SIZE:
+        memcache.set(alerts_type, compressed)
+        new_entry = AlertsJSON(
+            json=json_data,
+            type=alerts_type)
+        new_entry.put()
+      else:
+        memcache.delete(alerts_type)
+        self.post_to_gcs(alerts_type, json_data)
+        new_entry = AlertsJSON(
+           use_gcs=True,
+           type=alerts_type)
+        new_entry.put()
 
   def parse_alerts(self, alerts_json):
     try:
@@ -124,7 +149,6 @@ class AlertsHandler(webapp2.RequestHandler):
   def update_alerts(self, alerts_type):
     alerts = self.parse_alerts(self.request.get('content'))
     if alerts:
-      self.post_to_memcache(alerts_type, alerts)
       self.post_to_history(alerts_type, alerts)
 
   def post(self):
