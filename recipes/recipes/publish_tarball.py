@@ -6,10 +6,13 @@ DEPS = [
   'bot_update',
   'gclient',
   'gsutil',
+  'omahaproxy',
   'path',
   'platform',
   'properties',
   'python',
+  'raw_io',
+  'trigger',
 ]
 
 
@@ -31,6 +34,20 @@ def export_tarball(api, args, source, destination):
 
 
 def GenSteps(api):
+  if 'version' not in api.properties:
+    ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
+                           stdout=api.raw_io.output()).stdout
+    missing_releases = set()
+    # TODO(phajdan.jr): find better solution than hardcoding version number.
+    # We do that currently (carryover from a solution this recipe is replacing)
+    # to avoid running into errors with older releases.
+    for release in api.omahaproxy.history(min_major_version=38):
+      if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
+        missing_releases.add(release['version'])
+    for version in missing_releases:
+      api.trigger({'buildername': 'publish_tarball', 'version': version})
+    return
+
   version = api.properties['version']
 
   api.gclient.set_config('chromium')
@@ -40,7 +57,9 @@ def GenSteps(api):
 
   export_tarball(
       api,
-      ['--remove-nonessential-files', 'chromium-%s' % version],
+      # Verbose output helps avoid a buildbot timeout when no output
+      # is produced for a long time.
+      ['--remove-nonessential-files', 'chromium-%s' % version, '--verbose'],
       'chromium-%s.tar.xz' % version,
       'chromium-%s.tar.xz' % version)
 
@@ -49,4 +68,11 @@ def GenTests(api):
     api.test('basic') +
     api.properties.generic(version='38.0.2125.122') +
     api.platform('linux', 64)
+  )
+
+  yield (
+    api.test('trigger') +
+    api.properties.generic() +
+    api.platform('linux', 64) +
+    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
   )

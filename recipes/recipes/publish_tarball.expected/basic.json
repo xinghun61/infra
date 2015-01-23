@@ -68,7 +68,8 @@
       "-u",
       "[SLAVE_BUILD]/src/tools/export_tarball/export_tarball.py",
       "--remove-nonessential-files",
-      "chromium-38.0.2125.122"
+      "chromium-38.0.2125.122",
+      "--verbose"
     ],
     "cwd": "[TMP_BASE]/export_tarball_tmp_1",
     "name": "export_tarball"
