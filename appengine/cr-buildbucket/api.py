@@ -196,7 +196,8 @@ class BuildBucketApi(remote.Service):
       start_cursor=messages.StringField(1),
       # All specified tags must be present in a build.
       tag=messages.StringField(2, repeated=True),
-      max_builds=messages.IntegerField(3, variant=messages.Variant.INT32),
+      bucket=messages.StringField(3, repeated=True),
+      max_builds=messages.IntegerField(4, variant=messages.Variant.INT32),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -208,13 +209,11 @@ class BuildBucketApi(remote.Service):
       SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='search', http_method='GET')
   def search(self, request):
-    """Searches for builds.
-
-    Currently only search by tag(s) is supported. Tags must contain ":".
-    """
+    """Searches for builds."""
     assert isinstance(request.tag, list)
-    builds, next_cursor = self.service.search_by_tags(
-        request.tag,
+    builds, next_cursor = self.service.search(
+        tags=request.tag,
+        buckets=request.bucket,
         max_builds=request.max_builds,
         start_cursor=request.start_cursor)
     return self.SearchResponseMessage(

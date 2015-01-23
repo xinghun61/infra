@@ -78,15 +78,13 @@ def validate_url(url):
     raise InvalidInputError('Unexpected url scheme: "%s"' % parsed.scheme)
 
 
-def validate_max_builds(max_builds):
+def fix_max_builds(max_builds):
   max_builds = max_builds or 10
   if not isinstance(max_builds, int):
     raise InvalidInputError('max_builds must be an integer')
   if max_builds < 0:
     raise InvalidInputError('max_builds must be positive')
-  if max_builds >= MAX_RETURN_BUILDS:
-    raise InvalidInputError(
-        'max_builds must not be greater than %s' % MAX_RETURN_BUILDS)
+  return min(MAX_RETURN_BUILDS, max_builds)
 
 
 def validate_tags(tags):
@@ -182,16 +180,18 @@ class BuildBucketService(object):
           break
 
     next_cursor_str = None
-    if query_iter.probably_has_next():
+    if query_iter.has_next():
       next_cursor_str = query_iter.cursor_after().urlsafe()
     return entities, next_cursor_str
 
-  def search_by_tags(self, tags, max_builds=None, start_cursor=None):
-    """Searches for builds by tags.
+  def search(self, tags=None, buckets=None, max_builds=None, start_cursor=None):
+    """Searches for builds.
 
     Args:
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
+      buckets (list of str): if not None, a list of buckets to search in.
+        A build must be in one of the buckets.
       max_builds (int): maximum number of builds to return.
       start_cursor (string): a value of "next" cursor returned by previous
         search_by_tags call. If not None, return next builds in the query.
@@ -202,14 +202,21 @@ class BuildBucketService(object):
         next_cursor (string): cursor for the next page.
           None if there are no more builds.
     """
-    max_builds = max_builds or 10
-    validate_max_builds(max_builds)
     validate_tags(tags)
     tags = tags or []
+    if buckets is not None:
+      if not isinstance(buckets, list):
+        raise InvalidInputError('buckets must be a list')
+      if not all(isinstance(b, basestring) for b in buckets):
+        raise InvalidInputError('Each bucket must be a string')
+    max_builds = fix_max_builds(max_builds)
 
     q = model.Build.query()
     for t in tags:
       q = q.filter(model.Build.tags == t)
+    if buckets:
+      q = q.filter(model.Build.bucket.IN(buckets))
+    q = q.order(model.Build.key)
     return self._fetch_page(q, max_builds, start_cursor)
 
   def peek(self, buckets, max_builds=None, start_cursor=None):
@@ -236,8 +243,7 @@ class BuildBucketService(object):
     assert all(isinstance(n, basestring) for n in buckets), (
         'Buckets must be strings'
     )
-    max_builds = max_builds or 10
-    validate_max_builds(max_builds)
+    max_builds = fix_max_builds(max_builds)
     identity = auth.get_current_identity()
     for bucket in buckets:
       if not acl.can_peek_bucket(bucket, identity):

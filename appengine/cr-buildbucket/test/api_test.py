@@ -132,11 +132,21 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   #################################### SEARCH ##################################
 
-  def test_search_by_tags(self):
+  def test_search(self):
     self.test_build.put()
-    self.service.search_by_tags.return_value = ([self.test_build], 'the cursor')
-    req = {'tag': ['important']}
+    self.service.search.return_value = ([self.test_build], 'the cursor')
+    req = {
+        'tag': ['important'],
+        'bucket': ['chromium'],
+    }
+
     res = self.call_api('search', req).json_body
+
+    self.service.search.assert_called_once_with(
+        tags=req['tag'],
+        buckets=req['bucket'],
+        max_builds=None,
+        start_cursor=None)
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
