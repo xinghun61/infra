@@ -267,93 +267,87 @@ def parse_cq_data(json_data):
     if action != 'verifier_jobs_update':
       continue
 
-    patchset = fields['patchset']
-    issue = fields['issue']
-    jobs = fields['jobs']
-    for master in jobs:
-      for job in jobs[master]:
-        if not 'status' in jobs[master][job] or not 'rietveld_results' in jobs[master][job]:
+    if fields['verifier'] != 'try job':
+      continue
+
+    job_states = fields['jobs']
+    for state in job_states:
+      # Just go by |result|.
+      #if state not in ['JOB_SUCCEEDED', 'JOB_FAILED', 'JOB_TIMED_OUT']:
+      #  continue
+
+      for job in job_states[state]:
+        master = job['master']
+        builder = job['builder']
+        result = job['result']
+        buildnumber = job['buildnumber']
+        timestamp = datetime.datetime.strptime(job['timestamp'],
+                                               '%Y-%m-%d %H:%M:%S.%f')
+        build_properties = job['build_properties']
+        if not build_properties:
+          continue
+        issue = int(build_properties['issue'])
+        patchset = int(build_properties['patchset'])
+
+        if build_result.isResultPending(result):
           continue
 
-        rietveld_results = jobs[master][job]['rietveld_results']
+        # At this point, only success or failure.
+        success = build_result.isResultSuccess(result)
 
-        status = jobs[master][job]['status']
-        if len(rietveld_results) == 0:
-          continue  # happens for initial creation of job
+        patchset_builder_runs = get_patchset_builder_runs(issue=issue,
+                                                          patchset=patchset,
+                                                          master=master,
+                                                          builder=builder)
 
-        for rietveld_result in rietveld_results:
-          if not rietveld_result['slave']:
-            continue  # TODO(jam): what is this case with result=6 and slave=None?
-          buildnumber = rietveld_result['buildnumber']
-          slave = rietveld_result['slave']
-          result = rietveld_result['result']
+        build_run = BuildRun(parent=patchset_builder_runs.key,
+                             buildnumber=buildnumber,
+                             result=result,
+                             time_finished=timestamp)
 
-          if build_result.isResultPending(result):
+        previous_runs = BuildRun.query(
+            ancestor=patchset_builder_runs.key).fetch()
+
+        duplicate = False
+        for previous_run in previous_runs:
+          # We saw this build run already or there are multiple green runs,
+          # in which case we ignore subsequent ones to avoid showing failures
+          # multiple times.
+          if (previous_run.buildnumber == buildnumber) or \
+             (build_run.is_success and previous_run.is_success) :
+            duplicate = True
+            break
+
+        if duplicate:
+          continue
+
+        build_run.put()
+
+        for previous_run in previous_runs:
+          if previous_run.is_success == build_run.is_success:
             continue
+          if success:
+            # We saw the flake and then the pass.
+            flaky_run = FlakyRun(
+                failure_run=previous_run.key,
+                failure_run_time_finished=previous_run.time_finished,
+                success_run=build_run.key)
+            flaky_run.put()
+            logging_output.append(previous_run.key.parent().get().builder +
+                                  str(previous_run.buildnumber))
+          else:
+            # We saw the pass and then the failure. Could happen when fetching
+            # historical data.
+            flaky_run = FlakyRun(
+                failure_run=build_run.key,
+                failure_run_time_finished=build_run.time_finished,
+                success_run=previous_run.key)
+            flaky_run.put()
+            logging_output.append(build_run.key.parent().get().builder +
+                                  str(build_run.buildnumber))
 
-          # At this point, only success or failure.
-          success = build_result.isResultSuccess(result)
-
-          patchset_builder_runs = get_patchset_builder_runs(issue=issue,
-                                                            patchset=patchset,
-                                                            master=master,
-                                                            builder=job)
-
-          try:
-            timestamp = datetime.datetime.strptime(rietveld_result['timestamp'],
-                                                   '%Y-%m-%d %H:%M:%S.%f')
-          except ValueError:
-            # chromium-cq-status switched to adding microseconds
-            timestamp = datetime.datetime.strptime(rietveld_result['timestamp'],
-                                                   '%Y-%m-%d %H:%M:%S')
-          build_run = BuildRun(parent=patchset_builder_runs.key,
-                               buildnumber=buildnumber,
-                               result=result,
-                               time_finished=timestamp)
-
-          previous_runs = BuildRun.query(
-              ancestor=patchset_builder_runs.key).fetch()
-
-          duplicate = False
-          for previous_run in previous_runs:
-            # We saw this build run already or there are multiple green runs,
-            # in which case we ignore subsequent ones to avoid showing failures
-            # multiple times.
-            if (previous_run.buildnumber == buildnumber) or \
-               (build_run.is_success and previous_run.is_success) :
-              duplicate = True
-              break
-
-          if duplicate:
-            continue
-
-          build_run.put()
-
-          for previous_run in previous_runs:
-            if previous_run.is_success == build_run.is_success:
-              continue
-            if success:
-              # We saw the flake and then the pass.
-              flaky_run = FlakyRun(
-                  failure_run=previous_run.key,
-                  failure_run_time_finished=previous_run.time_finished,
-                  success_run=build_run.key)
-              flaky_run.put()
-              logging_output.append(previous_run.key.parent().get().builder +
-                                    str(previous_run.buildnumber))
-            else:
-              # We saw the pass and then the failure. Could happen when fetching
-              # historical data.
-              flaky_run = FlakyRun(
-                  failure_run=build_run.key,
-                  failure_run_time_finished=build_run.time_finished,
-                  success_run=previous_run.key)
-              flaky_run.put()
-              logging_output.append(build_run.key.parent().get().builder +
-                                    str(build_run.buildnumber))
-
-            # Queue a task to fetch the error of this failure.
-            deferred.defer(get_flaky_run_reason, flaky_run.key)
+          # Queue a task to fetch the error of this failure.
+          deferred.defer(get_flaky_run_reason, flaky_run.key)
 
   return logging_output
 
