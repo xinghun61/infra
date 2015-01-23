@@ -10,6 +10,10 @@ var actionInfo = {
     description: 'CQ stopped processing patch',
     cls: 'important',
   },
+  patch_failed: {
+    description: 'CQ rejected the patch',
+    cls: 'important',
+  },
   patch_ready_to_commit: {
     description: 'Patch is ready to be committed',
     cls: 'important',
@@ -33,34 +37,30 @@ var actionInfo = {
   verifier_skip: {
     description: 'Tryjobs skipped',
     cls: 'normal',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   },
   verifier_start: startedJobsInfo,
   verifier_jobs_update: jobsUpdateInfo,
   verifier_error: {
     description: 'Error fetching tryjob status',
     cls: 'bad',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   },
   verifier_pass: {
     description: 'All tryjobs passed',
     cls: 'good',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   },
   verifier_fail: {
     description: 'Patch failed tryjobs',
     cls: 'bad',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   },
-  verifier_retry: {
-    description: 'Retrying failed tryjobs',
-    cls: 'bad',
-    filter: simpleTryjobVerifierCheck,
-  },
+  verifier_retry: verifierRetryInfo,
   verifier_timeout: {
     description: 'Timeout waiting for tryjob to trigger',
     cls: 'bad',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   },
 };
 
@@ -71,6 +71,29 @@ tryjobStatus = [
   'not-started',
 ];
 
+function jobStateToStatus(jobState) {
+  switch(jobState) {
+    case 'JOB_NOT_TRIGGERED': return 'not-started';
+    case 'JOB_PENDING': return 'not-started';
+    case 'JOB_RUNNING': return 'running';
+    case 'JOB_SUCCEEDED': return 'passed';
+    case 'JOB_FAILED': return 'failed';
+    case 'JOB_TIMED_OUT': return 'failed';
+    default: return 'not-started';
+  }
+}
+
+function jobStatePrint(jobState) {
+  switch(jobState) {
+    case 'JOB_NOT_TRIGGERED': return 'not triggered';
+    case 'JOB_PENDING': return 'pending';
+    case 'JOB_RUNNING': return 'running';
+    case 'JOB_SUCCEEDED': return 'succeeded';
+    case 'JOB_FAILED': return 'failed';
+    case 'JOB_TIMED_OUT': return 'timed out';
+    default: return 'in unknown state';
+  }
+}
 
 function main() {
   container.textContent = 'Loading patch data...';
@@ -106,7 +129,9 @@ function loadPatchsetRecords(callback) {
 
 function displayAttempts(records) {
   container.textContent = '';
-  var recordGroups = splitByAttempts(records.filter(function(record) { return 'action' in record.fields; }));
+  var recordGroups = splitByAttempts(records.filter(function(record) {
+    return 'action' in record.fields;
+  }));
   var attempts = [];
   recordGroups.forEach(function(recordGroup, i) {
     var lastRecord = recordGroup[recordGroup.length - 1];
@@ -122,7 +147,8 @@ function displayAttempts(records) {
     recordGroup.forEach(function(record) {
       var info = actionInfo[record.fields.action];
       if (!info) {
-        console.warn('Unexpected action ' + record.fields.action + ' at timestamp ' + record.timestamp);
+        console.warn('Unexpected action ' + record.fields.action
+                     + ' at timestamp ' + record.timestamp);
         return;
       }
       if (typeof info === 'function') {
@@ -132,7 +158,8 @@ function displayAttempts(records) {
         return;
       }
       var duration = getDurationString(attempt.start, record.timestamp);
-      attempt.rows.push(newRow(record.timestamp, duration, info.description, record.fields.message, info.cls));
+      attempt.rows.push(newRow(record.timestamp, duration, info.description,
+                               record.fields.message, info.cls));
     });
     attempt.header = newHeader(attempt);
     attempts.push(attempt);
@@ -264,6 +291,10 @@ function simpleTryjobVerifierCheck(record) {
   return record.fields.verifier === 'simple try job';
 }
 
+function tryjobVerifierCheck(record) {
+  return record.fields.verifier === 'try job';
+}
+
 function startedJobsInfo(attempt, record) {
   var jobs = record.fields.tryjobs;
   var node = newElement('div');
@@ -272,7 +303,8 @@ function startedJobsInfo(attempt, record) {
     builders.push(builder);
   });
   builders.sort();
-  node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' triggered: '))
+  node.appendChild(newElement('span', 'Tryjob' + plural(builders.length)
+                              + ' triggered: '));
   builders.forEach(function(builder) {
     node.appendChild(newTryjobBubble(builder, 'triggered'));
     node.appendChild(newElement('span', ' '));
@@ -282,44 +314,51 @@ function startedJobsInfo(attempt, record) {
   return {
     description: node,
     cls: 'normal',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   };
 }
 
-function jobsUpdateInfo(attempt, record) {
-  var jobs = record.fields.jobs;
+function verifierRetryInfo(attempt, record) {
+  var builder = record.fields.builder
   var node = newElement('div');
+  node.appendChild(newElement('span', 'Retrying failed tryjob: ' + builder))
+  return {
+    description: node,
+    cls: 'bad',
+    filter: tryjobVerifierCheck,
+  }
+}
+
+function jobsUpdateInfo(attempt, record) {
   // Update latest attempt tryjob state.
-  forEachBuilder(jobs, function(builder, data) {
-    if (!attempt.tryjobs[builder]) {
-      attempt.tryjobs[builder] = initialTryjobState();
-    }
-    if ('status' in data) {
-      attempt.tryjobs[builder].status = tryjobStatus[data.status];
-    }
-    if (data.rietveld_results && data.rietveld_results.length > 0) {
-      attempt.tryjobs[builder].url = data.rietveld_results[0].url;
-    }
-  });
-  // Scan for status changes to display.
+  if(!tryjobVerifierCheck(record)) return null;
+  var states = record.fields.jobs;
+  var node = newElement('div');
   var firstLine = true;
-  tryjobStatus.forEach(function(status) {
-    var builders = [];
-    forEachBuilder(jobs, function(builder, data) {
-      if (tryjobStatus[data.status] === status) {
-        builders.push(builder);
+  forEachJobState(states, function(jobState, jobs) {
+    tryjobs = [];
+    jobs.forEach(function(job, i) {
+      builder = job.builder;
+      if (!attempt.tryjobs[builder]) {
+        attempt.tryjobs[builder] = initialTryjobState();
+      }
+      if (attempt.tryjobs[builder].jobState !== jobState) {
+        attempt.tryjobs[builder].builder = builder;
+        attempt.tryjobs[builder].status = jobStateToStatus(jobState);
+        attempt.tryjobs[builder].jobState = jobState;
+        attempt.tryjobs[builder].url = job.url;
+        tryjobs.push(attempt.tryjobs[builder]);
       }
     });
-    if (builders.length === 0) {
-      return;
-    }
+    if(tryjobs.length == 0) return null;
     if (!firstLine) {
       node.appendChild(newElement('br'));
     }
     firstLine = false;
-    node.appendChild(newElement('span', 'Tryjob' + plural(builders.length) + ' ' + status + ': '))
-    builders.forEach(function(builder) {
-      node.appendChild(newTryjobBubble(builder, status, attempt.tryjobs[builder].url));
+    node.appendChild(newElement('span', 'Tryjob' + plural(tryjobs.length) + ' ' + jobStatePrint(jobState) + ': '))
+    tryjobs.forEach(function(tryjob, i) {
+      node.appendChild(newTryjobBubble(
+        tryjob.builder, tryjob.status, tryjob.url));
       node.appendChild(newElement('span', ' '));
     });
   });
@@ -327,13 +366,15 @@ function jobsUpdateInfo(attempt, record) {
   return firstLine ? null : {
     description: node,
     cls: 'normal',
-    filter: simpleTryjobVerifierCheck,
+    filter: tryjobVerifierCheck,
   };
 }
 
 function initialTryjobState() {
   return {
+    builder: null,
     status: 'triggered',
+    jobState: null,
     url: null,
   };
 }
@@ -342,6 +383,14 @@ function forEachBuilder(jobs, callback) {
   for (var master in jobs) {
     for (var builder in jobs[master]) {
       callback(builder, jobs[master][builder]);
+    }
+  }
+}
+
+function forEachJobState(states, callback) {
+  for (var jobState in states) {
+    if (states.hasOwnProperty(jobState)) {
+      callback(jobState, states[jobState]);
     }
   }
 }

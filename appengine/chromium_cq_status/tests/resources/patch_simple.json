@@ -96,12 +96,12 @@
       "owner=test@chromium.org",
       "action=verifier_pass",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_pass",
       "patchset": 1,
       "issue": 123456789
@@ -120,13 +120,11 @@
       "owner=test@chromium.org",
       "action=verifier_jobs_update",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "jobs": {
-        "tryserver.b": {
-          "test_suite_b_2": {
-            "rietveld_results": [
+        "JOB_SUCCEEDED": [
               {
                 "tests": [
                   "defaulttests"
@@ -139,13 +137,11 @@
                 "result": 0,
                 "buildnumber": 1002
               }
-            ]
-          }
-        }
+        ]
       },
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_jobs_update",
       "patchset": 1,
       "issue": 123456789
@@ -164,13 +160,11 @@
       "owner=test@chromium.org",
       "action=verifier_jobs_update",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "jobs": {
-        "tryserver.b": {
-          "test_suite_b_1": {
-            "rietveld_results": [
+        "JOB_SUCCEEDED": [
               {
                 "tests": [
                   "defaulttests"
@@ -183,13 +177,11 @@
                 "result": 0,
                 "buildnumber": 1001
               }
-            ]
-          }
-        }
+        ]
       },
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_jobs_update",
       "patchset": 1,
       "issue": 123456789
@@ -208,13 +200,11 @@
       "owner=test@chromium.org",
       "action=verifier_jobs_update",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "jobs": {
-        "tryserver.a": {
-          "test_suite_a": {
-            "rietveld_results": [
+        "JOB_SUCCEEDED": [
               {
                 "tests": [
                   "defaulttests"
@@ -227,13 +217,11 @@
                 "result": 0,
                 "buildnumber": 1000
               }
-            ]
-          }
-        }
+        ]
       },
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_jobs_update",
       "patchset": 1,
       "issue": 123456789
@@ -252,13 +240,11 @@
       "owner=test@chromium.org",
       "action=verifier_jobs_update",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "jobs": {
-        "tryserver.b": {
-          "test_suite_b_2": {
-            "rietveld_results": [
+        "JOB_RUNNING": [
               {
                 "tests": [
                   "defaulttests"
@@ -271,13 +257,11 @@
                 "result": -1,
                 "buildnumber": 1002
               }
-            ]
-          }
-        }
+        ]
       },
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_jobs_update",
       "patchset": 1,
       "issue": 123456789
@@ -296,13 +280,11 @@
       "owner=test@chromium.org",
       "action=verifier_jobs_update",
       "patchset=1",
-      "verifier=simple try job"
+      "verifier=try job"
     ],
     "fields": {
       "jobs": {
-        "tryserver.a": {
-          "test_suite_a": {
-            "rietveld_results": [
+        "JOB_RUNNING": [
               {
                 "tests": [
                   "defaulttests"
@@ -314,13 +296,7 @@
                 "builder": "test_suite_a",
                 "result": -1,
                 "buildnumber": 1000
-              }
-            ]
-          }
-        },
-        "tryserver.b": {
-          "test_suite_b_1": {
-            "rietveld_results": [
+              },
               {
                 "tests": [
                   "defaulttests"
@@ -334,12 +310,10 @@
                 "buildnumber": 1001
               }
             ]
-          }
-        }
       },
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_jobs_update",
       "patchset": 1,
       "issue": 123456789
@@ -357,13 +331,13 @@
       "issue=123456789",
       "owner=test@chromium.org",
       "patchset=1",
-      "verifier=simple try job",
+      "verifier=try job",
       "action=verifier_start"
     ],
     "fields": {
       "project": "chromium",
       "owner": "test@chromium.org",
-      "verifier": "simple try job",
+      "verifier": "try job",
       "action": "verifier_start",
       "tryjobs": {
         "tryserver.a": {

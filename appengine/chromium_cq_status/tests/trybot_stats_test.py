@@ -7,47 +7,79 @@ from tests.stats_test import StatsTest
 from stats.analysis import PatchsetReference
 from stats.trybot_stats import TrybotReference
 
-passed = 0
-failed = 1
-running = 2
+passed = 'JOB_SUCCEEDED'
+failed = 'JOB_FAILED'
+running = 'JOB_RUNNING'
+
+
+test_builder_ppp = {
+    'master': 'test_master_a',
+    'builder': 'test_builder_ppp',
+    'url': 'ppp',
+}
+
+
+test_builder_fff = {
+    'master': 'test_master_a',
+    'builder': 'test_builder_fff',
+    'url': 'fff',
+}
+
+
+test_builder_ffp = {
+    'master': 'test_master_b',
+    'builder': 'test_builder_ffp',
+    'url': 'ffp',
+}
+
 
 class TrybotStatsTest(StatsTest):
-  trybot_records = (
-    (1, {'issue': 1, 'patchset': 1, 'action': 'patch_start'}),
-    (2, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {
-        'test_master_a': {
-          'test_builder_ppp': {'status': running},
-          'test_builder_fff': {'status': running},
-        },
-        'test_master_b': {
-          'test_builder_ffp': {'status': running},
+  # Keep this shorter than 24 records. Each record adds an hour of
+  # virtual time, and the tests aggregate over a day.
+  trybot_records = list(enumerate([
+      {'issue': 1, 'patchset': 1, 'action': 'patch_start'},
+      {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
+        'jobs': {
+          running: [test_builder_ppp, test_builder_fff, test_builder_ffp]
         },
       },
-    }),
 
-    (3, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_ppp': {'status': passed}}}}),
-    (4, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_ppp': {'status': passed}}}}),
-    (5, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_ppp': {'status': passed}}}}),
+      {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
+       'jobs': {
+         passed: [test_builder_ppp],
+         failed: [test_builder_fff, test_builder_ffp],
+       },
+      },
 
-    (6, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_fff': {'status': failed}}}}),
-    (7, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_fff': {'status': failed}}}}),
-    (8, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_a': {'test_builder_fff': {'status': failed}}}}),
+      {'issue': 1, 'patchset': 1, 'action': 'patch_stop'},
+      {'issue': 1, 'patchset': 1, 'action': 'patch_start'},
 
-    (9, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_b': {'test_builder_ffp': {'status': failed}}}}),
-    (10, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_b': {'test_builder_ffp': {'status': failed}}}}),
-    (11, {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
-      'jobs': {'test_master_b': {'test_builder_ffp': {'status': passed}}}}),
-    (12, {'issue': 1, 'patchset': 1, 'action': 'patch_stop'}),
-  )
+      {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
+       'jobs': {
+         passed: [test_builder_ppp],
+         failed: [test_builder_fff],
+        },
+      },
+      {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
+       'jobs': {
+         failed: [test_builder_ffp, test_builder_fff],
+         passed: [test_builder_ppp],
+        },
+      },
+
+      {'issue': 1, 'patchset': 1, 'action': 'patch_stop'},
+      {'issue': 1, 'patchset': 1, 'action': 'patch_start'},
+
+      {'issue': 1, 'patchset': 1, 'action': 'verifier_jobs_update',
+       'jobs': {
+         passed: [test_builder_ppp],
+         failed: [test_builder_fff],
+         passed: [test_builder_ffp],
+       },
+      },
+
+      {'issue': 1, 'patchset': 1, 'action': 'patch_stop'},
+    ]))
 
   def test_trybot_false_reject_count(self):
     self.analyze_records(*self.trybot_records)
@@ -112,7 +144,7 @@ class TrybotStatsTest(StatsTest):
     self.assertEquals(self.create_count(
         name='trybot-test_builder_ppp-pass-count',
         description = 'Number of passing runs by the test_builder_ppp trybot.',
-        tally={PatchsetReference(1, 1): 3},
+        tally={PatchsetReference(1, 1): 1},
       ), self.get_stats('trybot-test_builder_ppp-pass-count'))
     self.assertEquals(self.create_count(
         name='trybot-test_builder_fff-pass-count',
@@ -128,7 +160,7 @@ class TrybotStatsTest(StatsTest):
         name='trybot-pass-count',
         description = 'Number of passing runs across all trybots.',
         tally={
-          TrybotReference('test_master_a', 'test_builder_ppp'): 3,
+          TrybotReference('test_master_a', 'test_builder_ppp'): 1,
           TrybotReference('test_master_a', 'test_builder_fff'): 0,
           TrybotReference('test_master_b', 'test_builder_ffp'): 1,
         },

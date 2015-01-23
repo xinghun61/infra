@@ -15,7 +15,7 @@ from shared.config import (
   TAG_ISSUE,
   TAG_PATCHSET,
   TRYJOBVERIFIER,
-  RIETVELD_JOB_STATE,
+  JOB_STATE,
   RIETVELD_TIMESTAMP_FORMAT,
 )
 from shared.utils import (
@@ -45,7 +45,7 @@ def summarize_patch(issue, patch, now): # pragma: no cover
     },
     'job_counts': {
       state: sum(len(attempt['jobs'][state]) for attempt in attempts)
-      for state in RIETVELD_JOB_STATE.itervalues()
+      for state in JOB_STATE.itervalues()
     },
     'flaky_jobs': get_flaky_jobs(attempts),
     'attempt_count': len(attempts),
@@ -153,50 +153,49 @@ class AttemptJobTracker(object): # pragma: no cover
     self.jobs = {}
 
   def update_jobs(self, record):
-    masters = record.fields.get('jobs') or {}
-    for master, builders in masters.iteritems():
-      self.jobs.setdefault(master, {})
-      for builder, job_update in builders.iteritems():
+    job_states = record.fields.get('jobs', {})
+    for cq_job_state, jobs in job_states.iteritems():
+      job_state = JOB_STATE.get(cq_job_state)
+      if not job_state:
+        logging.warning('Unknown job state: %s', cq_job_state)
+        continue
+      for job_info in jobs:
+        master = job_info.get('master')
+        builder = job_info.get('builder')
+        self.jobs.setdefault(master, {})
         self.jobs[master].setdefault(builder, {})
-        rietveld_results = job_update.get('rietveld_results') or []
-        for job_info in rietveld_results:
-          job_info = job_info or {}
-          timestamp = self.rietveld_timestamp(job_info.get('timestamp'))
-          # Ignore jobs from past attempts.
-          if not timestamp or timestamp < self.cutoff_timestamp:
-            continue
-          job_state = RIETVELD_JOB_STATE.get(job_info.get('result'))
-          if not job_state:
-            logging.warning(
-                'Unknown rietveld result: %s' % job_info.get('result'))
-            continue
-          build_number = job_info.get('buildnumber')
-          if not build_number:
-            logging.warning('No build number for %s %s at %s.' % (
-                master, builder, timestamp))
-            continue
-          job = self.jobs[master][builder].setdefault(build_number, {})
-          if len(job) == 0:
-            job.update(blank_job_summary())
-            job.update({
-              'begin': timestamp,
-              'master': master,
-              'builder': builder,
-              'slave': job_info.get('slave'),
-              'build_number': build_number,
-            })
-          if job_state != 'running':
-            job['end'] = timestamp
-            job['duration'] = timestamp - job['begin']
-          job['state'] = job_state
-          job['retry'] = any(
-              same_builder(job, test_job) and
-              job['build_number'] != test_job['build_number'] and
-              test_job['begin'] < job['begin']
-              for test_job in self.jobs[master][builder].itervalues())
-          # The build URL is sometimes missing so ensure we set it
-          # if it was not already set.
-          job['url'] = job['url'] or job_info.get('url')
+        job_info = job_info or {}
+        timestamp = self.rietveld_timestamp(job_info.get('timestamp'))
+        # Ignore jobs from past attempts.
+        if not timestamp or timestamp < self.cutoff_timestamp:
+          continue
+        build_number = job_info.get('buildnumber')
+        if not build_number:
+          logging.warning('No build number for %s %s at %s.' % (
+              master, builder, timestamp))
+          continue
+        job = self.jobs[master][builder].setdefault(build_number, {})
+        if len(job) == 0:
+          job.update(blank_job_summary())
+          job.update({
+            'begin': timestamp,
+            'master': master,
+            'builder': builder,
+            'slave': job_info.get('slave'),
+            'build_number': build_number,
+          })
+        if job_state != 'running':
+          job['end'] = timestamp
+          job['duration'] = timestamp - job['begin']
+        job['state'] = job_state
+        job['retry'] = any(
+            same_builder(job, test_job) and
+            job['build_number'] != test_job['build_number'] and
+            test_job['begin'] < job['begin']
+            for test_job in self.jobs[master][builder].itervalues())
+        # The build URL is sometimes missing so ensure we set it
+        # if it was not already set.
+        job['url'] = job['url'] or job_info.get('url')
 
   @staticmethod
   def rietveld_timestamp(timestamp_string):
@@ -208,7 +207,7 @@ class AttemptJobTracker(object): # pragma: no cover
       return None
 
   def summarize_jobs(self, attempt_ended, last_timestamp):
-    summaries = {state: [] for state in RIETVELD_JOB_STATE.itervalues()}
+    summaries = {state: [] for state in JOB_STATE.itervalues()}
     for builds in self.jobs.itervalues():
       for jobs in builds.itervalues():
         for job in jobs.itervalues():
@@ -229,7 +228,7 @@ def blank_attempt_summary(): # pragma: no cover
     'begin': None,
     'end': None,
     'durations': blank_durations_summary(),
-    'jobs': {state: [] for state in RIETVELD_JOB_STATE.itervalues()},
+    'jobs': {state: [] for state in JOB_STATE.itervalues()},
   }
 
 

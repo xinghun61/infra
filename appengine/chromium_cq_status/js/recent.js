@@ -82,6 +82,7 @@ function addRow(record) {
     newFieldValue(record, 'issue'),
     newFieldValue(record, 'patchset'),
     newFieldValue(record, 'action'),
+    newFieldValue(record, 'verifier'),
     newFieldValue(record, 'message'),
     newDetailLinks(record),
   ];

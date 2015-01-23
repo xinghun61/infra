@@ -23,7 +23,7 @@ class StatsTest(testing.AppengineTestCase): # pragma: no cover
   def add_record(self, hours_from_start, tagged_fields):
     tagged_fields.setdefault('project', 'test')
     if tagged_fields.get('action', '').startswith('verifier_'):
-      tagged_fields.setdefault('verifier', 'simple try job')
+      tagged_fields.setdefault('verifier', 'try job')
     self.mock_now(datetime.utcfromtimestamp(STATS_START_TIMESTAMP) +
         timedelta(hours=hours_from_start))
     Record(

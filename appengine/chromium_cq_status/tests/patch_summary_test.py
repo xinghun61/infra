@@ -22,13 +22,8 @@ class PatchSummaryTest(testing.AppengineTestCase):
   def test_patch_summary_flaky(self):
     return self._test_patch('flaky')
 
-  # https://chromium-cq-status.appspot.com/recent#issue=754513002,patchset=1
-  def test_patch_summary_754513002_1(self):
-    return self._test_patch('754513002_1', 754513002)
-
-  # https://chromium-cq-status.appspot.com/recent#issue=765763002,patchset=1
-  def test_patch_summary_765763002_1(self):
-    return self._test_patch('765763002_1', 765763002)
+  # TODO(sergeyberezin): add a small real-life CL for an integration
+  # test.
 
   def _load_records(self, filename):
     assert Record.query().count() == 0
