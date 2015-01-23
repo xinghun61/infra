@@ -101,6 +101,17 @@ func TestUtilities(t *testing.T) {
 			_, err := os.Stat(filepath.Join(tempDir, "dir"))
 			So(os.IsNotExist(err), ShouldBeTrue)
 		})
+
+		Convey("ensureFileGone works", func() {
+			touch("abc")
+			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+			_, err := os.Stat(filepath.Join(tempDir, "abc"))
+			So(os.IsNotExist(err), ShouldBeTrue)
+		})
+
+		Convey("ensureFileGone works with missing file", func() {
+			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+		})
 	})
 }
 
@@ -111,19 +122,16 @@ func TestDeployInstance(t *testing.T) {
 		Reset(func() { os.RemoveAll(tempDir) })
 
 		Convey("DeployInstance new empty package instance", func() {
-			inst := makeTestInstance("test/package", []File{})
+			inst := makeTestInstance("test/package", nil)
 			info, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
-			So(info, ShouldResemble, DeployedPackageInfo{
-				InstanceID: inst.InstanceID(),
-				Manifest: Manifest{
-					FormatVersion: "1",
-					PackageName:   "test/package",
-				},
+			So(info, ShouldResemble, PackageState{
+				PackageName: "test/package",
+				InstanceID:  inst.InstanceID(),
 			})
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/_current:0123456789abcdef00000123456789abcdef0000",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
 			})
 		})
 
@@ -135,12 +143,12 @@ func TestDeployInstance(t *testing.T) {
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/some/executable*",
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/some/file/path",
-				".cipd/pkgs/test/package/_current:0123456789abcdef00000123456789abcdef0000",
-				"some/executable:../.cipd/pkgs/test/package/_current/some/executable",
-				"some/file/path:../../.cipd/pkgs/test/package/_current/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/executable*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
+				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
+				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
 			})
 			// Ensure symlinks are actually traversable.
 			body, err := ioutil.ReadFile(filepath.Join(tempDir, "some", "file", "path"))
@@ -158,12 +166,12 @@ func TestDeployInstance(t *testing.T) {
 			_, err = DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/some/executable*",
-				".cipd/pkgs/test/package/0123456789abcdef00000123456789abcdef0000/some/file/path",
-				".cipd/pkgs/test/package/_current:0123456789abcdef00000123456789abcdef0000",
-				"some/executable:../.cipd/pkgs/test/package/_current/some/executable",
-				"some/file/path:../../.cipd/pkgs/test/package/_current/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/executable*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
+				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
+				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
 			})
 		})
 
@@ -191,20 +199,20 @@ func TestDeployInstance(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test/package/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/1111111111111111111111111111111111111111/mode change 1",
-				".cipd/pkgs/test/package/1111111111111111111111111111111111111111/mode change 2*",
-				".cipd/pkgs/test/package/1111111111111111111111111111111111111111/some/executable*",
-				".cipd/pkgs/test/package/1111111111111111111111111111111111111111/some/file/path",
-				".cipd/pkgs/test/package/_current:1111111111111111111111111111111111111111",
-				"mode change 1:.cipd/pkgs/test/package/_current/mode change 1",
-				"mode change 2:.cipd/pkgs/test/package/_current/mode change 2",
-				"some/executable:../.cipd/pkgs/test/package/_current/some/executable",
-				"some/file/path:../../.cipd/pkgs/test/package/_current/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/mode change 1",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/mode change 2*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/executable*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:1111111111111111111111111111111111111111",
+				"mode change 1:.cipd/pkgs/test_package_B6R4ErK5ko/_current/mode change 1",
+				"mode change 2:.cipd/pkgs/test_package_B6R4ErK5ko/_current/mode change 2",
+				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
+				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
 			})
 		})
 
-		Convey("DeployInstance two different package", func() {
+		Convey("DeployInstance two different packages", func() {
 			pkg1 := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a old", false),
 				makeTestFile("some/executable", "data b old", true),
@@ -228,33 +236,126 @@ func TestDeployInstance(t *testing.T) {
 			// TODO: Conflicting symlinks point to last installed package, it is not
 			// very deterministic.
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test/package/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/0000000000000000000000000000000000000000/pkg1 file",
-				".cipd/pkgs/test/package/0000000000000000000000000000000000000000/some/executable*",
-				".cipd/pkgs/test/package/0000000000000000000000000000000000000000/some/file/path",
-				".cipd/pkgs/test/package/_current:0000000000000000000000000000000000000000",
-				".cipd/pkgs/test/package/another/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
-				".cipd/pkgs/test/package/another/1111111111111111111111111111111111111111/pkg2 file",
-				".cipd/pkgs/test/package/another/1111111111111111111111111111111111111111/some/executable*",
-				".cipd/pkgs/test/package/another/1111111111111111111111111111111111111111/some/file/path",
-				".cipd/pkgs/test/package/another/_current:1111111111111111111111111111111111111111",
-				"pkg1 file:.cipd/pkgs/test/package/_current/pkg1 file",
-				"pkg2 file:.cipd/pkgs/test/package/another/_current/pkg2 file",
-				"some/executable:../.cipd/pkgs/test/package/another/_current/some/executable",
-				"some/file/path:../../.cipd/pkgs/test/package/another/_current/some/file/path",
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/pkg2 file",
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/some/executable*",
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/some/file/path",
+				".cipd/pkgs/package_another_4HL4H61fGm/_current:1111111111111111111111111111111111111111",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/pkg1 file",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/some/executable*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0000000000000000000000000000000000000000",
+				"pkg1 file:.cipd/pkgs/test_package_B6R4ErK5ko/_current/pkg1 file",
+				"pkg2 file:.cipd/pkgs/package_another_4HL4H61fGm/_current/pkg2 file",
+				"some/executable:../.cipd/pkgs/package_another_4HL4H61fGm/_current/some/executable",
+				"some/file/path:../../.cipd/pkgs/package_another_4HL4H61fGm/_current/some/file/path",
 			})
 		})
 
 		Convey("Try to deploy package instance with bad package name", func() {
-			_, err := DeployInstance(tempDir, makeTestInstance("../test/package", []File{}))
+			_, err := DeployInstance(tempDir, makeTestInstance("../test/package", nil))
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Try to deploy package instance with bad instance ID", func() {
-			inst := makeTestInstance("test/package", []File{})
+			inst := makeTestInstance("test/package", nil)
 			inst.instanceID = "../000000000"
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestFindDeployed(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("FindDeployed works with empty dir", func() {
+			out, err := FindDeployed(tempDir)
+			So(err, ShouldBeNil)
+			So(out, ShouldBeNil)
+		})
+
+		Convey("FindDeployed works", func() {
+			// Deploy a bunch of stuff.
+			_, err := DeployInstance(tempDir, makeTestInstance("test/pkg/123", nil))
+			So(err, ShouldBeNil)
+			_, err = DeployInstance(tempDir, makeTestInstance("test/pkg/456", nil))
+			So(err, ShouldBeNil)
+			_, err = DeployInstance(tempDir, makeTestInstance("test/pkg", nil))
+			So(err, ShouldBeNil)
+			_, err = DeployInstance(tempDir, makeTestInstance("test", nil))
+			So(err, ShouldBeNil)
+
+			// Verify it is discoverable.
+			out, err := FindDeployed(tempDir)
+			So(err, ShouldBeNil)
+			So(out, ShouldResemble, []PackageState{
+				PackageState{
+					PackageName: "test",
+					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
+				},
+				PackageState{
+					PackageName: "test/pkg",
+					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
+				},
+				PackageState{
+					PackageName: "test/pkg/123",
+					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
+				},
+				PackageState{
+					PackageName: "test/pkg/456",
+					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
+				},
+			})
+		})
+	})
+}
+
+func TestRemoveDeployed(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("RemoveDeployed works with missing package", func() {
+			err := RemoveDeployed(tempDir, "package/path")
+			So(err, ShouldBeNil)
+		})
+
+		Convey("RemoveDeployed works", func() {
+			// Deploy some instance (to keep it).
+			inst := makeTestInstance("test/package/123", []File{
+				makeTestFile("some/file/path1", "data a", false),
+				makeTestFile("some/executable1", "data b", true),
+			})
+			_, err := DeployInstance(tempDir, inst)
+			So(err, ShouldBeNil)
+
+			// Deploy another instance (to remove it).
+			inst = makeTestInstance("test/package", []File{
+				makeTestFile("some/file/path2", "data a", false),
+				makeTestFile("some/executable2", "data b", true),
+			})
+			_, err = DeployInstance(tempDir, inst)
+			So(err, ShouldBeNil)
+
+			// Now remove the second package.
+			err = RemoveDeployed(tempDir, "test/package")
+			So(err, ShouldBeNil)
+
+			// Verify the final state (only first package should survive).
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/some/executable1*",
+				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/some/file/path1",
+				".cipd/pkgs/package_123_Wnok5l4iFr/_current:0123456789abcdef00000123456789abcdef0000",
+				"some/executable1:../.cipd/pkgs/package_123_Wnok5l4iFr/_current/some/executable1",
+				"some/file/path1:../../.cipd/pkgs/package_123_Wnok5l4iFr/_current/some/file/path1",
+			})
 		})
 	})
 }

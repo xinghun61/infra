@@ -5,22 +5,26 @@
 package cipd
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-// TODO: Make it work on Windows, verify it works on Mac.
+// TODO(vadimsh): Make it work on Windows, verify it works on Mac.
 
-// TODO: How to handle path conflicts between two packages? Currently the last
-// installed wins.
+// TODO(vadimsh): How to handle path conflicts between two packages? Currently
+// the last one installed wins.
 
 // File system layout of a site directory <root>:
 // <root>/.cipd/pkgs/
-//   <package name>/
+//   <package name digest>/
 //     _current -> symlink to fea3ab83440e9dfb813785e16d4101f331ed44f4
 //     fea3ab83440e9dfb813785e16d4101f331ed44f4/
 //       bin/
@@ -28,8 +32,12 @@ import (
 //         ...
 //       ...
 // bin/
-//    tool -> symlink to ../.cipd/pkgs/<package name>/_current/bin/tool
+//    tool -> symlink to ../.cipd/pkgs/<package name digest>/_current/bin/tool
 //    ...
+//
+// Where <package name digest> is derived from a package name. It doesn't have
+// to be reversible though, since the package name is still stored in the
+// installed package manifest and can be read from there.
 //
 // Some efforts are made to make sure that during the deployment a window of
 // inconsistency in the file system is as small as possible.
@@ -40,19 +48,19 @@ const packagesDir = siteServiceDir + "/pkgs"
 // Name of a symlink that points to latest deployed version.
 const currentSymlink = "_current"
 
-// DeployedPackageInfo contains information about single deployed package.
-type DeployedPackageInfo struct {
-	// Id of the original package file: package.InstanceID().
+// PackageState contains information about single deployed package.
+type PackageState struct {
+	// PackageName identifies the package.
+	PackageName string
+	// InstanceID is ID of the installed package instance (SHA1 of package contents).
 	InstanceID string
-	// Original package's manifest.
-	Manifest Manifest
 }
 
 // DeployInstance installs a specific instance of a package (identified by
 // InstanceID()) into a site root directory. It unpacks the package into
 // <root>/.cipd/pkgs/*, and rearranges symlinks to point to unpacked files.
 // It tries to make it as "atomic" as possibly.
-func DeployInstance(root string, inst PackageInstance) (info DeployedPackageInfo, err error) {
+func DeployInstance(root string, inst PackageInstance) (state PackageState, err error) {
 	root, err = filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return
@@ -111,17 +119,13 @@ func DeployInstance(root string, inst PackageInstance) (info DeployedPackageInfo
 
 	// Delete symlinks to files no longer needed i.e. set(old) - set(new).
 	for relPath := range oldFiles.diff(newFiles) {
-		absPath := filepath.Join(root, relPath)
-		err = os.Remove(absPath)
-		if err != nil {
-			log.Warnf("Failed to remove %s", absPath)
-		}
+		ensureFileGone(filepath.Join(root, relPath))
 	}
 
 	// Verify it's all right, read the manifest.
-	info, err = CheckDeployed(root, inst.PackageName())
-	if err == nil && info.InstanceID != inst.InstanceID() {
-		err = fmt.Errorf("Other package instance (%s) was deployed concurrently", info.InstanceID)
+	state, err = CheckDeployed(root, inst.PackageName())
+	if err == nil && state.InstanceID != inst.InstanceID() {
+		err = fmt.Errorf("Other package instance (%s) was deployed concurrently", state.InstanceID)
 	}
 	if err == nil {
 		log.Infof("Successfully deployed %s:%s", inst.PackageName(), inst.InstanceID())
@@ -133,45 +137,89 @@ func DeployInstance(root string, inst PackageInstance) (info DeployedPackageInfo
 
 // CheckDeployed checks whether a given package is deployed and returns
 // information about it if it is.
-func CheckDeployed(root string, pkg string) (info DeployedPackageInfo, err error) {
-	// Be paranoid.
-	err = ValidatePackageName(pkg)
+func CheckDeployed(root string, pkg string) (state PackageState, err error) {
+	state, err = readPackageState(packagePath(root, pkg))
 	if err != nil {
 		return
 	}
-
-	// Resolve "_current" symlink to a concrete id.
-	current, err := os.Readlink(packagePath(root, pkg, currentSymlink))
-	if err != nil {
-		return
-	}
-	err = ValidateInstanceID(current)
-	if err != nil {
-		err = fmt.Errorf("Symlink target doesn't look like a valid package id")
-		return
-	}
-
-	// Read manifest file, verify it's sane.
-	manifestPath := packagePath(root, pkg, current, filepath.FromSlash(manifestName))
-	r, err := os.Open(manifestPath)
-	if err != nil {
-		return
-	}
-	defer r.Close()
-	manifest, err := readManifest(r)
-	if err != nil {
-		return
-	}
-	if manifest.PackageName != pkg {
+	if state.PackageName != pkg {
 		err = fmt.Errorf("Package path and package name in the manifest do not match")
-		return
-	}
-
-	info = DeployedPackageInfo{
-		InstanceID: current,
-		Manifest:   manifest,
 	}
 	return
+}
+
+// FindDeployed returns a list of packages deployed to a site root.
+func FindDeployed(root string) (out []PackageState, err error) {
+	root, err = filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return
+	}
+
+	// Directories with packages are direct children of .cipd/pkgs/.
+	pkgs := filepath.Join(root, filepath.FromSlash(packagesDir))
+	infos, err := ioutil.ReadDir(pkgs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+			return
+		}
+		return
+	}
+
+	// Read the package name from the package manifest. Skip broken stuff.
+	found := make(map[string]PackageState)
+	keys := []string{}
+	for _, info := range infos {
+		// Attempt to read the manifest. If it is there -> valid package is found.
+		if info.IsDir() {
+			state, err := readPackageState(filepath.Join(pkgs, info.Name()))
+			if err == nil {
+				// Ignore duplicate entries, they can appear if someone messes with
+				// pkgs/* structure manually.
+				if _, ok := found[state.PackageName]; !ok {
+					keys = append(keys, state.PackageName)
+					found[state.PackageName] = state
+				}
+			}
+		}
+	}
+
+	// Sort by package name.
+	sort.Strings(keys)
+	out = make([]PackageState, len(found))
+	for i, k := range keys {
+		out[i] = found[k]
+	}
+	return
+}
+
+// RemoveDeployed deletes a package given its name.
+func RemoveDeployed(root string, packageName string) error {
+	root, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return err
+	}
+	log.Infof("Removing %s from %s", packageName, root)
+
+	// Be paranoid.
+	err = ValidatePackageName(packageName)
+	if err != nil {
+		return err
+	}
+
+	// Grab list of files in currently deployed package to unlink them from root.
+	files := makeStringSet()
+	instanceID := findDeployedInstance(root, packageName, files)
+
+	// If was installed, removed symlinks pointing to the package files.
+	if instanceID != "" {
+		for relPath := range files {
+			ensureFileGone(filepath.Join(root, relPath))
+		}
+	}
+
+	// Ensure all garbage is gone even if instanceID == "" was returned.
+	return ensureDirectoryGone(packagePath(root, packageName))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,13 +229,12 @@ func CheckDeployed(root string, pkg string) (info DeployedPackageInfo, err error
 // instance and finds all files in it (adding them to 'files' set). Returns ""
 // if nothing is deployed. File paths in 'files' are relative to package root.
 func findDeployedInstance(root string, pkg string, files stringSet) string {
-	info, err := CheckDeployed(root, pkg)
+	state, err := CheckDeployed(root, pkg)
 	if err != nil {
 		return ""
 	}
-	log.Infof("Enumerating files in %s:%s", pkg, info.InstanceID)
-	scanPackageDir(packagePath(root, pkg, info.InstanceID), files)
-	return info.InstanceID
+	scanPackageDir(packagePath(root, pkg, state.InstanceID), files)
+	return state.InstanceID
 }
 
 // deployInstance atomically extracts a package instance to its final
@@ -236,20 +283,14 @@ func linkFilesToRoot(root string, packageRoot string, files stringSet) {
 
 // packagePath joins paths together to return absolute path to .cipd/pkgs sub path.
 func packagePath(root string, pkg string, rest ...string) string {
-	// Be paranoid.
-	err := ValidatePackageName(pkg)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	root, err = filepath.Abs(filepath.Clean(root))
+	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		panic(fmt.Sprintf("Can't get absolute path of '%s'", root))
 	}
-	root = filepath.Join(root, filepath.FromSlash(packagesDir), filepath.FromSlash(pkg))
+	root = filepath.Join(root, filepath.FromSlash(packagesDir), packageNameDigest(pkg))
 	result := filepath.Join(append([]string{root}, rest...)...)
 
-	// Be more paranoid and check that everything is inside .cipd directory.
+	// Be paranoid and check that everything is inside .cipd directory.
 	abs, err := filepath.Abs(result)
 	if err != nil {
 		panic(fmt.Sprintf("Can't get absolute path of '%s'", result))
@@ -258,6 +299,64 @@ func packagePath(root string, pkg string, rest ...string) string {
 		panic(fmt.Sprintf("Wrong path %s outside of root %s", abs, root))
 	}
 	return result
+}
+
+// packageNameDigest returns a filename to use for naming a package directory in
+// the file system. Using package names as is can introduce problems on file
+// systems with path length limits (on Windows in particular). Returns last two
+// components of the package name + stripped SHA1 of the whole package name.
+func packageNameDigest(pkg string) string {
+	// Be paranoid.
+	err := ValidatePackageName(pkg)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Grab stripped SHA1 of the full package name.
+	h := sha1.New()
+	h.Write([]byte(pkg))
+	hash := base64.URLEncoding.EncodeToString(h.Sum(nil))[:10]
+
+	// Grab last <= 2 components of the package path.
+	chunks := strings.Split(pkg, "/")
+	if len(chunks) > 2 {
+		chunks = chunks[len(chunks)-2:]
+	}
+
+	// Join together with '_' as separator.
+	chunks = append(chunks, hash)
+	return strings.Join(chunks, "_")
+}
+
+// readPackageState reads package manifest of a deployed package instance and
+// returns corresponding PackageState object.
+func readPackageState(packageDir string) (state PackageState, err error) {
+	// Resolve _current symlink to a concrete instance ID.
+	current, err := os.Readlink(filepath.Join(packageDir, currentSymlink))
+	if err != nil {
+		return
+	}
+	err = ValidateInstanceID(current)
+	if err != nil {
+		err = fmt.Errorf("Symlink target doesn't look like a valid instance id")
+		return
+	}
+	// Read the manifest from the instance directory.
+	manifestPath := filepath.Join(packageDir, current, filepath.FromSlash(manifestName))
+	r, err := os.Open(manifestPath)
+	if err != nil {
+		return
+	}
+	defer r.Close()
+	manifest, err := readManifest(r)
+	if err != nil {
+		return
+	}
+	state = PackageState{
+		PackageName: manifest.PackageName,
+		InstanceID:  current,
+	}
+	return
 }
 
 // ensureSymlink atomically creates a symlink pointing to a target. It will
@@ -330,6 +429,16 @@ func ensureDirectoryGone(path string) error {
 	err = os.RemoveAll(temp)
 	if err != nil {
 		log.Warnf("Failed to remove directory %s: %v", temp, err)
+		return err
+	}
+	return nil
+}
+
+// ensureFileGone removes file, logging the errors (if any).
+func ensureFileGone(path string) error {
+	err := os.Remove(path)
+	if err != nil && !os.IsNotExist(err) {
+		log.Warnf("Failed to remove %s", path)
 		return err
 	}
 	return nil
