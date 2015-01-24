@@ -75,15 +75,5 @@
       "[SLAVE_BUILD]/infra/go/test.py"
     ],
     "name": "infra go tests"
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "presubmit",
-      "--force"
-    ],
-    "cwd": "[SLAVE_BUILD]/build",
-    "name": "build tests"
   }
 ]

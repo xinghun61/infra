@@ -26,8 +26,6 @@ def GenSteps(api):
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python('infra go tests', api.path['checkout'].join('go', 'env.py'),
                ['python', api.path['checkout'].join('go', 'test.py')])
-    api.step('build tests', ['git', 'cl', 'presubmit', '--force'],
-             cwd=api.path['slave_build'].join('build'))
 
 
 def GenTests(api):
