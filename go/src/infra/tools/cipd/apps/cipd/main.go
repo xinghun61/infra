@@ -70,6 +70,59 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'ensure' subcommand.
+
+var cmdEnsure = &subcommands.Command{
+	UsageLine: "ensure [options]",
+	ShortDesc: "installs, removes and updates packages",
+	LongDesc:  "Installs, removes and updates packages.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &ensureRun{}
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
+		c.Flags.StringVar(&c.listFile, "list", "<path>", "a file with a list of '<package name> <version>' pairs")
+		return c
+	},
+}
+
+type ensureRun struct {
+	subcommands.CommandRunBase
+	rootDir  string
+	listFile string
+}
+
+func (c *ensureRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 0) {
+		return 1
+	}
+	err := ensurePackages(c.rootDir, c.listFile)
+	if err != nil {
+		reportError("Error while updating packages: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func ensurePackages(root string, desiredStateFile string) error {
+	f, err := os.Open(desiredStateFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	desiredState, err := cipd.ParseDesiredState(f)
+	if err != nil {
+		return err
+	}
+	clientFactory := func() (*http.Client, error) {
+		return auth.AuthenticatedClient(false, nil)
+	}
+	return cipd.EnsurePackages(cipd.EnsurePackagesOptions{
+		ClientFactory: clientFactory,
+		Root:          root,
+		Packages:      desiredState,
+	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'acl-list' subcommand.
 
 var cmdListACL = &subcommands.Command{
@@ -578,6 +631,7 @@ var application = &subcommands.DefaultApplication{
 		subcommands.CmdHelp,
 
 		// High level commands.
+		cmdEnsure,
 		cmdListACL,
 		cmdEditACL,
 

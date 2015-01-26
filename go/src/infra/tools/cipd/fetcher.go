@@ -7,8 +7,10 @@ package cipd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"infra/libs/logging"
@@ -27,7 +29,7 @@ type FetchInstanceOptions struct {
 	PackageName string
 	// InstanceID identifies an instance of the package to fetch.
 	InstanceID string
-	// Output is where to write the fetched data to. It is io.Seeker to support retries.
+	// Output is where to write the fetched data to. Must be nil when used with FetchAndDeployInstance.
 	Output io.WriteSeeker
 }
 
@@ -138,6 +140,63 @@ func FetchInstance(options FetchInstanceOptions) (err error) {
 
 	err = fmt.Errorf("All %d fetch attempts failed", maxAttempts)
 	return
+}
+
+// FetchAndDeployInstance fetches the package instance and deploys it into
+// a site root. It doesn't check whether the instance is already deployed.
+// options.Output field is not used and must be set to nil.
+func FetchAndDeployInstance(root string, options FetchInstanceOptions) error {
+	// Be paranoid.
+	err := ValidatePackageName(options.PackageName)
+	if err != nil {
+		return err
+	}
+	err = ValidateInstanceID(options.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	// This field is not supported.
+	if options.Output != nil {
+		return fmt.Errorf("Passed non-nil Output to FetchAndDeployInstance")
+	}
+
+	// Use temp file for storing package file. Delete it when done.
+	var instance PackageInstance
+	tempPath := filepath.Join(root, siteServiceDir, "tmp")
+	err = os.MkdirAll(tempPath, 0777)
+	if err != nil {
+		return err
+	}
+	f, err := ioutil.TempFile(tempPath, options.InstanceID)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// Instance takes ownership of the file, no need to close it separately.
+		if instance == nil {
+			f.Close()
+		}
+		os.Remove(f.Name())
+	}()
+
+	// Fetch the package data to the provided storage.
+	options.Output = f
+	err = FetchInstance(options)
+	if err != nil {
+		return err
+	}
+
+	// Open the instance, verify the instance ID.
+	instance, err = OpenInstance(f, options.InstanceID)
+	if err != nil {
+		return err
+	}
+	defer instance.Close()
+
+	// Deploy it. 'defer' will take care of removing the temp file if needed.
+	_, err = DeployInstance(root, instance)
+	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
