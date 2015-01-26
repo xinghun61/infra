@@ -460,6 +460,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.succeed()
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.result, model.BuildResult.SUCCESS)
+    self.assertIsNotNone(self.test_build.complete_time)
 
   def test_succeed_timed_out_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED
@@ -484,6 +485,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         self.test_build.key.id(), self.test_build.lease_key)
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(self.test_build.result, model.BuildResult.FAILURE)
+    self.assertIsNotNone(self.test_build.complete_time)
 
   def test_fail_with_details(self):
     self.lease()

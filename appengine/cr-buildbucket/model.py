@@ -80,6 +80,7 @@ class Build(ndb.Model):
   """
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+  update_time = ndb.DateTimeProperty(auto_now=True)
 
   # Creation time attributes.
   create_time = ndb.DateTimeProperty(auto_now_add=True)
@@ -98,6 +99,7 @@ class Build(ndb.Model):
   url = ndb.StringProperty(indexed=False)
 
   # Completion time attributes.
+  complete_time = ndb.DateTimeProperty()
   result = msgprop.EnumProperty(BuildResult)
   result_details = ndb.JsonProperty()
   cancelation_reason = msgprop.EnumProperty(CancelationReason)

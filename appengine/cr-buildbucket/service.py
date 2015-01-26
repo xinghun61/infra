@@ -441,6 +441,7 @@ class BuildBucketService(object):
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
+    build.complete_time = utils.utcnow()
     build.result = result
     if url is not None:  # pragma: no branch
       build.url = url

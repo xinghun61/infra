@@ -54,6 +54,9 @@ class BuildMessage(messages.Message):
   lease_expiration_ts = messages.IntegerField(10)
   lease_key = messages.IntegerField(11)
   url = messages.StringField(12)
+  created_ts = messages.IntegerField(13)
+  updated_ts = messages.IntegerField(14)
+  completed_ts = messages.IntegerField(15)
 
 
 class BuildResponseMessage(messages.Message):
@@ -79,6 +82,9 @@ def build_to_message(build, include_lease_key=False):
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
       url=build.url,
+      created_ts=datetime_to_timestamp_safe(build.create_time),
+      updated_ts=datetime_to_timestamp_safe(build.update_time),
+      completed_ts=datetime_to_timestamp_safe(build.complete_time),
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
@@ -136,6 +142,12 @@ def parse_datetime(timestamp):
   except OverflowError:
     raise service.InvalidInputError(
         'Could not parse timestamp: %s' % timestamp)
+
+
+def datetime_to_timestamp_safe(value):
+  if value is None:
+    return None
+  return utils.datetime_to_timestamp(value)
 
 
 @auth.endpoints_api(
