@@ -538,8 +538,8 @@ class UpdateBuilderTimes(webapp2.RequestHandler):
   """
   @render_json
   def get(self, master, builder, num_builds):
-    url = urllib.quote(
-        'https://chrome-build-extract.appspot.com/get_builds'
+    url = 'https://%s' % urllib.quote(
+        'chrome-build-extract.appspot.com/get_builds'
         '?master=%s&builder=%s&num_builds=%s' % (
             master, builder, num_builds))
     builds_data = json.loads(urlfetch.fetch(url, deadline=600).content)
