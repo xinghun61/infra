@@ -69,6 +69,28 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 	return true
 }
 
+// serviceOptions defines command line arguments related to communication
+// with the remote service. Subcommands that interact with the network include
+// it.
+type serviceOptions struct {
+	serviceURL         string
+	serviceAccountJSON string
+}
+
+func (opts *serviceOptions) registerFlags(f flag.FlagSet) {
+	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one")
+	f.StringVar(&opts.serviceAccountJSON, "service-account-json", "", "Path to JSON file with service account credentials to use.")
+}
+
+func (opts *serviceOptions) makeClient() (*http.Client, error) {
+	authOpts := auth.Options{}
+	if opts.serviceAccountJSON != "" {
+		authOpts.Method = auth.ServiceAccountMethod
+		authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
+	}
+	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 'ensure' subcommand.
 
@@ -80,12 +102,15 @@ var cmdEnsure = &subcommands.Command{
 		c := &ensureRun{}
 		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
 		c.Flags.StringVar(&c.listFile, "list", "<path>", "a file with a list of '<package name> <version>' pairs")
+		c.serviceOptions.registerFlags(c.Flags)
 		return c
 	},
 }
 
 type ensureRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
+
 	rootDir  string
 	listFile string
 }
@@ -94,7 +119,7 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := ensurePackages(c.rootDir, c.listFile)
+	err := ensurePackages(c.rootDir, c.listFile, c.serviceOptions)
 	if err != nil {
 		reportError("Error while updating packages: %s", err)
 		return 1
@@ -102,7 +127,7 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func ensurePackages(root string, desiredStateFile string) error {
+func ensurePackages(root string, desiredStateFile string, opts serviceOptions) error {
 	f, err := os.Open(desiredStateFile)
 	if err != nil {
 		return err
@@ -112,11 +137,9 @@ func ensurePackages(root string, desiredStateFile string) error {
 	if err != nil {
 		return err
 	}
-	clientFactory := func() (*http.Client, error) {
-		return auth.AuthenticatedClient(false, nil)
-	}
 	return cipd.EnsurePackages(cipd.EnsurePackagesOptions{
-		ClientFactory: clientFactory,
+		ServiceURL:    opts.serviceURL,
+		ClientFactory: func() (*http.Client, error) { return opts.makeClient() },
 		Root:          root,
 		Packages:      desiredState,
 	})
@@ -130,24 +153,22 @@ var cmdListACL = &subcommands.Command{
 	ShortDesc: "lists package path Access Control List",
 	LongDesc:  "Lists package path Access Control List",
 	CommandRun: func() subcommands.CommandRun {
-		return &listACLRun{}
+		c := &listACLRun{}
+		c.serviceOptions.registerFlags(c.Flags)
+		return c
 	},
 }
 
 type listACLRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
 }
 
 func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := auth.AuthenticatedClient(true, nil)
-	if err != nil {
-		reportError("Error when authenticating: %s", err)
-		return 1
-	}
-	err = listACL(args[0], client)
+	err := listACL(args[0], c.serviceOptions)
 	if err != nil {
 		reportError("Error while listing ACL: %s", err)
 		return 1
@@ -155,9 +176,14 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func listACL(packagePath string, client *http.Client) error {
+func listACL(packagePath string, opts serviceOptions) error {
+	client, err := opts.makeClient()
+	if err != nil {
+		return err
+	}
 	acls, err := cipd.FetchACL(cipd.FetchACLOptions{
 		ACLOptions: cipd.ACLOptions{
+			ServiceURL:  opts.serviceURL,
 			Client:      client,
 			PackagePath: packagePath,
 		},
@@ -225,12 +251,14 @@ var cmdEditACL = &subcommands.Command{
 		c.Flags.Var(&c.writer, "writer", "users or groups to grant WRITER role")
 		c.Flags.Var(&c.reader, "reader", "users or groups to grant READER role")
 		c.Flags.Var(&c.revoke, "revoke", "users or groups to remove from all roles")
+		c.serviceOptions.registerFlags(c.Flags)
 		return c
 	},
 }
 
 type editACLRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
 
 	owner  principalsList
 	writer principalsList
@@ -242,12 +270,7 @@ func (c *editACLRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := auth.AuthenticatedClient(true, nil)
-	if err != nil {
-		reportError("Error when authenticating: %s", err)
-		return 1
-	}
-	err = editACL(args[0], c.owner, c.writer, c.reader, c.revoke, client)
+	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.serviceOptions)
 	if err != nil {
 		reportError("Error while editing ACL: %s", err)
 		return 1
@@ -255,7 +278,7 @@ func (c *editACLRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func editACL(packagePath string, owners, writers, readers, revoke principalsList, client *http.Client) error {
+func editACL(packagePath string, owners, writers, readers, revoke principalsList, opts serviceOptions) error {
 	changes := []cipd.PackageACLChange{}
 
 	makeChanges := func(action cipd.PackageACLChangeAction, role string, list principalsList) {
@@ -276,8 +299,18 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 	makeChanges(cipd.RevokeRole, "WRITER", revoke)
 	makeChanges(cipd.RevokeRole, "READER", revoke)
 
-	err := cipd.ModifyACL(cipd.ModifyACLOptions{
+	if len(changes) == 0 {
+		return nil
+	}
+
+	client, err := opts.makeClient()
+	if err != nil {
+		return err
+	}
+
+	err = cipd.ModifyACL(cipd.ModifyACLOptions{
 		ACLOptions: cipd.ACLOptions{
+			ServiceURL:  opts.serviceURL,
 			Client:      client,
 			PackagePath: packagePath,
 		},
@@ -407,12 +440,14 @@ var cmdFetch = &subcommands.Command{
 		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
 		c.Flags.StringVar(&c.instanceID, "instance-id", "<instance id>", "package instance ID to fetch")
 		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
+		c.serviceOptions.registerFlags(c.Flags)
 		return c
 	},
 }
 
 type fetchRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
 
 	packageName string
 	instanceID  string
@@ -423,12 +458,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	client, err := auth.AuthenticatedClient(false, nil)
-	if err != nil {
-		reportError("Error when authenticating: %s", err)
-		return 1
-	}
-	err = fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, client)
+	err := fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, c.serviceOptions)
 	if err != nil {
 		reportError("Error while fetching the package: %s", err)
 		return 1
@@ -436,8 +466,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func fetchInstanceFile(packageName, instanceID, instanceFile string, client *http.Client) error {
-	// Fetch it.
+func fetchInstanceFile(packageName, instanceID, instanceFile string, opts serviceOptions) error {
 	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
@@ -450,7 +479,13 @@ func fetchInstanceFile(packageName, instanceID, instanceFile string, client *htt
 		}
 	}()
 
+	client, err := opts.makeClient()
+	if err != nil {
+		return err
+	}
+
 	err = cipd.FetchInstance(cipd.FetchInstanceOptions{
+		ServiceURL:  opts.serviceURL,
 		Client:      client,
 		PackageName: packageName,
 		InstanceID:  instanceID,
@@ -530,24 +565,22 @@ var cmdRegister = &subcommands.Command{
 	ShortDesc: "uploads and registers package instance in the package repository",
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
-		return &registerRun{}
+		c := &registerRun{}
+		c.serviceOptions.registerFlags(c.Flags)
+		return c
 	},
 }
 
 type registerRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := auth.AuthenticatedClient(true, nil)
-	if err != nil {
-		reportError("Error when authenticating: %s", err)
-		return 1
-	}
-	err = registerInstanceFile(args[0], client)
+	err := registerInstanceFile(args[0], c.serviceOptions)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
 		return 1
@@ -555,18 +588,23 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, client *http.Client) error {
+func registerInstanceFile(instanceFile string, opts serviceOptions) error {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
 	defer inst.Close()
+	client, err := opts.makeClient()
+	if err != nil {
+		return err
+	}
 	logging.Infof("Registering package %s:%s", inst.PackageName(), inst.InstanceID())
 	inspectInstance(inst, false)
 	return cipd.RegisterInstance(cipd.RegisterInstanceOptions{
 		PackageInstance: inst,
 		UploadOptions: cipd.UploadOptions{
-			Client: client,
+			ServiceURL: opts.serviceURL,
+			Client:     client,
 		},
 	})
 }
@@ -579,24 +617,22 @@ var cmdUpload = &subcommands.Command{
 	ShortDesc: "uploads package data blob to the CAS store",
 	LongDesc:  "Uploads package data blob to the CAS store.",
 	CommandRun: func() subcommands.CommandRun {
-		return &uploadRun{}
+		c := &uploadRun{}
+		c.serviceOptions.registerFlags(c.Flags)
+		return c
 	},
 }
 
 type uploadRun struct {
 	subcommands.CommandRunBase
+	serviceOptions
 }
 
 func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	client, err := auth.AuthenticatedClient(true, nil)
-	if err != nil {
-		reportError("Error when authenticating: %s", err)
-		return 1
-	}
-	err = uploadInstanceFile(args[0], client)
+	err := uploadInstanceFile(args[0], c.serviceOptions)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
 		return 1
@@ -604,19 +640,24 @@ func (c *uploadRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func uploadInstanceFile(instanceFile string, client *http.Client) error {
+func uploadInstanceFile(instanceFile string, opts serviceOptions) error {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
 	defer inst.Close()
+	client, err := opts.makeClient()
+	if err != nil {
+		return err
+	}
 	logging.Infof("Uploading package instance %s", inst.InstanceID())
 	inspectInstance(inst, false)
 	return cipd.UploadToCAS(cipd.UploadToCASOptions{
 		SHA1: inst.InstanceID(),
 		Data: inst.DataReader(),
 		UploadOptions: cipd.UploadOptions{
-			Client: client,
+			ServiceURL: opts.serviceURL,
+			Client:     client,
 		},
 	})
 }
