@@ -75,6 +75,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.bucket, 'chromium')
     self.assertEqual(build.parameters, params)
 
+  def test_add_with_bad_bucket_name(self):
+    with self.assertRaises(service.InvalidInputError):
+      self.service.add(bucket='chromium as')
+    with self.assertRaises(service.InvalidInputError):
+      self.service.add(bucket='')
+
   def test_add_with_leasing(self):
     build = self.service.add(
         bucket='chromium',

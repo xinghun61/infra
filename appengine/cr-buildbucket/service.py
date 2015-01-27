@@ -6,6 +6,7 @@ import datetime
 import itertools
 import json
 import logging
+import re
 import urlparse
 
 from components import auth
@@ -18,6 +19,7 @@ import acl
 import model
 
 
+BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z\.\-/]{1,100}$')
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
@@ -45,6 +47,17 @@ class InvalidInputError(Error):
 
 class LeaseExpiredError(Error):
   """Raised when provided lease_key does not match the current one."""
+
+
+def validate_bucket_name(bucket):
+  if not bucket:
+    raise InvalidInputError('Bucket not specified')
+  if not isinstance(bucket, basestring):
+    raise InvalidInputError('Bucket must be a string')
+  if not BUCKET_NAME_REGEX.match(bucket):
+    raise InvalidInputError(
+        'Bucket name "%s" does not match regular expression %s' %
+        (bucket, BUCKET_NAME_REGEX.pattern))
 
 
 def validate_lease_key(lease_key):
@@ -118,8 +131,7 @@ class BuildBucketService(object):
     Returns:
       A new Build.
     """
-    assert bucket, 'Bucket not specified'
-    assert isinstance(bucket, basestring), 'Bucket must be a string'
+    validate_bucket_name(bucket)
     assert parameters is None or isinstance(parameters, dict)
     validate_lease_expiration_date(lease_expiration_date)
     validate_tags(tags)
@@ -207,8 +219,8 @@ class BuildBucketService(object):
     if buckets is not None:
       if not isinstance(buckets, list):
         raise InvalidInputError('buckets must be a list')
-      if not all(isinstance(b, basestring) for b in buckets):
-        raise InvalidInputError('Each bucket must be a string')
+      for bucket in buckets:
+        validate_bucket_name(bucket)
     max_builds = fix_max_builds(max_builds)
 
     q = model.Build.query()
@@ -240,9 +252,8 @@ class BuildBucketService(object):
 
     assert isinstance(buckets, list)
     assert buckets, 'No buckets specified'
-    assert all(isinstance(n, basestring) for n in buckets), (
-        'Buckets must be strings'
-    )
+    for bucket in buckets:
+      validate_bucket_name(bucket)
     max_builds = fix_max_builds(max_builds)
     identity = auth.get_current_identity()
     for bucket in buckets:
