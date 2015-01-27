@@ -36,6 +36,8 @@ class FailureReason(messages.Enum):
   BUILDBUCKET_FAILURE = 2
   # Something happened with build infrastructure, but not buildbucket.
   INFRA_FAILURE = 3
+  # A build-system rejected a build because its definition is invalid.
+  INVALID_BUILD_DEFINITION = 4
 
 
 class CancelationReason(messages.Enum):
