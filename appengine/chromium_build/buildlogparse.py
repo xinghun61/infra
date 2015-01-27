@@ -9,12 +9,14 @@ import logging
 import os
 import re
 import time
+import urllib
 import urlparse
 import webapp2
 import zlib
 
+from google.appengine.api import memcache
 from google.appengine.api import urlfetch
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 import utils
 
@@ -102,21 +104,21 @@ REPLACEMENTS = [
 ########
 # Models
 ########
-class BuildLogModel(db.Model):
+class BuildLogModel(ndb.Model):
   # Used for caching finished build logs.
-  url = db.StringProperty()
-  data = db.BlobProperty()
+  url = ndb.StringProperty()
+  data = ndb.BlobProperty()
 
-class BuildbotCacheModel(db.Model):
+class BuildbotCacheModel(ndb.Model):
   # Used for caching finished build data.
-  url = db.StringProperty()
-  data = db.BlobProperty()
+  url = ndb.StringProperty()
+  data = ndb.BlobProperty()
 
-class BuildLogResultModel(db.Model):
+class BuildLogResultModel(ndb.Model):
   # Used for caching finished and parsed build logs.
-  url = db.StringProperty()
-  version = db.StringProperty()
-  data = db.BlobProperty()
+  url = ndb.StringProperty()
+  version = ndb.StringProperty()
+  data = ndb.BlobProperty()
 
 
 def emit(source, out):
@@ -180,38 +182,29 @@ def emit(source, out):
 class BuildbotPassthrough(webapp2.RequestHandler):
   def get(self, path):
     # TODO(hinoka): Page caching.
-    url = 'http://build.chromium.org/p/%s' % path
-    s = urlfetch.fetch(url.replace(' ', '%20'),
-        method=urlfetch.GET, deadline=60).content
+    url = 'build.chromium.org/p/%s' % path
+    full_url = 'https://%s' % urllib.quote(url)
+    s = urlfetch.fetch(full_url, method=urlfetch.GET, deadline=60).content
     s = s.replace('default.css', '../../static/default-old.css')
     self.response.out.write(s)
 
 
-class BuildStep(webapp2.RequestHandler):
+class Build(webapp2.RequestHandler):
   @staticmethod
-  def get_build_step(url):
-    build_step = BuildbotCacheModel.all().filter('url =', url).get()
-    if build_step:
-      return json.loads(build_step.data)
-    else:
-      s = urlfetch.fetch(url.replace(' ', '%20'),
-          method=urlfetch.GET, deadline=60).content
-      logging.info(s)
-      build_step_data = json.loads(s)
-      # Cache if completed.
-      if not build_step_data['currentStep']:
-        build_step = BuildbotCacheModel(url=url, data=s)
-        build_step.put()
-      return build_step_data
+  @ndb.toplevel
+  def get_build_step(master, builder, step):
+    data = get_build(master, builder, step).get_result()
+    return data
 
   @utils.render_iff_new_flag_set('step.html', jinja_environment)
   def get(self, master, builder, step, new=None):
     """Parses a build step page."""
     # Fetch the page.
     if new:
-      json_url = ('http://build.chromium.org/p/%s/'
-          'json/builders/%s/builds/%s' % (master, builder, step))
-      result = BuildStep.get_build_step(json_url)
+      result = Build.get_build_step(master, builder, step)
+      if not result:
+        self.error(404)
+        return
 
       # Add on some extraneous info.
       build_properties = dict((name, value) for name, value, _
@@ -257,19 +250,106 @@ class BuildStep(webapp2.RequestHandler):
       return s
 
 
+@ndb.tasklet
+def get_build(master, builder, build):
+  # Get build from:
+  # 1. Memcache
+  # 2. Local datastore
+  # 3. Chrome build extract cache
+  # 4. Original buildbot master
+  ctx = ndb.get_context()
+
+  # 1. Try the local memcache.
+  url = ('https://build.chromium.org/p/%s/json/builders/%s/builds/%s' %
+         tuple(map(urllib.quote, (master, builder, str(build)))))
+  key = '%s:build:%s' % (VERSION_ID, url)
+  data = yield ctx.memcache_get(key)
+  if data:
+    logging.debug('Fetched %s from memcache.' % url)
+    raise ndb.Return(json.loads(data))
+
+  # 2. Try the local datastore.
+  result = yield BuildbotCacheModel.query(
+      BuildbotCacheModel.url == url).fetch_async(1)
+  if result:
+    data = result[0].data
+    try:
+      json_data = json.loads(data)
+    except Exception:
+      logging.warning('Invalid json from datastore: %s\n' % data)
+      result[0].key.delete()  # Invalid data
+    else:
+      ctx.memcache_set(key, data)
+      logging.debug('Fetched %s from datastore.' % url)
+      raise ndb.Return(json_data)
+
+  # 3. Try CBE.
+  cbe_url = (
+      'https://chrome-build-extract.appspot.com/p/%s/builders/%s/builds/%s'
+      % tuple(map(urllib.quote, (master, builder, str(build)))))
+  response = yield ctx.urlfetch(cbe_url)
+  if response.status_code != 200:
+    # 4. Just fetch it from buildbot.
+    response = yield ctx.urlfetch(url)
+    if response.status_code != 200:
+      logging.error(
+          'Fetching %s returned error %d' % (url, response.status_code))
+      raise ndb.Return(None)
+    logging.debug('Fetched %s' % url)
+  else:
+    logging.debug('Fetched %s from CBE' % cbe_url)
+  data = response.content
+  json_data = json.loads(data)
+
+  if not json_data['currentStep']:
+    build_cache = BuildbotCacheModel(url=url, data=data)
+    build_cache.put_async()
+    ctx.memcache_set(key, data)
+  raise ndb.Return(json_data)
+
+
 class BuildSlave(webapp2.RequestHandler):
   """Parses a build slave page."""
+  @staticmethod
+  @ndb.toplevel
+  def get_recent_builds(master, builders, limit=10):
+    if not builders:
+      return []
+    # Build job list consisting of urls.
+    jobs = []
+    for builder, builds in builders.iteritems():
+      builds = sorted(builds, reverse=True)
+      if len(builds) > limit:
+        builds = builds[:limit]
+      for build in builds:
+        jobs.append(get_build(master, builder, build))
+
+    builds = [build.get_result() for build in jobs]
+    builds = [build for build in builds if build]
+    return sorted(builds, key=lambda x: x['times'][1], reverse=True)
+
+  @staticmethod
+  def get_slave_json(master, slave):
+      json_url = ('https://build.chromium.org/p/%s/'
+          'json/slaves/%s' % tuple(map(urllib.quote, (master, slave))))
+      memcache_key = '%s:url:%s' % (VERSION_ID, json_url)
+      s = memcache.get(memcache_key)
+      if not s:
+        s = urlfetch.fetch(json_url, method=urlfetch.GET, deadline=60).content
+        memcache.set(memcache_key, s, time=60)
+        logging.info('Loaded %s' % json_url)
+      else:
+        logging.info('Loaded %s from memcache' % json_url)
+      return json.loads(s)
+
+
   @utils.render_iff_new_flag_set('slave.html', jinja_environment)
   def get(self, master, slave, new=None):
     # Fetch the page.
     if new:
-      json_url = ('http://build.chromium.org/p/%s/'
-          'json/slaves/%s' % (master, slave))
-      logging.info(json_url)
-      s = urlfetch.fetch(json_url.replace(' ', '%20'),
-          method=urlfetch.GET, deadline=60).content
-
-      result = json.loads(s)
+      result = self.get_slave_json(master, slave)
+      builders = result.get('builders', {})
+      result['recent_builds'] = self.get_recent_builds(master, builders)
       result['breadcrumbs'] = [
           ('Master %s' % master,
            '/buildbot/%s?new=true' % master),
@@ -284,9 +364,8 @@ class BuildSlave(webapp2.RequestHandler):
       return result
     else:
       url = ('http://build.chromium.org/p/%s/buildslaves/%s' %
-             (master, slave))
-      s = urlfetch.fetch(url.replace(' ', '%20'),
-          method=urlfetch.GET, deadline=60).content
+             tuple(map(urllib.quote, (master, slave))))
+      s = urlfetch.fetch(url, method=urlfetch.GET, deadline=60).content
       s = s.replace('../default.css', '/static/default-old.css')
       s = s.replace('<a href="../about">About</a>',
         '<a href="../about">About</a>'
@@ -345,9 +424,7 @@ class BuildLog(webapp2.RequestHandler):
   @utils.render_iff_new_flag_set('logs.html', jinja_environment)
   def get(self, master, builder, build, step, logname, new):
     # Lets fetch the build data first to determine if this is a running step.
-    json_url = ('http://build.chromium.org/p/%s/'
-        'json/builders/%s/builds/%s' % (master, builder, build))
-    build_data = BuildStep.get_build_step(json_url)
+    build_data = Build.get_build_step(master, builder, build)
     steps = dict([(_step['name'], _step) for _step in build_data['steps']])
     # Construct the url to the log file.
     url = ('http://build.chromium.org/'
@@ -459,7 +536,7 @@ app = webapp2.WSGIApplication([
     ('/buildbot/', MainPage),
     ('/buildbot/(.*)/builders/(.*)/builds/(\d+)/steps/(.*)/logs/(.*)/?',
         BuildLog),
-    ('/buildbot/(.*)/builders/(.*)/builds/(\d+)/?', BuildStep),
+    ('/buildbot/(.*)/builders/(.*)/builds/(\d+)/?', Build),
     ('/buildbot/(.*)/buildslaves/(.*)/?', BuildSlave),
     ('/buildbot/(.*)', BuildbotPassthrough),
-    ], debug=True)
+    ])

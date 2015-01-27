@@ -27,6 +27,9 @@ from jinja2 import Environment, FileSystemLoader
 from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup, Tag
 
 
+# pylint: disable=no-value-for-parameter
+
+
 # Current application name.
 APP_NAME = get_application_id()
 

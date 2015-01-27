@@ -4,11 +4,14 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
+default_expiration: "10m"
+
 handlers:
 - url: /(.+.ico)
   static_files: static/\1
   mime_type: image/x-icon
   upload: static/(.+.ico)
+  expiration: "1h"
 
 - url: /(robots\.txt)
   static_files: static/\1
@@ -17,6 +20,7 @@ handlers:
 
 - url: /static
   static_dir: static
+  expiration: 1d
 
 - url: /tasks/.*
   script: handler.application

@@ -31,6 +31,34 @@ Buildslave: {{name}}
       <h4>Not currently running any builds</h4>
     {% endif %}
 
+    {% if recent_builds %}
+      <h4>Recent builds:</h4>
+      <table class='table table-condensed'><tbody>
+        {% for build in recent_builds%}
+          <tr
+            {% if build.results == 0 %}
+              class='success'
+            {% elif build.results == 88 %}
+              class='warning'
+            {% else %}
+              class='error'
+            {% endif %}
+          >
+            <td class="time_ago">{{build.times[0]|time_since}} ago</td>
+            <td>Revision {{build.sourceStamp.revision}}</td>
+            <td>
+              <a href="/buildbot/{{master}}/builders/{{build.builderName}}?new=true">
+                {{build.builderName}}
+              </a>
+            </td>
+            <td>
+              <a href="/buildbot/{{master}}/builders/{{build.builderName}}/builds/{{build.number}}">
+                #{{build.number}}
+              </a>
+          </tr>
+        {% endfor %}
+      </tbody></table>
+    {% endif %}
 
   </div>
 </div>

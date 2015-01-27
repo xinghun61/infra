@@ -70,9 +70,13 @@ def render_iff_new_flag_set(template_filename, jinja_environment):
   def _render(fn):
     def wrapper(self, *args, **kwargs):
       new = self.request.get('new') or self.request.cookies.get('new')
+      use_json = self.request.get('json')
       kwargs.update({'new': new})
       results = fn(self, *args, **kwargs)
       if new:
+        if use_json:
+          self.response.out.write(json.dumps(results))
+          return
         template = jinja_environment.get_template(template_filename)
         try:
           self.response.out.write(template.render(results))
@@ -190,19 +194,16 @@ def delta_time(delta):
   minutes = int((delta - hours * 3600)/60)
   seconds = int(delta - (hours * 3600) - (minutes * 60))
   result = ''
-  if hours > 1:
-    result += '%d hrs, ' % hours
-  elif hours:
-    result += '%d hr, ' % hours
-  if minutes > 1:
-    result += '%d mins ' % minutes
-  elif minutes:
-    result += '%d min ' % minutes
+  if hours:
+    result += '%d hr' % hours
+  if minutes:
+    if hours:
+      result += ', '
+    result += '%d min' % minutes
   if not hours:
-    if seconds > 1 or seconds == 0:
-      result += '%d secs.' % seconds
-    else:
-      result += '%d sec.' % seconds
+    if hours or minutes:
+      result += ', '
+    result += '%d sec' % seconds
   return result
 
 
