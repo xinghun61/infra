@@ -33,12 +33,24 @@ class BuildFailure(BaseHandler):
     master_name, builder_name, build_number = build_info
 
     force = self.request.get('force') == '1'
-    build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
+    analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, force,
         BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
-    # TODO: return info of the build analysis.
-    return None
+    data = {
+        'master_name': analysis.master_name,
+        'builder_name': analysis.builder_name,
+        'build_number': analysis.build_number,
+        'build_url': buildbot.CreateBuildUrl(
+            analysis.master_name, analysis.builder_name, analysis.build_number),
+        'pipeline_url': analysis.pipeline_url,
+        'analysis_started': analysis.start_time,
+        'analysis_updated': analysis.updated_time,
+        'analysis_completed': analysis.completed,
+        'analysis_failed': analysis.failed,
+    }
+
+    return {'template': 'build_failure.html', 'data': data}
 
   def HandlePost(self):  # pragma: no cover
     return self.HandleGet()

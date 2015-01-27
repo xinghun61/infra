@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <head>
   <title>Findit</title>
+  <meta charset="utf-8">
 </head>
 <body>
   Findit is still under experiment.
   <h3>Build failure in Chromium waterfall</h3>
-  <form method='get' action='./build-failure'>
-    URL to the <b>FIRST-known</b> failed build: <br/>
-    (eg.: https://build.chromium.org/p/chromium.mac/builders/Mac%2010.6%20Tests%20%28dbg%29%281%29/builds/50458)
-    <textarea rows='2' cols='150' name='url'></textarea><br/>
-    <input type='submit' value='Find it'/>
+  <form method="get" action="./build-failure">
+    URL to the failed build: <br>
+    (eg.: http://build.chromium.org/p/chromium.chromiumos/builders/Linux%20ChromiumOS%20GN/builds/6146 or http://build.chromium.org/p/chromium.mac/builders/Mac%20GN%20%28dbg%29/builds/2598/steps/compile/logs/stdio)
+    <input type="text" name="url" id="url" size="200"><br>
+    <input type="submit" value="Find it">
   </form>
 </body>

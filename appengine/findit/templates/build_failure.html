@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<head>
+  <title>Build Failure</title>
+  <meta charset="utf-8">
+  <style>
+    .running {
+      color: #666666;
+      background-color: #fffc6c;
+      border-color: #C5C56D;
+    }
+    .completed {
+      color: #FFFFFF;
+      background-color: #8fdf5f;
+      border-color: #4F8530;
+    }
+    .error {
+      color: #FFFFFF;
+      background-color: #e98080;
+      border-color: #A77272;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script>
+    buildUrl = '{{build_url}}';
+
+    analysisCompleted = '{{analysis_completed}}' == 'True';
+    analysisFailed = '{{analysis_failed}}' == 'True';
+
+    $(document).ready(function() {
+      if (!analysisCompleted) {
+        $('#status_message').text('running, will refresh in 5 seconds...');
+        $('#status_message').attr('class', 'running');
+        setTimeout(function(){
+          window.location.href = 'build-failure?url=' + buildUrl;
+        }, 5000);
+      } else if (analysisFailed) {
+        $('#status_message').text('error');
+        $('#status_message').attr('class', 'error');
+      } else {
+        // TODO: use another style when no culprit CL is found.
+        $('#status_message').text('completed');
+        $('#status_message').attr('class', 'completed');
+      }
+    });
+  </script>
+</head>
+<body>
+  Findit is still under experiment.
+  <br>
+  <br>
+
+  <b>Build info:</b>
+  <div>
+    Master: {{master_name}}<br>
+    Builder: {{builder_name}}<br>
+    Build: <a href="{{build_url}}">{{build_number}}</a>
+  </div>
+  <br>
+
+  <b>Analysis info:</b>
+  <div id="process info">
+    status: <span id="status_message"></span>
+  {% if pipeline_url %}
+    <a href="{{pipeline_url}}">pipeline</a><br>
+    Started: {{analysis_started}}<br>
+    Updated: {{analysis_updated}}<br>
+  {% endif %}
+  </div>
+  <br>
+</body>
