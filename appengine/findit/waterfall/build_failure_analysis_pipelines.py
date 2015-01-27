@@ -11,6 +11,9 @@ from model.build_analysis import BuildAnalysis
 from model.build_analysis_status import BuildAnalysisStatus
 from waterfall.base_pipeline import BasePipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
+from waterfall.extract_signal_pipeline import ExtractSignalPipeline
+from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
+from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 
 
 class BuildFailurePipeline(BasePipeline):
@@ -23,13 +26,15 @@ class BuildFailurePipeline(BasePipeline):
     self.build_number = build_number
 
   def finalized(self):
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        self.master_name, self.builder_name, self.build_number)
+    # When this root pipeline or its sub-pipelines still run into any error
+    # after auto-retries, this root pipeline will be aborted. So, mark the
+    # analysis as ERROR. The analysis is created before the pipeline starts.
     if self.was_aborted:  # pragma: no cover
-      analysis.status = BuildAnalysisStatus.ERROR
-    else:
-      analysis.status = BuildAnalysisStatus.ANALYZED
-    analysis.put()
+      analysis = BuildAnalysis.GetBuildAnalysis(
+          self.master_name, self.builder_name, self.build_number)
+      if analysis:  # In case the analysis is deleted manually.
+        analysis.status = BuildAnalysisStatus.ERROR
+        analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
@@ -40,7 +45,14 @@ class BuildFailurePipeline(BasePipeline):
     analysis.start_time = datetime.utcnow()
     analysis.put()
 
-    yield DetectFirstFailurePipeline(master_name, builder_name, build_number)
+    # The yield statements below return PipelineFutures, which allow subsequent
+    # pipelines to refer to previous output values.
+    # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
+    failure_info = yield DetectFirstFailurePipeline(
+        master_name, builder_name, build_number)
+    change_logs = yield PullChangelogPipeline(failure_info)
+    signals = yield ExtractSignalPipeline(failure_info)
+    yield IdentifyCulpritPipeline(failure_info, change_logs, signals)
 
 
 @ndb.transactional
