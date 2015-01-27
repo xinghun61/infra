@@ -185,9 +185,11 @@ function splitByAttempts(records) {
   records.forEach(function(record) {
     if (record.fields.action == attemptStart) {
       if (recordGroup) {
-        console.warn('Attempt group started before previous one ended.')
+        console.warn('Attempt group started before previous one ended.');
+        return; // Skip repeated start action.
+      } else {
+        recordGroup = [];
       }
-      recordGroup = [];
     }
     if (recordGroup) {
       recordGroup.push(record);
