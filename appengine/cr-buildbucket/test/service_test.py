@@ -29,6 +29,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'lease_build',
         'cancel_build',
         'view_build',
+        'reset_build',
     ]
     for op in ops:
       self.mock(acl, 'can_%s' % op, lambda *_, **__: True)
@@ -320,50 +321,37 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   ################################### UNELASE ##################################
 
-  def test_unlease(self):
+  def test_reset(self):
     self.lease()
-    build = self.service.unlease(
-        self.test_build.key.id(), self.test_build.lease_key)
+    build = self.service.reset(self.test_build.key.id())
     self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
     self.assertIsNone(build.lease_key)
     self.assertIsNone(build.lease_expiration_date)
     self.assertIsNone(build.leasee)
     self.assertTrue(self.lease())
 
-  def test_unlease_is_idempotent(self):
+  def test_reset_is_idempotent(self):
     self.lease()
     build_id = self.test_build.key.id()
-    lease_key = self.test_build.lease_key
-    self.service.unlease(build_id, lease_key)
-    self.service.unlease(build_id, lease_key)
+    self.service.reset(build_id)
+    self.service.reset(build_id)
 
-  def test_unlease_completed_build(self):
+  def test_reset_completed_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
     with self.assertRaises(service.InvalidBuildStateError):
-      self.service.unlease(self.test_build.key.id(), 42)
+      self.service.reset(self.test_build.key.id())
 
-  def test_cannot_unlease_nonexistent_build(self):
+  def test_cannot_reset_nonexistent_build(self):
     with self.assertRaises(service.BuildNotFoundError):
-      self.service.unlease(123, lease_key=321)
+      self.service.reset(123)
 
-  def test_unlease_without_lease_key(self):
+  def test_reset_with_auth_error(self):
     self.lease()
-    with self.assertRaises(service.InvalidInputError):
-      self.service.unlease(self.test_build.key.id(), None)
-
-  def test_cannot_unlease_with_wrong_lease_key(self):
-    self.lease()
-    with self.assertRaises(service.LeaseExpiredError):
-      self.service.unlease(
-          self.test_build.key.id(), self.test_build.lease_key + 1)
-
-  def test_unlease_with_auth_error(self):
-    self.lease()
-    self.mock_cannot('lease_build')
+    self.mock_cannot('reset_build')
     with self.assertRaises(auth.AuthorizationError):
-      self.service.unlease(self.test_build.key.id(), lease_key=321)
+      self.service.reset(self.test_build.key.id())
 
   #################################### START ###################################
 
@@ -412,6 +400,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
     with self.assertRaises(service.InvalidBuildStateError):
       self.service.start(self.test_build.key.id(), 42)
+
+  def test_start_without_lease_key(self):
+    with self.assertRaises(service.InvalidInputError):
+      self.service.start(1, None)
 
   @contextlib.contextmanager
   def callback_test(self):

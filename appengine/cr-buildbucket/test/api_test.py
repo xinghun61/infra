@@ -210,6 +210,19 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     }
     self.expect_error('lease', req, 'CANNOT_LEASE_BUILD')
 
+  #################################### RESET ###################################
+
+  def test_reset(self):
+    self.service.reset.return_value = self.test_build
+    req = {
+        'id': self.test_build.key.id(),
+    }
+    res = self.call_api('reset', req).json_body
+    self.service.reset.assert_called_once_with(self.test_build.key.id())
+    self.assertIsNone(res.get('error'))
+    self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
+    self.assertFalse('lease_key' in res['build'])
+
   #################################### START ###################################
 
   def test_start(self):

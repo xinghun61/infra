@@ -328,21 +328,19 @@ class BuildBucketService(object):
     build.leasee = None
 
   @ndb.transactional
-  def unlease(self, build_id, lease_key):
-    """Unleases the build and resets its state. Idempotent.
+  def reset(self, build_id):
+    """Forcibly unleases the build and resets its state. Idempotent.
 
     Resets status, url and lease_key.
 
     Returns:
-      The unleased Build.
+      The reset Build.
     """
-    validate_lease_key(lease_key)
     build = self._get_leasable_build(build_id)
-    if build.lease_key is None:
-      if build.status == model.BuildStatus.SCHEDULED:
-        return build
-      raise InvalidBuildStateError('Cannot unlease a non-leased build')
-    self._check_lease(build, lease_key)
+    if not acl.can_reset_build(build):
+      raise auth.AuthorizationError()
+    if build.status == model.BuildStatus.COMPLETED:
+      raise BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
     self._clear_lease(build)
     build.url = None
@@ -389,7 +387,7 @@ class BuildBucketService(object):
         build.put()
       return build
     elif build.status == model.BuildStatus.COMPLETED:
-      raise BuildIsCompletedError('Cannot start a compelted build')
+      raise BuildIsCompletedError('Cannot start a completed build')
     assert build.status == model.BuildStatus.SCHEDULED
     self._check_lease(build, lease_key)
 

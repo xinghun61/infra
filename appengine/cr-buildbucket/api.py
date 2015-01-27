@@ -286,6 +286,16 @@ class BuildBucketApi(remote.Service):
     assert build.lease_key is not None
     return build_to_response_message(build, include_lease_key=True)
 
+  #################################  RESET  ####################################
+
+  @buildbucket_api_method(
+      id_resource_container(), BuildResponseMessage,
+      path='builds/{id}/reset', http_method='POST')
+  def reset(self, request):
+    """Forcibly unleases a build and resets its state to SCHEDULED."""
+    build = self.service.reset(request.id)
+    return build_to_response_message(build)
+
   #################################  STARTED  ##################################
 
   class StartRequestBodyMessage(messages.Message):

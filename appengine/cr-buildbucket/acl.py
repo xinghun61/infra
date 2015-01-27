@@ -12,25 +12,30 @@ from components import auth
 ACCESS_GROUP = 'buildbucket-access'
 
 
-def is_access_group_member(identity):  # pragma: no cover
+def is_access_group_member(identity=None):  # pragma: no cover
+  identity = identity or auth.get_current_identity()
   return auth.is_group_member(ACCESS_GROUP, identity)
 
 
-def can_add_build_to_bucket(bucket, identity):  # pragma: no cover
+def can_add_build_to_bucket(bucket, identity=None):  # pragma: no cover
   return is_access_group_member(identity)
 
 
-def can_peek_bucket(bucket, identity):  # pragma: no cover
+def can_peek_bucket(bucket, identity=None):  # pragma: no cover
   return is_access_group_member(identity)
 
 
-def can_lease_build(build, identity):  # pragma: no cover
+def can_lease_build(build, identity=None):  # pragma: no cover
   return is_access_group_member(identity)
 
 
-def can_cancel_build(build, identity):  # pragma: no cover
+def can_cancel_build(build, identity=None):  # pragma: no cover
   return is_access_group_member(identity)
 
 
-def can_view_build(build, identity):  # pragma: no cover
+def can_reset_build(build, identity=None):  # pragma: no cover
+  return is_access_group_member(identity)
+
+
+def can_view_build(build, identity=None):  # pragma: no cover
   return is_access_group_member(identity)
