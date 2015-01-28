@@ -366,7 +366,7 @@ class ViewGraph(webapp2.RequestHandler):
       return {'status': 'Error - %s not found' % graph_name}
     graph = graph_q[0]
 
-    num_points = int(self.request.get('num_points', 1000))
+    num_points = int(self.request.get('num_points', 100000))
 
     days_since = int(self.request.get('days', '28'))
     since = datetime.datetime.utcnow() - datetime.timedelta(days=days_since)
