@@ -74,6 +74,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.key.id())
     self.assertEqual(build.bucket, 'chromium')
     self.assertEqual(build.parameters, params)
+    self.assertEqual(build.created_by, auth.get_current_identity())
 
   def test_add_with_bad_bucket_name(self):
     with self.assertRaises(service.InvalidInputError):

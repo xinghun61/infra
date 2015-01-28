@@ -57,6 +57,7 @@ class BuildMessage(messages.Message):
   created_ts = messages.IntegerField(13)
   updated_ts = messages.IntegerField(14)
   completed_ts = messages.IntegerField(15)
+  created_by = messages.StringField(16)
 
 
 class BuildResponseMessage(messages.Message):
@@ -85,6 +86,7 @@ def build_to_message(build, include_lease_key=False):
       created_ts=datetime_to_timestamp_safe(build.create_time),
       updated_ts=datetime_to_timestamp_safe(build.update_time),
       completed_ts=datetime_to_timestamp_safe(build.complete_time),
+      created_by=build.created_by.to_bytes() if build.created_by else None,
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(

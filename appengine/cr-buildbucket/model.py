@@ -86,6 +86,7 @@ class Build(ndb.Model):
 
   # Creation time attributes.
   create_time = ndb.DateTimeProperty(auto_now_add=True)
+  created_by = auth.IdentityProperty()
   bucket = ndb.StringProperty(required=True)
   tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()

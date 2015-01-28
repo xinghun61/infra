@@ -148,6 +148,7 @@ class BuildBucketService(object):
         tags=tags,
         parameters=parameters,
         status=model.BuildStatus.SCHEDULED,
+        created_by=identity,
     )
     if lease_expiration_date is not None:
       build.lease_expiration_date = lease_expiration_date
