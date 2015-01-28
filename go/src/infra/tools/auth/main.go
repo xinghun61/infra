@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"infra/libs/auth"
@@ -17,6 +18,20 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/maruel/subcommands"
 )
+
+func reportIdentity(t http.RoundTripper) error {
+	var ident auth.Identity
+	service, err := auth.NewGroupsService("", &http.Client{Transport: t}, nil)
+	if err == nil {
+		ident, err = service.FetchCallerIdentity()
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to fetch current identity: %s\n", err)
+		return err
+	}
+	fmt.Printf("Logged in as %s\n", ident)
+	return nil
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // 'login' subcommand.
@@ -40,12 +55,10 @@ func (c *loginRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintf(os.Stderr, "Login failed: %s\n", err.Error())
 		return 1
 	}
-	ident, err := auth.FetchIdentity(transport)
+	err = reportIdentity(transport)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to fetch a current identity: %s\n", err)
 		return 1
 	}
-	fmt.Printf("Current identity: %s\n", ident)
 	return 0
 }
 
@@ -99,12 +112,10 @@ func (c *infoRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	ident, err := auth.FetchIdentity(transport)
+	err = reportIdentity(transport)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to fetch a current identity: %s\n", err)
 		return 3
 	}
-	fmt.Println(ident)
 	return 0
 }
 
