@@ -28,6 +28,16 @@ MIRRORED_COMMIT = FOOTER_PREFIX + 'Mirrored-Commit'
 ################################################################################
 
 class GsubtreedConfigRef(config_ref.ConfigRef):
+  """GsubtreedConfigRef sets the schema for the configuration ref that gsubtreed
+  uses. Using a ref for configuration allows the config to be versioned and for
+  the configuration to be updated without restarting the daemon. The
+  configuration is stored in the repo at :attr:`REF` in a file named
+  ``config.json``.
+
+  The format of this file is simply a JSON dictionary consisting of zero or more
+  values as described by :attr:`DEFAULTS`.
+  """
+
   CONVERT = {
     'interval': lambda self, val: float(val),
 
@@ -36,20 +46,44 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     # normpath to avoid trailing/double-slash errors.
     'enabled_paths': lambda self, val: map(posixpath.normpath, map(str, val)),
   }
+
   DEFAULTS = {
     'interval': 5.0,
 
-    # The base URL is the url relative to which all mirror repos are assumed to
-    # exist. For example, if you mirror the path 'bob', and base_url is
-    # https://host.domain.tld/main_repo, then it would assume that the mirror
-    # for the bob subtree is https://host.domain.tld/main_repo/bob.
-    #
-    # By default, base_url is set to the repo that gsubtreed is processing
     'base_url': None,
-    'enabled_refglobs': ['refs/heads/*'],
     'enabled_paths': [],
+    'enabled_refglobs': ['refs/heads/*'],
   }
+  """DEFAULTS is the default values for the in-repo versioned configuration ref.
+
+  Parameters:
+    interval: The time in seconds between iterations of gsubtreed. Each
+      iteration will fetch from the main repo, and try to push to all of the
+      subtree repos.
+
+    base_url: The base URL is the url relative to which all mirror repos are
+      assumed to exist. For example, if you mirror the path ``bob``, and
+      base_url is ``https://.../main_repo``, then it would assume that the
+      mirror for the ``bob`` subtree is ``https://.../main_repo/bob``.  By
+      default, base_url is set to the repo that gsubtreed is processing.
+
+    enabled_paths: A list of paths in the repo to mirror. These are absolute
+      paths from the ref root. Any commits which affect these paths will be
+      mirrored to the target repo ``'/'.join((base_url, path))``.
+
+    enabled_refglobs: A list of git-style absolute refglobs that gsubtreed
+      should attempt to mirror. If a subtree appears in multiple refs covered by
+      the refglob, then all of those refs will be pushed to the mirror for that
+      subtree. Say you are mirroring the subtree ``bob`` and the refglob
+      ``refs/*``. If ``bob`` appeared on ``refs/foo`` and ``refs/bar``, the
+      ``bob`` subtree repo would then contain both a ``refs/foo`` and
+      a ``refs/bar`` ref.
+  """
+
+
   REF = 'refs/gsubtreed-config/main'
+  """REF is the git ref where gsubtree tries to find `config.json` in the repo
+  being mirrored."""
 
 
 
@@ -190,7 +224,11 @@ def process_path(path, origin_repo, config):
 
 
 def inner_loop(origin_repo, config):
-  """Returns (success, {path: #commits_synthesized})."""
+  """Runs one iteration of the gsubtreed algorithm.
+
+  Returns:
+    (success, {path: #commits_synthesized})
+  """
 
   origin_repo.fetch()
   config.evaluate()
