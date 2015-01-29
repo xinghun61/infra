@@ -18,11 +18,6 @@ class AlertsTest(unittest.TestCase):
   def setUp(self):
     self.testbed = testbed.Testbed()
     self.testbed.activate()
-    self.testbed.init_user_stub()
-    self.testbed.init_memcache_stub()
-    self.testbed.init_datastore_v3_stub()
-    self.testbed.init_app_identity_stub()
-    self.testbed.init_urlfetch_stub()
     self.testbed.init_all_stubs()
     self.testapp = webtest.TestApp(alerts.app)
 
@@ -237,6 +232,28 @@ class AlertsTest(unittest.TestCase):
     got_alerts = json.loads(res.body)
     self.assertEquals(got_alerts['alerts'], big_alerts['alerts'])
     self.assertEquals(memcache.get(alerts.AlertsHandler.ALERTS_TYPE), None)
+
+  def test_update_alerts_when_last_was_stored_in_gcs(self):
+    random.seed(0xf00f00)
+    alerts_1 = self.generate_fake_alerts(10000)
+    content = json.dumps(alerts_1)
+    self.assertTrue(len(content) > alerts.AlertsHandler.MAX_JSON_SIZE)
+    params = {'content': content}
+    self.testapp.post('/alerts', params)
+
+    test_alerts2 = {'alerts': ['hello', 'world', '1']}
+    self.testapp.post('/alerts', {'content': json.dumps(test_alerts2)})
+    alerts_query = alerts.AlertsJSON.query().order(alerts.AlertsJSON.date)
+    stored_alerts = alerts_query.fetch(limit=3)
+    self.assertEqual(2, len(stored_alerts))
+    self.assertEqual(stored_alerts[0].type, 'alerts')
+    self.assertEqual(stored_alerts[1].type, 'alerts')
+    self.assertTrue(stored_alerts[0].use_gcs)
+    stored_alerts2 = json.loads(stored_alerts[1].json)
+    self.assertEqual(test_alerts2['alerts'], stored_alerts2['alerts'])
+    self.assertTrue('date' in stored_alerts2)
+    self.assertEqual(type(stored_alerts2['date']), int)
+
 
   def generate_fake_alerts(self, n):
     return {'alerts': [self.generate_fake_alert() for _ in range(n)]}

@@ -100,9 +100,15 @@ class AlertsHandler(webapp2.RequestHandler):
   def get(self):
     self.get_alerts(AlertsHandler.ALERTS_TYPE)
 
-  def post_to_history(self, alerts_type, alerts):
+  def store_alerts(self, alerts_type, alerts):
     last_entry = self.get_last_datastore(alerts_type)
-    last_alerts = json.loads(last_entry.json) if last_entry else {}
+    last_alerts = {}
+    if last_entry:
+      if last_entry.use_gcs:
+        alerts_json = self.get_from_gcs(alerts_type)
+        last_alerts = json.loads(alerts_json)
+      else:
+        last_alerts = json.loads(last_entry.json) if last_entry else {}
 
     # Only changes to the fields with 'alerts' in the name should cause a
     # new history entry to be saved.
@@ -148,8 +154,9 @@ class AlertsHandler(webapp2.RequestHandler):
 
   def update_alerts(self, alerts_type):
     alerts = self.parse_alerts(self.request.get('content'))
+
     if alerts:
-      self.post_to_history(alerts_type, alerts)
+      self.store_alerts(alerts_type, alerts)
 
   def post(self):
     self.update_alerts(AlertsHandler.ALERTS_TYPE)

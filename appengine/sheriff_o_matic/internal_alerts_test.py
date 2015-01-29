@@ -19,9 +19,7 @@ class InternalAlertsTest(unittest.TestCase):
   def setUp(self):
     self.testbed = testbed.Testbed()
     self.testbed.activate()
-    self.testbed.init_user_stub()
-    self.testbed.init_memcache_stub()
-    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_all_stubs()
     self.testapp = webtest.TestApp(internal_alerts.app)
 
   def tearDown(self):
@@ -124,6 +122,21 @@ class InternalAlertsTest(unittest.TestCase):
     got_internal_alerts = json.loads(res.body)
     self.assertEquals(got_internal_alerts['alerts'],
                       put_internal_alerts['alerts'])
+
+  def test_alerts_too_big_for_memcache(self):
+    random.seed(0xf00f00)
+    big_alerts = self.generate_fake_internal_alerts(10000)
+    content = json.dumps(big_alerts)
+    self.assertTrue(len(content) > alerts.AlertsHandler.MAX_JSON_SIZE)
+
+    params = {'content': content}
+
+    self.testapp.post('/internal-alerts', params)
+    res = self.testapp.get('/internal-alerts')
+    got_alerts = json.loads(res.body)
+    self.assertEquals(got_alerts['alerts'], big_alerts['alerts'])
+    alerts_type = internal_alerts.InternalAlertsHandler.ALERTS_TYPE
+    self.assertEquals(memcache.get(alerts_type), None)
 
   def test_no_user(self):
     # Get it.
