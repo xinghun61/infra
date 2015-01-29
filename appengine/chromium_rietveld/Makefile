@@ -38,6 +38,8 @@ VERSION?= `git show --format='%h' --no-patch`$(dirty)
 
 PYTHON?= python2.7
 COVERAGE?= coverage
+VULCANIZE?= ./node_modules/vulcanize/bin/vulcanize
+VULCANIZE_FLAGS?= --inline
 
 NPM_VERSION := $(shell npm --version 2>/dev/null)
 
@@ -54,7 +56,7 @@ help:
 
 vulcanize: check
 	mkdir -p ./gen
-	./node_modules/vulcanize/bin/vulcanize new_static/components/cr-app.html -o new_static/components/cr-app.vulcanized.html
+	$(VULCANIZE) $(VULCANIZE_FLAGS) new_static/components/cr-app.html -o new_static/components/cr-app.vulcanized.html
 
 run: serve
 
