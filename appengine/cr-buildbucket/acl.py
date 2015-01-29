@@ -17,8 +17,10 @@ import logging
 import re
 
 from google.appengine.ext import ndb
+from google.appengine.ext.ndb import msgprop
 from components import auth
 from components import utils
+from protorpc import messages
 
 import errors
 
@@ -26,36 +28,71 @@ import errors
 ################################################################################
 ## Role definitions.
 
+class Action(messages.Enum):
+  # Schedule a build.
+  ADD_BUILD = 1
+  # Get information about a build.
+  VIEW_BUILD = 2
+  # Lease a build for execution. Normally done by build systems.
+  LEASE_BUILD = 3
+  # Cancel an existing build. Does not require a lease key.
+  CANCEL_BUILD = 4
+  # Unlease and reset state of an existing build. Normally done by admins.
+  RESET_BUILD = 5
+  # Search for builds or get a list of scheduled builds.
+  SEARCH_BUILDS = 6
+  # View bucket ACLs.
+  READ_ACL = 7
+  # Change bucket ACLs.
+  WRITE_ACL = 8
+
+
+_action_dict = Action.to_dict()
+
+
+class Role(messages.Enum):
+  # Has read-only access to a bucket.
+  READER = 1
+  # Same as READER + can schedule and cancel builds.
+  SCHEDULER = 2
+  # Same as SCHEDULER + can lease, mark as started and completed.
+  WRITER = 3
+  # Same as WRITER + can change ACLs and can reset a build.
+  OWNER = 4
+
+
+_role_dict = Role.to_dict()
+
 
 READER_ROLE_ACTIONS = [
-    'view_build',
-    'search_builds',
+    Action.VIEW_BUILD,
+    Action.SEARCH_BUILDS,
 ]
 SCHEDULER_ROLE_ACTIONS = READER_ROLE_ACTIONS + [
-    'add_build',
-    'cancel_build'
+    Action.ADD_BUILD,
+    Action.CANCEL_BUILD,
 ]
 WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
-   'lease_build'
+    Action.LEASE_BUILD,
 ]
 OWNER_ROLE_ACTIONS = WRITER_ROLE_ACTIONS + [
-    'read_acl',
-    'write_acl',
-    'reset_build',
+    Action.READ_ACL,
+    Action.WRITE_ACL,
+    Action.RESET_BUILD,
 ]
 
-ALL_ACTIONS = set(OWNER_ROLE_ACTIONS)
 
-ROLES = {
-    'READER': set(READER_ROLE_ACTIONS),
-    'SCHEDULER': set(SCHEDULER_ROLE_ACTIONS),
-    'WRITER': set(WRITER_ROLE_ACTIONS),
-    'OWNER': set(OWNER_ROLE_ACTIONS),
+ACTIONS_FOR_ROLE = {
+    Role.READER: set(READER_ROLE_ACTIONS),
+    Role.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
+    Role.WRITER: set(WRITER_ROLE_ACTIONS),
+    Role.OWNER: set(OWNER_ROLE_ACTIONS),
 }
 
+
 ROLES_FOR_ACTION = {
-    a: set(r for r, actions in ROLES.items() if a in actions)
-    for a in ALL_ACTIONS
+    a: set(r for r, actions in ACTIONS_FOR_ROLE.items() if a in actions)
+    for a in Action
 }
 
 
@@ -66,53 +103,41 @@ ROLES_FOR_ACTION = {
 validate_bucket_name = errors.validate_bucket_name
 
 
-def validate_role_name(role_name):
-  """Raises errors.InvalidInputError if |role_name| is invalid."""
-  if role_name not in ROLES:
-    raise errors.InvalidInputError('Invalid role name "%s"' % role_name)
-
-
 def validate_group_name(group):
   """Raises errors.InvalidInputError if |group| is invalid."""
   if not auth.is_valid_group_name(group):
     raise errors.InvalidInputError('Invalid group "%s"' % group)
 
 
-def validate_action_name(action):
-  """Raises errors.InvalidInputError if |action| is invalid."""
-  if action not in ALL_ACTIONS:
-    raise errors.InvalidInputError('Invalid action "%s"' % action)
+def validate_acl(acl):
+  assert isinstance(acl, BucketAcl)
+  for rule in acl.rules:
+    validate_group_name(rule.group)
 
 
 ################################################################################
 ## Granular actions. API uses these.
 
 def can_fn(action):
-  validate_action_name(action)
+  assert isinstance(action, Action)
   return lambda bucket, identity=None: can(bucket, action, identity)
 
 
 def can_fn_for_build(action):
-  validate_action_name(action)
+  assert isinstance(action, Action)
   return lambda build, identity=None: can(build.bucket, action, identity)
 
 
-# Getting information about a build.
-can_view_build = can_fn_for_build('view_build')
-# Getting a list of scheduled builds.
-can_search_builds = can_fn_for_build('search_builds')
-# Scheduling a build.
-can_add_build = can_fn('add_build')
-# Leasing a build for running. Normally done by build systems.
-can_lease_build = can_fn_for_build('lease_build')
-# Canceling an existing build.
-can_cancel_build = can_fn_for_build('cancel_build')
-# Unleasing and resetting state of an existing build. Normally done by admins.
-can_reset_build = can_fn_for_build('reset_build')
-# Viewing ACLs.
-can_read_acl = can_fn('read_acl')
-# Changing ACLs.
-can_write_acl = can_fn('write_acl')
+# Functions for each Action.
+# Some accept build as first param, others accept bucket name.
+can_view_build = can_fn_for_build(Action.VIEW_BUILD)
+can_search_builds = can_fn(Action.SEARCH_BUILDS)
+can_add_build = can_fn(Action.ADD_BUILD)
+can_lease_build = can_fn_for_build(Action.LEASE_BUILD)
+can_cancel_build = can_fn_for_build(Action.CANCEL_BUILD)
+can_reset_build = can_fn_for_build(Action.RESET_BUILD)
+can_read_acl = can_fn(Action.READ_ACL)
+can_write_acl = can_fn(Action.WRITE_ACL)
 
 
 def get_acl(bucket):
@@ -126,7 +151,7 @@ def get_acl(bucket):
 def set_acl(bucket, acl):
   """Overwrites ACL of |bucket|."""
   validate_bucket_name(bucket)
-  assert isinstance(acl, BucketAcl)
+  validate_acl(acl)
   if not can_write_acl(bucket):
     raise auth.AuthorizationError()
   current_identity = auth.get_current_identity()
@@ -138,6 +163,7 @@ def set_acl(bucket, acl):
   acl.modified_by = current_identity
   acl.modified_time = utils.utcnow()
   acl.put()  # Overwrite.
+  return acl
 
 
 ################################################################################
@@ -149,7 +175,7 @@ class Rule(ndb.Model):
 
   Stored inside BucketAcl.
   """
-  role = ndb.StringProperty(required=True)
+  role = msgprop.EnumProperty(Role, required=True)
   group = ndb.StringProperty(required=True)
 
 
@@ -173,30 +199,29 @@ class BucketAcl(ndb.Model):
   def _pre_put_hook(self):
     validate_bucket_name(self.bucket)
     for rule in self.rules:
-      validate_role_name(rule.role)
       validate_group_name(rule.group)
 
 
-def has_any_of_roles(bucket, role_names, identity=None):
-  """True if |identity| has any of given roles in |bucket|."""
+def has_any_of_roles(bucket, roles, identity=None):
+  """True if |identity| has any of |roles| in |bucket|."""
   validate_bucket_name(bucket)
-  for r in role_names:
-    validate_role_name(r)
+  for r in roles:
+    assert isinstance(r, Role)
   identity = identity or auth.get_current_identity()
 
   if auth.is_admin(identity):
     return True
 
-  role_names = set(role_names)
+  roles = set(roles)
   bucket_acl = BucketAcl.get_by_id(bucket)
   if bucket_acl:
     for rule in bucket_acl.rules:
-      if rule.role in role_names and auth.is_group_member(rule.group, identity):
+      if rule.role in roles and auth.is_group_member(rule.group, identity):
         return True
   return False
 
 
 def can(bucket, action, identity=None):
   validate_bucket_name(bucket)
-  validate_action_name(action)
+  assert isinstance(action, Action)
   return has_any_of_roles(bucket, ROLES_FOR_ACTION[action], identity)

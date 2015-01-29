@@ -373,8 +373,8 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_get_acl(self):
     bucket_acl = acl.BucketAcl(
         rules=[
-            acl.Rule(role='READER', group='readers'),
-            acl.Rule(role='WRITER', group='writers'),
+            acl.Rule(role=acl.Role.READER, group='readers'),
+            acl.Rule(role=acl.Role.WRITER, group='writers'),
         ],
         modified_time=datetime.datetime(2015, 1, 1),
         modified_by=auth.Identity.from_bytes('user:a@example.com'),
@@ -407,16 +407,15 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_set_acl(self):
     rules = [
-        acl.Rule(role='READER', group='readers'),
-        acl.Rule(role='WRITER', group='writers'),
+        acl.Rule(role=acl.Role.READER, group='readers'),
+        acl.Rule(role=acl.Role.WRITER, group='writers'),
     ]
-    get_acl_result = acl.BucketAcl(
+    set_acl_result = acl.BucketAcl(
         rules=rules,
         modified_time=datetime.datetime(2015, 1, 1),
         modified_by=auth.Identity.from_bytes('user:a@example.com'),
     )
-    self.mock(acl, 'get_acl', mock.Mock(return_value=get_acl_result))
-    self.mock(acl, 'set_acl', mock.Mock())
+    self.mock(acl, 'set_acl', mock.Mock(return_value=set_acl_result))
     req = {
         'bucket': 'bucket',
         'rules': [
@@ -449,7 +448,6 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
     expect_invalid_input_error(
         {'role': 'READER', 'group': 'good group'}, bucket='bad bucket')
-    expect_invalid_input_error({'role': 'bad role', 'group': 'good group'})
     expect_invalid_input_error({'role': 'READER', 'group': 'bad/ group'})
 
   #################################### ERRORS ##################################

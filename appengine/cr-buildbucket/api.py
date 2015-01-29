@@ -102,7 +102,7 @@ def build_to_response_message(build, include_lease_key=False):
 
 class BucketAclMessage(messages.Message):
   class RuleMessage(messages.Message):
-    role = messages.StringField(1, required=True)
+    role = messages.EnumField(acl.Role, 1, required=True)
     group = messages.StringField(2, required=True)
 
   rules = messages.MessageField(RuleMessage, 1, repeated=True)
@@ -128,15 +128,6 @@ def bucket_acl_to_response_message(bucket_acl):
         modified_ts=utils.datetime_to_timestamp(bucket_acl.modified_time),
     )
   return response
-
-
-def bucket_acl_from_message(bucket_acl):
-  result = acl.BucketAcl(rules=[])
-  for rule in bucket_acl.rules:
-    acl.validate_role_name(rule.role)
-    acl.validate_group_name(rule.group)
-    result.rules.append(acl.Rule(role=str(rule.role), group=str(rule.group)))
-  return result
 
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
@@ -488,7 +479,15 @@ class BuildBucketApi(remote.Service):
   def set_acl(self, request):
     """Sets bucket ACL."""
     service.validate_bucket_name(request.bucket)
-    bucket_acl = bucket_acl_from_message(request)
-    acl.set_acl(request.bucket, bucket_acl)
-    bucket_acl = acl.get_acl(request.bucket)
+    # Do not validate rules here, rely on acl.set_acl's validation.
+    bucket_acl = acl.BucketAcl(
+        rules=[
+            acl.Rule(
+                role=rule.role,
+                group=rule.group,
+            )
+            for rule in request.rules
+        ],
+    )
+    bucket_acl = acl.set_acl(request.bucket, bucket_acl)
     return bucket_acl_to_response_message(bucket_acl)

@@ -23,20 +23,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     super(BuildBucketServiceTest, self).__init__(*args, **kwargs)
     self.test_build = None
 
-  def mock_acls(self):
-    ops = [
-        'add_build',
-        'search_builds',
-        'lease_build',
-        'cancel_build',
-        'view_build',
-        'reset_build',
-    ]
-    for op in ops:
-      self.mock(acl, 'can_%s' % op, lambda *_, **__: True)
-
-  def mock_cannot(self, operation):
-    self.mock(acl, 'can_%s' % operation, lambda *_, **__: False)
+  def mock_cannot(self, action):
+    def can(_bucket, requested_action, _identity=None):
+      return action != requested_action
+    self.mock(acl, 'can', can)
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
@@ -54,7 +44,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.current_identity = auth.Identity('service', 'unittest')
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
-    self.mock_acls()
+    self.mock(acl, 'can', lambda *_: True)
 
   def put_many_builds(self):
     for _ in xrange(100):
@@ -91,7 +81,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.lease_key)
 
   def test_add_with_auth_error(self):
-    self.mock_cannot('add_build')
+    self.mock_cannot(acl.Action.ADD_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       self.service.add(self.test_build.bucket)
 
@@ -106,7 +96,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(self.service.get(42))
 
   def test_get_with_auth_error(self):
-    self.mock_cannot('view_build')
+    self.mock_cannot(acl.Action.VIEW_BUILD)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.service.get(self.test_build.key.id())
@@ -137,7 +127,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_cancel_with_auth_error(self):
     self.test_build.put()
-    self.mock_cannot('cancel_build')
+    self.mock_cannot(acl.Action.CANCEL_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       self.service.cancel(self.test_build.key.id())
 
@@ -257,7 +247,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       self.service.peek(buckets=[])
 
   def test_peek_with_auth_error(self):
-    self.mock_cannot('search_builds')
+    self.mock_cannot(acl.Action.SEARCH_BUILDS)
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.service.peek(buckets=[self.test_build.bucket])
@@ -293,7 +283,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(self.test_build.leasee, self.current_identity)
 
   def test_lease_build_with_auth_error(self):
-    self.mock_cannot('lease_build')
+    self.mock_cannot(acl.Action.LEASE_BUILD)
     build = self.test_build
     build.put()
     with self.assertRaises(auth.AuthorizationError):
@@ -366,7 +356,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_reset_with_auth_error(self):
     self.lease()
-    self.mock_cannot('reset_build')
+    self.mock_cannot(acl.Action.RESET_BUILD)
     with self.assertRaises(auth.AuthorizationError):
       self.service.reset(self.test_build.key.id())
 

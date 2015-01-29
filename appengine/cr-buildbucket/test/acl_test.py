@@ -34,21 +34,27 @@ class AclTest(testing.AppengineTestCase):
     acl.BucketAcl(
         id='bucket',
         rules=[
-            acl.Rule(role='READER', group='readers'),
-            acl.Rule(role='WRITER', group='writers'),
+            acl.Rule(role=acl.Role.READER, group='readers'),
+            acl.Rule(role=acl.Role.WRITER, group='writers'),
         ],
         modified_by=self.current_identity,
         modified_time=utils.utcnow(),
     ).put()
 
-    self.assertTrue(acl.has_any_of_roles('bucket', ['READER']))
-    self.assertTrue(acl.has_any_of_roles('bucket', ['READER', 'WRITER']))
-    self.assertFalse(acl.has_any_of_roles('bucket', ['WRITER']))
-    self.assertFalse(acl.has_any_of_roles('bucket', ['WRITER', 'OWNER']))
-    self.assertFalse(acl.has_any_of_roles('another-bucket', ['READER']))
+    self.assertTrue(
+        acl.has_any_of_roles('bucket', [acl.Role.READER]))
+    self.assertTrue(
+        acl.has_any_of_roles('bucket', [acl.Role.READER, acl.Role.WRITER]))
+    self.assertFalse(
+        acl.has_any_of_roles('bucket', [acl.Role.WRITER]))
+    self.assertFalse(
+        acl.has_any_of_roles('bucket', [acl.Role.WRITER, acl.Role.OWNER]))
+    self.assertFalse(
+        acl.has_any_of_roles('another-bucket', [acl.Role.READER]))
 
     self.mock_is_group_member([])
-    self.assertFalse(acl.has_any_of_roles('bucket', acl.ROLES))
+    self.assertFalse(acl.has_any_of_roles('bucket', acl.Role))
+
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)
@@ -57,28 +63,26 @@ class AclTest(testing.AppengineTestCase):
     self.mock(acl, 'has_any_of_roles', has_any_of_roles)
 
   def test_can(self):
-    self.mock_has_any_of_roles(['READER'])
-    self.assertTrue(acl.can('bucket', 'view_build'))
-    self.assertFalse(acl.can('bucket', 'cancel_build'))
-    self.assertFalse(acl.can('bucket', 'write_acl'))
+    self.mock_has_any_of_roles([acl.Role.READER])
+    self.assertTrue(acl.can('bucket', acl.Action.VIEW_BUILD))
+    self.assertFalse(acl.can('bucket', acl.Action.CANCEL_BUILD))
+    self.assertFalse(acl.can('bucket', acl.Action.WRITE_ACL))
 
     self.mock_has_any_of_roles([])
-    for action in acl.ALL_ACTIONS:
+    for action in acl.Action:
       self.assertFalse(acl.can('bucket', action))
 
     with self.assertRaises(errors.InvalidInputError):
-      acl.can('bucket', 'invalid action')
-    with self.assertRaises(errors.InvalidInputError):
-      acl.can('bad bucket name', 'view_build')
+      acl.can('bad bucket name', acl.Action.VIEW_BUILD)
 
   def test_can_view_build(self):
-    self.mock_has_any_of_roles(['READER'])
+    self.mock_has_any_of_roles([acl.Role.READER])
     build = model.Build(bucket='bucket')
     self.assertTrue(acl.can_view_build(build))
     self.assertFalse(acl.can_lease_build(build))
 
   def test_writer_cannot_write_acl(self):
-    self.mock_has_any_of_roles(['WRITER'])
+    self.mock_has_any_of_roles([acl.Role.WRITER])
     self.assertFalse(acl.can_read_acl('bucket'))
     self.assertFalse(acl.can_write_acl('bucket'))
 
@@ -86,7 +90,7 @@ class AclTest(testing.AppengineTestCase):
     self.mock_admin()
     expected = acl.BucketAcl(
         id='bucket',
-        rules=[acl.Rule(role='READER', group='readers')],
+        rules=[acl.Rule(role=acl.Role.READER, group='readers')],
         modified_by=self.current_identity,
         modified_time=utils.utcnow(),
     )
@@ -107,10 +111,12 @@ class AclTest(testing.AppengineTestCase):
 
     self.mock_admin()
     expected = acl.BucketAcl(
-        rules=[acl.Rule(
-            role='READER',
-            group='readers',
-        )]
+        rules=[
+            acl.Rule(
+                role=acl.Role.READER,
+                group='readers',
+            ),
+        ],
     )
 
     acl.set_acl('bucket', expected)
@@ -123,7 +129,7 @@ class AclTest(testing.AppengineTestCase):
   def test_set_acl_without_permissions(self):
     acls = acl.BucketAcl(
         rules=[acl.Rule(
-            role='READER',
+            role=acl.Role.READER,
             group='readers',
         )]
     )
@@ -140,12 +146,6 @@ class AclTest(testing.AppengineTestCase):
       acl.set_acl(
           'good-bucket-name',
           acl.BucketAcl(rules=[
-              acl.Rule(role='bad role name', group='good-group-name')
-          ]))
-
-    with self.assertRaises(errors.InvalidInputError):
-      acl.set_acl(
-          'good-bucket-name',
-          acl.BucketAcl(rules=[
-              acl.Rule(role='READER', group='bad:group name')
-          ]))
+              acl.Rule(role=acl.Role.READER, group='bad:group name'),
+          ],
+      ))
