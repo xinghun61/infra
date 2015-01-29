@@ -81,6 +81,8 @@
       "[BUILD]/scripts/slave/recipe_modules/gsutil/resources/gsutil_wrapper.py",
       "--",
       "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
       "--",
       "cp",
       "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",

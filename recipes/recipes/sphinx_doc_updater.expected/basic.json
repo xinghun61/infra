@@ -72,6 +72,8 @@
       "python",
       "-u",
       "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
       "--",
       "cp",
       "-R",
