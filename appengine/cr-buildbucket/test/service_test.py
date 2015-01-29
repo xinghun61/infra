@@ -13,6 +13,7 @@ from testing_utils import testing
 import mock
 
 import acl
+import errors
 import model
 import service
 
@@ -24,8 +25,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def mock_acls(self):
     ops = [
-        'add_build_to_bucket',
-        'peek_bucket',
+        'add_build',
+        'search_builds',
         'lease_build',
         'cancel_build',
         'view_build',
@@ -55,11 +56,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.mock_acls()
 
-  def put_many_builds(self, tags=None):
+  def put_many_builds(self):
     for _ in xrange(100):
-      b = model.Build(
-          bucket=self.test_build.bucket,
-          tags=tags or [])
+      b = model.Build(bucket=self.test_build.bucket)
       b.put()
 
   #################################### ADD #####################################
@@ -77,9 +76,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.created_by, auth.get_current_identity())
 
   def test_add_with_bad_bucket_name(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.add(bucket='chromium as')
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.add(bucket='')
 
   def test_add_with_leasing(self):
@@ -92,7 +91,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.lease_key)
 
   def test_add_with_auth_error(self):
-    self.mock_cannot('add_build_to_bucket')
+    self.mock_cannot('add_build')
     with self.assertRaises(auth.AuthorizationError):
       self.service.add(self.test_build.bucket)
 
@@ -133,7 +132,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.service.cancel(self.test_build.key.id())
 
   def test_cancel_nonexistent_build(self):
-    with self.assertRaises(service.BuildNotFoundError):
+    with self.assertRaises(errors.BuildNotFoundError):
       self.service.cancel(1)
 
   def test_cancel_with_auth_error(self):
@@ -146,7 +145,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
-    with self.assertRaises(service.InvalidBuildStateError):
+    with self.assertRaises(errors.InvalidBuildStateError):
       self.service.cancel(self.test_build.key.id())
 
   #################################### SEARCH ##################################
@@ -158,7 +157,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.tags = ['important:true']
     self.test_build.put()
     builds, _ = self.service.search(
-        tags=self.test_build.tags, buckets=[self.test_build.bucket])
+        buckets=[self.test_build.bucket],
+        tags=self.test_build.tags,
+    )
     self.assertEqual(builds, [self.test_build])
 
   def test_search_many_tags(self):
@@ -171,7 +172,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build2.put()
 
     # Search by both tags.
-    builds, _ = self.service.search(tags=self.test_build.tags)
+    builds, _ = self.service.search(
+        buckets=[self.test_build.bucket],
+        tags=self.test_build.tags,
+    )
     self.assertEqual(builds, [self.test_build])
 
   def test_search_bucket(self):
@@ -184,44 +188,45 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds, _ = self.service.search(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_all(self):
-    self.test_build.put()
-    builds, _ = self.service.search()
-    self.assertEqual(builds, [self.test_build])
-
   def test_search_with_paging(self):
-    tags = ['important:true']
-    self.put_many_builds(tags)
+    self.put_many_builds()
 
-    first_page, next_cursor = self.service.search(tags=tags, max_builds=10)
+    first_page, next_cursor = self.service.search(
+        buckets=[self.test_build.bucket],
+        max_builds=10,
+    )
     self.assertEqual(len(first_page), 10)
     self.assertTrue(next_cursor)
 
-    second_page, _ = self.service.search(tags=tags, start_cursor=next_cursor)
+    second_page, _ = self.service.search(
+        buckets=[self.test_build.bucket],
+        max_builds=10,
+        start_cursor=next_cursor)
     self.assertEqual(len(second_page), 10)
     self.assertTrue(any(new not in first_page for new in second_page))
 
   def test_search_with_bad_tags(self):
-    with self.assertRaises(service.InvalidInputError):
-      self.service.search(tags={})
-    with self.assertRaises(service.InvalidInputError):
-      self.service.search(tags=['x'])
-    with self.assertRaises(service.InvalidInputError):
-      self.service.search(tags=[1])
+    def test_bad_tag(tags):
+      with self.assertRaises(errors.InvalidInputError):
+        self.service.search(buckets=['bucket'], tags=tags)
+    test_bad_tag(['x'])
+    test_bad_tag([1])
+    test_bad_tag({})
+    test_bad_tag(1)
 
   def test_search_with_bad_buckets(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.search(buckets={})
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.search(buckets=[1])
 
   def test_search_with_non_number_max_builds(self):
-    with self.assertRaises(service.InvalidInputError):
-      self.service.search(tags=['a:b'], max_builds='a')
+    with self.assertRaises(errors.InvalidInputError):
+      self.service.search(buckets=['b'], tags=['a:b'], max_builds='a')
 
   def test_search_with_negative_max_builds(self):
-    with self.assertRaises(service.InvalidInputError):
-      self.service.search(tags=['a:b'], max_builds=-2)
+    with self.assertRaises(errors.InvalidInputError):
+      self.service.search(buckets=['b'], tags=['a:b'], max_builds=-2)
 
   #################################### PEEK ####################################
 
@@ -244,11 +249,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek_with_bad_cursor(self):
     self.put_many_builds()
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.peek(buckets=[self.test_build.bucket], start_cursor='abc')
 
+  def test_peek_without_buckets(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.service.peek(buckets=[])
+
   def test_peek_with_auth_error(self):
-    self.mock_cannot('peek_bucket')
+    self.mock_cannot('search_builds')
     self.test_build.put()
     with self.assertRaises(auth.AuthorizationError):
       self.service.peek(buckets=[self.test_build.bucket])
@@ -297,21 +306,21 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertFalse(self.lease())
 
   def test_cannot_lease_a_nonexistent_build(self):
-    with self.assertRaises(service.BuildNotFoundError):
+    with self.assertRaises(errors.BuildNotFoundError):
       self.service.lease(build_id=42)
 
   def test_cannot_lease_for_whole_day(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.lease(
           lease_expiration_date=utils.utcnow() + datetime.timedelta(days=1))
 
   def test_cannot_set_expiration_date_to_past(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       yesterday = utils.utcnow() - datetime.timedelta(days=1)
       self.lease(lease_expiration_date=yesterday)
 
   def test_cannot_lease_with_non_datetime_expiration_date(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.lease(lease_expiration_date=1)
 
   def test_leasing_regenerates_lease_key(self):
@@ -347,11 +356,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
-    with self.assertRaises(service.InvalidBuildStateError):
+
+    with self.assertRaises(errors.InvalidBuildStateError):
       self.service.reset(self.test_build.key.id())
 
   def test_cannot_reset_nonexistent_build(self):
-    with self.assertRaises(service.BuildNotFoundError):
+    with self.assertRaises(errors.BuildNotFoundError):
       self.service.reset(123)
 
   def test_reset_with_auth_error(self):
@@ -363,15 +373,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   #################################### START ###################################
 
   def test_validate_malformed_url(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       service.validate_url('svn://sdfsf')
 
   def test_validate_relative_url(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       service.validate_url('sdfsf')
 
   def test_validate_nonstring_url(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       service.validate_url(123)
 
   def start(self, url=None, lease_key=None):
@@ -398,18 +408,18 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_start_non_leased_build(self):
     self.test_build.put()
-    with self.assertRaises(service.LeaseExpiredError):
+    with self.assertRaises(errors.LeaseExpiredError):
       self.service.start(self.test_build.key.id(), 42)
 
   def test_start_completed_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
-    with self.assertRaises(service.InvalidBuildStateError):
+    with self.assertRaises(errors.InvalidBuildStateError):
       self.service.start(self.test_build.key.id(), 42)
 
   def test_start_without_lease_key(self):
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.start(1, None)
 
   @contextlib.contextmanager
@@ -442,7 +452,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_heartbeat_without_expiration_date(self):
     self.lease()
-    with self.assertRaises(service.InvalidInputError):
+    with self.assertRaises(errors.InvalidInputError):
       self.service.heartbeat(
           self.test_build.key.id(), self.test_build.lease_key,
           lease_expiration_date=None)
@@ -466,7 +476,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.result = model.BuildResult.CANCELED
     self.test_build.cancelation_reason = model.CancelationReason.TIMEOUT
     self.test_build.put()
-    with self.assertRaises(service.InvalidBuildStateError):
+    with self.assertRaises(errors.InvalidBuildStateError):
       self.service.succeed(self.test_build.key.id(), 42)
 
   def test_succeed_is_idempotent(self):

@@ -6,7 +6,6 @@ import datetime
 import itertools
 import json
 import logging
-import re
 import urlparse
 
 from components import auth
@@ -16,66 +15,36 @@ from google.appengine.ext import db
 from google.appengine.ext import ndb
 
 import acl
+import errors
 import model
 
 
-BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z\.\-/]{1,100}$')
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 
 
-class Error(Exception):
-  pass
-
-
-class BuildNotFoundError(Error):
-  pass
-
-
-class InvalidBuildStateError(Error):
-  """Operation is invalid given the current build state."""
-
-
-class BuildIsCompletedError(InvalidBuildStateError):
-  """Build is complete and cannot be changed."""
-
-
-class InvalidInputError(Error):
-  """Raised when service method argument value is invalid."""
-
-
-class LeaseExpiredError(Error):
-  """Raised when provided lease_key does not match the current one."""
-
-
-def validate_bucket_name(bucket):
-  if not bucket:
-    raise InvalidInputError('Bucket not specified')
-  if not isinstance(bucket, basestring):
-    raise InvalidInputError('Bucket must be a string')
-  if not BUCKET_NAME_REGEX.match(bucket):
-    raise InvalidInputError(
-        'Bucket name "%s" does not match regular expression %s' %
-        (bucket, BUCKET_NAME_REGEX.pattern))
+validate_bucket_name = errors.validate_bucket_name
 
 
 def validate_lease_key(lease_key):
   if lease_key is None:
-    raise InvalidInputError('Lease key is not provided')
+    raise errors.InvalidInputError('Lease key is not provided')
 
 
 def validate_lease_expiration_date(expiration_date):
-  """Raises InvalidInputError if |expiration_date| is invalid."""
+  """Raises errors.InvalidInputError if |expiration_date| is invalid."""
   if expiration_date is None:
     return
   if not isinstance(expiration_date, datetime.datetime):
-    raise InvalidInputError('Lease expiration date must be datetime.datetime')
+    raise errors.InvalidInputError(
+        'Lease expiration date must be datetime.datetime')
   duration = expiration_date - utils.utcnow()
   if duration <= datetime.timedelta(0):
-    raise InvalidInputError('Lease expiration date cannot be in the past')
+    raise errors.InvalidInputError(
+        'Lease expiration date cannot be in the past')
   if duration > MAX_LEASE_DURATION:
-    raise InvalidInputError(
+    raise errors.InvalidInputError(
         'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
 
 
@@ -83,20 +52,21 @@ def validate_url(url):
   if url is None:
     return
   if not isinstance(url, basestring):
-    raise InvalidInputError('url must be string')
+    raise errors.InvalidInputError('url must be string')
   parsed = urlparse.urlparse(url)
   if not parsed.netloc:
-    raise InvalidInputError('url must be absolute')
+    raise errors.InvalidInputError('url must be absolute')
   if parsed.scheme.lower() not in ('http', 'https'):
-    raise InvalidInputError('Unexpected url scheme: "%s"' % parsed.scheme)
+    raise errors.InvalidInputError(
+        'Unexpected url scheme: "%s"' % parsed.scheme)
 
 
 def fix_max_builds(max_builds):
   max_builds = max_builds or 10
   if not isinstance(max_builds, int):
-    raise InvalidInputError('max_builds must be an integer')
+    raise errors.InvalidInputError('max_builds must be an integer')
   if max_builds < 0:
-    raise InvalidInputError('max_builds must be positive')
+    raise errors.InvalidInputError('max_builds must be positive')
   return min(MAX_RETURN_BUILDS, max_builds)
 
 
@@ -104,12 +74,12 @@ def validate_tags(tags):
   if tags is None:
     return
   if not isinstance(tags, list):
-    raise InvalidInputError('tags must be a list')
+    raise errors.InvalidInputError('tags must be a list')
   for t in tags:
     if not isinstance(t, basestring):
-      raise InvalidInputError('Invalid tag "%s": must be a string')
+      raise errors.InvalidInputError('Invalid tag "%s": must be a string')
     if ':' not in t:
-      raise InvalidInputError('Invalid tag "%s": does not contain ":"')
+      raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
 
 
 class BuildBucketService(object):
@@ -138,7 +108,7 @@ class BuildBucketService(object):
     tags = tags or []
 
     identity = auth.get_current_identity()
-    if not acl.can_add_build_to_bucket(bucket, identity):
+    if not acl.can_add_build(bucket, identity):
       raise auth.AuthorizationError(
           'Bucket %s is not allowed for %s' %
           (bucket, identity.to_bytes()))
@@ -182,7 +152,7 @@ class BuildBucketService(object):
       except db.BadValueError as ex:
         msg = 'Bad cursor "%s": %s' % (start_cursor, ex)
         logging.warning(msg)
-        raise InvalidInputError(msg)
+        raise errors.InvalidInputError(msg)
 
     query_iter = query.iter(start_cursor=curs, produce_cursors=True)
     entities = []
@@ -197,14 +167,29 @@ class BuildBucketService(object):
       next_cursor_str = query_iter.cursor_after().urlsafe()
     return entities, next_cursor_str
 
-  def search(self, tags=None, buckets=None, max_builds=None, start_cursor=None):
+  def _check_search_acls(self, buckets):
+    if not isinstance(buckets, list):
+      raise errors.InvalidInputError('Buckets must be a list')
+    if not buckets:
+      raise errors.InvalidInputError('No buckets specified')
+    for bucket in buckets:
+      validate_bucket_name(bucket)
+
+    identity = auth.get_current_identity()
+    for bucket in buckets:
+      if not acl.can_search_builds(bucket, identity):
+        raise auth.AuthorizationError(
+            ('User %s cannot search for buillds in bucket %s' %
+             (identity.to_bytes(), bucket)))
+
+  def search(self, buckets, tags=None, max_builds=None, start_cursor=None):
     """Searches for builds.
 
     Args:
-      tags (list of str): a list of tags that a build must have.
-        All of the |tags| must be present in a build.
       buckets (list of str): if not None, a list of buckets to search in.
         A build must be in one of the buckets.
+      tags (list of str): a list of tags that a build must have.
+        All of the |tags| must be present in a build.
       max_builds (int): maximum number of builds to return.
       start_cursor (string): a value of "next" cursor returned by previous
         search_by_tags call. If not None, return next builds in the query.
@@ -215,20 +200,14 @@ class BuildBucketService(object):
         next_cursor (string): cursor for the next page.
           None if there are no more builds.
     """
+    self._check_search_acls(buckets)
     validate_tags(tags)
     tags = tags or []
-    if buckets is not None:
-      if not isinstance(buckets, list):
-        raise InvalidInputError('buckets must be a list')
-      for bucket in buckets:
-        validate_bucket_name(bucket)
     max_builds = fix_max_builds(max_builds)
 
-    q = model.Build.query()
+    q = model.Build.query(model.Build.bucket.IN(buckets))
     for t in tags:
       q = q.filter(model.Build.tags == t)
-    if buckets:
-      q = q.filter(model.Build.bucket.IN(buckets))
     q = q.order(model.Build.key)
     return self._fetch_page(q, max_builds, start_cursor)
 
@@ -249,19 +228,8 @@ class BuildBucketService(object):
         next_cursor (str): cursor for the next page.
           None if there are no more builds.
     """
-    # TODO(nodir): accept and return a cursor for paging.
-
-    assert isinstance(buckets, list)
-    assert buckets, 'No buckets specified'
-    for bucket in buckets:
-      validate_bucket_name(bucket)
+    self._check_search_acls(buckets)
     max_builds = fix_max_builds(max_builds)
-    identity = auth.get_current_identity()
-    for bucket in buckets:
-      if not acl.can_peek_bucket(bucket, identity):
-        raise auth.AuthorizationError(
-            'User %s cannot peek builds in bucket %s' %
-            (identity.to_bytes(), bucket))
 
     q = model.Build.query(
         model.Build.status == model.BuildStatus.SCHEDULED,
@@ -275,8 +243,7 @@ class BuildBucketService(object):
     def local_predicate(b):
       return (b.status == model.BuildStatus.SCHEDULED and
               not b.is_leased and
-              b.bucket in buckets and
-              acl.can_view_build(b, identity))
+              b.bucket in buckets)
 
     return self._fetch_page(
         q, max_builds, start_cursor, predicate=local_predicate)
@@ -284,7 +251,7 @@ class BuildBucketService(object):
   def _get_leasable_build(self, build_id):
     build = model.Build.get_by_id(build_id)
     if build is None:
-      raise BuildNotFoundError()
+      raise errors.BuildNotFoundError()
     identity = auth.get_current_identity()
     if not acl.can_lease_build(build, identity):
       raise auth.AuthorizationError()
@@ -330,8 +297,8 @@ class BuildBucketService(object):
 
   def _check_lease(self, build, lease_key):
     if lease_key != build.lease_key:
-      raise LeaseExpiredError('lease_key is incorrect. '
-                              'Your lease might be expired.')
+      raise errors.LeaseExpiredError(
+          'lease_key is incorrect. Your lease might be expired.')
 
   def _clear_lease(self, build):
     """Clears build's lease attributes."""
@@ -352,7 +319,7 @@ class BuildBucketService(object):
     if not acl.can_reset_build(build):
       raise auth.AuthorizationError()
     if build.status == model.BuildStatus.COMPLETED:
-      raise BuildIsCompletedError('Cannot reset a completed build')
+      raise errors.BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
     self._clear_lease(build)
     build.url = None
@@ -399,7 +366,7 @@ class BuildBucketService(object):
         build.put()
       return build
     elif build.status == model.BuildStatus.COMPLETED:
-      raise BuildIsCompletedError('Cannot start a completed build')
+      raise errors.BuildIsCompletedError('Cannot start a completed build')
     assert build.status == model.BuildStatus.SCHEDULED
     self._check_lease(build, lease_key)
 
@@ -423,7 +390,7 @@ class BuildBucketService(object):
     """
     validate_lease_key(lease_key)
     if lease_expiration_date is None:
-      raise InvalidInputError('Lease expiration date not specified')
+      raise errors.InvalidInputError('Lease expiration date not specified')
     validate_lease_expiration_date(lease_expiration_date)
     build = self._get_leasable_build(build_id)
     self._check_lease(build, lease_key)
@@ -447,7 +414,8 @@ class BuildBucketService(object):
           build.result_details == result_details and
           build.url == url):
         return build
-      raise InvalidBuildStateError('Build %s has already completed' % build_id)
+      raise errors.InvalidBuildStateError(
+          'Build %s has already completed' % build_id)
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
@@ -508,14 +476,14 @@ class BuildBucketService(object):
     """
     build = model.Build.get_by_id(build_id)
     if build is None:
-      raise BuildNotFoundError()
+      raise errors.BuildNotFoundError()
     identity = auth.get_current_identity()
     if not acl.can_cancel_build(build, identity):
       raise auth.AuthorizationError()
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
         return build
-      raise InvalidBuildStateError('Cannot cancel a completed build')
+      raise errors.InvalidBuildStateError('Cannot cancel a completed build')
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY

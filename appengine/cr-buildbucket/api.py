@@ -13,6 +13,8 @@ from protorpc import message_types
 from protorpc import remote
 import endpoints
 
+import acl
+import errors
 import model
 import service
 
@@ -27,11 +29,11 @@ class ErrorReason(messages.Enum):
 
 
 ERROR_REASON_MAP = {
-    service.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
-    service.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
-    service.InvalidInputError: ErrorReason.INVALID_INPUT,
-    service.InvalidBuildStateError: ErrorReason.INVALID_BUILD_STATE,
-    service.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
+    errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
+    errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
+    errors.InvalidInputError: ErrorReason.INVALID_INPUT,
+    errors.InvalidBuildStateError: ErrorReason.INVALID_BUILD_STATE,
+    errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
 }
 
 
@@ -98,6 +100,45 @@ def build_to_response_message(build, include_lease_key=False):
   return BuildResponseMessage(build=build_to_message(build, include_lease_key))
 
 
+class BucketAclMessage(messages.Message):
+  class RuleMessage(messages.Message):
+    role = messages.StringField(1, required=True)
+    group = messages.StringField(2, required=True)
+
+  rules = messages.MessageField(RuleMessage, 1, repeated=True)
+  modified_by = messages.StringField(2)
+  modified_ts = messages.IntegerField(3)
+
+
+class BucketAclResponseMessage(messages.Message):
+  acl = messages.MessageField(BucketAclMessage, 1)
+  error = messages.MessageField(ErrorMessage, 2)
+
+
+def bucket_acl_to_response_message(bucket_acl):
+  response = BucketAclResponseMessage()
+  if bucket_acl:
+    response.acl = BucketAclMessage(
+        rules=[
+            BucketAclMessage.RuleMessage(
+                role=rule.role,
+                group=rule.group,
+            ) for rule in bucket_acl.rules],
+        modified_by=bucket_acl.modified_by.to_bytes(),
+        modified_ts=utils.datetime_to_timestamp(bucket_acl.modified_time),
+    )
+  return response
+
+
+def bucket_acl_from_message(bucket_acl):
+  result = acl.BucketAcl(rules=[])
+  for rule in bucket_acl.rules:
+    acl.validate_role_name(rule.role)
+    acl.validate_group_name(rule.group)
+    result.rules.append(acl.Rule(role=str(rule.role), group=str(rule.group)))
+  return result
+
+
 def id_resource_container(body_message_class=message_types.VoidMessage):
   return endpoints.ResourceContainer(
       body_message_class,
@@ -117,7 +158,7 @@ def buildbucket_api_method(
     def decorated(*args, **kwargs):
       try:
         return fn(*args, **kwargs)
-      except service.Error as ex:
+      except errors.Error as ex:
         assert hasattr(response_message_class, 'error')
         return response_message_class(error=ErrorMessage(
             reason=ERROR_REASON_MAP[type(ex)],
@@ -133,7 +174,7 @@ def parse_json(json_data, param_name):
   try:
     return json.loads(json_data)
   except ValueError as ex:
-    raise service.InvalidInputError('Could not parse %s: %s' % (param_name, ex))
+    raise errors.InvalidInputError('Could not parse %s: %s' % (param_name, ex))
 
 
 def parse_datetime(timestamp):
@@ -142,7 +183,7 @@ def parse_datetime(timestamp):
   try:
     return utils.timestamp_to_datetime(timestamp)
   except OverflowError:
-    raise service.InvalidInputError(
+    raise errors.InvalidInputError(
         'Could not parse timestamp: %s' % timestamp)
 
 
@@ -176,7 +217,7 @@ class BuildBucketApi(remote.Service):
     """Returns a build by id."""
     build = self.service.get(request.id)
     if build is None:
-      raise service.BuildNotFoundError()
+      raise errors.BuildNotFoundError()
     return build_to_response_message(build)
 
   ###################################  PUT  ####################################
@@ -193,7 +234,7 @@ class BuildBucketApi(remote.Service):
   def put(self, request):
     """Creates a new build."""
     if not request.bucket:
-      raise service.InvalidInputError('Bucket not specified')
+      raise errors.InvalidInputError('Bucket not specified')
 
     build = self.service.add(
         bucket=request.bucket,
@@ -209,8 +250,8 @@ class BuildBucketApi(remote.Service):
       message_types.VoidMessage,
       start_cursor=messages.StringField(1),
       # All specified tags must be present in a build.
-      tag=messages.StringField(2, repeated=True),
-      bucket=messages.StringField(3, repeated=True),
+      bucket=messages.StringField(2, repeated=True),
+      tag=messages.StringField(3, repeated=True),
       max_builds=messages.IntegerField(4, variant=messages.Variant.INT32),
   )
 
@@ -226,8 +267,8 @@ class BuildBucketApi(remote.Service):
     """Searches for builds."""
     assert isinstance(request.tag, list)
     builds, next_cursor = self.service.search(
-        tags=request.tag,
         buckets=request.bucket,
+        tags=request.tag,
         max_builds=request.max_builds,
         start_cursor=request.start_cursor)
     return self.SearchResponseMessage(
@@ -250,9 +291,6 @@ class BuildBucketApi(remote.Service):
   def peek(self, request):
     """Returns available builds."""
     assert isinstance(request.bucket, list)
-    if not request.bucket:
-      raise service.InvalidInputError('Bucket not specified')
-
     builds, next_cursor = self.service.peek(
         request.bucket,
         max_builds=request.max_builds,
@@ -356,7 +394,7 @@ class BuildBucketApi(remote.Service):
             parse_datetime(heartbeat.lease_expiration_ts))
         hb_result.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
-      except service.Error as ex:
+      except errors.Error as ex:
         hb_result.error = ErrorMessage(
             reason=ERROR_REASON_MAP[type(ex)],
             message=ex.message,
@@ -414,3 +452,43 @@ class BuildBucketApi(remote.Service):
     """Cancels a build."""
     build = self.service.cancel(request.id)
     return build_to_response_message(build)
+
+  #################################  GET ACL  ##################################
+
+  GET_ACL_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
+      message_types.VoidMessage,
+      bucket=messages.StringField(1, required=True),
+  )
+
+  @buildbucket_api_method(
+      GET_ACL_REQUEST_RESOURCE_CONTAINER, BucketAclResponseMessage,
+      path='bucket/{bucket}/acl', http_method='GET',
+      name='acl.get')
+  def get_acl(self, request):
+    """Returns bucket ACL."""
+    service.validate_bucket_name(request.bucket)
+    bucket_acl = acl.get_acl(request.bucket)
+    return bucket_acl_to_response_message(bucket_acl)
+
+  #################################  SET ACL  ##################################
+
+  class SetAclRequestBodyMessage(messages.Message):
+    rules = messages.MessageField(
+        BucketAclMessage.RuleMessage, 1, repeated=True)
+
+  SET_ACL_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
+      SetAclRequestBodyMessage,
+      bucket=messages.StringField(1, required=True),
+  )
+
+  @buildbucket_api_method(
+      SET_ACL_REQUEST_RESOURCE_CONTAINER, BucketAclResponseMessage,
+      path='bucket/{bucket}/acl', http_method='POST',
+      name='acl.set')
+  def set_acl(self, request):
+    """Sets bucket ACL."""
+    service.validate_bucket_name(request.bucket)
+    bucket_acl = bucket_acl_from_message(request)
+    acl.set_acl(request.bucket, bucket_acl)
+    bucket_acl = acl.get_acl(request.bucket)
+    return bucket_acl_to_response_message(bucket_acl)

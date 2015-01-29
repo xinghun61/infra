@@ -196,6 +196,13 @@ buildbucket.setup(
 ">
     file a ticket</a>.</p>
 
+    <p>ACL-related APIs:
+      <ul>
+        <li>{{ api_link('acl.get') }}: get bucket ACL.</li>
+        <li>{{ api_link('acl.set') }}: set bucket ACL.</li>
+      </ul>
+    </p>
+
   <h2>Notifications</h2>
   <p>Currently notifications are not implemented. Build status can be polled using
     {{ api_link('get') }} API call. Notifications will be enabled once

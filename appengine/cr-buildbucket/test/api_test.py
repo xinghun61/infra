@@ -17,6 +17,7 @@ import endpoints
 
 import acl
 import api
+import errors
 import model
 import service
 
@@ -168,9 +169,6 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
 
-  def test_peek_without_buckets(self):
-    self.expect_error('peek', {}, 'INVALID_INPUT')
-
   #################################### LEASE ###################################
 
   def test_lease(self):
@@ -241,7 +239,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
 
   def test_start_completed_build(self):
     def raise_completed(*_, **__):
-      raise service.BuildIsCompletedError()
+      raise errors.BuildIsCompletedError()
     self.service.start.side_effect = raise_completed
     req = {
         'id': self.test_build.key.id(),
@@ -279,7 +277,7 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     def service_heartbeat(build_id, *_, **__):
       if build_id == self.test_build.key.id():
         return self.test_build
-      raise service.LeaseExpiredError()
+      raise errors.LeaseExpiredError()
     self.service.heartbeat.side_effect = service_heartbeat
 
     req = {
@@ -369,22 +367,107 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service.cancel.assert_called_once_with(req['id'])
     self.assertEqual(int(res['build']['id']), req['id'])
 
+
+  #################################### ACL ##################################
+
+  def test_get_acl(self):
+    bucket_acl = acl.BucketAcl(
+        rules=[
+            acl.Rule(role='READER', group='readers'),
+            acl.Rule(role='WRITER', group='writers'),
+        ],
+        modified_time=datetime.datetime(2015, 1, 1),
+        modified_by=auth.Identity.from_bytes('user:a@example.com'),
+    )
+    self.mock(acl, 'get_acl', mock.Mock(return_value=bucket_acl))
+
+    req = {
+        'bucket': 'bucket',
+    }
+    res = self.call_api('get_acl', req).json_body
+    acl.get_acl.assert_called_once_with('bucket')
+    self.assertEqual(res, {
+        'acl': {
+            'rules': [
+                {'role': 'READER', 'group': 'readers'},
+                {'role': 'WRITER', 'group': 'writers'},
+            ],
+            'modified_ts': '1420070400000000',
+            'modified_by': 'user:a@example.com',
+        },
+    })
+
+  def test_get_empty_acl(self):
+    self.mock(acl, 'get_acl', mock.Mock(return_value=None))
+    req = {
+        'bucket': 'bucket',
+    }
+    res = self.call_api('get_acl', req).json_body
+    self.assertEqual(res, {})
+
+  def test_set_acl(self):
+    rules = [
+        acl.Rule(role='READER', group='readers'),
+        acl.Rule(role='WRITER', group='writers'),
+    ]
+    get_acl_result = acl.BucketAcl(
+        rules=rules,
+        modified_time=datetime.datetime(2015, 1, 1),
+        modified_by=auth.Identity.from_bytes('user:a@example.com'),
+    )
+    self.mock(acl, 'get_acl', mock.Mock(return_value=get_acl_result))
+    self.mock(acl, 'set_acl', mock.Mock())
+    req = {
+        'bucket': 'bucket',
+        'rules': [
+            {'role': 'READER', 'group': 'readers'},
+            {'role': 'WRITER', 'group': 'writers'},
+        ],
+    }
+    res = self.call_api('set_acl', req).json_body
+
+    expected = acl.BucketAcl(rules=rules)
+    acl.set_acl.assert_called_once_with('bucket', expected)
+    self.assertEqual(res, {
+        'acl': {
+            'rules': req['rules'],
+            'modified_ts': '1420070400000000',
+            'modified_by': 'user:a@example.com',
+        },
+    })
+
+
+  def test_set_acl_with_invalid_input(self):
+    def expect_invalid_input_error(rule, bucket='bucket'):
+      req = {
+          'bucket': bucket,
+          'rules': [rule],
+      }
+      res = self.call_api('set_acl', req).json_body
+      self.assertTrue('error' in res)
+      self.assertEqual(res['error']['reason'], 'INVALID_INPUT')
+
+    expect_invalid_input_error(
+        {'role': 'READER', 'group': 'good group'}, bucket='bad bucket')
+    expect_invalid_input_error({'role': 'bad role', 'group': 'good group'})
+    expect_invalid_input_error({'role': 'READER', 'group': 'bad/ group'})
+
   #################################### ERRORS ##################################
 
-  def error_test(self, service_error_class, reason):
+  def error_test(self, error_class, reason):
     def raise_service_error(*_, **__):
-      raise service_error_class()
+      raise error_class()
     self.service.get.side_effect = raise_service_error
     self.expect_error('get', {'id': 123}, reason)
 
   def test_build_not_found_error(self):
-    self.error_test(service.BuildNotFoundError, 'BUILD_NOT_FOUND')
+    self.error_test(errors.BuildNotFoundError, 'BUILD_NOT_FOUND')
 
   def test_invalid_input_error(self):
-    self.error_test(service.InvalidInputError, 'INVALID_INPUT')
+    self.error_test(errors.InvalidInputError, 'INVALID_INPUT')
 
   def test_invalid_build_state_error(self):
-    self.error_test(service.InvalidBuildStateError, 'INVALID_BUILD_STATE')
+    self.error_test(errors.InvalidBuildStateError, 'INVALID_BUILD_STATE')
 
   def test_lease_expired_error(self):
-    self.error_test(service.LeaseExpiredError, 'LEASE_EXPIRED')
+    self.error_test(errors.LeaseExpiredError, 'LEASE_EXPIRED')
