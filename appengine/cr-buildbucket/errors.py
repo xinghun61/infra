@@ -5,7 +5,7 @@
 import re
 
 
-BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z\.\-/]{1,100}$')
+BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-/]{1,100}$')
 
 
 class Error(Exception):
