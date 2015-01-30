@@ -110,6 +110,7 @@ class TryserverBuilders(ndb.Model):
   }
 
   MEMCACHE_KEY = 'default_builders'
+  MEMCACHE_TRYSERVERS_KEY = 'tryservers'
   MEMCACHE_TIME = 3600 * 24
 
   # Dictionary mapping tryserver names like tryserver.chromium to a list
@@ -129,6 +130,41 @@ class TryserverBuilders(ndb.Model):
     data = json.loads(cls.get_instance().json_contents)
     memcache.add(cls.MEMCACHE_KEY, data, cls.MEMCACHE_TIME)
     return data
+
+  @classmethod
+  def get_curated_tryservers(cls):
+    """Returns an array of sorted tryservers to ease client consumption.
+
+    The structure of the array is:
+    [
+      { tryserver: tryserver_name2,
+        builders: [
+          { builder: builder_name1, category: category_name1 },
+          { builder: builder_name2, category: category_name2 },
+          ...
+        ]
+      },
+      ...
+    ]
+    """
+    tryserver_json = memcache.get(cls.MEMCACHE_TRYSERVERS_KEY)
+    if tryserver_json is not None:
+      return tryserver_json
+
+    tryserver_json = []
+    tryserver_dict = json.loads(cls.get_instance().json_contents)
+    for tryserver in sorted(tryserver_dict):
+      categories = tryserver_dict[tryserver]
+      builders_arr = []
+      for category in sorted(categories):
+        builders = categories[category]
+        for builder in sorted(builders):
+          builders_arr.append({'builder': builder, 'category': category})
+      tryserver_json.append({'tryserver': tryserver, 'builders': builders_arr})
+
+    memcache.add(cls.MEMCACHE_TRYSERVERS_KEY, tryserver_json, cls.MEMCACHE_TIME)
+    return tryserver_json
+
 
   @classmethod
   def refresh(cls):

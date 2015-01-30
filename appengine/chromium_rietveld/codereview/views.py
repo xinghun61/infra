@@ -2307,6 +2307,11 @@ def api_issue(request):
   values = _issue_as_dict(request.issue, messages, request)
   return values
 
+@deco.access_control_allow_origin_star
+@deco.json_response
+def api_tryservers(request):
+  """/api/tryservers - Gets tryservers as a JSON-encoded dictionary."""
+  return models_chromium.TryserverBuilders.get_curated_tryservers()
 
 @deco.access_control_allow_origin_star
 @deco.patchset_required
