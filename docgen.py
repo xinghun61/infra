@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
-os.environ['PYTHONPATH'] += (os.path.pathsep + INFRA_ROOT)
+
 
 def cmd_run():
   """Generate html files from rst files.
@@ -33,9 +33,9 @@ def cmd_run():
   # Build html documentation for rst files
   path = os.path.join('ENV', 'bin', 'sphinx-build')
   os.chdir(INFRA_ROOT)
-  os.execv(path, [path, '-b', 'html',
-                  os.path.join('doc', 'source'),
-                  os.path.join('doc', 'html')])
+  subprocess.check_call([path, '-b', 'html',
+                         os.path.join('doc', 'source'),
+                         os.path.join('doc', 'html')])
 
 
 def cmd_clean():
@@ -52,16 +52,20 @@ def cmd_clean():
 
 
 def main():
+  # Squash any existing path, we only want packages from the virtualenv.
+  os.environ['PYTHONPATH'] = INFRA_ROOT
+
   parser = argparse.ArgumentParser()
   subparsers = parser.add_subparsers(title='commands')
   subparsers.add_parser('run').set_defaults(func=cmd_run)
   subparsers.add_parser('clean').set_defaults(func=cmd_clean)
 
   if len(sys.argv) == 1:
-    cmd_run()
+    return(cmd_run())
+
   args = parser.parse_args()
-  args.func()
-  return 0
+  return args.func()
+
 
 if __name__ == '__main__':
   sys.exit(main())
