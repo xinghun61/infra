@@ -26,7 +26,7 @@ deps = {
 
   "infra/appengine/third_party/npm_modules":
     ("https://chromium.googlesource.com/infra/third_party/npm_modules.git"
-     "@f3f825ae2d3521d889fe076bd2229f6a1fadaac6"),
+     "@363892f3b5977a8dcd3d5ea643cdbeb45d79cfc6"),
 
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
