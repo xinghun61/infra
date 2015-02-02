@@ -7,17 +7,50 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-dialog.html">
 <link rel="import" href="cr-toolbar.html">
 
-<polymer-element name="cr-patchset-title-dialog" attributes="patchset">
+<polymer-element name="cr-patchset-edit-dialog" attributes="patchset">
     <template>
         <link rel="stylesheet" href="common.css">
         <link rel="stylesheet" href="forms.css">
+
+        <style>
+            img {
+                display: block;
+            }
+
+            .delete-action {
+                flex: 1;
+                display: flex;
+                justify-content: flex-end;
+            }
+
+            .delete-action > cr-button {
+                margin-right: 0;
+            }
+
+            .delete-confirmation {
+                display: flex;
+                align-items: center;
+                border: 1px solid #dcdcdc;
+                margin-left: -1px;
+            }
+
+            .delete-confirmation div {
+                display: flex;
+                align-items: center;
+                margin: 0 16px;
+            }
+
+            .delete-confirmation cr-button {
+                height: 20px;
+            }
+        </style>
 
         <dialog is="cr-dialog" id="dialog" on-cancel="{{ cancel }}">
             <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
 
             <h1>Edit patchset {{ patchset.sequence }}</h1>
 
-            <fieldset class="form-fields" disabled?="{{ disabled }}">
+            <fieldset class="form-fields" disabled?="{{ sending }}">
                 <div class="form-row">
                     <label class="form-label" for="title">Title</label>
                     <div class="form-field">
@@ -29,17 +62,45 @@ found in the LICENSE file. -->
             <cr-toolbar>
                 <cr-button primary on-tap="{{ save }}">Save</cr-button>
                 <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                <template if="{{ patchset.issue.patchsets.length > 1 }}">
+                    <div class="delete-action">
+                        <cr-button on-tap="{{ toggleDeleteAction }}" icon>
+                            <img src="../images/delete_icon_36.png" height="25">
+                        </cr-button>
+                        <template if="{{ showDeleteAction }}">
+                            <div class="delete-confirmation">
+                                <div>Permanently delete this patch?</div>
+                                <cr-button create on-tap="{{ deletePatchset }}">Delete</cr-button>
+                                <cr-button on-tap="{{ toggleDeleteAction }}">No</cr-button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
             </cr-toolbar>
         </dialog>
     </template>
     <script>
-        Polymer("cr-patchset-title-dialog", {
+        Polymer("cr-patchset-edit-dialog", {
             created: function() {
                 this.patchset = null;
                 this.commit = true;
                 this.butterbarMessage = "";
                 this.sending = false;
                 this.title = "";
+                this.showDeleteAction = false;
+            },
+            toggleDeleteAction: function() {
+                this.showDeleteAction = !this.showDeleteAction;
+            },
+            deletePatchset: function() {
+                this.sending = true;
+                this.patchset.delete()
+                    .then(this.deleteSuccess.bind(this))
+                    .catch(this.displayError.bind(this));
+            },
+            deleteSuccess: function() {
+                this.fire("issue-refresh");
+                this.close();
             },
             cancel: function(event) {
                 this.close();
@@ -49,6 +110,7 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "";
                 this.commit = true;
                 this.title = this.patchset ? this.patchset.title : "";
+                this.showDeleteAction = false;
             },
             close: function() {
                 this.reset();
@@ -59,12 +121,12 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "Saving...";
                 this.patchset.setTitle(this.title)
                     .then(this.saveSuccess.bind(this))
-                    .catch(this.saveFailure.bind(this));
+                    .catch(this.displayError.bind(this));
             },
             saveSuccess: function() {
                 this.close();
             },
-            saveFailure: function(error) {
+            displayError: function(error) {
                 // TODO(esprehn): We should show an better error message.
                 this.sending = false;
                 this.butterbarMessage = "Error: " + error.message;

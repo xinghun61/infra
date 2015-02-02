@@ -25,8 +25,9 @@ function PatchSet(issue, id, sequence)
     this.active = false;
 }
 
-PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true"
+PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true";
 PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
+PatchSet.DELETE_URL = "/{1}/patchset/{2}/delete";
 PatchSet.TITLE_URL = "/{1}/patchset/{2}/edit_patchset_title";
 
 PatchSet.prototype.getDetailUrl = function()
@@ -46,6 +47,13 @@ PatchSet.prototype.getRevertUrl = function()
 PatchSet.prototype.getEditTitleUrl = function()
 {
     return PatchSet.TITLE_URL.assign(
+        encodeURIComponent(this.issue.id),
+        encodeURIComponent(this.id));
+};
+
+PatchSet.prototype.getDeleteUrl = function()
+{
+    return PatchSet.DELETE_URL.assign(
         encodeURIComponent(this.issue.id),
         encodeURIComponent(this.id));
 };
@@ -91,6 +99,16 @@ PatchSet.prototype.setTitle = function(value)
     }).then(function() {
         patchset.title = value;
         return value;
+    });
+};
+
+PatchSet.prototype.delete = function()
+{
+    var patchset = this;
+    return User.loadCurrentUser().then(function(user) {
+        return sendFormData(patchset.getDeleteUrl(), {
+            xsrf_token: user.xsrfToken,
+        });
     });
 };
 

@@ -2,7 +2,7 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="cr-patchset-title-dialog.html">
+<link rel="import" href="cr-patchset-edit-dialog.html">
 
 <polymer-element name="cr-patchset-header" attributes="patchset">
     <template>
@@ -31,11 +31,6 @@ found in the LICENSE file. -->
         <div class="patchset-title">
             Patch {{ patchset.sequence }}<template if="{{ patchset.title }}">: {{ patchset.title }}</template>
         </div>
-        <div class="patchset-actions">
-            <template if="{{ userIsOwner }}">
-                <cr-action on-tap="{{ showEditTitleDialog }}">Edit</cr-action>
-            </template>
-        </div>
         <div class="patchset-comments">
             {{ patchset.messageCount - patchset.draftCount | pluralize("comment") }}
             <template if="{{ patchset.draftCount }}">
@@ -44,6 +39,11 @@ found in the LICENSE file. -->
             </template>
         </div>
         <div class="patchset-date">{{ patchset.created | formatDate }}</div>
+        <div class="patchset-actions">
+            <template if="{{ userIsOwner }}">
+                <cr-action on-tap="{{ showEditDialog }}">Edit</cr-action>
+            </template>
+        </div>
     </template>
     <script>
         Polymer("cr-patchset-header", {
@@ -64,15 +64,20 @@ found in the LICENSE file. -->
                     return "";
                 return date.relative();
             },
-            showEditTitleDialog: function(event) {
+            showEditDialog: function(event) {
                 // Don't collapse the patchset.
                 event.stopPropagation();
-                var dialog = document.createElement("cr-patchset-title-dialog");
+                var dialog = document.createElement("cr-patchset-edit-dialog");
                 dialog.patchset = this.patchset;
                 dialog.addEventListener("close", function() {
                     dialog.remove();
                 });
-                document.body.appendChild(dialog);
+                // TODO(esprehn): This is a hack, we need to be a child of the
+                // issue to dispatch a "refresh-issue" event. Instead we should
+                // stop using that event and use a real data model API that
+                // components interact with like <cr-datasource>.
+                var dialogs = document.querySelector("html /deep/ cr-issue::shadow #dialogs");
+                dialogs.appendChild(dialog);
                 dialog.showModal();
             },
         });
