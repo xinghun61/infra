@@ -1550,6 +1550,19 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   logging.info("Patchset id %s for issue %s has target_ref %s",
                patchset.key.id(), issue.key.id(), issue.target_ref)
 
+  # Inform reviewers of the new patchset if they approved a previous patchset
+  # and have not been notified yet.
+  if issue.approvers_to_notify:
+    new_patchset_msg = (
+        "New patchsets have been uploaded after l-g-t-m from %s" %
+            ','.join(issue.approvers_to_notify))
+    make_message(
+        request, issue, new_patchset_msg, send_mail=True, auto_generated=True,
+        email_to=issue.approvers_to_notify).put()
+    # Approvers have been notified, clear the list.
+    issue.approvers_to_notify = []
+    issue.put()
+
   if form.cleaned_data.get('send_mail'):
     msg = make_message(request, issue, message, '', True)
     issue.put()
@@ -3285,14 +3298,14 @@ def _get_modified_counts(issue):
 
 def make_message(request, issue, message, comments=None, send_mail=False,
                  draft=None, in_reply_to=None, auto_generated=False,
-                 email_only_owner=False):
+                 email_to=None):
   """Helper to create a Message instance and optionally send an email."""
   attach_patch = request.POST.get("attach_patch") == "yes"
   template, context = _get_mail_template(request, issue, full_diff=attach_patch)
   # Decide who should receive mail
   my_email = request.user.email()
-  if email_only_owner:
-    to = [issue.owner.email()]
+  if email_to:
+    to = email_to
     cc = []
   else:
     to = [issue.owner.email()] + issue.reviewers + issue.collaborator_emails()

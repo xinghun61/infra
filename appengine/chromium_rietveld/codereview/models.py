@@ -101,6 +101,9 @@ class Issue(ndb.Model):
   # JSON: {reviewer_email -> [bool|None]}
   reviewer_approval = ndb.TextProperty()
 
+  # Approvers to notify by email if a new patchset is uploaded after their LGTM.
+  approvers_to_notify = ndb.StringProperty(repeated=True)
+
   # JSON: {reviewer_email -> int}
   draft_count_by_user = ndb.TextProperty()
 
@@ -307,7 +310,6 @@ class Issue(ndb.Model):
     old_messages = [
       msg for msg in old_messages if not msg.auto_generated]
 
-
     for msg in itertools.chain(old_messages, msgs):
       if self._original_subject is None:
         self._original_subject = msg.subject
@@ -319,8 +321,16 @@ class Issue(ndb.Model):
         updates_for_set.add(self.owner.email())
         if msg.approval:
           approval_dict[msg.sender] = True
+          if (not msg.patchset_key or
+              self.most_recent_patchset_key().id() == msg.patchset_key):
+            if msg.sender not in self.approvers_to_notify:
+              self.approvers_to_notify.append(msg.sender)
         elif msg.disapproval:
           approval_dict[msg.sender] = False
+          if (not msg.patchset_key or
+              self.most_recent_patchset_key().id() == msg.patchset_key):
+            if msg.sender in self.approvers_to_notify:
+              self.approvers_to_notify.remove(msg.sender)
       updates_for_set.discard(msg.sender)
       self.modified = msg.date
     self.updates_for = updates_for_set
@@ -1215,7 +1225,7 @@ class Account(ndb.Model):
   # The user can opt-in to displaying generated messages by default.
   display_generated_msgs = ndb.BooleanProperty(default=False)
 
-  # The user can opt-in to displaying experimental tryjob results 
+  # The user can opt-in to displaying experimental tryjob results
   # if available by default.
   display_exp_tryjob_results = ndb.BooleanProperty(default=False)
 

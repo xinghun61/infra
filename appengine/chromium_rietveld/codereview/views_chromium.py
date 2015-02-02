@@ -399,7 +399,7 @@ def edit_flags(request):
                               not request.issue.commit)
     views.make_message(request, request.issue, commit_checked_msg,
                        send_mail=unchecked_by_non_owner, auto_generated=True,
-                       email_only_owner=unchecked_by_non_owner).put()
+                       email_to=[request.issue.owner.email()]).put()
     request.issue.put()
 
   if 'builders' in request.POST:
