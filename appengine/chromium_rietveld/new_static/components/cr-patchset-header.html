@@ -17,25 +17,24 @@ found in the LICENSE file. -->
             }
 
             .patchset-title {
-                flex: 1;
+                display: flex;
                 font-weight: bold;
+                flex: 1;
             }
 
-            .patchset-comments {
-                padding: 0 16px;
-            }
-
-            .edit-title-link {
-                 font-size: 80%;
-                 cursor: pointer;
-                 vertical-align: top;
+            .patchset-actions,
+            .patchset-comments,
+            .patchset-date {
+                margin-left: 8px;
             }
         </style>
         <div class="patchset-title">
-            Patch {{ patchset.sequence }}<template if="{{ patchset.message }}">: {{ patchset.message }}</template>
+            Patch {{ patchset.sequence }}<template if="{{ patchset.title }}">: {{ patchset.title }}</template>
+        </div>
+        <div class="patchset-actions">
             <template if="{{ userIsOwner }}">
-              <cr-action class="edit-title-link" on-tap="{{ showEditTitleDialog }}">(edit)</cr-action>
-	    </template>
+                <cr-action on-tap="{{ showEditTitleDialog }}">Edit</cr-action>
+            </template>
         </div>
         <div class="patchset-comments">
             {{ patchset.messageCount - patchset.draftCount | pluralize("comment") }}
@@ -45,8 +44,6 @@ found in the LICENSE file. -->
             </template>
         </div>
         <div class="patchset-date">{{ patchset.created | formatDate }}</div>
-
-        <div id="dialogs"></div>
     </template>
     <script>
         Polymer("cr-patchset-header", {
@@ -67,18 +64,16 @@ found in the LICENSE file. -->
                     return "";
                 return date.relative();
             },
-            showDialog: function(dialog) {
-                this.$.dialogs.appendChild(dialog);
+            showEditTitleDialog: function(event) {
+                // Don't collapse the patchset.
+                event.stopPropagation();
+                var dialog = document.createElement("cr-patchset-title-dialog");
+                dialog.patchset = this.patchset;
                 dialog.addEventListener("close", function() {
                     dialog.remove();
                 });
+                document.body.appendChild(dialog);
                 dialog.showModal();
-            },
-            showEditTitleDialog: function() {
-                var dialog = document.createElement("cr-patchset-title-dialog");
-                dialog.patchset = this.patchset;
-                dialog.orig_title = this.patchset.message;
-                this.showDialog(dialog);
             },
         });
     </script>

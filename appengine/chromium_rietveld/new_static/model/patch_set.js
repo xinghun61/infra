@@ -17,7 +17,7 @@ function PatchSet(issue, id, sequence)
     this.lastModified = ""; // Date
     this.issue = issue || null;
     this.owner = null // User
-    this.message = "";
+    this.title = "";
     this.id = id || 0;
     this.sequence = sequence || 0;
     this.commit = false;
@@ -80,24 +80,17 @@ PatchSet.prototype.createRevertData = function(options)
     });
 };
 
-PatchSet.prototype.editTitle = function(options)
+PatchSet.prototype.setTitle = function(value)
 {
     var patchset = this;
-    // Return no-op if new title is the same as the old one.
-    if (options.new_title == patchset.message)
-      return Promise.resolve("");
-    return this.createEditTitleData(options).then(function(data) {
-        return sendFormData(patchset.getEditTitleUrl(), data);
-    });
-};
-
-PatchSet.prototype.createEditTitleData = function(options)
-{
     return User.loadCurrentUser().then(function(user) {
-        return {
+        return sendFormData(patchset.getEditTitleUrl(), {
             xsrf_token: user.xsrfToken,
-            patchset_title: options.new_title,
-        };
+            patchset_title: value,
+        });
+    }).then(function() {
+        patchset.title = value;
+        return value;
     });
 };
 
@@ -111,7 +104,9 @@ PatchSet.prototype.parseData = function(data)
     }
 
     this.owner = new User(data.owner);
-    this.message = data.message || "";
+    // TODO(esprehn): The server calls it a message sometimes and a title others,
+    // lets always call it a title.
+    this.title = data.message || "";
     this.lastModified = Date.utc.create(data.modified);
     this.created = Date.utc.create(data.created);
 
