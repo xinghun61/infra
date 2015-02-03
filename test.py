@@ -3,15 +3,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Convenience script for (cd [infra] && ENV/bin/expect_tests "$@")"""
+"""Convenience script for expect_tests"""
 
 assert __name__ == '__main__'
 
 import itertools
 import os
-import sys
 import subprocess
-import imp
+import sys
 
 
 def usage():
@@ -32,32 +31,7 @@ def usage():
   sys.exit(1)
 
 
-# FIXME: We should share this logic with PRESUBMIT.py
-def appengine_library_paths(appengine_env_path):  # pragma: no cover
-  # AppEngine has a wrapper_util module which knows where the various
-  # appengine libraries are stored inside the SDK. All AppEngine scripts
-  # 'import wrapper_util' and then call its various methods to get those
-  # paths to fix their sys.path. Since AppEngine isn't in our sys.path yet
-  # we use imp.load_source to load wrapper_util from an absolute path
-  # and then call its methods to get all the paths to the AppEngine-provided
-  # libraries to add to sys.path when calling expect_tests.
-  wrapper_util_path = os.path.join(appengine_env_path,
-      'wrapper_util.py')
-  wrapper_util = imp.load_source('wrapper_util', wrapper_util_path)
-  wrapper_util_paths = wrapper_util.Paths(appengine_env_path)
-  appengine_lib_paths = wrapper_util_paths.script_paths('dev_appserver.py')
-  # Unclear if v2_extra_paths is correct here, it contains endpoints
-  # and protorpc which several apps seem to depend on.
-  return appengine_lib_paths + wrapper_util_paths.v2_extra_paths
-
-
-# Set up appengine path.
 INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
-ABOVE_INFRA_ROOT = os.path.dirname(INFRA_ROOT)
-APPENGINE_ENV_PATH = os.path.join(ABOVE_INFRA_ROOT, 'google_appengine')
-
-appengine_paths = appengine_library_paths(APPENGINE_ENV_PATH)
-os.environ['PYTHONPATH'] = os.pathsep.join(appengine_paths).encode('utf8')
 
 # Parse command-line arguments
 if len(sys.argv) == 1:
@@ -65,6 +39,8 @@ if len(sys.argv) == 1:
 else:
   if not sys.argv[1] in ('list', 'train', 'test', 'debug'):
     usage()
+
+expect_tests_path = os.path.join('ENV', 'bin', 'expect_tests')
 
 args = sys.argv[1:]
 
@@ -80,7 +56,7 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
     if os.path.isfile(os.path.join(d, 'app.yaml'))])
               )
 
+os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
 subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
-path = os.path.join('ENV', 'bin', 'expect_tests')
-os.execv(path, [path] + args)
+sys.exit(subprocess.call([expect_tests_path] + args))
