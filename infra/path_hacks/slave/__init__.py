@@ -4,10 +4,10 @@
 
 import os as _os
 
-import infra as _infra
+import infra.path_hacks as _path_hacks
 
-_build_scripts_slave = _os.path.abspath(_os.path.join(
-    _infra.__file__, _os.pardir, _os.pardir, _os.pardir,
-    'build', 'scripts', 'slave'))
+_build_scripts_slave = _os.path.abspath(
+    _os.path.join(_path_hacks.full_infra_path,
+                  _os.pardir, 'build', 'scripts', 'slave'))
 
 __path__ = [_build_scripts_slave]
