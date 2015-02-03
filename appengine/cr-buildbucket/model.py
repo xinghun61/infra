@@ -82,6 +82,7 @@ class Build(ndb.Model):
   """
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+  status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
   update_time = ndb.DateTimeProperty(auto_now=True)
 
   # Creation time attributes.

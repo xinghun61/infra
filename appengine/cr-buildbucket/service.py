@@ -321,6 +321,7 @@ class BuildBucketService(object):
     if build.status == model.BuildStatus.COMPLETED:
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
+    build.status_changed_time = utils.utcnow()
     self._clear_lease(build)
     build.url = None
     build.put()
@@ -371,6 +372,7 @@ class BuildBucketService(object):
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.STARTED
+    build.status_changed_time = utils.utcnow()
     build.url = url
     build.put()
     self._enqueue_callback_task_if_needed(build)
@@ -419,6 +421,7 @@ class BuildBucketService(object):
     self._check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = utils.utcnow()
     build.complete_time = utils.utcnow()
     build.result = result
     if url is not None:  # pragma: no branch
@@ -485,6 +488,7 @@ class BuildBucketService(object):
         return build
       raise errors.InvalidBuildStateError('Cannot cancel a completed build')
     build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = utils.utcnow()
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     self._clear_lease(build)
@@ -504,6 +508,7 @@ class BuildBucketService(object):
         'Completed build is leased')
     self._clear_lease(build)
     build.status = model.BuildStatus.SCHEDULED
+    build.status_changed_time = utils.utcnow()
     build.url = None
     build.put()
     return True

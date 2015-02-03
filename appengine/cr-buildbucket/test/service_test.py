@@ -45,6 +45,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.current_identity = auth.Identity('service', 'unittest')
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.mock(acl, 'can', lambda *_: True)
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
 
   def put_many_builds(self):
     for _ in xrange(100):
@@ -107,6 +108,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
     build = self.service.cancel(self.test_build.key.id())
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(build.status_changed_time, utils.utcnow())
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(
         build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY)
@@ -331,6 +333,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     build = self.service.reset(self.test_build.key.id())
     self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
+    self.assertEqual(build.status_changed_time, utils.utcnow())
     self.assertIsNone(build.lease_key)
     self.assertIsNone(build.lease_expiration_date)
     self.assertIsNone(build.leasee)
@@ -458,6 +461,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.start()
     self.succeed()
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
     self.assertEqual(self.test_build.result, model.BuildResult.SUCCESS)
     self.assertIsNotNone(self.test_build.complete_time)
 
@@ -483,6 +487,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build = self.service.fail(
         self.test_build.key.id(), self.test_build.lease_key)
     self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
     self.assertEqual(self.test_build.result, model.BuildResult.FAILURE)
     self.assertIsNotNone(self.test_build.complete_time)
 
