@@ -115,7 +115,7 @@ And either:
     The repo is
       ``git+https://chromium.googlesource.com/infra/third_party/{package_name}``
   * ``gs``: ``{sha1}.{ext}`` indicates file
-    ``gs://chrome-infra-wheelhouse/sources/{sha1}.{ext}``. The sha1 will be
+    ``gs://chrome-python-wheelhouse/sources/{sha1}.{ext}``. The sha1 will be
     checked against the content of the file.
 
 And optionally:
