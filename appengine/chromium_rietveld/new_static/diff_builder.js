@@ -7,9 +7,8 @@
 function DiffBuilder(file, output)
 {
     this.file = file;
-    this.language = file.language;
+    this.highlighter = new SyntaxHighlighter(file.language, file.containsEmbeddedLanguages);
     this.output = output;
-    this.highlightData = null;
 }
 
 DiffBuilder.prototype.emitDiff = function(diff)
@@ -49,8 +48,6 @@ DiffBuilder.prototype.emitLine = function(section, line)
 {
     var file = this.file;
 
-    this.resetLanguageIfNeeded(line);
-
     var row = document.createElement("div");
     row.className = "row " + line.type;
 
@@ -68,33 +65,12 @@ DiffBuilder.prototype.emitLine = function(section, line)
     if (messages)
         section.appendChild(messages);
 
-    this.selectEmbeddedLanguage(line);
-
     // TODO(esprehn): Editing a multi line comment can end up making an entire file
     // look like a comment. For now we reset the syntax highlighter between
     // sections to avoid this in the common case. This will break headers
     // in the middle of multi line comments, but that's very rare.
     if (line.type == "header")
-        this.highlightData = null;
-};
-
-DiffBuilder.prototype.resetLanguageIfNeeded = function(line)
-{
-    if (this.language == this.file.language)
-        return;
-    if (!this.file.shouldResetEmbeddedLanguage(this.language, line.text))
-        return;
-    this.language = this.file.language;
-    this.highlightData = null;
-};
-
-DiffBuilder.prototype.selectEmbeddedLanguage = function(line)
-{
-    if (this.language != this.file.language)
-        return;
-    this.language = this.file.selectEmbeddedLanguage(line.text);
-    if (this.language != this.file.language)
-        this.highlightData = null;
+        this.highlighter.resetSyntaxState();
 };
 
 DiffBuilder.prototype.createContextAction = function(section, line)
@@ -122,21 +98,15 @@ DiffBuilder.prototype.createLineNumber = function(line, number, type)
 
 DiffBuilder.prototype.createText = function(line)
 {
-    var text = document.createElement("div");
-    text.className = "text";
-    if (!this.language) {
-        text.textContent = line.text;
-        return text;
+    var div = document.createElement("div");
+    div.className = "text";
+    var html = this.highlighter.parseText(line.text);
+    if (!html) {
+        div.textContent = line.text;
+    } else {
+        div.innerHTML = html;
     }
-    try {
-        var code = hljs.highlight(this.language, line.text, true, this.highlightData);
-        this.highlightData = code.top;
-        text.innerHTML = code.value;
-    } catch (e) {
-        console.log("Syntax highlighter error", e);
-        text.textContent = line.text;
-    }
-    return text;
+    return div;
 };
 
 DiffBuilder.prototype.messagesForLine = function(line, number, type)
