@@ -3,7 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="cr-diff-image.html">
-<link rel="import" href="cr-patch-file-message.html">
+<link rel="import" href="cr-patch-file-messages.html">
 
 <script src="../lib/highlight/highlight.pack.js"></script>
 
@@ -15,12 +15,7 @@ found in the LICENSE file. -->
         <template if="{{ loading }}">
             <img src="../images/dots16.gif" class="spinner">
         </template>
-        <div id="output"
-            on-file-message-save="{{ saveDraft }}"
-            on-file-message-discard="{{ discardDraft }}"
-            on-file-message-cancel="{{ cancelDraft }}"
-            on-file-message-reply="{{ replyDraft }}"
-            on-tap="{{ handleTap }}"></div>
+        <div id="output" on-tap="{{ handleTap }}"></div>
     </template>
     <script>
         Polymer("cr-diff", {
@@ -38,95 +33,26 @@ found in the LICENSE file. -->
                 var element = event.target;
                 if (User.current && element.classList.contains("line-number")) {
                     var row = element.parentNode;
-                    this.addMessage(row);
+                    var messages = row.nextSibling;
+                    if (!messages || messages.localName != "cr-patch-file-messages") {
+                        messages = document.createElement("cr-patch-file-messages");
+                        messages.file = this.file;
+                        row.parentNode.insertBefore(messages, row.nextSibling);
+                    }
+                    var numbers = row.querySelectorAll(".line-number");
+                    var lineNumber;
+                    var side;
+                    if (row.classList.contains("remove")) {
+                        lineNumber = numbers[0].getAttribute("value").toNumber();
+                        side = "before";
+                    } else {
+                        lineNumber = numbers[1].getAttribute("value").toNumber();
+                        side = "after";
+                    }
+                    messages.addDraft(side, lineNumber);
                 } else if (element.classList.contains("show-context")) {
                     this.showContext(element.line, element.section);
                 }
-            },
-            saveDraft: function(event) {
-                var self = this;
-                var message = event.detail.message;
-                var text = event.detail.text;
-                var target = event.target;
-                this.fire("butterbar-update", {
-                    message: "Saving..."
-                });
-                this.file.saveDraft(message, text).then(function() {
-                    self.fire("butterbar-update");
-                    target.expanded = false;
-                }).catch(function(e) {
-                    self.fire("butterbar-update");
-                    console.log(e);
-                });
-            },
-            cancelDraft: function(event) {
-                var message = event.detail.message;
-                var target = event.target;
-                if (!message.date) {
-                    this.file.removeMessage(message);
-                    target.remove();
-                }
-            },
-            discardDraft: function(event) {
-                var self = this;
-                var message = event.detail.message;
-                var target = event.target;
-                this.fire("butterbar-update", {
-                    message: "Saving..."
-                });
-                this.file.discardDraft(message).then(function() {
-                    self.fire("butterbar-update");
-                    target.remove();
-                }).catch(function(e) {
-                    self.fire("butterbar-update");
-                    console.log(e);
-                });
-            },
-            replyDraft: function(event) {
-                var message = event.target.message;
-                // TODO(esprehn): This is code duplication with <cr-issue-message-reply>.
-                var date = message.date.utc(true).format("On {yyyy}/{MM}/{dd} at {HH}:{mm}:{ss}");
-                var value = date + ", " + message.author.name + " wrote:\n";
-                message.text.split("\n").forEach(function(line) {
-                    value += "> " + line + "\n";
-                });
-                value += "\n";
-                var row = event.target.parentNode.previousSibling;
-                this.addMessage(row, value);
-            },
-            addMessage: function(row, defaultText) {
-                if (row.classList.contains("header"))
-                    return;
-                if (!row.nextSibling || !row.nextSibling.classList.contains("messages")) {
-                    var messages = document.createElement("div");
-                    messages.className = "messages";
-                    row.parentNode.insertBefore(messages, row.nextSibling);
-                }
-                var messages = row.nextSibling.querySelectorAll("cr-patch-file-message").array();
-                var existingDraft = messages.find(function(fileMessage) {
-                    return fileMessage.message.draft;
-                });
-                if (existingDraft) {
-                    existingDraft.expand();
-                    existingDraft.focusInput();
-                    return;
-                }
-                var numbers = row.querySelectorAll(".line-number");
-                var message = new PatchFileMessage(this.file);
-                message.draft = true;
-                message.author = User.current;
-                message.text = defaultText || "";
-                if (row.classList.contains("remove")) {
-                    message.line = numbers[0].getAttribute("value").toNumber();
-                    message.left = true;
-                } else {
-                    message.line = numbers[1].getAttribute("value").toNumber();
-                }
-                this.file.addMessage(message);
-                var fileMessage = document.createElement("cr-patch-file-message");
-                fileMessage.message = message;
-                fileMessage.expand();
-                row.nextSibling.appendChild(fileMessage);
             },
             showDiff: function() {
                 var self = this;

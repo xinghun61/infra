@@ -154,28 +154,21 @@ DiffBuilder.prototype.createMessages = function(line)
     if (!beforeMessages && !afterMessages)
         return null;
 
-    var messages = document.createElement("div");
-    messages.className = "messages";
+    beforeMessages = (beforeMessages || []).filter(function(message) {
+        return message.left;
+    });
 
-    if (beforeMessages) {
-        beforeMessages.forEach(function(message) {
-            if (!message.left)
-                return;
-            var fileMessage = document.createElement("cr-patch-file-message");
-            fileMessage.message = message;
-            messages.appendChild(fileMessage);
-        });
-    }
+    afterMessages = (afterMessages || []).filter(function(message) {
+        return !message.left;
+    });
 
-    if (afterMessages) {
-        afterMessages.forEach(function(message) {
-            if (message.left)
-                return;
-            var fileMessage = document.createElement("cr-patch-file-message");
-            fileMessage.message = message;
-            messages.appendChild(fileMessage);
-        });
-    }
+    if (!beforeMessages.length && !afterMessages.length)
+        return null;
+
+    var messages = document.createElement("cr-patch-file-messages");
+    messages.beforeMessages = beforeMessages;
+    messages.afterMessages = afterMessages;
+    messages.file = this.file;
 
     return messages;
 };

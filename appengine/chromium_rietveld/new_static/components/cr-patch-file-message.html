@@ -86,9 +86,15 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-patch-file-message", {
-            message: null,
-            expanded: false,
-            text: "",
+            created: function() {
+                this.message = null;
+                this.expanded = false;
+                this.text = "";
+            },
+            attached: function() {
+                if (!this.message.date)
+                    this.expand();
+            },
             expand: function() {
                 if (this.expanded)
                     return;
@@ -97,7 +103,9 @@ found in the LICENSE file. -->
                 this.saving = false;
             },
             reply: function() {
-                this.fire("file-message-reply");
+                this.fire("file-message-reply", {
+                    message: this.message,
+                });
             },
             expandedChanged: function() {
                 this.async(this.focusInput);
