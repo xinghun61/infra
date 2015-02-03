@@ -107,9 +107,11 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-gif-selfie", {
-            countdown: 0,
-            recorder: null,
-            state: "",
+            created: function() {
+                this.countdown = 0;
+                this.recorder = null;
+                this.state = "";
+            },
             showCountdown: function() {
                 var self = this;
                 this.countdown = 4;

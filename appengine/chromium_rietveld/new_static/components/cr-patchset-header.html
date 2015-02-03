@@ -47,8 +47,10 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-patchset-header", {
-            patchset: null,
-            userIsOwner: false,
+            created: function() {
+                this.patchset = null;
+                this.userIsOwner = false;
+            },
             domReady: function() {
               this.userIsOwner = this.patchset.issue.owner.isCurrentUser();
             },

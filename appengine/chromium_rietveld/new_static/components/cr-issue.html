@@ -97,8 +97,10 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue", {
-            issue: null,
-            butterbarMessage: "",
+            created: function() {
+                this.issue = null;
+                this.butterbarMessage = "";
+            },
             updateButterbar: function(event) {
                 this.butterbarMessage = event.detail.message;
             },

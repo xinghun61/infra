@@ -10,9 +10,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-title-handler", {
-            titlePrefix: "",
-            titleSuffix: "",
             created: function() {
+                this.titlePrefix = "";
+                this.titleSuffix = "";
                 this.handleTitleChange = this.handleTitleChange.bind(this);
             },
             attached: function() {

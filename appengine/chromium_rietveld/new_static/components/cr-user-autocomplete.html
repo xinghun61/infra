@@ -57,13 +57,15 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-user-autocomplete", {
-            value: "",
-            termRange: {},
-            completions: [],
-            didComplete: false,
-            shouldDismiss: true,
-            active: false,
-            selectedIndex: 0,
+            created: function() {
+                this.value = "";
+                this.termRange = {};
+                this.completions = [];
+                this.didComplete = false;
+                this.shouldDismiss = true;
+                this.active = false;
+                this.selectedIndex = 0;
+            },
             dismiss: function() {
                 if (!this.shouldDismiss)
                     return;

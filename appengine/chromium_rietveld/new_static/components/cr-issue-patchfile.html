@@ -28,7 +28,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-patchfile", {
-            file: null,
+            created: function() {
+                this.file = null;
+            },
             showDiff: function() {
                 return this.$.diff.showDiff();
             },

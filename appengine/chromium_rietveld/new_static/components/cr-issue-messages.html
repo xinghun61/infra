@@ -55,10 +55,13 @@ found in the LICENSE file. -->
         var MAX_MESSAGES = 5;
 
         Polymer("cr-issue-messages", {
-            messages: null,
-            olderMessages: null,
-            visibleMessages: null,
-            selectionId: null,
+            created: function() {
+                this.messages = null;
+                this.olderMessages = null;
+                this.visibleMessages = null;
+                this.selectionId = null;
+                this.showOlderMessages = false;
+            },
             messagesChanged: function() {
                 var index = Math.max(this.messages.length - MAX_MESSAGES, 0);
                 this.olderMessages = this.messages.to(index);

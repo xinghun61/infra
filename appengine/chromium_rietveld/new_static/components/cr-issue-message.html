@@ -32,8 +32,10 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-message", {
-            message: null,
-            selected: false,
+            created: function() {
+                this.message = null;
+                this.selected = false;
+            },
             formatDate: function(date) {
                 if (!date)
                     return "";

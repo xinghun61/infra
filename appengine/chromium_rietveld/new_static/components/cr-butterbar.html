@@ -37,8 +37,10 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-butterbar", {
-            message: "",
-            action: "",
+            created: function() {
+                this.message = "";
+                this.action = "";
+            },
             activate: function() {
                 this.fire("action-activate");
             },

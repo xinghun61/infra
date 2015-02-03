@@ -160,14 +160,16 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-publish-dialog", {
-            issue: null,
-            message: "",
-            butterbarMessage: "",
-            sending: false,
-            addAsReviewer: true,
-            userIsOwner: true,
-            draftsVisible: false,
-            addSelfie: false,
+            created: function() {
+                this.issue = null;
+                this.message = "";
+                this.butterbarMessage = "";
+                this.sending = false;
+                this.addAsReviewer = true;
+                this.userIsOwner = true;
+                this.draftsVisible = false;
+                this.addSelfie = false;
+            },
             cancel: function(event) {
                 if (this.$.editor.dismissAutocomplete()) {
                     event.preventDefault();

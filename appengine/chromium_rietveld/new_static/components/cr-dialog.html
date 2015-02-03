@@ -33,9 +33,8 @@ found in the LICENSE file. -->
     (function() {
         var backdrop = document.createElement("cr-dialog-backdrop");
         Polymer("cr-dialog", {
-            polyfill: !window.HTMLDialogElement,
             created: function() {
-                if (!this.polyfill)
+                if (window.HTMLDialogElement)
                     return;
                 this.classList.add("polyfill");
                 this.showModal = function() {

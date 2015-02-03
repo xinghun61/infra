@@ -22,8 +22,10 @@ found in the LICENSE file. -->
             publish: {
                 active: { value: false, reflect: true },
             },
-            loading: false,
-            file: null,
+            created: function() {
+                this.loading = false;
+                this.file = null;
+            },
             fileChanged: function(oldValue, newValue) {
                 var output = this.$.output;
                 if (output.firstChild)

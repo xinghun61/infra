@@ -39,10 +39,12 @@ found in the LICENSE file. -->
     </template>
     <script>
     Polymer("cr-issue-message-reply", {
-        message: null,
-        expanded: false,
-        value: "",
-        sending: false,
+        created: function() {
+            this.message = null;
+            this.expanded = false;
+            this.value = "";
+            this.sending = false;
+        },
         expand: function() {
             this.expanded = true;
             this.async(this.showReply);

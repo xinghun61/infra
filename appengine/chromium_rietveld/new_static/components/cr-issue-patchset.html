@@ -55,7 +55,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-patchset", {
-            patchset: null,
+            created: function() {
+                this.patchset = null;
+            },
             getFiles: function() {
                 // TODO(esprehn): Use an id instead.
                 return this.shadowRoot.querySelectorAll("cr-issue-patchfile").array();

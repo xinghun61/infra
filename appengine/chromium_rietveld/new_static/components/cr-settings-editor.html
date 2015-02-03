@@ -70,9 +70,11 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-settings-editor", {
-            settings: null,
-            errors: {},
-            disabled: false,
+            created: function() {
+                this.settings = null;
+                this.errors = {};
+                this.disabled = false;
+            },
         });
     </script>
 </polymer-element>

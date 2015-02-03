@@ -27,10 +27,12 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-edit-dialog", {
-            issue: null,
-            errors: {},
-            butterbarMessage: "",
-            saving: false,
+            created: function() {
+                this.issue = null;
+                this.errors = {};
+                this.butterbarMessage = "";
+                this.saving = false;
+            },
             cancel: function(event) {
                 if (this.$.editor.dismissAutocomplete()) {
                     event.preventDefault();

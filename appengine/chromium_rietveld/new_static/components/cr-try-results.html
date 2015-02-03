@@ -80,7 +80,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-try-results", {
-            results: null
+            created: function() {
+                this.results = null;
+            },
         });
     </script>
 </polymer-element>

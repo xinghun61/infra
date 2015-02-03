@@ -71,10 +71,12 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-patchsets", {
-            patchsets: null,
-            showOlderPatchsets: false,
-            olderPatchsets: null,
-            currentPatchset: null,
+            created: function() {
+                this.patchsets = null;
+                this.showOlderPatchsets = false;
+                this.olderPatchsets = null;
+                this.currentPatchset = null;
+            },
             patchsetsChanged: function(oldValue, newValue) {
                 var value = newValue || [];
                 this.olderPatchsets = value.to(-1);

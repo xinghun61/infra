@@ -37,7 +37,9 @@ found in the LICENSE file. -->
         var globalSupported = !navigator.userAgent.contains("Chrome/35.");
 
         Polymer("cr-keyboard", {
-            global: false,
+            created: function() {
+                this.global = false;
+            },
             attached: function() {
                 instances.unshift(this);
             },

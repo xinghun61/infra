@@ -67,12 +67,14 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-try-dialog", {
-            servers: TryServers.SERVERS,
-            issue: null,
-            checked: {},
-            butterbarMessage: "",
-            saving: false,
-            builderFilter: "",
+            created: function() {
+                this.servers = TryServers.SERVERS;
+                this.issue = null;
+                this.checked = {};
+                this.butterbarMessage = "";
+                this.saving = false;
+                this.builderFilter = "";
+            },
             cancel: function(event) {
                 this.close();
             },

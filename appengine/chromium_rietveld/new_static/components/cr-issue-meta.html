@@ -107,7 +107,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-meta", {
-            issue: null,
+            created: function() {
+                this.issue = null;
+            },
             formatDate: function(date) {
                 return date.format("{Mon} {ord} {yyyy} {h}:{mm}{tt}");
             },

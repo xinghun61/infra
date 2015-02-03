@@ -18,9 +18,11 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-diff-image", {
-            file: null,
-            oldImageUrl: null,
-            newImageUrl: null,
+            created: function() {
+                this.file = null;
+                this.oldImageUrl = null;
+                this.newImageUrl = null;
+            },
             fileChanged: function() {
                 if (!this.file)
                     return;

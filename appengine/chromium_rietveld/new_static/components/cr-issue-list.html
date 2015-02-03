@@ -114,7 +114,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-list", {
-            issues: null,
+            created: function() {
+                this.issues = null;
+            },
             formatDate: function(date) {
                 if (!date)
                     return "";

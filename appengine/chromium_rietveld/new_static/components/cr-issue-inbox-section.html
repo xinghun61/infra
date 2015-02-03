@@ -31,13 +31,15 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-inbox-section", {
-            weeks: "all",
-            issues: null,
-            visibleIssues: [],
-            hiddenIssues: [],
-            showingHiddenIssues: false,
             computed: {
                 state: "[issues, weeks]",
+            },
+            created: function() {
+                this.weeks = "all";
+                this.issues = null;
+                this.visibleIssues = [];
+                this.hiddenIssues = [];
+                this.showingHiddenIssues = false;
             },
             stateChanged: function() {
                 var self = this;

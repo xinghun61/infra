@@ -50,9 +50,11 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-discard-drafts-dialog", {
-            issue: null,
-            butterbarMessage: "",
-            sending: false,
+            created: function() {
+                this.issue = null;
+                this.butterbarMessage = "";
+                this.sending = false;
+            },
             cancel: function(event) {
                 this.close();
             },

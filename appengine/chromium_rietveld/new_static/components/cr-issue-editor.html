@@ -79,15 +79,17 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-editor", {
-            issue: null,
-            subject: "",
-            reviewers: "",
-            cc: "",
-            description: "",
-            errors: null,
-            disabled: false,
-            private: false,
-            fields: "subject description reviewers cc private",
+            created: function() {
+                this.issue = null;
+                this.subject = "";
+                this.reviewers = "";
+                this.cc = "";
+                this.description = "";
+                this.errors = null;
+                this.disabled = false;
+                this.private = false;
+                this.fields = "subject description reviewers cc private";
+            },
             reset: function() {
                 this.disabled = false;
                 if (!this.issue)

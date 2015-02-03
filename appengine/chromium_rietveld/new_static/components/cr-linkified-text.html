@@ -19,7 +19,9 @@ found in the LICENSE file. -->
     </style><div id="output"></div></template>
     <script>
     Polymer("cr-linkified-text", {
-        text: "",
+        created: function() {
+            this.text = "";
+        },
         textChanged: function(oldValue, newValue) {
             var output = this.$.output;
 

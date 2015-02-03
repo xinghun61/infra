@@ -52,11 +52,13 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-revert-dialog", {
-            patchset: null,
-            reason: "",
-            commit: true,
-            butterbarMessage: "",
-            sending: false,
+            created: function() {
+                this.patchset = null;
+                this.reason = "";
+                this.commit = true;
+                this.butterbarMessage = "";
+                this.sending = false;
+            },
             cancel: function(event) {
                 this.close();
             },
