@@ -6,6 +6,7 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
+    mirror(cool_path): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -28,13 +29,21 @@
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
+  - 'INFO: processing path exception/path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: starting with tree git2.INVALID'
   - 'INFO: Running (''git'', ''push'', ''origin'', ''c7e96f4cfbd7c45854bba77ff60bb854d867ed76:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''53eb90f840c9e5fd04b50fb079381620205d3529:refs/heads/master'',
     ''79af6c5c5a2eda738426be59a8932afecad69e43:refs/heads/other'')'
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: true
   processed:
+    exception/path: 0
     mirrored_path: 2
     mirrored_path/subpath: 1
 - - lots refs
@@ -45,6 +54,7 @@
       refs/heads/other:
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
+    mirror(cool_path): {}
     mirror(mirrored_path):
       refs/heads/master:
         53eb90f840c9e5fd04b50fb079381620205d3529:

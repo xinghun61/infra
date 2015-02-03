@@ -1,11 +1,7 @@
 - - repo is set up
   - origin:
       refs/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
-        - unrelated commit
-        ea9899ff5037bdb48ec4e9b2c52075284010f0a3:
-        - next commit
-        59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
+        dfae5bf3509f126a554814c7fefd8aadfb08d372:
         - first commit
     mirror(cool_path): {}
     mirror(mirrored_path): {}
@@ -20,36 +16,32 @@
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing commit Commit(TestRepo(''local''), ''ea9899ff5037bdb48ec4e9b2c52075284010f0a3'')'
-  - 'INFO: found new tree ''58e2ba602f2b3b89d2a97a416d12c49d17b52daa'''
   - 'INFO: processing path exception/path'
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing commit Commit(TestRepo(''local''), ''dfae5bf3509f126a554814c7fefd8aadfb08d372'')'
+  - 'INFO: found new tree ''7dd1340776a9eb9d3ea285976431d68bb01ccf23'''
   - 'INFO: Completed push for ''mirrored_path/subpath'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''54ec3957a50fdfd16ced02b78685cf0e117e8141:refs/heads/master'')'
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''8e5f94000908f6e22943e6c5594bf48419782bd3:refs/heads/master'')'
   - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: true
   processed:
-    exception/path: 0
-    mirrored_path: 1
+    exception/path: 1
+    mirrored_path: 0
     mirrored_path/subpath: 0
 - - should see stuff
   - origin:
       refs/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
-        - unrelated commit
-        ea9899ff5037bdb48ec4e9b2c52075284010f0a3:
-        - next commit
-        59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
+        dfae5bf3509f126a554814c7fefd8aadfb08d372:
         - first commit
-    mirror(cool_path): {}
-    mirror(mirrored_path):
+    mirror(cool_path):
       refs/heads/master:
-        54ec3957a50fdfd16ced02b78685cf0e117e8141:
-        - next commit
+        8e5f94000908f6e22943e6c5594bf48419782bd3:
+        - first commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
-        - 'Cr-Mirrored-Commit: ea9899ff5037bdb48ec4e9b2c52075284010f0a3'
+        - 'Cr-Mirrored-Commit: dfae5bf3509f126a554814c7fefd8aadfb08d372'
+    mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}

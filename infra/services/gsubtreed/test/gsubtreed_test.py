@@ -40,20 +40,24 @@ def RunTest(test_name):
 
   base_repo_path = tempfile.mkdtemp()
 
-  enabled_paths = ['mirrored_path/subpath', 'mirrored_path']
+  enabled_paths = ['mirrored_path/subpath', 'mirrored_path', 'exception/path']
+  path_map_exceptions = {'exception/path': 'cool_path'}
   cref = TestConfigRef(origin)
-  cref.update(enabled_paths=enabled_paths, base_url='file://' + base_repo_path)
+  cref.update(enabled_paths=enabled_paths, base_url='file://' + base_repo_path,
+              path_map_exceptions=path_map_exceptions)
 
   mirrors = {}
   for path in enabled_paths:
-    full_path = os.path.join(base_repo_path, path)
+    path_in_mirror = path_map_exceptions.get(path, path)
+    full_path = os.path.join(base_repo_path, path_in_mirror)
     try:
       os.makedirs(full_path)
     except OSError:
       pass
-    mirrors[path] = TestRepo('mirror(%s)' % path, clock, 'fake')
-    mirrors[path]._repo_path = full_path
-    mirrors[path].run('init', '--bare')
+    mirrors[path_in_mirror] = TestRepo('mirror(%s)' % path_in_mirror, clock,
+                                       'fake')
+    mirrors[path_in_mirror]._repo_path = full_path
+    mirrors[path_in_mirror].run('init', '--bare')
 
   def checkpoint(message, include_committer=False, include_config=False):
     repos = collections.OrderedDict()

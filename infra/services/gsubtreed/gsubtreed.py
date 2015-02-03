@@ -45,6 +45,9 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     'enabled_refglobs': lambda self, val: map(str, list(val)),
     # normpath to avoid trailing/double-slash errors.
     'enabled_paths': lambda self, val: map(posixpath.normpath, map(str, val)),
+
+    'path_map_exceptions': lambda self, val: dict(
+      (str(k), str(v)) for k, v in val.iteritems()),
   }
 
   DEFAULTS = {
@@ -53,6 +56,8 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     'base_url': None,
     'enabled_paths': [],
     'enabled_refglobs': ['refs/heads/*'],
+
+    'path_map_exceptions': {},
   }
   """DEFAULTS is the default values for the in-repo versioned configuration ref.
 
@@ -78,6 +83,15 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
       ``refs/*``. If ``bob`` appeared on ``refs/foo`` and ``refs/bar``, the
       ``bob`` subtree repo would then contain both a ``refs/foo`` and
       a ``refs/bar`` ref.
+
+    path_map_exceptions: A dictionary mapping 'enabled_path' to
+      'mirror_repo_path'. This will be used instead of the generic join rule for
+      calculating the mirror URL (so it would be
+      ``'/'.join((base_url, path_map_exceptions[path]))`` instead of using path
+      directly). For example if this had the value ``{'path/to/foo': 'bar'}``,
+      and base_url was ``https://example.com``, then it would mirror
+      ``path/to/foo`` to ``https://example.com/bar``, instead of
+      ``https://example.com/path/to/foo``.
   """
 
 
@@ -135,7 +149,10 @@ def process_path(path, origin_repo, config):
   base_url = config['base_url']
   mirror_url = '[FILE-URL]' if base_url.startswith('file:') else origin_repo.url
 
-  subtree_repo = repo.Repo(posixpath.join(base_url, path))
+  subtree_repo_path = path
+  if path in config['path_map_exceptions']:
+    subtree_repo_path = config['path_map_exceptions'][path]
+  subtree_repo = repo.Repo(posixpath.join(base_url, subtree_repo_path))
   subtree_repo.repos_dir = origin_repo.repos_dir
   subtree_repo.reify(share_from=origin_repo)
   subtree_repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)

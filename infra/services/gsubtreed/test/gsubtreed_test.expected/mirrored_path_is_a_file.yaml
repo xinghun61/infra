@@ -11,6 +11,7 @@
         - bad subtree
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
+    mirror(cool_path): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -33,11 +34,17 @@
     ''3f96fe56937903ad7158825d1d6cd20e20250c71'')'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''ab1dbcd7cff198979ff11618603f97846a5f4931'')'
   - 'INFO: found new tree ''6987dee8db61edb533b23f7d1dd464a43dd027a7'''
+  - 'INFO: processing path exception/path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''3db9398d3995ad6c7de356f79b5b605edb529792:refs/heads/master'')'
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: true
   processed:
+    exception/path: 0
     mirrored_path: 2
     mirrored_path/subpath: 0
 - - should see 2 commits in synthesized
@@ -53,6 +60,7 @@
         - bad subtree
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
+    mirror(cool_path): {}
     mirror(mirrored_path):
       refs/heads/master:
         3db9398d3995ad6c7de356f79b5b605edb529792:

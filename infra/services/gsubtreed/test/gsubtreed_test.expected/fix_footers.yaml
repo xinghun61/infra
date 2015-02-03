@@ -8,6 +8,7 @@
         - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
         - 'Commit-Id: whaaat'
         - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+    mirror(cool_path): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -22,11 +23,17 @@
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing commit Commit(TestRepo(''local''), ''b404e807c89d3b8f4b255fec1aaa9e123808f63c'')'
   - 'INFO: found new tree ''0dcb5629d63f25755c3f2ad3a6987e069a83a754'''
+  - 'INFO: processing path exception/path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/branch'')'
+  - 'INFO: starting with tree git2.INVALID'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Running (''git'', ''push'', ''origin'', ''5c3f835c4a13b397b949d345715a0d61403d04f0:refs/heads/branch'')'
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: true
   processed:
+    exception/path: 0
     mirrored_path: 1
     mirrored_path/subpath: 0
 - - a really sweet (mirrored) commit
@@ -39,6 +46,7 @@
         - 'Cr-Commit-Position: refs/heads/branch@{#12345}'
         - 'Commit-Id: whaaat'
         - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
+    mirror(cool_path): {}
     mirror(mirrored_path):
       refs/heads/branch:
         5c3f835c4a13b397b949d345715a0d61403d04f0:

@@ -5,6 +5,7 @@
         - second commit
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
+    mirror(cool_path): {}
     mirror(mirrored_path):
       refs/heads/master:
         35533ec8003bfcfcba38d48db90cea0af3b9398c:
@@ -22,10 +23,16 @@
   - 'WARNING: Getting data from extra_footers. This information isonly as trustworthy
     as the ACLs.'
   - 'ERROR: Could not find footers for synthesized commit ''35533ec8003bfcfcba38d48db90cea0af3b9398c'''
+  - 'INFO: processing path exception/path'
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing ref Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
   - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: false
   processed:
+    exception/path: 0
     mirrored_path: 0
     mirrored_path/subpath: 0
 - - mirrored_path repo should not have changed
@@ -35,6 +42,7 @@
         - second commit
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
+    mirror(cool_path): {}
     mirror(mirrored_path):
       refs/heads/master:
         35533ec8003bfcfcba38d48db90cea0af3b9398c:

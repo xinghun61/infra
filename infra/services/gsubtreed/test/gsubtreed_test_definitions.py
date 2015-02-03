@@ -14,6 +14,21 @@ def test(f):
 
 
 @test
+def path_map_exceptions(origin, run, checkpoint, mirrors):
+  master = origin['refs/heads/master']
+  mc = master.make_commit
+  mc('first commit', {'exception': {'path': {'file': 'cowabunga'}}})
+
+  checkpoint('repo is set up')
+  run()
+  checkpoint('should see stuff')
+
+  assert GitEntry.spec_for(mirrors['cool_path'], 'refs/heads/master') == {
+    'file': ('cowabunga', 0644),
+  }
+
+
+@test
 def master_mirrored_path(origin, run, checkpoint, mirrors):
   master = origin['refs/heads/master']
   mc = master.make_commit
