@@ -9,11 +9,11 @@ from google.appengine.api import users
 from status import cq_status
 
 commands = {
-  'fetch_cq_status': lambda: cq_status.fetch_cq_status(),
-  'update_flake_hour_counter': lambda: cq_status.update_flake_hour_counter(),
-  'update_flake_day_counter': lambda: cq_status.update_flake_day_counter(),
-  'update_flake_week_counter': lambda: cq_status.update_flake_week_counter(),
-  'update_flake_month_counter': lambda: cq_status.update_flake_month_counter(),
+  'fetch_cq_status': cq_status.fetch_cq_status,
+  'update_flake_hour_counter': cq_status.update_flake_hour_counter,
+  'update_flake_day_counter': cq_status.update_flake_day_counter,
+  'update_flake_week_counter': cq_status.update_flake_week_counter,
+  'update_flake_month_counter': cq_status.update_flake_month_counter,
 }
 
 class CronDispatch(webapp2.RequestHandler):

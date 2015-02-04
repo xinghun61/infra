@@ -5,7 +5,8 @@
 import logging
 
 # This line was copied from master/buildbot/status/builder.py.
-NOT_STARTED, SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, TRY_PENDING = range(-1, 7)
+(NOT_STARTED, SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY,
+ TRY_PENDING) = range(-1, 7)
 
 def getHumanReadableResult(result):
   """Returns an English name of a buildbot result value.

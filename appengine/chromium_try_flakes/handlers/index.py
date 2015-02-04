@@ -23,19 +23,19 @@ def FlakeSortFunction(s):
 
 class Index(webapp2.RequestHandler):
   def get(self):
-    range = self.request.get('range', default_value='day')
+    time_range = self.request.get('range', default_value='day')
     cursor = Cursor(urlsafe=self.request.get('cursor'))
     flakes_query = Flake.query()
-    if range == 'hour':
+    if time_range == 'hour':
       flakes_query = flakes_query.filter(Flake.last_hour == True)
       flakes_query = flakes_query.order(-Flake.count_hour)
-    elif range == 'day':
+    elif time_range == 'day':
       flakes_query = flakes_query.filter(Flake.last_day == True)
       flakes_query = flakes_query.order(-Flake.count_day)
-    elif range == 'week':
+    elif time_range == 'week':
       flakes_query = flakes_query.filter(Flake.last_week == True)
       flakes_query = flakes_query.order(-Flake.count_week)
-    elif range == 'month':
+    elif time_range == 'month':
       flakes_query = flakes_query.filter(Flake.last_month == True)
       flakes_query = flakes_query.order(-Flake.count_month)
     else:
@@ -64,18 +64,19 @@ class Index(webapp2.RequestHandler):
       # tryserver pages show PST time so do so here as well for easy comparison.
       pst_timezone = pytz.timezone("US/Pacific")
       for index, r in enumerate(failure_runs):
-        if (range == 'hour' and is_last_hour(r.time_finished)) or \
-           (range == 'day' and is_last_day(r.time_finished)) or \
-           (range == 'week' and is_last_week(r.time_finished)) or \
-           (range == 'month' and is_last_month(r.time_finished)) or \
-           range == 'all':
+        if (time_range == 'hour' and is_last_hour(r.time_finished)) or \
+           (time_range == 'day' and is_last_day(r.time_finished)) or \
+           (time_range == 'week' and is_last_week(r.time_finished)) or \
+           (time_range == 'month' and is_last_month(r.time_finished)) or \
+           time_range == 'all':
           r.patchset_url = patchsets[index].getURL()
           r.builder = patchsets[index].builder
 
           time_format = ''
-          if range == 'hour':
+          if time_range == 'hour':
             time_format = '%I:%M %p'
-          elif range == 'day' or range == 'week' or range == 'month':
+          elif (time_range == 'day' or time_range == 'week' or
+                time_range == 'month'):
             time_format = '%m/%d %I:%M %p'
           else:
             time_format = '%m/%d/%y %I:%M %p'
@@ -88,7 +89,7 @@ class Index(webapp2.RequestHandler):
                                       key=FlakeSortFunction)
 
     values = {
-      'range': range,
+      'range': time_range,
       'flakes': flakes,
       'more': more,
       'cursor': next_cursor.urlsafe() if next_cursor else '',

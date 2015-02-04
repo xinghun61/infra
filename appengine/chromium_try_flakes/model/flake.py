@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from build_run import BuildRun
+from model.build_run import BuildRun
 
 # A particular occurance of a single flake occuring.
 class FlakeOccurance(ndb.Model):

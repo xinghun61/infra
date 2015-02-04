@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import build_result
 import datetime
 import logging
 import json
@@ -19,6 +18,7 @@ from model.fetch_status import FetchStatus
 from model.flake import Flake
 from model.flake import FlakeOccurance
 from model.flake import FlakyRun
+from status import build_result
 
 @ndb.transactional
 def get_patchset_builder_runs(issue, patchset, master, builder):
@@ -125,7 +125,7 @@ def update_flake_month_counter():
     update_flake_counters(flake)
 
 
-@ndb.transactional(xg=True)
+@ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
 def add_failure_to_flake(name, flaky_run):
   flake = Flake.get_by_id(name)
   if not flake:
@@ -140,9 +140,10 @@ def add_failure_to_flake(name, flaky_run):
   flake.put()
 
 # see examples:
-# compile http://build.chromium.org/p/tryserver.chromium.mac/json/builders/mac_chromium_compile_dbg/builds/11167?as_text=1
-# gpu http://build.chromium.org/p/tryserver.chromium.gpu/json/builders/linux_gpu_triggered_tests/builds/51542?as_text=1
-# gtest http://build.chromium.org/p/tryserver.chromium.win/json/builders/win_chromium_x64_rel_swarming/builds/4357?as_text=1
+# compile http://build.chromium.org/p/tryserver.chromium.mac/json/builders/
+#         mac_chromium_compile_dbg/builds/11167?as_text=1
+# gtest http://build.chromium.org/p/tryserver.chromium.win/json/builders/
+#       win_chromium_x64_rel_swarming/builds/4357?as_text=1
 # TODO(jam): get specific problem with compile so we can use that as name
 # TODO(jam): It's unfortunate to have to parse this html. Can we get it from
 # another place instead of the tryserver's json?
@@ -422,7 +423,8 @@ def fetch_cq_status():
       if logging_idx != -1:
         logging_idx += len(timestamp_str)
         logging_idx2 = result.find('"', logging_idx)
-        logging.info(' current fetch has time of ' + result[logging_idx:logging_idx2])
+        logging.info(' current fetch has time of ' +
+                     result[logging_idx:logging_idx2])
 
       try:
         json_result = json.loads(result)
@@ -473,4 +475,4 @@ def fetch_cq_status():
       if not more:
         return  # finish the cron job and wait for next iteration
     except urllib2.URLError, e:
-      handleError(e)
+      logging.warning('Failed to fetch CQ status: %s', e.reason)

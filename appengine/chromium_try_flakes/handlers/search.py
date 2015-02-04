@@ -5,7 +5,7 @@
 from google.appengine.ext import ndb
 
 from model.flake import Flake
-from all_flake_occurrences import show_all_flakes
+from handlers.all_flake_occurrences import show_all_flakes
 
 import webapp2
 
