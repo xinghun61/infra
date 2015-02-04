@@ -46,8 +46,8 @@ found in the LICENSE file. -->
             </div>
 
             <fieldset id="servers" disabled?="{{ sending }}">
-                <template repeat="{{ server in servers | filterServers(builderFilter) }}">
-                    <h2>{{ server.master }}</h2>
+                <template repeat="{{ server in servers.serversAndBuilders | filterServers(builderFilter) }}">
+                    <h2>{{ server.name }}</h2>
                     <div class="builders">
                         <template repeat="{{ builder in server.builders }}">
                             <label class="builder">
@@ -68,12 +68,20 @@ found in the LICENSE file. -->
     <script>
         Polymer("cr-try-dialog", {
             created: function() {
-                this.servers = TryServers.SERVERS;
+                this.servers = null;
                 this.issue = null;
                 this.checked = {};
                 this.butterbarMessage = "";
                 this.saving = false;
                 this.builderFilter = "";
+
+                var self = this;
+                var servers = new TryServers();
+                servers.loadDetails().then(function() {
+                    self.servers = servers;
+                }).catch(function(e) {
+                    console.log(e);
+                });
             },
             cancel: function(event) {
                 this.close();
@@ -96,7 +104,7 @@ found in the LICENSE file. -->
                 });
                 this.saving = true;
                 this.butterbarMessage = "Saving...";
-                this.issue.setFlags({builders: builders})
+                this.issue.setFlags({builders: this.servers.createFlagValue(builders)})
                     .then(this.saveSuccess.bind(this))
                     .catch(this.saveFailure.bind(this));
             },

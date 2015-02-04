@@ -275,8 +275,8 @@ Issue.prototype.createFlagsData = function(options)
         };
         if (Object.has(options, "commit"))
             data.commit = options.commit ? 1 : 0;
-        if (options.builders && options.builders.length)
-            data.builders = TryServers.createFlagValue(options.builders);
+        if (options.builders)
+            data.builders = options.builders;
         return data;
     });
 };
