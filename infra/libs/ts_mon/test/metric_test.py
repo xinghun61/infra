@@ -108,6 +108,25 @@ class BooleanMetricTest(unittest.TestCase):
       m.set(object())
 
 
+class NumericMetricTest(unittest.TestCase):
+
+  def test_increment(self):
+    m = metric.NumericMetric('test')
+    def set_stub(val):
+      m._value = val
+    m.set = set_stub
+    m._value = 1
+    m.increment()
+    self.assertEquals(m._value, 2)
+    m.increment_by(3.14)
+    self.assertAlmostEquals(m._value, 5.14)
+
+  def test_unset_increment_raises(self):
+    m = metric.NumericMetric('test')
+    with self.assertRaises(MonitoringIncrementUnsetValueError):
+      m.increment()
+
+
 class CounterMetricTest(unittest.TestCase):
 
   def test_populate_metric(self):
@@ -124,25 +143,6 @@ class CounterMetricTest(unittest.TestCase):
     self.assertEquals(m._value, 10)
     self.assertEquals(fake_send.call_count, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_increment(self, fake_send):
-    m = metric.CounterMetric('test')
-    m._value = 1
-    m.increment()
-    self.assertEquals(m._value, 2)
-    self.assertEquals(fake_send.call_count, 1)
-    m.increment_by(8)
-    self.assertEquals(m._value, 10)
-    self.assertEquals(fake_send.call_count, 2)
-
-  def test_float_raises(self):
-    m = metric.CounterMetric('test')
-    m._value = 0
-    with self.assertRaises(MonitoringInvalidValueTypeError):
-      m.set(1.5)
-    with self.assertRaises(MonitoringInvalidValueTypeError):
-      m.increment_by(1.5)
-
   def test_decrement_raises(self):
     m = metric.CounterMetric('test')
     m._value = 1
@@ -151,15 +151,15 @@ class CounterMetricTest(unittest.TestCase):
     with self.assertRaises(MonitoringDecreasingValueError):
       m.increment_by(-1)
 
-  def test_unset_increment_raises(self):
-    m = metric.CounterMetric('test')
-    with self.assertRaises(MonitoringIncrementUnsetValueError):
-      m.increment()
-
   def test_non_int_raises(self):
     m = metric.CounterMetric('test')
+    m._value = 0
     with self.assertRaises(MonitoringInvalidValueTypeError):
       m.set(object())
+    with self.assertRaises(MonitoringInvalidValueTypeError):
+      m.set(1.5)
+    with self.assertRaises(MonitoringInvalidValueTypeError):
+      m.increment_by(1.5)
 
 
 class GaugeMetricTest(unittest.TestCase):
@@ -203,17 +203,6 @@ class CumulativeMetricTest(unittest.TestCase):
     self.assertAlmostEquals(m._value, 3.14)
     self.assertEquals(fake_send.call_count, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_increment(self, fake_send):
-    m = metric.CumulativeMetric('test')
-    m._value = 3.14
-    m.increment()
-    self.assertAlmostEquals(m._value, 4.14)
-    self.assertEquals(fake_send.call_count, 1)
-    m.increment_by(1.618)
-    self.assertAlmostEquals(m._value, 5.758)
-    self.assertEquals(fake_send.call_count, 2)
-
   def test_decrement_raises(self):
     m = metric.CumulativeMetric('test')
     m._value = 3.14
@@ -221,11 +210,6 @@ class CumulativeMetricTest(unittest.TestCase):
       m.set(0)
     with self.assertRaises(MonitoringDecreasingValueError):
       m.increment_by(-1)
-
-  def test_unset_increment_raises(self):
-    m = metric.CumulativeMetric('test')
-    with self.assertRaises(MonitoringIncrementUnsetValueError):
-      m.increment()
 
   def test_non_number_raises(self):
     m = metric.CumulativeMetric('test')

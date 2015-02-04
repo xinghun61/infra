@@ -124,11 +124,23 @@ class BooleanMetric(Metric):
     self.set(not self._value)
 
 
-class CounterMetric(Metric):
+class NumericMetric(Metric):  # pylint: disable=abstract-method
+  """Abstract base class for numeric (int or float) metrics."""
+  #TODO(agable): Figure out if there's a way to send units with these metrics.
+
+  def increment(self):
+    self.increment_by(1)
+
+  def increment_by(self, step):
+    if self._value is None:
+      raise MonitoringIncrementUnsetValueError(self._name)
+    self.set(self._value + step)
+
+
+class CounterMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing integer."""
 
-  def __init__(self, name, target=None, fields=None,
-               start_time=None):
+  def __init__(self, name, target=None, fields=None, start_time=None):
     super(CounterMetric, self).__init__(name, target=target, fields=fields)
     self._start_time = start_time or int(time.time() * 1000)
 
@@ -144,16 +156,8 @@ class CounterMetric(Metric):
     self._value = value
     send(self)
 
-  def increment(self):
-    self.increment_by(1)
 
-  def increment_by(self, step):
-    if self._value is None:
-      raise MonitoringIncrementUnsetValueError(self._name)
-    self.set(self._value + step)
-
-
-class GaugeMetric(Metric):
+class GaugeMetric(NumericMetric):
   """A metric whose value type is an integer."""
 
   def _populate_metric_pb(self, metric):
@@ -166,11 +170,10 @@ class GaugeMetric(Metric):
     send(self)
 
 
-class CumulativeMetric(Metric):
+class CumulativeMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing float."""
 
-  def __init__(self, name, target=None, fields=None,
-               start_time=None):
+  def __init__(self, name, target=None, fields=None, start_time=None):
     super(CumulativeMetric, self).__init__(name, target=target, fields=fields)
     self._start_time = start_time or int(time.time() * 1000)
 
@@ -186,16 +189,8 @@ class CumulativeMetric(Metric):
     self._value = float(value)
     send(self)
 
-  def increment(self):
-    self.increment_by(1.0)
 
-  def increment_by(self, step):
-    if self._value is None:
-      raise MonitoringIncrementUnsetValueError(self._name)
-    self.set(self._value + step)
-
-
-class FloatMetric(Metric):
+class FloatMetric(NumericMetric):
   """A metric whose value type is a float."""
 
   def _populate_metric_pb(self, metric):

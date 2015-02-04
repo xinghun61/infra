@@ -17,7 +17,6 @@ from infra.libs import ts_mon
 cpu_count = ts_mon.GaugeMetric('dev/cpu/count')
 cpu_percent = ts_mon.FloatMetric('dev/cpu/usage')
 
-# TODO(agable): Add a 'Units' field to Metrics so this can specify Bytes.
 root_used = ts_mon.GaugeMetric('dev/disk/usage',
                                fields={'state': 'used', 'path': '/'})
 root_free = ts_mon.GaugeMetric('dev/disk/usage',
