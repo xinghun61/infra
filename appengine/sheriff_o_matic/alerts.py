@@ -41,6 +41,9 @@ class AlertsHandler(webapp2.RequestHandler):
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5
 
+  # New alerts should be posted at least every 30 minutes 
+  MAX_STALENESS = 60*30
+
   # Has no 'response' member.
   # pylint: disable=E1101
   def send_json_headers(self):
@@ -75,11 +78,19 @@ class AlertsHandler(webapp2.RequestHandler):
   def get_from_datastore(self, alerts_type):
     last_entry = self.get_last_datastore(alerts_type)
     if last_entry:
+      data  = last_entry.json
       if last_entry.use_gcs:
-        blob = self.get_from_gcs(alerts_type)
-        self.send_json_data(blob)
-      else:
-        self.send_json_data(last_entry.json)
+        data = self.get_from_gcs(alerts_type)
+      data = json.loads(data)
+      data["stale_alerts_thresh"] = self.MAX_STALENESS
+      utcnow = (datetime.datetime.utcnow() -
+          datetime.datetime.utcfromtimestamp(0))
+      if utcnow.total_seconds() - data["date"] > self.MAX_STALENESS:
+        data["stale_alerts_json"] = True
+ 
+      data = self.generate_json_dump(data)
+
+      self.send_json_data(data)
       return True
     return False
 
@@ -87,7 +98,15 @@ class AlertsHandler(webapp2.RequestHandler):
     compressed = memcache.get(memcache_key)
     if compressed:
       uncompressed = zlib.decompress(compressed)
-      self.send_json_data(uncompressed)
+      data = json.loads(uncompressed)
+      utcnow = (datetime.datetime.utcnow() -
+          datetime.datetime.utcfromtimestamp(0))
+      if utcnow.total_seconds() - data["date"] > self.MAX_STALENESS:
+        data["stale_alerts_json"] = True
+      data["stale_alerts_thresh"] = self.MAX_STALENESS
+
+      data = self.generate_json_dump(data) 
+      self.send_json_data(data)
       return True
     return False
 
