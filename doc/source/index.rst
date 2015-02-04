@@ -24,6 +24,11 @@ General Information
 * :doc:`contributing`
 * :doc:`reference/modules` - reference documentation, extracted from docstrings.
 
+Usage Guides
+------------
+
+* :doc:`new_master` - How to set up a new buildbot master.
+
 Contributer's Guides
 --------------------
 
@@ -41,7 +46,7 @@ This section (will) explains some technical choices.
 
 * :doc:`testing` - tools used, how and why.
 * :doc:`bootstrap` - Dependency handling. How it works and why it's structured
-  this way. 
+  this way.
 
 Other topics
 -------------------
