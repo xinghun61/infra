@@ -59,6 +59,16 @@ found in the LICENSE file. -->
                 </div>
             </div>
             <div class="form-row">
+                <label class="form-label" for="displayExperimentalTryjobs">Display experimental tryjobs</label>
+                <div class="form-field">
+                    <select id="displayExperimentalTryjobs" value="{{ settings.displayExperimentalTryjobs }}" class="{{ {invalid: errors.displayExperimentalTryjobs} | tokenList }}">
+                        <option value="False">Never</option>
+                        <option value="True">On issues that have experimental results</option>
+		    </select>
+                    <div class="form-error">{{ errors.displayExperimentalTryjobs }}</div>
+                </div>
+            </div>
+            <div class="form-row">
                 <label class="form-label" for="sendFromEmailAddr">Send from my address</label>
                 <div class="form-field">
                     <input type="checkbox" id="sendFromEmailAddr" checked="{{ settings.sendFromEmailAddr }}" class="{{ {invalid: errors.sendFromEmailAddr} | tokenList }}">
