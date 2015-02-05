@@ -2,6 +2,7 @@
   'project': 'chromium',
   'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/chromium/src',
+  'error_recipients': 'chrome-build-alerts@google.com',
   'masters': {
     'chromium.win': {
       'base_url': 'https://build.chromium.org/p/chromium.win',

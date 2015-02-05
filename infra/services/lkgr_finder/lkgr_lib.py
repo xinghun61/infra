@@ -503,6 +503,7 @@ def SendMail(recipients, subject, message, dry):  # pragma: no cover
     body.append('Reply-To: %s' % recipients)
     body.append('')
     body.append(message)
+    # TODO(pgervais,crbug.com/455436): send this to sheriff-o-matic instead.
     server = smtplib.SMTP('localhost')
     server.sendmail(sender, recipients.split(','), '\n'.join(body))
     server.quit()
