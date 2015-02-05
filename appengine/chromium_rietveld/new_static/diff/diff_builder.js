@@ -100,8 +100,12 @@ DiffBuilder.prototype.createText = function(line)
 {
     var div = document.createElement("div");
     div.className = "text";
+    if (!line.text)
+        return div;
     var html = this.highlighter.parseText(line.text);
-    if (!html) {
+    // If the html is just the text then it didn't get highlighted so we can
+    // use textContent which is faster than innerHTML.
+    if (!html || html == line.text) {
         div.textContent = line.text;
     } else {
         div.innerHTML = html;
