@@ -72,7 +72,10 @@ Issue.prototype.getDiscardAllDraftsUrl = function()
 
 Issue.prototype.reviewerEmails = function()
 {
+    var issue = this;
     return this.reviewers.map(function(user) {
+        if (issue.requiredReviewers.find(user.email))
+            return "*" + user.email;
         return user.email;
     }).join(", ");
 };

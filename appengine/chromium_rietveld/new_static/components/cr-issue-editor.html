@@ -98,18 +98,7 @@ found in the LICENSE file. -->
                 this.description = this.issue.description;
                 this.cc = this.issue.ccEmails();
                 this.private = this.issue.private;
-
-                // Mark required reviewers with a "*" prefix.
-                var reviewerTokens = this.issue.reviewerEmails().split(", ");
-                var formattedReviewerTokens = [];
-                for (i = 0; i<reviewerTokens.length; i++) {
-                  var reviewerEmail = reviewerTokens[i];
-                  if (this.contains(this.issue.requiredReviewers, reviewerTokens[i])) {
-                    reviewerEmail = "*" + reviewerEmail;
-                  }
-                  formattedReviewerTokens[i] = reviewerEmail;
-                }
-                this.reviewers = formattedReviewerTokens.join(", ");
+                this.reviewers = this.issue.reviewerEmails();
             },
             dismissAutocomplete: function() {
                 if (this.$.reviewerAutocomplete.active || this.$.ccAutocomplete.active) {
