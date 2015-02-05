@@ -31,7 +31,7 @@ class PullChangelogPipeline(BasePipeline):
     """
     change_logs = {}
 
-    for build in failure_info['builds'].values():
+    for build in failure_info.get('builds', {}).values():
       for revision in build['blame_list']:
         change_log = self.GIT_REPO.GetChangeLog(revision)
         if not change_log:  # pragma: no cover

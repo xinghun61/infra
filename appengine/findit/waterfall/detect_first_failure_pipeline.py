@@ -27,49 +27,6 @@ class DetectFirstFailurePipeline(BasePipeline):
   """ A pipeline to detect first failure of each step.
 
   TODO(stgao): do test-level detection for gtest.
-
-  Input:
-    master_name
-    builder_name
-    build_number
-
-  Output:
-    A json like below:
-    {
-      "master_name": "chromium.gpu",
-      "builder_name": "GPU Linux Builder"
-      "build_number": 25410,
-      "failed": true,
-      "failed_steps": {
-        "compile": {
-          "last_pass": 25408,
-          "current_failure": 25410,
-          "first_failure": 25409
-        }
-      },
-      "builds": {
-        "25408": {
-          "chromium_revision": "474ab324d17d2cd198d3fb067cabc10a775a8df7"
-          "blame_list": [
-            "474ab324d17d2cd198d3fb067cabc10a775a8df7"
-          ],
-        },
-        "25409": {
-          "chromium_revision": "33c6f11de20c5b229e102c51237d96b2d2f1be04"
-          "blame_list": [
-            "9d5ebc5eb14fc4b3823f6cfd341da023f71f49dd",
-            ...
-          ],
-        },
-        "25410": {
-          "chromium_revision": "4bffcd598dd89e0016208ce9312a1f477ff105d1"
-          "blame_list": [
-            "b98e0b320d39a323c81cc0542e6250349183a4df",
-            ...
-          ],
-        }
-      }
-    }
   """
 
   HTTP_CLIENT = HttpClient()
@@ -214,6 +171,50 @@ class DetectFirstFailurePipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
+    """
+    Args:
+      master_name (str): the master name of a build.
+      builder_name (str): the builder name of a build.
+      build_number (int): the build number of a build.
+
+    Returns:
+      A dict in the following form:
+      {
+        "master_name": "chromium.gpu",
+        "builder_name": "GPU Linux Builder"
+        "build_number": 25410,
+        "failed": true,
+        "failed_steps": {
+          "compile": {
+            "last_pass": 25408,
+            "current_failure": 25410,
+            "first_failure": 25409
+          }
+        },
+        "builds": {
+          "25408": {
+            "chromium_revision": "474ab324d17d2cd198d3fb067cabc10a775a8df7"
+            "blame_list": [
+              "474ab324d17d2cd198d3fb067cabc10a775a8df7"
+            ],
+          },
+          "25409": {
+            "chromium_revision": "33c6f11de20c5b229e102c51237d96b2d2f1be04"
+            "blame_list": [
+              "9d5ebc5eb14fc4b3823f6cfd341da023f71f49dd",
+              ...
+            ],
+          },
+          "25410": {
+            "chromium_revision": "4bffcd598dd89e0016208ce9312a1f477ff105d1"
+            "blame_list": [
+              "b98e0b320d39a323c81cc0542e6250349183a4df",
+              ...
+            ],
+          }
+        }
+      }
+    """
     build_info = self._ExtractBuildInfo(master_name, builder_name, build_number)
 
     if not build_info:  # pragma: no cover
@@ -223,7 +224,9 @@ class DetectFirstFailurePipeline(BasePipeline):
         'failed': True,
         'master_name': master_name,
         'builder_name': builder_name,
-        'build_number': build_number
+        'build_number': build_number,
+        'builds': {},
+        'failed_steps': [],
     }
 
     if (build_info.result == buildbot.SUCCESS or

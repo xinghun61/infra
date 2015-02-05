@@ -37,7 +37,7 @@ class ExtractSignalPipeline(BasePipeline):
     master_name = failure_info['master_name']
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
-    for step_name in failure_info['failed_steps']:
+    for step_name in failure_info.get('failed_steps', []):
       step = Step.GetStep(master_name, builder_name, build_number, step_name)
       if step and step.log_data:
         stdio_log = step.log_data
