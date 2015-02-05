@@ -43,6 +43,12 @@ deps = {
      "trace-viewer.git"
      '@' + '76a4496033c164d8be9ee8c57f702b0859cb1911'),
 
+  ## For ease of development. These are pulled in as wheels for run.py/test.py
+  "expect_tests":
+    "https://chromium.googlesource.com/infra/testing/expect_tests.git",
+  "testing_support":
+    "https://chromium.googlesource.com/infra/testing/testing_support.git",
+
   ## external deps
   # v1.11.6
   "infra/bootstrap/virtualenv":
