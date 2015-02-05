@@ -65,15 +65,8 @@ found in the LICENSE file. -->
             var textarea = this.shadowRoot.getElementById("textarea");
             textarea.scrollIntoView(true);
             textarea.focus();
-            if (this.message) {
-                var date = this.message.date.utc(true).format("On {yyyy}/{MM}/{dd} at {HH}:{mm}:{ss}");
-                var value = date + ", " + this.message.author.name + " wrote:\n";
-                this.message.text.split("\n").forEach(function(line) {
-                    value += "> " + line + "\n";
-                });
-                value += "\n";
-                this.value = value;
-            }
+            if (this.message)
+                this.value = emailQuote(this.message.text, this.message.author.name, this.message.date);
             this.async(function() {
                 // Need to scroll at raf time to make sure the text area is filled in.
                 textarea.scrollTop = textarea.scrollHeight;

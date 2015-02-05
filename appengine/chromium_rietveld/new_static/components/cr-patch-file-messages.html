@@ -84,15 +84,9 @@ found in the LICENSE file. -->
             },
             handleReplyDraft: function(event) {
                 var message = event.detail.message;
-                // TODO(esprehn): This is code duplication with <cr-issue-message-reply>.
-                var date = message.date.utc(true).format("On {yyyy}/{MM}/{dd} at {HH}:{mm}:{ss}");
-                var value = date + ", " + message.author.name + " wrote:\n";
-                message.text.split("\n").forEach(function(line) {
-                    value += "> " + line + "\n";
-                });
-                value += "\n";
+                var text = emailQuote(message.text, message.author.name, message.date);
                 var side = message.left ? "before" : "after";
-                this.addDraft(side, message.line, value);
+                this.addDraft(side, message.line, text);
             },
             addDraft: function(side, line, text) {
                 if (side != "before" && side != "after")
