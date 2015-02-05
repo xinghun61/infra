@@ -34,6 +34,7 @@
     'rev': 'fa395d839ba1fe8363f48487067374f7aff658f2',
     'implicit': True,  # Required by Sphinx
   },
+# expect_tests is maintained by Chrome Infra
   'expect_tests': {
     'version': '0.3.3',
     'build': '0',
