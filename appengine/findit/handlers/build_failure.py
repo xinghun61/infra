@@ -3,6 +3,9 @@
 # found in the LICENSE file.
 
 import logging
+import os
+
+from google.appengine.api import users
 
 from base_handler import BaseHandler
 from base_handler import Permission
@@ -15,6 +18,12 @@ BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
+
+  def _IsPipelineAccessible(self):
+    # Pipeline is accessible if the app is run locally during development or if
+    # the currently logged-in user is an admin.
+    return (os.environ['SERVER_SOFTWARE'].startswith('Development') or
+            users.is_current_user_admin())
 
   def HandleGet(self):
     """Triggers analysis of a build failure on demand and return current result.
@@ -37,6 +46,12 @@ class BuildFailure(BaseHandler):
         master_name, builder_name, build_number, force,
         BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
+    def FormatDatetime(datetime):
+      if not datetime:
+        return None
+      else:
+        return datetime.strftime('%Y-%m-%d %H:%M:%S')
+
     data = {
         'master_name': analysis.master_name,
         'builder_name': analysis.builder_name,
@@ -44,10 +59,12 @@ class BuildFailure(BaseHandler):
         'build_url': buildbot.CreateBuildUrl(
             analysis.master_name, analysis.builder_name, analysis.build_number),
         'pipeline_url': analysis.pipeline_url,
-        'analysis_started': analysis.start_time,
-        'analysis_updated': analysis.updated_time,
+        'pipeline_accessible': self._IsPipelineAccessible(),
+        'analysis_started': FormatDatetime(analysis.start_time),
+        'analysis_updated': FormatDatetime(analysis.updated_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
+        'analysis_result': analysis.result,
     }
 
     return {'template': 'build_failure.html', 'data': data}

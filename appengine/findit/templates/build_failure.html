@@ -18,6 +18,13 @@
       background-color: #e98080;
       border-color: #A77272;
     }
+    table {
+      border-collapse: collapse;
+      border: 1px solid gray;
+    }
+    table td, th {
+      border: 1px solid gray;
+    }
   </style>
   <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
   <script>
@@ -58,13 +65,102 @@
   <br>
 
   <b>Analysis info:</b>
-  <div id="process info">
+  <div id="analysis_info">
     status: <span id="status_message"></span>
-  {% if pipeline_url %}
-    <a href="{{pipeline_url}}">pipeline</a><br>
-    Started: {{analysis_started}}<br>
-    Updated: {{analysis_updated}}<br>
+  {% if pipeline_accessible and pipeline_url %}
+    <a href="{{pipeline_url}}">pipeline</a>
   {% endif %}
+    <br>
+    Started: {{analysis_started | default('N/A', true)}}<br>
+    Updated: {{analysis_updated}}<br>
   </div>
   <br>
+
+  {% if analysis_completed %}
+  <b>Analysis result:</b>
+    {% if analysis_failed %}
+      <br>
+      <span class="error">No result because of some error in analysis!</span>
+    {% elif analysis_result.failures|length == 0 %}
+      <div>No failure is found.</div>
+    {% else %}
+      <div id="analysis_result">
+        <table id="failures">
+          <tr>
+            <th rowspan="2">Step</th>
+            <th rowspan="2">First Failure</th>
+            <th rowspan="2">Last Pass</th>
+            <th colspan="7">Suspected CLs</th>
+          </tr>
+          <tr>
+            <th>Build</th>
+            <th>Dependency Name</th>
+            <th>Git Revision</th>
+            <th>Commit Position</th>
+            <th>Suspect Points</th>
+            <th>Score</th>
+            <th>Justification</th>
+          </tr>
+          <tbody>
+          {% for failure in analysis_result.failures %}
+            {% if failure.suspected_cls|length == 0 %}
+              <tr>
+                <td>{{failure.step_name}}</td>
+                <td>{{failure.first_failure}}</td>
+                <td>{{failure.last_pass | default('N/A', true)}}</td>
+                <td colspan="7"></td>
+              </tr>
+            {% else %}
+              {% set first_suspected_cl = failure.suspected_cls[0] %}
+              <tr>
+                <td rowspan="{{failure.suspected_cls|length}}">{{failure.step_name}}</td>
+                <td rowspan="{{failure.suspected_cls|length}}">{{failure.first_failure}}</td>
+                <td rowspan="{{failure.suspected_cls|length}}">{{failure.last_pass | default('N/A', true)}}</td>
+
+                <td>{{first_suspected_cl.build_number}}</td>
+                <td>{{first_suspected_cl.dependency_name}}</td>
+                <td>
+                  {% if first_suspected_cl.code_review_url %}
+                    <a href="{{first_suspected_cl.code_review_url}}">{{first_suspected_cl.revision}}</a>
+                  {% else %}
+                    {{first_suspected_cl.revision}}
+                  {% endif %}
+                </td>
+                <td>{{first_suspected_cl.commit_position}}</td>
+                <td>{{first_suspected_cl.suspect_points}}</td>
+                <td>{{first_suspected_cl.score}}</td>
+                <td>
+                  {% for hint in first_suspected_cl.hints %}
+                    <li>{{hint}}</li>
+                  {% endfor %}
+                </td>
+              </tr>
+              {# Show the remaining suspected CLs, so skip the first three columns. #}
+              {% for suspected_cl in failure.suspected_cls[1:] %}
+              <tr>
+                <td>{{suspected_cl.build_number}}</td>
+                <td>{{suspected_cl.dependency_name}}</td>
+                <td>
+                  {% if suspected_cl.code_review_url %}
+                    <a href="{{suspected_cl.code_review_url}}">{{suspected_cl.revision}}</a>
+                  {% else %}
+                    {{suspected_cl.revision}}
+                  {% endif %}
+                </td>
+                <td>{{suspected_cl.commit_position}}</td>
+                <td>{{suspected_cl.suspect_points}}</td>
+                <td>{{suspected_cl.score}}</td>
+                <td>
+                  {% for hint in suspected_cl.hints %}
+                    <li>{{hint}}</li>
+                  {% endfor %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+          </tbody>
+      </div>
+    {% endif %}
+  {% endif %}
 </body>

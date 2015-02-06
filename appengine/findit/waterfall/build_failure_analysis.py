@@ -232,28 +232,55 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
     failure_signals (dict): Output of pipeline ExtractSignalPipeline.
 
   Returns:
-    A dict with the following form (could be an empty dict):
+    A dict with the following form:
     {
-      'compile': {
-        'cl_git_hash': {
-          'suspect_points': 2,
-          'score': 11,
-          'hints': [
-            'add a/b/x.cc',
-            'delete a/b/y.cc',
-            'modify e/f/z.cc',
+      'failures': [
+        {
+          'step_name': 'compile',
+          'first_failure': 230,
+          'last_pass': 229,
+          'suspected_cls': [
+            {
+              'build_number': 230,
+              'dependency_name': 'chromium',
+              'revision': 'a_git_hash',
+              'commit_position': 56789,
+              'suspect_points': 2,
+              'score': 11,
+              'hints': [
+                'add a/b/x.cc',
+                'delete a/b/y.cc',
+                'modify e/f/z.cc',
+                ...
+              ]
+            },
             ...
-          ]
+          ],
         },
         ...
-      },
-      ...
+      ]
     }
   """
-  analysis_result = {}
+  analysis_result = {
+      'failures': []
+  }
 
   if not failure_info['failed']:
     return analysis_result
+
+  def CreateCLInfoDict(justification_dict, build_number, change_log):
+    # TODO(stgao): remove hard-coded 'chromium' when DEPS file parsing is
+    # supported.
+    cl_info = {
+        'build_number': build_number,
+        'dependency_name': 'chromium',
+        'revision': change_log['revision'],
+        'commit_position': change_log.get('commit_position'),
+        'code_review_url': change_log.get('code_review_url'),
+    }
+
+    cl_info.update(justification_dict)
+    return cl_info
 
   failed_steps = failure_info['failed_steps']
   builds = failure_info['builds']
@@ -262,18 +289,27 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
     failed_build_number = step_failure_info['current_failure']
     build_number = step_failure_info['first_failure']
 
-    step_analysis_result = {}
+    step_analysis_result = {
+        'step_name': step_name,
+        'first_failure': step_failure_info['first_failure'],
+        'last_pass': step_failure_info.get('last_pass'),
+        'suspected_cls': [],
+    }
 
     while build_number <= failed_build_number:
       for revision in builds[str(build_number)]['blame_list']:
         justification_dict = _CheckFiles(failure_signal, change_logs[revision])
-        if justification_dict:
-          step_analysis_result[revision] = justification_dict
+
+        if not justification_dict:
+          continue
+
+        step_analysis_result['suspected_cls'].append(
+            CreateCLInfoDict(justification_dict, build_number,
+                             change_logs[revision]))
 
       build_number += 1
 
-    if step_analysis_result:
-      # TODO(stgao): sorted CLs related to a step failure.
-      analysis_result[step_name] = step_analysis_result
+    # TODO(stgao): sort CLs by suspect points and score.
+    analysis_result['failures'].append(step_analysis_result)
 
   return analysis_result

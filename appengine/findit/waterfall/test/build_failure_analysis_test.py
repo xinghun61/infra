@@ -137,7 +137,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
     result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, None, None)
-    self.assertEqual(0, len(result))
+    self.assertEqual(0, len(result['failures']))
 
   def testAnalyzeBuildFailure(self):
     failure_info = {
@@ -163,6 +163,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
     change_logs = {
         'r99_1': {
+            'revision': 'r99_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.ADD,
@@ -172,6 +173,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             ],
         },
         'r99_2': {
+            'revision': 'r99_2',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -181,6 +183,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             ],
         },
         'r98_1': {
+            'revision': 'r98_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -201,17 +204,35 @@ class BuildFailureAnalysisTest(unittest.TestCase):
               'f.cc': [],
           },
         },
-        }
+    }
     expected_analysis_result = {
-        'a': {
-            'r99_2': {
-                'suspect_points': 0,
-                'score': 1,
-                'hints': [
-                    'modify a/b/f99_2.cc',
-                ]
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [
+                    {
+                        'build_number': 99,
+                        'dependency_name': 'chromium',
+                        'revision': 'r99_2',
+                        'commit_position': None,
+                        'code_review_url': None,
+                        'suspect_points': 0,
+                        'score': 1,
+                        'hints': [
+                            'modify a/b/f99_2.cc'
+                        ],
+                    }
+                ],
             },
-        },
+            {
+                'step_name': 'b',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [],
+            }
+        ]
     }
 
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
