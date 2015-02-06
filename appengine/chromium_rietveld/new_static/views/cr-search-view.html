@@ -1,0 +1,191 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../components/cr-button.html">
+<link rel="import" href="../components/cr-issue-list.html">
+<link rel="import" href="../components/cr-keyboard.html">
+<link rel="import" href="../components/cr-toolbar.html">
+<link rel="import" href="../components/cr-user-autocomplete.html">
+
+<polymer-element name="cr-search-view">
+    <template>
+        <link rel="stylesheet" href="../components/common.css">
+        <link rel="stylesheet" href="../components/forms.css">
+        <style>
+            :host { display: block; }
+
+            .search-layout {
+                display: flex;
+            }
+
+            .search-form {
+                width: 500px;
+                flex-shrink: 0;
+            }
+
+            .search-results header {
+                display: flex;
+                align-items: center;
+                margin-right: 16px;
+            }
+
+            .search-results h2 {
+                flex: 1;
+            }
+
+            cr-issue-list {
+                margin: 20px 16px 0 16px;
+            }
+
+            p {
+                margin-left: 16px;
+                font-size: 1.2em;
+                margin-top: 6px;
+            }
+        </style>
+        <h1 class="app-header">Search</h1>
+
+        <div class="search-layout">
+            <div class="search-form">
+                <h2>Query</h2>
+                <fieldset class="form-fields" disabled?="{{ disabled }}">
+                    <div class="form-row">
+                        <label class="form-label" for="owner">Owner</label>
+                        <div class="form-field">
+                            <cr-user-autocomplete id="ownerAutocomplete" value="{{ query.owner }}">
+                                <input type="text" id="owner" value="{{ query.owner }}" autocomplete="off">
+                            </cr-user-autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="reviewer">Reviewer</label>
+                        <div class="form-field">
+                            <cr-user-autocomplete id="reviewerAutocomplete" value="{{ query.reviewer }}">
+                                <input type="text" id="reviewer" value="{{ query.reviewer }}" autocomplete="off">
+                            </cr-user-autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="cc">CC</label>
+                        <div class="form-field">
+                            <cr-user-autocomplete id="ccAutocomplete" value="{{ query.cc }}">
+                                <input type="text" id="cc" value="{{ query.cc }}" autocomplete="off">
+                            </cr-user-autocomplete>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="sort">Sort by</label>
+                        <div class="form-field">
+                            <select id="sort" value="{{ query.sort }}">
+                                <option value="modified" selected>Last modified</option>
+                                <option value="created">Created</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="orderby">Order</label>
+                        <div class="form-field">
+                            <select id="orderby" value="{{ query.order }}">
+                                <option value="ascending" selected>Newest first</option>
+                                <option value="descending">Oldest first</option>
+                            </select>
+                        </div>
+                    </div>
+                </fieldset>
+                <cr-toolbar>
+                    <cr-button primary on-tap="{{ search }}">Search</cr-button>
+                </cr-toolbar>
+            </div>
+            <div class="search-results">
+                <header>
+                    <h2>Issues</h2>
+                    <template if="{{ nextCursor && issues.length }}">
+                        <cr-action on-tap="{{ handleNextPage }}">Next</cr-action>
+                    </template>
+                </header>
+                <cr-issue-list issues="{{ issues }}"></cr-issue-list>
+                <template if="{{ issues && !issues.length }}">
+                    <p>No results.</p>
+                </template>
+                <template if="{{ sending }}">
+                    <p>Searching...</p>
+                </template>
+            </div>
+        </div>
+        <cr-keyboard on-key-enter="{{ handleEnterKey }}"></cr-keyboard>
+    </template>
+    <script>
+        Polymer("cr-search-view", {
+            created: function() {
+                this.issues = null;
+                this.nextCursor = "";
+                this.query = {
+                    owner: "",
+                    reviewer: "",
+                    cc: "",
+                    sort: "modified",
+                    order: "ascending",
+                };
+                this.queryId = 0;
+                this.sending = false;
+            },
+            attached: function() {
+                this.fire("title-change", {
+                    value: "Search issues",
+                });
+                var query = Object.fromQueryString(window.location);
+                if (!Object.isEmpty(query)) {
+                    Object.merge(this.query, query);
+                    this.search();
+                }
+            },
+            handleEnterKey: function() {
+                if (this.$.ownerAutocomplete.active
+                    || this.$.reviewerAutocomplete.active
+                    || this.$.ccAutocomplete.active) {
+                    return;
+                }
+                this.search();
+            },
+            handleNextPage: function() {
+                if (!this.nextCursor || !this.issues.length)
+                    return;
+                this.query.cursor = this.nextCursor;
+                this.search();
+            },
+            search: function() {
+                var self = this;
+                this.$.ownerAutocomplete.resetAutocomplete();
+                this.$.reviewerAutocomplete.resetAutocomplete();
+                this.$.ccAutocomplete.resetAutocomplete();
+                var queryString = Object.toQueryString(this.query);
+                if (!queryString)
+                    return;
+                queryString = queryString.replace(/\+/g, "%20");
+                var url = window.location.pathname + "?" + queryString
+                    + window.location.hash;
+                window.history.pushState(null, null, url);
+                var queryId = ++this.queryId;
+                this.issues = null;
+                this.sending = true;
+                Search.findIssues(this.query).then(function(result) {
+                    if (queryId == self.queryId) {
+                        self.issues = result.issues;
+                        self.nextCursor = result.cursor;
+                    }
+                }).catch(function(error) {
+                    console.log(error);
+                    // If there's no JSON response we assume it meant there was
+                    // no results. This isn't really true, but the server doesn't
+                    // have a good JSON API.
+                    if (queryId == self.queryId)
+                        self.issues = [];
+                }).either(function() {
+                    if (queryId == self.queryId)
+                        self.sending = false;
+                });
+            }
+        });
+    </script>
+</polymer-element>

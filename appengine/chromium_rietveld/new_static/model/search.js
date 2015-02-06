@@ -9,7 +9,7 @@ function Search()
 }
 
 Search.USER_URL = "/account?limit={1}&q={2}";
-Search.ISSUE_URL = "/search?format=json&closed={1}&owner={2}&reviewer={3}&limit={4}&cursor={5}";
+Search.ISSUE_URL = "/search?format=json&closed={1}&owner={2}&reviewer={3}&cc={4}&order={5}&limit={6}&cursor={7}";
 Search.DEFAULT_LIMIT = 10;
 
 Search.findUsers = function(query, limit)
@@ -38,10 +38,19 @@ Search.findIssues = function(query, limit)
     if (query.hasOwnProperty("closed"))
         closed = query.closed ? 1 : 2;
 
+    if (query.order && query.order != "descending" && query.order != "ascending")
+        throw new Error("Order must be one of 'ascending' or 'descending'.");
+
+    var sort = query.sort || "";
+    if (sort && query.order == "descending")
+        sort = "-" + sort;
+
     var url = Search.ISSUE_URL.assign(
         encodeURIComponent(closed),
         encodeURIComponent(query.owner || ""),
         encodeURIComponent(query.reviewer || ""),
+        encodeURIComponent(query.cc || ""),
+        encodeURIComponent(sort),
         encodeURIComponent(Number(limit) || Search.DEFAULT_LIMIT),
         encodeURIComponent(query.cursor || ""));
 

@@ -3594,6 +3594,8 @@ def search(request):
   Returns HTTP 500 if the corresponding index is missing.
   """
   if request.method == 'GET':
+    if _use_new_ui(request) and request.GET.get('format') != 'json':
+      return _serve_new_ui(request)
     form = SearchForm(request.GET)
     if not form.is_valid() or not request.GET:
       return respond(request, 'search.html', {'form': form})

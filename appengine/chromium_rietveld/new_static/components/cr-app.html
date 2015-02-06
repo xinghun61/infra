@@ -41,6 +41,7 @@ found in the LICENSE file. -->
 
 <link rel="import" href="../views/cr-inbox-view.html">
 <link rel="import" href="../views/cr-issue-view.html">
+<link rel="import" href="../views/cr-search-view.html">
 <link rel="import" href="../views/cr-settings-view.html">
 <link rel="import" href="../views/cr-user-view.html">
 
@@ -131,12 +132,14 @@ found in the LICENSE file. -->
                 <a class="bug-report"
                    href="https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Area-Rietveld"
                    target="_blank">Report a bug</a>
+                <a href="/search" class="search-link">Search</a>
                 <a href="/settings" class="settings-link">Settings</a>
                 <cr-action on-tap="{{ handleLogin }}" class="login-link" white>Login</cr-action>
             </div>
         </header>
         <app-router id="router" trailingSlash="ignore">
             <app-route path="/" element="cr-inbox-view"></app-route>
+            <app-route path="/search" element="cr-search-view"></app-route>
             <app-route path="/settings" element="cr-settings-view"></app-route>
             <app-route path="/user/:username" element="cr-user-view"></app-route>
             <app-route path="/:issueId" element="cr-issue-view"></app-route>
@@ -161,7 +164,8 @@ found in the LICENSE file. -->
                 self.$.router.go();
             },
             handleNavigate: function(event) {
-                if (window.location.pathname != event.detail.url)
+                var currentUrl = window.location.pathname + window.location.search + window.location.hash;
+                if (currentUrl != event.detail.url)
                     window.history.pushState(null, null, event.detail.url);
                 this.$.router.go();
             },
