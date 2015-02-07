@@ -28,6 +28,15 @@ User.LOGIN_REDIRECT_URL = "https://www.google.com/accounts/ServiceLogin?service=
 User.current = null;
 User.currentPromise = null;
 
+(function() {
+    // Take the user information provided by the server in the initial request
+    // if it's available.
+    if (window.INITIAL_USER_DATA) {
+        var data = window.INITIAL_USER_DATA;
+        User.current = new User(data.name, data.email, "me");
+    }
+})();
+
 User.parseCurrentUser = function(document)
 {
     if (!document.body)
@@ -53,7 +62,7 @@ User.loadCurrentUser = function(options)
 {
     if (User.currentPromise)
         return User.currentPromise;
-    if (options && options.cached && User.current)
+    if (options && options.cached)
         return Promise.resolve(User.current);
     User.currentPromise = loadDocument(User.CURRENT_USER_URL).then(function(document) {
         return User.parseCurrentUser(document);

@@ -149,7 +149,7 @@ found in the LICENSE file. -->
         Polymer({
             attached: function() {
                 var self = this;
-                User.loadCurrentUser().then(function() {
+                User.loadCurrentUser({cached:true}).then(function() {
                     self.classList.add("login");
                 }).catch(function(e) {
                     self.classList.add("no-login");
