@@ -44,7 +44,7 @@
 .text {
     white-space: pre-wrap;
     word-wrap: break-word;
-    font-family: Monaco, monospace;
+    font-family: Menlo, Monaco, monospace;
     flex-shrink: 0;
 }
 
