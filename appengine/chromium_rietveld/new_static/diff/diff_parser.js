@@ -13,12 +13,29 @@ function DiffParser(text)
 DiffParser.HEADER_BEGIN = "Index: ";
 DiffParser.TEXT_HEADER_END = "+++ ";
 DiffParser.BINARY_HEADER_END = "Binary files ";
-DiffParser.PNG_SUFFIX = ".png";
 DiffParser.COPY_FROM_PREFIX = "copy from ";
 DiffParser.COPY_TO_PREFIX = "copy to ";
 DiffParser.RENAME_FROM_PREFIX = "rename from ";
 DiffParser.RENAME_TO_PREFIX = "rename to ";
 DiffParser.HEADER_PATTERN = /^@@ \-(\d+),[^+]+\+(\d+)(,\d+)? @@ ?(.*)/;
+DiffParser.IMAGE_EXTENSIONS = {
+    "png": true,
+    "jpeg": true,
+    "jpg": true,
+    "webp": true,
+    "bmp": true,
+    "gif": true,
+};
+
+DiffParser.isImageFile = function(name)
+{
+    var index = name.lastIndexOf(".");
+    // Dot files are not images.
+    if (index <= 0)
+        return false;
+    var extension = name.from(index + 1);
+    return DiffParser.IMAGE_EXTENSIONS[extension];
+};
 
 DiffParser.prototype.peekLine = function()
 {
@@ -177,7 +194,7 @@ DiffParser.prototype.parse = function()
         var groups = this.parseFile();
         result.push({
             name: name,
-            isImage: name.endsWith(DiffParser.PNG_SUFFIX),
+            isImage: DiffParser.isImageFile(name),
             from: header.from,
             to: header.to,
             external: header.from && groups.length == 1,

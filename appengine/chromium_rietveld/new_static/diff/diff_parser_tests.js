@@ -5,6 +5,16 @@
 "use strict";
 
 describe("DiffParser", function() {
+    it("should detect image file names", function() {
+        expect(DiffParser.isImageFile("foo.png")).toBeTruthy();
+        expect(DiffParser.isImageFile("foo.bar.jpeg")).toBeTruthy();
+        expect(DiffParser.isImageFile("foo(baz).jpg")).toBeTruthy();
+        expect(DiffParser.isImageFile("_foo_.webp")).toBeTruthy();
+        expect(DiffParser.isImageFile("example-file-name.bmp")).toBeTruthy();
+        expect(DiffParser.isImageFile("is a. gif.gif")).toBeTruthy();
+        expect(DiffParser.isImageFile(".gif")).toBeFalsy();
+        expect(DiffParser.isImageFile("not a gif.gif.txt")).toBeFalsy();
+    });
     it("should not show context link for file deletes", function() {
         var text =
             "Index: example.cc\n" +
