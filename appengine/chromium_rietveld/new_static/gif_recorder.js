@@ -22,32 +22,18 @@ function GifRecorder(options)
     this.context = canvas.getContext("2d");
 }
 
-GifRecorder.ACTUAL_WORKER_URL = "bower_components/gif.js/dist/gif.worker.js";
-GifRecorder.WORKER_URL = null;
+GifRecorder.WORKER_URL = "new_static/bower_components/gif.js/dist/gif.worker.js";
 
-// TODO(esprehn): This is all a hack since workers don't allow loading from chrome-extension:// urls.
-GifRecorder.loadWorkerUrl = function()
+GifRecorder.prototype.ensureEncoder = function()
 {
-    if (GifRecorder.WORKER_URL)
-        return Promise.resolve(GifRecorder.WORKER_URL);
-    return loadText(GifRecorder.ACTUAL_WORKER_URL).then(function(text) {
-        var blob = new Blob([text], {type: "text/javascript"});
-        GifRecorder.WORKER_URL = URL.createObjectURL(blob);
-        return GifRecorder.WORKER_URL;
-    });
-};
-
-GifRecorder.prototype.createEncoder = function()
-{
-    var self = this;
-    return GifRecorder.loadWorkerUrl().then(function() {
-        self.encoder = new GIF({
-            workers: self.workers,
-            workerScript: GifRecorder.WORKER_URL,
-            width: self.width,
-            height: self.height,
-            quality: self.quality,
-        });
+    if (this.encoder)
+        return;
+    this.encoder = new GIF({
+        workers: this.workers,
+        workerScript: GifRecorder.WORKER_URL,
+        width: this.width,
+        height: this.height,
+        quality: this.quality,
     });
 };
 
@@ -106,8 +92,8 @@ GifRecorder.prototype.encodeImageData = function(blob)
 
 GifRecorder.prototype.record = function()
 {
-    return this.createEncoder()
-        .then(this.captureFrames.bind(this))
+    this.ensureEncoder();
+    return this.captureFrames()
         .then(this.renderFrames.bind(this))
         .then(this.encodeImageData.bind(this));
 };
