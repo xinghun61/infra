@@ -24,6 +24,7 @@ User.ISSUES_OPEN_PATTERN = /issues created: (\d+)/;
 User.ISSUES_REVIEW_PATTERN = /issues reviewed: (\d+)/;
 User.XSRF_TOKEN_PATTERN = /xsrfToken = '([^']+)';/;
 User.LOGIN_REDIRECT_URL = "https://www.google.com/accounts/ServiceLogin?service=ah&passive=true&continue=https://appengine.google.com/_ah/conflogin%3Fcontinue%3D{1}&ltmpl=gm";
+User.LOGOUT_REDIRECT_URL = "{1}/_ah/logout?continue=https://www.google.com/accounts/Logout%3Fcontinue%3Dhttps://appengine.google.com/_ah/logout%253Fcontinue%253D{2}";
 
 User.current = null;
 User.currentPromise = null;
@@ -75,6 +76,13 @@ User.loadCurrentUser = function(options)
 User.getLoginUrl = function()
 {
     return User.LOGIN_REDIRECT_URL.assign(encodeURIComponent(location.href));
+};
+
+User.getLogoutUrl = function()
+{
+    return User.LOGOUT_REDIRECT_URL.assign(
+        location.origin,
+        encodeURIComponent(location.href));
 };
 
 User.forName = function(name, email)

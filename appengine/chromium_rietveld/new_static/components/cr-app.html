@@ -107,19 +107,6 @@ found in the LICENSE file. -->
             app-route {
                 display: none;
             }
-
-            .view-links .login-link,
-            .view-links .settings-link {
-                display: none;
-            }
-
-            :host-context(.login) .settings-link {
-                display: block;
-            }
-
-            :host-context(.no-login) .login-link {
-                display: block;
-            }
         </style>
         <header>
             <div class="title">
@@ -133,8 +120,17 @@ found in the LICENSE file. -->
                    href="https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Area-Rietveld"
                    target="_blank">Report a bug</a>
                 <a href="/search" class="search-link">Search</a>
-                <a href="/settings" class="settings-link">Settings</a>
-                <cr-action on-tap="{{ handleLogin }}" class="login-link" white>Login</cr-action>
+                <template if="{{ user }}">
+                    <a href="/settings">Settings</a>
+                </template>
+                <cr-action on-tap="{{ handleLogin }}" white>
+                    <template if="{{ user }}">
+                        Logout
+                    </template>
+                    <template if="{{ !user }}">
+                        Login
+                    </template>
+                </cr-action>
             </div>
         </header>
         <app-router id="router" trailingSlash="ignore">
@@ -147,6 +143,9 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer({
+            created: function() {
+                this.user = User.current;
+            },
             attached: function() {
                 var self = this;
                 User.loadCurrentUser({cached:true}).then(function() {
@@ -162,7 +161,10 @@ found in the LICENSE file. -->
                 this.$.router.go();
             },
             handleLogin: function() {
-                window.location.href = User.getLoginUrl();
+                if (this.user)
+                    location.href = User.getLogoutUrl();
+                else
+                    location.href = User.getLoginUrl();
             },
         });
     </script>
