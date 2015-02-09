@@ -202,6 +202,7 @@ class BucketAcl(ndb.Model):
       validate_group_name(rule.group)
 
 
+@ndb.non_transactional
 def has_any_of_roles(bucket, roles, identity=None):
   """True if |identity| has any of |roles| in |bucket|."""
   validate_bucket_name(bucket)
