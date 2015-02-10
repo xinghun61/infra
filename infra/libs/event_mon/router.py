@@ -4,6 +4,7 @@
 
 import Queue
 import logging
+import requests
 import threading
 import time
 
@@ -26,10 +27,9 @@ class _Router(object):
   ... fill in event ...
   router.push_event(event)
   """
-  def __init__(self, dry_run=True):
-    # dry_run is meant for local testing and unit testing. When True, this
-    # object should have no side effect.
-    self.dry_run = dry_run
+  def __init__(self, endpoint=None):
+    # endpoint == None means 'dry run'. No data is sent.
+    self.endpoint = endpoint
 
     self.event_queue = Queue.Queue()
     self._thread = threading.Thread(target=self._router)
@@ -44,10 +44,11 @@ class _Router(object):
 
       # Set this time at the very last moment
       events.request_time_ms = time_ms()
-
-      if not self.dry_run:  # pragma: no cover
-        # TODO(pgervais): Actually do something
-        pass
+      if self.endpoint:  # pragma: no cover
+        # TODO(pgervais): log when something fails.
+        requests.post(self.endpoint, data=events.SerializeToString())
+      else:
+        print('fake post request')
 
   def close(self, timeout=None):
     """
@@ -80,8 +81,9 @@ class _Router(object):
                     % str(type(event)))
       return False
 
-    # Dumb implementation, can be made more sophisticated (batching)
-    request = LogRequestLite()
-    request.log_event.extend((event,))  # copies the protobuf
-    self.event_queue.put(request)
+    # TODO(pgervais): implement batching.
+    request_p = LogRequestLite()
+    request_p.log_source_name = 'CHROME_INFRA'
+    request_p.log_event.extend((event,))  # copies the protobuf
+    self.event_queue.put(request_p)
     return True

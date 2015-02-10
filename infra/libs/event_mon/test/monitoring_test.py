@@ -14,8 +14,8 @@ class MonitoringTest(unittest.TestCase):
   def _set_up_args(self, args=None):
     parser = argparse.ArgumentParser()
     event_mon.add_argparse_options(parser)
-    args = parser.parse_args((args or []) + ['--event-mon-dry-run', 'True'])
-    self.assertEquals(args.event_mon_dry_run, True)
+    args = parser.parse_args((args or []))
+    self.assertEquals(args.event_mon_run_type, 'dry')
     event_mon.process_argparse_options(args)
     self.assertIsInstance(config._router, router._Router)
 

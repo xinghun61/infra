@@ -17,9 +17,11 @@ cache = {}
 
 def add_argparse_options(parser):
   # The default values should make sense for local testing, not production.
-  parser.add_argument('--event-mon-dry-run', type=bool, default=True,
-                      help='Whether events should be sent to the remote '
-                      'server.')
+  parser.add_argument('--event-mon-run-type', default='dry',
+                      choices=('dry', 'test', 'prod'),
+                      help='Determine how to send data. "dry" does not send'
+                      ' anything. "test" sends to the test endpoint, and '
+                      '"prod" to the actual production endpoint.')
   parser.add_argument('--event-mon-service-name',
                       help='Service name to use in log events.')
   parser.add_argument('--event-mon-hostname',
@@ -45,7 +47,13 @@ def add_argparse_options(parser):
 def process_argparse_options(args):
   global _router
   if not _router:
-    _router = _Router(dry_run=args.event_mon_dry_run)
+    ENDPOINTS = {
+      'dry': None,
+      'test': 'https://jmt17.google.com/log',
+      'prod': 'https://play.googleapis.com/log',
+      }
+    endpoint = ENDPOINTS.get(args.event_mon_run_type)
+    _router = _Router(endpoint=endpoint)
 
     default_event = ChromeInfraEvent()
 

@@ -41,7 +41,7 @@ def send_service_event(event_type,
   if timestamp_kind:
     event.timestamp_kind = getattr(ChromeInfraEvent, timestamp_kind)
 
-  # TODO: Serialize protobuf here.
   log_event = LogRequestLite.LogEventLite()
   log_event.event_time_ms = event_timestamp or router.time_ms()
+  log_event.source_extension = event.SerializeToString()
   return config._router.push_event(log_event)

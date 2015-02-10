@@ -11,11 +11,11 @@ from infra.libs.event_mon.log_request_lite_pb2 import LogRequestLite
 class RouterTests(unittest.TestCase):
   def test_smoke(self):
     # Use dry_run to avoid code that deals with http (including auth).
-    r = router._Router(dry_run=True)
+    r = router._Router(endpoint=None)
     self.assertTrue(r.close())
 
   def test_push_smoke(self):
-    r = router._Router(dry_run=True)
+    r = router._Router(endpoint=None)
 
     req = LogRequestLite.LogEventLite()
     req.event_time_ms = router.time_ms()
@@ -25,6 +25,6 @@ class RouterTests(unittest.TestCase):
     self.assertTrue(r.close())
 
   def test_push_error_handling(self):
-    r = router._Router(dry_run=True)
+    r = router._Router(endpoint=None)
     r.push_event(None)
     self.assertTrue(r.close())
