@@ -19,7 +19,9 @@
     -webkit-user-select: none;
     cursor: default;
     white-space: nowrap;
-    vertical-align: middle;
+    vertical-align: baseline;
+    display: table-cell;
+    padding: 1.3em 16px;
 }
 
 .form-label-textarea {
@@ -32,7 +34,6 @@
     vertical-align: top;
 }
 
-.form-label,
 .form-field {
     display: table-cell;
     padding: 1em 16px;
