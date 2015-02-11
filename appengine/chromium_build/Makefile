@@ -38,53 +38,50 @@ VERSION_TAG= `git show --format='%h' --no-patch`$(dirty)
 VERSION?= `git show --format='%h' --no-patch`$(dirty)
 
 PYTHON?= python2.7
-COVERAGE?= coverage
-VULCANIZE?= ./node_modules/vulcanize/bin/vulcanize
-VULCANIZE_FLAGS?= --inline
 
 NPM_VERSION := $(shell npm --version 2>/dev/null)
+# APP_VERSIONS := $(shell $(APPCFG) $(APPCFG_FLAGS) list_versions . 2>/dev/null 1>&2)
+APP_VERSIONS := $(shell $(APPCFG) $(APPCFG_FLAGS) list_versions -q . 2>/dev/null 0</dev/null)
 
 default: help
 
-check:
-ifndef NPM_VERSION
-	$(error npm not found. Install from nodejs.org or see README)
-endif
+# TODO(???): Nice to have: test that appcfg.py list_versions fails and tell the
+#            how to get a credential.
+# verify_permission:
+# ifndef APP_VERSIONS
+# 	$(error \"$(APPCFG) $(APPCFG_FLAGS list_versions .\" failed.  Please run with \"$(APPCFG) $(APPCFG_FLAGS) list_versions . --noauth_local_webserver\" and try again.)
+# endif
 
 help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_.]*:/s/:.*//p' <Makefile | sort
 
-vulcanize: check
-	mkdir -p ./gen
-	$(VULCANIZE) $(VULCANIZE_FLAGS) new_static/components/cr-app.html -o new_static/components/cr-app.vulcanized.html
-
 run: serve
-
-serve: update_revision vulcanize
-	@echo "---[Starting SDK AppEngine Server]---"
-	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) .
-
-serve_remote: update_revision vulcanize
-	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) --host 0.0.0.0  --admin_host 0.0.0.0 .
 
 update_revision:
 	@echo "---[Updating REVISION]---"
 	@echo "$(VERSION_TAG)" >REVISION
 
-update: update_revision vulcanize
+serve: update_revision
+	@echo "---[Starting SDK AppEngine Server]---"
+	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) .
+
+serve_remote: update_revision
+	$(DEV_APPSERVER) $(DEV_APPSERVER_FLAGS) --host 0.0.0.0  --admin_host 0.0.0.0 .
+
+update: update_revision
 	@echo "---[Updating $(APPID)]---"
-	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(APPID) --version $(VERSION)
+	$(APPCFG) $(APPCFG_FLAGS) update . --application $(APPID) --version $(VERSION)
 
 upload: update
 
 deploy: update
 
 update_indexes:
-	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --oauth2 --application $(APPID)
+	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --application $(APPID)
 
 vacuum_indexes:
-	$(APPCFG) $(APPCFG_FLAGS) vacuum_indexes . --oauth2 --application $(APPID)
+	$(APPCFG) $(APPCFG_FLAGS) vacuum_indexes . --application $(APPID)
 
 # This target should only be run from within appengine/chromium_build/.
 test:
@@ -96,7 +93,7 @@ test:
 # that might clutter the real datastore.
 stage: update_revision
 	@echo "---[Staging $(STAGEID)]---"
-	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(STAGEID) --version $(VERSION)
+	$(APPCFG) $(APPCFG_FLAGS) update . --application $(STAGEID) --version $(VERSION)
 
 stage_indexes:
-	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --oauth2 --application $(STAGEID)
+	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --application $(STAGEID)
