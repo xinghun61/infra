@@ -14,7 +14,6 @@ import string
 import urllib
 
 from google.appengine.api import files, memcache, urlfetch
-from google.appengine.api.app_identity import get_application_id
 from google.appengine.ext import blobstore, db, deferred
 # F0401: 16,0: Unable to import 'webapp2_extras'
 # W0611: 16,0: Unused import jinja2
@@ -29,9 +28,6 @@ from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup, Tag
 
 # pylint: disable=no-value-for-parameter
 
-
-# Current application name.
-APP_NAME = get_application_id()
 
 # Deadline for fetching URLs (in seconds).
 URLFETCH_DEADLINE = 60*5  # 5 mins
@@ -52,7 +48,8 @@ DEFAULT_MASTERS_TO_MERGE = [
 console_template = ''
 def bootstrap():
   global console_template
-  with open('templates/merger.html', 'r') as fh:
+  merger_file = os.path.join(os.path.dirname(__file__), 'templates/merger.html')
+  with open(merger_file, 'r') as fh:
     console_template = fh.read()
 
 
@@ -408,6 +405,11 @@ def console_merger(localpath, remoteurl, page_data,
   surroundings = get_and_cache_pagedata('surroundings')
   merged_page = BeautifulSoup(surroundings['content'])
   merged_tag = merged_page.find('table', 'ConsoleData')
+  if merged_tag is None:
+    msg = 'console_merger("%s", "%s", "%s"): merged_tag cannot be None.' % (
+          localpath, remoteurl, page_data)
+    logging.error(msg)
+    raise Exception(msg)
   latest_rev = int(get_and_cache_rowdata('latest_rev')['rev_number'])
   if not latest_rev:
     logging.error('console_merger(\'%s\', \'%s\', \'%s\'): cannot get latest '
@@ -481,10 +483,10 @@ def console_merger(localpath, remoteurl, page_data,
   # Place merged data at |merged_tag|'s location in |merged_page|, and put the
   # result in |merged_content|.
   merged_tag.replaceWith(str(merged_content))
-  # .prettify() may damage the HTML but makes output more nice.  However, that
+  # .prettify() may damage the HTML but makes output nicer.  However, that
   # cost is a bunch of extra whitespace.  We reduce page size by not using
   # .prettify().
-  merged_content = str(merged_page)
+  merged_content = merged_page.__str__(encoding=None)
   merged_content = re.sub(
       r'\'\<a href="\'', '\'<a \' + attributes + \' href="\'', merged_content)
   merged_content = re.sub(
@@ -657,11 +659,25 @@ def console_handler(unquoted_localpath, remoteurl, page_data=None):
 
 
 def get_position_number(commit_msg):
+  # Cr-Commit-Position should exist at least once in the commit message, but can
+  # exist more than once.  Reverts are examples of commits which can contain
+  # multiple Cr-Commit-Position instances.  In those cases, only the last one
+  # is correct, so split on the break tag and reverse the result to find the
+  # last occurrence of Cr-Commit-Position.
   for line in reversed(commit_msg.split('<br />')):
-    logging.debug(line)
     if line.startswith('Cr-Commit-Position: '):
       return filter(str.isdigit, str(line.split('@')[-1]))
   return '0'
+
+
+def utf8_convert(bstring):
+  # cmp also investigated:
+  #   bstring.__str__(encoding='utf-8').decode('utf-8')
+  # He found that the BeautifulSoup() __str__ method when used with a 'utf-8'
+  # encoding returned effectively the same thing as str(), a Python built-in.
+  # After a handful of tests, he switched to using str() to avoid the add'l
+  # complexity of another BeautifulSoup method.
+  return str(bstring).decode('utf-8')
 
 
 # W0613:600,28:parse_master: Unused argument 'remoteurl'
@@ -683,6 +699,8 @@ def parse_master(localpath, remoteurl, page_data=None):
   # Split page into surroundings (announce, legend, footer) and data (rows).
   surroundings = BeautifulSoup(content)
   data = surroundings.find('table', 'ConsoleData')
+  if data is None:
+    raise Exception('parse_master: data can not be None')
   new_data = Tag(surroundings, 'table', [('class', 'ConsoleData'),
                                          ('width', '96%')])
   data.replaceWith(new_data)
@@ -691,9 +709,8 @@ def parse_master(localpath, remoteurl, page_data=None):
                                          None, maxage=30)
   surroundings_data = {}
   surroundings_data['title'] = 'Surroundings'
-  surroundings_data['content'] = unicode(surroundings)
-  save_page(surroundings_page, 'surroundings', ts,
-            surroundings_data)
+  surroundings_data['content'] = utf8_convert(surroundings)
+  save_page(surroundings_page, 'surroundings', ts, surroundings_data)
 
   rows = data.findAll('tr', recursive=False)
   # The first table row can be special: the list of categories.
@@ -710,17 +727,17 @@ def parse_master(localpath, remoteurl, page_data=None):
                                        None, maxage=30)
     category_data = {}
     category_data['title'] = 'Categories for ' + localpath
-    category_data['content'] = unicode(categories)
+    category_data['content'] = utf8_convert(categories)
     save_page(category_page, localpath + '/categories', ts, category_data)
 
-  # The next table row is special: it's the summary one-box-per-builder.
+  # The next table row is special, it's the summary one-box-per-builder.
   summary = rows[0]
   rows = rows[1:]
 
   summary_page = get_or_create_page(localpath + '/summary', None, maxage=30)
   summary_data = {}
   summary_data['title'] = 'Summary for ' + localpath
-  summary_data['content'] = unicode(summary)
+  summary_data['content'] = utf8_convert(summary)
   save_page(summary_page, localpath + '/summary', ts, summary_data)
 
   curr_row = {}
@@ -729,17 +746,18 @@ def parse_master(localpath, remoteurl, page_data=None):
   # or a spacer row (in which case we finalize the row and save it).
   for row in rows:
     if row.find('td', 'DevComment'):
-      curr_row['comment'] = ''.join(unicode(tag).strip() for tag in
-                                    row.td.contents)
+      curr_row['comment'] = ''.join(utf8_convert(tag).strip()
+                                    for tag in row.td.contents)
     elif row.find('td', 'DevDetails'):
-      curr_row['details'] = ''.join(unicode(tag).strip() for tag in
-                                    row.td.contents)
+      curr_row['details'] = ''.join(utf8_convert(tag).strip()
+                                    for tag in row.td.contents)
     elif row.find('td', 'DevStatus'):
-      curr_row['rev'] = unicode(row.find('td', 'DevRev').a)
-      curr_row['name'] = ''.join(unicode(tag).strip() for tag in
-                                 row.find('td', 'DevName').contents)
-      curr_row['status'] = ''.join(unicode(box.table) for box in
-                                   row.findAll('td', 'DevStatus'))
+      curr_row['rev'] = ''.join(utf8_convert(tag).strip()
+                                for tag in row.find('td', 'DevRev').contents)
+      curr_row['name'] = ''.join(utf8_convert(tag).strip()
+                                 for tag in row.find('td', 'DevName').contents)
+      curr_row['status'] = ''.join(utf8_convert(box.table).strip()
+                                   for box in row.findAll('td', 'DevStatus'))
     else:
       if 'details' not in curr_row:
         curr_row['details'] = ''

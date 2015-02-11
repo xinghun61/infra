@@ -1,0 +1,3105 @@
+<!<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="refresh" content="9999999999" />
+<title>BuildBot: Chromium Mac</title>
+<link rel="stylesheet" href="default.css" type="text/css" />
+<link rel="alternate" type="application/rss+xml" title="RSS" href="rss" />
+<script type="text/javascript">
+// <![CDATA[
+//
+
+//
+// Functions used to display the build status bubble on box click.
+//
+
+// show the build status box. This is called when the user clicks on a block.
+function showBuildBox(url, event) {
+    //  Find the current curson position.
+    var cursorPosTop = (window.event ? window.event.clientY : event.pageY)
+    var cursorPosLeft = (window.event ? window.event.clientX : event.pageX)
+
+    // Offset the position by 5, to make the window appears under the cursor.
+    cursorPosTop  = cursorPosTop  + document.body.scrollTop -5 ;    
+    cursorPosLeft = cursorPosLeft  + document.body.scrollLeft - 5;
+
+    // Move the div (hidden) under the cursor.
+    var divBox = document.getElementById('divBox');
+    divBox.style.top = parseInt(cursorPosTop) + 'px';
+    divBox.style.left = parseInt(cursorPosLeft) + 'px';
+
+    // Reload the hidden frame with the build page we want to show.
+    // The onload even on this frame will update the div and make it visible.
+    document.getElementById("frameBox").src = url
+    
+    // We don't want to reload the page.
+    return false;
+}
+
+// OnLoad handler for the iframe containing the build to show.
+function updateDiv(event) { 
+    // Get the frame innerHTML.
+    var iframeContent = document.getElementById("frameBox").contentWindow.document.body.innerHTML;
+
+    // If there is any content, update the div, and make it visible.
+    if (iframeContent) {
+        var divBox = document.getElementById('divBox'); 
+        divBox.innerHTML = iframeContent ;
+        divBox.style.display = "block";
+    }
+} 
+
+// Util functions to know if an element is contained inside another element.
+// We use this to know when we mouse out our build status div.
+function containsDOM (container, containee) {
+    var isParent = false;
+    do {
+        if ((isParent = container == containee))
+            break;
+        containee = containee.parentNode;
+    } while (containee != null);
+
+    return isParent;
+}
+
+// OnMouseOut handler. Returns true if the mouse moved out of the element.
+// It is false if the mouse is still in the element, but in a blank part of it,
+// like in an empty table cell.
+function checkMouseLeave(element, event) {
+  if (element.contains && event.toElement) {
+    return !element.contains(event.toElement);
+  }
+  else if (event.relatedTarget) {
+    return !containsDOM(element, event.relatedTarget);
+  }
+}
+
+// Creates a new cookie.
+function createCookie(name, value, day) {
+    var date = new Date();
+    date.setTime(date.getTime() + (day * 24 * 60 * 60 * 1000));
+    var expires = "; expires=" + date.toGMTString();
+    document.cookie = name + "=" + value+expires + "; path=/";
+}
+
+// Returns the vaue of a cookie, or null if it does not exist.
+function readCookie(name) {
+    var begin = name + "=";
+    var data = document.cookie.split(';');
+    for(var i = 0; i < data.length; i++) {
+        var cookie = data[i];
+        while (cookie.charAt(0) == ' ')
+            cookie = cookie.substring(1, cookie.length);
+        if (cookie.indexOf(begin) == 0)
+            return cookie.substring(begin.length, cookie.length);
+    }
+
+    return null;
+}
+
+// Deletes a cookie.
+function eraseCookie(name) {
+    createCookie(name, "", -1);
+}
+
+// Hides all "details" and "comments" section.
+function collapse() {
+    // Hide all Comments sections.
+    var comments = document.querySelectorAll('.DevComment');
+    for(var i = 0; i < comments.length; i++) {
+        comments[i].style.display = "none";
+    }
+
+    // Hide all details sections.
+    var details = document.querySelectorAll('.DevDetails');
+    for(var i = 0; i < details.length; i++) {
+        details[i].style.display = "none";
+    }
+
+    // Fix the rounding on the Revision box. (Lower right corner must be round)
+    var revisions = document.querySelectorAll('.DevRev');
+    for(var i = 0; i < revisions.length; i++) {
+      revisions[i].className = revisions[i].className + ' DevRevCollapse';
+    }
+
+    // Fix the rounding on the last category box. (Lower left corner must be round)
+    var status = document.querySelectorAll('.last');
+    for(var i = 0; i < status.length; i++) {
+        status[i].className = status[i].className + ' DevStatusCollapse';
+    }
+
+    // Create a cookie to remember that we want the view to be collapsed.
+    createCookie('collapsed', 'true', 30)
+
+    // Hide the collapse and the unmerge buttons.
+    document.querySelectorAll('.collapse')[0].style.display = 'none'
+    document.querySelectorAll('.unmerge')[0].style.display = 'none'
+
+    // Activate the merge and expand buttons.
+    document.querySelectorAll('.uncollapse')[0].style.display = 'inline'
+    document.querySelectorAll('.merge')[0].style.display = 'inline'
+}
+
+// Expands the view. This is the opposite of "Collapse"
+function uncollapse() {
+    unmerge();
+
+    // Make the comments visible.
+    var comments = document.querySelectorAll('.DevComment');
+    for(var i = 0; i < comments.length; i++) {
+        comments[i].style.display = "";
+    }
+
+    // Make the details visible.
+    var details = document.querySelectorAll('.DevDetails');
+    for(var i = 0; i < details.length; i++) {
+        details[i].style.display = "";
+    }
+
+    // Remove the round corner (lower right) for the Revision box.
+    var revisions = document.querySelectorAll('.DevRev');
+    for(var i = 0; i < revisions.length; i++) {
+        revisions[i].className = revisions[i].className.replace('DevRevCollapse', '');
+    }
+
+    // Remoe the round corner (lower left) for the last category box.
+    var status = document.querySelectorAll('.DevStatus');
+    for(var i = 0; i < status.length; i++) {
+        status[i].className = status[i].className.replace('DevStatusCollapse', '');
+    }
+
+    // Delete the cookies that say that we want to be collapsed or merged.
+    eraseCookie('collapsed')
+    eraseCookie('merged')
+
+    // Display the "collapse" and "merge" buttons.
+    document.querySelectorAll('.collapse')[0].style.display = 'inline'
+    document.querySelectorAll('.merge')[0].style.display = 'inline'
+
+    // Remove the "uncollapse" and "unmerge" buttons.
+    document.querySelectorAll('.uncollapse')[0].style.display = 'none'
+    document.querySelectorAll('.unmerge')[0].style.display = 'none'
+}
+
+// Merge all the status boxes together.
+function merge() {
+    collapse();
+
+    // Hide all the spacing.
+    var spacing = document.querySelectorAll('.DevStatusSpacing');
+    for(var i = 0; i < spacing.length; i++) {
+        spacing[i].style.display = "none";
+    }
+
+    // Each boxes have, in the className, a tag that uniquely represents the
+    // build where this data comes from.
+    // Since we  want to merge all the boxes coming from the same build, we
+    // parse the document to find all the builds, and then, for each build, we
+    // concatenate the boxes.
+
+    var allTags = [];
+    all = document.getElementsByTagName('*')
+    for(var i = 0; i < all.length; i++) {
+        var element = all[i];
+        start = element.className.indexOf('Tag')
+        if (start != -1) {
+            var className = ""
+            end = element.className.indexOf(' ', start)
+            if (end != -1) {
+                className = element.className.substring(start, end);
+            } else {
+                className = element.className.substring(start);
+            }
+            allTags[className] = 1;
+        }
+    }
+
+    // Mergeall tags that we found
+    for (i in allTags) {
+        var current = document.querySelectorAll('.' + i);
+
+        // We do the work only if there is more than 1 box with the same
+        // build.
+        if (current.length > 1) {
+            // Add the noround class to all the boxes.
+            for(var i = 0; i < current.length; i++) {
+                current[i].className = current[i].className + ' noround';
+            }
+
+            // Add the begin class to the first box.
+            current[0].className = current[0].className + ' begin';
+
+            // Add the end class to the last box.
+            last = current.length - 1;
+            current[last].className = current[last].className + ' end';
+        }
+    }
+
+    // Display the "unmerge" button.
+    document.querySelectorAll('.unmerge')[0].style.display = 'inline'
+    document.querySelectorAll('.uncollapse')[0].style.display = 'inline'
+
+    // Remove the "merge" button.
+    document.querySelectorAll('.collapse')[0].style.display = 'none'
+    document.querySelectorAll('.merge')[0].style.display = 'none'
+
+    // Create a cookie to remember that we want to be merged.
+    createCookie('merged', 'true', 30)
+}
+
+// Un-merge the view. This is the opposite of "merge".
+function unmerge() {
+    // We put back all the spacing.
+    var spacing = document.querySelectorAll('.DevStatusSpacing');
+    for(var i = 0; i < spacing.length; i++) {
+        spacing[i].style.display = "";
+    }
+
+    // We remove the class added to all the boxes we modified.
+    var noround = document.querySelectorAll('.noround');
+    for(var i = 0; i < noround.length; i++) {
+        noround[i].className = noround[i].className.replace("begin", '');
+        noround[i].className = noround[i].className.replace("end", '');
+        noround[i].className = noround[i].className.replace("noround", '');
+    }
+
+    // Delete the cookie, we don't want to be merged anymore.
+    eraseCookie('merged')
+
+    // Display the "merge" button.
+    document.querySelectorAll('.merge')[0].style.display = 'inline'
+
+    // Hide the "unmerge" button.
+    document.querySelectorAll('.unmerge')[0].style.display = 'none'
+}
+
+function SetupView() {
+    if (readCookie('merged')) {
+        merge();
+    } else if (readCookie('collapsed')) {
+        collapse();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", SetupView, false);
+
+// ]]> 
+</script>
+</head>
+<body class="interface">
+<div class="header">
+<a href=".">Home</a>
+        - <a href="waterfall">Waterfall</a>
+<a href="grid">Grid</a>
+<a href="tgrid">T-Grid</a>
+<a href="console">Console</a>
+<a href="builders">Builders</a>
+<a href="one_line_per_build">Recent Builds</a>
+<a href="buildslaves">Buildslaves</a>
+<a href="changes">Changesources</a>
+        - <a href="json/help">JSON API</a>
+        - <a href="about">About</a>
+</div>
+<hr />
+<script>
+  /**
+   * Pseudo namespace for chromium - keep it short because we are in a very
+   * narrow scope for this file.
+   * @type {Object}
+   */
+  var c = {};
+
+  /**
+   * Replaces html references with anchor tags to the same.
+   * @param {String} className CSS class to operate on.
+   */
+  function autoLink(className) {
+    var comments = document.querySelectorAll(className);
+    for(var i = 0; i < comments.length; i++) {
+      comments[i].innerHTML = comments[i].innerHTML.replace(
+          /https?:\/\/[^ \t\n<]*/g, '<a href="$&">$&</a>');
+    }
+  };
+
+  window.addEventListener("load", function() {
+    autoLink('.DevComment');
+  }, false);
+
+  /**
+   * This is the indicator for whether we are in console or waterfall
+   * mode, or some future resource.
+   * @type {String}
+   */
+  c.viewtype = location.pathname.split('/').slice(-1);
+
+  /**
+   * Returns a search string portion including marker, or an empty string.
+   * optional.
+   * @param {String} opt_s A search string, or some form of emptiness.
+   * @returns {!String}
+   */
+  function search(opt_s) {
+    return opt_s ? '?' + opt_s.replace(/^[?]/, '') : '';
+  };
+
+  /**
+   * Replicates a string.
+   * @param {Number} i A whole number of repetitions.
+   * @param {String} x The string to be repeated.
+   * @returns {!String}
+   */
+  function repeat(i, x){
+    var t = ''
+    for (j = 0; j < i; j++) { t += x; }
+    return t;
+  };
+
+  /**
+   * A simple HTML table string.
+   * @param {String} attributes A set of HTML attributes for the table.
+   * @param {String} contents The contents.
+   * @returns {!String}
+   */
+  function table(attributes, contents) {
+      return '<table ' + attributes + '>' + contents + '</table>\n';
+  };
+
+  /**
+   * A simple HTML div string.
+   * @param {String} attributes A set of HTML attributes for the div.
+   * @param {String} contents The contents.
+   * @returns {!String}
+   */
+  function div(attributes, contents) {
+    return '<div ' + attributes + '>' + contents + '</div>';
+  };
+
+  /**
+   * A simple HTML table row string.
+   * @param {String} attributes A set of HTML attributes for the table row.
+   * @param {String} contents The contents.
+   * @returns {!String}
+   */
+  function tr(contents) {
+    return '<tr>' + contents + '</tr>\n';
+  };
+
+  /**
+   * A simple HTML table cell string.
+   * @param {String} attributes A set of HTML attributes for the table cell.
+   * @param {String} contents The contents.
+   * @returns {!String}
+   */
+  function td(attributes, contents) {
+    return '<td ' + attributes + '>' + contents + '</td>';
+  };
+
+  /**
+   * A simple HTML anchor string.
+   * @param {String} url The value for the href.
+   * @param {String} attributes A set of HTML attributes for the table.
+   * @param {String} contents The contents.
+   * @returns {!String}
+   */
+  function a(url, contents, attributes) {
+    return '<a ' + attributes + ' href="' + url + '">' + contents + '</a>';
+  };
+
+  /**
+   * Gives an HTML anchor string to the specified URL, but of the same view
+   * type as the current page.
+   * @param {String} url The URL portion up to the view.
+   * @param {String} search_opt A the query portion.
+   * @param {String} contents The contents for the tag.
+   * @returns {!String}
+   */
+  function aView(url, search_opt, contents) {
+      return a((url ? url + '/' : '') + c.viewtype + search(search_opt),
+               contents, '')
+  };
+
+  /**
+   * A simple HTML iframe string.
+   * @param {String} attributes A set of HTML attributes for the table.
+   * @param {String} url The source of the iframe.
+   * @returns {!String} the iframe or an empty string if noframe is specified.
+   */
+  function iFrame(attributes, url) {
+      if (window.location.href.search('noframe') == -1) {
+          return '<iframe ' + attributes + ' src="' + url + '"></iframe>';
+      }
+      return ''
+  };
+</script>
+<div class="Announcement">
+<iframe width="100%" height="44" frameborder="0" scrolling="no" src="https://chromium-status.appspot.com/current"></iframe>
+<center style="padding: 0 7px">
+<table width="100%" valign="top" bgcolor="#efefef" style="-webkit-border-bottom-left-radius: 24px; -webkit-border-bottom-right-radius: 24px; -moz-border-bottom-right-radius: 24px; -moz-border-bottom-right-radius: 24px;   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6); -moz-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6); -webkit-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);">
+<tr>
+<td width="29%">
+<table valign="top" width="100%">
+<tr>
+<td style="text-align: right;">
+<b>Builds:</b>
+</td>
+<td>
+<a href="https://commondatastorage.googleapis.com/chromium-browser-continuous/index.html">continuous</a> |
+              <a href="https://build.chromium.org/f/chromium/symsrv/index.html">symbols</a> |
+              <a href="https://chromium-status.appspot.com">status</a> |
+              <a href="https://blink-status.appspot.com">blink status</a>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Dashboards:</b>
+</td>
+<td>
+<a href="https://chromeperf.appspot.com/">perf</a> |
+              <a href="https://chromeperf.appspot.com/report?tests=sizes">sizes</a> |
+              <a href="https://chromeperf.appspot.com/report?tests=endure">endure</a> |
+              <a href="http://build.chromium.org/f/chromium/coverage/">coverage</a> |
+              <a href="http://build.chromium.org/f/chromium/flakiness/">flakiness</a> |
+              <a href="https://build.chromium.org/p/chromium/stats">stats</a>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Chromium:</b>
+</td>
+<td>
+<a href="https://src.chromium.org/viewvc/chrome">sources</a> |
+              <a href="https://codereview.chromium.org/">reviews</a> |
+              <a href="https://code.google.com/p/chromium/issues/list?can=2&amp;q=&amp;sort=pri+mstone&amp;colspec=ID%20Stars%20Pri%20Area%20Type%20Status%20Summary%20Modified%20Owner%20Mstone">bugs</a> |
+              <a href="http://dev.chromium.org/Home">dev</a> |
+              <a href="https://www.google.com/support/chrome/">support</a>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Sheriffs:</b>
+</td>
+<td>
+              Chromium: <script src="https://chromium-build.appspot.com/p/chromium/sheriff.js"></script>;<br />
+              Android: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_android.js"></script>;
+              iOS: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_ios_europe.js"></script>, <script src="https://chromium-build.appspot.com/p/chromium/sheriff_ios_us.js"></script>;<br />
+              Cros: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_cros_mtv.js"></script>, <script src="https://chromium-build.appspot.com/p/chromium/sheriff_cros_nonmtv.js"></script>;
+              <a href="http://dev.chromium.org/developers/tree-sheriffs/chrome-in-chromeos-gardening">ChromeOS</a>: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_cr_cros_gardeners.js"></script>;<br />
+              GPU: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_gpu.js"></script>;
+              Memory: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_memory.js"></script>;
+              Perf: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_perf.js"></script>;<br />
+              Webkit: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_webkit.js"></script>;<br />
+              Nacl: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_nacl.js"></script>;
+              V8: <script src="https://chromium-build.appspot.com/p/chromium/sheriff_v8.js"></script>;<br />
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Trooper:</b>
+</td>
+<td>
+<script src="https://chromium-build.appspot.com/p/chromium/trooper.js"></script>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Masters:</b>
+</td>
+<td colspan="2">
+<script>
+              document.write([
+                a("../tryserver.chromium.gpu/waterfall", "tryserver.chromium.gpu", ""),
+                a("../tryserver.chromium.linux/waterfall", "tryserver.chromium.linux", ""),
+                a("../tryserver.chromium.mac/waterfall", "tryserver.chromium.mac", ""),
+                a("../tryserver.chromium.win/waterfall", "tryserver.chromium.win", ""),
+                a("../tryserver.blink/waterfall", "tryserver.blink", ""),
+                aView("../chromium.fyi", "", "chromium.fyi"),
+                aView("../chromium.memory", "", "chromium.memory"),
+                aView("../chromium.memory.fyi", "", "chromium.memory.fyi"),
+                aView("../chromium.chromiumos", "", "chromium.chromiumos"),
+                aView("../chromiumos", "", "chromiumos"),
+                aView("../client.nacl", "", "client.nacl"),
+                aView("../chromium.webkit", "", "chromium.webkit")].join(' | '));
+              </script>
+</td>
+</tr>
+<tr>
+<td style="text-align: right;">
+<b>Navigate:</b>
+</td>
+<td colspan="2">
+<script>
+              document.write([
+                a("http://dev.chromium.org/developers/testing/chromium-build-infrastructure/tour-of-the-chromium-buildbot", "about", ""),
+                a("./waterfall/help", "customize", ""),
+                a("./waterfall", "waterfall", ""),
+                a("./console", "console", ""),
+                a("./waterfall?show_events=true&failures_only=true", "failures", "")].join(' | '));
+              </script>
+</td>
+</tr>
+</table>
+</td>
+<td width="1" bgcolor="#CCCCCC">
+</td>
+<td width="1%">
+</td>
+<td width="70%">
+<table width="100%">
+<script language="javascript">
+            c.chromium = '';
+            c.win = '';
+            c.mac = '';
+            c.linux = '';
+            c.chromium_chromiumos = '';
+            c.memory = '';
+            c.memory_fyi = '';
+            c.perf = '';
+            c.cros = '';
+            c.chrome = '';
+            c.lkgr = '';
+            c.gpu = '';
+            c.gpu_fyi = '';
+
+            c.status = '../chromium';
+            c.status_win = '../chromium.win';
+            c.status_mac = '../chromium.mac';
+            c.status_linux = '../chromium.linux';
+            c.status_cros = '../chromium.chromiumos';
+            c.status_memory = '../chromium.memory';
+            c.status_memory_fyi = '../chromium.memory.fyi';
+            c.status_chrome = '../chromium.chrome';
+            c.status_perf = '../chromium.perf';
+            c.status_lkgr = '../chromium.lkgr';
+            c.status_gpu = '../chromium.gpu';
+            c.status_gpu_fyi = '../chromium.gpu.fyi';
+
+            /**
+             * Builds a reference for the iframe with boxes.
+             * @param {String} x the name of the waterfall.
+             * @param {?Array.<String>} opt_builders an optional array of
+             *   builder names to use as a filter.
+             * @returns {String} The URL.
+             */
+            function BarUrl(x, opt_builders) {
+              builders = '';
+              if (opt_builders) {
+                for (var ii = 0; ii < opt_builders.length; ++ii) {
+                  if (ii == 0) {
+                    builders += '?';
+                  } else {
+                    builders += '&';
+                  }
+                  builders += 'builder=' + encodeURIComponent(opt_builders[ii]);
+                }
+              }
+              return 'https://chromium-build.appspot.com/p/' + x +
+                     '/horizontal_one_box_per_builder' + builders;
+            }
+            c.bar = BarUrl('chromium')
+            c.bar_win = BarUrl('chromium.win');
+            c.bar_mac = BarUrl('chromium.mac');
+            c.bar_linux = BarUrl('chromium.linux');
+            c.bar_memory = BarUrl('chromium.memory');
+            c.bar_memory_fyi = BarUrl('chromium.memory.fyi');
+            c.bar_perf = BarUrl('chromium.perf');
+            c.bar_chrome = BarUrl('chromium.chrome');
+            c.bar_lkgr = BarUrl('chromium.lkgr');
+            c.bar_cros = BarUrl('chromium.chromiumos');
+            c.bar_gpu = BarUrl('chromium.gpu');
+            c.bar_gpu_closers = BarUrl('chromium.gpu',
+              // This list must be kept in sync with the bots watched in
+              // scripts/slave/gatekeeper.json.
+              [ 'GPU Win Builder',
+                'Win7 Release (NVIDIA)',
+                'Win8 Release (NVIDIA)',
+                'Win7 Release (ATI)',
+                'Win7 Release (Intel)',
+                'GPU Mac Builder',
+                'Mac Release (Intel)',
+                'Mac Release (ATI)',
+                'Mac Retina Release',
+                'Mac 10.8 Release (Intel)',
+                'Mac 10.8 Release (ATI)',
+                'GPU Linux Builder',
+                'Linux Release (NVIDIA)',
+              ]
+            );
+            c.bar_gpu_fyi = BarUrl('chromium.gpu.fyi');
+
+
+            /**
+             * Joins URL and search terms.
+             * @param {String} type The Url without the cgi search portion.
+             * @param {String} content The parameters for the sub-selection
+             *                         inside the master.  Optional.
+             * @returns {String} A completed URL.
+             */
+            function GetUrl(type, content) {
+              return type + search(content);
+            }
+
+            /**
+             * Callback to replace the LKGR link with one that identifies
+             * the current revision for the LKGR.
+             */
+            function DisplayLKGR() {
+              var xmlHttp = new XMLHttpRequest();
+              var lkgrPath = c.status_lkgr +
+                             '/json/builders/Linux%20x64/builds/-1?as_text=1';
+              var lkgrLink = document.getElementById('LKGRLink');
+              xmlHttp.open('GET', lkgrPath, false);
+              xmlHttp.send(null);
+              if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                var buildData;
+                if (typeof (JSON) !== 'undefined' &&
+                    typeof (JSON.parse) === 'function') {
+                  buildData = JSON.parse(xmlHttp.responseText);
+                } else {
+                  buildData = eval('(' + xmlHttp.responseText + ')');
+                }
+                var properties = buildData['properties'];
+                for (var i = 0; i < properties.length; i++) {
+                  if (properties[i][0] == 'got_revision') {
+                    var revision = properties[i][1].substring(0,12);
+                    lkgrLink.innerHTML = 'LKGR<br>(' + revision + ')';
+                    return;
+                  }
+                }
+              }
+            }
+
+            c.default_iframe_properties = [
+                'width="100%"',
+                'height="20"',
+                'frameborder="0"',
+                'scrolling="no"',
+            ].join(' ');
+
+            /**
+             * The most detailed specification of a builder bar with boxes.
+             * Reutrns an HTMLstring with 2 <td>s
+             * @param {String} status_url URL portion for the title link.
+             * @param {String} bar_url URL portion for the array of boxes.
+             * @param {String} content specification for the references, e.g..
+             * @param {String} name what to call this bar.
+             * @param {String} bar_properties extra attributes for the array
+             *                 of boxes portion.
+             * @param {String} link_properties extra attributes for the name
+             *                 portion that is a link.
+             * @returns {String}
+             */
+            function HTMLBaseBar(status_url, bar_url, content, name,
+                                 bar_properties, link_properties) {
+              return td('',
+                        a(GetUrl(status_url, content), name,
+                          link_properties)) +
+                     td(bar_properties,
+                        iFrame(c.default_iframe_properties,
+                               GetUrl(bar_url, content)));
+            }
+
+            /**
+             * The more common specification of a builder bar with boxes.
+             * Presume to take an entire row.
+             * @param {String} status_url URL portion for the title link.
+             * @param {String} bar_url URL portion for the array of boxes.
+             * @param {String} content specification for the references, e.g..
+             * @param {String} name what to call this bar.
+             * @returns {String}
+             */
+            function HTMLBar(status_url, bar_url, content, name) {
+              return tr(HTMLBaseBar(status_url, bar_url, content, name,
+                                    'width="99%" colspan=9', ''));
+            }
+
+            /**
+             * A specification of a builder bar with boxes, which is one of
+             * multiple in a row.
+             * Note that since these are elements of a table, percents
+             * can be irrelevant to the final layout.
+             * @param {String} status_url URL portion for the title link.
+             * @param {String} bar_url URL portion for the array of boxes.
+             * @param {String} content specification for the references, e.g..
+             * @param {String} name what to call this bar.
+             * @param {String} pc percent of the line to allocat to the boxes.
+             * @returns {String}
+             */
+            function HTMLSubBar(status_url, bar_url, content, name, pc) {
+              return HTMLBaseBar(status_url, bar_url, content, name,
+                                 'width="' + pc + '"', '');
+            }
+
+            document.write(tr(td(
+                'colspan=10 width="99%"',
+                div(
+                  'class="closerbox" width="100%"',
+                  div('class="title" width="100%" height="10px"',
+                      a('https://chromium-status.appspot.com', 'Tree closers')) +
+                  table(
+                    'width="100%"',
+                    tr(
+                       HTMLBaseBar(c.status, c.bar, c.chromium, 'Chromium',
+                                   'width="8%"') +
+                       HTMLBaseBar(c.status_win, c.bar_win, c.win, 'Win',
+                                   'width="42%"') +
+                       HTMLBaseBar(c.status_mac, c.bar_mac, c.mac, 'Mac',
+                                   'width="30%"') +
+                       HTMLBaseBar(c.status_linux, c.bar_linux, c.linux,
+                                   'Linux', 'width="20%"')) +
+                    tr(HTMLBaseBar(c.status_cros, c.bar_cros, c.cros,
+                                   'ChromiumOS', 'colspan=3') +
+                       HTMLBaseBar(c.status_chrome, c.bar_chrome, c.chrome,
+                                   'Official', 'colspan=3')) +
+                    tr(HTMLBaseBar(c.status_memory, c.bar_memory, c.memory,
+                                  'Memory', 'colspan=3') +
+                       /* TODO(kbr): subset the bots in this bar to
+                          reflect which ones are tree closers.
+                          crbug.com/372576 */
+                       HTMLBaseBar(c.status_gpu, c.bar_gpu_closers, c.gpu,
+                                   'GPU', 'colspan=3')))))));
+
+            document.write(tr(
+                HTMLBaseBar(c.status_perf, c.bar_perf, c.perf,
+                            'Perf', 'width="75%"', '') +
+                HTMLBaseBar(c.status_lkgr, c.bar_lkgr, c.lkgr,
+                            'LKGR', 'width="25%"', 'id="LKGRLink"')));
+
+            document.write(tr(
+                HTMLBaseBar(c.status_memory_fyi, c.bar_memory_fyi, c.memory_fyi,
+                           'Memory<br>FYI', 'width="100%" colspan=6', '')));
+
+            document.write(tr(
+                HTMLBaseBar(c.status_gpu, c.bar_gpu, c.gpu,
+                           'GPU', 'width="75%"', '') +
+                HTMLBaseBar(c.status_gpu_fyi, c.bar_gpu_fyi, c.gpu_fyi,
+                           'GPU FYI', 'width="25%"', '')));
+
+            setTimeout('DisplayLKGR()', 100);
+          </script>
+</table>
+</td>
+</tr>
+</table>
+</center>
+</div>
+<hr />
+<div class="content">
+<div align="center">
+<table width="95%" class="Grid" border="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" class="left_align">
+</td>
+<td width="33%" align="center" class="center_align">
+<div align="center">
+<table class="info">
+<tr>
+<td>Legend:&nbsp;&nbsp;</td>
+<td class="legend success" title="All tests passed">Passed</td>
+<td class="legend failure" title="There is a new failure. Take a look!">Failed</td>
+<td class="legend warnings" title="It was failing before, and it is still failing. Make sure you did not introduce new regressions">Failed&nbsp;Again</td>
+<td class="legend running" title="The tests are still running">Running</td>
+<td class="legend exception" title="Something went wrong with the test, there is no result">Exception</td>
+<td class="legend offline" title="The builder is offline, as there are no slaves connected to it">Offline</td>
+<td class="legend notstarted" title="No result yet.">No&nbsp;data</td>
+</tr>
+</table>
+</div>
+</td>
+<td width="33%" align="right" class="right_align">
+<script type="text/javascript"> 
+// <![CDATA[
+          function reload_page() {
+            name_value = document.getElementById('namebox').value
+            if (document.location.href.lastIndexOf('?') == -1)
+              document.location.href = document.location.href+ '?name=' + name_value;
+            else
+              document.location.href = document.location.href+ '&name=' + name_value;
+          }
+// ]]> 
+        </script>
+<input id="namebox" name="name" type="text" style="color:#999;" onblur='this.value = this.value || this.defaultValue; this.style.color = "#999";' onfocus='this.value=""; this.style.color = "#000";' value="Personalized for..." />
+<input type="submit" value="Go" onclick="reload_page()" />
+</td>
+</tr>
+</table>
+</div>
+<br />
+<div align="center">
+<table width="96%" class="ConsoleData"><tr>
+  <td width="1%"></td>
+  <td width="1%"></td><td class='DevStatus Alt first '
+        colspan="2"><a href="http://build.chromium.org/p/chromium.linux/console"
+         target="_blank">chromium.linux</a>
+    </td><td class='DevStatus Alt last '
+        colspan="1"><a href="http://build.chromium.org/p/chromium.mac/console"
+         target="_blank">chromium.mac</a>
+    </td></tr>
+<tr class='DevStatusSpacing'></tr><tr>
+  <td width="1%"></td>
+  <td width="1%"></td>
+  <td class='DevSlave'>linux</td>
+    <td class='DevSlave'>android</td>
+    <td class='DevSlave'></td>
+    </tr><tr>
+  <td width="1%"></td>
+  <td width="1%"></td>
+  <td class='DevSlave Alt '>
+        <table width="100%">
+<tr>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Builder" title="Linux Builder" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Tests" title="Linux Tests" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Builder (dbg)(32)" title="Linux Builder (dbg)(32)" class="DevSlaveBox failure" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Tests (dbg)(1)(32)" title="Linux Tests (dbg)(1)(32)" class="DevSlaveBox failure" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Builder (dbg)" title="Linux Builder (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux Tests (dbg)(1)" title="Linux Tests (dbg)(1)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux GN" title="Linux GN" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Linux GN (dbg)" title="Linux GN (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+</tr>
+</table>
+      </td><td class='DevSlave Alt '>
+        <table width="100%">
+<tr>
+<td class="DevSlaveBox">
+<a href="./builders/Android Arm64 Builder (dbg)" title="Android Arm64 Builder (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Builder (dbg)" title="Android Builder (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Tests (dbg)" title="Android Tests (dbg)" class="DevSlaveBox offline" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Builder" title="Android Builder" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Tests" title="Android Tests" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Clang Builder (dbg)" title="Android Clang Builder (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android Webview AOSP Builder" title="Android Webview AOSP Builder" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Android GN" title="Android GN" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+</tr>
+</table>
+      </td><td class='DevSlave Alt '>
+        <table width="100%">
+<tr>
+<td class="DevSlaveBox">
+<a href="./builders/Mac Builder" title="Mac Builder" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac10.6 Tests" title="Mac10.6 Tests" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac10.8 Tests" title="Mac10.8 Tests" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac10.9 Tests" title="Mac10.9 Tests" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac Builder (dbg)" title="Mac Builder (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac10.9 Tests (dbg)" title="Mac10.9 Tests (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac GN" title="Mac GN" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/Mac GN (dbg)" title="Mac GN (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/iOS Device" title="iOS Device" class="DevSlaveBox offline" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/iOS Simulator (dbg)" title="iOS Simulator (dbg)" class="DevSlaveBox success" target="_blank">
+</a>
+</td>
+<td class="DevSlaveBox">
+<a href="./builders/iOS Device (ninja)" title="iOS Device (ninja)" class="DevSlaveBox offline" target="_blank">
+</a>
+</td>
+</tr>
+</table>
+      </td>
+</tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/bc2fbac8dcbb2a4daa87a906bf03f16861eab5fa">
+        <a href="https://chromium.googlesource.com/chromium/src/+/bc2fbac8dcbb2a4daa87a906bf03f16861eab5fa" target="_blank">bc2fbac8dcbb</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      skia-deps-roller<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Arm64 Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Clang Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Webview AOSP Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="iOS Device" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="iOS Simulator (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="iOS Device (ninja)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Roll src/third_party/skia 797f58a:5e1378d<br /><br />Summary of changes available at:<br />https://chromium.googlesource.com/skia/+log/797f58a..5e1378d<br /><br />CQ_EXTRA_TRYBOTS=tryserver.blink:linux_blink_rel,linux_blink_dbg<br />TBR=stephana@google.com<br /><br />Review URL: https://codereview.chromium.org/899333002<br /><br />Cr-Commit-Position: refs/heads/master@{#314883}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/abc41a5466e2cd7ad072cc9f2a31691b9de3070d">
+        <a href="https://chromium.googlesource.com/chromium/src/+/abc41a5466e2cd7ad072cc9f2a31691b9de3070d" target="_blank">abc41a5466e2</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      xunjieli<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Arm64 Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Clang Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Webview AOSP Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17124", event); return false;' title="Android GN  ETA: 199s" class="DevStatusBox running TagAndroidGN17124" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23179", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23179" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="iOS Simulator (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6305", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6305" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Clean up FTPNetworkTransaction to match the latest trace<br /><br />This CL is an follow-up CL to crrev.com/861193007. This CL makes sure state<br />transitions and comments match the latest trace.<br /><br />BUG=452657<br /><br />Review URL: https://codereview.chromium.org/891013002<br /><br />Cr-Commit-Position: refs/heads/master@{#314882}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/d35d0fb116bdbc3c249c1a4560562fb1678e3416">
+        <a href="https://chromium.googlesource.com/chromium/src/+/d35d0fb116bdbc3c249c1a4560562fb1678e3416" target="_blank">d35d0fb116bd</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      mbarbella<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22342", event); return false;' title="Linux GN  ETA: 453s" class="DevStatusBox running TagLinuxGN22342" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Arm64 Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73442", event); return false;' title="Android Builder (dbg)  ETA: 58s" class="DevStatusBox running TagAndroidBuilderdbg73442" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53231", event); return false;' title="Android Clang Builder (dbg)  ETA: 56s" class="DevStatusBox running TagAndroidClangBuilderdbg53231" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Webview AOSP Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17124", event); return false;' title="Android GN  ETA: 199s" class="DevStatusBox running TagAndroidGN17124" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23178", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23178" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="iOS Simulator (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6304", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6304" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Fix and IPC fuzzer top crasher in OnWorkerScriptLoaded.<br /><br />A compromised renderer can pass an arbitrary |provider_id|, so we should ensure that |provider_host| is not NULL and remove the DCHECK.<br /><br />See https://cluster-fuzz.appspot.com/testcase?key=4713217552023552<br /><br />R=falken@chromium.org,nhiroki@chromium.org<br /><br />Review URL: https://codereview.chromium.org/901243002<br /><br />Cr-Commit-Position: refs/heads/master@{#314881}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/fa5eafe0d22b65d60390594805de47a13adc2664">
+        <a href="https://chromium.googlesource.com/chromium/src/+/fa5eafe0d22b65d60390594805de47a13adc2664" target="_blank">fa5eafe0d22b</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      dnicoara<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45594", event); return false;' title="Linux Builder  ETA: 292s" class="DevStatusBox running TagLinuxBuilder45594" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84891", event); return false;' title="Linux Builder (dbg)  ETA: 987s" class="DevStatusBox running TagLinuxBuilderdbg84891" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22342", event); return false;' title="Linux GN  ETA: 453s" class="DevStatusBox running TagLinuxGN22342" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21562", event); return false;' title="Linux GN (dbg)  ETA: 969s" class="DevStatusBox running TagLinuxGNdbg21562" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Arm64 Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73442", event); return false;' title="Android Builder (dbg)  ETA: 58s" class="DevStatusBox running TagAndroidBuilderdbg73442" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53231", event); return false;' title="Android Clang Builder (dbg)  ETA: 56s" class="DevStatusBox running TagAndroidClangBuilderdbg53231" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Webview AOSP Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17124", event); return false;' title="Android GN  ETA: 199s" class="DevStatusBox running TagAndroidGN17124" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23178", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23178" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20910", event); return false;' title="iOS Simulator (dbg)  ETA: 42s" class="DevStatusBox running TagiOSSimulatordbg20910" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6303", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6303" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      [Ozone-Gbm] Return true on resize of surfaceless surfaces<br /><br />The expectation is that GLSurface resize operations succeed, so pretend<br />that surfaceless resizes succeed as well, otherwise the state in<br />SurfacelessEGL will not be updated correctly.<br /><br />BUG=none<br /><br />Review URL: https://codereview.chromium.org/884183007<br /><br />Cr-Commit-Position: refs/heads/master@{#314880}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/7cec381bf3e65920fcb34a3d733dd1cdc0f99061">
+        <a href="https://chromium.googlesource.com/chromium/src/+/7cec381bf3e65920fcb34a3d733dd1cdc0f99061" target="_blank">7cec381bf3e6</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      tbansal<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45594", event); return false;' title="Linux Builder  ETA: 292s" class="DevStatusBox running TagLinuxBuilder45594" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84891", event); return false;' title="Linux Builder (dbg)  ETA: 987s" class="DevStatusBox running TagLinuxBuilderdbg84891" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22342", event); return false;' title="Linux GN  ETA: 453s" class="DevStatusBox running TagLinuxGN22342" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21562", event); return false;' title="Linux GN (dbg)  ETA: 969s" class="DevStatusBox running TagLinuxGNdbg21562" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8776", event); return false;' title="Android Arm64 Builder (dbg)  ETA: 305s" class="DevStatusBox running TagAndroidArm64Builderdbg8776" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73442", event); return false;' title="Android Builder (dbg)  ETA: 58s" class="DevStatusBox running TagAndroidBuilderdbg73442" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43648", event); return false;' title="Android Builder  ETA: 478s" class="DevStatusBox running TagAndroidBuilder43648" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53231", event); return false;' title="Android Clang Builder (dbg)  ETA: 56s" class="DevStatusBox running TagAndroidClangBuilderdbg53231" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17123", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17123" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17688", event); return false;' title="Mac Builder  ETA: 1168s" class="DevStatusBox running TagMacBuilder17688" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac Builder (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23177", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23177" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20910", event); return false;' title="iOS Simulator (dbg)  ETA: 42s" class="DevStatusBox running TagiOSSimulatordbg20910" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6302", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6302" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Treat QUIC proxy as a valid HTTP proxy.<br /><br />QUIC Proxy servers are valid HTTP proxies and should be treated<br />as such. This is required for using Chrome with a QUIC-based data<br />reduction proxy.<br /><br />BUG=343579<br /><br />Review URL: https://codereview.chromium.org/880483004<br /><br />Cr-Commit-Position: refs/heads/master@{#314879}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/075f83963550a232d2832d615ad5c1fea8426b45">
+        <a href="https://chromium.googlesource.com/chromium/src/+/075f83963550a232d2832d615ad5c1fea8426b45" target="_blank">075f83963550</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      rogerj<span style="display:none">ohnoyoudont</span>@opera.com
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45594", event); return false;' title="Linux Builder  ETA: 292s" class="DevStatusBox running TagLinuxBuilder45594" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84891", event); return false;' title="Linux Builder (dbg)  ETA: 987s" class="DevStatusBox running TagLinuxBuilderdbg84891" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22341", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22341" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21562", event); return false;' title="Linux GN (dbg)  ETA: 969s" class="DevStatusBox running TagLinuxGNdbg21562" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8776", event); return false;' title="Android Arm64 Builder (dbg)  ETA: 305s" class="DevStatusBox running TagAndroidArm64Builderdbg8776" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73441", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73441" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43648", event); return false;' title="Android Builder  ETA: 478s" class="DevStatusBox running TagAndroidBuilder43648" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53230", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53230" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17123", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17123" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17688", event); return false;' title="Mac Builder  ETA: 1168s" class="DevStatusBox running TagMacBuilder17688" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81544", event); return false;' title="Mac Builder (dbg)  ETA: 1023s" class="DevStatusBox running TagMacBuilderdbg81544" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23176", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23176" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20909", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20909" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6301", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6301" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      eglWaitSyncKHR is part of the EGL_KHR_wait_sync extension<br /><br />The eglWaitSyncKHR function should only be expected to exist if the<br />EGL_KHR_wait_sync extension is supported. The code prior to this patch<br />triggered a DCHECK if only the EGL_KHR_fence_sync extension was available.<br /><br />BUG=None<br /><br />Review URL: https://codereview.chromium.org/900233003<br /><br />Cr-Commit-Position: refs/heads/master@{#314878}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/4afb36099b356de54b7e389f454294338fe9fd93">
+        <a href="https://chromium.googlesource.com/chromium/src/+/4afb36099b356de54b7e389f454294338fe9fd93" target="_blank">4afb36099b35</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      maruel<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45594", event); return false;' title="Linux Builder  ETA: 292s" class="DevStatusBox running TagLinuxBuilder45594" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84891", event); return false;' title="Linux Builder (dbg)  ETA: 987s" class="DevStatusBox running TagLinuxBuilderdbg84891" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22341", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22341" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21562", event); return false;' title="Linux GN (dbg)  ETA: 969s" class="DevStatusBox running TagLinuxGNdbg21562" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8776", event); return false;' title="Android Arm64 Builder (dbg)  ETA: 305s" class="DevStatusBox running TagAndroidArm64Builderdbg8776" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73441", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73441" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43648", event); return false;' title="Android Builder  ETA: 478s" class="DevStatusBox running TagAndroidBuilder43648" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53230", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53230" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17123", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17123" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17688", event); return false;' title="Mac Builder  ETA: 1168s" class="DevStatusBox running TagMacBuilder17688" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81544", event); return false;' title="Mac Builder (dbg)  ETA: 1023s" class="DevStatusBox running TagMacBuilderdbg81544" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23175", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23175" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20909", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20909" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6300", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6300" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Roll tools/swarming_client/ to e6677c8702f2735dbd4fc24aad388346a6bbb342.<br /><br />$ git log c698ea2a7..e6677c870 --date=short --format=&#39;%ad %ae %s&#39; | sed &#39;s/@chromium\.org//&#39;<br />2015-02-05 maruel Further limit archival on 32 bits.<br />2015-02-03 maruel Update /get_slave_code to /bot_code new url.<br /><br />R=vadimsh@chromium.org<br />BUG=419862<br /><br />Review URL: https://codereview.chromium.org/895903004<br /><br />Cr-Commit-Position: refs/heads/master@{#314877}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/7f07ac7281819acd6eab53e28a2d45e425e2fd39">
+        <a href="https://chromium.googlesource.com/chromium/src/+/7f07ac7281819acd6eab53e28a2d45e425e2fd39" target="_blank">7f07ac728181</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      achaulk<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45594", event); return false;' title="Linux Builder  ETA: 292s" class="DevStatusBox running TagLinuxBuilder45594" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84891", event); return false;' title="Linux Builder (dbg)  ETA: 987s" class="DevStatusBox running TagLinuxBuilderdbg84891" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22340", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22340" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21561", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21561" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8776", event); return false;' title="Android Arm64 Builder (dbg)  ETA: 305s" class="DevStatusBox running TagAndroidArm64Builderdbg8776" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73441", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73441" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43648", event); return false;' title="Android Builder  ETA: 478s" class="DevStatusBox running TagAndroidBuilder43648" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53230", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53230" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17122", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17122" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17688", event); return false;' title="Mac Builder  ETA: 1168s" class="DevStatusBox running TagMacBuilder17688" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.6 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.8 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81544", event); return false;' title="Mac Builder (dbg)  ETA: 1023s" class="DevStatusBox running TagMacBuilderdbg81544" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23174", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23174" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20909", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20909" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6299", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6299" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Seeing crashes likely from negative touch indexes, check for them<br /><br />BUG=452602<br /><br />Review URL: https://codereview.chromium.org/891703004<br /><br />Cr-Commit-Position: refs/heads/master@{#314876}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/fdef2865f067f30e99f1f11b33d8811d98bf1e54">
+        <a href="https://chromium.googlesource.com/chromium/src/+/fdef2865f067f30e99f1f11b33d8811d98bf1e54" target="_blank">fdef2865f067</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      noms<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22339", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22339" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21561", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21561" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73440", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73440" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53229", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53229" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17121", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17121" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81544", event); return false;' title="Mac Builder (dbg)  ETA: 1023s" class="DevStatusBox running TagMacBuilderdbg81544" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23173", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23173" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20908", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20908" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6298", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6298" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Update sync promo string in chrome://settings<br /><br />BUG=455273<br /><br />Review URL: https://codereview.chromium.org/904513002<br /><br />Cr-Commit-Position: refs/heads/master@{#314875}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/959b409bb77024e26221aadad7bd8afc71cce6d3">
+        <a href="https://chromium.googlesource.com/chromium/src/+/959b409bb77024e26221aadad7bd8afc71cce6d3" target="_blank">959b409bb770</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      mseaborn<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Builder (dbg)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22339", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22339" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21561", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21561" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73440", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73440" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53229", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53229" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17121", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17121" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23172", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23172" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20908", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20908" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6297", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6297" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Revert of NaCl: Remove the IRT&#39;s Gyp dependency on libsrpc (patchset #1 id:1 of https://codereview.chromium.org/878623004/)<br /><br />Reason for revert:<br /><br />I was a bit too eager about removing the dependency on libsrpc.&nbsp; I&#39;m<br />preparing a NaCl change that will make the IRT depend on SRPC again<br />(https://codereview.chromium.org/883393005/), as a step towards<br />removing SRPC later.<br /><br />Unfortunately, untrusted.gypi doesn&#39;t support transitive library<br />dependencies, so it&#39;s not enough just for the NaCl side to declare the<br />de<br />...skip...<br />Gyp dependency on libsrpc<br />&gt;<br />&gt; Since I removed the IRT&#39;s calls to NaClSrpcModuleInit() and<br />&gt; NaClPluginLowLevelInitializationComplete(), the IRT no longer depends<br />&gt; on SRPC.<br />&gt;<br />&gt; BUG=https://code.google.com/p/nativeclient/issues/detail?id=3864<br />&gt; TEST=build<br />&gt;<br />&gt; Committed: https://crrev.com/65a326a734d413e2124c6782b2e32a81ceca74c1<br />&gt; Cr-Commit-Position: refs/heads/master@{#313664}<br /><br />BUG=302078<br />TEST=build<br /><br />Review URL: https://codereview.chromium.org/901053008<br /><br />Cr-Commit-Position: refs/heads/master@{#314874}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/a0f666219c0a8e03e2fd4909cb5fab8859a49462">
+        <a href="https://chromium.googlesource.com/chromium/src/+/a0f666219c0a8e03e2fd4909cb5fab8859a49462" target="_blank">a0f666219c0a</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      sergeyu<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22339", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22339" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21561", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21561" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73440", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73440" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53229", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53229" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17121", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17121" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23172", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23172" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20908", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20908" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6296", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6296" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Copy debug PNaCl plugin in Dev builds of the chromoting webapp.<br /><br />With this change the Debug version of the PNaCl plugin will be copied to<br />the webapp directory allowing to debug PNaCl plugin (using nacl-gdb).<br /><br />Also updated build-webapp.py to process all *.jinja2 input files as jinja2<br />templates.<br /><br />This patch was previously reverted because of a problem that should be<br />fixed now by https://codereview.chromium.org/872673006/ .<br /><br />BUG=451643<br /><br />Review URL: https://codereview.chromium.org/872633006<br /><br />Cr-Commit-Position: refs/heads/master@{#314873}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/566c432e789653356da210e066b1f0ed62f1aa3d">
+        <a href="https://chromium.googlesource.com/chromium/src/+/566c432e789653356da210e066b1f0ed62f1aa3d" target="_blank">566c432e7896</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      ianwen<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22339", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22339" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73439", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73439" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53228", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53228" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17120", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17120" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23171", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23171" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20907", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20907" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6295", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6295" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      [Enhanced Bookmark]Upstream image fetching code in android<br /><br />This CL added the image fetching code that previously lived in clank private repository.<br /><br />Also I moved android enhanced_bookmark_bridge from<br />chrome/browser/android/enhanced_bookmarks/ to chrome/browser/enhanced_bookmarks/android,<br />since the latter is a more unified place to put all files in.(I deleted the<br />android/enhanced_bookmarks folder).<br /><br />Last but not least, I made some small changes to the internal implementation of<br />bookmark_image_service, making it more readable.<br /><br />The previously private code can be found in code search:<br />https://cs.corp.google.com/#clankium/src/clank/native/framework/chrome/enhanced_bookmarks/<br /><br />Downstream CL: https://chrome-internal-review.googlesource.com/#/c/195438/<br />BUG=454623<br /><br />Review URL: https://codereview.chromium.org/899653003<br /><br />Cr-Commit-Position: refs/heads/master@{#314872}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/f8b95b1bac2582a87f9f67fb3a35413202ecb07f">
+        <a href="https://chromium.googlesource.com/chromium/src/+/f8b95b1bac2582a87f9f67fb3a35413202ecb07f" target="_blank">f8b95b1bac25</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      ihf<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22338", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22338" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73439", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73439" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53228", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53228" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17610", event); return false;' title="Android Webview AOSP Builder  ETA: 1589s" class="DevStatusBox running TagAndroidWebviewAOSPBuilder17610" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17120", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17120" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23170", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23170" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20907", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20907" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6294", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6294" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Revert &#34;Fix visible size for V4L2 VDA&#34;<br /><br />This reverts commit ad3526512104b5a7352f356b62f8cea3427a58cb.<br /><br />It causes video on peach_pit to lock up/reboot machine.<br /><br />BUG=chromium:449920, chromium:448208<br />TEST=test_that 100.96.59.64 video_VideoSanity.bvt doesn&#39;t reboot anymore<br /><br />Review URL: https://codereview.chromium.org/898553004<br /><br />Cr-Commit-Position: refs/heads/master@{#314871}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/73cb4e12164e4d0023db17b91241b0e77f5d21fd">
+        <a href="https://chromium.googlesource.com/chromium/src/+/73cb4e12164e4d0023db17b91241b0e77f5d21fd" target="_blank">73cb4e12164e</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      dfalcantara<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22338", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22338" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73439", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73439" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53228", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53228" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17609", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17609" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17120", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17120" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23170", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23170" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20907", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20907" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6294", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6294" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Redo how AppBannerInfoBars are created and stored<br /><br />* AppBannerManager will now keep a pointer to the<br />&nbsp; AppBannerInfoBar that gets created for it, which<br />&nbsp; will allow it to update the UI as needed.<br /><br />* Gets rid of AppBannerInfoBarDelegate; that design<br />&nbsp; pattern doesn&#39;t make much sense even for ConfirmInfoBars.<br /><br />* AppBannerManager becomes an EmptyTabObserver.<br /><br />- Breaks native app promos: they won&#39;t show up until<br />&nbsp; a follow up CL lands. Functions related to the<br />&nbsp; AppBannerView will be removed soon.<br /><br />BUG=453170<br /><br />Review URL: https://codereview.chromium.org/901203003<br /><br />Cr-Commit-Position: refs/heads/master@{#314870}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/7e3d2e8d7bda5adc8ec6256f2d0e6fce68fa6fd3">
+        <a href="https://chromium.googlesource.com/chromium/src/+/7e3d2e8d7bda5adc8ec6256f2d0e6fce68fa6fd3" target="_blank">7e3d2e8d7bda</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      mseaborn<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45593", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45593" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20236", event); return false;' title="Linux Tests  ETA: 589s" class="DevStatusBox running TagLinuxTests20236" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22338", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22338" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73439", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73439" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53228", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53228" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17609", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17609" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17120", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17120" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23169", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23169" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20906", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20906" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6293", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6293" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      NaCl: Update revision in DEPS, 9e3dac8 -&gt; 2363d1a<br /><br />This pulls in the following Native Client changes:<br /><br />0f2d722: (phosek@chromium.org) Removes the now-unused reverse service from the service runtime<br />2363d1a: (mcgrathr@chromium.org) Update DEPS for Chrome LKCR<br /><br />BUG=none<br />TEST=browser_tests and nacl_integration<br />CQ_EXTRA_TRYBOTS=tryserver.chromium.linux:linux_rel_precise32,linux_arm_compile,linux_nacl_sdk_build<br /><br />Review URL: https://codereview.chromium.org/885183003<br /><br />Cr-Commit-Position: refs/heads/master@{#314869}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/452de5927e54e1da0d57a4b2df8b447f4d442360">
+        <a href="https://chromium.googlesource.com/chromium/src/+/452de5927e54e1da0d57a4b2df8b447f4d442360" target="_blank">452de5927e54</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      rmcilroy<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45592", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45592" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20235", event); return false;' title="Linux Tests build successful" class="DevStatusBox success TagLinuxTests20235" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22338", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22338" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8775", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8775" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73438", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73438" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43647", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43647" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53228", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53228" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17609", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17609" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17119", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17119" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23168", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23168" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20906", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20906" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6292", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6292" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      [telemetry] Add a V8GCTimes measurement and benchmarks.<br /><br />Replaces the v8_stats metric with a v8_gc_times<br />measurement.&nbsp; This new measurement measures the amount of<br />time spent in GC during the whole benchmark rather than<br />just during gestures.<br /><br />The following gc metrics are measured:<br />&nbsp; v8_gc_incremental_marking<br />&nbsp; v8_gc_incremental_marking_idle_deadline_overrun<br />&nbsp; v8_gc_incremental_marking_outside_idle<br />&nbsp; v8_gc_incremental_marking_percentage_idle<br />&nbsp; v8_gc_mark_compactor<br />&nbsp; v8_gc_mark_compactor_idle_deadline_ov<br />...skip...<br />smooth benchmarks have been added.<br /><br />Since v8_garbage_collection_cases was the only benchmark to<br />use the is_fast metric type, and these measurements are now<br />done as part of the v8_gc_times measurement now, this CL<br />also removes the fast metric type.<br /><br />Perf Sherrifs: Since this CL changes he way in which the GC<br />measurements are done it may cause a movement in the<br />v8_garbage_collection_cases benchmarks.<br /><br />Review URL: https://codereview.chromium.org/898673005<br /><br />Cr-Commit-Position: refs/heads/master@{#314868}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/a52158d7c0b0c697d1625680fbaf9c2902d26da7">
+        <a href="https://chromium.googlesource.com/chromium/src/+/a52158d7c0b0c697d1625680fbaf9c2902d26da7" target="_blank">a52158d7c0b0</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      tfarina<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45592", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45592" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20235", event); return false;' title="Linux Tests build successful" class="DevStatusBox success TagLinuxTests20235" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84890", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84890" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38668", event); return false;' title="Linux Tests (dbg)(1)  ETA: 970s" class="DevStatusBox running TagLinuxTestsdbg138668" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22337", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22337" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21560", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21560" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8774", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8774" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73437", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73437" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43646", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43646" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Android Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53227", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53227" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17609", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17609" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17118", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17118" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81543", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81543" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2697", event); return false;' title="Mac10.9 Tests (dbg)  ETA: 1520s" class="DevStatusBox running TagMac109Testsdbg2697" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN (dbg)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23167", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23167" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20905", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20905" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6291", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6291" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      GN: Allow users to enable DCHECK on Release builds.<br /><br />This declares dcheck_always_on argument (false by default) so users can<br />override it. If set to true this will make a compiler define<br />(DCHECK_ALWAYS_ON=1). This mirrors GYP counterpart.<br /><br />Debug:<br /><br />$ gn gen out_gn/Debug --args=&#39;dcheck_always_on=true&#39;<br />$ ninja -v -C out_gn/Debug base<br /><br />Release:<br /><br />$ gn gen --args=&#39;is_debug=false dcheck_always_on=true&#39; out_gn/Release<br />$ ninja -v -C out_gn/Release base<br /><br />Manually checked that -DDCHECK_ALWAYS_ON=1 is passed on the command line<br />to the compiler.<br /><br />BUG=None<br />TEST=see above<br />R=brettw@chromium.org<br /><br />Review URL: https://codereview.chromium.org/896413003<br /><br />Cr-Commit-Position: refs/heads/master@{#314867}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/3d4b61cf6e1ece497318d9b6c5110000445dae6b">
+        <a href="https://chromium.googlesource.com/chromium/src/+/3d4b61cf6e1ece497318d9b6c5110000445dae6b" target="_blank">3d4b61cf6e1e</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      timvolodine<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45591", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45591" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20234", event); return false;' title="Linux Tests build successful" class="DevStatusBox success TagLinuxTests20234" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84889", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84889" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38667", event); return false;' title="Linux Tests (dbg)(1) build successful" class="DevStatusBox success TagLinuxTestsdbg138667" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22337", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22337" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21559", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21559" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8774", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8774" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73436", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73436" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests%20%28dbg%29&amp;number=25802", event); return false;' title="Android Tests (dbg) build successful" class="DevStatusBox success TagAndroidTestsdbg25802" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43645", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43645" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests&amp;number=18193", event); return false;' title="Android Tests  ETA: 1589s" class="DevStatusBox running TagAndroidTests18193" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53226", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53226" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17609", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17609" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17117", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17117" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17687", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17687" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3929", event); return false;' title="Mac10.6 Tests  ETA: 688s" class="DevStatusBox running TagMac106Tests3929" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4001", event); return false;' title="Mac10.8 Tests  ETA: 537s" class="DevStatusBox running TagMac108Tests4001" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac10.9 Tests" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81542", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81542" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2696", event); return false;' title="Mac10.9 Tests (dbg) build successful" class="DevStatusBox success TagMac109Testsdbg2696" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20GN%20%28dbg%29&amp;number=3915", event); return false;' title="Mac GN (dbg)  ETA: 0s" class="DevStatusBox running TagMacGNdbg3915" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23166", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23166" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20904", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20904" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6290", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6290" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Clean-up refactoring of chrome_content_browser_client to use GetPermissionContext consistently.<br /><br />Eliminate some duplicate code now that PermissionContextBase is the base class<br />for all other permission contexts and we have a helper function<br />GetPermissionContext to obtain the proper permission context class depending<br />on permission type. Also move PermissionToContentSetting to anonymous namespace.<br /><br />BUG=<br /><br />Review URL: https://codereview.chromium.org/896173002<br /><br />Cr-Commit-Position: refs/heads/master@{#314866}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse ">
+      <a href="https://chromium.googlesource.com/chromium/src/+/a86ffa06e4415b155a96b9513ed2f18e0d9deaf6">
+        <a href="https://chromium.googlesource.com/chromium/src/+/a86ffa06e4415b155a96b9513ed2f18e0d9deaf6" target="_blank">a86ffa06e441</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName ">
+      bratell<span style="display:none">ohnoyoudont</span>@opera.com
+    </td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45591", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45591" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20234", event); return false;' title="Linux Tests build successful" class="DevStatusBox success TagLinuxTests20234" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84889", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84889" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38667", event); return false;' title="Linux Tests (dbg)(1) build successful" class="DevStatusBox success TagLinuxTestsdbg138667" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22336", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22336" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21559", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21559" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8774", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8774" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73436", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73436" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests%20%28dbg%29&amp;number=25802", event); return false;' title="Android Tests (dbg) build successful" class="DevStatusBox success TagAndroidTestsdbg25802" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43645", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43645" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests&amp;number=18193", event); return false;' title="Android Tests  ETA: 1589s" class="DevStatusBox running TagAndroidTests18193" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53225", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53225" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17608", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17608" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17116", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17116" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus '><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17686", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17686" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3928", event); return false;' title="Mac10.6 Tests build successful" class="DevStatusBox success TagMac106Tests3928" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4000", event); return false;' title="Mac10.8 Tests build successful" class="DevStatusBox success TagMac108Tests4000" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests&amp;number=2839", event); return false;' title="Mac10.9 Tests  ETA: 873s" class="DevStatusBox running TagMac109Tests2839" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81542", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81542" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2696", event); return false;' title="Mac10.9 Tests (dbg) build successful" class="DevStatusBox success TagMac109Testsdbg2696" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20GN%20%28dbg%29&amp;number=3915", event); return false;' title="Mac GN (dbg)  ETA: 0s" class="DevStatusBox running TagMacGNdbg3915" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23165", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23165" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20903", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20903" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6289", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6289" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment ">
+      Use the supplied memory for YUV decoding.<br /><br />As some kind of optimization the yuv decoder replaced some pointers<br />to point to decoder-internal memory when an API user asked for<br />yuv data. That often worked, but failed if the data needed to<br />outlive the decoder. It was also a violation of the API contract.<br /><br />This replaces that with a buffer copy. It will be slower but will avoid<br />random bitmap errors that also happened randomly on cq try bots.<br /><br />This is a stopgap solution while a better solution is designed, coded and<br />tested.<br /><br />BUG=455235<br />R=sugoi@chromium.org,dongseong.hwang@intel.com<br /><br />Review URL: https://codereview.chromium.org/901573004<br /><br />Cr-Commit-Position: refs/heads/master@{#314865}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr><tr>
+    <td width="1%" class="DevRev DevRevCollapse Alt">
+      <a href="https://chromium.googlesource.com/chromium/src/+/91f93b66946793715f5877fc696f626dc6812dbf">
+        <a href="https://chromium.googlesource.com/chromium/src/+/91f93b66946793715f5877fc696f626dc6812dbf" target="_blank">91f93b669467</a>
+      </a>
+    </td>
+    <td width="1%" class="DevName Alt">
+      sergeyu<span style="display:none">ohnoyoudont</span>@chromium.org
+    </td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder&amp;number=45591", event); return false;' title="Linux Builder build successful" class="DevStatusBox success TagLinuxBuilder45591" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests&amp;number=20234", event); return false;' title="Linux Tests build successful" class="DevStatusBox success TagLinuxTests20234" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29%2832%29&amp;number=33012", event); return false;' title="Linux Builder (dbg)(32)  ETA: 0s" class="DevStatusBox running TagLinuxBuilderdbg3233012" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Linux Tests (dbg)(1)(32)" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Builder%20%28dbg%29&amp;number=84889", event); return false;' title="Linux Builder (dbg) build successful" class="DevStatusBox success TagLinuxBuilderdbg84889" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20Tests%20%28dbg%29%281%29&amp;number=38667", event); return false;' title="Linux Tests (dbg)(1) build successful" class="DevStatusBox success TagLinuxTestsdbg138667" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN&amp;number=22336", event); return false;' title="Linux GN build successful" class="DevStatusBox success TagLinuxGN22336" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Linux%20GN%20%28dbg%29&amp;number=21559", event); return false;' title="Linux GN (dbg) build successful" class="DevStatusBox success TagLinuxGNdbg21559" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Arm64%20Builder%20%28dbg%29&amp;number=8773", event); return false;' title="Android Arm64 Builder (dbg) build successful" class="DevStatusBox success TagAndroidArm64Builderdbg8773" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder%20%28dbg%29&amp;number=73436", event); return false;' title="Android Builder (dbg) build successful" class="DevStatusBox success TagAndroidBuilderdbg73436" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests%20%28dbg%29&amp;number=25802", event); return false;' title="Android Tests (dbg) build successful" class="DevStatusBox success TagAndroidTestsdbg25802" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Builder&amp;number=43645", event); return false;' title="Android Builder build successful" class="DevStatusBox success TagAndroidBuilder43645" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Tests&amp;number=18193", event); return false;' title="Android Tests  ETA: 1589s" class="DevStatusBox running TagAndroidTests18193" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Clang%20Builder%20%28dbg%29&amp;number=53225", event); return false;' title="Android Clang Builder (dbg) build successful" class="DevStatusBox success TagAndroidClangBuilderdbg53225" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20Webview%20AOSP%20Builder&amp;number=17608", event); return false;' title="Android Webview AOSP Builder build successful" class="DevStatusBox success TagAndroidWebviewAOSPBuilder17608" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Android%20GN&amp;number=17116", event); return false;' title="Android GN build successful" class="DevStatusBox success TagAndroidGN17116" target="_blank"></a>
+</td>
+</tr>
+</table></td><td class='DevStatus Alt'><table width="100%">
+<tr>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder&amp;number=17686", event); return false;' title="Mac Builder build successful" class="DevStatusBox success TagMacBuilder17686" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.6%20Tests&amp;number=3928", event); return false;' title="Mac10.6 Tests build successful" class="DevStatusBox success TagMac106Tests3928" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.8%20Tests&amp;number=4000", event); return false;' title="Mac10.8 Tests build successful" class="DevStatusBox success TagMac108Tests4000" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests&amp;number=2839", event); return false;' title="Mac10.9 Tests  ETA: 873s" class="DevStatusBox running TagMac109Tests2839" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20Builder%20%28dbg%29&amp;number=81542", event); return false;' title="Mac Builder (dbg) build successful" class="DevStatusBox success TagMacBuilderdbg81542" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac10.9%20Tests%20%28dbg%29&amp;number=2696", event); return false;' title="Mac10.9 Tests (dbg) build successful" class="DevStatusBox success TagMac109Testsdbg2696" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./waterfall", event); return false;' title="Mac GN" class="DevStatusBox notstarted " target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=Mac%20GN%20%28dbg%29&amp;number=3915", event); return false;' title="Mac GN (dbg)  ETA: 0s" class="DevStatusBox running TagMacGNdbg3915" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device&amp;number=23164", event); return false;' title="iOS Device build successful" class="DevStatusBox success TagiOSDevice23164" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Simulator%20%28dbg%29&amp;number=20903", event); return false;' title="iOS Simulator (dbg) build successful" class="DevStatusBox success TagiOSSimulatordbg20903" target="_blank"></a>
+</td>
+<td class="DevStatusBox">
+<a href="#" onclick='showBuildBox("./buildstatus?builder=iOS%20Device%20%28ninja%29&amp;number=6288", event); return false;' title="iOS Device (ninja) build successful" class="DevStatusBox success TagiOSDeviceninja6288" target="_blank"></a>
+</td>
+</tr>
+</table></td></tr>
+
+  <tr>
+    <td colspan="5"
+        class="DevComment Alt">
+      Move capture scheduling logic from VideoScheduler to CaptureScheduler.<br /><br />BUG=455818<br /><br />Review URL: https://codereview.chromium.org/872433005<br /><br />Cr-Commit-Position: refs/heads/master@{#314864}<br />
+    </td>
+  </tr><tr class='DevStatusSpacing'></tr>
+</table>
+</div>
+<div id="divBox" onmouseout="if (checkMouseLeave(this, event)) this.style.display = 'None'" class="BuildWaterfall">
+</div>
+<iframe id="frameBox" style="display: none;"></iframe>
+<script type="text/javascript">
+// replace 'onload="updateDiv(event);" with this, as iframe doesn't have onload event in xhtml
+window.addEventListener("load", function() {
+  document.getElementById('frameBox').onload = function(event) {
+    updateDiv(event);
+  };
+}, false); 
+</script>
+</div><div class="footer" style="clear:both">
+<hr />
+  [ <a class="collapse" href="#" onclick="collapse(); return false;">collapse</a>
+<a class="uncollapse" href="#" onclick="uncollapse(); return false;">un-collapse</a>
+<a class="merge" href="#" onclick="merge(); return false;">merge</a>
+<a class="unmerge" style="display: none" href="#" onclick="unmerge(); return false;">un-merge</a> ]
+  <p>Debug info: {'revision_final': 25, 'builds_scanned': 440, 'source_all': 25, 'source_len': 25, 'last_revision': u'4514d31cc051b2099cd6fcc1a0a2a71bb1c5532e', 'from_cache': 122, 'added_blocks': 1, 'load_time': 0.06969308853149414}</p>
+</div>
+<script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-55762617-2', {'siteSpeedSampleRate': 100});
+      ga('send', 'pageview');
+
+    </script>
+</body>
+</html>

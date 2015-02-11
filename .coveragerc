@@ -4,6 +4,9 @@ omit =
     # Virtual environment with third_party packages.
     ./ENV/*
 
+    # Add chromium_build, which wasn't test.py-enabled for a long time.
+    ./appengine/chromium_build/*
+
     # Appengine third_party packages, committed into the repo as is.
     ./appengine/third_party/*
 

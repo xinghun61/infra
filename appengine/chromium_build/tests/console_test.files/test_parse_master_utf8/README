@@ -1,0 +1,21 @@
+How to recreate the contents of this directory.
+
+1. wget http://build.chromium.org/p/chromium.linux/console
+2. mv console in_console.html
+3. Find the first revision in in_console.html.  Note its
+   Cr-Commit-Position value.
+4. Edit app_test.py to change test_parse_master_utf8's rev
+   to that value.
+5. Edit console_input.html to insert ₩ in various places for
+   that revision's entries:
+   a. DevRev, prepend ₩ within tag content.
+   b. Details, skip, usually not found in output.
+   c. DevName, prepend ₩.
+   d. DevComment, prepend ₩.
+   e. DevStatus, prepend ₩.
+6. Outside of that revision's info, edit DevSlave, prepend ₩.
+7. Edit app_test.py, uncomment lines in app_test.py that
+   write expected contents.
+8. Run test.  (This will write expected contents.)
+9. Comment lines that write expected comments.
+10. Create a CL with the updated content, land it.

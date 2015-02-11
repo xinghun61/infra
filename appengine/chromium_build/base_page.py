@@ -82,5 +82,5 @@ class BasePage(webapp2.RequestHandler):
 
 
 def bootstrap():
-  app_name = os.environ['APPLICATION_ID']
+  app_name = os.environ.get('APPLICATION_ID', 'devcon~')
   BasePage.app_name = app_name

@@ -4,6 +4,9 @@
 
 ENABLE_APPSTATS = False
 
+# Make webapp.template use django 1.2.  Quells default django warning.
+webapp_django_version = '1.2'
+
 if ENABLE_APPSTATS:
   def webapp_add_wsgi_middleware(app):
     from google.appengine.ext.appstats import recording

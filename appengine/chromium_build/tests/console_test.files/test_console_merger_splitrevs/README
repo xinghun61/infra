@@ -1,0 +1,13 @@
+How to recreate the contents of this directory.
+
+1. wget http://build.chromium.org/p/chromium.linux/console
+2. mv console in_linux.html
+3. wget http://build.chromium.org/p/chromium.mac/console
+4. mv console in_mac.html
+5. Ensure that one of the input consoles specify a revision
+   that's not in the other one.
+6. Edit app_test.py, uncomment lines in app_test.py that
+   write expected contents.
+7. Run test.  (This will write expected contents.)
+8. Comment lines that write expected comments.
+9. Create a CL with the updated content, land it.
