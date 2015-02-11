@@ -48,7 +48,7 @@ class _Router(object):
         # TODO(pgervais): log when something fails.
         requests.post(self.endpoint, data=events.SerializeToString())
       else:
-        print('fake post request')
+        logging.info('fake post request')
 
   def close(self, timeout=None):
     """

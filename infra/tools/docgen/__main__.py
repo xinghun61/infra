@@ -6,6 +6,7 @@
 """Convenience script to generate documentation with Sphinx."""
 
 import argparse
+import logging
 import os
 import shutil
 import subprocess
@@ -47,7 +48,7 @@ def cmd_clean():
     except OSError:  # pragma: no cover
       pass
     else:
-      print 'Removing %s ...' % path
+      logging.info('Removing %s ...' % path)
 
 
 def main(argv):
