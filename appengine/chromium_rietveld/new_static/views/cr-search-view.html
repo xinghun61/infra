@@ -20,7 +20,7 @@ found in the LICENSE file. -->
             }
 
             .search-form {
-                width: 500px;
+                width: 400px;
                 flex-shrink: 0;
             }
 
@@ -87,8 +87,8 @@ found in the LICENSE file. -->
                         <label class="form-label" for="orderby">Order</label>
                         <div class="form-field">
                             <select id="orderby" value="{{ query.order }}">
-                                <option value="ascending" selected>Newest first</option>
-                                <option value="descending">Oldest first</option>
+                                <option value="descending" selected>Newest first</option>
+                                <option value="ascending">Oldest first</option>
                             </select>
                         </div>
                     </div>
@@ -100,12 +100,12 @@ found in the LICENSE file. -->
             <div class="search-results">
                 <header>
                     <h2>Issues</h2>
-                    <template if="{{ nextCursor && issues.length }}">
+                    <template if="{{ result && result.issues.length == query.limit }}">
                         <cr-action on-tap="{{ handleNextPage }}">Next</cr-action>
                     </template>
                 </header>
-                <cr-issue-list issues="{{ issues }}"></cr-issue-list>
-                <template if="{{ issues && !issues.length }}">
+                <cr-issue-list issues="{{ result.issues }}"></cr-issue-list>
+                <template if="{{ result && !result.issues.length }}">
                     <p>No results.</p>
                 </template>
                 <template if="{{ sending }}">
@@ -118,14 +118,14 @@ found in the LICENSE file. -->
     <script>
         Polymer("cr-search-view", {
             created: function() {
-                this.issues = null;
-                this.nextCursor = "";
+                this.result = null;
                 this.query = {
                     owner: "",
                     reviewer: "",
                     cc: "",
                     sort: "modified",
-                    order: "ascending",
+                    order: "descending",
+                    limit: Search.DEFAULT_LIMIT,
                 };
                 this.queryId = 0;
                 this.sending = false;
@@ -149,43 +149,58 @@ found in the LICENSE file. -->
                 this.search();
             },
             handleNextPage: function() {
-                if (!this.nextCursor || !this.issues.length)
+                var self = this;
+                if (!this.result)
                     return;
-                this.query.cursor = this.nextCursor;
-                this.search();
+                var queryId = ++this.queryId;
+                var cursor = this.result.cursor;
+                this.result.findNext().then(function(result) {
+                    self.query.cursor = cursor;
+                    self.updateUrl();
+                    if (self.queryId == queryId)
+                        self.updateResult(result);
+                });
             },
             search: function() {
                 var self = this;
                 this.$.ownerAutocomplete.resetAutocomplete();
                 this.$.reviewerAutocomplete.resetAutocomplete();
                 this.$.ccAutocomplete.resetAutocomplete();
-                var queryString = Object.toQueryString(this.query);
-                if (!queryString)
-                    return;
-                queryString = queryString.replace(/\+/g, "%20");
-                var url = window.location.pathname + "?" + queryString
-                    + window.location.hash;
-                window.history.pushState(null, null, url);
+                this.updateUrl();
                 var queryId = ++this.queryId;
-                this.issues = null;
+                this.query.cursor = "";
+                this.result = null;
                 this.sending = true;
                 Search.findIssues(this.query).then(function(result) {
-                    if (queryId == self.queryId) {
-                        self.issues = result.issues;
-                        self.nextCursor = result.cursor;
-                    }
+                    if (queryId == self.queryId)
+                        self.updateResult(result);
                 }).catch(function(error) {
                     console.log(error);
                     // If there's no JSON response we assume it meant there was
                     // no results. This isn't really true, but the server doesn't
                     // have a good JSON API.
                     if (queryId == self.queryId)
-                        self.issues = [];
+                        self.updateResult(new SearchResult([], ""));
                 }).either(function() {
                     if (queryId == self.queryId)
                         self.sending = false;
                 });
-            }
+            },
+            updateUrl: function() {
+                var queryString = Object.toQueryString(this.query);
+                queryString = queryString.replace(/\+/g, "%20");
+                var newUrl = window.location.pathname + "?" + queryString;
+                    + window.location.hash;
+                var oldUrl = window.location.pathname + window.location.search;
+                    + window.location.hash;
+                if (oldUrl == newUrl)
+                    return;
+                window.history.pushState(null, null, newUrl);
+            },
+            updateResult: function(result) {
+                this.result = result;
+                this.cursor = result.cursor;
+            },
         });
     </script>
 </polymer-element>

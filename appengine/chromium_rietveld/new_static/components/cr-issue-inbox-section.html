@@ -16,7 +16,7 @@ found in the LICENSE file. -->
             }
         </style>
 
-        <cr-issue-list issues="{{ visibleIssues }}"></cr-issue-list>
+        <cr-issue-list issues="{{ visibleIssues }}" approvals></cr-issue-list>
         <template if="{{ hiddenIssues.length }}">
             <polymer-ui-collapsible active="{{ showingHiddenIssues }}">
                 <cr-action class="polymer-ui-collapsible-header">
@@ -24,7 +24,7 @@ found in the LICENSE file. -->
                     {{ "issue" | pluralize(hiddenIssues.length) }}
                 </cr-action>
                 <template if="{{ showingHiddenIssues }}">
-                    <cr-issue-list issues="{{ hiddenIssues }}"></cr-issue-list>
+                    <cr-issue-list issues="{{ hiddenIssues }}" approvals></cr-issue-list>
                 </template>
             </polymer-ui-collapsible>
         </template>
