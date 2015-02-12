@@ -104,7 +104,7 @@ def get_and_cache_pagedata(localpath):
     return page_data
   page = Page.all().filter('localpath =', localpath).get()
   if not page:
-    logging.error('get_and_cache_pagedata(\'%s\'): no matching localpath in '
+    logging.debug('get_and_cache_pagedata(\'%s\'): no matching localpath in '
         'datastore' % localpath)
     return {'content': None}
   page_data = {
@@ -216,7 +216,7 @@ def get_and_cache_rowdata(localpath):
     return row_data
   row = Row.get_by_key_name(localpath)
   if not row:
-    logging.error('get_and_cache_rowdata(\'%s\'): no matching localpath in '
+    logging.debug('get_and_cache_rowdata(\'%s\'): no matching localpath in '
         'datastore' % localpath)
     return {}
   row_data = {}
