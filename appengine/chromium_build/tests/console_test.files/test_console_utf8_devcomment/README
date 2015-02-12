@@ -1,0 +1,10 @@
+How to recreate the contents of this directory.
+
+1. wget http://build.chromium.org/p/chromium.mac/console
+2. mv console in_mac.html
+3. Edit a DevComment section in in_mac.html to contain ₩.
+4. Edit console_test.py, uncomment lines in console_test.py
+   that write expected contents.
+5. Run test.  (This will write expected contents.)
+6. Comment lines that write expected comments.
+7. Create a CL with the updated content, land it.

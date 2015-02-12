@@ -275,6 +275,16 @@ def save_row(row_data, localpath):
     put_data_into_cache('latest_rev', latest_rev_row)
 
 
+def utf8_convert(beautiful_soup_tag):
+  # cmp also investigated:
+  #   beautiful_soup_tag.__str__(encoding='utf-8').decode('utf-8')
+  # He found that the BeautifulSoup() __str__ method when used with a 'utf-8'
+  # encoding returned effectively the same thing as str(), a Python built-in.
+  # After a handful of tests, he switched to using str() to avoid the add'l
+  # complexity of another BeautifulSoup method.
+  return str(beautiful_soup_tag).decode('utf-8')
+
+
 ##########
 # ConsoleData class definition and related functions.
 ##########
@@ -298,8 +308,7 @@ class ConsoleData(object):
 
   @staticmethod
   def ContentsToHtml(contents):
-    return ''.join(unicode(content).encode('ascii', 'replace')
-                   for content in contents)
+    return ''.join(utf8_convert(content) for content in contents)
 
   @property
   def last_row(self):
@@ -401,7 +410,7 @@ def console_merger(localpath, remoteurl, page_data,
                    masters_to_merge=None, num_rows_to_merge=None):
   masters_to_merge = masters_to_merge or DEFAULT_MASTERS_TO_MERGE
   num_rows_to_merge = num_rows_to_merge or 25
-  mergedconsole = ConsoleData()
+  console_data = ConsoleData()
   surroundings = get_and_cache_pagedata('surroundings')
   merged_page = BeautifulSoup(surroundings['content'])
   merged_tag = merged_page.find('table', 'ConsoleData')
@@ -423,7 +432,7 @@ def console_merger(localpath, remoteurl, page_data,
     master_summary = get_and_cache_pagedata('%s/console/summary' % master)
     if not master_summary['content']:
       continue
-    mergedconsole.SawMaster(master)
+    console_data.SawMaster(master)
     # Get the categories for this builder. If the builder doesn't have any
     # categories, just use the default empty-string category.
     category_list = []
@@ -437,7 +446,7 @@ def console_merger(localpath, remoteurl, page_data,
     summary_row = BeautifulSoup(master_summary['content'])
     summary_list = summary_row.findAll('table')
     for category, summary in zip(category_list, summary_list):
-      mergedconsole.AddCategory(category, summary)
+      console_data.AddCategory(category, summary)
 
     # Fetch all of the rows that we need.
     rows_fetched = 0
@@ -453,13 +462,13 @@ def console_merger(localpath, remoteurl, page_data,
         current_rev -= 1
         revs_skipped += 1
         continue
-      mergedconsole.AddRow(row_data)
+      console_data.AddRow(row_data)
       current_rev -= 1
       revs_skipped = 0
       rows_fetched += 1
 
   # Convert the merged content into console content.
-  mergedconsole.Finish()
+  console_data.Finish()
   template_environment = Environment()
   template_environment.loader = FileSystemLoader('.')
   def notstarted(builder_status):
@@ -474,19 +483,16 @@ def console_merger(localpath, remoteurl, page_data,
     return builder_status
   template_environment.filters['notstarted'] = notstarted
   merged_template = template_environment.from_string(console_template)
-  merged_content = merged_template.render(data=mergedconsole)
+  merged_console = merged_template.render(data=console_data)
   # For debugging:
-  # print merged_content
+  # logging.info('%r' % merged_console)
   # import code
   # code.interact(local=locals())
 
-  # Place merged data at |merged_tag|'s location in |merged_page|, and put the
-  # result in |merged_content|.
-  merged_tag.replaceWith(str(merged_content))
-  # .prettify() may damage the HTML but makes output nicer.  However, that
-  # cost is a bunch of extra whitespace.  We reduce page size by not using
-  # .prettify().
-  merged_content = merged_page.__str__(encoding=None)
+  # Place merged console at |merged_tag|'s location in |merged_page|, and put
+  # the result in |merged_content|.
+  merged_tag.replaceWith(merged_console)
+  merged_content = utf8_convert(merged_page)
   merged_content = re.sub(
       r'\'\<a href="\'', '\'<a \' + attributes + \' href="\'', merged_content)
   merged_content = re.sub(
@@ -668,16 +674,6 @@ def get_position_number(commit_msg):
     if line.startswith('Cr-Commit-Position: '):
       return filter(str.isdigit, str(line.split('@')[-1]))
   return '0'
-
-
-def utf8_convert(bstring):
-  # cmp also investigated:
-  #   bstring.__str__(encoding='utf-8').decode('utf-8')
-  # He found that the BeautifulSoup() __str__ method when used with a 'utf-8'
-  # encoding returned effectively the same thing as str(), a Python built-in.
-  # After a handful of tests, he switched to using str() to avoid the add'l
-  # complexity of another BeautifulSoup method.
-  return str(bstring).decode('utf-8')
 
 
 # W0613:600,28:parse_master: Unused argument 'remoteurl'

@@ -182,3 +182,31 @@ class ConsoleTestCase(cb.CbTestCase):
 
     self.assertEquals(self.read_file('exp_merged.html'), act_merged,
                       'Unexpected console output found')
+
+  def test_console_utf8_devcomment(self):
+    """Test that a console DevComment row with a UTF-8 character is retained."""
+    for master in ['mac']:
+      page_data = {'content': self.read_file('in_%s.html' % master)}
+      app.parse_master(
+          localpath='chromium.%s/console' % master,
+          remoteurl='http://build.chromium.org/p/chromium.%s/console' % master,
+          page_data=page_data)
+
+    # Get the expected and real output, compare.
+    app.console_merger(
+        'chromium/console', '', {},
+        masters_to_merge=[
+            'chromium.mac',
+        ],
+        num_rows_to_merge=20)
+    act_merged = app.get_and_cache_pagedata('chromium/console')['content']
+
+    # Uncomment if deeper inspection is needed of the returned console.
+    # import logging
+    # logging.debug('foo')
+    # self.write_file('exp_merged.html', act_merged.encode('utf-8'))
+    # import code
+    # code.interact(local=locals())
+
+    self.assertEquals(self.read_file('exp_merged.html').decode('utf-8'),
+                      act_merged, 'Unexpected console output found')
