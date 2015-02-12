@@ -14,8 +14,9 @@
 
 """Top-level URL mappings for Rietveld."""
 
-# NOTE: Must import *, since Django looks for things here, e.g. handler500.
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import include
+from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import url
 
 # If you don't want to run Rietveld from the root level, add the
 # subdirectory as shown in the following example:

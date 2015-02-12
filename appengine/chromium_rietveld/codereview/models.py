@@ -387,9 +387,6 @@ class Issue(ndb.Model):
       else:
         drafts = []
       comments = list(Comment.query(Comment.draft == False, ancestor=self.key))
-      # TODO(andi) Remove draft_count attribute, we already have _num_drafts
-      # and it's additional magic.
-      self.draft_count = len(drafts)
       for c in drafts:
         c.ps_key = c.patch_key.get().patchset_key
       patchset_id_mapping = {}  # Maps from patchset id to its ordering number.
@@ -1728,8 +1725,11 @@ class AccountStatsMulti(AccountStatsBase):
           year, month = self.name.split('-', 1)
           self._days = calendar.monthrange(int(year), int(month))[1]
         else:
-          self._days = sum(
-              calendar.monthrange(map(int, i.split('-')))[1] for i in quarter)
+          self._days = 0
+          for year_dash_month in quarter:
+            year, month = map(int, year_dash_month.split('-'))
+            self._days += calendar.monthrange(year, month)[1]
+
     return self._days
 
   @property
@@ -1753,7 +1753,7 @@ def quarter_to_months(when):
     return None
   prefix = quarter.group(1)
   # Convert the quarter into 3 months group.
-  base = (int(quarter.group(2)) - 1) * 4 + 1
+  base = (int(quarter.group(2)) - 1) * 3 + 1
   return ['%s%02d' % (prefix, i) for i in range(base, base+3)]
 
 

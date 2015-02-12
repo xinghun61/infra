@@ -117,9 +117,10 @@ VCS = [
 
 VCS_SHORT_NAMES = []    # hg, svn, ...
 VCS_ABBREVIATIONS = {}  # alias: name, ...
-for vcs in VCS:
-  VCS_SHORT_NAMES.append(min(vcs['aliases'], key=len))
-  VCS_ABBREVIATIONS.update((alias, vcs['name']) for alias in vcs['aliases'])
+for vcs_entry in VCS:
+  VCS_SHORT_NAMES.append(min(vcs_entry['aliases'], key=len))
+  VCS_ABBREVIATIONS.update((alias, vcs_entry['name'])
+                           for alias in vcs_entry['aliases'])
 
 
 # OAuth 2.0-Related Constants
@@ -184,7 +185,7 @@ def GetEmail(prompt):
       last_email = last_email_file.readline().strip("\n")
       last_email_file.close()
       prompt += " [%s]" % last_email
-    except IOError, e:
+    except IOError:
       pass
   email = raw_input(prompt + ": ").strip()
   if email:
@@ -192,7 +193,7 @@ def GetEmail(prompt):
       last_email_file = open(last_email_file_name, "w")
       last_email_file.write(email)
       last_email_file.close()
-    except IOError, e:
+    except IOError:
       pass
   else:
     email = last_email
@@ -371,7 +372,7 @@ class AbstractRpcServer(object):
     authentication cookie, it returns a 401 response (or a 302) and
     directs us to authenticate ourselves with ClientLogin.
     """
-    for i in range(3):
+    for _ in range(3):
       credentials = self.auth_function()
       try:
         auth_token = self._GetAuthToken(credentials[0], credentials[1])
@@ -756,7 +757,7 @@ class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     self.SetResponseValue()
     self.wfile.write(AUTH_HANDLER_RESPONSE)
 
-  def log_message(self, format, *args):
+  def log_message(self, format_str, *args):
     """Do not log messages to stdout while running as command line program."""
     pass
 
@@ -876,7 +877,7 @@ class KeyringCreds(object):
     if keyring and not email in self.accounts_seen:
       try:
         password = keyring.get_password(self.host, email)
-      except:
+      except Exception:
         # Sadly, we have to trap all errors here as
         # gnomekeyring.IOError inherits from object. :/
         print "Failed to get password from keyring"
@@ -1010,8 +1011,8 @@ def GetContentType(filename):
 use_shell = sys.platform.startswith("win")
 
 def RunShellWithReturnCodeAndStderr(command, print_output=False,
-                           universal_newlines=True,
-                           env=os.environ):
+                                    universal_newlines=True,
+                                    env=None):
   """Run a command and return output from stdout, stderr and the return code.
 
   Args:
@@ -1019,11 +1020,14 @@ def RunShellWithReturnCodeAndStderr(command, print_output=False,
     print_output: If True, the output is printed to stdout.
                   If False, both stdout and stderr are ignored.
     universal_newlines: Use universal_newlines flag (default: True).
+    env: environment variable dictionary (default: os.environ).
 
   Returns:
     Tuple (stdout, stderr, return code)
   """
   LOGGER.info("Running %s", command)
+  if env is None:
+    env = os.environ
   env = env.copy()
   env['LC_MESSAGES'] = 'C'
   p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1050,14 +1054,18 @@ def RunShellWithReturnCodeAndStderr(command, print_output=False,
 
 def RunShellWithReturnCode(command, print_output=False,
                            universal_newlines=True,
-                           env=os.environ):
+                           env=None):
   """Run a command and return output from stdout and the return code."""
-  out, err, retcode = RunShellWithReturnCodeAndStderr(command, print_output,
-                           universal_newlines, env)
+  if env is None:
+    env = os.environ
+  out, _, retcode = RunShellWithReturnCodeAndStderr(command, print_output,
+                                                    universal_newlines, env)
   return out, retcode
 
 def RunShell(command, silent_ok=False, universal_newlines=True,
-             print_output=False, env=os.environ):
+             print_output=False, env=None):
+  if env is None:
+    env = os.environ
   data, retcode = RunShellWithReturnCode(command, print_output,
                                          universal_newlines, env)
   if retcode:
@@ -1143,7 +1151,7 @@ class VersionControlSystem(object):
     files = {}
     for line in diff.splitlines(True):
       if line.startswith('Index:') or line.startswith('Property changes on:'):
-        unused, filename = line.split(':', 1)
+        _, filename = line.split(':', 1)
         # On Windows if a file has property changes its filename uses '\'
         # instead of '/'.
         filename = filename.strip().replace('\\', '/')
@@ -1159,16 +1167,16 @@ class VersionControlSystem(object):
       """Uploads a file to the server."""
       file_too_large = False
       if is_base:
-        type = "base"
+        base_or_cur = "base"
       else:
-        type = "current"
+        base_or_cur = "current"
       if len(content) > MAX_UPLOAD_SIZE:
         result = ("Not uploading the %s file for %s because it's too large." %
-            (type, filename))
+            (base_or_cur, filename))
         file_too_large = True
         content = ""
       elif options.verbose:
-        result = "Uploading %s file for %s" % (type, filename)
+        result = "Uploading %s file for %s" % (base_or_cur, filename)
       checksum = md5(content).hexdigest()
       url = "/%d/upload_content/%d/%d" % (int(issue), int(patchset), file_id)
       form_fields = [("filename", filename),
@@ -1196,7 +1204,8 @@ class VersionControlSystem(object):
       return result
 
     patches = dict()
-    [patches.setdefault(v, k) for k, v in patch_list]
+    for k, v in patch_list:
+      patches.setdefault(v, k)
 
     threads = []
     thread_pool = ThreadPool(options.num_upload_threads)
@@ -1260,6 +1269,7 @@ class SubversionVCS(VersionControlSystem):
   def GetGUID(self):
     return self._GetInfo("Repository UUID")
 
+  # pylint: disable=unused-argument
   def GuessBase(self, required):
     """Wrapper for _GuessBase."""
     return self.svn_base
@@ -1361,12 +1371,12 @@ class SubversionVCS(VersionControlSystem):
 
   def ReadFile(self, filename):
     """Returns the contents of a file."""
-    file = open(filename, 'rb')
+    file_obj = open(filename, 'rb')
     result = ""
     try:
-      result = file.read()
+      result = file_obj.read()
     finally:
-      file.close()
+      file_obj.close()
     return result
 
   def GetStatus(self, filename):
@@ -1819,7 +1829,6 @@ class MercurialVCS(VersionControlSystem):
 
   def GetUnknownFiles(self):
     """Return a list of files unknown to the VCS."""
-    args = []
     status = RunShell(["hg", "status", "--rev", self.base_rev, "-u", "."],
         silent_ok=True)
     unknown_files = []
@@ -1944,7 +1953,8 @@ class PerforceVCS(VersionControlSystem):
       ErrorExit("Got error status from %s:\n%s" % (extra_args, data))
     return data
 
-  def GetFileProperties(self, property_key_prefix = "", command = "describe"):
+  # pylint: disable=unused-argument
+  def GetFileProperties(self, property_key_prefix="", command="describe"):
     description = self.RunPerforceCommand(["describe", self.p4_changelist],
                                           marshal_output=True)
 
@@ -2146,7 +2156,8 @@ class PerforceVCS(VersionControlSystem):
     return "\n".join(svndiff) + "\n"
 
   def PerforceActionToSvnStatus(self, status):
-    # Mirroring the list at http://permalink.gmane.org/gmane.comp.version-control.mercurial.devel/28717
+    # Mirroring the list at
+    # permalink.gmane.org/gmane.comp.version-control.mercurial.devel/28717
     # Is there something more official?
     return {
             "add" : "A",
@@ -2207,10 +2218,10 @@ def SplitPatch(data):
   for line in data.splitlines(True):
     new_filename = None
     if line.startswith('Index:'):
-      unused, new_filename = line.split(':', 1)
+      _, new_filename = line.split(':', 1)
       new_filename = new_filename.strip()
     elif line.startswith('Property changes on:'):
-      unused, temp_filename = line.split(':', 1)
+      _, temp_filename = line.split(':', 1)
       # When a file is modified, paths use '/' between directories, however
       # when a property is modified '\' is used on Windows.  Make them the same
       # otherwise the file shows up twice.
@@ -2310,7 +2321,7 @@ def GuessVCSName(options):
       out, returncode = RunShellWithReturnCode(command)
       if returncode == 0:
         return (vcs_type, out.strip())
-    except OSError, (errcode, message):
+    except OSError, (errcode, _):
       if errcode != errno.ENOENT:  # command not found code
         raise
 
@@ -2355,28 +2366,28 @@ def GuessVCS(options):
   Returns:
     A VersionControlSystem instance. Exits if the VCS can't be guessed.
   """
-  vcs = options.vcs
-  if not vcs:
-    vcs = os.environ.get("CODEREVIEW_VCS")
-  if vcs:
-    v = VCS_ABBREVIATIONS.get(vcs.lower())
+  vcs_name = options.vcs
+  if not vcs_name:
+    vcs_name = os.environ.get("CODEREVIEW_VCS")
+  if vcs_name:
+    v = VCS_ABBREVIATIONS.get(vcs_name.lower())
     if v is None:
-      ErrorExit("Unknown version control system %r specified." % vcs)
-    (vcs, extra_output) = (v, None)
+      ErrorExit("Unknown version control system %r specified." % vcs_name)
+    (vcs_name, extra_output) = (v, None)
   else:
-    (vcs, extra_output) = GuessVCSName(options)
+    (vcs_name, extra_output) = GuessVCSName(options)
 
-  if vcs == VCS_MERCURIAL:
+  if vcs_name == VCS_MERCURIAL:
     if extra_output is None:
       extra_output = RunShell(["hg", "root"]).strip()
     return MercurialVCS(options, extra_output)
-  elif vcs == VCS_SUBVERSION:
+  elif vcs_name == VCS_SUBVERSION:
     return SubversionVCS(options)
-  elif vcs == VCS_PERFORCE:
+  elif vcs_name == VCS_PERFORCE:
     return PerforceVCS(options)
-  elif vcs == VCS_GIT:
+  elif vcs_name == VCS_GIT:
     return GitVCS(options)
-  elif vcs == VCS_CVS:
+  elif vcs_name == VCS_CVS:
     return CVSVCS(options)
 
   ErrorExit(("Could not guess version control system. "
@@ -2618,9 +2629,9 @@ def RealMain(argv, data=None):
   if options.file:
     if options.message:
       ErrorExit("Can't specify both message and message file options")
-    file = open(options.file, 'r')
-    message = file.read()
-    file.close()
+    file_obj = open(options.file, 'r')
+    message = file_obj.read()
+    file_obj.close()
   if options.issue:
     prompt = "Title describing this patch set: "
   else:
@@ -2646,12 +2657,12 @@ def RealMain(argv, data=None):
   # Send a hash of all the base file so the server can determine if a copy
   # already exists in an earlier patchset.
   base_hashes = ""
-  for file, info in files.iteritems():
+  for filename, info in files.iteritems():
     if not info[0] is None:
       checksum = md5(info[0]).hexdigest()
       if base_hashes:
         base_hashes += "|"
-      base_hashes += checksum + ":" + file
+      base_hashes += checksum + ":" + filename
   form_fields.append(("base_hashes", base_hashes))
   if options.private:
     if options.issue:

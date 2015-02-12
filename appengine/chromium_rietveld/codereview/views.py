@@ -14,6 +14,10 @@
 
 """Views for Rietveld."""
 
+# We often use local variables that are the same as handler function names, like
+# "acccount", "patch", and "patchset".
+# pylint: disable=W0621
+
 import binascii
 import calendar
 import cgi
@@ -431,16 +435,17 @@ class MigrateEntitiesForm(forms.Form):
     """
     if self._user is None:
       raise forms.ValidationError('No user given.')
-    account = models.Account.get_account_for_email(self.cleaned_data['account'])
-    if account is None:
+    account_obj = models.Account.get_account_for_email(
+      self.cleaned_data['account'])
+    if account_obj is None:
       raise forms.ValidationError('No such email.')
-    if account.user.email() == self._user.email():
+    if account_obj.user.email() == self._user.email():
       raise forms.ValidationError(
         'Nothing to do. This is your current email address.')
-    if account.user.user_id() != self._user.user_id():
+    if account_obj.user.user_id() != self._user.user_id():
       raise forms.ValidationError(
         'This email address isn\'t related to your account.')
-    return account
+    return account_obj
 
 
 ORDER_CHOICES = (
@@ -516,18 +521,18 @@ class SearchForm(forms.Form):
 
     Returns an User instance or raises ValidationError.
     """
-    accounts = filter(None,
-                      (x.strip()
-                       for x in self.cleaned_data.get(key, '').split(',')))
-    if len(accounts) > 1:
+    user_names = filter(None,
+                        (x.strip()
+                         for x in self.cleaned_data.get(key, '').split(',')))
+    if len(user_names) > 1:
       raise forms.ValidationError('Only one user name is allowed.')
-    elif not accounts:
+    elif not user_names:
       return None
-    account = accounts[0]
-    if '@' in account:
-      acct = models.Account.get_account_for_email(account)
+    user_name = user_names[0]
+    if '@' in user_name:
+      acct = models.Account.get_account_for_email(user_name)
     else:
-      acct = models.Account.get_account_for_nickname(account)
+      acct = models.Account.get_account_for_nickname(user_name)
     if not acct:
       raise forms.ValidationError('Unknown user')
     return acct.user
@@ -834,16 +839,16 @@ def _optimize_draft_counts(issues):
 
   If there is no current user, all draft counts are forced to 0.
   """
-  account = models.Account.current_user_account
-  if account is None:
+  cur_account = models.Account.current_user_account
+  if cur_account is None:
     issue_ids = None
   else:
-    issue_ids = account.drafts
+    issue_ids = cur_account.drafts
   for issue in issues:
     if issue_ids is None or issue.key.id() not in issue_ids:
       issue._num_drafts = issue._num_drafts or {}
-      if account:
-        issue._num_drafts[account.email] = 0
+      if cur_account:
+        issue._num_drafts[cur_account.email] = 0
 
 
 @deco.login_required
@@ -993,15 +998,15 @@ def _show_user(request):
     return _serve_new_ui(request)
 
   dashboard_dict = _get_dashboard_issue_lists(request)
-  account = models.Account.get_account_for_user(
+  viewed_account = models.Account.get_account_for_user(
     request.user_to_show, autocreate=False)
-  if not account:
+  if not viewed_account:
     return HttpTextResponse(
       'No such user (%s)' % request.user_to_show.email(), status=404)
 
   show_block = request.user_is_admin and request.user_to_show != request.user
   dashboard_dict.update({
-      'viewed_account': account,
+      'viewed_account': viewed_account,
       'show_block': show_block,
       })
   return respond(request, 'user.html', dashboard_dict)
@@ -1186,7 +1191,7 @@ def upload(request):
   return HttpTextResponse(msg)
 
 
-@ndb.transactional()
+@ndb.transactional
 def _update_patch(patch_key, content_key, is_current, status, is_binary):
   """Store content-related info in a Patch."""
   patch = patch_key.get()
@@ -1517,7 +1522,7 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   if not separate_patches:
     try:
       patches = engine.ParsePatchSet(patchset)
-    except:
+    except Exception:
       logging.exception('Exception during patchset parsing')
       patches = []
     if not patches:
@@ -1760,7 +1765,6 @@ def patchset(request):
   if request.user:
     account = models.Account.current_user_account
     display_exp_tryjob_results = account.display_exp_tryjob_results
-  logging.warning('Patchset display_exp_tryjob_results: %r', display_exp_tryjob_results)
   patchsets = request.issue.get_patchset_info(
     request.user, request.patchset.key.id())
   for ps in patchsets:
@@ -2320,6 +2324,7 @@ def api_issue(request):
   values = _issue_as_dict(request.issue, messages, request)
   return values
 
+# pylint: disable=W0613
 @deco.access_control_allow_origin_star
 @deco.json_response
 def api_tryservers(request):
@@ -3240,7 +3245,6 @@ def _get_draft_details(request, comments):
   output = []
   linecache = {}  # Maps (c.patch_key, c.left) to mapping (lineno, line)
   modified_patches = []
-  fetch_base_failed = False
 
   for c in comments:
     patch = c.patch_key.get()
@@ -3266,7 +3270,7 @@ def _get_draft_details(request, comments):
         except FetchError:
           linecache[last_key] = _patchlines2cache(
             patching.ParsePatchToLines(patch.lines), c.left)
-          fetch_base_failed = True
+
     context = linecache[last_key].get(c.lineno, '').strip()
     url = request.build_absolute_uri(
       '%s#%scode%d' % (reverse(diff, args=[request.issue.key.id(),
@@ -4201,7 +4205,7 @@ def get_access_token(request):
       credentials.refresh(httplib2.Http())
     except AccessTokenRefreshError:
       return redirect_response_object
-    except:
+    except Exception:
       refresh_failed = True
 
   port_value = _validate_port(request.GET.get('port'))

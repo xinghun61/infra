@@ -14,8 +14,8 @@
 
 """URL mappings for the codereview package."""
 
-# NOTE: Must import *, since Django looks for things here, e.g. handler500.
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import url
 import django.views.defaults
 from django.views.generic.base import RedirectView
 

@@ -53,6 +53,7 @@ class BaseFeed(Feed):
                             item.key.id())
     return reverse('codereview.views.show', args=[item.key.id()])
 
+  # pylint: disable=W0613
   def item_title(self, item):
     return 'the title'
 
@@ -79,6 +80,7 @@ class BaseFeed(Feed):
 
 class BaseUserFeed(BaseFeed):
 
+  # pylint: disable=W0613
   def get_object(self, request, *bits):
     """Returns the account for the requested user feed.
 
@@ -146,6 +148,7 @@ class OneIssueFeed(BaseFeed):
   def link(self):
     return reverse('codereview.views.index')
 
+  # pylint: disable=W0613
   def get_object(self, request, *bits):
     if len(bits) != 1:
       raise ObjectDoesNotExist
