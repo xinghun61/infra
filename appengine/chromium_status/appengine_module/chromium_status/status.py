@@ -314,6 +314,14 @@ class CurrentPage(BasePage):
     else:
       self._handle()
 
+  @utils.requires_bot_login
+  def post(self):
+    """Handles the same get request from a backdoor.
+
+    POST to receive the password plaintext without polluting the logs.
+    """
+    return self._handle()
+
   @utils.requires_read_access
   def _handle(self):
     """Displays the current message in various formats."""
