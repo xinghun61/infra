@@ -3,5 +3,4 @@
 # found in the LICENSE file.
 
 # Make webapp.template use django 1.2.  Quells default django warning.
-from google.appengine.dist import use_library
-use_library('django', '1.2')
+webapp_django_version = '1.2'
