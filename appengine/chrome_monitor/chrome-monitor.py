@@ -55,7 +55,6 @@ DEFAULT_MASTER = [
     'client.chromeoffice',
     'client.v8',
     'tryserver.blink',
-    'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
     'tryserver.chromium.win',
@@ -85,7 +84,6 @@ PRUNE_CONFIG = [
 # historical data.
 WHITELIST_FOR_PRUNING = [
     'tryserver.blink',
-    'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
     'tryserver.chromium.win',

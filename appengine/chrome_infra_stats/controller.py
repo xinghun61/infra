@@ -74,7 +74,6 @@ masters = [
     'client.webrtc',
     'client.webrtc.fyi',
     'tryserver.blink',
-    'tryserver.chromium.gpu',
     'tryserver.chromium.linux',
     'tryserver.chromium.mac',
     'tryserver.chromium.win',

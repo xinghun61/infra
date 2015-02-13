@@ -83,9 +83,6 @@ class TryserverBuilders(ndb.Model):
     'tryserver.chromium.win': [
       'http://build.chromium.org/p/tryserver.chromium.win/json/builders'
     ],
-    'tryserver.chromium.gpu': [
-      'http://build.chromium.org/p/tryserver.chromium.gpu/json/builders'
-    ],
     'client.skia': [
       'http://build.chromium.org/p/client.skia/json/trybots'
     ],

@@ -40,10 +40,6 @@ _masters = {
         'name': 'ChromiumWin',
         'groups': ['@ToT Chromium']
     },
-    'tryserver.chromium.gpu': {
-        'name': 'GpuTryServer',
-        'groups': ['TryServers']
-    },
     'client.mojo': {
         'name': 'client.mojo',
         'groups': ['ThisIsUnused']
