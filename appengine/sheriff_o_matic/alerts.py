@@ -12,7 +12,6 @@ import zlib
 
 import cloudstorage as gcs
 
-from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.datastore import datastore_query
@@ -42,7 +41,7 @@ class AlertsHandler(webapp2.RequestHandler):
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5
 
-  # New alerts should be posted at least every 30 minutes
+  # New alerts should be posted at least every 30 minutes 
   MAX_STALENESS = 60*30
 
   # Has no 'response' member.
@@ -68,16 +67,12 @@ class AlertsHandler(webapp2.RequestHandler):
     return last_query.order(-AlertsJSON.date).get()
 
   def get_from_gcs(self, alerts_type):
-    with contextlib.closing(gcs.open(
-        "/" + app_identity.get_default_gcs_bucket_name() +
-        "/" + alerts_type)) as gcs_file:
+    with contextlib.closing(gcs.open("/bucket/" + alerts_type)) as gcs_file:
       return gcs_file.read()
 
   def post_to_gcs(self, alerts_type, data):
     # Create a GCS file with GCS client.
-    with contextlib.closing(gcs.open(
-        "/" + app_identity.get_default_gcs_bucket_name() +
-        "/" + alerts_type, 'w')) as f:
+    with contextlib.closing(gcs.open("/bucket/" + alerts_type, 'w')) as f:
       f.write(data)
 
   def get_from_datastore(self, alerts_type):
@@ -92,7 +87,7 @@ class AlertsHandler(webapp2.RequestHandler):
           datetime.datetime.utcfromtimestamp(0))
       if utcnow.total_seconds() - data["date"] > self.MAX_STALENESS:
         data["stale_alerts_json"] = True
-
+ 
       data = self.generate_json_dump(data)
 
       self.send_json_data(data)
@@ -110,7 +105,7 @@ class AlertsHandler(webapp2.RequestHandler):
         data["stale_alerts_json"] = True
       data["stale_alerts_thresh"] = self.MAX_STALENESS
 
-      data = self.generate_json_dump(data)
+      data = self.generate_json_dump(data) 
       self.send_json_data(data)
       return True
     return False
