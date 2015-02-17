@@ -411,7 +411,8 @@ def console_merger(localpath, remoteurl, page_data,
   masters_to_merge = masters_to_merge or DEFAULT_MASTERS_TO_MERGE
   num_rows_to_merge = num_rows_to_merge or 25
   console_data = ConsoleData()
-  surroundings = get_and_cache_pagedata('surroundings')
+  surroundings = get_and_cache_pagedata(
+                     '%s/console/surroundings' % masters_to_merge[0])
   merged_page = BeautifulSoup(surroundings['content'])
   merged_tag = merged_page.find('table', 'ConsoleData')
   if merged_tag is None:
@@ -701,12 +702,13 @@ def parse_master(localpath, remoteurl, page_data=None):
                                          ('width', '96%')])
   data.replaceWith(new_data)
 
-  surroundings_page = get_or_create_page('surroundings',
+  surroundings_page = get_or_create_page(localpath + '/surroundings',
                                          None, maxage=30)
   surroundings_data = {}
-  surroundings_data['title'] = 'Surroundings'
+  surroundings_data['title'] = 'Surroundings for ' + localpath
   surroundings_data['content'] = utf8_convert(surroundings)
-  save_page(surroundings_page, 'surroundings', ts, surroundings_data)
+  save_page(surroundings_page, localpath + '/surroundings', ts,
+            surroundings_data)
 
   rows = data.findAll('tr', recursive=False)
   # The first table row can be special: the list of categories.
