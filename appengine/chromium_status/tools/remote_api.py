@@ -52,7 +52,6 @@ def main():
 
   from appengine_module.chromium_status import base_page
   from appengine_module.chromium_status import breakpad
-  from appengine_module.chromium_status import commit_queue
   from appengine_module.chromium_status import event_push
   from appengine_module.chromium_status import lkgr
   from appengine_module.chromium_status import profiling

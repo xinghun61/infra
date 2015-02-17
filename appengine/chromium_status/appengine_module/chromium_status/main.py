@@ -13,7 +13,6 @@ from google.appengine.ext import webapp
 
 from appengine_module.chromium_status import base_page
 from appengine_module.chromium_status import breakpad
-from appengine_module.chromium_status import commit_queue
 from appengine_module.chromium_status import event_push
 from appengine_module.chromium_status import git_lkgr
 from appengine_module.chromium_status import lkgr
@@ -39,12 +38,6 @@ URLS = [
   ('/_ah/warmup', Warmup),
   ('/allstatus/?', status.AllStatusPage),
   ('/breakpad/?', breakpad.BreakPad),
-  ('/cq/receiver/?', commit_queue.Receiver),
-  ('/cq/?', commit_queue.Summary),
-  ('/cq/top', commit_queue.TopScore),
-  ('/cq/([^/]+)/?', commit_queue.User),
-  ('/cq/([^/]+)/(\d+)/?', commit_queue.Issue),
-  ('/cq/([^/]+)/(\d+)/(\d+)/?', commit_queue.Issue),
   ('/current/?', status.CurrentPage),
   ('/lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
   ('/git-lkgr/?', git_lkgr.LastKnownGoodRevisionGIT),
@@ -72,7 +65,6 @@ APPLICATION = webapp.WSGIApplication(URLS, debug=True)
 # Do some one-time initializations.
 base_page.bootstrap()
 breakpad.bootstrap()
-commit_queue.bootstrap()
 lkgr.bootstrap()
 git_lkgr.bootstrap()
 status.bootstrap()
