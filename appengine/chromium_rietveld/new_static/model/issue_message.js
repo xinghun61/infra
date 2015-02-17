@@ -17,6 +17,7 @@ function IssueMessage(issue, sequence)
     this.generated = false;
     this.preview = "";
     this.active = false;
+    this.hidden = false;
 }
 
 IssueMessage.REPLY_HEADER = /^On \d+\/\d+\/\d+ (at )?\d+:\d+:\d+, .*? wrote:$/;
@@ -65,4 +66,5 @@ IssueMessage.prototype.parseData = function(data)
     this.date = Date.utc.create(data.date);
     this.approval = data.approval || false;
     this.generated = data.auto_generated || false;
+    this.hidden = this.generated;
 };

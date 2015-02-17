@@ -77,6 +77,10 @@
     background-color: #E75D54;
 }
 
+.generated .message-header {
+    background-color: #EEE;
+}
+
 .disapproval .message-header,
 .disapproval .message-preview {
     color: #F4F4F4;

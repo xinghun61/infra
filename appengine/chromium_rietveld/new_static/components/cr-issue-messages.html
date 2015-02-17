@@ -17,16 +17,43 @@ found in the LICENSE file. -->
                 margin-bottom: 1em;
                 padding: 0;
             }
+
+            .separator {
+                padding: 0 5px 0 5px;
+                flex-shrink: 0;
+            }
         </style>
 
-        <template if="{{ !showOlderMessages && olderMessages.length }}">
-            <cr-toolbar>
-                <cr-action on-tap="{{ handleShowOlderMessages }}">
-                    Show {{ olderMessages.length }} older
-                    {{ "message" | pluralize(olderMessages.length) }}
-                </cr-action>
-            </cr-toolbar>
+        <cr-toolbar>
+        <template if="{{ olderMessages.length }}">
+            <cr-action on-tap="{{ toggleOlderMessages }}">
+                <template if="{{ showOlderMessages }}">
+                    Hide
+                </template>
+                <template if="{{ !showOlderMessages }}">
+                    Show
+                </template>
+                {{ olderMessages.length }} older
+                {{ "message" | pluralize(olderMessages.length) }}
+            </cr-action>
+            <template if="{{ generatedMessages.length }}">
+              <div class="separator">/</div>
+            </template>
         </template>
+
+        <template if="{{ generatedMessages.length }}">
+            <cr-action on-tap="{{ toggleGeneratedMessages }}">
+                <template if="{{ showGeneratedMessages }}">
+                    Hide
+                </template>
+                <template if="{{ !showGeneratedMessages }}">
+                    Show
+                </template>
+                {{ generatedMessages.length }} generated
+                {{ "message" | pluralize(generatedMessages.length) }}
+            </cr-action>
+        </template>
+        </cr-toolbar>
 
         <div id="messages">
             <template if="{{ olderMessages.length }}">
@@ -34,16 +61,16 @@ found in the LICENSE file. -->
                     <template if="{{ showOlderMessages }}">
                         <template repeat="{{ message in olderMessages }}">
                             <cr-issue-message
-                                id="message-{{ message.sequence"
+                                id="message-{{ message.sequence }}"
                                 message="{{ message }}"
                                 selected="{{ message.sequence == selectionId }}"></cr-issue-message>
                         </template>
                     </template>
                 </polymer-ui-collapsible>
             </template>
-            <template repeat="{{ message in visibleMessages }}">
+            <template repeat="{{ message in recentMessages }}">
                 <cr-issue-message
-                    id="message-{{ message.sequence"
+                    id="message-{{ message.sequence }}"
                     message="{{ message }}"
                     selected="{{ message.sequence == selectionId }}"></cr-issue-message>
             </template>
@@ -58,15 +85,32 @@ found in the LICENSE file. -->
             created: function() {
                 this.messages = null;
                 this.olderMessages = null;
-                this.visibleMessages = null;
+                this.recentMessages = null;
+                this.generatedMessages = null;
                 this.selectionId = null;
                 this.showOlderMessages = false;
+                this.showGeneratedMessages = false;
+            },
+            showGeneratedMessagesChanged: function() {
+                this.messagesChanged();
             },
             messagesChanged: function() {
-                var index = Math.max(this.messages.length - MAX_MESSAGES, 0);
-                this.olderMessages = this.messages.to(index);
-                this.visibleMessages = this.messages.from(index);
-                var lastMessage = this.messages.last();
+                this.generatedMessages = this.messages.filter(function(message) {
+                    return message.generated;
+                });
+                for (var i = 0; i < this.messages.length; i++) {
+                    var message = this.messages[i];
+                    if (message.generated)
+                        message.hidden = !this.showGeneratedMessages;
+                }
+                var visibleMessages = this.messages.filter(function(message) {
+                    return !message.hidden;
+                });
+
+                var index = Math.max(visibleMessages.length - MAX_MESSAGES, 0);
+                this.olderMessages = visibleMessages.to(index);
+                this.recentMessages = visibleMessages.from(index);
+                var lastMessage = visibleMessages.last();
                 if (lastMessage)
                     lastMessage.active = true;
                 this.hashChanged();
@@ -84,8 +128,11 @@ found in the LICENSE file. -->
                     });
                 }
             },
-            handleShowOlderMessages: function() {
-                this.showOlderMessages = true;
+            toggleOlderMessages: function() {
+                this.showOlderMessages = !this.showOlderMessages;
+            },
+            toggleGeneratedMessages: function() {
+                this.showGeneratedMessages = !this.showGeneratedMessages;
             },
             pluralize: function(text, count) {
                 if (!count)

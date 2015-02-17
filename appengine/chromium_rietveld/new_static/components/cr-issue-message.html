@@ -13,7 +13,7 @@ found in the LICENSE file. -->
         <cr-view-handler></cr-view-handler>
         <link rel="stylesheet" href="cr-issue-message.css">
 
-        <polymer-ui-collapsible class="message {{ {approval: message.approval, disapproval: message.disapproval, selected: selected } | tokenList }}" active="{{ message.active }}">
+        <polymer-ui-collapsible class="message {{ {approval: message.approval, disapproval: message.disapproval, generated: message.generated, selected: selected } | tokenList }}" active="{{ message.active }}" hidden?="{{ message.hidden }}">
             <div id="message-{{ message.sequence }}" class="message-header polymer-ui-collapsible-header">
                 <div class="message-title" on-tap="{{ showMessage }}">
                     <div class="message-author" title="{{ message.author.email }}">{{ message.author.displayName }}</div>
