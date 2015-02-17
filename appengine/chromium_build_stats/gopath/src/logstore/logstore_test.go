@@ -1,4 +1,4 @@
-package chromegomalog
+package logstore
 
 import (
 	"testing"
@@ -25,6 +25,14 @@ func TestURL(t *testing.T) {
 		{
 			obj:   "2014/09/07/build48-m1/ninja_log.build48-m1.chrome-bot.20140907-165439%.13840%gz",
 			isErr: true,
+		},
+		{
+			obj:    "/upload/ninja_log.abcdef.gz",
+			urlstr: "https://storage.googleapis.com/chromium-build-stats.appspot.com/upload/ninja_log.abcdef.gz",
+		},
+		{
+			obj:    "upload/ninja_log.abcdef.gz",
+			urlstr: "https://storage.googleapis.com/chromium-build-stats.appspot.com/upload/ninja_log.abcdef.gz",
 		},
 	}
 	for i, tc := range testCases {

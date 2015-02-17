@@ -21,8 +21,8 @@ import (
 
 	"github.com/golang/oauth2/google"
 
-	"chromegomalog"
 	"compilerproxylog"
+	"logstore"
 )
 
 var (
@@ -121,7 +121,7 @@ func compilerProxyLogHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func compilerProxyLogFetch(client *http.Client, logPath string) (*compilerproxylog.CompilerProxyLog, error) {
-	resp, err := chromegomalog.Fetch(client, logPath)
+	resp, err := logstore.Fetch(client, logPath)
 	if err != nil {
 		return nil, err
 	}

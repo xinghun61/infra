@@ -2,24 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package chromegomalog provides an access to gs://chrome-goma-log.
-package chromegomalog
+package logstore
 
-import (
-	"fmt"
-	"net/http"
-	"net/url"
-)
+import "net/http"
 
-// URL returns url of the given obj in gs://chrome-goma-log.
-func URL(obj string) (*url.URL, error) {
-	if obj[0] == '/' {
-		obj = obj[1:]
-	}
-	return url.Parse(fmt.Sprintf("https://chrome-goma-log.storage.googleapis.com/%s", obj))
-}
-
-// Fetch fetches file from gs://chrome-goma-log/path.
+// Fetch fetches file from path in logstore.
 func Fetch(client *http.Client, path string) (*http.Response, error) {
 	fileURL, err := URL(path)
 	if err != nil {

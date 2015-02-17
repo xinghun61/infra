@@ -16,7 +16,7 @@ import (
 
 	"github.com/golang/oauth2/google"
 
-	"chromegomalog"
+	"logstore"
 )
 
 func init() {
@@ -40,7 +40,7 @@ func fileHandler(w http.ResponseWriter, req *http.Request) {
 	})
 	client := &http.Client{Transport: config.NewTransport()}
 	path := req.URL.Path
-	resp, err := chromegomalog.Fetch(client, path)
+	resp, err := logstore.Fetch(client, path)
 	if err != nil {
 		ctx.Errorf("failed to fetch %s: %v", path, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

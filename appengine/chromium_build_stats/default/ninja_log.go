@@ -8,6 +8,7 @@ package chromiumbuildstats
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -18,10 +19,11 @@ import (
 	"strings"
 
 	"appengine"
+	"appengine/user"
 
 	"github.com/golang/oauth2/google"
 
-	"chromegomalog"
+	"logstore"
 	"ninjalog"
 	"ninjalog/traceviewer"
 )
@@ -37,7 +39,26 @@ var (
 		"trace.html":    outputFunc(traceHTML),
 	}
 
-	// chromegomalog.URL(path) won't be accessible by user.
+	formTmpl = template.Must(template.New("form").Parse(`
+<html>
+<head>
+ <title>ninja_log</title>
+</head>
+<body>
+{{if .User}}
+ <div align="right">{{.User.Email}} <a href="{{.Logout}}">logout</a></div>
+<form action="/ninja_log/" method="post" enctype="multipart/form-data">
+<label for="file">.ninja_log file:</label><input type="file" name="file" />
+<input type="submit" name="upload" value="upload"><input type="submit" name="trace" value="trace"><input type="reset">
+</form>
+{{else}}
+ <div align="right"><a href="{{.Login}}">login</a></div>
+You need to <a href="{{.Login}}">login</a> to upload .ninja_log file.
+{{end}}
+</body>
+</html>`))
+
+	// logstore.URL(path) won't be accessible by user.
 	indexTmpl = template.Must(template.New("index").Parse(`
 <html>
 <head>
@@ -98,6 +119,11 @@ func init() {
 
 // ninjaLogHandler handles /<path>/<format> for ninja_log file in gs://chrome-goma-log/<path>
 func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "" {
+		ninjalogForm(w, req)
+		return
+	}
+
 	ctx := appengine.NewContext(req)
 
 	// should we set access control like /file?
@@ -129,6 +155,89 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func ninjalogForm(w http.ResponseWriter, req *http.Request) {
+	if req.Method == "POST" {
+		ninjalogUpload(w, req)
+		return
+	}
+	ctx := appengine.NewContext(req)
+	u := user.Current(ctx)
+	login, err := user.LoginURL(ctx, "/ninja_log/")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	logout, err := user.LogoutURL(ctx, "/ninja_log/")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	data := struct {
+		User   *user.User
+		Login  string
+		Logout string
+	}{
+		User:   u,
+		Login:  login,
+		Logout: logout,
+	}
+	err = formTmpl.Execute(w, data)
+	if err != nil {
+		ctx.Errorf("formTmpl: %v", err)
+	}
+
+}
+
+func ninjalogUpload(w http.ResponseWriter, req *http.Request) {
+	ctx := appengine.NewContext(req)
+	u := user.Current(ctx)
+	if u == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	// TODO(ukai): allow only @google.com and @chromium.org?
+	ctx.Infof("upload by %s", u.Email)
+	f, _, err := req.FormFile("file")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+	njl, err := ninjalog.Parse("ninja_log", f)
+	if err != nil {
+		ctx.Errorf("bad format: %v", err)
+		http.Error(w, fmt.Sprintf("malformed ninja_log file %v", err), http.StatusBadRequest)
+		return
+	}
+	var data bytes.Buffer
+	err = ninjalog.Dump(&data, njl.Steps)
+	if err != nil {
+		ctx.Errorf("dump error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	config := google.NewAppEngineConfig(ctx, []string{
+		"https://www.googleapis.com/auth/devstorage.read_write",
+	})
+	client := &http.Client{Transport: config.NewTransport()}
+
+	logPath, err := logstore.Upload(client, "ninja_log", data.Bytes())
+	if err != nil {
+		ctx.Errorf("upload error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx.Infof("%s upload to %s", u.Email, logPath)
+
+	if req.FormValue("trace") != "" {
+		http.Redirect(w, req, "/ninja_log/"+logPath+"/trace.html", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, req, "/ninja_log/"+logPath, http.StatusSeeOther)
+}
+
 func ninjalogPath(reqPath string) (string, outputFunc, error) {
 	basename := path.Base(reqPath)
 	for format, f := range outputs {
@@ -144,7 +253,7 @@ func ninjalogPath(reqPath string) (string, outputFunc, error) {
 }
 
 func ninjalogFetch(client *http.Client, logPath string) (*ninjalog.NinjaLog, http.Header, error) {
-	resp, err := chromegomalog.Fetch(client, logPath)
+	resp, err := logstore.Fetch(client, logPath)
 	if err != nil {
 		return nil, nil, err
 	}

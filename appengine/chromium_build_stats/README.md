@@ -30,12 +30,12 @@ How to:
  to run gofmt
   $ cd default; ../goenv.sh goapp fmt
 
-  $ goenv.sh goapp fmt chromegomalog ninjalog
+  $ goenv.sh goapp fmt logstore ninjalog
 
  to run govet
   $ cd default; ../goenv.sh goapp vet
 
-  $ goenv.sh goapp vet chromegomalog ninjalog
+  $ goenv.sh goapp vet logstore ninjalog
 
  to run test
   $ cd default; ../goenv.sh goapp test
