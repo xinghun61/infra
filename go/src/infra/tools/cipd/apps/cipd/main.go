@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"infra/libs/auth"
+	"infra/libs/build"
 	"infra/libs/logging"
 
 	"infra/tools/cipd"
@@ -610,69 +611,23 @@ func registerInstanceFile(instanceFile string, opts serviceOptions) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 'pkg-upload' subcommand.
-
-var cmdUpload = &subcommands.Command{
-	UsageLine: "pkg-upload <package instance file>",
-	ShortDesc: "uploads package data blob to the CAS store",
-	LongDesc:  "Uploads package data blob to the CAS store.",
-	CommandRun: func() subcommands.CommandRun {
-		c := &uploadRun{}
-		c.serviceOptions.registerFlags(c.Flags)
-		return c
-	},
-}
-
-type uploadRun struct {
-	subcommands.CommandRunBase
-	serviceOptions
-}
-
-func (c *uploadRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
-		return 1
-	}
-	err := uploadInstanceFile(args[0], c.serviceOptions)
-	if err != nil {
-		reportError("Error while uploading the package: %s", err)
-		return 1
-	}
-	return 0
-}
-
-func uploadInstanceFile(instanceFile string, opts serviceOptions) error {
-	inst, err := cipd.OpenInstanceFile(instanceFile, "")
-	if err != nil {
-		return err
-	}
-	defer inst.Close()
-	client, err := opts.makeClient()
-	if err != nil {
-		return err
-	}
-	logging.Infof("Uploading package instance %s", inst.InstanceID())
-	inspectInstance(inst, false)
-	return cipd.UploadToCAS(cipd.UploadToCASOptions{
-		SHA1: inst.InstanceID(),
-		Data: inst.DataReader(),
-		UploadOptions: cipd.UploadOptions{
-			ServiceURL: opts.serviceURL,
-			Client:     client,
-		},
-	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Main.
 
 var application = &subcommands.DefaultApplication{
 	Name:  "cipd",
-	Title: "Chrome infra package deployer.",
+	Title: "Chrome infra package deployer " + build.InfoString(),
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 
 		// High level commands.
 		cmdEnsure,
+
+		// Authentication related commands.
+		auth.SubcommandInfo("auth-info"),
+		auth.SubcommandLogin("auth-login"),
+		auth.SubcommandLogout("auth-logout"),
+
+		// ACLs.
 		cmdListACL,
 		cmdEditACL,
 
@@ -682,7 +637,6 @@ var application = &subcommands.DefaultApplication{
 		cmdFetch,
 		cmdInspect,
 		cmdRegister,
-		cmdUpload,
 	},
 }
 

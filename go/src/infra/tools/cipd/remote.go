@@ -69,6 +69,7 @@ type roleChangeMsg struct {
 
 // newRemoteService is mocked in tests.
 var newRemoteService = func(client *http.Client, url string, log logging.Logger) *remoteService {
+	log.Infof("cipd: service URL is %s", url)
 	return &remoteService{
 		client:     client,
 		serviceURL: url,
