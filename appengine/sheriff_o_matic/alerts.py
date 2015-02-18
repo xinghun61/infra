@@ -68,10 +68,13 @@ class AlertsHandler(webapp2.RequestHandler):
     return last_query.order(-AlertsJSON.date).get()
 
   def get_from_gcs(self, alerts_type):
-    with contextlib.closing(gcs.open(
-        "/" + app_identity.get_default_gcs_bucket_name() +
-        "/" + alerts_type)) as gcs_file:
-      return gcs_file.read()
+    try:
+      with contextlib.closing(gcs.open(
+          "/" + app_identity.get_default_gcs_bucket_name() +
+          "/" + alerts_type)) as gcs_file:
+        return gcs_file.read()
+    except gcs.NotFoundError:
+      return '{}'
 
   def post_to_gcs(self, alerts_type, data):
     # Create a GCS file with GCS client.
