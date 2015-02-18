@@ -401,6 +401,8 @@ def edit_flags(request):
                        send_mail=unchecked_by_non_owner, auto_generated=True,
                        email_to=[request.issue.owner.email()]).put()
     request.issue.put()
+    if request.issue.commit:
+      views.notify_approvers_of_new_patchsets(request, request.issue)
 
   if 'builders' in request.POST:
     new_builders = filter(None, map(unicode.strip,

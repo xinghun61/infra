@@ -101,7 +101,8 @@ class Issue(ndb.Model):
   # JSON: {reviewer_email -> [bool|None]}
   reviewer_approval = ndb.TextProperty()
 
-  # Approvers to notify by email if a new patchset is uploaded after their LGTM.
+  # Approvers to notify by email if a new patchset is uploaded after their LGTM
+  # and the CQ bit is checked.
   approvers_to_notify = ndb.StringProperty(repeated=True)
 
   # JSON: {reviewer_email -> int}
@@ -181,8 +182,11 @@ class Issue(ndb.Model):
   def patchsets(self):
     return PatchSet.query(ancestor=self.key).order(Issue.created)
 
+  def most_recent_patchset_query(self):
+    return PatchSet.query(ancestor=self.key).order(-Issue.created)
+
   def most_recent_patchset_key(self):
-    query = PatchSet.query(ancestor=self.key).order(-Issue.created)
+    query = self.most_recent_patchset_query()
     ps_key = query.get(keys_only=True)
     return ps_key
 
@@ -321,14 +325,16 @@ class Issue(ndb.Model):
         updates_for_set.add(self.owner.email())
         if msg.approval:
           approval_dict[msg.sender] = True
-          if (not msg.patchset_key or
-              self.most_recent_patchset_key().id() == msg.patchset_key):
-            if msg.sender not in self.approvers_to_notify:
-              self.approvers_to_notify.append(msg.sender)
+          patchset_id = msg.patchset_key.id() if msg.patchset_key else None
+          if (not patchset_id or
+              self.most_recent_patchset_key().id() == patchset_id):
+            if msg.sender in self.approvers_to_notify:
+              self.approvers_to_notify.remove(msg.sender)
         elif msg.disapproval:
           approval_dict[msg.sender] = False
-          if (not msg.patchset_key or
-              self.most_recent_patchset_key().id() == msg.patchset_key):
+          patchset_id = msg.patchset_key.id() if msg.patchset_key else None
+          if (not patchset_id or
+              self.most_recent_patchset_key().id() == patchset_id):
             if msg.sender in self.approvers_to_notify:
               self.approvers_to_notify.remove(msg.sender)
       updates_for_set.discard(msg.sender)

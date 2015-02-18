@@ -1550,23 +1550,16 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   issue.commit = False
   issue.target_ref = _get_target_ref(form, issue.key, issue.project)
   issue.calculate_updates_for()
+  # New patchset has been uploaded, add to the approvers_to_notify list.
+  approval_dict = json.loads(issue.reviewer_approval)
+  if approval_dict:
+    for approver in approval_dict:
+      if approval_dict[approver] and approver not in issue.approvers_to_notify:
+        issue.approvers_to_notify.append(approver)
   issue.put()
   # Log for auditing purposes.
   logging.info("Patchset id %s for issue %s has target_ref %s",
                patchset.key.id(), issue.key.id(), issue.target_ref)
-
-  # Inform reviewers of the new patchset if they approved a previous patchset
-  # and have not been notified yet.
-  if issue.approvers_to_notify:
-    new_patchset_msg = (
-        "New patchsets have been uploaded after l-g-t-m from %s" %
-            ','.join(issue.approvers_to_notify))
-    make_message(
-        request, issue, new_patchset_msg, send_mail=True, auto_generated=True,
-        email_to=issue.approvers_to_notify).put()
-    # Approvers have been notified, clear the list.
-    issue.approvers_to_notify = []
-    issue.put()
 
   if form.cleaned_data.get('send_mail'):
     msg = make_message(request, issue, message, '', True)
@@ -1574,6 +1567,25 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     msg.put()
     notify_xmpp.notify_issue(request, issue, 'Updated')
   return patchset
+
+def notify_approvers_of_new_patchsets(request, issue):
+  if issue.approvers_to_notify:
+    latest_patchset = issue.most_recent_patchset_query().get()
+    patchset_anchor = '#ps%d' % latest_patchset.key.id()
+    link_to_patchset = (
+        request.build_absolute_uri(reverse(show, args=[issue.key.id()])) +
+        patchset_anchor)
+    new_patchset_msg = (
+        "The patchset sent to the CQ was uploaded after l-g-t-m from %s\n"
+        "Link to the patchset: %s (title: \"%s\")" % (
+            ', '.join(issue.approvers_to_notify), link_to_patchset,
+            latest_patchset.message))
+    make_message(
+        request, issue, new_patchset_msg, send_mail=True, auto_generated=True,
+        email_to=issue.approvers_to_notify).put()
+    # Approvers have been notified, clear the list.
+    issue.approvers_to_notify = []
+    issue.put()
 
 def _get_emails(form, label):
   """Returns (reviewers, required_reviewers) or (None, None) for error."""
@@ -3147,6 +3159,9 @@ def publish(request):
 
   for obj in tbd:
     obj.put()
+
+  if form.cleaned_data['commit'] and not issue.closed:
+    notify_approvers_of_new_patchsets(request, issue)
 
   notify_xmpp.notify_issue(request, issue, 'Comments published')
 
