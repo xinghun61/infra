@@ -30,7 +30,7 @@ class RedirectorTest(unittest.TestCase):
       redirector.load_url = mock_load_url
 
       expected = ('https://chromium.googlesource.com/chromium/src/+log/'
-        'aaaaaaa..bbbbbbb?pretty=fuller')
+        'aaaaaaa^..bbbbbbb?pretty=fuller')
       self.assertEqual(redirector.url_from_commit_positions(1, 2), expected)
     finally:
       redirector.load_url = old_load_url

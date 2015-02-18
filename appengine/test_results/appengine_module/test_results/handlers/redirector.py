@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 # TODO(ojan): Get rid of this one crrev.com supports this directly.
+# See http://crbug.com/407198.
 
 import json
 import urllib2
@@ -23,7 +24,7 @@ def url_from_commit_positions(start_commit_position, end_commit_position):
   start = commit_position_to_hash(start_commit_position)
   end = commit_position_to_hash(end_commit_position)
   return ('https://chromium.googlesource.com/chromium/src/+log'
-      '/%s..%s?pretty=fuller' % (start, end))
+      '/%s^..%s?pretty=fuller' % (start, end))
 
 
 def get_googlesource_url(handler, *_args, **_kwargs):  # pragma: no cover

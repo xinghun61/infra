@@ -202,7 +202,7 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
         // Intentionally do not increment previous revision. This rev works the
         // way gitiles does (exclude the start of the range) instead of the way
         // the perf dashboard below does.
-        rangeUrl = '../../revision_range?start=' + previousRevision + '&end=' + currentRevision;
+        rangeUrl = '../../revision_range?start=' + (previousRevision + 1) + '&end=' + currentRevision;
     } else {
         rangeUrl = 'http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk' +
             '&range=' + (previousRevision + 1) + ':' + currentRevision + '&mode=html';
