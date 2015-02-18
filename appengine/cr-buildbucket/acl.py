@@ -16,6 +16,7 @@ import collections
 import logging
 import re
 
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from components import auth
@@ -226,3 +227,36 @@ def can(bucket, action, identity=None):
   validate_bucket_name(bucket)
   assert isinstance(action, Action)
   return has_any_of_roles(bucket, ROLES_FOR_ACTION[action], identity)
+
+
+def get_available_buckets(identity=None):
+  """Returns buckets available to the |identity|.
+
+  Results are memcached for 10 minutes per identity.
+
+  Returns:
+    Set of bucket names or None if all buckets are available.
+  """
+  identity = identity or auth.get_current_identity()
+  if auth.is_admin(identity):
+    return None
+
+  cache_key = 'available_buckets/%s' % identity.to_bytes()
+  available_buckets = memcache.get(cache_key)
+  if available_buckets is not None:
+    return available_buckets
+  logging.info(
+      'Computing a list of available buckets for %s' % identity.to_bytes())
+  group_buckets_map = collections.defaultdict(set)
+  for acl in BucketAcl.query().iter():
+    for rule in acl.rules:
+      group_buckets_map[rule.group].add(acl.bucket)
+  available_buckets = set()
+  for group, buckets in group_buckets_map.iteritems():
+    if available_buckets.issuperset(buckets):
+      continue
+    if auth.is_group_member(group, identity):
+      available_buckets.update(buckets)
+  # Cache for 10 min
+  memcache.add(cache_key, available_buckets, 10 * 60)
+  return available_buckets

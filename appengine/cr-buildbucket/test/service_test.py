@@ -154,6 +154,28 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [self.test_build])
 
+  def test_search_without_buckets(self):
+    get_available_buckets = mock.Mock()
+    self.mock(acl, 'get_available_buckets', get_available_buckets)
+
+    self.test_build.put()
+    build2 = model.Build(bucket='other bucket')
+    build2.put()
+
+    get_available_buckets.return_value = [self.test_build.bucket]
+    builds, _ = self.service.search()
+    self.assertEqual(builds, [self.test_build])
+
+    # All buckets are available.
+    get_available_buckets.return_value = None
+    builds, _ = self.service.search()
+    self.assertEqual(builds, [self.test_build, build2])
+
+    # No buckets are available.
+    get_available_buckets.return_value = []
+    builds, _ = self.service.search()
+    self.assertEqual(builds, [])
+
   def test_search_many_tags(self):
     self.test_build.tags = ['important:true', 'author:ivan']
     self.test_build.put()

@@ -168,8 +168,6 @@ class BuildBucketService(object):
     return entities, next_cursor_str
 
   def _check_search_acls(self, buckets):
-    if not isinstance(buckets, list):
-      raise errors.InvalidInputError('Buckets must be a list')
     if not buckets:
       raise errors.InvalidInputError('No buckets specified')
     for bucket in buckets:
@@ -182,11 +180,11 @@ class BuildBucketService(object):
             ('User %s cannot search for buillds in bucket %s' %
              (identity.to_bytes(), bucket)))
 
-  def search(self, buckets, tags=None, max_builds=None, start_cursor=None):
+  def search(self, buckets=None, tags=None, max_builds=None, start_cursor=None):
     """Searches for builds.
 
     Args:
-      buckets (list of str): if not None, a list of buckets to search in.
+      buckets (list of str): a list of buckets to search in.
         A build must be in one of the buckets.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
@@ -200,12 +198,23 @@ class BuildBucketService(object):
         next_cursor (string): cursor for the next page.
           None if there are no more builds.
     """
-    self._check_search_acls(buckets)
+    if buckets is not None and not isinstance(buckets, list):
+      raise errors.InvalidInputError('Buckets must be a list or None')
     validate_tags(tags)
     tags = tags or []
     max_builds = fix_max_builds(max_builds)
 
-    q = model.Build.query(model.Build.bucket.IN(buckets))
+    if buckets:
+      self._check_search_acls(buckets)
+    else:
+      buckets = acl.get_available_buckets()
+      if buckets is not None and len(buckets) == 0:
+        return [], None
+
+    q = model.Build.query()
+    # buckets is None if the current identity has access to ALL buckets.
+    if buckets is not None:
+      q = q.filter(model.Build.bucket.IN(buckets))
     for t in tags:
       q = q.filter(model.Build.tags == t)
     q = q.order(model.Build.key)

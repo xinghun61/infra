@@ -55,6 +55,43 @@ class AclTest(testing.AppengineTestCase):
     self.mock_is_group_member([])
     self.assertFalse(acl.has_any_of_roles('bucket', acl.Role))
 
+  def test_get_available_buckets(self):
+    self.mock_is_group_member(['xxx', 'yyy'])
+
+    def set_acl(bucket_name, rules):
+      acl.BucketAcl(
+          id=bucket_name,
+          rules=rules,
+          modified_by=self.current_identity,
+          modified_time=utils.utcnow(),
+      ).put()
+
+    set_acl(
+        'available_bucket1',
+        [
+            acl.Rule(role=acl.Role.READER, group='xxx'),
+            acl.Rule(role=acl.Role.WRITER, group='yyy')
+        ],
+    )
+    set_acl(
+        'available_bucket2',
+        [
+            acl.Rule(role=acl.Role.READER, group='xxx'),
+            acl.Rule(role=acl.Role.WRITER, group='zzz')
+        ],
+    )
+    set_acl(
+        'not_available_bucket',
+        [acl.Rule(role=acl.Role.OWNER, group='zzz')],
+    )
+
+    availble_buckets = acl.get_available_buckets()
+    availble_buckets = acl.get_available_buckets()  # memcache coverage.
+    self.assertEqual(
+        availble_buckets, {'available_bucket1', 'available_bucket2'})
+
+    self.mock(auth, 'is_admin', lambda _: True)
+    self.assertIsNone(acl.get_available_buckets())
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)
