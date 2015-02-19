@@ -8,6 +8,7 @@ function DraftPatchSet(patchset)
 {
     this.patchset = patchset;
     this.files = []; // Array<PatchFile>
+    Object.preventExtensions(this);
 }
 
 DraftPatchSet.prototype.updateFiles = function()

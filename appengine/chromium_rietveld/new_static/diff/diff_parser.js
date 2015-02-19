@@ -8,6 +8,7 @@ function DiffParser(text)
 {
     this.lines = text.split("\n");
     this.currentLine = 0;
+    Object.preventExtensions(this);
 }
 
 DiffParser.HEADER_BEGIN = "Index: ";

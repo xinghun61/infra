@@ -23,6 +23,7 @@ function PatchSet(issue, id, sequence)
     this.commit = false;
     this.mostRecent = false;
     this.active = false;
+    Object.preventExtensions(this);
 }
 
 PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true";

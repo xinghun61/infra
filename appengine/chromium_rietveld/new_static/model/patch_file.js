@@ -26,6 +26,7 @@ function PatchFile(patchset, name)
     this.draftCount = 0;
     this.diff = null;
     this.isLayoutTest = this.name.startsWith("LayoutTests/");
+    Object.preventExtensions(this);
 
     var dotIndex = this.name.lastIndexOf(".");
     if (dotIndex != -1) {

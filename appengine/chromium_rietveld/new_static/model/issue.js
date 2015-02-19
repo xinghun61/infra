@@ -31,6 +31,7 @@ function Issue(id)
     this.approvalCount = 0;
     this.disapprovalCount = 0;
     this.recentActivity = false;
+    Object.preventExtensions(this);
 }
 
 Issue.DETAIL_URL = "/api/{1}?messages=true";

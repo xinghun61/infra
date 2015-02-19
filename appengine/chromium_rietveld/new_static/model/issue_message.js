@@ -18,6 +18,7 @@ function IssueMessage(issue, sequence)
     this.preview = "";
     this.active = false;
     this.hidden = false;
+    Object.preventExtensions(this);
 }
 
 IssueMessage.REPLY_HEADER = /^On \d+\/\d+\/\d+ (at )?\d+:\d+:\d+, .*? wrote:$/;

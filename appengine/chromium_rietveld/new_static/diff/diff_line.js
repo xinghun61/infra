@@ -13,4 +13,5 @@ function DiffLine(type)
     this.contextLinesEnd = 0;
     this.context = false;
     this.text = "";
+    Object.preventExtensions(this);
 }

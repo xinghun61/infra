@@ -12,6 +12,7 @@ function User(name, email, displayName)
     this.reviewedIssues = 0;
     this.xsrfToken = "";
     this.displayName = displayName || this.email.split("@")[0] || this.name;
+    Object.preventExtensions(this);
 }
 
 User.CURRENT_USER_URL = "/scrape/settings";

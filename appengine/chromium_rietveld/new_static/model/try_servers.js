@@ -8,6 +8,7 @@ function TryServers()
 {
     this.serversAndBuilders = [];
     this.buildersToServers = {};
+    Object.preventExtensions(this);
 }
 
 TryServers.DETAIL_URL = "/api/tryservers";

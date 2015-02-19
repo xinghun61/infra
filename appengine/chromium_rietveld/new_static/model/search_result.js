@@ -8,6 +8,7 @@ function SearchResult(issues, cursor)
 {
     this.cursor = cursor || "";
     this.issues = issues || []; // Array<Issue>
+    Object.preventExtensions(this);
 }
 
 SearchResult.prototype.findNext = function()

@@ -21,6 +21,7 @@ function TryJobResult()
     this.requester = null; // User
     this.buildnumber = 0;
     this.revision = ""; // Number or HEAD
+    Object.preventExtensions(this);
 }
 
 TryJobResult.RESULT = {

@@ -6,6 +6,7 @@
 
 function Search()
 {
+    Object.preventExtensions(this);
 }
 
 Search.USER_URL = "/account?limit={1}&q={2}";

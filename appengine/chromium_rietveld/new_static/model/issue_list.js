@@ -16,6 +16,7 @@ function IssueList(options)
     this.issues = {};
     this.cached = options && options.cached;
     this.recentActivity = options && options.recentActivity;
+    Object.preventExtensions(this);
 }
 
 IssueList.ISSUE_LIST_URL = "/scrape";

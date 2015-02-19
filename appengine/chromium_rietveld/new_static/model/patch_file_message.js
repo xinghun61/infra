@@ -14,6 +14,7 @@ function PatchFileMessage(file)
     this.date = ""; // Date
     this.left = false;
     this.messageId = "";
+    Object.preventExtensions(this);
 }
 
 PatchFileMessage.findDraftMessageId = function(document)

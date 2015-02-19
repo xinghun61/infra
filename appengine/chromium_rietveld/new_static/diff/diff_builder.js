@@ -9,6 +9,7 @@ function DiffBuilder(file, output)
     this.file = file;
     this.highlighter = new SyntaxHighlighter(file.language, file.containsEmbeddedLanguages);
     this.output = output;
+    Object.preventExtensions(this);
 }
 
 DiffBuilder.prototype.emitDiff = function(diff)

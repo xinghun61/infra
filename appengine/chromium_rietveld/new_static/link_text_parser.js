@@ -7,6 +7,7 @@
 function LinkTextParser(callback)
 {
     this.callback = callback;
+    Object.preventExtensions(this);
 }
 
 LinkTextParser.TRACKERS = [

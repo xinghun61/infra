@@ -15,6 +15,8 @@ function GifRecorder(options)
     this.delay = options.delay || 150;
     this.remainingFrames = 0;
     this.encoder = null;
+    this.context = null;
+    Object.preventExtensions(this);
 
     var canvas = document.createElement("canvas");
     canvas.width = this.width;

@@ -8,6 +8,7 @@ function TryJobResultStep(result, name)
 {
     this.result = result || null;
     this.name = name || "";
+    Object.preventExtensions(this);
 }
 
 TryJobResultStep.prototype.getDetailUrl = function()
