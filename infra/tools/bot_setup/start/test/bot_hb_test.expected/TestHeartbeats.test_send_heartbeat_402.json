@@ -35,6 +35,7 @@
       {
         "foo": "bar",
         "id": "Fake ID",
+        "image_name": "test-image-1",
         "message": "OK",
         "name": "test_slave",
         "status": 0,

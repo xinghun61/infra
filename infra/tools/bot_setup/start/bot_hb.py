@@ -7,6 +7,7 @@
 import copy
 import os
 import psutil
+import requests
 import threading
 import time
 
@@ -74,6 +75,17 @@ class HeartbeatRunner(object):
         'disk_percent': disk_usage.percent,
     }
 
+  def get_image_name(self):  # pragma: no cover
+    if self.testing:
+      return 'test-image-1'
+    url = ('http://169.254.169.254/computeMetadata/v1/instance/'
+           'attributes/image_name')
+    headers = {'Metadata-Flavor': 'Google'}
+    req = requests.get(url, headers=headers)
+    if req.status_code == 200:
+      return req.text
+    return 'N/A'
+
 
   def _send_heartbeat(self):
     data = {
@@ -82,6 +94,7 @@ class HeartbeatRunner(object):
         'message': 'OK',
         'time': time.time(),
         'id': self.heartbeat.get_id(),
+        'image_name': self.get_image_name(),
     }
     data.update(self.get_psutil_data())
     data.update(self.get_extra_data())
