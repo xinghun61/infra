@@ -32,9 +32,11 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-user-view", {
-            username: "",
-            issues: null,
-            failed: false,
+            created: function() {
+                this.username = "";
+                this.issues = null;
+                this.failed = false;
+            },
             attached: function() {
                 var self = this;
                 this.fire("title-change", {

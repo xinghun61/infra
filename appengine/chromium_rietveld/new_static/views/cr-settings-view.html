@@ -25,11 +25,13 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-settings-view", {
-            settings: null,
-            user: null,
-            butterbarMessage: "",
-            disabled: false,
-            errors: {},
+            created: function() {
+                this.settings = null;
+                this.user = null;
+                this.butterbarMessage = "";
+                this.disabled = false;
+                this.errors = {};
+            },
             attached: function() {
                 var self = this;
                 User.loadCurrentUser({cached: true}).then(function() {

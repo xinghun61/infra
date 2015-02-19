@@ -87,12 +87,14 @@ found in the LICENSE file. -->
         var SHOW_RECENT_ACTIVITY_KEY = "cr-inbox-view.showRecentActivity";
 
         Polymer("cr-inbox-view", {
-            filter: "2",
-            showRecentActivity: false,
-            issues: null,
-            loading: true,
-            failed: false,
-            butterbarMessage: "",
+            created: function() {
+                this.filter = "2";
+                this.showRecentActivity = false;
+                this.issues = null;
+                this.loading = true;
+                this.failed = false;
+                this.butterbarMessage = "";
+            },
             attached: function() {
                 var self = this;
                 this.fire("title-change", {

@@ -38,8 +38,10 @@ found in the LICENSE file. -->
     </template>
     <script>
         Polymer("cr-issue-view", {
-            issue: null,
-            issueId: 0,
+            created: function() {
+                this.issue = null;
+                this.issueId = 0;
+            },
             attached: function() {
                 var self = this;
                 User.loadCurrentUser({cached: true}).either(function() {
