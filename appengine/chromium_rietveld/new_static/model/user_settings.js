@@ -12,7 +12,7 @@ function UserSettings()
     this.tabSpaces = 0;
     this.notifyByChat = false;
     this.deprecatedUi = false;
-    this.sendFromEmailAddr = true;
+    this.sendFromEmailAddress = true;
     this.displayExperimentalTryjobs = false;
     Object.preventExtensions(this);
 }
@@ -26,7 +26,7 @@ UserSettings.FIELD_NAME_MAP = {
     "column_width": "columnWidth",
     "tab_spaces": "tabSpaces",
     "context": "context",
-    "send_from_email_address": "sendFromEmailAddr",
+    "send_from_email_address": "sendFromEmailAddress",
     "display_exp_tryjob_results": "displayExperimentalTryjobs",
 };
 
@@ -63,14 +63,13 @@ UserSettings.prototype.parseDocument = function(doc)
     if (deprecatedUi)
         this.deprecatedUi = deprecatedUi.checked;
 
-    var sendFromEmailAddr = doc.getElementById("id_send_from_email_addr");
-    if (sendFromEmailAddr)
-        this.sendFromEmailAddr = sendFromEmailAddr.checked;
+    var sendFromEmailAddress = doc.getElementById("id_send_from_email_addr");
+    if (sendFromEmailAddress)
+        this.sendFromEmailAddress = sendFromEmailAddress.checked;
 
     var displayExp = doc.getElementById("id_display_exp_tryjob_results");
-    if (displayExp) {
-        this.displayExperimentalTryjobs = displayExp.value;
-    }
+    if (displayExp && displayExp.selectedOptions[0] && displayExp.selectedOptions[0].value === "True")
+        this.displayExperimentalTryjobs = true;
 };
 
 UserSettings.prototype.save = function()
@@ -105,7 +104,7 @@ UserSettings.prototype.createSaveData = function()
             column_width: settings.columnWidth,
             tab_spaces: settings.tabSpaces,
             context: settings.context,
-            send_from_email_addr: settings.sendFromEmailAddr,
+            send_from_email_addr: settings.sendFromEmailAddress,
             display_exp_tryjob_results: settings.displayExperimentalTryjobs,
         };
     });

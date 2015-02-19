@@ -16,35 +16,6 @@ found in the LICENSE file. -->
                 </div>
             </div>
             <div class="form-row">
-                <label class="form-label" for="context">Context</label>
-                <div class="form-field">
-                    <select id="context" value="{{ settings.context }}" class="{{ {invalid: errors.context} | tokenList }}">
-                        <option value="3">3 lines</option>
-                        <option value="10">10 lines</option>
-                        <option value="25">25 lines</option>
-                        <option value="50">50 lines</option>
-                        <option value="75">75 lines</option>
-                        <option value="100">100 lines</option>
-                        <option value="">Whole file</option>
-                    </select>
-                    <div class="form-error">{{ errors.context }}</div>
-                </div>
-            </div>
-            <div class="form-row">
-                <label class="form-label" for="columnWidth">Column width</label>
-                <div class="form-field">
-                    <input type="text" id="columnWidth" value="{{ settings.columnWidth }}" autocomplete="off" class="{{ {invalid: errors.columnWidth} | tokenList }}">
-                    <div class="form-error">{{ errors.columnWidth }}</div>
-                </div>
-            </div>
-            <div class="form-row">
-                <label class="form-label" for="tabSpaces">Tab spaces</label>
-                <div class="form-field">
-                    <input type="text" id="tabSpaces" value="{{ settings.tabSpaces }}" autocomplete="off" class="{{ {invalid: errors.tabSpaces} | tokenList }}">
-                    <div class="form-error">{{ errors.tabSpaces }}</div>
-                </div>
-            </div>
-            <div class="form-row">
                 <label class="form-label" for="notifyByChat">Notify by chat</label>
                 <div class="form-field">
                     <input type="checkbox" id="notifyByChat" checked="{{ settings.notifyByChat }}" class="{{ {invalid: errors.notifyByChat} | tokenList }}">
@@ -59,21 +30,17 @@ found in the LICENSE file. -->
                 </div>
             </div>
             <div class="form-row">
-                <label class="form-label" for="displayExperimentalTryjobs">Display experimental tryjobs</label>
+                <label class="form-label" for="displayExperimentalTryjobs">Display experimental tryjob results</label>
                 <div class="form-field">
-                    <select id="displayExperimentalTryjobs" value="{{ settings.displayExperimentalTryjobs }}" class="{{ {invalid: errors.displayExperimentalTryjobs} | tokenList }}">
-                        <option value="False">Never</option>
-                        <option value="True">On issues that have experimental results</option>
-		    </select>
+                    <input type="checkbox" id="displayExperimentalTryjobs" checked="{{ settings.displayExperimentalTryjobs }}" class="{{ {invalid: errors.displayExperimentalTryjobs} | tokenList }}">
                     <div class="form-error">{{ errors.displayExperimentalTryjobs }}</div>
                 </div>
             </div>
             <div class="form-row">
-                <label class="form-label" for="sendFromEmailAddr">Send from my address</label>
+                <label class="form-label" for="sendFromEmailAddress">Send replies from my email address</label>
                 <div class="form-field">
-                    <input type="checkbox" id="sendFromEmailAddr" checked="{{ settings.sendFromEmailAddr }}" class="{{ {invalid: errors.sendFromEmailAddr} | tokenList }}">
-		    Use my email address in the From: line of notification emails that I send.
-                    <div class="form-error">{{ errors.sendFromEmailAddr }}</div>
+                    <input type="checkbox" id="sendFromEmailAddress" checked="{{ settings.sendFromEmailAddress }}" class="{{ {invalid: errors.sendFromEmailAddress} | tokenList }}">
+                    <div class="form-error">{{ errors.sendFromEmailAddress }}</div>
                 </div>
             </div>
         </fieldset>
