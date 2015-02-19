@@ -16,6 +16,8 @@ module.exports = function(config) {
       'model/**/*.js',
       'lib/**/*.js',
       'diff/**/*.js',
+      'linkify/**/*.js',
+      'selfie/**/*.js',
       'resources_mocks.js',
     ],
 
