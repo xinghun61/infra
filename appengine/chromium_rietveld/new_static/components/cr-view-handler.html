@@ -43,6 +43,8 @@ found in the LICENSE file. -->
                     return;
                 if (!a.href.startsWith(window.location.origin))
                     return;
+                if (a.getAttribute("is") == "cr-action")
+                    return;
                 event.preventDefault();
                 this.asyncFire("navigate", {
                     url: a.pathname + a.search + a.hash
