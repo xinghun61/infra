@@ -26,7 +26,7 @@ found in the LICENSE file. -->
 
     <h2>Build</h2>
     Build is an element of buildbucket. It can be scheduled, leased, started,
-    and completed. Read more about it <a href="#docs/build">here</a>.
+    and completed. Read more about it <a href="#/docs/build">here</a>.
 
     <h2>Build requester</h2>
     <p>APIs for build requesters:
@@ -63,12 +63,31 @@ found in the LICENSE file. -->
         <li><api-link name="fail"></api-link>: mark a build as failed.</li>
       </ul></p>
 
+    <h2>Test server</h2>
+    Use <a href="http://cr-buildbucket-test.appspot.com">cr-buildbucket-test</a>
+    for testing. <a href="http://cr-buildbucket.appspot.com">cr-buildbucket</a>
+    is for production only.
+
     <h2>Notifications</h2>
     <p>Currently notifications are not implemented. Build status can be polled
       using <api-link name="get"></api-link> API call.
       Notifications will be enabled once
       <a href="https://cloud.google.com/pubsub/">Cloud PubSub</a> is ready for
       production.</p>
+
+    <h2>Auth</h2>
+    <p>Anonymous requests can access only public buckets. To access internal
+      buckets, requests must be authenticated. Authentication is done via
+      OAuth2. BuildBucket manages ACLs and
+      <a href="/auth">chrome-infra-auth</a> manages groups.</p>
+
+    <h2>ACLs</h2>
+    <p>ACLs are stored per bucket.</p>
+    <p>API:
+      <ul>
+        <li><api-link name="acl.get"></api-link>: get bucket ACL.</li>
+        <li><api-link name="acl.set"></api-link>: set bucket ACL.</li>
+      </ul></p>
   </template>
 
   <script>

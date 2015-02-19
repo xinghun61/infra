@@ -22,10 +22,9 @@ buildbucket.setup(
     buckets=['chromium'],
 )</code-block>
 
-    <p>Buildbot supports the following parameters:
+    <p>Buildbot supports the following build parameters:
       <ul>
-        <li>builder_name (str): required builder name for the build. A builder with
-          the name must exist, otherwise build will not be scheduled.</li>
+        <li>builder_name (str): builder name for the build, required.</li>
         <li>properties (dict): arbitrary build properties.</li>
         <li>changes (list of dict): changes for the build, each include revision,
           author, etc.</li>
