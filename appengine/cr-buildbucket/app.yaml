@@ -17,7 +17,13 @@ handlers:
 - url: /_ah/spi/.*
   script: apps.endpoints
 
-- url: /.*
+- url: /
+  static_files: static_files/html/index.html
+  # The following "upload" means "upload of gae app". not "upload by user".
+  upload: static_files/html/index.html
+  secure: always
+
+- url: /.+
   script: apps.html
   secure: always
 
@@ -49,3 +55,4 @@ skip_files:
 - ^test.*
 - ^tools.*
 - ^[A-Z]+(\.[a-z]+)?
+- ^static_files/html/doc/examples/.*.sh

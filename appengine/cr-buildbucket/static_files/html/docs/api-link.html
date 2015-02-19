@@ -1,0 +1,11 @@
+<!-- Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<polymer-element name="api-link" attributes="name" noscript>
+  <template>
+    <a href="/_ah/api/explorer/#p/buildbucket/v1/buildbucket.{{name}}">
+      {{name}}
+    </a>
+  </template>
+</polymer-element>

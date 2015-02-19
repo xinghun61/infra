@@ -1,0 +1,23 @@
+<!-- Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="/static/bower_components/paper-shadow/paper-shadow.html">
+
+<polymer-element name="app-page" attributes="pageTitle" noscript>
+  <template>
+    <style>
+      paper-shadow {
+        background: white;
+        margin: 10px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+    </style>
+    <div layout vertical>
+      <paper-shadow>
+        <content></content>
+      </paper-shadow>
+    </div>
+  </template>
+</polymer-element>

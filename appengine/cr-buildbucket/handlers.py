@@ -3,26 +3,14 @@
 # found in the LICENSE file.
 
 from components import decorators
-import jinja2
 import webapp2
 
 import service
 
 
-ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader('templates'),
-    autoescape=True,
-)
-
 
 def create_service():
   return service.BuildBucketService()
-
-
-class MainHandler(webapp2.RequestHandler):  # pragma: no cover
-  def get(self):
-    tmpl = ENVIRONMENT.get_template('main.html')
-    self.response.out.write(tmpl.render({}))
 
 
 class CronResetExpiredBuilds(webapp2.RequestHandler):
@@ -33,7 +21,8 @@ class CronResetExpiredBuilds(webapp2.RequestHandler):
 
 
 def get_frontend_routes():  # pragma: no cover
-  return [webapp2.Route(r'/', MainHandler)]
+  return [
+  ]
 
 
 def get_backend_routes():
