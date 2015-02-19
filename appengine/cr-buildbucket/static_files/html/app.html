@@ -41,10 +41,10 @@ found in the LICENSE file. -->
 
           <paper-item hash="">Home</paper-item>
           <core-item subhead>Documentation</core-item>
-          <paper-item hash="/docs/basics">Basics</paper-item>
-          <paper-item hash="/docs/conventions">Conventions</paper-item>
-          <paper-item hash="/docs/build">Build</paper-item>
-          <paper-item hash="/docs/buildbot">Buildbot</paper-item>
+          <paper-item hash="docs/basics">Basics</paper-item>
+          <paper-item hash="docs/conventions">Conventions</paper-item>
+          <paper-item hash="docs/build">Build</paper-item>
+          <paper-item hash="docs/buildbot">Buildbot</paper-item>
 
         </core-menu>
       </core-header-panel>
@@ -58,16 +58,18 @@ found in the LICENSE file. -->
         <app-router id="appRouter" mode="hash"
             on-activate-route-end="{{hashChanged}}">
 
-          <app-route path="/docs/basics"
+          <app-route path="docs" redirect="docs/basics"></app-route>
+
+          <app-route path="docs/basics"
             import="/static/html/docs/basics.html" template></app-route>
 
-          <app-route path="/docs/conventions"
+          <app-route path="docs/conventions"
             import="/static/html/docs/conventions.html" template></app-route>
 
-          <app-route path="/docs/build"
+          <app-route path="docs/build"
               import="/static/html/docs/build.html" template></app-route>
 
-          <app-route path="/docs/buildbot"
+          <app-route path="docs/buildbot"
               import="/static/html/docs/buildbot.html" template></app-route>
 
           <app-route path="*"
