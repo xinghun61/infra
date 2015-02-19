@@ -60,13 +60,13 @@ found in the LICENSE file. -->
         </template>
         <template if="{{ !message.draft }}">
             <cr-toolbar>
-                <cr-action on-tap="{{ reply }}">Reply</cr-action>
+                <a is="cr-action" on-tap="{{ reply }}">Reply</a>
             </cr-toolbar>
         </template>
         <template if="{{ message.draft }}">
             <template if="{{ !expanded }}">
                 <cr-toolbar>
-                    <cr-action on-tap="{{ expand }}">Edit</cr-action>
+                    <a is="cr-action" on-tap="{{ expand }}">Edit</a>
                 </cr-toolbar>
             </template>
             <template if="{{ expanded }}">

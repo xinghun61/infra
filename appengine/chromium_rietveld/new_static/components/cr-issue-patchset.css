@@ -32,7 +32,6 @@ header .ui-actions {
     overflow-x: auto;
 }
 
-#try-job-results cr-action {
+.add-more {
     margin: 0 16px 0.5em 16px;
-    display: inline-block;
 }

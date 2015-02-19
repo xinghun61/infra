@@ -107,14 +107,14 @@ found in the LICENSE file. -->
                 <div id="drafts">
                     <polymer-ui-collapsible active="{{ draftsVisible }}">
                         <div class="polymer-ui-collapsible-header">
-                            <cr-action>
+                            <a is="cr-action">
                                 <template if="{{ !draftsVisible }}">
                                     Show Drafts
                                 </template>
                                 <template if="{{ draftsVisible }}">
                                     Hide Drafts
                                 </template>
-                            </cr-action>
+                            </a>
                         </div>
                         <!-- TODO(esprehn): This should use <cr-patch-file-message> and allow editing. -->
                         <template repeat="{{ draftPatchset in issue.draftPatchsets }}">

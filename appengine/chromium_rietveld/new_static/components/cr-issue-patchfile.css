@@ -19,6 +19,10 @@
     flex: 1;
 }
 
+.file-name a {
+    -webkit-user-select: text;
+}
+
 .file-messages,
 .file-status,
 .file-added,

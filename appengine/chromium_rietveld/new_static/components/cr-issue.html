@@ -50,7 +50,7 @@ found in the LICENSE file. -->
                         <button is="cr-button" on-tap="{{ showRevertDialog }}">Revert</button>
                     </template>
                     <div class="ui-actions">
-                        <cr-action on-tap="{{ showEditDialog }}">Edit</cr-action>
+                        <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
                     </div>
                 </cr-toolbar>
 
@@ -72,7 +72,7 @@ found in the LICENSE file. -->
             <h2>Patches</h2>
             <div class="ui-actions">
                 <template if="{{ issue.draftCount }}">
-                    <cr-action on-tap="{{ discardAllDrafts }}">Discard all drafts</cr-action>
+                    <a is="cr-action" on-tap="{{ discardAllDrafts }}">Discard all drafts</a>
                 </template>
             </div>
         </header>
@@ -83,8 +83,8 @@ found in the LICENSE file. -->
             <header>
                 <h2>Messages</h2>
                 <div class="ui-actions">
-                    <cr-action on-tap="{{ expandAllMessages }}">Expand all</cr-action> /
-                    <cr-action on-tap="{{ collapseAllMessages }}">Collapse all</cr-action>
+                    <a is="cr-action" on-tap="{{ expandAllMessages }}">Expand all</a> /
+                    <a is="cr-action" on-tap="{{ collapseAllMessages }}">Collapse all</a>
                 </div>
             </header>
         </template>

@@ -19,10 +19,10 @@ found in the LICENSE file. -->
         <cr-issue-list issues="{{ visibleIssues }}" approvals></cr-issue-list>
         <template if="{{ hiddenIssues.length }}">
             <polymer-ui-collapsible active="{{ showingHiddenIssues }}">
-                <cr-action class="polymer-ui-collapsible-header">
+                <a is="cr-action" class="polymer-ui-collapsible-header">
                     {{ hiddenIssues.length }} older
                     {{ "issue" | pluralize(hiddenIssues.length) }}
-                </cr-action>
+                </a>
                 <template if="{{ showingHiddenIssues }}">
                     <cr-issue-list issues="{{ hiddenIssues }}" approvals></cr-issue-list>
                 </template>

@@ -24,7 +24,7 @@ found in the LICENSE file. -->
         </style>
         <template if="{{ !expanded }}">
             <cr-toolbar>
-                <cr-action on-tap="{{ expand }}">Reply</cr-action>
+                <a is="cr-action" on-tap="{{ expand }}">Reply</a>
             </cr-toolbar>
         </template>
         <template if="{{ expanded }}">

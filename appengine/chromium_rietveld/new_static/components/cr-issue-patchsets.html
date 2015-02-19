@@ -41,10 +41,10 @@ found in the LICENSE file. -->
 
         <template if="{{ !showOlderPatchsets && olderPatchsets.length }}">
             <cr-toolbar>
-                <cr-action on-tap="{{ handleShowOlderPatchsets }}">
+                <a is="cr-action" on-tap="{{ handleShowOlderPatchsets }}">
                     Show {{ olderPatchsets.length }} older
                     {{ "patch" | pluralize(olderPatchsets.length) }}
-                </cr-action>
+                </a>
             </cr-toolbar>
         </template>
 

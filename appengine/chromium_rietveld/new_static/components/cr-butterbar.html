@@ -30,7 +30,7 @@ found in the LICENSE file. -->
             <span>
                 {{ message }}
                 <template if="{{ action }}">
-                    <cr-action on-tap="{{ activate }}">{{ action }}</cr-action>
+                    <a is="cr-action" on-tap="{{ activate }}">{{ action }}</a>
                 </template>
             </span>
         </template>

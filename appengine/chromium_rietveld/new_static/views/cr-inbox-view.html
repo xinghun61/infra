@@ -52,7 +52,7 @@ found in the LICENSE file. -->
         </style>
         <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
         <div class="login-prompt">
-            <p><cr-action on-tap="{{ login }}">Login</cr-action> to view your issues.</p>
+            <p><a is="cr-action" on-tap="{{ login }}">Login</a> to view your issues.</p>
         </div>
         <template if="{{ issues && !failed }}">
             <header>

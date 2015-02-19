@@ -41,7 +41,7 @@ found in the LICENSE file. -->
         <div class="patchset-date">{{ patchset.created | formatDate }}</div>
         <div class="patchset-actions">
             <template if="{{ userIsOwner }}">
-                <cr-action on-tap="{{ showEditDialog }}">Edit</cr-action>
+                <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
             </template>
         </div>
     </template>

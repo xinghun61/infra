@@ -77,7 +77,7 @@ DiffBuilder.prototype.createContextAction = function(section, line)
 {
     if (!line.context)
         return null;
-    var action = document.createElement("cr-action");
+    var action = document.createElement("a", "cr-action");
     action.textContent = "Show context";
     action.className = "show-context";
     action.line = line;

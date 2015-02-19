@@ -14,7 +14,7 @@ found in the LICENSE file. -->
             <div class="file-status">{{ file.status }}</div>
             <div class="file-removed">-{{ file.removed }}</div>
             <div class="file-added">+{{ file.added }}</div>
-            <div class="file-name"><cr-action on-tap="{{ toggleDiff }}" selectable>{{ file.name }}</cr-action></div>
+            <div class="file-name"><a is="cr-action" on-tap="{{ toggleDiff }}">{{ file.name }}</a></div>
             <div class="file-messages">
                 {{ file.messageCount - file.draftCount | pluralize("comment") }}
                 <template if="{{ file.draftCount }}">

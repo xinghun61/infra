@@ -26,7 +26,7 @@ found in the LICENSE file. -->
 
         <cr-toolbar>
         <template if="{{ olderMessages.length }}">
-            <cr-action on-tap="{{ toggleOlderMessages }}">
+            <a is="cr-action" on-tap="{{ toggleOlderMessages }}">
                 <template if="{{ showOlderMessages }}">
                     Hide
                 </template>
@@ -35,14 +35,14 @@ found in the LICENSE file. -->
                 </template>
                 {{ olderMessages.length }} older
                 {{ "message" | pluralize(olderMessages.length) }}
-            </cr-action>
+            </a>
             <template if="{{ generatedMessages.length }}">
               <div class="separator">/</div>
             </template>
         </template>
 
         <template if="{{ generatedMessages.length }}">
-            <cr-action on-tap="{{ toggleGeneratedMessages }}">
+            <a is="cr-action" on-tap="{{ toggleGeneratedMessages }}">
                 <template if="{{ showGeneratedMessages }}">
                     Hide
                 </template>
@@ -51,7 +51,7 @@ found in the LICENSE file. -->
                 </template>
                 {{ generatedMessages.length }} generated
                 {{ "message" | pluralize(generatedMessages.length) }}
-            </cr-action>
+            </a>
         </template>
         </cr-toolbar>
 

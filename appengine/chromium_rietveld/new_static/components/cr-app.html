@@ -83,8 +83,7 @@ found in the LICENSE file. -->
                 display: flex;
             }
 
-            .view-links a,
-            cr-action {
+            .view-links a {
                 color: white;
                 flex-shrink: 0;
                 margin-right: 16px;
@@ -123,14 +122,14 @@ found in the LICENSE file. -->
                 <template if="{{ user }}">
                     <a href="/settings">Settings</a>
                 </template>
-                <cr-action on-tap="{{ handleLogin }}" white>
+                <a is="cr-action" on-tap="{{ handleLogin }}">
                     <template if="{{ user }}">
                         Logout
                     </template>
                     <template if="{{ !user }}">
                         Login
                     </template>
-                </cr-action>
+                </a>
             </div>
         </header>
         <app-router id="router" trailingSlash="ignore">

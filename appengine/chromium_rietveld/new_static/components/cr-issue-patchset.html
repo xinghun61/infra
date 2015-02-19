@@ -15,8 +15,8 @@ found in the LICENSE file. -->
             <header>
                 <h2>Files</h2>
                 <div class="ui-actions">
-                    <cr-action on-tap="{{ expandAllDiffs }}">Show diffs</cr-action> /
-                    <cr-action on-tap="{{ collapseAllDiffs }}">Hide diffs</cr-action> /
+                    <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
+                    <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                     <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
                 </div>
             </header>
@@ -31,8 +31,8 @@ found in the LICENSE file. -->
                 <h2>LayoutTests</h2>
                 <template if="{{ !patchset.sourceFiles.length }}">
                     <div class="ui-actions">
-                        <cr-action on-tap="{{ expandAllDiffs }}">Show diffs</cr-action> /
-                        <cr-action on-tap="{{ collapseAllDiffs }}">Hide diffs</cr-action> /
+                        <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
+                        <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                         <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
                     </div>
                 </template>
@@ -48,7 +48,7 @@ found in the LICENSE file. -->
                 <h2>Try job results</h2>
                 <cr-try-results results="{{ patchset.tryJobResults }}"></cr-try-results>
                 <template if="{{ patchset.mostRecent && !patchset.issue.closed }}">
-                    <cr-action on-tap="{{ handleAddMore }}">Add more</cr-action>
+                    <a class="add-more" is="cr-action" on-tap="{{ handleAddMore }}">Add more</a>
                 </template>
             </template>
         </div>
