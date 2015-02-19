@@ -44,6 +44,7 @@ found in the LICENSE file. -->
                 <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
             </template>
         </div>
+        <div id="dialogs" on-tap="{{ handleDialogTap }}"></div>
     </template>
     <script>
         Polymer("cr-patchset-header", {
@@ -66,6 +67,10 @@ found in the LICENSE file. -->
                     return "";
                 return date.relative();
             },
+            handleDialogTap: function(event) {
+                // Tapping on a dialog shouldn't collapse the header.
+                event.stopPropagation();
+            },
             showEditDialog: function(event) {
                 // Don't collapse the patchset.
                 event.stopPropagation();
@@ -74,12 +79,7 @@ found in the LICENSE file. -->
                 dialog.addEventListener("close", function() {
                     dialog.remove();
                 });
-                // TODO(esprehn): This is a hack, we need to be a child of the
-                // issue to dispatch a "refresh-issue" event. Instead we should
-                // stop using that event and use a real data model API that
-                // components interact with like <cr-datasource>.
-                var dialogs = document.querySelector("html /deep/ cr-issue::shadow #dialogs");
-                dialogs.appendChild(dialog);
+                this.$.dialogs.appendChild(dialog);
                 dialog.showModal();
             },
         });
