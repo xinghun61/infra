@@ -37,8 +37,8 @@ found in the LICENSE file. -->
             </fieldset>
 
             <cr-toolbar>
-                <cr-button primary on-tap="{{ revert }}">Revert</cr-button>
-                <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                <button is="cr-button" primary on-tap="{{ revert }}">Revert</button>
+                <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                 <label>
                     <input type="checkbox" checked="{{ commit }}">
                     Automatically send revert to CQ

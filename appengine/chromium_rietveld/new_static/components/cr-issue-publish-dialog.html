@@ -140,11 +140,11 @@ found in the LICENSE file. -->
             </template>
 
             <cr-toolbar>
-                <cr-button primary on-tap="{{ send }}">Send</cr-button>
+                <button is="cr-button" primary on-tap="{{ send }}">Send</button>
                 <template if="{{ !issue.closed }}">
-                    <cr-button  on-tap="{{ sendAndCommit }}">Send + CQ</cr-button>
+                    <button is="cr-button"  on-tap="{{ sendAndCommit }}">Send + CQ</button>
                 </template>
-                <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                 <template if="{{ !userIsOwner }}">
                     <label>
                         <input type="checkbox" checked="{{ addAsReviewer }}">

@@ -19,7 +19,7 @@ found in the LICENSE file. -->
         <template if="{{ settings }}">
             <cr-settings-editor settings="{{ settings }}" disabled="{{ disabled }}" errors="{{ errors }}"></cr-settings-editor>
             <cr-toolbar>
-                <cr-button primary on-tap="{{ save }}">Save</cr-button>
+                <button is="cr-button" primary on-tap="{{ save }}">Save</button>
             </cr-toolbar>
         </template>
     </template>

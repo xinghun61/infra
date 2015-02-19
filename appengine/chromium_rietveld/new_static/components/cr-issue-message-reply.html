@@ -32,8 +32,8 @@ found in the LICENSE file. -->
                 <textarea id="textarea" rows="20" value="{{ value }}"></textarea>
             </fieldset>
             <cr-toolbar>
-                <cr-button primary on-tap="{{ sendMessage }}">Send Message</cr-button>
-                <cr-button on-tap="{{ discardMessage }}">Discard</cr-button>
+                <button is="cr-button" primary on-tap="{{ sendMessage }}">Send Message</button>
+                <button is="cr-button" on-tap="{{ discardMessage }}">Discard</button>
             </cr-toolbar>
         </template>
     </template>

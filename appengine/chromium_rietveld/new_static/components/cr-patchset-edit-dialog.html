@@ -23,7 +23,7 @@ found in the LICENSE file. -->
                 justify-content: flex-end;
             }
 
-            .delete-action > cr-button {
+            .delete-action > button {
                 margin-right: 0;
             }
 
@@ -40,7 +40,7 @@ found in the LICENSE file. -->
                 margin: 0 16px;
             }
 
-            .delete-confirmation cr-button {
+            .delete-confirmation button {
                 height: 20px;
             }
         </style>
@@ -60,18 +60,18 @@ found in the LICENSE file. -->
             </fieldset>
 
             <cr-toolbar>
-                <cr-button primary on-tap="{{ save }}">Save</cr-button>
-                <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                <button is="cr-button" primary on-tap="{{ save }}">Save</button>
+                <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                 <template if="{{ patchset.issue.patchsets.length > 1 }}">
                     <div class="delete-action">
-                        <cr-button on-tap="{{ toggleDeleteAction }}" icon>
+                        <button is="cr-button" on-tap="{{ toggleDeleteAction }}" icon>
                             <img src="../images/delete_icon_36.png" height="25">
-                        </cr-button>
+                        </button>
                         <template if="{{ showDeleteAction }}">
                             <div class="delete-confirmation">
                                 <div>Permanently delete this patch?</div>
-                                <cr-button create on-tap="{{ deletePatchset }}">Delete</cr-button>
-                                <cr-button on-tap="{{ toggleDeleteAction }}">No</cr-button>
+                                <button is="cr-button" create on-tap="{{ deletePatchset }}">Delete</button>
+                                <button is="cr-button" on-tap="{{ toggleDeleteAction }}">No</button>
                             </div>
                         </template>
                     </div>

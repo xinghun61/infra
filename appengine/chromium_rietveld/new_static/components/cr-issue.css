@@ -79,7 +79,7 @@ header h2 {
         align-items: stretch;
     }
 
-    .issue-toolbar cr-button {
+    .issue-toolbar button {
         margin: 8px;
         flex: 1;
     }

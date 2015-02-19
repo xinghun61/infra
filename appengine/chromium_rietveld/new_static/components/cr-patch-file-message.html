@@ -74,10 +74,10 @@ found in the LICENSE file. -->
                     <textarea id="textarea" rows="10" value="{{ text }}"></textarea>
                 </fieldset>
                 <cr-toolbar>
-                    <cr-button primary on-tap="{{ save }}">Save</cr-button>
-                    <cr-button on-tap="{{ cancel }}">Cancel</cr-button>
+                    <button is="cr-button" primary on-tap="{{ save }}">Save</button>
+                    <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                     <template if="{{ message.date }}">
-                        <cr-button on-tap="{{ discard }}">Discard</cr-button>
+                        <button is="cr-button" on-tap="{{ discard }}">Discard</button>
                     </template>
                 </cr-toolbar>
                 <cr-keyboard on-key-escape="{{ handleCancelKey }}"></cr-keyboard>
