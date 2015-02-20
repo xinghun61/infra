@@ -1,0 +1,37 @@
+<!-- Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="/static/html/app-page.html">
+<link rel="import" href="api-link.html">
+
+<template>
+  <app-page pageTitle="Documentation">
+    <h2>Access control</h2>
+    <p>Each bucket has its own ACLs. By default a bucket is accessible only by
+      admins. If a bucket does not exist, its ACL is considered default.</p>
+
+    <p>An ACL is a list of rules, where each rule is a (role, group) tuple.
+      A role can be one of:
+      <ul>
+        <li>READER: read-only access to builds in the buckets.</li>
+        <li>SCHEDULER: same as READER + can schedule and cancel builds.</li>
+        <li>WRITER: same as SCHEDULER + can lease, mark as started and
+          completed.</li>
+        <li>OWNER: same as WRITER + can change ACLs and can reset a build.</li>
+      </ul>
+      Groups are stored and managed at <a href="/auth">chrome-infra-auth</a>.
+      </p>
+
+    <p>Anonymous requests can access only public buckets. To access internal
+      buckets, requests must be authenticated. Authentication is done via
+      OAuth2. BuildBucket manages ACLs and
+      <a href="/auth">chrome-infra-auth</a> manages groups.</p>
+
+    <p>A bucket owner or admin can use these API:
+      <ul>
+        <li><api-link name="acl.get"></api-link>: get bucket ACL.</li>
+        <li><api-link name="acl.set"></api-link>: set bucket ACL.</li>
+      </ul></p>
+  </app-page>
+</template>

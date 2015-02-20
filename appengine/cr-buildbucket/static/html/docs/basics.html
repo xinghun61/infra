@@ -74,20 +74,6 @@ found in the LICENSE file. -->
       Notifications will be enabled once
       <a href="https://cloud.google.com/pubsub/">Cloud PubSub</a> is ready for
       production.</p>
-
-    <h2>Auth</h2>
-    <p>Anonymous requests can access only public buckets. To access internal
-      buckets, requests must be authenticated. Authentication is done via
-      OAuth2. BuildBucket manages ACLs and
-      <a href="/auth">chrome-infra-auth</a> manages groups.</p>
-
-    <h2>ACLs</h2>
-    <p>ACLs are stored per bucket.</p>
-    <p>API:
-      <ul>
-        <li><api-link name="acl.get"></api-link>: get bucket ACL.</li>
-        <li><api-link name="acl.set"></api-link>: set bucket ACL.</li>
-      </ul></p>
   </template>
 
   <script>
