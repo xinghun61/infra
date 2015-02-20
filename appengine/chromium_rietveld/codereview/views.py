@@ -1153,6 +1153,10 @@ def upload(request):
         logging.info('base_hashes is %r', base_hashes)
         patches = list(patchset.patches)
         logging.info('len(patches) = %r', len(patches))
+        if len(patches) >= django_settings.MAX_PATCHES_PER_PATCHSET:
+          return HttpTextResponse(
+            'ERROR: Too many patches in this patchset.  Limit is %r.' %
+            django_settings.MAX_PATCHES_PER_PATCHSET, status=400)
 
         existing_patches = {}
         patchsets = list(issue.patchsets)
@@ -1290,6 +1294,10 @@ def upload_patch(request):
   if patchset.data:
     return HttpTextResponse(
         'ERROR: Can\'t upload patches to patchset with data.')
+  if patchset.num_patches >= django_settings.MAX_PATCHES_PER_PATCHSET:
+    return HttpTextResponse(
+      'ERROR: Too many patches in this patchset.  Limit is %r.' %
+      django_settings.MAX_PATCHES_PER_PATCHSET, status=400)
   text = utils.to_dbtext(utils.unify_linebreaks(form.get_uploaded_patch()))
   patch = models.Patch(
     patchset_key=patchset.key, text=text,
@@ -1318,6 +1326,10 @@ def upload_complete(request, patchset_id=None):
     if patchset is None:
       return HttpTextResponse(
           'No patch set exists with that id (%s)' % patchset_id, status=403)
+    if patchset.num_patches >= django_settings.MAX_PATCHES_PER_PATCHSET:
+      return HttpTextResponse(
+        'ERROR: Too many patches in this patchset.  Limit is %r.' %
+        django_settings.MAX_PATCHES_PER_PATCHSET, status=400)
     # Add delta calculation task.
     # TODO(jrobbins): If this task has transient failures, consider using cron.
     taskqueue.add(url=reverse(task_calculate_delta),

@@ -116,3 +116,6 @@ MAX_COLUMN_WIDTH = 2000
 DEFAULT_TAB_SPACES = 8
 MIN_TAB_SPACES = 2
 MAX_TAB_SPACES = 10
+
+# Sanity limits to avoid timeouts and out-of-memory errors
+MAX_PATCHES_PER_PATCHSET = 5000

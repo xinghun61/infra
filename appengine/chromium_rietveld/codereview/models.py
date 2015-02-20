@@ -605,13 +605,21 @@ class PatchSet(ndb.Model):
   build_results = ndb.StringProperty(repeated=True)
 
   @property
+  def num_patches(self):
+    """Return the number of patches in this patchset."""
+    return Patch.query(ancestor=self.key).count(
+      settings.MAX_PATCHES_PER_PATCHSET)
+
+  @property
   def patches(self):
     def reading_order(patch):
       """Sort patches by filename, except .h files before .c files."""
       base, ext = os.path.splitext(patch.filename)
       return (base, ext not in ('.h', '.hxx', '.hpp'), ext)
 
-    patch_list = list(Patch.query(ancestor=self.key))
+    patch_list = Patch.query(ancestor=self.key).fetch(
+      settings.MAX_PATCHES_PER_PATCHSET,
+      batch_size=settings.MAX_PATCHES_PER_PATCHSET)
     return sorted(patch_list, key=reading_order)
 
   def update_comment_count(self, n):
