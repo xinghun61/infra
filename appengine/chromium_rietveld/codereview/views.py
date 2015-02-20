@@ -1764,8 +1764,6 @@ def show(request):
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
-    'trybot_documentation_link':
-      models_chromium.DefaultBuilderList.get_doc_link(issue.base),
     'offer_cq': request.issue.is_cq_available,
   })
 
