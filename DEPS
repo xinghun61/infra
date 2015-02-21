@@ -41,7 +41,7 @@ deps = {
   "infra/appengine/third_party/trace-viewer":
     ("https://chromium.googlesource.com/external/"
      "trace-viewer.git"
-     '@' + '76a4496033c164d8be9ee8c57f702b0859cb1911'),
+     '@' + '6c50e784746e6c785b4f5476cf843edecb4fab00'),
 
   ## For ease of development. These are pulled in as wheels for run.py/test.py
   "expect_tests":
