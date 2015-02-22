@@ -26,6 +26,7 @@ SUPPORTED_FILE_EXTENSIONS = [
     'mm',
     'mojom',
     'o',
+    'obj',
     'py',
     'pyc',
     'sh',

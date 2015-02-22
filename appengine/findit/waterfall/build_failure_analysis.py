@@ -37,7 +37,7 @@ def _NormalizeObjectFile(file_path):
   file_dir = os.path.dirname(file_path)
   file_name = os.path.basename(file_path)
   parts = file_name.split('.', 1)
-  if len(parts) == 2 and parts[1].endswith('.o'):
+  if len(parts) == 2 and (parts[1].endswith('.o') or parts[1].endswith('.obj')):
     file_name = parts[1]
 
   return os.path.join(file_dir, file_name).replace(os.sep, '/')
