@@ -89,7 +89,19 @@ def NeedANewAnalysis(master_name, builder_name, build_number, force):
 
 def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
                              queue_name):
-  """Schedules an analysis if needed and returns the build analysis."""
+  """Schedules an analysis if needed and returns the build analysis.
+
+  Args:
+    master_name (str): the master name of the failed build.
+    builder_name (str): the builder name of the failed build.
+    build_number (int): the build number of the failed build.
+    force (bool): if True, a fresh new analysis will be triggered even when an
+        old one was completed already; otherwise bail out.
+    queue_name (str): the task queue to be used for pipeline tasks.
+
+  Returns:
+    A BuildAnalysis instance.
+  """
   if NeedANewAnalysis(master_name, builder_name, build_number, force):
     pipeline_job = BuildFailurePipeline(master_name, builder_name, build_number)
     pipeline_job.start(queue_name=queue_name)

@@ -11,6 +11,7 @@ from base_handler import BaseHandler
 from base_handler import Permission
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
+from waterfall import masters
 
 
 BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
@@ -40,6 +41,10 @@ class BuildFailure(BaseHandler):
       return BaseHandler.CreateError(
           'Url "%s" is not pointing to a build.' % url, 501)
     master_name, builder_name, build_number = build_info
+
+    if not masters.MasterIsSupported(master_name):
+      return BaseHandler.CreateError(
+          'Master "%s" is not supported yet.' % master_name, 501)
 
     force = self.request.get('force') == '1'
     analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(

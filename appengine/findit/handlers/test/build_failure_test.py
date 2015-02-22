@@ -14,6 +14,7 @@ from testing_utils import testing
 from handlers import build_failure
 from model.build_analysis_status import BuildAnalysisStatus
 from waterfall import buildbot
+from waterfall import masters
 
 
 # Root directory appengine/findit.
@@ -44,12 +45,34 @@ class BuildFailureTest(testing.AppengineTestCase):
                    re.MULTILINE|re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
+  def testMasterNotSupported(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    def MockMasterIsSupported(*_):
+      return False
+    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*501 Not Implemented.*Master &#34;%s&#34; '
+                   'is not supported yet.*' % master_name,
+                   re.MULTILINE|re.DOTALL),
+        self.test_app.get, '/build-failure', params={'url': build_url})
+
   def testBuildFailureAnalysisScheduled(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
+
+    def MockMasterIsSupported(*_):
+      return True
+    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
 
     response = self.test_app.get('/build-failure', params={'url': build_url})
     self.assertEquals(200, response.status_int)
