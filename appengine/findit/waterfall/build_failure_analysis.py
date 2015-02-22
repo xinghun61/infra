@@ -87,8 +87,7 @@ def _IsRelated(src_file, file_path):
     1. file.h <-> file_impl.cc
     2. file_impl.cc <-> file_unittest.cc
     3. file_win.cc <-> file_mac.cc
-    4. a/b/x.cc <-> a/b/y.cc
-    5. x.h <-> x.cc
+    4. x.h <-> x.cc
   """
   if file_path.endswith('.o'):
     file_path = _NormalizeObjectFile(file_path)
@@ -97,10 +96,7 @@ def _IsRelated(src_file, file_path):
                  _StripExtensionAndCommonSuffix(file_path)):
     return True
 
-  # Two file are in the same directory: a/b/x.cc  <-> a/b/y.cc
-  # TODO: cause noisy result?
-  src_file_dir = os.path.dirname(src_file)
-  return src_file_dir and src_file_dir == os.path.dirname(file_path)
+  return False
 
 
 class _Justification(object):

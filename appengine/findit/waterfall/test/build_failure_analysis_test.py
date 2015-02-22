@@ -52,8 +52,6 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     self.assertTrue(build_failure_analysis._IsRelated('a.py', 'a_test.py'))
     self.assertTrue(
         build_failure_analysis._IsRelated('a.h', 'a_impl_test.o'))
-    self.assertTrue(
-        build_failure_analysis._IsRelated('a/b/x.cc', 'a/b/y.cc'))
 
     self.assertFalse(
         build_failure_analysis._IsRelated('a/x.cc', 'a/b/y.cc'))
