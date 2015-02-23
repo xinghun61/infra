@@ -3,6 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="app-page.html">
+<link rel="import" href="docs/api-link.html">
 
 <template>
   <app-page pageTitle="Home">
@@ -11,5 +12,12 @@ found in the LICENSE file. -->
     <p>Welcome to Buildbucket! Consider reading
     <a href="#docs/basics">documentation</a>. Ping nodir@</a>.
 
+    <h2>Quick links</h2>
+    <ul>
+      <li><api-link name="put">Schedule a build</api-link></li>
+      <li><api-link name="get">Get a build by ID</api-link></li>
+      <li><api-link name="search">Search for builds</api-link></li>
+      <li><api-link name="acl.get">Get ACLs</api-link></li>
+      <li><api-link name="acl.set">Set ACLs</api-link></li>
   </app-page>
 </template>

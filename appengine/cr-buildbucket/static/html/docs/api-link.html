@@ -2,9 +2,20 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<polymer-element name="api-link" attributes="name" noscript>
+<polymer-element name="api-link" attributes="name">
   <template>
-    <a href="/_ah/api/explorer/#p/buildbucket/v1/buildbucket.{{name}}"
-      >{{name}}</a>
+    <a href="/_ah/api/explorer/#p/buildbucket/v1/buildbucket.{{name}}">
+        <label id="label" style="display:none">{{name}}</label>
+        <content></content>
+      </a>
   </template>
+  <script>
+    Polymer({
+      domReady: function () {
+        if (this.innerText == "") {
+          this.$.label.style.display = "";
+        }
+      }
+    })
+  </script>
 </polymer-element>
