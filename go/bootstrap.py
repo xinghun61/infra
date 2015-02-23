@@ -97,7 +97,7 @@ TOOLS_SOURCE = {
 
 # The set of directories to copy from the go_appengine SDK's goroot into our
 # toolchain's root. See patch_appengine_sdk for more details.
-GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'code.google.com'))
+GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'github.com'))
 
 # Counter-hacks against GAE's hacks :). The init module writes a gae-added
 # boolean into the os package to disable file writes, and overwrites the
@@ -255,7 +255,7 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
     LOGGER.info('  Old Appengine version is %s', old)
     LOGGER.info('  New Appengine version is %s', new)
 
-    base_sdk_dir = os.path.join(go_appengine, 'goroot', 'src', 'pkg')
+    base_sdk_dir = os.path.join(go_appengine, 'goroot', 'src')
     base_tool_dir = os.path.join(toolset_root, 'go', 'src')
 
     for d in GAE_PKGS:
