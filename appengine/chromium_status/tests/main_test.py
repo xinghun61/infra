@@ -15,7 +15,6 @@ import urllib2
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-import fill
 import local_gae
 
 
@@ -189,28 +188,6 @@ class LkgrTest(PublicTestCase):
     self.assertEqual('31337', self.get('lkgr'))
     self.assertEqual('988881adc9fc3655077dc2d4d757d480b5ea0e11',
                      self.get('git-lkgr'))
-
-
-class CommitQueueTest(PublicTestCase):
-  def _fill(self):
-    # Example dump taken from a run.
-    total = 0
-    for packet in fill.load_packets():
-      total += int(self.post('cq/receiver', packet))
-    self.assertEquals(9, total)
-
-  def test_summary_json(self):
-    self._fill()
-    self.assertEquals(7, len(json.loads(self.get('cq/?format=json'))))
-    self.assertEquals([], json.loads(self.get('cq/doesntexist?format=json')))
-    self.assertEquals(
-        4,
-        len(json.loads(self.get(
-          urllib2.quote('cq/bar@chromium.org') + '?format=json'))))
-    self.assertEquals(
-        3,
-        len(json.loads(self.get(
-          urllib2.quote('cq/joe@chromium.org') + '?format=json'))))
 
 
 class AccessControl(TestCase):
