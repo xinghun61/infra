@@ -31,7 +31,7 @@ urlpatterns = patterns(
     (r'^scrape/(\d+)/?$', 'show', {}, 'show_bare_issue_number'),
     (r'^(\d+)/?$', 'show', {}, 'show_bare_issue_number'),
 
-    # TODO(ojan): Use the api and remove the scrape URL.
+    # TODO(jrobbins): scrape/settings can be removed after the next deployment.
     (r'^scrape/settings$', 'settings'),
     (r'^settings$', 'settings'),
     (r'^api/settings$', 'api_settings'),

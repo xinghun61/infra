@@ -3818,11 +3818,16 @@ def api_settings(_request):
   account = models.Account.current_user_account
   return {
     'nickname': account.nickname,
+    'deprecated_ui': account.deprecated_ui,
     'default_context': account.default_context,
     'default_column_width': account.default_column_width,
     'default_tab_spaces': account.default_tab_spaces,
     'notify_by_email': account.notify_by_email,
-    'notify_by_chat': account.notify_by_chat
+    'notify_by_chat': account.notify_by_chat,
+    'add_plus_role': account.add_plus_role,
+    'display_generated_msgs': account.display_generated_msgs,
+    'display_exp_tryjob_results': account.display_exp_tryjob_results,
+    'send_from_email_addr': account.send_from_email_addr,
     }
 
 

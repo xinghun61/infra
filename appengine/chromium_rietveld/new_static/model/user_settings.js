@@ -17,7 +17,8 @@ function UserSettings()
     Object.preventExtensions(this);
 }
 
-UserSettings.DETAIL_URL = "scrape/settings";
+UserSettings.DETAIL_URL = "/api/settings";
+UserSettings.EDIT_URL = "/settings";
 
 UserSettings.FIELD_NAME_MAP = {
     "deprecated_ui": "deprecatedUi",
@@ -33,50 +34,30 @@ UserSettings.FIELD_NAME_MAP = {
 UserSettings.prototype.loadDetails = function()
 {
     var settings = this;
-    return loadDocument(UserSettings.DETAIL_URL).then(function(doc) {
-        settings.parseDocument(doc);
+    return loadJSON(UserSettings.DETAIL_URL).then(function(data) {
+        settings.parseData(data);
         return settings;
     });
 };
 
-UserSettings.prototype.parseDocument = function(doc)
+UserSettings.prototype.parseData = function(data)
 {
     this.name = User.current.name;
 
-    var context = doc.getElementById("id_context");
-    if (context && context.selectedOptions && context.selectedOptions.length)
-        this.context = context.selectedOptions[0].value;
-
-    var columnWidth = doc.getElementById("id_column_width");
-    if (columnWidth)
-        this.columnWidth = parseInt(columnWidth.value, 10) || 0;
-
-    var tabSpaces = doc.getElementById("id_tab_spaces");
-    if (tabSpaces)
-        this.tabSpaces = parseInt(tabSpaces.value, 10) || 0;
-
-    var notifyByChat = doc.getElementById("id_notify_by_chat");
-    if (notifyByChat)
-        this.notifyByChat = notifyByChat.checked;
-
-    var deprecatedUi = doc.getElementById("id_deprecated_ui");
-    if (deprecatedUi)
-        this.deprecatedUi = deprecatedUi.checked;
-
-    var sendFromEmailAddress = doc.getElementById("id_send_from_email_addr");
-    if (sendFromEmailAddress)
-        this.sendFromEmailAddress = sendFromEmailAddress.checked;
-
-    var displayExp = doc.getElementById("id_display_exp_tryjob_results");
-    if (displayExp && displayExp.selectedOptions[0] && displayExp.selectedOptions[0].value === "True")
-        this.displayExperimentalTryjobs = true;
+    this.context = data.default_context || "";
+    this.columnWidth = data.default_column_width || 0;
+    this.tabSpaces = data.default_tab_spaces || 0;
+    this.notifyByChat = data.notify_by_chat;
+    this.deprecatedUi = data.deprecated_ui;
+    this.sendFromEmailAddress = data.send_from_email_addr;
+    this.displayExperimentalTryjobs = data.display_exp_tryjob_results;
 };
 
 UserSettings.prototype.save = function()
 {
     var settings = this;
     return this.createSaveData().then(function(data) {
-        return sendFormData(UserSettings.DETAIL_URL, data).then(function(xhr) {
+        return sendFormData(UserSettings.EDIT_URL, data).then(function(xhr) {
             var errorData = parseFormErrorData(xhr.response);
             if (!errorData) {
                 // Synchronize the user's name now that we've saved it to the server.
