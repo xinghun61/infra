@@ -114,6 +114,7 @@ class BuildBucketService(object):
           (bucket, identity.to_bytes()))
 
     build = model.Build(
+        id=model.new_build_id(),
         bucket=bucket,
         tags=tags,
         parameters=parameters,
