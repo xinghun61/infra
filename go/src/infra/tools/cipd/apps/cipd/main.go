@@ -15,6 +15,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -90,6 +91,58 @@ func (opts *serviceOptions) makeClient() (*http.Client, error) {
 		authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
 	}
 	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'create' subcommand.
+
+var cmdCreate = &subcommands.Command{
+	UsageLine: "create [options]",
+	ShortDesc: "builds and uploads a package instance file",
+	LongDesc:  "Builds and uploads a package instance file.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &createRun{}
+		c.serviceOptions.registerFlags(c.Flags)
+		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
+		c.Flags.StringVar(&c.inputDir, "in", "<path>", "path to a directory with files to package")
+		return c
+	},
+}
+
+type createRun struct {
+	subcommands.CommandRunBase
+	serviceOptions
+
+	packageName string
+	inputDir    string
+}
+
+func (c *createRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 0) {
+		return 1
+	}
+	err := buildAndUploadInstance(c.packageName, c.inputDir, c.serviceOptions)
+	if err != nil {
+		reportError("Error while uploading the package: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func buildAndUploadInstance(packageName string, inputDir string, opts serviceOptions) error {
+	f, err := ioutil.TempFile("", "cipd_pkg")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+	err = buildInstanceFile(packageName, inputDir, f.Name())
+	if err != nil {
+		return err
+	}
+	return registerInstanceFile(f.Name(), opts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -356,6 +409,12 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 		reportError("Error while building the package: %s", err)
 		return 1
 	}
+	// Print information about built package, also verify it is readable.
+	err = inspectInstanceFile(c.outputFile, false)
+	if err != nil {
+		reportError("Error while building the package: %s", err)
+		return 1
+	}
 	return 0
 }
 
@@ -381,9 +440,7 @@ func buildInstanceFile(packageName string, inputDir string, instanceFile string)
 		os.Remove(instanceFile)
 		return err
 	}
-
-	// Print information about built package, also verify it is readable.
-	return inspectInstanceFile(instanceFile, false)
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -620,6 +677,7 @@ var application = &subcommands.DefaultApplication{
 		subcommands.CmdHelp,
 
 		// High level commands.
+		cmdCreate,
 		cmdEnsure,
 
 		// Authentication related commands.

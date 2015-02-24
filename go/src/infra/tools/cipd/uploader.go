@@ -45,6 +45,9 @@ type UploadToCASOptions struct {
 	UploadSessionID string
 	// UploadURL is where to upload the file to. Must be set if UploadSessionID is not empty.
 	UploadURL string
+
+	// remote is an instance of remoteService to use (if set).
+	remote *remoteService
 }
 
 // UploadToCAS uploads package data blob to Content Addressed Store if it is not
@@ -67,8 +70,11 @@ func UploadToCAS(options UploadToCASOptions) error {
 	if options.Log == nil {
 		options.Log = logging.DefaultLogger
 	}
+	if options.remote == nil {
+		options.remote = newRemoteService(options.Client, options.ServiceURL, options.Log)
+	}
 	log := options.Log
-	remote := newRemoteService(options.Client, options.ServiceURL, log)
+	remote := options.remote
 
 	// Open new upload session if existing is not provided.
 	var session *uploadSession
@@ -164,6 +170,7 @@ func RegisterInstance(options RegisterInstanceOptions) error {
 			Data:            inst.DataReader(),
 			UploadSessionID: result.UploadSession.ID,
 			UploadURL:       result.UploadSession.URL,
+			remote:          remote,
 		})
 		if err != nil {
 			return err
