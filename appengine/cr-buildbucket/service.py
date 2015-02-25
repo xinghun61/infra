@@ -82,6 +82,13 @@ def validate_tags(tags):
       raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
 
 
+def current_identity_cannot(action_format, *args):
+  action = action_format % args
+  msg = 'User %s cannot %s' % (auth.get_current_identity().to_bytes(), action)
+  logging.warning(msg)
+  raise auth.AuthorizationError(msg)
+
+
 class BuildBucketService(object):
   def add(
       self, bucket, tags=None, parameters=None, lease_expiration_date=None):
@@ -109,9 +116,7 @@ class BuildBucketService(object):
 
     identity = auth.get_current_identity()
     if not acl.can_add_build(bucket, identity):
-      raise auth.AuthorizationError(
-          'Bucket %s is not allowed for %s' %
-          (bucket, identity.to_bytes()))
+      raise current_identity_cannot('add builds to bucket %s', bucket)
 
     build = model.Build(
         id=model.new_build_id(),
@@ -126,6 +131,8 @@ class BuildBucketService(object):
       build.leasee = auth.get_current_identity()
       build.regenerate_lease_key()
     build.put()
+    logging.info(
+        'Build %s was created by %s', build.key.id(), identity.to_bytes())
     return build
 
   def get(self, build_id):
@@ -138,7 +145,7 @@ class BuildBucketService(object):
       return None
     identity = auth.get_current_identity()
     if not acl.can_view_build(build, identity):
-      raise auth.AuthorizationError()
+      raise current_identity_cannot('view build %s', build.key.id())
     return build
 
   def _fetch_page(self, query, page_size, start_cursor, predicate=None):
@@ -177,9 +184,7 @@ class BuildBucketService(object):
     identity = auth.get_current_identity()
     for bucket in buckets:
       if not acl.can_search_builds(bucket, identity):
-        raise auth.AuthorizationError(
-            ('User %s cannot search for buillds in bucket %s' %
-             (identity.to_bytes(), bucket)))
+        raise current_identity_cannot('search builds in bucket %s', bucket)
 
   def search(self, buckets=None, tags=None, max_builds=None, start_cursor=None):
     """Searches for builds.
@@ -264,7 +269,7 @@ class BuildBucketService(object):
       raise errors.BuildNotFoundError()
     identity = auth.get_current_identity()
     if not acl.can_lease_build(build, identity):
-      raise auth.AuthorizationError()
+      raise current_identity_cannot('lease build %s', build.key.id())
     return build
 
   def lease(self, build_id, lease_expiration_date=None):
@@ -301,6 +306,8 @@ class BuildBucketService(object):
       build.regenerate_lease_key()
       build.leasee = identity
       build.put()
+      logging.info(
+          'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
       return True, build
 
     return try_lease()
@@ -327,7 +334,7 @@ class BuildBucketService(object):
     """
     build = self._get_leasable_build(build_id)
     if not acl.can_reset_build(build):
-      raise auth.AuthorizationError()
+      raise current_identity_cannot('reset build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
     build.status = model.BuildStatus.SCHEDULED
@@ -335,6 +342,9 @@ class BuildBucketService(object):
     self._clear_lease(build)
     build.url = None
     build.put()
+    logging.info(
+        'Build %s was reset by %s',
+        build.key.id(), auth.get_current_identity().to_bytes())
     return build
 
   @staticmethod
@@ -385,6 +395,7 @@ class BuildBucketService(object):
     build.status_changed_time = utils.utcnow()
     build.url = url
     build.put()
+    logging.info('Build %s was started. URL: %s', build.key.id(), url)
     self._enqueue_callback_task_if_needed(build)
     return build
 
@@ -440,6 +451,9 @@ class BuildBucketService(object):
     build.failure_reason = failure_reason
     self._clear_lease(build)
     build.put()
+    logging.info(
+        'Build %s was completed. Status: %s. Result: %s',
+        build.key.id(), build.status, build.result)
     self._enqueue_callback_task_if_needed(build)
     return build
 
@@ -492,7 +506,7 @@ class BuildBucketService(object):
       raise errors.BuildNotFoundError()
     identity = auth.get_current_identity()
     if not acl.can_cancel_build(build, identity):
-      raise auth.AuthorizationError()
+      raise current_identity_cannot('cancel build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
         return build
@@ -503,6 +517,8 @@ class BuildBucketService(object):
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     self._clear_lease(build)
     build.put()
+    logging.info(
+        'Build %s was cancelled by %s', build.key.id(), identity.to_bytes())
     return build
 
   @ndb.transactional
@@ -531,4 +547,4 @@ class BuildBucketService(object):
     )
     for key in q.iter(keys_only=True):
       if self._reset_expired_build(key):  # pragma: no branch
-        logging.info('Reset expired build %s successfully' % key.id())
+        logging.info('Expired build %s was reset' % key.id())
