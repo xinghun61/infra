@@ -915,6 +915,7 @@ def fetch_page(localpath, remoteurl, maxage, postfetch=None, postsave=None,
 
 
 # List of URLs to fetch.
+# localpath is relative to the http://build.chromium.org/p directory.
 URLS = [
   # Console URLs.
   {
@@ -1037,6 +1038,11 @@ URLS = [
   },
 
   # Sheriff URLs.
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium/all_rotations.js',
+    'localpath': 'chromium/all_rotations.js',
+    'maxage': 15*60,  # 15 mins
+  },
   {
     'remoteurl': 'http://build.chromium.org/p/chromium/trooper.js',
     'localpath': 'chromium/trooper.js',
