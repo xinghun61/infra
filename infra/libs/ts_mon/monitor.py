@@ -88,7 +88,7 @@ def add_argparse_options(parser):
       default=region,
       help='name of the region this devices lives in')
   try:
-    network = re.match(r'[A-Za-z](\d+)', host.split('-')[-1]).group(1)  # N
+    network = re.match(r'\w*?(\d+)$', host).group(1)  # N
   except AttributeError:
     network = ''
   parser.add_argument(
