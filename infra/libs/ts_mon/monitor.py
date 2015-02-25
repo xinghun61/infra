@@ -34,6 +34,8 @@ Library usage:
 
 import logging
 import os
+import re
+import socket
 
 from monacq import acquisition_api
 from monacq.proto import metrics_pb2
@@ -68,17 +70,31 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-target-type',
       choices=['device', 'task'],
+      default='device',
       help='the type of target that is being monitored ("device" or "task")')
 
-  parser.add_argument(
-      '--ts-mon-device-region',
-      help='name of the region this devices lives in')
-  parser.add_argument(
-      '--ts-mon-device-network',
-      help='name of the network this device is connected to')
+  fqdn = socket.getfqdn()  # foo-[a|m]N.[chrome|golo].chromium.org
+  host = fqdn.split('.')[0]  # foo-[a|m]N
   parser.add_argument(
       '--ts-mon-device-hostname',
+      default=host,
       help='name of this device')
+  try:
+    region = fqdn.split('.')[1]  # [chrome|golo]
+  except IndexError:
+    region = ''
+  parser.add_argument(
+      '--ts-mon-device-region',
+      default=region,
+      help='name of the region this devices lives in')
+  try:
+    network = re.match(r'[A-Za-z](\d+)', host.split('-')[-1]).group(1)  # N
+  except AttributeError:
+    network = ''
+  parser.add_argument(
+      '--ts-mon-device-network',
+      default=network,
+      help='name of the network this device is connected to')
 
   parser.add_argument(
       '--ts-mon-task-service-name',
@@ -88,9 +104,11 @@ def add_argparse_options(parser):
       help='name of this job instance of the task')
   parser.add_argument(
       '--ts-mon-task-region',
+      default=region,
       help='name of the region in which this task is running')
   parser.add_argument(
       '--ts-mon-task-hostname',
+      default=host,
       help='name of the host on which this task is running')
   parser.add_argument(
       '--ts-mon-task-number', type=int,
@@ -100,7 +118,7 @@ def add_argparse_options(parser):
 def process_argparse_options(args):
   """Process command line arguments to initialize the global monitor.
 
-  Also initialized the default target if sufficient arguments are supplied.
+  Also initializes the default target if sufficient arguments are supplied.
   If they aren't, all created metrics will have to supply their own target.
   This is generally a bad idea, as many libraries rely on the default target
   being set up.

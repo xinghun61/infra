@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import argparse
+import copy
 import unittest
 
 import mock
@@ -23,10 +24,14 @@ class GlobalsTest(unittest.TestCase):
     monitor._global_monitor = None
     monitor._default_target = None
 
+  @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.monitor.Monitor')
-  def test_default_monitor_args(self, fake_monitor):
+  @mock.patch('infra.libs.ts_mon.monitor.DeviceTarget')
+  def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
     singleton = object()
     fake_monitor.return_value = singleton
+    fake_target.return_value = singleton
+    fake_fqdn.return_value = 'foo-a1.reg.tld'
     p = argparse.ArgumentParser()
     monitor.add_argparse_options(p)
     args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json'])
@@ -35,7 +40,27 @@ class GlobalsTest(unittest.TestCase):
         '/path/to/creds.p8.json',
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage')
     self.assertIs(monitor._global_monitor, singleton)
-    self.assertIsNone(monitor._default_target)
+    fake_target.assert_called_once_with('reg', '1', 'foo-a1')
+    self.assertIs(monitor._default_target, singleton)
+
+  @mock.patch('socket.getfqdn')
+  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.DeviceTarget')
+  def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
+    singleton = object()
+    fake_monitor.return_value = singleton
+    fake_target.return_value = singleton
+    fake_fqdn.return_value = 'foo'
+    p = argparse.ArgumentParser()
+    monitor.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json'])
+    monitor.process_argparse_options(args)
+    fake_monitor.assert_called_once_with(
+        '/path/to/creds.p8.json',
+        'https://www.googleapis.com/acquisitions/v1_mon_shared/storage')
+    self.assertIs(monitor._global_monitor, singleton)
+    fake_target.assert_called_once_with('', '', 'foo')
+    self.assertIs(monitor._default_target, singleton)
 
   @mock.patch('infra.libs.ts_mon.monitor.Monitor')
   def test_monitor_args(self, fake_monitor):
