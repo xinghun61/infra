@@ -36,11 +36,15 @@ class BuildFailurePipeline(BasePipeline):
         analysis.status = BuildAnalysisStatus.ERROR
         analysis.put()
 
+  def pipeline_status_path(self):  # pragma: no cover
+    """Returns an absolute path to look up the status of the pipeline."""
+    return '/_ah/pipeline/status?root=%s&auto=false' % self.root_pipeline_id
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
     analysis = BuildAnalysis.GetBuildAnalysis(
         master_name, builder_name, build_number)
-    analysis.pipeline_url = self.pipeline_status_url()
+    analysis.pipeline_status_path = self.pipeline_status_path()
     analysis.status = BuildAnalysisStatus.ANALYZING
     analysis.start_time = datetime.utcnow()
     analysis.put()

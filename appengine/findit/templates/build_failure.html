@@ -67,8 +67,8 @@
   <b>Analysis info:</b>
   <div id="analysis_info">
     status: <span id="status_message"></span>
-  {% if pipeline_accessible and pipeline_url %}
-    <a href="{{pipeline_url}}">pipeline</a>
+  {% if pipeline_accessible and pipeline_status_path %}
+    <a href="{{pipeline_status_path}}">pipeline</a>
   {% endif %}
     <br>
     Started: {{analysis_started | default('N/A', true)}}<br>

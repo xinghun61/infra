@@ -63,7 +63,7 @@ class BuildFailure(BaseHandler):
         'build_number': analysis.build_number,
         'build_url': buildbot.CreateBuildUrl(
             analysis.master_name, analysis.builder_name, analysis.build_number),
-        'pipeline_url': analysis.pipeline_url,
+        'pipeline_status_path': analysis.pipeline_status_path,
         'pipeline_accessible': self._IsPipelineAccessible(),
         'analysis_started': FormatDatetime(analysis.start_time),
         'analysis_updated': FormatDatetime(analysis.updated_time),

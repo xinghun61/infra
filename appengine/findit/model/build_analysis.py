@@ -40,7 +40,7 @@ class BuildAnalysis(BaseBuildModel):
 
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
-    self.pipeline_url = None
+    self.pipeline_status_path = None
     self.status = BuildAnalysisStatus.PENDING
     self.start_time = None
 
@@ -48,7 +48,7 @@ class BuildAnalysis(BaseBuildModel):
   build_start_time = ndb.DateTimeProperty(indexed=True)
 
   # Information of analysis processing.
-  pipeline_url = ndb.StringProperty(indexed=False)
+  pipeline_status_path = ndb.StringProperty(indexed=False)
   status = ndb.IntegerProperty(
       default=BuildAnalysisStatus.PENDING, indexed=False)
   start_time = ndb.DateTimeProperty(indexed=False)
