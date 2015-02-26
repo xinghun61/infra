@@ -8,7 +8,7 @@ Top-level commands
 ------------------
 
 - Launching ``test.py test`` runs all tests in the infra repository in parallel, 
-  including those in appengine applications. 
+  including those in appengine applications. See :doc:`testing` for details.
 
 - ``run.py`` is used to run a command located inside the infra package. See
   next section for details.
