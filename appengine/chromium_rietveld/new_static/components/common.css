@@ -101,3 +101,7 @@ input.invalid,
 textarea.invalid {
     border: 1px solid #DD4B39;
 }
+
+cr-toolbar > [is=cr-button] {
+    margin-right: 16px;
+}

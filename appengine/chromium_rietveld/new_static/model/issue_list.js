@@ -139,7 +139,7 @@ IssueList.prototype.parseDocument = function(document)
 
     function processHeaderRow(row) {
         currentType = [];
-        var type = row.classList[1];
+        var type = row.classList.item(1);
         issueList[type] = currentType;
     }
 

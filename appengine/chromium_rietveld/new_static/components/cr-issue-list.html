@@ -9,10 +9,16 @@ found in the LICENSE file. -->
         <cr-view-handler></cr-view-handler>
         <style>
             :host {
+                display: block;
+            }
+
+            .issues {
                 display: table;
             }
 
-            .issue {
+            .issue:link,
+            .issue:visited,
+            .issue:active {
                 border-bottom: 1px solid #E6E6E6;
                 display: table-row;
                 text-decoration: none;
@@ -95,26 +101,28 @@ found in the LICENSE file. -->
                 overflow: hidden;
             }
         </style>
-        <template repeat="{{ issue in issues }}">
-            <a href="/{{ issue.id }}" class="issue {{ {updated: issue.recentActivity} | tokenList }}">
-                <span class="issue-id issue-data">{{ issue.id }}</span>
-                <span class="issue-subject issue-data">{{ issue.subject }}</span>
-                <span class="issue-owner issue-data"><span class="owner" title="{{ issue.owner.displayName }}">{{ issue.owner.displayName }}</span></span>
-                <span class="issue-date issue-data">{{ issue.lastModified | formatDate }}</span>
-                <template if="{{ approvals }}">
-                    <span class="issue-approval issue-data">
-                        <template if="{{ issue.approvalCount }}">
-                            <span class="chip" title="lgtm by {{ issue.scores | selectKeys(1) }}"></span>
-                        </template>
-                    </span>
-                    <span class="issue-disapproval issue-data">
-                        <template if="{{ issue.disapprovalCount }}">
-                            <span class="chip" title="not lgtm by {{ issue.scores | selectKeys(-1) }}"></span>
-                        </template>
-                    </span>
-                </template>
-            </a>
-        </template>
+        <div class="issues">
+            <template repeat="{{ issue in issues }}">
+                <a href="/{{ issue.id }}" class="issue {{ {updated: issue.recentActivity} | tokenList }}">
+                    <span class="issue-id issue-data">{{ issue.id }}</span>
+                    <span class="issue-subject issue-data">{{ issue.subject }}</span>
+                    <span class="issue-owner issue-data"><span class="owner" title="{{ issue.owner.displayName }}">{{ issue.owner.displayName }}</span></span>
+                    <span class="issue-date issue-data">{{ issue.lastModified | formatDate }}</span>
+                    <template if="{{ approvals }}">
+                        <span class="issue-approval issue-data">
+                            <template if="{{ issue.approvalCount }}">
+                                <span class="chip" title="lgtm by {{ issue.scores | selectKeys(1) }}"></span>
+                            </template>
+                        </span>
+                        <span class="issue-disapproval issue-data">
+                            <template if="{{ issue.disapprovalCount }}">
+                                <span class="chip" title="not lgtm by {{ issue.scores | selectKeys(-1) }}"></span>
+                            </template>
+                        </span>
+                    </template>
+                </a>
+            </template>
+        </div>
     </template>
     <script>
         Polymer("cr-issue-list", {

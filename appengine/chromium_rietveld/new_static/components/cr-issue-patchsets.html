@@ -32,7 +32,7 @@ found in the LICENSE file. -->
                 -webkit-user-select: none;
             }
 
-            cr-toolbar {
+            .show-messages-toolbar {
                 margin: 0;
                 margin-bottom: 1em;
                 padding: 0;
@@ -40,7 +40,7 @@ found in the LICENSE file. -->
         </style>
 
         <template if="{{ !showOlderPatchsets && olderPatchsets.length }}">
-            <cr-toolbar>
+            <cr-toolbar class="show-messages-toolbar">
                 <a is="cr-action" on-tap="{{ handleShowOlderPatchsets }}">
                     Show {{ olderPatchsets.length }} older
                     {{ "patch" | pluralize(olderPatchsets.length) }}
