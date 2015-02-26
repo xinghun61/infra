@@ -81,6 +81,12 @@ found in the LICENSE file. -->
         var SELECTION_PREFIX = "#msg";
         var MAX_MESSAGES = 5;
 
+        function filterGeneratedMessages(messages) {
+            return messages.filter(function(message) {
+                return !message.generated;
+            });
+        }
+
         Polymer("cr-issue-messages", {
             created: function() {
                 this.messages = null;
@@ -98,19 +104,20 @@ found in the LICENSE file. -->
                 this.generatedMessages = this.messages.filter(function(message) {
                     return message.generated;
                 });
-                for (var i = 0; i < this.messages.length; i++) {
-                    var message = this.messages[i];
-                    if (message.generated)
-                        message.hidden = !this.showGeneratedMessages;
-                }
-                var visibleMessages = this.messages.filter(function(message) {
-                    return !message.hidden;
-                });
 
-                var index = Math.max(visibleMessages.length - MAX_MESSAGES, 0);
-                this.olderMessages = visibleMessages.to(index);
-                this.recentMessages = visibleMessages.from(index);
-                var lastMessage = visibleMessages.last();
+                var userMessages = filterGeneratedMessages(this.messages);
+                var index = Math.max(userMessages.length - MAX_MESSAGES, 0);
+                var lastIndex = this.messages.findIndex(userMessages[index]);
+
+                this.olderMessages = this.messages.to(lastIndex);
+                this.recentMessages = this.messages.from(lastIndex);
+
+                if (!this.showGeneratedMessages) {
+                    this.olderMessages = filterGeneratedMessages(this.olderMessages);
+                    this.recentMessages = filterGeneratedMessages(this.recentMessages);
+                }
+
+                var lastMessage = this.recentMessages.last();
                 if (lastMessage)
                     lastMessage.active = true;
                 this.hashChanged();
