@@ -28,12 +28,13 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     cases = {
         'obj/a/T.x.o': 'a/x.o',
         'obj/a/T.x.y.o': 'a/x.y.o',
-        'x.o': 'x.o'
+        'x.o': 'x.o',
+        'obj/a/x.obj': 'a/x.obj',
     }
     for obj_file, expected_file in cases.iteritems():
       self.assertEqual(
           expected_file,
-          build_failure_analysis._NormalizeObjectFile(obj_file))
+          build_failure_analysis._NormalizeObjectFilePath(obj_file))
 
   def testStripCommonSuffix(self):
     cases = {
@@ -52,6 +53,8 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     self.assertTrue(build_failure_analysis._IsRelated('a.py', 'a_test.py'))
     self.assertTrue(
         build_failure_analysis._IsRelated('a.h', 'a_impl_test.o'))
+    self.assertTrue(
+        build_failure_analysis._IsRelated('a.h', 'target.a_impl_test.obj'))
 
     self.assertFalse(
         build_failure_analysis._IsRelated('a/x.cc', 'a/b/y.cc'))

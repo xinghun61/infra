@@ -29,9 +29,17 @@ def _IsSameFile(src_file, file_path):
   return src_file.endswith('/%s' % file_path)
 
 
-def _NormalizeObjectFile(file_path):
-  # During compile, a/b/c/file.cc in TARGET will be compiled into object
-  # file a/b/c/TARGET.file.o, thus TARGET needs removing from path.
+def _NormalizeObjectFilePath(file_path):
+  """Normalize the file path to an c/c++ object file.
+
+  During compile, a/b/c/file.cc in TARGET will be compiled into object file
+  obj/a/b/c/TARGET.file.o, thus 'obj/' and TARGET need to be removed from path.
+
+  Args:
+    file_path (str): A path to an object file (.o or .obj) after compile.
+  Returns:
+    A normalized file path.
+  """
   if file_path.startswith('obj/'):
     file_path = file_path[4:]
   file_dir = os.path.dirname(file_path)
@@ -40,7 +48,10 @@ def _NormalizeObjectFile(file_path):
   if len(parts) == 2 and (parts[1].endswith('.o') or parts[1].endswith('.obj')):
     file_name = parts[1]
 
-  return os.path.join(file_dir, file_name).replace(os.sep, '/')
+  if file_dir:
+    return '%s/%s' % (file_dir, file_name)
+  else:
+    return file_name
 
 
 _COMMON_SUFFIXES = [
@@ -89,8 +100,8 @@ def _IsRelated(src_file, file_path):
     3. file_win.cc <-> file_mac.cc
     4. x.h <-> x.cc
   """
-  if file_path.endswith('.o'):
-    file_path = _NormalizeObjectFile(file_path)
+  if file_path.endswith('.o') or file_path.endswith('.obj'):
+    file_path = _NormalizeObjectFilePath(file_path)
 
   if _IsSameFile(_StripExtensionAndCommonSuffix(src_file),
                  _StripExtensionAndCommonSuffix(file_path)):
