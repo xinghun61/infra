@@ -14,6 +14,7 @@
 
 """Test utils."""
 
+import collections
 import os
 
 from google.appengine.ext import testbed
@@ -31,6 +32,7 @@ class TestCase(_TestCase):
   available on App Engine (e.g. fixture loading). And it initializes
   the Testbad class provided by the App Engine SDK.
   """
+  _saved = None
 
   def _fixture_setup(self):  # defined in django.test.TestCase
     self.testbed = testbed.Testbed()
@@ -49,6 +51,15 @@ class TestCase(_TestCase):
   def logout(self):
     """Logs the user out."""
     os.environ['USER_EMAIL'] = ''
+
+  def mock(self, obj, member, mock):
+    # Copied from
+    # https://chromium.googlesource.com/infra/testing/testing_support/+/master/testing_support/auto_stub.py
+    self._saved = self._saved or collections.OrderedDict()
+    old_value = self._saved.setdefault(
+        obj, collections.OrderedDict()).setdefault(member, getattr(obj, member))
+    setattr(obj, member, mock)
+    return old_value
 
 
 def load_file(fname):

@@ -1,0 +1,20 @@
+<a class="build-result build-status-color-{{try_job.status}}"
+  {%if try_job.url %}
+     href="{{try_job.url}}"
+  {% endif %}
+  {% if try_job.is_from_buildbucket %}
+    title="{{try_job.status}}. Buildbucket build {{try_job.build_id}}"
+  {% elif try_job.buildnumber %}
+     title="{{try_job.status}} {{try_job.buildnumber}}"
+  {% else %}
+     title="{{try_job.status}} on {{try_job.master}}"
+  {% endif %}
+     status="{{try_job.status}}"
+     category="{{try_job.category}}"
+  {% if try_job.category == 'cq_experimental' and not display_exp_tryjob_results or last_patchset.key.id == patchset.key.id %}
+     style="display:none;"
+  {% endif %}
+     target="_blank">
+     &nbsp;{{try_job.builder}}&nbsp;
+</a>
+

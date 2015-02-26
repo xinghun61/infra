@@ -77,6 +77,7 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client import xsrfutil
 
 from codereview import auth_utils
+from codereview import buildbucket
 from codereview import engine
 from codereview import library
 from codereview import models
@@ -1773,11 +1774,51 @@ def show(request):
     'last_user_message_index': last_user_message_index,
     'num_patchsets': num_patchsets,
     'patchsets': patchsets,
+    'try_job_results': get_patchset_try_job_results(last_patchset),
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
   })
+
+
+def get_patchset_try_job_results(patchset):
+  """Returns a list of try job results for the |patchset|.
+
+  Combines try job results stored in datastore and in buildbucket. Deduplicates
+  builds that have same buildbucket build id.
+  """
+  try_job_results = []
+  buildbucket_build_ids = set()
+  try:
+    buildbucket_results = buildbucket.get_try_job_results_for_patchset(
+        patchset.issue_key.id(), patchset.key.id())
+    for result in buildbucket_results:
+      try_job_results.append(result)
+      buildbucket_build_ids.add(result.build_id)
+  except Exception as ex:
+    logging.error(
+        'Could not load buildbucket builds for patchset %s/%s' % (
+            patchset.issue_key.id(), patchset.key.id()),
+        exc_info=ex)
+
+  def try_get_build_id(try_job_result):
+    if not try_job_result.build_properties:
+      return None
+    try:
+      props = json.loads(try_job_result.build_properties)
+    except ValueError:
+      return None
+    if not isinstance(prop, dict):
+      return None
+    return props.get('buildbucket', {}).get('build_id')
+
+  for result in patchset.try_job_results:
+    build_id = try_get_build_id(result)
+    if build_id is None or build_id not in buildbucket_build_ids:
+      try_job_results.append(result)
+
+  return try_job_results
 
 
 @deco.patchset_required
@@ -1804,6 +1845,8 @@ def patchset(request):
   return respond(request, 'patchset.html',
                  {'issue': request.issue,
                   'patchset': request.patchset,
+                  'try_job_results': get_patchset_try_job_results(
+                      request.patchset),
                   'patchsets': patchsets,
                   'is_editor': request.issue.edit_allowed,
                   'display_exp_tryjob_results': display_exp_tryjob_results,
