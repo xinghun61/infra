@@ -399,8 +399,8 @@ class BuildBucketService(object):
     self._enqueue_callback_task_if_needed(build)
     return build
 
-  @ndb.transactional
-  def heartbeat(self, build_id, lease_key, lease_expiration_date):
+  @ndb.transactional_tasklet
+  def heartbeat_async(self, build_id, lease_key, lease_expiration_date):
     """Extends build lease.
 
     Args:
@@ -409,17 +409,45 @@ class BuildBucketService(object):
       lease_expiration_date (datetime.timedelta): new lease expiration date.
 
     Returns:
-      The updated Build.
+      The updated Build as Future.
     """
     validate_lease_key(lease_key)
     if lease_expiration_date is None:
       raise errors.InvalidInputError('Lease expiration date not specified')
     validate_lease_expiration_date(lease_expiration_date)
-    build = self._get_leasable_build(build_id)
+    build = yield model.Build.get_by_id_async(build_id)
+    if build is None:
+      raise errors.BuildNotFoundError()
     self._check_lease(build, lease_key)
     build.lease_expiration_date = lease_expiration_date
-    build.put()
-    return build
+    yield build.put_async()
+    raise ndb.Return(build)
+
+  def heartbeat(self, build_id, lease_key, lease_expiration_date):
+    future = self.heartbeat_async(build_id, lease_key, lease_expiration_date)
+    return future.get_result()
+
+  def heartbeat_batch(self, heartbeats):
+    """Extends build leases in a batch.
+
+    Args:
+      heartbeats (list of dict): list of builds to update. Each dict is kwargs
+      for heartbeat() method.
+
+    Returns:
+      List of (build_id, build, exception) tuples.
+    """
+    futures = [(h, self.heartbeat_async(**h)) for h in heartbeats]
+
+    def get_result(heartbeat, future):
+      build_id = heartbeat['build_id']
+      exc = future.get_exception()
+      if not exc:
+        return build_id, future.get_result(), None
+      else:
+        return build_id, None, exc
+
+    return [get_result(h, f) for h, f in futures]
 
   @ndb.transactional
   def _complete(

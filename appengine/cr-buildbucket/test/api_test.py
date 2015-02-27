@@ -274,11 +274,10 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
         lease_expiration_date=self.future_date,
     )
 
-    def service_heartbeat(build_id, *_, **__):
-      if build_id == self.test_build.key.id():
-        return self.test_build
-      raise errors.LeaseExpiredError()
-    self.service.heartbeat.side_effect = service_heartbeat
+    self.service.heartbeat_batch.return_value = [
+        (self.test_build.key.id(), self.test_build, None),
+        (build2.key.id(), None, errors.LeaseExpiredError())
+    ]
 
     req = {
         'heartbeats': [{

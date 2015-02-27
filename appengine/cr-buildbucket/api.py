@@ -378,22 +378,29 @@ class BuildBucketApi(remote.Service):
       path='heartbeat', http_method='POST')
   def heartbeat_batch(self, request):
     """Updates multiple build leases."""
-    res = self.HeartbeatBatchResponseMessage(results=[])
-    for heartbeat in request.heartbeats:
-      hb_result = res.OneHeartbeatResult(build_id=heartbeat.build_id)
-      try:
-        build = self.service.heartbeat(
-            heartbeat.build_id, heartbeat.lease_key,
-            parse_datetime(heartbeat.lease_expiration_ts))
-        hb_result.lease_expiration_ts = utils.datetime_to_timestamp(
+    heartbeats = [
+        {
+            'build_id': h.build_id,
+            'lease_key': h.lease_key,
+            'lease_expiration_date': parse_datetime(h.lease_expiration_ts),
+        } for h in request.heartbeats
+    ]
+
+    def to_message((build_id, build, ex)):
+      msg = self.HeartbeatBatchResponseMessage.OneHeartbeatResult(
+          build_id=build_id)
+      if build:
+        msg.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
-      except errors.Error as ex:
-        hb_result.error = ErrorMessage(
+      else:
+        msg.error = ErrorMessage(
             reason=ERROR_REASON_MAP[type(ex)],
             message=ex.message,
         )
-      res.results.append(hb_result)
-    return res
+      return msg
+
+    results = self.service.heartbeat_batch(heartbeats)
+    return self.HeartbeatBatchResponseMessage(results=map(to_message, results))
 
   #################################  SUCCEED  ##################################
 

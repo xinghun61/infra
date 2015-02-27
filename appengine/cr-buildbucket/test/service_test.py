@@ -465,6 +465,33 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         lease_expiration_date=new_expiration_date)
     self.assertEqual(build.lease_expiration_date, new_expiration_date)
 
+  def test_heartbeat_batch(self):
+    self.lease()
+    new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    results = self.service.heartbeat_batch(
+        [
+            {
+                'build_id': self.test_build.key.id(),
+                'lease_key': self.test_build.lease_key,
+                'lease_expiration_date': new_expiration_date
+            },
+            {
+                'build_id': 42,
+                'lease_key': 42,
+                'lease_expiration_date': new_expiration_date,
+            },
+        ])
+
+    self.assertEqual(len(results), 2)
+
+    self.test_build = self.test_build.key.get()
+    self.assertEqual(
+        results[0],
+        (self.test_build.key.id(), self.test_build, None))
+
+    self.assertIsNone(results[1][1])
+    self.assertTrue(isinstance(results[1][2], errors.BuildNotFoundError))
+
   def test_heartbeat_without_expiration_date(self):
     self.lease()
     with self.assertRaises(errors.InvalidInputError):
