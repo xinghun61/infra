@@ -19,6 +19,31 @@ class ExtractSignalPipeline(BasePipeline):
 
   HTTP_CLIENT = HttpClient()
 
+  # Limit stored log data to 1000 KB, because a datastore entity has a size
+  # limit of 1 MB. And Leave 24 KB for other possible usage later.
+  # The stored log data in datastore will be compressed with gzip, backed by
+  # zlib. With the minimum compress level, the log data will usually be reduced
+  # to less than 20%. So for uncompressed data, a safe limit could 4000 KB.
+  LOG_DATA_BYTE_LIMIT = 4000 * 1024
+
+  @staticmethod
+  def _ExtractStorablePortionOfLog(log_data):
+    # For the log of a failed step in a build, the error messages usually show
+    # up at the end of the whole log. So if the log is too big to fit into a
+    # datastore entity, it's safe to just save the ending portion of the log.
+    if len(log_data) <= ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
+      return log_data
+
+    lines = log_data.split('\n')
+    size = 0
+    for line_index in reversed(range(len(lines))):
+      size += len(lines[line_index]) + 1
+      if size > ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
+        return '\n'.join(lines[line_index + 1:])
+    else:
+      return log_data  # pragma: no cover - this won't be reached.
+
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
     """
@@ -60,7 +85,7 @@ class ExtractSignalPipeline(BasePipeline):
           step = Step.CreateStep(
               master_name, builder_name, build_number, step_name)
 
-        step.log_data = stdio_log
+        step.log_data = self._ExtractStorablePortionOfLog(stdio_log)
         try:
           step.put()
         except Exception as e:  # pragma: no cover

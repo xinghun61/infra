@@ -43,7 +43,21 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
       }
   }
 
+  def testExtractStorablePortionOfLogWithSmallLogData(self):
+    self.mock(ExtractSignalPipeline, 'LOG_DATA_BYTE_LIMIT', 500)
+    lines = [str(i) * 99 for i in range(3)]
+    log_data = '\n'.join(lines)
+    expected_result = log_data
+    result = ExtractSignalPipeline._ExtractStorablePortionOfLog(log_data)
+    self.assertEqual(expected_result, result)
 
+  def testExtractStorablePortionOfLogWithBigLogData(self):
+    self.mock(ExtractSignalPipeline, 'LOG_DATA_BYTE_LIMIT', 500)
+    lines = [str(9 - i) * 99 for i in range(9)]
+    log_data = '\n'.join(lines)
+    expected_result = '\n'.join(lines[-5:])
+    result = ExtractSignalPipeline._ExtractStorablePortionOfLog(log_data)
+    self.assertEqual(expected_result, result)
 
   def testStepStdioLogAlreadyDownloaded(self):
     master_name = 'm'

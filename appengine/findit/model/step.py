@@ -29,4 +29,4 @@ class Step(BaseBuildModel):
     return Step.CreateKey(
         master_name, builder_name, build_number, step_name).get()
 
-  log_data = ndb.JsonProperty(indexed=False, compressed=True)
+  log_data = ndb.BlobProperty(indexed=False, compressed=True)
