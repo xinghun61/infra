@@ -47,26 +47,38 @@ function loadJSON(url)
 
 function sendFormData(url, data, options)
 {
-    return new Promise(function(fulfill, reject) {
-        options = options || {};
-        var formData = Object.keys(data).map(function(key) {
-            return key + "=" + encodeURIComponent(data[key]);
-        }).join("&");
+    // Clone data before the async request so callers can reuse it if needed.
+    options = Object.clone(options) || {};
+    data = Object.clone(data) || {};
 
-        var xhr = new XMLHttpRequest();
-        xhr.responseType = options.responseType || "document";
-        xhr.open("POST", url);
-        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-        Object.keys(options.headers || {}, function(name, value) {
-            xhr.setRequestHeader(name, value);
+    function sendInternal() {
+        return new Promise(function(fulfill, reject) {
+            var formData = Object.keys(data).map(function(key) {
+                return key + "=" + encodeURIComponent(data[key]);
+            }).join("&");
+
+            var xhr = new XMLHttpRequest();
+            xhr.responseType = options.responseType || "document";
+            xhr.open("POST", url);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+            Object.keys(options.headers || {}, function(name, value) {
+                xhr.setRequestHeader(name, value);
+            });
+
+            xhr.send(formData);
+            xhr.onload = function() {
+                fulfill(xhr);
+            };
+            xhr.onerror = function() {
+                reject(xhr);
+            };
         });
-        xhr.send(formData);
-        xhr.onload = function() {
-            fulfill(xhr);
-        };
-        xhr.onerror = function() {
-            reject(xhr);
-        };
+    }
+    if (!options.sendXsrfToken)
+        return sendInternal();
+    return User.loadCurrentUser().then(function(user) {
+        data.xsrf_token = user.xsrfToken;
+        return sendInternal();
     });
 }
 

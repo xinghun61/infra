@@ -36,7 +36,6 @@ UserSettings.prototype.loadDetails = function()
     var settings = this;
     return loadJSON(UserSettings.DETAIL_URL).then(function(data) {
         settings.parseData(data);
-        return settings;
     });
 };
 
@@ -56,37 +55,26 @@ UserSettings.prototype.parseData = function(data)
 UserSettings.prototype.save = function()
 {
     var settings = this;
-    return this.createSaveData().then(function(data) {
-        return sendFormData(UserSettings.EDIT_URL, data).then(function(xhr) {
-            var errorData = parseFormErrorData(xhr.response);
-            if (!errorData) {
-                // Synchronize the user's name now that we've saved it to the server.
-                return User.loadCurrentUser().then(function() {
-                    return settings;
-                });
-            }
-            var error = new Error(errorData.message);
-            error.fieldName = UserSettings.FIELD_NAME_MAP[errorData.fieldName] || errorData.fieldName;
-            throw error;
-        });
-    });
-};
-
-UserSettings.prototype.createSaveData = function()
-{
-    var settings = this;
-    return User.loadCurrentUser().then(function(user) {
-        return {
-            nickname: settings.name,
-            xsrf_token: user.xsrfToken,
-            deprecated_ui: settings.deprecatedUi ? "on" : "",
-            notify_by_chat: settings.notifyByChat ? "on" : "",
-            notify_by_email: "on",
-            column_width: settings.columnWidth,
-            tab_spaces: settings.tabSpaces,
-            context: settings.context,
-            send_from_email_addr: settings.sendFromEmailAddress,
-            display_exp_tryjob_results: settings.displayExperimentalTryjobs,
-        };
+    return sendFormData(UserSettings.EDIT_URL, {
+        nickname: this.name,
+        deprecated_ui: this.deprecatedUi ? "on" : "",
+        notify_by_chat: this.notifyByChat ? "on" : "",
+        notify_by_email: "on",
+        column_width: this.columnWidth,
+        tab_spaces: this.tabSpaces,
+        context: this.context,
+        send_from_email_addr: this.sendFromEmailAddress,
+        display_exp_tryjob_results: this.displayExperimentalTryjobs,
+    }, {
+        sendXsrfToken: true,
+    }).then(function(xhr) {
+        var errorData = parseFormErrorData(xhr.response);
+        if (!errorData) {
+            // Synchronize the user's name now that we've saved it to the server.
+            User.current.name = settings.name;
+        }
+        var error = new Error(errorData.message);
+        error.fieldName = UserSettings.FIELD_NAME_MAP[errorData.fieldName] || errorData.fieldName;
+        throw error;
     });
 };

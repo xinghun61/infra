@@ -93,7 +93,6 @@ Issue.prototype.loadDetails = function()
     var issue = this;
     return loadJSON(this.getDetailUrl()).then(function(data) {
         issue.parseData(data);
-        return issue;
     });
 };
 
@@ -182,137 +181,81 @@ Issue.prototype.toggleClosed = function()
             private: this.private,
         });
     }
-    var issue = this;
-    return User.loadCurrentUser().then(function(user) {
-        return sendFormData(issue.getCloseUrl(), {
-            xsrf_token: user.xsrfToken,
-        });
+    return sendFormData(this.getCloseUrl(), null, {
+        sendXsrfToken: true,
     });
 };
 
 Issue.prototype.edit = function(options)
 {
-    var issue = this;
-    return this.createEditData(options).then(function(data) {
-        return sendFormData(issue.getEditUrl(), data).then(function(xhr) {
-            var errorData = parseFormErrorData(xhr.response);
-            if (!errorData)
-                return issue;
-            var error = new Error(errorData.message);
-            error.fieldName = errorData.fieldName;
-            throw error;
-        });
-    });
-};
-
-Issue.prototype.createEditData = function(options)
-{
-    return User.loadCurrentUser().then(function(user) {
-        return {
-            xsrf_token: user.xsrfToken,
-            subject: options.subject,
-            description: options.description,
-            reviewers: options.reviewers,
-            cc: options.cc,
-            closed: options.closed ? "on" : "",
-            private: options.private ? "on" : "",
-        };
+    return sendFormData(this.getEditUrl(), {
+        subject: options.subject,
+        description: options.description,
+        reviewers: options.reviewers,
+        cc: options.cc,
+        closed: options.closed ? "on" : "",
+        private: options.private ? "on" : "",
+    }, {
+        sendXsrfToken: true,
+    }).then(function(xhr) {
+        var errorData = parseFormErrorData(xhr.response);
+        if (!errorData)
+            return;
+        var error = new Error(errorData.message);
+        error.fieldName = errorData.fieldName;
+        throw error;
     });
 };
 
 Issue.prototype.publish = function(options)
 {
-    var issue = this;
-    return this.createPublishData(options).then(function(data) {
-        return sendFormData(issue.getPublishUrl(), data).then(function() {
-            return issue;
-        });
-    });
-};
-
-Issue.prototype.createPublishData = function(options)
-{
-    var issue = this;
-    return User.loadCurrentUser().then(function(user) {
-        var message = options.message || "";
-        var addAsReviewer = options.addAsReviewer;
-        var publishDrafts = options.publishDrafts;
-        var commit = options.commit;
-        var reviewers = Object.has(options, "reviewers") ? options.reviewers : issue.reviewerEmails();
-        var cc = Object.has(options, "cc") ? options.cc : issue.ccEmails();
-        if (options.lgtm) {
-            message = "lgtm\n\n" + message;
-            addAsReviewer = true;
-            publishDrafts = true;
-        }
-        return {
-            xsrf_token: user.xsrfToken,
-            subject: issue.subject,
-            message_only: publishDrafts ? "0" : "1",
-            add_as_reviewer: addAsReviewer ? "1" : "0",
-            commit: commit ? "1" : "0",
-            message: message,
-            send_mail: "1",
-            reviewers: reviewers,
-            cc: cc,
-        };
+    var message = options.message || "";
+    var addAsReviewer = options.addAsReviewer;
+    var publishDrafts = options.publishDrafts;
+    var commit = options.commit;
+    var reviewers = Object.has(options, "reviewers") ? options.reviewers : this.reviewerEmails();
+    var cc = Object.has(options, "cc") ? options.cc : this.ccEmails();
+    if (options.lgtm) {
+        message = "lgtm\n\n" + message;
+        addAsReviewer = true;
+        publishDrafts = true;
+    }
+    return sendFormData(this.getPublishUrl(), {
+        subject: this.subject,
+        message_only: publishDrafts ? "0" : "1",
+        add_as_reviewer: addAsReviewer ? "1" : "0",
+        commit: commit ? "1" : "0",
+        message: message,
+        send_mail: "1",
+        reviewers: reviewers,
+        cc: cc,
+    }, {
+        sendXsrfToken: true,
     });
 };
 
 Issue.prototype.setFlags = function(options)
 {
-    var issue = this;
-    return this.createFlagsData(options).then(function(data) {
-        return sendFormData(issue.getFlagsUrl(), data).then(function() {
-            return issue;
-        });
-    });
-};
-
-Issue.prototype.createFlagsData = function(options)
-{
-    var lastPatchsetId = this.patchsets.last().id;
-    return User.loadCurrentUser().then(function(user) {
-        var data = {
-            xsrf_token: user.xsrfToken,
-            last_patchset: lastPatchsetId,
-        };
-        if (Object.has(options, "commit"))
-            data.commit = options.commit ? 1 : 0;
-        if (options.builders)
-            data.builders = options.builders;
-        return data;
-    });
-};
-
-Issue.prototype.createEditData = function(options)
-{
-    return User.loadCurrentUser().then(function(user) {
-        return {
-            xsrf_token: user.xsrfToken,
-            subject: options.subject,
-            description: options.description,
-            reviewers: options.reviewers,
-            cc: options.cc,
-            closed: options.closed ? "on" : "",
-            private: options.private ? "on" : "",
-        };
+    var data = {
+        last_patchset: this.patchsets.last().id,
+    };
+    if (Object.has(options, "commit"))
+        data.commit = options.commit ? 1 : 0;
+    if (options.builders)
+        data.builders = options.builders;
+    return sendFormData(this.getFlagsUrl(), data, {
+        sendXsrfToken: true,
     });
 };
 
 Issue.prototype.discardAllDrafts = function()
 {
-    var issue = this;
     var drafts = this.getDrafts();
-    return User.loadCurrentUser().then(function(user) {
-        var data = {
-            xsrf_token: user.xsrfToken,
-        };
-        return sendFormData(issue.getDiscardAllDraftsUrl(), data).then(function() {
-            drafts.forEach(function(draft) {
-                draft.file.removeMessage(draft);
-            });
-            return issue;
+    return sendFormData(this.getDiscardAllDraftsUrl(), null, {
+        sendXsrfToken: true,
+    }).then(function() {
+        drafts.forEach(function(draft) {
+            draft.file.removeMessage(draft);
         });
     });
 };

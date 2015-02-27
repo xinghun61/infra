@@ -64,7 +64,6 @@ PatchSet.prototype.loadDetails = function()
     var patchset = this;
     return loadJSON(this.getDetailUrl()).then(function(data) {
         patchset.parseData(data);
-        return patchset;
     });
 };
 
@@ -72,44 +71,30 @@ PatchSet.prototype.revert = function(options)
 {
     if (!options.reason)
         return Promise.reject(new Error("Must supply a reason"));
-    var patchset = this;
-    return this.createRevertData(options).then(function(data) {
-        return sendFormData(patchset.getRevertUrl(), data);
-    });
-};
-
-PatchSet.prototype.createRevertData = function(options)
-{
-    return User.loadCurrentUser().then(function(user) {
-        return {
-            xsrf_token: user.xsrfToken,
-            revert_reason: options.reason,
-            revert_cq: options.commit ? "1" : "0",
-        };
+    return sendFormData(this.getRevertUrl(), {
+        revert_reason: options.reason,
+        revert_cq: options.commit ? "1" : "0",
+    }, {
+        sendXsrfToken: true,
     });
 };
 
 PatchSet.prototype.setTitle = function(value)
 {
     var patchset = this;
-    return User.loadCurrentUser().then(function(user) {
-        return sendFormData(patchset.getEditTitleUrl(), {
-            xsrf_token: user.xsrfToken,
-            patchset_title: value,
-        });
+    return sendFormData(patchset.getEditTitleUrl(), {
+        patchset_title: value,
+    }, {
+        sendXsrfToken: true,
     }).then(function() {
         patchset.title = value;
-        return value;
     });
 };
 
 PatchSet.prototype.delete = function()
 {
-    var patchset = this;
-    return User.loadCurrentUser().then(function(user) {
-        return sendFormData(patchset.getDeleteUrl(), {
-            xsrf_token: user.xsrfToken,
-        });
+    return sendFormData(this.getDeleteUrl(), null, {
+        sendXsrfToken: true,
     });
 };
 
