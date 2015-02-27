@@ -4,14 +4,29 @@ module.exports = function(config) {
   config.set({
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
-    basePath: '',
+    basePath: '.',
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jasmine'],
+    // TODO(esprehn): This should include "chai" so we can skip adding an
+    // alias for var asset = chai.assert in every test file, need to update
+    // the third_party/node_modules first with that plugin though.
+    frameworks: ['mocha'],
+
+    // mocha setup
+    client: {
+      mocha: {
+        ui: 'bdd',
+        checkLeaks: true,
+        globals: []
+      },
+      captureConsole: true
+    },
 
     // list of files / patterns to load in the browser
     files: [
+      'node_modules/mocha/mocha.js',
+      'bower_components/chai/chai.js',
       '*.js',
       'model/**/*.js',
       'lib/**/*.js',

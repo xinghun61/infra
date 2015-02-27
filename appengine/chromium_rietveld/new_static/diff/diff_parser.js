@@ -35,7 +35,7 @@ DiffParser.isImageFile = function(name)
     if (index <= 0)
         return false;
     var extension = name.from(index + 1);
-    return DiffParser.IMAGE_EXTENSIONS[extension];
+    return DiffParser.IMAGE_EXTENSIONS[extension] || false;
 };
 
 DiffParser.prototype.peekLine = function()

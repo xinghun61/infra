@@ -5,15 +5,17 @@
 "use strict";
 
 describe("DiffParser", function() {
+    var assert = chai.assert;
+
     it("should detect image file names", function() {
-        expect(DiffParser.isImageFile("foo.png")).toBeTruthy();
-        expect(DiffParser.isImageFile("foo.bar.jpeg")).toBeTruthy();
-        expect(DiffParser.isImageFile("foo(baz).jpg")).toBeTruthy();
-        expect(DiffParser.isImageFile("_foo_.webp")).toBeTruthy();
-        expect(DiffParser.isImageFile("example-file-name.bmp")).toBeTruthy();
-        expect(DiffParser.isImageFile("is a. gif.gif")).toBeTruthy();
-        expect(DiffParser.isImageFile(".gif")).toBeFalsy();
-        expect(DiffParser.isImageFile("not a gif.gif.txt")).toBeFalsy();
+        assert.isTrue(DiffParser.isImageFile("foo.png"));
+        assert.isTrue(DiffParser.isImageFile("foo.bar.jpeg"));
+        assert.isTrue(DiffParser.isImageFile("foo(baz).jpg"));
+        assert.isTrue(DiffParser.isImageFile("_foo_.webp"));
+        assert.isTrue(DiffParser.isImageFile("example-file-name.bmp"));
+        assert.isTrue(DiffParser.isImageFile("is a. gif.gif"));
+        assert.isFalse(DiffParser.isImageFile(".gif"));
+        assert.isFalse(DiffParser.isImageFile("not a gif.gif.txt"));
     });
     it("should not show context link for file deletes", function() {
         var text =
@@ -26,12 +28,12 @@ describe("DiffParser", function() {
             "- This was a line\n";
         var parser = new DiffParser(text);
         var result = parser.parse()[0];
-        expect(result.name).toBe("example.cc");
-        expect(result.groups.length).toBe(3);
-        expect(result.groups[0].length).toBe(1);
-        expect(result.groups[0][0].type).toBe("header");
-        expect(result.groups[0][0].context).toBe(false);
-        expect(result.groups[0][0].text).toBe("File deleted");
+        assert.equal(result.name, "example.cc");
+        assert.equal(result.groups.length, 3);
+        assert.equal(result.groups[0].length, 1);
+        assert.equal(result.groups[0][0].type, "header");
+        assert.isFalse(result.groups[0][0].context);
+        assert.equal(result.groups[0][0].text, "File deleted");
     });
     it("should show context for one line headers", function() {
         var text =
@@ -48,16 +50,16 @@ describe("DiffParser", function() {
             "- Example line 1\n";
         var parser = new DiffParser(text);
         var result = parser.parse()[0];
-        expect(result.name).toBe("example.cc");
-        expect(result.groups.length).toBe(7);
-        expect(result.groups[0].length).toBe(1);
-        expect(result.groups[0][0].type).toBe("header");
-        expect(result.groups[0][0].context).toBe(false);
-        expect(result.groups[0][0].text).toBe("Context 1");
-        expect(result.groups[3].length).toBe(1);
-        expect(result.groups[3][0].type).toBe("header");
-        expect(result.groups[3][0].context).toBe(true);
-        expect(result.groups[3][0].text).toBe("Context 2");
+        assert.equal(result.name, "example.cc");
+        assert.equal(result.groups.length, 7);
+        assert.equal(result.groups[0].length, 1);
+        assert.equal(result.groups[0][0].type, "header");
+        assert.isFalse(result.groups[0][0].context);
+        assert.equal(result.groups[0][0].text, "Context 1");
+        assert.equal(result.groups[3].length, 1);
+        assert.equal(result.groups[3][0].type, "header");
+        assert.isTrue(result.groups[3][0].context);
+        assert.equal(result.groups[3][0].text, "Context 2");
     });
     it("should skip lines with backslash prefixes", function() {
         var text =
@@ -73,16 +75,16 @@ describe("DiffParser", function() {
             "+Example line 2\n";
         var parser = new DiffParser(text);
         var result = parser.parse()[0];
-        expect(result.name).toBe("example.cc");
-        expect(result.groups.length).toBe(4);
-        expect(result.groups[0].length).toBe(1);
-        expect(result.groups[0][0].type).toBe("header");
-        expect(result.groups[0][0].context).toBe(false);
-        expect(result.groups[0][0].text).toBe("Context 1");
-        expect(result.groups[2].length).toBe(2);
-        expect(result.groups[2][0].type).toBe("remove");
-        expect(result.groups[2][0].text).toBe("Example line 1");
-        expect(result.groups[2][1].type).toBe("add");
-        expect(result.groups[2][1].text).toBe("Example line 2");
+        assert.equal(result.name, "example.cc");
+        assert.equal(result.groups.length, 4);
+        assert.equal(result.groups[0].length, 1);
+        assert.equal(result.groups[0][0].type, "header");
+        assert.isFalse(result.groups[0][0].context, false);
+        assert.equal(result.groups[0][0].text, "Context 1");
+        assert.equal(result.groups[2].length, 2);
+        assert.equal(result.groups[2][0].type, "remove");
+        assert.equal(result.groups[2][0].text, "Example line 1");
+        assert.equal(result.groups[2][1].type, "add");
+        assert.equal(result.groups[2][1].text, "Example line 2");
     });
 });

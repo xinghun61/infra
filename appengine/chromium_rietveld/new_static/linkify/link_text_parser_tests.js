@@ -5,17 +5,19 @@
 "use strict";
 
 describe("LinkTextParser", function() {
+    var assert = chai.assert;
+
     function expectTokens(text, tokens) {
         var parser = new LinkTextParser(function(text, href) {
             if (!tokens.length)
                 throw new Error("Not enough tokens");
             var expected = tokens.shift();
             if (typeof expected == "string") {
-                expect(href).toBeFalsy();
-                expect(text).toBe(expected);
+                assert.isUndefined(href);
+                assert.equal(text, expected);
             } else {
-                expect(href).toBe(expected.href);
-                expect(text).toBe(expected.text);
+                assert.equal(href, expected.href);
+                assert.equal(text, expected.text);
             }
         });
         parser.parse(text);

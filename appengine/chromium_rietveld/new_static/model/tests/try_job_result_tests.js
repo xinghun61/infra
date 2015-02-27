@@ -1,14 +1,16 @@
 "use strict";
 
 describe("TryJobResult", function() {
-    var URL = "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/12456";
+    var assert = chai.assert;
+
+    var BUILDER_URL = "http://build.chromium.org/p/tryserver.blink/builders/win_blink_rel/builds/12456";
 
     function createData() {
         return {
             parent_name: null,
             tests: [ ],
             slave: null,
-            url: URL,
+            url: BUILDER_URL,
             timestamp: "2014-06-18 08:13:29.036400",
             builder: "win_blink_oilpan_rel",
             clobber: true,
@@ -27,16 +29,16 @@ describe("TryJobResult", function() {
         var tryResult = new TryJobResult();
         var data = createData();
         tryResult.parseData(data);
-        expect(tryResult.timestamp).toEqual(Date.utc.create(data.timestamp));
-        expect(tryResult.builder).toBe("win_blink_oilpan_rel");
-        expect(tryResult.clobber).toBe(true);
-        expect(tryResult.project).toBe("project name");
-        expect(tryResult.reason).toBe("some reason");
-        expect(tryResult.result).toBe("pending");
-        expect(tryResult.revision).toBe("HEAD");
-        expect(tryResult.buildnumber).toBe(123);
-        expect(tryResult.master).toBe("tryserver.blink");
-        expect(tryResult.url).toBe(URL);
+        assert.deepEqual(tryResult.timestamp, Date.utc.create(data.timestamp));
+        assert.equal(tryResult.builder, "win_blink_oilpan_rel");
+        assert.isTrue(tryResult.clobber);
+        assert.equal(tryResult.project, "project name");
+        assert.equal(tryResult.reason, "some reason");
+        assert.equal(tryResult.result, "pending");
+        assert.equal(tryResult.revision, "HEAD");
+        assert.equal(tryResult.buildnumber, 123);
+        assert.equal(tryResult.master, "tryserver.blink");
+        assert.equal(tryResult.url, BUILDER_URL);
     });
     it("should convert results ids to names", function() {
         var data = createData();
@@ -44,7 +46,7 @@ describe("TryJobResult", function() {
             var tryResult = new TryJobResult();
             data.result = parseInt(id, 10);
             tryResult.parseData(data);
-            expect(tryResult.result).toBe(name);
+            assert.equal(tryResult.result, name);
         });
     });
 });

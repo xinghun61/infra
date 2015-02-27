@@ -1,6 +1,8 @@
 "use strict";
 
 describe("User", function() {
+    var assert = chai.assert;
+
     afterEach(function() {
         User.current = null;
     });
@@ -31,8 +33,8 @@ describe("User", function() {
         doc.close();
 
         var user = User.parseCurrentUser(doc);
-        expect(user.email).toBe("esprehn@test.org");
-        expect(user.name).toBe("esprehn (oo in dc)");
-        expect(user.xsrfToken).toBe("cb66768b2ff3144abc700e12d88911e5");
+        assert.equal(user.email, "esprehn@test.org");
+        assert.equal(user.name, "esprehn (oo in dc)");
+        assert.equal(user.xsrfToken, "cb66768b2ff3144abc700e12d88911e5");
     });
 });

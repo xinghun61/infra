@@ -1,6 +1,8 @@
 "use strict";
 
 describe("PatchSet", function() {
+    var assert = chai.assert;
+
     it("should sort headers before implementation files", function() {
         var patchset = new PatchSet(new Issue(1), 2);
         patchset.parseData({
@@ -25,7 +27,7 @@ describe("PatchSet", function() {
         var fileNames = patchset.files.map(function(file) {
             return file.name;
         });
-        expect(fileNames).toEqual([
+        assert.deepEqual(fileNames, [
             "public/rendering/FrameView.cpp",
             "Source/core/Document.h",
             "Source/core/Document.cpp",
