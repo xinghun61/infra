@@ -167,11 +167,19 @@ def inner_loop(args):
     with open('builder_alerts.json', 'w') as f:
       f.write(json.dumps(data, indent=1))
 
+  ret = True
   for url in args.data_url:
-    logging.info('POST %s alerts to %s', len(alerts), url)
-    requests.post(url, data=data)
+    logging.info('POST %s (%s bytes) alerts to %s',
+                 len(alerts), len(json.dumps(data)), url)
+    resp = requests.post(url, data=data)
+    try:
+      resp.raise_for_status()
+    except requests.HTTPError as e:
+      logging.error('POST to %s failed! %d %s, %s, %s',
+                    url, resp.status_code, resp.reason, resp.content, e)
+      ret = False
 
-  return True
+  return ret
 
 
 def main(args):
