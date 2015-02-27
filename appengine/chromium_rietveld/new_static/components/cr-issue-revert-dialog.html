@@ -22,6 +22,13 @@ found in the LICENSE file. -->
             .dialog-fields-label {
                 padding: 0.5em 16px;
             }
+
+            .help-links {
+                flex: 1;
+                display: flex;
+                align-items: flex-end;
+                flex-direction: column;
+            }
         </style>
 
         <dialog is="cr-dialog" id="dialog" on-cancel="{{ cancel }}">
@@ -43,11 +50,11 @@ found in the LICENSE file. -->
                     <input type="checkbox" checked="{{ commit }}">
                     Automatically send revert to CQ
                 </label>
-            </cr-toolbar>
 
-            <label class="dialog-fields-label">
-                <a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriff-details-chromium?pli=1#TOC-Revert-Patchset-button-in-Rietveld">Revert help</a>
-            </label>
+                <div class="help-links">
+                    <a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriff-details-chromium?pli=1#TOC-Revert-Patchset-button-in-Rietveld" target="_blank">Revert help</a>
+                </div>
+            </cr-toolbar>
         </dialog>
     </template>
     <script>
