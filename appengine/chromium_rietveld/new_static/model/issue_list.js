@@ -21,6 +21,7 @@ function IssueList(options)
 
 IssueList.ISSUE_LIST_URL = "/scrape";
 IssueList.CACHE_KEY = "IssueList.cachedIssues";
+IssueList.CACHE_AGE_KEY = "IssueList.cachedIssues.age";
 
 IssueList.prototype.getIssue = function(id)
 {
@@ -31,9 +32,15 @@ IssueList.prototype.getIssue = function(id)
 
 IssueList.prototype.loadIssues = function()
 {
+    var CACHE_KEY = IssueList.CACHE_KEY;
+    var CACHE_AGE_KEY = IssueList.CACHE_AGE_KEY;
+
     var self = this;
     if (this.cached) {
-        var html = localStorage.getItem(IssueList.CACHE_KEY);
+        var age = Date.create(localStorage.getItem(CACHE_AGE_KEY) || "");
+        if (age.isBefore(Date.create("yesterday")))
+            localStorage.setItem(CACHE_KEY, "");
+        var html = localStorage.getItem(CACHE_KEY);
         if (html) {
             var doc = document.implementation.createHTMLDocument();
             doc.body.innerHTML = html;
@@ -41,8 +48,10 @@ IssueList.prototype.loadIssues = function()
         }
     }
     return loadDocument(IssueList.ISSUE_LIST_URL).then(function(doc) {
-        if (self.cached)
-            localStorage.setItem(IssueList.CACHE_KEY, doc.body.innerHTML);
+        if (self.cached) {
+            localStorage.setItem(CACHE_KEY, doc.body.innerHTML);
+            localStorage.setItem(CACHE_AGE_KEY, Date.create());
+        }
         self.parseDocument(doc);
         return self;
     });
