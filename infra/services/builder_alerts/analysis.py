@@ -120,6 +120,10 @@ def group_by_reason(alerts):  # pragma: no cover
     last_passing, first_failing = merge_regression_ranges(alerts)
     blame_list = flatten_to_commit_list(last_passing, first_failing)
     # FIXME: blame_list isn't filtered yet, but should be.
+    # FIXME: THIS IS A TEMPORARY HACK. WE SHOULD NOT TRUNCATE THIS LIST.
+    # But it turns out that sometimes it thinks that it is reasonable to send
+    # a blamelist 300,000 commits long, which just shouldn't happen.
+    blame_list = blame_list[-1000:]
     reason_groups.append({
         'sort_key': reason_key,
         'merged_last_passing': last_passing,
