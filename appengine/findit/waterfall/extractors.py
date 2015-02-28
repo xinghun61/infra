@@ -70,7 +70,6 @@ class CheckPermExtractor(Extractor):
 
 EXTRACTORS = {
     'compile': CompileStepExtractor,
-    'gn': CompileStepExtractor,
     'check_perms': CheckPermExtractor,
 }
 

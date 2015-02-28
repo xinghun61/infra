@@ -67,6 +67,8 @@ class ExtractorUtilTest(unittest.TestCase):
             [('gfx.render_text_harfbuzz.o', '')],
         'blabla a/b.cpp:234 include c/d.h':
             [('a/b.cpp', '234'), ('c/d.h', '')],
+        'ERROR at //BUILD.gn:246:7: Item not found':
+            [('//BUILD.gn', '246')],
     }
     self._VerifyPattern(extractor_util.FILE_PATH_LINE_PATTERN, cases)
 
@@ -93,6 +95,7 @@ class ExtractorUtilTest(unittest.TestCase):
         'a\\\\b\\\\c.cc': 'a/b/c.cc',
         '/b/build/slave/Android_Tests/build/src/a/b/c.cc': 'a/b/c.cc',
         'c:\\\\b\\build\\slave\\win_builder\\build\\src\\d\\\\e.cc': 'd/e.cc',
+        '//a/b/BUILD.gn': 'a/b/BUILD.gn',
     }
     for case in cases:
       self.assertEqual(extractor_util.NormalizeFilePath(case), cases[case])

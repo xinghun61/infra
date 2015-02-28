@@ -56,7 +56,7 @@ WINDOWS_ROOT_PATTERN = r'[a-zA-Z]:{SEP}'.format(SEP=PATH_SEPARATOR_PATTERN)
 
 
 # Match system root directory on Linux/Mac.
-UNIX_ROOT_PATTERN = r'/'
+UNIX_ROOT_PATTERN = r'/+'
 
 
 # Match system/drive root on Linux/Mac/Windows.
@@ -72,6 +72,7 @@ ROOT_DIR_PATTERN = r'(?:{WIN_ROOT}|{UNIX_ROOT})'.format(
 #   /a/../b/./c.txt
 #   a/b/c.txt
 #   'gfx.render_text_harfbuzz.o' in "libgfx.a(gfx.render_text_harfbuzz.o)"
+#   //BUILD.gn:246
 FILE_PATH_LINE_PATTERN = re.compile((
     r'(?:^|[^\w/\\.]+)'  # Non-path characters.
     r'('
@@ -95,22 +96,28 @@ PYTHON_STACK_TRACE_PATTERN = re.compile(
 
 # Match the file path relative to the root src of a chromium repo checkout.
 CHROMIUM_SRC_PATTERN = re.compile(
-    r'.*/b/build/slave/\w+[^\t\n/]*/build/src/(.*)')
+    r'.*/build/slave/\w+[^\t\n/]*/build/src/(.*)')
 
 
 def NormalizeFilePath(file_path):
   """Normalizes the file path.
 
+  0. Strip leading "/" or "\".
   1. Convert "\", "\\", and "//" to "/"
   2. Resolve ".." and "." from the file path.
   3. Extract relative file path from the root src of a chromium repo checkout.
 
   eg.:
+    //BUILD.gn  -> BUILD.gn
     ../a/b/c.cc -> a/b/c.cc  (os.path.normpath couldn't handle this case)
     a/b/../c.cc -> a/c.cc
     a/b/./c.cc  -> a/b/c.cc
     /b/build/slave/Android_Tests/build/src/a/b/c.cc -> a/b/c.cc
   """
+  # In some log (like gn step), file paths start with // or \\, but they are
+  # not an absolute path from the root directory. Thus strip them.
+  file_path = file_path.lstrip('\\/')
+
   file_path = file_path.replace('\\', '/')
   file_path = file_path.replace('//', '/')
 
