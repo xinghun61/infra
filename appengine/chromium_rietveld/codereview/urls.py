@@ -39,7 +39,7 @@ urlpatterns = patterns(
     # TODO(ojan): Use the api and remove the scrape URL.
     (r'^scrape/user/([^/]+)$', 'show_user'),
     (r'^user/([^/]+)$', 'show_user'),
-    (r'^api/user/([^/]+)$', 'api_show_user'),
+    (r'^api/user_inbox/([^/]+)$', 'api_user_inbox'),
 
     (r'^leaderboard/?$', RedirectView.as_view(url='/leaderboard/30')),
     (r'^leaderboard_json/(.+)$', 'leaderboard_json'),
@@ -53,7 +53,6 @@ urlpatterns = patterns(
     # we remove the deprecated UI.
     (r'^all$', 'view_all'),
     (r'^mine$', 'mine'),
-    (r'^api/mine$', 'api_mine'),
     (r'^starred$', 'starred'),
     (r'^(\d+)/(?:show)?$', 'show'),
 

@@ -859,11 +859,41 @@ def mine(request):
   return _show_user(request)
 
 
-@deco.login_required
 @deco.json_response
-def api_mine(request):
-  """/api/mine - JSON dict of lists of issues for the user's dashboard."""
-  return _json_show_user(request)
+@deco.user_key_required
+def api_user_inbox(request):
+  """/api/user_inbox/USER - JSON dict of lists of issues for the polymer
+  dashboard.
+  """
+  def issue_to_inbox_json(issue):
+    """Get the JSON for an issue, then add draft and comment counts."""
+
+    values = {
+      'owner_email': issue.owner.email(),
+      'modified': str(issue.modified),
+      'reviewer_scores': _scored_reviewers(issue),
+      'subject': issue.subject,
+      'issue': issue.key.id(),
+      'has_updates': issue.has_updates,
+    }
+    return values
+
+  dashboard_dict = _get_dashboard_issue_lists(
+      request, load_users_and_drafts=False)
+  result = {
+    key: [issue_to_inbox_json(issue) for issue in issue_list]
+    for key, issue_list in dashboard_dict.iteritems()}
+  return result
+
+
+def _scored_reviewers(issue):
+  result = {}
+  for email, value in issue.formatted_reviewers.iteritems():
+    if value == True:
+      result[email] = 1
+    elif value == False:
+      result[email] = -1
+  return result
 
 
 @deco.login_required
@@ -898,33 +928,7 @@ def show_user(request):
   return _show_user(request)
 
 
-@deco.user_key_required
-@deco.json_response
-def api_show_user(request):
-  """/api/user/USER - JSON dict of lists of issues for the user's dashboard."""
-  return _json_show_user(request)
-
-
-def _json_show_user(request):
-  """Return a dict {section_name: [issue_dict]} for the user's dashboard."""
-  def issue_to_json(issue, request):
-    """Get the JSON for an issue, then add draft and comment counts."""
-    json_dict = _issue_as_dict(issue, False, request)
-    # Add in some fields that are not in the regular issue API because they are
-    # potentially expensive to compute and not needed by the CQ.
-    json_dict.update(
-      num_comments=issue.num_comments,
-      num_drafts=issue.get_num_drafts(request.user))
-    return json_dict
-
-  dashboard_dict = _get_dashboard_issue_lists(request)
-  result = {
-    key: [issue_to_json(issue, request) for issue in issue_list]
-    for key, issue_list in dashboard_dict.iteritems()}
-  return result
-
-
-def _get_dashboard_issue_lists(request):
+def _get_dashboard_issue_lists(request, load_users_and_drafts=True):
   """Return a dict {string: [issue]} of the issues to show on a dashboard."""
   user = request.user_to_show
   if user == request.user:
@@ -981,8 +985,10 @@ def _get_dashboard_issue_lists(request):
   # that was sent out.
   outgoing_issues = [issue for issue in my_issues if issue.num_messages]
   unsent_issues = [issue for issue in my_issues if not issue.num_messages]
-  _load_users_for_issues(all_issues)
-  _optimize_draft_counts(all_issues)
+
+  if load_users_and_drafts:
+    _load_users_for_issues(all_issues)
+    _optimize_draft_counts(all_issues)
 
   return {
     'outgoing_issues': outgoing_issues,
@@ -1809,7 +1815,7 @@ def get_patchset_try_job_results(patchset):
       props = json.loads(try_job_result.build_properties)
     except ValueError:
       return None
-    if not isinstance(prop, dict):
+    if not isinstance(props, dict):
       return None
     return props.get('buildbucket', {}).get('build_id')
 

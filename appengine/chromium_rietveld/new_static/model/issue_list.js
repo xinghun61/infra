@@ -4,9 +4,13 @@
 
 "use strict";
 
-function IssueList(options)
+// Represents a set of issues for a user's inbox view displayed with
+// <cr-issue-inbox>. Can optionally load from a cached set of issues
+// first, but only has a single cache so it's only useful for the
+// login user.
+function IssueList(user, options)
 {
-    this.owner = null; // User
+    this.user = user; // User
     this.incoming = []; // Array<Issue>
     this.outgoing = []; // Array<Issue>
     this.unsent = []; // Array<Issue>
@@ -19,9 +23,25 @@ function IssueList(options)
     Object.preventExtensions(this);
 }
 
-IssueList.ISSUE_LIST_URL = "/scrape";
+IssueList.ISSUE_LIST_URL = "/api/user_inbox/{1}";
 IssueList.CACHE_KEY = "IssueList.cachedIssues";
+IssueList.CACHE_JSON_KEY = "IssueList.cachedIssues.json";
 IssueList.CACHE_AGE_KEY = "IssueList.cachedIssues.age";
+
+IssueList.SECTION_TO_PROPERTY_MAP = {
+    "outgoing_issues": "outgoing",
+    "unsent_issues": "unsent",
+    "review_issues": "incoming",
+    "closed_issues": "closed",
+    "cc_issues": "cc",
+    "draft_issues": "draft",
+};
+
+IssueList.prototype.getIssueListUrl = function()
+{
+    var name = this.user.email || this.user.name;
+    return IssueList.ISSUE_LIST_URL.assign(encodeURIComponent(name));
+};
 
 IssueList.prototype.getIssue = function(id)
 {
@@ -32,147 +52,49 @@ IssueList.prototype.getIssue = function(id)
 
 IssueList.prototype.loadIssues = function()
 {
-    var CACHE_KEY = IssueList.CACHE_KEY;
-    var CACHE_AGE_KEY = IssueList.CACHE_AGE_KEY;
+    // Clear the old document based cache.
+    localStorage.setItem(IssueList.CACHE_KEY, "");
+
+    if (this.cached)
+        this.loadCachedIssues();
 
     var self = this;
-    if (this.cached) {
-        var age = Date.create(localStorage.getItem(CACHE_AGE_KEY) || "");
-        if (age.isBefore(Date.create("yesterday")))
-            localStorage.setItem(CACHE_KEY, "");
-        var html = localStorage.getItem(CACHE_KEY);
-        if (html) {
-            var doc = document.implementation.createHTMLDocument();
-            doc.body.innerHTML = html;
-            this.parseDocument(doc);
-        }
-    }
-    return loadDocument(IssueList.ISSUE_LIST_URL).then(function(doc) {
+    return loadText(this.getIssueListUrl()).then(function(text) {
+        // Always parse first so if the parse fails we don't cache broken JSON.
+        self.parseData(JSON.parse(text));
         if (self.cached) {
-            localStorage.setItem(CACHE_KEY, doc.body.innerHTML);
-            localStorage.setItem(CACHE_AGE_KEY, Date.create());
+            localStorage.setItem(IssueList.CACHE_JSON_KEY, text);
+            localStorage.setItem(IssueList.CACHE_AGE_KEY, Date.create());
         }
-        self.parseDocument(doc);
-        return self;
     });
 };
 
-IssueList.convertRelativeDate = function(value)
+IssueList.prototype.loadCachedIssues = function()
 {
-    var result = Date.create();
-    var args = {};
-    value.split(",").each(function(value) {
-        var tokens = value.trim().split(" ");
-        if (tokens.length != 2)
-            return;
-        var type = tokens[1];
-        var amount = parseInt(tokens[0], 10);
-        if (isNaN(amount) || amount <= 0)
-            return;
-        args[type] = amount;
-    });
-    return result.rewind(args);
+    var age = Date.create(localStorage.getItem(IssueList.CACHE_AGE_KEY) || "");
+    if (age.isBefore(Date.create("yesterday")))
+        localStorage.setItem(IssueList.CACHE_JSON_KEY, "");
+    var text = localStorage.getItem(IssueList.CACHE_JSON_KEY);
+    if (text)
+        this.parseData(JSON.parse(text));
 };
 
-IssueList.convertToUser = function(name)
+IssueList.prototype.parseData = function(data)
 {
-    return User.forName(name);
-}
-
-IssueList.convertToReviewers = function(node, issue)
-{
-    var links = node.querySelectorAll("a");
-    var users = [];
-
-    issue.approvalCount = 0;
-    issue.disapprovalCount = 0;
-    issue.scores = {};
-
-    function addUser(node) {
-        if (!node)
-            return;
-        var user = User.forName(node.textContent.trim());
-        issue.scores[user.name] = 0;
-        var parentNode = node.parentNode;
-        if (parentNode.className == "approval") {
-            issue.scores[user.name] = 1;
-            issue.approvalCount++;
-        } else if (parentNode.className == "disapproval") {
-            issue.scores[user.name] = -1;
-            issue.disapprovalCount++;
+    for (var section in data) {
+        var propertyName = IssueList.SECTION_TO_PROPERTY_MAP[section];
+        if (!propertyName) {
+            console.log("Unknown issue inbox section: " + section);
+            continue;
         }
-        users.push(user);
-    }
-
-    for (var i = 0; i < links.length; ++i)
-        addUser(links[i]);
-
-    var me = node.querySelectorAll("span").array().find(function(node) {
-        return node.textContent == "me";
-    });
-    if (me)
-        addUser(me.firstChild);
-
-    return users.sort(User.compare);
-};
-
-IssueList.serializeWithInnerText = function(node)
-{
-    return node.innerText.trim();
-};
-
-IssueList.serializeToNode = function(node)
-{
-    return node;
-};
-
-IssueList.prototype.parseDocument = function(document)
-{
-    var FIELDS = [null, null, "id", "subject", "owner", "reviewers", "messageCount", "draftCount", "lastModified"];
-    var SERIALIZERS = [null, null, null, null, null, IssueList.serializeToNode, null, null, null];
-    var HANDLERS = [null, null, Number, String, IssueList.convertToUser, IssueList.convertToReviewers, Number, Number, IssueList.convertRelativeDate];
-
-    var issueList = this;
-
-    if (!document.body)
-        return;
-
-    var rows = document.querySelectorAll("#queues tr");
-    var currentType;
-
-    var h2 = document.querySelector("h2");
-    if (h2) {
-        var name = h2.textContent.remove("Issues for ");
-        issueList.owner = User.forName(name);
-    }
-
-    function processHeaderRow(row) {
-        currentType = [];
-        var type = row.classList.item(1);
-        issueList[type] = currentType;
-    }
-
-    function processIssueRow(row) {
-        if (!currentType)
-            return;
-        var issue = null;
-        for (var td = row.firstElementChild, i = 0; td; td = td.nextElementSibling, ++i) {
-            if (!FIELDS[i])
-                continue;
-            if (FIELDS[i] == "id")
-                issue = issueList.getIssue(Number(td.textContent));
-            var serializer = SERIALIZERS[i] || IssueList.serializeWithInnerText;
-            issue[FIELDS[i]] = HANDLERS[i](serializer(td), issue);
+        var sectionData = data[section];
+        var currentType = [];
+        this[propertyName] = currentType;
+        for (var i = 0; i < sectionData.length; ++i) {
+            var issueData = sectionData[i];
+            var issue = this.getIssue(issueData.issue);
+            issue.parseInboxData(issueData);
+            currentType.push(issue);
         }
-        issue.recentActivity = issueList.recentActivity && row.classList.contains("updated");
-        currentType.push(issue);
-    }
-
-    for (var i = 0; i < rows.length; ++i) {
-        var row = rows[i];
-        if (row.getAttribute("name") == "issue")
-            processIssueRow(row);
-        else if (row.classList.contains("header"))
-            processHeaderRow(row);
     }
 };

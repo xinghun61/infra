@@ -15,7 +15,7 @@ found in the LICENSE file. -->
                 font-size: 2em;
             }
         </style>
-        <template if="{{ !issues && !failed }}">
+        <template if="{{ loading && !failed }}">
             <p>
                 Loading issues for {{ username }}...
             </p>
@@ -25,7 +25,7 @@ found in the LICENSE file. -->
                 Failed to load issues. :(
             </p>
         </template>
-        <template if="{{ issues && !failed }}">
+        <template if="{{ !loading && !failed }}">
             <h1 class="app-header">Issues for {{ username }}</h1>
             <cr-issue-inbox issues="{{ issues }}"></cr-issue-inbox>
         </template>
@@ -36,18 +36,22 @@ found in the LICENSE file. -->
                 this.username = "";
                 this.issues = null;
                 this.failed = false;
+                this.loading = false;
             },
             attached: function() {
                 var self = this;
                 this.fire("title-change", {
-                    value: "Issues for " + this.username
+                    value: "Issues for " + this.username,
                 });
-                this.user = new User(this.username);
-                this.user.loadIssues().then(function(issues) {
-                    self.issues = issues;
-                }).catch(function(error) {
+                var user = new User(this.username);
+                this.issues = new IssueList(user);
+                this.failed = false;
+                this.loading = true;
+                this.issues.loadIssues().catch(function(error) {
                     console.log(error);
                     self.failed = true;
+                }).either(function() {
+                    self.loading = false;
                 });
             },
         });

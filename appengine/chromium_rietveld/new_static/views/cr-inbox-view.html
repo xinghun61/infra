@@ -54,7 +54,7 @@ found in the LICENSE file. -->
         <div class="login-prompt">
             <p><a is="cr-action" on-tap="{{ login }}">Login</a> to view your issues.</p>
         </div>
-        <template if="{{ issues && !failed }}">
+        <template if="{{ issues }}">
             <header>
                 <h1 class="app-header">My Issues</h1>
                 <div class="filter-form">
@@ -92,7 +92,6 @@ found in the LICENSE file. -->
                 this.showRecentActivity = false;
                 this.issues = null;
                 this.loading = true;
-                this.failed = false;
                 this.butterbarMessage = "";
             },
             attached: function() {
@@ -107,7 +106,7 @@ found in the LICENSE file. -->
             loadInbox: function() {
                 this.filter = localStorage.getItem(FILTER_KEY) || this.filter;
                 this.showRecentActivity = localStorage.getItem(SHOW_RECENT_ACTIVITY_KEY) == "true";
-                this.issues = new IssueList({
+                this.issues = new IssueList(User.current, {
                     cached: true,
                     recentActivity: this.showRecentActivity,
                 });
@@ -130,8 +129,7 @@ found in the LICENSE file. -->
                     self.butterbarMessage = "";
                 }).catch(function(error) {
                     console.log(error);
-                    self.failed = true;
-                    self.butterbarMessage = "Failed to load your issues. :(";
+                    self.butterbarMessage = "Failed to load issues. :(";
                 });
             },
             login: function() {

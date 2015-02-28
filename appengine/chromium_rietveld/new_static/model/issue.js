@@ -140,6 +140,33 @@ Issue.prototype.parseData = function(data)
     this.messageCount = this.messages.length;
 };
 
+Issue.prototype.parseInboxData = function(data)
+{
+    this.subject = data.subject;
+    this.recentActivity = data.has_updates;
+    this.lastModified = Date.utc.create(data.modified);
+    this.owner = User.forMailingListEmail(data.owner_email);
+    this.reviewers = Object.keys(data.reviewer_scores).map(function(email) {
+        return User.forMailingListEmail(email);
+    }).sort(User.compare);
+    // Reset computed fields since we may call parseInboxData twice, once with
+    // cached values and then again when the server comes back with new data.
+    this.approvalCount = 0;
+    this.disapprovalCount = 0;
+    this.scores = {};
+    for (var i = 0; i < this.reviewers.length; ++i) {
+        var reviewer = this.reviewers[i];
+        var score = data.reviewer_scores[reviewer.email];
+        // TODO(esprehn): This isn't right, it should use email instead but the
+        // UI wants to show short names in the inbox.
+        this.scores[reviewer.name] = score;
+        if (score == 1)
+            this.approvalCount++;
+        else if (score == -1)
+            this.disapprovalCount++;
+    }
+};
+
 Issue.prototype.updateScores = function() {
     var issue = this;
     var reviewerEmails = {};

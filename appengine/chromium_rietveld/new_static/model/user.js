@@ -17,7 +17,6 @@ function User(name, email, displayName)
 
 User.CURRENT_USER_URL = "/scrape/settings";
 User.DETAIL_URL = "/scrape/user_popup/{1}";
-User.ISSUE_LIST_URL = "/scrape/user/{1}";
 
 User.EMAIL_PATTERN = /^([^@]+@[^ ]+) \((.+?)\)$/;
 User.EMAIL_SUFFIX_PATTERN = /(\+[^@]+)?@.*/;
@@ -125,11 +124,6 @@ User.prototype.isCurrentUser = function()
     return User.current && this.name === User.current.name;
 };
 
-User.prototype.getIssueListUrl = function()
-{
-    return User.ISSUE_LIST_URL.assign(encodeURIComponent(this.email || this.name));
-};
-
 User.prototype.getDetailUrl = function()
 {
     return User.DETAIL_URL.assign(encodeURIComponent(this.email || this.name));
@@ -141,15 +135,6 @@ User.prototype.loadDetails = function()
     return loadText(this.getDetailUrl()).then(function(text) {
         user.parseDetail(text);
         return user;
-    });
-};
-
-User.prototype.loadIssues = function()
-{
-    return loadDocument(this.getIssueListUrl()).then(function(document) {
-        var issueList = new IssueList();
-        issueList.parseDocument(document);
-        return issueList;
     });
 };
 
