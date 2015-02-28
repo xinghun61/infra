@@ -7,8 +7,8 @@ import logging
 
 from google.appengine.ext import ndb
 
-from model.build_analysis import BuildAnalysis
-from model.build_analysis_status import BuildAnalysisStatus
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall.base_pipeline import BasePipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
@@ -30,10 +30,10 @@ class BuildFailurePipeline(BasePipeline):
     # after auto-retries, this root pipeline will be aborted. So, mark the
     # analysis as ERROR. The analysis is created before the pipeline starts.
     if self.was_aborted:  # pragma: no cover
-      analysis = BuildAnalysis.GetBuildAnalysis(
+      analysis = WfAnalysis.Get(
           self.master_name, self.builder_name, self.build_number)
       if analysis:  # In case the analysis is deleted manually.
-        analysis.status = BuildAnalysisStatus.ERROR
+        analysis.status = wf_analysis_status.ERROR
         analysis.put()
 
   def pipeline_status_path(self):  # pragma: no cover
@@ -42,10 +42,9 @@ class BuildFailurePipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number):
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.pipeline_status_path = self.pipeline_status_path()
-    analysis.status = BuildAnalysisStatus.ANALYZING
+    analysis.status = wf_analysis_status.ANALYZING
     analysis.start_time = datetime.utcnow()
     analysis.put()
 
@@ -63,18 +62,16 @@ class BuildFailurePipeline(BasePipeline):
 def NeedANewAnalysis(master_name, builder_name, build_number, force):
   """Checks status of analysis for the build and decides if a new one is needed.
 
-  A BuildAnalysis entity for the given build will be created if none exists.
+  A WfAnalysis entity for the given build will be created if none exists.
 
   Returns:
     True if an analysis is needed, otherwise False.
   """
-  analysis = BuildAnalysis.GetBuildAnalysis(
-      master_name, builder_name, build_number)
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
   if not analysis:
-    analysis = BuildAnalysis.CreateBuildAnalysis(
-        master_name, builder_name, build_number)
-    analysis.status = BuildAnalysisStatus.PENDING
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.PENDING
     analysis.put()
     return True
   elif force:
@@ -104,7 +101,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
     queue_name (str): the task queue to be used for pipeline tasks.
 
   Returns:
-    A BuildAnalysis instance.
+    A WfAnalysis instance.
   """
   if NeedANewAnalysis(master_name, builder_name, build_number, force):
     pipeline_job = BuildFailurePipeline(master_name, builder_name, build_number)
@@ -116,4 +113,4 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
   else:  # pragma: no cover
     logging.info('Analysis was already triggered or the result is recent.')
 
-  return BuildAnalysis.GetBuildAnalysis(master_name, builder_name, build_number)
+  return WfAnalysis.Get(master_name, builder_name, build_number)

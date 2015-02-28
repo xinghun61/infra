@@ -7,7 +7,7 @@ import logging
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import pipeline
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model.step import Step
+from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util
@@ -63,7 +63,7 @@ class ExtractSignalPipeline(BasePipeline):
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
     for step_name in failure_info.get('failed_steps', []):
-      step = Step.GetStep(master_name, builder_name, build_number, step_name)
+      step = WfStep.Get(master_name, builder_name, build_number, step_name)
       if step and step.log_data:
         stdio_log = step.log_data
       else:
@@ -82,7 +82,7 @@ class ExtractSignalPipeline(BasePipeline):
 
         # Save stdio in datastore and avoid downloading again during retry.
         if not step:  # pragma: no cover
-          step = Step.CreateStep(
+          step = WfStep.Create(
               master_name, builder_name, build_number, step_name)
 
         step.log_data = self._ExtractStorablePortionOfLog(stdio_log)

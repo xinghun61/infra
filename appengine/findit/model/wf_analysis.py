@@ -5,43 +5,43 @@
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model.build_analysis_status import BuildAnalysisStatus
+from model import wf_analysis_status
 
 
-class BuildAnalysis(BaseBuildModel):
-  """Represents an analysis of a build cycle of a builder in a waterfall."""
+class WfAnalysis(BaseBuildModel):
+  """Represents an analysis of a build of a builder in a Chromium waterfall.
+
+  'Wf' is short for waterfall.
+  """
 
   @staticmethod
-  def CreateKey(master_name, builder_name, build_number):  # pragma: no cover
-    return ndb.Key('BuildAnalysis',
+  def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
+    return ndb.Key('WfAnalysis',
                    BaseBuildModel.CreateBuildId(
                        master_name, builder_name, build_number))
 
   @staticmethod
-  def CreateBuildAnalysis(
-      master_name, builder_name, build_number):  # pragma: no cover
-    return BuildAnalysis(
-        key=BuildAnalysis.CreateKey(master_name, builder_name, build_number))
+  def Create(master_name, builder_name, build_number):  # pragma: no cover
+    return WfAnalysis(
+        key=WfAnalysis._CreateKey(master_name, builder_name, build_number))
 
   @staticmethod
-  def GetBuildAnalysis(
-      master_name, builder_name, build_number):  # pragma: no cover
-    return BuildAnalysis.CreateKey(
-        master_name, builder_name, build_number).get()
+  def Get(master_name, builder_name, build_number):  # pragma: no cover
+    return WfAnalysis._CreateKey(master_name, builder_name, build_number).get()
 
   @property
   def completed(self):
     return self.status in (
-        BuildAnalysisStatus.ANALYZED, BuildAnalysisStatus.ERROR)
+        wf_analysis_status.ANALYZED, wf_analysis_status.ERROR)
 
   @property
   def failed(self):
-    return self.status == BuildAnalysisStatus.ERROR
+    return self.status == wf_analysis_status.ERROR
 
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = None
-    self.status = BuildAnalysisStatus.PENDING
+    self.status = wf_analysis_status.PENDING
     self.start_time = None
 
   # Information of the analyzed build.
@@ -50,7 +50,7 @@ class BuildAnalysis(BaseBuildModel):
   # Information of analysis processing.
   pipeline_status_path = ndb.StringProperty(indexed=False)
   status = ndb.IntegerProperty(
-      default=BuildAnalysisStatus.PENDING, indexed=False)
+      default=wf_analysis_status.PENDING, indexed=False)
   start_time = ndb.DateTimeProperty(indexed=False)
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
 

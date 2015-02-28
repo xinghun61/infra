@@ -13,8 +13,8 @@ from google.appengine.api import memcache
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import pipeline
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model.build import Build
-from model.build_analysis import BuildAnalysis
+from model.wf_build import WfBuild
+from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall.base_pipeline import BasePipeline
 from waterfall import lock_util
@@ -36,10 +36,10 @@ class DetectFirstFailurePipeline(BasePipeline):
         (datetime.utcnow() - build.last_crawled_time).total_seconds() >= 300))
 
   def _DownloadBuildData(self, master_name, builder_name, build_number):
-    """Downloads build data and returns a Build instance."""
-    build = Build.GetBuild(master_name, builder_name, build_number)
+    """Downloads build data and returns a WfBuild instance."""
+    build = WfBuild.Get(master_name, builder_name, build_number)
     if not build:
-      build = Build.CreateBuild(master_name, builder_name, build_number)
+      build = WfBuild.Create(master_name, builder_name, build_number)
 
     # Cache the data to avoid pulling from master again.
     if self._BuildDataNeedUpdating(build):
@@ -70,8 +70,7 @@ class DetectFirstFailurePipeline(BasePipeline):
       build.result = build_info.result
       build.put()
 
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     if analysis and not analysis.build_start_time:
       analysis.build_start_time = build_info.build_start_time
       analysis.put()

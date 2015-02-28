@@ -5,8 +5,8 @@
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
-from model.build_analysis import BuildAnalysis
-from model.build_analysis_status import BuildAnalysisStatus
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall import build_failure_analysis
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 
@@ -19,10 +19,9 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
 
-    analysis = BuildAnalysis.CreateBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = None
-    analysis.status = BuildAnalysisStatus.ANALYZING
+    analysis.status = wf_analysis_status.ANALYZING
     analysis.put()
 
     failure_info = {
@@ -44,8 +43,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertEqual(dummy_result, analysis.result)
-    self.assertEqual(BuildAnalysisStatus.ANALYZED, analysis.status)
+    self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)

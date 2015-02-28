@@ -8,9 +8,9 @@ import os
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
-from model.build import Build
-from model.build_analysis import BuildAnalysis
-from model.build_analysis_status import BuildAnalysisStatus
+from model.wf_build import WfBuild
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall import buildbot
 from waterfall import detect_first_failure_pipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
@@ -35,7 +35,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
 
   def testBuildDataNeedUpdating(self):
-    build = Build.CreateBuild('m', 'b', 1)
+    build = WfBuild.Create('m', 'b', 1)
     pipeline = DetectFirstFailurePipeline('m', 'b', 1)
 
     # Build data is not available.
@@ -48,7 +48,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     self.assertTrue(pipeline._BuildDataNeedUpdating(build))
 
   def testBuildDataNotNeedUpdating(self):
-    build = Build.CreateBuild('m', 'b', 1)
+    build = WfBuild.Create('m', 'b', 1)
     pipeline = DetectFirstFailurePipeline('m', 'b', 1)
 
     # Build is not completed yet but data is recent.
@@ -64,10 +64,9 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     self.assertFalse(pipeline._BuildDataNeedUpdating(build))
 
 
-  def _CreateAndSaveBuildAnanlysis(
+  def _CreateAndSaveWfAnanlysis(
       self, master_name, builder_name, build_number, status):
-    analysis = BuildAnalysis.CreateBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
     analysis.put()
 
@@ -94,21 +93,21 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
 
-    self._CreateAndSaveBuildAnanlysis(
-        master_name, builder_name, build_number, BuildAnalysisStatus.ANALYZING)
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
 
     # Setup build data for builds:
     # 123: mock urlfetch to ensure it is fetched.
     self._MockUrlfetchWithBuildData(master_name, builder_name, 123)
     # 122: mock a build in datastore to ensure it is not fetched again.
-    build = Build.CreateBuild(master_name, builder_name, 122)
+    build = WfBuild.Create(master_name, builder_name, 122)
     build.data = self._GetBuildData(master_name, builder_name, 122)
     build.completed = True
     build.put()
     self._MockUrlfetchWithBuildData(
         master_name, builder_name, 122, build_data='Blow up if used!')
     # 121: mock a build in datastore to ensure it is updated.
-    build = Build.CreateBuild(master_name, builder_name, 121)
+    build = WfBuild.Create(master_name, builder_name, 121)
     build.data = 'Blow up if used!'
     build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
     build.completed = False
@@ -138,8 +137,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 124
 
-    self._CreateAndSaveBuildAnanlysis(
-        master_name, builder_name, build_number, BuildAnalysisStatus.ANALYZING)
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
@@ -165,8 +164,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 121
 
-    self._CreateAndSaveBuildAnanlysis(
-        master_name, builder_name, build_number, BuildAnalysisStatus.ANALYZING)
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 121)

@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model.build_analysis import BuildAnalysis
-from model.build_analysis_status import BuildAnalysisStatus
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall import build_failure_analysis
 from waterfall.base_pipeline import BasePipeline
 
@@ -29,10 +29,9 @@ class IdentifyCulpritPipeline(BasePipeline):
 
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, signals)
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.result = analysis_result
-    analysis.status = BuildAnalysisStatus.ANALYZED
+    analysis.status = wf_analysis_status.ANALYZED
     analysis.put()
 
     return analysis_result

@@ -5,7 +5,7 @@
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
-from model.step import Step
+from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
@@ -59,12 +59,12 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     result = ExtractSignalPipeline._ExtractStorablePortionOfLog(log_data)
     self.assertEqual(expected_result, result)
 
-  def testStepStdioLogAlreadyDownloaded(self):
+  def testWfStepStdioLogAlreadyDownloaded(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 'abc_test'
-    step = Step.CreateStep(master_name, builder_name, build_number, step_name)
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
     step.log_data = self.ABC_TEST_FAILURE_LOG
     step.put()
 
@@ -78,7 +78,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(self.FAILURE_SIGNALS, signals)
 
-  def testStepStdioLogNotDownloadedYet(self):
+  def testWfStepStdioLogNotDownloadedYet(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -93,5 +93,5 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
-    step = Step.CreateStep(master_name, builder_name, build_number, step_name)
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
     self.assertIsNotNone(step)

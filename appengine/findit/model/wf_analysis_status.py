@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 
-class BuildAnalysisStatus(object):
-  PENDING=0
-  ANALYZING=10
-  ANALYZED=70
-  ERROR=80
+# Represent status of the analysis of a Chromium waterfall build failure.
+PENDING = 0
+ANALYZING = 10
+ANALYZED = 70
+ERROR = 80

@@ -12,7 +12,6 @@ import webtest
 from testing_utils import testing
 
 from handlers import build_failure
-from model.build_analysis_status import BuildAnalysisStatus
 from waterfall import buildbot
 from waterfall import masters
 

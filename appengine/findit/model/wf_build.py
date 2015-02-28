@@ -7,22 +7,26 @@ from google.appengine.ext import ndb
 from model.base_build_model import BaseBuildModel
 
 
-class Build(BaseBuildModel):
-  """Represents a build cycle of a builder in a waterfall."""
+class WfBuild(BaseBuildModel):
+  """Represents a build cycle of a builder in a Chromium waterfall.
+
+  'Wf' is short for waterfall.
+  """
 
   @staticmethod
-  def CreateKey(master_name, builder_name, build_number):  # pragma: no cover
-    return ndb.Key('Build',
+  def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
+    return ndb.Key('WfBuild',
                    BaseBuildModel.CreateBuildId(
                        master_name, builder_name, build_number))
 
   @staticmethod
-  def CreateBuild(master_name, builder_name, build_number):  # pragma: no cover
-    return Build(key=Build.CreateKey(master_name, builder_name, build_number))
+  def Create(master_name, builder_name, build_number):  # pragma: no cover
+    return WfBuild(
+        key=WfBuild._CreateKey(master_name, builder_name, build_number))
 
   @staticmethod
-  def GetBuild(master_name, builder_name, build_number):  # pragma: no cover
-    return Build.CreateKey(master_name, builder_name, build_number).get()
+  def Get(master_name, builder_name, build_number):  # pragma: no cover
+    return WfBuild._CreateKey(master_name, builder_name, build_number).get()
 
   data = ndb.JsonProperty(indexed=False, compressed=True)
   last_crawled_time = ndb.DateTimeProperty(indexed=False)

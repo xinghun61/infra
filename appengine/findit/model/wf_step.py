@@ -7,26 +7,29 @@ from google.appengine.ext import ndb
 from model.base_build_model import BaseBuildModel
 
 
-class Step(BaseBuildModel):
-  """Represents a step in a build cycle of a builder in a waterfall."""
+class WfStep(BaseBuildModel):
+  """Represents a step in a build cycle of a builder in a Chromium waterfall.
+
+  'Wf' is short for waterfall.
+  """
 
   @staticmethod
-  def CreateKey(
+  def _CreateKey(
       master_name, builder_name, build_number, step_name):  # pragma: no cover
     build_id = BaseBuildModel.CreateBuildId(
         master_name, builder_name, build_number)
-    return ndb.Key('Build', build_id, 'Step', step_name)
+    return ndb.Key('WfBuild', build_id, 'WfStep', step_name)
 
   @staticmethod
-  def CreateStep(
+  def Create(
       master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return Step(
-        key=Step.CreateKey(master_name, builder_name, build_number, step_name))
+    return WfStep(key=WfStep._CreateKey(
+                          master_name, builder_name, build_number, step_name))
 
   @staticmethod
-  def GetStep(
+  def Get(
       master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return Step.CreateKey(
+    return WfStep._CreateKey(
         master_name, builder_name, build_number, step_name).get()
 
   log_data = ndb.BlobProperty(indexed=False, compressed=True)

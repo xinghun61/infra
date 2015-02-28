@@ -7,8 +7,8 @@ import os
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
-from model.build_analysis import BuildAnalysis
-from model.build_analysis_status import BuildAnalysisStatus
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
 from waterfall import lock_util
@@ -17,10 +17,9 @@ from waterfall import lock_util
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
   app_module = handlers._APP
 
-  def _CreateAndSaveBuildAnalysis(
+  def _CreateAndSaveWfAnalysis(
       self, master_name, builder_name, build_number, status):
-    analysis = BuildAnalysis.CreateBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
     analysis.put()
 
@@ -38,8 +37,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
-    self._CreateAndSaveBuildAnalysis(master_name, builder_name, build_number,
-                             BuildAnalysisStatus.ANALYZED)
+    self._CreateAndSaveWfAnalysis(master_name, builder_name, build_number,
+                                  wf_analysis_status.ANALYZED)
 
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
         master_name, builder_name, build_number, False)
@@ -50,8 +49,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
-    self._CreateAndSaveBuildAnalysis(
-        master_name, builder_name, build_number, BuildAnalysisStatus.ANALYZED)
+    self._CreateAndSaveWfAnalysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZED)
 
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
         master_name, builder_name, build_number, True)
@@ -138,7 +137,6 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     self.execute_queued_tasks()
 
-    analysis = BuildAnalysis.GetBuildAnalysis(
-        master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    self.assertEqual(BuildAnalysisStatus.ANALYZED, analysis.status)
+    self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
