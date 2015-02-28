@@ -28,6 +28,10 @@ JINJA2_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(TEMPLATES_PATH),
     autoescape=True,
     extensions=['jinja2.ext.autoescape'])
+TRUSTED_APP_IDS = [
+  'chrome-infra-auth',
+  'chrome-infra-auth-dev'
+]
 
 
 class MainPageHandler(webapp2.RequestHandler):
@@ -65,7 +69,8 @@ class ListHandler(webapp2.RequestHandler):
       logging.warning('Tried to view nonexistent or empty list.')
       self.abort(404)
 
-    if not auth_util.CheckUserInList(emails):
+    app_id = self.request.headers.get('X-Appengine-Inbound-Appid')
+    if app_id not in TRUSTED_APP_IDS and not auth_util.CheckUserInList(emails):
       # Technically should be 403, but use 404 to avoid exposing list names.
       self.abort(404)
       return
