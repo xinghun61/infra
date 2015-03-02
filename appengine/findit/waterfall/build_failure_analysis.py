@@ -10,13 +10,13 @@ from common.diff import ChangeType
 from waterfall.failure_signal import FailureSignal
 
 
-def _IsSameFile(src_file, file_path):
+def _IsSameFile(changed_src_file_path, file_path_in_log):
   """Guesses if the two files are the same.
 
   Args:
-    src_file (str): Full path of a file committed to git repo.
-    file_path (str): Path of a file appearing in a failure log. It might not be
-        a full path.
+    changed_src_file_path (str): Full path of a file committed to git repo.
+    file_path_in_log (str): Path of a file appearing in a failure log. It might
+        not be a full path.
 
   Returns:
     True if the two files are likely the same, otherwise False. Eg.:
@@ -24,9 +24,9 @@ def _IsSameFile(src_file, file_path):
       True: (a/b/x.cc, a/b/x.cc)
       False: (c/x.cc, a/b/c/x.cc)
   """
-  if src_file == file_path:
+  if changed_src_file_path == file_path_in_log:
     return True
-  return src_file.endswith('/%s' % file_path)
+  return changed_src_file_path.endswith('/%s' % file_path_in_log)
 
 
 def _NormalizeObjectFilePath(file_path):
@@ -91,7 +91,7 @@ def _StripExtensionAndCommonSuffix(file_path):
   return os.path.join(file_dir, file_name).replace(os.sep, '/')
 
 
-def _IsRelated(src_file, file_path):
+def _IsRelated(changed_src_file_path, file_path):
   """Checks if two files are related.
 
   Example of related files:
@@ -103,7 +103,7 @@ def _IsRelated(src_file, file_path):
   if file_path.endswith('.o') or file_path.endswith('.obj'):
     file_path = _NormalizeObjectFilePath(file_path)
 
-  if _IsSameFile(_StripExtensionAndCommonSuffix(src_file),
+  if _IsSameFile(_StripExtensionAndCommonSuffix(changed_src_file_path),
                  _StripExtensionAndCommonSuffix(file_path)):
     return True
 
@@ -134,26 +134,30 @@ class _Justification(object):
   def score(self):
     return self._score
 
-  def AddFileChange(
-      self, change_action, src_file, file_path, suspect_points, score):
+  def AddFileChange(self, change_action, changed_src_file_path,
+                    file_path_in_log, suspect_points, score):
     """Adds a suspected file change.
 
     Args:
-      change_action (str): One of the change types in common.diff.ChangeType.
-      src_file (str): Changed file path in a CL.
-      file_path (str): File path appearing in the failure log.
+      change_action (str): How file was changed: added, deleted, or modified.
+      changed_src_file_path (str): Changed file path in a CL.
+      file_path_in_log (str): File path appearing in the failure log.
       suspect_points (int): Number of suspect points for the file change.
       score (int): Score number for the file change.
     """
     self._suspect_points += suspect_points
     self._score += score
 
-    # TODO: make hint more descriptive?
-    if src_file != file_path:
-      self._hints.append(
-          '%s %s (%s)' % (change_action, src_file, file_path))
+    changed_src_file_path = os.path.basename(changed_src_file_path)
+    file_path_in_log = os.path.basename(file_path_in_log)
+
+    if changed_src_file_path != file_path_in_log:
+      hint = '%s %s (%s was in log)' % (
+          change_action, changed_src_file_path, file_path_in_log)
     else:
-      self._hints.append('%s %s' % (change_action, src_file))
+      hint = '%s %s (and it was in log)' % (
+          change_action, changed_src_file_path)
+    self._hints.append(hint)
 
   def ToDict(self):
     return {
@@ -163,26 +167,26 @@ class _Justification(object):
     }
 
 
-def _CheckFile(
-    change_action, src_file, file_path, suspect_points, score, justification):
+def _CheckFile(change_action, changed_src_file_path, file_path_in_log,
+               suspect_points, score, justification):
   """Checks if the given files are the same or correlated.
 
   Args:
-    change_action (str): One of the change types in common.diff.ChangeType.
-    src_file (str): Changed file path in a CL.
-    file_path (str): File path appearing in the failure log.
+    change_action (str): How file was changed: added, deleted, or modified.
+    changed_src_file_path (str): Changed file path in a CL.
+    file_path_in_log (str): File path appearing in the failure log.
     suspect_points (int): Number of suspect points if two files are the same.
     score (int): Score number if two files are the same.
     justification (_Justification): An instance of _Justification.
   """
-  if _IsSameFile(src_file, file_path):
-    justification.AddFileChange(
-        change_action, src_file, file_path, suspect_points, score)
-  elif _IsRelated(src_file, file_path):
+  if _IsSameFile(changed_src_file_path, file_path_in_log):
+    justification.AddFileChange(change_action, changed_src_file_path,
+                                file_path_in_log, suspect_points, score)
+  elif _IsRelated(changed_src_file_path, file_path_in_log):
     # For correlated files, do suspect=0 and score=1, because it is just likely,
     # but not highly, suspected.
     justification.AddFileChange(
-        change_action, src_file, file_path, 0, 1)
+        change_action, changed_src_file_path, file_path_in_log, 0, 1)
 
 
 def _CheckFiles(failure_signal, change_log):
@@ -199,29 +203,29 @@ def _CheckFiles(failure_signal, change_log):
   """
   justification = _Justification()
 
-  for file_path, _ in failure_signal.files.iteritems():
+  for file_path_in_log, _ in failure_signal.files.iteritems():
     # TODO(stgao): remove this hack when DEPS parsing is supported.
-    if file_path.startswith('src/'):
-      file_path = file_path[4:]
+    if file_path_in_log.startswith('src/'):
+      file_path_in_log = file_path_in_log[4:]
 
     for touched_file in change_log['touched_files']:
       change_type = touched_file['change_type']
 
       if change_type == ChangeType.MODIFY:
-        if _IsSameFile(touched_file['new_path'], file_path):
+        if _IsSameFile(touched_file['new_path'], file_path_in_log):
           # TODO(stgao): use line number for git blame.
           justification.AddFileChange(
-              'modify', touched_file['new_path'], file_path, 0, 1)
-        elif _IsRelated(touched_file['new_path'], file_path):
+              'modified', touched_file['new_path'], file_path_in_log, 0, 1)
+        elif _IsRelated(touched_file['new_path'], file_path_in_log):
           justification.AddFileChange(
-              'modify', touched_file['new_path'], file_path, 0, 1)
+              'modified', touched_file['new_path'], file_path_in_log, 0, 1)
 
       if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
-        _CheckFile('add', touched_file['new_path'], file_path, 1, 5,
+        _CheckFile('added', touched_file['new_path'], file_path_in_log, 1, 5,
                    justification)
 
       if change_type in (ChangeType.DELETE, ChangeType.RENAME):
-        _CheckFile('delete', touched_file['old_path'], file_path, 1, 5,
+        _CheckFile('deleted', touched_file['old_path'], file_path_in_log, 1, 5,
                    justification)
 
   if not justification.score:

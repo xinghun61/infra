@@ -222,7 +222,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                         'suspect_points': 0,
                         'score': 1,
                         'hints': [
-                            'modify a/b/f99_2.cc'
+                            'modified f99_2.cc (and it was in log)'
                         ],
                     }
                 ],
