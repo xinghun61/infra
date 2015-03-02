@@ -1,0 +1,39 @@
+#rotations {
+   border-collapse: collapse;
+   margin: 10px 0;
+}
+
+#rotations td, #rotations th {
+   border: solid black 1px;
+   padding: 3px;
+}
+
+#rotations th {
+   white-space: nowrap;
+}
+
+#rotations td {
+   font-family: monospace;
+   max-width: 150px;
+   overflow: auto;
+}
+
+#rotations tr:hover {
+    background-color: #CCC;
+}
+
+#settings {
+  display: none;
+  border: solid black 2px;
+  margin: 3px;
+  padding: 7px;
+  width: 200px;
+}
+
+.cb {
+  clear: both;
+}
+
+.centered {
+  align: center;
+}

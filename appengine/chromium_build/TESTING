@@ -8,9 +8,10 @@ LOCAL TESTING
 3. cd into this directory.
 4. .../google_appengine/dev_appserver.py .
 5. Navigate to http://localhost:8080/tasks/fetch_pages .
-6. Wait for it to complete. (Watch the output from dev_appserver.py
-   until it quiesces.)
-7. Replace chromium-build.appspot.com with localhost:8080 in the steps
+6. If it asks you to log in, be sure to check the "Log in as Administrator" box.
+7. The dev_appserver.py script should print out a bunch of information about
+   fetching pages; wait for it to complete.
+8. Replace chromium-build.appspot.com with localhost:8080 in the steps
    below, and run all of those tests.
 
 PRODUCTION TESTING
