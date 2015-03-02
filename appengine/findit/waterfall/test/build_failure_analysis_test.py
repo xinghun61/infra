@@ -109,7 +109,6 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     justification = build_failure_analysis._CheckFiles(
         FailureSignal.FromJson(failure_signal_json), change_log_json)
     self.assertIsNotNone(justification)
-    self.assertEqual(2, justification['suspect_points'])
     self.assertEqual(13, justification['score'])
 
   def testCheckFilesAgainstUnrelatedCL(self):
@@ -219,11 +218,10 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                         'revision': 'r99_2',
                         'commit_position': None,
                         'code_review_url': None,
-                        'suspect_points': 0,
                         'score': 1,
-                        'hints': [
-                            'modified f99_2.cc (and it was in log)'
-                        ],
+                        'hints': {
+                            'modified f99_2.cc (and it was in log)': 1,
+                        },
                     }
                 ],
             },

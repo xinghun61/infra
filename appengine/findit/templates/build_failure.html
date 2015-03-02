@@ -16,7 +16,7 @@
     .error {
       color: #FFFFFF;
       background-color: #e98080;
-      border-color: #A77272;
+      border-color: #a77272;
     }
     table {
       border-collapse: collapse;
@@ -97,9 +97,8 @@
             <th>Dependency Name</th>
             <th>Git Revision</th>
             <th>Commit Position</th>
-            <th>Suspect Points</th>
             <th>Score</th>
-            <th>Justification</th>
+            <th>Hints</th>
           </tr>
           <tbody>
           {% for failure in analysis_result.failures %}
@@ -108,7 +107,7 @@
                 <td>{{failure.step_name}}</td>
                 <td>{{failure.first_failure}}</td>
                 <td>{{failure.last_pass | default('N/A', true)}}</td>
-                <td colspan="7"></td>
+                <td colspan="6">Not found.</td>
               </tr>
             {% else %}
               {% set first_suspected_cl = failure.suspected_cls[0] %}
@@ -127,7 +126,6 @@
                   {% endif %}
                 </td>
                 <td>{{first_suspected_cl.commit_position}}</td>
-                <td>{{first_suspected_cl.suspect_points}}</td>
                 <td>{{first_suspected_cl.score}}</td>
                 <td>
                   {% for hint in first_suspected_cl.hints %}
@@ -148,7 +146,6 @@
                   {% endif %}
                 </td>
                 <td>{{suspected_cl.commit_position}}</td>
-                <td>{{suspected_cl.suspect_points}}</td>
                 <td>{{suspected_cl.score}}</td>
                 <td>
                   {% for hint in suspected_cl.hints %}

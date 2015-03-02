@@ -114,40 +114,35 @@ class _Justification(object):
   """Justification for why a CL might be suspected for a build failure.
 
   A justification includes:
-  1. suspect points: for a highly-suspected CL, it is given some suspect points.
-     Eg. a CL is highly suspected if it deleted a .cc file appearing in the
-     compile failure.
-  2. score: for a likely-suspected CL, it won't get suspect points, but a score.
-     Eg. a CL is just likely suspected if it only changed a related file
-     (x_impl.cc vs. x.h) appearing in a test failure.
-     For a highly-suspected CL, it will get a high score besides suspect points.
-  3. hints: each hint is a string describing a reason for suspecting a CL and
-    could be shown to the user (eg., "add x_impl.cc").
+  1. score:
+     1) If a hint shows that a CL is highly-suspected, the hint is given 5
+        score points. Eg. a CL is highly suspected if it deleted a .cc file
+        appearing in the compile failure.
+     2) If a hint shows that a CL is likely-suspected, the hint is given 1
+        score point. Eg. a CL is just likely suspected if it only changed a
+        related file (x_impl.cc vs. x.h) appearing in a failure.
+  2. hints: each hint is a string describing a reason for suspecting a CL and
+     could be shown to the user (eg., "added x_impl.cc (and it was in log)").
   """
 
   def __init__(self):
-    self._suspect_points = 0
     self._score = 0
-    self._hints = []
+    self._hints = collections.defaultdict(int)
 
   @property
   def score(self):
     return self._score
 
   def AddFileChange(self, change_action, changed_src_file_path,
-                    file_path_in_log, suspect_points, score):
+                    file_path_in_log, score):
     """Adds a suspected file change.
 
     Args:
       change_action (str): How file was changed: added, deleted, or modified.
       changed_src_file_path (str): Changed file path in a CL.
       file_path_in_log (str): File path appearing in the failure log.
-      suspect_points (int): Number of suspect points for the file change.
       score (int): Score number for the file change.
     """
-    self._suspect_points += suspect_points
-    self._score += score
-
     changed_src_file_path = os.path.basename(changed_src_file_path)
     file_path_in_log = os.path.basename(file_path_in_log)
 
@@ -157,36 +152,36 @@ class _Justification(object):
     else:
       hint = '%s %s (and it was in log)' % (
           change_action, changed_src_file_path)
-    self._hints.append(hint)
+
+    self._hints[hint] += score
+    self._score += score
 
   def ToDict(self):
     return {
-        'suspect_points': self._suspect_points,
         'score': self._score,
         'hints': self._hints,
     }
 
 
 def _CheckFile(change_action, changed_src_file_path, file_path_in_log,
-               suspect_points, score, justification):
-  """Checks if the given files are the same or correlated.
+               score, justification):
+  """Checks if the given files are related and updates the justification.
 
   Args:
     change_action (str): How file was changed: added, deleted, or modified.
     changed_src_file_path (str): Changed file path in a CL.
     file_path_in_log (str): File path appearing in the failure log.
-    suspect_points (int): Number of suspect points if two files are the same.
     score (int): Score number if two files are the same.
     justification (_Justification): An instance of _Justification.
   """
   if _IsSameFile(changed_src_file_path, file_path_in_log):
     justification.AddFileChange(change_action, changed_src_file_path,
-                                file_path_in_log, suspect_points, score)
+                                file_path_in_log, score)
   elif _IsRelated(changed_src_file_path, file_path_in_log):
-    # For correlated files, do suspect=0 and score=1, because it is just likely,
-    # but not highly, suspected.
+    # For related files, do score=1, because it is just likely-suspected, not
+    # highly-suspected.
     justification.AddFileChange(
-        change_action, changed_src_file_path, file_path_in_log, 0, 1)
+        change_action, changed_src_file_path, file_path_in_log, 1)
 
 
 def _CheckFiles(failure_signal, change_log):
@@ -211,21 +206,22 @@ def _CheckFiles(failure_signal, change_log):
     for touched_file in change_log['touched_files']:
       change_type = touched_file['change_type']
 
+      # TODO: move the analysis of change type into function _CheckFile.
       if change_type == ChangeType.MODIFY:
         if _IsSameFile(touched_file['new_path'], file_path_in_log):
           # TODO(stgao): use line number for git blame.
           justification.AddFileChange(
-              'modified', touched_file['new_path'], file_path_in_log, 0, 1)
+              'modified', touched_file['new_path'], file_path_in_log, 1)
         elif _IsRelated(touched_file['new_path'], file_path_in_log):
           justification.AddFileChange(
-              'modified', touched_file['new_path'], file_path_in_log, 0, 1)
+              'modified', touched_file['new_path'], file_path_in_log, 1)
 
       if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
-        _CheckFile('added', touched_file['new_path'], file_path_in_log, 1, 5,
+        _CheckFile('added', touched_file['new_path'], file_path_in_log, 5,
                    justification)
 
       if change_type in (ChangeType.DELETE, ChangeType.RENAME):
-        _CheckFile('deleted', touched_file['old_path'], file_path_in_log, 1, 5,
+        _CheckFile('deleted', touched_file['old_path'], file_path_in_log, 5,
                    justification)
 
   if not justification.score:
@@ -256,14 +252,13 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
               'dependency_name': 'chromium',
               'revision': 'a_git_hash',
               'commit_position': 56789,
-              'suspect_points': 2,
               'score': 11,
-              'hints': [
-                'add a/b/x.cc',
-                'delete a/b/y.cc',
-                'modify e/f/z.cc',
+              'hints': {
+                'add a/b/x.cc': 5,
+                'delete a/b/y.cc': 5,
+                'modify e/f/z.cc': 1,
                 ...
-              ]
+              }
             },
             ...
           ],
@@ -320,7 +315,7 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
 
       build_number += 1
 
-    # TODO(stgao): sort CLs by suspect points and score.
+    # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)
 
   return analysis_result
