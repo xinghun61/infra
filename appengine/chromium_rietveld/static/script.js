@@ -1583,6 +1583,21 @@ function M_setValueFromDivs(divs, text) {
 }
 
 /**
+ * Return the specified URL parameter.
+ * @param {String} sParam The name of the parameter.
+ */
+function M_getUrlParameter(sParam) {
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam) {
+            return sParameterName[1];
+        }
+    }
+}
+
+/**
  * Undo an edit of a draft inline comment, i.e. discard changes.
  * @param {Element} form The form containing the edits
  * @param {String} cid The number of the comment

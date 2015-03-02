@@ -101,6 +101,11 @@ found in the LICENSE file. -->
                 this.issue = null;
                 this.butterbarMessage = "";
             },
+            attached: function() {
+                var params = Object.fromQueryString(window.location.search.substring(1));
+                if ('focus_revert' in params)
+                    this.showRevertDialog();
+            },
             updateButterbar: function(event) {
                 this.butterbarMessage = event.detail.message;
             },
