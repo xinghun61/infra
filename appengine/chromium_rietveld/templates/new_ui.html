@@ -19,5 +19,20 @@
   <link rel='import' href='/new_static/components/cr-app.vulcanized.html?v={{rietveld_revision}}'>
 {%endif%}
 
-<link rel='stylesheet' href='/new_static/style.css'>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.65em;
+    color: #222;
+}
+
+body {
+    overflow-y: scroll;
+    /* Avoid the overlay chrome status bar. */
+    padding-bottom: 20px;
+}
+</style>
 <cr-app></cr-app>
