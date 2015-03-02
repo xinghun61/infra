@@ -1,0 +1,172 @@
+/* Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+*/
+
+/* Created by modifying the googlecode.css and default.css from hljs.
+    default.css is originally from: 
+        softwaremaniacs.org (c) Ivan Sagalaev <Maniac@SoftwareManiacs.Org>
+    googlecode.css originally from: 
+        Google Code style (c) Aahan Krish <geekpanth3r@gmail.com>
+*/
+
+.hljs-label,
+.hljs-javadoc,
+.ruby .hljs-string,
+.hljs-decorator,
+.hljs-filter .hljs-argument,
+.hljs-localvars,
+.hljs-array,
+.hljs-attr_selector,
+.hljs-important,
+.hljs-pseudo,
+.hljs-pi,
+.hljs-doctype,
+.hljs-deletion,
+.hljs-envvar,
+.hljs-shebang,
+.hljs-prompt,
+.markdown .hljs-link_label,
+.coffeescript .hljs-property,
+.hljs-phony {
+    color: #88f;
+}
+
+.hljs-emphasis {
+    font-style: italic;
+}
+
+.hljs-keyword,
+.method,
+.hljs-list .hljs-keyword,
+.hljs-tag .hljs-title,
+.setting .hljs-value,
+.hljs-winutils,
+.hljs-request,
+.hljs-status {
+    color: #008;
+}
+
+.hljs-envvar {
+    color: #660;
+}
+
+.hljs-sub .hljs-identifier,
+.hljs-pi,
+.hljs-tag,
+.hljs-tag .hljs-keyword,
+.hljs-decorator,
+.ini .hljs-title,
+.hljs-shebang,
+.hljs-prompt,
+.hljs-hexcolor,
+.hljs-rules .hljs-value,
+.hljs-literal,
+.hljs-symbol,
+.ruby .hljs-symbol .hljs-string,
+.hljs-number,
+.css .hljs-function {
+    color: #066;
+}
+
+.hljs-class .hljs-title,
+.hljs-javadoctag,
+.hljs-yardoctag,
+.hljs-phpdoc,
+.hljs-dartdoc,
+.hljs-type,
+.hljs-typename,
+.hljs-tag .hljs-attribute,
+.hljs-doctype,
+.hljs-class .hljs-id,
+.hljs-built_in,
+.setting,
+.hljs-params,
+.hljs-variable {
+    color: #606;
+}
+
+.css .hljs-tag,
+.hljs-rules .hljs-property,
+.hljs-pseudo,
+.hljs-subst {
+    color: #000;
+}
+
+.css .hljs-class,
+.css .hljs-id {
+    color: #9b703f;
+}
+
+.hljs-value .hljs-important {
+    color: #f70;
+}
+
+.hljs-rules .hljs-keyword {
+    color: #c5af75;
+}
+
+.hljs-annotation {
+    color: #9b859d;
+}
+
+.hljs-preprocessor,
+.hljs-preprocessor *,
+.hljs-pragma {
+    color: #444;
+}
+
+.diff .hljs-header,
+.hljs-chunk {
+    color: #808080;
+}
+
+.diff .hljs-change {
+    background-color: #bccff9;
+}
+
+.hljs-addition {
+    background-color: #baeeba;
+}
+
+.hljs-deletion {
+    background-color: #ffc8bd;
+}
+
+.hljs-title,
+.hljs-constant,
+.hljs-parent,
+.ruby .hljs-symbol,
+.hljs-template_tag,
+.hljs-flow,
+.hljs-stream,
+.bash .hljs-variable,
+.markdown .hljs-header,
+.hljs-comment,
+.hljs-annotation,
+.hljs-template_comment,
+.diff .hljs-header,
+.hljs-chunk,
+.markdown .hljs-blockquote {
+    color: #800;
+}
+
+.hljs-date,
+.hljs-regexp,
+.hljs-literal,
+.hljs-hexcolor,
+.go .hljs-constant,
+.hljs-change,
+.makefile .hljs-variable,
+.markdown .hljs-bullet,
+.markdown .hljs-link_url,
+.hljs-string,
+.hljs-tag .hljs-value,
+.hljs-cdata,
+.hljs-filter .hljs-argument,
+.hljs-attr_selector,
+.hljs-date,
+.hljs-regexp,
+.coffeescript .hljs-attribute {
+    color: #080;
+}

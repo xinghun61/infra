@@ -6,6 +6,7 @@
 
 :host {
     display: block;
+    -webkit-text-size-adjust: none;
 }
 
 .header,

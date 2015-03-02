@@ -50,25 +50,32 @@ PatchFile.MIXED_LANGUAGES = {
 };
 
 PatchFile.SYNTAX_LANGUAGES = {
-    "cpp": "cpp",
     "cc": "cpp",
+    "cgi": "perl",
+    "coffee": "coffeescript",
+    "cpp": "cpp",
+    "css": "css",
+    "dart": "dart",
+    "go": "go",
     "h": "cpp",
     "html": "html",
-    "xhtml": "html",
+    // TODO(esprehn): We should create a proper language definition for idl.
+    // For now we use ActionScript since they're actually quite similar.
+    "idl": "actionscript",
+    "ini": "ini",
     "js": "javascript",
-    "css": "css",
-    "xml": "xml",
-    "svg": "xml",
+    "json": "json",
+    "md": "markdown",
+    "mm": "objectivec",
+    "m": "objectivec",
     "pl": "perl",
     "pm": "perl",
-    "cgi": "perl",
     "py": "python",
     "rb": "ruby",
-    "mm": "objectivec",
-    "json": "json",
-    // TODO(esprehn): We should create a proper language definition for idl. For now we
-    // use ActionScript since they're actually quite similar.
-    "idl": "actionscript",
+    "sh": "bash",
+    "svg": "xml",
+    "xhtml": "html",
+    "xml": "xml",
 };
 
 PatchFile.compare = function(a, b)
