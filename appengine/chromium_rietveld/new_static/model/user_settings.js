@@ -69,12 +69,12 @@ UserSettings.prototype.save = function()
         sendXsrfToken: true,
     }).then(function(xhr) {
         var errorData = parseFormErrorData(xhr.response);
-        if (!errorData) {
-            // Synchronize the user's name now that we've saved it to the server.
-            User.current.name = settings.name;
+        if (errorData) {
+            var error = new Error(errorData.message);
+            error.fieldName = UserSettings.FIELD_NAME_MAP[errorData.fieldName] || errorData.fieldName;
+            throw error;
         }
-        var error = new Error(errorData.message);
-        error.fieldName = UserSettings.FIELD_NAME_MAP[errorData.fieldName] || errorData.fieldName;
-        throw error;
+        // Synchronize the user's name now that we've saved it to the server.
+        User.current.name = settings.name;
     });
 };
