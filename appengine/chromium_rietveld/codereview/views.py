@@ -2921,50 +2921,6 @@ def _add_or_update_comment(user, issue, patch, lineno, left, text, message_id):
   return comment
 
 
-@deco.login_required
-@deco.patchset_required
-@deco.require_methods('POST')
-@deco.json_response
-def api_draft_comments(request):
-  """/api/<issue>/<patchset>/draft_comments - Store a number of draft
-  comments for a particular issue and patchset.
-
-  This API differs from inline_draft in two ways:
-
-  1) api_draft_comments handles multiple comments at once so that
-     clients can upload draft comments in bulk.
-  2) api_draft_comments returns a response in JSON rather than
-     in HTML, which lets clients process the response programmatically.
-
-  Note: creating or editing draft comments is *not* XSRF-protected,
-  because it is not unusual to come back after hours; the XSRF tokens
-  time out after 1 or 2 hours.  The final submit of the drafts for
-  others to view *is* XSRF-protected.
-  """
-  try:
-    def sanitize(comment):
-      patch = models.Patch.get_by_id(int(comment.patch_id),
-                                     parent=request.patchset.key)
-      assert not patch is None
-      message_id = str(comment.message_id
-                       ) if hasattr(comment, "message_id") else None
-      return {
-        'user': request.user,
-        'issue': request.issue,
-        'patch': patch,
-        'lineno': int(comment.lineno),
-        'left': bool(comment.left),
-        'text': str(comment.text),
-        'message_id': message_id,
-      }
-    return [
-      {"message_id": _add_or_update_comment(**comment).message_id}
-      for comment in map(sanitize, json.load(request.data))
-    ]
-  except Exception as err:
-    return HttpTextResponse('An error occurred. %s' % str(err), status=500)
-
-
 @deco.require_methods('POST')
 def inline_draft(request):
   """/inline_draft - Ajax handler to submit an in-line draft comment.
