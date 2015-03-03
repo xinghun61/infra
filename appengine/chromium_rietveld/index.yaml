@@ -231,6 +231,13 @@ indexes:
   - name: closed
   - name: owner
   - name: modified
+  - name: subject
+
+- kind: Issue
+  properties:
+  - name: closed
+  - name: owner
+  - name: modified
     direction: desc
 
 - kind: Issue
@@ -304,6 +311,13 @@ indexes:
   - name: owner
   - name: modified
     direction: desc
+
+- kind: Issue
+  properties:
+  - name: owner
+  - name: modified
+    direction: desc
+  - name: subject
 
 - kind: Issue
   properties:

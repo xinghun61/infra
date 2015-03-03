@@ -941,30 +941,36 @@ def _get_dashboard_issue_lists(request, load_users_and_drafts=True):
   else:
     draft_issues = draft_issue_keys = []
 
-  my_issues = [
-      issue for issue in models.Issue.query(
-          models.Issue.closed == False, models.Issue.owner == user).order(
-            -models.Issue.modified).fetch(100)
-      if issue.key not in draft_issue_keys and issue.view_allowed]
-  review_issues = [
-      issue for issue in models.Issue.query(
-          models.Issue.closed == False,
-          models.Issue.reviewers == user.email().lower()).order(
-            -models.Issue.modified).fetch(100)
-      if (issue.key not in draft_issue_keys and issue.owner != user
-          and issue.view_allowed)]
   earliest_closed = datetime.datetime.utcnow() - datetime.timedelta(days=7)
-  closed_issues = [
-      issue for issue in models.Issue.query(
+
+  my_issues_query = models.Issue.query(
+      models.Issue.closed == False, models.Issue.owner == user).order(
+        -models.Issue.modified).fetch_async(100)
+  review_issues_query = models.Issue.query(
+      models.Issue.closed == False,
+      models.Issue.reviewers == user.email().lower()).order(
+        -models.Issue.modified).fetch_async(100)
+  closed_issues_query = models.Issue.query(
           models.Issue.closed == True,
           models.Issue.modified > earliest_closed,
           models.Issue.owner == user).order(
-            -models.Issue.modified).fetch(100)
+            -models.Issue.modified).fetch_async(100)
+  cc_issues_query = models.Issue.query(
+          models.Issue.closed == False, models.Issue.cc == user.email()).order(
+            -models.Issue.modified).fetch_async(100)
+
+  my_issues = [
+      issue for issue in my_issues_query.get_result()
+      if issue.key not in draft_issue_keys and issue.view_allowed]
+  review_issues = [
+      issue for issue in review_issues_query.get_result()
+      if (issue.key not in draft_issue_keys and issue.owner != user
+          and issue.view_allowed)]
+  closed_issues = [
+      issue for issue in closed_issues_query.get_result()
       if issue.key not in draft_issue_keys and issue.view_allowed]
   cc_issues = [
-      issue for issue in models.Issue.query(
-          models.Issue.closed == False, models.Issue.cc == user.email()).order(
-            -models.Issue.modified).fetch(100)
+      issue for issue in cc_issues_query.get_result()
       if (issue.key not in draft_issue_keys and issue.owner != user
           and issue.view_allowed)]
   all_issues = my_issues + review_issues + closed_issues + cc_issues
@@ -976,8 +982,7 @@ def _get_dashboard_issue_lists(request, load_users_and_drafts=True):
     ret = issue.calculate_and_save_updates_if_None()
     if ret is not None:
       futures.append(ret)
-  for f in futures:
-    f.get_result()
+  ndb.Future.wait_all(futures)
 
   # When a CL is sent from upload.py using --send_mail we create an empty
   # message. This might change in the future, either by not adding an empty
