@@ -108,7 +108,7 @@ class GitRepository(Repository):
         data['author']['time'],
         data['committer']['name'], NormalizeEmail(data['committer']['email']),
         data['committer']['time'], data['commit'], commit_position,
-        data['message'], touched_files, code_review_url)
+        data['message'], touched_files, url, code_review_url)
 
   def GetChangeDiff(self, revision):
     """Returns the raw diff of the given revision."""

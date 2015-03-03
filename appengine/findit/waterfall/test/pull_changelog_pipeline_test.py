@@ -60,25 +60,26 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
     }
 
     expected_change_logs = {
-      "rev1": {
-        "author_name": "someone@chromium.org",
-        "message":
-          "git-svn-id: svn://svn.chromium.org/chromium/src@175976 blabla",
-        "committer_email": "someone@chromium.org",
-        "commit_position": 175976,
-        "author_email": "someone@chromium.org",
-        "touched_files": [
+      'rev1': {
+        'author_name': 'someone@chromium.org',
+        'message':
+          'git-svn-id: svn://svn.chromium.org/chromium/src@175976 blabla',
+        'committer_email': 'someone@chromium.org',
+        'commit_position': 175976,
+        'author_email': 'someone@chromium.org',
+        'touched_files': [
           {
-            "new_path": "added_file.js",
-            "change_type": "add",
-            "old_path": "/dev/null"
+            'new_path': 'added_file.js',
+            'change_type': 'add',
+            'old_path': '/dev/null'
           }
         ],
-        "author_time": "Wed Jun 11 19:35:32 2014",
-        "committer_time": "Wed Jun 11 19:35:32 2014",
-        "code_review_url": None,
-        "committer_name": "someone@chromium.org",
-        "revision": "rev1"
+        'author_time': 'Wed Jun 11 19:35:32 2014',
+        'committer_time': 'Wed Jun 11 19:35:32 2014',
+        'commit_url': 'https://chromium.googlesource.com/chromium/src/+/rev1',
+        'code_review_url': None,
+        'committer_name': 'someone@chromium.org',
+        'revision': 'rev1'
       }
     }
 

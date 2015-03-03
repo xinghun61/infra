@@ -27,7 +27,7 @@ class ChangeLog(object):
 
   def __init__(self, author_name, author_email, author_time, committer_name,
                committer_email, committer_time, revision, commit_position,
-               message, touched_files, code_review_url=None):
+               message, touched_files, commit_url, code_review_url=None):
     self.author_name = author_name
     self.author_email = author_email
     self.author_time = author_time
@@ -38,6 +38,7 @@ class ChangeLog(object):
     self.commit_position = commit_position
     self.touched_files = touched_files
     self.message = message
+    self.commit_url = commit_url
     self.code_review_url = code_review_url
 
   def ToJson(self):
@@ -53,6 +54,7 @@ class ChangeLog(object):
       'commit_position': self.commit_position,
       'touched_files': [],
       'message': self.message,
+      'commit_url': self.commit_url,
       'code_review_url': self.code_review_url,
     }
     for touched_file in self.touched_files:
@@ -70,5 +72,5 @@ class ChangeLog(object):
         info['author_name'], info['author_email'], info['author_time'],
         info['committer_name'], info['committer_email'], info['committer_time'],
         info['revision'], info['commit_position'], info['message'],
-        touched_files, info['code_review_url']
+        touched_files, info['commit_url'], info['code_review_url']
     )

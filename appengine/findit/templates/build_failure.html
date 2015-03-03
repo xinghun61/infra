@@ -95,8 +95,7 @@
           <tr>
             <th>Build</th>
             <th>Dependency Name</th>
-            <th>Git Revision</th>
-            <th>Commit Position</th>
+            <th>Commit</th>
             <th>Score</th>
             <th>Hints</th>
           </tr>
@@ -107,7 +106,7 @@
                 <td>{{failure.step_name}}</td>
                 <td>{{failure.first_failure}}</td>
                 <td>{{failure.last_pass | default('N/A', true)}}</td>
-                <td colspan="6">Not found.</td>
+                <td colspan="5">Not found.</td>
               </tr>
             {% else %}
               {% set first_suspected_cl = failure.suspected_cls[0] %}
@@ -119,13 +118,12 @@
                 <td>{{first_suspected_cl.build_number}}</td>
                 <td>{{first_suspected_cl.dependency_name}}</td>
                 <td>
-                  {% if first_suspected_cl.code_review_url %}
-                    <a href="{{first_suspected_cl.code_review_url}}">{{first_suspected_cl.revision}}</a>
+                  {% if first_suspected_cl.commit_position %}
+                    <a href="{{first_suspected_cl.url}}">{{first_suspected_cl.commit_position}}</a>
                   {% else %}
-                    {{first_suspected_cl.revision}}
+                    <a href="{{first_suspected_cl.url}}">{{first_suspected_cl.revision}}</a>
                   {% endif %}
                 </td>
-                <td>{{first_suspected_cl.commit_position}}</td>
                 <td>{{first_suspected_cl.score}}</td>
                 <td>
                   {% for hint in first_suspected_cl.hints %}
@@ -139,13 +137,12 @@
                 <td>{{suspected_cl.build_number}}</td>
                 <td>{{suspected_cl.dependency_name}}</td>
                 <td>
-                  {% if suspected_cl.code_review_url %}
-                    <a href="{{suspected_cl.code_review_url}}">{{suspected_cl.revision}}</a>
+                  {% if suspected_cl.commit_position %}
+                    <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>
                   {% else %}
-                    {{suspected_cl.revision}}
+                    <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
                   {% endif %}
                 </td>
-                <td>{{suspected_cl.commit_position}}</td>
                 <td>{{suspected_cl.score}}</td>
                 <td>
                   {% for hint in suspected_cl.hints %}

@@ -217,7 +217,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                         'dependency_name': 'chromium',
                         'revision': 'r99_2',
                         'commit_position': None,
-                        'code_review_url': None,
+                        'url': None,
                         'score': 1,
                         'hints': {
                             'modified f99_2.cc (and it was in log)': 1,

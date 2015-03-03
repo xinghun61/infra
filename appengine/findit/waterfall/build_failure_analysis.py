@@ -282,7 +282,8 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
         'dependency_name': 'chromium',
         'revision': change_log['revision'],
         'commit_position': change_log.get('commit_position'),
-        'code_review_url': change_log.get('code_review_url'),
+        'url':
+            change_log.get('code_review_url') or change_log.get('commit_url'),
     }
 
     cl_info.update(justification_dict)
