@@ -20,11 +20,12 @@ BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
-  def _IsPipelineAccessible(self):
-    # Pipeline is accessible if the app is run locally during development or if
-    # the currently logged-in user is an admin.
+  def _ShowDebugInfo(self):
+    # Show debug info only if the app is run locally during development, if the
+    # currently logged-in user is an admin, or if it is explicitly requested
+    # with parameter 'debug=1'.
     return (os.environ['SERVER_SOFTWARE'].startswith('Development') or
-            users.is_current_user_admin())
+            users.is_current_user_admin() or self.request.get('debug') == '1')
 
   def HandleGet(self):
     """Triggers analysis of a build failure on demand and return current result.
@@ -55,16 +56,14 @@ class BuildFailure(BaseHandler):
       if not datetime:
         return None
       else:
-        return datetime.strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.strftime('%Y-%m-%d %H:%M:%S UTC')
 
     data = {
         'master_name': analysis.master_name,
         'builder_name': analysis.builder_name,
         'build_number': analysis.build_number,
-        'build_url': buildbot.CreateBuildUrl(
-            analysis.master_name, analysis.builder_name, analysis.build_number),
         'pipeline_status_path': analysis.pipeline_status_path,
-        'pipeline_accessible': self._IsPipelineAccessible(),
+        'show_debug_info': self._ShowDebugInfo(),
         'analysis_started': FormatDatetime(analysis.start_time),
         'analysis_updated': FormatDatetime(analysis.updated_time),
         'analysis_completed': analysis.completed,

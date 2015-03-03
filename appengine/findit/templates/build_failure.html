@@ -28,8 +28,6 @@
   </style>
   <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
   <script>
-    buildUrl = '{{build_url}}';
-
     analysisCompleted = '{{analysis_completed}}' == 'True';
     analysisFailed = '{{analysis_failed}}' == 'True';
 
@@ -38,7 +36,11 @@
         $('#status_message').text('running, will refresh in 5 seconds...');
         $('#status_message').attr('class', 'running');
         setTimeout(function(){
-          window.location.href = 'build-failure?url=' + buildUrl;
+          {% if show_debug_info %}
+          window.location.href = 'build-failure?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}&debug=1';
+          {% else %}
+          window.location.href = 'build-failure?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}';
+          {% endif %}
         }, 5000);
       } else if (analysisFailed) {
         $('#status_message').text('error');
@@ -52,27 +54,29 @@
   </script>
 </head>
 <body>
-  Findit is still under experiment.
+  Findit is still under experiment. (<a href="https://code.google.com/p/chromium/issues/entry?status=Available&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A">File a Findit bug</a>)
   <br>
   <br>
 
   <b>Build info:</b>
   <div>
     Master: {{master_name}}<br>
-    Builder: {{builder_name}}<br>
-    Build: <a href="{{build_url}}">{{build_number}}</a>
+    Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
+    Build Number: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a>
   </div>
   <br>
 
   <b>Analysis info:</b>
   <div id="analysis_info">
     status: <span id="status_message"></span>
-  {% if pipeline_accessible and pipeline_status_path %}
-    <a href="{{pipeline_status_path}}">pipeline</a>
-  {% endif %}
+  {% if show_debug_info %}
+    {% if pipeline_status_path %}
+      <a href="{{pipeline_status_path}}">pipeline</a>
+    {% endif %}
     <br>
     Started: {{analysis_started | default('N/A', true)}}<br>
     Updated: {{analysis_updated}}<br>
+  {% endif %}
   </div>
   <br>
 
@@ -89,11 +93,11 @@
           <tr>
             <th rowspan="2">Step</th>
             <th rowspan="2">First Failure</th>
-            <th rowspan="2">Last Pass</th>
+            <th rowspan="2">Last Pass<br>Before Failure</th>
             <th colspan="7">Suspected CLs</th>
           </tr>
           <tr>
-            <th>Build</th>
+            <th>Build Number</th>
             <th>Dependency Name</th>
             <th>Commit</th>
             <th>Score</th>
@@ -104,18 +108,26 @@
             {% if failure.suspected_cls|length == 0 %}
               <tr>
                 <td>{{failure.step_name}}</td>
-                <td>{{failure.first_failure}}</td>
-                <td>{{failure.last_pass | default('N/A', true)}}</td>
+                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
+                {% if failure.last_pass %}
+                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>
+                {% else %}
+                <td>N/A</td>
+                {% endif %}
                 <td colspan="5">Not found.</td>
               </tr>
             {% else %}
               {% set first_suspected_cl = failure.suspected_cls[0] %}
               <tr>
                 <td rowspan="{{failure.suspected_cls|length}}">{{failure.step_name}}</td>
-                <td rowspan="{{failure.suspected_cls|length}}">{{failure.first_failure}}</td>
-                <td rowspan="{{failure.suspected_cls|length}}">{{failure.last_pass | default('N/A', true)}}</td>
+                <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
+                {% if failure.last_pass %}
+                <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>
+                {% else %}
+                <td rowspan="{{failure.suspected_cls|length}}">N/A</td>
+                {% endif %}
 
-                <td>{{first_suspected_cl.build_number}}</td>
+                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{first_suspected_cl.build_number}}">{{first_suspected_cl.build_number}}</a></td>
                 <td>{{first_suspected_cl.dependency_name}}</td>
                 <td>
                   {% if first_suspected_cl.commit_position %}
@@ -134,7 +146,7 @@
               {# Show the remaining suspected CLs, so skip the first three columns. #}
               {% for suspected_cl in failure.suspected_cls[1:] %}
               <tr>
-                <td>{{suspected_cl.build_number}}</td>
+                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
                 <td>{{suspected_cl.dependency_name}}</td>
                 <td>
                   {% if suspected_cl.commit_position %}
