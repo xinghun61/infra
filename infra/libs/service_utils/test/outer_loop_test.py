@@ -20,6 +20,13 @@ class TestOuterLoop(auto_stub.TestCase):
     self.mock(time, 'sleep', mocked_sleep)
     self.mock(time, 'time', lambda: self.now)
 
+  def testLongUnsuccessfulJobStillFails(self):
+    ret = outer_loop.loop(
+      lambda: time.sleep(100), sleep_timeout=lambda: 1, duration=1,
+      max_errors=5)
+    self.assertEqual(outer_loop.LoopResults(False, 1), ret)
+    self.assertEqual([100], self.sleeps)
+
   def testUntilCtrlC(self):
     tasks = [None, None, None]
     def task():

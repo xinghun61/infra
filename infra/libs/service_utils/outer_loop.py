@@ -41,6 +41,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   """
   deadline = None if duration is None else (time.time() + duration)
   errors_left = max_errors
+  seen_success = False
   failed = False
   loop_count = 0
   error_count = 0
@@ -70,6 +71,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
 
       # Reset error counter on success, or abort on too many errors.
       if attempt_success:
+        seen_success = True
         errors_left = max_errors
       else:
         error_count += 1
@@ -97,9 +99,10 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
 
       loop_count += 1
   except KeyboardInterrupt:
+    seen_success = True
     LOGGER.warn('Stopping due to KeyboardInterrupt')
 
-  return LoopResults(not failed, error_count)
+  return LoopResults(not failed and seen_success, error_count)
 
 
 def add_argparse_options(parser):  # pragma: no cover
