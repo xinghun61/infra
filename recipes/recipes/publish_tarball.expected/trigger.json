@@ -31,8 +31,8 @@
     "name": "trigger publish_tarball",
     "trigger_specs": [
       {
+        "builder_name": "publish_tarball",
         "properties": {
-          "buildername": "publish_tarball",
           "version": "41.0.2270.0"
         }
       }
