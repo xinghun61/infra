@@ -27,6 +27,7 @@ module.exports = function(config) {
     files: [
       'node_modules/mocha/mocha.js',
       'bower_components/chai/chai.js',
+      'bower_components/sugar/release/sugar-full.development.js',
       '*.js',
       'model/**/*.js',
       'lib/**/*.js',
