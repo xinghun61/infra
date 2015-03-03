@@ -197,10 +197,10 @@
     'rev': 'bd5bdacd4b364f582258ce0bdfcd507ab3b71270',
   },
   'testing_support': {
-    'version': '0.1.5',
+    'version': '0.1.6',
     'build': '0',
     'repo': 'infra/testing/testing_support',
-    'rev': '86d39fcee75b7bb3a7c788e5553e68a3fc14d886',
+    'rev': 'a6e1c88d2f488f6b3207bf0976d96a76a0b3f44e',
   },
   'uritemplate': {
     'version': '0.6',
