@@ -17,6 +17,7 @@ function IssueMessage(issue, sequence)
     this.generated = false;
     this.preview = "";
     this.active = false;
+    this.issueWasClosed = false;
     Object.preventExtensions(this);
 }
 
@@ -66,4 +67,5 @@ IssueMessage.prototype.parseData = function(data)
     this.date = Date.utc.create(data.date);
     this.approval = data.approval || false;
     this.generated = data.auto_generated || false;
+    this.issueWasClosed = data.issue_was_closed || false;
 };

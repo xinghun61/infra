@@ -2330,6 +2330,7 @@ def _issue_as_dict(issue, messages, request=None):
         'approval': m.approval,
         'disapproval': m.disapproval,
         'auto_generated': m.auto_generated,
+        'issue_was_closed': m.issue_was_closed,
         'patchset': m.patchset_key.id() if m.patchset_key else None,
       }
       for m in models.Message.query(ancestor=issue.key)),
