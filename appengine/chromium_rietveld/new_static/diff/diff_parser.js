@@ -82,8 +82,7 @@ DiffParser.prototype.nextLineType = function()
 DiffParser.prototype.parseFile = function()
 {
     var groups = [];
-    var currentGroupType = "";
-    var currentGroup = [];
+    var currentGroup = null;
     var currentBeforeLineNumber = 0;
     var currentAfterLineNumber = 0;
     var deltaOffset = 0;
@@ -135,15 +134,14 @@ DiffParser.prototype.parseFile = function()
 
         if (groupType == "add" || groupType == "remove")
             groupType = "delta";
-        if (groupType != currentGroupType) {
-            if (currentGroup.length)
+        if (!currentGroup || groupType != currentGroup.type) {
+            if (currentGroup)
                 groups.push(currentGroup);
-            currentGroupType = groupType;
-            currentGroup = [];
+            currentGroup = new DiffGroup(groupType);
         }
-        currentGroup.push(line);
+        currentGroup.addLine(line);
     }
-    if (currentGroup.length)
+    if (currentGroup)
         groups.push(currentGroup);
 
     // Always have a header at the end of the file to allow an "Expand context"
@@ -152,7 +150,7 @@ DiffParser.prototype.parseFile = function()
     endLine.contextLinesStart = currentBeforeLineNumber + deltaOffset;
     endLine.contextLinesEnd = Number.MAX_SAFE_INTEGER;
     endLine.context = true;
-    groups.push([endLine]);
+    groups.push(new DiffGroup("header", [endLine]));
 
     return groups;
 };

@@ -30,10 +30,11 @@ describe("DiffParser", function() {
         var result = parser.parse()[0];
         assert.equal(result.name, "example.cc");
         assert.equal(result.groups.length, 3);
-        assert.equal(result.groups[0].length, 1);
-        assert.equal(result.groups[0][0].type, "header");
-        assert.isFalse(result.groups[0][0].context);
-        assert.equal(result.groups[0][0].text, "File deleted");
+        assert.equal(result.groups[0].type, "header");
+        assert.equal(result.groups[0].lines.length, 1);
+        assert.equal(result.groups[0].lines[0].type, "header");
+        assert.isFalse(result.groups[0].lines[0].context);
+        assert.equal(result.groups[0].lines[0].text, "File deleted");
     });
     it("should show context for one line headers", function() {
         var text =
@@ -52,14 +53,16 @@ describe("DiffParser", function() {
         var result = parser.parse()[0];
         assert.equal(result.name, "example.cc");
         assert.equal(result.groups.length, 7);
-        assert.equal(result.groups[0].length, 1);
-        assert.equal(result.groups[0][0].type, "header");
-        assert.isFalse(result.groups[0][0].context);
-        assert.equal(result.groups[0][0].text, "Context 1");
-        assert.equal(result.groups[3].length, 1);
-        assert.equal(result.groups[3][0].type, "header");
-        assert.isTrue(result.groups[3][0].context);
-        assert.equal(result.groups[3][0].text, "Context 2");
+        assert.equal(result.groups[0].type, "header");
+        assert.equal(result.groups[0].lines.length, 1);
+        assert.equal(result.groups[0].lines[0].type, "header");
+        assert.isFalse(result.groups[0].lines[0].context);
+        assert.equal(result.groups[0].lines[0].text, "Context 1");
+        assert.equal(result.groups[3].type, "header");
+        assert.equal(result.groups[3].lines.length, 1);
+        assert.equal(result.groups[3].lines[0].type, "header");
+        assert.isTrue(result.groups[3].lines[0].context);
+        assert.equal(result.groups[3].lines[0].text, "Context 2");
     });
     it("should skip lines with backslash prefixes", function() {
         var text =
@@ -77,14 +80,16 @@ describe("DiffParser", function() {
         var result = parser.parse()[0];
         assert.equal(result.name, "example.cc");
         assert.equal(result.groups.length, 4);
-        assert.equal(result.groups[0].length, 1);
-        assert.equal(result.groups[0][0].type, "header");
-        assert.isFalse(result.groups[0][0].context, false);
-        assert.equal(result.groups[0][0].text, "Context 1");
-        assert.equal(result.groups[2].length, 2);
-        assert.equal(result.groups[2][0].type, "remove");
-        assert.equal(result.groups[2][0].text, "Example line 1");
-        assert.equal(result.groups[2][1].type, "add");
-        assert.equal(result.groups[2][1].text, "Example line 2");
+        assert.equal(result.groups[0].type, "header");
+        assert.equal(result.groups[0].lines.length, 1);
+        assert.equal(result.groups[0].lines[0].type, "header");
+        assert.isFalse(result.groups[0].lines[0].context, false);
+        assert.equal(result.groups[0].lines[0].text, "Context 1");
+        assert.equal(result.groups[2].type, "delta");
+        assert.equal(result.groups[2].lines.length, 2);
+        assert.equal(result.groups[2].lines[0].type, "remove");
+        assert.equal(result.groups[2].lines[0].text, "Example line 1");
+        assert.equal(result.groups[2].lines[1].type, "add");
+        assert.equal(result.groups[2].lines[1].text, "Example line 2");
     });
 });

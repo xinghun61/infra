@@ -30,18 +30,17 @@ DiffBuilder.prototype.emitDiff = function(diff)
 // Moves and copies need a header at the start of the file.
 DiffBuilder.prototype.emitMoveHeader = function(text)
 {
-    var section = document.createElement("div");
-    this.output.appendChild(section);
     var line = new DiffLine("header");
     line.text = text;
-    this.emitLine(section, line);
+    this.emitGroup(new DiffGroup("header", [line]));
 };
 
 DiffBuilder.prototype.emitGroup = function(group, beforeSection)
 {
     var section = document.createElement("div");
-    for (var i = 0; i < group.length; ++i)
-        this.emitLine(section, group[i]);
+    section.className = "section " + group.type;
+    for (var i = 0; i < group.lines.length; ++i)
+        this.emitLine(section, group.lines[i]);
     this.output.insertBefore(section, beforeSection);
 };
 
