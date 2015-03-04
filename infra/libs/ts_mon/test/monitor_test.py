@@ -4,6 +4,7 @@
 
 import argparse
 import copy
+import tempfile
 import unittest
 
 import mock
@@ -25,7 +26,7 @@ class GlobalsTest(unittest.TestCase):
     monitor._default_target = None
 
   @mock.patch('socket.getfqdn')
-  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.monitor.DeviceTarget')
   def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
     singleton = object()
@@ -44,7 +45,7 @@ class GlobalsTest(unittest.TestCase):
     self.assertIs(monitor._default_target, singleton)
 
   @mock.patch('socket.getfqdn')
-  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.monitor.DeviceTarget')
   def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
     singleton = object()
@@ -62,7 +63,7 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('', '', 'foo')
     self.assertIs(monitor._default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.ApiMonitor')
   def test_monitor_args(self, fake_monitor):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -75,7 +76,18 @@ class GlobalsTest(unittest.TestCase):
         '/path/to/creds.p8.json', 'https://foo.tld/api')
     self.assertIs(monitor._global_monitor, singleton)
 
-  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.DryMonitor')
+  def test_dryrun_args(self, fake_monitor):
+    singleton = object()
+    fake_monitor.return_value = singleton
+    p = argparse.ArgumentParser()
+    monitor.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-endpoint', 'file://foo.txt'])
+    monitor.process_argparse_options(args)
+    fake_monitor.assert_called_once_with('foo.txt')
+    self.assertIs(monitor._global_monitor, singleton)
+
+  @mock.patch('infra.libs.ts_mon.monitor.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.monitor.DeviceTarget')
   def test_device_args(self, fake_target, _fake_monitor):
     singleton = object()
@@ -91,7 +103,7 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('reg', 'net', 'host')
     self.assertIs(monitor._default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.monitor.Monitor')
+  @mock.patch('infra.libs.ts_mon.monitor.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.monitor.TaskTarget')
   def test_task_args(self, fake_target, _fake_monitor):
     singleton = object()
@@ -121,11 +133,11 @@ class GlobalsTest(unittest.TestCase):
       monitor.send(mock.MagicMock())
 
 
-class MonitorTest(unittest.TestCase):
+class ApiMonitorTest(unittest.TestCase):
 
   @mock.patch('infra.libs.ts_mon.monitor.acquisition_api')
   def test_init(self, fake_api):
-    _ = monitor.Monitor('/path/to/creds.p8.json', 'https://www.tld/api')
+    _ = monitor.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api')
     fake_api.AcquisitionCredential.Load.assert_called_once_with(
         '/path/to/creds.p8.json')
     fake_api.AcquisitionApi.assert_called_once_with(
@@ -136,7 +148,7 @@ class MonitorTest(unittest.TestCase):
   def test_send(self, _fake_api):
     fake_metric = mock.MagicMock(_name='test')
     fake_metric._target = mock.MagicMock()
-    m = monitor.Monitor('/path/to/creds.p8.json', 'https://www.tl/api')
+    m = monitor.ApiMonitor('/path/to/creds.p8.json', 'https://www.tl/api')
     m.send(fake_metric)
     self.assertEquals(fake_metric._populate_metric_pb.call_count, 1)
     self.assertEquals(fake_metric._populate_fields_pb.call_count, 1)
@@ -148,7 +160,7 @@ class MonitorTest(unittest.TestCase):
     fake_metric = mock.MagicMock(_name='test')
     fake_metric._target = None
     monitor._default_target = mock.MagicMock()
-    m = monitor.Monitor('/path/to/creds.p8.json', 'https://www.tl/api')
+    m = monitor.ApiMonitor('/path/to/creds.p8.json', 'https://www.tl/api')
     m.send(fake_metric)
     self.assertEquals(fake_metric._populate_metric_pb.call_count, 1)
     self.assertEquals(fake_metric._populate_fields_pb.call_count, 1)
@@ -160,6 +172,18 @@ class MonitorTest(unittest.TestCase):
     fake_metric = mock.MagicMock(_name='test')
     fake_metric._target = None
     monitor._default_target = None
-    m = monitor.Monitor('/path/to/creds.p8.json', 'https://www.tl/api')
+    m = monitor.ApiMonitor('/path/to/creds.p8.json', 'https://www.tl/api')
     with self.assertRaises(MonitoringNoConfiguredTargetError):
       m.send(fake_metric)
+
+
+class DryMonitorTest(unittest.TestCase):
+
+  def test_send(self):
+    with tempfile.NamedTemporaryFile(delete=True) as f:
+      m = monitor.DryMonitor(f.name)
+      fake_metric = mock.MagicMock(_name='test')
+      fake_metric._target = mock.MagicMock()
+      m.send(fake_metric)
+      self.assertTrue(
+          any(['name: "crit/test"\n' == line for line in f.readlines()]))

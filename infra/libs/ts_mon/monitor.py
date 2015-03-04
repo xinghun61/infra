@@ -40,6 +40,7 @@ import socket
 from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
+from infra.libs import logs
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 from infra.libs.ts_mon.target import DeviceTarget, TaskTarget
@@ -62,7 +63,7 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-endpoint',
       default='https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
-      help='url to post monitoring metrics to')
+      help='url (including file://) to post monitoring metrics to')
   parser.add_argument(
       '--ts-mon-credentials',
       help='path to a pkcs8 json credential file')
@@ -128,7 +129,10 @@ def process_argparse_options(args):
   """
   global _global_monitor
   global _default_target
-  _global_monitor = Monitor(args.ts_mon_credentials, args.ts_mon_endpoint)
+  if args.ts_mon_endpoint.startswith('file://'):
+    _global_monitor = DryMonitor(args.ts_mon_endpoint[len('file://'):])
+  else:
+    _global_monitor = ApiMonitor(args.ts_mon_credentials, args.ts_mon_endpoint)
 
   if args.ts_mon_target_type == 'device':
     _default_target = DeviceTarget(
@@ -161,7 +165,7 @@ def _logging_callback(resp, content):  # pragma: no cover
 
 
 class Monitor(object):
-  """Class encapsulating the ability to send metrics to the api.
+  """Abstract base class encapsulating the ability to collect and send metrics.
 
   This is a singleton class. There should only be one instance of a Monitor at
   a time. It will be created and initialized by process_argparse_options. It
@@ -169,6 +173,26 @@ class Monitor(object):
   Metrics may be initialized before the underlying Monitor. If it does not exist
   at the time that a Metric is sent, an exception will be raised.
   """
+  def construct_metric_pb(self, metric):
+    # TODO(agable): start using the /crit/ prefix when we have real quota,
+    # instead of just using the crit/ subspace of /acquisitions/monitoring/.
+    metric_pb = metrics_pb2.MetricsData(name='crit/' + metric._name)
+
+    metric._populate_metric_pb(metric_pb)
+    metric._populate_fields_pb(metric_pb)
+
+    if metric._target:
+      metric._target._populate_target_pb(metric_pb)
+    elif _default_target:
+      _default_target._populate_target_pb(metric_pb)
+    else:
+      raise MonitoringNoConfiguredTargetError(metric._name)
+
+    return metric_pb
+
+
+class ApiMonitor(Monitor):
+  """Class which sends metrics to the monitoring api, the default behavior."""
   def __init__(self, credsfile, endpoint):
     """Process monitoring related command line flags and initialize api.
 
@@ -191,18 +215,17 @@ class Monitor(object):
     Raises:
       MonitoringNoConfiguredTargetError: if there is no Target object
     """
-    # TODO(agable): start using the /crit/ prefix when we have real quota,
-    # instead of just using the crit/ subspace of /acquisitions/monitoring/.
-    metric_pb = metrics_pb2.MetricsData(name='crit/' + metric._name)
-
-    metric._populate_metric_pb(metric_pb)
-    metric._populate_fields_pb(metric_pb)
-
-    if metric._target:
-      metric._target._populate_target_pb(metric_pb)
-    elif _default_target:
-      _default_target._populate_target_pb(metric_pb)
-    else:
-      raise MonitoringNoConfiguredTargetError(metric._name)
-
+    metric_pb = self.construct_metric_pb(metric)
     self._api.Send(metrics_pb2.MetricsCollection(data=[metric_pb]))
+
+
+class DryMonitor(Monitor):
+  """Class which writes metrics to a local file for debugging."""
+  def __init__(self, filepath):
+    self._logger = logging.getLogger('__name__')
+    filehandler = logging.FileHandler(filepath, 'a')
+    logs.add_handler(self._logger, handler=filehandler, level=logging.INFO)
+
+  def send(self, metric):
+    metric_pb = self.construct_metric_pb(metric)
+    self._logger.info('\n' + str(metric_pb))
