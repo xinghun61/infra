@@ -5,7 +5,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-action.html">
 <link rel="import" href="cr-diff.html">
 
-<polymer-element name="cr-issue-patchfile" attributes="file">
+<polymer-element name="cr-issue-patchfile" attributes="file mode active">
     <template>
         <link rel="stylesheet" href="common.css">
         <link rel="stylesheet" href="cr-issue-patchfile.css">
@@ -24,14 +24,16 @@ found in the LICENSE file. -->
             </div>
         </div>
 
-        <cr-diff id="diff" file="{{ file }}"></cr-diff>
+        <cr-diff id="diff" file="{{ file }}" mode="{{ mode }}" active="{{ active }}"></cr-diff>
     </template>
     <script>
         Polymer("cr-issue-patchfile", {
             created: function() {
                 this.file = null;
+                this.mode = "unified";
+                this.active = false;
             },
-            showDiff: function() {
+            showDiff: function(mode) {
                 return this.$.diff.showDiff();
             },
             hideDiff: function() {

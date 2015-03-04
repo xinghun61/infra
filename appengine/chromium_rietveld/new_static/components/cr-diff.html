@@ -7,7 +7,7 @@ found in the LICENSE file. -->
 
 <script src="../lib/highlight/highlight.pack.js"></script>
 
-<polymer-element name="cr-diff" attributes="file active">
+<polymer-element name="cr-diff" attributes="file active mode">
     <template>
         <link rel="stylesheet" href="cr-diff.css">
         <link rel="stylesheet" href="cr-diff-code-theme.css">
@@ -22,13 +22,26 @@ found in the LICENSE file. -->
                 active: { value: false, reflect: true },
             },
             created: function() {
+                this.active = false;
                 this.loading = false;
                 this.file = null;
+                this.mode = "unified";
+                this.activeMode = "unified";
             },
             fileChanged: function(oldValue, newValue) {
                 var output = this.$.output;
                 if (output.firstChild)
                     output.innerHTML = "";
+            },
+            modeChanged: function(oldValue, newValue) {
+                if (!this.active)
+                    return;
+                if (this.activeMode == this.mode)
+                    return;
+                // TODO(esprehn): Hiding the diff like this makes the page jump
+                // to the top when toggling modes.
+                this.hideDiff();
+                this.showDiff();
             },
             handleTap: function(event) {
                 var element = event.target;
@@ -40,9 +53,13 @@ found in the LICENSE file. -->
                         messages.file = this.file;
                         row.parentNode.insertBefore(messages, row.nextSibling);
                     }
-                    var numbers = row.querySelectorAll(".line-number");
+                    var numbers = row.querySelectorAll(".line-number").array();
                     var lineNumber;
                     var side;
+                    // TODO(esprehn): Need a better way to do this. For now we
+                    // pretend there's two numbers in side-by-side mode.
+                    if (this.mode == "side-by-side")
+                        numbers.push(numbers[0]);
                     if (row.classList.contains("remove")) {
                         lineNumber = numbers[0].getAttribute("value").toNumber();
                         side = "before";
@@ -61,11 +78,12 @@ found in the LICENSE file. -->
                     return Promise.resolve(this);
                 this.active = true;
                 this.loading = true;
+                this.activeMode = this.mode;
                 return this.file.loadDiff().then(function(diff) {
                     self.loading = false;
                     if (!self.active)
                         return;
-                    var builder = new DiffBuilder(self.file, self.$.output);
+                    var builder = self.createDiffBuilder();
                     builder.emitDiff(diff);
                 }).catch(function(e) {
                     self.loading = false;
@@ -85,7 +103,7 @@ found in the LICENSE file. -->
                 this.file.loadContext(line.contextLinesStart, line.contextLinesEnd).then(function(group) {
                     if (!section.parentNode)
                         return;
-                    var builder = new DiffBuilder(self.file, self.$.output);
+                    var builder = self.createDiffBuilder();
                     builder.emitGroup(group, section);
                     section.remove();
                 }).catch(function(e) {
@@ -94,6 +112,13 @@ found in the LICENSE file. -->
             },
             toggleDiff: function() {
                 return this.active ? this.hideDiff() : this.showDiff();
+            },
+            createDiffBuilder: function() {
+                if (this.activeMode == "unified")
+                    return new DiffBuilderUnified(this.file, this.$.output);
+                if (this.activeMode == "side-by-side")
+                    return new DiffBuilderSideBySide(this.file, this.$.output);
+                throw new Error("Invalid <cr-diff> mode.");
             },
         });
     </script>

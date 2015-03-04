@@ -4,15 +4,14 @@
 
 "use strict";
 
-function DiffBuilder(file, output)
+function DiffBuilderBase(file, output)
 {
     this.file = file;
     this.highlighter = new SyntaxHighlighter(file.language, file.containsEmbeddedLanguages);
     this.output = output;
-    Object.preventExtensions(this);
 }
 
-DiffBuilder.prototype.emitDiff = function(diff)
+DiffBuilderBase.prototype.emitDiff = function(diff)
 {
     if (diff.isImage) {
         var image = document.createElement("cr-diff-image");
@@ -23,57 +22,32 @@ DiffBuilder.prototype.emitDiff = function(diff)
     if (diff.from)
         this.emitMoveHeader(diff.from);
     var groups = diff.groups;
-    for (var i = 0; i < groups.length; ++i)
+    for (var i = 0; i < groups.length; ++i) {
         this.emitGroup(groups[i]);
+        // TODO(esprehn): Editing a multi line comment can end up making an
+        // entire file look like a comment. For now we reset the syntax
+        // highlighter between sections to avoid this in the common case. This
+        // will break headers in the middle of multi line comments, but that's
+        // very rare.
+        if (groups[i].type == "header")
+            this.highlighter.resetSyntaxState();
+    }
 };
 
 // Moves and copies need a header at the start of the file.
-DiffBuilder.prototype.emitMoveHeader = function(text)
+DiffBuilderBase.prototype.emitMoveHeader = function(text)
 {
     var line = new DiffLine("header");
     line.text = text;
     this.emitGroup(new DiffGroup("header", [line]));
 };
 
-DiffBuilder.prototype.emitGroup = function(group, beforeSection)
+DiffBuilderBase.prototype.emitGroup = function(group, beforeSection)
 {
-    var section = document.createElement("div");
-    section.className = "section " + group.type;
-    for (var i = 0; i < group.lines.length; ++i)
-        this.emitLine(section, group.lines[i]);
-    this.output.insertBefore(section, beforeSection);
+    throw new Error("Subclasses must implement emitLine.");
 };
 
-DiffBuilder.prototype.emitLine = function(section, line)
-{
-    var file = this.file;
-
-    var row = document.createElement("div");
-    row.className = "row " + line.type;
-
-    row.appendChild(this.createLineNumber(line, line.beforeNumber, "remove"));
-    row.appendChild(this.createLineNumber(line, line.afterNumber, "add"));
-    row.appendChild(this.createText(line));
-
-    var contextAction = this.createContextAction(section, line);
-    if (contextAction)
-        row.appendChild(contextAction);
-
-    section.appendChild(row);
-
-    var messages = this.createMessages(line);
-    if (messages)
-        section.appendChild(messages);
-
-    // TODO(esprehn): Editing a multi line comment can end up making an entire file
-    // look like a comment. For now we reset the syntax highlighter between
-    // sections to avoid this in the common case. This will break headers
-    // in the middle of multi line comments, but that's very rare.
-    if (line.type == "header")
-        this.highlighter.resetSyntaxState();
-};
-
-DiffBuilder.prototype.createContextAction = function(section, line)
+DiffBuilderBase.prototype.createContextAction = function(section, line)
 {
     if (!line.context)
         return null;
@@ -85,18 +59,18 @@ DiffBuilder.prototype.createContextAction = function(section, line)
     return action;
 };
 
-DiffBuilder.prototype.createLineNumber = function(line, number, type)
+DiffBuilderBase.prototype.createLineNumber = function(line, number, type)
 {
     var div = document.createElement("div");
     div.className = "line-number";
-    if (line.type == "both" || line.type == type)
-        div.setAttribute("value", number);
-    else if (line.type == "header")
+    if (line.type == "header")
         div.setAttribute("value", "@@");
+    else if (line.type == "both" || line.type == type)
+        div.setAttribute("value", number);
     return div;
 };
 
-DiffBuilder.prototype.createText = function(line)
+DiffBuilderBase.prototype.createText = function(line)
 {
     var div = document.createElement("div");
     div.className = "text";
@@ -113,14 +87,14 @@ DiffBuilder.prototype.createText = function(line)
     return div;
 };
 
-DiffBuilder.prototype.messagesForLine = function(line, number, type)
+DiffBuilderBase.prototype.messagesForLine = function(line, number, type)
 {
     if (line.type == "both" || line.type == type)
         return this.file.messages[number];
     return null;
 };
 
-DiffBuilder.prototype.createMessages = function(line)
+DiffBuilderBase.prototype.createMessages = function(line)
 {
     var beforeMessages = this.messagesForLine(line, line.beforeNumber, "remove");
     var afterMessages = this.messagesForLine(line, line.afterNumber, "add");

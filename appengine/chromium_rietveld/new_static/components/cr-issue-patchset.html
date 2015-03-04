@@ -7,7 +7,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-toolbar.html">
 <link rel="import" href="cr-try-results.html">
 
-<polymer-element name="cr-issue-patchset" attributes="patchset">
+<polymer-element name="cr-issue-patchset" attributes="patchset mode">
     <template>
         <link rel="stylesheet" href="common.css">
         <link rel="stylesheet" href="cr-issue-patchset.css">
@@ -18,11 +18,15 @@ found in the LICENSE file. -->
                     <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
                     <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                     <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
+                    <label class="side-by-side">
+                        <input type="checkbox" checked="{{ sideBySide }}">
+                        <span>Side by side</span>
+                    </label>
                 </div>
             </header>
             <div class="files">
                 <template repeat="{{ file in patchset.sourceFiles }}">
-                    <cr-issue-patchfile file="{{ file }}"></cr-issue-patchfile>
+                    <cr-issue-patchfile file="{{ file }}" mode="{{ mode }}"></cr-issue-patchfile>
                 </template>
             </div>
         </template>
@@ -34,12 +38,16 @@ found in the LICENSE file. -->
                         <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
                         <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                         <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
+                        <label class="side-by-side">
+                            <input type="checkbox" checked="{{ sideBySide }}">
+                            <span>Side by side</span>
+                        </label>
                     </div>
                 </template>
             </header>
             <div class="files">
                 <template repeat="{{ file in patchset.testFiles }}">
-                    <cr-issue-patchfile file="{{ file }}"></cr-issue-patchfile>
+                    <cr-issue-patchfile file="{{ file }}" mode="{{ mode }}"></cr-issue-patchfile>
                 </template>
             </div>
         </template>
@@ -54,9 +62,22 @@ found in the LICENSE file. -->
         </div>
     </template>
     <script>
+    (function() {
+        var SIDE_BY_SIDE_KEY = "cr-issue-patchset.sideBySide";
+
         Polymer("cr-issue-patchset", {
             created: function() {
                 this.patchset = null;
+                this.mode = "";
+                this.sideBySide = localStorage.getItem(SIDE_BY_SIDE_KEY) == "true";
+                this.updateMode();
+            },
+            sideBySideChanged: function(oldValue, newValue) {
+                this.updateMode();
+                localStorage.setItem(SIDE_BY_SIDE_KEY, newValue);
+            },
+            updateMode: function() {
+                this.mode = this.sideBySide ? "side-by-side" : "unified";
             },
             getFiles: function() {
                 // TODO(esprehn): Use an id instead.
@@ -76,5 +97,6 @@ found in the LICENSE file. -->
                 this.fire("show-try-dialog");
             },
         });
+    })();
     </script>
 </polymer-element>

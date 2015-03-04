@@ -28,6 +28,15 @@ header .ui-actions {
     flex-shrink: 0;
 }
 
+header .ui-actions a,
+header .ui-actions span {
+    vertical-align: middle;
+}
+
+.side-by-side {
+    margin-left: 8px;
+}
+
 .files {
     overflow-x: auto;
 }
