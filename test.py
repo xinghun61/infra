@@ -51,10 +51,9 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
                     for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))]
 
   # Use relative paths to shorten the command-line
-  args.extend(itertools.chain([d
-    for d in appengine_dirs
-    if os.path.isfile(os.path.join(d, 'app.yaml'))])
-              )
+  args.extend(itertools.chain(
+      [d for d in appengine_dirs if os.path.isfile(os.path.join(d, 'app.yaml'))]
+  ))
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
