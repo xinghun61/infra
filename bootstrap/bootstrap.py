@@ -186,6 +186,7 @@ def activate_env(env, deps):
     print '  Installing deps'
     print_deps(deps, indent=2, with_implicit=False)
     install(deps)
+    virtualenv.make_environment_relocatable(env)
     with open(manifest_path, 'wb') as f:
       f.write(repr(deps) + '\n')
 
