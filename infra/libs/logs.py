@@ -26,7 +26,7 @@ import logging
 import pytz
 
 
-class InfraFilter(logging.Filter):
+class InfraFilter(logging.Filter):  # pragma: no cover
   """Adds fields used by the infra-specific formatter.
 
   Fields added:
@@ -48,7 +48,7 @@ class InfraFilter(logging.Filter):
     return True
 
 
-class InfraFormatter(logging.Formatter):
+class InfraFormatter(logging.Formatter):  # pragma: no cover
   """Formats log messages in a standard way.
 
   This object processes fields added by :class:`InfraFilter`.
@@ -58,7 +58,8 @@ class InfraFormatter(logging.Formatter):
                                          '%(module)s:%(lineno)s] %(message)s')
 
 
-def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
+def add_handler(logger, handler=None, timezone='UTC',
+                level=logging.WARN):  # pragma: no cover
   """Configures and adds a handler to a logger the standard way for infra.
 
   Args:
@@ -92,7 +93,8 @@ def add_handler(logger, handler=None, timezone='UTC', level=logging.WARN):
   logger.setLevel(level=logging.DEBUG)
 
 
-def add_argparse_options(parser, default_level=logging.WARN):
+def add_argparse_options(parser,
+                         default_level=logging.WARN):  # pragma: no cover
   """Adds logging related options to an argparse.ArgumentParser.
 
   See also: :func:`process_argparse_options`
@@ -110,7 +112,7 @@ def add_argparse_options(parser, default_level=logging.WARN):
                  dest='log_level', help='Make the output really loud.')
 
 
-def process_argparse_options(options, logger=None):
+def process_argparse_options(options, logger=None):  # pragma: no cover
   """Handles logging argparse options added in 'add_argparse_options'.
 
   Configures 'logging' module.
