@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -71,45 +72,61 @@ func zipInputFiles(files []File, w io.Writer) error {
 		// Intentionally do not add timestamp or file mode to make zip archive
 		// deterministic. See also zip.FileInfoHeader() implementation.
 		fh := zip.FileHeader{
-			Name:               in.Name(),
-			UncompressedSize64: in.Size(),
-			Method:             zip.Deflate,
-		}
-		if fh.UncompressedSize64 > (1<<32)-1 {
-			fh.UncompressedSize = (1 << 32) - 1
-		} else {
-			fh.UncompressedSize = uint32(fh.UncompressedSize64)
-		}
-		// Use owner file mode bit to carry 'executable' flag.
-		if in.Executable() {
-			fh.SetMode(0700)
-		} else {
-			fh.SetMode(0600)
+			Name:   in.Name(),
+			Method: zip.Deflate,
 		}
 
-		src, err := in.Open()
-		if err != nil {
-			return err
+		mode := os.FileMode(0600)
+		if in.Executable() {
+			mode |= 0100
 		}
+		if in.Symlink() {
+			mode |= os.ModeSymlink
+		}
+		fh.SetMode(mode)
 
 		dst, err := writer.CreateHeader(&fh)
 		if err != nil {
-			src.Close()
 			return err
 		}
-
-		written, err := io.Copy(dst, src)
-		src.Close()
+		if in.Symlink() {
+			err = zipSymlinkFile(dst, in)
+		} else {
+			err = zipRegularFile(dst, in)
+		}
 		if err != nil {
 			return err
-		}
-
-		if uint64(written) != in.Size() {
-			return fmt.Errorf("File %s changed midway", in.Name())
 		}
 	}
 
 	return nil
+}
+
+func zipRegularFile(dst io.Writer, f File) error {
+	src, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	written, err := io.Copy(dst, src)
+	if err != nil {
+		return err
+	}
+	if uint64(written) != f.Size() {
+		return fmt.Errorf("File %s changed midway", f.Name())
+	}
+	return nil
+}
+
+func zipSymlinkFile(dst io.Writer, f File) error {
+	target, err := f.SymlinkTarget()
+	if err != nil {
+		return err
+	}
+	// Symlinks are zipped as text files with target path. os.ModeSymlink bit in
+	// the header distinguishes them from regular files.
+	_, err = dst.Write([]byte(target))
+	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,6 +136,12 @@ type manifestFile []byte
 func (m *manifestFile) Name() string     { return manifestName }
 func (m *manifestFile) Size() uint64     { return uint64(len(*m)) }
 func (m *manifestFile) Executable() bool { return false }
+func (m *manifestFile) Symlink() bool    { return false }
+
+func (m *manifestFile) SymlinkTarget() (string, error) {
+	return "", fmt.Errorf("Not a symlink: %s", m.Name())
+}
+
 func (m *manifestFile) Open() (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewReader(*m)), nil
 }

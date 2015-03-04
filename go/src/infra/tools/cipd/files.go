@@ -10,29 +10,39 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// File defines a single file to be added or extracted from a package.
+// File defines a single file to be added or extracted from a package. All paths
+// are slash separated (including symlink targets).
 type File interface {
 	// Name returns slash separated file path relative to a package root, e.g. "dir/dir/file".
 	Name() string
-	// Size returns size of the file.
+	// Size returns size of the file. 0 for symlinks.
 	Size() uint64
-	// Executable returns true if the file is executable. Only used for Linux\Mac archives.
+	// Executable returns true if the file is executable. Only used for Linux\Mac archives. false for symlinks.
 	Executable() bool
-	// Open opens the file for reading.
+	// Symlink returns true if the file is a symlink.
+	Symlink() bool
+	// SymlinkTarget return a path the symlink is pointing to.
+	SymlinkTarget() (string, error)
+	// Open opens the regular file for reading. Returns error for symlink files.
 	Open() (io.ReadCloser, error)
 }
 
 // Destination knows how to create files when extracting a package. It supports
 // transactional semantic by providing 'Begin' and 'End' methods. No changes
 // should be applied until End(true) is called. A call to End(false) should
-// discard any pending changes.
+// discard any pending changes. All paths are slash separated.
 type Destination interface {
 	// Begin initiates a new write transaction. Called before first CreateFile.
 	Begin() error
-	// CreateFile opens a writer to extract some package file to.
+	// CreateFile opens a writer to extract some package file to. 'name' must
+	// be a slash separated path relative to the destination root.
 	CreateFile(name string, executable bool) (io.WriteCloser, error)
+	// CreateSymlink creates a symlink (with absolute or relative target). 'name'
+	// must be a slash separated path relative to the destination root.
+	CreateSymlink(name string, target string) error
 	// End finalizes package extraction (commit or rollback, based on success).
 	End(success bool) error
 }
@@ -41,21 +51,37 @@ type Destination interface {
 // File system source.
 
 type fileSystemFile struct {
-	absPath    string
-	name       string
-	size       uint64
-	executable bool
+	absPath       string
+	name          string
+	size          uint64
+	executable    bool
+	symlinkTarget string
 }
 
-func (f *fileSystemFile) Name() string                 { return f.name }
-func (f *fileSystemFile) Size() uint64                 { return f.size }
-func (f *fileSystemFile) Executable() bool             { return f.executable }
-func (f *fileSystemFile) Open() (io.ReadCloser, error) { return os.Open(f.absPath) }
+func (f *fileSystemFile) Name() string     { return f.name }
+func (f *fileSystemFile) Size() uint64     { return f.size }
+func (f *fileSystemFile) Executable() bool { return f.executable }
+func (f *fileSystemFile) Symlink() bool    { return f.symlinkTarget != "" }
+
+func (f *fileSystemFile) SymlinkTarget() (string, error) {
+	if f.symlinkTarget != "" {
+		return f.symlinkTarget, nil
+	}
+	return "", fmt.Errorf("Not a symlink: %s", f.Name())
+}
+
+func (f *fileSystemFile) Open() (io.ReadCloser, error) {
+	if f.Symlink() {
+		return nil, fmt.Errorf("Opening a symlink is not allowed: %s", f.Name())
+	}
+	return os.Open(f.absPath)
+}
 
 // ScanFileSystem returns all files in some file system directory in
 // an alphabetical order. It returns only files, skipping directory entries
 // (i.e. empty directories are complete invisible). ScanFileSystem does not
-// follow and does not recognize symbolic links.
+// follow symbolic links, but recognizes them as such (see Symlink() method
+// of File interface).
 func ScanFileSystem(root string) ([]File, error) {
 	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
@@ -72,7 +98,37 @@ func ScanFileSystem(root string) ([]File, error) {
 		if err != nil {
 			return err
 		}
-		if info.Mode().IsRegular() {
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(abs)
+			if err != nil {
+				return err
+			}
+			if filepath.IsAbs(target) {
+				// Convert absolute path pointing somewhere in "root" into a path
+				// relative to the symlink file itself. Store other absolute paths as
+				// they are. For example, it allows to package virtual env directory
+				// that symlinks python binary from /usr/bin.
+				if strings.HasPrefix(target, root) {
+					target, err = filepath.Rel(filepath.Dir(abs), target)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				// Only relative paths that do not go outside "root" are allowed.
+				// A package must not depend on its installation path.
+				targetAbs := filepath.Clean(filepath.Join(filepath.Dir(abs), target))
+				if !strings.HasPrefix(targetAbs, root) {
+					return fmt.Errorf(
+						"Invalid symlink %s: a relative symlink pointing to a file outside of the package root", rel)
+				}
+			}
+			files = append(files, &fileSystemFile{
+				absPath:       abs,
+				name:          filepath.ToSlash(rel),
+				symlinkTarget: filepath.ToSlash(target),
+			})
+		} else if info.Mode().IsRegular() {
 			files = append(files, &fileSystemFile{
 				absPath:    abs,
 				name:       filepath.ToSlash(rel),
@@ -155,22 +211,12 @@ func (d *fileSystemDestination) Begin() (err error) {
 }
 
 func (d *fileSystemDestination) CreateFile(name string, executable bool) (io.WriteCloser, error) {
-	if d.tempDir == "" {
-		return nil, fmt.Errorf("Destination is not open")
-	}
-
-	path := filepath.Join(d.outDir, filepath.FromSlash(name))
-	if !filepath.IsAbs(path) {
-		return nil, fmt.Errorf("Invalid relative file name: %s", name)
-	}
-
 	_, ok := d.openFiles[name]
 	if ok {
 		return nil, fmt.Errorf("File %s is already open", name)
 	}
 
-	// Make sure full path exists.
-	err := os.MkdirAll(filepath.Dir(path), 0777)
+	path, err := d.prepareFilePath(name)
 	if err != nil {
 		return nil, err
 	}
@@ -195,6 +241,24 @@ func (d *fileSystemDestination) CreateFile(name string, executable bool) (io.Wri
 			delete(d.openFiles, name)
 		},
 	}, nil
+}
+
+func (d *fileSystemDestination) CreateSymlink(name string, target string) error {
+	path, err := d.prepareFilePath(name)
+	if err != nil {
+		return err
+	}
+
+	// Forbid relative symlinks to files outside of the destination root.
+	target = filepath.FromSlash(target)
+	if !filepath.IsAbs(target) {
+		targetAbs := filepath.Clean(filepath.Join(filepath.Dir(path), target))
+		if !strings.HasPrefix(targetAbs, d.outDir) {
+			return fmt.Errorf("Relative symlink is pointing outside of the destination dir: %s", name)
+		}
+	}
+
+	return os.Symlink(target, path)
 }
 
 func (d *fileSystemDestination) End(success bool) error {
@@ -231,6 +295,25 @@ func (d *fileSystemDestination) End(success bool) error {
 	}
 
 	return nil
+}
+
+// prepareFilePath performs steps common to CreateFile and CreateSymlink: it
+// does some validation, expands "name" to an absolute path and creates parent
+// directories for a future file. Returns absolute path where the file should
+// be put.
+func (d *fileSystemDestination) prepareFilePath(name string) (string, error) {
+	if d.tempDir == "" {
+		return "", fmt.Errorf("Destination is not open")
+	}
+	path := filepath.Clean(filepath.Join(d.outDir, filepath.FromSlash(name)))
+	if !strings.HasPrefix(path, d.outDir) {
+		return "", fmt.Errorf("Invalid relative file name: %s", name)
+	}
+	err := os.MkdirAll(filepath.Dir(path), 0777)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 type fileSystemDestinationFile struct {

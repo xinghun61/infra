@@ -73,7 +73,7 @@ func TestUtilities(t *testing.T) {
 			touch("dir/b/1")
 			touch("dir/.cipdpkg/abc")
 			touch("dir/.cipd/abc")
-			ensureLink("dir/a/link", "target")
+			ensureLink("dir/a/sym_link", "target")
 			files := makeStringSet()
 			err := scanPackageDir(filepath.Join(tempDir, "dir"), files)
 			So(err, ShouldBeNil)
@@ -85,6 +85,7 @@ func TestUtilities(t *testing.T) {
 			So(names, ShouldResemble, sort.StringSlice{
 				"a/1",
 				"a/2",
+				"a/sym_link",
 				"b/1",
 			})
 		})
@@ -111,6 +112,13 @@ func TestUtilities(t *testing.T) {
 
 		Convey("ensureFileGone works with missing file", func() {
 			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+		})
+
+		Convey("ensureFileGone works with symlink", func() {
+			ensureLink("abc", "target")
+			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+			_, err := os.Stat(filepath.Join(tempDir, "abc"))
+			So(os.IsNotExist(err), ShouldBeTrue)
 		})
 	})
 }
@@ -139,6 +147,7 @@ func TestDeployInstance(t *testing.T) {
 			inst := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a", false),
 				makeTestFile("some/executable", "data b", true),
+				makeTestSymlink("some/symlink", "executable"),
 			})
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
@@ -146,20 +155,27 @@ func TestDeployInstance(t *testing.T) {
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/executable*",
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/symlink:executable",
 				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
 				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
 				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
+				"some/symlink:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/symlink",
 			})
 			// Ensure symlinks are actually traversable.
 			body, err := ioutil.ReadFile(filepath.Join(tempDir, "some", "file", "path"))
 			So(err, ShouldBeNil)
 			So(string(body), ShouldEqual, "data a")
+			// Symlink to symlink is traversable too.
+			body, err = ioutil.ReadFile(filepath.Join(tempDir, "some", "symlink"))
+			So(err, ShouldBeNil)
+			So(string(body), ShouldEqual, "data b")
 		})
 
 		Convey("Redeploy same package instance", func() {
 			inst := makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path", "data a", false),
 				makeTestFile("some/executable", "data b", true),
+				makeTestSymlink("some/symlink", "executable"),
 			})
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
@@ -169,9 +185,11 @@ func TestDeployInstance(t *testing.T) {
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/executable*",
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/some/symlink:executable",
 				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
 				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
 				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
+				"some/symlink:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/symlink",
 			})
 		})
 
@@ -182,6 +200,9 @@ func TestDeployInstance(t *testing.T) {
 				makeTestFile("old only", "data c old", true),
 				makeTestFile("mode change 1", "data d", true),
 				makeTestFile("mode change 2", "data e", false),
+				makeTestSymlink("symlink unchanged", "target"),
+				makeTestSymlink("symlink changed", "old target"),
+				makeTestSymlink("symlink removed", "target"),
 			})
 			oldPkg.instanceID = "0000000000000000000000000000000000000000"
 
@@ -190,6 +211,8 @@ func TestDeployInstance(t *testing.T) {
 				makeTestFile("some/executable", "data b new", true),
 				makeTestFile("mode change 1", "data d", false),
 				makeTestFile("mode change 2", "data d", true),
+				makeTestSymlink("symlink unchanged", "target"),
+				makeTestSymlink("symlink changed", "new target"),
 			})
 			newPkg.instanceID = "1111111111111111111111111111111111111111"
 
@@ -204,11 +227,15 @@ func TestDeployInstance(t *testing.T) {
 				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/mode change 2*",
 				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/executable*",
 				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/symlink changed:new target",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/symlink unchanged:target",
 				".cipd/pkgs/test_package_B6R4ErK5ko/_current:1111111111111111111111111111111111111111",
 				"mode change 1:.cipd/pkgs/test_package_B6R4ErK5ko/_current/mode change 1",
 				"mode change 2:.cipd/pkgs/test_package_B6R4ErK5ko/_current/mode change 2",
 				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
 				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
+				"symlink changed:.cipd/pkgs/test_package_B6R4ErK5ko/_current/symlink changed",
+				"symlink unchanged:.cipd/pkgs/test_package_B6R4ErK5ko/_current/symlink unchanged",
 			})
 		})
 
@@ -339,6 +366,7 @@ func TestRemoveDeployed(t *testing.T) {
 			inst = makeTestInstance("test/package", []File{
 				makeTestFile("some/file/path2", "data a", false),
 				makeTestFile("some/executable2", "data b", true),
+				makeTestSymlink("some/symlink", "executable"),
 			})
 			_, err = DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)

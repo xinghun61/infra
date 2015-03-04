@@ -391,10 +391,11 @@ func ensureSymlink(symlink string, target string) error {
 	return nil
 }
 
-// scanPackageDir finds a set of regular files found in a directory with paths
-// relative to that directory to be symlinked into the site root. Skips package
-// service directories (.cipdpkg and .cipd) since they contains package deployer
-// gut files, not something that needs to be deployed.
+// scanPackageDir finds a set of regular files (and symlinks) in a package
+// instance directory to be symlinked into the site root. Adds paths relative
+// to 'root' to 'out'. Skips package service directories (.cipdpkg and .cipd)
+// since they contain package deployer gut files, not something that needs
+// to be deployed.
 func scanPackageDir(root string, out stringSet) error {
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -407,7 +408,7 @@ func scanPackageDir(root string, out stringSet) error {
 		if rel == packageServiceDir || rel == siteServiceDir {
 			return filepath.SkipDir
 		}
-		if info.Mode().IsRegular() {
+		if info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
 			out.add(rel)
 		}
 		return nil

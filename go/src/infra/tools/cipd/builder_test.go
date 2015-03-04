@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -64,6 +65,8 @@ func TestBuildInstance(t *testing.T) {
 			Input: []File{
 				makeTestFile("testing/qwerty", "12345", false),
 				makeTestFile("abc", "duh", true),
+				makeTestSymlink("rel_symlink", "abc"),
+				makeTestSymlink("abs_symlink", "/abc/def"),
 			},
 			Output:      &out,
 			PackageName: "testing",
@@ -84,6 +87,18 @@ func TestBuildInstance(t *testing.T) {
 				size: 3,
 				mode: 0700,
 				body: []byte("duh"),
+			},
+			zippedFile{
+				name: "rel_symlink",
+				size: 3,
+				mode: 0600 | os.ModeSymlink,
+				body: []byte("abc"),
+			},
+			zippedFile{
+				name: "abs_symlink",
+				size: 8,
+				mode: 0600 | os.ModeSymlink,
+				body: []byte("/abc/def"),
 			},
 			zippedFile{
 				// See structs.go, manifestName.
@@ -175,15 +190,28 @@ func readZip(data []byte) []zippedFile {
 ////////////////////////////////////////////////////////////////////////////////
 
 type testFile struct {
-	name       string
-	data       string
-	executable bool
+	name          string
+	data          string
+	executable    bool
+	symlinkTarget string
 }
 
 func (f *testFile) Name() string     { return f.name }
 func (f *testFile) Size() uint64     { return uint64(len(f.data)) }
 func (f *testFile) Executable() bool { return f.executable }
+func (f *testFile) Symlink() bool    { return f.symlinkTarget != "" }
+
+func (f *testFile) SymlinkTarget() (string, error) {
+	if f.symlinkTarget == "" {
+		return "", fmt.Errorf("Not a symlink: %s", f.Name())
+	}
+	return f.symlinkTarget, nil
+}
+
 func (f *testFile) Open() (io.ReadCloser, error) {
+	if f.Symlink() {
+		return nil, fmt.Errorf("Can't open symlink: %s", f.Name())
+	}
 	r := bytes.NewReader([]byte(f.data))
 	return ioutil.NopCloser(r), nil
 }
@@ -193,5 +221,12 @@ func makeTestFile(name string, data string, executable bool) File {
 		name:       name,
 		data:       data,
 		executable: executable,
+	}
+}
+
+func makeTestSymlink(name string, target string) File {
+	return &testFile{
+		name:          name,
+		symlinkTarget: target,
 	}
 }

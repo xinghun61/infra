@@ -55,6 +55,39 @@ func TestScanFileSystem(t *testing.T) {
 			So(file.Executable(), ShouldBeTrue)
 		})
 
+		Convey("Discovering absolute symlink outside of package works", func() {
+			// Pick a path outside of tempDir. Picking '/' wont work on Windows, so
+			// just use a parent directory.
+			target := filepath.Dir(tempDir)
+			writeSymlink(tempDir, "abs_symlink", target)
+			files, err := ScanFileSystem(tempDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 1)
+			ensureSymlinkTarget(files[0], filepath.ToSlash(target))
+		})
+
+		Convey("Discovering absolute symlink inside of package works", func() {
+			writeSymlink(tempDir, "a/b1/abs_symlink", filepath.Join(tempDir, "a", "b2", "c"))
+			files, err := ScanFileSystem(tempDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 1)
+			ensureSymlinkTarget(files[0], "../b2/c")
+		})
+
+		Convey("Discovering allowed relative symlink works", func() {
+			writeSymlink(tempDir, "a/b1/rel_symlink", filepath.FromSlash("../def"))
+			files, err := ScanFileSystem(tempDir)
+			So(err, ShouldBeNil)
+			So(len(files), ShouldEqual, 1)
+			ensureSymlinkTarget(files[0], "../def")
+		})
+
+		Convey("Relative symlink to outside of package are forbidden", func() {
+			writeSymlink(tempDir, "a/b1/rel_symlink", filepath.FromSlash("../../.."))
+			_, err := ScanFileSystem(tempDir)
+			So(err, ShouldNotBeNil)
+		})
+
 		Convey("Enumerating subdirectories", func() {
 			writeFile(tempDir, "a", "", 0666)
 			writeFile(tempDir, "b", "", 0666)
@@ -108,6 +141,22 @@ func writeFile(root string, path string, data string, mode os.FileMode) {
 	}
 }
 
+func writeSymlink(root string, path string, target string) {
+	abs := filepath.Join(root, filepath.FromSlash(path))
+	os.MkdirAll(filepath.Dir(abs), 0777)
+	err := os.Symlink(target, abs)
+	if err != nil {
+		panic("Failed to create symlink")
+	}
+}
+
+func ensureSymlinkTarget(file File, target string) {
+	So(file.Symlink(), ShouldBeTrue)
+	discoveredTarget, err := file.SymlinkTarget()
+	So(err, ShouldBeNil)
+	So(discoveredTarget, ShouldEqual, target)
+}
+
 func TestFileSystemDestination(t *testing.T) {
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
@@ -116,13 +165,18 @@ func TestFileSystemDestination(t *testing.T) {
 		dest := NewFileSystemDestination(destDir)
 		Reset(func() { os.RemoveAll(tempDir) })
 
-		writeToDest := func(name string, executable bool, data string) {
+		writeFileToDest := func(name string, executable bool, data string) {
 			writer, err := dest.CreateFile(name, executable)
 			if writer != nil {
 				defer writer.Close()
 			}
 			So(err, ShouldBeNil)
 			_, err = writer.Write([]byte(data))
+			So(err, ShouldBeNil)
+		}
+
+		writeSymlinkToDest := func(name string, target string) {
+			err := dest.CreateSymlink(name, target)
 			So(err, ShouldBeNil)
 		}
 
@@ -163,12 +217,38 @@ func TestFileSystemDestination(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("CreateFile rejects invalid relative paths", func() {
+			So(dest.Begin(), ShouldBeNil)
+			defer dest.End(true)
+
+			// Rel path that is still inside the package is ok.
+			wr, err := dest.CreateFile("a/b/c/../../../d", false)
+			So(err, ShouldBeNil)
+			wr.Close()
+
+			// Rel path pointing outside is forbidden.
+			_, err = dest.CreateFile("a/b/c/../../../../d", false)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("CreateSymlink rejects invalid relative paths", func() {
+			So(dest.Begin(), ShouldBeNil)
+			defer dest.End(true)
+
+			// Rel symlink to a file inside the destination is OK.
+			So(dest.CreateSymlink("a/b/c", "../.."), ShouldBeNil)
+			// Rel symlink to a file outside -> error.
+			So(dest.CreateSymlink("a/b/c", "../../.."), ShouldNotBeNil)
+		})
+
 		Convey("Committing bunch of files works", func() {
 			So(dest.Begin(), ShouldBeNil)
-			writeToDest("a", false, "a data")
-			writeToDest("exe", true, "exe data")
-			writeToDest("dir/c", false, "dir/c data")
-			writeToDest("dir/dir/d", false, "dir/dir/c data")
+			writeFileToDest("a", false, "a data")
+			writeFileToDest("exe", true, "exe data")
+			writeFileToDest("dir/c", false, "dir/c data")
+			writeFileToDest("dir/dir/d", false, "dir/dir/c data")
+			writeSymlinkToDest("abs_symlink", filepath.FromSlash(tempDir))
+			writeSymlinkToDest("dir/dir/rel_symlink", "../../a")
 			So(dest.End(true), ShouldBeNil)
 
 			// Ensure everything is there.
@@ -180,12 +260,14 @@ func TestFileSystemDestination(t *testing.T) {
 			}
 			So(names, ShouldResemble, []string{
 				"a",
+				"abs_symlink",
 				"dir/c",
 				"dir/dir/d",
+				"dir/dir/rel_symlink",
 				"exe",
 			})
 
-			// Ensure data is valid.
+			// Ensure data is valid (check first file only).
 			r, err := files[0].Open()
 			if r != nil {
 				defer r.Close()
@@ -196,8 +278,16 @@ func TestFileSystemDestination(t *testing.T) {
 			So(data, ShouldResemble, []byte("a data"))
 
 			// Ensure file mode is valid.
-			So(files[3].Name(), ShouldEqual, "exe")
-			So(files[3].Executable(), ShouldBeTrue)
+			So(files[5].Name(), ShouldEqual, "exe")
+			So(files[5].Executable(), ShouldBeTrue)
+
+			// Ensure absolute symlink if valid.
+			So(files[1].Name(), ShouldEqual, "abs_symlink")
+			ensureSymlinkTarget(files[1], filepath.FromSlash(tempDir))
+
+			// Ensure relative symlink is valid.
+			So(files[4].Name(), ShouldEqual, "dir/dir/rel_symlink")
+			ensureSymlinkTarget(files[4], "../../a")
 
 			// Ensure no temp files left.
 			allFiles, err := ScanFileSystem(tempDir)
@@ -206,8 +296,9 @@ func TestFileSystemDestination(t *testing.T) {
 
 		Convey("Rolling back bunch of files works", func() {
 			So(dest.Begin(), ShouldBeNil)
-			writeToDest("a", false, "a data")
-			writeToDest("dir/c", false, "dir/c data")
+			writeFileToDest("a", false, "a data")
+			writeFileToDest("dir/c", false, "dir/c data")
+			writeSymlinkToDest("dir/d", "c")
 			So(dest.End(false), ShouldBeNil)
 
 			// No dest directory.
@@ -228,14 +319,16 @@ func TestFileSystemDestination(t *testing.T) {
 
 			// Now deploy something to it.
 			So(dest.Begin(), ShouldBeNil)
-			writeToDest("a", false, "a data")
+			writeFileToDest("a", false, "a data")
+			writeSymlinkToDest("b", "a")
 			So(dest.End(true), ShouldBeNil)
 
 			// Overwritten.
 			files, err := ScanFileSystem(destDir)
 			So(err, ShouldBeNil)
-			So(len(files), ShouldEqual, 1)
+			So(len(files), ShouldEqual, 2)
 			So(files[0].Name(), ShouldEqual, "a")
+			So(files[1].Name(), ShouldEqual, "b")
 		})
 
 		Convey("Not overwriting a directory works", func() {
@@ -247,10 +340,11 @@ func TestFileSystemDestination(t *testing.T) {
 
 			// Now attempt deploy something to it, but roll back.
 			So(dest.Begin(), ShouldBeNil)
-			writeToDest("a", false, "a data")
+			writeFileToDest("a", false, "a data")
+			writeSymlinkToDest("b", "a")
 			So(dest.End(false), ShouldBeNil)
 
-			// Kept as it.
+			// Kept as is.
 			files, err := ScanFileSystem(destDir)
 			So(err, ShouldBeNil)
 			So(len(files), ShouldEqual, 1)
@@ -259,7 +353,7 @@ func TestFileSystemDestination(t *testing.T) {
 
 		Convey("Opening file twice fails", func() {
 			So(dest.Begin(), ShouldBeNil)
-			writeToDest("a", false, "a data")
+			writeFileToDest("a", false, "a data")
 			w, err := dest.CreateFile("a", false)
 			So(w, ShouldBeNil)
 			So(err, ShouldNotBeNil)

@@ -610,7 +610,16 @@ func inspectInstance(inst cipd.PackageInstance, listFiles bool) {
 	if listFiles {
 		logging.Infof("Package files:")
 		for _, f := range inst.Files() {
-			logging.Infof("  %v", f.Name())
+			if f.Symlink() {
+				target, err := f.SymlinkTarget()
+				if err != nil {
+					logging.Infof(" E %s (%s)", f.Name(), err)
+				} else {
+					logging.Infof(" S %s -> %s", f.Name(), target)
+				}
+			} else {
+				logging.Infof(" F %s", f.Name())
+			}
 		}
 	}
 }

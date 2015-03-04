@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -71,7 +72,7 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 	}()
 
 	// Use a nested function in a loop for defers.
-	extractOne := func(f File) error {
+	extractRegularFile := func(f File) error {
 		out, err := dest.CreateFile(f.Name(), f.Executable())
 		if err != nil {
 			return err
@@ -86,10 +87,22 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 		return err
 	}
 
+	extractSymlinkFile := func(f File) error {
+		target, err := f.SymlinkTarget()
+		if err != nil {
+			return err
+		}
+		return dest.CreateSymlink(f.Name(), target)
+	}
+
 	files := inst.Files()
 	for i, f := range files {
 		log.Infof("[%d/%d] inflating %s", i+1, len(files), f.Name())
-		err = extractOne(f)
+		if f.Symlink() {
+			err = extractSymlinkFile(f)
+		} else {
+			err = extractRegularFile(f)
+		}
 		if err != nil {
 			break
 		}
@@ -198,10 +211,45 @@ type fileInZip struct {
 	z *zip.File
 }
 
-func (f *fileInZip) Name() string                 { return f.z.Name }
-func (f *fileInZip) Size() uint64                 { return f.z.UncompressedSize64 }
-func (f *fileInZip) Executable() bool             { return (f.z.Mode() & 0100) != 0 }
-func (f *fileInZip) Open() (io.ReadCloser, error) { return f.z.Open() }
+func (f *fileInZip) Name() string  { return f.z.Name }
+func (f *fileInZip) Symlink() bool { return (f.z.Mode() & os.ModeSymlink) != 0 }
+
+func (f *fileInZip) Executable() bool {
+	if f.Symlink() {
+		return false
+	}
+	return (f.z.Mode() & 0100) != 0
+}
+
+func (f *fileInZip) Size() uint64 {
+	if f.Symlink() {
+		return 0
+	}
+	return f.z.UncompressedSize64
+}
+
+func (f *fileInZip) SymlinkTarget() (string, error) {
+	if !f.Symlink() {
+		return "", fmt.Errorf("Not a symlink: %s", f.Name())
+	}
+	r, err := f.z.Open()
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (f *fileInZip) Open() (io.ReadCloser, error) {
+	if f.Symlink() {
+		return nil, fmt.Errorf("Opening a symlink is not allowed: %s", f.Name())
+	}
+	return f.z.Open()
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ReaderAt implementation via ReadSeeker. Not concurrency safe, moves file

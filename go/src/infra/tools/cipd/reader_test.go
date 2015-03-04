@@ -108,6 +108,8 @@ func TestPackageReading(t *testing.T) {
 			Input: []File{
 				makeTestFile("testing/qwerty", "12345", false),
 				makeTestFile("abc", "duh", true),
+				makeTestSymlink("rel_symlink", "abc"),
+				makeTestSymlink("abs_symlink", "/abc/def"),
 			},
 			Output:      &out,
 			PackageName: "testing",
@@ -125,7 +127,6 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(dest.beginCalls, ShouldEqual, 1)
 		So(dest.endCalls, ShouldEqual, 1)
-		So(len(dest.files), ShouldEqual, 3)
 
 		// Verify file list, file data and flags are correct.
 		names := []string{}
@@ -135,10 +136,14 @@ func TestPackageReading(t *testing.T) {
 		So(names, ShouldResemble, []string{
 			"testing/qwerty",
 			"abc",
+			"rel_symlink",
+			"abs_symlink",
 			".cipdpkg/manifest.json",
 		})
 		So(string(dest.files[0].Bytes()), ShouldEqual, "12345")
 		So(dest.files[1].executable, ShouldBeTrue)
+		So(dest.files[2].symlinkTarget, ShouldEqual, "abc")
+		So(dest.files[3].symlinkTarget, ShouldEqual, "/abc/def")
 	})
 }
 
@@ -152,8 +157,9 @@ type testDestination struct {
 
 type testDestinationFile struct {
 	bytes.Buffer
-	name       string
-	executable bool
+	name          string
+	executable    bool
+	symlinkTarget string
 }
 
 func (d *testDestinationFile) Close() error { return nil }
@@ -170,6 +176,15 @@ func (d *testDestination) CreateFile(name string, executable bool) (io.WriteClos
 	}
 	d.files = append(d.files, f)
 	return f, nil
+}
+
+func (d *testDestination) CreateSymlink(name string, target string) error {
+	f := &testDestinationFile{
+		name:          name,
+		symlinkTarget: target,
+	}
+	d.files = append(d.files, f)
+	return nil
 }
 
 func (d *testDestination) End(success bool) error {
