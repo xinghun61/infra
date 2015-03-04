@@ -42,7 +42,7 @@ class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
 
   patch_false_rejection_count = ('https://chromium-cq-status.appspot.com/stats/'
                                  'query?project=%s&names='
-                                 'patchset-false-reject-count,attempt-count&'
+                                 'attempt-false-reject-count,attempt-count&'
                                  'interval_minutes=%d&count=1')
 
   pending_api_url = 'https://chromium-commit-queue.appspot.com/api/%s/pending'
@@ -93,16 +93,16 @@ class CheckCQHandler(webapp2.RequestHandler):  # pragma: no cover
     models.FalseRejectionSLOOffender(
         parent=project_model.key,
         hourly_patchset_attempts=item_grabber('attempt-count', hourly_stat),
-        hourly_patchset_rejections=item_grabber('patchset-false-reject-count',
+        hourly_patchset_rejections=item_grabber('attempt-false-reject-count',
                                                 hourly_stat),
         weekly_patchset_attempts=item_grabber('attempt-count', weekly_stat),
-        weekly_patchset_rejections=item_grabber('patchset-false-reject-count',
+        weekly_patchset_rejections=item_grabber('attempt-false-reject-count',
                                                 weekly_stat),
         hourly=(100.0 *
-            float(item_grabber('patchset-false-reject-count', hourly_stat)) /
+            float(item_grabber('attempt-false-reject-count', hourly_stat)) /
             float(item_grabber('attempt-count', hourly_stat) or 1)),
         weekly=(100.0 *
-            float(item_grabber('patchset-false-reject-count', weekly_stat)) /
+            float(item_grabber('attempt-false-reject-count', weekly_stat)) /
             float(item_grabber( 'attempt-count', weekly_stat) or 1)),
         ).put()
 
