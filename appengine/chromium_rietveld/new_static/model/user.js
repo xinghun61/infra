@@ -15,7 +15,8 @@ function User(name, email, displayName)
     Object.preventExtensions(this);
 }
 
-User.CURRENT_USER_URL = "/scrape/settings";
+// TODO: Eventually we need to handle the case where the user is not signed in.
+User.CURRENT_USER_URL = "/api/settings";
 User.DETAIL_URL = "/scrape/user_popup/{1}";
 
 User.EMAIL_PATTERN = /^([^@]+@[^ ]+) \((.+?)\)$/;
@@ -38,23 +39,12 @@ User.currentPromise = null;
     }
 })();
 
-User.parseCurrentUser = function(document)
+User.parseCurrentUser = function(data)
 {
-    if (!document.body)
+    if (!data)
         return null;
-    var b = document.body.querySelector("div[align=right] b");
-    if (!b)
-        return null;
-    var match = User.EMAIL_PATTERN.exec(b.textContent);
-    if (!match)
-        return null;
-    var user = new User(match[2], match[1], "me");
-    var script = document.body.querySelector("script");
-    if (script) {
-        var match = script.textContent.match(User.XSRF_TOKEN_PATTERN);
-        if (match)
-            user.xsrfToken = match[1];
-    }
+    var user = new User(data.nickname, data.email, "me");
+    user.xsrfToken = data.xsrf_token;
     User.current = user;
     return user;
 };
@@ -65,8 +55,8 @@ User.loadCurrentUser = function(options)
         return User.currentPromise;
     if (options && options.cached)
         return Promise.resolve(User.current);
-    User.currentPromise = loadDocument(User.CURRENT_USER_URL).then(function(document) {
-        return User.parseCurrentUser(document);
+    User.currentPromise = loadJSON(User.CURRENT_USER_URL).then(function(data) {
+        return User.parseCurrentUser(data);
     }).either(function(e) {
         User.currentPromise = null;
     });

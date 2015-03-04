@@ -3827,6 +3827,8 @@ def api_settings(_request):
   """Repond with user prefs in JSON."""
   account = models.Account.current_user_account
   return {
+    'xsrf_token': account.get_xsrf_token(),
+    'email': account.email,
     'nickname': account.nickname,
     'deprecated_ui': account.deprecated_ui,
     'default_context': account.default_context,

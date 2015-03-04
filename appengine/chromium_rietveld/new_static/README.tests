@@ -1,0 +1,6 @@
+To run JS unit tests:
+./node_modules/karma/bin/karma start
+
+The idea is to leave that running all the time while you are doing development.
+It automatically re-runs tests as you edit the source files.
+
