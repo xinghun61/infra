@@ -293,8 +293,8 @@ PatchFile.prototype.parseDiff = function(text)
     var diff = result[0];
     if (!diff.external || diff.isImage)
         return diff;
-    return this.loadContext(0, Number.MAX_SAFE_INTEGER).then(function(lines) {
-        diff.groups = [lines];
+    return this.loadContext(0, Number.MAX_SAFE_INTEGER).then(function(group) {
+        diff.groups = [group];
         return diff;
     });
 };
@@ -309,7 +309,7 @@ PatchFile.prototype.loadContext = function(start, end)
 
 PatchFile.prototype.parseContext = function(data)
 {
-    var lines = [];
+    var group = new DiffGroup("both");
     for (var i = 0; i < data.length; i += 2) {
         var newLine = PatchFile.parseContextLine(data[i][1][1][1]);
         var oldLine = PatchFile.parseContextLine(data[i][1][0][1]);
@@ -321,9 +321,9 @@ PatchFile.prototype.parseContext = function(data)
         line.beforeNumber = oldLine.lineNumber;
         line.afterNumber = newLine.lineNumber;
         line.text = newLine.text;
-        lines.push(line);
+        group.addLine(line);
     }
-    return lines;
+    return group;
 };
 
 PatchFile.parseContextLine = function(text)

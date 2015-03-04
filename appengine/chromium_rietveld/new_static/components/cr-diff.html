@@ -82,11 +82,11 @@ found in the LICENSE file. -->
             },
             showContext: function(line, section) {
                 var self = this;
-                this.file.loadContext(line.contextLinesStart, line.contextLinesEnd).then(function(lines) {
+                this.file.loadContext(line.contextLinesStart, line.contextLinesEnd).then(function(group) {
                     if (!section.parentNode)
                         return;
                     var builder = new DiffBuilder(self.file, self.$.output);
-                    builder.emitGroup(lines, section);
+                    builder.emitGroup(group, section);
                     section.remove();
                 }).catch(function(e) {
                     console.log(e);
