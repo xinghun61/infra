@@ -18,6 +18,10 @@ from util import tempdir, tempname, platform_tag, merge_deps, print_deps
 
 
 REPO_HOST = 'git+https://chromium.googlesource.com/'
+GSUTIL = os.path.join(
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'depot_tools', 'gsutil.py')
 
 
 def has_custom_build(name):
@@ -104,7 +108,9 @@ def process_gs(name, sha_ext, build, build_options):
   sha, ext = sha_ext.split('.', 1)
   with tempname(ext) as tmp:
     link = 'file://' + tmp
-    subprocess.check_call(['gsutil', 'cp', SOURCE_URL.format(sha_ext), tmp])
+    subprocess.check_call([
+        sys.executable, GSUTIL, '--force-version', '4.7', 'cp',
+        SOURCE_URL.format(sha_ext), tmp])
     with open(tmp, 'rb') as f:
       assert hashlib.sha1(f.read()).hexdigest() == sha
     if not has_custom_build(name):
@@ -122,8 +128,9 @@ def clear_wheelhouse():
 
 
 def push_wheelhouse():
-  status = subprocess.call(['gsutil', '-m', 'cp', os.path.join(WHEELHOUSE, '*'),
-                            WHEELS_URL])
+  status = subprocess.call([
+      sys.executable, GSUTIL, '--force-version', '4.7', '-m', 'cp',
+      os.path.join(WHEELHOUSE, '*'), WHEELS_URL])
   if status:
     print('Failed to upload wheels, falling back to local cache')
     if not os.path.isdir(LOCAL_STORAGE_PATH):
