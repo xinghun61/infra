@@ -15,3 +15,5 @@ function DiffLine(type)
     this.text = "";
     Object.preventExtensions(this);
 }
+
+DiffLine.BLANK_LINE = new DiffLine("blank");

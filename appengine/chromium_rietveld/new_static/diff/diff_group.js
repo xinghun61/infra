@@ -15,8 +15,6 @@ function DiffGroup(type, lines)
         lines.forEach(this.addLine, this);
 }
 
-DiffGroup.BLANK_LINE = new DiffLine("blank");
-
 DiffGroup.prototype.addLine = function(line)
 {
     this.lines.push(line);
@@ -41,8 +39,8 @@ DiffGroup.prototype.getSideBySidePairs = function()
     var j = 0;
     for ( ; i < this.removes.length || j < this.adds.length; ++i, ++j) {
         pairs[i] = {
-            left: this.removes[i] || DiffGroup.BLANK_LINE,
-            right: this.adds[j] || DiffGroup.BLANK_LINE,
+            left: this.removes[i] || DiffLine.BLANK_LINE,
+            right: this.adds[j] || DiffLine.BLANK_LINE,
         };
     }
     return pairs;
