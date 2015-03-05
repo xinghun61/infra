@@ -22,16 +22,20 @@
 
 .message-header {
     padding: 0.5em 16px;
+    display: -webkit-flex;
     display: flex;
 }
 
 .message-title {
     flex: 1;
+    -webkit-flex: 1;
+    display: -webkit-flex;
     display: flex;
 }
 
 .message-number {
     flex-shrink: 0;
+    -webkit-flex-shrink: 0;
     min-width: 2em;
     color: #646464;
     padding-left: 8px;
@@ -40,6 +44,7 @@
 
 .message-author {
     flex-shrink: 0;
+    -webkit-flex-shrink: 0;
     font-weight: bold;
 }
 

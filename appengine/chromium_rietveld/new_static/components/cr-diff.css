@@ -29,11 +29,13 @@
 
 .row,
 .pair {
+    display: -webkit-flex;
     display: flex;
 }
 
 .text {
     flex: 1;
+    -webkit-flex: 1;
     border-left: 1px solid #dcdcdc;
 }
 
@@ -44,6 +46,7 @@
 
 .show-context {
     align-self: center;
+    -webkit-align-self: center;
 }
 
 .line-number,
@@ -52,6 +55,7 @@
     word-wrap: break-word;
     font-family: Menlo, Monaco, monospace;
     flex-shrink: 0;
+    -webkit-flex-shrink: 0;
 }
 
 .line-number {

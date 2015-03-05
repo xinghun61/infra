@@ -10,12 +10,14 @@
 
 .file {
     padding: 0.25em 16px;
+    display: -webkit-flex;
     display: flex;
 }
 
 .file-name {
     padding: 0.25em 4px;
     flex: 1;
+    -webkit-flex: 1;
 }
 
 .file-name a {
@@ -28,6 +30,7 @@
 .file-removed {
     white-space: nowrap;
     flex-shrink: 0;
+    -webkit-flex-shrink: 0;
     padding: 0.25em 0;
 }
 

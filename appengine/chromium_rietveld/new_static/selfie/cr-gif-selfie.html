@@ -14,8 +14,10 @@ found in the LICENSE file. -->
         <link rel="stylesheet" href="../components/common.css">
         <style>
             :host {
+                display: -webkit-flex;
                 display: flex;
                 flex-direction: column;
+                -webkit-flex-direction: column;
             }
 
             #viewer,
@@ -25,9 +27,12 @@ found in the LICENSE file. -->
 
             #viewer {
                 position: relative;
+                display: -webkit-flex;
                 display: flex;
                 align-items: center;
+                -webkit-align-items: center;
                 justify-content: center;
+                -webkit-justify-content: center;
                 box-sizing: border-box;
             }
 
@@ -79,6 +84,7 @@ found in the LICENSE file. -->
 
             cr-toolbar {
                 justify-content: center;
+                -webkit-justify-content: center;
             }
 
             cr-toolbar button:last-child {

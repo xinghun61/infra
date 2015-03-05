@@ -16,22 +16,27 @@ found in the LICENSE file. -->
             :host { display: block; }
 
             .search-layout {
+                display: -webkit-flex;
                 display: flex;
             }
 
             .search-form {
                 width: 400px;
                 flex-shrink: 0;
+                -webkit-flex-shrink: 0;
             }
 
             .search-results header {
+                display: -webkit-flex;
                 display: flex;
                 align-items: center;
+                -webkit-align-items: center;
                 margin-right: 16px;
             }
 
             .search-results h2 {
                 flex: 1;
+                -webkit-flex: 1;
             }
 
             cr-issue-list {

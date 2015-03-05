@@ -63,8 +63,10 @@ found in the LICENSE file. -->
                 font-size: 1.1em;
                 -webkit-user-select: none;
                 cursor: default;
+                display: -webkit-flex;
                 display: flex;
                 align-items: center;
+                -webkit-align-items: center;
             }
 
             .page-header span,
@@ -74,6 +76,7 @@ found in the LICENSE file. -->
 
             .title {
                 flex: 1;
+                -webkit-flex: 1;
             }
 
             .title a:link,
@@ -85,12 +88,14 @@ found in the LICENSE file. -->
             }
 
             .view-links {
+                display: -webkit-flex;
                 display: flex;
             }
 
             .view-links a {
                 color: white;
                 flex-shrink: 0;
+                -webkit-flex-shrink: 0;
                 margin-right: 16px;
                 display: block;
             }
