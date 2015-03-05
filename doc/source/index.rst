@@ -27,7 +27,8 @@ General Information
 Usage Guides
 ------------
 
-* :doc:`new_master` - How to set up a new buildbot master.
+* :doc:`user_guide/new_master` - How to set up a new buildbot master.
+* :doc:`user_guide/recipes` - Recipes user guide.
 
 Contributer's Guides
 --------------------
