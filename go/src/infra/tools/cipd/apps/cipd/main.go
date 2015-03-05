@@ -71,26 +71,54 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 	return true
 }
 
-// serviceOptions defines command line arguments related to communication
+// ServiceOptions define command line arguments related to communication
 // with the remote service. Subcommands that interact with the network include
 // it.
-type serviceOptions struct {
+type ServiceOptions struct {
 	serviceURL         string
 	serviceAccountJSON string
 }
 
-func (opts *serviceOptions) registerFlags(f flag.FlagSet) {
+func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
 	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one")
 	f.StringVar(&opts.serviceAccountJSON, "service-account-json", "", "Path to JSON file with service account credentials to use.")
 }
 
-func (opts *serviceOptions) makeClient() (*http.Client, error) {
+func (opts *ServiceOptions) makeClient() (*http.Client, error) {
 	authOpts := auth.Options{}
 	if opts.serviceAccountJSON != "" {
 		authOpts.Method = auth.ServiceAccountMethod
 		authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
 	}
 	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+}
+
+// InputOptions define command line arguments that specify where to get data
+// for a new package. Subcommands that build packages include it.
+type InputOptions struct {
+	packageName string
+	inputDir    string
+}
+
+func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
+	f.StringVar(&opts.packageName, "name", "<name>", "package name")
+	f.StringVar(&opts.inputDir, "in", "<path>", "path to a directory with files to package")
+}
+
+// prepareInput processes InputOptions by collecting all files to be added to
+// a package and populating BuildInstanceOptions. Caller is still responsible to
+// fill out Output field of BuildInstanceOptions.
+func (opts *InputOptions) prepareInput() (out cipd.BuildInstanceOptions, err error) {
+	// TODO(vadimsh): Do something fancier.
+	files, err := cipd.ScanFileSystem(opts.inputDir)
+	if err != nil {
+		return
+	}
+	out = cipd.BuildInstanceOptions{
+		Input:       files,
+		PackageName: opts.packageName,
+	}
+	return
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,26 +130,23 @@ var cmdCreate = &subcommands.Command{
 	LongDesc:  "Builds and uploads a package instance file.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &createRun{}
-		c.serviceOptions.registerFlags(c.Flags)
-		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
-		c.Flags.StringVar(&c.inputDir, "in", "<path>", "path to a directory with files to package")
+		c.InputOptions.registerFlags(&c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type createRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
-
-	packageName string
-	inputDir    string
+	InputOptions
+	ServiceOptions
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := buildAndUploadInstance(c.packageName, c.inputDir, c.serviceOptions)
+	err := buildAndUploadInstance(c.InputOptions, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
 		return 1
@@ -129,7 +154,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildAndUploadInstance(packageName string, inputDir string, opts serviceOptions) error {
+func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) error {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
 		return err
@@ -138,11 +163,11 @@ func buildAndUploadInstance(packageName string, inputDir string, opts serviceOpt
 		f.Close()
 		os.Remove(f.Name())
 	}()
-	err = buildInstanceFile(packageName, inputDir, f.Name())
+	err = buildInstanceFile(f.Name(), inputOpts)
 	if err != nil {
 		return err
 	}
-	return registerInstanceFile(f.Name(), opts)
+	return registerInstanceFile(f.Name(), serviceOpts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,14 +181,14 @@ var cmdEnsure = &subcommands.Command{
 		c := &ensureRun{}
 		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
 		c.Flags.StringVar(&c.listFile, "list", "<path>", "a file with a list of '<package name> <version>' pairs")
-		c.serviceOptions.registerFlags(c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type ensureRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
+	ServiceOptions
 
 	rootDir  string
 	listFile string
@@ -173,7 +198,7 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := ensurePackages(c.rootDir, c.listFile, c.serviceOptions)
+	err := ensurePackages(c.rootDir, c.listFile, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while updating packages: %s", err)
 		return 1
@@ -181,7 +206,7 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func ensurePackages(root string, desiredStateFile string, opts serviceOptions) error {
+func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOptions) error {
 	f, err := os.Open(desiredStateFile)
 	if err != nil {
 		return err
@@ -192,8 +217,8 @@ func ensurePackages(root string, desiredStateFile string, opts serviceOptions) e
 		return err
 	}
 	return cipd.EnsurePackages(cipd.EnsurePackagesOptions{
-		ServiceURL:    opts.serviceURL,
-		ClientFactory: func() (*http.Client, error) { return opts.makeClient() },
+		ServiceURL:    serviceOpts.serviceURL,
+		ClientFactory: func() (*http.Client, error) { return serviceOpts.makeClient() },
 		Root:          root,
 		Packages:      desiredState,
 	})
@@ -208,21 +233,21 @@ var cmdListACL = &subcommands.Command{
 	LongDesc:  "Lists package path Access Control List",
 	CommandRun: func() subcommands.CommandRun {
 		c := &listACLRun{}
-		c.serviceOptions.registerFlags(c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type listACLRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
+	ServiceOptions
 }
 
 func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := listACL(args[0], c.serviceOptions)
+	err := listACL(args[0], c.ServiceOptions)
 	if err != nil {
 		reportError("Error while listing ACL: %s", err)
 		return 1
@@ -230,14 +255,14 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func listACL(packagePath string, opts serviceOptions) error {
-	client, err := opts.makeClient()
+func listACL(packagePath string, serviceOpts ServiceOptions) error {
+	client, err := serviceOpts.makeClient()
 	if err != nil {
 		return err
 	}
 	acls, err := cipd.FetchACL(cipd.FetchACLOptions{
 		ACLOptions: cipd.ACLOptions{
-			ServiceURL:  opts.serviceURL,
+			ServiceURL:  serviceOpts.serviceURL,
 			Client:      client,
 			PackagePath: packagePath,
 		},
@@ -305,14 +330,14 @@ var cmdEditACL = &subcommands.Command{
 		c.Flags.Var(&c.writer, "writer", "users or groups to grant WRITER role")
 		c.Flags.Var(&c.reader, "reader", "users or groups to grant READER role")
 		c.Flags.Var(&c.revoke, "revoke", "users or groups to remove from all roles")
-		c.serviceOptions.registerFlags(c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type editACLRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
+	ServiceOptions
 
 	owner  principalsList
 	writer principalsList
@@ -324,7 +349,7 @@ func (c *editACLRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.serviceOptions)
+	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while editing ACL: %s", err)
 		return 1
@@ -332,7 +357,7 @@ func (c *editACLRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func editACL(packagePath string, owners, writers, readers, revoke principalsList, opts serviceOptions) error {
+func editACL(packagePath string, owners, writers, readers, revoke principalsList, serviceOpts ServiceOptions) error {
 	changes := []cipd.PackageACLChange{}
 
 	makeChanges := func(action cipd.PackageACLChangeAction, role string, list principalsList) {
@@ -357,14 +382,14 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 		return nil
 	}
 
-	client, err := opts.makeClient()
+	client, err := serviceOpts.makeClient()
 	if err != nil {
 		return err
 	}
 
 	err = cipd.ModifyACL(cipd.ModifyACLOptions{
 		ACLOptions: cipd.ACLOptions{
-			ServiceURL:  opts.serviceURL,
+			ServiceURL:  serviceOpts.serviceURL,
 			Client:      client,
 			PackagePath: packagePath,
 		},
@@ -386,8 +411,7 @@ var cmdBuild = &subcommands.Command{
 	LongDesc:  "Builds a package instance producing *.cipd file.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &buildRun{}
-		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
-		c.Flags.StringVar(&c.inputDir, "in", "<path>", "path to a directory with files to package")
+		c.InputOptions.registerFlags(&c.Flags)
 		c.Flags.StringVar(&c.outputFile, "out", "<path>", "path to a file to write the final package to")
 		return c
 	},
@@ -395,16 +419,16 @@ var cmdBuild = &subcommands.Command{
 
 type buildRun struct {
 	subcommands.CommandRunBase
-	packageName string
-	inputDir    string
-	outputFile  string
+	InputOptions
+
+	outputFile string
 }
 
 func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := buildInstanceFile(c.packageName, c.inputDir, c.outputFile)
+	err := buildInstanceFile(c.outputFile, c.InputOptions)
 	if err != nil {
 		reportError("Error while building the package: %s", err)
 		return 1
@@ -418,23 +442,22 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildInstanceFile(packageName string, inputDir string, instanceFile string) error {
+func buildInstanceFile(instanceFile string, inputOpts InputOptions) error {
 	// Read the list of files to add to the package.
-	files, err := cipd.ScanFileSystem(inputDir)
+	buildOpts, err := inputOpts.prepareInput()
 	if err != nil {
 		return err
 	}
 
-	// Build the package.
+	// Prepare the destination, update build options with io.Writer to it.
 	out, err := os.OpenFile(instanceFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	err = cipd.BuildInstance(cipd.BuildInstanceOptions{
-		Input:       files,
-		Output:      out,
-		PackageName: packageName,
-	})
+	buildOpts.Output = out
+
+	// Build the package.
+	err = cipd.BuildInstance(buildOpts)
 	out.Close()
 	if err != nil {
 		os.Remove(instanceFile)
@@ -498,14 +521,14 @@ var cmdFetch = &subcommands.Command{
 		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
 		c.Flags.StringVar(&c.instanceID, "instance-id", "<instance id>", "package instance ID to fetch")
 		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
-		c.serviceOptions.registerFlags(c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type fetchRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
+	ServiceOptions
 
 	packageName string
 	instanceID  string
@@ -516,7 +539,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, c.serviceOptions)
+	err := fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while fetching the package: %s", err)
 		return 1
@@ -524,7 +547,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func fetchInstanceFile(packageName, instanceID, instanceFile string, opts serviceOptions) error {
+func fetchInstanceFile(packageName, instanceID, instanceFile string, serviceOpts ServiceOptions) error {
 	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
@@ -537,13 +560,13 @@ func fetchInstanceFile(packageName, instanceID, instanceFile string, opts servic
 		}
 	}()
 
-	client, err := opts.makeClient()
+	client, err := serviceOpts.makeClient()
 	if err != nil {
 		return err
 	}
 
 	err = cipd.FetchInstance(cipd.FetchInstanceOptions{
-		ServiceURL:  opts.serviceURL,
+		ServiceURL:  serviceOpts.serviceURL,
 		Client:      client,
 		PackageName: packageName,
 		InstanceID:  instanceID,
@@ -633,21 +656,21 @@ var cmdRegister = &subcommands.Command{
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &registerRun{}
-		c.serviceOptions.registerFlags(c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type registerRun struct {
 	subcommands.CommandRunBase
-	serviceOptions
+	ServiceOptions
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := registerInstanceFile(args[0], c.serviceOptions)
+	err := registerInstanceFile(args[0], c.ServiceOptions)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
 		return 1
@@ -655,13 +678,13 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, opts serviceOptions) error {
+func registerInstanceFile(instanceFile string, serviceOpts ServiceOptions) error {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
 	defer inst.Close()
-	client, err := opts.makeClient()
+	client, err := serviceOpts.makeClient()
 	if err != nil {
 		return err
 	}
@@ -670,7 +693,7 @@ func registerInstanceFile(instanceFile string, opts serviceOptions) error {
 	return cipd.RegisterInstance(cipd.RegisterInstanceOptions{
 		PackageInstance: inst,
 		UploadOptions: cipd.UploadOptions{
-			ServiceURL: opts.serviceURL,
+			ServiceURL: serviceOpts.serviceURL,
 			Client:     client,
 		},
 	})
