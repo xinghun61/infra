@@ -107,11 +107,11 @@
     'rev': 'd9c9a1a96b90f1bec52a7f4b9e89e5b0450056f2',
   },
   'numpy': {
-    'version': '1.10.0.dev_7e53e9b',
+    'version': '1.6.1',
     'build': '0',
     'repo': 'external/github.com/numpy/numpy',
-    'rev': '7e53e9b6f50ba98aafb73147917dfc39743fffd0',
-    # TODO(agable): Figure out whether this is actually necessary.
+    'rev': '68538b74483009c2c2d1644ef00397014f95a696',
+    # Required to run/test some appengine apps locally
   },
   'oauth2client': {
     'version': '1.4.1',
