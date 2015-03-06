@@ -44,7 +44,7 @@ def GenerateHmac(authtoken, t=None, **params):
   hmac_params = params.copy()
   hmac_params.update({'id': authtoken.client_id, 't': t})
   assert all(isinstance(obj, collections.Hashable)
-             for obj in hmac.params.iteritems())
+             for obj in hmac_params.iteritems())
   blob = urllib.urlencode(sorted(hmac_params.items()))
   logging.debug('Generating HMAC from blob: %s' % blob)
   return hmac.new(authtoken.secret, blob, hashlib.sha256).hexdigest()
@@ -92,7 +92,7 @@ def CheckHmacAuth(handler):
     if not authtoken:
       abort_auth('No auth token stored for client.')
       return
-    logging.debug('AuthToken is from client: %s' % authtoken.client)
+    logging.debug('AuthToken is from client: %s' % authtoken.client_name)
 
     then = int(self.request.get('t', '0'))
     if not then:
@@ -127,7 +127,8 @@ def CheckHmacAuth(handler):
 
     # Hooray, they made it!
     self.request.authenticated = 'hmac'
-    handler(self, *args, **kwargs)
+    finish_auth('Successfully authenticated via HMAC.')
+    return
 
   return wrapper
 

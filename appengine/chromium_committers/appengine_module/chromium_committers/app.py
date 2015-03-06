@@ -56,6 +56,7 @@ class MainPageHandler(webapp2.RequestHandler):
 
 class ListHandler(webapp2.RequestHandler):
 
+  @hmac_util.CheckHmacAuth
   def get(self, list_name):
     """Displays the list of chromium committers in plain text."""
     if not list_name:
@@ -70,7 +71,12 @@ class ListHandler(webapp2.RequestHandler):
       self.abort(404)
 
     app_id = self.request.headers.get('X-Appengine-Inbound-Appid')
-    if app_id not in TRUSTED_APP_IDS and not auth_util.CheckUserInList(emails):
+    valid_request = (
+        self.request.authenticated == 'hmac' or
+        app_id in TRUSTED_APP_IDS or
+        auth_util.CheckUserInList(emails)
+    )
+    if not valid_request:
       # Technically should be 403, but use 404 to avoid exposing list names.
       self.abort(404)
       return
