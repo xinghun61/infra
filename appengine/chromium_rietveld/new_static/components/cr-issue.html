@@ -47,7 +47,7 @@ found in the LICENSE file. -->
                     </template>
                     <template if="{{ issue.closed }}">
                         <button is="cr-button" on-tap="{{ toggleClosed }}">Reopen</button>
-                        <button is="cr-button" on-tap="{{ showRevertDialog }}">Revert</button>
+                        <button is="cr-button" on-tap="{{ startRevertDialog }}">Revert</button>
                     </template>
                     <div class="ui-actions">
                         <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
@@ -102,8 +102,7 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "";
             },
             attached: function() {
-                var params = Object.fromQueryString(window.location.search.substring(1));
-                if ('focus_revert' in params)
+                if (window.location.pathname.endsWith("/revert"))
                     this.showRevertDialog();
             },
             updateButterbar: function(event) {
@@ -153,12 +152,25 @@ found in the LICENSE file. -->
                 dialog.issue = this.issue;
                 this.showDialog(dialog);
             },
+            startRevertDialog: function() {
+                this.showRevertDialog();
+                var url = window.location.pathname;
+                if (!url.endsWith("/")) url += "/";
+                url += "revert";
+                window.history.pushState(null, null, url);
+            },
             showRevertDialog: function() {
                 if (!this.issue.closed || this.issue.patchsets.isEmpty())
                     return;
                 var dialog = document.createElement("cr-issue-revert-dialog");
                 dialog.patchset = this.issue.patchsets.last();
                 this.showDialog(dialog);
+                dialog.addEventListener("close", function() {
+                    var path = window.location.pathname;
+                    if (path.endsWith("/revert"))
+                        window.history.replaceState(
+                            null, null, path.slice(0, -6));
+                });
             },
             collapseAllMessages: function() {
                 this.issue.messages.forEach(function(message) {

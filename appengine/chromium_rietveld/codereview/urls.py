@@ -55,6 +55,7 @@ urlpatterns = patterns(
     (r'^mine$', 'mine'),
     (r'^starred$', 'starred'),
     (r'^(\d+)/(?:show)?$', 'show'),
+    (r'^(\d+)/revert$', 'show'),  # Auto-opens the revert CL dialog.
 
     (r'^upload$', 'upload'),
     (r'^(\d+)/edit$', 'edit'),

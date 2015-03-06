@@ -163,15 +163,13 @@
             <input type="submit" value="Submit">
           </div>
         </form>
-        {%if issue.closed %}
+        {%if auto_open_revert %}
         <script type="text/javascript">
           onload = function() {
-            if (M_getUrlParameter("focus_revert")) {
-              // Open up the revert popup.
-              M_toggleRevertReasonPopup(true);
-              // Switch focus to the revert reason textarea.
-              document.revert_form.revert_reason_textarea.focus(); 
-            }
+            // Open up the revert popup.
+            M_toggleRevertReasonPopup(true);
+            // Switch focus to the revert reason textarea.
+            document.revert_form.revert_reason_textarea.focus();
           }
         </script>
         {% endif %}

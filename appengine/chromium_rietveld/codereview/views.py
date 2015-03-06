@@ -1772,6 +1772,7 @@ def show(request):
     if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
       try_job.builder = try_job.parent_name + ':' + try_job.builder
 
+  auto_open_revert = request.issue.closed and request.path.endswith('/revert')
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1790,6 +1791,7 @@ def show(request):
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
+    'auto_open_revert': auto_open_revert,
   })
 
 
