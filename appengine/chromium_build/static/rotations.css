@@ -1,39 +1,47 @@
 #rotations {
-   border-collapse: collapse;
-   margin: 10px 0;
+    border-collapse: collapse;
+    margin: 10px 0;
 }
 
 #rotations td, #rotations th {
-   border: solid black 1px;
-   padding: 3px;
+    border: solid black 1px;
+    padding: 3px;
 }
 
 #rotations th {
-   white-space: nowrap;
+    white-space: nowrap;
 }
 
 #rotations td {
-   font-family: monospace;
-   max-width: 150px;
-   overflow: auto;
+    font-family: monospace;
+    max-width: 150px;
+    overflow: auto;
 }
 
 #rotations tr:hover {
     background-color: #CCC;
 }
 
+#settings_button {
+    margin-right: 10px;
+}
+
+.shortlink {
+    font-family: Consolas, monospace;
+}
+
 #settings {
-  display: none;
-  border: solid black 2px;
-  margin: 3px;
-  padding: 7px;
-  width: 200px;
+    display: none;
+    border: solid black 2px;
+    margin: 3px;
+    padding: 7px;
+    width: 200px;
 }
 
 .cb {
-  clear: both;
+    clear: both;
 }
 
 .centered {
-  align: center;
+    align: center;
 }

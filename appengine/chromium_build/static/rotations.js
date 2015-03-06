@@ -68,15 +68,15 @@
     }
   }
 
-  function reHighlight(match_string, color) {
-    if (! /\S/.test(match_string)) {
-      console.error('reHighlight() called with no match_string');
+  function reHighlight(regex, color) {
+    if (! /\S/.test(regex)) {
+      console.error('reHighlight() called with no regex');
     } else if (! /\S/.test(color)) {
       console.error('reHighlight() called with no color');
     } else {
       $('#rotations td').css('background-color', '');
       var to_highlight = $('#rotations td').filter(function() {
-        return $(this).text().indexOf(match_string) > -1;
+        return $(this).text().search(regex) > -1;
       });
       to_highlight.css('background-color', color);
     }
@@ -93,10 +93,10 @@
       var cookiename = 'chromecal-' + $(this).attr('id');
       var cookieval = $(this).val();
       $.cookie(cookiename, cookieval, { expires: 9999 });
-      reHighlight($('#highlight_string').val(), $('#highlight_color').val());
+      reHighlight($('#highlight_regex').val(), $('#highlight_color').val());
      });
 
-    reHighlight($('#highlight_string').val(), $('#highlight_color').val());
+    reHighlight($('#highlight_regex').val(), $('#highlight_color').val());
   }
 
   $(document).ready(function() {
