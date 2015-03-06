@@ -268,7 +268,7 @@ PatchFile.prototype.createDraftData = function(message)
 
 PatchFile.prototype.loadDiff = function()
 {
-    var file = this;
+    var self = this;
     var diff = this.diff;
     if (diff) {
         return new Promise(function(resolve, reject) {
@@ -278,23 +278,25 @@ PatchFile.prototype.loadDiff = function()
         });
     }
     return loadText(this.getDiffUrl()).then(function(text) {
-        var diff = file.parseDiff(text);
-        file.diff = diff;
-        return diff;
+        return self.parseDiff(text);
     });
 };
 
 PatchFile.prototype.parseDiff = function(text)
 {
+    var self = this;
     var parser = new DiffParser(text);
     var result = parser.parse();
     if (!result || !result[0] || result[0].name != this.name)
-        throw new Error("No diff available");
+        return Promise.reject(new Error("No diff available"));
     var diff = result[0];
-    if (!diff.external || diff.isImage)
-        return diff;
+    if (!diff.external || diff.isImage) {
+        self.diff = diff;
+        return Promise.resolve(diff);
+    }
     return this.loadContext(0, Number.MAX_SAFE_INTEGER).then(function(group) {
         diff.groups = [group];
+        self.diff = diff;
         return diff;
     });
 };
