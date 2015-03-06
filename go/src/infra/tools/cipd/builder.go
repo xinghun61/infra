@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 // BuildInstanceOptions defines options for BuildInstance function.
@@ -68,7 +69,18 @@ func zipInputFiles(files []File, w io.Writer) error {
 	writer := zip.NewWriter(w)
 	defer writer.Close()
 
-	for _, in := range files {
+	// Reports zipping progress to the log each second.
+	lastReport := time.Time{}
+	progress := func(count int) {
+		if time.Since(lastReport) > time.Second {
+			lastReport = time.Now()
+			log.Infof("Zipping files: %d files left", len(files)-count)
+		}
+	}
+
+	for i, in := range files {
+		progress(i)
+
 		// Intentionally do not add timestamp or file mode to make zip archive
 		// deterministic. See also zip.FileInfoHeader() implementation.
 		fh := zip.FileHeader{
