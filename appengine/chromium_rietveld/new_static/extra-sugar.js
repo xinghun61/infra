@@ -4,6 +4,9 @@
 
 "use strict";
 
+// This file contains extensions to the platform objects that add extra
+// general purpose sugaring that the sugar.js library is missing.
+
 (function() {
 
 function clampToLength(value, defaultValue, maxValue) {
