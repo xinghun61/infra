@@ -31,9 +31,15 @@ header .ui-actions {
     -webkit-flex-shrink: 0;
 }
 
-header .ui-actions a,
-header .ui-actions span {
-    vertical-align: middle;
+.ui-actions label {
+    display: inline-flex;
+    display: -webkit-inline-flex;
+    align-items: baseline;
+    -webkit-align-items: baseline;
+}
+
+.ui-actions input {
+    margin-right: 4px;
 }
 
 .side-by-side {
