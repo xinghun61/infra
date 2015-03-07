@@ -22,10 +22,7 @@ def boot_venv(script, env_path):
       sys.exit(-1)
 
     # not in the venv
-    if sys.platform.startswith('win'):
-      python = os.path.join(env_path, 'Scripts', 'python.exe')
-    else:
-      python = os.path.join(env_path, 'bin', 'python')
+    python = os.path.join(env_path, 'bin', 'python')
     if os.path.exists(python):
       os.environ[RUN_PY_RECURSION_BLOCKER] = "1"
       os.environ.pop('PYTHONPATH', None)

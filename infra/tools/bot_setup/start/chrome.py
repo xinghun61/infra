@@ -37,14 +37,10 @@ SVN_URLS = [
     'svn://svn.chromium.org/chrome-try'
 ]
 
-if sys.platform.startswith('win'):
-  PYTHON = sys.executable
-  GCLIENT_BIN = 'gclient.bat'
-else:
-  # BUG(hinoka): This is a temp fix for crbug.com/426081
-  # TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
-  PYTHON = '/usr/bin/python'
-  GCLIENT_BIN = 'gclient'
+# BUG(hinoka): This is a temp fix for crbug.com/426081
+# TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
+SYSTEM_PYTHON = '/usr/bin/python'
+
 
 def call(args, **kwargs):
   print 'Running %s' % ' '.join(args)
@@ -94,15 +90,14 @@ def seed_passwords(root_dir, password_file):
   for var in ['svn_user', 'svn_password', 'bot_password']:
     assert var in passwords
 
-  if not sys.platform.startswith('win'):
-    # Seed SVN passwords, except on Windows, where we don't bother installing.
-    svn_user = passwords['svn_user']
-    svn_password = passwords['svn_password']
-    for svn_url in SVN_URLS:
-      # Use subprocess.call() so that the password doesn't get printed.
-      subprocess.call(
-          ['svn', 'info', svn_url, '--username', svn_user,
-           '--password', svn_password])
+  # Seed SVN passwords.
+  svn_user = passwords['svn_user']
+  svn_password = passwords['svn_password']
+  for svn_url in SVN_URLS:
+    # Use subprocess.call() so that the password doesn't get printed.
+    subprocess.call(
+        ['svn', 'info', svn_url, '--username', svn_user,
+         '--password', svn_password])
 
   # Seed buildbot bot password.
   bot_password_path = os.path.join(
@@ -137,7 +132,7 @@ def run_slave(root_dir):
   #      Daemonizing is not a priority.
   #   2. The limits are already set in /etc/security/limits.conf.
   # This is why we can explicitly call run_slave.py
-  cmd = [PYTHON, run_slave_path, '--no_save', '--no-gclient-sync'
+  cmd = [SYSTEM_PYTHON, run_slave_path, '--no_save',
          '--python', 'buildbot.tac', '--nodaemon', '--logfile', 'twistd.log']
   call(cmd, cwd=slave_dir, env=env)
   print 'run_slave.py died'
@@ -166,11 +161,7 @@ def get_botmap_entry(slave_name):
 
 
 def start(root_dir, depot_tools, password_file, slave_name):
-  if sys.platform.startswith('win'):
-    # depot_tools msysgit can't find ~/.gitconfig unless we explicitly set HOME
-    os.environ['HOME'] = '%s%s' % (
-        os.environ.get('HOMEDRIVE'), os.environ.get('HOMEPATH'))
-  gclient = os.path.join(depot_tools, GCLIENT_BIN)
+  gclient = os.path.join(depot_tools, 'gclient')
   bot_entry = get_botmap_entry(slave_name)
   is_internal = bot_entry.get('internal', False)
   ensure_checkout(root_dir, gclient, is_internal)

@@ -15,16 +15,10 @@ from infra.tools.bot_setup.start import bot_hb as heartbeat
 from infra.tools.bot_setup.start import swarming
 
 
-if sys.platform.startswith('win'):
-  DEFAULT_ROOT = 'C:\\b'
-else:
-  DEFAULT_ROOT = '/b'
-
-
 def parse_args():
   parser = argparse.ArgumentParser()
   parser.add_argument('-s', '--slave_name')
-  parser.add_argument('-b', '--root_dir', default=DEFAULT_ROOT)
+  parser.add_argument('-b', '--root_dir', default='/b')
   parser.add_argument('-d', '--depot_tools')
   parser.add_argument('-p', '--password_file')
   return parser.parse_args()
