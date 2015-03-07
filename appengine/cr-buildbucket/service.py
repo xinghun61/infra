@@ -315,7 +315,8 @@ class BuildBucketService(object):
   def _check_lease(self, build, lease_key):
     if lease_key != build.lease_key:
       raise errors.LeaseExpiredError(
-          'lease_key is incorrect. Your lease might be expired.')
+          'lease_key for build %s is incorrect. Your lease might be expired.' %
+          build.key.id())
 
   def _clear_lease(self, build):
     """Clears build's lease attributes."""
