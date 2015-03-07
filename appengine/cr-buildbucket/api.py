@@ -5,6 +5,7 @@
 import datetime
 import functools
 import json
+import logging
 
 from components import auth
 from components import utils
@@ -393,10 +394,16 @@ class BuildBucketApi(remote.Service):
         msg.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
       else:
+        if not isinstance(ex, errors.Error):
+          logging.error(ex.message, exc_info=ex)
+          raise endpoints.InternalServerErrorException(ex.message)
+
+        assert type(ex) in ERROR_REASON_MAP
         msg.error = ErrorMessage(
             reason=ERROR_REASON_MAP[type(ex)],
             message=ex.message,
         )
+
       return msg
 
     results = self.service.heartbeat_batch(heartbeats)

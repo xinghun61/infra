@@ -304,6 +304,23 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.assertEqual(int(result2['build_id']), build2.key.id())
     self.assertTrue(result2['error']['reason'] == 'LEASE_EXPIRED')
 
+  def test_heartbeat_batch_with_internal_server_error(self):
+    self.test_build.lease_expiration_date = self.future_date
+
+    self.service.heartbeat_batch.return_value = [
+        (self.test_build.key.id(), None, ValueError())
+    ]
+
+    req = {
+        'heartbeats': [{
+          'build_id': self.test_build.key.id(),
+          'lease_key': 42,
+          'lease_expiration_ts': self.future_ts,
+        }],
+    }
+    with self.call_should_fail(500):
+        self.call_api('heartbeat_batch', req)
+
   ################################## SUCCEED ###################################
 
   def test_succeed(self):
