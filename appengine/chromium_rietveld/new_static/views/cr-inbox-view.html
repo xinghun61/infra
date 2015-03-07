@@ -83,7 +83,7 @@ found in the LICENSE file. -->
                     </div>
                 </div>
             </header>
-            <cr-issue-inbox issues="{{ issues }}" weeks="{{ filter }}"></cr-issue-inbox>
+            <cr-issue-inbox issues="{{ issues }}" weeks="{{ filter }}" showRecentActivity="{{ showRecentActivity }}"></cr-issue-inbox>
         </template>
     </template>
     <script>
@@ -113,7 +113,6 @@ found in the LICENSE file. -->
                 this.showRecentActivity = localStorage.getItem(SHOW_RECENT_ACTIVITY_KEY) == "true";
                 this.issues = new IssueList(User.current, {
                     cached: true,
-                    recentActivity: this.showRecentActivity,
                 });
                 this.loadIssues();
             },
@@ -121,10 +120,6 @@ found in the LICENSE file. -->
                 localStorage.setItem(FILTER_KEY, this.filter);
             },
             showRecentActivityChanged: function(oldValue, newValue) {
-                // TODO(esprehn): We shouldn't reload issues just to toggle this status,
-                // but it's a lot plumbing to pass it down otherwise.
-                this.issues.recentActivity = this.showRecentActivity;
-                this.loadIssues();
                 localStorage.setItem(SHOW_RECENT_ACTIVITY_KEY, this.showRecentActivity);
             },
             loadIssues: function() {

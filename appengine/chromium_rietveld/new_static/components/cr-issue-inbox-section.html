@@ -6,7 +6,7 @@ found in the LICENSE file. -->
 
 <link rel="import" href="cr-issue-list.html">
 
-<polymer-element name="cr-issue-inbox-section" attributes="issues weeks">
+<polymer-element name="cr-issue-inbox-section" attributes="issues weeks showRecentActivity">
     <template>
         <link rel="stylesheet" href="common.css">
         <style>
@@ -16,7 +16,7 @@ found in the LICENSE file. -->
             }
         </style>
 
-        <cr-issue-list issues="{{ visibleIssues }}" approvals></cr-issue-list>
+        <cr-issue-list issues="{{ visibleIssues }}" showRecentActivity="{{ showRecentActivity }}" approvals></cr-issue-list>
         <template if="{{ hiddenIssues.length }}">
             <polymer-ui-collapsible active="{{ showingHiddenIssues }}">
                 <a is="cr-action" class="polymer-ui-collapsible-header">
@@ -24,7 +24,7 @@ found in the LICENSE file. -->
                     {{ "issue" | pluralize(hiddenIssues.length) }}
                 </a>
                 <template if="{{ showingHiddenIssues }}">
-                    <cr-issue-list issues="{{ hiddenIssues }}" approvals></cr-issue-list>
+                    <cr-issue-list issues="{{ hiddenIssues }}" showRecentActivity="{{ showRecentActivity }}" approvals></cr-issue-list>
                 </template>
             </polymer-ui-collapsible>
         </template>
@@ -36,6 +36,7 @@ found in the LICENSE file. -->
             },
             created: function() {
                 this.weeks = "all";
+                this.showRecentActivity = false;
                 this.issues = null;
                 this.visibleIssues = [];
                 this.hiddenIssues = [];

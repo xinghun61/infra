@@ -19,7 +19,6 @@ function IssueList(user, options)
     this.closed = []; // Array<Issue>
     this.issues = {};
     this.cached = options && options.cached;
-    this.recentActivity = options && options.recentActivity;
     Object.preventExtensions(this);
 }
 
