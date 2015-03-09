@@ -13,6 +13,22 @@ Note:
   to nag pgervais@ and/or contribute.
 
 
+How to edit these docs
+======================
+
+This documentation is stored in `infra.git/master/doc/source
+<https://chromium.googlesource.com/infra/infra/+/master/doc/source>`_.
+It's written using a system called reStructuredText; `here's a quick
+primer <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_
+on its markup language.
+
+After making a change to a *.rst file (or making a new one), you can test it
+locally by doing this::
+
+  $ cd [...]/infra
+  $ ./docgen.py
+  $ google-chrome doc/html
+
 How to write docstrings
 -----------------------
 For documentation extracted from docstrings to show up properly in the final
