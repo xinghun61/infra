@@ -54,8 +54,9 @@ urlpatterns = patterns(
     (r'^all$', 'view_all'),
     (r'^mine$', 'mine'),
     (r'^starred$', 'starred'),
+    # Auto-opens the revert CL dialog.  Must be listed before other show URL.
+    (r'^(\d+)/revert$', 'show'),
     (r'^(\d+)/(?:show)?$', 'show'),
-    (r'^(\d+)/revert$', 'show'),  # Auto-opens the revert CL dialog.
 
     (r'^upload$', 'upload'),
     (r'^(\d+)/edit$', 'edit'),
