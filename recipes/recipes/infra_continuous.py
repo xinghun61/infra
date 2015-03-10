@@ -14,9 +14,13 @@ DEPS = [
   'step',
 ]
 
-
 def GenSteps(api):
-  api.gclient.set_config('infra')
+  project_name = api.properties.get('project')
+  if project_name not in ('infra', 'infra_internal'):  # pragma: no cover
+    raise ValueError('This recipe is not intended for project %s. '
+                     % project_name)
+
+  api.gclient.set_config(project_name)
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
 
@@ -30,9 +34,15 @@ def GenSteps(api):
 
 def GenTests(api):
   yield (
-    api.test('basic') +
+    api.test('infra') +
     api.properties.tryserver(
-        mastername='fake',
         buildername='infra_tester',
-        repo_name='infra')
+        project='infra')
+  )
+  yield (
+    api.test('infra_internal') +
+    api.properties.tryserver(
+        buildername='infra_tester',
+        project='infra_internal')
+
   )

@@ -5,7 +5,7 @@
       "-u",
       "[BUILD]/scripts/slave/bot_update.py",
       "--master",
-      "fake",
+      "chromium.testing.master",
       "--builder",
       "infra_tester",
       "--slave",
