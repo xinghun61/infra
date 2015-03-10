@@ -2312,7 +2312,7 @@ def _issue_as_dict(issue, messages, request=None):
     'reviewers': issue.reviewers,
     'required_reviewers': issue.required_reviewers,
     'all_required_reviewers_approved': issue.all_required_reviewers_approved,
-    'patchsets': [p.key.id() for p in issue.patchsets],
+    'patchsets': [key.id() for key in issue.patchsets.iter(keys_only=True)],
     'description': issue.description,
     'subject': issue.subject,
     'project': issue.project,
