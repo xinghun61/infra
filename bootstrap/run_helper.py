@@ -12,11 +12,34 @@ import os
 import sys
 
 
+def is_in_venv(env_path):
+  """True if already running in virtual env."""
+  abs_prefix = os.path.abspath(sys.prefix)
+  abs_env_path = os.path.abspath(env_path)
+  if abs_prefix == abs_env_path:
+    return True
+  # Ordinarily os.path.abspath(sys.prefix) == env_path is enough. But it doesn't
+  # work when virtual env is deployed as CIPD package. CIPD uses symlinks to
+  # stage files into installation root. When booting venv, something (python
+  # binary itself?) resolves the symlink ENV/bin/python to the target, making
+  # sys.prefix look like "<root>/.cipd/.../ENV". Note that "<root>/ENV" is not
+  # a symlink itself, but "<root>/ENV/bin/python" is.
+  if sys.platform == 'win32':
+    # TODO(vadimsh): Make it work for Win32 too.
+    return False
+  try:
+    return os.path.samefile(
+        os.path.join(abs_prefix, 'bin', 'python'),
+        os.path.join(abs_env_path, 'bin', 'python'))
+  except OSError:
+    return False
+
+
 def boot_venv(script, env_path):
   """Reexecs the top-level script in a virtualenv (if necessary)."""
   RUN_PY_RECURSION_BLOCKER = 'RUN_PY_RECURSION'
 
-  if os.path.abspath(sys.prefix) != env_path:
+  if not is_in_venv(env_path):
     if RUN_PY_RECURSION_BLOCKER in os.environ:
       print >> sys.stderr, 'TOO MUCH RECURSION IN RUN.PY'
       sys.exit(-1)
