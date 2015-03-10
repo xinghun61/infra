@@ -17,16 +17,6 @@ function PatchFileMessage(file)
     Object.preventExtensions(this);
 }
 
-PatchFileMessage.findDraftMessageId = function(document)
-{
-    if (!document)
-        return "";
-    var ids = document.querySelectorAll("input[name=message_id]");
-    if (!ids.length)
-        return "";
-    return ids[ids.length - 1].value;
-};
-
 PatchFileMessage.prototype.parseData = function(data)
 {
     this.author = User.forName(data.author, data.author_email);

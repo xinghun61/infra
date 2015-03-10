@@ -57,7 +57,10 @@ found in the LICENSE file. -->
                     self.fire("butterbar-update");
                     target.expanded = false;
                 }).catch(function(e) {
-                    self.fire("butterbar-update");
+                    self.fire("butterbar-update", {
+                        message: "Error saving. :(",
+                    });
+                    target.saving = false;
                     console.log(e);
                 });
             },

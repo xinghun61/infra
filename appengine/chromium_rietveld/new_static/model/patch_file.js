@@ -39,7 +39,7 @@ function PatchFile(patchset, name)
 
 PatchFile.DIFF_URL = "/download/issue{1}_{2}_{3}.diff";
 PatchFile.CONTEXT_URL = "/{1}/diff_skipped_lines/{2}/{3}/{4}/{5}/a/2000";
-PatchFile.COMMENT_URL = "/inline_draft";
+PatchFile.DRAFT_URL = "/api/{1}/{2}/{3}/draft_message";
 PatchFile.IMAGE_URL = "/{1}/image/{2}/{3}/{4}";
 
 PatchFile.MIXED_LANGUAGES = {
@@ -216,20 +216,25 @@ PatchFile.prototype.getContextUrl = function(start, end)
         encodeURIComponent(end));
 };
 
+PatchFile.prototype.getDraftUrl = function()
+{
+    return PatchFile.DRAFT_URL.assign(
+        encodeURIComponent(this.patchset.issue.id),
+        encodeURIComponent(this.patchset.id),
+        encodeURIComponent(this.id));
+};
+
 PatchFile.prototype.saveDraft = function(message, newText)
 {
     var self = this;
     var data = this.createDraftData(message);
     data.text = newText;
-    return sendFormData(PatchFile.COMMENT_URL, data).then(function(xhr) {
-        var id = PatchFileMessage.findDraftMessageId(xhr.response);
-        if (!id)
-            throw new Error("Cannot save draft");
-        // This isn't really the correct date, but it's good enough to just
-        // approximate that it was saved right now.
-        message.date = Date.utc.create();
-        message.messageId = id;
-        message.text = newText;
+    return sendFormData(this.getDraftUrl(), data, {
+        responseType: "json",
+    }).then(function(xhr) {
+        if (!(xhr.response instanceof Object))
+            throw new Error("Server error.");
+        message.parseData(xhr.response);
         self.addMessage(message);
         return true;
     });
@@ -243,10 +248,10 @@ PatchFile.prototype.discardDraft = function(message)
     }
     var self = this;
     var data = this.createDraftData(message)
-    data.old_text = message.text;
     data.text = "";
-    data.file = "";
-    return sendFormData(PatchFile.COMMENT_URL, data).then(function() {
+    return sendFormData(this.getDraftUrl(), data, {
+        responseType: "json",
+    }).then(function() {
         self.removeMessage(message);
         return true;
     });
@@ -255,12 +260,8 @@ PatchFile.prototype.discardDraft = function(message)
 PatchFile.prototype.createDraftData = function(message)
 {
     return {
-        snapshot: message.left ? "old" : "new",
         lineno: message.line,
-        side: message.left ? "a" : "b",
-        issue: this.patchset.issue.id,
-        patchset: this.patchset.id,
-        patch: this.id,
+        left: message.left,
         text: message.text,
         message_id: message.messageId,
     };

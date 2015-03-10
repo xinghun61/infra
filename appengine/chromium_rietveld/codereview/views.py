@@ -2952,6 +2952,60 @@ def inline_draft(request):
         '<font color="red">Error: %s; please report!</font>' %
         err.__class__.__name__)
 
+@deco.require_methods('POST')
+@deco.patch_required
+@deco.json_response
+def api_draft_message(request):
+  """/api/<issue>/<patchset>/<patch>/draft_message - Creates or updates a draft
+  message on a patch file.
+  """
+  user = request.user
+  patch = request.patch
+  patchset = request.patchset
+  issue = request.issue
+  left = (request.POST['left'] == 'true')
+  text = request.POST['text']
+  lineno = int(request.POST['lineno'])
+  message_id = request.POST['message_id']
+
+  # Get the existing message or create a new one.
+  if message_id:
+    comment = models.Comment.get_by_id(message_id, parent=patch.key)
+    if comment is None or not comment.draft or comment.author != user:
+      return HttpTextResponse(
+        'No comment exists with that id (%s)' % message_id, status=404)
+  else:
+    # Prefix with 'z' to avoid key names starting with digits.
+    message_id = 'z' + binascii.hexlify(_random_bytes(16))
+    comment = models.Comment(id=message_id, parent=patch.key)
+
+  # Saving an empty (or all whitespace) string as the text deletes the comment.
+  if not text.rstrip():
+    comment.key.delete()
+    models.Account.current_user_account.update_drafts(issue)
+    return None
+
+  comment.patch_key = patch.key
+  comment.lineno = lineno
+  comment.left = left
+  comment.text = text
+  comment.message_id = message_id
+  comment.put()
+  issue.calculate_draft_count_by_user()
+  issue.put()
+  models.Account.current_user_account.update_drafts(issue, have_drafts=True)
+
+  return {
+    'author': library.get_nickname(comment.author, True, request),
+    'author_email': comment.author.email(),
+    'date': str(comment.date),
+    'lineno': comment.lineno,
+    'text': comment.text,
+    'left': comment.left,
+    'draft': comment.draft,
+    'message_id': comment.message_id,
+  }
+
 
 def _inline_draft(request):
   """Helper to submit an in-line draft comment."""

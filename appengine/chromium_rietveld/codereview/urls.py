@@ -40,6 +40,7 @@ urlpatterns = patterns(
     (r'^scrape/user/([^/]+)$', 'show_user'),
     (r'^user/([^/]+)$', 'show_user'),
     (r'^api/user_inbox/([^/]+)$', 'api_user_inbox'),
+    (r'^api/([^/]+)/([^/]+)/([^/]+)/draft_message$', 'api_draft_message'),
 
     (r'^leaderboard/?$', RedirectView.as_view(url='/leaderboard/30')),
     (r'^leaderboard_json/(.+)$', 'leaderboard_json'),
