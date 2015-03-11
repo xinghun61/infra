@@ -144,9 +144,9 @@ found in the LICENSE file. -->
             </template>
 
             <cr-toolbar>
-                <button is="cr-button" primary on-tap="{{ send }}">Send</button>
+                <button is="cr-button" primary on-tap="{{ handleSend }}">Send</button>
                 <template if="{{ !issue.closed }}">
-                    <button is="cr-button"  on-tap="{{ sendAndCommit }}">Send + CQ</button>
+                    <button is="cr-button" on-tap="{{ handleSendAndCommit }}">Send + CQ</button>
                 </template>
                 <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                 <template if="{{ !issue.owner.isCurrentUser }}">
@@ -193,7 +193,10 @@ found in the LICENSE file. -->
                 this.reset();
                 this.$.dialog.close();
             },
-            sendAndCommit: function() {
+            handleSend: function(event) {
+                this.send();
+            },
+            handleSendAndCommit: function(event) {
                 this.send({commit: true});
             },
             send: function(options) {
@@ -201,18 +204,18 @@ found in the LICENSE file. -->
                 data.message = this.message;
                 data.addAsReviewer = this.addAsReviewer;
                 data.publishDrafts = true;
-                data.commit = options.commit;
+                data.commit = options && options.commit;
                 this.sending = true;
                 this.butterbarMessage = "Saving...";
                 this.issue.publish(data)
-                    .then(this.saveSuccess.bind(this))
-                    .catch(this.saveFailure.bind(this));
+                    .then(this.sendSuccess.bind(this))
+                    .catch(this.sendFailure.bind(this));
             },
-            saveSuccess: function() {
+            sendSuccess: function() {
                 this.fire("issue-refresh");
                 this.close();
             },
-            saveFailure: function(error) {
+            sendFailure: function(error) {
                 // TODO(esprehn): We should show an better error message.
                 this.sending = false;
                 this.butterbarMessage = "Error: " + error.message;
