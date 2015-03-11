@@ -4,6 +4,8 @@
   "Slave slave2-c7 is on version 87378f3474795c1426746bc5144e7459c2174b01",
   "Slave slave250-c4 is on version origin/master",
   "Slave slave260-c4 is on version 87378f3474795c1426746bc5144e7459c2174b01",
+  "Slave swarm-win1-c4 is on version origin/master",
   "Slave swarm1-c4 is on version origin/master",
-  "Slave swarm11-c4 is on version 87378f3474795c1426746bc5144e7459c2174b01"
+  "Slave swarm11-c4 is on version 87378f3474795c1426746bc5144e7459c2174b01",
+  "Slave winslave1-c4 is on version origin/master"
 ]

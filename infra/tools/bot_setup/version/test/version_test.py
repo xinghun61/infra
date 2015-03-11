@@ -17,6 +17,8 @@ ENABLED_SLAVES = [
   'slave260-c4',
   'swarm1-c4',
   'swarm11-c4',
+  'winslave1-c4',
+  'swarm-win1-c4',
 ]
 
 DISABLED_SLAVES = [
