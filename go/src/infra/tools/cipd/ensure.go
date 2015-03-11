@@ -89,7 +89,7 @@ type EnsurePackagesOptions struct {
 // actions to bring the state of the site root to desired one.
 func EnsurePackages(opts EnsurePackagesOptions) error {
 	// Make sure a package is specified only once.
-	seen := make(map[string]bool)
+	seen := make(map[string]bool, len(opts.Packages))
 	for _, p := range opts.Packages {
 		if seen[p.PackageName] {
 			return fmt.Errorf("Package %s is specified twice", p.PackageName)

@@ -1,0 +1,5 @@
+package: infra/tools/cipd/${platform}
+description: CIPD client binary.
+root: ../../go/bin
+data:
+  - file: cipd${exe_suffix}

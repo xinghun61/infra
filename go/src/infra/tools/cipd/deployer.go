@@ -167,7 +167,7 @@ func FindDeployed(root string) (out []PackageState, err error) {
 	}
 
 	// Read the package name from the package manifest. Skip broken stuff.
-	found := make(map[string]PackageState)
+	found := map[string]PackageState{}
 	keys := []string{}
 	for _, info := range infos {
 		// Attempt to read the manifest. If it is there -> valid package is found.
@@ -295,7 +295,7 @@ func packagePath(root string, pkg string, rest ...string) string {
 	if err != nil {
 		panic(fmt.Sprintf("Can't get absolute path of '%s'", result))
 	}
-	if !strings.HasPrefix(abs, root) {
+	if !isSubpath(abs, root) {
 		panic(fmt.Sprintf("Wrong path %s outside of root %s", abs, root))
 	}
 	return result

@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"infra/libs/auth"
@@ -71,9 +72,8 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 	return true
 }
 
-// ServiceOptions define command line arguments related to communication
-// with the remote service. Subcommands that interact with the network include
-// it.
+// ServiceOptions defines command line arguments related to communication
+// with the remote service. Subcommands that interact with the network embed it.
 type ServiceOptions struct {
 	serviceURL         string
 	serviceAccountJSON string
@@ -93,32 +93,125 @@ func (opts *ServiceOptions) makeClient() (*http.Client, error) {
 	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
 }
 
-// InputOptions define command line arguments that specify where to get data
-// for a new package. Subcommands that build packages include it.
+// PackageVars holds array of '-pkg-var' command line options.
+type PackageVars map[string]string
+
+func (vars *PackageVars) String() string {
+	// String() for empty vars used in -help output.
+	if len(*vars) == 0 {
+		return "key:value"
+	}
+	chunks := make([]string, 0, len(*vars))
+	for k, v := range *vars {
+		chunks = append(chunks, fmt.Sprintf("%s:%s", k, v))
+	}
+	return strings.Join(chunks, " ")
+}
+
+// Set is called by 'flag' package when parsing command line options.
+func (vars *PackageVars) Set(value string) error {
+	// <key>:<value> pair.
+	chunks := strings.Split(value, ":")
+	if len(chunks) != 2 {
+		return fmt.Errorf("Expecting <key>:<value> pair, got %q", value)
+	}
+	(*vars)[chunks[0]] = chunks[1]
+	return nil
+}
+
+// InputOptions defines command line arguments that specify where to get data
+// for a new package. Subcommands that build packages embed it.
 type InputOptions struct {
+	// Path to *.yaml file with package definition.
+	packageDef string
+	vars       PackageVars
+
+	// Alternative to 'pkg-def'.
 	packageName string
 	inputDir    string
 }
 
 func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
-	f.StringVar(&opts.packageName, "name", "<name>", "package name")
-	f.StringVar(&opts.inputDir, "in", "<path>", "path to a directory with files to package")
+	opts.vars = PackageVars{}
+
+	// Interface to accept package definition file.
+	f.StringVar(&opts.packageDef, "pkg-def", "", "*.yaml file that defines what to put into the package")
+	f.Var(&opts.vars, "pkg-var", "variables accessible from package definition file")
+
+	// Interface to accept a single directory (alternative to -pkg-def).
+	f.StringVar(&opts.packageName, "name", "", "package name (unused with -pkg-def)")
+	f.StringVar(&opts.inputDir, "in", "", "path to a directory with files to package (unused with -pkg-def)")
 }
 
 // prepareInput processes InputOptions by collecting all files to be added to
 // a package and populating BuildInstanceOptions. Caller is still responsible to
 // fill out Output field of BuildInstanceOptions.
-func (opts *InputOptions) prepareInput() (out cipd.BuildInstanceOptions, err error) {
-	// TODO(vadimsh): Do something fancier.
-	files, err := cipd.ScanFileSystem(opts.inputDir)
-	if err != nil {
-		return
+func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
+	out := cipd.BuildInstanceOptions{}
+	cmdErr := fmt.Errorf("Invalid command line options")
+
+	// Handle -name and -in if defined. Do not allow -pkg-def and -pkg-var in that case.
+	if opts.inputDir != "" {
+		if opts.packageName == "" {
+			reportError("Missing required flag: -name")
+			return out, cmdErr
+		}
+		if opts.packageDef != "" {
+			reportError("-pkg-def and -in can not be used together")
+			return out, cmdErr
+		}
+		if len(opts.vars) != 0 {
+			reportError("-pkg-var and -in can not be used together")
+			return out, cmdErr
+		}
+
+		// Simply enumerate files in the directory.
+		var files []cipd.File
+		files, err := cipd.ScanFileSystem(opts.inputDir, opts.inputDir, nil)
+		if err != nil {
+			return out, err
+		}
+		out = cipd.BuildInstanceOptions{
+			Input:       files,
+			PackageName: opts.packageName,
+		}
+		return out, nil
 	}
-	out = cipd.BuildInstanceOptions{
-		Input:       files,
-		PackageName: opts.packageName,
+
+	// Handle -pkg-def case. -in is "" (already checked), reject -name.
+	if opts.packageDef != "" {
+		if opts.packageName != "" {
+			reportError("-pkg-def and -name can not be used together")
+			return out, cmdErr
+		}
+
+		// Parse the file, perform variable substitution.
+		f, err := os.Open(opts.packageDef)
+		if err != nil {
+			return out, err
+		}
+		defer f.Close()
+		pkgDef, err := cipd.LoadPackageDef(f, opts.vars)
+		if err != nil {
+			return out, err
+		}
+
+		// Scan the file system. Package definition may use path relative to the
+		// package definition file itself, so pass its location.
+		files, err := pkgDef.FindFiles(filepath.Dir(opts.packageDef))
+		if err != nil {
+			return out, err
+		}
+		out = cipd.BuildInstanceOptions{
+			Input:       files,
+			PackageName: pkgDef.Package,
+		}
+		return out, nil
 	}
-	return
+
+	// All command line options are missing.
+	reportError("-pkg-def or -name/-in are required")
+	return out, cmdErr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +365,7 @@ func listACL(packagePath string, serviceOpts ServiceOptions) error {
 	}
 
 	// Split by role, drop empty ACLs.
-	byRole := make(map[string][]cipd.PackageACL)
+	byRole := map[string][]cipd.PackageACL{}
 	for _, a := range acls {
 		if len(a.Principals) != 0 {
 			byRole[a.Role] = append(byRole[a.Role], a)
@@ -314,7 +407,7 @@ func (l *principalsList) Set(value string) error {
 	// Ensure <type>:<id> syntax is used. Let the backend to validate the rest.
 	chunks := strings.Split(value, ":")
 	if len(chunks) != 2 {
-		return fmt.Errorf("The string '%s' doesn't look principal id (<type>:<id>)", value)
+		return fmt.Errorf("The string %q doesn't look principal id (<type>:<id>)", value)
 	}
 	*l = append(*l, value)
 	return nil

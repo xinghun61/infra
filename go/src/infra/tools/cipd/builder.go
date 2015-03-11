@@ -50,7 +50,7 @@ func BuildInstance(opts BuildInstanceOptions) error {
 	files := append(opts.Input, manifestFile)
 
 	// Make sure filenames are unique.
-	seenNames := make(map[string]struct{})
+	seenNames := make(map[string]struct{}, len(files))
 	for _, f := range files {
 		_, seen := seenNames[f.Name()]
 		if seen {

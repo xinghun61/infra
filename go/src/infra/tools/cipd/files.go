@@ -77,64 +77,47 @@ func (f *fileSystemFile) Open() (io.ReadCloser, error) {
 	return os.Open(f.absPath)
 }
 
+// ScanFilter is predicate used by ScanFileSystem to decide what files to skip.
+type ScanFilter func(abs string) bool
+
 // ScanFileSystem returns all files in some file system directory in
 // an alphabetical order. It returns only files, skipping directory entries
-// (i.e. empty directories are complete invisible). ScanFileSystem does not
+// (i.e. empty directories are completely invisible). ScanFileSystem does not
 // follow symbolic links, but recognizes them as such (see Symlink() method
-// of File interface).
-func ScanFileSystem(root string) ([]File, error) {
+// of File interface). It scans "dir" path, returning File objects that have
+// paths relative to "root". It skips files and directories for which
+// 'exclude(absolute path)' returns true.
+func ScanFileSystem(dir string, root string, exclude ScanFilter) ([]File, error) {
 	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return nil, err
 	}
+	dir, err = filepath.Abs(filepath.Clean(dir))
+	if err != nil {
+		return nil, err
+	}
+	if !isSubpath(dir, root) {
+		return nil, fmt.Errorf("Scanned directory must be under root directory")
+	}
 
 	files := []File{}
 
-	err = filepath.Walk(root, func(abs string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(abs string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(root, abs)
-		if err != nil {
-			return err
+		if exclude != nil && abs != dir && exclude(abs) {
+			if info.Mode().IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(abs)
+		if info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			f, err := WrapFile(abs, root, &info)
 			if err != nil {
 				return err
 			}
-			if filepath.IsAbs(target) {
-				// Convert absolute path pointing somewhere in "root" into a path
-				// relative to the symlink file itself. Store other absolute paths as
-				// they are. For example, it allows to package virtual env directory
-				// that symlinks python binary from /usr/bin.
-				if strings.HasPrefix(target, root) {
-					target, err = filepath.Rel(filepath.Dir(abs), target)
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				// Only relative paths that do not go outside "root" are allowed.
-				// A package must not depend on its installation path.
-				targetAbs := filepath.Clean(filepath.Join(filepath.Dir(abs), target))
-				if !strings.HasPrefix(targetAbs, root) {
-					return fmt.Errorf(
-						"Invalid symlink %s: a relative symlink pointing to a file outside of the package root", rel)
-				}
-			}
-			files = append(files, &fileSystemFile{
-				absPath:       abs,
-				name:          filepath.ToSlash(rel),
-				symlinkTarget: filepath.ToSlash(target),
-			})
-		} else if info.Mode().IsRegular() {
-			files = append(files, &fileSystemFile{
-				absPath:    abs,
-				name:       filepath.ToSlash(rel),
-				size:       uint64(info.Size()),
-				executable: (info.Mode().Perm() & 0111) != 0,
-			})
+			files = append(files, f)
 		}
 		return nil
 	})
@@ -143,6 +126,106 @@ func ScanFileSystem(root string) ([]File, error) {
 		return nil, err
 	}
 	return files, nil
+}
+
+// WrapFile constructs File object for some file in the file system, specified
+// by its native absolute path 'abs' (subpath of 'root', also specified as
+// a native absolute path). Returned File object has path relative to 'root'.
+// If fileInfo is given, it will be used to grab file mode and size, otherwise
+// os.Lstat will be used to get it. Recognizes symlinks.
+func WrapFile(abs string, root string, fileInfo *os.FileInfo) (File, error) {
+	if !filepath.IsAbs(abs) {
+		return nil, fmt.Errorf("Expecting absolute path, got this: %q", abs)
+	}
+	if !filepath.IsAbs(root) {
+		return nil, fmt.Errorf("Expecting absolute path, got this: %q", root)
+	}
+	if !isSubpath(abs, root) {
+		return nil, fmt.Errorf("Path %q is not under %q", abs, root)
+	}
+
+	var info os.FileInfo
+	if fileInfo == nil {
+		// Use Lstat to NOT follow symlinks (as os.Stat does).
+		var err error
+		info, err = os.Lstat(abs)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		info = *fileInfo
+	}
+
+	rel, err := filepath.Rel(root, abs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recognize symlinks as such, convert target to relative path, if needed.
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(abs)
+		if err != nil {
+			return nil, err
+		}
+		if filepath.IsAbs(target) {
+			// Convert absolute path pointing somewhere in "root" into a path
+			// relative to the symlink file itself. Store other absolute paths as
+			// they are. For example, it allows to package virtual env directory
+			// that symlinks python binary from /usr/bin.
+			if isSubpath(target, root) {
+				target, err = filepath.Rel(filepath.Dir(abs), target)
+				if err != nil {
+					return nil, err
+				}
+			}
+		} else {
+			// Only relative paths that do not go outside "root" are allowed.
+			// A package must not depend on its installation path.
+			targetAbs := filepath.Clean(filepath.Join(filepath.Dir(abs), target))
+			if !isSubpath(targetAbs, root) {
+				return nil, fmt.Errorf(
+					"Invalid symlink %s: a relative symlink pointing to a file outside of the package root", rel)
+			}
+		}
+		return &fileSystemFile{
+			absPath:       abs,
+			name:          filepath.ToSlash(rel),
+			symlinkTarget: filepath.ToSlash(target),
+		}, nil
+	}
+
+	// Regular file.
+	if info.Mode().IsRegular() {
+		return &fileSystemFile{
+			absPath:    abs,
+			name:       filepath.ToSlash(rel),
+			size:       uint64(info.Size()),
+			executable: (info.Mode().Perm() & 0111) != 0,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("Not a regular file or symlink: %s", abs)
+}
+
+// isSubpath returns true if 'path' is 'root' or is inside a subdirectory of
+// 'root'. Both 'path' and 'root' should be given as a native paths. If any of
+// paths can't be converted to an absolute path returns false.
+func isSubpath(path, root string) bool {
+	path, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return false
+	}
+	root, err = filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return false
+	}
+	if root == path {
+		return true
+	}
+	if root[len(root)-1] != filepath.Separator {
+		root += string(filepath.Separator)
+	}
+	return strings.HasPrefix(path, root)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +247,7 @@ type fileSystemDestination struct {
 func NewFileSystemDestination(dir string) Destination {
 	return &fileSystemDestination{
 		dir:       dir,
-		openFiles: make(map[string]*os.File),
+		openFiles: map[string]*os.File{},
 	}
 }
 
@@ -253,7 +336,7 @@ func (d *fileSystemDestination) CreateSymlink(name string, target string) error 
 	target = filepath.FromSlash(target)
 	if !filepath.IsAbs(target) {
 		targetAbs := filepath.Clean(filepath.Join(filepath.Dir(path), target))
-		if !strings.HasPrefix(targetAbs, d.outDir) {
+		if !isSubpath(targetAbs, d.outDir) {
 			return fmt.Errorf("Relative symlink is pointing outside of the destination dir: %s", name)
 		}
 	}
@@ -306,7 +389,7 @@ func (d *fileSystemDestination) prepareFilePath(name string) (string, error) {
 		return "", fmt.Errorf("Destination is not open")
 	}
 	path := filepath.Clean(filepath.Join(d.outDir, filepath.FromSlash(name)))
-	if !strings.HasPrefix(path, d.outDir) {
+	if !isSubpath(path, d.outDir) {
 		return "", fmt.Errorf("Invalid relative file name: %s", name)
 	}
 	err := os.MkdirAll(filepath.Dir(path), 0777)
