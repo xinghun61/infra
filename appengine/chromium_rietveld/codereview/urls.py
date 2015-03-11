@@ -97,6 +97,7 @@ urlpatterns = patterns(
     (r'^api/(\d+)/?$', 'api_issue'),
     (r'^api/tryservers/?$', 'api_tryservers'),
     (r'^api/(\d+)/(\d+)/?$', 'api_patchset'),
+    (r'^api/(\d+)/(\d+)/try_job_results/?$', 'api_patchset_try_job_results'),
     (r'^tarball/(\d+)/(\d+)$', 'tarball'),
     (r'^inline_draft$', 'inline_draft'),
     (r'^account_delete$', 'account_delete'),

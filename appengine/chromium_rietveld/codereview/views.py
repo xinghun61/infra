@@ -2429,6 +2429,16 @@ def api_patchset(request):
 
   return values
 
+@deco.access_control_allow_origin_star
+@deco.patchset_required
+@deco.json_response
+def api_patchset_try_job_results(request):
+  """/api/<issue>/<patchset>/try_job_results - Gets a patchset's try job
+  results as a JSON-encoded list of dictionaries.
+  """
+  try_job_results = get_patchset_try_job_results(request.patchset)
+  return [r.to_dict() for r in try_job_results]
+
 
 def _get_context_for_user(request):
   """Returns the context setting for a user.

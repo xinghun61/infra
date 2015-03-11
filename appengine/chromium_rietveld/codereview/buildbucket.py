@@ -103,6 +103,7 @@ class BuildbucketTryJobResult(models.TryJobResult):
         pass
 
     return cls(
+        id=build['id'],  # Required for to_dict() serialization.
         build_id=build['id'],
         url=dict_get_safe(build, 'url', basestring),
         result=cls.convert_status_to_result(build),
