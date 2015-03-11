@@ -1824,7 +1824,9 @@ def get_patchset_try_job_results(patchset):
       return None
     if not isinstance(props, dict):
       return None
-    return props.get('buildbucket', {}).get('build_id')
+    return (
+        props.get('buildbucket', {}).get('build', {}).get('id') or
+        props.get('buildbucket', {}).get('build_id'))
 
   for result in patchset.try_job_results:
     build_id = try_get_build_id(result)

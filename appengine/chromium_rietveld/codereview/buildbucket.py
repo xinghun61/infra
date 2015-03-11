@@ -202,6 +202,8 @@ def load_json_dict_safe(container_dict, key_name):
     return {}
   try:
     result = json.loads(possibly_json)
+    if result is None:
+      return {}
     if not isinstance(result, dict):
       logging.warning(
           '%s expected to be a dict. Got %s instead', key_name, result)
