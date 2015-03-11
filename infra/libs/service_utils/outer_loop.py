@@ -77,7 +77,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
         error_count += 1
         if errors_left is not None:
           errors_left -= 1
-          if not errors_left:
+          if errors_left <= 0:
             failed = True
             LOGGER.warn(
                 'Too many consecutive errors (%d), stopping.', max_errors)
@@ -87,7 +87,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
       # TODO(vadimsh): Make sleep timeout dynamic.
       now = time.time()
       timeout = sleep_timeout()
-      if deadline and now + timeout >= deadline:
+      if deadline is not None and now + timeout >= deadline:
         when = now - deadline
         if when > 0:
           LOGGER.info('Deadline reached %.1f sec ago, stopping.', when)
