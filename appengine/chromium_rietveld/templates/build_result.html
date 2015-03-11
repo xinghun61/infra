@@ -11,9 +11,6 @@
   {% endif %}
      status="{{try_job.status}}"
      category="{{try_job.category}}"
-  {% if try_job.category == 'cq_experimental' and not display_exp_tryjob_results or last_patchset.key.id == patchset.key.id %}
-     style="display:none;"
-  {% endif %}
      target="_blank">
      &nbsp;{{try_job.builder}}&nbsp;
 </a>

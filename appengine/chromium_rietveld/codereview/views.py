@@ -1758,7 +1758,8 @@ def show(request):
   # the builder to differentiate them.
   builds_to_parents = {}
   has_exp_jobs = False
-  for try_job in last_patchset.try_job_results:
+  try_job_results = get_patchset_try_job_results(last_patchset)
+  for try_job in try_job_results:
     if try_job.parent_name:
       builds_to_parents.setdefault(try_job.builder,
                                    set()).add(try_job.parent_name)
@@ -1768,7 +1769,7 @@ def show(request):
   if display_exp_tryjob_results and not has_exp_jobs:
     display_exp_tryjob_results = False
 
-  for try_job in last_patchset.try_job_results:
+  for try_job in try_job_results:
     if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
       try_job.builder = try_job.parent_name + ':' + try_job.builder
 
@@ -1786,7 +1787,7 @@ def show(request):
     'last_user_message_index': last_user_message_index,
     'num_patchsets': num_patchsets,
     'patchsets': patchsets,
-    'try_job_results': get_patchset_try_job_results(last_patchset),
+    'try_job_results': try_job_results,
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
@@ -1848,20 +1849,23 @@ def patchset(request):
   for ps in patchsets:
     if ps.key.id() == request.patchset.key.id():
       patchset = ps
+
+  try_job_results = get_patchset_try_job_results(patchset)
   if display_exp_tryjob_results:
     has_exp_jobs = False
-    for try_job in patchset.try_job_results:
+    for try_job in try_job_results:
       if try_job.category == 'cq_experimental':
         has_exp_jobs = True
         break
     if not has_exp_jobs:
+      logging.debug('no experiments')
       display_exp_tryjob_results = False
+  logging.debug('tryjobs: %s' % try_job_results)
 
   return respond(request, 'patchset.html',
                  {'issue': request.issue,
                   'patchset': request.patchset,
-                  'try_job_results': get_patchset_try_job_results(
-                      request.patchset),
+                  'try_job_results': try_job_results,
                   'patchsets': patchsets,
                   'is_editor': request.issue.edit_allowed,
                   'display_exp_tryjob_results': display_exp_tryjob_results,
