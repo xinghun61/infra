@@ -13,6 +13,7 @@ files on disk.
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -72,6 +73,9 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 	return true
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// ServiceOptions mixin.
+
 // ServiceOptions defines command line arguments related to communication
 // with the remote service. Subcommands that interact with the network embed it.
 type ServiceOptions struct {
@@ -92,6 +96,9 @@ func (opts *ServiceOptions) makeClient() (*http.Client, error) {
 	}
 	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// InputOptions mixin.
 
 // PackageVars holds array of '-pkg-var' command line options.
 type PackageVars map[string]string
@@ -215,6 +222,64 @@ func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// JSONOutputOptions mixin.
+
+// PackageInfo is put into JSON output by subcommands. It describes a built
+// package instance.
+type PackageInfo struct {
+	Package    string `json:"package"`
+	InstanceID string `json:"instance_id"`
+}
+
+// JSONOutputOptions define -json-output option that is used to return
+// structured operation result back to caller.
+type JSONOutputOptions struct {
+	jsonOutput string
+}
+
+func (opts *JSONOutputOptions) registerFlags(f *flag.FlagSet) {
+	f.StringVar(&opts.jsonOutput, "json-output", "", "Path to write operation results to")
+}
+
+// writeJSONOutput writes result to JSON output file. It returns original error
+// if it is non-nil.
+func (opts *JSONOutputOptions) writeJSONOutput(result interface{}, err error) error {
+	// -json-output flag wasn't specified.
+	if opts.jsonOutput == "" {
+		return err
+	}
+
+	// Prepare the body of the output file.
+	var body struct {
+		Error  string      `json:"error,omitempty"`
+		Result interface{} `json:"result,omitempty"`
+	}
+	if err != nil {
+		body.Error = err.Error()
+	}
+	body.Result = result
+	out, e := json.MarshalIndent(&body, "", "  ")
+	if e != nil {
+		reportError("Failed to serialize JSON output: %s", e)
+		if err == nil {
+			err = e
+		}
+		return err
+	}
+
+	e = ioutil.WriteFile(opts.jsonOutput, out, 0600)
+	if e != nil {
+		reportError("Failed write JSON output to %s: %s", opts.jsonOutput, e)
+		if err == nil {
+			err = e
+		}
+		return err
+	}
+
+	return err
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'create' subcommand.
 
 var cmdCreate = &subcommands.Command{
@@ -225,6 +290,7 @@ var cmdCreate = &subcommands.Command{
 		c := &createRun{}
 		c.InputOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
@@ -233,13 +299,15 @@ type createRun struct {
 	subcommands.CommandRunBase
 	InputOptions
 	ServiceOptions
+	JSONOutputOptions
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := buildAndUploadInstance(c.InputOptions, c.ServiceOptions)
+	info, err := buildAndUploadInstance(c.InputOptions, c.ServiceOptions)
+	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
 		return 1
@@ -247,10 +315,10 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) error {
+func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
-		return err
+		return PackageInfo{}, err
 	}
 	defer func() {
 		f.Close()
@@ -258,7 +326,7 @@ func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) 
 	}()
 	err = buildInstanceFile(f.Name(), inputOpts)
 	if err != nil {
-		return err
+		return PackageInfo{}, err
 	}
 	return registerInstanceFile(f.Name(), serviceOpts)
 }
@@ -505,6 +573,7 @@ var cmdBuild = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &buildRun{}
 		c.InputOptions.registerFlags(&c.Flags)
+		c.JSONOutputOptions.registerFlags(&c.Flags)
 		c.Flags.StringVar(&c.outputFile, "out", "<path>", "path to a file to write the final package to")
 		return c
 	},
@@ -513,6 +582,7 @@ var cmdBuild = &subcommands.Command{
 type buildRun struct {
 	subcommands.CommandRunBase
 	InputOptions
+	JSONOutputOptions
 
 	outputFile string
 }
@@ -527,7 +597,8 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 	// Print information about built package, also verify it is readable.
-	err = inspectInstanceFile(c.outputFile, false)
+	info, err := inspectInstanceFile(c.outputFile, false)
+	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while building the package: %s", err)
 		return 1
@@ -690,19 +761,23 @@ var cmdInspect = &subcommands.Command{
 	ShortDesc: "inspects contents of a package instance file",
 	LongDesc:  "Reads contents *.cipd file and prints information about it.",
 	CommandRun: func() subcommands.CommandRun {
-		return &inspectRun{}
+		c := &inspectRun{}
+		c.JSONOutputOptions.registerFlags(&c.Flags)
+		return c
 	},
 }
 
 type inspectRun struct {
 	subcommands.CommandRunBase
+	JSONOutputOptions
 }
 
 func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := inspectInstanceFile(args[0], true)
+	info, err := inspectInstanceFile(args[0], true)
+	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while inspecting the package: %s", err)
 		return 1
@@ -710,17 +785,16 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func inspectInstanceFile(instanceFile string, listFiles bool) error {
+func inspectInstanceFile(instanceFile string, listFiles bool) (PackageInfo, error) {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
-		return err
+		return PackageInfo{}, err
 	}
 	defer inst.Close()
-	inspectInstance(inst, listFiles)
-	return nil
+	return inspectInstance(inst, listFiles), nil
 }
 
-func inspectInstance(inst cipd.PackageInstance, listFiles bool) {
+func inspectInstance(inst cipd.PackageInstance, listFiles bool) PackageInfo {
 	logging.Infof("Package name: %s", inst.PackageName())
 	logging.Infof("Instance ID:  %s", inst.InstanceID())
 	if listFiles {
@@ -738,6 +812,10 @@ func inspectInstance(inst cipd.PackageInstance, listFiles bool) {
 			}
 		}
 	}
+	return PackageInfo{
+		Package:    inst.PackageName(),
+		InstanceID: inst.InstanceID(),
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -750,6 +828,7 @@ var cmdRegister = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &registerRun{}
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
@@ -757,13 +836,15 @@ var cmdRegister = &subcommands.Command{
 type registerRun struct {
 	subcommands.CommandRunBase
 	ServiceOptions
+	JSONOutputOptions
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := registerInstanceFile(args[0], c.ServiceOptions)
+	info, err := registerInstanceFile(args[0], c.ServiceOptions)
+	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
 		return 1
@@ -771,19 +852,19 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, serviceOpts ServiceOptions) error {
+func registerInstanceFile(instanceFile string, serviceOpts ServiceOptions) (PackageInfo, error) {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
-		return err
+		return PackageInfo{}, err
 	}
 	defer inst.Close()
 	client, err := serviceOpts.makeClient()
 	if err != nil {
-		return err
+		return PackageInfo{}, err
 	}
 	logging.Infof("Registering package %s:%s", inst.PackageName(), inst.InstanceID())
-	inspectInstance(inst, false)
-	return cipd.RegisterInstance(cipd.RegisterInstanceOptions{
+	info := inspectInstance(inst, false)
+	return info, cipd.RegisterInstance(cipd.RegisterInstanceOptions{
 		PackageInstance: inst,
 		UploadOptions: cipd.UploadOptions{
 			ServiceURL: serviceOpts.serviceURL,
