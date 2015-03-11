@@ -40,6 +40,7 @@ else:
   if not sys.argv[1] in ('list', 'train', 'test', 'debug'):
     usage()
 
+python_bin = os.path.join('ENV', 'bin', 'python')
 expect_tests_path = os.path.join('ENV', 'bin', 'expect_tests')
 
 args = sys.argv[1:]
@@ -58,4 +59,4 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
 subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
-sys.exit(subprocess.call([expect_tests_path] + args))
+sys.exit(subprocess.call([python_bin, expect_tests_path] + args))
