@@ -58,7 +58,7 @@
     text-overflow: ellipsis;
 }
 
-.polymer-ui-collapsible-header {
+.cr-collapsible-header {
     -webkit-user-select: none;
     cursor: default;
 }

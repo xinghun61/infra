@@ -2,8 +2,7 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="../bower_components/polymer-ui-collapsible/polymer-ui-collapsible.html">
-
+<link rel="import" href="cr-collapsible.html">
 <link rel="import" href="cr-issue-patchset.html">
 <link rel="import" href="cr-patchset-header.html">
 
@@ -27,7 +26,7 @@ found in the LICENSE file. -->
                 z-index: 1;
             }
 
-            .polymer-ui-collapsible-header {
+            .cr-collapsible-header {
                 cursor: default;
                 -webkit-user-select: none;
             }
@@ -49,22 +48,22 @@ found in the LICENSE file. -->
         </template>
 
         <div class="patchsets">
-            <polymer-ui-collapsible active="{{ showOlderPatchsets }}">
+            <cr-collapsible active="{{ showOlderPatchsets }}">
                 <template if="{{ showOlderPatchsets }}">
                     <template repeat="{{ patchset in olderPatchsets }}">
-                        <polymer-ui-collapsible class="patchset" active="{{ patchset.active }}">
-                            <cr-patchset-header class="polymer-ui-collapsible-header" patchset="{{ patchset }}"></cr-patchset-header>
+                        <cr-collapsible class="patchset" active="{{ patchset.active }}">
+                            <cr-patchset-header class="cr-collapsible-header" patchset="{{ patchset }}"></cr-patchset-header>
                             <template if="{{ patchset.active }}">
                                 <cr-issue-patchset patchset="{{ patchset }}"></cr-issue-patchset>
                             </template>
-                        </polymer-ui-collapsible>
+                        </cr-collapsible>
                     </template>
                 </template>
-            </polymer-ui-collapsible>
-            <polymer-ui-collapsible class="patchset" active>
-                <cr-patchset-header class="polymer-ui-collapsible-header" patchset="{{ currentPatchset }}"></cr-patchset-header>
+            </cr-collapsible>
+            <cr-collapsible class="patchset" active>
+                <cr-patchset-header class="cr-collapsible-header" patchset="{{ currentPatchset }}"></cr-patchset-header>
                 <cr-issue-patchset patchset="{{ currentPatchset }}"></cr-issue-patchset>
-            </polymer-ui-collapsible>
+            </cr-collapsible>
         </div>
 
         <cr-keyboard on-key-e="{{ handleExpandKey }}" global></cr-keyboard>

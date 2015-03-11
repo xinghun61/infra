@@ -2,8 +2,7 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="../bower_components/polymer-ui-collapsible/polymer-ui-collapsible.html">
-
+<link rel="import" href="cr-collapsible.html">
 <link rel="import" href="cr-issue-message-reply.html">
 <link rel="import" href="cr-view-handler.html">
 <link rel="import" href="../linkify/cr-linkified-text.html">
@@ -13,8 +12,8 @@ found in the LICENSE file. -->
         <cr-view-handler></cr-view-handler>
         <link rel="stylesheet" href="cr-issue-message.css">
 
-        <polymer-ui-collapsible class="message {{ {approval: message.approval, disapproval: message.disapproval, generated: message.generated, closed: message.issueWasClosed, selected: selected } | tokenList }}" active="{{ message.active }}" hidden?="{{ message.hidden }}">
-            <div id="message-{{ message.sequence }}" class="message-header polymer-ui-collapsible-header">
+        <cr-collapsible class="message {{ {approval: message.approval, disapproval: message.disapproval, generated: message.generated, closed: message.issueWasClosed, selected: selected } | tokenList }}" active="{{ message.active }}" hidden?="{{ message.hidden }}">
+            <div id="message-{{ message.sequence }}" class="message-header cr-collapsible-header">
                 <div class="message-title" on-tap="{{ showMessage }}">
                     <div class="message-author" title="{{ message.author.email }}">{{ message.author.displayName }}</div>
                     <div class="message-preview">{{ message.preview }}</div>
@@ -28,7 +27,7 @@ found in the LICENSE file. -->
                 <cr-linkified-text text="{{ message.text }}" pre></cr-linkified-text>
             </div>
             <cr-issue-message-reply message="{{ message }}"></cr-issue-message-reply>
-        </polymer-ui-collapsible>
+        </cr-collapsible>
     </template>
     <script>
         Polymer("cr-issue-message", {

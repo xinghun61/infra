@@ -2,15 +2,14 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="../bower_components/polymer-ui-collapsible/polymer-ui-collapsible.html">
-
+<link rel="import" href="cr-collapsible.html">
 <link rel="import" href="cr-issue-list.html">
 
 <polymer-element name="cr-issue-inbox-section" attributes="issues weeks showRecentActivity">
     <template>
         <link rel="stylesheet" href="common.css">
         <style>
-            .polymer-ui-collapsible-header {
+            .cr-collapsible-header {
                 padding: 0.5em 16px;
                 display: block;
             }
@@ -18,15 +17,15 @@ found in the LICENSE file. -->
 
         <cr-issue-list issues="{{ visibleIssues }}" showRecentActivity="{{ showRecentActivity }}" approvals></cr-issue-list>
         <template if="{{ hiddenIssues.length }}">
-            <polymer-ui-collapsible active="{{ showingHiddenIssues }}">
-                <a is="cr-action" class="polymer-ui-collapsible-header">
+            <cr-collapsible active="{{ showingHiddenIssues }}">
+                <a is="cr-action" class="cr-collapsible-header">
                     {{ hiddenIssues.length }} older
                     {{ "issue" | pluralize(hiddenIssues.length) }}
                 </a>
                 <template if="{{ showingHiddenIssues }}">
                     <cr-issue-list issues="{{ hiddenIssues }}" showRecentActivity="{{ showRecentActivity }}" approvals></cr-issue-list>
                 </template>
-            </polymer-ui-collapsible>
+            </cr-collapsible>
         </template>
     </template>
     <script>

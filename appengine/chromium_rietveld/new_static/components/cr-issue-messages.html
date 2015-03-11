@@ -3,6 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="cr-action.html">
+<link rel="import" href="cr-collapsible.html">
 <link rel="import" href="cr-hash-observer.html">
 <link rel="import" href="cr-issue-message.html">
 
@@ -58,7 +59,7 @@ found in the LICENSE file. -->
 
         <div id="messages">
             <template if="{{ olderMessages.length }}">
-                <polymer-ui-collapsible active="{{ showOlderMessages }}">
+                <cr-collapsible active="{{ showOlderMessages }}">
                     <template if="{{ showOlderMessages }}">
                         <template repeat="{{ message in olderMessages }}">
                             <cr-issue-message
@@ -67,7 +68,7 @@ found in the LICENSE file. -->
                                 selected="{{ message.sequence == selectionId }}"></cr-issue-message>
                         </template>
                     </template>
-                </polymer-ui-collapsible>
+                </cr-collapsible>
             </template>
             <template repeat="{{ message in recentMessages }}">
                 <cr-issue-message
@@ -154,9 +155,9 @@ found in the LICENSE file. -->
             },
             scrollMessageToVisibleIfNeeded: function(message) {
                 // If you click the header then scroll the message until you can read it. This is
-                // racy with the <polymer-ui-collapsible> animation but it's the best we have
-                // until polymer exposes some events. We could listen for on-transitionend but
-                // then expand/collapse all would make us do this for each item.
+                // racy with the <cr-collapsible> animation but it's the best we have
+                // until we expose some events. We could listen for on-transitionend
+                // but then expand/collapse all would make us do this for each item.
                 this.async(function() {
                     message.scrollIntoViewIfNeeded();
                 }, null, 350);

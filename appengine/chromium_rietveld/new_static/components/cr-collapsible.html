@@ -1,0 +1,121 @@
+<!-- Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<!--
+    Based on <polymer-ui-collapsible>, this widget expects a child element
+    that has class name "cr-collapsible-header" and will expand or collapse of
+    the rest of the children when the header is tapped using animation.
+
+    ex.
+
+    <cr-collapsible active>
+        <div class="cr-collapsible-header">
+            Tap to expand
+        </div>
+        <div>Content here</div>
+        <div>More content here</div>
+    </cr-collapsible>
+
+    The |active| property is reflected and can be used for styling or toggled
+    using data binding (ex. active="{{ object.active }}") to control the
+    expanded state.
+
+    TODO(esprehn): Evaluate using <core-collapse> instead.
+-->
+<polymer-element name="cr-collapsible" attributes="active">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+            #body {
+              height: 0;
+              overflow: hidden;
+              -webkit-transition: height 0.33s;
+              transition: height 0.33s;
+            }
+        </style>
+        <div on-tap="{{ handleHeaderTap }}">
+            <content select=".cr-collapsible-header"></content>
+        </div>
+        <div id="body"
+            on-webkitTransitionEnd="{{ handleTransitionEnd }}"
+            on-transitionEnd="{{ handleTransitionEnd }}">
+            <content></content>
+        </div>
+    </template>
+    <script>
+        Polymer("cr-collapsible", {
+            publish: {
+                active: {value: false, reflect: true},
+            },
+            created: function() {
+                this.active = false;
+                this.afterInitialUpdate = false;
+            },
+            attached: function() {
+                this.$.body.hidden = !this.active;
+                this.$.body.style.height = "auto";
+                this.async(function() {
+                    this.afterInitialUpdate = true;
+                });
+            },
+            activeChanged: function() {
+                this.update();
+            },
+            toggle: function() {
+                this.active = !this.active;
+            },
+            handleHeaderTap: function() {
+                this.toggle();
+            },
+            handleTransitionEnd: function() {
+                if (this.active)
+                    this.updateSize("auto");
+                this.$.body.hidden = !this.active;
+            },
+            updateSize: function(size, didTransition) {
+                var bodyStyle = this.$.body.style;
+                // Transition events don't fire if the property doesn't change
+                // so we need to manually call the handler.
+                if (didTransition && bodyStyle.height === size)
+                    this.handleTransitionEnd();
+                else
+                    bodyStyle.height = size;
+            },
+            update: function() {
+                this[this.active ? "show" : "hide"]();
+            },
+            computeBodySize: function() {
+                return this.$.body.getBoundingClientRect().height + "px";
+            },
+            show: function() {
+                this.$.body.hidden = false;
+
+                // Don't play the animation until after the initial update to
+                // avoid having all collapsibles animate open on view load.
+                if (!this.afterInitialUpdate)
+                    return;
+
+                this.updateSize("auto");
+                var size = this.computeBodySize();
+                this.updateSize("0");
+
+                this.async(function() {
+                    this.computeBodySize();
+                    this.updateSize(size, true);
+                });
+            },
+            hide: function() {
+                if (this.$.body.hidden)
+                    return;
+                this.updateSize(this.computeBodySize());
+                this.async(function() {
+                    this.computeBodySize();
+                    this.updateSize("0", true);
+                });
+            },
+        });
+  </script>
+</polymer-element>
