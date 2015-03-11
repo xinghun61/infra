@@ -10,7 +10,6 @@ function PatchFile(patchset, name)
     this.prefix = name || "";
     this.extension = "";
     this.language = "";
-    this.containsEmbeddedLanguages = false;
     this.status = "";
     this.chunks = 0;
     this.missingBaseFile = false;
@@ -35,7 +34,6 @@ function PatchFile(patchset, name)
         this.isHeader = PatchFile.HEADER_EXTENSIONS[this.extension] || false;
         this.prefix = this.name.to(dotIndex);
         this.language = PatchFile.SYNTAX_LANGUAGES[this.extension] || "";
-        this.containsEmbeddedLanguages = PatchFile.MIXED_LANGUAGES[this.language];
     }
 }
 
@@ -43,13 +41,6 @@ PatchFile.DIFF_URL = "/download/issue{1}_{2}_{3}.diff";
 PatchFile.CONTEXT_URL = "/{1}/diff_skipped_lines/{2}/{3}/{4}/{5}/a/2000";
 PatchFile.DRAFT_URL = "/api/{1}/{2}/{3}/draft_message";
 PatchFile.IMAGE_URL = "/{1}/image/{2}/{3}/{4}";
-
-PatchFile.MIXED_LANGUAGES = {
-    "html": true,
-    "svg": true,
-    "xhtml": true,
-    "xml": true,
-};
 
 PatchFile.SYNTAX_LANGUAGES = {
     "cc": "cpp",
@@ -95,30 +86,6 @@ PatchFile.compare = function(a, b)
     if (a.isHeader != b.isHeader)
         return a.isHeader ? -1 : 1;
     return a.extension.localeCompare(b.extension);
-};
-
-PatchFile.prototype.shouldResetEmbeddedLanguage = function(language, text)
-{
-    if (!this.containsEmbeddedLanguages)
-        return false;
-    if (language == "javascript" && text.startsWith("<\/script"))
-        return true;
-    if (language == "css" && text.startsWith("<\/style"))
-        return true;
-    return false;
-};
-
-// TODO(esprehn): This isn't perfect, you can easily confuse it with multiple script
-// or style tags on the same line. It's good enough for most reviews though.
-PatchFile.prototype.selectEmbeddedLanguage = function(text)
-{
-    if (!this.containsEmbeddedLanguages)
-        return this.language;
-    if (text.startsWith("<script") && !text.contains("<\/script"))
-        return "javascript";
-    if (text.startsWith("<style") && !text.contains("<\/style"))
-        return "css";
-    return this.language;
 };
 
 PatchFile.prototype.addMessage = function(message)

@@ -6,13 +6,11 @@
 
 // Stateful highlighter that can be used to syntax highlight a file by calling
 // parseText() repeatedly on chunks of the file (usually per line).
-function SyntaxHighlighter(initialLanguage, containsEmbeddedLanguages)
+function SyntaxHighlighter(language)
 {
     // State of the highlighter from hljs to make multi line comments work.
     this.syntaxState = null;
-    this.initialLanguage = initialLanguage; // string.
-    this.language = initialLanguage; // string.
-    this.containsEmbeddedLanguages = containsEmbeddedLanguages; // boolean.
+    this.language = language; // string.
     Object.preventExtensions(this);
 }
 
@@ -33,20 +31,9 @@ SyntaxHighlighter.prototype.parseText = function(text)
     if (!this.language)
         return null;
 
-    if (this.shouldResetEmbeddedLanguage(text)) {
-        this.syntaxState = null;
-        this.language = this.initialLanguage;
-    }
-
     var code = this.parseTextInternal(text);
     if (code)
         this.syntaxState = code.top;
-
-    var language = this.selectEmbeddedLanguage(text);
-    if (language) {
-        this.syntaxState = null;
-        this.language = language;
-    }
 
     if (code)
         return code.value;
@@ -63,26 +50,4 @@ SyntaxHighlighter.prototype.parseTextInternal = function(text)
         console.log("Syntax highlighter error", e);
     }
     return null;
-};
-
-SyntaxHighlighter.prototype.selectEmbeddedLanguage = function(text)
-{
-    if (!this.containsEmbeddedLanguages)
-        return "";
-    if (text.startsWith("<script") && !text.contains("<\/script"))
-        return "javascript";
-    if (text.startsWith("<style") && !text.contains("<\/style"))
-        return "css";
-    return "";
-};
-
-SyntaxHighlighter.prototype.shouldResetEmbeddedLanguage = function(text)
-{
-    if (!this.containsEmbeddedLanguages)
-        return false;
-    if (this.language == "javascript" && text.startsWith("<\/script"))
-        return true;
-    if (this.language == "css" && text.startsWith("<\/style"))
-        return true;
-    return false;
 };

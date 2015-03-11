@@ -7,7 +7,7 @@
 function DiffBuilderBase(file, output)
 {
     this.file = file;
-    this.highlighter = new SyntaxHighlighter(file.language, file.containsEmbeddedLanguages);
+    this.highlighter = new SyntaxHighlighter(file.language);
     this.output = output;
 }
 

@@ -26,22 +26,6 @@ describe("PatchFile", function() {
         assert.equal(new PatchFile(null, "Document.cpp/").language, "");
         assert.equal(new PatchFile(null, "prefetch_messages.cc").language, "cpp");
     });
-    it("should handle embedded language selection", function() {
-        var html = new PatchFile(null, "example.html");
-        assert.equal(html.selectEmbeddedLanguage("<script type=\"foo\"></script>"), "html");
-        assert.equal(html.selectEmbeddedLanguage("<script></script>"), "html");
-        assert.equal(html.selectEmbeddedLanguage("<script>function() { return 1/script>2; }</script>"), "html");
-        assert.equal(html.selectEmbeddedLanguage("<script>"), "javascript");
-        assert.equal(html.selectEmbeddedLanguage("<script type=\"foo\">"), "javascript");
-        assert.equal(html.selectEmbeddedLanguage("</script>"), "html");
-        assert.equal(html.selectEmbeddedLanguage("<style>"), "css");
-        assert.equal(html.selectEmbeddedLanguage("<style type=example>"), "css");
-        assert.equal(html.selectEmbeddedLanguage("<style type=example>.foo { }</style>"), "html");
-        assert.equal(html.selectEmbeddedLanguage("<style type=example></style>"), "html");
-        var text = new PatchFile(null, "example.cpp");
-        assert.equal(text.selectEmbeddedLanguage("<script></script>"), "cpp");
-        assert.equal(text.selectEmbeddedLanguage("<style></style>"), "cpp");
-    });
     it("should maintain message counts", function() {
         var issue = new Issue(1);
         var file = new PatchFile(new PatchSet(issue, 2));
