@@ -202,6 +202,38 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds, _ = self.service.search(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
+  def test_search_by_status(self):
+    self.test_build.put()
+    build2 = model.Build(
+        bucket=self.test_build.bucket,
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.SUCCESS,
+    )
+    build2.put()
+
+    builds, _ = self.service.search(
+        buckets=[self.test_build.bucket],
+        status=model.BuildStatus.SCHEDULED)
+    self.assertEqual(builds, [self.test_build])
+
+    builds, _ = self.service.search(
+        buckets=[self.test_build.bucket],
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.FAILURE)
+    self.assertEqual(builds, [])
+
+  def test_search_by_created_by(self):
+    self.test_build.put()
+    build2 = model.Build(
+        bucket=self.test_build.bucket,
+        created_by = auth.Identity.from_bytes('user:x@chromium.org')
+    )
+    build2.put()
+
+    builds, _ = self.service.search(
+        created_by='user:x@chromium.org', buckets=[self.test_build.bucket])
+    self.assertEqual(builds, [build2])
+
   def test_search_with_paging(self):
     self.put_many_builds()
 

@@ -137,15 +137,24 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.test_build.put()
     self.service.search.return_value = ([self.test_build], 'the cursor')
     req = {
-        'tag': ['important'],
         'bucket': ['chromium'],
+        'cancelation_reason': 'CANCELED_EXPLICITLY',
+        'created_by': 'user:x@chromium.org',
+        'result': 'CANCELED',
+        'status': 'COMPLETED',
+        'tag': ['important'],
     }
 
     res = self.call_api('search', req).json_body
 
     self.service.search.assert_called_once_with(
-        tags=req['tag'],
         buckets=req['bucket'],
+        tags=req['tag'],
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.CANCELED,
+        failure_reason=None,
+        cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
+        created_by='user:x@chromium.org',
         max_builds=None,
         start_cursor=None)
     self.assertEqual(len(res['builds']), 1)

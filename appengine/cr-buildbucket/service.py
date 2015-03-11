@@ -186,7 +186,10 @@ class BuildBucketService(object):
       if not acl.can_search_builds(bucket, identity):
         raise current_identity_cannot('search builds in bucket %s', bucket)
 
-  def search(self, buckets=None, tags=None, max_builds=None, start_cursor=None):
+  def search(
+      self, buckets=None, tags=None,
+      status=None, result=None, failure_reason=None, cancelation_reason=None,
+      created_by=None, max_builds=None, start_cursor=None):
     """Searches for builds.
 
     Args:
@@ -194,6 +197,11 @@ class BuildBucketService(object):
         A build must be in one of the buckets.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
+      status (model.BuildStatus): build status.
+      result (model.BuildResult): build result.
+      failure_reason (model.FailureReason): failure reason.
+      cancelation_reason (model.CancelationReason): build cancelation reason.
+      created_by (str): identity who created a build.
       max_builds (int): maximum number of builds to return.
       start_cursor (string): a value of "next" cursor returned by previous
         search_by_tags call. If not None, return next builds in the query.
@@ -209,6 +217,8 @@ class BuildBucketService(object):
     validate_tags(tags)
     tags = tags or []
     max_builds = fix_max_builds(max_builds)
+    if isinstance(created_by, basestring):
+      created_by = auth.Identity.from_bytes(created_by)
 
     if buckets:
       self._check_search_acls(buckets)
@@ -223,8 +233,19 @@ class BuildBucketService(object):
       q = q.filter(model.Build.bucket.IN(buckets))
     for t in tags:
       q = q.filter(model.Build.tags == t)
+    filter_if = lambda p, v: q if v is None else q.filter(p == v)
+    q = filter_if(model.Build.status, status)
+    q = filter_if(model.Build.result, result)
+    q = filter_if(model.Build.failure_reason, failure_reason)
+    q = filter_if(model.Build.cancelation_reason, cancelation_reason)
+    q = filter_if(model.Build.created_by, created_by)
     q = q.order(model.Build.key)
-    return self._fetch_page(q, max_builds, start_cursor)
+
+    local_predicate = None
+    if status is not None:
+      local_predicate = lambda b: b.status == status
+    return self._fetch_page(
+        q, max_builds, start_cursor, predicate=local_predicate)
 
   def peek(self, buckets, max_builds=None, start_cursor=None):
     """Returns builds available for leasing in the specified |buckets|.

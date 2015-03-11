@@ -246,7 +246,12 @@ class BuildBucketApi(remote.Service):
       # All specified tags must be present in a build.
       bucket=messages.StringField(2, repeated=True),
       tag=messages.StringField(3, repeated=True),
-      max_builds=messages.IntegerField(4, variant=messages.Variant.INT32),
+      status=messages.EnumField(model.BuildStatus, 4),
+      result=messages.EnumField(model.BuildResult, 5),
+      cancelation_reason=messages.EnumField(model.CancelationReason, 6),
+      failure_reason=messages.EnumField(model.FailureReason, 7),
+      created_by=messages.StringField(8),
+      max_builds=messages.IntegerField(9, variant=messages.Variant.INT32),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -263,7 +268,12 @@ class BuildBucketApi(remote.Service):
     builds, next_cursor = self.service.search(
         buckets=request.bucket,
         tags=request.tag,
+        status=request.status,
+        result=request.result,
+        failure_reason=request.failure_reason,
+        cancelation_reason=request.cancelation_reason,
         max_builds=request.max_builds,
+        created_by=request.created_by,
         start_cursor=request.start_cursor)
     return self.SearchResponseMessage(
         builds=map(build_to_message, builds),
