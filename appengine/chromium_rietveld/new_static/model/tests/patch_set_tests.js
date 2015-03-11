@@ -48,13 +48,13 @@ describe("PatchSet", function() {
             "Source/rendering/FrameView.cpph",
             "Source/rendering/FrameView.html",
             "LayoutTests/foo/ack.html",
+            "LayoutTests/foo/bar.hxx",
             "LayoutTests/foo/bar.html",
-            "LayoutTests/foo/bar.h",
             "LayoutTests/foo/bar.js",
         ]);
     });
 
-    it.only("should sort files without extensions", function() {
+    it("should sort files without extensions", function() {
         assertSortedNames([
             "chrome/chrome_tests_unit.gypi",
             "components/webdata/DEPS",
