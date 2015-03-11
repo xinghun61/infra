@@ -45,6 +45,33 @@ def add_argparse_options(parser):
 
 
 def process_argparse_options(args):
+  setup_monitoring(run_type=args.event_mon_run_type,
+                   hostname=args.event_mon_hostname,
+                   service_name=args.event_mon_service_name,
+                   appengine_name=args.event_mon_appengine_name)
+
+
+def setup_monitoring(run_type='dry',
+                     hostname=None,
+                     service_name=None,
+                     appengine_name=None):
+  """Initializes event monitoring.
+
+  This function is mainly used to provide default global values which are
+  required for the module to work.
+
+  If you're implementing a command-line tool, use process_argparse_options
+  instead.
+
+  Args:
+    run_type (str): One of 'dry', 'test', or 'prod'. Do respectively nothing,
+      hit the testing endpoint and the production endpoint.
+    hostname (str): hostname as it should appear in the event. If not provided
+      a default value is computed.
+    service_name (str): logical name of the service that emits events. e.g.
+      "commit_queue".
+    appengine_name (str): name of the appengine app, if running on appengine.
+  """
   global _router
   if not _router:
     ENDPOINTS = {
@@ -52,25 +79,24 @@ def process_argparse_options(args):
       'test': 'https://jmt17.google.com/log',
       'prod': 'https://play.googleapis.com/log',
       }
-    endpoint = ENDPOINTS.get(args.event_mon_run_type)
+    # TODO(pgervais): log a warning if event_mon_run_type is invalid.
+    endpoint = ENDPOINTS.get(run_type)
     _router = _Router(endpoint=endpoint)
 
     default_event = ChromeInfraEvent()
 
-    if args.event_mon_hostname:
-      default_event.event_source.host_name = args.event_mon_hostname
-    else:
-      hostname = socket.getfqdn()
-      # hostname might be empty string or None on some systems, who knows.
-      if hostname:  # pragma: no branch
-        default_event.event_source.host_name = hostname
+    hostname = hostname or socket.getfqdn()
+    # hostname might be empty string or None on some systems, who knows.
+    if hostname:  # pragma: no branch
+      #TODO(pgervais): log when hostname is None or empty, because it's not
+      # supposed to happen.
+      default_event.event_source.host_name = hostname
 
-    if args.event_mon_service_name:
-      default_event.event_source.service_name = args.event_mon_service_name
-    if args.event_mon_appengine_name:
-      default_event.event_source.appengine_name = args.event_mon_appengine_name
+    if service_name:
+      default_event.event_source.service_name = service_name
+    if appengine_name:
+      default_event.event_source.appengine_name = appengine_name
 
-    # TODO(pgervais): set up code version
     cache['default_event'] = default_event
 
 

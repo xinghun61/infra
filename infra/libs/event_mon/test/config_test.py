@@ -47,3 +47,33 @@ class ConfigTest(unittest.TestCase):
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertEquals(event.event_source.appengine_name, appengine_name)
     self._close()
+
+  def test_default_event(self):
+    # The protobuf structure is actually an API not an implementation detail
+    # so it's sane to test for changes.
+    event_mon.setup_monitoring()
+    event = config.cache['default_event']
+    self.assertTrue(event.event_source.HasField('host_name'))
+    self.assertFalse(event.event_source.HasField('service_name'))
+    self.assertFalse(event.event_source.HasField('appengine_name'))
+
+    self._close()
+
+  def test_default_event_with_values(self):
+    # The protobuf structure is actually an API not an implementation detail
+    # so it's sane to test for changes.
+    hostname = 'a'
+    service_name = 'b'
+    appengine_name = 'c'
+
+    event_mon.setup_monitoring(
+      hostname=hostname,
+      service_name=service_name,
+      appengine_name=appengine_name
+    )
+    event = config.cache['default_event']
+    self.assertEquals(event.event_source.host_name, hostname)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.event_source.appengine_name, appengine_name)
+
+    self._close()
