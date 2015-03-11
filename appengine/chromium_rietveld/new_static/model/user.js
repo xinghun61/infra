@@ -12,6 +12,7 @@ function User(name, email, displayName)
     this.reviewedIssues = 0;
     this.xsrfToken = "";
     this.displayName = displayName || this.email.split("@")[0] || this.name;
+    this.isCurrentUser = User.current && this.name === User.current.name;
     Object.preventExtensions(this);
 }
 
@@ -36,6 +37,7 @@ User.currentPromise = null;
     if (window.INITIAL_USER_DATA) {
         var data = window.INITIAL_USER_DATA;
         User.current = new User(data.name, data.email, "me");
+        User.current.isCurrentUser = true;
     }
 })();
 
@@ -45,6 +47,7 @@ User.parseCurrentUser = function(data)
         return null;
     var user = new User(data.nickname, data.email, "me");
     user.xsrfToken = data.xsrf_token;
+    user.isCurrentUser = true;
     User.current = user;
     return user;
 };
@@ -107,11 +110,6 @@ User.compareEmail = function(userA, userB)
     if (!result)
         return User.compare(userA, userB);
     return result;
-};
-
-User.prototype.isCurrentUser = function()
-{
-    return User.current && this.name === User.current.name;
 };
 
 User.prototype.getDetailUrl = function()

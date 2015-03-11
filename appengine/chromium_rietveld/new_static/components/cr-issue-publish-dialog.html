@@ -149,7 +149,7 @@ found in the LICENSE file. -->
                     <button is="cr-button"  on-tap="{{ sendAndCommit }}">Send + CQ</button>
                 </template>
                 <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
-                <template if="{{ !userIsOwner }}">
+                <template if="{{ !issue.owner.isCurrentUser }}">
                     <label>
                         <input type="checkbox" checked="{{ addAsReviewer }}">
                         Add as reviewer
@@ -170,7 +170,6 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "";
                 this.sending = false;
                 this.addAsReviewer = true;
-                this.userIsOwner = true;
                 this.draftsVisible = false;
                 this.addSelfie = false;
             },
@@ -188,7 +187,6 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "";
                 this.message = "";
                 this.$.editor.dismissAutocomplete();
-                this.userIsOwner = this.issue.owner.isCurrentUser();
                 this.draftsVisible = false;
             },
             close: function() {

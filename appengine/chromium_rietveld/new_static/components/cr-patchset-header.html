@@ -43,7 +43,7 @@ found in the LICENSE file. -->
         </div>
         <div class="patchset-date">{{ patchset.created | formatDate }}</div>
         <div class="patchset-actions">
-            <template if="{{ userIsOwner }}">
+            <template if="{{ patchset.issue.owner.isCurrentUser }}">
                 <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
             </template>
         </div>
@@ -53,10 +53,6 @@ found in the LICENSE file. -->
         Polymer("cr-patchset-header", {
             created: function() {
                 this.patchset = null;
-                this.userIsOwner = false;
-            },
-            domReady: function() {
-              this.userIsOwner = this.patchset.issue.owner.isCurrentUser();
             },
             pluralize: function(count, text) {
                 if (!count)

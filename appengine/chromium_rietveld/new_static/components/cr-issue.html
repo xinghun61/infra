@@ -37,17 +37,21 @@ found in the LICENSE file. -->
             <div class="issue-content">
                 <cr-toolbar class="issue-toolbar">
                     <button is="cr-button" on-tap="{{ showPublishDialog }}" create>Publish</button>
-                    <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
+                    <template if="{{ !issue.owner.isCurrentUser }}">
+                        <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
+                    </template>
                     <template if="{{ !issue.closed }}">
-                        <button is="cr-button" on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</button>
+                        <template if="{{ !issue.owner.isCurrentUser }}">
+                            <button is="cr-button" on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</button>
+                        </template>
                         <template if="{{ !issue.commit }}">
                             <button is="cr-button" on-tap="{{ toggleCommit }}">Commit</button>
                         </template>
                         <button is="cr-button" on-tap="{{ toggleClosed }}">Close</button>
                     </template>
                     <template if="{{ issue.closed }}">
-                        <button is="cr-button" on-tap="{{ toggleClosed }}">Reopen</button>
                         <button is="cr-button" on-tap="{{ startRevertDialog }}">Revert</button>
+                        <button is="cr-button" on-tap="{{ toggleClosed }}">Reopen</button>
                     </template>
                     <div class="ui-actions">
                         <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
