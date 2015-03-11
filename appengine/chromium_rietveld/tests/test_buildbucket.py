@@ -49,7 +49,7 @@ class BuildbucketTryJobResultTest(TestCase):
           build)
       self.assertEqual(actual, expected)
 
-    status_test({'status': 'SCHEDULED'}, None)
+    status_test({'status': 'SCHEDULED'}, statuses.TRYPENDING)
     status_test({'status': 'STARTED'}, None)
     status_test({'status': 'COMPLETED', 'result': 'SUCCESS'}, statuses.SUCCESS)
     status_test(

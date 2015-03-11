@@ -66,6 +66,8 @@ class BuildbucketTryJobResult(models.TryJobResult):
     See buildbucket docs here:
     https://cr-buildbucket.appspot.com/#/docs/build
     """
+    if build.get('status') == 'SCHEDULED':
+      return cls.TRYPENDING
     if build.get('status') == 'COMPLETED':
       if build.get('result') == 'SUCCESS':
         return cls.SUCCESS
