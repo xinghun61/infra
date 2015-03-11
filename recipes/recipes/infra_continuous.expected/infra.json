@@ -7,7 +7,7 @@
       "--master",
       "chromium.testing.master",
       "--builder",
-      "infra_tester",
+      "infra-continuous",
       "--slave",
       "TestSlavename",
       "--spec",

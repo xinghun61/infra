@@ -15,10 +15,14 @@ DEPS = [
 ]
 
 def GenSteps(api):
-  project_name = api.properties.get('project')
-  if project_name not in ('infra', 'infra_internal'):  # pragma: no cover
-    raise ValueError('This recipe is not intended for project %s. '
-                     % project_name)
+  builder_name = api.properties.get('buildername')
+  if builder_name == 'infra-internal-continuous':
+    project_name = 'infra_internal'
+  elif builder_name == 'infra-continuous':
+    project_name = 'infra'
+  else:  #pragma: no cover
+    raise ValueError('This recipe is not intended for builder %s. '
+                     % builder_name)
 
   api.gclient.set_config(project_name)
   api.bot_update.ensure_checkout(force=True)
@@ -36,13 +40,11 @@ def GenTests(api):
   yield (
     api.test('infra') +
     api.properties.tryserver(
-        buildername='infra_tester',
-        project='infra')
+        buildername='infra-continuous')
   )
   yield (
     api.test('infra_internal') +
     api.properties.tryserver(
-        buildername='infra_tester',
-        project='infra_internal')
+        buildername='infra-internal-continuous')
 
   )
