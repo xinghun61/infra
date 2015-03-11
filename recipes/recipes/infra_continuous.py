@@ -35,6 +35,9 @@ def GenSteps(api):
     api.python('infra go tests', api.path['checkout'].join('go', 'env.py'),
                ['python', api.path['checkout'].join('go', 'test.py')])
 
+  api.python('build cipd packages',
+             api.path['checkout'].join('build', 'build.py'))
+
 
 def GenTests(api):
   yield (

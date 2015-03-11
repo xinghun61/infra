@@ -75,5 +75,13 @@
       "[SLAVE_BUILD]/infra_internal/go/test.py"
     ],
     "name": "infra go tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra_internal/build/build.py"
+    ],
+    "name": "build cipd packages"
   }
 ]
