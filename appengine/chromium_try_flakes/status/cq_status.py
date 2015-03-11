@@ -256,6 +256,13 @@ def get_flaky_run_reason(flaky_run_key):
   flaky_run.put()
 
 
+def get_int_value(properties, key):
+  value = properties[key]
+  if type(value) == type(list()):
+    value = value[0]
+  return int(value)
+
+
 # Parses the json which we get from chromium-cq-status.
 def parse_cq_data(json_data):
   logging_output = []
@@ -278,17 +285,18 @@ def parse_cq_data(json_data):
       #  continue
 
       for job in job_states[state]:
-        master = job['master']
-        builder = job['builder']
-        result = job['result']
-        buildnumber = job['buildnumber']
-        timestamp = datetime.datetime.strptime(job['timestamp'],
-                                               '%Y-%m-%d %H:%M:%S.%f')
         build_properties = job['build_properties']
         if not build_properties:
           continue
-        issue = int(build_properties['issue'])
-        patchset = int(build_properties['patchset'])
+
+        master = job['master']
+        builder = job['builder']
+        result = job['result']
+        timestamp = datetime.datetime.strptime(job['timestamp'],
+                                               '%Y-%m-%d %H:%M:%S.%f')
+        buildnumber = get_int_value(build_properties, 'buildnumber')
+        issue = get_int_value(build_properties, 'issue')
+        patchset = get_int_value(build_properties, 'patchset')
 
         if build_result.isResultPending(result):
           continue
