@@ -2,9 +2,9 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="cr-patch-file-message.html">
+<link rel="import" href="cr-diff-message.html">
 
-<polymer-element name="cr-patch-file-messages" attributes="beforeMessages afterMessages file">
+<polymer-element name="cr-diff-messages" attributes="beforeMessages afterMessages file">
     <template>
         <link rel="stylesheet" href="../common/common.css">
         <style>
@@ -12,12 +12,12 @@ found in the LICENSE file. -->
                 display: block;
             }
 
-            cr-patch-file-message {
+            cr-diff-message {
                 background-color: #ffd;
                 border-bottom: 1px solid #dcdcdc;
             }
 
-            cr-patch-file-message:last-child {
+            cr-diff-message:last-child {
                 border-bottom: none;
             }
         </style>
@@ -28,18 +28,18 @@ found in the LICENSE file. -->
             on-file-message-reply="{{ handleReplyDraft }}">
             <div id="before">
                 <template repeat="{{ message in beforeMessages }}">
-                    <cr-patch-file-message message="{{ message }}"></cr-patch-file-message>
+                    <cr-diff-message message="{{ message }}"></cr-diff-message>
                 </template>
             </div>
             <div id="after">
                 <template repeat="{{ message in afterMessages }}">
-                    <cr-patch-file-message message="{{ message }}"></cr-patch-file-message>
+                    <cr-diff-message message="{{ message }}"></cr-diff-message>
                 </template>
             </div>
         </div>
     </template>
     <script>
-        Polymer("cr-patch-file-messages", {
+        Polymer("cr-diff-messages", {
             created: function() {
                 this.beforeMessages = [];
                 this.afterMessages = [];
@@ -95,7 +95,7 @@ found in the LICENSE file. -->
                 if (side != "before" && side != "after")
                     throw new Error("Valid sides are either 'before' or 'after', saw: " + side);
                 var container = this.$[side];
-                var lastMessage = container.querySelector("cr-patch-file-message:last-child");
+                var lastMessage = container.querySelector("cr-diff-message:last-child");
                 if (lastMessage && lastMessage.message.draft) {
                     lastMessage.expand();
                     lastMessage.focusInput();

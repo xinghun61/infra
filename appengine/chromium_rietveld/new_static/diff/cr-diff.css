@@ -79,7 +79,7 @@ cr-diff-image {
     margin-left: 108px;
 }
 
-cr-patch-file-messages {
+cr-diff-messages {
     border-color: #dcdcdc;
     border-style: solid;
     border-width: 1px 0 1px 1px;
@@ -100,7 +100,7 @@ cr-patch-file-messages {
     width: 50%;
 }
 
-.side-by-side cr-patch-file-messages {
+.side-by-side cr-diff-messages {
     margin-left: calc(3em + 16px);
 }
 
@@ -108,7 +108,7 @@ cr-patch-file-messages {
     border-right: 1px solid #dcdcdc;
 }
 
-.side-by-side cr-patch-file-messages {
+.side-by-side cr-diff-messages {
     border-width: 1px 0 1px 1px;
 }
 

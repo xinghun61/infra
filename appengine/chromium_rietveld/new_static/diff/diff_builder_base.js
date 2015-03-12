@@ -113,7 +113,7 @@ DiffBuilderBase.prototype.createMessages = function(line)
     if (!beforeMessages.length && !afterMessages.length)
         return null;
 
-    var messages = document.createElement("cr-patch-file-messages");
+    var messages = document.createElement("cr-diff-messages");
     messages.beforeMessages = beforeMessages;
     messages.afterMessages = afterMessages;
     messages.file = this.file;

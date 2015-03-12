@@ -3,7 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="cr-diff-image.html">
-<link rel="import" href="cr-patch-file-messages.html">
+<link rel="import" href="cr-diff-messages.html">
 
 <script src="../lib/highlight/highlight.pack.js"></script>
 
@@ -48,8 +48,8 @@ found in the LICENSE file. -->
                 if (User.current && element.classList.contains("line-number")) {
                     var row = element.parentNode;
                     var messages = row.nextSibling;
-                    if (!messages || messages.localName != "cr-patch-file-messages") {
-                        messages = document.createElement("cr-patch-file-messages");
+                    if (!messages || messages.localName != "cr-diff-messages") {
+                        messages = document.createElement("cr-diff-messages");
                         messages.file = this.file;
                         row.parentNode.insertBefore(messages, row.nextSibling);
                     }

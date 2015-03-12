@@ -120,7 +120,7 @@ found in the LICENSE file. -->
                                 </template>
                             </a>
                         </div>
-                        <!-- TODO(esprehn): This should use <cr-patch-file-message> and allow editing. -->
+                        <!-- TODO(esprehn): This should use <cr-diff-message> and allow editing. -->
                         <template repeat="{{ draftPatchset in issue.draftPatchsets }}">
                             <template repeat="{{ file in draftPatchset.files }}">
                                 <h3 class="file-header">
