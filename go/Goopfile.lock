@@ -1,7 +1,8 @@
 code.google.com/p/goauth2/oauth #f02aa781ad087b29b5b6276564da3215d39a6d61 !https://chromium.googlesource.com/infra/third_party/go/code.google.com/p/goauth2.git
+github.com/Sirupsen/logrus #f92b7950b372b1db80bd3527e4d40e42555fe6c2 !https://chromium.googlesource.com/external/github.com/Sirupsen/logrus.git
 github.com/go-yaml/yaml #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 github.com/maruel/subcommands #5bd08a04658ca8ee8a3acaad13f240017d2470b0 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
-github.com/Sirupsen/logrus #f92b7950b372b1db80bd3527e4d40e42555fe6c2 !https://chromium.googlesource.com/external/github.com/Sirupsen/logrus.git
+github.com/mjibson/goon #4aa92ab1b81cf479627de5e93f1c43e9d31c81ae !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
 github.com/smartystreets/goconvey #5a2cd6136dd3ae751ec8ff3eb0d1b0f2ca835388 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/texttheater/golang-levenshtein #9a5fc661c251580d9ddbd1ff6b24bfe82ee118df !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/tobi/airbrake-go #ce0ba05e080ba9d755c544ffa703a2a4dc0c6ecf !https://chromium.googlesource.com/external/github.com/tobi/airbrake-go.git
