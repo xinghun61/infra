@@ -5,9 +5,10 @@ Scripts and files in this directory describe how to build CIPD packages from
 the source code in infra.git repo.
 
 There are two flavors of packages:
-  * Packages with executables compiled from Go code.
-  * Single giant package with all python code and archived virtual environment
-    needed to run it.
+
+* Packages with executables compiled from Go code.
+* Single giant package with all python code and archived virtual environment
+  needed to run it.
 
 
 Package definition
@@ -51,17 +52,18 @@ package: infra/tools/cipd/${platform}
 ```
 
 Available variables are defined in [build.py](build.py) in `get_package_vars`:
-  * `${exe_suffix}` is '.exe' on Windows and empty string on other platforms.
-  * `${platform}` defines where build.py is running, as '(flavor)-(bitness)'
-    string. Examples:
-      * linux-amd64
-      * linux-386
-      * mac-amd64
-      * mac-386
-      * windows-amd64
-      * windows-386
-  * `${python_version}` defined python version as '(major)(minor)' string,
-    e.g '27'.
+
+* `${exe_suffix}` is '.exe' on Windows and empty string on other platforms.
+* `${platform}` defines where build.py is running, as '(flavor)-(bitness)'
+  string. Examples:
+    * linux-amd64
+    * linux-386
+    * mac-amd64
+    * mac-386
+    * windows-amd64
+    * windows-386
+* `${python_version}` defined python version as '(major)(minor)' string,
+  e.g '27'.
 
 See [packages](packages/) for examples of package definitions.
 
@@ -70,11 +72,31 @@ Build script
 ------------
 
 [build.py](build.py) script does the following:
-  * Ensures python virtual environment directory (ENV) is up to date.
-  * Rebuilds all infra Go code from scratch, with 'release' tag set.
-  * Enumerates packages/ directory for package definition files, builds and
-    (optionally, if `--upload` option is passed) uploads CIPD packages.
-  * Puts built packages into out/.
+
+* Ensures python virtual environment directory (ENV) is up to date.
+* Rebuilds all infra Go code from scratch, with 'release' tag set.
+* Enumerates packages/ directory for package definition files, builds and
+  (if `--upload` option is passed) uploads CIPD packages to
+  [the repository](https://chrome-infra-packages.appspot.com).
+* Stores built packages into out/ (as *.cipd files).
 
 Package definition files can assume that Go infra code is built and all
 artifacts are installed in `GOBIN` (which is go/bin).
+
+You can also pass one or more *.yaml file names to build only specific packages:
+
+    build.py infra_python.yaml cipd_client.yaml
+
+
+Verifying a package
+-------------------------
+
+To install a built package locally use cipd client binary (it is built by
+build.py as well). For example, to rebuild and install infra_python.cipd into
+./install_dir, run:
+
+    cd infra.git/
+    rm -rf install_dir
+    ./build/build.py infra_python.yaml
+    ./go/bin/cipd pkg-deploy -root=install_dir build/out/infra_python.cipd
+    cd install_dir
