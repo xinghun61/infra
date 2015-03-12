@@ -6,8 +6,8 @@ found in the LICENSE file. -->
 
 <polymer-element name="cr-issue-editor" attributes="issue errors disabled fields">
     <template>
-        <link rel="stylesheet" href="common.css">
-        <link rel="stylesheet" href="forms.css">
+        <link rel="stylesheet" href="../common/common.css">
+        <link rel="stylesheet" href="../common/forms.css">
 
         <fieldset class="form-fields" disabled?="{{ disabled }}">
             <template if="{{ fields | contains('subject') }}">

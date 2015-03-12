@@ -2,9 +2,13 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<link rel="import" href="cr-action.html">
-<link rel="import" href="cr-butterbar.html">
-<link rel="import" href="cr-button.html">
+<link rel="import" href="../common/cr-action.html">
+<link rel="import" href="../common/cr-butterbar.html">
+<link rel="import" href="../common/cr-button.html">
+<link rel="import" href="../common/cr-keyboard.html">
+<link rel="import" href="../common/cr-toolbar.html">
+<link rel="import" href="../common/cr-view-handler.html">
+<link rel="import" href="../linkify/cr-linkified-text.html">
 <link rel="import" href="cr-issue-discard-drafts-dialog.html">
 <link rel="import" href="cr-issue-edit-dialog.html">
 <link rel="import" href="cr-issue-messages.html">
@@ -12,17 +16,13 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-patchsets.html">
 <link rel="import" href="cr-issue-publish-dialog.html">
 <link rel="import" href="cr-issue-revert-dialog.html">
-<link rel="import" href="cr-keyboard.html">
-<link rel="import" href="cr-toolbar.html">
 <link rel="import" href="cr-try-dialog.html">
 <link rel="import" href="cr-try-results.html">
-<link rel="import" href="cr-view-handler.html">
-<link rel="import" href="../linkify/cr-linkified-text.html">
 
 <polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}">
     <template>
         <cr-view-handler></cr-view-handler>
-        <link rel="stylesheet" href="common.css">
+        <link rel="stylesheet" href="../common/common.css">
         <link rel="stylesheet" href="cr-issue.css">
 
         <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
