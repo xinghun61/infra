@@ -33,6 +33,18 @@
       {
         "builder_name": "publish_tarball",
         "properties": {
+          "version": "41.0.2267.0"
+        }
+      }
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "trigger publish_tarball (2)",
+    "trigger_specs": [
+      {
+        "builder_name": "publish_tarball",
+        "properties": {
           "version": "41.0.2270.0"
         }
       }
