@@ -80,7 +80,10 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/build/build.py"
+      "[SLAVE_BUILD]/infra/build/build.py",
+      "--upload",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
     ],
     "name": "build cipd packages"
   }

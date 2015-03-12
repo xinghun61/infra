@@ -14,6 +14,12 @@ DEPS = [
   'step',
 ]
 
+
+# Path to a service account credentials to use to talk to CIPD backend.
+# Deployed by Puppet.
+CIPD_BUILDER_CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
+
+
 def GenSteps(api):
   builder_name = api.properties.get('buildername')
   if builder_name == 'infra-internal-continuous':
@@ -36,7 +42,8 @@ def GenSteps(api):
                ['python', api.path['checkout'].join('go', 'test.py')])
 
   api.python('build cipd packages',
-             api.path['checkout'].join('build', 'build.py'))
+             api.path['checkout'].join('build', 'build.py'),
+             ['--upload', '--service-account-json', CIPD_BUILDER_CREDS])
 
 
 def GenTests(api):
