@@ -273,43 +273,9 @@ PatchFile.prototype.parseDiff = function(text)
 
 PatchFile.prototype.loadContext = function(start, end)
 {
-    var file = this;
     return loadJSON(this.getContextUrl(start, end)).then(function(data) {
-        return file.parseContext(data);
+        var group = new DiffGroup("both");
+        group.parseContextData(data);
+        return group;
     });
-};
-
-PatchFile.prototype.parseContext = function(data)
-{
-    var group = new DiffGroup("both");
-    for (var i = 0; i < data.length; i += 2) {
-        var newLine = PatchFile.parseContextLine(data[i][1][1][1]);
-        var oldLine = PatchFile.parseContextLine(data[i][1][0][1]);
-        // TODO(esprehn): Rietveld will respond with mysterious lines sometimes, for now
-        // we harden the code to skip them instead of throwing errors.
-        if (!newLine || !oldLine)
-            continue;
-        var line = new DiffLine("both");
-        line.beforeNumber = oldLine.lineNumber;
-        line.afterNumber = newLine.lineNumber;
-        line.text = newLine.text;
-        group.addLine(line);
-    }
-    return group;
-};
-
-PatchFile.parseContextLine = function(text)
-{
-    if (!text)
-        return null;
-    var numberStart = 0;
-    while (text[numberStart] == " " && numberStart < text.length)
-        ++numberStart;
-    var numberEnd = numberStart;
-    while (text[numberEnd] != " " && numberEnd < text.length)
-        ++numberEnd;
-    return {
-        lineNumber: parseInt(text.substring(numberStart, numberEnd), 10),
-        text: text.from(numberEnd + 1),
-    };
 };
