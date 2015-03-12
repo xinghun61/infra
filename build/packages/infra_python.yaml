@@ -1,4 +1,4 @@
-package: infra/infra_python/${platform}-py${python_version}
+package: infra/infra_python/${platform}-${os_ver}
 description: Virtual environment + 'infra' package with infra.git python code.
 root: ../../
 

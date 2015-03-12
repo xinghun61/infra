@@ -152,6 +152,21 @@ def get_package_vars():
   if not platform_variant:
     raise ValueError('Unknown OS: %s' % sys.platform)
 
+  if sys.platform == 'darwin':
+    # platform.mac_ver()[0] is '10.9.5'.
+    dist = platform.mac_ver()[0].split('.')
+    os_ver = 'mac%s_%s' % (dist[0], dist[1])
+  elif sys.platform == 'linux2':
+    # platform.linux_distribution() is ('Ubuntu', '14.04', ...).
+    dist = platform.linux_distribution()
+    os_ver = '%s%s' % (dist[0].lower(), dist[1].replace('.', '_'))
+  elif sys.platform == 'win32':
+    # platform.version() is '6.1.7601'.
+    dist = platform.version().split('.')
+    os_ver = 'win%s_%s' % (dist[0], dist[1])
+  else:
+    raise ValueError('Unknown OS: %s' % sys.platform)
+
   # amd64, 386, etc.
   platform_arch = {
     'amd64': 'amd64',
@@ -165,7 +180,9 @@ def get_package_vars():
   return {
     # e.g. '.exe' or ''.
     'exe_suffix': EXE_SUFFIX,
-    # e.g. 'linux-amd64'.
+    # e.g. 'ubuntu14_04' or 'mac10_9' or 'win6_1'.
+    'os_ver': os_ver,
+    # e.g. 'linux-amd64'
     'platform': '%s-%s' % (platform_variant, platform_arch),
     # e.g. '27' (dots are not allowed in package names).
     'python_version': '%s%s' % sys.version_info[:2],

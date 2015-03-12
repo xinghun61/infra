@@ -32,10 +32,10 @@ data:
   # directory of the package.
   - dir: a/b/c
     # A list of regular expressions for files to exclude from the package.
-    # Syntax is defined [here](http://golang.org/pkg/regexp/syntax/). Each
-    # expression is implicitly wrapped into ^...$. The tests are applied to
-    # paths relative to 'dir', e.g. 'bin/active' regexp matches only single
-    # file <yaml_path>/../../a/b/c/bin/active.
+    # Syntax is defined at http://golang.org/pkg/regexp/syntax/. Each expression
+    # is implicitly wrapped into ^...$. The tests are applied to paths relative
+    # to 'dir', e.g. 'bin/active' regexp matches only single file
+    # <yaml_path>/../../a/b/c/bin/active.
     exclude:
       - bin/activate
       - .*\.pyc
@@ -55,14 +55,22 @@ Available variables are defined in [build.py](build.py) in `get_package_vars`:
 
 * `${exe_suffix}` is '.exe' on Windows and empty string on other platforms.
 * `${platform}` defines where build.py is running, as '(flavor)-(bitness)'
-  string. Examples:
+  string. It is suitable for packages that do not depend much on the exact
+  version of the OS, for example packages with statically linked binaries.
+  Example values:
     * linux-amd64
     * linux-386
     * mac-amd64
     * mac-386
     * windows-amd64
     * windows-386
-* `${python_version}` defined python version as '(major)(minor)' string,
+* `${os_ver}` defines major and minor version of the OS/Linux distribution.
+  It is useful if package depends on *.dll/*.so libraries provided by the OS.
+  Example values:
+    * ubuntu14_04
+    * mac10_9
+    * win6_1
+* `${python_version}` defines python version as '(major)(minor)' string,
   e.g '27'.
 
 See [packages](packages/) for examples of package definitions.
