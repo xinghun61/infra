@@ -6,7 +6,7 @@
 
 function TryJobResult()
 {
-    this.tests = [];
+    this.steps = [];
     this.slave = "";
     this.url = "";
     this.master = "";
@@ -54,9 +54,7 @@ TryJobResult.prototype.getDetailUrl = function()
 TryJobResult.prototype.parseData = function(data)
 {
     var result = this;
-    this.tests = (data.tests || []).map(function(name) {
-        return new TryJobResultStep(result, name);
-    });
+    this.steps = data.tests || [];
     this.slave = data.slave || "";
     this.timestamp = Date.utc.create(data.timestamp);
     this.builder = data.builder || "";
