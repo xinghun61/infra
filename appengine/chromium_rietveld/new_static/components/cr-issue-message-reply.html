@@ -66,7 +66,7 @@ found in the LICENSE file. -->
             textarea.scrollIntoView(true);
             textarea.focus();
             if (this.message)
-                this.value = emailQuote(this.message.text, this.message.author.name, this.message.date);
+                this.value = this.message.emailQuote();
             this.async(function() {
                 // Need to scroll at raf time to make sure the text area is filled in.
                 textarea.scrollTop = textarea.scrollHeight;

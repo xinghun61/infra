@@ -28,6 +28,8 @@ module.exports = function(config) {
       'node_modules/mocha/mocha.js',
       'bower_components/chai/chai.js',
       'bower_components/sugar/release/sugar-full.development.js',
+      'model/message_base.js',
+      'model/diff_builder_base.js',
       '*.js',
       'model/**/*.js',
       'lib/**/*.js',

@@ -87,7 +87,7 @@ found in the LICENSE file. -->
             },
             handleReplyDraft: function(event) {
                 var message = event.detail.message;
-                var text = emailQuote(message.text, message.author.name, message.date);
+                var text = message.emailQuote();
                 var side = message.left ? "before" : "after";
                 this.addDraft(side, message.line, text);
             },

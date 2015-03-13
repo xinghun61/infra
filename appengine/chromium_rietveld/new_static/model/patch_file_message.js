@@ -6,16 +6,15 @@
 
 function PatchFileMessage(file)
 {
+    MessageBase.call(this);
     this.file = file || null;
-    this.author = null; // User
-    this.text = "";
     this.draft = false;
     this.line = 0;
-    this.date = ""; // Date
     this.left = false;
     this.messageId = "";
     Object.preventExtensions(this);
 }
+PatchFileMessage.extends(MessageBase);
 
 PatchFileMessage.prototype.parseData = function(data)
 {

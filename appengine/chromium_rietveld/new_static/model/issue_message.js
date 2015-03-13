@@ -6,12 +6,10 @@
 
 function IssueMessage(issue, sequence)
 {
+    MessageBase.call(this);
     this.issue = issue || null; // Issue
-    this.author = null; // User
     this.recipients = []; // Array<User>
-    this.text = "";
     this.disapproval = false;
-    this.date = ""; // Date
     this.approval = false;
     this.sequence = sequence || 0;
     this.generated = false;
@@ -20,6 +18,7 @@ function IssueMessage(issue, sequence)
     this.issueWasClosed = false;
     Object.preventExtensions(this);
 }
+IssueMessage.extends(MessageBase);
 
 IssueMessage.REPLY_HEADER = /^On \d+\/\d+\/\d+ (at )?\d+:\d+:\d+, .*? wrote:$/;
 IssueMessage.FILE_HEADER = /^https:\/\/codereview.chromium.org\/\d+\/diff\/\d+\/.*$/;
