@@ -187,9 +187,24 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Search by both tags.
     builds, _ = self.service.search(
-        buckets=[self.test_build.bucket],
         tags=self.test_build.tags,
+        buckets=[self.test_build.bucket],
     )
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_by_buildset(self):
+    self.test_build.tags = ['buildset:x']
+    self.test_build.put()
+
+    build2 = model.Build(
+        bucket='secret.bucket',
+        tags=self.test_build.tags,  # only one of two tags.
+    )
+    build2.put()
+
+    get_available_buckets = mock.Mock(return_value=[self.test_build.bucket])
+    self.mock(acl, 'get_available_buckets', get_available_buckets)
+    builds, _ = self.service.search(tags=['buildset:x'])
     self.assertEqual(builds, [self.test_build])
 
   def test_search_bucket(self):

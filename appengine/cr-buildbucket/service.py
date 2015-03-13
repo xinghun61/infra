@@ -162,7 +162,8 @@ class BuildBucketService(object):
         logging.warning(msg)
         raise errors.InvalidInputError(msg)
 
-    query_iter = query.iter(start_cursor=curs, produce_cursors=True)
+    query_iter = query.iter(
+        start_cursor=curs, produce_cursors=True, batch_size=page_size)
     entities = []
     for entity in query_iter:
       if predicate is None or predicate(entity):  # pragma: no branch
@@ -226,12 +227,15 @@ class BuildBucketService(object):
       buckets = acl.get_available_buckets()
       if buckets is not None and len(buckets) == 0:
         return [], None
+    if buckets:
+      buckets = set(buckets)
+    assert buckets is None or buckets
 
+    check_buckets_locally = False
     q = model.Build.query()
-    # buckets is None if the current identity has access to ALL buckets.
-    if buckets is not None:
-      q = q.filter(model.Build.bucket.IN(buckets))
     for t in tags:
+      if t.startswith('buildset:'):
+        check_buckets_locally = True
       q = q.filter(model.Build.tags == t)
     filter_if = lambda p, v: q if v is None else q.filter(p == v)
     q = filter_if(model.Build.status, status)
@@ -239,11 +243,21 @@ class BuildBucketService(object):
     q = filter_if(model.Build.failure_reason, failure_reason)
     q = filter_if(model.Build.cancelation_reason, cancelation_reason)
     q = filter_if(model.Build.created_by, created_by)
+    # buckets is None if the current identity has access to ALL buckets.
+    if buckets and not check_buckets_locally:
+      q = q.filter(model.Build.bucket.IN(buckets))
     q = q.order(model.Build.key)
 
     local_predicate = None
-    if status is not None:
-      local_predicate = lambda b: b.status == status
+    def local_status_and_bucket_check(build):
+      if status is not None and build.status != status:  # pragma: no coverage
+        return False
+      if buckets and build.bucket not in buckets:
+        return False
+      return True
+    if status is not None or (buckets and check_buckets_locally):
+      local_predicate = local_status_and_bucket_check
+
     return self._fetch_page(
         q, max_builds, start_cursor, predicate=local_predicate)
 
