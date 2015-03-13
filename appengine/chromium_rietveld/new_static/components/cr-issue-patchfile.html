@@ -27,7 +27,7 @@ found in the LICENSE file. -->
         <cr-diff id="diff" file="{{ file }}" mode="{{ mode }}" active="{{ active }}"></cr-diff>
     </template>
     <script>
-        Polymer("cr-issue-patchfile", {
+        Polymer({
             created: function() {
                 this.file = null;
                 this.mode = "unified";

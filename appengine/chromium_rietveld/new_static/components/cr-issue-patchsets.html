@@ -69,7 +69,7 @@ found in the LICENSE file. -->
         <cr-keyboard on-key-e="{{ handleExpandKey }}" global></cr-keyboard>
     </template>
     <script>
-        Polymer("cr-issue-patchsets", {
+        Polymer({
             created: function() {
                 this.patchsets = null;
                 this.showOlderPatchsets = false;
