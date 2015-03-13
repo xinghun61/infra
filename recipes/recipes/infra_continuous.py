@@ -22,9 +22,9 @@ CIPD_BUILDER_CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
 
 def GenSteps(api):
   builder_name = api.properties.get('buildername')
-  if builder_name == 'infra-internal-continuous':
+  if builder_name.startswith('infra-internal-continuous'):
     project_name = 'infra_internal'
-  elif builder_name == 'infra-continuous':
+  elif builder_name.startswith('infra-continuous'):
     project_name = 'infra'
   else:  #pragma: no cover
     raise ValueError('This recipe is not intended for builder %s. '
