@@ -62,6 +62,7 @@ class BuildMessage(messages.Message):
   completed_ts = messages.IntegerField(15)
   created_by = messages.StringField(16)
   status_changed_ts = messages.IntegerField(17)
+  utcnow_ts = messages.IntegerField(18, required=True)
 
 
 class BuildResponseMessage(messages.Message):
@@ -92,6 +93,7 @@ def build_to_message(build, include_lease_key=False):
       completed_ts=datetime_to_timestamp_safe(build.complete_time),
       created_by=build.created_by.to_bytes() if build.created_by else None,
       status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
+      utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(
