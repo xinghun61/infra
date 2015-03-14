@@ -28,7 +28,7 @@
   },
   {
     "cmd": [],
-    "name": "trigger publish_tarball",
+    "name": "trigger",
     "trigger_specs": [
       {
         "builder_name": "publish_tarball",
@@ -36,11 +36,14 @@
           "version": "41.0.2267.0"
         }
       }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@publish_tarball@@@"
     ]
   },
   {
     "cmd": [],
-    "name": "trigger publish_tarball (2)",
+    "name": "trigger (2)",
     "trigger_specs": [
       {
         "builder_name": "publish_tarball",
@@ -48,6 +51,9 @@
           "version": "41.0.2270.0"
         }
       }
+    ],
+    "~followup_annotations": [
+      "@@@STEP_TEXT@publish_tarball@@@"
     ]
   }
 ]
