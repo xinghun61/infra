@@ -14,6 +14,7 @@
 
 """Rietveld-BuildBucket integration module."""
 
+import datetime
 import json
 import logging
 import os
@@ -29,7 +30,7 @@ from django.conf import settings
 from codereview import common
 from codereview import models
 
-
+EPOCH = datetime.datetime.utcfromtimestamp(0)
 BUILDBUCKET_HOSTNAME = (
     'cr-buildbucket-test.appspot.com' if common.IS_DEV
     else 'cr-buildbucket.appspot.com')
@@ -104,6 +105,10 @@ class BuildbucketTryJobResult(models.TryJobResult):
       except users.UserNotFoundError:
         pass
 
+    timestamp = timestamp_to_datetime(build.get('status_changed_ts'))
+    if timestamp is None:
+      logging.warning('Build %s has status_changed_ts=None', build['id'])
+
     return cls(
         id=build['id'],  # Required for to_dict() serialization.
         build_id=build['id'],
@@ -115,6 +120,7 @@ class BuildbucketTryJobResult(models.TryJobResult):
         buildnumber=read_prop('buildnumber', int),
         reason=read_prop('reason', basestring),
         revision=read_prop('revision', basestring),
+        timestamp=timestamp,
         clobber=read_prop('clobber', bool),
         tests=read_prop('testfilter', list) or [],
         project=read_prop('project', basestring),
@@ -228,3 +234,11 @@ def dict_get_safe(container_dict, key_name, expected_type):
     )
     return None
   return value
+
+
+def timestamp_to_datetime(timestamp):
+  if timestamp is None:
+    return None
+  if isinstance(timestamp, basestring):
+    timestamp = int(timestamp)
+  return EPOCH + datetime.timedelta(microseconds=timestamp)
