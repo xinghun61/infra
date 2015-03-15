@@ -21,6 +21,9 @@ import tempfile
 # Root of infra.git repository.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Root of infra gclient solution.
+GCLIENT_ROOT = os.path.dirname(ROOT)
+
 # Where to upload packages to.
 PACKAGE_REPO_SERVICE = 'https://chrome-infra-packages.appspot.com'
 
@@ -83,6 +86,8 @@ def run_cipd(go_workspace, cmd, args):
 
 def print_title(title):
   """Pretty prints a banner to stdout."""
+  sys.stdout.flush()
+  sys.stderr.flush()
   print
   print '-' * 80
   print title
@@ -101,16 +106,38 @@ def build_go(go_workspace, packages):
     packages: list of packages to build (can include '...' patterns).
   """
   print_title('Compiling Go code: %s' % ', '.join(packages))
+
+  # Go toolchain embeds absolute paths to *.go files into the executable. Use
+  # symlink with stable path to make executables independent of checkout path.
+  new_root = None
+  new_workspace = go_workspace
+  if sys.platform != 'win32':
+    new_root = '/tmp/_chrome_infra_build'
+    if os.path.exists(new_root):
+      assert os.path.islink(new_root)
+      os.remove(new_root)
+    os.symlink(GCLIENT_ROOT, new_root)
+    rel = os.path.relpath(go_workspace, GCLIENT_ROOT)
+    assert not rel.startswith('..'), rel
+    new_workspace = os.path.join(new_root, rel)
+
   # Remove any stale binaries and libraries.
-  shutil.rmtree(os.path.join(go_workspace, 'bin'), ignore_errors=True)
-  shutil.rmtree(os.path.join(go_workspace, 'pkg'), ignore_errors=True)
+  shutil.rmtree(os.path.join(new_workspace, 'bin'), ignore_errors=True)
+  shutil.rmtree(os.path.join(new_workspace, 'pkg'), ignore_errors=True)
+
   # Recompile ('-a') with 'release' tag set.
-  run_python(
-      script=os.path.join(go_workspace, 'env.py'),
-      args=[
-        'go', 'install', '-a', '-v',
-        '-tags', 'release',
-      ] + list(packages))
+  try:
+    subprocess.check_call(
+        args=[
+          'python', '-u', os.path.join(new_workspace, 'env.py'),
+          'go', 'install', '-a', '-v',
+          '-tags', 'release',
+        ] + list(packages),
+        executable=sys.executable,
+        stderr=subprocess.STDOUT)
+  finally:
+    if new_root:
+      os.remove(new_root)
 
 
 def enumerate_packages_to_build(package_def_dir, package_def_files=None):
