@@ -1,0 +1,38 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<!DOCTYPE html>
+<title>Chromium/WebKit Builder State</title>
+<style>
+body {
+  font-family: monospace;
+  color: #333;
+}
+
+tr:hover {
+  font-weight: bold;
+  color: black;
+}
+
+.days-old {
+  background: orange;
+}
+
+.weeks-old {
+  background: red;
+}
+
+</style>
+
+<link rel="import" href="builderstatejs.html"></script>
+
+<div id="content">
+<table id='builder-state-test-table'>
+  <th>Test Type</th>
+  <th>master:builder</th>
+  <th>last successful upload time</th>
+</table>
+</div>
+

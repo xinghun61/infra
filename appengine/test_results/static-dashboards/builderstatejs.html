@@ -1,0 +1,79 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel='import' href='../appengine_module/components/net.html'>
+<script>
+var builderstate = builderstate || {};
+
+(function() {
+
+function load() {
+  net.json('http://test-results.appspot.com/builderstate').then(success, error);
+}
+
+function success(data) {
+  var tbody = document.getElementById('builder-state-test-table'); 
+  if (tbody) {
+    tbody.innerHTML += generateHtml(data);
+  }
+}
+
+function generateHtml(data) {
+  var newRows = '';
+  if (!data.masters) {
+    return newRows;
+  }
+  data.masters.forEach(function(master) {
+    for (var testName in master.tests) {
+      var test = master.tests[testName];
+      for (var builderName in test.builders) {
+        var builderTimestamp = test.builders[builderName];
+        var ago = 'never';
+        var rowClass = '';
+        if (builderTimestamp) {
+          var agoTimestamp = Date.now() - Date.parse(builderTimestamp);
+          var agoDate = new Date(agoTimestamp);
+          var agoDays = (agoTimestamp/(1000*60*60*24)).toFixed();
+          if (agoDays == 0) {
+            ago = '';
+            rowClass = '';
+          } else {
+            ago = `${agoDays} days, `;
+            rowClass = agoDays > 6 ? 'weeks-old' : 'days-old';
+          }
+          ago += `${agoDate.toISOString().substr(11, 8)}`;
+        }
+        var builderUrl = `http://build.chromium.org/p/${master.url_name}/builders/${encodeURIComponent(builderName)}`;
+        var resultsUrl = `http://test-results.appspot.com/testfile?testtype=${encodeURIComponent(testName)}&builder=${encodeURIComponent(builderName)}&master=${master.url_name}`;
+        newRows += `
+          <tr>
+            <td>${testName}</td>
+            <td>
+               ${master.name}:${builderName}
+               [<a href="${resultsUrl}" target="_blank">results</a>] [<a href="${builderUrl}" target="_blank">builder</a>]
+            </td>
+            <td class="${rowClass}">${builderTimestamp ? builderTimestamp : ''} (${ago})</td>
+          </tr>
+        `;
+      }
+    }
+
+  });
+
+  return newRows;
+}
+
+function error(xhr) {
+  window.console.log(['ERROR', xhr]);
+}
+
+window.addEventListener('load', load);
+
+// Exposed for testing
+builderstate.generateHtml = generateHtml;
+})();
+
+</script>
