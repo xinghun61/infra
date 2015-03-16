@@ -56,6 +56,10 @@ handlers:
   static_dir: bower_components
   secure: always
 
+- url: /appengine_module
+  static_dir: appengine_module
+  secure: always
+
 # Application root.
 - url: /.*
   script: main.app

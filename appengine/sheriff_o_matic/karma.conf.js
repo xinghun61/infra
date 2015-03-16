@@ -40,6 +40,7 @@ module.exports = function(config) {
       {pattern: 'model/*.html', included: false},
       'scripts/*.js',
       {pattern: 'ui/*.html', included: false},
+      {pattern: 'appengine_module/components/*', included: false},
       // tests
       'lib/test/*.html',
       'model/test/*.html',
