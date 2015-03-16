@@ -64,6 +64,7 @@ class BuildFailure(BaseHandler):
         'build_number': analysis.build_number,
         'pipeline_status_path': analysis.pipeline_status_path,
         'show_debug_info': self._ShowDebugInfo(),
+        'analysis_requested': FormatDatetime(analysis.request_time),
         'analysis_started': FormatDatetime(analysis.start_time),
         'analysis_updated': FormatDatetime(analysis.updated_time),
         'analysis_completed': analysis.completed,

@@ -74,6 +74,7 @@
       <a href="{{pipeline_status_path}}">pipeline</a>
     {% endif %}
     <br>
+    Requested: {{analysis_requested | default('N/A', true)}}<br>
     Started: {{analysis_started | default('N/A', true)}}<br>
     Updated: {{analysis_updated}}<br>
   {% endif %}

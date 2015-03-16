@@ -42,17 +42,22 @@ class WfAnalysis(BaseBuildModel):
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = None
     self.status = wf_analysis_status.PENDING
+    self.request_time = None
     self.start_time = None
 
-  # Information of the analyzed build.
   build_start_time = ndb.DateTimeProperty(indexed=True)
 
-  # Information of analysis processing.
+  # The url path to the pipeline status page.
   pipeline_status_path = ndb.StringProperty(indexed=False)
+  # The status of the analysis.
   status = ndb.IntegerProperty(
       default=wf_analysis_status.PENDING, indexed=False)
+  # When the analysis was requested.
+  request_time = ndb.DateTimeProperty(indexed=False)
+  # When the analysis actually started.
   start_time = ndb.DateTimeProperty(indexed=False)
+  # When the analysis was updated.
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
 
-  # Analysis result.
+  # Analysis result for the build failure.
   result = ndb.JsonProperty(indexed=False, compressed=True)

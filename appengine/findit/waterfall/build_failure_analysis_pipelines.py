@@ -72,11 +72,13 @@ def NeedANewAnalysis(master_name, builder_name, build_number, force):
   if not analysis:
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = wf_analysis_status.PENDING
+    analysis.request_time = datetime.utcnow()
     analysis.put()
     return True
   elif force:
     # TODO: avoid concurrent analysis.
     analysis.Reset()
+    analysis.request_time = datetime.utcnow()
     analysis.put()
     return True
   else:
