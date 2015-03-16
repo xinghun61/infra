@@ -30,7 +30,6 @@
         'Linux64 Release [large tests]',
         'Android Builder',
         'Android Builder (dbg)',
-        'Android ARM64 (dbg)',
         'Android Clang (dbg)',
       ],
     },

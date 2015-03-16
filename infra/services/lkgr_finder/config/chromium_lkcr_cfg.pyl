@@ -26,7 +26,6 @@
         'Linux Builder',
         'Linux Builder (dbg)',
         'Linux Builder (dbg)(32)',
-        'Linux Clang (dbg)',
         'Android Builder (dbg)',
         'Android Builder',
         'Android Clang Builder (dbg)',
@@ -37,7 +36,6 @@
       'builders': [
         'Linux ChromiumOS Builder',
         'Linux ChromiumOS Builder (dbg)',
-        'Linux ChromiumOS (Clang dbg)',
       ],
     },  # chromium.chromiumos
   },
