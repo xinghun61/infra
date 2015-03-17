@@ -9,13 +9,26 @@ import urllib
 
 from waterfall.build_info import BuildInfo
 
+_MASTER_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)'
+                                  '(/.*)?$')
 
-BUILD_URL_PATTERN = re.compile(r'^https?://build.chromium.org/p/([^/]+)/'
-                                'builders/([^/]+)/builds/([\d]+)(/.*)?$')
+_BUILD_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
+                                 'builders/([^/]+)/builds/([\d]+)(/.*)?$')
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
+
+
+def GetMasterNameFromUrl(url):
+  """Parses the given url and returns the master name."""
+  if not url:
+    return None
+
+  match = _MASTER_URL_PATTERN.match(url)
+  if not match:
+    return None
+  return match.group(1)
 
 
 def ParseBuildUrl(url):
@@ -27,7 +40,7 @@ def ParseBuildUrl(url):
   if not url:
     return None
 
-  match = BUILD_URL_PATTERN.match(url)
+  match = _BUILD_URL_PATTERN.match(url)
   if not match:
     return None
 

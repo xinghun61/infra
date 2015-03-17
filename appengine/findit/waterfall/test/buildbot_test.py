@@ -27,6 +27,19 @@ class DummyHttpClient(RetryHttpClient):
 
 
 class BuildBotTest(unittest.TestCase):
+  def testGetMasternameFromUrl(self):
+    cases = {
+        None: None,
+        '': None,
+        'https://unknown.host/p/chromium': None,
+        'http://build.chromium.org/p/chromium': 'chromium',
+        'http://build.chromium.org/p/chromium/builders/Linux': 'chromium',
+    }
+
+    for url, expected_result in cases.iteritems():
+      result = buildbot.GetMasterNameFromUrl(url)
+      self.assertEqual(expected_result, result)
+
   def testParseBuildUrl(self):
     cases = {
         None: None,

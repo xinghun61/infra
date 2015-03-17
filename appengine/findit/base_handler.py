@@ -31,8 +31,9 @@ class BaseHandler(webapp2.RequestHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
   def _HasPermission(self):
-    if self.request.headers.get('X-AppEngine-QueueName'):
-      # Requests from task queues could access all HTTP endpoints.
+    if (self.request.headers.get('X-AppEngine-QueueName') or
+        self.request.headers.get('X-AppEngine-Cron')):
+      # Requests from task queues or cron jobs could access all HTTP endpoints.
       return True
     elif self.PERMISSION_LEVEL == Permission.ANYONE:
       return True

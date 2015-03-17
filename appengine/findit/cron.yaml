@@ -1,0 +1,5 @@
+cron:
+- description: monitor alerts and trigger analysis automatically
+  url: /monitor-alerts
+  schedule: every 3 mins
+  target: alpha
