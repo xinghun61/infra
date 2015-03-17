@@ -76,7 +76,11 @@ def NeedANewAnalysis(master_name, builder_name, build_number, force):
     analysis.put()
     return True
   elif force:
-    # TODO: avoid concurrent analysis.
+    if not analysis.completed:
+      # TODO: start a new analysis if the last one has started running but it
+      # has no update for a considerable amount of time, eg. 10 minutes.
+      return False
+
     analysis.Reset()
     analysis.request_time = datetime.utcnow()
     analysis.put()
@@ -111,7 +115,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
 
     logging.info('An analysis triggered on build %s, %s, %s: %s',
                  master_name, builder_name, build_number,
-                 pipeline_job.pipeline_status_url())
+                 pipeline_job.pipeline_status_path())
   else:  # pragma: no cover
     logging.info('Analysis was already triggered or the result is recent.')
 

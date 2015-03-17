@@ -11,10 +11,10 @@ from waterfall import build_failure_analysis
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 
 
-class PullChangelogPipelineTest(testing.AppengineTestCase):
+class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
   app_module = handlers._APP
 
-  def testPullChangelogs(self):
+  def testIdentifyCulpritPipeline(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -33,11 +33,11 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
     signals = {}
 
     dummy_result = ['dummy_result']
-    def _MockAnalyzeBuildFailure(*_):
+    def MockAnalyzeBuildFailure(*_):
       return dummy_result
 
     self.mock(build_failure_analysis,
-              'AnalyzeBuildFailure', _MockAnalyzeBuildFailure)
+              'AnalyzeBuildFailure', MockAnalyzeBuildFailure)
 
     pipeline = IdentifyCulpritPipeline(failure_info, change_logs, signals)
     pipeline.start()

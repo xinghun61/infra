@@ -45,7 +45,19 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     self.assertFalse(need_analysis)
 
-  def testNewAnalysisIsNeededWhenForced(self):
+  def testNewAnalysisIsNotNeededWhenForcedAndLastAnalysisIsNotCompleted(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    self._CreateAndSaveWfAnalysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+
+    need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
+        master_name, builder_name, build_number, True)
+
+    self.assertFalse(need_analysis)
+
+  def testNewAnalysisIsNeededWhenForcedAndLastAnalysisIsCompleted(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
