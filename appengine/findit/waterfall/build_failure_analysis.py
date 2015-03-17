@@ -249,7 +249,7 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
           'suspected_cls': [
             {
               'build_number': 230,
-              'dependency_name': 'chromium',
+              'repo_name': 'chromium',
               'revision': 'a_git_hash',
               'commit_position': 56789,
               'score': 11,
@@ -279,7 +279,7 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
     # supported.
     cl_info = {
         'build_number': build_number,
-        'dependency_name': 'chromium',
+        'repo_name': 'chromium',
         'revision': change_log['revision'],
         'commit_position': change_log.get('commit_position'),
         'url':

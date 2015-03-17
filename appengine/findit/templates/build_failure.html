@@ -6,15 +6,15 @@
     .running {
       color: #666666;
       background-color: #fffc6c;
-      border-color: #C5C56D;
+      border-color: #c5c56d;
     }
     .completed {
-      color: #FFFFFF;
+      color: #ffffff;
       background-color: #8fdf5f;
-      border-color: #4F8530;
+      border-color: #4f8530;
     }
     .error {
-      color: #FFFFFF;
+      color: #ffffff;
       background-color: #e98080;
       border-color: #a77272;
     }
@@ -99,7 +99,7 @@
           </tr>
           <tr>
             <th>Build Number</th>
-            <th>Dependency Name</th>
+            <th>Repo Name</th>
             <th>Commit</th>
             <th>Score</th>
             <th>Hints</th>
@@ -129,7 +129,7 @@
                 {% endif %}
 
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{first_suspected_cl.build_number}}">{{first_suspected_cl.build_number}}</a></td>
-                <td>{{first_suspected_cl.dependency_name}}</td>
+                <td>{{first_suspected_cl.repo_name}}</td>
                 <td>
                   {% if first_suspected_cl.commit_position %}
                     <a href="{{first_suspected_cl.url}}">{{first_suspected_cl.commit_position}}</a>
@@ -148,7 +148,7 @@
               {% for suspected_cl in failure.suspected_cls[1:] %}
               <tr>
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
-                <td>{{suspected_cl.dependency_name}}</td>
+                <td>{{suspected_cl.repo_name}}</td>
                 <td>
                   {% if suspected_cl.commit_position %}
                     <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>

@@ -214,7 +214,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                 'suspected_cls': [
                     {
                         'build_number': 99,
-                        'dependency_name': 'chromium',
+                        'repo_name': 'chromium',
                         'revision': 'r99_2',
                         'commit_position': None,
                         'url': None,
