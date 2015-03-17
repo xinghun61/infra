@@ -63,6 +63,9 @@ found in the LICENSE file. -->
                     <cr-try-results results="{{ issue.patchsets[issue.patchsets.length - 1].tryJobResults }}" showmore></cr-try-results>
                     <cr-toolbar class="issue-toolbar">
                         <button is="cr-button" on-tap="{{ toggleCommit }}">Cancel commit</button>
+                        <div class="ui-actions">
+                          <a href="http://goo.gl/8k1zIY">CQ not working?</a>
+                        </div>
                     </cr-toolbar>
                 </template>
 

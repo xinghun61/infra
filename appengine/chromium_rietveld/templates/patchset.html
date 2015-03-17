@@ -143,10 +143,11 @@
       <form id="commitform" name="commitform" method="post">
         <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
         <input type="hidden" name="last_patchset" value="{{last_patchset.key.id}}">
-        Commit: <input type="checkbox" id="commit" name="commit"
+        Commit:<input type="checkbox" id="commit" name="commit" style="vertical-align: middle"
           {%if issue.commit%}checked{%endif%}
           {%if not request.user or issue.closed or issue.private%}disabled{%endif%}
           onchange="M_editFlags('{{issue.key.id}}')" />
+        <a style="margin-left:10px" href="http://goo.gl/8k1zIY">CQ not working?</a>
       </form>
 
       {%if is_editor %}
