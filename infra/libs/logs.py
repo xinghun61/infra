@@ -55,6 +55,7 @@ class InfraFormatter(logging.Formatter):  # pragma: no cover
   """
   def __init__(self):
     super(InfraFormatter, self).__init__('[%(severity)s%(iso8601)s %(process)d '
+                                         '%(thread)d '
                                          '%(module)s:%(lineno)s] %(message)s')
 
 
