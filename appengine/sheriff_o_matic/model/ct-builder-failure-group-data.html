@@ -5,6 +5,7 @@ found in the LICENSE file.
 -->
 
 <link rel="import" href="ct-builder-list.html">
+<link rel="import" href="ct-failure-group-data.html">
 
 <script>
 function CTBuilderFailureGroupData(failure, bot, examineUrl) {
@@ -24,4 +25,17 @@ CTBuilderFailureGroupData.prototype.getAnnotations = function() {
 CTBuilderFailureGroupData.prototype.failureKeys = function() {
   return [this.failure.key];
 };
+
+// FIXME: Add tests for this.
+CTBuilderFailureGroupData.prototype.fileBugMessage = function() {
+  return '{failureState}\nFailing builder: {builder}: {masterUrl}\n'.assign(
+      {failureState: this.failure.state, builder: this.builder.builder,
+         masterUrl: this.builder.masterUrl});
+};
+
+CTBuilderFailureGroupData.prototype.fileBugLink = function() {
+  return CTFailureGroupData.fileBugLink('Build failure',
+      'Build is broken:\n' + this.fileBugMessage());
+};
+
 </script>

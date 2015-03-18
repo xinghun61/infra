@@ -1,0 +1,21 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<script>
+function CTFailureGroupData() {
+}
+
+CTFailureGroupData.fileBugLink = function(summary, comment, labels) {
+  labels = labels || ['Pri-2'];
+  labels = labels.map(function(l) { return encodeURIComponent(l); }).join(',');
+  return ('https://code.google.com/p/chromium/issues/entry?' +
+      'status=Available&labels={labels}&summary={summary}&comment={comment}').assign(
+          {summary: encodeURIComponent(summary),
+           comment: encodeURIComponent(comment),
+           labels: labels});
+};
+
+</script>
