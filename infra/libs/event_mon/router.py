@@ -45,8 +45,12 @@ class _Router(object):
       # Set this time at the very last moment
       events.request_time_ms = time_ms()
       if self.endpoint:  # pragma: no cover
-        # TODO(pgervais): log when something fails.
-        requests.post(self.endpoint, data=events.SerializeToString())
+        response = requests.post(self.endpoint, data=events.SerializeToString())
+        if response.status_code != 200:
+          # TODO(pgervais): implement retry / local storage when this
+          # happens.
+          logging.error('failed to post data to %s', self.endpoint)
+          logging.error('data: %s', str(events)[:1000])
       else:
         logging.info('fake post request')
 

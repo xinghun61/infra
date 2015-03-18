@@ -45,6 +45,11 @@ def add_argparse_options(parser):
 
 
 def process_argparse_options(args):
+  """Initializes event monitoring based on provided arguments.
+
+  Args:
+    args(argparse.Namespace): output of ArgumentParser.parse_args.
+  """
   setup_monitoring(run_type=args.event_mon_run_type,
                    hostname=args.event_mon_hostname,
                    service_name=args.event_mon_service_name,
