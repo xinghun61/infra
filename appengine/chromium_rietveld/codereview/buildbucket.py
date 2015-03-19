@@ -67,16 +67,26 @@ class BuildbucketTryJobResult(models.TryJobResult):
     See buildbucket docs here:
     https://cr-buildbucket.appspot.com/#/docs/build
     """
-    if build.get('status') == 'SCHEDULED':
+    status = build.get('status')
+    if status == 'SCHEDULED':
       return cls.TRYPENDING
-    if build.get('status') == 'COMPLETED':
+
+    if status == 'COMPLETED':
       if build.get('result') == 'SUCCESS':
         return cls.SUCCESS
-
       if build.get('result') == 'FAILURE':
         if build.get('failure_reason') == 'BUILD_FAILURE':
           return cls.FAILURE
-        return cls.EXCEPTION
+      if build.get('result') == 'CANCELED':
+        if build.get('cancelation_reason') == 'TIMEOUT':
+          return cls.SKIPPED
+      return cls.EXCEPTION
+
+    if status == 'STARTED':
+      return cls.STARTED
+
+    logging.warning('Unexpected build %s status: %s', build.get('id'), status)
+    return None
 
   @staticmethod
   def parse_tags(tag_list):

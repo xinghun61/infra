@@ -82,7 +82,7 @@ def unpack_result(result):
 def handle_build_started(base_url, timestamp, packet, payload):
   build = payload['build']
   # results should always be absent.
-  result = build.get('results', [-1])
+  result = build.get('results', [model.TryJobResult.STARTED])
   logging.info('handle_build_started result is %r', result)
   return inner_handle(
       build.get('reason', ''), base_url, timestamp, packet, result,

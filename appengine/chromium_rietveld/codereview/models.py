@@ -525,12 +525,14 @@ class TryJobResult(ndb.Model):
   # sync'ed.  The last is used internally to make a try job that should be
   # tried with the commit queue, but has not been sent yet.
   SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, TRYPENDING = range(7)
+  STARTED = -1
+
   OK = (SUCCESS, WARNINGS, SKIPPED)
   FAIL = (FAILURE, EXCEPTION)
   # Define the priority level of result value when updating it.
   PRIORITIES = (
       (TRYPENDING,),
-      (-1, None),
+      (STARTED, None),
       (RETRY,),
       OK,
       FAIL,
@@ -671,7 +673,7 @@ class PatchSet(ndb.Model):
         elif status == 'failure':
           result = TryJobResult.FAILURE
         else:
-          result = -1
+          result = TryJobResult.STARTED
         self._try_job_results.append(
             TryJobResult(
               parent=self.key,
