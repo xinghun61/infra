@@ -77,6 +77,6 @@ CTStepFailureGroupData.prototype.fileBugMessage = function() {
 
 CTStepFailureGroupData.prototype.fileBugLink = function() {
   return CTFailureGroupData.fileBugLink('Build failure',
-      'Build is broken:\n' + this.fileBugMessage());
+      'Build is broken:\n' + this.fileBugMessage(), this.bugLabels);
 };
 </script>

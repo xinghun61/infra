@@ -10,12 +10,26 @@ found in the LICENSE file.
 function CTTreeList() {
     this.trees = [
         new CTTree('chromium', 'Chromium'),  // First entry is the default.
-        new CTTree('blink', 'Blink'),
+        new CTTree('blink', 'Blink', ['gardening-blink', 'Pri-2']),
         new CTTree('trooper', 'Trooper'),
         new CTTree('trooper-fyi', 'Trooper Miscellaneous'),
-        new CTTree('chromium.perf', 'Chromium Perf'),
+        new CTTree('chromium.perf', 'Chromium Perf',
+            ['Performance-Sheriff', 'Performance-Waterfall', 'Pri-0', 'OS-?']),
     ];
 }
+
+CTTreeList.getInstance = function() {
+  if (!CTTreeList.instance) {
+    CTTreeList.instance = new CTTreeList();
+  }
+  return CTTreeList.instance;
+};
+
+CTTreeList.getTree = function(treeName) {
+  return CTTreeList.getInstance().trees.filter(function(t) {
+    return t.name == treeName;
+  })[0];
+};
 
 CTTreeList.prototype.defaultValue = function() {
     return this.trees[0].name;

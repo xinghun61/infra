@@ -5,6 +5,7 @@ found in the LICENSE file.
 -->
 
 <link rel="import" href="ct-commit-list.html">
+<link rel="import" href="ct-tree-list.html">
 
 <script>
 function CTFailureGroup(tree, data, category) {
@@ -12,6 +13,10 @@ function CTFailureGroup(tree, data, category) {
   this.tree = tree;
   this.examineUrl = this.tree + '/failure/' + encodeURIComponent(this.key);
   this.data = data;
+  var cTree = CTTreeList.getTree(tree);
+  if (cTree) {
+    this.data.bugLabels = cTree.bugLabels;
+  }
 
   this._annotation = CTFailureGroup._mergeAnnotations(data.getAnnotations());
   this._originalCategory = category || 'default';

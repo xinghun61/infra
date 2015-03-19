@@ -34,8 +34,8 @@ CTBuilderFailureGroupData.prototype.fileBugMessage = function() {
 };
 
 CTBuilderFailureGroupData.prototype.fileBugLink = function() {
-  return CTFailureGroupData.fileBugLink('Build failure',
-      'Build is broken:\n' + this.fileBugMessage());
+  return CTFailureGroupData.fileBugLink('Builder failure',
+      'Build is broken:\n' + this.fileBugMessage(), this.bugLabels);
 };
 
 </script>
