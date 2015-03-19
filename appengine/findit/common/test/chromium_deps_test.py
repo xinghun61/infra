@@ -7,7 +7,7 @@ import unittest
 
 from common import chromium_deps
 from common import repository
-from infra.libs.deps.dependency import Dependency
+from common.dependency import Dependency
 
 
 class DummyGitRepository(repository.Repository):

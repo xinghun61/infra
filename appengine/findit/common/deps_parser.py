@@ -12,7 +12,7 @@ TODO: support strict mode, 'target_os', 'target_os_only', 'use_relative_paths',
 
 import collections
 
-from infra.libs.deps import dependency
+from common import dependency
 
 
 # All supported OSes in DEPS file.

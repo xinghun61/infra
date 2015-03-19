@@ -6,8 +6,8 @@ import copy
 import textwrap
 import unittest
 
-from infra.libs.deps import dependency
-from infra.libs.deps import deps_parser
+from common import dependency
+from common import deps_parser
 
 
 class DepsParserTest(unittest.TestCase):

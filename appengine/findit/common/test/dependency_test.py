@@ -4,7 +4,7 @@
 
 import unittest
 
-from infra.libs.deps.dependency import Dependency
+from common.dependency import Dependency
 
 
 class DependencyTest(unittest.TestCase):
