@@ -56,8 +56,8 @@ def _get_service_event(event_type,
   if code_version is None:
     code_version = ()
   if not isinstance(code_version, (tuple, list)):
-    logging.error('Invalid type provided to code_version argument in'
-                  '_get_service_event. Please fix the calling code.'
+    logging.error('Invalid type provided to code_version argument in '
+                  '_get_service_event. Please fix the calling code. '
                   'Type provided: %s, expected list, tuple or None.'
                   % str(type(code_version)))
     code_version = ()
