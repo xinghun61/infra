@@ -22,8 +22,8 @@ handlers:
 - url: /dashboards
   static_dir: static-dashboards
 
-- url: /appengine_module
-  static_dir: appengine_module
+- url: /appengine_module/components
+  static_dir: appengine_module/components
 
 - url: /testfile/delete
   script: appengine_module.test_results.main.app
