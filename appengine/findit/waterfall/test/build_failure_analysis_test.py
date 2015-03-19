@@ -65,8 +65,9 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     failure_signal_json = {
         'files': {
             'src/a/b/f1.cc': [],
+            'd/e/a2_test.cc': [],
             'b/c/f2.h': [10, 20],
-            'd/e/f3_test.cc': [],
+            'd/e/f3.h': [],
             'x/y/f4.py': [],
             'f5_impl.cc': []
         }
@@ -77,6 +78,11 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                 'change_type': ChangeType.ADD,
                 'old_path': '/dev/null',
                 'new_path': 'a/b/f1.cc'
+            },
+            {
+                'change_type': ChangeType.ADD,
+                'old_path': '/dev/null',
+                'new_path': 'd/e/a2.cc'
             },
             {
                 'change_type': ChangeType.MODIFY,
@@ -109,7 +115,15 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     justification = build_failure_analysis._CheckFiles(
         FailureSignal.FromJson(failure_signal_json), change_log_json)
     self.assertIsNotNone(justification)
-    self.assertEqual(13, justification['score'])
+    # The score is 14 because:
+    # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
+    # +1 added d/e/a2.cc (related file a2_test.cc in failure_signal log)
+    # +1 modified b/c/f2.h (same file a/b/c/f2.h in failure_signal log)
+    # +1 modified d/e/f3.h (same file d/e/f3.h in failure_signal log)
+    # +5 deleted x/y/f4.py (same file x/y/f4.py in failure_signal log)
+    # +1 deleted h/f5.h (related file f5_impl.cc in failure_signal log)
+    # +0 renamed t/y/x.cc -> s/z/x.cc (no related file in failure_signal log)
+    self.assertEqual(14, justification['score'])
 
   def testCheckFilesAgainstUnrelatedCL(self):
     failure_signal_json = {

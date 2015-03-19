@@ -163,26 +163,40 @@ class _Justification(object):
     }
 
 
-def _CheckFile(change_action, changed_src_file_path, file_path_in_log,
-               score, justification):
+def _CheckFile(touched_file, file_path_in_log, justification):  
   """Checks if the given files are related and updates the justification.
 
   Args:
-    change_action (str): How file was changed: added, deleted, or modified.
-    changed_src_file_path (str): Changed file path in a CL.
+    touched_file (dict): The touched file found in the change log.
     file_path_in_log (str): File path appearing in the failure log.
-    score (int): Score number if two files are the same.
     justification (_Justification): An instance of _Justification.
   """
-  if _IsSameFile(changed_src_file_path, file_path_in_log):
-    justification.AddFileChange(change_action, changed_src_file_path,
-                                file_path_in_log, score)
-  elif _IsRelated(changed_src_file_path, file_path_in_log):
-    # For related files, do score=1, because it is just likely-suspected, not
-    # highly-suspected.
-    justification.AddFileChange(
-        change_action, changed_src_file_path, file_path_in_log, 1)
+  change_type = touched_file['change_type']
 
+  if change_type == ChangeType.MODIFY:
+    changed_src_file_path = touched_file['new_path'] 
+    if (_IsSameFile(changed_src_file_path, file_path_in_log) or 
+        _IsRelated(changed_src_file_path, file_path_in_log)):
+      justification.AddFileChange(
+          'modified', touched_file['new_path'], file_path_in_log, score=1)
+                   
+  if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
+    changed_src_file_path = touched_file['new_path']  
+    if _IsSameFile(changed_src_file_path, file_path_in_log):
+      justification.AddFileChange(
+          'added', changed_src_file_path, file_path_in_log, score=5)
+    elif _IsRelated(changed_src_file_path, file_path_in_log):
+      justification.AddFileChange(
+          'added', changed_src_file_path, file_path_in_log, score=1)
+
+  if change_type in (ChangeType.DELETE, ChangeType.RENAME):
+    changed_src_file_path = touched_file['old_path']
+    if _IsSameFile(changed_src_file_path, file_path_in_log):
+      justification.AddFileChange(
+          'deleted', changed_src_file_path, file_path_in_log, score=5)
+    elif _IsRelated(changed_src_file_path, file_path_in_log):
+      justification.AddFileChange(
+          'deleted', changed_src_file_path, file_path_in_log, score=1)
 
 def _CheckFiles(failure_signal, change_log):
   """Check files in the given change log of a CL against the failure signal.
@@ -204,25 +218,7 @@ def _CheckFiles(failure_signal, change_log):
       file_path_in_log = file_path_in_log[4:]
 
     for touched_file in change_log['touched_files']:
-      change_type = touched_file['change_type']
-
-      # TODO: move the analysis of change type into function _CheckFile.
-      if change_type == ChangeType.MODIFY:
-        if _IsSameFile(touched_file['new_path'], file_path_in_log):
-          # TODO(stgao): use line number for git blame.
-          justification.AddFileChange(
-              'modified', touched_file['new_path'], file_path_in_log, 1)
-        elif _IsRelated(touched_file['new_path'], file_path_in_log):
-          justification.AddFileChange(
-              'modified', touched_file['new_path'], file_path_in_log, 1)
-
-      if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
-        _CheckFile('added', touched_file['new_path'], file_path_in_log, 5,
-                   justification)
-
-      if change_type in (ChangeType.DELETE, ChangeType.RENAME):
-        _CheckFile('deleted', touched_file['old_path'], file_path_in_log, 5,
-                   justification)
+      _CheckFile(touched_file, file_path_in_log, justification)
 
   if not justification.score:
     return None
