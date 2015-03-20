@@ -16,42 +16,66 @@ from infra.libs.service_utils import outer_loop
 
 
 cpu_count = ts_mon.GaugeMetric('dev/cpu/count')
-cpu_percent = ts_mon.FloatMetric('dev/cpu/usage')
+cpu_user_percent = ts_mon.FloatMetric('dev/cpu/user')
+cpu_system_percent = ts_mon.FloatMetric('dev/cpu/system')
+cpu_idle_percent = ts_mon.FloatMetric('dev/cpu/idle')
+cpu_total_percent = ts_mon.FloatMetric('dev/cpu/total')
 
-root_used = ts_mon.GaugeMetric('dev/disk/usage',
-                               fields={'state': 'used', 'path': '/'})
-root_free = ts_mon.GaugeMetric('dev/disk/usage',
-                               fields={'state': 'free', 'path': '/'})
+disk_free = ts_mon.GaugeMetric('dev/disk/free')
+disk_total = ts_mon.GaugeMetric('dev/disk/total')
 
-mem_used = ts_mon.GaugeMetric('dev/mem/usage', fields={'state': 'used'})
-mem_free = ts_mon.GaugeMetric('dev/mem/usage', fields={'state': 'free'})
+mem_free = ts_mon.GaugeMetric('dev/mem/free')
+mem_total = ts_mon.GaugeMetric('dev/mem/total')
 
-net_up = ts_mon.GaugeMetric('dev/net/traffic', fields={'direction': 'up'})
-net_down = ts_mon.GaugeMetric('dev/net/traffic', fields={'direction': 'down'})
+net_up = ts_mon.GaugeMetric('dev/net/up')
+net_down = ts_mon.GaugeMetric('dev/net/down')
+
+proc_count = ts_mon.GaugeMetric('dev/proc/count')
 
 
 def get_cpu_info():
-  cpu_count.set(psutil.cpu_count())
+  num_cores = psutil.cpu_count()
+  cpu_count.set(num_cores)
   # Warning: blocking call for the duration of 'interval'.
-  cpu_percent.set(psutil.cpu_percent(interval=1.0))
+  times_percents = psutil.cpu_times_percent(interval=1.0, percpu=True)
+  total_percents = psutil.cpu_percent(percpu=True)  # uses same interval.
+  # psutil guarantees that the return values when percpu=True always have
+  # the same deterministic ordering, so we can rely on that here.
+  for cpu in xrange(num_cores):
+    # We only report user, system, and idle because others (such as nice) aren't
+    # available on all platforms.
+    cpu_user_percent.set(times_percents[cpu].user, {'core': cpu})
+    cpu_system_percent.set(times_percents[cpu].system, {'core': cpu})
+    cpu_idle_percent.set(times_percents[cpu].idle, {'core': cpu})
+    cpu_total_percent.set(total_percents[cpu], {'core': cpu})
 
 
 def get_disk_info():
-  disk = psutil.disk_usage('/')
-  root_used.set(disk.used)
-  root_free.set(disk.free)
+  disks = psutil.disk_partitions()
+  for disk in disks:
+    usage = psutil.disk_usage(disk.mountpoint)
+    disk_free.set(usage.free, {'path': disk.mountpoint})
+    disk_total.set(usage.total, {'path': disk.mountpoint})
 
 
 def get_mem_info():
+  # We don't report mem.used because (due to virtual memory) it is not useful.
   mem = psutil.virtual_memory()
-  mem_used.set(mem.used)
   mem_free.set(mem.available)
+  mem_total.set(mem.total)
 
 
 def get_net_info():
-  net = psutil.net_io_counters()
-  net_up.set(net.bytes_sent)
-  net_down.set(net.bytes_recv)
+  nics = psutil.net_io_counters(pernic=True)
+  for nic, counters in nics.iteritems():
+    # This could easily be extended to track packets, errors, and drops.
+    net_up.set(counters.bytes_sent, {'interface': nic})
+    net_down.set(counters.bytes_recv, {'interface': nic})
+
+
+def get_proc_info():
+  procs = psutil.pids()
+  proc_count.set(len(procs))
 
 
 def parse_args(argv):
@@ -88,6 +112,7 @@ def main(argv):
     get_disk_info()
     get_mem_info()
     get_net_info()
+    get_proc_info()
     ts_mon.flush()
     return True
 
