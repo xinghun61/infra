@@ -19,7 +19,7 @@ module.exports = function(config) {
         globals: ['net', 'scrolled', 'oCursor', 'availableWidth', 'topNotUsableSize',
             'xLabelWidth', 'nblab', 'bottomNotUsableHeightWithoutXLabels',
             'bottomNotUsableHeightWithXLabels', 'availableHeight', 'clrx', 'clrwidth',
-            'clry', 'clrheight', 'fmtYLabel', 'lgtxt', 'lgtxt2']
+            'clry', 'clrheight', 'fmtYLabel', 'lgtxt', 'lgtxt2', 'todoannotage', 'tp', 'k', 'newstr']
       },
       captureConsole: true
     },
@@ -27,7 +27,7 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       // dependencies
-      'bower_components/platform/platform.js',
+      'bower_components/webcomponentsjs/webcomponents.js',
       'test/karma-loader.html',
       'bower_components/chai/chai.js',
       'bower_components/sugar/release/sugar-full.development.js',

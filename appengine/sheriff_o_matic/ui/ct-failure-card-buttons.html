@@ -7,7 +7,7 @@ found in the LICENSE file.
 <link rel="import" href="../model/ct-builder-list.html">
 <link rel="import" href="ct-button.html">
 <link rel="import" href="ct-view-handler.html">
-<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-action-dialog.html">
 <link rel="import" href="../bower_components/paper-dialog/paper-dialog-transition.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
 
@@ -41,7 +41,7 @@ found in the LICENSE file.
     </template>
     <ct-button id="link-bug" on-tap="{{ linkBug }}" label="Link Bug"></ct-button>
 
-    <paper-dialog heading="Enter bug number" transition="paper-transition-center" id="bugDialog">
+    <paper-action-dialog heading="Enter bug number" transition="paper-transition-center" id="bugDialog">
       <paper-input label="Bug# or URL" floatingLabel autofocus id="bug"></paper-input>
       <div><a id="fileBugLink" target="_blank" on-click="{{ fileBugClicked }}">
         <template if="{{ !_fileBugClicked }}">
@@ -53,9 +53,9 @@ found in the LICENSE file.
           Remember to enter the new bug number above!
         </div>
       </template>
-      <ct-button label="Remove bug link" on-tap="{{ removeBug }}" dismissive id="dialogRemoveBug"></ct-button>
-      <ct-button label="OK" on-tap="{{ saveBug }}" affirmative id="dialogOk"></ct-button>
-    </paper-dialog>
+      <ct-button on-tap="{{ removeBug }}" dismissive role="button" id="dialogRemoveBug" label="Remove bug link"></ct-button>
+      <ct-button on-tap="{{ saveBug }}" affirmative role="button" id="dialogOk" label="OK"></ct-button>
+    </paper-action-dialog>
   </template>
   <script>
     Polymer({
