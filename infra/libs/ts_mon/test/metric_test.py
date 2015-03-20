@@ -36,7 +36,8 @@ class MetricTest(unittest.TestCase):
     m._value = 'val'
     p = m.serialize(fields={'baz': False})
     e = textwrap.dedent('''\
-        name: "crit/test"
+        name: "test"
+        metric_name_prefix: "/chrome/infra/"
         network_device {
           alertable: true
           realm: "ACQ_CHROME"
@@ -64,7 +65,8 @@ class MetricTest(unittest.TestCase):
     m._value = 'val'
     p = m.serialize(default_target=t)
     e = textwrap.dedent('''\
-        name: "crit/test"
+        name: "test"
+        metric_name_prefix: "/chrome/infra/"
         network_device {
           alertable: true
           realm: "ACQ_CHROME"

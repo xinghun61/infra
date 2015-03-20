@@ -74,9 +74,8 @@ class Metric(object):
       MonitoringTooManyFieldsError: if the provided extra metric fields put the
                                     total over seven.
     """
-    # TODO(agable): start using the /crit/ prefix when we have real quota,
-    # instead of just using the crit/ subspace of /acquisitions/monitoring/.
-    metric_pb = metrics_pb2.MetricsData(name='crit/' + self._name)
+    metric_pb = metrics_pb2.MetricsData(metric_name_prefix='/chrome/infra/',
+                                        name=self._name)
 
     self._populate_metric_pb(metric_pb)
     self._populate_fields_pb(metric_pb, fields=fields)
