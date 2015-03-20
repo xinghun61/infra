@@ -12,6 +12,7 @@ import psutil
 
 from infra.libs import logs
 from infra.libs import ts_mon
+from infra.libs.service_utils import outer_loop
 
 
 cpu_count = ts_mon.GaugeMetric('dev/cpu/count')
@@ -53,20 +54,49 @@ def get_net_info():
   net_down.set(net.bytes_recv)
 
 
-def main(argv):
+def parse_args(argv):
   p = argparse.ArgumentParser()
+
+  p.add_argument(
+      '--interval',
+      default=10, type=int,
+      help='time (in seconds) between sampling system metrics')
 
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
-  args = p.parse_args(argv)
-  logs.process_argparse_options(args)
-  ts_mon.process_argparse_options(args)
+  outer_loop.add_argparse_options(p)
+  opts = p.parse_args(argv)
+  logs.process_argparse_options(opts)
+  ts_mon.process_argparse_options(opts)
 
-  get_cpu_info()
-  get_disk_info()
-  get_mem_info()
-  get_net_info()
+  # Set our own defaults (rather than outer_loop's "forever" and "infinity").
+  # Our defaults are such that it will run only once and then exit.
+  loop_opts = outer_loop.pro0ess_argparse_options(opts)
+  if not loop_opts.get('duration'):
+    loop_opts['duration'] = 0
+  if not loop_opts.get('max_errors'):
+    loop_opts['max_errors'] = 0
+
+  return opts, loop_opts
+
+
+def main(argv):
+  opts, loop_opts = parse_args(argv)
+
+  def single_iteration():
+    get_cpu_info()
+    get_disk_info()
+    get_mem_info()
+    get_net_info()
+    return True
+
+  loop_results = outer_loop.loop(
+      task=single_iteration,
+      sleep_timeout=lambda: opts.interval,
+      **loop_opts)
+
+  return 0 if loop_results.success else 1
 
 
 if __name__ == '__main__':
-  main(sys.argv[1:])
+  sys.exit(main(sys.argv[1:]))
