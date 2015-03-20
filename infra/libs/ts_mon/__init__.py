@@ -11,6 +11,11 @@ from infra.libs.ts_mon.errors import MonitoringTooManyFieldsError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 
+from infra.libs.ts_mon.interface import add_argparse_options
+from infra.libs.ts_mon.interface import process_argparse_options
+from infra.libs.ts_mon.interface import send
+from infra.libs.ts_mon.interface import flush
+
 from infra.libs.ts_mon.target import DeviceTarget
 from infra.libs.ts_mon.target import TaskTarget
 
@@ -21,6 +26,5 @@ from infra.libs.ts_mon.metric import GaugeMetric
 from infra.libs.ts_mon.metric import CumulativeMetric
 from infra.libs.ts_mon.metric import FloatMetric
 
-from infra.libs.ts_mon.monitor import Monitor
-from infra.libs.ts_mon.monitor import add_argparse_options
-from infra.libs.ts_mon.monitor import process_argparse_options
+from infra.libs.ts_mon.monitor import ApiMonitor
+from infra.libs.ts_mon.monitor import DiskMonitor

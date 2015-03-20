@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import sys
+import textwrap
 import unittest
 
 import mock
@@ -16,11 +17,80 @@ from infra.libs.ts_mon.errors import MonitoringIncrementUnsetValueError
 from infra.libs.ts_mon.errors import MonitoringInvalidFieldTypeError
 from infra.libs.ts_mon.errors import MonitoringInvalidValueTypeError
 from infra.libs.ts_mon.errors import MonitoringTooManyFieldsError
+from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
+from infra.libs.ts_mon.target import DeviceTarget
 
 
 class MetricTest(unittest.TestCase):
 
-  def test_populate_fields(self):
+  def test_init_too_may_fields(self):
+    fields = {str(i): str(i) for i in xrange(8)}
+    with self.assertRaises(MonitoringTooManyFieldsError) as e:
+      metric.Metric('test', fields=fields)
+    self.assertEquals(e.exception.metric, 'test')
+    self.assertEquals(len(e.exception.fields), 8)
+
+  def test_serialize(self):
+    t = DeviceTarget('reg', 'net', 'host')
+    m = metric.StringMetric('test', target=t, fields={'bar': 1})
+    m._value = 'val'
+    p = m.serialize(fields={'baz': False})
+    e = textwrap.dedent('''\
+        name: "crit/test"
+        network_device {
+          alertable: true
+          realm: "ACQ_CHROME"
+          metro: "reg"
+          hostname: "host"
+          hostgroup: "net"
+        }
+        fields {
+          name: "baz"
+          type: BOOL
+          bool_value: false
+        }
+        fields {
+          name: "bar"
+          type: INT
+          int_value: 1
+        }
+        string_value: "val"
+    ''')
+    self.assertEquals(str(p), e)
+
+  def test_serialize_default_target(self):
+    t = DeviceTarget('reg', 'net', 'host')
+    m = metric.StringMetric('test')
+    m._value = 'val'
+    p = m.serialize(default_target=t)
+    e = textwrap.dedent('''\
+        name: "crit/test"
+        network_device {
+          alertable: true
+          realm: "ACQ_CHROME"
+          metro: "reg"
+          hostname: "host"
+          hostgroup: "net"
+        }
+        string_value: "val"
+    ''')
+    self.assertEquals(str(p), e)
+
+  def test_serialize_no_target(self):
+    m = metric.StringMetric('test')
+    m._value = 'val'
+    with self.assertRaises(MonitoringNoConfiguredTargetError):
+      m.serialize()
+
+  def test_serialze_too_many_fields(self):
+    t = DeviceTarget('reg', 'net', 'host')
+    m = metric.StringMetric('test', target=t,
+                            fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
+    m._value = 'val'
+    with self.assertRaises(MonitoringTooManyFieldsError):
+      m.serialize(fields={'e': 5, 'f': 6, 'g': 7, 'h': 8})
+
+  def test_populate_field_values(self):
     pb1 = metrics_pb2.MetricsData()
     m1 = metric.Metric('foo', fields={'asdf': 1})
     m1._populate_fields_pb(pb1)
@@ -39,14 +109,7 @@ class MetricTest(unittest.TestCase):
     self.assertEquals(pb3.fields[0].name, 'zxcv')
     self.assertEquals(pb3.fields[0].string_value, 'baz')
 
-  def test_too_may_fields(self):
-    fields = {str(i): str(i) for i in xrange(8)}
-    with self.assertRaises(MonitoringTooManyFieldsError) as e:
-      metric.Metric('test', fields=fields)
-    self.assertEquals(e.exception.metric, 'test')
-    self.assertEquals(len(e.exception.fields), 8)
-
-  def test_invalid_field(self):
+  def test_invalid_field_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.Metric('test', fields={'pi': 3.14})
     with self.assertRaises(MonitoringInvalidFieldTypeError) as e:
@@ -112,7 +175,7 @@ class NumericMetricTest(unittest.TestCase):
 
   def test_increment(self):
     m = metric.NumericMetric('test')
-    def set_stub(val):
+    def set_stub(val, _fields=None):
       m._value = val
     m.set = set_stub
     m._value = 1

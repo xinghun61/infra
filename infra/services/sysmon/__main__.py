@@ -88,6 +88,7 @@ def main(argv):
     get_disk_info()
     get_mem_info()
     get_net_info()
+    ts_mon.flush()
     return True
 
   loop_results = outer_loop.loop(

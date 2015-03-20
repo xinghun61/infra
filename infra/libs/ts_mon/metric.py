@@ -15,8 +15,9 @@ from infra.libs.ts_mon.errors import MonitoringIncrementUnsetValueError
 from infra.libs.ts_mon.errors import MonitoringInvalidFieldTypeError
 from infra.libs.ts_mon.errors import MonitoringInvalidValueTypeError
 from infra.libs.ts_mon.errors import MonitoringTooManyFieldsError
+from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 
-from infra.libs.ts_mon.monitor import send
+from infra.libs.ts_mon.interface import send
 
 
 class Metric(object):
@@ -57,13 +58,54 @@ class Metric(object):
       raise MonitoringTooManyFieldsError(self._name, fields)
     self._fields = fields
 
-  def _populate_fields_pb(self, metric):
+  def serialize(self, fields=None, default_target=None):
+    """Convert this Metric into a metrics_pb2.MetricsData protobuf.
+
+    Args:
+      fields (dict): a set of key-value pairs to be set as extra metric fields
+      default_target (Target): a Target to use if self._target is not set
+
+    Returns:
+      metrics_pb2.MetricsData protocol buffer with the current metric value
+
+    Raises:
+      MonitoringNoConfiguredTargetError: if neither self._target nor
+                                         default_target is set
+      MonitoringTooManyFieldsError: if the provided extra metric fields put the
+                                    total over seven.
+    """
+    # TODO(agable): start using the /crit/ prefix when we have real quota,
+    # instead of just using the crit/ subspace of /acquisitions/monitoring/.
+    metric_pb = metrics_pb2.MetricsData(name='crit/' + self._name)
+
+    self._populate_metric_pb(metric_pb)
+    self._populate_fields_pb(metric_pb, fields=fields)
+
+    if self._target:
+      self._target._populate_target_pb(metric_pb)
+    elif default_target:
+      default_target._populate_target_pb(metric_pb)
+    else:
+      raise MonitoringNoConfiguredTargetError(self._name)
+
+    return metric_pb
+
+  def _populate_fields_pb(self, metric, fields=None):
     """Fill in the fields attribute of a metric protocol buffer.
 
     Args:
       metric (metrics_pb2.MetricsData): a metrics protobuf to populate
+      fields (dict): additional metric fields to complement those on self
+
+    Raises:
+      MonitoringTooManyFieldsError: if there are more than seven metric fields
+      MonitoringInvalidFieldTypeError: if a field has a value of unknown type
     """
-    for key, value in self._fields.iteritems():
+    all_fields = copy.copy(self._fields)
+    all_fields.update(fields or {})
+    if len(all_fields) > 7:
+      raise MonitoringTooManyFieldsError(self._name, all_fields)
+    for key, value in all_fields.iteritems():
       field = metric.fields.add()
       field.name = key
       if isinstance(value, basestring):
@@ -86,11 +128,12 @@ class Metric(object):
     """
     raise NotImplementedError()
 
-  def set(self, value):
+  def set(self, value, fields=None):
     """Set a new value for this metric. Results in sending a new value.
 
     Args:
       value (see concrete class): the value of the metric to be set
+      fields (dict): additional metric fields to complement those on self
     """
     raise NotImplementedError()
 
@@ -101,11 +144,11 @@ class StringMetric(Metric):
   def _populate_metric_pb(self, metric):
     metric.string_value = self._value
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, basestring):
       raise MonitoringInvalidValueTypeError(self._name, value)
     self._value = value
-    send(self)
+    send(self, fields)
 
 
 class BooleanMetric(Metric):
@@ -114,27 +157,27 @@ class BooleanMetric(Metric):
   def _populate_metric_pb(self, metric):
     metric.boolean_value = self._value
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, bool):
       raise MonitoringInvalidValueTypeError(self._name, value)
     self._value = value
-    send(self)
+    send(self, fields)
 
-  def toggle(self):
-    self.set(not self._value)
+  def toggle(self, fields=None):
+    self.set(not self._value, fields)
 
 
 class NumericMetric(Metric):  # pylint: disable=abstract-method
   """Abstract base class for numeric (int or float) metrics."""
   #TODO(agable): Figure out if there's a way to send units with these metrics.
 
-  def increment(self):
-    self.increment_by(1)
+  def increment(self, fields=None):
+    self.increment_by(1, fields)
 
-  def increment_by(self, step):
+  def increment_by(self, step, fields=None):
     if self._value is None:
       raise MonitoringIncrementUnsetValueError(self._name)
-    self.set(self._value + step)
+    self.set(self._value + step, fields)
 
 
 class CounterMetric(NumericMetric):
@@ -148,13 +191,13 @@ class CounterMetric(NumericMetric):
     metric.counter = self._value
     metric.start_timestamp_us = self._start_time
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
       raise MonitoringInvalidValueTypeError(self._name, value)
     if value < self._value:
       raise MonitoringDecreasingValueError(self._name, self._value, value)
     self._value = value
-    send(self)
+    send(self, fields)
 
 
 class GaugeMetric(NumericMetric):
@@ -163,11 +206,11 @@ class GaugeMetric(NumericMetric):
   def _populate_metric_pb(self, metric):
     metric.gauge = self._value
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
       raise MonitoringInvalidValueTypeError(self._name, value)
     self._value = value
-    send(self)
+    send(self, fields)
 
 
 class CumulativeMetric(NumericMetric):
@@ -181,13 +224,13 @@ class CumulativeMetric(NumericMetric):
     metric.cumulative_double_value = self._value
     metric.start_timestamp_us = self._start_time
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
       raise MonitoringInvalidValueTypeError(self._name, value)
     if value < self._value:
       raise MonitoringDecreasingValueError(self._name, self._value, value)
     self._value = float(value)
-    send(self)
+    send(self, fields)
 
 
 class FloatMetric(NumericMetric):
@@ -196,8 +239,8 @@ class FloatMetric(NumericMetric):
   def _populate_metric_pb(self, metric):
     metric.noncumulative_double_value = self._value
 
-  def set(self, value):
+  def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
       raise MonitoringInvalidValueTypeError(self._name, value)
     self._value = float(value)
-    send(self)
+    send(self, fields)
