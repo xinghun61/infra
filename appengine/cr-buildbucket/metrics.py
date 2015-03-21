@@ -70,7 +70,7 @@ def call_mon_api_async(method, path, body=None):
   logging.debug('urlfetch request: %s %s', method, url)
   res = yield ndb.get_context().urlfetch(
       url, method=method, payload=payload, headers=headers,
-      follow_redirect=False, validate_certificate=True)
+      follow_redirects=False, validate_certificate=True)
   if res.status_code >= 300:
     raise Error(
         'Unexpected status code: %s. Content: %s' %
