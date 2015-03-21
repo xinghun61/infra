@@ -20,6 +20,16 @@ class AclTest(testing.AppengineTestCase):
     self.current_identity = auth.Identity.from_bytes('user:a@example.com')
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
 
+  def set_acl(self, bucket_name, rules):
+    bucket_acl = acl.BucketAcl(
+        id=bucket_name,
+        rules=rules,
+        modified_by=self.current_identity,
+        modified_time=utils.utcnow(),
+    )
+    bucket_acl.put()
+    return bucket_acl
+
   def mock_admin(self):
     self.mock(auth, 'is_admin', lambda *_: True)
 
@@ -31,15 +41,12 @@ class AclTest(testing.AppengineTestCase):
   def test_has_any_of_roles(self):
     self.mock_is_group_member(['readers'])
 
-    acl.BucketAcl(
-        id='bucket',
-        rules=[
+    self.set_acl(
+        'bucket',
+        [
             acl.Rule(role=acl.Role.READER, group='readers'),
             acl.Rule(role=acl.Role.WRITER, group='writers'),
-        ],
-        modified_by=self.current_identity,
-        modified_time=utils.utcnow(),
-    ).put()
+        ])
 
     self.assertTrue(
         acl.has_any_of_roles('bucket', [acl.Role.READER]))
@@ -58,29 +65,22 @@ class AclTest(testing.AppengineTestCase):
   def test_get_available_buckets(self):
     self.mock_is_group_member(['xxx', 'yyy'])
 
-    def set_acl(bucket_name, rules):
-      acl.BucketAcl(
-          id=bucket_name,
-          rules=rules,
-          modified_by=self.current_identity,
-          modified_time=utils.utcnow(),
-      ).put()
 
-    set_acl(
+    self.set_acl(
         'available_bucket1',
         [
             acl.Rule(role=acl.Role.READER, group='xxx'),
             acl.Rule(role=acl.Role.WRITER, group='yyy')
         ],
     )
-    set_acl(
+    self.set_acl(
         'available_bucket2',
         [
             acl.Rule(role=acl.Role.READER, group='xxx'),
             acl.Rule(role=acl.Role.WRITER, group='zzz')
         ],
     )
-    set_acl(
+    self.set_acl(
         'not_available_bucket',
         [acl.Rule(role=acl.Role.OWNER, group='zzz')],
     )
@@ -125,13 +125,8 @@ class AclTest(testing.AppengineTestCase):
 
   def test_get_acl(self):
     self.mock_admin()
-    expected = acl.BucketAcl(
-        id='bucket',
-        rules=[acl.Rule(role=acl.Role.READER, group='readers')],
-        modified_by=self.current_identity,
-        modified_time=utils.utcnow(),
-    )
-    expected.put()
+    expected = self.set_acl(
+        'bucket', [acl.Rule(role=acl.Role.READER, group='readers')])
 
     actual = acl.get_acl('bucket')
     self.assertEqual(expected, actual)

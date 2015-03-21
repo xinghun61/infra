@@ -5,6 +5,9 @@
 import os
 import sys
 
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(APP_DIR, 'third_party'))
+
 from components import utils
 from components import ereporter2
 import endpoints
@@ -12,9 +15,6 @@ import webapp2
 
 import api
 import handlers
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(APP_DIR, 'third_party'))
 
 
 def create_html_app():  # pragma: no cover

@@ -5,6 +5,7 @@
 from components import decorators
 import webapp2
 
+import metrics
 import service
 
 
@@ -17,6 +18,14 @@ class CronResetExpiredBuilds(webapp2.RequestHandler):
   @decorators.require_cronjob
   def get(self):
     create_service().reset_expired_builds()
+
+
+class CronSendMetrics(webapp2.RequestHandler):  # pragma: no cover
+  """Resets expired builds."""
+  @decorators.require_cronjob
+  def get(self):
+    metrics.ensure_metrics_exist()
+    metrics.send_all_metrics()
 
 
 class BuildHandler(webapp2.RequestHandler):  # pragma: no cover
@@ -37,4 +46,7 @@ def get_backend_routes():
       webapp2.Route(
           r'/internal/cron/buildbucket/reset_expired_builds',
           CronResetExpiredBuilds),
+      webapp2.Route(
+          r'/internal/cron/buildbucket/send_metrics',
+          CronSendMetrics),
   ]

@@ -5,6 +5,12 @@ cron:
   url: /internal/cron/buildbucket/reset_expired_builds
   schedule: every 1 minutes
 
+
+- description: send metrics
+  target: backend
+  url: /internal/cron/buildbucket/send_metrics
+  schedule: every 15 minutes
+
 ### ereporter2
 
 - description: ereporter2 cleanup
