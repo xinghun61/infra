@@ -18,10 +18,10 @@ from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 class GlobalsTest(unittest.TestCase):
 
   def setUp(self):
-    interface._config = interface.Config(None, None, None, [])
+    interface._state = interface.State()
 
   def tearDown(self):
-    interface._config = interface.Config(None, None, None, [])
+    interface._state = interface.State()
 
   @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
@@ -38,9 +38,9 @@ class GlobalsTest(unittest.TestCase):
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json',
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage')
-    self.assertIs(interface._config.global_monitor, singleton)
+    self.assertIs(interface._state.global_monitor, singleton)
     fake_target.assert_called_once_with('reg', '100', 'foo100')
-    self.assertIs(interface._config.default_target, singleton)
+    self.assertIs(interface._state.default_target, singleton)
     self.assertEquals(args.ts_mon_flush, 'all')
 
   @mock.patch('socket.getfqdn')
@@ -58,9 +58,9 @@ class GlobalsTest(unittest.TestCase):
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json',
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage')
-    self.assertIs(interface._config.global_monitor, singleton)
+    self.assertIs(interface._state.global_monitor, singleton)
     fake_target.assert_called_once_with('', '', 'foo')
-    self.assertIs(interface._config.default_target, singleton)
+    self.assertIs(interface._state.default_target, singleton)
 
   @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
   def test_monitor_args(self, fake_monitor):
@@ -73,7 +73,7 @@ class GlobalsTest(unittest.TestCase):
     interface.process_argparse_options(args)
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json', 'https://foo.tld/api')
-    self.assertIs(interface._config.global_monitor, singleton)
+    self.assertIs(interface._state.global_monitor, singleton)
 
   @mock.patch('infra.libs.ts_mon.interface.DiskMonitor')
   def test_dryrun_args(self, fake_monitor):
@@ -84,7 +84,7 @@ class GlobalsTest(unittest.TestCase):
     args = p.parse_args(['--ts-mon-endpoint', 'file://foo.txt'])
     interface.process_argparse_options(args)
     fake_monitor.assert_called_once_with('foo.txt')
-    self.assertIs(interface._config.global_monitor, singleton)
+    self.assertIs(interface._state.global_monitor, singleton)
 
   @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.interface.DeviceTarget')
@@ -100,7 +100,7 @@ class GlobalsTest(unittest.TestCase):
                          '--ts-mon-device-hostname', 'host'])
     interface.process_argparse_options(args)
     fake_target.assert_called_once_with('reg', 'net', 'host')
-    self.assertIs(interface._config.default_target, singleton)
+    self.assertIs(interface._state.default_target, singleton)
 
   @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.interface.TaskTarget')
@@ -118,34 +118,34 @@ class GlobalsTest(unittest.TestCase):
                          '--ts-mon-task-number', '1'])
     interface.process_argparse_options(args)
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
-    self.assertIs(interface._config.default_target, singleton)
+    self.assertIs(interface._state.default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface._config')
-  def test_send(self, fake_config):
+  @mock.patch('infra.libs.ts_mon.interface._state')
+  def test_send(self, fake_state):
     fake_metric = mock.MagicMock()
     fake_proto = mock.MagicMock().serialize()
     fake_metric.serialize.return_value = fake_proto
-    interface._config.flush_mode = 'all'
+    interface._state.flush_mode = 'all'
     interface.send(fake_metric)
-    fake_config.global_monitor.send.assert_called_once_with(fake_proto)
+    fake_state.global_monitor.send.assert_called_once_with(fake_proto)
 
-  @mock.patch('infra.libs.ts_mon.interface._config')
-  def test_send_stores(self, fake_config):
+  @mock.patch('infra.libs.ts_mon.interface._state')
+  def test_send_stores(self, fake_state):
     fake_metric = mock.MagicMock()
     fake_proto = mock.MagicMock().serialize()
     fake_metric.serialize.return_value = fake_proto
-    interface._config.flush_mode = 'manual'
+    interface._state.flush_mode = 'manual'
     interface.send(fake_metric)
-    fake_config.metric_store.append.assert_called_once_with(fake_proto)
+    fake_state.metric_store.append.assert_called_once_with(fake_proto)
 
   def test_send_raises(self):
-    self.assertIsNone(interface._config.global_monitor)
+    self.assertIsNone(interface._state.global_monitor)
     with self.assertRaises(MonitoringNoConfiguredMonitorError):
       interface.send(mock.MagicMock())
 
-  @mock.patch('infra.libs.ts_mon.interface._config')
-  def test_flush(self, fake_config):
-    fake_config.metric_store = [2, 'foo', True]
+  @mock.patch('infra.libs.ts_mon.interface._state')
+  def test_flush(self, fake_state):
+    fake_state.metric_store = [2, 'foo', True]
     interface.flush()
-    fake_config.global_monitor.send.assert_called_once_with([2, 'foo', True])
-    self.assertEqual(fake_config.metric_store, [])
+    fake_state.global_monitor.send.assert_called_once_with([2, 'foo', True])
+    self.assertEqual(fake_state.metric_store, [])

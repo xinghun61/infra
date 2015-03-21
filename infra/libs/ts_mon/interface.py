@@ -31,9 +31,7 @@ Library usage:
     c.increment()
 """
 
-import collections
 import copy
-import logging
 import re
 import socket
 
@@ -42,25 +40,24 @@ from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor
 from infra.libs.ts_mon.target import DeviceTarget, TaskTarget
 
 
-Config = collections.namedtuple(
-  # Package-level configuration is stored here so that it is easily accessible.
-  # Configuration is kept in this one object at the global level so that all
-  # libraries in use by the same tool or service can all take advantage of the
-  # same configuration.
-  'Config',
-  [
-    # The Monitor object that will be used to send all metrics.
-    'global_monitor',
-    # The Target object that will be paired with all metrics that don't supply
-    # their own.
-    'default_target',
-    # The flush mode being used to control when metrics are pushed.
-    'flush_mode',
-    # The collection of metrics which have been stored but not yet flushed.
-    'metric_store',
-  ]
-)
-_config = Config(None, None, None, [])
+class State(object):
+  """Package-level state is stored here so that it is easily accessible.
+
+  Configuration is kept in this one object at the global level so that all
+  libraries in use by the same tool or service can all take advantage of the
+  same configuration.
+  """
+  # The Monitor object that will be used to send all metrics.
+  global_monitor = None
+  # The Target object that will be paired with all metrics that don't supply
+  # their own.
+  default_target = None
+  # The flush mode being used to control when metrics are pushed.
+  flush_mode = None
+  # The collection of metrics which have been stored but not yet flushed.
+  metric_store = []
+
+_state = State()
 
 
 def add_argparse_options(parser):
@@ -141,30 +138,26 @@ def process_argparse_options(args):
   Args:
     args (argparse.Namespace): the result of parsing the command line arguments
   """
-  global _config
-
   if args.ts_mon_endpoint.startswith('file://'):
-    global_monitor = DiskMonitor(args.ts_mon_endpoint[len('file://'):])
+    _state.global_monitor = DiskMonitor(args.ts_mon_endpoint[len('file://'):])
   else:
-    global_monitor = ApiMonitor(args.ts_mon_credentials,
-                                         args.ts_mon_endpoint)
+    _state.global_monitor = ApiMonitor(args.ts_mon_credentials,
+                                       args.ts_mon_endpoint)
 
   if args.ts_mon_target_type == 'device':
-    default_target = DeviceTarget(
+    _state.default_target = DeviceTarget(
         args.ts_mon_device_region,
         args.ts_mon_device_network,
         args.ts_mon_device_hostname)
   if args.ts_mon_target_type == 'task':
-    default_target = TaskTarget(
+    _state.default_target = TaskTarget(
         args.ts_mon_task_service_name,
         args.ts_mon_task_job_name,
         args.ts_mon_task_region,
         args.ts_mon_task_hostname,
         args.ts_mon_task_number)
 
-  flush_mode = args.ts_mon_flush
-
-  _config = Config(global_monitor, default_target, flush_mode, [])
+  _state.flush_mode = args.ts_mon_flush
 
 
 def send(metric, fields=None):
@@ -181,22 +174,18 @@ def send(metric, fields=None):
     MonitoringNoConfiguredMonitorError: if the global Monitor doesn't exist
     MonitoringTooManyFieldsError: if the extra fields put the total over 7
   """
-  if not _config.global_monitor:
+  if not _state.global_monitor:
     raise MonitoringNoConfiguredMonitorError(metric._name)
 
-  proto = metric.serialize(fields=fields, default_target=_config.default_target)
-  if _config.flush_mode == 'all':
-    _config.global_monitor.send(proto)
+  proto = metric.serialize(fields=fields, default_target=_state.default_target)
+  if _state.flush_mode == 'all':
+    _state.global_monitor.send(proto)
   else:
-    _config.metric_store.append(proto)
+    _state.metric_store.append(proto)
 
 
 def flush():
   """Send all metrics which have been stored since the last flush()."""
-  if _config.flush_mode != 'manual':  # pragma: no cover
-    logging.warn('Manual flush() being called when flush mode is %s.',
-                 _config.flush_mode)
-
-  store_copy = copy.copy(_config.metric_store)
-  _config.global_monitor.send(store_copy)
-  _config.metric_store = _config.metric_store[len(store_copy):]
+  store_copy = copy.copy(_state.metric_store)
+  _state.global_monitor.send(store_copy)
+  _state.metric_store = _state.metric_store[len(store_copy):]
