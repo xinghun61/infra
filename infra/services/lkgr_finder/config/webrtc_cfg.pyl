@@ -1,8 +1,7 @@
 {
   'project': 'webrtc',
-  'source_vcs': 'svn',
-  'source_url': 'http://webrtc.googlecode.com/svn/',
-  'viewvc_url': 'https://code.google.com/p/webrtc/source/browse/?r=%s',
+  'source_vcs': 'git',
+  'source_url': 'https://chromium.googlesource.com/external/webrtc',
   'status_url': 'https://webrtc-status.appspot.com',
   'allowed_lag': 3,
   'error_recipients': 'phoglund@google.com,kjellander@google.com',
