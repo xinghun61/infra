@@ -75,6 +75,7 @@ class AlertsHandler(webapp2.RequestHandler):
         return gcs_file.read()
     except gcs.NotFoundError:
       return '{}'
+    logging.info('Reading alerts from GCS')
 
   def post_to_gcs(self, alerts_type, data):
     # Create a GCS file with GCS client.
@@ -86,6 +87,7 @@ class AlertsHandler(webapp2.RequestHandler):
   def get_from_datastore(self, alerts_type):
     last_entry = self.get_last_datastore(alerts_type)
     if last_entry:
+      logging.info('Reading alerts from datastore')
       data  = last_entry.json
       if last_entry.use_gcs:
         data = self.get_from_gcs(alerts_type)
@@ -105,6 +107,7 @@ class AlertsHandler(webapp2.RequestHandler):
   def get_from_memcache(self, memcache_key):
     compressed = memcache.get(memcache_key)
     if compressed:
+      logging.info('Reading alerts from memcache')
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
       utcnow = (datetime.datetime.utcnow() -
