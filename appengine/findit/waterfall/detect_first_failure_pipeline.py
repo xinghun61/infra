@@ -134,9 +134,11 @@ class DetectFirstFailurePipeline(BasePipeline):
       builds (dict): a dict to save blame list and chromium revision.
     """
     # Look back for first known failures.
-    for i in range(_MAX_BUILDS_TO_CHECK):  # limit not hit - pragma: no cover
+    earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
+    for n in range(build_number - 1, earliest_build_number -1, -1):  
+      # Extraction should stop when when we reach to the first build
       build_info = self._ExtractBuildInfo(
-          master_name, builder_name, build_number - i - 1)
+          master_name, builder_name, n)
 
       if not build_info:  # pragma: no cover
         # Failed to extract the build information, bail out.

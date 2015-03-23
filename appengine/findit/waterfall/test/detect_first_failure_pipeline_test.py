@@ -176,3 +176,33 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
     self.assertFalse(failure_info['failed'])
+  
+  def testStopLookingBackIfFindTheFirstBuild(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+
+    # Setup build data for builds:
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 2)
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 1)
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 0)
+
+    pipeline = DetectFirstFailurePipeline()
+    failure_info = pipeline.run(master_name, builder_name, build_number)
+
+    expected_failed_steps = {
+        'a_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        },
+        'unit_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        }
+    }
+
+    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+
