@@ -37,6 +37,12 @@ class AlertsJSON(ndb.Model):
   use_gcs = ndb.BooleanProperty()
 
 
+class LastUpdated(ndb.Model):
+  date = ndb.DateTimeProperty(auto_now=True)
+  type = ndb.StringProperty()
+  haddiff = ndb.BooleanProperty()
+
+
 class AlertsHandler(webapp2.RequestHandler):
   ALERTS_TYPE = 'alerts'
   # Max number of bytes that AppEngine allows writing to Memcache
@@ -93,9 +99,13 @@ class AlertsHandler(webapp2.RequestHandler):
         data = self.get_from_gcs(alerts_type)
       data = json.loads(data)
       data["stale_alerts_thresh"] = self.MAX_STALENESS
+      data['last_posted'] = ndb.Key(LastUpdated, alerts_type).get()
       utcnow = (datetime.datetime.utcnow() -
           datetime.datetime.utcfromtimestamp(0))
-      if utcnow.total_seconds() - data["date"] > self.MAX_STALENESS:
+      posted_date = data['date']
+      if data['last_posted']:
+        posted_date = data['last_posted']
+      if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
         data["stale_alerts_json"] = True
 
       data = self.generate_json_dump(data)
@@ -149,7 +159,8 @@ class AlertsHandler(webapp2.RequestHandler):
           filtered_json[key] = value
       return filtered_json
 
-    if alert_fields(last_alerts) != alert_fields(alerts):
+    haddiff = alert_fields(last_alerts) != alert_fields(alerts)
+    if haddiff:
       json_data = self.generate_json_dump(alerts)
 
       compression_level = 9
@@ -168,6 +179,13 @@ class AlertsHandler(webapp2.RequestHandler):
            use_gcs=True,
            type=alerts_type)
         new_entry.put()
+    updated_key = ndb.Key(LastUpdated, alerts_type)
+    LastUpdated(
+        key=updated_key,
+        haddiff=haddiff,
+        type=alerts_type).put()
+
+
 
   def parse_alerts(self, alerts_json):
     try:
