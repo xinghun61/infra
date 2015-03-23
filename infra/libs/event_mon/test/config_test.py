@@ -10,6 +10,11 @@ from infra.libs.event_mon import config, router
 
 
 class ConfigTest(unittest.TestCase):
+  def setUpClass(self): # pragma: no cover
+    # This is only here to run tests serially, because they modify the same
+    # global state.
+    pass
+
   def _set_up_args(self, args=None):
     parser = argparse.ArgumentParser()
     event_mon.add_argparse_options(parser)
