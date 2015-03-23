@@ -25,6 +25,8 @@ def update_record(key=None, tags=None, fields=None): # pragma: no cover
   fields = fields or {}
   if not key and len(tags) == 0 and len(fields) == 0:
     raise ValueError('Empty record entries disallowed')
+  if not 'project' in fields:
+    raise ValueError('"Project" field missing')
   for item in fields:
     if item in AUTO_TAGGED_FIELDS:
       tags.append('%s=%s' % (item, fields[item]))
