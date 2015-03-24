@@ -120,9 +120,14 @@ class AlertsHandler(webapp2.RequestHandler):
       logging.info('Reading alerts from memcache')
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
+
+      data['last_posted'] = ndb.Key(LastUpdated, memcache_key).get()
       utcnow = (datetime.datetime.utcnow() -
           datetime.datetime.utcfromtimestamp(0))
-      if utcnow.total_seconds() - data["date"] > self.MAX_STALENESS:
+      posted_date = data['date']
+      if data['last_posted']:
+        posted_date = data['last_posted']
+      if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
         data["stale_alerts_json"] = True
       data["stale_alerts_thresh"] = self.MAX_STALENESS
 
