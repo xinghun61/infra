@@ -184,6 +184,11 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                     'old_path': '/dev/null',
                     'new_path': 'x/y/f99_1.cc'
                 },
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
             ],
         },
         'r99_2': {
@@ -215,7 +220,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         },
         'b': {
           'files': {
-              'f.cc': [],
+              'x/y/f99_1.cc': [],
           },
         },
     }
@@ -243,7 +248,19 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                 'step_name': 'b',
                 'first_failure': 98,
                 'last_pass': None,
-                'suspected_cls': [],
+                'suspected_cls': [
+                    {
+                        'build_number': 99,
+                        'repo_name': 'chromium',
+                        'revision': 'r99_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 5,
+                        'hints': {
+                            'added x/y/f99_1.cc (and it was in log)': 5,
+                        },
+                    }
+                ],
             }
         ]
     }

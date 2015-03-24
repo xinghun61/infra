@@ -134,7 +134,7 @@ class _Justification(object):
     return self._score
 
   def AddFileChange(self, change_action, changed_src_file_path,
-                    file_path_in_log, score):
+                    file_path_in_log, score, num_file_name_occurrences):
     """Adds a suspected file change.
 
     Args:
@@ -142,9 +142,12 @@ class _Justification(object):
       changed_src_file_path (str): Changed file path in a CL.
       file_path_in_log (str): File path appearing in the failure log.
       score (int): Score number for the file change.
+      num_file_name_occurrences (int): Number of occurrences of this file base 
+          name (not including directory part) in the commit.
     """
-    changed_src_file_path = os.path.basename(changed_src_file_path)
-    file_path_in_log = os.path.basename(file_path_in_log)
+    if num_file_name_occurrences == 1:
+      changed_src_file_path = os.path.basename(changed_src_file_path)
+      file_path_in_log = os.path.basename(file_path_in_log)
 
     if changed_src_file_path != file_path_in_log:
       hint = '%s %s (%s was in log)' % (
@@ -163,40 +166,65 @@ class _Justification(object):
     }
 
 
-def _CheckFile(touched_file, file_path_in_log, justification):  
+def _CheckFile(touched_file, 
+               file_path_in_log, 
+               justification, 
+               file_name_occurrences):  
   """Checks if the given files are related and updates the justification.
 
   Args:
     touched_file (dict): The touched file found in the change log.
     file_path_in_log (str): File path appearing in the failure log.
     justification (_Justification): An instance of _Justification.
+    file_name_occurrences (dict): A dict mapping file names to 
+        number of occurrences.
   """
   change_type = touched_file['change_type']
 
   if change_type == ChangeType.MODIFY:
+    # TODO(stgao): Use Git Blame if a modified file in the failure message 
+    # is with a line number.
     changed_src_file_path = touched_file['new_path'] 
+    file_name = os.path.basename(changed_src_file_path)
     if (_IsSameFile(changed_src_file_path, file_path_in_log) or 
         _IsRelated(changed_src_file_path, file_path_in_log)):
-      justification.AddFileChange(
-          'modified', touched_file['new_path'], file_path_in_log, score=1)
+      justification.AddFileChange('modified', 
+                                  changed_src_file_path, 
+                                  file_path_in_log, 
+                                  1, 
+                                  file_name_occurrences.get(file_name))
                    
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
-    changed_src_file_path = touched_file['new_path']  
+    changed_src_file_path = touched_file['new_path']
+    file_name = os.path.basename(changed_src_file_path)  
     if _IsSameFile(changed_src_file_path, file_path_in_log):
-      justification.AddFileChange(
-          'added', changed_src_file_path, file_path_in_log, score=5)
+      justification.AddFileChange('added', 
+                                  changed_src_file_path, 
+                                  file_path_in_log, 
+                                  5,
+                                  file_name_occurrences.get(file_name))
     elif _IsRelated(changed_src_file_path, file_path_in_log):
-      justification.AddFileChange(
-          'added', changed_src_file_path, file_path_in_log, score=1)
+      justification.AddFileChange('added', 
+                                  changed_src_file_path, 
+                                  file_path_in_log, 
+                                  1,
+                                  file_name_occurrences.get(file_name))
 
   if change_type in (ChangeType.DELETE, ChangeType.RENAME):
     changed_src_file_path = touched_file['old_path']
+    file_name = os.path.basename(changed_src_file_path)
     if _IsSameFile(changed_src_file_path, file_path_in_log):
-      justification.AddFileChange(
-          'deleted', changed_src_file_path, file_path_in_log, score=5)
+      justification.AddFileChange('deleted', 
+                                  changed_src_file_path, 
+                                  file_path_in_log, 
+                                  5,
+                                  file_name_occurrences.get(file_name))
     elif _IsRelated(changed_src_file_path, file_path_in_log):
-      justification.AddFileChange(
-          'deleted', changed_src_file_path, file_path_in_log, score=1)
+      justification.AddFileChange('deleted', 
+                                  changed_src_file_path, 
+                                  file_path_in_log, 
+                                  1,
+                                  file_name_occurrences.get(file_name))
 
 def _CheckFiles(failure_signal, change_log):
   """Check files in the given change log of a CL against the failure signal.
@@ -210,6 +238,19 @@ def _CheckFiles(failure_signal, change_log):
     A dict as returned by _Justification.ToDict() if the CL is suspected for the
     failure; otherwise None.
   """
+  # Use a dict to map each file name of the touched files to their occurrences.
+  file_name_occurrences = collections.defaultdict(int)
+  for touched_file in change_log['touched_files']: 
+    change_type = touched_file['change_type']           
+    if (change_type in (ChangeType.ADD, ChangeType.COPY, 
+        ChangeType.RENAME, ChangeType.MODIFY)):
+      file_name = os.path.basename(touched_file['new_path'])
+      file_name_occurrences[file_name] += 1 
+    
+    if change_type in (ChangeType.DELETE, ChangeType.RENAME):
+      file_name = os.path.basename(touched_file['old_path'])
+      file_name_occurrences[file_name] += 1
+      
   justification = _Justification()
 
   for file_path_in_log, _ in failure_signal.files.iteritems():
@@ -218,7 +259,8 @@ def _CheckFiles(failure_signal, change_log):
       file_path_in_log = file_path_in_log[4:]
 
     for touched_file in change_log['touched_files']:
-      _CheckFile(touched_file, file_path_in_log, justification)
+      _CheckFile(
+          touched_file, file_path_in_log, justification, file_name_occurrences)
 
   if not justification.score:
     return None
