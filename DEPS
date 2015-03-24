@@ -49,14 +49,13 @@ deps = {
   "testing_support":
     "https://chromium.googlesource.com/infra/testing/testing_support.git",
 
-  ## external deps
   # v1.11.6
   "infra/bootstrap/virtualenv":
-    ("https://github.com/pypa/virtualenv.git"
+    ("https://chromium.googlesource.com/infra/third_party/virtualenv.git"
      "@93cfa83481a1cb934eb14c946d33aef94c21bcb0"),
 
   "infra/appengine/third_party/src/github.com/golang/oauth2":
-  ("https://github.com/golang/oauth2.git"
+  ("https://chromium.googlesource.com/external/github.com/golang/oauth2.git"
    "@cb029f4c1f58850787981eefaf9d9bf547c1a722"),
 }
 
