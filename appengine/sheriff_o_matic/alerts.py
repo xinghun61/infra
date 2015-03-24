@@ -99,7 +99,13 @@ class AlertsHandler(webapp2.RequestHandler):
         data = self.get_from_gcs(alerts_type)
       data = json.loads(data)
       data["stale_alerts_thresh"] = self.MAX_STALENESS
-      data['last_posted'] = ndb.Key(LastUpdated, alerts_type).get()
+
+      data['last_posted'] = None
+      last_updated = ndb.Key(LastUpdated, alerts_type).get()
+      if last_updated:
+        data['last_posted'] = (last_updated.date -
+            datetime.datetime.utcfromtimestamp(0)).total_seconds()
+
       utcnow = (datetime.datetime.utcnow() -
           datetime.datetime.utcfromtimestamp(0))
       posted_date = data['date']
@@ -121,7 +127,12 @@ class AlertsHandler(webapp2.RequestHandler):
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
 
-      data['last_posted'] = ndb.Key(LastUpdated, memcache_key).get()
+      data['last_posted'] = None
+      last_updated = ndb.Key(LastUpdated, memcache_key).get()
+      if last_updated:
+        data['last_posted'] = (last_updated.date -
+            datetime.datetime.utcfromtimestamp(0)).total_seconds()
+
       utcnow = (datetime.datetime.utcnow() -
           datetime.datetime.utcfromtimestamp(0))
       posted_date = data['date']
