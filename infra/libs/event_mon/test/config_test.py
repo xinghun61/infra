@@ -10,12 +10,7 @@ from infra.libs.event_mon import config, router
 
 
 class ConfigTest(unittest.TestCase):
-  def setUpClass(self): # pragma: no cover
-    # This is only here to run tests serially, because they modify the same
-    # global state.
-    pass
-
-  def _set_up_args(self, args=None):
+  def _set_up_args(self, args=None):  # pragma: no cover
     parser = argparse.ArgumentParser()
     event_mon.add_argparse_options(parser)
     args = parser.parse_args((args or []))
@@ -32,11 +27,11 @@ class ConfigTest(unittest.TestCase):
     # Test that calling it twice does not raise an exception.
     event_mon.close()
 
-  def test_no_args_smoke(self):
+  def DISABLED_test_no_args_smoke(self):  # pragma: no cover
     self._set_up_args()
     self._close()
 
-  def test_args_and_default_event(self):
+  def DISABLED_test_args_and_default_event(self):  # pragma: no cover
     # The protobuf structure is actually an API not an implementation detail
     # so it's sane to test for changes.
     hostname = 'a'

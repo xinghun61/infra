@@ -15,7 +15,7 @@ _router = None
 cache = {}
 
 
-def add_argparse_options(parser):
+def add_argparse_options(parser):  # pragma: no cover
   # The default values should make sense for local testing, not production.
   parser.add_argument('--event-mon-run-type', default='dry',
                       choices=('dry', 'test', 'prod'),
@@ -44,7 +44,7 @@ def add_argparse_options(parser):
                       help='Svn revision for the currently running code.')
 
 
-def process_argparse_options(args):
+def process_argparse_options(args):  # pragma: no cover
   """Initializes event monitoring based on provided arguments.
 
   Args:
@@ -78,7 +78,7 @@ def setup_monitoring(run_type='dry',
     appengine_name (str): name of the appengine app, if running on appengine.
   """
   global _router
-  if not _router:
+  if not _router:  # pragma: no cover
     ENDPOINTS = {
       'dry': None,
       'test': 'https://jmt17.google.com/log',
