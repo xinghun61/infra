@@ -110,7 +110,10 @@ CTFailures.prototype.update = function() {
     var trooper_data = data_array[2];
 
     var newFailures = {};
-    this.lastUpdateDate = new Date(sheriff_data.date * 1000);
+
+    var lastPosted = (sheriff_data.last_posted || sheriff_data.date) * 1000;
+    this.lastUpdateDate = new Date(lastPosted);
+
     this._mungeAlerts(sheriff_data.alerts);
     // FIXME: Change builder_alerts to expose the alerts as a map instead of an array.
     var alertsByKey = {}
