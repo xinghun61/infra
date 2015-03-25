@@ -51,11 +51,21 @@ class MerticsTest(testing.AppengineTestCase):
     get_context = mock.Mock()
     self.mock(ndb, 'get_context', get_context)
     fetch_res = mock.Mock(
-        content='Not found',
-        status_code=404,
+        content='Transient error',
+        status_code=500,
     )
     get_context.return_value.urlfetch = self.mock_tasklet(fetch_res)
     with self.assertRaises(metrics.Error):
+      metrics.call_mon_api('GET', 'metricDescriptors')
+
+  def test_call_mon_api_deadline_exceeded(self):
+    def raise_deadline_exceeded(*_, **__):
+      raise urlfetch.DeadlineExceededError()
+    get_context = mock.Mock()
+    self.mock(ndb, 'get_context', get_context)
+    get_context.return_value.urlfetch.side_effect = raise_deadline_exceeded
+
+    with self.assertRaises(urlfetch.DeadlineExceededError):
       metrics.call_mon_api('GET', 'metricDescriptors')
 
   def test_send_build_status_metric(self):

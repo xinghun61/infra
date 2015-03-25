@@ -68,9 +68,19 @@ def call_mon_api_async(method, path, body=None):
   if body:
     headers['Content-Type'] ='application/json'
   logging.debug('urlfetch request: %s %s', method, url)
-  res = yield ndb.get_context().urlfetch(
-      url, method=method, payload=payload, headers=headers,
-      follow_redirects=False, validate_certificate=True)
+
+  attempts = 5
+  while attempts > 0:
+    attempts -= 1
+    try:
+      res = yield ndb.get_context().urlfetch(
+          url, method=method, payload=payload, headers=headers,
+          follow_redirects=False, validate_certificate=True, deadline=10)
+      if res.status_code < 500:
+        break
+    except urlfetch.DeadlineExceededError:
+      if attempts == 0:
+        raise
   if res.status_code >= 300:
     raise Error(
         'Unexpected status code: %s. Content: %s' %
