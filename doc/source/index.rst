@@ -49,6 +49,11 @@ This section (will) explains some technical choices.
 * :doc:`bootstrap` - Dependency handling. How it works and why it's structured
   this way.
 
+How to
+------
+
+* :doc:`master_auth`
+
 Other topics
 -------------------
 * :doc:`steps` - list of infra steps on waterfall and tryserver
