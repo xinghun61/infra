@@ -4,7 +4,10 @@
 # found in the LICENSE file.
 
 import argparse
+import contextlib
+import cStringIO
 import datetime
+import gzip
 import json
 import logging
 import multiprocessing
@@ -168,10 +171,19 @@ def inner_loop(args):
       f.write(json.dumps(data, indent=1))
 
   ret = True
+
+  json_data = json.dumps(data)
+  logging.info('Alerts json is %s bytes uncompressed.', len(json_data))
+  s = cStringIO.StringIO()
+  with contextlib.closing(gzip.GzipFile(fileobj=s, mode='w')) as g:
+    g.write(json_data)
+  gzipped_data = s.getvalue()
+
   for url in args.data_url:
-    logging.info('POST %s (%s bytes) alerts to %s',
-                 len(alerts), len(json.dumps(data)), url)
-    resp = requests.post(url, data=data)
+    logging.info('POST %s alerts (%s bytes compressed) to %s',
+                 len(alerts), len(gzipped_data), url)
+    resp = requests.post(url, data=gzipped_data,
+                         headers={'content-encoding': 'gzip'})
     try:
       resp.raise_for_status()
     except requests.HTTPError as e:

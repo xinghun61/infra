@@ -4,7 +4,9 @@
 
 import calendar
 import contextlib
+import cStringIO
 import datetime
+import gzip
 import json
 import logging
 import webapp2
@@ -204,6 +206,13 @@ class AlertsHandler(webapp2.RequestHandler):
 
 
   def parse_alerts(self, alerts_json):
+    if self.request.headers.get('content-encoding') == 'gzip':
+      LOGGER.info('Data (len %s) appears to be gzipped.', len(alerts_json))
+      s = cStringIO.StringIO(alerts_json)
+      with contextlib.closing(gzip.GzipFile(fileobj=s, mode='r')) as g:
+        alerts_json = g.read()
+      LOGGER.info('Data decompressed to length %s', len(alerts_json))
+
     try:
       alerts = json.loads(alerts_json)
     except ValueError:
