@@ -28,10 +28,12 @@ found in the LICENSE file.
         font-size: large;
         color: red;
       }
+
+      #examineLink {
+        padding: 6px 22px;
+      }
     </style>
-    <a href="{{ group.examineUrl }}" target="_blank">
-      <ct-button id="examine" label="Examine"></ct-button>
-    </a>
+    <a href="{{ group.examineUrl }}" id="examineLink">Examine</a>
     <template if="{{ !group.isSnoozed }}">
       <ct-button id="snooze" on-tap="{{ snooze }}" label="Snooze"></ct-button>
     </template>
