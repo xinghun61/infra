@@ -57,7 +57,7 @@ class SubProcess(object):
     try:
       master_json = buildbot.fetch_master_json(master_url)
       if not master_json:
-        return (None, None)
+        return (None, None, None, master_url)
 
       master_alerts, stale_master_alert = alert_builder.alerts_for_master(
           self._cache, master_url, master_json, self._old_alerts,
@@ -72,7 +72,7 @@ class SubProcess(object):
               self._cache, master_url, master_json))
       if stale_master_alert:
         stale_builder_alerts.append(stale_master_alert)
-      return (master_alerts, data, stale_builder_alerts)
+      return (master_alerts, data, stale_builder_alerts, master_url)
     except:
       # Put all exception text into an exception and raise that so it doesn't
       # get eaten by the multiprocessing code.
@@ -131,6 +131,7 @@ def inner_loop(args):
 
   latest_builder_info = {}
   stale_builder_alerts = []
+  missing_masters = []
   alerts = []
 
   pool = multiprocessing.Pool(processes=args.processes)
@@ -143,6 +144,7 @@ def inner_loop(args):
     # TODO(ojan): We should put an alert in the JSON for this master so
     # we can show that the master is down in the sheriff-o-matic UI.
     if not data[0]:
+      missing_masters.extend([data[3]])
       continue
     alerts.extend(data[0])
     latest_builder_info.update(data[1])
@@ -164,6 +166,7 @@ def inner_loop(args):
       'range_groups': range_groups,
       'latest_builder_info': latest_builder_info,
       'stale_builder_alerts': stale_builder_alerts,
+      'missing_masters': missing_masters,
   })}
 
   if not args.data_url:
