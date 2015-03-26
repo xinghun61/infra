@@ -133,6 +133,9 @@ func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 		if line == "# end of ninja log" {
 			break
 		}
+		if line == "" {
+			continue
+		}
 		step, err := lineToStep(line)
 		if err != nil {
 			return nil, fmt.Errorf("error at %d: %v", lineno, err)

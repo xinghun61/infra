@@ -264,7 +264,7 @@ func ninjalogFetch(client *http.Client, logPath string) (*ninjalog.NinjaLog, htt
 		return nil, nil, err
 	}
 	nl, err := ninjalog.Parse(logPath, rd)
-	return nl, resp.Header, nil
+	return nl, resp.Header, err
 }
 
 func indexPage(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {

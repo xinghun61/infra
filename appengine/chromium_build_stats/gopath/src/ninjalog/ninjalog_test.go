@@ -186,6 +186,21 @@ func TestParseSimple(t *testing.T) {
 	}
 }
 
+func TestParseEmptyLine(t *testing.T) {
+	njl, err := Parse(".ninja_log", strings.NewReader(logTestCase+"\n"))
+	if err != nil {
+		t.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+	}
+	want := &NinjaLog{
+		Filename: ".ninja_log",
+		Start:    1,
+		Steps:    stepsTestCase,
+	}
+	if !reflect.DeepEqual(njl, want) {
+		t.Errorf("Parse()=%v; want=%v", njl, want)
+	}
+}
+
 func TestParseLast(t *testing.T) {
 	njl, err := Parse(".ninja_log", strings.NewReader(`# ninja log v5
 1020807	1020916	0	chrome.1	e101fd46be020cfc
@@ -225,6 +240,7 @@ func TestParseMetadata(t *testing.T) {
 141	287	0	PepperFlash/manifest.json	324f0a0b77c37ef
 142	288	0	PepperFlash/libpepflashplayer.so	1e2c2b7845a4d4fe
 287	290	0	obj/third_party/angle/src/copy_scripts.actions_rules_copies.stamp	b211d373de72f455
+
 # end of ninja log
 {"platform": "linux", "argv": ["../../../scripts/slave/compile.py", "--target", "Release", "--clobber", "--compiler=goma", "--", "all"], "cmdline": ["ninja", "-C", "/b/build/slave/Linux_x64/build/src/out/Release", "all", "-j50"], "exit": 0, "env": {"LANG": "en_US.UTF-8", "SHELL": "/bin/bash", "HOME": "/home/chrome-bot", "PWD": "/b/build/slave/Linux_x64/build", "LOGNAME": "chrome-bot", "USER": "chrome-bot", "PATH": "/home/chrome-bot/slavebin:/b/depot_tools:/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin" }, "compiler_proxy_info": "/tmp/compiler_proxy.build48-m1.chrome-bot.log.INFO.20140907-203827.14676", "cwd": "/b/build/slave/Linux_x64/build/src", "compiler": "goma"}
 `))
