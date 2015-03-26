@@ -94,7 +94,6 @@ def _get_service_event(event_type,
   log_event = LogRequestLite.LogEventLite()
   log_event.event_time_ms = event_timestamp or router.time_ms()
   log_event.source_extension = event.SerializeToString()
-
   return log_event
 
 

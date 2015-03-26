@@ -3,39 +3,8 @@
 # found in the LICENSE file.
 
 import argparse
-import re
 import sys
 import infra.libs.event_mon as event_mon
-
-
-def parse_revinfo(file_obj):
-  """Parse the output of "gclient revinfo -a"
-
-  Args:
-    file_obj (File): file open for reading.
-
-  Returns:
-    revinfo (dict): <directory>: (URL, revision)
-  """
-  revision_expr = re.compile('(.*)@([^@]*)')
-
-  revinfo = {}
-  for line in file_obj:
-    if ':' not in line:
-      continue
-
-    path, line = line.split(':', 1)
-    if '@' in line:
-      url, revision = revision_expr.match(line).groups()
-      revision = revision.strip()
-    else:
-      # Split at the last @
-      url, revision = line.strip(), None
-
-    path = path.strip()
-    url = url.strip()
-    revinfo[path] = {'source_url': url, 'revision': revision}
-  return revinfo
 
 
 def get_arguments(argv):
@@ -61,11 +30,16 @@ def get_arguments(argv):
                       choices=('START', 'STOP', 'UPDATE', 'CURRENT_VERSION'),
                       default='START',
                       help='Kind of event to send.')
-  parser.add_argument('--service-event-revinfo',
-                      help='File to read revision information from, "-" means'
-                      ' standard input. The file'
-                      ' is supposed to contain the output of'
-                      ' "gclient revinfo -a".')
+  revinfo = parser.add_mutually_exclusive_group()
+  revinfo.add_argument('--service-event-revinfo',
+                       help='File to read revision information from, "-" means'
+                       ' standard input. The file'
+                       ' is supposed to contain the output of'
+                       ' "gclient revinfo -a".')
+  revinfo.add_argument('--service-event-revinfo-from-gclient',
+                       action='store_true',
+                       help='Calls gclient to get revision information. '
+                       'Mutually exclusive with --service-event-revinfo')
 
   args = parser.parse_args(argv)
   return args
@@ -75,13 +49,15 @@ def main(argv):  # pragma: no cover
   args = get_arguments(argv)
   event_mon.process_argparse_options(args)
 
-  revinfo = None
+  revinfo = {}
   if args.service_event_revinfo:
     if args.service_event_revinfo == '-':
-      revinfo = parse_revinfo(sys.stdin)
+      revinfo = event_mon.parse_revinfo(sys.stdin.read())
     else:
       with open(args.service_event_revinfo, 'r') as f:
-        revinfo = parse_revinfo(f)
+        revinfo = event_mon.parse_revinfo(f.read())
+  elif args.service_event_revinfo_from_gclient:
+    revinfo = event_mon.get_revinfo()
 
   event_mon.send_service_event(args.service_event_type,
                                code_version=revinfo.values())
