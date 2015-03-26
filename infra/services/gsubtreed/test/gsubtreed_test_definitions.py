@@ -231,3 +231,21 @@ def bootstrap_history_with_extra_footers(origin, run, checkpoint, mirrors):
     'file': ('data', 0644),
     'other': ('hat', 0644)
   }
+
+
+@test
+def deleted_tree_is_ok(origin, run, checkpoint, mirrors):
+  master = origin['refs/heads/master']
+  mc = master.make_commit
+  mc('first commit', {'mirrored_path': {'file': 'data'}})
+  mc('revert first commit', {'mirrored_path': None})
+  mc('first commit again', {'mirrored_path': {'file': 'new data'}})
+
+  checkpoint('repo is set up')
+  run()
+  checkpoint('should see stuff')
+
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/master') == {
+    'file': ('new data', 0644),
+  }
+

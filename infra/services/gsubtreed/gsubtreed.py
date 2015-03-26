@@ -22,6 +22,8 @@ LOGGER = logging.getLogger(__name__)
 MIRRORED_FROM = FOOTER_PREFIX + 'Mirrored-From'
 MIRRORED_COMMIT = FOOTER_PREFIX + 'Mirrored-Commit'
 
+# Can be reproduced with `git mktree --batch <<< ''`
+EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 ################################################################################
 # ConfigRef
@@ -164,7 +166,7 @@ def process_path(path, origin_repo, config):
 
   for glob in config['enabled_refglobs']:
     for ref in origin_repo.refglob(glob):
-      LOGGER.info('processing ref %s', ref)
+      LOGGER.info('processing %s', ref)
 
       # The last thing that was pushed to the subtree_repo
       last_push = subtree_repo[ref.ref].commit
@@ -196,13 +198,22 @@ def process_path(path, origin_repo, config):
       LOGGER.info('starting with tree %r', synth_parent.data.tree)
 
       for commit in origin_repo[processed.hsh].to(ref, path):
-        LOGGER.info('processing commit %s', commit)
+        LOGGER.info('processing %s', commit)
         obj_name = '{.hsh}:{}'.format(commit, path)
-        typ = origin_repo.run('cat-file', '-t', obj_name).strip()
-        if typ != 'tree':
-          LOGGER.warn('path %r is not a tree in commit %s', path, commit)
-          continue
-        dir_tree = origin_repo.run('rev-parse', obj_name).strip()
+        dir_tree = None
+        try:
+          typ = origin_repo.run('cat-file', '-t', obj_name).strip()
+          if typ != 'tree':
+            LOGGER.warn('path %r is not a tree in commit %s', path, commit)
+            continue
+          else:
+            dir_tree = origin_repo.run('rev-parse', obj_name).strip()
+        except CalledProcessError as ex:
+          if ex.returncode == 128 and 'Not a valid object name' in ex.stderr:
+            LOGGER.warn('path %r was deleted in commit %s', path, commit)
+            dir_tree = EMPTY_TREE
+          else:
+            raise  # pragma: no cover
 
         LOGGER.info('found new tree %r', dir_tree)
 
@@ -254,7 +265,7 @@ def inner_loop(origin_repo, config):
   success = True
   processed = {}
   for path in config['enabled_paths']:
-    LOGGER.info('processing path %s', path)
+    LOGGER.info('processing path %r', path)
     try:
       path_success, num_synthed, t = process_path(path, origin_repo, config)
       threads.append(t)

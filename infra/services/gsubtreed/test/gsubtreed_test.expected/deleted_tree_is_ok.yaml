@@ -1,0 +1,71 @@
+- - repo is set up
+  - origin:
+      refs/heads/master:
+        47418efb9eae22235f2d184ed969f4bfc3aad981:
+        - first commit again
+        1a6b369ed8589c49920b285caaa3baaa9410b74d:
+        - revert first commit
+        8ee2bda77e55317c88482d4c7b5145955add3972:
+        - first commit
+    mirror(cool_path): {}
+    mirror(mirrored_path): {}
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path ''mirrored_path'''
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing Commit(TestRepo(''local''), ''8ee2bda77e55317c88482d4c7b5145955add3972'')'
+  - 'INFO: found new tree ''5421190833e254f1483799793aed9306b29fcdf7'''
+  - 'INFO: processing Commit(TestRepo(''local''), ''1a6b369ed8589c49920b285caaa3baaa9410b74d'')'
+  - 'WARNING: path ''mirrored_path'' was deleted in commit Commit(TestRepo(''local''),
+    ''1a6b369ed8589c49920b285caaa3baaa9410b74d'')'
+  - 'INFO: found new tree ''4b825dc642cb6eb9a060e54bf8d69288fbee4904'''
+  - 'INFO: processing Commit(TestRepo(''local''), ''47418efb9eae22235f2d184ed969f4bfc3aad981'')'
+  - 'INFO: found new tree ''19bfb62a94629830139eece0ae15c5fc90cb654f'''
+  - 'INFO: processing path ''exception/path'''
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''bda22a84f1e2d5f3badb277eb7d20919127377ca:refs/heads/master'')'
+  - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
+- inner_loop success: true
+  processed:
+    exception/path: 0
+    mirrored_path: 3
+    mirrored_path/subpath: 0
+- - should see stuff
+  - origin:
+      refs/heads/master:
+        47418efb9eae22235f2d184ed969f4bfc3aad981:
+        - first commit again
+        1a6b369ed8589c49920b285caaa3baaa9410b74d:
+        - revert first commit
+        8ee2bda77e55317c88482d4c7b5145955add3972:
+        - first commit
+    mirror(cool_path): {}
+    mirror(mirrored_path):
+      refs/heads/master:
+        bda22a84f1e2d5f3badb277eb7d20919127377ca:
+        - first commit again
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 47418efb9eae22235f2d184ed969f4bfc3aad981'
+        25511de4a3932b70180d76a140c979801f3a9ff8:
+        - revert first commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 1a6b369ed8589c49920b285caaa3baaa9410b74d'
+        6048a03417ed28752fa6aeb23113eea92049dfe3:
+        - first commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 8ee2bda77e55317c88482d4c7b5145955add3972'
+    mirror(mirrored_path/subpath): {}
