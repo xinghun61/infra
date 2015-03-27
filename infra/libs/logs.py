@@ -100,6 +100,7 @@ def add_argparse_options(parser,
 
   See also: :func:`process_argparse_options`
   """
+  parser = parser.add_argument_group('Logging Options')
   g = parser.add_mutually_exclusive_group()
   g.set_defaults(log_level=default_level)
   g.add_argument('--quiet', action='store_const', const=logging.ERROR,

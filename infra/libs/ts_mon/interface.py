@@ -66,6 +66,7 @@ def add_argparse_options(parser):
   Args:
     parser (argparse.ArgumentParser): the parser for the main process.
   """
+  parser = parser.add_argument_group('Timeseries Monitoring Options')
   parser.add_argument(
       '--ts-mon-endpoint',
       default='https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
@@ -123,8 +124,9 @@ def add_argparse_options(parser):
       default=host,
       help='name of the host on which this task is running')
   parser.add_argument(
-      '--ts-mon-task-number', type=int,
-      help='number (e.g. for replication) of this instance of this task')
+      '--ts-mon-task-number', type=int, default=0,
+      help='number (e.g. for replication) of this instance of this task '
+           '(default is %(default)s)')
 
 
 def process_argparse_options(args):
