@@ -34,6 +34,19 @@ Setup:
         assume a lot of things about how the repos are related to each other (it
         was written as a one-off to assist the chromium git migration). However
         studying its source code should be enlightening.
+
+        Note that ``git notes`` may not respect the "--ref" option with a fully
+        qualified ref (e.g. `refs/notes/extra_footers`). For example,
+        ``git notes --ref refs/b/l/a add ...`` may actually
+        store notes in ``refs/notes/refs/b/l/a``. You can check which ref
+        is really being used by running ``git notes --ref refs/b/l/a get-ref``.
+        If you have this problem AND your mirrors already have notes in
+        ``refs/notes/extra_footers``, you may have to locally inititalize the
+        weird ref (the ``get-ref`` one) with the commit hash of
+        ``refs/notes/extra_footers`` of your mirror. You can do this directly
+        with the ``git update-ref`` command after fetching the existing notes
+        from the mirror.
+
   3. Once your mirrors are in a good state (either empty or primed with
      ``extra_footers``), you should be able to run ``run.py
      infra.services.gsubtreed <repo Url>`` and it should Just Work.
