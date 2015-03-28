@@ -25,17 +25,17 @@ func TestUploadToCAS(t *testing.T) {
 
 		Convey("UploadToCAS full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/cas/v1/upload/SHA1/abc",
 					Reply:  `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
 				},
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/cas/v1/finalize/12345",
 					Reply:  `{"status":"VERIFYING"}`,
 				},
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/cas/v1/finalize/12345",
 					Reply:  `{"status":"PUBLISHED"}`,
@@ -48,7 +48,7 @@ func TestUploadToCAS(t *testing.T) {
 		Convey("UploadToCAS timeout", func() {
 			// Append a bunch of "still verifying" responses at the end.
 			calls := []expectedHTTPCall{
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/cas/v1/upload/SHA1/abc",
 					Reply:  `{"status":"SUCCESS","upload_session_id":"12345","upload_url":"http://localhost"}`,
@@ -89,7 +89,7 @@ func TestRegisterInstance(t *testing.T) {
 
 		Convey("RegisterInstance full flow", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/repo/v1/instance",
 					Query: url.Values{
@@ -102,12 +102,12 @@ func TestRegisterInstance(t *testing.T) {
 						"upload_url": "http://localhost"
 					}`,
 				},
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/cas/v1/finalize/12345",
 					Reply:  `{"status":"PUBLISHED"}`,
 				},
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/repo/v1/instance",
 					Query: url.Values{
@@ -129,7 +129,7 @@ func TestRegisterInstance(t *testing.T) {
 
 		Convey("RegisterInstance already registered", func() {
 			mockRemoteServiceWithExpectations([]expectedHTTPCall{
-				expectedHTTPCall{
+				{
 					Method: "POST",
 					Path:   "/_ah/api/repo/v1/instance",
 					Query: url.Values{
@@ -152,7 +152,7 @@ func TestRegisterInstance(t *testing.T) {
 }
 
 func TestResumableUpload(t *testing.T) {
-	Convey("Resumable upload full flow", t, func() {
+	Convey("Resumable upload full flow", t, func(c C) {
 		mockClock(time.Now())
 
 		dataToUpload := "0123456789abcdef"
@@ -161,12 +161,12 @@ func TestResumableUpload(t *testing.T) {
 		errors := 0
 
 		server, client := mockServerWithHandler("/", func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/upl")
-			So(r.Method, ShouldEqual, "PUT")
+			c.So(r.URL.Path, ShouldEqual, "/upl")
+			c.So(r.Method, ShouldEqual, "PUT")
 
 			rangeHeader := r.Header.Get("Content-Range")
 			body, err := ioutil.ReadAll(r.Body)
-			So(err, ShouldBeNil)
+			c.So(err, ShouldBeNil)
 
 			// Insert a bunch of consecutive transient errors in the middle.
 			cur := uploaded.Len()
@@ -178,7 +178,7 @@ func TestResumableUpload(t *testing.T) {
 
 			// Request for uploaded offset.
 			if len(body) == 0 {
-				So(rangeHeader, ShouldEqual, fmt.Sprintf("bytes */%d", totalLen))
+				c.So(rangeHeader, ShouldEqual, fmt.Sprintf("bytes */%d", totalLen))
 				if cur == totalLen {
 					w.WriteHeader(200)
 					return
@@ -191,9 +191,9 @@ func TestResumableUpload(t *testing.T) {
 			}
 
 			// Uploading next chunk.
-			So(rangeHeader, ShouldEqual, fmt.Sprintf("bytes %d-%d/%d", cur, cur+len(body)-1, totalLen))
+			c.So(rangeHeader, ShouldEqual, fmt.Sprintf("bytes %d-%d/%d", cur, cur+len(body)-1, totalLen))
 			_, err = uploaded.Write(body)
-			So(err, ShouldBeNil)
+			c.So(err, ShouldBeNil)
 			if uploaded.Len() == totalLen {
 				w.WriteHeader(200)
 			} else {

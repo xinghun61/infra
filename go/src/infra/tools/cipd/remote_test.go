@@ -21,73 +21,73 @@ import (
 )
 
 func TestRemoteService(t *testing.T) {
-	mockInitiateUpload := func(response string) (*uploadSession, error) {
+	mockInitiateUpload := func(c C, response string) (*uploadSession, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/upload/SHA1/abc")
-			So(r.Method, ShouldEqual, "POST")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/upload/SHA1/abc")
+			c.So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
 		return remote.initiateUpload("abc")
 	}
 
-	mockFinalizeUpload := func(response string) (bool, error) {
+	mockFinalizeUpload := func(c C, response string) (bool, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/finalize/abc")
-			So(r.Method, ShouldEqual, "POST")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/finalize/abc")
+			c.So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
 		return remote.finalizeUpload("abc")
 	}
 
-	mockRegisterInstance := func(response string) (*registerInstanceResponse, error) {
+	mockRegisterInstance := func(c C, response string) (*registerInstanceResponse, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
-			So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
-			So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-			So(r.Method, ShouldEqual, "POST")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
+			c.So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
+			c.So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+			c.So(r.Method, ShouldEqual, "POST")
 			w.Write([]byte(response))
 		})
 		return remote.registerInstance("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	}
 
-	mockFetchInstance := func(response string) (*fetchInstanceResponse, error) {
+	mockFetchInstance := func(c C, response string) (*fetchInstanceResponse, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
-			So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
-			So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-			So(r.Method, ShouldEqual, "GET")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/instance")
+			c.So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
+			c.So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+			c.So(r.Method, ShouldEqual, "GET")
 			w.Write([]byte(response))
 		})
 		return remote.fetchInstance("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	}
 
-	mockFetchACL := func(response string) ([]PackageACL, error) {
+	mockFetchACL := func(c C, response string) ([]PackageACL, error) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
-			So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
-			So(r.Method, ShouldEqual, "GET")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
+			c.So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
+			c.So(r.Method, ShouldEqual, "GET")
 			w.Write([]byte(response))
 		})
 		return remote.fetchACL("pkgname")
 	}
 
-	mockModifyACL := func(changes []PackageACLChange, request, response string) error {
+	mockModifyACL := func(c C, changes []PackageACLChange, request, response string) error {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
-			So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
-			So(r.Method, ShouldEqual, "POST")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/acl")
+			c.So(r.URL.Query().Get("package_path"), ShouldEqual, "pkgname")
+			c.So(r.Method, ShouldEqual, "POST")
 			body, err := ioutil.ReadAll(r.Body)
-			So(err, ShouldBeNil)
-			So(string(body), ShouldEqual, request)
+			c.So(err, ShouldBeNil)
+			c.So(string(body), ShouldEqual, request)
 			w.Write([]byte(response))
 		})
 		return remote.modifyACL("pkgname", changes)
 	}
 
-	Convey("makeRequest POST works", t, func() {
+	Convey("makeRequest POST works", t, func(c C) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.Method, ShouldEqual, "POST")
-			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
+			c.So(r.Method, ShouldEqual, "POST")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
 			w.Write([]byte(`{"value":"123"}`))
 		})
 		var reply struct {
@@ -98,10 +98,10 @@ func TestRemoteService(t *testing.T) {
 		So(reply.Value, ShouldEqual, "123")
 	})
 
-	Convey("makeRequest GET works", t, func() {
+	Convey("makeRequest GET works", t, func(c C) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.Method, ShouldEqual, "GET")
-			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
+			c.So(r.Method, ShouldEqual, "GET")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/method")
 			w.Write([]byte(`{"value":"123"}`))
 		})
 		var reply struct {
@@ -154,14 +154,14 @@ func TestRemoteService(t *testing.T) {
 		So(calls, ShouldEqual, 10)
 	})
 
-	Convey("initiateUpload ALREADY_UPLOADED", t, func() {
-		s, err := mockInitiateUpload(`{"status":"ALREADY_UPLOADED"}`)
+	Convey("initiateUpload ALREADY_UPLOADED", t, func(c C) {
+		s, err := mockInitiateUpload(c, `{"status":"ALREADY_UPLOADED"}`)
 		So(err, ShouldBeNil)
 		So(s, ShouldBeNil)
 	})
 
-	Convey("initiateUpload SUCCESS", t, func() {
-		s, err := mockInitiateUpload(`{"status":"SUCCESS","upload_session_id":"123","upload_url":"http://localhost"}`)
+	Convey("initiateUpload SUCCESS", t, func(c C) {
+		s, err := mockInitiateUpload(c, `{"status":"SUCCESS","upload_session_id":"123","upload_url":"http://localhost"}`)
 		So(err, ShouldBeNil)
 		So(s, ShouldResemble, &uploadSession{
 			ID:  "123",
@@ -169,14 +169,14 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("initiateUpload ERROR", t, func() {
-		s, err := mockInitiateUpload(`{"status":"ERROR","error_message":"boo"}`)
+	Convey("initiateUpload ERROR", t, func(c C) {
+		s, err := mockInitiateUpload(c, `{"status":"ERROR","error_message":"boo"}`)
 		So(err, ShouldNotBeNil)
 		So(s, ShouldBeNil)
 	})
 
-	Convey("initiateUpload unknown status", t, func() {
-		s, err := mockInitiateUpload(`{"status":"???"}`)
+	Convey("initiateUpload unknown status", t, func(c C) {
+		s, err := mockInitiateUpload(c, `{"status":"???"}`)
 		So(err, ShouldNotBeNil)
 		So(s, ShouldBeNil)
 	})
@@ -191,45 +191,45 @@ func TestRemoteService(t *testing.T) {
 		So(s, ShouldBeNil)
 	})
 
-	Convey("finalizeUpload MISSING", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"MISSING"}`)
+	Convey("finalizeUpload MISSING", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"MISSING"}`)
 		So(err, ShouldNotBeNil)
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("finalizeUpload UPLOADING", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"UPLOADING"}`)
+	Convey("finalizeUpload UPLOADING", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"UPLOADING"}`)
 		So(err, ShouldBeNil)
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("finalizeUpload VERIFYING", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"VERIFYING"}`)
+	Convey("finalizeUpload VERIFYING", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"VERIFYING"}`)
 		So(err, ShouldBeNil)
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("finalizeUpload PUBLISHED", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"PUBLISHED"}`)
+	Convey("finalizeUpload PUBLISHED", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"PUBLISHED"}`)
 		So(err, ShouldBeNil)
 		So(finished, ShouldBeTrue)
 	})
 
-	Convey("finalizeUpload ERROR", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"ERROR","error_message":"boo"}`)
+	Convey("finalizeUpload ERROR", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"ERROR","error_message":"boo"}`)
 		So(err, ShouldNotBeNil)
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("finalizeUpload unknown status", t, func() {
-		finished, err := mockFinalizeUpload(`{"status":"???"}`)
+	Convey("finalizeUpload unknown status", t, func(c C) {
+		finished, err := mockFinalizeUpload(c, `{"status":"???"}`)
 		So(err, ShouldNotBeNil)
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("finalizeUpload bad reply", t, func() {
+	Convey("finalizeUpload bad reply", t, func(c C) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
-			So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/finalize/abc")
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/cas/v1/finalize/abc")
 			w.WriteHeader(403)
 		})
 		finished, err := remote.finalizeUpload("abc")
@@ -237,8 +237,8 @@ func TestRemoteService(t *testing.T) {
 		So(finished, ShouldBeFalse)
 	})
 
-	Convey("registerInstance REGISTERED", t, func() {
-		result, err := mockRegisterInstance(`{
+	Convey("registerInstance REGISTERED", t, func(c C) {
+		result, err := mockRegisterInstance(c, `{
 			"status": "REGISTERED",
 			"instance": {
 				"registered_by": "user:abc@example.com",
@@ -254,8 +254,8 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("registerInstance ALREADY_REGISTERED", t, func() {
-		result, err := mockRegisterInstance(`{
+	Convey("registerInstance ALREADY_REGISTERED", t, func(c C) {
+		result, err := mockRegisterInstance(c, `{
 			"status": "ALREADY_REGISTERED",
 			"instance": {
 				"registered_by": "user:abc@example.com",
@@ -272,8 +272,8 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("registerInstance UPLOAD_FIRST", t, func() {
-		result, err := mockRegisterInstance(`{
+	Convey("registerInstance UPLOAD_FIRST", t, func(c C) {
+		result, err := mockRegisterInstance(c, `{
 			"status": "UPLOAD_FIRST",
 			"upload_session_id": "upload_session_id",
 			"upload_url": "http://upload_url"
@@ -287,8 +287,8 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("registerInstance ERROR", t, func() {
-		result, err := mockRegisterInstance(`{
+	Convey("registerInstance ERROR", t, func(c C) {
+		result, err := mockRegisterInstance(c, `{
 			"status": "ERROR",
 			"error_message": "Some error message"
 		}`)
@@ -296,14 +296,14 @@ func TestRemoteService(t *testing.T) {
 		So(result, ShouldBeNil)
 	})
 
-	Convey("registerInstance unknown status", t, func() {
-		result, err := mockRegisterInstance(`{"status":"???"}`)
+	Convey("registerInstance unknown status", t, func(c C) {
+		result, err := mockRegisterInstance(c, `{"status":"???"}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
 
-	Convey("fetchInstance SUCCESS", t, func() {
-		result, err := mockFetchInstance(`{
+	Convey("fetchInstance SUCCESS", t, func(c C) {
+		result, err := mockFetchInstance(c, `{
 			"status": "SUCCESS",
 			"instance": {
 				"registered_by": "user:abc@example.com",
@@ -321,20 +321,20 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("fetchInstance PACKAGE_NOT_FOUND", t, func() {
-		result, err := mockFetchInstance(`{"status": "PACKAGE_NOT_FOUND"}`)
+	Convey("fetchInstance PACKAGE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchInstance(c, `{"status": "PACKAGE_NOT_FOUND"}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
 
-	Convey("fetchInstance INSTANCE_NOT_FOUND", t, func() {
-		result, err := mockFetchInstance(`{"status": "INSTANCE_NOT_FOUND"}`)
+	Convey("fetchInstance INSTANCE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchInstance(c, `{"status": "INSTANCE_NOT_FOUND"}`)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
 
-	Convey("fetchInstance ERROR", t, func() {
-		result, err := mockFetchInstance(`{
+	Convey("fetchInstance ERROR", t, func(c C) {
+		result, err := mockFetchInstance(c, `{
 			"status": "ERROR",
 			"error_message": "Some error message"
 		}`)
@@ -342,8 +342,8 @@ func TestRemoteService(t *testing.T) {
 		So(result, ShouldBeNil)
 	})
 
-	Convey("fetchACL SUCCESS", t, func() {
-		result, err := mockFetchACL(`{
+	Convey("fetchACL SUCCESS", t, func(c C) {
+		result, err := mockFetchACL(c, `{
 			"status": "SUCCESS",
 			"acls": {
 				"acls": [
@@ -366,14 +366,14 @@ func TestRemoteService(t *testing.T) {
 		}`)
 		So(err, ShouldBeNil)
 		So(result, ShouldResemble, []PackageACL{
-			PackageACL{
+			{
 				PackagePath: "a",
 				Role:        "OWNER",
 				Principals:  []string{"user:a", "group:b"},
 				ModifiedBy:  "user:abc@example.com",
 				ModifiedTs:  time.Unix(0, 1420244414571500000),
 			},
-			PackageACL{
+			{
 				PackagePath: "a/b",
 				Role:        "READER",
 				Principals:  []string{"group:c"},
@@ -383,8 +383,8 @@ func TestRemoteService(t *testing.T) {
 		})
 	})
 
-	Convey("fetchACL ERROR", t, func() {
-		result, err := mockFetchACL(`{
+	Convey("fetchACL ERROR", t, func(c C) {
+		result, err := mockFetchACL(c, `{
 			"status": "ERROR",
 			"error_message": "Some error message"
 		}`)
@@ -392,7 +392,7 @@ func TestRemoteService(t *testing.T) {
 		So(result, ShouldBeNil)
 	})
 
-	Convey("modifyACL SUCCESS", t, func() {
+	Convey("modifyACL SUCCESS", t, func(c C) {
 		expected := `{
 			"changes": [
 				{
@@ -412,13 +412,13 @@ func TestRemoteService(t *testing.T) {
 		expected = strings.Replace(expected, "\n", "", -1)
 		expected = strings.Replace(expected, "\t", "", -1)
 
-		err := mockModifyACL([]PackageACLChange{
-			PackageACLChange{
+		err := mockModifyACL(c, []PackageACLChange{
+			{
 				Action:    GrantRole,
 				Role:      "OWNER",
 				Principal: "user:a@example.com",
 			},
-			PackageACLChange{
+			{
 				Action:    RevokeRole,
 				Role:      "READER",
 				Principal: "user:b@example.com",
@@ -427,8 +427,8 @@ func TestRemoteService(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 
-	Convey("modifyACL ERROR", t, func() {
-		err := mockModifyACL([]PackageACLChange{}, `{"changes":null}`, `{
+	Convey("modifyACL ERROR", t, func(c C) {
+		err := mockModifyACL(c, []PackageACLChange{}, `{"changes":null}`, `{
 			"status": "ERROR",
 			"error_message": "Error message"
 		}`)
