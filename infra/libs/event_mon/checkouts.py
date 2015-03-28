@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(
   os.path.dirname(
     os.path.dirname(
       os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))))
+        os.path.dirname(os.path.realpath(__file__))))))
 
 
 def parse_revinfo(revinfo):
@@ -65,9 +65,10 @@ def get_revinfo(cwd=None):  # pragma: no cover
   """
 
   cmd = [os.path.join(BASE_DIR, 'depot_tools', 'gclient'), 'revinfo', '-a']
+  logging.debug('Running: %s', ' '.join(cmd))
   revinfo = ''
   try:
     revinfo = subprocess.check_output(cmd, cwd=cwd)
-  except subprocess.CalledProcessError:
-    logging.error('Command failed to run: %s', ' '.join(cmd))
+  except (subprocess.CalledProcessError, OSError):
+    logging.exception('Command failed to run: %s', ' '.join(cmd))
   return parse_revinfo(revinfo)
