@@ -35,8 +35,8 @@ Setup:
         was written as a one-off to assist the chromium git migration). However
         studying its source code should be enlightening.
 
-        Note that ``git notes`` may not respect the "--ref" option with a fully
-        qualified ref (e.g. `refs/notes/extra_footers`). For example,
+        Note that ``git notes`` may not respect the ``--ref`` option with a
+        fully qualified ref (e.g. `refs/notes/extra_footers`). For example,
         ``git notes --ref refs/b/l/a add ...`` may actually
         store notes in ``refs/notes/refs/b/l/a``. You can check which ref
         is really being used by running ``git notes --ref refs/b/l/a get-ref``.
