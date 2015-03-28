@@ -50,9 +50,22 @@ def parse_revinfo(revinfo):
 
 
 def get_revinfo(cwd=None):  # pragma: no cover
-  # Call gclient to get the list of all revisions actually checked out on disk.
+  """Call gclient to get the list of all revisions actually checked out on disk.
+
+  gclient is expected to be under depot_tools/ sibling to infra/.
+  If gclient can't be found or fail to run returns {}.
+
+  Args:
+    cwd (str): working directory where to run gclient. If None, use the
+      current working directory.
+  Returns:
+    revinfo (dict): keys are local paths, values are dicts with keys:
+      'source_url' or 'revision'. The latter can be a git SHA1 or an svn
+      revision.
+  """
 
   cmd = [os.path.join(BASE_DIR, 'depot_tools', 'gclient'), 'revinfo', '-a']
+  revinfo = ''
   try:
     revinfo = subprocess.check_output(cmd, cwd=cwd)
   except subprocess.CalledProcessError:
