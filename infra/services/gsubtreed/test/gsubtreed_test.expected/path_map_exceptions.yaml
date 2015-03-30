@@ -4,6 +4,7 @@
         dfae5bf3509f126a554814c7fefd8aadfb08d372:
         - first commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -43,5 +44,6 @@
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
         - 'Cr-Mirrored-Commit: dfae5bf3509f126a554814c7fefd8aadfb08d372'
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}

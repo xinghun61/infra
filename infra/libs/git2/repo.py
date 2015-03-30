@@ -300,18 +300,26 @@ class Repo(object):
     """
     if not refs_and_commits:
       return
-    assert all(r.repo is self for r in refs_and_commits)
-    refspec = [
-      '%s:%s' % (c.hsh, r.ref)
-      for r, c in sorted(
-          refs_and_commits.iteritems(), key=lambda pair: pair[0].ref)
-    ]
+    refspec = self.make_refspec(refs_and_commits)
     kwargs = {'stderr': sys.stdout} if include_err else {}
     kwargs['timeout'] = timeout
     output = self.run('push', 'origin', *refspec, **kwargs)
     for r, c in refs_and_commits.iteritems():
       r.fast_forward(c)
     return output
+
+  def make_refspec(self, refs_and_commits):
+    """Returns the rendered list of refspec entries for a git-push command line.
+
+    Args:
+      refs_and_commits: dict {Ref object -> Commit to push to the ref}.
+    """
+    assert all(r.repo is self for r in refs_and_commits)
+    return [
+      '%s:%s' % (c.hsh, r.ref)
+      for r, c in sorted(
+          refs_and_commits.iteritems(), key=lambda pair: pair[0].ref)
+    ]
 
   def queue_fast_forward(self, refs_and_commits):
     """Update local refs, and keep track of which refs are updated.

@@ -14,7 +14,7 @@ def test(f):
 
 
 @test
-def path_map_exceptions(origin, run, checkpoint, mirrors):
+def path_map_exceptions(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'exception': {'path': {'file': 'cowabunga'}}})
@@ -29,7 +29,7 @@ def path_map_exceptions(origin, run, checkpoint, mirrors):
 
 
 @test
-def master_mirrored_path(origin, run, checkpoint, mirrors):
+def master_mirrored_path(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'unrelated': 'cowabunga'})
@@ -56,7 +56,7 @@ def master_mirrored_path(origin, run, checkpoint, mirrors):
 
 
 @test
-def multiple_refs(origin, run, checkpoint, mirrors):
+def multiple_refs(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   other = origin['refs/heads/other']
   mc = master.make_commit
@@ -80,7 +80,7 @@ def multiple_refs(origin, run, checkpoint, mirrors):
 
 
 @test
-def mirrored_path_is_a_file(origin, run, checkpoint, mirrors):
+def mirrored_path_is_a_file(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'unrelated': 'cowabunga'})
@@ -99,7 +99,7 @@ def mirrored_path_is_a_file(origin, run, checkpoint, mirrors):
 
 
 @test
-def multiple_runs(origin, run, checkpoint, mirrors):
+def multiple_runs(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   other = origin['refs/heads/other']
   mc = master.make_commit
@@ -128,7 +128,7 @@ def multiple_runs(origin, run, checkpoint, mirrors):
 
 
 @test
-def fix_footers(origin, run, checkpoint, mirrors):
+def fix_footers(origin, run, checkpoint, mirrors, **_):
   branch = origin['refs/heads/branch']
   branch.make_commit(
     'sweet commit',
@@ -158,7 +158,7 @@ def fix_footers(origin, run, checkpoint, mirrors):
 
 
 @test
-def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors):
+def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   master.make_commit('initial commit', {'mirrored_path': {'file': 'data'}})
 
@@ -185,7 +185,7 @@ def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors):
 
 
 @test
-def bootstrap_fails_without_footer(origin, run, checkpoint, mirrors):
+def bootstrap_fails_without_footer(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mirrored_path_repo = mirrors['mirrored_path']
   mirrored_path = mirrored_path_repo['refs/heads/master']
@@ -206,7 +206,7 @@ def bootstrap_fails_without_footer(origin, run, checkpoint, mirrors):
 
 
 @test
-def bootstrap_history_with_extra_footers(origin, run, checkpoint, mirrors):
+def bootstrap_history_with_extra_footers(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mirrored_path_repo = mirrors['mirrored_path']
   mirrored_path = mirrored_path_repo['refs/heads/master']
@@ -234,7 +234,7 @@ def bootstrap_history_with_extra_footers(origin, run, checkpoint, mirrors):
 
 
 @test
-def deleted_tree_is_ok(origin, run, checkpoint, mirrors):
+def deleted_tree_is_ok(origin, run, checkpoint, mirrors, **_):
   master = origin['refs/heads/master']
   mc = master.make_commit
   mc('first commit', {'mirrored_path': {'file': 'data'}})
@@ -249,3 +249,36 @@ def deleted_tree_is_ok(origin, run, checkpoint, mirrors):
     'file': ('new data', 0644),
   }
 
+
+@test
+def multi_push(origin, run, checkpoint, mirrors, config, **_):
+  config.update(path_extra_push={
+    'mirrored_path': [mirrors['extra_mirror'].repo_path]})
+
+  master = origin['refs/heads/master']
+  mc = master.make_commit
+  mc('first commit', {'unrelated': 'cowabunga'})
+  mc('next commit', {
+    'mirrored_path': {
+      'mirror_file': 'awesome sauce',
+      'some_other_file': 'neat',
+    },
+    'unrelated': 'other',
+    'unrelated_path': 'not helpful',
+  })
+  master.make_commit('unrelated commit', {
+    'unrelated_path': 'helpful?',
+  })
+
+  checkpoint('repo is set up')
+  run()
+  checkpoint('should see stuff')
+
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/master') == {
+    'mirror_file': ('awesome sauce', 0644),
+    'some_other_file': ('neat', 0644),
+  }
+  assert GitEntry.spec_for(mirrors['extra_mirror'], 'refs/heads/master') == {
+    'mirror_file': ('awesome sauce', 0644),
+    'some_other_file': ('neat', 0644),
+  }

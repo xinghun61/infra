@@ -12,6 +12,7 @@
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -61,6 +62,7 @@
         59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
         - first commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         3db9398d3995ad6c7de356f79b5b605edb529792:

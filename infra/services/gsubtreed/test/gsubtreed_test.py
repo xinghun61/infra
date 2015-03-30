@@ -47,7 +47,7 @@ def RunTest(test_name):
               path_map_exceptions=path_map_exceptions)
 
   mirrors = {}
-  for path in enabled_paths:
+  for path in enabled_paths + ['extra_mirror']:
     path_in_mirror = path_map_exceptions.get(path, path)
     full_path = os.path.join(base_repo_path, path_in_mirror)
     try:
@@ -58,6 +58,11 @@ def RunTest(test_name):
                                        'fake')
     mirrors[path_in_mirror]._repo_path = full_path
     mirrors[path_in_mirror].run('init', '--bare')
+
+  class LogFormatter(logging.Formatter):
+    def format(self, record):
+      s = super(LogFormatter, self).format(record)
+      return s.replace(base_repo_path, '[TMPDIR]')
 
   def checkpoint(message, include_committer=False, include_config=False):
     repos = collections.OrderedDict()
@@ -73,8 +78,7 @@ def RunTest(test_name):
     logout = StringIO()
     root_logger = logging.getLogger()
     shandler = logging.StreamHandler(logout)
-    shandler.setFormatter(
-        logging.Formatter('%(levelname)s: %(message)s'))
+    shandler.setFormatter(LogFormatter('%(levelname)s: %(message)s'))
     root_logger.addHandler(shandler)
     shandler.setLevel(logging.INFO)
 
@@ -106,7 +110,8 @@ def RunTest(test_name):
       })
 
   gsubtreed_test_definitions.GSUBTREED_TESTS[test_name](
-    origin, run, checkpoint, mirrors)
+    origin=origin, run=run, checkpoint=checkpoint, mirrors=mirrors,
+    config=cref)
 
   return expect_tests.Result(ret)
 

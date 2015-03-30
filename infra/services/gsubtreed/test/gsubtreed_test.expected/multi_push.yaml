@@ -1,11 +1,11 @@
 - - repo is set up
   - origin:
       refs/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
+        3db74a910bc5d6ff9fd07792d04d677bab8394f2:
         - unrelated commit
-        ea9899ff5037bdb48ec4e9b2c52075284010f0a3:
+        c1dac40efa8fe1e644db28ebe235009e78bfd114:
         - next commit
-        59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
+        e01697145334cb4c124d2bdfa76772a3234d0b42:
         - first commit
     mirror(cool_path): {}
     mirror(extra_mirror): {}
@@ -21,14 +21,15 @@
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
-  - 'INFO: processing Commit(TestRepo(''local''), ''ea9899ff5037bdb48ec4e9b2c52075284010f0a3'')'
+  - 'INFO: processing Commit(TestRepo(''local''), ''c1dac40efa8fe1e644db28ebe235009e78bfd114'')'
   - 'INFO: found new tree ''58e2ba602f2b3b89d2a97a416d12c49d17b52daa'''
   - 'INFO: processing path ''exception/path'''
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: Completed push for ''mirrored_path/subpath'''
-  - 'INFO: Running (''git'', ''push'', ''origin'', ''54ec3957a50fdfd16ced02b78685cf0e117e8141:refs/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''08a47054d5c21e09b9df083ee3622a24365d31b6:refs/heads/master'')'
+  - 'INFO: Running (''git'', ''push'', ''[TMPDIR]/extra_mirror'', ''08a47054d5c21e09b9df083ee3622a24365d31b6:refs/heads/master'')'
   - 'INFO: Completed push for ''mirrored_path'''
   - 'INFO: Completed push for ''exception/path'''
 - inner_loop success: true
@@ -39,19 +40,25 @@
 - - should see stuff
   - origin:
       refs/heads/master:
-        e8c0dbcbd59405d1eef5dd0b5325a0e626893dd0:
+        3db74a910bc5d6ff9fd07792d04d677bab8394f2:
         - unrelated commit
-        ea9899ff5037bdb48ec4e9b2c52075284010f0a3:
+        c1dac40efa8fe1e644db28ebe235009e78bfd114:
         - next commit
-        59583d0d2eb66379a46d2d0a2dc33d6d0a1e417d:
+        e01697145334cb4c124d2bdfa76772a3234d0b42:
         - first commit
     mirror(cool_path): {}
-    mirror(extra_mirror): {}
-    mirror(mirrored_path):
+    mirror(extra_mirror):
       refs/heads/master:
-        54ec3957a50fdfd16ced02b78685cf0e117e8141:
+        08a47054d5c21e09b9df083ee3622a24365d31b6:
         - next commit
         - ''
         - 'Cr-Mirrored-From: [FILE-URL]'
-        - 'Cr-Mirrored-Commit: ea9899ff5037bdb48ec4e9b2c52075284010f0a3'
+        - 'Cr-Mirrored-Commit: c1dac40efa8fe1e644db28ebe235009e78bfd114'
+    mirror(mirrored_path):
+      refs/heads/master:
+        08a47054d5c21e09b9df083ee3622a24365d31b6:
+        - next commit
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: c1dac40efa8fe1e644db28ebe235009e78bfd114'
     mirror(mirrored_path/subpath): {}

@@ -7,6 +7,7 @@
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -55,6 +56,7 @@
         e213bc0ab9d92e8d6fcd9167d1db625516946de5:
         - what_commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         53eb90f840c9e5fd04b50fb079381620205d3529:

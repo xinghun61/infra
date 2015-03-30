@@ -6,6 +6,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         35533ec8003bfcfcba38d48db90cea0af3b9398c:
@@ -51,6 +52,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         390c5c83978057e0f982f3c15a4437d333097bb5:

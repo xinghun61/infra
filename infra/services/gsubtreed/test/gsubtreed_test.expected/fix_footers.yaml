@@ -9,6 +9,7 @@
         - 'Commit-Id: whaaat'
         - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -47,6 +48,7 @@
         - 'Commit-Id: whaaat'
         - 'Cr-Branched-From: deadbeef-refs/heads/master@{#12300}'
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/branch:
         5c3f835c4a13b397b949d345715a0d61403d04f0:

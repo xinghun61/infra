@@ -8,6 +8,7 @@
         8ee2bda77e55317c88482d4c7b5145955add3972:
         - first commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -51,6 +52,7 @@
         8ee2bda77e55317c88482d4c7b5145955add3972:
         - first commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         bda22a84f1e2d5f3badb277eb7d20919127377ca:

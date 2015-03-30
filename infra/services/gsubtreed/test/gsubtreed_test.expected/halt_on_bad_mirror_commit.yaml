@@ -4,6 +4,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path): {}
     mirror(mirrored_path/subpath): {}
 - log output:
@@ -37,6 +38,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         0a64dfdacf02eaa1ed98b8c30153f3319c1dab24:
@@ -51,6 +53,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         8b7349362b2127db9987da3a81b8c58ad2e582d9:
@@ -90,6 +93,7 @@
         7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a:
         - initial commit
     mirror(cool_path): {}
+    mirror(extra_mirror): {}
     mirror(mirrored_path):
       refs/heads/master:
         8b7349362b2127db9987da3a81b8c58ad2e582d9:

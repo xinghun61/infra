@@ -48,8 +48,11 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     # normpath to avoid trailing/double-slash errors.
     'enabled_paths': lambda self, val: map(posixpath.normpath, map(str, val)),
 
-    'path_map_exceptions': lambda self, val: dict(
-      (str(k), str(v)) for k, v in val.iteritems()),
+    'path_map_exceptions': lambda self, val: {
+      str(k): str(v) for k, v in val.iteritems()},
+
+    'path_extra_push': lambda self, val: {
+      str(k): set(str(x) for x in v) for k, v in val.iteritems()},
   }
 
   DEFAULTS = {
@@ -60,6 +63,7 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     'enabled_refglobs': ['refs/heads/*'],
 
     'path_map_exceptions': {},
+    'path_extra_push': {},
   }
   """DEFAULTS is the default values for the in-repo versioned configuration ref.
 
@@ -94,6 +98,11 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
       and base_url was ``https://example.com``, then it would mirror
       ``path/to/foo`` to ``https://example.com/bar``, instead of
       ``https://example.com/path/to/foo``.
+
+    path_extra_push: A dictionary mapping 'enabled_path' to
+      a list of full_git_repo_urls. Any time we find changes in the
+      enabled_path, we'll also push those subtree commits to all the git repos
+      in full_git_repo_urls.
   """
 
 
@@ -114,13 +123,14 @@ class Pusher(threading.Thread):
   # (and defined by the order 'get_result' calls).
   FAKE_THREADING = False
 
-  def __init__(self, name, dest_repo, pushspec):
+  def __init__(self, name, dest_repo, pushspec, also_push):
     super(Pusher, self).__init__()
     self._name = name
     self._repo = dest_repo
+    self._also_push = also_push
     self._pushspec = pushspec
 
-    self._success = False
+    self._success = True
     self._output = None
 
   def run(self):
@@ -142,9 +152,25 @@ class Pusher(threading.Thread):
     try:
       self._output = self._repo.fast_forward_push(
           self._pushspec, include_err=True, timeout=PUSH_TIMEOUT)
-      self._success = True
     except CalledProcessError as cpe:  # pragma: no cover
       self._output = str(cpe)
+      self._success = False
+    except:  # pragma: no cover
+      self._success = False
+      raise
+
+    refspec = self._repo.make_refspec(self._pushspec)
+    for url in self._also_push:
+      try:
+        self._output += self._repo.run(
+            'push', url, *refspec, stderr=sys.stdout,
+            timeout=PUSH_TIMEOUT)
+      except CalledProcessError as cpe:  # pragma: no cover
+        self._output += str(cpe)
+        self._success = False
+      except:  # pragma: no cover
+        self._success = False
+        raise
 
 
 def process_path(path, origin_repo, config):
@@ -245,7 +271,8 @@ def process_path(path, origin_repo, config):
       if synth_parent is not INVALID and synth_parent != last_push:
         subtree_repo_push[subtree_repo[ref.ref]] = synth_parent
 
-  t = Pusher(path, subtree_repo, subtree_repo_push)
+  t = Pusher(path, subtree_repo, subtree_repo_push,
+             config['path_extra_push'].get(path, []))
   t.start()
 
   return success, synthed_count, t
