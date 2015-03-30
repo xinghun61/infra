@@ -50,6 +50,10 @@ header .ui-actions {
     overflow-x: auto;
 }
 
-.add-more {
-    margin: 0 16px 0.5em 16px;
+.choose-trybots {
+    margin: 0 5px 0.5em 16px;
+}
+
+.trigger-dry-run {
+    margin: 0 0px 0.5em 5px;
 }

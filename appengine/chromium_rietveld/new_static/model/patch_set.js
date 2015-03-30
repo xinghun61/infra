@@ -21,6 +21,7 @@ function PatchSet(issue, id, sequence)
     this.id = id || 0;
     this.sequence = sequence || 0;
     this.commit = false;
+    this.cqDryRun = false;
     this.mostRecent = false;
     this.active = false;
     Object.preventExtensions(this);

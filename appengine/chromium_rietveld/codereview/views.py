@@ -1993,6 +1993,7 @@ def edit(request):
   issue.closed = cleaned_data['closed']
   if issue.closed:
     issue.commit = False
+    issue.cq_dry_run = False
   issue.private = cleaned_data.get('private', False)
   base_changed = (issue.base != base)
   issue.base = base
@@ -2327,6 +2328,8 @@ def _issue_as_dict(issue, messages, request=None):
     'target_ref': issue.target_ref,
     'private': issue.private,
     'commit': issue.commit,
+    'cq_dry_run': issue.cq_dry_run,
+    'cq_dry_run_last_triggered_by': issue.cq_dry_run_last_triggered_by,
   }
   if messages:
     values['messages'] = sorted(

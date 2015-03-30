@@ -22,7 +22,8 @@ h2 {
 
 dialog {
     max-width: 800px;
-    width: 100%;
+    width: 800px;
+    width: -webkit-max-content;
     padding: 0;
     border: 1px solid #dcdcdc;
     box-shadow: 0 0 5px 3px rgba(0, 0, 0, 0.2);

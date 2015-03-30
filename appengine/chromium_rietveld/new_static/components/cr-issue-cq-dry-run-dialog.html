@@ -1,0 +1,54 @@
+<!-- Copyright (c) 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../common/cr-button.html">
+<link rel="import" href="../common/cr-dialog.html">
+<link rel="import" href="../common/cr-toolbar.html">
+
+<polymer-element name="cr-issue-cq-dry-run-dialog">
+    <template>
+        <link rel="stylesheet" href="../common/common.css">
+        <style>
+            .dialog-fields-field {
+                padding: 0.5em 16px;
+            }
+
+        </style>
+
+        <dialog is="cr-dialog" id="dialog" class="dialog small" on-cancel="{{ cancel }}">
+            <h1>CQ Dry Run</h1>
+
+            <fieldset class="dialog-fields" disabled?="{{ sending }}">
+                <div class="dialog-fields-field">
+                    Send this patchset to the project's CQ to run all of its checks without submitting the change.
+                </div>
+                <div class="dialog-fields-field">
+                    Note: The LGTM check is skipped during the dry run only if the user is a project committer.
+                </div>
+            </fieldset>
+
+            <cr-toolbar>
+                <button is="cr-button" primary on-tap="{{ dryRun }}">Trigger Dry Run</button>
+                <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
+            </cr-toolbar>
+        </dialog>
+    </template>
+    <script>
+        Polymer({
+            cancel: function(event) {
+                this.close();
+            },
+            close: function() {
+                this.$.dialog.close();
+            },
+            dryRun: function() {
+                this.fire("set-flags", {commit: true, cqDryRun: true});
+                this.close();
+            },
+            showModal: function() {
+                this.$.dialog.showModal();
+            },
+        });
+    </script>
+</polymer-element>

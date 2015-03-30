@@ -576,6 +576,25 @@ function M_createRevertPatchset() {
   return confirm("Proceed with creating a revert of this patchset?");
 }
 
+function M_triggerCQDryRun(issue) {
+  var confirmed = confirm(
+      'Send this patchset to the project\'s CQ to run all of its checks without submitting the ' +
+      'change.\n\nNote: The LGTM check is skipped during the dry run ' +
+      'only if the user is a project committer.');
+  if (!confirmed) {
+    return false
+  }
+
+  // Flip the commit bit.
+  var commitForm = document.getElementById("commitform");
+  commitForm.commit.checked = true;
+  // Flip the cq dry run bit.
+  commitForm.cq_dry_run.value = true;
+  // Call the server to set the necessary commit and cq_dry_run flags
+  // on the issue.
+  return M_editFlags(issue);
+}
+
 /**
  * Change the commit bit for the given issue by using edit_flags.
  * @param {String} issue The issue key
@@ -600,7 +619,10 @@ function M_editFlags(issue) {
     }
   }
 
-  M_sendEditFlagsRequest(issue, req.join('&'));
+  M_sendEditFlagsRequest(issue, req.join("&"), function(xhr) {
+    if (xhr.status == 200)
+      window.location.reload();
+  });
   return true;
 }
 

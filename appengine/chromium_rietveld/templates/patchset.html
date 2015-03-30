@@ -117,7 +117,10 @@
             {%ifequal last_patchset.key.id patchset.key.id%}
               |
               <a id="tryjobchange-{{patchset.key.id}}" href="#"
-                  onclick="M_editPendingTryJobs('{{patchset.key.id}}'); return false">Try more bots</a>
+                  onclick="M_editPendingTryJobs('{{patchset.key.id}}'); return false">Choose trybots</a>
+              {%if offer_cq%}
+                | <a href="#" onclick="M_triggerCQDryRun('{{issue.key.id}}')">CQ dry run</a>
+              {%endif%}
             {%endifequal%}
           {%endif%}
         {%else%}
@@ -143,10 +146,12 @@
       <form id="commitform" name="commitform" method="post">
         <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
         <input type="hidden" name="last_patchset" value="{{last_patchset.key.id}}">
-        Commit:<input type="checkbox" id="commit" name="commit" style="vertical-align: middle"
+        <input type="hidden" id="cq_dry_run" name="cq_dry_run" value=false>
+        Commit: <input type="checkbox" id="commit" name="commit"
           {%if issue.commit%}checked{%endif%}
           {%if not request.user or issue.closed or issue.private%}disabled{%endif%}
-          onchange="M_editFlags('{{issue.key.id}}')" />
+          onchange="document.commitform.cq_dry_run.value=false; M_editFlags('{{issue.key.id}}')" />
+        {%if issue.cq_dry_run %}(dry run){% endif %}
         <a style="margin-left:10px" href="http://goo.gl/8k1zIY">CQ not working?</a>
       </form>
 

@@ -91,6 +91,8 @@ class Issue(ndb.Model):
   private = ndb.BooleanProperty(default=False)
   n_comments = ndb.IntegerProperty()
   commit = ndb.BooleanProperty(default=False)
+  cq_dry_run = ndb.BooleanProperty(default=False)
+  cq_dry_run_last_triggered_by = ndb.StringProperty()
 
   # NOTE: Use num_messages instead of using n_messages_sent directly.
   n_messages_sent = ndb.IntegerProperty()

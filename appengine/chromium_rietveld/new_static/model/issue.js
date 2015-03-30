@@ -26,6 +26,7 @@ function Issue(id)
     this.lastModified = ""; // Date
     this.closed = false;
     this.commit = false;
+    this.cqDryRun = false;
     this.id = id || 0;
     this.scores = {}; // Map<email, (-1, 1)>
     this.approvalCount = 0;
@@ -105,6 +106,7 @@ Issue.prototype.parseData = function(data)
     this.targetRef = data.target_ref || "";
     this.closed = data.closed || false;
     this.commit = data.commit || false;
+    this.cqDryRun = data.cq_dry_run || false;
     this.created = Date.utc.create(data.created);
     this.description = data.description || "";
     this.lastModified = Date.utc.create(data.modified);
@@ -132,6 +134,7 @@ Issue.prototype.parseData = function(data)
     if (this.patchsets.length) {
         var last = this.patchsets.last();
         last.commit = this.commit;
+        last.cqDryRun = this.cqDryRun;
         last.mostRecent = true;
         last.active = true;
     }
@@ -240,6 +243,7 @@ Issue.prototype.publish = function(options)
     var addAsReviewer = options.addAsReviewer;
     var publishDrafts = options.publishDrafts;
     var commit = options.commit;
+    var cqDryRun = options.cqDryRun;
     var reviewers = Object.has(options, "reviewers") ? options.reviewers : this.reviewerEmails();
     var cc = Object.has(options, "cc") ? options.cc : this.ccEmails();
     if (options.lgtm) {
@@ -252,6 +256,7 @@ Issue.prototype.publish = function(options)
         message_only: publishDrafts ? "0" : "1",
         add_as_reviewer: addAsReviewer ? "1" : "0",
         commit: commit ? "1" : "0",
+        cq_dry_run: cqDryRun ? "1" : "0",
         message: message,
         send_mail: "1",
         reviewers: reviewers,
@@ -268,6 +273,8 @@ Issue.prototype.setFlags = function(options)
     };
     if (Object.has(options, "commit"))
         data.commit = options.commit ? 1 : 0;
+    if (Object.has(options, "cqDryRun"))
+        data.cq_dry_run = options.cqDryRun ? 1 : 0;
     if (options.builders)
         data.builders = options.builders;
     return sendFormData(this.getFlagsUrl(), data, {

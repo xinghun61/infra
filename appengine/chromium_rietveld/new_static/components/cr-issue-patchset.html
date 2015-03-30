@@ -4,6 +4,7 @@ found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-toolbar.html">
+<link rel="import" href="cr-issue-cq-dry-run-dialog.html">
 <link rel="import" href="cr-issue-patchfile.html">
 <link rel="import" href="cr-try-results.html">
 
@@ -56,10 +57,12 @@ found in the LICENSE file. -->
                 <h2>Try job results</h2>
                 <cr-try-results results="{{ patchset.tryJobResults }}"></cr-try-results>
                 <template if="{{ patchset.mostRecent && !patchset.issue.closed }}">
-                    <a class="add-more" is="cr-action" on-tap="{{ handleAddMore }}">Add more</a>
+                    <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose trybots</a> /
+                    <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
                 </template>
             </template>
         </div>
+        <div id="dialogs"></div>
     </template>
     <script>
     (function() {
@@ -71,6 +74,19 @@ found in the LICENSE file. -->
                 this.mode = "";
                 this.sideBySide = localStorage.getItem(SIDE_BY_SIDE_KEY) == "true";
                 this.updateMode();
+            },
+            showDryRunDialog: function() {
+              if (this.patchset.issue.closed)
+                  return;
+              var dialog = document.createElement("cr-issue-cq-dry-run-dialog");
+              this.showDialog(dialog);
+            },
+            showDialog: function(dialog) {
+                this.$.dialogs.appendChild(dialog);
+                dialog.addEventListener("close", function() {
+                    dialog.remove();
+                });
+                dialog.showModal();
             },
             sideBySideChanged: function(oldValue, newValue) {
                 this.updateMode();

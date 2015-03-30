@@ -45,6 +45,7 @@ from codereview import views
 class EditFlagsForm(forms.Form):
   last_patchset = forms.IntegerField(widget=forms.HiddenInput())
   commit = forms.BooleanField(required=False)
+  cq_dry_run = forms.BooleanField(required=False)
   builders = forms.CharField(max_length=16*1024, required=False)
 
 
@@ -365,6 +366,7 @@ def edit_flags(request):
       return HttpResponseBadRequest(
         'Cannot set commit on private issues', content_type='text/plain')
     request.issue.commit = form.cleaned_data['commit']
+    request.issue.cq_dry_run = form.cleaned_data['cq_dry_run']
     user_email = request.user.email().lower()
     if (request.issue.commit and  # Add as reviewer if setting, not clearing.
         user_email != request.issue.owner.email() and
@@ -375,6 +377,13 @@ def edit_flags(request):
     # spam by not emailing users.
     action = 'checked' if request.issue.commit else 'unchecked'
     commit_checked_msg = 'The CQ bit was %s by %s' % (action, user_email)
+    if request.issue.cq_dry_run:
+      commit_checked_msg += ' to run a CQ dry run'
+      request.issue.cq_dry_run_last_triggered_by = user_email
+      logging.info('CQ dry run has been triggered by %s for %d/%d', user_email,
+                   request.issue.key.id(), last_patchset.key.id())
+    else:
+      request.issue.cq_dry_run_last_triggered_by = ''
     # Mail just the owner if the CQ bit was unchecked by someone other than the
     # owner. More details in
     # https://code.google.com/p/skia/issues/detail?id=3093

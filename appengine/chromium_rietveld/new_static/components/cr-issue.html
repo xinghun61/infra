@@ -19,7 +19,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-try-dialog.html">
 <link rel="import" href="cr-try-results.html">
 
-<polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}">
+<polymer-element name="cr-issue" attributes="issue" on-butterbar-update="{{ updateButterbar }}" on-show-try-dialog="{{ handleShowTryDialog }}" on-set-flags="{{ setFlags }}">
     <template>
         <cr-view-handler></cr-view-handler>
         <link rel="stylesheet" href="../common/common.css">
@@ -62,7 +62,9 @@ found in the LICENSE file. -->
                     <h2>Commit status</h2>
                     <cr-try-results results="{{ issue.patchsets[issue.patchsets.length - 1].tryJobResults }}" showmore></cr-try-results>
                     <cr-toolbar class="issue-toolbar">
-                        <button is="cr-button" on-tap="{{ toggleCommit }}">Cancel commit</button>
+                        <button is="cr-button" on-tap="{{ toggleCommit }}">
+                            Cancel Commit <template if="{{ issue.cqDryRun }}">Dry Run</template>
+                        </button>
                         <div class="ui-actions">
                           <a href="http://goo.gl/8k1zIY">CQ not working?</a>
                         </div>
@@ -116,9 +118,16 @@ found in the LICENSE file. -->
                 this.butterbarMessage = event.detail.message;
             },
             toggleCommit: function() {
+                this.fire("set-flags", {commit: !this.issue.commit})
+            },
+            setFlags: function(event) {
                 var self = this;
                 this.butterbarMessage = "Saving...";
-                this.issue.setFlags({commit: !this.issue.commit}).then(function() {
+                var options = {
+                    commit: event.detail.commit ? event.detail.commit : false,
+                    cqDryRun: event.detail.cqDryRun ? event.detail.cqDryRun : false,
+                }
+                this.issue.setFlags(options).then(function() {
                     self.butterbarMessage = "";
                     self.fire("issue-refresh");
                 }).catch(function(e) {
