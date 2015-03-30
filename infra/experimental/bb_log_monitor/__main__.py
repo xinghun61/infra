@@ -90,9 +90,6 @@ def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument('-n', '--nice', type=int, metavar='VALUE',
       help='Set the nice level of the process to VALUE prior to execution.')
-  parser.add_argument('statefile',
-      help='The path of the state file. If non-existent, one will be created; '
-           'otherwise, the existing one will be updated.')
   parser.add_argument('master_paths', nargs='+',
       help='The paths to the master base directories to monitor. Consider '
            'the /path/to/build/masters/master.* wildcard to specify all of '
