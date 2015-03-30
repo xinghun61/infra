@@ -119,3 +119,7 @@ MAX_TAB_SPACES = 10
 
 # Sanity limits to avoid timeouts and out-of-memory errors
 MAX_PATCHES_PER_PATCHSET = 5000
+
+# Chromium committers listed in this list on chromium-committers.appspot.com
+# are allowed to edit any issue, including checking the commit checkbox.
+COMMITTER_LIST_NAME = 'chromium-committers'

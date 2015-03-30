@@ -34,6 +34,7 @@ from google.appengine.ext import ndb
 from django.conf import settings
 
 from codereview import auth_utils
+from codereview import committer_list
 from codereview import invert_patches
 from codereview import patching
 from codereview import utils
@@ -57,11 +58,17 @@ def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
 
 
 def is_privileged_user(user):
-  """Returns True if user is permitted special access rights."""
+  """Returns True if user is permitted special access rights.
+
+  Users are privileged if they are using an account from
+  a certain domain or they are a Chromium committer, regardless
+  of domain.
+  """
   if not user:
     return False
   email = user.email().lower()
-  return email.endswith(PRIVILEGED_USER_DOMAINS)
+  return (email.endswith(PRIVILEGED_USER_DOMAINS) or
+          email in committer_list.Committers())
 
 
 ### Issues, PatchSets, Patches, Contents, Comments, Messages ###

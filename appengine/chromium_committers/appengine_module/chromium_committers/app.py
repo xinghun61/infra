@@ -30,7 +30,8 @@ JINJA2_ENVIRONMENT = jinja2.Environment(
     extensions=['jinja2.ext.autoescape'])
 TRUSTED_APP_IDS = [
   'chrome-infra-auth',
-  'chrome-infra-auth-dev'
+  'chrome-infra-auth-dev',
+  'chromiumcodereview-hr',
 ]
 
 
