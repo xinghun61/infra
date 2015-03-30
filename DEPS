@@ -3,8 +3,8 @@ deps = {
     "https://chromium.googlesource.com/chromium/tools/build.git",
 
   "infra/appengine/swarming":
-    ("https://chromium.googlesource.com/infra/swarming.git"
-     "@c043b409936afc92b998802b49ed89577e29c0c0"),
+    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
+     "@98b5e30a9a2b77bef320d0cc8bf002151a8c6614"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
