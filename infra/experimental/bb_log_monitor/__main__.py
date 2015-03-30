@@ -17,30 +17,38 @@ BUILDLOG_RE = re.compile(r'(?P<buildnum>\d+)-log-(?P<step>.+)')
 
 
 def get_builder_state(metric, builder_name, builder_path):
-  # List every file in this directory. Log files that are monitored as the
-  # unzipped output files, which mean they don't have an extension.
+  """Adds metrics for the log entries associated with a given builder.
+
+  List every file in this directory. Log files that are monitored as the
+  unzipped output files, which mean they don't have an extension.
+
+  Args:
+    metric (ts_mon.GaugeMetric) The gauge metric to publish to.
+    builder_name (str): The name of the builder.
+    builder_path (str): The path of the builder's root directory.
+  """
   for n in os.listdir(builder_path):
     path = os.path.join(builder_path, n)
 
     # Skip files with an extension.
     _, ext = os.path.splitext(n)
     if ext:
-      logging.debug("Skipping file with extension: %s", path)
+      logging.debug('Skipping file with extension: %s', path)
       continue
 
     # Skip files that aren't log files.
     match = BUILDLOG_RE.match(n)
     if not match:
-      logging.debug("Skipping unmatching path: %s", path)
+      logging.debug('Skipping unmatching path: %s', path)
       continue
     buildnum, step = match.group('buildnum'), match.group('step')
-    logging.debug("Processing log file '%s :: %s' for %s at: %s",
+    logging.debug('Processing log file "%s :: %s" for %s at: %s',
                   buildnum, step, builder_name, path)
 
     try:
       path_stat = os.stat(path)
     except OSError as e:
-      logging.error("Error while statting %s: %s", path, e)
+      logging.error('Error while statting %s: %s', path, e)
       continue
 
     metric.set(path_stat.st_size, fields={
@@ -51,11 +59,18 @@ def get_builder_state(metric, builder_name, builder_path):
 
 
 def get_master_state(master_path, master_target):
+  """Adds metrics for the builders and their logs within a master directory.
+
+  Args:
+    master_path (str): The path of the master's base directory.
+    master_target (ts_mon.TaskTarget): The monitoring target to use for metrics
+        associated with this master.
+  """
   if not os.path.isdir(master_path):
-    logging.error("Master path is not a directory: %s", master_path)
+    logging.error('Master path is not a directory: %s', master_path)
     return None
 
-  active_log_size = ts_mon.GaugeMetric('master/active_log_size',
+  active_log_size = ts_mon.GaugeMetric('proc/master/active_log_size',
                                        target=master_target)
   for d in os.listdir(master_path):
     path = os.path.join(master_path, d)
@@ -93,14 +108,14 @@ def main(args):
 
   # Try setting the nice value; if it fails, eat the error and continue.
   if args.nice:
-    logging.debug("Setting process 'nice' to: %d", args.nice)
+    logging.debug('Setting process "nice" to: %d', args.nice)
     try:
       os.nice(args.nice)
     except OSError as e:
-      logging.error("Failed to update 'nice' to %d: %s", args.nice, e)
+      logging.error('Failed to update "nice" to %d: %s', args.nice, e)
 
   # Update global state calculations.
-  logging.info("Pulling master state from: %s", args.master_paths)
+  logging.info('Pulling master state from: %s', args.master_paths)
   for master_path in args.master_paths:
     master_name = master_path_to_name(master_path)
 
@@ -111,11 +126,11 @@ def main(args):
         args.ts_mon_task_region,
         args.ts_mon_task_hostname,
         args.ts_mon_task_number)
-    logging.info("Collecting log state for master '%s' at: %s",
+    logging.info('Collecting log state for master "%s" at: %s',
                  master_name, master_path)
     get_master_state(master_path, target)
 
-  logging.info("Flushing collected information.")
+  logging.info('Flushing collected information.')
   ts_mon.flush()
   return 0
 
