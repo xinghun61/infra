@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-from infra.libs.event_mon.router import _Router
+import logging
 import socket
 
 from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra.libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
+from infra.libs.event_mon.router import _Router
 
 _router = None
 
@@ -78,6 +78,7 @@ def setup_monitoring(run_type='dry',
     appengine_name (str): name of the appengine app, if running on appengine.
   """
   global _router
+  logging.debug('event_mon: setting up monitoring.')
   if not _router:  # pragma: no cover
     ENDPOINTS = {
       'dry': None,
@@ -93,9 +94,9 @@ def setup_monitoring(run_type='dry',
     hostname = hostname or socket.getfqdn()
     # hostname might be empty string or None on some systems, who knows.
     if hostname:  # pragma: no branch
-      #TODO(pgervais): log when hostname is None or empty, because it's not
-      # supposed to happen.
       default_event.event_source.host_name = hostname
+    else:
+      logging.warning('event_mon: unable to determine hostname.')
 
     if service_name:
       default_event.event_source.service_name = service_name

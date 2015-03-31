@@ -34,6 +34,7 @@ class _Router(object):
     self.event_queue = Queue.Queue()
     self._thread = threading.Thread(target=self._router)
     self._thread.daemon = True
+    logging.debug('event_mon: starting router thread')
     self._thread.start()
 
   def _router(self):
@@ -45,6 +46,7 @@ class _Router(object):
       # Set this time at the very last moment
       events.request_time_ms = time_ms()
       if self.endpoint:  # pragma: no cover
+        logging.info('event_mon: POSTing events to %s', self.endpoint)
         response = requests.post(self.endpoint, data=events.SerializeToString())
         if response.status_code != 200:
           # TODO(pgervais): implement retry / local storage when this
@@ -61,12 +63,18 @@ class _Router(object):
         guarantee that all events have been properly sent to the remote.
     """
     timeout = timeout or 5
+    logging.debug('event_mon: trying to close')
     self.event_queue.put(None)
     self._thread.join(timeout)
     # If the thread is still alive at this point, we can't but wait for a call
     # to sys.exit. Since we expect this function to be called at the end of the
     # program, it should come soon.
-    return not self._thread.is_alive()
+    success = not self._thread.is_alive()
+    if success:
+      logging.debug('event_mon: successfully closed.')
+    else:  # pragma: no cover
+      logging.debug('event_mon: timeout waiting for thread to finish.')
+    return success
 
   def push_event(self, event):
     """Enqueue event to push to the collection service.
