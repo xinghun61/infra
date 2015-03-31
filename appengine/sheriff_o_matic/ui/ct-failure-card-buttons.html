@@ -65,10 +65,12 @@ found in the LICENSE file.
 
       snooze: function() {
         this.group.snoozeUntil(Date.now() + 60 * 60 * 1000);
+        ga('send', 'event', 'snooze', 'click');
       },
 
       unsnooze: function() {
         this.group.unsnooze();
+        ga('send', 'event', 'unsnooze', 'click');
       },
 
       linkBug: function() {
@@ -76,18 +78,22 @@ found in the LICENSE file.
         this._fileBugClicked = false;
         this.$.fileBugLink.href = this.group.data.fileBugLink();
         this.$.bugDialog.toggle();
+        ga('send', 'event', 'linkBug', 'click');
       },
 
       saveBug: function() {
         this.group.setBug(this.$.bug.value);
+        ga('send', 'event', 'saveBug', 'click');
       },
 
       removeBug: function() {
         this.group.clearBug();
+        ga('send', 'event', 'removeBug', 'click');
       },
 
       fileBugClicked: function() {
         this._fileBugClicked = true;
+        ga('send', 'event', 'fileBug', 'click');
       },
     });
   </script>
