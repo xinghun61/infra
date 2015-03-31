@@ -117,13 +117,13 @@ When modifying the documentation, it is highly recommended to compile it
 locally, and check that the rendered output is what you expected. The ReST can
 be surprising at times.
 
-Deploying the documentation to the web is done automatically by a builder
-running on the Chrome infrastructure. Thus all you have to do is to get your
-changes committed. The builder is currently running on a non-public waterfall,
-but the recipe is public and located in `build/
+Deploying the documentation to the web is done automatically by the `doc-updater
+<http://build.chromium.org/p/chromium.infra/builders/doc-updater>`_ builder
+running this `recipe
 <http://src.chromium.org/viewvc/chrome/trunk/tools/build/scripts/slave/recipes/infra/>`_
-All it does is remove existing rendered files, compile them again, and copy the
-content of ``doc/html`` to a Cloud Storage bucket at
+on the Chrome infrastructure. Thus all you have to do is to get your changes
+committed. All it does is remove existing rendered files, compile them again,
+and copy the content of ``doc/html`` to a Cloud Storage bucket at
 `gs://chromium-infra-docs/infra
 <https://storage.googleapis.com/chromium-infra-docs/infra/index.html>`_.
 
