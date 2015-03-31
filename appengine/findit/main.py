@@ -2,8 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import endpoints
 import webapp2
 
+from findit_api import FindItApi
 from handlers import analyze_build_failure
 from handlers import build_failure
 from handlers import home
@@ -25,4 +27,10 @@ handler_mappings = [
     ('/', home.Home),
 ]
 
-application = webapp2.WSGIApplication(handler_mappings, debug=False)
+
+# This is for Web pages.
+web_application = webapp2.WSGIApplication(handler_mappings, debug=False)
+
+
+# This is for Cloud Endpoint apis.
+api_application = endpoints.api_server([FindItApi])

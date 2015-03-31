@@ -8,13 +8,19 @@ builtins:
   - remote_api: on
 
 handlers:
+# Pipeline handler.
 - url: /_ah/pipeline(/.*)?
   script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\
            handlers._APP"
   secure: always
 
+# Endpoints handler.
+- url: /_ah/spi/.*
+  script: main.api_application
+  secure: always
+
 - url: /.*
-  script: main.application
+  script: main.web_application
   secure: always
 
 libraries:
@@ -22,3 +28,7 @@ libraries:
   version: latest
 - name: jinja2
   version: latest
+- name: pycrypto
+  version: latest
+- name: endpoints
+  version: 1.0
