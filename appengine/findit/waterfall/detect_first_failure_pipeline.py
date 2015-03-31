@@ -24,7 +24,7 @@ _MAX_BUILDS_TO_CHECK = 20
 
 
 class DetectFirstFailurePipeline(BasePipeline):
-  """ A pipeline to detect first failure of each step.
+  """A pipeline to detect first failure of each step.
 
   TODO(stgao): do test-level detection for gtest.
   """

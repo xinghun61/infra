@@ -4,6 +4,8 @@
 
 import logging
 
+from google.appengine.api.urlfetch import ResponseTooLargeError
+
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import pipeline
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
@@ -73,9 +75,18 @@ class ExtractSignalPipeline(BasePipeline):
                                % (step_name, master_name))
 
         # TODO: do test-level analysis instead of step-level.
-        stdio_log = buildbot.GetStepStdio(
-            master_name, builder_name, build_number, step_name,
-            self.HTTP_CLIENT)
+        try:
+          stdio_log = buildbot.GetStepStdio(
+              master_name, builder_name, build_number, step_name,
+              self.HTTP_CLIENT)
+        except ResponseTooLargeError:  # pragma: no cover.
+          logging.exception(
+              'Log of step "%s" is too large for urlfetch.', step_name)
+          # If the stdio log of a step is too large, we don't want to pull it
+          # again in next run, because that might lead to DDoS to the master.
+          # TODO: Use archived stdio logs in Google Storage instead.
+          stdio_log = 'Stdio log is too large for urlfetch.'
+
         if not stdio_log:  # pragma: no cover
           raise pipeline.Retry('Failed to pull stdio of step %s of master %s'
                                % (step_name, master_name))

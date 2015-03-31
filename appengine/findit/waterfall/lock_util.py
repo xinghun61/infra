@@ -12,7 +12,7 @@ from google.appengine.api import memcache
 
 _MEMCACHE_MASTER_DOWNLOAD_LOCK = 'master-download-lock-%s'
 _MEMCACHE_MASTER_DOWNLOAD_EXPIRATION_SECONDS = 60 * 60
-_DOWNLOAD_INTERVAL_SECONDS = 5
+_DOWNLOAD_INTERVAL_SECONDS = 10
 
 
 def WaitUntilDownloadAllowed(
