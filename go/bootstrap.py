@@ -117,6 +117,7 @@ def get_toolset_url():
     'amd64': 'x86-64',
     'x86_64': 'x86-64',
     'i386': 'x86-32',
+    'i686': 'x86-32',
     'x86': 'x86-32',
   }.get(platform.machine().lower())
   variant = TOOLSET_VARIANTS.get((sys.platform, arch))
