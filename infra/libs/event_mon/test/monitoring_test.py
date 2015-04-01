@@ -1,8 +1,8 @@
+# -*- encoding:utf-8 -*-
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import argparse
 import unittest
 
 from infra.libs import event_mon
@@ -75,6 +75,78 @@ class MonitoringTest(unittest.TestCase):
     self.assertEqual(code_version_p[3].source_url,
                      code_version[3]['source_url'])
     self.assertEqual(code_version_p[3].dirty, True)
+
+  def test_get_service_event_crash_simple(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    log_event = monitoring._get_service_event('CRASH')
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+
+  def test_get_service_event_crash_with_ascii_trace(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    stack_trace = 'A nice ascii string'
+    log_event = monitoring._get_service_event('CRASH',
+                                              stack_trace=stack_trace)
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+    self.assertEqual(event.service_event.stack_trace, stack_trace)
+
+  def test_get_service_event_crash_with_unicode_trace(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    stack_trace = u"Soyez prêt à un étrange goût de Noël."
+    log_event = monitoring._get_service_event('CRASH',
+                                              stack_trace=stack_trace)
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+    self.assertEqual(event.service_event.stack_trace, stack_trace)
+
+  def test_get_service_event_crash_with_big_trace(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    stack_trace = "this is way too long" * 55
+    self.assertTrue(len(stack_trace) > monitoring.STACK_TRACE_MAX_SIZE)
+    log_event = monitoring._get_service_event('CRASH',
+                                              stack_trace=stack_trace)
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+    self.assertEqual(len(event.service_event.stack_trace),
+                     monitoring.STACK_TRACE_MAX_SIZE)
+
+  def test_get_service_event_crash_invalid_trace(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    # This is not a stacktrace
+    stack_trace = 123456
+    # Should not crash
+    log_event = monitoring._get_service_event('CRASH',
+                                              stack_trace=stack_trace)
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+
+    # Send only valid data this time
+    self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+    self.assertFalse(event.service_event.HasField('stack_trace'))
+
+  def test_get_service_event_trace_without_crash(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    stack_trace = 'A nice ascii string'
+    log_event = monitoring._get_service_event('START',
+                                              stack_trace=stack_trace)
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+
+    # Make sure we send even invalid data.
+    self.assertEqual(event.service_event.type, ServiceEvent.START)
+    self.assertEqual(event.service_event.stack_trace, stack_trace)
+
 
   def test_send_service_event_bad_versions(self):
     # Check that an invalid version does not cause any exception.
