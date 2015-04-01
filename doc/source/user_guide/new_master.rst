@@ -18,7 +18,7 @@ this `example builders.pyl`_ for reference. Put the port numbers you received
 from Labs into this file.  You will also need slaves allocated for all your
 builders, and they will be configured in this file.::
 
-  $ cp $BUILD_DIR/masters/masters.chromium.mojo/builders.pyl .
+  $ cp $BUILD_DIR/masters/master.chromium.mojo/builders.pyl .
   <edit builders.pyl to taste>
 
 After this file exists, you can use ``buildbot-tool`` to generate the rest of
