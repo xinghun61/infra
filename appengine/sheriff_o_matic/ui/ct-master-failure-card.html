@@ -7,7 +7,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-button.html">
 <link href="../bower_components/core-tooltip/core-tooltip.html" rel="import">
 <link href="../bower_components/core-icon-button/core-icon-button.html" rel="import">
-<link href="../bower_components/paper-dialog/paper-dialog.html" rel="import">
+<link href="../bower_components/paper-dialog/paper-action-dialog.html" rel="import">
 <link href="../bower_components/paper-dialog/paper-dialog-transition.html" rel="import">
 
 <polymer-element name="ct-master-failure-card" attributes="group">
@@ -35,14 +35,16 @@ found in the LICENSE file.
         <span id="masterAlert">master data {{ group.failure.hoursSinceLastUpdate }} hours stale.</span>
         <core-icon-button icon="info" on-tap="{{ toggleHelp }}"></core-icon-button>
       </div>
-      <paper-dialog heading="About stale master data" id="helpDialog" transition="paper-transition-center">
+      <paper-action-dialog heading="About stale master data" id="helpDialog" transition="paper-transition-center">
+				<div>
           We weren't able to get up to date information from the master.<br/>
           This can mean the master is down, or (more often) that it's overloaded and having trouble
           serving up the JSON about it's current state.<br/>
           Something is wrong with the master and needs to be fixed ASAP, since it means that sheriff-o-matic 
           has no idea about the state of the tree on this master.<br/>
+				</div>
         <ct-button label="OK" affirmative id="dialogOk"></ct-button>
-      </paper-dialog>
+      </paper-action-dialog>
   </template>
 <script>
   Polymer({
