@@ -79,6 +79,94 @@ class SubProcess(object):
       raise Exception(''.join(traceback.format_exception(*sys.exc_info())))
 
 
+def query_findit(findit_api_url, alerts):
+  """Get analysis results from Findit for failures in the given alerts.
+
+  Args:
+    findit_api_url (str): The URL to findit's api for build failure analysis.
+    alerts (list): A non-empty list of failure alerts.
+
+  Returns:
+    A list of analysis results in the following form (could be an empty list):
+    [
+      {
+        "master_url": "https://build.chromium.org/p/chromium.chromiumos",
+        "builder_name": "Linux ChromiumOS GN",
+        "build_number": 6146,
+        "step_name": "compile",
+        "first_known_failed_build_number": 6146,
+        "is_sub_test": false,
+        "suspected_cls": [
+          {
+            "repo_name": "chromium",
+            "revision": "ed1e90f4f980709cef6a8a9c7e0f64cfe5578cdd",
+            "commit_position": 311460,
+          }
+        ]
+      },
+      {
+        "master_url": "https://build.chromium.org/p/chromium.linux",
+        "builder_name": "Linux Tests",
+        "build_number": 1234,
+        "step_name": "browser_tests",
+        "first_known_failed_build_number": 1232,
+        "is_sub_test": true,
+        "test_name": "TestSuite.TestName",
+        "suspected_cls": [
+          {
+            "repo_name": "chromium",
+            "revision": "another_git_hash",
+            "commit_position": 23456,
+          }
+        ]
+      }
+    ]
+  """
+  # Alerts are per-step or per-reason, but analysis of build failures by Findit
+  # is per-build. Thus use a dict to de-duplicate.
+  builds = {}
+  for alert in alerts:
+    master_url = alert['master_url']
+    builder_name = alert['builder_name']
+    build_number = alert['last_failing_build']
+    key = '%s-%s-%d' % (master_url, builder_name, build_number)
+    builds[key] = {
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number
+    }
+
+  try:
+    headers = {'Content-type': 'application/json'}
+    data_json = {'builds': builds.values()}
+
+    logging.debug('Request to findit:\n%s', json.dumps(data_json, indent=2))
+
+    start_time = datetime.datetime.utcnow()
+    response = requests.post(findit_api_url, data=json.dumps(data_json),
+                             headers=headers, timeout=60)
+    logging.info('Query Findit took: %s seconds.',
+                 (datetime.datetime.utcnow() - start_time).total_seconds())
+
+    if response.status_code != 200:
+      logging.error('Findit response status code:%d, content:%s',
+                    response.status_code, response.text)
+      return []
+
+    response_json = response.json()
+
+    logging.debug(
+        'Response from findit:\n%s', json.dumps(response_json, indent=2))
+
+    return response_json.get('results', [])
+  except (requests.Timeout, ValueError, Exception):
+    # TODO(crbug.com/468161): remove the "Exception" from the list above.
+    # For now, it is to make sure any break on Findit side won't impact the
+    # rest of builder_alerts.
+    logging.exception('Failed to incorporate result from Findit.')
+    return []
+
+
 def inner_loop(args):
   if not args.data_url:
     logging.warn('No /data url passed, will write to builder_alerts.json')
@@ -99,7 +187,7 @@ def inner_loop(args):
       gatekeeper_trees_path)
 
   master_urls = gatekeeper_extras.fetch_master_urls(gatekeeper, args)
-  start_time = datetime.datetime.now()
+  start_time = datetime.datetime.utcnow()
 
   cache = buildbot.DiskCache(CACHE_PATH)
 
@@ -133,6 +221,7 @@ def inner_loop(args):
   stale_builder_alerts = []
   missing_masters = []
   alerts = []
+  suspected_cls = []
 
   pool = multiprocessing.Pool(processes=args.processes)
   master_datas = pool.map(SubProcess(cache, old_alerts, args.builder_filter,
@@ -150,7 +239,8 @@ def inner_loop(args):
     latest_builder_info.update(data[1])
     stale_builder_alerts.extend(data[2])
 
-  logging.info('Fetch took: %s', (datetime.datetime.now() - start_time))
+  logging.info('Fetch took: %s seconds.',
+               (datetime.datetime.utcnow() - start_time).total_seconds())
 
   alerts = gatekeeper_extras.apply_gatekeeper_rules(alerts, gatekeeper,
                                                     gatekeeper_trees)
@@ -160,8 +250,13 @@ def inner_loop(args):
   alerts = analysis.assign_keys(alerts)
   reason_groups = analysis.group_by_reason(alerts)
   range_groups = analysis.merge_by_range(reason_groups)
+
+  if args.findit_api_url and alerts:
+    suspected_cls = query_findit(args.findit_api_url, alerts)
+
   data = {'content': json.dumps({
       'alerts': alerts,
+      'suspected_cls': suspected_cls,
       'reason_groups': reason_groups,
       'range_groups': range_groups,
       'latest_builder_info': latest_builder_info,
@@ -216,6 +311,9 @@ def main(args):
                                        'gatekeeper_trees.json')
   parser.add_argument('--gatekeeper-trees', action='store',
                       default=gatekeeper_trees_json)
+
+  parser.add_argument('--findit-api-url',
+                      help='Query findit results from this url.')
 
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
