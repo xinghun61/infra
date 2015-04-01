@@ -19,6 +19,11 @@ class MonitoringTest(unittest.TestCase):
     # Use setUpClass here because it is better to initialize event_mon once.
     event_mon.setup_monitoring(run_type='dry')
 
+  def test_constants(self):
+    # Make sure constants have not been renamed since they're part of the API.
+    self.assertTrue(event_mon.EVENT_TYPES)
+    self.assertTrue(event_mon.TIMESTAMP_KINDS)
+
   def test_get_service_event_default(self):
     self.assertIsInstance(config._router, router._Router)
     self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)

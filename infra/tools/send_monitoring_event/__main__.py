@@ -5,6 +5,7 @@
 import argparse
 import sys
 import infra.libs.event_mon as event_mon
+import infra.libs.logs as infra_logs
 
 
 def get_arguments(argv):
@@ -21,17 +22,29 @@ def get_arguments(argv):
   parser = argparse.ArgumentParser(
     description="""Send an event to the monitoring pipeline.
 
-    Example:
+    Examples:
     run.py infra.tool.send_monitoring_event --service-event-type=START \\
                                             --service-event-revinfo <filename>
+
+    run.py infra.tool.send_monitoring_event --service-event-stack-trace \\
+                                            "<stack trace>"
     """, formatter_class=argparse.RawTextHelpFormatter)
-  event_mon.add_argparse_options(parser)
-  parser.add_argument('--service-event-type',
-                      choices=('START', 'STOP', 'UPDATE', 'CURRENT_VERSION'),
+
+  service_group = parser.add_argument_group('Service event options')
+  type_group = service_group.add_mutually_exclusive_group()
+  type_group.add_argument('--service-event-type',
+                      choices=event_mon.EVENT_TYPES,
                       default='START',
                       help='Kind of event to send.')
-  revinfo = parser.add_mutually_exclusive_group()
+
+  type_group.add_argument('--service-event-stack-trace',
+                          metavar='STACK_TRACE',
+                          help='String containing a stack trace. Sets the event'
+                          ' type to "CRASH" automatically.')
+
+  revinfo = service_group.add_mutually_exclusive_group()
   revinfo.add_argument('--service-event-revinfo',
+                       metavar='FILENAME',
                        help='File to read revision information from, "-" means'
                        ' standard input. The file'
                        ' is supposed to contain the output of'
@@ -41,6 +54,9 @@ def get_arguments(argv):
                        help='Calls gclient to get revision information. '
                        'Mutually exclusive with --service-event-revinfo')
 
+  event_mon.add_argparse_options(parser)
+  infra_logs.add_argparse_options(parser)
+
   args = parser.parse_args(argv)
   return args
 
@@ -48,6 +64,7 @@ def get_arguments(argv):
 def main(argv):  # pragma: no cover
   args = get_arguments(argv)
   event_mon.process_argparse_options(args)
+  infra_logs.process_argparse_options(args)
 
   revinfo = {}
   if args.service_event_revinfo:
@@ -59,8 +76,11 @@ def main(argv):  # pragma: no cover
   elif args.service_event_revinfo_from_gclient:
     revinfo = event_mon.get_revinfo()
 
+  if args.service_event_stack_trace:
+    args.service_event_type = 'CRASH'
   event_mon.send_service_event(args.service_event_type,
-                               code_version=revinfo.values())
+                               code_version=revinfo.values(),
+                               stack_trace=args.service_event_stack_trace)
   event_mon.close()
 
 

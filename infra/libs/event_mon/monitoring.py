@@ -9,6 +9,7 @@ from infra.libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra.libs.event_mon.log_request_lite_pb2 import LogRequestLite
 from infra.libs.event_mon import config, router
 
+# These constants are part of the API.
 EVENT_TYPES = ('START', 'STOP', 'UPDATE', 'CURRENT_VERSION', 'CRASH')
 TIMESTAMP_KINDS = (None, 'UNKNOWN', 'POINT', 'BEGIN', 'END')
 

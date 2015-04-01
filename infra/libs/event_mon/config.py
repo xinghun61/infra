@@ -17,31 +17,19 @@ cache = {}
 
 def add_argparse_options(parser):  # pragma: no cover
   # The default values should make sense for local testing, not production.
-  parser.add_argument('--event-mon-run-type', default='dry',
+  group = parser.add_argument_group('Event monitoring (event_mon) '
+                                    'global options')
+  group.add_argument('--event-mon-run-type', default='dry',
                       choices=('dry', 'test', 'prod'),
                       help='Determine how to send data. "dry" does not send'
                       ' anything. "test" sends to the test endpoint, and '
                       '"prod" to the actual production endpoint.')
-  parser.add_argument('--event-mon-service-name',
+  group.add_argument('--event-mon-service-name',
                       help='Service name to use in log events.')
-  parser.add_argument('--event-mon-hostname',
+  group.add_argument('--event-mon-hostname',
                       help='Hostname to use in log events.')
-  parser.add_argument('--event-mon-appengine-name',
+  group.add_argument('--event-mon-appengine-name',
                       help='App name to use in log events.')
-
-  # Provide information about version of code running.
-  parser.add_argument('--event-mon-code-source-url',
-                      help='URL where to get the source code (info sent in log '
-                      'events.')
-  parser.add_argument('--event-mon-code-dirty', type=bool,
-                      help='Whether there are local modifications in the '
-                      'currently running code (info sent in log events).')
-  parser.add_argument('--event-mon-code-version',
-                      help='Version string for the currently running code.')
-  parser.add_argument('--event-mon-code-git-hash',
-                      help='Git hash for the currently running code.')
-  parser.add_argument('--event-mon-code-svn-revision', type=int,
-                      help='Svn revision for the currently running code.')
 
 
 def process_argparse_options(args):  # pragma: no cover

@@ -9,7 +9,7 @@ import threading
 import time
 
 from infra.libs.event_mon.log_request_lite_pb2 import LogRequestLite
-
+from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 
 def time_ms():
   """Return current timestamp in milliseconds."""
@@ -54,7 +54,10 @@ class _Router(object):
           logging.error('failed to post data to %s', self.endpoint)
           logging.error('data: %s', str(events)[:1000])
       else:
-        logging.info('fake post request')
+        infra_events = [str(ChromeInfraEvent.FromString(
+          ev.source_extension)) for ev in events.log_event]
+        logging.info('Fake post request. Sending:\n%s',
+                     '\n'.join(infra_events))
 
   def close(self, timeout=None):
     """
