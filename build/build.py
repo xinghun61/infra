@@ -198,6 +198,7 @@ def get_package_vars():
   platform_arch = {
     'amd64': 'amd64',
     'i386': '386',
+    'i686': '386',
     'x86': '386',
     'x86_64': 'amd64',
   }.get(platform.machine().lower())
