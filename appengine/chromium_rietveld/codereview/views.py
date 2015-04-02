@@ -175,6 +175,7 @@ class UploadForm(forms.Form):
   separate_patches = forms.BooleanField(required=False)
   base = forms.CharField(max_length=MAX_URL, required=False)
   target_ref = forms.CharField(max_length=MAX_URL, required=False)
+  cq_dry_run = forms.BooleanField(required=False)
   data = forms.FileField(required=False)
   issue = forms.IntegerField(required=False)
   reviewers = forms.CharField(max_length=MAX_REVIEWERS, required=False)
@@ -1427,6 +1428,8 @@ def _make_new(request, form):
 
   project = form.cleaned_data['project']
   target_ref = _get_target_ref(form, issue_key, project)
+  cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
+  cq_dry_run_triggered_by = account.email if cq_dry_run else ''
 
   issue = models.Issue(subject=form.cleaned_data['subject'],
                        description=form.cleaned_data['description'],
@@ -1439,6 +1442,8 @@ def _make_new(request, form):
                        cc=cc,
                        private=form.cleaned_data.get('private', False),
                        n_comments=0,
+                       cq_dry_run=cq_dry_run,
+                       cq_dry_run_last_triggered_by=cq_dry_run_triggered_by,
                        key=issue_key)
   issue.put()
 
@@ -1573,6 +1578,8 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     issue.cc, _ = _get_emails(form, 'cc')
   issue.commit = False
   issue.target_ref = _get_target_ref(form, issue.key, issue.project)
+  issue.cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
+  issue.cq_dry_run_last_triggered_by = account.email if issue.cq_dry_run else ''
   issue.calculate_updates_for()
   # New patchset has been uploaded, add to the approvers_to_notify list.
   approval_dict = json.loads(issue.reviewer_approval)
