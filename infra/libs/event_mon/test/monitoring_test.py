@@ -15,9 +15,13 @@ from infra.libs.event_mon.log_request_lite_pb2 import LogRequestLite
 
 class MonitoringTest(unittest.TestCase):
 
-  def setUpClass(self): # pragma: no cover
-    # Use setUpClass here because it is better to initialize event_mon once.
+  # We have to setup and tear down event_mon for each test to avoid
+  # interactions between tests because event_mon stores a global state.
+  def setUp(self):
     event_mon.setup_monitoring(run_type='dry')
+
+  def tearDown(self):
+    event_mon.close()
 
   def test_constants(self):
     # Make sure constants have not been renamed since they're part of the API.

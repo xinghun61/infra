@@ -23,15 +23,16 @@ class ConfigTest(unittest.TestCase):
     self.assertIs(config._router, r)
 
   def _close(self):
-    event_mon.close()
+    self.assertTrue(event_mon.close())
+    self.assertFalse(config.cache)
     # Test that calling it twice does not raise an exception.
-    event_mon.close()
+    self.assertTrue(event_mon.close())
 
-  def DISABLED_test_no_args_smoke(self):  # pragma: no cover
+  def test_no_args_smoke(self):  # pragma: no cover
     self._set_up_args()
     self._close()
 
-  def DISABLED_test_args_and_default_event(self):  # pragma: no cover
+  def test_args_and_default_event(self):  # pragma: no cover
     # The protobuf structure is actually an API not an implementation detail
     # so it's sane to test for changes.
     hostname = 'a'

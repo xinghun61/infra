@@ -104,9 +104,13 @@ def close(timeout=5):
   Returns:
     success (bool): False if a timeout occured.
   """
-  global _router
+  global _router, cache
   success = True
   if _router:
     success = _router.close(timeout=timeout)
-    _router = None
+    # If the thread is still alive, the global state can still change, thus
+    # keep the values around for consistency.
+    if success:  # pragma: no branch
+      _router = None
+      cache = {}
   return success
