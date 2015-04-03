@@ -101,10 +101,10 @@
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
   },
   'monacq': {
-    'version': '1.1',
+    'version': '1.1.1',
     'build': '0',
     'repo': 'git+https://chrome-internal.googlesource.com/infra/third_party/monacq',
-    'rev': 'd9c9a1a96b90f1bec52a7f4b9e89e5b0450056f2',
+    'rev': '18386bc2416d39fcec91098bbc7b8e096a24dbfd',
   },
   'numpy': {
     'version': '1.6.1',
