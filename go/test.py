@@ -23,6 +23,8 @@ import shutil
 import subprocess
 import sys
 
+from multiprocessing.pool import ThreadPool
+
 
 # infra/go/
 INFRA_GO_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -250,14 +252,13 @@ def run_tests(package_root, coverage_dir):
     print 'No tests to run'
     return 0
 
-  # TODO: Run tests in parallel, basically implement parallel
-  # map(run_package_tests, package). run_package_tests already captures all
-  # output.
   failed = []
   bad_cover = []
-  for pkg in packages:
+  tpool = ThreadPool(len(packages))
+  def run(pkg):
     coverage_file = os.path.join(coverage_dir, pkg.replace('/', os.sep))
-    result = run_package_tests(pkg, coverage_file)
+    return run_package_tests(pkg, coverage_file)
+  for result in tpool.imap_unordered(run, packages):
     if result.tests_pass and result.coverage_pass:
       sys.stdout.write('.')
     elif not result.tests_pass:
