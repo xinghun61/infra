@@ -34,6 +34,7 @@ EXPECTED_INFO_KEYS = frozenset([
   'skip_testing',
   'expected_coverage_min',
   'expected_coverage_max',
+  'build_tags',
 ])
 
 
@@ -141,6 +142,12 @@ def should_skip(package):
   """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
   return get_package_info(package).get('skip_testing', False)
 
+def get_build_tags(package):
+  """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
+  tags = get_package_info(package).get('build_tags', ())
+  if tags:
+    return '-tags='+(','.join(tags))
+  return None
 
 def get_expected_coverage(package):
   """Returns allowed code coverage percentage as a pair (min, max)."""
@@ -176,6 +183,9 @@ def run_package_tests(package, coverage_file):
 
   # Ask go test to collect coverage to a file, to convert it to HTML later.
   cmd = ['go', 'test', package]
+  build_tags = get_build_tags(package)
+  if build_tags:
+    cmd.append(build_tags)
   makedirs(os.path.dirname(coverage_file))
   coverage_out = '%s.out' % coverage_file
   cmd.extend(['-coverprofile', coverage_out])
