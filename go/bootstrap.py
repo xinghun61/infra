@@ -269,6 +269,13 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
     for pkg in GAE_HACK_PKGS:
       shutil.rmtree(os.path.join(base_tool_dir, pkg))
 
+    patches = [os.path.join(WORKSPACE, 'patches', p)
+               for p in os.listdir(os.path.join(WORKSPACE, 'patches'))
+               if p.endswith('.patch')]
+    for patch in patches:
+      subprocess.check_call(['git', 'apply'], cwd=toolset_root,
+                            stdin=open(patch), stdout=sys.stderr)
+
     to_build = []
     for d in GAE_PKGS:
       to_build.extend(discover_targets(base_tool_dir, d))
