@@ -13,7 +13,7 @@ from waterfall import buildbot
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 from waterfall import lock_util
 
-    
+
 class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
   app_module = handlers._APP
   
@@ -58,12 +58,12 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
         'REVISION', revision).replace('USER_NAME', user_name).replace(
         'COMMIT_POSITION', str(commit_position)).replace('FILE_PATH', file_path)
     urlfetch.register_handler(url, commit_log)
-  
+
   def _Setup(self, master_name, builder_name, build_number):    
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = wf_analysis_status.ANALYZING
     analysis.put()
-    
+
     def _WaitUntilDownloadAllowed(*_):
       return True
 
@@ -89,20 +89,20 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
       self._MockChangeLog(
           urlfetch, 'user1', '64c72819e898e952103b63eabc12772f9640af07',
           8887, 'd/e/y.cc')
-     
+
   def testBuildFailurePipeline(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    
+
     self._Setup(master_name, builder_name, build_number)
-              
+
     root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
                                                 builder_name, 
                                                 build_number)
     root_pipeline.start(queue_name='default')
     self.execute_queued_tasks()
-    
+
     expected_analysis_result = {
         'failures': [
             {
@@ -126,24 +126,24 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
             }
         ]
     }
-    
+
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
     self.assertEqual(expected_analysis_result, analysis.result)
-        
+
   def testAnalyzeBuildFailurePipelineAbortedWithAnalysis(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    
+
     self._Setup(master_name, builder_name, build_number)
-              
+
     root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
                                                 builder_name, 
                                                 build_number)
     root_pipeline._LogUnexpectedAborting(True)
-    
+
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertEqual(wf_analysis_status.ERROR, analysis.status)
@@ -152,11 +152,27 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-              
+
     root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
                                                 builder_name, 
                                                 build_number)
     root_pipeline._LogUnexpectedAborting(True)
-    
+
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNone(analysis)
+
+  def testAnalyzeBuildFailurePipelineNotAborted(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    self._Setup(master_name, builder_name, build_number)
+
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
+                                                builder_name, 
+                                                build_number)
+    root_pipeline._LogUnexpectedAborting(False)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertIsNotNone(analysis)
+    self.assertNotEqual(wf_analysis_status.ERROR, analysis.status)

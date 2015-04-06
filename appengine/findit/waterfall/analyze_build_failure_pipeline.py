@@ -12,6 +12,7 @@ from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
   
+
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
   def __init__(self, master_name, builder_name, build_number):
@@ -57,5 +58,3 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     change_logs = yield PullChangelogPipeline(failure_info)
     signals = yield ExtractSignalPipeline(failure_info)
     yield IdentifyCulpritPipeline(failure_info, change_logs, signals)
-
-

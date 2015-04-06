@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import logging
 
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
@@ -13,7 +14,10 @@ from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
 from waterfall import lock_util
 
-class MockRootPipeline():
+
+class _MockRootPipeline(object):
+  STARTED = False
+
   def __init__(self, master_name, builder_name, build_number):
     pass
   
@@ -21,7 +25,9 @@ class MockRootPipeline():
     return ''
     
   def start(self, queue_name):
-    pass
+    _MockRootPipeline.STARTED = True
+    logging.info(queue_name)
+
 
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
   app_module = handlers._APP
@@ -78,16 +84,38 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     self.assertTrue(need_analysis)
 
-  def testSuccessfulAnalysisOfBuildFailure(self):
+  def testStartPipelineForNewAnalysis(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
           
     self.mock(build_failure_analysis_pipelines.analyze_build_failure_pipeline, 
               'AnalyzeBuildFailurePipeline', 
-              MockRootPipeline)
+              _MockRootPipeline)
+    _MockRootPipeline.STARTED = False
+
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, False, 'default')
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    
+    self.assertTrue(_MockRootPipeline.STARTED)
     self.assertIsNotNone(analysis)
+    
+  def testNotStartPipelineForNewAnalysis(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+
+    self._CreateAndSaveWfAnalysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+      
+    self.mock(build_failure_analysis_pipelines.analyze_build_failure_pipeline, 
+              'AnalyzeBuildFailurePipeline', 
+              _MockRootPipeline)
+    _MockRootPipeline.STARTED = False
+
+    build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
+        master_name, builder_name, build_number, False, 'default')
+
+    self.assertFalse(_MockRootPipeline.STARTED)
