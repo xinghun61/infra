@@ -9,6 +9,8 @@ from infra.libs.event_mon.config import process_argparse_options
 from infra.libs.event_mon.config import setup_monitoring
 
 from infra.libs.event_mon.monitoring import EVENT_TYPES, TIMESTAMP_KINDS
+from infra.libs.event_mon.monitoring import BUILD_EVENT_TYPES, BUILD_RESULTS
 from infra.libs.event_mon.monitoring import send_service_event
+from infra.libs.event_mon.monitoring import send_build_event
 
 from infra.libs.event_mon.router import time_ms
