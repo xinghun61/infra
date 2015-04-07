@@ -78,15 +78,57 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       return f.read()
 
   def _MockUrlfetchWithBuildData(
-      self, master_name, builder_name, build_number, build_data=None):
+      self, master_name, builder_name, build_number, 
+      build_data=None, archive=False):
     """If build data is None, use json file in waterfall/test/data."""
     if build_data is None:
       build_data = self._GetBuildData(master_name, builder_name, build_number)
 
+    if archive:  
+      if build_data == 'Test get build data':
+        build_data = build_data + ' from archive'
+      archived_build_url = buildbot.CreateArchivedBuildUrl(
+          master_name, builder_name, build_number)
+      self.mocked_urlfetch.register_handler(archived_build_url, build_data)
+
+    if build_data == 'Test get build data':
+      build_data = build_data + ' from build master'
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number, json_api=True)
-
     self.mocked_urlfetch.register_handler(build_url, build_data)
+
+  def testGetBuildeDataFromArchive(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 123, 
+                                    build_data='Test get build data', 
+                                    archive=True)
+
+    pipeline = DetectFirstFailurePipeline()
+    build = pipeline._DownloadBuildData(master_name, builder_name, build_number)
+
+    expected_build_data = 'Test get build data from archive'
+
+    self.assertIsNotNone(build)
+    self.assertEqual(expected_build_data, build.data)
+
+  def testGetBuildeDataFromBuildMaster(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
+                                    build_data='Test get build data')
+
+    pipeline = DetectFirstFailurePipeline()
+    build = pipeline._DownloadBuildData(master_name, builder_name, build_number)
+
+    expected_build_data = 'Test get build data from build master'
+
+    self.assertIsNotNone(build)
+    self.assertEqual(expected_build_data, build.data)
 
   def testLookBackUntilGreenBuild(self):
     master_name = 'm'
@@ -142,7 +184,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123)
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 123, 
+                                    build_data=None, archive=True)
     self._MockUrlfetchWithBuildData(
         master_name, builder_name, 122, build_data='Blow up if used!')
 
@@ -176,7 +219,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
     self.assertFalse(failure_info['failed'])
-  
+
   def testStopLookingBackIfFindTheFirstBuild(self):
     master_name = 'm'
     builder_name = 'b'
@@ -205,4 +248,3 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     }
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-

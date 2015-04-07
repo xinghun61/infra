@@ -49,6 +49,13 @@ def ParseBuildUrl(url):
   return master_name, builder_name, int(build_number)
 
 
+def CreateArchivedBuildUrl(master_name, builder_name, build_number):
+  """Creates the url for the given build from archived build info."""
+  builder_name = urllib.quote(builder_name)
+  return ('https://chrome-build-extract.appspot.com/p/%s/builders/%s/builds/%s'
+          '?json=1' % (master_name, builder_name, build_number))
+        
+
 def CreateBuildUrl(master_name, builder_name, build_number, json_api=False):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
@@ -68,10 +75,22 @@ def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
               master_name, builder_name, build_number, step_name)
 
 
-def GetBuildData(master_name, builder_name, build_number, http_client):
-  """Returns the json-format data of the build through buildbot json API."""
+def GetBuildDataFromBuildMaster(master_name, 
+                                builder_name, build_number, http_client):
+  """Returns the json-format data of the build from buildbot json API."""
   status_code, data = http_client.Get(
       CreateBuildUrl(master_name, builder_name, build_number, json_api=True))
+  if status_code != 200:
+    return None
+  else:
+    return data
+
+
+def GetBuildDataFromArchive(master_name, 
+                            builder_name, build_number, http_client):
+  """Returns the json-format data of the build from build archive."""
+  status_code, data = http_client.Get(
+      CreateArchivedBuildUrl(master_name, builder_name, build_number))
   if status_code != 200:
     return None
   else:

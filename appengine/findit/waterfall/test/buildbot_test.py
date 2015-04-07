@@ -57,6 +57,19 @@ class BuildBotTest(unittest.TestCase):
       result = buildbot.ParseBuildUrl(url)
       self.assertEqual(expected_result, result)
 
+  def testCreateArchivedBuildUrl(self):
+    master_name = 'a'
+    builder_name = 'Win7 Tests (1)'
+    build_number = 123
+    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
+                    'Win7%20Tests%20%281%29/builds/123?json=1')
+
+    self.assertEqual(
+        expected_url,
+        buildbot.CreateArchivedBuildUrl(master_name, 
+                                        builder_name, 
+                                        build_number))
+
   def testCreateBuildUrl(self):
     master_name = 'a'
     builder_name = 'Win7 Tests (1)'
@@ -88,25 +101,51 @@ class BuildBotTest(unittest.TestCase):
         buildbot.CreateStdioLogUrl(
             master_name, builder_name, build_number, step_name))
 
-  def testGetBuildDataSuccess(self):
+  def testGetBuildDataFromArchiveSuccess(self):
     master_name = 'a'
     builder_name = 'b c'
     build_number = 1
-    expected_url = 'https://build.chromium.org/p/a/json/builders/b%20c/builds/1'
+    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
+                    'b%20c/builds/1?json=1')
     http_client = DummyHttpClient(200, 'abc')
-    data = buildbot.GetBuildData(
+    data = buildbot.GetBuildDataFromArchive(
         master_name, builder_name, build_number, http_client)
     self.assertEqual(http_client.response_content, data)
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  def testGetBuildDataFailure(self):
+  def testGetBuildDataFromArchiveFailure(self):
+    master_name = 'a'
+    builder_name = 'b c'
+    build_number = 1
+    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
+                    'b%20c/builds/1?json=1')
+    http_client = DummyHttpClient(404, 'Not Found')
+    data = buildbot.GetBuildDataFromArchive(
+        master_name, builder_name, build_number, http_client)
+    self.assertIsNone(data)
+    self.assertEqual(1, len(http_client.requests))
+    self.assertEqual(expected_url, http_client.requests[0])
+    
+  def testGetBuildDataFromBuildMasterSuccess(self):
+    master_name = 'a'
+    builder_name = 'b c'
+    build_number = 1
+    expected_url = 'https://build.chromium.org/p/a/json/builders/b%20c/builds/1'
+    http_client = DummyHttpClient(200, 'abc')
+    data = buildbot.GetBuildDataFromBuildMaster(
+        master_name, builder_name, build_number, http_client)
+    self.assertEqual(http_client.response_content, data)
+    self.assertEqual(1, len(http_client.requests))
+    self.assertEqual(expected_url, http_client.requests[0])
+
+  def testGetBuildDataFromBuildMasterFailure(self):
     master_name = 'a'
     builder_name = 'b c'
     build_number = 1
     expected_url = 'https://build.chromium.org/p/a/json/builders/b%20c/builds/1'
     http_client = DummyHttpClient(404, 'Not Found')
-    data = buildbot.GetBuildData(
+    data = buildbot.GetBuildDataFromBuildMaster(
         master_name, builder_name, build_number, http_client)
     self.assertIsNone(data)
     self.assertEqual(1, len(http_client.requests))

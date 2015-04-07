@@ -43,13 +43,21 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     # Cache the data to avoid pulling from master again.
     if self._BuildDataNeedUpdating(build):
-      if not lock_util.WaitUntilDownloadAllowed(
-          master_name):  # pragma: no cover
-        raise pipeline.Retry('Too many download from %s' % master_name)
-
-      build.data = buildbot.GetBuildData(
+      # Retrieve build data from build archive first.
+      build.data = buildbot.GetBuildDataFromArchive(
           build.master_name, build.builder_name, build.build_number,
           self.HTTP_CLIENT)
+
+      if build.data is None:
+        if not lock_util.WaitUntilDownloadAllowed(
+            master_name):  # pragma: no cover
+          raise pipeline.Retry('Too many download from %s' % master_name)
+
+        # Retrieve build data from build master. 
+        build.data = buildbot.GetBuildDataFromBuildMaster(
+            build.master_name, build.builder_name, build.build_number,
+            self.HTTP_CLIENT)
+
       build.last_crawled_time = datetime.utcnow()
       build.put()
 
