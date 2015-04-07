@@ -155,17 +155,18 @@ CTFailures.prototype._failureComparator = function(a, b) {
 
 CTFailures.prototype._processTrooperFailures = function(all_failures,
                                                         trooper_data) {
-  var trooper_failures = [];
+  var health_failures = [];
   Object.keys(trooper_data, function(failureType, failuresByTree) {
     Object.keys(failuresByTree, function(tree, failure) {
       if (failure.should_alert) {
-        trooper_failures.push(new CTFailureGroup('trooper',
+        health_failures.push(new CTFailureGroup('health',
             new CTTrooperFailureGroupData(failure.details, failure.url, failure,
                                           failureType, tree)));
       }
     });
   });
 
+  var trooper_failures = [];
   var trooper_fyi_failures = [];
   Object.keys(all_failures, function(tree, failuresByTree) {
     // By default, we put non chromium and blink waterfalls into 'trooper-fyi'.
@@ -180,6 +181,8 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
       }
     });
   });
+
+  this.failures['health'] = health_failures;
   this.failures['trooper'] = trooper_failures;
   this.failures['trooper-fyi'] = trooper_fyi_failures;
 };

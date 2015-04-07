@@ -14,12 +14,14 @@ found in the LICENSE file.
 <link rel="import" href="../model/ct-repositories.html">
 <link rel="import" href="../model/ct-failures.html">
 <link rel="import" href="../model/ct-tree-list.html">
+<link rel="import" href="ct-party-time.html">
 <link rel="import" href="ct-results-panel.html">
 <link rel="import" href="ct-router.html">
 <link rel="import" href="ct-tree-select.html">
 <link rel="import" href="ct-unexpected-failures.html">
 <link rel="import" href="ct-view.html">
 <link rel="import" href="ct-view-handler.html">
+<link rel="import" href="ct-trooper-card.html">
 
 <polymer-element name="ct-sheriff-o-matic">
   <template>
@@ -79,6 +81,19 @@ found in the LICENSE file.
     </header>
 
     <ct-router id="router" defaultPath="{{ _defaultPath }}">
+      <ct-view path="/health">
+        <div layout vertical>
+          <h2>System Health</h2>
+          <template repeat="{{ group in failures.failures['health']}}">
+            <template if="{{ group.data.category == 'trooper' }}">
+              <ct-trooper-card class='{{ { snoozed: group.isSnoozed } | tokenList }}' group="{{ group.data }}"></ct-trooper-card>
+            </template>
+          </template>
+          <template if="{{ failures && !failures.failures['health'] }}">
+            <ct-party-time></ct-party-time>
+          </template>
+        </div>
+      </ct-view>
       <ct-view path="/{tree}" default>
         <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}"></ct-unexpected-failures>
       </ct-view>

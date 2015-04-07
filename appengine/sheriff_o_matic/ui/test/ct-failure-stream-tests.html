@@ -64,16 +64,16 @@ describe('ct-failure-stream', function() {
             'details', 'url', {percent_over_median_slo: '6%',
             percent_over_max_slo: '7%'}, 'cq_latency', ''))];
         setTimeout(function() {
-          assert(stream.shadowRoot.querySelector('ct-trooper-card') != null,
-              'missing cq-latency card');
+          assert(stream.shadowRoot.querySelector('ct-trooper-card') == null,
+              'do not display cq-latency card');
           stream.groups[0].data.type = 'tree_status';
           setTimeout(function() {
-            assert(stream.shadowRoot.querySelector('ct-trooper-card') !=
-                null, 'missing tree-status card');
+            assert(stream.shadowRoot.querySelector('ct-trooper-card') ==
+                null, 'do not display tree-status card');
             stream.groups[0].data.type = 'cycle_time';
             setTimeout(function() {
-              assert(stream.shadowRoot.querySelector('ct-trooper-card') !=
-                  null, 'missing cycle-time card');
+              assert(stream.shadowRoot.querySelector('ct-trooper-card') ==
+                  null, 'do not display cycle-time card');
               done();
             });
           });

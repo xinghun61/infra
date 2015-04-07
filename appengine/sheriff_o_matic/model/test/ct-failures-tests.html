@@ -474,7 +474,7 @@ describe('ct-failures', function() {
       analyzer.failures['trooper'].forEach(function(failure) {
         assert(failure.data.data.should_appear);
       });
-      assert(analyzer.failures['trooper'].length == 2);
+      assert(analyzer.failures['health'].length == 2);
     });
   });
 
