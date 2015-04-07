@@ -36,13 +36,13 @@ found in the LICENSE file.
         <core-icon-button icon="info" on-tap="{{ toggleHelp }}"></core-icon-button>
       </div>
       <paper-action-dialog heading="About stale master data" id="helpDialog" transition="paper-transition-center">
-				<div>
+        <div>
           We weren't able to get up to date information from the master.<br/>
           This can mean the master is down, or (more often) that it's overloaded and having trouble
           serving up the JSON about it's current state.<br/>
           Something is wrong with the master and needs to be fixed ASAP, since it means that sheriff-o-matic 
           has no idea about the state of the tree on this master.<br/>
-				</div>
+        </div>
         <ct-button label="OK" affirmative id="dialogOk"></ct-button>
       </paper-action-dialog>
   </template>

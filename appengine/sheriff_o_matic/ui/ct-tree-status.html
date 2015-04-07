@@ -22,6 +22,19 @@ found in the LICENSE file.
         background-color: #e98080;
       }
 
+      .status {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 5px;
+        padding: 3px;
+      }
+
+     :host[state=open] {
+        margin: 0;
+        padding: 0;
+      }
+
       .message {
         flex: 1;
         overflow: hidden;
@@ -30,8 +43,10 @@ found in the LICENSE file.
       }
     </style>
     <template if="{{ status.message }}">
-      <div class="message">{{ status.project }}: {{ status.message }}</div>
-      <div style="padding: 0 5px;">[ <a href="{{ status.url }}">details</a> ]</div>
+      <div class="status">
+        <div class="message">{{ status.project }}: {{ status.message }}</div>
+        <div style="padding: 0 0px;">[ <a href="{{ status.url }}">details</a> ]</div>
+      </div>
     </template>
   </template>
 </polymer-element>

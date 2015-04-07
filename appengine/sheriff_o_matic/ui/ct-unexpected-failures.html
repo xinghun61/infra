@@ -14,19 +14,6 @@ found in the LICENSE file.
 <polymer-element name="ct-unexpected-failures" attributes="tree repositories failures">
   <template>
     <style>
-      ct-tree-status {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin: 5px;
-        padding: 3px;
-      }
-
-      ct-tree-status[state=open] {
-        margin: 0;
-        padding: 0;
-      }
-
       .toolbar {
         display: flex;
         justify-content: space-between;
@@ -34,10 +21,6 @@ found in the LICENSE file.
         padding: 0 5px;
       }
     </style>
-    <div class="toolbar">
-      <a href="https://code.google.com/p/chromium/wiki/UsefulURLs">Useful URLs</a>
-      <a href="http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium">How to Sheriff</a>
-    </div>
     <ct-tree-status status="{{ treeStatuses['chromium'] }}" state="{{ treeStatuses['chromium'].status }}"></ct-tree-status>
     <template if="{{ tree == 'blink' }}">
       <ct-tree-status status="{{ treeStatuses['blink'] }}" state="{{ treeStatuses['blink'].status }}"></ct-tree-status>
@@ -70,6 +53,8 @@ found in the LICENSE file.
 
       update: function() {
         // FIXME: These shouldn't update if there's already an update in progress.
+        // This causes noticeable jank becuse <tree-status>.update makes an xhr
+        // for current?format=json every time you nav from one tree to another.
         Object.keys(this.treeStatuses, function(tree, status) {
           status.update();
         });

@@ -6,10 +6,10 @@ found in the LICENSE file.
 
 <link rel="import" href="../model/ct-builder-list.html">
 <link rel="import" href="ct-button.html">
-<link rel="import" href="ct-view-handler.html">
 <link rel="import" href="../bower_components/paper-dialog/paper-action-dialog.html">
 <link rel="import" href="../bower_components/paper-dialog/paper-dialog-transition.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/pushstate-anchor/pushstate-anchor.html">
 
 <polymer-element name="ct-failure-card-buttons" attributes="group bug">
   <template>
@@ -33,7 +33,7 @@ found in the LICENSE file.
         padding: 6px 22px;
       }
     </style>
-    <a href="{{ group.examineUrl }}" id="examineLink">Examine</a>
+    <a is="pushstate-anchor" href="{{ group.examineUrl }}" id="examineLink">Examine</a>
     <template if="{{ !group.isSnoozed }}">
       <ct-button id="snooze" on-tap="{{ snooze }}" label="Snooze"></ct-button>
     </template>
@@ -83,11 +83,13 @@ found in the LICENSE file.
 
       saveBug: function() {
         this.group.setBug(this.$.bug.value);
+        this.$.bugDialog.toggle();
         ga('send', 'event', 'saveBug', 'click');
       },
 
       removeBug: function() {
         this.group.clearBug();
+        this.$.bugDialog.toggle();
         ga('send', 'event', 'removeBug', 'click');
       },
 
