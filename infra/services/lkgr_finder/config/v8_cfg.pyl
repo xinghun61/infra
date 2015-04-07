@@ -73,7 +73,6 @@
         'V8 Linux - arm64 - sim',
         'V8 Linux - arm64 - sim - debug',
         'V8 Linux - mipsel - sim - builder',
-        'V8 Linux - mips64el - sim - builder',
         'V8 GC Stress - 1',
         'V8 GC Stress - 2',
         'V8 GC Stress - 3',
