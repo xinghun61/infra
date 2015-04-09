@@ -9,6 +9,8 @@ Current APIs include:
    Analyzes build failures and detects suspected CLs.
 """
 
+import logging
+
 import endpoints
 from protorpc import messages
 from protorpc import message_types
@@ -89,6 +91,8 @@ class FindItApi(remote.Service):
       A list of analysis results for the given build failures.
     """
     results = []
+
+    logging.info('%d build failure(s).', len(request.builds))
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)

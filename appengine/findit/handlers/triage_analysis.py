@@ -14,6 +14,6 @@ class TriageAnalysis(BaseHandler):
 
     Update the culprit CLs and mark the analysis result as correct/wrong/etc.
     This corresponds to the "Update" button in following page:
-    https://findit-for-me.appspot.com/list-build?count=400&type=triage
+    https://1-dot-findit-for-me.appspot.com/list-build?count=400&type=triage
     """
     return BaseHandler.CreateError('Not implemented yet!', 501)

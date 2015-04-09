@@ -70,7 +70,5 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number, force,
     logging.info('An analysis triggered on build %s, %s, %s: %s',
                  master_name, builder_name, build_number,
                  pipeline_job.pipeline_status_path())
-  else:  # pragma: no cover
-    logging.info('Analysis was already triggered or the result is recent.')
 
   return WfAnalysis.Get(master_name, builder_name, build_number)

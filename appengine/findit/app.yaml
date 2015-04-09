@@ -12,6 +12,10 @@ handlers:
   static_files: robots.txt
   upload: robots.txt
 
+- url: /
+  static_files: templates/home.html
+  upload: templates/home.html
+
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
   script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\

@@ -14,7 +14,7 @@ class VerifyAnalysis(BaseHandler):
 
     Later it will be extended for coverage analysis.
     This corresponds to the "Verify after green" button in the following page:
-    https://findit-for-me.appspot.com/list-build?count=400&type=triage
+    https://1-dot-findit-for-me.appspot.com/list-build?count=400&type=triage
 
     This endpoint serves JSON result.
     """
