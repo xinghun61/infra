@@ -17,5 +17,19 @@ From command line, run:
   cd $SRC_ROOT/infra
   python test.py test --html-report /tmp/coverage appengine/findit
 
-If a branch is not tested and no line number is shown in the command line
-output, you could open file:///tmp/coverage/index.html to check.
+If a code path branch is not tested and no line number is shown in the command
+line output, you could open file:///tmp/coverage/index.html to check.
+
+# How to deploy to appengine?
+
+For testing, deploy to findit-for-waterfall.appspot.com:
+  $SRC_ROOT/google_appengine/appcfg.py --oauth2 update -A findit-for-waterfall . --version `git rev-parse  --short HEAD`
+
+For release, make sure you are in a clean branch and deploy to findit-for-me.appspot.com:
+  git diff origin/master && git status
+  $SRC_ROOT/google_appengine/appcfg.py --oauth2 update -A findit-for-me . --version `git rev-parse  --short HEAD`
+
+To make the new version the default:
+1. Go to https://appengine.google.com and select the findit-for-me app.
+2. Click on the 'Versions' link on the left navigation menu.
+3. Make the new version as default.

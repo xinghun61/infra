@@ -8,6 +8,10 @@ builtins:
   - remote_api: on
 
 handlers:
+- url: /robots.txt
+  static_files: robots.txt
+  upload: robots.txt
+
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
   script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\
@@ -22,6 +26,17 @@ handlers:
 - url: /.*
   script: main.web_application
   secure: always
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*_test\.py$
+- ^(.*/)?tests\.py$
+- ^(.*/)?\..*$
+- ^(.*/)?.*\.md$
+- ^(.*/)?README$
+- ^(.*/)?Makefile$
 
 libraries:
 - name: webapp2
