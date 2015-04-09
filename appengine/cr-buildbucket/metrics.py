@@ -9,6 +9,8 @@ import time
 from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
+
+from components import decorators
 from components import utils
 
 import acl
@@ -75,7 +77,7 @@ def call_mon_api_async(method, path, body=None):
     try:
       res = yield ndb.get_context().urlfetch(
           url, method=method, payload=payload, headers=headers,
-          follow_redirects=False, validate_certificate=True, deadline=10)
+          follow_redirects=False, validate_certificate=True, deadline=15)
       if res.status_code < 500:
         break
     except urlfetch.DeadlineExceededError:
@@ -93,6 +95,7 @@ def call_mon_api(*args, **kwargs):
 
 
 @ndb.tasklet
+@decorators.silence(urlfetch.DeadlineExceededError)
 def write_timeseries_value(bucket, metric, value):
   now = utils.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
   logging.info(
