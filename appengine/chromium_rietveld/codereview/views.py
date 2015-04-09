@@ -1447,6 +1447,12 @@ def _make_new(request, form):
                        key=issue_key)
   issue.put()
 
+  if cq_dry_run:
+    commit_checked_msg = 'The CQ bit was checked by %s to run a CQ dry run' % (
+        cq_dry_run_triggered_by)
+    make_message(request, issue, commit_checked_msg, send_mail=False,
+                 auto_generated=True).put()
+
   first_ps_id, _ = models.PatchSet.allocate_ids(1, parent=issue.key)
   ps_key = ndb.Key(models.PatchSet, first_ps_id, parent=issue.key)
   patchset = models.PatchSet(
@@ -1580,6 +1586,11 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   issue.target_ref = _get_target_ref(form, issue.key, issue.project)
   issue.cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
   issue.cq_dry_run_last_triggered_by = account.email if issue.cq_dry_run else ''
+  if issue.cq_dry_run:
+    commit_checked_msg = 'The CQ bit was checked by %s to run a CQ dry run' % (
+        issue.cq_dry_run_last_triggered_by)
+    make_message(request, issue, commit_checked_msg, send_mail=False,
+                 auto_generated=True).put()
   issue.calculate_updates_for()
   # New patchset has been uploaded, add to the approvers_to_notify list.
   approval_dict = json.loads(issue.reviewer_approval)
