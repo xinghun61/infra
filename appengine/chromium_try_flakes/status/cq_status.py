@@ -257,6 +257,8 @@ def get_flaky_run_reason(flaky_run_key):
 
 
 def get_int_value(properties, key):
+  if not key in properties:
+    raise ValueError('key not found')
   value = properties[key]
   if type(value) == type(list()):
     value = value[0]
@@ -294,9 +296,12 @@ def parse_cq_data(json_data):
         result = job['result']
         timestamp = datetime.datetime.strptime(job['timestamp'],
                                                '%Y-%m-%d %H:%M:%S.%f')
-        buildnumber = get_int_value(build_properties, 'buildnumber')
-        issue = get_int_value(build_properties, 'issue')
-        patchset = get_int_value(build_properties, 'patchset')
+        try:
+          buildnumber = get_int_value(build_properties, 'buildnumber')
+          issue = get_int_value(build_properties, 'issue')
+          patchset = get_int_value(build_properties, 'patchset')
+        except ValueError as e:
+          continue
 
         if build_result.isResultPending(result):
           continue
