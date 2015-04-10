@@ -4,6 +4,7 @@
 
 import collections
 import operator
+import logging
 
 from infra.services.builder_alerts import string_helpers
 
@@ -123,6 +124,10 @@ def group_by_reason(alerts):  # pragma: no cover
     # FIXME: THIS IS A TEMPORARY HACK. WE SHOULD NOT TRUNCATE THIS LIST.
     # But it turns out that sometimes it thinks that it is reasonable to send
     # a blamelist 300,000 commits long, which just shouldn't happen.
+    if len(blame_list) > 1000:
+      logging.warn('Had to truncate blame list (%d:%d, length %d) for %s',
+          last_passing, first_failing, len(blame_list), reason_key)
+
     blame_list = blame_list[-1000:]
     reason_groups.append({
         'sort_key': reason_key,
