@@ -60,7 +60,7 @@ found in the LICENSE file. -->
                     </template>
                 </template>
             </cr-collapsible>
-            <cr-collapsible class="patchset" active>
+            <cr-collapsible class="patchset" active="{{ currentPatchset.active }}">
                 <cr-patchset-header class="cr-collapsible-header" patchset="{{ currentPatchset }}"></cr-patchset-header>
                 <cr-issue-patchset patchset="{{ currentPatchset }}"></cr-issue-patchset>
             </cr-collapsible>

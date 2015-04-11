@@ -57,3 +57,12 @@ header .ui-actions {
 .trigger-dry-run {
     margin: 0 0px 0.5em 5px;
 }
+
+#try-job-results h2 {
+    margin: 0.5em 16px 0.5em 16px;
+}
+
+.spinner {
+    vertical-align: middle;
+    margin: 0 8px 0 8px;
+}

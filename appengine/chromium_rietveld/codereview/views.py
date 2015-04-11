@@ -2367,7 +2367,7 @@ def _issue_as_dict(issue, messages, request=None):
   return values
 
 
-def _patchset_as_dict(patchset, comments, request):
+def _patchset_as_dict(patchset, comments, try_jobs, request):
   """Converts a patchset into a dict."""
   issue = patchset.issue_key.get()
   values = {
@@ -2380,9 +2380,11 @@ def _patchset_as_dict(patchset, comments, request):
     'created': str(patchset.created),
     'modified': str(patchset.modified),
     'num_comments': patchset.num_comments,
-    'try_job_results': [t.to_dict() for t in patchset.try_job_results],
     'files': {},
   }
+  if (try_jobs):
+    values['try_job_results'] = [
+        t.to_dict() for t in patchset.try_job_results]
   for patch in models.Patch.query(models.Patch.patchset_key == patchset.key):
     # num_comments and num_drafts are left out for performance reason:
     # they cause a datastore query on first access. They could be added
@@ -2445,7 +2447,8 @@ def api_patchset(request):
   dictionary.
   """
   comments = request.GET.get('comments', 'false').lower() == 'true'
-  values = _patchset_as_dict(request.patchset, comments, request)
+  try_jobs = request.GET.get('try_jobs', 'true').lower() == 'true'
+  values = _patchset_as_dict(request.patchset, comments, try_jobs, request)
 
   # Add the current datetime as seen by AppEngine (it should always be UTC).
   # This makes it possible to reliably compare try job timestamps (also based

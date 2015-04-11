@@ -52,16 +52,23 @@ found in the LICENSE file. -->
                 </template>
             </div>
         </template>
-        <div id="try-job-results">
-            <template if="{{ patchset.files.length && ((patchset.mostRecent && !patchset.commit && (!patchset.issue.closed || patchset.tryJobResults.length)) || (!patchset.mostRecent && patchset.tryJobResults.length)) }}">
-                <h2>Try job results</h2>
-                <cr-try-results results="{{ patchset.tryJobResults }}"></cr-try-results>
-                <template if="{{ patchset.mostRecent && !patchset.issue.closed }}">
+        <template if="{{ patchset.files.length && ((patchset.mostRecent && !patchset.issue.commit) || (!patchset.mostRecent && (!tryJobResults || tryJobResults.length))) }}">
+            <div id="try-job-results">
+                <h2>
+                    Try job results
+                    <template if="{{ !tryJobResults }}">
+                        <img src="../images/dots16.gif" class="spinner">
+                    </template>
+                </h2>
+                <template if="{{ tryJobResults.length }}">
+                    <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
+                </template>
+                <template if="{{ patchset.mostRecent && !patchset.issue.closed && !patchset.issue.commit }}">
                     <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose trybots</a> /
                     <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
                 </template>
-            </template>
-        </div>
+            </div>
+        </template>
         <div id="dialogs"></div>
     </template>
     <script>
@@ -71,6 +78,7 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.patchset = null;
+                this.tryJobResults = null;
                 this.mode = "";
                 this.sideBySide = localStorage.getItem(SIDE_BY_SIDE_KEY) == "true";
                 this.updateMode();
@@ -87,6 +95,16 @@ found in the LICENSE file. -->
                     dialog.remove();
                 });
                 dialog.showModal();
+            },
+            patchsetChanged: function(oldValue, newValue) {
+                var self = this;
+                var list = new TryJobResultList(this.patchset);
+                list.loadResults().then(function(results) {
+                    self.tryJobResults = results;
+                }).catch(function(e) {
+                    // TODO(esprehn): Show an error.
+                    console.log(e);
+                });
             },
             sideBySideChanged: function(oldValue, newValue) {
                 this.updateMode();

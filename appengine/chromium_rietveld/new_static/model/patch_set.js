@@ -10,7 +10,6 @@ function PatchSet(issue, id, sequence)
     this.files = []; // Array<PatchFile>
     this.sourceFiles = []; // Array<PatchFile>
     this.testFiles = []; // Array<PatchFile>
-    this.tryJobResults = []; // Array<tryJobResults>
     this.created = ""; // Date
     this.messageCount = 0;
     this.draftCount = 0;
@@ -27,7 +26,7 @@ function PatchSet(issue, id, sequence)
     Object.preventExtensions(this);
 }
 
-PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true";
+PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true&try_jobs=false";
 PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
 PatchSet.DELETE_URL = "/{1}/patchset/{2}/delete";
 PatchSet.TITLE_URL = "/{1}/patchset/{2}/edit_patchset_title";
@@ -129,17 +128,4 @@ PatchSet.prototype.parseData = function(data)
         else
             this.sourceFiles.push(file);
     }, this);
-
-    var tryResults = (data.try_job_results || []).groupBy("builder");
-    this.tryJobResults = Object.keys(tryResults)
-        .sort()
-        .map(function(builder) {
-            var jobSet = new TryJobResultSet(builder);
-            jobSet.results = tryResults[builder].map(function(resultData) {
-                var result = new TryJobResult();
-                result.parseData(resultData);
-                return result;
-            }).reverse();
-            return jobSet;
-        });
 };

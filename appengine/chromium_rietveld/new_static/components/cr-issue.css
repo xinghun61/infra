@@ -114,3 +114,8 @@ header h2 {
 :host-context(.no-login) .issue-content {
     margin-top: 1em;
 }
+
+.spinner {
+    vertical-align: middle;
+    margin: 0 8px;
+}

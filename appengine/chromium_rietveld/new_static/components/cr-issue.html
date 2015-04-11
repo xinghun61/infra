@@ -59,8 +59,15 @@ found in the LICENSE file. -->
                 </cr-toolbar>
 
                 <template if="{{ issue.commit }}">
-                    <h2>Commit status</h2>
-                    <cr-try-results results="{{ issue.patchsets[issue.patchsets.length - 1].tryJobResults }}" showmore></cr-try-results>
+                    <h2>
+                        Commit status
+                        <template if="{{ !tryJobResults }}">
+                            <img src="../images/dots16.gif" class="spinner">
+                        </template>
+                    </h2>
+                    <template if="{{ tryJobResults }}">
+                        <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
+                    </template>
                     <cr-toolbar class="issue-toolbar">
                         <button is="cr-button" on-tap="{{ toggleCommit }}">
                             Cancel Commit <template if="{{ issue.cqDryRun }}">Dry Run</template>
@@ -108,11 +115,31 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.issue = null;
+                this.tryJobResults = null;
                 this.butterbarMessage = "";
             },
             attached: function() {
                 if (window.location.pathname.endsWith("/revert"))
                     this.showRevertDialog();
+            },
+            issueChanged: function(oldValue, newValue) {
+                this.loadCommitTryJobs();
+            },
+            loadCommitTryJobs: function() {
+                var self = this;
+                this.tryJobResults = null;
+                if (!this.issue.commit)
+                    return;
+                var patchset = this.issue.patchsets.last();
+                if (!patchset)
+                    return;
+                var list = new TryJobResultList(patchset);
+                list.loadResults().then(function(results) {
+                    self.tryJobResults = results;
+                }).catch(function(e) {
+                    // TODO(esprehn): Show an error.
+                    console.log(e);
+                });
             },
             updateButterbar: function(event) {
                 this.butterbarMessage = event.detail.message;
