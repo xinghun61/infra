@@ -24,12 +24,46 @@ describe('ct-commit', function() {
   });
 
   describe('commit UI', function() {
-    it('should show example commit', function() {
+    function checkCommitInfo() {
       var html = commit.shadowRoot.innerHTML;
 
       assert.include(html, 'mkwst');
       assert.include(html, 'behavior for these types');
       assert.equal(commit.shadowRoot.querySelector('a').href, commit.data.url);
+    }
+
+    function checkNotASuspectedCommit() {
+      assert.equal(commit.shadowRoot.querySelector('span'), null);
+      assert.equal(commit.shadowRoot.querySelector('a').className, '');
+    }
+
+    it('should show example commit', function() {
+      checkCommitInfo();
+      checkNotASuspectedCommit();
+    });
+
+    it('should show unsuspected commit', function(done) {
+      commit.suspected = false;
+
+      setTimeout(function(){
+        checkCommitInfo();
+        checkNotASuspectedCommit();
+
+        done();
+      });
+    });
+
+    it('should show suspected commit', function(done) {
+      commit.suspected = true;
+
+      setTimeout(function(){
+        checkCommitInfo();
+
+        assert.equal(commit.shadowRoot.querySelector('span').innerHTML, '*');
+        assert.equal(commit.shadowRoot.querySelector('a').className, 'suspected-commit');
+
+        done();
+      });
     });
   });
 });

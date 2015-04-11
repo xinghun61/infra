@@ -4,7 +4,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
-<polymer-element name="ct-commit" attributes="data" noscript>
+<polymer-element name="ct-commit" attributes="data suspected" noscript>
   <template>
     <style>
       :host {
@@ -22,12 +22,25 @@ found in the LICENSE file.
       div {
         flex: 1;
       }
+      .suspected-commit {
+        color: red;
+        font-weight: bold;
+      }
       :host(:hover) a {
         background-color: #555;
         color: white;
       }
+      :host(:hover) a.suspected-commit {
+        background-color: #555;
+        color: red;
+      }
     </style>
-    <a href="{{ data.url }}">{{ data.revision }}</a>
+    <template if="{{ suspected }}">
+      <span class="suspected-commit">*</span><a class="suspected-commit" href="{{ data.url }}">{{ data.revision }}</a>
+    </template>
+    <template if="{{ !suspected }}">
+      <a href="{{ data.url }}">{{ data.revision }}</a>
+    </template>
     <div>{{ data.summary }} <em>{{ data.author }}</em></div>
   </template>
 </polymer-element>

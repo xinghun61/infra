@@ -44,7 +44,7 @@ found in the LICENSE file.
       <ct-builder-grid builderList="{{ group.builderList }}"></ct-builder-grid>
       <ct-test-list tests="{{ group.failures }}"></ct-test-list>
     </div>
-    <ct-commit-list commitList="{{ group.commitList }}"></ct-commit-list>
+    <ct-commit-list commitList="{{ group.commitList }}" suspectedCLsByRepo="{{ group.suspectedCLsByRepo }}"></ct-commit-list>
   </template>
   <script>
     Polymer({

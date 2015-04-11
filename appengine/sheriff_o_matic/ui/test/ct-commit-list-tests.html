@@ -18,18 +18,21 @@ describe('ct-commit-list', function() {
 
   beforeEach(function(done) {
     list = document.createElement('ct-commit-list');
+    list.commitList = new CTCommitListMock();
     setTimeout(done);
   });
 
-  describe('commit list UI', function() {
-    beforeEach(function(done) {
-      list.commitList = new CTCommitListMock();
-      setTimeout(done);
-    });
+  function numOfMatchedSuspectedCommitInfo() {
+    var html = list.shadowRoot.innerHTML;
+    var results = html.match(/\d+ suspected CL\(s\)/g);
+    return Object.size(results);
+  }
 
+  describe('commit list UI', function() {
     it('should show no commits by default', function() {
       var commits = list.shadowRoot.querySelectorAll('ct-commit');
       assert.lengthOf(commits, 0);
+      assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
     });
 
     describe('expanded test', function() {
@@ -40,6 +43,41 @@ describe('ct-commit-list', function() {
 
       it('should show commit when expanded', function() {
         assert.lengthOf(list.shadowRoot.querySelectorAll('ct-commit'), 2);
+        assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
+      });
+    });
+  });
+
+  describe('summary of suspected commits', function() {
+    it('should show up if they are in range', function(done) {
+      list.suspectedCLsByRepo = {
+        'blink': [
+          {
+            'commitPosition': 158544,
+            'builds': ['https://abc']
+          }
+        ]
+      };
+
+      setTimeout(function() {
+        assert.equal(numOfMatchedSuspectedCommitInfo(), 2);
+        done();
+      });
+    });
+
+    it('should not show up if they are out of range', function(done) {
+      list.suspectedCLsByRepo = {
+        'blink': [
+          {
+            'commitPosition': 258544,
+            'builds': ['https://abc']
+          }
+        ]
+      };
+
+      setTimeout(function() {
+        assert.equal(numOfMatchedSuspectedCommitInfo(), 0);
+        done();
       });
     });
   });

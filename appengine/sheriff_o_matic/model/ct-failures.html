@@ -123,7 +123,7 @@ CTFailures.prototype.update = function() {
     // Update |failures| with the appropriate CTFailureGroup's for each
     // tree.
     sheriff_data.range_groups.forEach(function(rangeGroup) {
-      this._processFailuresForRangeGroup(newFailures, rangeGroup, alertsByKey, annotations);
+      this._processFailuresForRangeGroup(newFailures, rangeGroup, alertsByKey, annotations, sheriff_data.suspected_cls);
     }.bind(this));
 
     sheriff_data.stale_builder_alerts.forEach(function(alert) {
@@ -217,7 +217,61 @@ CTFailures.prototype._groupFailuresByTreeAndReason = function(failures, annotati
   return failuresByTree
 };
 
-CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, rangeGroup, alerts, annotations) {
+CTFailures.prototype._populateSuspectedCLs = function(suspectedCLGroup, analysisResult, masterUrl, builderName, buildNumber) {
+  analysisResult.suspected_cls.forEach(function(cl) {
+    if (!suspectedCLGroup[cl.repo_name])
+      suspectedCLGroup[cl.repo_name] = {};
+    if (!suspectedCLGroup[cl.repo_name][cl.revision]) {
+      suspectedCLGroup[cl.repo_name][cl.revision] = {
+        'commitPosition': cl.commit_position,
+        'revision': cl.revision,
+        'builds': [],
+      };
+    }
+    var buildUrl = masterUrl + '/builders/' + builderName + '/builds/' + buildNumber;
+    suspectedCLGroup[cl.repo_name][cl.revision].builds.push(buildUrl);
+  });
+};
+
+CTFailures.prototype._filterOutsuspectedCLForStepFailure = function(suspectedCLGroup, stepFailure, analysisResults) {
+  var stepName = stepFailure.step;
+
+  // FIXME: filter with test name when Findit supports test-level analysis.
+  Object.keys(stepFailure.resultNodesByBuilder, function(builderName, failure) {
+    analysisResults.forEach(function(analysisResult) {
+      if (stepName != analysisResult.step_name ||
+          failure.lastFailingBuild != analysisResult.build_number ||
+          builderName != analysisResult.builder_name ||
+          failure.masterUrl != analysisResult.master_url)
+        return;
+
+      this._populateSuspectedCLs(suspectedCLGroup, analysisResult, failure.masterUrl, builderName, failure.lastFailingBuild);
+    }.bind(this));
+  }.bind(this));
+};
+
+CTFailures.prototype._processAnalysisResultsForStepFailureGroup = function(failures, analysisResults) {
+  if (Object.isEmpty(analysisResults))
+    return {};
+
+  var suspectedCLGroup = {};
+  failures.forEach(function(stepFailure) {
+    this._filterOutsuspectedCLForStepFailure(suspectedCLGroup, stepFailure, analysisResults);
+  }.bind(this));
+
+  var suspectedCLsByRepo = {};
+  Object.keys(suspectedCLGroup, function(repoName, clByRevision) {
+    Object.keys(clByRevision, function(revision, cl) {
+      if (!suspectedCLsByRepo[repoName])
+        suspectedCLsByRepo[repoName] = [];
+      suspectedCLsByRepo[repoName].push(cl);
+    });
+  });
+
+  return suspectedCLsByRepo;
+};
+
+CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, rangeGroup, alerts, annotations, analysisResults) {
   // A rangeGroup may be related to multiple alerts (via |failure_keys|). Categorize
   // these failures by reason (cause of failure), so that they can be grouped in the UI
   // (via a CTFailureGroup).
@@ -235,13 +289,15 @@ CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, range
       var failure = JSON.parse(reasonKey);
       treeFailures.push(
           new CTStepFailure(failure.step, failure.reason, resultsByBuilder));
-    })
+    });
     treeFailures.sort(this._failureComparator);
+
+    var suspectedCLsByRepo = this._processAnalysisResultsForStepFailureGroup(treeFailures, analysisResults);
 
     if (!newFailures[tree])
       newFailures[tree] = [];
     var commitList = new CTCommitList(this.repositories, rangeGroup.likely_revisions);
-    newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(treeFailures, commitList)));
+    newFailures[tree].push(new CTFailureGroup(tree, new CTStepFailureGroupData(treeFailures, commitList, suspectedCLsByRepo)));
   }.bind(this));
 };
 

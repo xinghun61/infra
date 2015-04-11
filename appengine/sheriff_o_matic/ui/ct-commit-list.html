@@ -8,7 +8,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-detailed-commit.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 
-<polymer-element name="ct-commit-list" attributes="commitList detailed">
+<polymer-element name="ct-commit-list" attributes="commitList detailed suspectedCLsByRepo">
   <template>
     <style>
       :host {
@@ -28,6 +28,9 @@ found in the LICENSE file.
         margin-left: 10px;
       }
     </style>
+    <template if="{{ totalSuspectedCommits_ > 0 }}">
+      <a href="https://findit-for-me.appspot.com/build-failure?url={{ representiveBuildUrl_ }}">Findit found {{ totalSuspectedCommits_ }} suspected CL(s).</a>
+    </template>
     <template repeat="{{ repository in commitList.repositories }}">
       <div class="repository-info">
         <span style="font-weight: bold">{{ repository.name }}</span>
@@ -40,13 +43,16 @@ found in the LICENSE file.
         <template if="{{ repository.name != 'blink' && repository.name != 'chromium'}}">{{ repository.range }}</template>
         <paper-icon-button icon="unfold-more"
             on-click="{{ _toggle }}" repository="{{ repository.name }}"></paper-icon-button>
+        <template if="{{ suspectedCommitsByRepo_[repository.name] && _numberOfSuspectedCL(repository.name) > 0 }}">
+          <span style="color: red">{{ _numberOfSuspectedCL(repository.name) }} suspected CL(s)</span>
+        </template>
         <template if="{{ repository.expanded }}">
           <template repeat="{{ commit in repository.commits }}">
             <template if="{{ !detailed }}">
-              <ct-commit data="{{ commit }}"></ct-commit>
+              <ct-commit data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-commit>
             </template>
             <template if="{{ detailed }}">
-              <ct-detailed-commit data="{{ commit }}"></ct-detailed-commit>
+            <ct-detailed-commit data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-detailed-commit>
             </template>
           </template>
         </template>
@@ -56,13 +62,85 @@ found in the LICENSE file.
   <script>
   Polymer({
     detailed: false,
+    suspectedCommitsByRepo_: {},
+    totalSuspectedCommits_: 0,
+    representiveBuildUrl_: null,
+
+    observe: {
+      commitList: '_updateSuspectedCommitInfo',
+      suspectedCLsByRepo: '_updateSuspectedCommitInfo',
+    },
+
     _toggle: function(event, detail, sender, target) {
       var repo = sender.getAttribute('repository');
       var r = this.commitList.repositories.find(function(item) {
         return item.name === repo;
       });
       r.expanded = !r.expanded;
-    }
+    },
+
+    _updateSuspectedCommitInfo: function() {
+      this.suspectedCommitsByRepo_ = {};
+      this.totalSuspectedCommits_ = 0;
+      this.representiveBuildUrl_ = null;
+
+      if (Object.isEmpty(this.suspectedCLsByRepo))
+        return;
+
+      var builds = {};
+
+      this.commitList.repositories.forEach(function(repository) {
+        if (!this.suspectedCLsByRepo[repository.name])
+          return;
+
+        if (!this.suspectedCommitsByRepo_[repository.name])
+          this.suspectedCommitsByRepo_[repository.name] = {};
+
+        repository.commits.forEach(function(commit) {
+          var suspectedCL = null;
+
+          // If a suspected CL is not in the regression range, don't show it on UI.
+          this.suspectedCLsByRepo[repository.name].some(function(cl) {
+            // In builder_alerts and sheriff-o-matic, git commit position is referred as revision.
+            if (cl.commitPosition == commit.revision) {
+              suspectedCL = cl;
+              return true;
+            }
+            return false;
+          });
+
+          if (suspectedCL) {
+            this.suspectedCommitsByRepo_[repository.name][commit.revision] = suspectedCL;
+            suspectedCL.builds.forEach(function(buildUrl) {
+              if (!builds[buildUrl])
+                builds[buildUrl] = 0;
+              builds[buildUrl] += 1;
+            });
+            this.totalSuspectedCommits_ += 1;
+          }
+        }.bind(this));
+      }.bind(this));
+
+      // Use a build out of the same step failure group as a representative one to link back to Findit.
+      // It could be the one that has the most failures tagged with some suspected CLs.
+      if (!Object.isEmpty(builds)) {
+        var maxCount = 0;
+        Object.keys(builds, function(buildUrl, count) {
+          if (count > maxCount) {
+            this.representiveBuildUrl_ = buildUrl;
+            maxCount = count;
+          }
+        }.bind(this));
+      }
+    },
+
+    _isSuspected: function(revision, repoName) {
+      return this.suspectedCommitsByRepo_[repoName] && this.suspectedCommitsByRepo_[repoName][revision] !== undefined;
+    },
+
+    _numberOfSuspectedCL: function(repoName) {
+      return Object.size(this.suspectedCommitsByRepo_[repoName]);
+    },
   });
   </script>
 </polymer-element>

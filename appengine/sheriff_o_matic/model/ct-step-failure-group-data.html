@@ -9,12 +9,13 @@ found in the LICENSE file.
 <link rel="import" href="ct-failure-group-data.html">
 
 <script>
-function CTStepFailureGroupData(failures, commitList) {
+function CTStepFailureGroupData(failures, commitList, suspectedCLsByRepo) {
   this.failures = failures;
   this.key = failures.map(function(failure) {
     return failure.key;
   }).join('::');
   this.commitList = commitList;
+  this.suspectedCLsByRepo = suspectedCLsByRepo;
   this.builderList = new CTBuilderList(failures);
   this.category = 'step';
 };
