@@ -185,7 +185,8 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
       self.response.headers["Access-Control-Allow-Origin"] = "*"
       self.response.out.write(json)
     else:
-      self.error(404)
+      self.response.headers["Access-Control-Allow-Origin"] = "*"
+      self.response.set_status(404)
 
   def get(self):  # pragma: no cover
     key = self.request.get(PARAM_KEY)
@@ -219,7 +220,8 @@ class GetFile(webapp2.RequestHandler):  # pylint: disable=W0232
       if not master_data:
         master_data = master_config.getMasterByMasterName(master)
       if not master_data:
-        self.error(404)
+        self.response.headers["Access-Control-Allow-Origin"] = "*"
+        self.response.set_status(404)
         return
 
       json, date = self._get_file_content(
