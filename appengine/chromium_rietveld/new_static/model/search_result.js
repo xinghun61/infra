@@ -4,14 +4,14 @@
 
 "use strict";
 
-function SearchResult(issues, cursor)
+function SearchResult(issues, query)
 {
-    this.cursor = cursor || "";
+    this.query = query || {};
     this.issues = issues || []; // Array<Issue>
     Object.preventExtensions(this);
 }
 
 SearchResult.prototype.findNext = function()
 {
-    return Search.findIssues({cursor: this.cursor});
+    return Search.findIssues(this.query);
 };

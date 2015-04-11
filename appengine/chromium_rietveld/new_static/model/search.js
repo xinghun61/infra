@@ -32,8 +32,11 @@ Search.findUsers = function(query, limit)
     });
 };
 
-Search.findIssues = function(query, limit)
+Search.findIssues = function(query)
 {
+    // Use a local copy so we can modify it.
+    query = Object.clone(query);
+
     // 0 = Unknown, 1 = Closed, 2 = Not Closed.
     var closed = 0;
     if (query.hasOwnProperty("closed"))
@@ -46,13 +49,15 @@ Search.findIssues = function(query, limit)
     if (sort && query.order == "descending")
         sort = "-" + sort;
 
+    query.limit = Number(query.limit) || Search.DEFAULT_LIMIT;
+
     var url = Search.ISSUE_URL.assign(
         encodeURIComponent(closed),
         encodeURIComponent(query.owner || ""),
         encodeURIComponent(query.reviewer || ""),
         encodeURIComponent(query.cc || ""),
         encodeURIComponent(sort),
-        encodeURIComponent(Number(limit) || Search.DEFAULT_LIMIT),
+        encodeURIComponent(query.limit),
         encodeURIComponent(query.cursor || ""));
 
     return loadJSON(url).then(function(data) {
@@ -61,6 +66,7 @@ Search.findIssues = function(query, limit)
             issue.parseData(issueData);
             return issue;
         });
-        return new SearchResult(issues, data.cursor);
+        query.cursor = data.cursor;
+        return new SearchResult(issues, query);
     });
-}
+};

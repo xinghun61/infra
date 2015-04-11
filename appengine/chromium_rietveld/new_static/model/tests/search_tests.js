@@ -26,4 +26,55 @@ describe("Search", function() {
             ]);
         });
     });
+    it("should search for issues", function() {
+        loadJSON.expect("/search?format=json&closed=0&owner=esprehn%40chromium.org&reviewer=&cc=&order=&limit=10&cursor=", function() {
+            return Promise.resolve({
+                results: [{
+                    issue: 10,
+                }, {
+                    issue: 20,
+                }],
+                cursor: "__cursor__",
+            });
+        });
+        var query = {
+            owner: "esprehn@chromium.org",
+        };
+        return Search.findIssues(query).then(function(result) {
+            assert.lengthOf(result.issues, 2);
+            assert.equal(result.issues[0].id, 10);
+            assert.equal(result.issues[1].id, 20);
+            assert.equal(result.query.cursor, "__cursor__");
+            assert.equal(result.query.owner, "esprehn@chromium.org");
+        });
+    });
+    it("should search for issues", function() {
+        loadJSON.expect("/search?format=json&closed=0&owner=esprehn%40chromium.org&reviewer=&cc=&order=&limit=10&cursor=", function() {
+            return Promise.resolve({
+                results: [{
+                    issue: 10,
+                }],
+                cursor: "a_cursor",
+            });
+        });
+        loadJSON.expect("/search?format=json&closed=0&owner=esprehn%40chromium.org&reviewer=&cc=&order=&limit=10&cursor=a_cursor", function() {
+            return Promise.resolve({
+                results: [{
+                    issue: 30,
+                }],
+                cursor: "b_cursor",
+            });
+        });
+        var query = {
+            owner: "esprehn@chromium.org",
+        };
+        return Search.findIssues(query).then(function(resultA) {
+            resultA.findNext().then(function(resultB) {
+                assert.lengthOf(resultB.issues, 1);
+                assert.equal(resultB.issues[0].id, 30);
+                assert.equal(resultB.query.cursor, "b_cursor");
+                assert.equal(resultB.query.owner, "esprehn@chromium.org");
+            });
+        });
+    });
 });
