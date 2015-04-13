@@ -17,7 +17,7 @@ found in the LICENSE file. -->
         </style>
 
         <dialog is="cr-dialog" id="dialog" class="dialog small" on-cancel="{{ cancel }}">
-            <h1>CQ Dry Run</h1>
+            <h1>CQ dry run</h1>
 
             <fieldset class="dialog-fields" disabled?="{{ sending }}">
                 <div class="dialog-fields-field">
@@ -29,7 +29,7 @@ found in the LICENSE file. -->
             </fieldset>
 
             <cr-toolbar>
-                <button is="cr-button" primary on-tap="{{ dryRun }}">Trigger Dry Run</button>
+                <button is="cr-button" primary on-tap="{{ dryRun }}">Start dry run</button>
                 <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
             </cr-toolbar>
         </dialog>
