@@ -8,8 +8,8 @@ function loadResource(type, url)
 {
     return new Promise(function(fulfill, reject) {
         var xhr = new XMLHttpRequest();
-        xhr.responseType = type;
         xhr.open("GET", url);
+        xhr.responseType = type;
         xhr.send();
         xhr.onload = function() {
             fulfill(xhr);
@@ -58,8 +58,8 @@ function sendFormData(url, data, options)
             }).join("&");
 
             var xhr = new XMLHttpRequest();
-            xhr.responseType = options.responseType || "document";
             xhr.open("POST", url);
+            xhr.responseType = options.responseType || "document";
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
             Object.keys(options.headers || {}, function(name, value) {
                 xhr.setRequestHeader(name, value);
