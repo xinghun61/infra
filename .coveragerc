@@ -13,6 +13,9 @@ omit =
     # Apps symlinking swarming/components.
     ./appengine/*/components/*
 
+    # Luci code added via DEPS.
+    ./luci/*
+
 [report]
 exclude_lines =
     # Have to re-enable the standard pragma

@@ -3,6 +3,7 @@
 ENV
 .wheelcache
 appengine/swarming
+luci
 .DS_Store
 /doc/html
 /doc/source/reference
