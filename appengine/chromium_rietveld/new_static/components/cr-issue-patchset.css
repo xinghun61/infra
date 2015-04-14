@@ -66,3 +66,13 @@ header .ui-actions {
     vertical-align: middle;
     margin: 0 8px 0 8px;
 }
+
+@media (max-width: 600px) {
+    header h2 {
+        display: none;
+    }
+
+    header .ui-actions {
+        padding: 0 8px;
+    }
+}

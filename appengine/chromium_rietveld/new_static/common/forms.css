@@ -54,3 +54,10 @@
     color: #9FA6AA;
     font-size: 1em;
 }
+
+@media (max-width: 600px) {
+    .form-label {
+        padding: 1.3em 8px;
+        white-space: normal;
+    }
+}

@@ -27,6 +27,17 @@ found in the LICENSE file. -->
                 display: flex;
             }
 
+            @media (max-width: 600px) {
+                .issue-publish-field,
+                .issue-publish-label {
+                    padding: 0.5em 8px;
+                }
+
+                .selfie-action {
+                    display: none;
+                }
+            }
+
             h2 {
                 font-size: 1em;
                 color: #959595;
@@ -163,7 +174,7 @@ found in the LICENSE file. -->
                         Add as reviewer
                     </label>
                 </template>
-                <label>
+                <label class="selfie-action">
                     <input type="checkbox" checked="{{ addSelfie }}">
                     Add a selfie!
                 </label>

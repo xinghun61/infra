@@ -25,7 +25,7 @@ found in the LICENSE file. -->
         }
         </style>
         <content></content>
-        <template if="{{ polyfill && open }}">
+        <template if="{{ isPolyfill && open }}">
             <cr-keyboard on-key-escape="{{ fireCancelEvent }}"></cr-keyboard>
         </template>
     </template>
@@ -34,25 +34,42 @@ found in the LICENSE file. -->
         var backdrop = document.createElement("cr-dialog-backdrop");
         Polymer({
             created: function() {
-                if (window.HTMLDialogElement)
-                    return;
-                this.classList.add("polyfill");
-                this.showModal = function() {
+                this.isPolyfill = !window.HTMLDialogElement;
+                if (this.isPolyfill)
+                    this.classList.add("polyfill");
+                // <dialog> by default does all work synchronously which is bad
+                // because it means hiding a dialog will issue a touch under the
+                // button that called .close() in the tap handler since the
+                // dialog disappeared in the middle of the touch sequence. It
+                // also means unnecessary sync style updates. To fix this we
+                // replace the native browser methods with async ones.
+                var syncShowModal = this.showModal || function() {
                     this.open = true;
                     this.setAttribute("open", "");
                     document.body.appendChild(backdrop);
-                    this.async(function() {
-                        // Focus the first input.
-                        var input = this.querySelector("input, textarea, * /deep/ input, * /deep/ textarea");
-                        if (input)
-                            input.focus();
-                    });
                 };
-                this.close = function() {
+                var syncClose = this.close || function() {
                     if (!this.open)
                         return;
                     this.removeAttribute("open");
                     backdrop.remove();
+                };
+                this.showModal = function() {
+                    this.async(function() {
+                        syncShowModal.call(this);
+                        this.async(function() {
+                            // Focus the first input. The browser tries to do
+                            // something like this but isn't very good at it.
+                            var input = this.querySelector("input, textarea, * /deep/ input, * /deep/ textarea");
+                            if (input)
+                                input.focus();
+                        });
+                    });
+                };
+                this.close = function() {
+                    this.async(function() {
+                        syncClose.call(this);
+                    });
                 };
                 this.fireCancelEvent = function(event) {
                     event.preventDefault();

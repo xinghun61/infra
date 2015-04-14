@@ -98,6 +98,7 @@ cr-diff-messages {
 .side-by-side .left,
 .side-by-side .right {
     width: 50%;
+    min-width: 340px;
 }
 
 .side-by-side cr-diff-messages {
@@ -114,4 +115,27 @@ cr-diff-messages {
 
 .side-by-side .text {
     border: none;
+}
+
+@media (max-width: 600px) {
+    cr-diff-image {
+        margin: 0;
+    }
+
+    cr-diff-messages {
+        margin-left: calc(6em + 8px);
+    }
+
+    .side-by-side cr-diff-messages {
+        margin-left: calc(3em + 4px);
+    }
+
+    .text,
+    .show-context {
+        padding: 0 4px;
+    }
+
+    .line-number {
+        padding-right: 4px;
+    }
 }

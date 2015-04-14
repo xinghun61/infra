@@ -116,12 +116,18 @@ found in the LICENSE file. -->
             app-route {
                 display: none;
             }
+
+            @media (max-width: 500px) {
+                .view-links .bug-report {
+                    display: none;
+                }
+            }
         </style>
         <header class="page-header">
             <div class="title">
                 <a href="/">
                     <img src="../images/chromium-logo-50.png">
-                    <span>Chromium Code Review</span>
+                    <span>Code Review</span>
                 </a>
             </div>
             <div class="view-links">

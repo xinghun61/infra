@@ -51,8 +51,20 @@ found in the LICENSE file. -->
                 padding: 1em;
                 font-size: 1.8em;
             }
+
             :host-context(.no-login) .login-prompt {
                 display: block;
+            }
+
+            @media (max-width: 600px) {
+                header {
+                    display: block;
+                }
+
+                .form-field:first-child,
+                #filter-form {
+                    margin: 0;
+                }
             }
         </style>
         <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>

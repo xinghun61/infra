@@ -44,6 +44,7 @@ h1.app-header {
     padding: 0.5em 16px;
     font-size: 1.5em;
     color: #DD4B39;
+    white-space: nowrap;
 }
 
 fieldset {
@@ -105,4 +106,15 @@ textarea.invalid {
 
 cr-toolbar > [is=cr-button] {
     margin-right: 16px;
+}
+
+@media (max-width: 600px) {
+    dialog {
+        width: auto;
+        box-shadow: 0 0 5px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    h1, h2 {
+        margin: 0.5em 8px;
+    }
 }

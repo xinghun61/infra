@@ -62,3 +62,15 @@ cr-diff[active] {
     border-radius: 2px;
     overflow: hidden;
 }
+
+@media (max-width: 600px) {
+    cr-diff[active],
+    .file {
+        min-width: -webkit-min-content;
+        min-width: min-content;
+    }
+
+    cr-diff[active] {
+        margin: 0.25em 0;
+    }
+}

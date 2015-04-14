@@ -80,23 +80,20 @@ header h2 {
     -webkit-align-items: center;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 600px) {
     .issue-body {
         flex-direction: column;
         -webkit-flex-direction: column;
+
     }
 
-    .issue-toolbar {
-        flex-direction: column;
-        -webkit-flex-direction: column;
-        align-items: stretch;
-        -webkit-align-items: stretch;
-    }
-
+    .issue-toolbar .ui-actions,
     .issue-toolbar button {
+        flex: none;
+        -webkit-flex: none;
         margin: 8px;
-        flex: 1;
-        -webkit-flex: 1;
+        width: calc(50% - 16px);
+        box-sizing: border-box;
     }
 
     .issue-toolbar a {
@@ -104,6 +101,22 @@ header h2 {
         flex: 1;
         -webkit-flex: 1;
         text-align: center;
+    }
+
+    cr-issue-meta {
+        padding: 0;
+        order: 1;
+        -webkit-order: 1;
+    }
+
+    cr-issue-patchsets,
+    cr-issue-messages,
+    header .ui-actions {
+        padding: 0 8px;
+    }
+
+    .issue-description {
+        margin: 1em 8px;
     }
 }
 

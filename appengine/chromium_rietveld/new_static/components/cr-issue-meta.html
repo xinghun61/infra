@@ -42,6 +42,13 @@ found in the LICENSE file. -->
             a.disapproval {
                 color: #DD4B39;
             }
+
+            @media (max-width: 600px) {
+                .issue-meta-type,
+                .issue-meta-value {
+                    padding: 0.5em 8px;
+                }
+            }
         </style>
         <template if="{{ issue }}">
             <div class="issue-author issue-meta-item">
