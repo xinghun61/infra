@@ -4,7 +4,7 @@ deps = {
 
   "infra/appengine/swarming":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
-     "@98b5e30a9a2b77bef320d0cc8bf002151a8c6614"),
+     "@ad4c7956bcb07827e3d4d351b4e4c5a34dd0b46b"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
