@@ -2,11 +2,6 @@ deps = {
   "build":
     "https://chromium.googlesource.com/chromium/tools/build.git",
 
-  # To be removed.
-  "infra/appengine/swarming":
-    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
-     "@ad4c7956bcb07827e3d4d351b4e4c5a34dd0b46b"),
-
   "infra/luci":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
      "@ad4c7956bcb07827e3d4d351b4e4c5a34dd0b46b"),

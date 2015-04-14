@@ -10,9 +10,6 @@ omit =
     # Appengine third_party packages, committed into the repo as is.
     ./appengine/third_party/*
 
-    # Apps symlinking swarming/components.
-    ./appengine/*/components/*
-
     # Luci code added via DEPS.
     ./luci/*
 
