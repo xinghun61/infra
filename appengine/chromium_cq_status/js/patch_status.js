@@ -39,7 +39,18 @@ var actionInfo = {
     cls: 'normal',
     filter: tryjobVerifierCheck,
   },
-  verifier_start: startedJobsInfo,
+  // This is a useful message for debugging logs, but it will re-appear each
+  // time CQ is restarted (manually or via auto_deploy.py). To avoid flooding CQ
+  // status app with unnecessary updates, we ignore this message here.
+  verifier_start: {
+    filter: function() { return false; }
+  },
+  // We decided to hide this message as it duplicates information in other
+  // messages, e.g. verifier_retry, verifier_jobs_update. We'll keep it in raw
+  // CQ logs for easier debugging.
+  verifier_trigger:  {
+    filter: function() { return false; }
+  },
   verifier_jobs_update: jobsUpdateInfo,
   verifier_error: {
     description: 'Error fetching tryjob status',
@@ -295,29 +306,6 @@ function simpleTryjobVerifierCheck(record) {
 
 function tryjobVerifierCheck(record) {
   return record.fields.verifier === 'try job';
-}
-
-function startedJobsInfo(attempt, record) {
-  var jobs = record.fields.tryjobs;
-  var node = newElement('div');
-  var builders = [];
-  forEachBuilder(jobs, function(builder) {
-    builders.push(builder);
-  });
-  builders.sort();
-  node.appendChild(newElement('span', 'Tryjob' + plural(builders.length)
-                              + ' triggered: '));
-  builders.forEach(function(builder) {
-    node.appendChild(newTryjobBubble(builder, 'triggered'));
-    node.appendChild(newElement('span', ' '));
-    attempt.tryjobs[builder] = initialTryjobState();
-  });
-
-  return {
-    description: node,
-    cls: 'normal',
-    filter: tryjobVerifierCheck,
-  };
 }
 
 function verifierRetryInfo(attempt, record) {
