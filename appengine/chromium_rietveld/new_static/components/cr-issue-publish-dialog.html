@@ -146,7 +146,15 @@ found in the LICENSE file. -->
             <cr-toolbar>
                 <button is="cr-button" primary on-tap="{{ handleSend }}">Send</button>
                 <template if="{{ !issue.closed }}">
-                    <button is="cr-button" on-tap="{{ handleSendAndCommit }}">Send + CQ</button>
+                    <template if="{{ !issue.owner.isCurrentUser }}">
+                        <button is="cr-button" on-tap="{{ handleLgtm }}">LGTM</button>
+                        <template if="{{ !issue.commit }}">
+                            <button is="cr-button" on-tap="{{ handleLgtmAndCommit }}">LGTM + CQ</button>
+                        </template>
+                    </template>
+                    <template if="{{ issue.owner.isCurrentUser && !issue.commit }}">
+                        <button is="cr-button" on-tap="{{ handleSendAndCommit }}">Send + CQ</button>
+                    </template>
                 </template>
                 <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
                 <template if="{{ !issue.owner.isCurrentUser }}">
@@ -199,12 +207,21 @@ found in the LICENSE file. -->
             handleSendAndCommit: function(event) {
                 this.send({commit: true});
             },
+            handleLgtm: function(event) {
+                this.send({lgtm: true});
+            },
+            handleLgtmAndCommit: function(event) {
+                this.send({
+                    lgtm: true,
+                    commit: true,
+                });
+            },
             send: function(options) {
                 var data = this.$.editor.createEditData();
                 data.message = this.message;
                 data.addAsReviewer = this.addAsReviewer;
                 data.publishDrafts = true;
-                data.commit = options && options.commit;
+                Object.merge(data, options);
                 this.sending = true;
                 this.butterbarMessage = "Saving...";
                 this.issue.publish(data)
