@@ -10,16 +10,19 @@ found in the LICENSE file. -->
         <link rel="stylesheet" href="../common/common.css">
         <link rel="stylesheet" href="../common/forms.css">
         <style>
-            :host { display: block; }
+            :host {
+                display: block;
+            }
         </style>
         <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
-        <template if="{{ user.email }}">
-            <h1 class="app-header">Settings for {{ user.email }}</h1>
-        </template>
+        <h1 class="app-header">My settings</h1>
         <template if="{{ settings }}">
             <cr-settings-editor settings="{{ settings }}" disabled="{{ disabled }}" errors="{{ errors }}"></cr-settings-editor>
             <cr-toolbar>
                 <button is="cr-button" primary on-tap="{{ save }}">Save</button>
+                <div class="ui-actions">
+                    <a is="cr-action" on-tap="{{ logout }}">Logout</a>
+                </div>
             </cr-toolbar>
         </template>
     </template>
@@ -27,7 +30,6 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.settings = null;
-                this.user = null;
                 this.butterbarMessage = "";
                 this.disabled = false;
                 this.errors = {};
@@ -43,7 +45,6 @@ found in the LICENSE file. -->
             loadSettings: function() {
                 var self = this;
                 var settings = new UserSettings();
-                this.user = User.current;
                 this.butterbarMessage = "Loading settings...";
                 settings.loadDetails().then(function() {
                     self.settings = settings;
@@ -53,10 +54,12 @@ found in the LICENSE file. -->
                 });
             },
             reset: function() {
-                this.user = User.current;
                 this.disabled = false;
                 this.errors = {};
                 this.butterbarMessage = "";
+            },
+            logout: function() {
+                location.href = User.getLogoutUrl();
             },
             save: function() {
                 if (!this.settings)

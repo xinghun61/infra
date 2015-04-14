@@ -130,16 +130,11 @@ found in the LICENSE file. -->
                    target="_blank">Report a bug</a>
                 <a href="/search" class="search-link">Search</a>
                 <template if="{{ user }}">
-                    <a href="/settings">Settings</a>
+                    <a href="/settings">{{ user.email }}</a>
                 </template>
-                <a is="cr-action" on-tap="{{ handleLogin }}">
-                    <template if="{{ user }}">
-                        Logout
-                    </template>
-                    <template if="{{ !user }}">
-                        Login
-                    </template>
-                </a>
+                <template if="{{ !user }}">
+                    <a is="cr-action" on-tap="{{ handleLogin }}">Login</a>
+                </template>
             </div>
         </header>
         <app-router id="router" trailingSlash="ignore">
@@ -171,10 +166,7 @@ found in the LICENSE file. -->
                 this.$.router.go();
             },
             handleLogin: function() {
-                if (this.user)
-                    location.href = User.getLogoutUrl();
-                else
-                    location.href = User.getLoginUrl();
+                location.href = User.getLoginUrl();
             },
         });
     </script>
