@@ -16,8 +16,9 @@ DEPS = [
 
 
 def GenSteps(api):
-  api.gclient.set_config('infra')
-  res = api.bot_update.ensure_checkout(force=True, patch_root='infra')
+  project = api.properties['patch_project'] or api.properties['project']
+  api.gclient.set_config(project)
+  res = api.bot_update.ensure_checkout(force=True, patch_root=project)
   upstream = res.json.output['properties'].get('got_revision')
   api.presubmit.commit_patch_locally()
   api.gclient.runhooks()
@@ -53,7 +54,7 @@ def GenTests(api):
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
         buildername='infra_tester',
-        repo_name='infra') +
+        patch_project='infra') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
   )
 
@@ -62,7 +63,7 @@ def GenTests(api):
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
         buildername='infra_tester',
-        repo_name='infra') +
+        patch_project='infra') +
     diff('go/src/infra/stuff.go')
   )
 
@@ -71,6 +72,15 @@ def GenTests(api):
     api.properties.tryserver(
         mastername='tryserver.chromium.linux',
         buildername='infra_tester',
-        repo_name='infra') +
+        patch_project='infra') +
     diff('infra/stuff.py')
+  )
+
+  yield (
+    api.test('infra_internal') +
+    api.properties.tryserver(
+        mastername='internal.infra',
+        buildername='infra-internal-tester',
+        patch_project='infra_internal') +
+    diff('infra/stuff.py', 'go/src/infra/stuff.go')
   )
