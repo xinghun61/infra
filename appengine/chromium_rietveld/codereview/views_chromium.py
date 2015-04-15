@@ -382,8 +382,6 @@ def edit_flags(request):
       request.issue.cq_dry_run_last_triggered_by = user_email
       logging.info('CQ dry run has been triggered by %s for %d/%d', user_email,
                    request.issue.key.id(), last_patchset.key.id())
-    else:
-      request.issue.cq_dry_run_last_triggered_by = ''
     # Mail just the owner if the CQ bit was unchecked by someone other than the
     # owner. More details in
     # https://code.google.com/p/skia/issues/detail?id=3093

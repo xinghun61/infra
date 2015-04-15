@@ -3266,11 +3266,21 @@ def publish(request):
 
   if comments:
     logging.warn('Publishing %d comments', len(comments))
+  # Email only the triggerer and the CL owner if it was a CQ dry run request.
+  # More details are in crbug.com/476883
+  email_to = None
+  if (request.user.email().lower() == 'commit-bot@chromium.org' and
+      'dry run' in form.cleaned_data['message'].lower()):
+    email_to = [issue.owner.email()]
+    if (issue.cq_dry_run_last_triggered_by and
+        issue.cq_dry_run_last_triggered_by != issue.owner.email()):
+      email_to.append(issue.cq_dry_run_last_triggered_by)
   msg = make_message(request, issue,
                      form.cleaned_data['message'],
                      comments,
                      form.cleaned_data['send_mail'],
                      draft=draft_message,
+                     email_to=email_to,
                      in_reply_to=form.cleaned_data.get('in_reply_to'))
   tbd.append(msg)
 
