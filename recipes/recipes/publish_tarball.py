@@ -56,7 +56,9 @@ def GenSteps(api):
       if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
         missing_releases.add(release['version'])
     for version in missing_releases:
-      api.trigger({'buildername': 'publish_tarball', 'version': version})
+      # TODO(akuegel): Remove this once crbug/477255 is fixed.
+      if version != '41.0.2272.22':
+        api.trigger({'buildername': 'publish_tarball', 'version': version})
     return
 
   version = api.properties['version']
