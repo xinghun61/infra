@@ -17,8 +17,11 @@ DEPS = [
 
 def GenSteps(api):
   project = api.properties['patch_project'] or api.properties['project']
+  patch_oauth2 = (project == 'infra_internal')
+
   api.gclient.set_config(project)
-  res = api.bot_update.ensure_checkout(force=True, patch_root=project)
+  res = api.bot_update.ensure_checkout(force=True, patch_root=project,
+                                       patch_oauth2=patch_oauth2)
   upstream = res.json.output['properties'].get('got_revision')
   api.presubmit.commit_patch_locally()
   api.gclient.runhooks()
