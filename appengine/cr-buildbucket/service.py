@@ -447,16 +447,20 @@ class BuildBucketService(object):
     Returns:
       The updated Build as Future.
     """
-    validate_lease_key(lease_key)
-    if lease_expiration_date is None:
-      raise errors.InvalidInputError('Lease expiration date not specified')
-    validate_lease_expiration_date(lease_expiration_date)
-    build = yield model.Build.get_by_id_async(build_id)
-    if build is None:
-      raise errors.BuildNotFoundError()
-    self._check_lease(build, lease_key)
-    build.lease_expiration_date = lease_expiration_date
-    yield build.put_async()
+    try:
+      validate_lease_key(lease_key)
+      if lease_expiration_date is None:
+        raise errors.InvalidInputError('Lease expiration date not specified')
+      validate_lease_expiration_date(lease_expiration_date)
+      build = yield model.Build.get_by_id_async(build_id)
+      if build is None:
+        raise errors.BuildNotFoundError()
+      self._check_lease(build, lease_key)
+      build.lease_expiration_date = lease_expiration_date
+      yield build.put_async()
+    except Exception as ex:
+      logging.warning('Heartbeat for build %s failed: %s', build_id, ex)
+      raise
     raise ndb.Return(build)
 
   def heartbeat(self, build_id, lease_key, lease_expiration_date):
