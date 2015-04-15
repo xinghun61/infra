@@ -1,0 +1,20 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="ct-trooper-card.html">
+<polymer-element name="ct-health" attributes="failures" noscript>
+<template>
+  <h2>System Health</h2>
+  <template repeat="{{ group in failures.failures['health'] }}">
+    <template if="{{ group.data.category == 'trooper' }}">
+      <ct-trooper-card class='{{ { snoozed: group.isSnoozed } | tokenList }}' group="{{ group.data }}"></ct-trooper-card>
+    </template>
+  </template>
+  <template if="{{ failures && (!failures.failures['health'] || failures.failures['health'].length == 0) }}">
+    <ct-party-time></ct-party-time>
+  </template>
+</template>
+</polymer-element>

@@ -15,6 +15,7 @@ found in the LICENSE file.
 <link rel="import" href="../model/ct-repositories.html">
 <link rel="import" href="../model/ct-failures.html">
 <link rel="import" href="../model/ct-tree-list.html">
+<link rel="import" href="ct-health.html">
 <link rel="import" href="ct-party-time.html">
 <link rel="import" href="ct-results-panel.html">
 <link rel="import" href="ct-tree-select.html">
@@ -147,39 +148,34 @@ found in the LICENSE file.
       <div layout vertical>
         <!-- main content area -->
         <div fit>
-          <app-router id="router" trailingSlash="ignore" fit mode="pushstate" activate-route-end="{{ routeEnd }}">
-
+          <app-router id="router" trailingSlash="ignore" fit mode="pushstate">
             <app-route path="/help_links" fit>
-              <h1>Helpful Links</h1>
-              <ul>
-                <li><a href="https://code.google.com/p/chromium/wiki/UsefulURLs">Useful URLs</a></li>
-                <li><a href="http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium">How to Sheriff</a></li>
-              </ul>
+              <template>
+                <h1>Helpful Links</h1>
+                <ul>
+                  <li><a href="https://code.google.com/p/chromium/wiki/UsefulURLs">Useful URLs</a></li>
+                  <li><a href="http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium">How to Sheriff</a></li>
+                </ul>
+              </template>
             </app-route>
 
             <app-route path="/help_calendar" fit>
-              <iframe fit src="https://chromium-build.appspot.com/static/rotations.html" width="100%" height="100%"></iframe>
+              <template>
+                <iframe fit src="https://chromium-build.appspot.com/static/rotations.html" width="100%" height="100%"></iframe>
+              </template>
             </app-route>
 
-            <app-route path="/health">
-              <div layout vertical>
-                <h2>System Health</h2>
-                <template repeat="{{ group in failures.failures['health']}}">
-                  <template if="{{ group.data.category == 'trooper' }}">
-                    <ct-trooper-card class='{{ { snoozed: group.isSnoozed } | tokenList }}' group="{{ group.data }}"></ct-trooper-card>
-                  </template>
-                </template>
-                <template if="{{ failures && !failures.failures['health'] }}">
-                  <ct-party-time></ct-party-time>
-                </template>
-              </div>
+            <app-route path="/health" fit on-before-data-binding="{{ bindHealth }}">
+              <template>
+                <ct-health failures="{{ failures }}"></ct-health>
+              </template>
             </app-route>
 
             <app-route path="/:tree" fit on-before-data-binding="{{ modifyTreeModel }}">
-               <template>
-               <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}"></ct-unexpected-failures>
-               </template>
-           </app-route>
+              <template>
+                <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}"></ct-unexpected-failures>
+              </template>
+            </app-route>
 
             <app-route path="/:tree/failure/:failureGroupKey" on-before-data-binding="{{ modifyFailureGroupModel }}">
               <template>
@@ -218,6 +214,10 @@ found in the LICENSE file.
         this.$.main_scaffold.closeDrawer();
         history.pushState(null, null, pageId);
         this.$.router.go();
+      },
+
+      bindHealth: function(e) {
+        e.detail.model.failures = this.failures;
       },
 
       modifyTreeModel: function(e) {
