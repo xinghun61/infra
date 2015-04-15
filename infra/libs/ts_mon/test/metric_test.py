@@ -202,6 +202,14 @@ class CounterMetricTest(unittest.TestCase):
     self.assertEquals(pb.counter, 1)
 
   @mock.patch('infra.libs.ts_mon.metric.send')
+  def test_starts_at_zero(self, fake_send):
+    m = metric.CounterMetric('test')
+    self.assertEquals(m._value, 0)
+    m.increment()
+    self.assertEquals(m._value, 1)
+    self.assertEquals(fake_send.call_count, 1)
+
+  @mock.patch('infra.libs.ts_mon.metric.send')
   def test_set(self, fake_send):
     m = metric.CounterMetric('test')
     m.set(10)
@@ -260,6 +268,14 @@ class CumulativeMetricTest(unittest.TestCase):
     m._value = 1.618
     m._populate_metric_pb(pb)
     self.assertAlmostEquals(pb.cumulative_double_value, 1.618)
+
+  @mock.patch('infra.libs.ts_mon.metric.send')
+  def test_starts_at_zero(self, fake_send):
+    m = metric.CumulativeMetric('test')
+    self.assertEquals(m._value, 0.0)
+    m.increment()
+    self.assertEquals(m._value, 1.0)
+    self.assertEquals(fake_send.call_count, 1)
 
   @mock.patch('infra.libs.ts_mon.metric.send')
   def test_set(self, fake_send):

@@ -184,6 +184,7 @@ class CounterMetric(NumericMetric):
 
   def __init__(self, name, target=None, fields=None, start_time=None):
     super(CounterMetric, self).__init__(name, target=target, fields=fields)
+    self._value = 0
     self._start_time = start_time or int(time.time() * 1000)
 
   def _populate_metric_pb(self, metric):
@@ -217,6 +218,7 @@ class CumulativeMetric(NumericMetric):
 
   def __init__(self, name, target=None, fields=None, start_time=None):
     super(CumulativeMetric, self).__init__(name, target=target, fields=fields)
+    self._value = 0.0
     self._start_time = start_time or int(time.time() * 1000)
 
   def _populate_metric_pb(self, metric):
