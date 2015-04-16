@@ -129,11 +129,13 @@
       "CheckBuildbotPendingBuilds",
       "--rietveld_url",
       "https://codereview.chromium.org",
-      "--rietveld_email",
-      "",
       "--rietveld_fetch",
       "--upstream",
-      "0a18b32e3a93913e1090d1ee6b8965c6dc3116d6"
+      "0a18b32e3a93913e1090d1ee6b8965c6dc3116d6",
+      "--rietveld_email_file",
+      "[BUILD]/site_config/.rietveld_client_email",
+      "--rietveld_private_key_file",
+      "[BUILD]/site_config/.rietveld_secret_key"
     ],
     "name": "presubmit"
   }

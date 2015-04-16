@@ -125,11 +125,11 @@
       "CheckBuildbotPendingBuilds",
       "--rietveld_url",
       "https://codereview.chromium.org",
-      "--rietveld_email",
-      "",
       "--rietveld_fetch",
       "--upstream",
-      "5e03a58dc0850e5137a8ebbce29610670c756aed"
+      "5e03a58dc0850e5137a8ebbce29610670c756aed",
+      "--rietveld_email",
+      ""
     ],
     "name": "presubmit"
   }
