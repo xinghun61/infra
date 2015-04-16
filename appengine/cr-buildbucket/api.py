@@ -43,6 +43,22 @@ class ErrorMessage(messages.Message):
   message = messages.StringField(2, required=True)
 
 
+def exception_to_error_message(ex):
+  assert isinstance(ex, errors.Error)
+  return ErrorMessage(
+      reason=ERROR_REASON_MAP[type(ex)],
+      message=ex.message,
+  )
+
+
+class PutRequestMessage(messages.Message):
+  client_operation_id = messages.StringField(1)
+  bucket = messages.StringField(2, required=True)
+  tags = messages.StringField(3, repeated=True)
+  parameters_json = messages.StringField(4)
+  lease_expiration_ts = messages.IntegerField(5)
+
+
 class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
   id = messages.IntegerField(1, required=True)
@@ -156,10 +172,7 @@ def buildbucket_api_method(
         return fn(*args, **kwargs)
       except errors.Error as ex:
         assert hasattr(response_message_class, 'error')
-        return response_message_class(error=ErrorMessage(
-            reason=ERROR_REASON_MAP[type(ex)],
-            message=ex.message,
-        ))
+        return response_message_class(error=exception_to_error_message(ex))
     return endpoints_decorator(decorated)
   return decorator
 
@@ -218,27 +231,63 @@ class BuildBucketApi(remote.Service):
 
   ###################################  PUT  ####################################
 
-  class PutRequestMessage(messages.Message):
-    bucket = messages.StringField(1, required=True)
-    tags = messages.StringField(2, repeated=True)
-    parameters_json = messages.StringField(3)
-    lease_expiration_ts = messages.IntegerField(4)
-
   @buildbucket_api_method(
       PutRequestMessage, BuildResponseMessage,
       path='builds', http_method='PUT')
   def put(self, request):
     """Creates a new build."""
-    if not request.bucket:
-      raise errors.InvalidInputError('Bucket not specified')
-
     build = self.service.add(
         bucket=request.bucket,
         tags=request.tags,
         parameters=parse_json(request.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(request.lease_expiration_ts),
+        client_operation_id=request.client_operation_id,
     )
     return build_to_response_message(build, include_lease_key=True)
+
+  ################################  PUT_BATCH  #################################
+
+  class PutBatchRequestMessage(messages.Message):
+    builds = messages.MessageField(PutRequestMessage, 1, repeated=True)
+
+  class PutBatchResponseMessage(messages.Message):
+    class OneResult(messages.Message):
+      client_operation_id = messages.StringField(1)
+      build = messages.MessageField(BuildMessage, 2)
+      error = messages.MessageField(ErrorMessage, 3)
+    results = messages.MessageField(OneResult, 1, repeated=True)
+
+  @buildbucket_api_method(
+      PutBatchRequestMessage, PutBatchResponseMessage,
+      path='builds/batch', http_method='PUT')
+  def put_batch(self, request):
+    """Creates builds."""
+    build_futures = [
+        self.service.add_async(
+            bucket=put_req.bucket,
+            tags=put_req.tags,
+            parameters=parse_json(put_req.parameters_json, 'parameters_json'),
+            lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
+            client_operation_id=put_req.client_operation_id,
+        )
+        for put_req in request.builds
+    ]
+
+    res = self.PutBatchResponseMessage()
+
+    def to_msg(req, build_future):
+      one_res = res.OneResult(client_operation_id=req.client_operation_id)
+      try:
+        build = build_future.get_result()
+        one_res.build = build_to_message(build, include_lease_key=True)
+      except errors.Error as ex:
+        one_res.error = exception_to_error_message(ex)
+      return one_res
+
+    res.results = [
+        to_msg(req, build)
+        for req, build in zip(request.builds, build_futures)]
+    return res
 
   ##################################  SEARCH   #################################
 

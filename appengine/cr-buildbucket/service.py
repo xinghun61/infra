@@ -90,8 +90,10 @@ def current_identity_cannot(action_format, *args):
 
 
 class BuildBucketService(object):
-  def add(
-      self, bucket, tags=None, parameters=None, lease_expiration_date=None):
+  @ndb.tasklet
+  def add_async(
+      self, bucket, tags=None, parameters=None, lease_expiration_date=None,
+      client_operation_id=None):
     """Adds the build entity to the build bucket.
 
     Requires the current user to have permissions to add builds to the
@@ -104,19 +106,38 @@ class BuildBucketService(object):
         build creation.
       lease_expiration_date (datetime.datetime): if not None, the build is
         created as leased and its lease_key is not None.
+      client_operation_id (str): client-supplied operation id. If an
+        a build with the same client operation id was added during last minute,
+        it will be returned instead.
 
     Returns:
       A new Build.
     """
+    if client_operation_id is not None:
+      if not isinstance(client_operation_id, basestring):  # pragma: no cover
+        raise errors.InvalidInputError('client_operation_id must be string')
+      if '/' in client_operation_id:  # pragma: no cover
+        raise errors.InvalidInputError('client_operation_id must not contain /')
     validate_bucket_name(bucket)
     assert parameters is None or isinstance(parameters, dict)
     validate_lease_expiration_date(lease_expiration_date)
     validate_tags(tags)
     tags = tags or []
 
+    ctx = ndb.get_context()
     identity = auth.get_current_identity()
     if not acl.can_add_build(bucket, identity):
       raise current_identity_cannot('add builds to bucket %s', bucket)
+
+    if client_operation_id is not None:
+      client_operation_cache_key = (
+          'client_op/%s/%s/add_build' % (
+              identity.to_bytes(), client_operation_id))
+      build_id = yield ctx.memcache_get(client_operation_cache_key)
+      if build_id:
+        build = yield model.Build.get_by_id_async(build_id)
+        if build:  # pragma: no branch
+          raise ndb.Return(build)
 
     build = model.Build(
         id=model.new_build_id(),
@@ -130,10 +151,17 @@ class BuildBucketService(object):
       build.lease_expiration_date = lease_expiration_date
       build.leasee = auth.get_current_identity()
       build.regenerate_lease_key()
-    build.put()
+    yield build.put_async()
     logging.info(
         'Build %s was created by %s', build.key.id(), identity.to_bytes())
-    return build
+
+    if client_operation_id is not None:
+      yield ctx.memcache_set(client_operation_cache_key, build.key.id(), 60)
+    raise ndb.Return(build)
+
+  def add(self, *args, **kwargs):
+    """Sync version of add_async."""
+    return self.add_async(*args, **kwargs).get_result()
 
   def get(self, build_id):
     """Gets a build by |build_id|.

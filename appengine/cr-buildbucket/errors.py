@@ -37,7 +37,8 @@ def validate_bucket_name(bucket):
   if not bucket:
     raise InvalidInputError('Bucket not specified')
   if not isinstance(bucket, basestring):
-    raise InvalidInputError('Bucket must be a string')
+    raise InvalidInputError(
+        'Bucket must be a string. It is %s.' % type(bucket).__name__)
   if not BUCKET_NAME_REGEX.match(bucket):
     raise InvalidInputError(
         'Bucket name "%s" does not match regular expression %s' %
