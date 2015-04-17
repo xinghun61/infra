@@ -84,8 +84,13 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 1048576  # 1 MB
 
 MEDIA_URL = '/static/'
 
-appid = app_identity.get_application_id()
-RIETVELD_INCOMING_MAIL_ADDRESS = ('reply@%s.appspotmail.com' % appid)
+# The split() call is here to remove the prefix for the internal instance.
+# It does nothing to the app_id of the public app.
+APP_ID = app_identity.get_application_id().split(':')[-1]
+
+# This email address is correct for the stripped app_id because we
+# also defined an alias for the internal app in the external namespace.
+RIETVELD_INCOMING_MAIL_ADDRESS = ('reply@%s.appspotmail.com' % APP_ID)
 RIETVELD_INCOMING_MAIL_MAX_SIZE = 500 * 1024  # 500K
 RIETVELD_INCOMING_MAIL_RECOGNIZE_LGTM = False
 RIETVELD_REVISION = '<unknown>'

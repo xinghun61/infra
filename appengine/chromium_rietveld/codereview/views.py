@@ -4175,7 +4175,8 @@ def _absolute_url_in_preferred_domain(handler, args=None):
   handler_url_path = reverse(handler, args=args)
   app_id = app_identity.get_application_id()
   canonical_host = '%s.appspot.com' % app_id
-  host = django_settings.PREFERRED_DOMAIN_NAMES.get(app_id, canonical_host)
+  host = django_settings.PREFERRED_DOMAIN_NAMES.get(
+    django_settings.APP_ID, canonical_host)
   return 'https://%s%s' % (host, handler_url_path)
 
 

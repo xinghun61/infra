@@ -20,7 +20,6 @@ import logging
 import os
 import urllib
 
-from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -145,8 +144,7 @@ def get_self_hostname():
 
   See tag conventions http://cr-buildbucket.appspot.com/#docs/conventions
   """
-  app_id = app_identity.get_application_id()
-  return settings.PREFERRED_DOMAIN_NAMES.get(app_id)
+  return settings.PREFERRED_DOMAIN_NAMES.get(settings.APP_ID)
 
 
 def get_builds_for_patchset(issue_id, patchset_id):
@@ -163,7 +161,7 @@ def get_builds_for_patchset(issue_id, patchset_id):
   if not hostname:
     logging.error(
         'Preferred domain name for this app is not set. '
-        'See PREFERRED_DOMAIN_NAMES in settings.py')
+        'See PREFERRED_DOMAIN_NAMES in settings.py: %r', hostname)
     return []
 
   buildset_tag = BUILDSET_TAG_FORMAT.format(
