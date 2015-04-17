@@ -20,6 +20,7 @@ import logging
 import os
 import urllib
 
+from google.appengine.api import app_identity
 from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -147,6 +148,19 @@ def get_self_hostname():
   return settings.PREFERRED_DOMAIN_NAMES.get(settings.APP_ID)
 
 
+def fetch(url):
+  try:
+    access_token = app_identity.get_access_token(
+        'https://www.googleapis.com/auth/userinfo.email')[0]
+    headers = {
+        'Authorization': 'Bearer %s' % access_token,
+    }
+    return urlfetch.fetch(
+        url, headers=headers, validate_certificate=True, follow_redirects=False)
+  except urlfetch.DownloadError as ex:
+    raise BuildBucketError('DownloadError: %s' % ex)
+
+
 def get_builds_for_patchset(issue_id, patchset_id):
   """Queries BuildBucket for builds associated with the patchset.
 
@@ -178,11 +192,7 @@ def get_builds_for_patchset(issue_id, patchset_id):
   logging.info(
       'Fetching builds for patchset %s/%s. URL: %s',
       issue_id, patchset_id, url)
-  try:
-    resp = urlfetch.fetch(
-        url, validate_certificate=True, follow_redirects=False)
-  except urlfetch.DownloadError as ex:
-    raise BuildBucketError('DownloadError: %s' % ex)
+  resp = fetch(url)
   if resp.status_code >= 300:
     raise BuildBucketError(
         'BuildBucket responded with %s status code' % resp.status_code)

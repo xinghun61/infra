@@ -109,6 +109,7 @@ except Exception:
 # instances and other instances of the app.
 PREFERRED_DOMAIN_NAMES = {
   'chromiumcodereview-hr': 'codereview.chromium.org',
+  'chromiumcodereview-hr-staging': 'codereview.chromium.org',
   }
 
 UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
