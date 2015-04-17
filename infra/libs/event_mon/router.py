@@ -4,10 +4,13 @@
 
 import Queue
 import logging
-import requests
 import threading
 import time
 
+import httplib2
+import oauth2client
+
+from infra.libs.authentication import get_authenticated_http
 from infra.libs.event_mon.log_request_lite_pb2 import LogRequestLite
 from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 
@@ -27,9 +30,22 @@ class _Router(object):
   ... fill in event ...
   router.push_event(event)
   """
-  def __init__(self, endpoint=None):
+  def __init__(self, cache, endpoint=None):
+    # cache is defined in config.py. Passed as a parameter to avoid
+    # a circular import.
+
     # endpoint == None means 'dry run'. No data is sent.
     self.endpoint = endpoint
+    self.http = httplib2.Http()
+    self.cache = cache
+
+    if self.endpoint and self.cache['service_account_creds']:
+      logging.debug('Activating OAuth2 authentication.')
+      self.http = get_authenticated_http(
+        self.cache['service_account_creds'],
+        service_accounts_creds_root=self.cache['service_accounts_creds_root'],
+        scope='https://www.googleapis.com/auth/cclog'
+      )
 
     self.event_queue = Queue.Queue()
     self._thread = threading.Thread(target=self._router)
@@ -47,12 +63,19 @@ class _Router(object):
       events.request_time_ms = time_ms()
       if self.endpoint:  # pragma: no cover
         logging.info('event_mon: POSTing events to %s', self.endpoint)
-        response = requests.post(self.endpoint, data=events.SerializeToString())
-        if response.status_code != 200:
+        response, _ = self.http.request(
+          uri=self.endpoint,
+          method='POST',
+          headers={'Content-Type': 'application/octet-stream'},
+          body=events.SerializeToString()
+        )
+
+        if response.status != 200:
           # TODO(pgervais): implement retry / local storage when this
           # happens.
-          logging.error('failed to post data to %s', self.endpoint)
+          logging.error('failed to POST data to %s', self.endpoint)
           logging.error('data: %s', str(events)[:1000])
+          logging.error(response)
       else:
         infra_events = [str(ChromeInfraEvent.FromString(
           ev.source_extension)) for ev in events.log_event]

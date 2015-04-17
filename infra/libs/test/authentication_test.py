@@ -13,6 +13,12 @@ import oauth2client.client
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
+
+class ConstantsTest(unittest.TestCase):
+  def test_constants_presence(self):
+    self.assertTrue(authentication.SERVICE_ACCOUNTS_CREDS_ROOT)
+
+
 class LoadJsonCredentialsTest(unittest.TestCase):
   # Everything's good, should not raise any exceptions.
   def test_valid_credentials(self):

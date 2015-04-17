@@ -5,10 +5,21 @@
 import logging
 import socket
 
+from infra.libs import authentication
 from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra.libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra.libs.event_mon.router import _Router
 
+DEFAULT_SERVICE_ACCOUNT_CREDS = 'event_mon.json'
+
+# endpoint to hit for the various run types.
+ENDPOINTS = {
+  'dry': None,
+  'test': 'https://jmt17.google.com/log',
+  'prod': 'https://play.googleapis.com/log',
+}
+
+# Instance of router._Router (singleton)
 _router = None
 
 # Cache some generally useful values
@@ -21,8 +32,8 @@ def add_argparse_options(parser):  # pragma: no cover
                                     'global options')
   group.add_argument('--event-mon-run-type', default='dry',
                       choices=('dry', 'test', 'prod'),
-                      help='Determine how to send data. "dry" does not send'
-                      ' anything. "test" sends to the test endpoint, and '
+                      help='Determine how to send data. "dry" does not send\n'
+                      'anything. "test" sends to the test endpoint, and \n'
                       '"prod" to the actual production endpoint.')
   group.add_argument('--event-mon-service-name',
                       help='Service name to use in log events.')
@@ -30,6 +41,19 @@ def add_argparse_options(parser):  # pragma: no cover
                       help='Hostname to use in log events.')
   group.add_argument('--event-mon-appengine-name',
                       help='App name to use in log events.')
+  group.add_argument('--event-mon-service-account-creds',
+                     default=DEFAULT_SERVICE_ACCOUNT_CREDS,
+                     metavar='JSON_FILE',
+                     help="Path to a json file containing a service account's"
+                     "\ncredentials. This is relative to the path specified\n"
+                     "in --event-mon-service-accounts-creds-root\n"
+                     "Defaults to '%(default)s'")
+  group.add_argument('--event-mon-service-accounts-creds-root',
+                     metavar='DIR',
+                     default=authentication.SERVICE_ACCOUNTS_CREDS_ROOT,
+                     help="Directory containing service accounts credentials.\n"
+                     "Defaults to %(default)s"
+                     )
 
 
 def process_argparse_options(args):  # pragma: no cover
@@ -38,16 +62,21 @@ def process_argparse_options(args):  # pragma: no cover
   Args:
     args(argparse.Namespace): output of ArgumentParser.parse_args.
   """
-  setup_monitoring(run_type=args.event_mon_run_type,
-                   hostname=args.event_mon_hostname,
-                   service_name=args.event_mon_service_name,
-                   appengine_name=args.event_mon_appengine_name)
+  setup_monitoring(
+    run_type=args.event_mon_run_type,
+    hostname=args.event_mon_hostname,
+    service_name=args.event_mon_service_name,
+    appengine_name=args.event_mon_appengine_name,
+    service_account_creds=args.event_mon_service_account_creds,
+    service_accounts_creds_root=args.event_mon_service_accounts_creds_root)
 
 
 def setup_monitoring(run_type='dry',
                      hostname=None,
                      service_name=None,
-                     appengine_name=None):
+                     appengine_name=None,
+                     service_account_creds=None,
+                     service_accounts_creds_root=None):
   """Initializes event monitoring.
 
   This function is mainly used to provide default global values which are
@@ -59,24 +88,27 @@ def setup_monitoring(run_type='dry',
   Args:
     run_type (str): One of 'dry', 'test', or 'prod'. Do respectively nothing,
       hit the testing endpoint and the production endpoint.
+
     hostname (str): hostname as it should appear in the event. If not provided
       a default value is computed.
+
     service_name (str): logical name of the service that emits events. e.g.
       "commit_queue".
+
     appengine_name (str): name of the appengine app, if running on appengine.
+
+    service_account_creds (str): path to a json file containing a service
+      account's credentials obtained from a Google Cloud project. **Path is
+      relative to service_account_creds_root**, which is not the current path by
+      default. See infra.libs.authentication for details.
+
+    service_account_creds_root (str): path containing credentials files.
+
   """
   global _router
   logging.debug('event_mon: setting up monitoring.')
-  if not _router:  # pragma: no cover
-    ENDPOINTS = {
-      'dry': None,
-      'test': 'https://jmt17.google.com/log',
-      'prod': 'https://play.googleapis.com/log',
-      }
-    # TODO(pgervais): log a warning if event_mon_run_type is invalid.
-    endpoint = ENDPOINTS.get(run_type)
-    _router = _Router(endpoint=endpoint)
 
+  if not _router:  # pragma: no cover
     default_event = ChromeInfraEvent()
 
     hostname = hostname or socket.getfqdn()
@@ -92,6 +124,13 @@ def setup_monitoring(run_type='dry',
       default_event.event_source.appengine_name = appengine_name
 
     cache['default_event'] = default_event
+    cache['service_account_creds'] = service_account_creds
+    cache['service_accounts_creds_root'] = service_accounts_creds_root
+
+    if run_type not in ENDPOINTS:
+      logging.error('Unknown run_type (%s). Setting to "dry"', run_type)
+    endpoint = ENDPOINTS.get(run_type)
+    _router = _Router(cache, endpoint=endpoint)
 
 
 def close(timeout=5):

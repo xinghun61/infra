@@ -12,6 +12,8 @@ import httplib2
 import oauth2client.client
 
 DEFAULT_SCOPES = ['email']
+
+# This is part of the API.
 # TODO: this is linux-specific, make it multi-platform.
 SERVICE_ACCOUNTS_CREDS_ROOT = '/creds/service_accounts'
 
