@@ -635,7 +635,7 @@ test('htmlForPopupForBuild', 2, function() {
                 '</a>' +
             '</li>' +
             '<li>Blink: <a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range=1234:1235&mode=html">r1234 to r1235</a></li>' +
-            '<li>Chromium: <a href="../../revision_range?start=1233&end=1235">r1234 to r1235</a></li>' +
+            '<li>Chromium: <a href="../../revision_range?start=1234&end=1235">r1234 to r1235</a></li>' +
             '<li>' +
                 '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/4/layout-test-results.zip">' +
                     'layout-test-results.zip' +
