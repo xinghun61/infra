@@ -9,10 +9,9 @@ package messages
 
 // BuildExtract is AKA "master_data" from builder_alerts.py.
 type BuildExtract struct {
-	AcceptingBuilds AcceptingBuilds     `json:"accepting_builds"`
-	Builders        map[string]Builders `json:"builders"`
-	Buildstate      Buildstate          `json:"buildstate"`
-	//	ChangeSources	map[float64]ChangeSources `json:"change_sources"`
+	AcceptingBuilds  AcceptingBuilds        `json:"accepting_builds"`
+	Builders         map[string]Builders    `json:"builders"`
+	Buildstate       Buildstate             `json:"buildstate"`
 	Changes          map[string]Changes     `json:"changes"`
 	Clock            Clock                  `json:"clock"`
 	Created          string                 `json:"created"`
@@ -20,6 +19,31 @@ type BuildExtract struct {
 	Metrics          map[string]interface{} `json:"metrics"`
 	Project          Project                `json:"project"`
 	Slaves           map[string]Slaves      `json:"slaves"`
+}
+
+// Builder represents a buildbot builder's state.
+type Builder struct {
+	Builds []Builds `json:"builds"`
+	Cursor string   `json:"cursor"`
+}
+
+// Builds represents a buildbot build.
+type Builds struct {
+	Blame            []string  `json:"blame"`
+	BuilderName      string    `json:"builderName"`
+	CreatedTimestamp EpochTime `json:"created_timestamp"`
+	CurrentStep      `json:"currentStep"`
+	Eta              EpochTime       `json:"eta"`
+	Logs             [][]string      `json:"logs"`
+	Number           int64           `json:"number"`
+	Properties       [][]interface{} `json:"properties"`
+	Reason           string          `json:"reason"`
+	Results          int64           `json:"results"`
+	Slave            string          `json:"slave"`
+	SourceStamp      SourceStamp     `json:"sourceStamp"`
+	Steps            []Steps         `json:"steps"`
+	Text             []string        `json:"text"`
+	Times            []EpochTime     `json:"times"`
 }
 
 // Slaves is an automatically generated type.
@@ -30,21 +54,21 @@ type Slaves struct {
 	Connected     bool                 `json:"connected"`
 	Host          string               `json:"host"`
 	Name          string               `json:"name"`
-	RunningBuilds []RunningBuilds      `json:"runningBuilds"`
+	RunningBuilds []Builds             `json:"runningBuilds"`
 	Version       string               `json:"version"`
 }
 
 // Builders is an automatically generated type.
 type Builders struct {
-	Basedir       string    `json:"basedir"`
-	BuildState    URLs      `json:"buildState"`
-	BuilderName   string    `json:"builderName"`
-	CachedBuilds  []float64 `json:"cachedBuilds"`
-	Category      string    `json:"category"`
-	CurrentBuilds []float64 `json:"currentBuilds"`
-	PendingBuilds float64   `json:"pendingBuilds"`
-	Slaves        []string  `json:"slaves"`
-	State         string    `json:"state"`
+	Basedir       string   `json:"basedir"`
+	BuildState    URLs     `json:"buildState"`
+	BuilderName   string   `json:"builderName"`
+	CachedBuilds  []int64  `json:"cachedBuilds"`
+	Category      string   `json:"category"`
+	CurrentBuilds []int64  `json:"currentBuilds"`
+	PendingBuilds float64  `json:"pendingBuilds"`
+	Slaves        []string `json:"slaves"`
+	State         string   `json:"state"`
 }
 
 // Project is an automatically generated type.
@@ -124,24 +148,6 @@ type Clock struct {
 type URLs struct {
 }
 
-// RunningBuilds is an automatically generated type.
-type RunningBuilds struct {
-	Blame       []string        `json:"blame"`
-	BuilderName string          `json:"builderName"`
-	CurrentStep CurrentStep     `json:"currentStep"`
-	Eta         EpochTime       `json:"eta"`
-	Logs        [][]interface{} `json:"logs"`
-	Number      float64         `json:"number"`
-	Properties  [][]interface{} `json:"properties"`
-	Reason      string          `json:"reason"`
-	Results     []interface{}   `json:"results"`
-	Slave       string          `json:"slave"`
-	SourceStamp SourceStamp     `json:"sourceStamp"`
-	Steps       []CurrentStep   `json:"steps"`
-	Text        []string        `json:"text"`
-	Times       []float64       `json:"times"`
-}
-
 // Steps is an automatically generated type.
 type Steps struct {
 	Eta          EpochTime       `json:"eta"`
@@ -151,12 +157,14 @@ type Steps struct {
 	IsStarted    bool            `json:"isStarted"`
 	Logs         [][]interface{} `json:"logs"`
 	Name         string          `json:"name"`
-	Results      []float64       `json:"results"`
-	Statistics   URLs            `json:"statistics"`
-	StepNumber   float64         `json:"step_number"`
-	Text         []string        `json:"text"`
-	Times        []float64       `json:"times"`
-	URLs         URLs            `json:"urls"`
+	// Results is a homogenous array. Use runtime introspection to
+	// determine element types.
+	Results    []interface{} `json:"results"`
+	Statistics URLs          `json:"statistics"`
+	StepNumber float64       `json:"step_number"`
+	Text       []string      `json:"text"`
+	Times      []float64     `json:"times"`
+	URLs       URLs          `json:"urls"`
 }
 
 // Files is an automatically generated type.

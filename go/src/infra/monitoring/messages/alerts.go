@@ -76,13 +76,14 @@ type Link struct {
 
 // BuildFailure is an Extension.
 type BuildFailure struct {
-	Builders         []Builder
+	TreeCloser       bool
+	Builders         []AlertedBuilder
 	Reasons          []Reason
 	RegressionRanges []RegressionRange `json:"regression_ranges"`
 }
 
-// Builder represents an individual builder.
-type Builder struct {
+// AlertedBuilder represents an individual builder.
+type AlertedBuilder struct {
 	Name          string
 	URL           string
 	FirstFailure  EpochTime `json:"first_failure"`
