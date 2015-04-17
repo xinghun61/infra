@@ -181,7 +181,8 @@ def get_builds_for_patchset(issue_id, patchset_id):
       'Fetching builds for patchset %s/%s. URL: %s',
       issue_id, patchset_id, url)
   try:
-    resp = urlfetch.fetch(url, validate_certificate=True)
+    resp = urlfetch.fetch(
+        url, validate_certificate=True, follow_redirects=False)
   except urlfetch.DownloadError as ex:
     raise BuildBucketError('DownloadError: %s' % ex)
   if resp.status_code >= 300:
