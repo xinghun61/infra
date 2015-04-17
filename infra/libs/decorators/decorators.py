@@ -54,3 +54,18 @@ class cached_property(object):
     assert inst is not None
     if hasattr(inst, self._iname):
       delattr(inst, self._iname)
+
+
+def instance_decorator(dec):
+  """Allows a decorator to access 'self'.
+
+  Note: there is a bug in pylint that triggers false positives on decorated
+  decorators with arguments. See http://goo.gl/Ln6uyn for details, but in the
+  mean time you may have to disable no-value-for-parameter for any code using
+  this.
+  """
+  def layer(self, *args, **kwargs):  # pragma: no cover
+    def inner_layer(f):
+      return dec(self, f, *args, **kwargs)
+    return inner_layer
+  return layer
