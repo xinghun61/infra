@@ -9,7 +9,7 @@ cron:
 - description: send metrics
   target: backend
   url: /internal/cron/buildbucket/send_metrics
-  schedule: every 2 minutes
+  schedule: every 5 minutes
 
 ### ereporter2
 
