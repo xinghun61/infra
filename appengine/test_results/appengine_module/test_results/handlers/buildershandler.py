@@ -63,7 +63,6 @@ TEST_STEPS_THAT_DO_NOT_UPLOAD_YET = [
     'test CronetSample',
     'test_mini_installer',
     'webkit_python_tests',
-    'webkit_unit_tests',
 ]
 
 BUILDS_URL_TEMPLATE = ('http://chrome-build-extract.appspot.com/get_builds?'
