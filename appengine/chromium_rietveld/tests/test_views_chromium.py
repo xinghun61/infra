@@ -68,20 +68,20 @@ class TestStatusListener(TestCase):
       }
     }
 
-  password = 'password'
-  password_hash = sha.new(password).hexdigest()
-  memcache.add('key_required', password_hash, 60)
+    password = 'password'
+    password_hash = sha.new(password).hexdigest()
+    memcache.add('key_required', password_hash, 60)
 
-  response = self.client.post('/status_listener', {
-    'password': password,
-    'packets': json.dumps([fake_packet]),
-    'base_url': 'foo.com',
-  })
-  self.assertEqual(response.status_code, 200)
-  self.assertEqual(response['Content-Type'], 'text/html; charset=utf-8')
+    response = self.client.post('/status_listener', {
+      'password': password,
+      'packets': json.dumps([fake_packet]),
+      'base_url': 'foo.com',
+    })
+    self.assertEqual(response.status_code, 200)
+    self.assertEqual(response['Content-Type'], 'text/html; charset=utf-8')
 
-  try_job_result = models.TryJobResult.query().get()
-  self.assertEquals(try_job_result.result, models.TryJobResult.FAILURE)
+    try_job_result = models.TryJobResult.query().get()
+    self.assertEquals(try_job_result.result, models.TryJobResult.FAILURE)
 
 
 if __name__ == '__main__':
