@@ -5,7 +5,7 @@
 define DETECT_SDK
 import os
 locations = [
-  "../google_appengine",
+  "../../google_appengine",
   "/usr/local/google_appengine",
   ".locally/google_appengine",
 ]

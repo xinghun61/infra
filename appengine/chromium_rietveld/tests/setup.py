@@ -20,7 +20,7 @@ import sys
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 POSSIBLE_SDK_PATHS = [
-  "../google_appengine",
+  "../../google_appengine",
   "/usr/local/google_appengine",
   ".locally/google_appengine",
   ]
