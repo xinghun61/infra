@@ -52,7 +52,9 @@ def GenSteps(api):
     # TODO(phajdan.jr): find better solution than hardcoding version number.
     # We do that currently (carryover from a solution this recipe is replacing)
     # to avoid running into errors with older releases.
-    for release in api.omahaproxy.history(min_major_version=38):
+    # Exclude ios - it often uses internal buildspecs so public ones don't work.
+    for release in api.omahaproxy.history(
+        min_major_version=42, exclude_platforms=['ios']):
       if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
         missing_releases.add(release['version'])
     for version in missing_releases:

@@ -33,22 +33,7 @@
       {
         "builder_name": "publish_tarball",
         "properties": {
-          "version": "41.0.2267.0"
-        }
-      }
-    ],
-    "~followup_annotations": [
-      "@@@STEP_TEXT@publish_tarball@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "trigger (2)",
-    "trigger_specs": [
-      {
-        "builder_name": "publish_tarball",
-        "properties": {
-          "version": "41.0.2270.0"
+          "version": "44.0.2376.0"
         }
       }
     ],
