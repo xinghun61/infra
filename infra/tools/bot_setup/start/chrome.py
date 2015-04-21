@@ -41,7 +41,7 @@ SVN_URLS = [
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if sys.platform == 'win32':
-  PYTHON = 'python.bat'  # This should pick up the python.bat in depot_tools.
+  PYTHON = 'python'  # This should pick up python in depot_tools.
   GCLIENT_BIN = 'gclient.bat'
 else:
   PYTHON = '/usr/bin/python'
