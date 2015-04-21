@@ -41,7 +41,7 @@ SVN_URLS = [
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if sys.platform == 'win32':
-  PYTHON = 'python'  # This should pick up python in depot_tools.
+  PYTHON = 'python'
   GCLIENT_BIN = 'gclient.bat'
 else:
   PYTHON = '/usr/bin/python'
@@ -127,6 +127,10 @@ def run_slave(root_dir):
     pass
   else:
     print 'Removed stale pid file %s' % twistd_pid_path
+
+  # HACK(hinoka): This is dumb. Buildbot on Windows requires pywin32.
+  if sys.platform == 'win32':
+    call(['pip', 'install', 'pypiwin32'], cwd=slave_dir, env=env)
 
   # Observant infra members will notice that we are not using "make start" to
   # start the run_slave.py process.  We use make start for a couple of reasons:
