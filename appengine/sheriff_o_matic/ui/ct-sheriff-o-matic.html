@@ -27,6 +27,7 @@ found in the LICENSE file.
 <link rel="import" href="../bower_components/core-menu/core-menu.html">
 <link rel="import" href="../bower_components/core-pages/core-pages.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../bower_components/core-icon-button/core-icon-button.html">
 <link rel="import" href="../bower_components/core-toolbar/core-toolbar.html">
 <link rel="import" href="../bower_components/core-menu/core-submenu.html">
@@ -142,6 +143,7 @@ found in the LICENSE file.
 
       <div tool horizontal layout>
         <div flex>Sheriff-O-Matic: {{ page_title }}</div>
+          <paper-spinner id="spinner" active="true"></paper-spinner>
         <ct-last-updated date="{{ failures.lastUpdateDate }}"></ct-last-updated>
       </div>
 
@@ -267,6 +269,7 @@ found in the LICENSE file.
       update: function() {
         if (this._promise)
           return;
+        this.$.spinner.active = true;
 
         this._promise = Promise.all(
           [this.repositories.update(),
@@ -281,7 +284,7 @@ found in the LICENSE file.
 
       _updateCompleted: function() {
         this._promise = null;
-
+        this.$.spinner.active = false;
         // FIXME: Shouldn't have to do this, but $ doesn't contain dynamically inserted
         // elements (app-router dynamically inserts resultsPanel if some other route was
         // in the initial page load).  This logic should probably be pushed down into
