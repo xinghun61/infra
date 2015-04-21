@@ -89,9 +89,13 @@ FILE_PATH_LINE_PATTERN = re.compile((
         FILE_EXTENSION=FILE_EXTENSION_PATTERN))
 
 
-# Pattern for Python stack trace.
-PYTHON_STACK_TRACE_PATTERN = re.compile(
+# Pattern for Python stack trace frame.
+PYTHON_STACK_TRACE_FRAME_PATTERN = re.compile(
     r'\s*File "(?P<file>.+\.py)", line (?P<line>[0-9]+), in (?P<function>.+)')
+
+
+# Pattern for C++ stack trace frame.
+CPP_STACK_TRACE_FRAME_PATTERN = re.compile('\s*#(\d+) 0x[0-9a-fA-F]+ .*')
 
 
 # Match the file path relative to the root src of a chromium repo checkout.
@@ -148,7 +152,7 @@ def ShouldIgnoreLine(line):
   are not related to the failure at all and could lead to false positive.
   """
   # TODO: log of ERROR level should be taken care of?
-  for log_level in ('INFO:', 'WARNING:', 'ERROR:'):
+  for log_level in ('INFO:', 'WARNING:', 'ERROR:', 'VERBOSE2:'):
     if log_level in line:
       return True
   return False

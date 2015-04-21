@@ -16,8 +16,27 @@ class GeneralExtractor(Extractor):
   def Extract(self, failure_log, *_):
     signal = FailureSignal()
 
+    in_expected_crash = False
     # Extract files and line numbers.
     for line in failure_log.splitlines():
+      match = extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(line)
+      if match:
+        cpp_stack_frame_index = int(match.group(1)) + 1
+        if not in_expected_crash and '::CrashIntentionally()' in line:
+          # TODO: Add a crash stack parser to handle crash separately.
+          # TODO: Re-factor and add a list of crash signature to be ignored.
+          in_expected_crash = True
+      else:
+        cpp_stack_frame_index = 0
+        in_expected_crash = False
+
+      if in_expected_crash or cpp_stack_frame_index > 4:
+        # Ignore expected crashes and frames deep in the unexpected crashes.
+        # For a crash, usually it is caused by some change to files in the top
+        # frames. CLs touching other frames deep in the stacks usually are not
+        # culprits. Here, we set the threshold as 4 frames.
+        continue
+
       if line and not extractor_util.ShouldIgnoreLine(line):
         self.ExtractFiles(line, signal)
 

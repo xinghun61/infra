@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -72,12 +72,20 @@ class ExtractorUtilTest(unittest.TestCase):
     }
     self._VerifyPattern(extractor_util.FILE_PATH_LINE_PATTERN, cases)
 
-  def testPythonStackTracePattern(self):
+  def testPythonStackTraceFramePattern(self):
     cases = {
         '  File "a/b/c.py", line 109, in abc':
             [('a/b/c.py', '109', 'abc')],
     }
-    self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_PATTERN, cases)
+    self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN, cases)
+
+  def testCPPStackTraceFramePattern(self):
+    self.assertRegexpMatches(
+        ' #1 0x110c7f21c in MaybeHandleDebugURL render_frame_impl.cc:341:5',
+        extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
+    self.assertNotRegexpMatches(
+        '../../chrome/test/ppapi/ppapi_test.cc:263: Failure',
+        extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
 
   def testChromiumSrcPattern(self):
     cases = {
