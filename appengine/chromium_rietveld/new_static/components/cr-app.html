@@ -170,6 +170,11 @@ found in the LICENSE file. -->
                 if (currentUrl != event.detail.url)
                     window.history.pushState(null, null, event.detail.url);
                 this.$.router.go();
+                ga('send', 'pageview', {
+                  "page": window.location.pathname +
+                      window.location.search,
+                  "title": document.title
+                });
             },
             handleLogin: function() {
                 location.href = User.getLoginUrl();
