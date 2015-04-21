@@ -14,7 +14,8 @@ DISABLED_BUILDERS = [
 CANARY_SLAVES = (
     ['swarm%d-c4' % i for i in xrange(1, 10)] +
     ['slave%d-c4' % i for i in xrange(250, 260)] +
-    ['winslave1-c4', 'swarm-win1-c4'])
+    ['winslave1-c4', 'swarm-win1-c4'] +
+    ['win12-c1', 'win13-c1'])
 
 
 class BuilderDisabled(Exception):
