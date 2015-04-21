@@ -175,6 +175,14 @@ class TestClock(object):
     self._time += 10
     return self._time
 
+local_repos_dir = None
+remote_repos_dir = None
+def lazy_repo_dirs():
+  global local_repos_dir, remote_repos_dir
+  if local_repos_dir is None:
+    local_repos_dir = tempfile.mkdtemp(suffix='.TestRepo.local_repos_dir')
+  if remote_repos_dir is None:
+    remote_repos_dir = tempfile.mkdtemp(suffix='.TestRepo.remote_repos_dir')
 
 class TestRepo(git2.Repo):
   """A testing version of git2.Repo, which adds a couple useful methods:
@@ -193,15 +201,16 @@ class TestRepo(git2.Repo):
       mirror_of  - a url to mirror, or None to create an empty bare Repo
     """
     super(TestRepo, self).__init__(mirror_of or 'local test repo')
+    lazy_repo_dirs()
     self._short_name = short_name
-    self.repos_dir = tempfile.tempdir
+    self.repos_dir = local_repos_dir
 
     if mirror_of is None:
       # Normally _repo_path is set by the reify() method, but since we're
       # making an empty bare Repo in this mode, we set it so that reify()
       # doesn't attempt to clone from the url (which is set to the bogus
       # 'local test repo' string).
-      self._repo_path = tempfile.mkdtemp(suffix='.git')
+      self._repo_path = tempfile.mkdtemp(dir=remote_repos_dir)
       self.run('init', '--bare')
 
     self._clock = clock

@@ -13,7 +13,6 @@
 - log output:
   - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing path ''mirrored_path/subpath'''
-  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/other'')'
@@ -21,7 +20,6 @@
   - 'INFO: processing Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''21890050477c9313c9a5447ba40a13dfc2c350d0'''
   - 'INFO: processing path ''mirrored_path'''
-  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing Commit(TestRepo(''local''), ''92c96f11ffe418019c661a1dc933bfca0f6920e3'')'
@@ -31,7 +29,6 @@
   - 'INFO: processing Commit(TestRepo(''local''), ''e213bc0ab9d92e8d6fcd9167d1db625516946de5'')'
   - 'INFO: found new tree ''b0ab517a48c5630896e7ed629baea93b19c5076d'''
   - 'INFO: processing path ''exception/path'''
-  - 'INFO: Running (''git'', ''fetch'')'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
   - 'INFO: starting with tree git2.INVALID'
   - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/other'')'

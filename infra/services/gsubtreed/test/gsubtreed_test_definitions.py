@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import posixpath
+import shutil
+
 from collections import OrderedDict
 
+from infra.libs.git2 import repo
 from infra.libs.git2.testing_support import GitEntry
 from infra.libs.infra_types import thaw
 
@@ -158,7 +162,8 @@ def fix_footers(origin, run, checkpoint, mirrors, **_):
 
 
 @test
-def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors, **_):
+def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors,
+                              config, local_origin_repo, **_):
   master = origin['refs/heads/master']
   master.make_commit('initial commit', {'mirrored_path': {'file': 'data'}})
 
@@ -170,7 +175,7 @@ def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors, **_):
   assert thaw(footers) == OrderedDict([
     ('Cr-Mirrored-From', ['[FILE-URL]']),
     ('Cr-Mirrored-Commit', ['7002d44b73ea8a85ee2b3e8f5f81c8c5d2ff557a']),
-  ])
+  ]), footers
 
   mhead = mirrors['mirrored_path']['refs/heads/master']
   mhead.update_to(mhead.commit.alter(
@@ -178,6 +183,13 @@ def halt_on_bad_mirror_commit(origin, run, checkpoint, mirrors, **_):
       'Cr-Mirrored-Commit': ['deadbeefdeadbeefdeadbeefdeadbeefdeadbeef']
     }
   ))
+
+  # force a resync of gsubtreed's local copy of the mirrored_path subtree repo.
+  base_url = config['base_url']
+  subtree_repo = repo.Repo(posixpath.join(base_url, 'mirrored_path'))
+  subtree_repo.repos_dir = local_origin_repo.repos_dir
+  subtree_repo.reify(share_from=local_origin_repo)
+  shutil.rmtree(subtree_repo.repo_path)
 
   checkpoint('altered mirrored commit')
   run()

@@ -183,7 +183,6 @@ def process_path(path, origin_repo, config):
   subtree_repo = repo.Repo(posixpath.join(base_url, subtree_repo_path))
   subtree_repo.repos_dir = origin_repo.repos_dir
   subtree_repo.reify(share_from=origin_repo)
-  subtree_repo.run('fetch', stdout=sys.stdout, stderr=sys.stderr)
   subtree_repo_push = {}
 
   synthed_count = 0

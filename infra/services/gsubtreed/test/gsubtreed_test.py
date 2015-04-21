@@ -38,7 +38,7 @@ def RunTest(test_name):
   origin = TestRepo('origin', clock)
   local = TestRepo('local', clock, origin.repo_path)
 
-  base_repo_path = tempfile.mkdtemp()
+  base_repo_path = tempfile.mkdtemp(".gsubtreed.remote_repos")
 
   enabled_paths = ['mirrored_path/subpath', 'mirrored_path', 'exception/path']
   path_map_exceptions = {'exception/path': 'cool_path'}
@@ -111,7 +111,7 @@ def RunTest(test_name):
 
   gsubtreed_test_definitions.GSUBTREED_TESTS[test_name](
     origin=origin, run=run, checkpoint=checkpoint, mirrors=mirrors,
-    config=cref)
+    config=cref, local_origin_repo=local)
 
   return expect_tests.Result(ret)
 
