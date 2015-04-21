@@ -131,7 +131,11 @@ def parse_commit_message(msg, project, repo):
   """Take a commit message and parse out any numberings."""
   numberings = []
   lines = msg.split('\n')
-  for line in lines:
+
+  # Scan the commit message twice, to catch both the commit-position and the
+  # git-svn-id if they both exist. However, we only care about the last instance
+  # of each, so we scan the lines backwards.
+  for line in reversed(lines):
     git_svn_match = GIT_SVN_ID_REGEX.match(line)
     if git_svn_match:
       full_url = git_svn_match.group(1)
@@ -152,22 +156,24 @@ def parse_commit_message(msg, project, repo):
               models.NumberingMap.svn_unique_id(url, revision))
           )
         )
+      break
 
-    else:
-      git_commit_position_match = GIT_COMMIT_POSITION_REGEX.match(line)
-      if git_commit_position_match:
-        git_ref = git_commit_position_match.group(1)
-        commit_position = int(git_commit_position_match.group(2))
-        numberings.append(
-          models.NumberingMap(
-            numbering_type=models.NumberingType.COMMIT_POSITION,
-            numbering_identifier=git_ref,
-            number=commit_position,
-            key=ndb.Key(models.NumberingMap,
-              models.NumberingMap.git_unique_id(
-                project, repo, git_ref, commit_position))
-          )
+  for line in reversed(lines):
+    git_commit_position_match = GIT_COMMIT_POSITION_REGEX.match(line)
+    if git_commit_position_match:
+      git_ref = git_commit_position_match.group(1)
+      commit_position = int(git_commit_position_match.group(2))
+      numberings.append(
+        models.NumberingMap(
+          numbering_type=models.NumberingType.COMMIT_POSITION,
+          numbering_identifier=git_ref,
+          number=commit_position,
+          key=ndb.Key(models.NumberingMap,
+            models.NumberingMap.git_unique_id(
+              project, repo, git_ref, commit_position))
         )
+      )
+      break
 
   return numberings
 

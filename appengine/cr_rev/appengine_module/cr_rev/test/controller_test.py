@@ -360,6 +360,36 @@ class TestController(testing.AppengineTestCase):
         ref='refs/heads/master').get()
     self.assertIsNotNone(commit)
 
+  def test_conversion_to_commit_multiple(self):
+    my_repo = model_helpers.create_repo()
+    my_repo.put()
+    my_commit = model_helpers.create_commit()
+    my_commit.put()
+    commit_json = {
+        'commit': 'deadbeef' * 5,
+        'message': 'This is a revert\n'
+                   'Original message\n'
+                   'Cr-Commit-Position: refs/heads/master@{#298664}\n'
+                   'More stuff\n'
+                   'Cr-Commit-Position: refs/heads/master@{#298668}',
+    }
+
+    controller.write_commits_to_db( [commit_json], 'cool', 'cool_src')
+    commit = models.NumberingMap.get_key_by_id(
+        298668,
+        models.NumberingType.COMMIT_POSITION,
+        repo='cool_src',
+        project='cool',
+        ref='refs/heads/master').get()
+    self.assertIsNotNone(commit)
+    commit = models.NumberingMap.get_key_by_id(
+        298664,
+        models.NumberingType.COMMIT_POSITION,
+        repo='cool_src',
+        project='cool',
+        ref='refs/heads/master').get()
+    self.assertIsNone(commit)
+
   def test_conversion_to_svn_commit(self):
     my_repo = model_helpers.create_repo()
     my_repo.put()
