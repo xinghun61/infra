@@ -37,12 +37,13 @@ SVN_URLS = [
     'svn://svn.chromium.org/chrome-try'
 ]
 
-if sys.platform.startswith('win'):
-  PYTHON = sys.executable
+# TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
+# Because of various issues (eg. pywin32 not installed in the infra virtualenv)
+# We can't use the virtualenv for running buildbot :(.
+if sys.platform == 'win32':
+  PYTHON = 'python.bat'  # This should pick up the python.bat in depot_tools.
   GCLIENT_BIN = 'gclient.bat'
 else:
-  # BUG(hinoka): This is a temp fix for crbug.com/426081
-  # TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
   PYTHON = '/usr/bin/python'
   GCLIENT_BIN = 'gclient'
 
