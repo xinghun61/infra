@@ -15,6 +15,7 @@ ENABLED_SLAVES = [
   'slave2-c7',
   'slave250-c4',
   'slave260-c4',
+  'swarm-canary-group-xyzw',
   'swarm-win1-c4',
   'swarm1-c4',
   'swarm11-c4',

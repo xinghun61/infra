@@ -4,6 +4,7 @@
   "Slave slave2-c7 is on version d4578c002501d502e7cc688e22154676e39a57b9",
   "Slave slave250-c4 is on version origin/master",
   "Slave slave260-c4 is on version d4578c002501d502e7cc688e22154676e39a57b9",
+  "Slave swarm-canary-group-xyzw is on version origin/master",
   "Slave swarm-win1-c4 is on version origin/master",
   "Slave swarm1-c4 is on version origin/master",
   "Slave swarm11-c4 is on version d4578c002501d502e7cc688e22154676e39a57b9",
