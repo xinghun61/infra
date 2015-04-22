@@ -508,7 +508,7 @@ def _calculate_delta(patch, patchset_id, patchsets):
       # we need to go to the datastore.  Use the index to see if there's a
       # patch against our current file in other.
       query = Patch.query(
-          Patch.filename == patch.filename, Patch.patchset_key == other.key)
+          Patch.filename == patch.filename, ancestor=other.key)
       other_patches = query.fetch(100)
       if other_patches and len(other_patches) > 1:
         logging.info("Got %s patches with the same filename for a patchset",
@@ -919,7 +919,7 @@ class Patch(ndb.Model):
     """
     if self._num_comments is None:
       self._num_comments = Comment.query(
-          Comment.patch_key == self.key, Comment.draft == False).count()
+          Comment.draft == False, ancestor=self.key).count()
     return self._num_comments
 
   _num_my_comments = None
@@ -935,8 +935,8 @@ class Patch(ndb.Model):
         self._num_my_comments = 0
       else:
         query = Comment.query(
-            Comment.patch_key == self.key, Comment.draft == False,
-            Comment.author == account.user)
+            Comment.draft == False, Comment.author == account.user,
+            ancestor=self.key)
         self._num_my_comments = query.count()
     return self._num_my_comments
 
@@ -954,8 +954,8 @@ class Patch(ndb.Model):
         self._num_drafts = 0
       else:
         query = Comment.query(
-            Comment.patch_key == self.key, Comment.draft == True,
-            Comment.author == account.user)
+            Comment.draft == True, Comment.author == account.user,
+            ancestor=self.key)
         self._num_drafts = query.count()
     return self._num_drafts
 
@@ -1284,6 +1284,7 @@ class Account(ndb.Model):
     """Returns a unique nickname for a user."""
     name = nickname = user.email().split('@', 1)[0]
     next_char = chr(ord(nickname[0].lower())+1)
+    # This uses eventual consistency and cannot be made strongly consistent.
     existing_nicks = [
       account.lower_nickname for account in cls.query(
           cls.lower_nickname >= nickname.lower(),
@@ -1354,6 +1355,7 @@ class Account(ndb.Model):
     """Get the list of Accounts that have this nickname."""
     assert nickname
     assert '@' not in nickname
+    # This uses eventual consistency and cannot be made strongly consistent.
     return cls.query(cls.lower_nickname == nickname.lower()).get()
 
   @classmethod
@@ -1440,6 +1442,7 @@ class Account(ndb.Model):
       return False
     # We're looking for the Issue key id.  The ancestry of comments goes:
     # Issue -> PatchSet -> Patch -> Comment.
+    # This uses eventual consistency and cannot be made strongly consistent.
     draft_query = Comment.query(
         Comment.author == self.user, Comment.draft == True)
     issue_ids = set(comment.key.parent().parent().parent().id()

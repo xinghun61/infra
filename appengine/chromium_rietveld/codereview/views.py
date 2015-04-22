@@ -406,6 +406,7 @@ class SettingsForm(forms.Form):
       raise forms.ValidationError('Choose a different nickname.')
 
     # Look for existing nicknames
+    # This uses eventual consistency and cannot be made strongly consistent.
     query = models.Account.query(
         models.Account.lower_nickname == nickname.lower())
     if any(
@@ -815,6 +816,7 @@ def view_all(request, index_call=False):
   if closed is not None:
     nav_parameters['closed'] = int(closed)
 
+  # This uses eventual consistency and cannot be made strongly consistent.
   query = models.Issue.query(
       models.Issue.private == False).order(-models.Issue.modified)
   if closed is not None:
@@ -933,6 +935,7 @@ def _get_dashboard_issue_lists(request, load_users_and_drafts=True):
   """Return a dict {string: [issue]} of the issues to show on a dashboard."""
   user = request.user_to_show
   if user == request.user:
+  # This uses eventual consistency and cannot be made strongly consistent.
     draft_query = models.Comment.query(
         models.Comment.draft == True, models.Comment.author == request.user)
     draft_issue_keys = {
@@ -944,6 +947,7 @@ def _get_dashboard_issue_lists(request, load_users_and_drafts=True):
 
   earliest_closed = datetime.datetime.utcnow() - datetime.timedelta(days=7)
 
+  # These use eventual consistency and cannot be made strongly consistent.
   my_issues_query = models.Issue.query(
       models.Issue.closed == False, models.Issue.owner == user).order(
         -models.Issue.modified).fetch_async(100)
@@ -1061,6 +1065,7 @@ def block_user(request):
       if account.blocked:
         # Remove user from existing issues so that he doesn't participate in
         # email communication anymore.
+        # These use eventual consistency and cannot be made strongly consistent.
         tbd = {}
         email = account.user.email()
         query = models.Issue.query(models.Issue.reviewers == email)
@@ -1706,6 +1711,7 @@ def replace_bug(message):
 
 def _map_base_url(base):
   """Check if Base URL can be converted into a source code viewer URL."""
+  # This uses eventual consistency and cannot be made strongly consistent.
   for rule in models_chromium.UrlMap.query().order(
       models_chromium.UrlMap.base_url_template):
     base_template = r'^%s$' % rule.base_url_template
@@ -1899,6 +1905,7 @@ def account(request):
     prefix = prefix.lstrip(models.REQUIRED_REVIEWER_PREFIX)
     limit = _clean_int(request.GET.get('limit'), 10, 10, 100)
 
+    # This uses eventual consistency and cannot be made strongly consistent.
     accounts_query = models.Account.query(
         prop >= prefix, prop < prefix + u"\ufffd").order(prop)
     for account in accounts_query:
@@ -2159,7 +2166,7 @@ def tarball(request):
   containing a/ and b/ trees of the complete files for the entire patchset."""
 
   patches = (models.Patch
-             .query(models.Patch.patchset_key == request.patchset.key)
+             .query(ancestor=request.patchset.key)
              .order(models.Patch.filename)
              .fetch(1000))
 
@@ -2385,7 +2392,7 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
   if (try_jobs):
     values['try_job_results'] = [
         t.to_dict() for t in patchset.try_job_results]
-  for patch in models.Patch.query(models.Patch.patchset_key == patchset.key):
+  for patch in models.Patch.query(ancestor=patchset.key):
     # num_comments and num_drafts are left out for performance reason:
     # they cause a datastore query on first access. They could be added
     # optionally if the need ever arises.
@@ -2403,7 +2410,7 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
       visible_comments = []
       requester_email = request.user.email() if request.user else 'no email'
       query = (models.Comment
-               .query(models.Comment.patch_key == patch.key)
+               .query(ancestor=patch.key)
                .order(models.Comment.date))
       for c in query:
         if not c.draft or requester_email == c.author.email():
@@ -2711,8 +2718,8 @@ def _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
       patch_filename = patch_right.filename
   # Now find the corresponding patch in ps_left
   patch_left = models.Patch.query(
-      models.Patch.patchset_key == ps_left.key,
-      models.Patch.filename == patch_filename).get()
+      models.Patch.filename == patch_filename,
+      ancestor=ps_left.key).get()
 
   if patch_left:
     try:
@@ -2763,8 +2770,8 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
 
   if ps_right:
     patch_right = models.Patch.query(
-        models.Patch.patchset_key == ps_right.key,
-        models.Patch.filename == patch_filename).get()
+        models.Patch.filename == patch_filename,
+        ancestor=ps_right.key).get()
 
   if patch_right:
     patch_id = patch_right.key.id()
@@ -3079,9 +3086,10 @@ def _inline_draft(request):
   issue.calculate_draft_count_by_user()
   issue_fut = issue.put_async()
 
-  query = models.Comment.query(
-      models.Comment.patch_key == patch.key, models.Comment.lineno == lineno,
-      models.Comment.left == left).order(models.Comment.date)
+  query = (models.Comment
+           .query(models.Comment.lineno == lineno, models.Comment.left == left,
+                  ancestor=patch.key)
+           .order(models.Comment.date))
   comments = list(c for c in query if not c.draft or c.author == request.user)
   if comment is not None and comment.author is None:
     # Show anonymous draft even though we don't save it
@@ -3170,9 +3178,9 @@ def publish(request):
   draft_message = None
   if not request.POST.get('message_only', None):
     query = models.Message.query(
-        models.Message.issue_key == issue.key,
         models.Message.sender == request.user.email(),
-        models.Message.draft == True)
+        models.Message.draft == True,
+        ancestor=issue.key)
     draft_message = query.get()
   if request.method != 'POST':
     reviewers = issue.reviewers[:]
@@ -3674,9 +3682,9 @@ def draft_message(request):
   others to view *is* XSRF-protected.
   """
   query = models.Message.query(
-      models.Message.issue_key == request.issue.key,
       models.Message.sender == request.user.email(),
-      models.Message.draft == True)
+      models.Message.draft == True,
+      ancestor=request.issue.key)
   if query.count() == 0:
     draft_message = None
   else:
@@ -3768,6 +3776,7 @@ def search(request):
       else:
         limit = 100
 
+  # This uses eventual consistency and cannot be made strongly consistent.
   q = models.Issue.query(default_options=ndb.QueryOptions(keys_only=keys_only))
   encoded_cursor = form.cleaned_data['cursor'] or None
   if encoded_cursor:
@@ -4048,6 +4057,7 @@ def _user_popup(request):
   user = request.user_to_show
   popup_html = memcache.get('user_popup:' + user.email())
   if popup_html is None:
+    # These use eventual consistency and cannot be made strongly consistent.
     num_issues_created = models.Issue.query(
         models.Issue.closed == False, models.Issue.owner == user).count()
     num_issues_reviewed = models.Issue.query(
@@ -4158,6 +4168,7 @@ def _process_incoming_mail(raw_message, recipients):
                           issue.cc +
                           issue.collaborator_emails())]
   if sender.lower() not in all_emails:
+    # This uses eventual consistency and cannot be made strongly consistent.
     query = models.Account.query(models.Account.lower_email == sender.lower())
     account = query.get()
     if account is not None:
@@ -4556,6 +4567,7 @@ def figure_out_real_accounts(people_involved, people_caches):
   # People we are still unsure about that need to be looked up.
   people_to_look_for = list(people_involved - people_caches['real'])
 
+  # This uses eventual consistency and cannot be made strongly consistent.
   futures = [
     models.Issue.query(models.Issue.owner == users.User(r)).fetch(
       limit=1, keys_only=True)

@@ -716,6 +716,7 @@ def get_pending_try_patchsets(request):
     description['baseurl'] = issue.base
     return description
 
+  # This uses eventual consistency and cannot be made strongly consistent.
   q = models.TryJobResult.query(
       models.TryJobResult.result == models.TryJobResult.TRYPENDING)
   if master:

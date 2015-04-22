@@ -130,6 +130,18 @@ indexes:
   - name: author
   - name: draft
 
+- kind: Comment
+  ancestor: yes
+  properties:
+  - name: date
+
+- kind: Comment
+  ancestor: yes
+  properties:
+  - name: left
+  - name: lineno
+  - name: date
+
 - kind: Issue
   properties:
   - name: base
@@ -405,6 +417,11 @@ indexes:
 - kind: Patch
   properties:
   - name: patchset
+  - name: filename
+
+- kind: Patch
+  ancestor: yes
+  properties:
   - name: filename
 
 - kind: PatchSet
