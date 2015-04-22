@@ -24,7 +24,7 @@ from django.conf import settings
 from codereview import common
 
 
-COMMITTER_LIST_FORMAT = 'https://chromium-committers.appspot.com/%s'
+COMMITTER_LIST_FORMAT = 'https://chromium-committers.appspot.com/lists/%s'
 COMMITTER_LIST_MEMCACHE_KEY = 'COMMITTER_LIST_MEMCACHE_KEY'
 COMMITTER_LIST_EXPIRY_SECONDS = 1800
 
