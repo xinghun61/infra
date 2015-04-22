@@ -58,5 +58,6 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
-subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
+if '--help' not in sys.argv and '-h' not in sys.argv:
+  subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
 sys.exit(subprocess.call([python_bin, expect_tests_path] + args))
