@@ -41,7 +41,7 @@ SVN_URLS = [
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if sys.platform == 'win32':
-  PYTHON = 'python'
+  PYTHON = r'c:\Python27\python-2.7.5\python'
   GCLIENT_BIN = 'gclient.bat'
 else:
   PYTHON = '/usr/bin/python'
