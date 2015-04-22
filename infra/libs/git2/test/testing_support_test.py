@@ -4,9 +4,10 @@
 
 from collections import OrderedDict as OD
 
+from infra.libs.git2 import testing_support
 from infra.libs.git2.test import test_util
-from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import GitFile
+from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import TestRepo
 
 
@@ -181,3 +182,25 @@ class TestTestRepo(test_util.TestBasis):
       },
       'carry_over': ('this is the same before and after', 0644),
     })
+
+  def testLazyDirs(self):
+    try:
+      old_local_repos_dir = testing_support.local_repos_dir
+      old_remote_repos_dir = testing_support.remote_repos_dir
+
+      testing_support.local_repos_dir = None
+      testing_support.remote_repos_dir = None
+
+      testing_support.lazy_repo_dirs()
+      self.assertTrue(testing_support.local_repos_dir)
+      self.assertTrue(testing_support.remote_repos_dir)
+
+      new_local_repos_dir = testing_support.local_repos_dir
+      new_remote_repos_dir = testing_support.remote_repos_dir
+
+      testing_support.lazy_repo_dirs()
+      self.assertEquals(testing_support.local_repos_dir, new_local_repos_dir)
+      self.assertEquals(testing_support.remote_repos_dir, new_remote_repos_dir)
+    finally:
+      testing_support.local_repos_dir = old_local_repos_dir
+      testing_support.remote_repos_dir = old_remote_repos_dir
