@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Gnumd (Git NUMber Daemon): Adds metadata to git commits as they land in
+"""Gnumbd (Git NUMBer Daemon): Adds metadata to git commits as they land in
 a primary repo.
 
 This is a simple daemon which takes commits pushed to a pending ref, alters
