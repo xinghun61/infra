@@ -22,8 +22,8 @@
   },
   'cffi': {
     'version': '0.9.0',
-    'build': '0',
-    'gs': '02e44ecada40cb859e18e0b628cc52deba064a39.tar.gz',
+    'build': '1',
+    'gs': 'cabed2c0ab329dc19ff4f089b26bf9f4faae55e4.tar.gz',
     'implicit': True,  # Required by cryptography
   },
   'coverage': {
