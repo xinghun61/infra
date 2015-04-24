@@ -61,3 +61,6 @@ class WfAnalysis(BaseBuildModel):
 
   # Analysis result for the build failure.
   result = ndb.JsonProperty(indexed=False, compressed=True)
+
+  # Suspected CLs we found.
+  suspected_cls = ndb.JsonProperty(indexed=False, compressed=True)

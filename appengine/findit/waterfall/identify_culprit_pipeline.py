@@ -8,6 +8,22 @@ from waterfall import build_failure_analysis
 from waterfall.base_pipeline import BasePipeline
 
 
+def _GetSuspectedCLs(analysis_result):
+  """Returns the suspected CLs we found in analysis."""
+  suspected_cls = []
+  for failure in analysis_result['failures']:
+    for suspected_cl in failure['suspected_cls']:
+      cl_info = {
+          'repo_name': suspected_cl['repo_name'],
+          'revision': suspected_cl['revision'],
+          'commit_position': suspected_cl['commit_position'],
+          'url': suspected_cl['url']
+      }
+      if cl_info not in suspected_cls:
+        suspected_cls.append(cl_info)
+  return suspected_cls
+
+
 class IdentifyCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a build failure."""
 
@@ -32,6 +48,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.result = analysis_result
     analysis.status = wf_analysis_status.ANALYZED
+    analysis.suspected_cls = _GetSuspectedCLs(analysis_result)
     analysis.put()
 
     return analysis_result
