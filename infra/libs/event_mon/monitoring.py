@@ -212,10 +212,13 @@ def _get_build_event(event_type,
     return None
 
   event.build_event.type = getattr(BuildEvent, event_type)
-  event.build_event.host_name = hostname
+  if not hostname:
+    logging.error('hostname must be provided, got %s' % hostname)
+  else:
+    event.build_event.host_name = hostname
 
   if not build_name:
-    logging.error('build_name must be provided, got nothing')
+    logging.error('build_name must be provided, got %s' % build_name)
   else:  # avoid sending empty strings
     event.build_event.build_name = build_name
 

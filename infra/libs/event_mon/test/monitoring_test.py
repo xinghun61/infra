@@ -264,6 +264,20 @@ class GetBuildEventTest(unittest.TestCase):
 
     self.assertFalse(event.build_event.HasField('build_name'))
 
+  def test_get_build_event_invalid_hostname(self):
+    # an invalid hostname is not a critical error.
+    builder_name = 'builder_name'
+    log_event = monitoring._get_build_event('BUILD', None, builder_name)
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.build_name, builder_name)
+
+    self.assertFalse(event.build_event.HasField('host_name'))
+
   def test_get_build_event_with_build_zero(self):
     # testing 0 is important because bool(0) == False
     hostname = 'bot.host.name'

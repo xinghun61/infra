@@ -35,6 +35,17 @@ def get_arguments(argv):
                                      --build-event-hostname='bot.dns.name'
     """, formatter_class=argparse.RawTextHelpFormatter)
 
+  # Common fields
+  common_group = parser.add_argument_group('Common event options')
+  common_group.add_argument('--event-mon-timestamp-kind',
+                            choices=[kind
+                                     for kind in event_mon.TIMESTAMP_KINDS
+                                     if kind],
+                            default='POINT',
+                            help='General kind of event. This value is used '
+                            'e.g. to automatically compute durations between '
+                            'START and STOP events. Default: %(default)s')
+
   # Service event
   service_group = parser.add_argument_group('Service event options')
   type_group = service_group.add_mutually_exclusive_group()
@@ -122,17 +133,21 @@ def send_service_event(args):
   if args.service_event_stack_trace:
     args.service_event_type = 'CRASH'
 
-  event_mon.send_service_event(args.service_event_type,
-                               code_version=revinfo.values(),
-                               stack_trace=args.service_event_stack_trace)
+  event_mon.send_service_event(
+    args.service_event_type,
+    code_version=revinfo.values(),
+    stack_trace=args.service_event_stack_trace,
+    timestamp_kind=args.event_mon_timestamp_kind)
 
 
 def send_build_event(args):
-  event_mon.send_build_event(args.build_event_type,
-                             args.build_event_hostname,
-                             args.build_event_build_name,
-                             args.build_event_build_number,
-                             args.build_event_build_scheduling_time,
-                             args.build_event_step_name,
-                             args.build_event_step_number,
-                             args.build_event_result)
+  event_mon.send_build_event(
+    args.build_event_type,
+    args.build_event_hostname,
+    args.build_event_build_name,
+    build_number=args.build_event_build_number,
+    build_scheduling_time=args.build_event_build_scheduling_time,
+    step_name=args.build_event_step_name,
+    step_number=args.build_event_step_number,
+    result=args.build_event_result,
+    timestamp_kind=args.event_mon_timestamp_kind)
