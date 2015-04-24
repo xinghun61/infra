@@ -4,6 +4,7 @@
 
 DEPS = [
   'bot_update',
+  'chromium',
   'gclient',
   'gsutil',
   'omahaproxy',
@@ -16,24 +17,12 @@ DEPS = [
 ]
 
 
-def export_tarball_has_progress(api):
-  step_result = api.python(
-      'export_tarball.py --help',
-      api.path['checkout'].join(
-          'tools', 'export_tarball', 'export_tarball.py'),
-      ['--help'],
-      stdout=api.raw_io.output()
-  )
-  return '--progress' in step_result.stdout
-
-
 def export_tarball(api, args, source, destination):
   try:
     temp_dir = api.path.mkdtemp('export_tarball')
     api.python(
         'export_tarball',
-        api.path['checkout'].join(
-            'tools', 'export_tarball', 'export_tarball.py'),
+        api.chromium.resource('export_tarball.py'),
         args,
         cwd=temp_dir)
     api.gsutil.upload(
@@ -68,16 +57,14 @@ def GenSteps(api):
   solution.revision = 'refs/tags/%s' % version
   api.bot_update.ensure_checkout(force=True, with_branch_heads=True)
 
-  extra_args = []
-  if export_tarball_has_progress(api):
-    extra_args.append('--progress')
   export_tarball(
       api,
       # Verbose output helps avoid a buildbot timeout when no output
       # is produced for a long time.
       ['--remove-nonessential-files',
        'chromium-%s' % version,
-       '--verbose'] + extra_args,
+       '--verbose',
+       '--progress'],
       'chromium-%s.tar.xz' % version,
       'chromium-%s.tar.xz' % version)
 
@@ -85,9 +72,7 @@ def GenTests(api):
   yield (
     api.test('basic') +
     api.properties.generic(version='38.0.2125.122') +
-    api.platform('linux', 64) +
-    api.step_data('export_tarball.py --help',
-                  stdout=api.raw_io.output('--progress'))
+    api.platform('linux', 64)
   )
 
   yield (

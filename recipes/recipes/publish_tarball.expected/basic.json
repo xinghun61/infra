@@ -66,17 +66,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/src/tools/export_tarball/export_tarball.py",
-      "--help"
-    ],
-    "name": "export_tarball.py --help",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[SLAVE_BUILD]/src/tools/export_tarball/export_tarball.py",
+      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
       "--verbose",
