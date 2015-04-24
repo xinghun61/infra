@@ -455,6 +455,26 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
     self.service.cancel.assert_called_once_with(req['id'])
     self.assertEqual(int(res['build']['id']), req['id'])
 
+  ################################# CANCEL_BATCH ###############################
+
+  def test_cancel_batch(self):
+    self.service.cancel.side_effect = [
+        self.test_build, errors.BuildIsCompletedError]
+
+    req = {
+        'build_ids': [self.test_build.key.id(), 2],
+    }
+    res = self.call_api('cancel_batch', req).json_body
+
+    res0 = res['results'][0]
+    self.assertEqual(int(res0['build_id']), self.test_build.key.id())
+    self.assertEqual(int(res0['build']['id']), self.test_build.key.id())
+    self.service.cancel.assert_any_call(self.test_build.key.id())
+
+    res1 = res['results'][1]
+    self.assertEqual(int(res1['build_id']), 2)
+    self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
+    self.service.cancel.assert_any_call(2)
 
   #################################### ACL ##################################
 

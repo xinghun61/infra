@@ -514,12 +514,40 @@ class BuildBucketApi(remote.Service):
   ##################################  CANCEL  ##################################
 
   @buildbucket_api_method(
-      id_resource_container(message_types.VoidMessage), BuildResponseMessage,
+      id_resource_container(), BuildResponseMessage,
       path='builds/{id}/cancel', http_method='POST')
   def cancel(self, request):
     """Cancels a build."""
     build = self.service.cancel(request.id)
     return build_to_response_message(build)
+
+  ###############################  CANCEL_BATCH  ###############################
+
+  class CancelBatchRequestMessage(messages.Message):
+    build_ids = messages.IntegerField(1, repeated=True)
+
+  class CancelBatchResponseMessage(messages.Message):
+    class OneResult(messages.Message):
+      build_id = messages.IntegerField(1, required=True)
+      build = messages.MessageField(BuildMessage, 2)
+      error = messages.MessageField(ErrorMessage, 3)
+    results = messages.MessageField(OneResult, 1, repeated=True)
+
+  @buildbucket_api_method(
+      CancelBatchRequestMessage, CancelBatchResponseMessage,
+      path='builds/cancel', http_method='POST')
+  def cancel_batch(self, request):
+    """Cancels builds."""
+    res = self.CancelBatchResponseMessage()
+    for build_id in request.build_ids:
+      one_res = res.OneResult(build_id=build_id)
+      try:
+        build = self.service.cancel(build_id)
+        one_res.build = build_to_message(build)
+      except errors.Error as ex:
+        one_res.error = exception_to_error_message(ex)
+      res.results.append(one_res)
+    return res
 
   #################################  GET ACL  ##################################
 
