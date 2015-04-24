@@ -6,7 +6,7 @@ import argparse
 import sys
 
 import infra.libs.event_mon as event_mon
-import infra.libs.logs as infra_logs
+import infra.libs.logs
 
 
 def get_arguments(argv):
@@ -15,7 +15,7 @@ def get_arguments(argv):
   Args:
     argv (list of strings): sys.argv[1:]
   Returns:
-    args (argparse.Namespaces): processed command-line arguments
+    args (argparse.Namespace): processed command-line arguments
   """
   # This function must be testable. Put non-testable side-effects
   # in main().
@@ -94,7 +94,7 @@ def get_arguments(argv):
                            'been provided or not.')
 
   event_mon.add_argparse_options(parser)
-  infra_logs.add_argparse_options(parser)
+  infra.libs.logs.add_argparse_options(parser)
 
   args = parser.parse_args(argv)
 

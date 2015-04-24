@@ -4,14 +4,15 @@
 
 import sys
 
-from infra.tools.send_monitoring_event import send_event
 import infra.libs.event_mon as event_mon
-import infra.libs.logs as infra_logs
+import infra.libs.logs
+
+from infra.tools.send_monitoring_event import send_event
 
 
 def main(argv):  # pragma: no cover
   # Does nothing when no arguments are passed, to make it safe to import this
-  # module.
+  # module (main() is executed on import, because this file is called __main__).
   status = 0
 
   if len(argv) == 0:
@@ -20,7 +21,7 @@ def main(argv):  # pragma: no cover
   args = send_event.get_arguments(argv)
 
   event_mon.process_argparse_options(args)
-  infra_logs.process_argparse_options(args)
+  infra.libs.logs.process_argparse_options(args)
 
   if args.build_event_type:
     send_event.send_build_event(args)
