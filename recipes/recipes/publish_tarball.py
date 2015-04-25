@@ -5,6 +5,7 @@
 DEPS = [
   'bot_update',
   'chromium',
+  'file',
   'gclient',
   'gsutil',
   'omahaproxy',
@@ -30,7 +31,7 @@ def export_tarball(api, args, source, destination):
         'chromium-browser-official',
         destination)
   finally:
-    api.path.rmtree('temp dir', temp_dir)
+    api.file.rmtree('temp dir', temp_dir)
 
 
 def GenSteps(api):
