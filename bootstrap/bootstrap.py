@@ -178,6 +178,8 @@ def activate_env(env, deps):
         env, search_dirs=virtualenv.file_search_dirs())
 
   print '  Activating environment'
+  # Ensure hermeticity during activation.
+  del os.environ['PYTHONPATH']
   bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
   activate_this = os.path.join(env, bin_dir, 'activate_this.py')
   execfile(activate_this, dict(__file__=activate_this))
