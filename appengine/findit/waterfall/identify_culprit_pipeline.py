@@ -6,6 +6,24 @@ from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall import build_failure_analysis
 from waterfall.base_pipeline import BasePipeline
+from model import wf_analysis_result_status
+
+
+def _GetResultAnalysisStatus(analysis_result):
+  """Returns the status of the analysis result.
+
+  We can dicide the status based on:
+    1. whether we found any suspected CL(s).
+    2. whether we have triaged the failure.
+    3. whether our analysis result is the same as triaged result.
+  """
+  # Now we can only set the status based on if we found any suspected CL(s).
+  # TODO: Add logic to decide the status after comparing with culprit CL(s).
+  for failure in analysis_result['failures']:
+    if failure['suspected_cls']: 
+      return wf_analysis_result_status.FOUND_UNTRIAGED
+
+  return wf_analysis_result_status.NOT_FOUND_UNTRIAGED
 
 
 def _GetSuspectedCLs(analysis_result):
@@ -48,6 +66,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.result = analysis_result
     analysis.status = wf_analysis_status.ANALYZED
+    analysis.result_status = _GetResultAnalysisStatus(analysis_result)
     analysis.suspected_cls = _GetSuspectedCLs(analysis_result)
     analysis.put()
 

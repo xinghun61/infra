@@ -7,6 +7,7 @@ from testing_utils import testing
 
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from model import wf_analysis_result_status
 from waterfall import build_failure_analysis
 from waterfall import identify_culprit_pipeline
 
@@ -128,6 +129,74 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertEqual(expected_suspected_cls, 
                      identify_culprit_pipeline._GetSuspectedCLs(dummy_result))
 
+  def testGetResultAnalysisStatusFoundUntriaged(self):
+    dummy_result = {
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [
+                    {
+                        'build_number': 99,
+                        'repo_name': 'chromium',
+                        'revision': 'r99_2',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 1,
+                        'hints': {
+                            'modified f99_2.cc (and it was in log)': 1,
+                        },
+                    }
+                ],
+            },
+            {
+                'step_name': 'b',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [
+                    {
+                        'build_number': 99,
+                        'repo_name': 'chromium',
+                        'revision': 'r99_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 5,
+                        'hints': {
+                            'added x/y/f99_1.cc (and it was in log)': 5,
+                        },
+                    }
+                ],
+            }
+        ]
+    }
+
+    self.assertEqual(wf_analysis_result_status.FOUND_UNTRIAGED,
+                     identify_culprit_pipeline._GetResultAnalysisStatus(
+                         dummy_result))
+
+  def testGetResultAnalysisStatusNotFoundUntriaged(self):
+    dummy_result = {
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'b',
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [],
+            }
+        ]
+    }
+
+    self.assertEqual(wf_analysis_result_status.NOT_FOUND_UNTRIAGED,
+                     identify_culprit_pipeline._GetResultAnalysisStatus(
+                         dummy_result))
+
   def testIdentifyCulpritPipeline(self):
     master_name = 'm'
     builder_name = 'b'
@@ -147,6 +216,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     signals = {}
 
     dummy_result = {'failures': []}
+
     def MockAnalyzeBuildFailure(*_):
       return dummy_result
 
@@ -164,4 +234,6 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertIsNotNone(analysis)
     self.assertEqual(dummy_result, analysis.result)
     self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
+    self.assertEqual(wf_analysis_result_status.NOT_FOUND_UNTRIAGED,
+                     analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)
