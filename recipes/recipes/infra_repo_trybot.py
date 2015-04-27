@@ -17,13 +17,11 @@ DEPS = [
 
 def GenSteps(api):
   project = api.properties['patch_project'] or api.properties['project']
-  internal = (project == 'infra_internal')
+  internal = 'internal' in project
 
   api.gclient.set_config(project)
-  res = api.bot_update.ensure_checkout(force=True, patch_root=project,
-                                       patch_oauth2=internal)
-  upstream = res.json.output['properties'].get('got_revision')
-  api.presubmit.commit_patch_locally()
+  api.bot_update.ensure_checkout(force=True, patch_root=project,
+                                 patch_oauth2=internal)
   api.gclient.runhooks()
 
   # Grab a list of changed files.
@@ -43,8 +41,6 @@ def GenSteps(api):
       api.python(
           'go test.py', api.path['checkout'].join('go', 'env.py'),
           ['python', api.path['checkout'].join('go', 'test.py')])
-
-  api.presubmit(upstream=upstream, use_rietveld_credentials=internal)
 
 
 def GenTests(api):
