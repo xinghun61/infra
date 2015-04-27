@@ -37,3 +37,4 @@ skip_files:
 - ^test.*
 - ^tools.*
 - ^[A-Z]+(\.[a-z]+)?
+- .+\.md

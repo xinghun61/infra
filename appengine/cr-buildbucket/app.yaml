@@ -56,3 +56,4 @@ skip_files:
 - ^tools.*
 - ^[A-Z]+(\.[a-z]+)?
 - ^static/html/doc/examples/.*.sh
+- .+\.md
