@@ -1,0 +1,31 @@
+application: chrome-infra-mon-proxy
+# version: 2 # Must specify version explicitly.
+runtime: python27
+vm: true
+module: vm2
+api_version: 1
+threadsafe: true
+
+automatic_scaling:
+  min_num_instances: 2
+  max_num_instances: 20
+  cool_down_period_sec: 60
+  cpu_utilization:
+    target_utilization: 0.8
+
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10
+
+network:
+  instance_tag: managed-gae-vm2
+
+handlers:
+- url: /.*
+  script: vm_module.app
+
+health_check:
+  enable_health_check: True
+  check_interval_sec: 10
+  restart_threshold: 40

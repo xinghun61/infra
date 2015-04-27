@@ -1,0 +1,38 @@
+application: chrome-infra-mon-proxy
+# version: 2
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /admin/.*
+  secure: always
+  login: admin
+  script: admin_handler.admin
+- url: /css
+  static_dir: css
+  secure: always
+- url: /.*
+  secure: always
+  script: main.app
+
+automatic_scaling:
+  min_idle_instances: 2
+  min_pending_latency: 100ms
+  max_pending_latency: 500ms
+  max_concurrent_requests: 40
+
+libraries:
+- name: endpoints
+  version: 1.0
+- name: jinja2
+  version: latest
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+
+includes:
+- components/auth
