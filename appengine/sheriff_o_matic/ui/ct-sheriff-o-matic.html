@@ -119,26 +119,35 @@ found in the LICENSE file.
 
       app-route {
         display: none;
-      } 
+      }
+
+      #main_menu paper-item {
+        padding-left: 24px;
+      }
+
+      #main_menu core-item {
+        font-weight: bold;
+      }
     </style>
     <core-scaffold id="main_scaffold" responsiveWidth="1200px">
       <core-header-panel mode="seamed" id="core_header_panel" navigation flex>
         <core-toolbar id="main_toolbar"></core-toolbar>
-        <core-menu valueattr="id" id="main_menu" theme="core-light-theme" on-core-select="{{ menuSelected }}">
-          <core-submenu valueattr="id" icon="folder" label="Trees">
+        <div valueattr="id" id="main_menu">
+          <core-menu id="menu" valueattr="id" on-core-select="{{ menuSelected }}">
+            <core-item icon="folder" label="Trees" notap="true"></core-item>
             <template repeat="{{ t in treeList.trees }}">
               <paper-item id="{{ t.name }}" label="{{ t.displayName }}" horizontal center layout>
                 {{ t.displayName }}
               </paper-item>
             </template>
-          </core-submenu>
 
-          <core-submenu valueattr="id" icon="help" label="Help">
+            <core-item icon="help" label="Help" notap="true"></core-item>
+
             <paper-item id="help_links" label="Useful Links" horizontal center layout>Useful Links</paper-item>
             <paper-item id="help_calendar" label="Rotation Calendar" horizontal center layout>Rotation Calendar</paper-item>
             <paper-item id="health" label="System Health" horizontal center layout>System Health</paper-item>
-          </core-submenu>
-      </core-menu>
+          </core-menu>
+        </div>
       </core-header-panel>
 
       <div tool horizontal layout>
@@ -157,6 +166,7 @@ found in the LICENSE file.
                 <ul>
                   <li><a href="https://code.google.com/p/chromium/wiki/UsefulURLs">Useful URLs</a></li>
                   <li><a href="http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium">How to Sheriff</a></li>
+                  <li><a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper">How to contact a Trooper</a></li>
                 </ul>
               </template>
             </app-route>
@@ -203,21 +213,20 @@ found in the LICENSE file.
       _pendingFailureGroupKey: '',
 
       menuSelected: function(e, detail, sender) {
-        if (!detail.isSelected) {
+        if (!e.detail.isSelected) {
           return;
         }
-        var pageId = detail.item.id;
+        var pageId = e.detail.item.id;
         if (!pageId) {
           return;
         }
 
         this.tree = pageId;
-        this.page_title = detail.item.innerText;
+        this.page_title = e.detail.item.innerText;
         this.$.main_scaffold.closeDrawer();
         history.pushState(null, null, pageId);
         this.$.router.go();
       },
-
       bindHealth: function(e) {
         e.detail.model.failures = this.failures;
       },
@@ -242,13 +251,10 @@ found in the LICENSE file.
         // try to highlight the current tree in the submenu, so
         // we don't highlight anything on the nav menu in that case.
         if (pathParts.length == 2 && this.$) {
-          this.$.main_menu.items.forEach(function(submenu) {
-            submenu.items.forEach(function(item) {
-              if (item.id == this.tree) {
-                submenu.selected = this.tree;
-                submenu.active = true;
-              }
-            }, this);
+          this.$.menu.items.forEach(function(item) {
+            if (item.id == this.tree) {
+              this.$.menu.selected = this.tree;
+            }
           }, this);
         }
       },
