@@ -20,7 +20,7 @@ import model
 
 
 MAX_RETURN_BUILDS = 100
-MAX_LEASE_DURATION = datetime.timedelta(minutes=10)
+MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 
 
