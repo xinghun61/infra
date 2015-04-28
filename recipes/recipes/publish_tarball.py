@@ -65,7 +65,8 @@ def GenSteps(api):
       ['--remove-nonessential-files',
        'chromium-%s' % version,
        '--verbose',
-       '--progress'],
+       '--progress',
+       '--src-dir', api.path['checkout']],
       'chromium-%s.tar.xz' % version,
       'chromium-%s.tar.xz' % version)
 

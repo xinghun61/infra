@@ -70,7 +70,9 @@
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
       "--verbose",
-      "--progress"
+      "--progress",
+      "--src-dir",
+      "[SLAVE_BUILD]/src"
     ],
     "cwd": "[TMP_BASE]/export_tarball_tmp_1",
     "name": "export_tarball"
