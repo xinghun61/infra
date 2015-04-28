@@ -22,6 +22,7 @@ The last line should print something like::
 
 import datetime
 import logging
+import re
 
 import pytz
 
@@ -36,15 +37,25 @@ class InfraFilter(logging.Filter):  # pragma: no cover
 
   Args:
     timezone (str): timezone in which timestamps should be printed.
+    logger_name_blacklist (str): do not print log lines from loggers whose name
+      matches this regular expression.
   """
-  def __init__(self, timezone):
+  def __init__(self, timezone, logger_name_blacklist=None):
     super(InfraFilter, self).__init__()
+    self.logger_name_blacklist = None
+
+    if logger_name_blacklist:
+      self.logger_name_blacklist = re.compile(logger_name_blacklist)
+
     self.tz = pytz.timezone(timezone)
 
   def filter(self, record):
     dt = datetime.datetime.fromtimestamp(record.created, tz=pytz.utc)
     record.iso8601 = self.tz.normalize(dt).isoformat()
     record.severity = record.levelname[0]
+    if self.logger_name_blacklist:
+      if self.logger_name_blacklist.search(record.name):
+        return False
     return True
 
 
@@ -60,16 +71,20 @@ class InfraFormatter(logging.Formatter):  # pragma: no cover
 
 
 def add_handler(logger, handler=None, timezone='UTC',
-                level=logging.WARN):  # pragma: no cover
+                level=logging.WARN,
+                logger_name_blacklist=None):  # pragma: no cover
   """Configures and adds a handler to a logger the standard way for infra.
 
   Args:
     logger (logging.Logger): logger object obtained from `logging.getLogger`.
+
+  Keyword Args:
     handler (logging.Handler): handler to add to the logger. defaults to
        logging.StreamHandler.
     timezone (str): timezone to use for timestamps.
-
     level (int): logging level. Could be one of DEBUG, INFO, WARN, CRITICAL
+    logger_name_blacklist (str): do not print log lines from loggers whose name
+      matches this regular expression.
 
   Example usage::
 
@@ -85,7 +100,8 @@ def add_handler(logger, handler=None, timezone='UTC',
 
   """
   handler = handler or logging.StreamHandler()
-  handler.addFilter(InfraFilter(timezone))
+  handler.addFilter(InfraFilter(timezone,
+                                logger_name_blacklist=logger_name_blacklist))
   handler.setFormatter(InfraFormatter())
   handler.setLevel(level=level)
   logger.addHandler(handler)
@@ -103,15 +119,22 @@ def add_argparse_options(parser,
   parser = parser.add_argument_group('Logging Options')
   g = parser.add_mutually_exclusive_group()
   g.set_defaults(log_level=default_level)
-  g.add_argument('--quiet', action='store_const', const=logging.ERROR,
-                 dest='log_level', help='Make the output quieter.')
-  g.add_argument('--warning', action='store_const', const=logging.WARN,
+  g.add_argument('--logs-quiet', '--quiet',
+                 action='store_const', const=logging.ERROR,
+                 dest='log_level', help='Make the output quieter (ERROR).')
+  g.add_argument('--logs-warning', '--warning',
+                 action='store_const', const=logging.WARN,
                  dest='log_level',
-                 help='Set the output to an average verbosity.')
-  g.add_argument('--verbose', action='store_const', const=logging.INFO,
-                 dest='log_level', help='Make the output louder.')
-  g.add_argument('--debug', action='store_const', const=logging.DEBUG,
-                 dest='log_level', help='Make the output really loud.')
+                 help='Set the output to an average verbosity (WARNING).')
+  g.add_argument('--logs-verbose', '--verbose',
+                 action='store_const', const=logging.INFO,
+                 dest='log_level', help='Make the output louder (INFO).')
+  g.add_argument('--logs-debug', '--debug',
+                 action='store_const', const=logging.DEBUG,
+                 dest='log_level', help='Make the output really loud (DEBUG).')
+  parser.add_argument('--logs-black-list', metavar='REGEX',
+                      help='hide log lines emitted by loggers whose name '
+                           'matches this regular expression.')
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -137,4 +160,5 @@ def process_argparse_options(options, logger=None):  # pragma: no cover
   """
   if logger is None:
     logger = logging.root
-  add_handler(logger, level=options.log_level)
+  add_handler(logger, level=options.log_level,
+              logger_name_blacklist=options.logs_black_list)
