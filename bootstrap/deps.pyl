@@ -150,7 +150,6 @@
     'build': '0',
     'repo': 'external/code.launchpad.net/dateutil',
     'rev': '30af0028a6633dc415a6c41bf2f2a67bda9bb68a',
-    # TODO(agable): Figure out if this is actually necessary. I think it's not.
   },
   'psutil': {
     'version': '2.1.3',

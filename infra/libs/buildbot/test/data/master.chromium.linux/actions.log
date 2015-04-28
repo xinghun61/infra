@@ -1,0 +1,85 @@
+**  Wed Apr 22 17:15:18 PDT 2015	make start
+build: https://chromium.googlesource.com/chromium/tools/build.git@fd06255cf9d6de4c5b56cce77750e3677ef3a7cf
+build/scripts/gsd_generate_index: https://chromium.googlesource.com/chromium/tools/gsd_generate_index.git@d2f5d5a5d212d8fb337d751c0351644a6ac83ac8
+build/scripts/private/data/reliability: https://chromium.googlesource.com/chromium/src/chrome/test/data/reliability.git@ba644102a2f81bb33582e9474a10812fef825389
+build/scripts/tools/deps2git: https://chromium.googlesource.com/chromium/tools/deps2git.git@27ce444f50f3c6732982d225d3f4cf67f0979a98
+build/third_party/gsutil: https://chromium.googlesource.com/external/gsutil/src.git@5cba434b828da428a906c8197a23c9ae120d2636
+build/third_party/gsutil/boto: https://chromium.googlesource.com/external/boto.git@98fc59a5896f4ea990a4d527548204fed8f06c64
+build/third_party/lighttpd: https://chromium.googlesource.com/chromium/deps/lighttpd.git@9dfa55d15937a688a92cbf2b7a8621b0927d06eb
+depot_tools: https://chromium.googlesource.com/chromium/tools/depot_tools.git@98201125ea9a2e14dfd6f105cb5cce4ef55c9003
+expect_tests: https://chromium.googlesource.com/infra/testing/expect_tests.git@8dc60fa9bf7d80ff8f9e54445b3c891c36c00e0e
+infra: https://chromium.googlesource.com/infra/infra.git@e0e3771affbb17a78b3e614fa616ae6bf62768f6
+infra/appengine/third_party/bootstrap: https://chromium.googlesource.com/infra/third_party/bootstrap.git@b4895a0d6dc493f17fe9092db4debe44182d42ac
+infra/appengine/third_party/cloudstorage: https://chromium.googlesource.com/infra/third_party/cloudstorage.git@ad74316d12e198e0c7352bd666bbc2ec7938bd65
+infra/appengine/third_party/endpoints-proto-datastore: https://chromium.googlesource.com/infra/third_party/endpoints-proto-datastore.git@971bca8e31a4ab0ec78b823add5a47394d78965a
+infra/appengine/third_party/google-api-python-client: https://chromium.googlesource.com/external/github.com/google/google-api-python-client.git@49d45a6c3318b75e551c3022020f46c78655f365
+infra/appengine/third_party/highlight: https://chromium.googlesource.com/infra/third_party/highlight.js.git@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba
+infra/appengine/third_party/npm_modules: https://chromium.googlesource.com/infra/third_party/npm_modules.git@f6115d7f7fd45fa25a34518c3487f2654590ed83
+infra/appengine/third_party/pipeline: https://chromium.googlesource.com/infra/third_party/appengine-pipeline.git@e79945156a7a3a48eecb29b792a9b7925631aadf
+infra/appengine/third_party/src/github.com/golang/oauth2: https://chromium.googlesource.com/external/github.com/golang/oauth2.git@cb029f4c1f58850787981eefaf9d9bf547c1a722
+infra/appengine/third_party/trace-viewer: https://chromium.googlesource.com/external/trace-viewer.git@6c50e784746e6c785b4f5476cf843edecb4fab00
+infra/bootstrap/virtualenv: https://chromium.googlesource.com/infra/third_party/virtualenv.git@4243b272823228dde5d18a7400c404ce52fb4cea
+infra/luci: https://chromium.googlesource.com/external/github.com/luci/luci-py@4981574633e4966c54ae1363c77ffb67ec9ae132
+testing_support: https://chromium.googlesource.com/infra/testing/testing_support.git@a6e1c88d2f488f6b3207bf0976d96a76a0b3f44e
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events.
+**  Wed Apr 22 17:22:24 PDT 2015	make stop
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events
+**  Wed Apr 22 17:22:24 PDT 2015	make start
+build: https://chromium.googlesource.com/chromium/tools/build.git@fd06255cf9d6de4c5b56cce77750e3677ef3a7cf
+build/scripts/gsd_generate_index: https://chromium.googlesource.com/chromium/tools/gsd_generate_index.git@d2f5d5a5d212d8fb337d751c0351644a6ac83ac8
+build/scripts/private/data/reliability: https://chromium.googlesource.com/chromium/src/chrome/test/data/reliability.git@ba644102a2f81bb33582e9474a10812fef825389
+build/scripts/tools/deps2git: https://chromium.googlesource.com/chromium/tools/deps2git.git@27ce444f50f3c6732982d225d3f4cf67f0979a98
+build/third_party/gsutil: https://chromium.googlesource.com/external/gsutil/src.git@5cba434b828da428a906c8197a23c9ae120d2636
+build/third_party/gsutil/boto: https://chromium.googlesource.com/external/boto.git@98fc59a5896f4ea990a4d527548204fed8f06c64
+build/third_party/lighttpd: https://chromium.googlesource.com/chromium/deps/lighttpd.git@9dfa55d15937a688a92cbf2b7a8621b0927d06eb
+depot_tools: https://chromium.googlesource.com/chromium/tools/depot_tools.git@98201125ea9a2e14dfd6f105cb5cce4ef55c9003
+expect_tests: https://chromium.googlesource.com/infra/testing/expect_tests.git@8dc60fa9bf7d80ff8f9e54445b3c891c36c00e0e
+infra: https://chromium.googlesource.com/infra/infra.git@e0e3771affbb17a78b3e614fa616ae6bf62768f6
+infra/appengine/third_party/bootstrap: https://chromium.googlesource.com/infra/third_party/bootstrap.git@b4895a0d6dc493f17fe9092db4debe44182d42ac
+infra/appengine/third_party/cloudstorage: https://chromium.googlesource.com/infra/third_party/cloudstorage.git@ad74316d12e198e0c7352bd666bbc2ec7938bd65
+infra/appengine/third_party/endpoints-proto-datastore: https://chromium.googlesource.com/infra/third_party/endpoints-proto-datastore.git@971bca8e31a4ab0ec78b823add5a47394d78965a
+infra/appengine/third_party/google-api-python-client: https://chromium.googlesource.com/external/github.com/google/google-api-python-client.git@49d45a6c3318b75e551c3022020f46c78655f365
+infra/appengine/third_party/highlight: https://chromium.googlesource.com/infra/third_party/highlight.js.git@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba
+infra/appengine/third_party/npm_modules: https://chromium.googlesource.com/infra/third_party/npm_modules.git@f6115d7f7fd45fa25a34518c3487f2654590ed83
+infra/appengine/third_party/pipeline: https://chromium.googlesource.com/infra/third_party/appengine-pipeline.git@e79945156a7a3a48eecb29b792a9b7925631aadf
+infra/appengine/third_party/src/github.com/golang/oauth2: https://chromium.googlesource.com/external/github.com/golang/oauth2.git@cb029f4c1f58850787981eefaf9d9bf547c1a722
+infra/appengine/third_party/trace-viewer: https://chromium.googlesource.com/external/trace-viewer.git@6c50e784746e6c785b4f5476cf843edecb4fab00
+infra/bootstrap/virtualenv: https://chromium.googlesource.com/infra/third_party/virtualenv.git@4243b272823228dde5d18a7400c404ce52fb4cea
+infra/luci: https://chromium.googlesource.com/external/github.com/luci/luci-py@4981574633e4966c54ae1363c77ffb67ec9ae132
+testing_support: https://chromium.googlesource.com/infra/testing/testing_support.git@a6e1c88d2f488f6b3207bf0976d96a76a0b3f44e
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events.
+**  Thu Apr 23 11:01:40 PDT 2015	make restart
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events
+build: https://chromium.googlesource.com/chromium/tools/build.git@fd06255cf9d6de4c5b56cce77750e3677ef3a7cf
+build/scripts/gsd_generate_index: https://chromium.googlesource.com/chromium/tools/gsd_generate_index.git@d2f5d5a5d212d8fb337d751c0351644a6ac83ac8
+build/scripts/private/data/reliability: https://chromium.googlesource.com/chromium/src/chrome/test/data/reliability.git@ba644102a2f81bb33582e9474a10812fef825389
+build/scripts/tools/deps2git: https://chromium.googlesource.com/chromium/tools/deps2git.git@27ce444f50f3c6732982d225d3f4cf67f0979a98
+build/third_party/gsutil: https://chromium.googlesource.com/external/gsutil/src.git@5cba434b828da428a906c8197a23c9ae120d2636
+build/third_party/gsutil/boto: https://chromium.googlesource.com/external/boto.git@98fc59a5896f4ea990a4d527548204fed8f06c64
+build/third_party/lighttpd: https://chromium.googlesource.com/chromium/deps/lighttpd.git@9dfa55d15937a688a92cbf2b7a8621b0927d06eb
+depot_tools: https://chromium.googlesource.com/chromium/tools/depot_tools.git@98201125ea9a2e14dfd6f105cb5cce4ef55c9003
+expect_tests: https://chromium.googlesource.com/infra/testing/expect_tests.git@8dc60fa9bf7d80ff8f9e54445b3c891c36c00e0e
+infra: https://chromium.googlesource.com/infra/infra.git@e0e3771affbb17a78b3e614fa616ae6bf62768f6
+infra/appengine/third_party/bootstrap: https://chromium.googlesource.com/infra/third_party/bootstrap.git@b4895a0d6dc493f17fe9092db4debe44182d42ac
+infra/appengine/third_party/cloudstorage: https://chromium.googlesource.com/infra/third_party/cloudstorage.git@ad74316d12e198e0c7352bd666bbc2ec7938bd65
+infra/appengine/third_party/endpoints-proto-datastore: https://chromium.googlesource.com/infra/third_party/endpoints-proto-datastore.git@971bca8e31a4ab0ec78b823add5a47394d78965a
+infra/appengine/third_party/google-api-python-client: https://chromium.googlesource.com/external/github.com/google/google-api-python-client.git@49d45a6c3318b75e551c3022020f46c78655f365
+infra/appengine/third_party/highlight: https://chromium.googlesource.com/infra/third_party/highlight.js.git@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba
+infra/appengine/third_party/npm_modules: https://chromium.googlesource.com/infra/third_party/npm_modules.git@f6115d7f7fd45fa25a34518c3487f2654590ed83
+infra/appengine/third_party/pipeline: https://chromium.googlesource.com/infra/third_party/appengine-pipeline.git@e79945156a7a3a48eecb29b792a9b7925631aadf
+infra/appengine/third_party/src/github.com/golang/oauth2: https://chromium.googlesource.com/external/github.com/golang/oauth2.git@cb029f4c1f58850787981eefaf9d9bf547c1a722
+infra/appengine/third_party/trace-viewer: https://chromium.googlesource.com/external/trace-viewer.git@6c50e784746e6c785b4f5476cf843edecb4fab00
+infra/bootstrap/virtualenv: https://chromium.googlesource.com/infra/third_party/virtualenv.git@4243b272823228dde5d18a7400c404ce52fb4cea
+infra/luci: https://chromium.googlesource.com/external/github.com/luci/luci-py@4981574633e4966c54ae1363c77ffb67ec9ae132
+testing_support: https://chromium.googlesource.com/infra/testing/testing_support.git@a6e1c88d2f488f6b3207bf0976d96a76a0b3f44e
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events.
+**  Thu Apr 23 11:01:50 PDT 2015	make no-new-builds
+**  Thu Apr 23 11:01:52 PDT 2015	make stop
+/bin/sh: /home/chrome-bot/infra/infra/run.py: No such file or directory
+Running send_monitoring_event failed, skipping sending events
+**  Thu Apr 23 12:01:52 PDT 2015	make start
