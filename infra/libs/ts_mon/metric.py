@@ -186,6 +186,10 @@ class Metric(object):
     """Returns the current value for this metric."""
     return self._values.get(self._normalize_fields(fields), self._initial_value)
 
+  def reset(self):
+    """Resets the current values for this metric to 0.  Useful for tests."""
+    self._values = {}
+
 
 class StringMetric(Metric):
   """A metric whose value type is a string."""

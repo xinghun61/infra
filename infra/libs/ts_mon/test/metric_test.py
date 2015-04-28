@@ -201,6 +201,14 @@ class MetricTest(MetricTestBase):
     m.unregister()
     self.assertEquals(0, len(self.fake_state.metrics))
 
+  def test_reset(self):
+    m = metric.StringMetric('test')
+    self.assertIsNone(m.get())
+    m.set('foo')
+    self.assertEqual('foo', m.get())
+    m.reset()
+    self.assertIsNone(m.get())
+
 
 class StringMetricTest(MetricTestBase):
 
