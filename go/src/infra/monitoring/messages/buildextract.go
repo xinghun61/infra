@@ -7,11 +7,23 @@
 
 package messages
 
+const (
+	// StateBuilding is the builder "building" state.
+	StateBuilding = "building"
+
+	// StateOffline is the builder "offline" state.
+	StateOffline = "offline"
+
+	// StateIdle is the builder "idle" state.
+	StateIdle = "idle"
+)
+
 // BuildExtract is AKA "master_data" from builder_alerts.py.
 type BuildExtract struct {
-	AcceptingBuilds  AcceptingBuilds        `json:"accepting_builds"`
-	Builders         map[string]Builders    `json:"builders"`
-	Buildstate       Buildstate             `json:"buildstate"`
+	AcceptingBuilds AcceptingBuilds     `json:"accepting_builds"`
+	Builders        map[string]Builders `json:"builders"`
+	Buildstate      Buildstate          `json:"buildstate"`
+	// Maps [build number? Change number? (from gnumd?)] to Changes
 	Changes          map[string]Changes     `json:"changes"`
 	Clock            Clock                  `json:"clock"`
 	Created          string                 `json:"created"`
@@ -66,7 +78,7 @@ type Builders struct {
 	CachedBuilds  []int64  `json:"cachedBuilds"`
 	Category      string   `json:"category"`
 	CurrentBuilds []int64  `json:"currentBuilds"`
-	PendingBuilds float64  `json:"pendingBuilds"`
+	PendingBuilds int64    `json:"pendingBuilds"`
 	Slaves        []string `json:"slaves"`
 	State         string   `json:"state"`
 }
@@ -163,7 +175,7 @@ type Steps struct {
 	Statistics URLs          `json:"statistics"`
 	StepNumber float64       `json:"step_number"`
 	Text       []string      `json:"text"`
-	Times      []float64     `json:"times"`
+	Times      []EpochTime   `json:"times"`
 	URLs       URLs          `json:"urls"`
 }
 

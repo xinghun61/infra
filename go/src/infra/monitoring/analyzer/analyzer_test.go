@@ -19,9 +19,12 @@ func fakeNow(t time.Time) func() time.Time {
 }
 
 type mockClient struct {
-	build                           *messages.Builds
-	testResults                     *messages.TestResults
-	buildFetchError, stepFetchError error
+	build        *messages.Builds
+	testResults  *messages.TestResults
+	stdioForStep []string
+	buildFetchError,
+	stepFetchError,
+	stdioForStepError error
 }
 
 func (m mockClient) Build(mn, bn string, bID int64) (*messages.Builds, error) {
@@ -77,9 +80,9 @@ func TestMasterAlerts(t *testing.T) {
 				{
 					Key:   "stale master: http://fake.master",
 					Title: "Stale Master Data",
-					Body:  fmt.Sprintf("%s elapsed since last update.", 2*StaleMasterThreshold),
+					Body:  fmt.Sprintf("%s elapsed since last update (1970-01-01 00:01:40 +0000 UTC).", 2*StaleMasterThreshold),
 					Time:  messages.TimeToEpochTime(time.Unix(100, 0).Add(StaleMasterThreshold * 2)),
-					Links: []messages.Link{{"Master Url", "http://fake.master"}},
+					Links: []messages.Link{{"Master", "http://fake.master"}},
 				},
 			},
 		},
@@ -150,6 +153,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		builder    string
 		b          messages.Builders
 		builds     *messages.Builds
+		time       time.Time
 		wantAlerts []messages.Alert
 		wantErrs   []error
 	}{
@@ -162,7 +166,17 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			name:    "builders ok",
 			master:  "fake.master",
 			builder: "fake.builder",
-			builds:  &messages.Builds{},
+			builds: &messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "fake_step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(10, 0)),
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+						},
+					},
+				},
+			},
 			b: messages.Builders{
 				BuilderName:   "fake.builder",
 				CachedBuilds:  []int64{0, 1, 2, 3},
@@ -171,17 +185,56 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{},
 			wantErrs:   []error{},
 		},
+		{
+			name:    "builder building for too long",
+			master:  "fake.master",
+			builder: "fake.builder",
+			builds: &messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "fake_step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(10, 0)),
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+						},
+					},
+				},
+			},
+			b: messages.Builders{
+				State:         messages.StateBuilding,
+				BuilderName:   "fake.builder",
+				CachedBuilds:  []int64{0, 1, 2, 3},
+				CurrentBuilds: []int64{5, 6, 7, 8},
+			},
+			time: time.Unix(0, 0).Add(4 * time.Hour),
+			wantAlerts: []messages.Alert{
+				{
+					Key:   "fake.master.fake.builder.hung",
+					Title: "fake.master.fake.builder is hung in step fake_step.",
+					Time:  messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
+					Body:  "fake.master.fake.builder has been building for 3h59m50s (last step update 1970-01-01 00:00:10 +0000 UTC), past the alerting threshold of 3h0m0s",
+					Links: []messages.Link{
+						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder"},
+						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/3"},
+						{Title: "Last build step", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/3/steps/fake_step"},
+					},
+				},
+			},
+			wantErrs: []error{},
+		},
 	}
 
 	a := New(nil, 10)
 
 	for _, test := range tests {
+
+		now = fakeNow(test.time)
 		a.Client = mockClient{
 			build: test.builds,
 		}
 		gotAlerts, gotErrs := a.builderAlerts(test.master, test.builder, &test.b)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotAlerts, test.wantAlerts)
+			t.Errorf("%s failed. Got:\n%+v, want:\n%+v", test.name, gotAlerts, test.wantAlerts)
 		}
 		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
@@ -301,7 +354,7 @@ func TestStepFailureAlerts(t *testing.T) {
 			wantAlerts: []messages.Alert{
 				{
 					Key:   "fake.master.fake_builder.something_tests.test_a",
-					Title: "Builder step failure",
+					Title: "Builder step failure: fake.master.fake_builder",
 					Type:  "buildfailure",
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -416,6 +469,139 @@ func TestStepFailures(t *testing.T) {
 		}
 		if !reflect.DeepEqual(err, test.wantErr) {
 			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.wantErr)
+		}
+	}
+}
+
+func TestLatestBuildStep(t *testing.T) {
+	tests := []struct {
+		name       string
+		b          messages.Builds
+		wantStep   string
+		wantUpdate messages.EpochTime
+		wantErr    error
+	}{
+		{
+			name:    "blank",
+			wantErr: errNoBuildSteps,
+		},
+		{
+			name: "done time is latest",
+			b: messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "done step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(6, 0)),
+							messages.TimeToEpochTime(time.Unix(42, 0)),
+						},
+					},
+				},
+			},
+			wantStep:   "done step",
+			wantUpdate: messages.TimeToEpochTime(time.Unix(42, 0)),
+		},
+		{
+			name: "started time is latest",
+			b: messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "start step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(42, 0)),
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+						},
+					},
+				},
+			},
+			wantStep:   "start step",
+			wantUpdate: messages.TimeToEpochTime(time.Unix(42, 0)),
+		},
+		{
+			name: "started time is latest, multiple steps",
+			b: messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "start step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(6, 0)),
+							messages.TimeToEpochTime(time.Unix(7, 0)),
+						},
+					},
+					{
+						Name: "second step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(42, 0)),
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+						},
+					},
+				},
+			},
+			wantStep:   "second step",
+			wantUpdate: messages.TimeToEpochTime(time.Unix(42, 0)),
+		},
+		{
+			name: "done time is latest, multiple steps",
+			b: messages.Builds{
+				Steps: []messages.Steps{
+					{
+						Name: "start step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+							messages.TimeToEpochTime(time.Unix(6, 0)),
+						},
+					},
+					{
+						Name: "second step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(7, 0)),
+							messages.TimeToEpochTime(time.Unix(42, 0)),
+						},
+					},
+				},
+			},
+			wantStep:   "second step",
+			wantUpdate: messages.TimeToEpochTime(time.Unix(42, 0)),
+		},
+		{
+			name: "build is done",
+			b: messages.Builds{
+				Times: []messages.EpochTime{
+					messages.TimeToEpochTime(time.Unix(0, 0)),
+					messages.TimeToEpochTime(time.Unix(42, 0)),
+				},
+				Steps: []messages.Steps{
+					{
+						Name: "start step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+							messages.TimeToEpochTime(time.Unix(0, 0)),
+						},
+					},
+					{
+						Name: "second step",
+						Times: []messages.EpochTime{
+							messages.TimeToEpochTime(time.Unix(6, 0)),
+							messages.TimeToEpochTime(time.Unix(7, 0)),
+						},
+					},
+				},
+			},
+			wantStep:   StepCompletedRun,
+			wantUpdate: messages.TimeToEpochTime(time.Unix(42, 0)),
+		},
+	}
+
+	for _, test := range tests {
+		gotStep, gotUpdate, gotErr := latestBuildStep(&test.b)
+		if gotStep != test.wantStep {
+			t.Errorf("%s failed. Got %q, want %q.", test.name, gotStep, test.wantStep)
+		}
+		if gotUpdate != test.wantUpdate {
+			t.Errorf("%s failed. Got %s, want %s.", test.name, gotUpdate, test.wantUpdate)
+		}
+		if gotErr != test.wantErr {
+			t.Errorf("%s failed. Got %s, want %s.", test.name, gotErr, test.wantErr)
 		}
 	}
 }
