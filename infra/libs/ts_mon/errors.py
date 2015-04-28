@@ -78,8 +78,11 @@ class MonitoringNoConfiguredMonitorError(MonitoringError):
     self.metric = metric
 
   def __str__(self):
-    return 'Metric "%s" was sent before initializing the global Monitor.' % (
-        self.metric)
+    if self.metric is not None:
+      return 'Metric "%s" was sent before initializing the global Monitor.' % (
+          self.metric)
+    else:
+      return 'Metrics were sent before initializing the global Monitor.'
 
 
 class MonitoringNoConfiguredTargetError(MonitoringError):

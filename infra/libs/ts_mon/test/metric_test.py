@@ -10,6 +10,7 @@ import mock
 
 from monacq.proto import metrics_pb2
 
+import infra.libs.ts_mon.interface as interface
 import infra.libs.ts_mon.metric as metric
 
 from infra.libs.ts_mon.errors import MonitoringDecreasingValueError
@@ -21,7 +22,28 @@ from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 from infra.libs.ts_mon.target import DeviceTarget
 
 
-class MetricTest(unittest.TestCase):
+class FakeState(interface.State):
+  def __init__(self):
+    super(FakeState, self).__init__()
+    self.global_monitor = mock.Mock()
+
+
+class MetricTestBase(unittest.TestCase):
+  def setUp(self):
+    self.fake_state = FakeState()
+    self.state_patcher = mock.patch(
+        'infra.libs.ts_mon.interface._state', new=self.fake_state)
+    self.send_patcher = mock.patch('infra.libs.ts_mon.metric.send')
+
+    self.state_patcher.start()
+    self.fake_send = self.send_patcher.start()
+
+  def tearDown(self):
+    self.state_patcher.stop()
+    self.send_patcher.stop()
+
+
+class MetricTest(MetricTestBase):
 
   def test_init_too_may_fields(self):
     fields = {str(i): str(i) for i in xrange(8)}
@@ -33,81 +55,133 @@ class MetricTest(unittest.TestCase):
   def test_serialize(self):
     t = DeviceTarget('reg', 'net', 'host')
     m = metric.StringMetric('test', target=t, fields={'bar': 1})
-    m._value = 'val'
-    p = m.serialize(fields={'baz': False})
+    m.set('val', fields={'baz': False})
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p)
     e = textwrap.dedent('''\
-        name: "test"
-        metric_name_prefix: "/chrome/infra/"
-        network_device {
-          alertable: true
-          realm: "ACQ_CHROME"
-          metro: "reg"
-          hostname: "host"
-          hostgroup: "net"
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "bar"
+            type: INT
+            int_value: 1
+          }
+          fields {
+            name: "baz"
+            type: BOOL
+            bool_value: false
+          }
+          string_value: "val"
         }
-        fields {
-          name: "baz"
-          type: BOOL
-          bool_value: false
+    ''')
+    self.assertEquals(str(p), e)
+
+  def test_serialize_multiple_values(self):
+    t = DeviceTarget('reg', 'net', 'host')
+    m = metric.StringMetric('test', target=t)
+    m.set('val1', fields={'foo': 1})
+    m.set('val2', fields={'foo': 2})
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p)
+    e = textwrap.dedent('''\
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "foo"
+            type: INT
+            int_value: 2
+          }
+          string_value: "val2"
         }
-        fields {
-          name: "bar"
-          type: INT
-          int_value: 1
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "foo"
+            type: INT
+            int_value: 1
+          }
+          string_value: "val1"
         }
-        string_value: "val"
     ''')
     self.assertEquals(str(p), e)
 
   def test_serialize_default_target(self):
     t = DeviceTarget('reg', 'net', 'host')
     m = metric.StringMetric('test')
-    m._value = 'val'
-    p = m.serialize(default_target=t)
+    m.set('val')
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p, default_target=t)
     e = textwrap.dedent('''\
-        name: "test"
-        metric_name_prefix: "/chrome/infra/"
-        network_device {
-          alertable: true
-          realm: "ACQ_CHROME"
-          metro: "reg"
-          hostname: "host"
-          hostgroup: "net"
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          string_value: "val"
         }
-        string_value: "val"
     ''')
     self.assertEquals(str(p), e)
 
   def test_serialize_no_target(self):
     m = metric.StringMetric('test')
-    m._value = 'val'
+    m.set('val')
     with self.assertRaises(MonitoringNoConfiguredTargetError):
-      m.serialize()
+      p = metrics_pb2.MetricsCollection()
+      m.serialize_to(p)
 
   def test_serialze_too_many_fields(self):
     t = DeviceTarget('reg', 'net', 'host')
     m = metric.StringMetric('test', target=t,
                             fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
-    m._value = 'val'
+    m.set('val', fields={'e': 5, 'f': 6, 'g': 7})
     with self.assertRaises(MonitoringTooManyFieldsError):
-      m.serialize(fields={'e': 5, 'f': 6, 'g': 7, 'h': 8})
+      m.set('val', fields={'e': 5, 'f': 6, 'g': 7, 'h': 8})
 
   def test_populate_field_values(self):
     pb1 = metrics_pb2.MetricsData()
     m1 = metric.Metric('foo', fields={'asdf': 1})
-    m1._populate_fields_pb(pb1)
+    m1._populate_fields(pb1, m1._normalized_fields)
     self.assertEquals(pb1.fields[0].name, 'asdf')
     self.assertEquals(pb1.fields[0].int_value, 1)
 
     pb2 = metrics_pb2.MetricsData()
     m2 = metric.Metric('bar', fields={'qwer': True})
-    m2._populate_fields_pb(pb2)
+    m2._populate_fields(pb2, m2._normalized_fields)
     self.assertEquals(pb2.fields[0].name, 'qwer')
     self.assertEquals(pb2.fields[0].bool_value, True)
 
     pb3 = metrics_pb2.MetricsData()
     m3 = metric.Metric('baz', fields={'zxcv': 'baz'})
-    m3._populate_fields_pb(pb3)
+    m3._populate_fields(pb3, m3._normalized_fields)
     self.assertEquals(pb3.fields[0].name, 'zxcv')
     self.assertEquals(pb3.fields[0].string_value, 'baz')
 
@@ -115,27 +189,32 @@ class MetricTest(unittest.TestCase):
     pb = metrics_pb2.MetricsData()
     m = metric.Metric('test', fields={'pi': 3.14})
     with self.assertRaises(MonitoringInvalidFieldTypeError) as e:
-      m._populate_fields_pb(pb)
+      m._populate_fields(pb, m._normalized_fields)
     self.assertEquals(e.exception.metric, 'test')
     self.assertEquals(e.exception.field, 'pi')
     self.assertEquals(e.exception.value, 3.14)
 
+  def test_register_unregister(self):
+    self.assertEquals(0, len(self.fake_state.metrics))
+    m = metric.Metric('test', fields={'pi': 3.14})
+    self.assertEquals(1, len(self.fake_state.metrics))
+    m.unregister()
+    self.assertEquals(0, len(self.fake_state.metrics))
 
-class StringMetricTest(unittest.TestCase):
 
-  def test_populate_metric(self):
+class StringMetricTest(MetricTestBase):
+
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.StringMetric('test')
-    m._value = 'foo'
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, 'foo')
     self.assertEquals(pb.string_value, 'foo')
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.StringMetric('test')
     m.set('hello world')
-    self.assertEquals(m._value, 'hello world')
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 'hello world')
+    self.assertEquals(self.fake_send.call_count, 1)
 
   def test_non_string_raises(self):
     m = metric.StringMetric('test')
@@ -143,82 +222,75 @@ class StringMetricTest(unittest.TestCase):
       m.set(object())
 
 
-class BooleanMetricTest(unittest.TestCase):
+class BooleanMetricTest(MetricTestBase):
 
-  def test_populate_metric(self):
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.BooleanMetric('test')
-    m._value = True
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, True)
     self.assertEquals(pb.boolean_value, True)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.BooleanMetric('test')
     m.set(False)
-    self.assertEquals(m._value, False)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), False)
+    self.assertEquals(self.fake_send.call_count, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_toggle(self, fake_send):
+  def test_toggle(self):
     m = metric.BooleanMetric('test')
-    m._value = True
+    m.set(True)
+    self.assertEquals(m.get(), True)
+    self.assertEquals(self.fake_send.call_count, 1)
     m.toggle()
-    self.assertEquals(m._value, False)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), False)
+    self.assertEquals(self.fake_send.call_count, 2)
 
   def test_non_bool_raises(self):
     m = metric.BooleanMetric('test')
     with self.assertRaises(MonitoringInvalidValueTypeError):
       m.set(object())
+    with self.assertRaises(MonitoringInvalidValueTypeError):
+      m.set('True')
+    with self.assertRaises(MonitoringInvalidValueTypeError):
+      m.set(123)
 
 
-class NumericMetricTest(unittest.TestCase):
+class CounterMetricTest(MetricTestBase):
 
-  def test_increment(self):
-    m = metric.NumericMetric('test')
-    def set_stub(val, _fields=None):
-      m._value = val
-    m.set = set_stub
-    m._value = 1
-    m.increment()
-    self.assertEquals(m._value, 2)
-    m.increment_by(3.14)
-    self.assertAlmostEquals(m._value, 5.14)
-
-  def test_unset_increment_raises(self):
-    m = metric.NumericMetric('test')
-    with self.assertRaises(MonitoringIncrementUnsetValueError):
-      m.increment()
-
-
-class CounterMetricTest(unittest.TestCase):
-
-  def test_populate_metric(self):
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.CounterMetric('test')
-    m._value = 1
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, 1)
     self.assertEquals(pb.counter, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_starts_at_zero(self, fake_send):
+  def test_starts_at_zero(self):
     m = metric.CounterMetric('test')
-    self.assertEquals(m._value, 0)
+    self.assertEquals(m.get(), 0)
     m.increment()
-    self.assertEquals(m._value, 1)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 1)
+    self.assertEquals(self.fake_send.call_count, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.CounterMetric('test')
     m.set(10)
-    self.assertEquals(m._value, 10)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 10)
+    self.assertEquals(self.fake_send.call_count, 1)
+
+  def test_increment(self):
+    m = metric.CounterMetric('test')
+    m.set(1)
+    self.assertEquals(m.get(), 1)
+    self.assertEquals(self.fake_send.call_count, 1)
+    m.increment()
+    self.assertEquals(m.get(), 2)
+    self.assertEquals(self.fake_send.call_count, 2)
+    m.increment_by(3)
+    self.assertAlmostEquals(m.get(), 5)
+    self.assertEquals(self.fake_send.call_count, 3)
 
   def test_decrement_raises(self):
     m = metric.CounterMetric('test')
-    m._value = 1
+    m.set(1)
     with self.assertRaises(MonitoringDecreasingValueError):
       m.set(0)
     with self.assertRaises(MonitoringDecreasingValueError):
@@ -226,7 +298,6 @@ class CounterMetricTest(unittest.TestCase):
 
   def test_non_int_raises(self):
     m = metric.CounterMetric('test')
-    m._value = 0
     with self.assertRaises(MonitoringInvalidValueTypeError):
       m.set(object())
     with self.assertRaises(MonitoringInvalidValueTypeError):
@@ -234,59 +305,76 @@ class CounterMetricTest(unittest.TestCase):
     with self.assertRaises(MonitoringInvalidValueTypeError):
       m.increment_by(1.5)
 
+  def test_multiple_field_values(self):
+    m = metric.CounterMetric('test')
+    m.increment({'foo': 'bar'})
+    m.increment({'foo': 'baz'})
+    m.increment({'foo': 'bar'})
+    self.assertEquals(0, m.get())
+    self.assertEquals(2, m.get({'foo': 'bar'}))
+    self.assertEquals(1, m.get({'foo': 'baz'}))
 
-class GaugeMetricTest(unittest.TestCase):
+  def test_override_fields(self):
+    m = metric.CounterMetric('test', fields={'foo': 'bar'})
+    m.increment()
+    m.increment({'foo': 'baz'})
+    self.assertEquals(1, m.get())
+    self.assertEquals(1, m.get({'foo': 'bar'}))
+    self.assertEquals(1, m.get({'foo': 'baz'}))
 
-  def test_populate_metric(self):
+
+class GaugeMetricTest(MetricTestBase):
+
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.GaugeMetric('test')
-    m._value = 1
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, 1)
     self.assertEquals(pb.gauge, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.GaugeMetric('test')
     m.set(10)
-    self.assertEquals(m._value, 10)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 10)
+    self.assertEquals(self.fake_send.call_count, 1)
     m.set(sys.maxint + 1)
-    self.assertEquals(m._value, sys.maxint + 1)
-    self.assertEquals(fake_send.call_count, 2)
+    self.assertEquals(m.get(), sys.maxint + 1)
+    self.assertEquals(self.fake_send.call_count, 2)
 
   def test_non_int_raises(self):
     m = metric.GaugeMetric('test')
     with self.assertRaises(MonitoringInvalidValueTypeError):
       m.set(object())
 
+  def test_unset_increment_raises(self):
+    m = metric.GaugeMetric('test')
+    with self.assertRaises(MonitoringIncrementUnsetValueError):
+      m.increment()
 
-class CumulativeMetricTest(unittest.TestCase):
 
-  def test_populate_metric(self):
+class CumulativeMetricTest(MetricTestBase):
+
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.CumulativeMetric('test')
-    m._value = 1.618
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, 1.618)
     self.assertAlmostEquals(pb.cumulative_double_value, 1.618)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_starts_at_zero(self, fake_send):
+  def test_starts_at_zero(self):
     m = metric.CumulativeMetric('test')
-    self.assertEquals(m._value, 0.0)
+    self.assertEquals(m.get(), 0.0)
     m.increment()
-    self.assertEquals(m._value, 1.0)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 1.0)
+    self.assertEquals(self.fake_send.call_count, 1)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.CumulativeMetric('test')
     m.set(3.14)
-    self.assertAlmostEquals(m._value, 3.14)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertAlmostEquals(m.get(), 3.14)
+    self.assertEquals(self.fake_send.call_count, 1)
 
   def test_decrement_raises(self):
     m = metric.CumulativeMetric('test')
-    m._value = 3.14
+    m.set(3.14)
     with self.assertRaises(MonitoringDecreasingValueError):
       m.set(0)
     with self.assertRaises(MonitoringDecreasingValueError):
@@ -298,21 +386,19 @@ class CumulativeMetricTest(unittest.TestCase):
       m.set(object())
 
 
-class FloatMetricTest(unittest.TestCase):
+class FloatMetricTest(MetricTestBase):
 
-  def test_populate_metric(self):
+  def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
     m = metric.FloatMetric('test')
-    m._value = 1.618
-    m._populate_metric_pb(pb)
+    m._populate_value(pb, 1.618)
     self.assertEquals(pb.noncumulative_double_value, 1.618)
 
-  @mock.patch('infra.libs.ts_mon.metric.send')
-  def test_set(self, fake_send):
+  def test_set(self):
     m = metric.FloatMetric('test')
     m.set(3.14)
-    self.assertEquals(m._value, 3.14)
-    self.assertEquals(fake_send.call_count, 1)
+    self.assertEquals(m.get(), 3.14)
+    self.assertEquals(self.fake_send.call_count, 1)
 
   def test_non_number_raises(self):
     m = metric.FloatMetric('test')

@@ -31,9 +31,10 @@ Library usage:
     c.increment()
 """
 
-import copy
 import re
 import socket
+
+from monacq.proto import metrics_pb2
 
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor
@@ -47,15 +48,17 @@ class State(object):
   libraries in use by the same tool or service can all take advantage of the
   same configuration.
   """
-  # The Monitor object that will be used to send all metrics.
-  global_monitor = None
-  # The Target object that will be paired with all metrics that don't supply
-  # their own.
-  default_target = None
-  # The flush mode being used to control when metrics are pushed.
-  flush_mode = None
-  # The collection of metrics which have been stored but not yet flushed.
-  metric_store = []
+
+  def __init__(self):
+    # The Monitor object that will be used to send all metrics.
+    self.global_monitor = None
+    # The Target object that will be paired with all metrics that don't supply
+    # their own.
+    self.default_target = None
+    # The flush mode being used to control when metrics are pushed.
+    self.flush_mode = None
+    # All metrics created by this application.
+    self.metrics = set()
 
 _state = State()
 
@@ -162,32 +165,45 @@ def process_argparse_options(args):
   _state.flush_mode = args.ts_mon_flush
 
 
-def send(metric, fields=None):
-  """Send a metric (with its current value and fields) to the monitoring api.
+def send(metric):
+  """Send a single metric to the monitoring api.
 
-  In general, metrics are sent by calling their own .set() or related methods,
-  which both set a value and send that new value, but this can be used to send
-  the current value without setting a new one.
-
-  Args:
-    fields (dict): a key-value mapping of additional metric fields to send
-
-  Raises:
-    MonitoringNoConfiguredMonitorError: if the global Monitor doesn't exist
-    MonitoringTooManyFieldsError: if the extra fields put the total over 7
+  This is called automatically by Metric.set - you don't need to call it
+  manually.
   """
   if not _state.global_monitor:
     raise MonitoringNoConfiguredMonitorError(metric._name)
 
-  proto = metric.serialize(fields=fields, default_target=_state.default_target)
-  if _state.flush_mode == 'all':
-    _state.global_monitor.send(proto)
-  else:
-    _state.metric_store.append(proto)
+  if _state.flush_mode != 'all':
+    return
+
+  proto = metrics_pb2.MetricsCollection()
+  metric.serialize_to(proto, default_target=_state.default_target)
+  _state.global_monitor.send(proto)
 
 
 def flush():
-  """Send all metrics which have been stored since the last flush()."""
-  store_copy = copy.copy(_state.metric_store)
-  _state.global_monitor.send(store_copy)
-  _state.metric_store = _state.metric_store[len(store_copy):]
+  """Send all metrics that are registered in the application."""
+  if not _state.global_monitor:
+    raise MonitoringNoConfiguredMonitorError(None)
+
+  proto = metrics_pb2.MetricsCollection()
+  for metric in _state.metrics:
+    metric.serialize_to(proto, default_target=_state.default_target)
+
+  _state.global_monitor.send(proto)
+
+
+def register(metric):
+  """Adds the metric to the list of metrics sent by flush().
+
+  This is called automatically by Metric's constructor - you don't need to call
+  it manually.
+  """
+  if metric not in _state.metrics:
+    _state.metrics.add(metric)
+
+
+def unregister(metric):
+  """Removes the metric from the list of metrics sent by flush()."""
+  _state.metrics.remove(metric)

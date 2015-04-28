@@ -9,10 +9,18 @@ import unittest
 
 import mock
 
+from monacq.proto import metrics_pb2
+
 import infra.libs.ts_mon.interface as interface
 
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
+
+
+class FakeState(interface.State):
+  def __init__(self):
+    super(FakeState, self).__init__()
+    self.global_monitor = mock.Mock()
 
 
 class GlobalsTest(unittest.TestCase):
@@ -120,32 +128,75 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
     self.assertIs(interface._state.default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface._state')
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
   def test_send(self, fake_state):
-    fake_metric = mock.MagicMock()
-    fake_proto = mock.MagicMock().serialize()
-    fake_metric.serialize.return_value = fake_proto
-    interface._state.flush_mode = 'all'
-    interface.send(fake_metric)
-    fake_state.global_monitor.send.assert_called_once_with(fake_proto)
+    def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
+      pb.data.add().name = 'foo'
 
-  @mock.patch('infra.libs.ts_mon.interface._state')
-  def test_send_stores(self, fake_state):
-    fake_metric = mock.MagicMock()
-    fake_proto = mock.MagicMock().serialize()
-    fake_metric.serialize.return_value = fake_proto
-    interface._state.flush_mode = 'manual'
+    interface._state.flush_mode = 'all'
+
+    fake_metric = mock.Mock()
+    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+
     interface.send(fake_metric)
-    fake_state.metric_store.append.assert_called_once_with(fake_proto)
+    fake_state.global_monitor.send.assert_called_once()
+    proto = fake_state.global_monitor.send.call_args[0][0]
+    self.assertEqual(1, len(proto.data))
+    self.assertEqual('foo', proto.data[0].name)
+
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
+  def test_send_manual(self, fake_state):
+    interface._state.flush_mode = 'manual'
+
+    fake_metric = mock.Mock()
+    fake_metric.serialize_to = mock.Mock()
+
+    interface.send(fake_metric)
+    self.assertFalse(fake_state.global_monitor.send.called)
+    self.assertFalse(fake_metric.serialize_to.called)
 
   def test_send_raises(self):
     self.assertIsNone(interface._state.global_monitor)
     with self.assertRaises(MonitoringNoConfiguredMonitorError):
       interface.send(mock.MagicMock())
 
-  @mock.patch('infra.libs.ts_mon.interface._state')
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
   def test_flush(self, fake_state):
-    fake_state.metric_store = [2, 'foo', True]
+    def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
+      pb.data.add().name = 'foo'
+
+    fake_metric = mock.Mock()
+    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+    fake_state.metrics.add(fake_metric)
+
     interface.flush()
-    fake_state.global_monitor.send.assert_called_once_with([2, 'foo', True])
-    self.assertEqual(fake_state.metric_store, [])
+    fake_state.global_monitor.send.assert_called_once()
+    proto = fake_state.global_monitor.send.call_args[0][0]
+    self.assertEqual(1, len(proto.data))
+    self.assertEqual('foo', proto.data[0].name)
+
+  def test_flush_raises(self):
+    self.assertIsNone(interface._state.global_monitor)
+    with self.assertRaises(MonitoringNoConfiguredMonitorError):
+      interface.flush()
+
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
+  def test_register_unregister(self, fake_state):
+    fake_metric = mock.Mock()
+    other_fake_metric = mock.Mock()
+
+    self.assertEqual(0, len(fake_state.metrics))
+    interface.register(fake_metric)
+    self.assertEqual(1, len(fake_state.metrics))
+
+    # Registering the same one twice doesn't do anything
+    interface.register(fake_metric)
+    self.assertEqual(1, len(fake_state.metrics))
+
+    # Trying to unregister something that isn't registered raises an exception.
+    with self.assertRaises(KeyError):
+      interface.unregister(other_fake_metric)
+
+    self.assertEqual(1, len(fake_state.metrics))
+    interface.unregister(fake_metric)
+    self.assertEqual(0, len(fake_state.metrics))

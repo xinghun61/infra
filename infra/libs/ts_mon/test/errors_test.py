@@ -39,6 +39,11 @@ class ErrorsTest(unittest.TestCase):
       raise errors.MonitoringNoConfiguredMonitorError('test')
     str(e.exception)
 
+  def test_no_configured_monitor_flush(self):
+    with self.assertRaises(errors.MonitoringNoConfiguredMonitorError) as e:
+      raise errors.MonitoringNoConfiguredMonitorError(None)
+    str(e.exception)
+
   def test_no_configured_target(self):
     with self.assertRaises(errors.MonitoringNoConfiguredTargetError) as e:
       raise errors.MonitoringNoConfiguredTargetError('test')
