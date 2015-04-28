@@ -29,30 +29,31 @@ Usage Guides
 
 * :doc:`user_guide/new_master` - How to set up a new buildbot master.
 * :doc:`user_guide/recipes` - Recipes user guide.
+* :doc:`master_auth`
 
 Contributer's Guides
 --------------------
 
 * :doc:`documenting` - what and how to document, plus some technical information
   on the compilation/deployment pipeline.
+* :doc:`testing` - tools used, how and why.
+* :doc:`logging` - how logging works in infra.git.
+
+* :doc:`appengine` - How to develop an appengine app in infra.git
+
+TBD:
+
+* How to handle authentication
 * How to add a new tool - also gives example usage of
   :doc:`reference/infra.libs`
-* :doc:`appengine` - How to develop an appengine app in infra.git
-* How to handle authentication
 
 Technical Background
 --------------------
 
-This section (will) explains some technical choices.
+This section explains some technical choices.
 
-* :doc:`testing` - tools used, how and why.
 * :doc:`bootstrap` - Dependency handling. How it works and why it's structured
   this way.
-
-How to
-------
-
-* :doc:`master_auth`
 
 Other topics
 -------------------
