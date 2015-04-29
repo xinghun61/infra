@@ -38,7 +38,7 @@ class GlobalsTest(unittest.TestCase):
     singleton = object()
     fake_monitor.return_value = singleton
     fake_target.return_value = singleton
-    fake_fqdn.return_value = 'foo100.reg.tld'
+    fake_fqdn.return_value = 'slave1-a1.reg.tld'
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
     args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json'])
@@ -47,9 +47,9 @@ class GlobalsTest(unittest.TestCase):
         '/path/to/creds.p8.json',
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage')
     self.assertIs(interface._state.global_monitor, singleton)
-    fake_target.assert_called_once_with('reg', '100', 'foo100')
+    fake_target.assert_called_once_with('reg', '1', 'slave1-a1')
     self.assertIs(interface._state.default_target, singleton)
-    self.assertEquals(args.ts_mon_flush, 'all')
+    self.assertEquals(args.ts_mon_flush, 'manual')
 
   @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')

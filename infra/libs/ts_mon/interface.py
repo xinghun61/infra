@@ -79,7 +79,7 @@ def add_argparse_options(parser):
       help='path to a pkcs8 json credential file')
   parser.add_argument(
       '--ts-mon-flush',
-      choices=('all', 'manual'), default='all',
+      choices=('all', 'manual'), default='manual',
       help=('metric push behavior: all (send every metric individually), or '
             'manual (only send when flush() is called)'))
 
@@ -104,7 +104,9 @@ def add_argparse_options(parser):
       default=region,
       help='name of the region this devices lives in')
   try:
-    network = re.match(r'\w*?(\d+)$', host).group(1)  # N
+    # Regular expression that matches the vast majority of our host names.
+    # Matches everything of the form 'masterN', 'masterNa', and 'foo-xN'.
+    network = re.match(r'^([\w-]*?-[acm]|master)(\d+)a?$', host).group(2)  # N
   except AttributeError:
     network = ''
   parser.add_argument(
