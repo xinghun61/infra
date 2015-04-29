@@ -10,7 +10,7 @@ from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra.libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra.libs.event_mon.router import _Router
 
-DEFAULT_SERVICE_ACCOUNT_CREDS = 'event_mon.json'
+DEFAULT_SERVICE_ACCOUNT_CREDS = 'service-account-event-mon.json'
 
 # endpoint to hit for the various run types.
 ENDPOINTS = {
