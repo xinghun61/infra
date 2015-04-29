@@ -286,6 +286,8 @@ class AlertsHistory(webapp2.RequestHandler):
       result_json.update(self.get_list(query))
 
     self.response.headers['Content-Type'] = 'application/json'
+    self.response.headers['Access-Control-Allow-Origin'] = '*'
+
     self.response.out.write(json.dumps(result_json))
 
 

@@ -103,7 +103,20 @@ CTFailures.prototype._mungeAlerts = function(alerts) {
 
 CTFailures.prototype.update = function() {
   var annotationPromise = CTFailureGroup.fetchAnnotations();
-  return Promise.all([annotationPromise, net.json('https://sheriff-o-matic.appspot.com/alerts'),
+  var alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts';
+
+  if (window.location.search) {
+    var parts = window.location.search.split('&');
+    parts.forEach(function(part) {
+      var v = part.split('=');
+      if (v[0].replace('?', "") == 'history') {
+        alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts-history/' + v[1];
+      }
+    });
+  }
+
+  this.rotations = {};
+  return Promise.all([annotationPromise, net.json(alertsUrl),
       net.json('https://trooper-o-matic.appspot.com/alerts')]).then(function(data_array) {
     var annotations = data_array[0];
     var sheriff_data = data_array[1];

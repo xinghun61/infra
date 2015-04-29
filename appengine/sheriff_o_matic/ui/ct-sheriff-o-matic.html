@@ -225,7 +225,7 @@ found in the LICENSE file.
         this.tree = pageId;
         this.page_title = e.detail.item.innerText;
         this.$.main_scaffold.closeDrawer();
-        history.pushState(null, null, pageId);
+        history.pushState(null, null, pageId + window.location.search);
         this.$.router.go();
       },
       bindHealth: function(e) {
