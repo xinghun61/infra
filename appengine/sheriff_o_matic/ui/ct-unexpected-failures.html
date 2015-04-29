@@ -5,6 +5,7 @@ found in the LICENSE file.
 -->
 
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-shadow/paper-shadow.html">
 <link rel="import" href="../model/tree-status.html">
 <link rel="import" href="ct-failure-stream.html">
 <link rel="import" href="ct-last-updated.html">
@@ -20,10 +21,25 @@ found in the LICENSE file.
         align-items: baseline;
         padding: 0 5px;
       }
+      paper-shadow {
+        margin: 1em;
+        padding: 1em;
+        font-size: large;
+        font-weight: bold;
+        background: white;
+        text-align: center;
+      }
     </style>
     <ct-tree-status status="{{ treeStatuses['chromium'] }}" state="{{ treeStatuses['chromium'].status }}"></ct-tree-status>
     <template if="{{ tree == 'blink' }}">
       <ct-tree-status status="{{ treeStatuses['blink'] }}" state="{{ treeStatuses['blink'].status }}"></ct-tree-status>
+    </template>
+    <template if="{{ tree == 'trooper' }}">
+      <paper-shadow z="1">
+        <div class="trooper-bugs">
+          <a href="https://code.google.com/p/chromium/issues/list?can=2&q=Infra%3DTroopers">Current Trooper bug list</a>
+        </div>
+      </paper-shadow>
     </template>
     <template if="{{ failures && failures.failures && (tree != 'health' && !failures.failures[tree] || !failures.failures[tree].length) }}">
       <ct-party-time></ct-party-time>
