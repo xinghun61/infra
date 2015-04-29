@@ -13,6 +13,7 @@ found in the LICENSE file.
 <link rel="import" href="../lib/analytics.html">
 <link rel="import" href="../lib/ct-scheduled-updater.html">
 <link rel="import" href="../model/ct-repositories.html">
+<link rel="import" href="../model/ct-rotations.html">
 <link rel="import" href="../model/ct-failures.html">
 <link rel="import" href="../model/ct-tree-list.html">
 <link rel="import" href="ct-health.html">
@@ -266,6 +267,8 @@ found in the LICENSE file.
         this.failures = new CTFailures(this.repositories);
         this._updater = new CTScheduledUpdater(this.update.bind(this), kUpdateFrequency);
         this._analytics = new Analytics('UA-55762617-1');
+        this._rotations = CTRotations.getInstance();
+        this._rotations.update();
       },
 
       ready: function() {

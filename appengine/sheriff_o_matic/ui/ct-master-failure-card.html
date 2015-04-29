@@ -10,7 +10,7 @@ found in the LICENSE file.
 <link href="../bower_components/paper-dialog/paper-action-dialog.html" rel="import">
 <link href="../bower_components/paper-dialog/paper-dialog-transition.html" rel="import">
 
-<polymer-element name="ct-master-failure-card" attributes="group">
+<polymer-element name="ct-master-failure-card" attributes="group currentTrooper">
   <template>
     <style>
       :host {
@@ -42,15 +42,26 @@ found in the LICENSE file.
           serving up the JSON about it's current state.<br/>
           Something is wrong with the master and needs to be fixed ASAP, since it means that sheriff-o-matic 
           has no idea about the state of the tree on this master.<br/>
-          <a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper">contact a Trooper</a> for further help.
+          <template if="{{ currentTrooper }}">
+            <p>
+              Latest trooper according to the rotation calendar is: <a target='_blank' href='mailto:{{currentTrooper}}@google.com'>{{ currentTrooper }}@google.com</a>
+            </p>
+          </template>
+          See <a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper">Contact a Trooper</a> for further help.
         </div>
         <ct-button label="OK" affirmative id="dialogOk"></ct-button>
       </paper-action-dialog>
   </template>
 <script>
   Polymer({
+    curretTrooper : 'unknown',
     toggleHelp: function() {
       this.$.helpDialog.toggle();
+    },
+    created: function() {
+      var rot = CTRotations.getInstance();
+      var today = new Date().toISOString().substr(0, 10);
+      this.currentTrooper = rot.getOncaller(today, 'troopers');
     }
   });
 </script>

@@ -6,6 +6,9 @@ from google.appengine.api import app_identity
 from google.appengine.ext.webapp import template
 import os
 import webapp2
+import urllib
+
+from google.appengine.api import urlfetch
 
 
 # In development mode, use the un-vulcanized templates:
@@ -25,7 +28,17 @@ class MainPage(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'text/html'
     self.response.out.write(main)
 
+# This reverse-proxy exists in order to work around a same-origin policy
+# that prevents JS served from SoM from fetching resources from
+# chromium-build.appspot.com.
+class Rotations(webapp2.RequestHandler):
+  def get(self):
+    result = urlfetch.fetch(
+       url='https://chromium-build.appspot.com/p/chromium/all_rotations.js')
+    self.response.out.write(result.content)
+
 app = webapp2.WSGIApplication([
+    ('/rotations', Rotations),
     ('/.*', MainPage),
 ], debug=True)
 

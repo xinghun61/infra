@@ -1,0 +1,468 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../ct-rotations.html">
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+describe('ct-rotations model', function() {
+  it('should find latest trooper', function() {
+    var r = new CTRotations();
+    r.rotations = [
+      "android",
+      "android_stability",
+      "arc",
+      "chromeosgardener",
+      "chromeos.other",
+      "chromeos",
+      "chrome",
+      "gpu",
+      "ios_europe",
+      "ios_internal_roll",
+      "ios_merge",
+      "ios_us",
+      "nacl",
+      "network",
+      "perf",
+      "troopers_emea",
+      "troopers",
+      "v8",
+      "valgrind",
+      "webkit"
+    ],
+    r.calendar = [{
+      date: "2015-04-20",
+      participants: [
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [ ]
+      ]
+      },
+      {
+      date: "2015-04-21",
+      participants: [
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [ ]
+      ]
+      },
+      {
+      date: "2015-04-22",
+      participants: [
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [ ]
+      ]
+      },
+      {
+      date: "2015-04-23",
+      participants: [
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [ ]
+      ]
+      },
+      {
+      date: "2015-04-24",
+      participants: [
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [ ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [ ]
+      ]
+      },
+      {
+      date: "2015-04-27",
+      participants: [
+      [ ],
+      [ ],
+      [
+      "lpique",
+      "olonho"
+      ],
+      [
+      "afakhry"
+      ],
+      [
+      "chihchung"
+      ],
+      [ ],
+      [
+      "mohsen",
+      "nkostylev",
+      "gene"
+      ],
+      [
+      "cwallez"
+      ],
+      [
+      "bzanotti"
+      ],
+      [
+      "pkl",
+      "google.com_82etp3acu0hqveamrl7afmu5j0@group.calendar.google.com"
+      ],
+      [
+      "marq"
+      ],
+      [
+      "lliabraa"
+      ],
+      [
+      "sehr"
+      ],
+      [ ],
+      [ ],
+      [
+      "phajdan"
+      ],
+      [
+      "stip"
+      ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [ ],
+      [
+      "pdr"
+      ]
+      ]
+      },
+      {
+      date: "2015-04-28",
+      participants: [
+      [
+      "aberent",
+      "yusufo"
+      ],
+      [
+      "jaekyun"
+      ],
+      [
+      "lpique",
+      "olonho"
+      ],
+      [
+      "afakhry"
+      ],
+      [
+      "chihchung"
+      ],
+      [
+      "armansito",
+      "sonnyrao"
+      ],
+      [
+      "mohsen",
+      "nkostylev",
+      "gene"
+      ],
+      [
+      "cwallez"
+      ],
+      [
+      "bzanotti"
+      ],
+      [
+      "pkl",
+      "google.com_82etp3acu0hqveamrl7afmu5j0@group.calendar.google.com"
+      ],
+      [
+      "marq"
+      ],
+      [
+      "lliabraa"
+      ],
+      [
+      "sehr"
+      ],
+      [
+      "xunjieli"
+      ],
+      [
+      "andrewhayden"
+      ],
+      [
+      "phajdan"
+      ],
+      [
+      "stip"
+      ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [
+      "earthdok"
+      ],
+      [
+      "caseq"
+      ]
+      ]
+      },
+      {
+      date: "2015-04-29",
+      participants: [
+      [
+      "aberent",
+      "yusufo"
+      ],
+      [
+      "jaekyun"
+      ],
+      [
+      "lpique",
+      "olonho"
+      ],
+      [
+      "michaelpg"
+      ],
+      [
+      "hungte"
+      ],
+      [
+      "armansito",
+      "sonnyrao"
+      ],
+      [
+      "rickyz",
+      "macourteau",
+      "vkuzkokov"
+      ],
+      [
+      "cwallez"
+      ],
+      [
+      "olivierrobin"
+      ],
+      [
+      "pkl",
+      "google.com_82etp3acu0hqveamrl7afmu5j0@group.calendar.google.com"
+      ],
+      [
+      "marq"
+      ],
+      [
+      "shreyasv"
+      ],
+      [
+      "sehr"
+      ],
+      [
+      "xunjieli"
+      ],
+      [
+      "andrewhayden"
+      ],
+      [
+      "phajdan"
+      ],
+      [
+      "dnj"
+      ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [
+      "earthdok"
+      ],
+      [
+      "senorblanco"
+      ]
+      ]
+      },
+      {
+      date: "2015-04-30",
+      participants: [
+      [
+      "boliu",
+      "knn"
+      ],
+      [
+      "jaekyun"
+      ],
+      [
+      "lpique",
+      "olonho"
+      ],
+      [
+      "michaelpg"
+      ],
+      [
+      "hungte"
+      ],
+      [
+      "snanda",
+      "benzh"
+      ],
+      [
+      "rickyz",
+      "macourteau",
+      "vkuzkokov"
+      ],
+      [
+      "cwallez"
+      ],
+      [
+      "olivierrobin"
+      ],
+      [
+      "pkl",
+      "google.com_82etp3acu0hqveamrl7afmu5j0@group.calendar.google.com"
+      ],
+      [
+      "marq"
+      ],
+      [
+      "shreyasv"
+      ],
+      [
+      "sehr"
+      ],
+      [
+      "sleevi"
+      ],
+      [
+      "vollick"
+      ],
+      [
+      "phajdan"
+      ],
+      [
+      "dnj"
+      ],
+      [
+      "vogelheim",
+      "machenbach",
+      "yangguo"
+      ],
+      [
+      "earthdok"
+      ],
+      [
+      "noel"
+      ]
+      ]
+      }];
+      assert.equal('stip', r.getOncaller('2015-04-28', 'troopers'));
+      assert.equal('phajdan', r.getOncaller('2015-04-28', 'troopers_emea'));
+      assert.equal('dnj', r.getOncaller('2015-04-29', 'troopers'));
+    });
+  });
+})();
+</script>

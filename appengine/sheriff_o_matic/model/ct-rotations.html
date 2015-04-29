@@ -1,0 +1,54 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../appengine_module/components/net.html">
+// Fetch from http://chromium-build.appspot.com/p/chromium/all_rotations.js
+
+<script>
+
+function CTRotations() {
+	this._url = '/rotations';
+}
+
+(function() {
+'use strict';
+
+var instance = new CTRotations();
+
+CTRotations.getInstance = function() {
+  return instance;
+}
+
+CTRotations.prototype.update = function() {
+	var rots = net.json(this._url).then(function(data) {
+    this.rotations = data.rotations;
+    this.calendar = data.calendar;
+	}.bind(this), function(e) {
+		window.console.log(['error fetching ' + this._url, e]);
+	}.bind(this));
+};
+
+CTRotations.prototype.getOncaller = function(date, rotationName) {
+  if (!this.rotations) {
+    return;
+  }
+
+  var rotationIdx = this.rotations.indexOf(rotationName);
+  var latestParticipant = null;
+  this.calendar.some(function(day) {
+    var p = day.participants[rotationIdx];
+    if (p && p.length > 0) {
+      latestParticipant = p.join(', ');
+    }
+    if (day.date == date) {
+     return true;
+    }
+  }, this);
+  return latestParticipant;
+};
+})();
+
+</script>
