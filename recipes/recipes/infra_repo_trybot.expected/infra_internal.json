@@ -32,6 +32,7 @@
       "infra_internal@HEAD",
       "--force"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -58,6 +59,7 @@
       "[DEPOT_TOOLS]/gclient.py",
       "runhooks"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "gclient runhooks"
   },
   {
@@ -90,6 +92,7 @@
       "python",
       "[SLAVE_BUILD]/infra_internal/go/test.py"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "go test.py"
   }
 ]
