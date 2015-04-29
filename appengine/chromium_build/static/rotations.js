@@ -54,7 +54,11 @@
 
     table.append(row);
 
+    var today = new Date().toISOString().slice(0, 10);
     for (var c of calendar) {
+      if (c['date'] < today) {
+        continue;
+      }
       row = $('<tr/>');
       row.append(makeCell('th', c['date']));
       for (var p of c['participants']) {
