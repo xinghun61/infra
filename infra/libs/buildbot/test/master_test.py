@@ -147,7 +147,13 @@ class TestMasterInformation(auto_stub.TestCase):
     def timeout(*_args, **_kwargs):
       raise requests.exceptions.Timeout('timeout')
     self.mock(requests, 'get', timeout)
-    self.assertFalse(master.get_accepting_builds(self.chromium_fyi))
+    self.assertIsNone(master.get_accepting_builds(self.chromium_fyi))
+
+  def testConnectionErr(self):
+    def timeout(*_args, **_kwargs):
+      raise requests.exceptions.ConnectionError('error')
+    self.mock(requests, 'get', timeout)
+    self.assertIsNone(master.get_accepting_builds(self.chromium_fyi))
 
 class TestMasterManipulation(auto_stub.TestCase):
   def setUp(self):

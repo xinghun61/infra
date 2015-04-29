@@ -141,7 +141,7 @@ def get_accepting_builds(directory, timeout=30):
           return res.json().get('accepting_builds')
         except simplejson.scanner.JSONDecodeError:
           pass
-    except requests.exceptions.Timeout:
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
       pass
   return None
 
