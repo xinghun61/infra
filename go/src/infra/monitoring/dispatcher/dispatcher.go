@@ -49,7 +49,7 @@ func init() {
 	}
 }
 
-func analyzeBuildExtract(a *analyzer.Analyzer, url string, b *messages.BuildExtract) []messages.Alert {
+func analyzeBuildExtract(a *analyzer.MasterAnalyzer, url string, b *messages.BuildExtract) []messages.Alert {
 	ret := a.MasterAlerts(url, b)
 	if *mastersOnly {
 		return ret

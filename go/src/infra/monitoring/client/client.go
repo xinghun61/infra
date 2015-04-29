@@ -7,6 +7,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,6 +35,10 @@ type Client interface {
 	// BuildExtracts fetches build information for masters from CBE in parallel.
 	// Returns a map of url to error for any requests that had errors.
 	BuildExtracts(urls []string) (map[string]*messages.BuildExtract, map[string]error)
+
+	// StdioForStep fetches the standard output for a given build step, and an error if any
+	// occurred.
+	StdioForStep(master, builder, step string, bID int64) ([]string, error)
 
 	// JSON fetches data from a json endpoint and decodes it into v.  Returns the
 	// http response code and error, if any.
@@ -135,6 +140,12 @@ func (c *client) BuildExtracts(urls []string) (map[string]*messages.BuildExtract
 	return ret, errs
 }
 
+func (c *client) StdioForStep(master, builder, step string, bID int64) ([]string, error) {
+	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, bID, step)
+	res, _, err := c.Text(URL)
+	return strings.Split(res, "\n"), err
+}
+
 func (c *client) startReq() {
 	atomic.AddInt64(&c.currReqs, 1)
 	atomic.AddInt64(&c.totalReqs, 1)
@@ -150,12 +161,10 @@ func (c *client) errReq() {
 	atomic.AddInt64(&c.totalErrs, 1)
 }
 
-// JSON does a simple HTTP GET on a JSON endpoint.
-//
-// Returns the status code and the error, if any.
-func (c *client) JSON(url string, v interface{}) (status int, err error) {
-	c.startReq()
+func (c *client) trackRequestStats(cb func() (int64, error)) error {
+	var err error
 	length := int64(0)
+	c.startReq()
 	defer func() {
 		if err != nil {
 			c.errReq()
@@ -163,32 +172,77 @@ func (c *client) JSON(url string, v interface{}) (status int, err error) {
 			c.endReq(length)
 		}
 	}()
+	length, err = cb()
+	return err
+}
 
-	log.Infof("Fetching json (%d): %s", c.currReqs, url)
-	resp, err := c.hc.Get(url)
-	status = resp.StatusCode
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
-		return
-	}
-	ct := strings.ToLower(resp.Header.Get("Content-Type"))
-	expected := "application/json"
-	if ct != expected {
-		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
-		return
-	}
-	if resp.StatusCode >= 400 {
-		err = fmt.Errorf("http status %d: %s", resp.StatusCode, url)
-		return
-	}
+// JSON does a simple HTTP GET on a JSON endpoint.
+//
+// Returns the status code and the error, if any.
+func (c *client) JSON(url string, v interface{}) (status int, err error) {
+	err = c.trackRequestStats(func() (length int64, err error) {
+		log.Infof("Fetching json (%d): %s", c.currReqs, url)
+		resp, err := c.hc.Get(url)
+		status = resp.StatusCode
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+		if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
+			return
+		}
+		ct := strings.ToLower(resp.Header.Get("Content-Type"))
+		expected := "application/json"
+		if ct != expected {
+			err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
+			return
+		}
+		if resp.StatusCode >= 400 {
+			err = fmt.Errorf("http status %d: %s", resp.StatusCode, url)
+			return
+		}
 
-	length = resp.ContentLength
+		length = resp.ContentLength
 
-	log.Infof("Fetched(%d) json: %s", resp.StatusCode, url)
-	return resp.StatusCode, nil
+		log.Infof("Fetched(%d) json: %s", resp.StatusCode, url)
+		return length, err
+	})
+
+	return status, err
+}
+
+// Text does a simple HTTP GET on a text endpoint.
+//
+// Returns the status code and the error, if any.
+func (c *client) Text(url string) (ret string, status int, err error) {
+	err = c.trackRequestStats(func() (length int64, err error) {
+
+		log.Infof("Fetching text (%d): %s", c.currReqs, url)
+		resp, err := c.hc.Get(url)
+		if err != nil {
+			err = fmt.Errorf("couldn't resolve %s: %s", url, err)
+			return
+		}
+		defer resp.Body.Close()
+
+		b, err := ioutil.ReadAll(resp.Body)
+		status = resp.StatusCode
+		if err != nil {
+			return
+		}
+
+		if resp.StatusCode >= 400 {
+			err = fmt.Errorf("http status %d: %s", resp.StatusCode, url)
+			return
+		}
+
+		ret = string(b)
+		length = resp.ContentLength
+
+		log.Infof("Fetched(%d) text: %s", resp.StatusCode, url)
+		return length, err
+	})
+	return ret, status, nil
 }
 
 func (c *client) DumpStats() {

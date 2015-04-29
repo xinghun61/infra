@@ -39,6 +39,10 @@ func (m mockClient) BuildExtracts(urls []string) (map[string]*messages.BuildExtr
 	return nil, nil
 }
 
+func (m mockClient) StdioForStep(master, builder, step string, bID int64) ([]string, error) {
+	return m.stdioForStep, m.stdioForStepError
+}
+
 func (m mockClient) JSON(url string, v interface{}) (int, error) {
 	return 0, nil // Not actually used.
 }
@@ -75,13 +79,13 @@ func TestMasterAlerts(t *testing.T) {
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 			},
-			t: time.Unix(100, 0).Add(StaleMasterThreshold * 2),
+			t: time.Unix(100, 0).Add(20 * time.Minute),
 			want: []messages.Alert{
 				{
 					Key:   "stale master: http://fake.master",
 					Title: "Stale Master Data",
-					Body:  fmt.Sprintf("%s elapsed since last update (1970-01-01 00:01:40 +0000 UTC).", 2*StaleMasterThreshold),
-					Time:  messages.TimeToEpochTime(time.Unix(100, 0).Add(StaleMasterThreshold * 2)),
+					Body:  fmt.Sprintf("%s elapsed since last update (1970-01-01 00:01:40 +0000 UTC).", 20*time.Minute),
+					Time:  messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
 					Links: []messages.Link{{"Master", "http://fake.master"}},
 				},
 			},
@@ -100,7 +104,7 @@ func TestMasterAlerts(t *testing.T) {
 	a := New(&mockClient{}, 10)
 
 	for _, test := range tests {
-		now = fakeNow(test.t)
+		a.now = fakeNow(test.t)
 		got := a.MasterAlerts(test.url, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.want)
@@ -138,7 +142,7 @@ func TestBuilderAlerts(t *testing.T) {
 	a := New(&mockClient{}, 10)
 
 	for _, test := range tests {
-		now = fakeNow(test.t)
+		a.now = fakeNow(test.t)
 		got := a.BuilderAlerts(test.url, &test.be)
 		if !reflect.DeepEqual(got, test.wantBuilders) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.wantBuilders)
@@ -227,8 +231,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 	a := New(nil, 10)
 
 	for _, test := range tests {
-
-		now = fakeNow(test.time)
+		a.now = fakeNow(test.time)
 		a.Client = mockClient{
 			build: test.builds,
 		}
@@ -287,7 +290,9 @@ func TestReasonsForFailure(t *testing.T) {
 		want        []string
 	}{
 		{
-			name: "empty",
+			name:        "empty",
+			testResults: &messages.TestResults{},
+			want:        []string{},
 		},
 		{
 			name: "GTests",
@@ -316,79 +321,6 @@ func TestReasonsForFailure(t *testing.T) {
 		got := a.reasonsForFailure(test.f)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("% s failed. Got: %+v, want: %+v", test.name, got, test.want)
-		}
-	}
-}
-
-func TestStepFailureAlerts(t *testing.T) {
-	tests := []struct {
-		name        string
-		failures    []stepFailure
-		testResults *messages.TestResults
-		wantAlerts  []messages.Alert
-		wantErr     error
-	}{
-		{
-			name:       "empty",
-			wantAlerts: []messages.Alert{},
-		},
-		{
-			name: "build failure: test step",
-			failures: []stepFailure{
-				{
-					masterName:  "fake.master",
-					builderName: "fake_builder",
-					step: messages.Steps{
-						Name: "something_tests",
-					},
-				},
-			},
-			testResults: &messages.TestResults{
-				Tests: map[string]messages.TestResult{
-					"test_a": messages.TestResult{
-						Expected: "PASS",
-						Actual:   "FAIL",
-					},
-				},
-			},
-			wantAlerts: []messages.Alert{
-				{
-					Key:   "fake.master.fake_builder.something_tests.test_a",
-					Title: "Builder step failure: fake.master.fake_builder",
-					Type:  "buildfailure",
-					Extension: messages.BuildFailure{
-						Builders: []messages.AlertedBuilder{
-							{
-								Name:          "fake_builder",
-								FirstFailure:  0,
-								LatestFailure: 1,
-								URL:           "https://build.chromium.org/p/fake.master/builders/fake_builder/builds/0/steps/something_tests",
-							},
-						},
-						Reasons: []messages.Reason{
-							{
-								TestName: "test_a",
-								Step:     "something_tests",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	mc := &mockClient{}
-	a := New(mc, 10)
-
-	now = fakeNow(time.Unix(0, 0))
-	for _, test := range tests {
-		mc.testResults = test.testResults
-		gotAlerts, gotErr := a.stepFailureAlerts(test.failures)
-		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed.\n\tGot:\n\t%+v\n\twant:\n\t%+v.", test.name, gotAlerts, test.wantAlerts)
-		}
-		if !reflect.DeepEqual(gotErr, test.wantErr) {
-			t.Errorf("%s failed. Got: %+v want: %+v.", test.name, gotErr, test.wantErr)
 		}
 	}
 }
@@ -592,13 +524,15 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 	}
 
+	a := New(&mockClient{}, 10)
+	a.now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
-		gotStep, gotUpdate, gotErr := latestBuildStep(&test.b)
+		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)
 		if gotStep != test.wantStep {
 			t.Errorf("%s failed. Got %q, want %q.", test.name, gotStep, test.wantStep)
 		}
 		if gotUpdate != test.wantUpdate {
-			t.Errorf("%s failed. Got %s, want %s.", test.name, gotUpdate, test.wantUpdate)
+			t.Errorf("%s failed. Got %v, want %v.", test.name, gotUpdate, test.wantUpdate)
 		}
 		if gotErr != test.wantErr {
 			t.Errorf("%s failed. Got %s, want %s.", test.name, gotErr, test.wantErr)

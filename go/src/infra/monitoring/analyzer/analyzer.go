@@ -5,6 +5,7 @@
 package analyzer
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -19,33 +20,45 @@ import (
 )
 
 const (
-	// StaleMasterThreshold is the maximum number of seconds elapsed before a master
-	// triggers a "Stale Master Data" alert.
-	StaleMasterThreshold = 10 * time.Minute
-)
-
-const (
 	// StepCompletedRun is a synthetic step name used to indicate the build run is complete.
 	StepCompletedRun = "completed run"
 )
 
 var (
 	log = logrus.New()
-	// Aliased for testing purposes.
-	now = func() time.Time {
-		return time.Now()
-	}
 )
 
 var (
-	errNoBuildSteps = fmt.Errorf("No build steps")
+	errNoBuildSteps = errors.New("No build steps")
 )
 
-// Analyzer runs the process of checking masters, builders, test results and so on,
+// StepAnalyzer reasons about a stepFailure and produces a set of reasons for the
+// failure.  It also indicates whether or not it recognizes the stepFailure.
+type StepAnalyzer interface {
+	// Analyze returns a list of reasons for the step failure, and a boolean
+	// value indicating whether or not the step failure was recognized by
+	// the analyzer.
+	Analyze(f stepFailure) (*StepAnalyzerResult, error)
+}
+
+// StepAnalyzerResult is the result of running analysis on a stepFailure.
+type StepAnalyzerResult struct {
+	// Recognized is true if the StepFailureAnalyzer recognized the stepFailure.
+	Recognized bool
+
+	// Reasons lists the reasons for the stepFailure determined by the StepFailureAnalyzer.
+	Reasons []string
+}
+
+// MasterAnalyzer runs the process of checking masters, builders, test results and so on,
 // in order to produce alerts.
-type Analyzer struct {
+type MasterAnalyzer struct {
 	// MaxRecentBuilds is the maximum number of recent builds to check, per builder.
 	MaxRecentBuilds int
+
+	// StepAnalzers are the set of build step failure analyzers to be checked on
+	// build step failures.
+	StepAnalyzers []StepAnalyzer
 
 	// Client is the Client implementation for fetching json from CBE, builds, etc.
 	Client client.Client
@@ -62,30 +75,45 @@ type Analyzer struct {
 	// while in the "idle" state before triggering an "idle builder" alert.
 	IdleBuilderCountThresh int64
 
+	// StaleMasterThreshold is the maximum age that master data from CBE can be before
+	// triggering a "stale master" alert.
+	StaleMasterThreshold time.Duration
+
 	// bCache is a map of build cache key to Build message.
 	bCache map[string]*messages.Builds
+
+	// now is useful for mocking the system clock in testing.
+	now func() time.Time
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
 // maxBuilds is the maximum number of builds to check, per builder.
-func New(c client.Client, maxBuilds int) *Analyzer {
+func New(c client.Client, maxBuilds int) *MasterAnalyzer {
 	if c == nil {
 		c = client.New()
 	}
 
-	return &Analyzer{
+	return &MasterAnalyzer{
 		Client:                 c,
 		MaxRecentBuilds:        maxBuilds,
 		HungBuilderThresh:      3 * time.Hour,
 		OfflineBuilderThresh:   90 * time.Minute,
 		IdleBuilderCountThresh: 50,
+		StaleMasterThreshold:   10 * time.Minute,
+		StepAnalyzers: []StepAnalyzer{
+			&TestFailureAnalyzer{Client: c},
+		},
+
+		now: func() time.Time {
+			return time.Now()
+		},
 
 		bCache: map[string]*messages.Builds{},
 	}
 }
 
 // MasterAlerts returns alerts generated from the master at URL.
-func (a *Analyzer) MasterAlerts(url string, be *messages.BuildExtract) []messages.Alert {
+func (a *MasterAnalyzer) MasterAlerts(url string, be *messages.BuildExtract) []messages.Alert {
 	ret := []messages.Alert{}
 
 	// Copied logic from builder_messages.
@@ -94,28 +122,28 @@ func (a *Analyzer) MasterAlerts(url string, be *messages.BuildExtract) []message
 		return ret
 	}
 
-	elapsed := now().Sub(be.CreatedTimestamp.Time())
-	if elapsed > StaleMasterThreshold {
+	elapsed := a.now().Sub(be.CreatedTimestamp.Time())
+	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
 			Key:      fmt.Sprintf("stale master: %v", url),
 			Title:    "Stale Master Data",
 			Body:     fmt.Sprintf("%s elapsed since last update (%s).", elapsed, be.CreatedTimestamp.Time()),
 			Severity: 0,
-			Time:     messages.TimeToEpochTime(now()),
+			Time:     messages.TimeToEpochTime(a.now()),
 			Links:    []messages.Link{{"Master", url}},
 			// No type or extension for now.
 		})
 	}
 	if elapsed < 0 {
 		// Add this to the alerts returned, rather than just log it?
-		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", url, now(), elapsed)
+		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", url, a.now(), elapsed)
 	}
 
 	return ret
 }
 
 // BuilderAlerts returns alerts generated from builders connected to the master at url.
-func (a *Analyzer) BuilderAlerts(url string, be *messages.BuildExtract) []messages.Alert {
+func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []messages.Alert {
 	mn, err := masterName(url)
 	if err != nil {
 		log.Fatalf("Couldn't parse %s: %s", url, err)
@@ -188,7 +216,7 @@ func alertKey(master, builder, step, reason string) string {
 	return fmt.Sprintf("%s.%s.%s.%s", master, builder, step, reason)
 }
 
-func (a *Analyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) {
+func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) {
 	v := url.Values{}
 	v.Add("master", master)
 	v.Add("builder", builder)
@@ -220,9 +248,9 @@ func (a buildIDs) Less(i, j int) bool { return a[i] > a[j] }
 
 // latestBuildStep returns the latest build step name and update time, and an error
 // if there were any errors.
-func latestBuildStep(b *messages.Builds) (lastStep string, lastUpdate messages.EpochTime, err error) {
+func (a *MasterAnalyzer) latestBuildStep(b *messages.Builds) (lastStep string, lastUpdate messages.EpochTime, err error) {
 	if len(b.Steps) == 0 {
-		return "", messages.TimeToEpochTime(now()), errNoBuildSteps
+		return "", messages.TimeToEpochTime(a.now()), errNoBuildSteps
 	}
 	if len(b.Times) > 1 && b.Times[1] != 0 {
 		return StepCompletedRun, b.Times[1], nil
@@ -244,7 +272,7 @@ func latestBuildStep(b *messages.Builds) (lastStep string, lastUpdate messages.E
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]messages.Alert, []error) {
+func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]messages.Alert, []error) {
 	alerts := []messages.Alert{}
 	errs := []error{}
 
@@ -287,13 +315,13 @@ func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]
 	// Examining only the latest build is probably suboptimal since if it's still in progress it might
 	// not have hit a step that is going to fail and has failed repeatedly for the last few builds.
 	// AKA "Reliable failures".  TODO: Identify "Reliable failures"
-	lastStep, lastUpdated, err := latestBuildStep(lastBuild)
+	lastStep, lastUpdated, err := a.latestBuildStep(lastBuild)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("Couldn't get latest build step for %s.%s: %v", mn, bn, err))
 		return alerts, errs
 
 	}
-	elapsed := now().Sub(lastUpdated.Time())
+	elapsed := a.now().Sub(lastUpdated.Time())
 	links := []messages.Link{
 		{"Builder", fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", mn, bn)},
 		{"Last build", fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d", mn, bn, lastBuildID)},
@@ -308,7 +336,7 @@ func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]
 				Title:    fmt.Sprintf("%s.%s is hung in step %s.", mn, bn, lastStep),
 				Body:     fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
 				Severity: 0,
-				Time:     messages.TimeToEpochTime(now()),
+				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
 			// Note, just because it's building doesn't mean it's in a good state. If the last N builds
@@ -321,7 +349,7 @@ func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]
 				Title:    fmt.Sprintf("%s.%s is offline.", mn, bn),
 				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), a.OfflineBuilderThresh),
 				Severity: 0,
-				Time:     messages.TimeToEpochTime(now()),
+				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
 		}
@@ -332,7 +360,7 @@ func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]
 				Title:    fmt.Sprintf("%s.%s is idle with too many pending builds.", mn, bn),
 				Body:     fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", mn, bn, b.PendingBuilds, a.IdleBuilderCountThresh),
 				Severity: 0,
-				Time:     messages.TimeToEpochTime(now()),
+				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
 		}
@@ -344,7 +372,7 @@ func (a *Analyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]
 }
 
 // stepFailures returns the steps that have failed recently on builder bn.
-func (a *Analyzer) stepFailures(mn string, bn string, bID int64) ([]stepFailure, error) {
+func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFailure, error) {
 	cc := cacheKeyForBuild(mn, bn, bID)
 
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
@@ -390,7 +418,7 @@ func (a *Analyzer) stepFailures(mn string, bn string, bID int64) ([]stepFailure,
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, error) {
+func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, error) {
 	ret := []messages.Alert{}
 	type res struct {
 		f   stepFailure
@@ -407,7 +435,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		go func(f stepFailure) {
 			alr := messages.Alert{
 				Title: fmt.Sprintf("Builder step failure: %s.%s", f.masterName, f.builderName),
-				Time:  messages.EpochTime(now().Unix()),
+				Time:  messages.EpochTime(a.now().Unix()),
 				Type:  "buildfailure",
 			}
 
@@ -464,48 +492,25 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 
 // reasonsForFailure examines the step failure and applies some heuristics to
 // to find the cause. It may make blocking IO calls in the process.
-func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
+func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
 	ret := []string{}
+	recognized := false
 	log.Infof("Checking for reasons for failure step: %v", f.step.Name)
-	switch {
-	case f.step.Name == "compile":
-		log.Errorf("CompileSplitter")
-		// TODO: get more detailed reasons for compile failure.
-		return []string{"compile failure"}
-		// CompileSplitter
-	case f.step.Name == "webkit_tests":
-		log.Errorf("LayoutSplitter")
-		// LayoutTestSplitter
-	case f.step.Name == "androidwebview_instrumentation_tests" || f.step.Name == "mojotest_instrumentation_tests":
-		log.Errorf("JUnitSplitter")
-		// JUnitSplitter
-	case strings.HasSuffix(f.step.Name, "tests"):
-		// GTestSplitter
-		testResults, err := a.Client.TestResults(f.masterName, f.builderName, f.step.Name, f.build.Number)
+	for _, sfa := range a.StepAnalyzers {
+		res, err := sfa.Analyze(f)
 		if err != nil {
-			log.Errorf("Error fetching test results")
-			return nil
+			log.Errorf("Error get reasons from StepAnalyzer: %v", err)
 		}
-		if len(testResults.Tests) == 0 {
-			log.Errorf("No test results for %v", f)
+		if res.Recognized {
+			recognized = true
+			ret = append(ret, res.Reasons...)
 		}
-		log.Infof("%d test results", len(testResults.Tests))
+	}
 
-		for testName, testResults := range testResults.Tests {
-			// This string splitting logic was copied from builder_alerts.
-			// I'm not sure it's really necessary since the strings appear to always
-			// be either "PASS" or "FAIL" in practice.
-			expected := strings.Split(testResults.Expected, " ")
-			actual := strings.Split(testResults.Actual, " ")
-			ue := unexpected(expected, actual)
-			if len(ue) > 0 {
-				ret = append(ret, testName)
-			}
-		}
-
-	default:
-		log.Errorf("Unknown step type, unable to find reasons: %s", f.step.Name)
-		return nil
+	if !recognized {
+		// TODO: log and report frequently encountered unrecognized builder step
+		// failure names.
+		log.Errorf("Unrecognized step step failure type, unable to find reasons: %s", f.step.Name)
 	}
 
 	return ret
