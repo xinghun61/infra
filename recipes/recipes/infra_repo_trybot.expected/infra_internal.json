@@ -140,6 +140,7 @@
       "--rietveld_private_key_file",
       "[BUILD]/site_config/.rietveld_secret_key"
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "presubmit"
   }
 ]

@@ -134,6 +134,7 @@
       "--rietveld_email",
       ""
     ],
+    "cwd": "[SLAVE_BUILD]",
     "name": "presubmit"
   }
 ]
