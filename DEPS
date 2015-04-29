@@ -4,7 +4,7 @@ deps = {
 
   "infra/luci":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
-     "@4981574633e4966c54ae1363c77ffb67ec9ae132"),
+     "@9082f953988e79ebf15f843db7c702327f6ff4c9"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
