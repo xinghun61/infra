@@ -260,8 +260,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build2.put()
 
     builds, _ = self.service.search(
-        created_by='user:x@chromium.org', buckets=[self.test_build.bucket])
+        created_by='x@chromium.org', buckets=[self.test_build.bucket])
     self.assertEqual(builds, [build2])
+
+  def test_search_by_created_by_with_bad_string(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.service.search(created_by='blah')
 
   def test_search_with_paging(self):
     self.put_many_builds()

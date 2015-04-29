@@ -247,7 +247,12 @@ class BuildBucketService(object):
     tags = tags or []
     max_builds = fix_max_builds(max_builds)
     if isinstance(created_by, basestring):
-      created_by = auth.Identity.from_bytes(created_by)
+      if ':' not in created_by:  # pragma: no branch
+        created_by = 'user:%s' % created_by
+      try:
+        created_by = auth.Identity.from_bytes(created_by)
+      except ValueError as ex:
+        raise errors.InvalidInputError('Invalid created_by identity: %s' % ex)
 
     if buckets:
       self._check_search_acls(buckets)
