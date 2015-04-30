@@ -130,6 +130,24 @@ class ExtractorsTest(unittest.TestCase):
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json)
 
+  def testCompileStepNinjaErrorExtractor(self):
+    """Test ninja error extraction in compile step."""
+    failure_log = textwrap.dedent("""
+        ninja -C /a/b/c/ all -j50
+        ninja: Entering directory `../da/b/build/sl/M/'
+        ninja: error: '../../r/w/c/sess.js', needed by 'ob/r/w/h.stamp', 
+        missing and no known rule to make it""")
+    expected_signal_json = {
+        'files': {
+            'r/w/c/sess.js' : []
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
   def testCheckPermExtractor(self):
     failure_log = textwrap.dedent("""
         a/b/c.py
