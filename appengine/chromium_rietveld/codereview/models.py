@@ -470,8 +470,6 @@ def _calculate_delta(patch, patchset_id, patchsets):
     A list of patchset ids.
   """
   delta = []
-  if patch.no_base_file:
-    return delta
   for other in patchsets:
     if patchset_id == other.key.id():
       break
@@ -1021,6 +1019,10 @@ class Patch(ndb.Model):
         content = self.content_key.get()
         if content.is_bad:
           msg = 'Bad content. Try to upload again.'
+          logging.warn('Patch.get_content: %s', msg)
+          raise FetchError(msg)
+        if content.file_too_large:
+          msg = 'File too large.'
           logging.warn('Patch.get_content: %s', msg)
           raise FetchError(msg)
         if content.is_uploaded and content.text == None:
