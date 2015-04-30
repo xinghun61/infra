@@ -24,7 +24,6 @@ class CronSendMetrics(webapp2.RequestHandler):  # pragma: no cover
   """Resets expired builds."""
   @decorators.require_cronjob
   def get(self):
-    metrics.ensure_metrics_exist()
     metrics.send_all_metrics()
 
 
