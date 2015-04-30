@@ -254,6 +254,10 @@ def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
   output.extend(input_api.canned_checks.CheckOwners(input_api, output_api))
+  output.extend(input_api.canned_checks.CheckTreeIsOpen(
+      input_api,
+      output_api,
+      json_url='http://infra-status.appspot.com/current?format=json'))
   return output
 
 
