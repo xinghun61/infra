@@ -7,14 +7,13 @@ threadsafe: true
 handlers:
 - url: /admin/.*
   secure: always
-  login: admin
-  script: admin_handler.admin
+  script: app.admin_app
 - url: /css
   static_dir: css
   secure: always
 - url: /.*
   secure: always
-  script: main.app
+  script: app.main_app
 
 automatic_scaling:
   min_idle_instances: 2

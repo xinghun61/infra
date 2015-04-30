@@ -9,11 +9,34 @@
       body {
         padding-top: 10px;
       }
+      .top_right_links {
+        display: inline-block;
+        float: right;
+      }
     </style>
     {% block extra_head %}{% endblock %}
   </head>
 
   <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <p>
+        <div class="col-md-10">
+
+  <div class="top_right_links">
+    {% if username is defined %}
+      {% if username %}
+        {{ username }}
+      {% else %}
+        <a href="{{signin_link|safe }}">Sign in</a>
+      {% endif %}
+    {% endif %}
+  </div>
+
     {% block content %}{% endblock %}
+
+        </div>
+      </div>
+    </div>
   </body>
 </html>

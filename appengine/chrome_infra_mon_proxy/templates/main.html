@@ -1,16 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <p>
-        <div class="col-md-10">
 <h1>Chrome Infra Monitoring Proxy</h1>
 
 
 <p>Welcome to the Chrome Infrastructure Monitoring Proxy for time series data.
 
 <ul>
-  <li><a href="/admin/">Configuration</a> (requires admin priviledges)
+  <li><a href="/admin/">Configuration</a> (requires membership in
+      <a href="https://chrome-infra-auth.appspot.com/auth/groups#project-chrome-infra-monitoring-team" target="_blank">project-chrome-infra-monitoring-team</a>)
 </ul>
 
 <p>Send your protobufs to the /monacq endpoint (POST only) using the
@@ -22,8 +19,4 @@
 The end point requires authentication as a member of the
 <a href="https://chrome-infra-auth.appspot.com/auth/groups#service-account-monitoring-proxy"
    target="_blank">service-account-monitoring-proxy</a> group.
-
-        </div>
-      </div>
-    </div>
 {% endblock %}

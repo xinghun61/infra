@@ -17,26 +17,11 @@ from protorpc import remote
 from google.appengine.api import app_identity, taskqueue
 
 import common
+import handler_utils
 from components import auth
+from components import utils
 
 VM_MODULES = ['vm1', 'vm2', 'vm3']
-
-
-def require_group_membership(group_name):
-  """Authenticating decorator for handler methods.
-
-  Requires the user to be part of group in production, and
-  skips authorization for dev appserver.
-  """
-  if common.is_development_server():
-    auth_decorator = auth.public
-  else:
-    auth_decorator = auth.require( # pragma: no branch
-        lambda: auth.is_group_member(group_name))
-
-  def decorator(fn):
-    return auth_decorator(fn)
-  return decorator
 
 
 class NoBackendException(Exception):
@@ -64,13 +49,13 @@ class LoadBalancer(object):
 
 def forward_data(data):
   """Forwards the raw data to the backend."""
-  # Task queue should work correctly both in dev and prod server.
   lb = LoadBalancer()
   module_name = lb.choose_module()
   logging.info('Forwarding request to module: %s', module_name)
   hostname = app_identity.get_default_version_hostname()
-  if common.is_development_server():
+  if utils.is_local_dev_server():
     protocol = 'http'
+    hostname = 'localhost:808%s' % module_name[-1]
   else:
     protocol = 'https'
   url = '%s://%s/%s' % (protocol, hostname, module_name)
@@ -79,25 +64,27 @@ def forward_data(data):
 
 
 class MonacqHandler(auth.AuthenticatingHandler):
-  # Disable XSRF in local dev appserver; otherwise requests will fail.
-  if common.is_development_server():
-    xsrf_token_enforce_on = []  # pragma: no cover
 
-  @require_group_membership('service-account-monitoring-proxy')
+  @auth.require(lambda: auth.is_group_member(
+      'service-account-monitoring-proxy'))
   def post(self):
     forward_data(self.request.body)
 
 
-class MainHandler(common.BaseHandler):
+class MainHandler(handler_utils.BaseAuthHandler):
+  @auth.public
   def get(self):
     self.render_response('main.html', title='Chrome Infra Monitoring Proxy')
 
 
-logging.basicConfig(level=logging.DEBUG)
+def create_app():
+  logging.basicConfig(level=logging.DEBUG)
+  if utils.is_local_dev_server():
+    handler_utils.init_local_dev_server()
 
-main_handlers = [
-    (r'/', MainHandler),
-    (r'/monacq', MonacqHandler),
-]
+  main_handlers = [
+      (r'/', MainHandler),
+      (r'/monacq', MonacqHandler),
+  ]
 
-app = webapp2.WSGIApplication(main_handlers, debug=True)
+  return webapp2.WSGIApplication(main_handlers, debug=True)

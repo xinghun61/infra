@@ -16,6 +16,12 @@ from google.appengine.ext import ndb
 import common
 
 
+# Cannot use components.utils version here, because docker containers
+# don't play well with non-local symlinks.
+def _is_development_server():
+  return os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
+
+
 def _get_config_data():
   data_entity = common.MonAcqData.get_by_id(common.CONFIG_DATA_KEY)
   logging.info('get_config_data(): entity = %r', data_entity)
@@ -51,7 +57,7 @@ class VMHandler(webapp2.RequestHandler):
 
   def post(self):
     authorized = (
-        common.is_development_server() or
+        _is_development_server() or
         self.requester_is_task() or self.requester_is_me())
     if not authorized:
       self.abort(403)

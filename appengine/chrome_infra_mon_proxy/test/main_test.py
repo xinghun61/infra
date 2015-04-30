@@ -13,13 +13,14 @@ from testing_utils import testing
 import common
 import main
 from components import auth
+from components import utils
 
 
 class MonacqHandlerTest(testing.AppengineTestCase):
 
   @property
   def app_module(self):
-    return main.app
+    return main.create_app()
 
   def setUp(self):
     super(MonacqHandlerTest, self).setUp()
@@ -28,16 +29,7 @@ class MonacqHandlerTest(testing.AppengineTestCase):
               lambda: users.User('test@user.com', 'auth_domain'))
     self.mock(main.MonacqHandler, 'xsrf_token_enforce_on', [])
     self.mock(auth, 'is_group_member', lambda _: True) # pragma: no branch
-
-  def tearDown(self):
-    super(MonacqHandlerTest, self).tearDown()
-
-  def test_require_group_membership(self):
-    # This is a smoke test for coverage. The function is otherwise trivial.
-    self.mock(os, 'environ', {'SERVER_SOFTWARE': 'Development server'})
-    main.require_group_membership('foo')
-    self.mock(os, 'environ', {'SERVER_SOFTWARE': 'GAE production server'})
-    main.require_group_membership('foo')
+    self.mock(auth, 'bootstrap_group', lambda *_: None)
 
   def test_get(self):
     # GET request is not allowed.
@@ -61,9 +53,18 @@ class MainHandlerTest(testing.AppengineTestCase):
 
   @property
   def app_module(self):
-    return main.app
+    return main.create_app()
+
+  def setUp(self):
+    super(MainHandlerTest, self).setUp()
+    self.mock(utils, 'is_local_dev_server', lambda: True)
 
   def test_get(self):
     response = self.test_app.get('/')
     logging.info('response = %s', response)
     self.assertEquals(200, response.status_int)
+
+  def test_create_app(self):
+    """Branch coverage for production server."""
+    self.mock(utils, 'is_local_dev_server', lambda: False)
+    main.create_app()

@@ -8,10 +8,13 @@ import os
 import sys
 import webapp2
 
-from google.appengine.api import users
 from webapp2_extras import jinja2
 
 import common
+import handler_utils
+from components import auth
+from components import utils
+
 
 class AdminCommand(object):
   """Base class for administrative commands.
@@ -52,7 +55,7 @@ class SetCredentials(AdminCommand):
   @staticmethod
   def setParams(params, data):
     """Serialize data fields into template parameters."""
-    params['url'] = data.url
+    params['url'] = data.url or ''
     params['credentials'] = json.dumps(data.credentials)
     params['scopes'] = '\n'.join(data.scopes)
     params['headers'] = json.dumps(data.headers)
@@ -69,6 +72,7 @@ class SetCredentials(AdminCommand):
     params = {
         'message': '',
         'title': 'Config: Chrome Infra Monitoring Proxy',
+        'xsrf_token': self._handler.generate_xsrf_token(),
     }
     data = common.MonAcqData.get_by_id(common.CONFIG_DATA_KEY)
     if data:
@@ -79,6 +83,7 @@ class SetCredentials(AdminCommand):
     params = {
         'message': '',
         'title': 'Config: Chrome Infra Monitoring Proxy',
+        'xsrf_token': self._handler.generate_xsrf_token(),
     }
     data = common.MonAcqData.get_or_insert(common.CONFIG_DATA_KEY)
     self.setParams(params, data)
@@ -112,28 +117,27 @@ commands = {
 }
 
 
-# TODO(sergeyberezin): reimplement this using auth groups.
-class AdminDispatch(common.BaseHandler):
+class AdminDispatch(handler_utils.BaseAuthHandler):
   """Provide a cached Jinja environment to each request."""
 
+  @auth.autologin
+  @auth.require(lambda: auth.is_group_member(
+      'project-chrome-infra-monitoring-team'))
   def get(self, command):
-    if not users.get_current_user():
-      self.redirect(users.create_login_url(self.request.url))
-      return
-    if not users.is_current_user_admin():
-      self.response.set_status(403)
-      return
     commands[command](self).get()
 
+  @auth.require(lambda: auth.is_group_member(
+      'project-chrome-infra-monitoring-team'))
   def post(self, command):
-    if not users.is_current_user_admin():
-      self.response.set_status(403)
-      return
     commands[command](self).post()
 
 
-admin_handlers = [
-    (r'/admin/(.*)', AdminDispatch),
-]
+def create_app():
+  if utils.is_local_dev_server():
+    handler_utils.init_local_dev_server()
 
-admin = webapp2.WSGIApplication(admin_handlers, debug=True)
+  admin_handlers = [
+      (r'/admin/(.*)', AdminDispatch),
+  ]
+
+  return webapp2.WSGIApplication(admin_handlers, debug=True)
