@@ -22,7 +22,7 @@ class ConstantsTest(unittest.TestCase):
 class LoadJsonCredentialsTest(unittest.TestCase):
   # Everything's good, should not raise any exceptions.
   def test_valid_credentials(self):
-    creds = authentication.load_json_credentials(
+    creds = authentication.load_service_account_credentials(
       'valid_creds.json',
       service_accounts_creds_root=DATA_DIR)
     self.assertIsInstance(creds, dict)
@@ -33,38 +33,38 @@ class LoadJsonCredentialsTest(unittest.TestCase):
   # File exists but issue with the content: raises AuthError.
   def test_missing_type(self):
     with self.assertRaises(authentication.AuthError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'creds_missing_type.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_wrong_type(self):
     with self.assertRaises(authentication.AuthError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'creds_wrong_type.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_missing_client_email(self):
     with self.assertRaises(authentication.AuthError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'creds_missing_client_email.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_missing_private_key(self):
     with self.assertRaises(authentication.AuthError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'creds_missing_private_key.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_malformed(self):
     with self.assertRaises(authentication.AuthError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'creds_malformed.json',
         service_accounts_creds_root=DATA_DIR)
 
   # Problem with the file itself
   def test_file_not_found(self):
     with self.assertRaises(IOError):
-      authentication.load_json_credentials(
+      authentication.load_service_account_credentials(
         'this_file_should_not_exist.json',
         service_accounts_creds_root=DATA_DIR)
 

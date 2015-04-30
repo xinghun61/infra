@@ -22,11 +22,11 @@ class AuthError(Exception):
   pass
 
 
-def load_json_credentials(credentials_filename,
-                          service_accounts_creds_root=None):
-  """Loads and validate credential JSON file.
+def load_service_account_credentials(credentials_filename,
+                                     service_accounts_creds_root=None):
+  """Loads and validate a credential JSON file.
 
-  Example of a well-formatted key:
+  Example of a well-formatted file:
     {
       "private_key_id": "4168d274cdc7a1eaef1c59f5b34bdf255",
       "private_key": ("-----BEGIN PRIVATE KEY-----\nMIIhkiG9w0BAQEFAASCAmEwsd"
@@ -92,7 +92,7 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
 
   Args:
     credentials_filename (str): path to the service account key file.
-      See load_json_credentials() docstring for the file format.
+      See load_service_account_credentials() docstring for the file format.
 
   Keyword Args:
     scope (str|list of str): scope(s) of the credentials being
@@ -106,7 +106,7 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
     scope = [scope]
   assert all(isinstance(s, basestring) for s in scope)
 
-  key = load_json_credentials(
+  key = load_service_account_credentials(
     credentials_filename,
     service_accounts_creds_root=service_accounts_creds_root)
 
