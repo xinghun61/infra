@@ -31,13 +31,14 @@ Library usage:
     c.increment()
 """
 
+import logging
 import re
 import socket
 
 from monacq.proto import metrics_pb2
 
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
-from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor
+from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor, NullMonitor
 from infra.libs.ts_mon.target import DeviceTarget, TaskTarget
 
 
@@ -147,9 +148,13 @@ def process_argparse_options(args):
   """
   if args.ts_mon_endpoint.startswith('file://'):
     _state.global_monitor = DiskMonitor(args.ts_mon_endpoint[len('file://'):])
-  else:
+  elif args.ts_mon_credentials:
     _state.global_monitor = ApiMonitor(args.ts_mon_credentials,
                                        args.ts_mon_endpoint)
+  else:
+    logging.warning('Monitoring is disabled because --ts-mon-credentials was '
+                    'not set')
+    _state.global_monitor = NullMonitor()
 
   if args.ts_mon_target_type == 'device':
     _state.default_target = DeviceTarget(

@@ -128,6 +128,17 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
     self.assertIs(interface._state.default_target, singleton)
 
+  @mock.patch('infra.libs.ts_mon.interface.NullMonitor')
+  def test_no_args(self, fake_monitor):
+    singleton = object()
+    fake_monitor.return_value = singleton
+    p = argparse.ArgumentParser()
+    interface.add_argparse_options(p)
+    args = p.parse_args([])
+    interface.process_argparse_options(args)
+    fake_monitor.assert_called_once()
+    self.assertIs(interface._state.global_monitor, singleton)
+
   @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
   def test_send(self, fake_state):
     def serialize_to(pb, default_target=None): # pylint: disable=unused-argument

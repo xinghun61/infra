@@ -17,6 +17,15 @@ from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 
 
+class MonitorTest(unittest.TestCase):
+
+  def test_send(self):
+    m = monitor.Monitor()
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    with self.assertRaises(NotImplementedError):
+      m.send(metric1)
+
+
 class ApiMonitorTest(unittest.TestCase):
 
   @mock.patch('infra.libs.ts_mon.monitor.acquisition_api')
@@ -54,3 +63,11 @@ class DiskMonitorTest(unittest.TestCase):
       output = f.read()
     self.assertEquals(output.count('data {\n  name: "m1"\n}'), 3)
     self.assertEquals(output.count('data {\n  name: "m2"\n}'), 2)
+
+
+class NullMonitorTest(unittest.TestCase):
+
+  def test_send(self):
+    m = monitor.NullMonitor()
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    m.send(metric1)

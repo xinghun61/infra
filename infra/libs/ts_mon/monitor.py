@@ -73,6 +73,9 @@ class Monitor(object):
       ret = metrics_pb2.MetricsCollection(data=[data])
     return ret
 
+  def send(self, metric_pb):
+    raise NotImplementedError()
+
 
 class ApiMonitor(Monitor):
   """Class which sends metrics to the monitoring api, the default behavior."""
@@ -107,3 +110,9 @@ class DiskMonitor(Monitor):
 
   def send(self, metric_pb):
     self._logger.info('\n' + str(self._wrap_proto(metric_pb)))
+
+
+class NullMonitor(Monitor):
+  """Class that doesn't send metrics anywhere."""
+  def send(self, metric_pb):
+    pass
