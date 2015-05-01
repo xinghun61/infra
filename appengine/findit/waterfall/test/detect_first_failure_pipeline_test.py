@@ -174,6 +174,41 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
+  def testFirstFailureLastPassUpdating(self):
+    """last pass always should just be updated once."""
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, wf_analysis_status.ANALYZING)
+    # Setup build data for builds:
+    # 100: net_unitests failed, unit_tests failed.
+    # 99: net_unitests passed, unit_tests failed.
+    # 98: net_unitests passed, unit_tests failed.
+    # 97: net_unitests failed, unit_tests failed.
+    # 96: net_unitests passed, unit_tests passed.
+    for i in range(5):
+         self._MockUrlfetchWithBuildData(master_name, builder_name, 100 - i)
+  
+    pipeline = DetectFirstFailurePipeline()
+    failure_info = pipeline.run(master_name, builder_name, build_number)
+
+    expected_failed_steps = {
+        'net_unittests': {
+            'last_pass': 99,
+            'current_failure': 100,
+            'first_failure': 100
+        },
+        'unit_tests': {
+            'last_pass': 96,
+            'current_failure': 100,
+            'first_failure': 97
+        }
+    }
+
+    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+
   def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self):
     master_name = 'm'
     builder_name = 'b'

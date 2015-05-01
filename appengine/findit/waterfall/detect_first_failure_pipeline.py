@@ -167,11 +167,13 @@ class DetectFirstFailurePipeline(BasePipeline):
         # steps here.
 
         for step_name in build_info.failed_steps:
-          if step_name in failed_steps:
+          if (step_name in failed_steps and 
+              not 'last_pass' in failed_steps[step_name]):
             failed_steps[step_name]['first_failure'] = build_info.build_number
 
         for step_name in failed_steps:
-          if step_name in build_info.passed_steps:
+          if (step_name in build_info.passed_steps and
+              'last_pass' not in failed_steps[step_name]):
             failed_steps[step_name]['last_pass'] = build_info.build_number
 
         if all('last_pass' in step_info for step_info in failed_steps.values()):

@@ -1,0 +1,49 @@
+{
+  "properties": [
+    [
+      "got_revision",
+      "64c72819e898e952103b63eabc12772f9640af07",
+      "Change"
+    ]
+  ],
+  "results": 2,
+  "sourceStamp": {
+    "changes": [
+      {
+        "revision": "64c72819e898e952103b63eabc12772f9640af07"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "isFinished": true,
+      "name": "a"
+    },
+    {
+      "isFinished": true,
+      "name": "net_unittests",
+      "results": [
+        2,
+        [
+          "failed",
+          "net_unittests"
+        ]
+      ]
+    },
+    {
+      "isFinished": true,
+      "name": "unit_tests",
+      "results": [
+        2,
+        [
+          "failed",
+          "unit_tests"
+        ]
+      ]
+    }
+  ],
+  "times": [
+    1420233837.563434,
+    1420235143.579917
+  ]
+}
