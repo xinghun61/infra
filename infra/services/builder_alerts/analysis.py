@@ -125,7 +125,7 @@ def group_by_reason(alerts):  # pragma: no cover
     # But it turns out that sometimes it thinks that it is reasonable to send
     # a blamelist 300,000 commits long, which just shouldn't happen.
     if len(blame_list) > 1000:
-      logging.warn('Had to truncate blame list (%r:%r, length %s) for %s',
+      logging.warn('Had to truncate blame list (%r:%r, length %d) for %s',
           last_passing, first_failing, len(blame_list), reason_key)
 
     blame_list = blame_list[-1000:]
