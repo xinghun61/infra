@@ -82,6 +82,7 @@ from codereview import engine
 from codereview import library
 from codereview import models
 from codereview import models_chromium
+from codereview import net
 from codereview import notify_xmpp
 from codereview import patching
 from codereview import utils
@@ -1826,19 +1827,20 @@ def get_patchset_try_job_results(patchset):
   Combines try job results stored in datastore and in buildbucket. Deduplicates
   builds that have same buildbucket build id.
   """
+  # Fetch try job results from NDB and Buildbucket in parallel.
+  buildbucket_results_future = (
+      buildbucket.get_try_job_results_for_patchset_async(
+          patchset.issue_key.id(), patchset.key.id()))
+  local_try_job_results = patchset.try_job_results
+
   try_job_results = []
   buildbucket_build_ids = set()
   try:
-    buildbucket_results = buildbucket.get_try_job_results_for_patchset(
-        patchset.issue_key.id(), patchset.key.id())
-    for result in buildbucket_results:
+    for result in buildbucket_results_future.get_result():
       try_job_results.append(result)
       buildbucket_build_ids.add(result.build_id)
-  except Exception as ex:
-    logging.error(
-        'Could not load buildbucket builds for patchset %s/%s' % (
-            patchset.issue_key.id(), patchset.key.id()),
-        exc_info=ex)
+  except net.AuthError:
+    logging.exception('Could not load buildbucket builds')
 
   def try_get_build_id(try_job_result):
     if not try_job_result.build_properties:
@@ -1853,7 +1855,7 @@ def get_patchset_try_job_results(patchset):
         props.get('buildbucket', {}).get('build', {}).get('id') or
         props.get('buildbucket', {}).get('build_id'))
 
-  for result in patchset.try_job_results:
+  for result in local_try_job_results:
     build_id = try_get_build_id(result)
     if build_id is None or build_id not in buildbucket_build_ids:
       try_job_results.append(result)

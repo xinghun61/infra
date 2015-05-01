@@ -23,19 +23,13 @@ import setup
 setup.process_args()
 
 
-from google.appengine.api import app_identity
-from google.appengine.api import urlfetch
+from google.appengine.ext import ndb
 
 from utils import TestCase
 
 from codereview import buildbucket
 from codereview import models
-
-
-class MockResponse(object):
-  def __init__(self, data, status_code=200):
-    self.content = json.dumps(data, sort_keys=True)
-    self.status_code = status_code
+from codereview import net
 
 
 class BuildbucketTryJobResultTest(TestCase):
@@ -50,7 +44,7 @@ class BuildbucketTryJobResultTest(TestCase):
       self.assertEqual(actual, expected)
 
     status_test({'status': 'SCHEDULED'}, statuses.TRYPENDING)
-    status_test({'status': 'STARTED'}, None)
+    status_test({'status': 'STARTED'}, statuses.STARTED)
     status_test({'status': 'COMPLETED', 'result': 'SUCCESS'}, statuses.SUCCESS)
     status_test(
         {
@@ -91,6 +85,7 @@ class BuildbucketTryJobResultTest(TestCase):
     build = {
       'id': '1234567890',
       'status': 'SCHEDULED',
+      'status_changed_ts': 1430511441000,
       'tags': [
         'buildset:patch/rietveld/codereview.chromium.org/1/2',
         'master:tryserver.chromium.linux',
@@ -105,7 +100,8 @@ class BuildbucketTryJobResultTest(TestCase):
     self.assertIsNotNone(result)
     self.assertEqual(result.build_id, '1234567890')
     self.assertEqual(result.url, 'http://tryserver.com/1')
-    self.assertEqual(result.result, None)
+    self.assertEqual(
+        result.result, buildbucket.BuildbucketTryJobResult.TRYPENDING)
     self.assertEqual(result.master, 'tryserver.chromium.linux')
     self.assertEqual(result.builder, 'Release')
     self.assertEqual(result.slave, 'vm1-m1')
@@ -124,6 +120,7 @@ class BuildbucketTryJobResultTest(TestCase):
     build = {
       'id': '1234567890',
       'status': 'COMPLETED',
+      'status_changed_ts': 1430511441000,
       'result': 'SUCCESS',
       'parameters_json': json.dumps({
         'builder_name': 'Release',
@@ -148,6 +145,7 @@ class BuildbucketTryJobResultTest(TestCase):
     build = {
       'id': 'not an int',
       'status': 'SCHEDULED',
+      'status_changed_ts': 1430511441000,
       'tags': [
         # no master name
         'weirdtag:a:b:c',
@@ -166,9 +164,14 @@ class BuildbucketFunctionsTest(TestCase):
 
   def setUp(self):
     self.fake_responses = []
-    self.mock(urlfetch, 'fetch', lambda *_, **__: self.fake_responses.pop(0))
+    def json_request_async(*_, **__):
+      future = ndb.Future()
+      future.set_result(self.fake_responses.pop(0))
+      return future
+
+    self.mock(net, 'json_request_async', json_request_async)
     self.mock(
-        app_identity, 'get_application_id', lambda: 'chromiumcodereview-hr')
+        buildbucket, 'get_self_hostname', lambda: 'codereview.chromium.org')
 
   def test_get_try_job_results_for_patchset(self):
     response_data = {
@@ -177,8 +180,8 @@ class BuildbucketFunctionsTest(TestCase):
         {'id': '2', 'status': 'SCHEDULED'},
       ]
     }
-    self.fake_responses = [MockResponse(response_data)]
-    actual_builds = buildbucket.get_builds_for_patchset(1, 2)
+    self.fake_responses = [response_data]
+    actual_builds = buildbucket.get_builds_for_patchset_async(1, 2).get_result()
     self.assertEqual(actual_builds, response_data['builds'])
 
 

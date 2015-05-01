@@ -29,6 +29,7 @@ from django.conf import settings
 
 from codereview import common
 from codereview import models
+from codereview import net
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 BUILDBUCKET_HOSTNAME = (
@@ -148,20 +149,8 @@ def get_self_hostname():
   return settings.PREFERRED_DOMAIN_NAMES.get(settings.APP_ID)
 
 
-def fetch(url):
-  try:
-    access_token = app_identity.get_access_token(
-        'https://www.googleapis.com/auth/userinfo.email')[0]
-    headers = {
-        'Authorization': 'Bearer %s' % access_token,
-    }
-    return urlfetch.fetch(
-        url, headers=headers, validate_certificate=True, follow_redirects=False)
-  except urlfetch.DownloadError as ex:
-    raise BuildBucketError('DownloadError: %s' % ex)
-
-
-def get_builds_for_patchset(issue_id, patchset_id):
+@ndb.tasklet
+def get_builds_for_patchset_async(issue_id, patchset_id):
   """Queries BuildBucket for builds associated with the patchset.
 
   Requests for max 500 builds and does not check "next_cursor". Currently if
@@ -176,7 +165,7 @@ def get_builds_for_patchset(issue_id, patchset_id):
     logging.error(
         'Preferred domain name for this app is not set. '
         'See PREFERRED_DOMAIN_NAMES in settings.py: %r', hostname)
-    return []
+    raise ndb.Return([])
 
   buildset_tag = BUILDSET_TAG_FORMAT.format(
       hostname=hostname,
@@ -188,34 +177,35 @@ def get_builds_for_patchset(issue_id, patchset_id):
       'tag': 'buildset:%s' % buildset_tag,
   }
 
-  url = '%s/search?%s' % (BUILDBUCKET_API_ROOT, urllib.urlencode(params))
+  url = '%s/search' % BUILDBUCKET_API_ROOT
   logging.info(
-      'Fetching builds for patchset %s/%s. URL: %s',
-      issue_id, patchset_id, url)
-  resp = fetch(url)
-  if resp.status_code >= 300:
-    raise BuildBucketError(
-        'BuildBucket responded with %s status code' % resp.status_code)
-  body = json.loads(resp.content)
-  if 'error' in body:
-    bb_error = body.get('error', {})
+      'Fetching builds for patchset %s/%s. Buildset: %s',
+      issue_id, patchset_id, buildset_tag)
+  resp = yield net.json_request_async(
+      url, params=params,
+      scopes='https://www.googleapis.com/auth/userinfo.email')
+  if 'error' in resp:
+    bb_error = resp.get('error', {})
     raise BuildBucketError(
         'BuildBucket responded with error (reason %s): %s' % (
             bb_error.get('reason', 'no-reason'),
             bb_error.get('message', 'no-message')))
-  return body.get('builds') or []
+  raise ndb.Return(resp.get('builds') or [])
 
 
-def get_try_job_results_for_patchset(issue_id, patchset_id):
+@ndb.tasklet
+def get_try_job_results_for_patchset_async(issue_id, patchset_id):
   """Returns try job results stored on buildbucket."""
-  builds = get_builds_for_patchset(issue_id, patchset_id)
+  builds = yield get_builds_for_patchset_async(issue_id, patchset_id)
+  results = []
   for build in builds:
     try_job_result = BuildbucketTryJobResult.from_build(build)
     if not try_job_result.builder:
       logging.info(
           'Build %s does not have a builder' % try_job_result.build_id)
       continue
-    yield try_job_result
+    results.append(try_job_result)
+  raise ndb.Return(results)
 
 
 ################################################################################
