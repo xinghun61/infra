@@ -8,3 +8,12 @@ PENDING = 0
 ANALYZING = 10
 ANALYZED = 70
 ERROR = 80
+
+
+
+STATUS_TO_DESCRIPTION = {
+    PENDING: 'Pending',
+    ANALYZING: 'Analyzing',
+    ANALYZED: 'Analyzed',
+    ERROR: 'Error'
+}

@@ -6,6 +6,8 @@ from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
 from model import wf_analysis_status
+from model import wf_analysis_result_status
+from waterfall import buildbot
 
 
 class WfAnalysis(BaseBuildModel):
@@ -13,7 +15,6 @@ class WfAnalysis(BaseBuildModel):
 
   'Wf' is short for waterfall.
   """
-
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfAnalysis',
@@ -37,6 +38,15 @@ class WfAnalysis(BaseBuildModel):
   @property
   def failed(self):
     return self.status == wf_analysis_status.ERROR
+
+  @property
+  def status_description(self):
+    return wf_analysis_status.STATUS_TO_DESCRIPTION.get(self.status, 'Unknown')
+
+  @property
+  def result_status_description(self):
+    return wf_analysis_result_status.RESULT_STATUS_TO_DESCRIPTION.get(
+        self.result_status,'')
 
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""

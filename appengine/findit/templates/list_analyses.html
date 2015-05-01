@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<head>
+  <title>Build Analyses</title>
+  <meta charset="utf-8">
+  <style>
+    table {
+      border-collapse: collapse;
+      border: 1px solid gray;
+    }
+    table td, th {
+      border: 1px solid gray;
+    }
+  </style>
+</head>
+<body>
+  <b>Builds and Analysis Results:</b>
+  <div id="builds">
+    <table>
+      <tr>
+        <th></th>
+        <th>Build Start Time</th>
+        <th>Build</th>
+        <th>Status</th>
+        <th>Suspected CLs</th>
+        <th>Result Status</th>
+      </tr>
+
+      <tbody>
+      {% for analysis in analyses %}
+        <tr>
+          <td>{{loop.index}}</td>
+          <td>{{analysis.build_start_time}}</td>
+          <td>{{analysis.master_name}}, {{analysis.builder_name}}, 
+            <a href="./build-failure?url=https://build.chromium.org/p
+/{{analysis.master_name}}/builders/{{analysis.builder_name}}
+/builds/{{analysis.build_number}}">
+              {{analysis.build_number}}
+            </a>
+          </td>
+          <td>{{analysis.status_description}}</td>
+          <td>
+          {% if analysis.suspected_cls %}
+            {% for suspected_cl in analysis.suspected_cls %}
+              <li>
+                {{suspected_cl.repo_name}}: 
+                {% if suspected_cl.commit_position %}
+                  <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>
+                {% else %}
+                  <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          {% endif %}
+          </td>
+          <td>{{analysis.result_status}}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+</body>

@@ -10,3 +10,13 @@ NOT_FOUND_INCORRECT = 20
 FOUND_UNTRIAGED = 30
 NOT_FOUND_UNTRIAGED = 40
 NOT_FOUND_CORRECT = 50
+
+
+RESULT_STATUS_TO_DESCRIPTION = {
+    FOUND_CORRECT: 'Correct - Found',
+    FOUND_INCORRECT: 'Incorrect - Found',
+    NOT_FOUND_INCORRECT: 'Incorrect - Not Found',
+    FOUND_UNTRIAGED: 'Untriaged - Found',
+    NOT_FOUND_UNTRIAGED: 'Untriaged - Not Found',
+    NOT_FOUND_CORRECT: 'Correct - Not Found'
+}

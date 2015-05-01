@@ -6,6 +6,7 @@ import unittest
 
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from model import wf_analysis_result_status
 
 
 class WfAnalysisTest(unittest.TestCase):
@@ -32,3 +33,21 @@ class WfAnalysisTest(unittest.TestCase):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = status
       self.assertFalse(analysis.failed)
+
+  def testWfAnalysisStatusDescription(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.status = wf_analysis_status.PENDING
+    self.assertEqual("Pending", analysis.status_description)
+    analysis.status = wf_analysis_status.ANALYZING
+    self.assertEqual("Analyzing", analysis.status_description)
+    analysis.status = wf_analysis_status.ANALYZED
+    self.assertEqual("Analyzed", analysis.status_description)
+    analysis.status = wf_analysis_status.ERROR
+    self.assertEqual("Error", analysis.status_description)
+
+  def testWfAnalysisResultStatusDescription(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+
+    self.assertEqual('', analysis.result_status_description)
+    analysis.result_status = wf_analysis_result_status.FOUND_CORRECT
+    self.assertEqual("Correct - Found", analysis.result_status_description)

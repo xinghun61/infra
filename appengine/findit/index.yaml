@@ -1,0 +1,9 @@
+indexes:
+
+# For aggregated build failure analyses UI
+- kind: WfAnalysis
+  properties:
+  - name: result_status
+    direction: asc
+  - name: build_start_time
+    direction: desc

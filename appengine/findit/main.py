@@ -7,7 +7,7 @@ import webapp2
 
 from findit_api import FindItApi
 from handlers import build_failure
-from handlers import list_build
+from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import read_entity
 from handlers import triage_analysis
@@ -16,7 +16,7 @@ from handlers import verify_analysis
 
 handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
-    ('/list-build', list_build.ListBuild),
+    ('/list-analyses', list_analyses.ListAnalyses),
     ('/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/read-entity', read_entity.ReadEntity),
     ('/triage-analysis', triage_analysis.TriageAnalysis),

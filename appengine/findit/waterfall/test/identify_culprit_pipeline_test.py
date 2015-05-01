@@ -234,6 +234,5 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertIsNotNone(analysis)
     self.assertEqual(dummy_result, analysis.result)
     self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
-    self.assertEqual(wf_analysis_result_status.NOT_FOUND_UNTRIAGED,
-                     analysis.result_status)
+    self.assertIsNone(analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)

@@ -19,6 +19,9 @@ def _GetResultAnalysisStatus(analysis_result):
   """
   # Now we can only set the status based on if we found any suspected CL(s).
   # TODO: Add logic to decide the status after comparing with culprit CL(s).
+  if not analysis_result or not analysis_result['failures']:
+    return None
+
   for failure in analysis_result['failures']:
     if failure['suspected_cls']: 
       return wf_analysis_result_status.FOUND_UNTRIAGED
@@ -29,6 +32,9 @@ def _GetResultAnalysisStatus(analysis_result):
 def _GetSuspectedCLs(analysis_result):
   """Returns the suspected CLs we found in analysis."""
   suspected_cls = []
+  if not analysis_result or not analysis_result['failures']:
+    return suspected_cls
+
   for failure in analysis_result['failures']:
     for suspected_cl in failure['suspected_cls']:
       cl_info = {
