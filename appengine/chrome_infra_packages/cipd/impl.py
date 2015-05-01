@@ -59,6 +59,9 @@ from . import reader
 # be lower case.
 PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
 
+# Regular expression for a package path (path inside package namespace).
+PACKAGE_PATH_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
+
 # Hash algorithm used to derive package instance ID from package data.
 DIGEST_ALGO = 'SHA1'
 
@@ -357,14 +360,19 @@ class RepoService(object):
     return pkg, True
 
 
-def is_valid_package_path(package_name):
+def is_valid_package_name(package_name):
   """True if string looks like a valid package name."""
-  return bool(PACKAGE_NAME_RE.match(package_name))
+  return package_name and bool(PACKAGE_NAME_RE.match(package_name))
+
+
+def is_valid_package_path(package_path):
+  """True if string looks like a valid package path."""
+  return package_path and bool(PACKAGE_PATH_RE.match(package_path))
 
 
 def is_valid_instance_id(instance_id):
   """True if string looks like a valid package instance ID."""
-  return cas.is_valid_hash_digest(DIGEST_ALGO, instance_id)
+  return instance_id and cas.is_valid_hash_digest(DIGEST_ALGO, instance_id)
 
 
 def get_repo_service():

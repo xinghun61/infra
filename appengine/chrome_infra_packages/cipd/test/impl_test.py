@@ -21,6 +21,19 @@ from cipd import processing
 
 
 class TestValidators(unittest.TestCase):
+  def test_is_valid_package_name(self):
+    self.assertTrue(impl.is_valid_package_name('a'))
+    self.assertTrue(impl.is_valid_package_name('a/b'))
+    self.assertTrue(impl.is_valid_package_name('a/b/c/1/2/3'))
+    self.assertTrue(impl.is_valid_package_name('infra/tools/cipd'))
+    self.assertTrue(impl.is_valid_package_name('-/_'))
+    self.assertFalse(impl.is_valid_package_name(''))
+    self.assertFalse(impl.is_valid_package_name('/a'))
+    self.assertFalse(impl.is_valid_package_name('a/'))
+    self.assertFalse(impl.is_valid_package_name('A'))
+    self.assertFalse(impl.is_valid_package_name('a/B'))
+    self.assertFalse(impl.is_valid_package_name('a\\b'))
+
   def test_is_valid_package_path(self):
     self.assertTrue(impl.is_valid_package_path('a'))
     self.assertTrue(impl.is_valid_package_path('a/b'))

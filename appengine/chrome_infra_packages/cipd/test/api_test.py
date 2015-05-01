@@ -51,10 +51,9 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         now=datetime.datetime(2014, 1, 1))
     self.assertTrue(registered)
 
-    # Should return PACKAGE_NOT_FOUND even though package exists.
     self.mock(api.acl, 'can_fetch_package', lambda *_: False)
-    resp = self.call_api('fetch_package', {'package_name': 'good/name'})
-    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+    with self.call_should_fail(403):
+      self.call_api('fetch_package', {'package_name': 'good/name'})
 
   def test_fetch_package_no_such_package(self):
     resp = self.call_api('fetch_package', {'package_name': 'good/name'})
@@ -174,13 +173,12 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         now=datetime.datetime(2014, 1, 1))
     self.assertTrue(registered)
 
-    # Should return PACKAGE_NOT_FOUND even though package exists.
     self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
-    resp = self.call_api('fetch_instance', {
-      'package_name': 'good/name',
-      'instance_id': 'a'*40,
-    })
-    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+    with self.call_should_fail(403):
+      self.call_api('fetch_instance', {
+        'package_name': 'good/name',
+        'instance_id': 'a'*40,
+      })
 
   def test_fetch_instance_no_such_package(self):
     resp = self.call_api('fetch_instance', {
@@ -390,9 +388,8 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
 
   def test_fetch_acl_no_access(self):
     self.mock(api.acl, 'can_fetch_acl', lambda *_: False)
-    resp = self.call_api('fetch_acl', {'package_path': 'a/b/c'})
-    self.assertEqual(200, resp.status_code)
-    self.assertEqual({'acls': {}, 'status': 'SUCCESS'}, resp.json_body)
+    with self.call_should_fail(403):
+      self.call_api('fetch_acl', {'package_path': 'a/b/c'})
 
   def test_modify_acl_ok(self):
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
@@ -569,11 +566,11 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
 
     # Should return PACKAGE_NOT_FOUND even though package exists.
     self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
-    resp = self.call_api('fetch_client_binary', {
-      'package_name': 'infra/tools/cipd/linux-amd64',
-      'instance_id': 'a'*40,
-    })
-    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+    with self.call_should_fail(403):
+      self.call_api('fetch_client_binary', {
+        'package_name': 'infra/tools/cipd/linux-amd64',
+        'instance_id': 'a'*40,
+      })
 
   def test_fetch_client_binary_no_such_package(self):
     resp = self.call_api('fetch_client_binary', {

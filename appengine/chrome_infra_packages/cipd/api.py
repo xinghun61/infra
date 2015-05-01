@@ -4,6 +4,8 @@
 
 """Cloud Endpoints API for Package Repository service."""
 
+import functools
+
 import endpoints
 
 from protorpc import message_types
@@ -22,13 +24,34 @@ from . import impl
 package = 'cipd'
 
 
+################################################################################
+## Messages used by other messages.
+
+
+class Status(messages.Enum):
+  """Response status code, shared by all responses."""
+  # Operation finished successfully (generic "success" response).
+  SUCCESS = 1
+  # The package was successfully registered.
+  REGISTERED = 2
+  # The package was already registered (not a error).
+  ALREADY_REGISTERED = 3
+  # Some uncategorized non-transient error happened.
+  ERROR = 4
+  # No such package.
+  PACKAGE_NOT_FOUND = 5
+  # Package itself is known, but requested instance_id isn't registered.
+  INSTANCE_NOT_FOUND = 6
+  # Need to upload package data before registering the package.
+  UPLOAD_FIRST = 7
+  # Client binary is not available, the call should be retried later.
+  NOT_EXTRACTED_YET = 8
+
+
 class Package(messages.Message):
   """Information about some registered package."""
-  # Name of the package.
   package_name = messages.StringField(1, required=True)
-  # Who registered the package.
   registered_by = messages.StringField(2, required=True)
-  # When the package was registered.
   registered_ts = messages.IntegerField(3, required=True)
 
 
@@ -42,13 +65,9 @@ def package_to_proto(ent):
 
 class PackageInstance(messages.Message):
   """Information about some registered package instance."""
-  # Name of the package.
   package_name = messages.StringField(1, required=True)
-  # ID of the instance (SHA1 of package file content).
   instance_id = messages.StringField(2, required=True)
-  # Who registered the instance.
   registered_by = messages.StringField(3, required=True)
-  # When the instance was registered.
   registered_ts = messages.IntegerField(4, required=True)
 
 
@@ -59,121 +78,6 @@ def instance_to_proto(ent):
       instance_id=ent.instance_id,
       registered_by=ent.registered_by.to_bytes(),
       registered_ts=utils.datetime_to_timestamp(ent.registered_ts))
-
-
-class FetchPackageResponse(messages.Message):
-  """Results of fetchPackage call."""
-
-  # TODO(vadimsh): Add more info (like a list of labels or instances).
-
-  class Status(messages.Enum):
-    # Package exists.
-    SUCCESS = 1
-    # No such package or access is denied.
-    PACKAGE_NOT_FOUND = 2
-    # Some non-transient error happened.
-    ERROR = 3
-
-  # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField(Status, 1, required=True)
-  # For SUCCESS, an information about the package.
-  package = messages.MessageField(Package, 2, required=False)
-  # For ERROR status, an error message.
-  error_message = messages.StringField(3, required=False)
-
-
-class RegisterPackageResponse(messages.Message):
-  """Results of registerPackage call."""
-
-  class Status(messages.Enum):
-    # Package successfully registered.
-    REGISTERED = 1
-    # Such package already exists. It is not an error.
-    ALREADY_REGISTERED = 2
-    # Some unexpected fatal error happened.
-    ERROR = 3
-
-  # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField(Status, 1, required=True)
-  # For REGISTERED or ALREADY_REGISTERED, an information about the package.
-  package = messages.MessageField(Package, 2, required=False)
-  # For ERROR status, an error message.
-  error_message = messages.StringField(3, required=False)
-
-
-class FetchInstanceResponse(messages.Message):
-  """Results of fetchInstance call."""
-
-  class Status(messages.Enum):
-    # Package instance exists, fetch_url is returned.
-    SUCCESS = 1
-    # No such package or access is denied.
-    PACKAGE_NOT_FOUND = 2
-    # Package itself is known, but requested instance_id isn't registered.
-    INSTANCE_NOT_FOUND = 3
-    # Some non-transient error happened.
-    ERROR = 4
-
-  class Processor(messages.Message):
-    class Status(messages.Enum):
-      PENDING = 1
-      SUCCESS = 2
-      FAILURE = 3
-    # Name of the processor, defines what it does.
-    name = messages.StringField(1, required=True)
-    # Status of th processing.
-    status = messages.EnumField(Status, 2, required=True)
-
-  # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField(Status, 1, required=True)
-
-  # For SUCCESS, an information about the package instance.
-  instance = messages.MessageField(PackageInstance, 2, required=False)
-  # For SUCCESS, a signed url to fetch the package instance file from.
-  fetch_url = messages.StringField(3, required=False)
-  # For SUCCESS, list of processors applies to the instance.
-  processors = messages.MessageField(Processor, 4, repeated=True)
-
-  # For ERROR status, an error message.
-  error_message = messages.StringField(5, required=False)
-
-
-class RegisterInstanceResponse(messages.Message):
-  """Results of registerInstance call.
-
-  upload_session_id and upload_url (if present) can be used with CAS service
-  (finishUpload call in particular).
-
-  Callers are expected to execute following protocol:
-    1. Attempt to register a package instance by calling registerInstance(...).
-    2. On UPLOAD_FIRST response, upload package data and finalize the upload by
-       using upload_session_id and upload_url and calling cas.finishUpload.
-    3. Once upload is finalized, call registerInstance(...) again.
-  """
-
-  class Status(messages.Enum):
-    # Package instance successfully registered.
-    REGISTERED = 1
-    # Such package instance already exists. It is not an error.
-    ALREADY_REGISTERED = 2
-    # Package data has to be upload to CAS first.
-    UPLOAD_FIRST = 3
-    # Some unexpected fatal error happened.
-    ERROR = 4
-
-  # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField(Status, 1, required=True)
-
-  # For REGISTERED or ALREADY_REGISTERED, info about the package instance.
-  instance = messages.MessageField(PackageInstance, 2, required=False)
-
-  # For UPLOAD_FIRST status, a unique identifier of the upload operation.
-  upload_session_id = messages.StringField(3, required=False)
-  # For UPLOAD_FIRST status, URL to PUT file to via resumable upload protocol.
-  upload_url = messages.StringField(4, required=False)
-
-  # For ERROR status, an error message.
-  error_message = messages.StringField(5, required=False)
 
 
 class PackageACL(messages.Message):
@@ -209,30 +113,11 @@ def package_acls_to_proto(per_role_acls):
   return PackageACL(acls=acls)
 
 
-class FetchACLResponse(messages.Message):
-  """Results of fetchACL call."""
-
-  class Status(messages.Enum):
-    # ACLs are successfully read.
-    SUCCESS = 1
-    # Some unexpected fatal error happened.
-    ERROR = 2
-
-  # Status of this operation, defines what other fields to expect.
-  status = messages.EnumField(Status, 1, required=True)
-  # For SUCCESS status, list of ACLs split by package path and role.
-  acls = messages.MessageField(PackageACL, 2, required=False)
-  # For ERROR status, an error message.
-  error_message = messages.StringField(3, required=False)
-
-
 class RoleChange(messages.Message):
   """Describes a single modification to ACL."""
-
   class Action(messages.Enum):
     GRANT = 1
     REVOKE = 2
-
   # Action to perform.
   action = messages.EnumField(Action, 1, required=True)
   # Role to modify ('OWNER', 'WRITER', 'READER', ...).
@@ -267,6 +152,102 @@ def role_change_from_proto(proto, package_path):
       group=group)
 
 
+################################################################################
+
+
+class FetchPackageResponse(messages.Message):
+  """Results of fetchPackage call."""
+
+  # TODO(vadimsh): Add more info (like a list of labels or instances).
+
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, information about the package.
+  package = messages.MessageField(Package, 3, required=False)
+
+
+################################################################################
+
+
+class RegisterPackageResponse(messages.Message):
+  """Results of registerPackage call."""
+
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For REGISTERED or ALREADY_REGISTERED, information about the package.
+  package = messages.MessageField(Package, 3, required=False)
+
+
+################################################################################
+
+
+class FetchInstanceResponse(messages.Message):
+  """Results of fetchInstance call."""
+  class Processor(messages.Message):
+    class Status(messages.Enum):
+      PENDING = 1
+      SUCCESS = 2
+      FAILURE = 3
+    # Name of the processor, defines what it does.
+    name = messages.StringField(1, required=True)
+    # Status of the processing.
+    status = messages.EnumField(Status, 2, required=True)
+
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, information about the package instance.
+  instance = messages.MessageField(PackageInstance, 3, required=False)
+  # For SUCCESS, a signed url to fetch the package instance file from.
+  fetch_url = messages.StringField(4, required=False)
+  # For SUCCESS, list of processors applies to the instance.
+  processors = messages.MessageField(Processor, 5, repeated=True)
+
+
+################################################################################
+
+
+class RegisterInstanceResponse(messages.Message):
+  """Results of registerInstance call.
+
+  upload_session_id and upload_url (if present) can be used with CAS service
+  (finishUpload call in particular).
+
+  Callers are expected to execute following protocol:
+    1. Attempt to register a package instance by calling registerInstance(...).
+    2. On UPLOAD_FIRST response, upload package data and finalize the upload by
+       using upload_session_id and upload_url and calling cas.finishUpload.
+    3. Once upload is finalized, call registerInstance(...) again.
+  """
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For REGISTERED or ALREADY_REGISTERED, info about the package instance.
+  instance = messages.MessageField(PackageInstance, 3, required=False)
+
+  # For UPLOAD_FIRST status, a unique identifier of the upload operation.
+  upload_session_id = messages.StringField(4, required=False)
+  # For UPLOAD_FIRST status, URL to PUT file to via resumable upload protocol.
+  upload_url = messages.StringField(5, required=False)
+
+
+################################################################################
+
+
+class FetchACLResponse(messages.Message):
+  """Results of fetchACL call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, list of ACLs split by package path and role.
+  acls = messages.MessageField(PackageACL, 3, required=False)
+
+
+################################################################################
+
+
 class ModifyACLRequest(messages.Message):
   """Body of modifyACL call."""
   changes = messages.MessageField(RoleChange, 1, repeated=True)
@@ -274,34 +255,15 @@ class ModifyACLRequest(messages.Message):
 
 class ModifyACLResponse(messages.Message):
   """Results of modifyACL call."""
-
-  class Status(messages.Enum):
-    # ACLs successfully modified.
-    SUCCESS = 1
-    # Some unexpected fatal error happened.
-    ERROR = 2
-
-  # Status of this operation, defines what other fields to expect.
   status = messages.EnumField(Status, 1, required=True)
-  # For ERROR status, an error message.
   error_message = messages.StringField(2, required=False)
+
+
+################################################################################
 
 
 class FetchClientBinaryResponse(messages.Message):
   """Results of fetchClientBinary call."""
-
-  class Status(messages.Enum):
-    # The client binary is extracted, client_binary is returned.
-    SUCCESS = 1
-    # No such package or access is denied.
-    PACKAGE_NOT_FOUND = 2
-    # Package itself is known, but requested instance_id isn't registered.
-    INSTANCE_NOT_FOUND = 3
-    # The client binary is not extracted yet. The call may be retried later.
-    NOT_EXTRACTED_YET = 4
-    # Some non-transient error happened.
-    ERROR = 5
-
   class ClientBinary(messages.Message):
     # SHA1 hex digest of the extracted binary, for verification on the client.
     sha1 = messages.StringField(1, required=True)
@@ -310,16 +272,87 @@ class FetchClientBinaryResponse(messages.Message):
     # A signed url to fetch the binary file from.
     fetch_url = messages.StringField(3, required=True)
 
-  # Status of this operation, defines what other fields to expect.
   status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
 
-  # For SUCCESS or NOT_EXTRACTED_YET, an information about the package instance.
-  instance = messages.MessageField(PackageInstance, 2, required=False)
-  # For SUCCESS, an information about the client binary.
-  client_binary = messages.MessageField(ClientBinary, 3, required=False)
+  # For SUCCESS or NOT_EXTRACTED_YET, information about the package instance.
+  instance = messages.MessageField(PackageInstance, 3, required=False)
+  # For SUCCESS, information about the client binary.
+  client_binary = messages.MessageField(ClientBinary, 4, required=False)
 
-  # For ERROR status, an error message.
-  error_message = messages.StringField(4, required=False)
+
+################################################################################
+
+
+class Error(Exception):
+  status = Status.ERROR
+
+
+class PackageNotFoundError(Error):
+  status = Status.PACKAGE_NOT_FOUND
+
+
+class InstanceNotFoundError(Error):
+  status = Status.INSTANCE_NOT_FOUND
+
+
+class ValidationError(Error):
+  # TODO(vadimsh): Use VALIDATION_ERROR. It changes JSON protocol.
+  status = Status.ERROR
+
+
+def validate_package_name(package_name):
+  if not impl.is_valid_package_path(package_name):
+    raise ValidationError('Invalid package name')
+  return package_name
+
+
+def validate_package_path(package_path):
+  if not impl.is_valid_package_path(package_path):
+    raise ValidationError('Invalid package path')
+  return package_path
+
+
+def validate_instance_id(instance_id):
+  if not impl.is_valid_instance_id(instance_id):
+    raise ValidationError('Invalid package instance ID')
+  return instance_id
+
+
+def endpoints_method(request_message, response_message, **kwargs):
+  """Wrapper around Endpoint methods to simplify error handling.
+
+  Catches Error exceptions and converts them to error responses. Assumes
+  response_message has fields 'status' and 'error_message'.
+  """
+  assert hasattr(response_message, 'status')
+  assert hasattr(response_message, 'error_message')
+  def decorator(f):
+    @auth.endpoints_method(request_message, response_message, **kwargs)
+    @functools.wraps(f)
+    def wrapper(*args):
+      try:
+        response = f(*args)
+        if response.status is None:
+          response.status = Status.SUCCESS
+        return response
+      except Error as e:
+        return response_message(
+            status=e.status,
+            error_message=e.message if e.message else None)
+    return wrapper
+  return decorator
+
+
+def container(body_cls, params):
+  """Sugar for endpoints.ResourceContainer(...)."""
+  kwargs = {}
+  for idx, param in enumerate(params):
+    kwargs[param] = messages.StringField(idx+1, required=True)
+  return endpoints.ResourceContainer(body_cls, **kwargs)
+
+
+################################################################################
 
 
 @auth.endpoints_api(
@@ -342,111 +375,74 @@ class PackageRepositoryApi(remote.Service):
             'Service is not configured')
     return self._service
 
-  # Identifies some package.
-  PACKAGE_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      package_name=messages.StringField(1, required=True))
 
-  @auth.endpoints_method(
-      PACKAGE_RESOURCE_CONTAINER,
+  ### Package methods.
+
+
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_name']),
       FetchPackageResponse,
       http_method='GET',
       path='package',
       name='fetchPackage')
   def fetch_package(self, request):
     """Returns information about a package."""
-    package_name = request.package_name
-    if not impl.is_valid_package_path(package_name):
-      return FetchPackageResponse(
-          status=FetchPackageResponse.Status.ERROR,
-          error_message='Invalid package name')
+    package_name = validate_package_name(request.package_name)
 
-    # An unauthorized user should not be able to prob package namespace and rely
-    # on 403 status to discover what packages exist. Return "not found" instead.
     caller = auth.get_current_identity()
     if not acl.can_fetch_package(package_name, caller):
-      return FetchPackageResponse(
-          status=FetchPackageResponse.Status.PACKAGE_NOT_FOUND)
+      raise auth.AuthorizationError()
 
     pkg = self.service.get_package(package_name)
     if pkg is None:
-      return FetchPackageResponse(
-          status=FetchPackageResponse.Status.PACKAGE_NOT_FOUND)
+      raise PackageNotFoundError()
+    return FetchPackageResponse(package=package_to_proto(pkg))
 
-    return FetchPackageResponse(
-        status=FetchPackageResponse.Status.SUCCESS,
-        package=package_to_proto(pkg))
-
-  @auth.endpoints_method(
-      PACKAGE_RESOURCE_CONTAINER,
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_name']),
       RegisterPackageResponse,
       path='package',
       http_method='POST',
       name='registerPackage')
   def register_package(self, request):
     """Registers a new package in the repository."""
-    package_name = request.package_name
-    if not impl.is_valid_package_path(package_name):
-      return RegisterPackageResponse(
-          status=RegisterPackageResponse.Status.ERROR,
-          error_message='Invalid package name')
+    package_name = validate_package_name(request.package_name)
 
     caller = auth.get_current_identity()
     if not acl.can_register_package(package_name, caller):
       raise auth.AuthorizationError()
 
     pkg, registered = self.service.register_package(package_name, caller)
-    if registered:
-      status = RegisterPackageResponse.Status.REGISTERED
-    else:
-      status = RegisterPackageResponse.Status.ALREADY_REGISTERED
-    return RegisterPackageResponse(status=status, package=package_to_proto(pkg))
+    return RegisterPackageResponse(
+        status=Status.REGISTERED if registered else Status.ALREADY_REGISTERED,
+        package=package_to_proto(pkg))
 
-  # Identifies some instance of some package.
-  INSTANCE_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      package_name=messages.StringField(1, required=True),
-      instance_id=messages.StringField(2, required=True))
 
-  @auth.endpoints_method(
-      INSTANCE_RESOURCE_CONTAINER,
+  ### PackageInstance methods.
+
+
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_name', 'instance_id']),
       FetchInstanceResponse,
       http_method='GET',
       path='instance',
       name='fetchInstance')
   def fetch_instance(self, request):
     """Returns signed URL that can be used to fetch a package instance."""
-    def error(msg):
-      return FetchInstanceResponse(
-          status=FetchInstanceResponse.Status.ERROR,
-          error_message=msg)
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
 
-    package_name = request.package_name
-    if not impl.is_valid_package_path(package_name):
-      return error('Invalid package name')
-
-    instance_id = request.instance_id
-    if not instance_id or not impl.is_valid_instance_id(instance_id):
-      return error('Invalid package instance ID')
-
-    # An unauthorized user should not be able to prob package namespace and rely
-    # on 403 status to discover what packages exist. Return "not found" instead.
     caller = auth.get_current_identity()
     if not acl.can_fetch_instance(package_name, caller):
-      return FetchInstanceResponse(
-          status=FetchInstanceResponse.Status.PACKAGE_NOT_FOUND)
+      raise auth.AuthorizationError()
 
-    # Check that package and instance exist.
     instance = self.service.get_instance(package_name, instance_id)
     if instance is None:
       pkg = self.service.get_package(package_name)
       if pkg is None:
-        return FetchInstanceResponse(
-            status=FetchInstanceResponse.Status.PACKAGE_NOT_FOUND)
-      return FetchInstanceResponse(
-          status=FetchInstanceResponse.Status.INSTANCE_NOT_FOUND)
+        raise PackageNotFoundError()
+      raise InstanceNotFoundError()
 
-    # Convert list of processors to proto messages.
     def procs_to_msg(procs, status):
       return [
         FetchInstanceResponse.Processor(name=name, status=status)
@@ -463,55 +459,36 @@ class PackageRepositoryApi(remote.Service):
         instance.processors_failure,
         FetchInstanceResponse.Processor.Status.FAILURE)
 
-    # Success.
     return FetchInstanceResponse(
-        status=FetchInstanceResponse.Status.SUCCESS,
         instance=instance_to_proto(instance),
         fetch_url=self.service.generate_fetch_url(instance),
         processors=processors)
 
-  @auth.endpoints_method(
-      INSTANCE_RESOURCE_CONTAINER,
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_name', 'instance_id']),
       RegisterInstanceResponse,
       path='instance',
       http_method='POST',
       name='registerInstance')
   def register_instance(self, request):
     """Registers a new package instance in the repository."""
-    # Forms ERROR response.
-    def error(msg):
-      return RegisterInstanceResponse(
-          status=RegisterInstanceResponse.Status.ERROR,
-          error_message=msg)
-
-    # Forms REGISTERED or ALREADY_REGISTERED response.
-    def success(instance, status):
-      return RegisterInstanceResponse(
-          status=status,
-          instance=instance_to_proto(instance))
-
-    package_name = request.package_name
-    if not impl.is_valid_package_path(package_name):
-      return error('Invalid package name')
-
-    instance_id = request.instance_id
-    if not impl.is_valid_instance_id(instance_id):
-      return error('Invalid package instance ID')
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
 
     caller = auth.get_current_identity()
     if not acl.can_register_instance(package_name, caller):
-      raise auth.AuthorizationError('Instance registration is forbidden')
+      raise auth.AuthorizationError()
 
-    # Already registered?
     instance = self.service.get_instance(package_name, instance_id)
     if instance is not None:
-      return success(
-          instance, RegisterInstanceResponse.Status.ALREADY_REGISTERED)
+      return RegisterInstanceResponse(
+          status=Status.ALREADY_REGISTERED,
+          instance=instance_to_proto(instance))
 
     # If the package is missing, check that user is actually allowed to make it.
     pkg = self.service.get_package(package_name)
     if pkg is None and not acl.can_register_package(package_name, caller):
-      raise auth.AuthorizationError('Package creation is forbidden')
+      raise auth.AuthorizationError()
 
     # Need to upload to CAS first? Open an upload session. Caller must use
     # CASServiceApi to finish the upload and then call registerInstance again.
@@ -519,7 +496,7 @@ class PackageRepositoryApi(remote.Service):
       upload_url, upload_session_id = self.service.create_upload_session(
           package_name, instance_id, caller)
       return RegisterInstanceResponse(
-          status=RegisterInstanceResponse.Status.UPLOAD_FIRST,
+          status=Status.UPLOAD_FIRST,
           upload_session_id=upload_session_id,
           upload_url=upload_url)
 
@@ -529,69 +506,43 @@ class PackageRepositoryApi(remote.Service):
         instance_id=instance_id,
         caller=caller,
         now=utils.utcnow())
-    if registered:
-      status = RegisterInstanceResponse.Status.REGISTERED
-    else:  # pragma: no cover
-      status = RegisterInstanceResponse.Status.ALREADY_REGISTERED
-    return success(instance, status)
+    return RegisterInstanceResponse(
+        status=Status.REGISTERED if registered else Status.ALREADY_REGISTERED,
+        instance=instance_to_proto(instance))
 
-  # Identifies some package path.
-  FETCH_ACL_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      package_path=messages.StringField(1, required=True))
 
-  @auth.endpoints_method(
-      FETCH_ACL_RESOURCE_CONTAINER,
+  ### ACL methods.
+
+
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_path']),
       FetchACLResponse,
       http_method='GET',
       path='acl',
       name='fetchACL')
   def fetch_acl(self, request):
     """Returns access control list for a given package path."""
-    package_path = request.package_path
-    if not impl.is_valid_package_path(package_path):
-      return FetchACLResponse(
-          status=FetchACLResponse.Status.ERROR,
-          error_message='Invalid package path')
+    package_path = validate_package_path(request.package_path)
 
-    # An unauthorized user should not be able to prob package namespace and rely
-    # on 403 status to discover what packages exist. Return empty ACL list
-    # instead.
     caller = auth.get_current_identity()
     if not acl.can_fetch_acl(package_path, caller):
-      per_role_acls = {}
-    else:
-      per_role_acls = {
-        role: acl.get_package_acls(package_path, role)
-        for role in acl.ROLES
-      }
+      raise auth.AuthorizationError()
 
     return FetchACLResponse(
-        status=FetchACLResponse.Status.SUCCESS,
-        acls=package_acls_to_proto(per_role_acls))
+        acls=package_acls_to_proto({
+          role: acl.get_package_acls(package_path, role)
+          for role in acl.ROLES
+        }))
 
-  # Identifies some package path.
-  MODIFY_ACL_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      ModifyACLRequest,
-      package_path=messages.StringField(1, required=True))
-
-  @auth.endpoints_method(
-      MODIFY_ACL_RESOURCE_CONTAINER,
+  @endpoints_method(
+      container(ModifyACLRequest, ['package_path']),
       ModifyACLResponse,
       http_method='POST',
       path='acl',
       name='modifyACL')
   def modify_acl(self, request):
     """Changes access control list for a given package path."""
-    package_path = request.package_path
-    if not impl.is_valid_package_path(package_path):
-      return ModifyACLResponse(
-          status=ModifyACLResponse.Status.ERROR,
-          error_message='Invalid package path')
-
-    caller = auth.get_current_identity()
-    if not acl.can_modify_acl(package_path, caller):
-      raise auth.AuthorizationError()
+    package_path = validate_package_path(request.package_path)
 
     try:
       changes = [
@@ -599,10 +550,11 @@ class PackageRepositoryApi(remote.Service):
         for msg in request.changes
       ]
     except ValueError as exc:
-      return ModifyACLResponse(
-          status=ModifyACLResponse.Status.ERROR,
-          error_message='Invalid role change request: %s' % exc)
+      raise ValidationError('Invalid role change request: %s' % exc)
 
+    caller = auth.get_current_identity()
+    if not acl.can_modify_acl(package_path, caller):
+      raise auth.AuthorizationError()
     # Modifying ACLs for a package subpath implicitly creates an empty package.
     # That way acl.PackageACL entities always correspond to some existing
     # packages (impl.Package entities). It also simplifies registering new
@@ -617,58 +569,46 @@ class PackageRepositoryApi(remote.Service):
     # sufficient. If it is not, HTTP 500 and an uncaught exception in logs is
     # exactly what is needed.
     acl.modify_roles(changes, caller, now)
-    return ModifyACLResponse(status=ModifyACLResponse.Status.SUCCESS)
+    return ModifyACLResponse()
 
-  @auth.endpoints_method(
-      INSTANCE_RESOURCE_CONTAINER,
+
+  ### ClientBinary methods.
+
+
+  @endpoints_method(
+      container(message_types.VoidMessage, ['package_name', 'instance_id']),
       FetchClientBinaryResponse,
       http_method='GET',
       path='client',
       name='fetchClientBinary')
   def fetch_client_binary(self, request):
     """Returns signed URL that can be used to fetch CIPD client binary."""
-    def error(msg):
-      return FetchClientBinaryResponse(
-          status=FetchClientBinaryResponse.Status.ERROR,
-          error_message=msg)
-
-    package_name = request.package_name
-    if not impl.is_valid_package_path(package_name):
-      return error('Invalid package name')
+    package_name = validate_package_name(request.package_name)
     if not client.is_cipd_client_package(package_name):
-      return error('Not a CIPD client package')
-
-    instance_id = request.instance_id
-    if not instance_id or not impl.is_valid_instance_id(instance_id):
-      return error('Invalid package instance ID')
+      raise ValidationError('Not a CIPD client package')
+    instance_id = validate_instance_id(request.instance_id)
 
     caller = auth.get_current_identity()
     if not acl.can_fetch_instance(package_name, caller):
-      return FetchClientBinaryResponse(
-          status=FetchClientBinaryResponse.Status.PACKAGE_NOT_FOUND)
+      raise auth.AuthorizationError()
 
-    # Check that package and instance exist.
     instance = self.service.get_instance(package_name, instance_id)
     if instance is None:
       pkg = self.service.get_package(package_name)
       if pkg is None:
-        return FetchClientBinaryResponse(
-            status=FetchClientBinaryResponse.Status.PACKAGE_NOT_FOUND)
-      return FetchClientBinaryResponse(
-          status=FetchClientBinaryResponse.Status.INSTANCE_NOT_FOUND)
+        raise PackageNotFoundError()
+      raise InstanceNotFoundError()
 
     # Grab the location of the extracted binary.
     client_info, error_message = self.service.get_client_binary_info(instance)
     if error_message:
-      return error(error_message)
+      raise Error(error_message)
     if client_info is None:
       return FetchClientBinaryResponse(
-        status=FetchClientBinaryResponse.Status.NOT_EXTRACTED_YET,
+        status=Status.NOT_EXTRACTED_YET,
         instance=instance_to_proto(instance))
 
-    # Success.
     return FetchClientBinaryResponse(
-        status=FetchClientBinaryResponse.Status.SUCCESS,
         instance=instance_to_proto(instance),
         client_binary=FetchClientBinaryResponse.ClientBinary(
             sha1=client_info.sha1,
