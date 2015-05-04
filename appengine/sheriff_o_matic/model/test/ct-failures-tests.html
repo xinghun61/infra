@@ -577,12 +577,12 @@ describe('ct-failures', function() {
       var analyzer = new CTFailures(new CTCommitList(undefined, []));
       analyzer.failures = {};
       analyzer._processTrooperFailures(
-          {'chromium': [group1], 'blink': [group2, group3]}, {});
+          {'chromium': [group1], 'blink': [group2, group3], 'chromium.perf': [group3]}, {});
       analyzer.failures['trooper'].forEach(function(failure) {
         assert(failure.category == 'builder' || failure.category == 'master');
       });
       assert(analyzer.failures['trooper-fyi'].length == 0);
-      assert(analyzer.failures['trooper'].length == 2);
+      assert.equal(analyzer.failures['trooper'].length, 3);
     });
   });
 

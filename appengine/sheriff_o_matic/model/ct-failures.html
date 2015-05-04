@@ -185,7 +185,7 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
     // By default, we put non chromium and blink waterfalls into 'trooper-fyi'.
     // As other waterfalls become more stable, they can be moved to 'trooper.'
     var failure_array = trooper_fyi_failures;
-    if (tree == 'chromium' || tree == 'blink'){
+    if (tree == 'chromium' || tree == 'blink' || tree == 'chromium.perf') {
       failure_array = trooper_failures;
     }
     failuresByTree.forEach(function(failure) {
