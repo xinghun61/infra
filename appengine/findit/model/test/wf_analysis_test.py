@@ -51,3 +51,34 @@ class WfAnalysisTest(unittest.TestCase):
     self.assertEqual('', analysis.result_status_description)
     analysis.result_status = wf_analysis_result_status.FOUND_CORRECT
     self.assertEqual("Correct - Found", analysis.result_status_description)
+
+  def testWfAnalysisCorrectnessIsUnknownIfIncompletedOrFailed(self):
+    for status in (wf_analysis_status.PENDING, wf_analysis_status.ANALYZING,
+                   wf_analysis_status.ERROR):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.status = status
+      self.assertIsNone(analysis.correct)
+
+  def testWfAnalysisCorrectnessIsUnknownIfUntriaged(self):
+    for result_status in (wf_analysis_result_status.FOUND_UNTRIAGED,
+                          wf_analysis_result_status.NOT_FOUND_UNTRIAGED):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.status = wf_analysis_status.ANALYZED
+      analysis.result_status = result_status
+      self.assertIsNone(analysis.correct)
+
+  def testWfAnalysisHasCorrectResult(self):
+    for result_status in (wf_analysis_result_status.FOUND_CORRECT,
+                          wf_analysis_result_status.NOT_FOUND_CORRECT):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.status = wf_analysis_status.ANALYZED
+      analysis.result_status = result_status
+      self.assertTrue(analysis.correct)
+
+  def testWfAnalysisHasIncorrectResult(self):
+    for result_status in (wf_analysis_result_status.FOUND_INCORRECT,
+                          wf_analysis_result_status.NOT_FOUND_INCORRECT):
+      analysis = WfAnalysis.Create('m', 'b', 123)
+      analysis.status = wf_analysis_status.ANALYZED
+      analysis.result_status = result_status
+      self.assertFalse(analysis.correct)

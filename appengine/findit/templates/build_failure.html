@@ -25,11 +25,73 @@
     table td, th {
       border: 1px solid gray;
     }
+    .thumbs-up-down {
+      border-radius: 7px;
+      display: inline-block;
+      height: 28px;
+    }
+    .triage, .triaged {
+      display: block;
+      float: left;
+      vertical-align: middle;
+    }
+    .triage {
+      background-color: #e5e5e5;
+      cursor: pointer;
+    }
+    .triaged {
+      cursor: default;
+    }
+    .thumb-up {
+      border-top: solid 1px;
+      border-bottom: solid 1px;
+      border-left: solid 1px;
+      border-top-left-radius: 7px;
+      border-bottom-left-radius: 7px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .thumb-down {
+      border: solid 1px;
+      border-top-right-radius: 7px;
+      border-bottom-right-radius: 7px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .thumb-up:hover, .thumb-up.triaged {
+      background-color: #8fdf5f;
+    }
+    .thumb-down:hover, .thumb-down.triaged {
+      background-color: #e98080;
+    }
   </style>
   <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
   <script>
     analysisCompleted = '{{analysis_completed}}' == 'True';
     analysisFailed = '{{analysis_failed}}' == 'True';
+    build_url = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}';
+    analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
+
+    function TriageAnalysisResult(e) {
+      var target = $(this);
+      if (target.hasClass('triaged'))
+        return;
+
+      var correct = target.hasClass('thumb-up');
+      $.getJSON('triage-analysis?correct=' + correct + '&url=' + build_url, function(data) {
+        if (data['success']) {
+          $('.triaged').addClass('triage').removeClass('triaged');
+          target.addClass('triaged').removeClass('triage');
+        } else {
+          alert('Failed to update datastore. Please refresh and try again.');
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+
+      e.preventDefault();
+    }
 
     $(document).ready(function() {
       if (!analysisCompleted) {
@@ -37,9 +99,9 @@
         $('#status_message').attr('class', 'running');
         setTimeout(function(){
           {% if show_debug_info %}
-          window.location.href = 'build-failure?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}&debug=1';
+          window.location.href = 'build-failure?url=' + build_url + '&debug=1';
           {% else %}
-          window.location.href = 'build-failure?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}';
+          window.location.href = 'build-failure?url=' + build_url;
           {% endif %}
         }, 5000);
       } else if (analysisFailed) {
@@ -49,6 +111,14 @@
         // TODO: use another style when no culprit CL is found.
         $('#status_message').text('completed');
         $('#status_message').attr('class', 'completed');
+
+        $('.triage').click(TriageAnalysisResult);
+
+        if (analysisCorrect == 'True') {
+          $('.thumb-up').addClass('triaged').removeClass('triage');
+        } else if (analysisCorrect == 'False') {
+          $('.thumb-down').addClass('triaged').removeClass('triage');
+        }
       }
     });
   </script>
@@ -89,6 +159,10 @@
     {% elif analysis_result.failures|length == 0 %}
       <div>No failure is found.</div>
     {% else %}
+      <div class="thumbs-up-down">
+        <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
+        <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
+      </div>
       <div id="analysis_result">
         <table id="failures">
           <tr>

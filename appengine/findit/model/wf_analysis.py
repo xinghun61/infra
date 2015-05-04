@@ -7,7 +7,6 @@ from google.appengine.ext import ndb
 from model.base_build_model import BaseBuildModel
 from model import wf_analysis_status
 from model import wf_analysis_result_status
-from waterfall import buildbot
 
 
 class WfAnalysis(BaseBuildModel):
@@ -48,6 +47,28 @@ class WfAnalysis(BaseBuildModel):
     return wf_analysis_result_status.RESULT_STATUS_TO_DESCRIPTION.get(
         self.result_status,'')
 
+  @property
+  def correct(self):
+    """Returns whether the analysis result is correct or not.
+
+    Returns:
+      True: correct
+      False: incorrect
+      None: don't know yet.
+    """
+    if not self.completed or self.failed:
+      return None
+
+    if self.result_status in (wf_analysis_result_status.FOUND_CORRECT,
+                              wf_analysis_result_status.NOT_FOUND_CORRECT):
+      return True
+
+    if self.result_status in (wf_analysis_result_status.FOUND_INCORRECT,
+                              wf_analysis_result_status.NOT_FOUND_INCORRECT):
+      return False
+
+    return None
+
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = None
@@ -71,11 +92,11 @@ class WfAnalysis(BaseBuildModel):
 
   # Analysis result for the build failure.
   result = ndb.JsonProperty(indexed=False, compressed=True)
-
-  # Conlusion of analysis result for the build failure: 'Found' or 'Not Found'.
-  # TODO: Add logic for deciding if the result is correct or not later.
-  result_status = ndb.IntegerProperty(indexed=True)
-
   # Suspected CLs we found.
   suspected_cls = ndb.JsonProperty(indexed=False, compressed=True)
 
+  # The actual culprit CLs that are responsible for the failures.
+  culprit_cls = ndb.JsonProperty(indexed=False, compressed=True)
+  # Conlusion of analysis result for the build failure: 'Found' or 'Not Found'.
+  # TODO: Add logic for deciding if the result is correct or not later.
+  result_status = ndb.IntegerProperty(indexed=True)

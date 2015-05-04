@@ -36,7 +36,7 @@ class BuildFailure(BaseHandler):
 
     Serve HTML page or JSON result as requested.
     """
-    url = self.request.get('url', '').strip()
+    url = self.request.get('url').strip()
     build_info = buildbot.ParseBuildUrl(url)
     if not build_info:
       return BaseHandler.CreateError(
@@ -70,6 +70,7 @@ class BuildFailure(BaseHandler):
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
         'analysis_result': analysis.result,
+        'analysis_correct': analysis.correct,
     }
 
     return {'template': 'build_failure.html', 'data': data}

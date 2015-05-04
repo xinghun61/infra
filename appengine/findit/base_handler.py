@@ -146,7 +146,7 @@ class BaseHandler(webapp2.RequestHandler):
         data = {
             'error_message':
                 ('Either not login or no permission. '
-                 'Please login with your google account.'),
+                 'Please login with your google.com account.'),
             'login_url': login_url
         }
         return_code = 401
