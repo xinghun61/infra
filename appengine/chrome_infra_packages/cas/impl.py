@@ -111,11 +111,17 @@ def get_cas_service():
   except ValueError as err:
     logging.error("Invalid CAS config: %s", err)
     return None
+  service_account_key = auth.ServiceAccountKey(
+      client_email=conf.service_account_email,
+      private_key=conf.service_account_pkey,
+      private_key_id=conf.service_account_pkey_id)
+  if utils.is_local_dev_server():  # pragma: no branch
+    from . import hacks
+    hacks.patch_cloudstorage_lib(service_account_key)
   return CASService(
       conf.cas_gs_path.rstrip('/'),
       conf.cas_gs_temp.rstrip('/'),
-      conf.service_account_email,
-      conf.service_account_pkey)
+      service_account_key)
 
 
 class NotFoundError(Exception):
@@ -132,18 +138,19 @@ class UploadIdSignature(auth.TokenKind):
 class CASService(object):
   """CAS implementation on top of Google Storage."""
 
-  def __init__(self, gs_path, gs_temp, account_email=None, account_pkey=None):
+  def __init__(self, gs_path, gs_temp, service_account_key=None):
     self._gs_path = gs_path.rstrip('/')
     self._gs_temp = gs_temp.rstrip('/')
-    self._account_email = account_email
-    self._account_pkey = account_pkey
+    self._service_account_key = service_account_key
     self._retry_params = api_utils.RetryParams()
     cloudstorage.validate_file_path(self._gs_path)
     cloudstorage.validate_file_path(self._gs_temp)
 
   def is_fetch_configured(self):
     """True if service account credentials are configured."""
-    return bool(self._account_pkey and self._account_email)
+    return (
+        self._service_account_key and
+        self._service_account_key.private_key_id)
 
   def is_object_present(self, hash_algo, hash_digest):
     """True if the given object is in the store."""
@@ -163,17 +170,18 @@ class CASService(object):
     # Generate the signature.
     gs_path = self._verified_gs_path(hash_algo, hash_digest)
     expires = str(int(utils.time_time() + FETCH_URL_EXPIRATION_SEC))
-    signature = self._rsa_sign(self._account_pkey, '\n'.join([
+    to_sign = '\n'.join([
       'GET',
       '', # Content-MD5, not provided
       '', # Content-Type, not provided
       expires,
       gs_path,
-    ]))
+    ])
+    signature = self._rsa_sign(self._service_account_key.private_key, to_sign)
 
     # Generate the final URL.
     query_params = urllib.urlencode([
-      ('GoogleAccessId', self._account_email),
+      ('GoogleAccessId', self._service_account_key.client_email),
       ('Expires', expires),
       ('Signature', signature),
     ])

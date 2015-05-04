@@ -12,6 +12,7 @@ import StringIO
 
 from testing_utils import testing
 
+from components import auth
 from components import auth_testing
 from components import utils
 
@@ -68,7 +69,8 @@ class CASServiceImplTest(testing.AppengineTestCase):
 
   def test_fetch(self):
     service = impl.CASService(
-        '/bucket/real', '/bucket/temp', 'account@email.com', 'PEM private key')
+        '/bucket/real', '/bucket/temp',
+        auth.ServiceAccountKey('account@email.com', 'PEM private key', 'id'))
 
     # Actual _rsa_sign implementation depends on PyCrypto, that for some reason
     # is not importable in unit tests. _rsa_sign is small enough to be "tested"
