@@ -1,0 +1,11 @@
+cron:
+
+### ereporter2
+
+- description: ereporter2 cleanup
+  url: /internal/cron/ereporter2/cleanup
+  schedule: every 1 hours
+
+- description: ereporter2 mail exception report
+  url: /internal/cron/ereporter2/mail
+  schedule: every 1 hours synchronized

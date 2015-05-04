@@ -1,0 +1,66 @@
+application: luci-milo
+module: default
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /_ah/spi/.*
+  script: apps.apis_app
+
+- url: /internal.*
+  script: apps.html_app
+  secure: always
+  login: admin
+
+- url: /components
+  static_dir: html/components
+
+- url: /endpoints
+  static_dir: html/endpoints
+
+- url: /parts
+  static_dir: html/parts
+
+- url: /services
+  static_dir: html/services
+
+- url: /.*
+  script: apps.html_app
+  secure: always
+
+builtins:
+- remote_api: on
+
+includes:
+- components/auth
+- components/ereporter2
+- components/static_third_party.yaml
+
+libraries:
+- name: endpoints
+  version: "1.0"
+- name: jinja2
+  version: "2.6"
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+- name: yaml
+  version: "3.10"
+
+skip_files:
+- ^(.*/)?#.*#
+- ^(.*/)?.*~
+- ^(.*/)?.*\.py[co]
+- ^(.*/)?\..*
+- ^test.*
+- ^tools.*
+- ^(.*/)?.*\.orig
+- ^(.*/)?.*\.rej
+- ^[A-Z]+
+- ^[A-Z]+\.[a-z]+
+- ^local_dev_config.*
