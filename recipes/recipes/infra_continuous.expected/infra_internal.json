@@ -86,9 +86,27 @@
       "[SLAVE_BUILD]/infra_internal/build/build.py",
       "--upload",
       "--service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "build cipd packages"
+    "name": "build cipd packages",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"succeeded\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"info\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"abcdefabcdef63ad814cd1dfffe2fcfc9f81299c\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/tools/some_tool/linux-bitness\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"pkg_def_name\": \"some_tool\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@infra/tools/some_tool/linux-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
+    ]
   }
 ]
