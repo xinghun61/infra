@@ -42,6 +42,13 @@ found in the LICENSE file.
           serving up the JSON about it's current state.<br/>
           Something is wrong with the master and needs to be fixed ASAP, since it means that sheriff-o-matic 
           has no idea about the state of the tree on this master.<br/>
+          Things to check:
+          <ul>
+            <li><a href="https://uberchromegw.corp.google.com/i/chromium.infra.cron/builders/builder-alerts">Latest builder_alerts run</a></li>
+            <li>Check the <a href="{{ group.failure.masterUrl }}">master itself</a> - it may be down.</li>
+            <li>Check the Appengine logs for <a href="//chrome-build-extract.appspot.com"> chrome-build-extract.appspot.com</a> - it may be having problems caching this data from the master.</li>
+            <li>Instructions for <a href="https://x20web.corp.google.com/teams/chrome-infra/doc/html/playbook.html#restarting-a-buildbot-master-process">restarting masters</a> if all else fails.</li>
+          </ul>
           <template if="{{ currentTrooper }}">
             <p>
               Latest trooper according to the rotation calendar is: <a target='_blank' href='mailto:{{currentTrooper}}@google.com'>{{ currentTrooper }}@google.com</a>
