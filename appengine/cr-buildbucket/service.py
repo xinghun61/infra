@@ -488,6 +488,8 @@ class BuildBucketService(object):
       build = yield model.Build.get_by_id_async(build_id)
       if build is None:
         raise errors.BuildNotFoundError()
+      if build.status == model.BuildStatus.COMPLETED:
+        raise errors.BuildIsCompletedError()
       self._check_lease(build, lease_key)
       build.lease_expiration_date = lease_expiration_date
       yield build.put_async()
@@ -538,7 +540,7 @@ class BuildBucketService(object):
           build.result_details == result_details and
           build.url == url):
         return build
-      raise errors.InvalidBuildStateError(
+      raise errors.BuildIsCompletedError(
           'Build %s has already completed' % build_id)
     self._check_lease(build, lease_key)
 
@@ -611,7 +613,7 @@ class BuildBucketService(object):
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
         return build
-      raise errors.InvalidBuildStateError('Cannot cancel a completed build')
+      raise errors.BuildIsCompletedError('Cannot cancel a completed build')
     build.status = model.BuildStatus.COMPLETED
     build.status_changed_time = utils.utcnow()
     build.result = model.BuildResult.CANCELED

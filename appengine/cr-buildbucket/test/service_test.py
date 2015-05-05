@@ -151,7 +151,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
-    with self.assertRaises(errors.InvalidBuildStateError):
+    with self.assertRaises(errors.BuildIsCompletedError):
       self.service.cancel(self.test_build.key.id())
 
   #################################### SEARCH ##################################
@@ -437,7 +437,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
 
-    with self.assertRaises(errors.InvalidBuildStateError):
+    with self.assertRaises(errors.BuildIsCompletedError):
       self.service.reset(self.test_build.key.id())
 
   def test_cannot_reset_nonexistent_build(self):
@@ -495,7 +495,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.put()
-    with self.assertRaises(errors.InvalidBuildStateError):
+    with self.assertRaises(errors.BuildIsCompletedError):
       self.service.start(self.test_build.key.id(), 42)
 
   def test_start_without_lease_key(self):
@@ -529,6 +529,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         self.test_build.key.id(), self.test_build.lease_key,
         lease_expiration_date=new_expiration_date)
     self.assertEqual(build.lease_expiration_date, new_expiration_date)
+
+
+  def test_heartbeat_completed(self):
+    self.test_build.status = model.BuildStatus.COMPLETED
+    self.test_build.result = model.BuildResult.CANCELED
+    self.test_build.cancelation_reason = (
+        model.CancelationReason.CANCELED_EXPLICITLY)
+    self.test_build.put()
+
+    new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    with self.assertRaises(errors.BuildIsCompletedError):
+      self.service.heartbeat(
+          self.test_build.key.id(), 0,
+          lease_expiration_date=new_expiration_date)
 
   def test_heartbeat_batch(self):
     self.lease()
@@ -584,7 +598,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.result = model.BuildResult.CANCELED
     self.test_build.cancelation_reason = model.CancelationReason.TIMEOUT
     self.test_build.put()
-    with self.assertRaises(errors.InvalidBuildStateError):
+    with self.assertRaises(errors.BuildIsCompletedError):
       self.service.succeed(self.test_build.key.id(), 42)
 
   def test_succeed_is_idempotent(self):

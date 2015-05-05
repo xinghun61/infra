@@ -33,7 +33,6 @@ ERROR_REASON_MAP = {
     errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
     errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
     errors.InvalidInputError: ErrorReason.INVALID_INPUT,
-    errors.InvalidBuildStateError: ErrorReason.INVALID_BUILD_STATE,
     errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
 }
 

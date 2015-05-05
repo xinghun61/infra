@@ -16,11 +16,7 @@ class BuildNotFoundError(Error):
   pass
 
 
-class InvalidBuildStateError(Error):
-  """Operation is invalid given the current build state."""
-
-
-class BuildIsCompletedError(InvalidBuildStateError):
+class BuildIsCompletedError(Error):
   """Build is complete and cannot be changed."""
 
 

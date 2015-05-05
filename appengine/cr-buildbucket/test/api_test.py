@@ -570,8 +570,5 @@ class BuildBucketApiTest(testing.EndpointsTestCase):
   def test_invalid_input_error(self):
     self.error_test(errors.InvalidInputError, 'INVALID_INPUT')
 
-  def test_invalid_build_state_error(self):
-    self.error_test(errors.InvalidBuildStateError, 'INVALID_BUILD_STATE')
-
   def test_lease_expired_error(self):
     self.error_test(errors.LeaseExpiredError, 'LEASE_EXPIRED')
