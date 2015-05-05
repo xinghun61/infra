@@ -5,7 +5,6 @@
 """Start, restart and shut down masters as needed."""
 
 import argparse
-import json
 import logging
 import os
 import subprocess
@@ -26,8 +25,11 @@ def parse_args():  # pragma: no cover
                   'unless --prod is specified')
   parser.add_argument('directory', nargs='?',
       help='location of the master to manage')
-  parser.add_argument('--desired-state-file', default='desired_state.json',
-      help='location of the state file to look up information')
+  parser.add_argument('desired_state', nargs='?',
+      choices=buildbot_state.STATES['desired_buildbot_state'],
+      help='the desired state of the master')
+  parser.add_argument('transition_time_utc', nargs='?', type=float,
+      help='seconds since the UTC epoch to trigger the state')
   parser.add_argument('--list-all-states', action='store_true',
       help='list all states with their actions and exit')
   parser.add_argument('--enable-gclient-sync', action='store_true',
@@ -51,28 +53,31 @@ def parse_args():  # pragma: no cover
   args = parser.parse_args()
   logs.process_argparse_options(args)
 
-  if not args.list_all_states and not args.directory:
-    parser.error('A master directory must be specified.')
+  if not args.list_all_states:
+    if not args.directory:
+      parser.error('A master directory must be specified.')
+    if not args.transition_time_utc:
+      parser.error('A transition time must be specified.')
+    if not args.desired_state:
+      parser.error('A desired state must be specified.')
   return args
 
 
 def run_state_machine_pass(
-    logger, matchlist, abs_master_directory, emergency_file, desired_state_file,
-    enable_gclient_sync, prod, connection_timeout):  # pragma: no cover
+    logger, matchlist, abs_master_directory, emergency_file, desired_state,
+    transition_time_utc, enable_gclient_sync, prod, connection_timeout):
+  # pragma: no cover
   if os.path.exists(os.path.join(abs_master_directory, emergency_file)):
     logger.error('%s detected in %s, aborting!',
         emergency_file, abs_master_directory)
     return 1
 
-  desired_state_file = os.path.abspath(desired_state_file)
-  master_directory = os.path.basename(abs_master_directory)
   evidence = buildbot_state.collect_evidence(
       abs_master_directory, connection_timeout=connection_timeout)
-  with open(desired_state_file) as f:
-    evidence['desired_buildbot_state'] = json.load(f).get(master_directory)
-  if not evidence['desired_buildbot_state']:
-    raise KeyError('Couldn\'t get evidence for master %s from %s.' %
-        (master_directory, desired_state_file))
+  evidence['desired_buildbot_state'] = {
+      'desired_state': desired_state,
+      'transition_time_utc': transition_time_utc,
+  }
 
   state, action_name, action_items = matchlist.execution_list(evidence)
   execution_list = list(
@@ -114,8 +119,8 @@ def main():  # pragma: no cover
 
   state_machine = partial(run_state_machine_pass, logger,
         matchlist, abs_master_directory, args.emergency_file,
-        args.desired_state_file, args.enable_gclient_sync, args.prod,
-        args.connection_timeout)
+        args.desired_state, args.transition_time_utc, args.enable_gclient_sync,
+        args.prod, args.connection_timeout)
 
   if args.loop:
     loop_opts = outer_loop.process_argparse_options(args)
