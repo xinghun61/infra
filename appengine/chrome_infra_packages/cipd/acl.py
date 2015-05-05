@@ -2,22 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Access control list implementation.
-
-Package namespace is a file-system like hierarchical structure where each node
-has an access control list inherited by all subnodes. ACL for some subpath
-contains a list of pairs (group | user, role) where possible roles are:
-  * READER - can fetch package instances.
-  * WRITER - same as READER + can register new instances in existing packages.
-  * OWNER - same as WRITER + can change ACLs and can create new subpackages.
-
-ACLs of a leaf package is a union of ACLs of all parent nodes. Exclusions or
-overrides are not supported.
-
-ACL changes are applied atomically (e.g. multiple ACLs can be changed all at
-once or none at all), but checks are still only eventually consistent (for
-performance and code simplicity).
-"""
+"""Access control list implementation."""
 
 import collections
 
@@ -74,6 +59,10 @@ can_register_package = is_owner
 can_fetch_instance = is_reader
 # Uploading a new instance to existing package.
 can_register_instance = is_writer
+# Adding tags. TODO(vadimsh): Make it per-tag.
+can_attach_tag = lambda package_path, tag, ident: is_writer(package_path, ident)
+# Removing tags. TODO(vadimsh): Make it per-tag.
+can_detach_tag = lambda package_path, tag, ident: is_writer(package_path, ident)
 # Viewing ACLs.
 can_fetch_acl = is_owner
 # Changing ACLs.

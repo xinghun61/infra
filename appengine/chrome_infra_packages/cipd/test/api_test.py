@@ -17,6 +17,7 @@ from cipd import impl
 
 class PackageRepositoryApiTest(testing.EndpointsTestCase):
   """Tests for API layer ONLY."""
+  maxDiff = None
 
   api_service_cls = api.PackageRepositoryApi
 
@@ -621,6 +622,296 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     self.assertEqual({
       'status': 'ERROR',
       'error_message': 'Invalid package instance ID',
+    }, resp.json_body)
+
+
+  def set_tag(self, pkg, tag, ts, instance_id='a'*40):
+    self.repo_service.register_instance(
+        package_name=pkg,
+        instance_id=instance_id,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=ts)
+    self.repo_service.attach_tags(
+        package_name=pkg,
+        instance_id=instance_id,
+        tags=[tag],
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=ts)
+
+  def test_fetch_tags_all(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2015, 1, 1))
+
+    resp = self.call_api('fetch_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'status': u'SUCCESS',
+      'tags': [
+        {
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1420070400000000',
+          'tag': 'tag2:',
+        },
+        {
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1388534400000000',
+          'tag': 'tag1:',
+        },
+      ],
+    }, resp.json_body)
+
+  def test_fetch_tags_some(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2015, 1, 1))
+
+    resp = self.call_api('fetch_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tag': ['tag1:', 'missing:'],
+    })
+    self.assertEqual({
+      'status': u'SUCCESS',
+      'tags': [
+        {
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1388534400000000',
+          'tag': 'tag1:',
+        },
+      ],
+    }, resp.json_body)
+
+
+  def test_fetch_tags_no_access(self):
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('fetch_tags', {
+        'package_name': 'a/b',
+        'instance_id': 'a'*40,
+        'tag': ['tag1:', 'missing:'],
+      })
+
+  def test_fetch_tags_no_package(self):
+    resp = self.call_api('fetch_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tag': ['tag1:', 'missing:'],
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_attach_tags_ok(self):
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    resp = self.call_api('attach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tags': ['tag1:', 'tag2:'],
+    })
+    self.assertEqual({
+      'status': u'SUCCESS',
+      'tags': [
+        {
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1388534400000000',
+          'tag': 'tag1:',
+        },
+        {
+          'registered_by': 'user:mocked@example.com',
+          'registered_ts': '1420070400000000',
+          'tag': 'tag2:',
+        },
+      ],
+    }, resp.json_body)
+
+  def test_attach_tags_no_tags(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    resp = self.call_api('attach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'error_message': 'Tag list is empty',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_attach_tags_bad_tag(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    resp = self.call_api('attach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tags': ['BAD_TAG'],
+    })
+    self.assertEqual({
+      'error_message': 'Invalid tag "BAD_TAG"',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_attach_tags_no_access(self):
+    self.mock(api.acl, 'can_attach_tag', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('attach_tags', {
+        'package_name': 'a/b',
+        'instance_id': 'a'*40,
+        'tags': ['tag1:'],
+      })
+
+  def test_attach_tags_failed_proc(self):
+    inst, _ = self.repo_service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    inst.processors_failure = ['failed proc']
+    inst.put()
+    resp = self.call_api('attach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tags': ['tag1:'],
+    })
+    self.assertEqual({
+      'error_message': 'Failed processors: failed proc',
+      'status': 'PROCESSING_FAILED',
+    }, resp.json_body)
+
+  def test_attach_tags_pending_proc(self):
+    inst, _ = self.repo_service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    inst.processors_pending = ['pending proc']
+    inst.put()
+    resp = self.call_api('attach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tags': ['tag1:'],
+    })
+    self.assertEqual({
+      'error_message': 'Pending processors: pending proc',
+      'status': 'PROCESSING_NOT_FINISHED_YET',
+    }, resp.json_body)
+
+  def test_detach_tags_ok(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
+    resp = self.call_api('detach_tags', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'tag': ['tag1:', 'tag2:'],
+    })
+    self.assertEqual({'status': 'SUCCESS'}, resp.json_body)
+
+  def test_detach_tags_no_access(self):
+    self.mock(api.acl, 'can_detach_tag', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('detach_tags', {
+        'package_name': 'a/b',
+        'instance_id': 'a'*40,
+        'tag': ['tag1:', 'tag2:'],
+      })
+
+  def test_search_in_single_package(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2015, 1, 1), 'b'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2016, 1, 1), 'c'*40)
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2016, 1, 1), 'a'*40)
+    self.set_tag('d/e', 'tag1:', datetime.datetime(2017, 1, 1), 'a'*40)
+    resp = self.call_api('search_instances', {
+      'tag': 'tag1:',
+      'package_name': 'a/b',
+    })
+    self.assertEqual({
+      'instances': [
+        {
+          'instance_id': 'cccccccccccccccccccccccccccccccccccccccc',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1451606400000000',
+        },
+        {
+          'instance_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1420070400000000',
+        },
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1388534400000000',
+        },
+      ],
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_search_globally(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2015, 1, 1), 'b'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2016, 1, 1), 'c'*40)
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2016, 1, 1), 'a'*40)
+    self.set_tag('d/e', 'tag1:', datetime.datetime(2017, 1, 1), 'a'*40)
+    resp = self.call_api('search_instances', {'tag': 'tag1:'})
+    self.assertEqual({
+      'instances': [
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'package_name': 'd/e',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1483228800000000',
+        },
+        {
+          'instance_id': 'cccccccccccccccccccccccccccccccccccccccc',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1451606400000000',
+        },
+        {
+          'instance_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1420070400000000',
+        },
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'package_name': 'a/b',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1388534400000000',
+        },
+      ],
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_search_no_access_single_pkg(self):
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('search_instances', {
+        'tag': 'tag1:',
+        'package_name': 'a/b',
+      })
+
+
+  def test_search_no_access_globally(self):
+    def mocked_can_fetch_instance(pkg, _ident):
+      return pkg == 'd/e'
+    self.mock(api.acl, 'can_fetch_instance', mocked_can_fetch_instance)
+
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2015, 1, 1), 'b'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2016, 1, 1), 'c'*40)
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2016, 1, 1), 'a'*40)
+    self.set_tag('d/e', 'tag1:', datetime.datetime(2017, 1, 1), 'a'*40)
+
+    resp = self.call_api('search_instances', {'tag': 'tag1:'})
+    self.assertEqual({
+      'instances': [
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'package_name': 'd/e',
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1483228800000000',
+        },
+      ],
+      'status': 'SUCCESS',
     }, resp.json_body)
 
 

@@ -52,8 +52,19 @@ class TestValidators(unittest.TestCase):
     self.assertFalse(impl.is_valid_instance_id(''))
     self.assertFalse(impl.is_valid_instance_id('A'*40))
 
+  def test_is_valid_instance_tag(self):
+    self.assertTrue(impl.is_valid_instance_tag('k:v'))
+    self.assertTrue(impl.is_valid_instance_tag('key:'))
+    self.assertTrue(impl.is_valid_instance_tag('key-_01234:#$%@\//%$SD'))
+    self.assertFalse(impl.is_valid_instance_tag(''))
+    self.assertFalse(impl.is_valid_instance_tag('key'))
+    self.assertFalse(impl.is_valid_instance_tag('KEY:'))
+    self.assertFalse(impl.is_valid_instance_tag('key:' + 'a'*500))
+
 
 class TestRepoService(testing.AppengineTestCase):
+  maxDiff = None
+
   def setUp(self):
     super(TestRepoService, self).setUp()
     self.mocked_cas_service = MockedCASService()
@@ -351,6 +362,90 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertIsNone(info)
     self.assertEqual(
         'Failed to extract the binary: File is not a zip file', error_msg)
+
+  def test_attach_detach_tags(self):
+    _, registered = self.service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+
+    # Add a tag.
+    attached = self.service.attach_tags(
+        package_name='a/b',
+        instance_id='a'*40,
+        tags=['tag1:value1'],
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual(
+      {
+        'tag1:value1': {
+          'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+          'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+          'tag': 'tag1:value1',
+        },
+      }, {k: e.to_dict() for k, e in attached.iteritems()})
+    self.assertEqual('a/b', attached['tag1:value1'].package_name)
+    self.assertEqual('a'*40, attached['tag1:value1'].instance_id)
+
+    # Attempt to attach existing one (and one new).
+    attached = self.service.attach_tags(
+        package_name='a/b',
+        instance_id='a'*40,
+        tags=['tag1:value1', 'tag2:value2'],
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2015, 1, 1, 0, 0))
+    self.assertEqual(
+      {
+        'tag1:value1': {
+          'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+          # Didn't change to 2015.
+          'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+          'tag': 'tag1:value1',
+        },
+        'tag2:value2': {
+          'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+          'registered_ts': datetime.datetime(2015, 1, 1, 0, 0),
+          'tag': 'tag2:value2',
+        },
+      }, {k: e.to_dict() for k, e in attached.iteritems()})
+
+    # Get specific tags.
+    tags = self.service.get_tags('a/b', 'a'*40, ['tag1:value1', 'missing:'])
+    self.assertEqual(
+      {
+        'tag1:value1': {
+          'registered_by': auth.Identity(kind='user', name='abc@example.com'),
+          'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
+          'tag': 'tag1:value1',
+        },
+        'missing:': None,
+      }, {k: e.to_dict() if e else None for k, e in tags.iteritems()})
+
+    # Get all tags. Newest first.
+    tags = self.service.query_tags('a/b', 'a'*40)
+    self.assertEqual(['tag2:value2', 'tag1:value1'], [t.tag for t in tags])
+
+    # Search by specific tag (in a package).
+    found = self.service.search_by_tag('tag1:value1', package_name='a/b')
+    self.assertEqual(
+        [('a/b', 'a'*40)], [(e.package_name, e.instance_id) for e in found])
+
+    # Search by specific tag (globally). Use callback to cover this code path.
+    found = self.service.search_by_tag('tag1:value1')
+    self.assertEqual(
+        [('a/b', 'a'*40)], [(e.package_name, e.instance_id) for e in found])
+
+    # Cover callback usage.
+    found = self.service.search_by_tag(
+        'tag1:value1', callback=lambda *_a: False)
+    self.assertFalse(found)
+
+    # Remove tag, search again -> missing.
+    self.service.detach_tags('a/b', 'a'*40, ['tag1:value1', 'missing:'])
+    found = self.service.search_by_tag('tag1:value1')
+    self.assertFalse(found)
 
 
 class MockedCASService(object):

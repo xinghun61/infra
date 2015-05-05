@@ -27,21 +27,29 @@ class TestRepoServiceACL(testing.AppengineTestCase):
     self.assertTrue(acl.is_owner('a/b', caller))
     self.assertTrue(acl.is_writer('a/b', caller))
     self.assertTrue(acl.is_reader('a/b', caller))
+    self.assertTrue(acl.can_attach_tag('a/b', 'tag1:', caller))
+    self.assertTrue(acl.can_detach_tag('a/b', 'tag1:', caller))
 
     mocked_roles = ['WRITER']
     self.assertFalse(acl.is_owner('a/b', caller))
     self.assertTrue(acl.is_writer('a/b', caller))
     self.assertTrue(acl.is_reader('a/b', caller))
+    self.assertTrue(acl.can_attach_tag('a/b', 'tag1:', caller))
+    self.assertTrue(acl.can_detach_tag('a/b', 'tag1:', caller))
 
     mocked_roles = ['READER']
     self.assertFalse(acl.is_owner('a/b', caller))
     self.assertFalse(acl.is_writer('a/b', caller))
     self.assertTrue(acl.is_reader('a/b', caller))
+    self.assertFalse(acl.can_attach_tag('a/b', 'tag1:', caller))
+    self.assertFalse(acl.can_detach_tag('a/b', 'tag1:', caller))
 
     mocked_roles = []
     self.assertFalse(acl.is_owner('a/b', caller))
     self.assertFalse(acl.is_writer('a/b', caller))
     self.assertFalse(acl.is_reader('a/b', caller))
+    self.assertFalse(acl.can_attach_tag('a/b', 'tag1:', caller))
+    self.assertFalse(acl.can_detach_tag('a/b', 'tag1:', caller))
 
   def test_has_role_admin(self):
     auth_testing.mock_is_admin(self, False)

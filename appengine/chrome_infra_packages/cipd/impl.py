@@ -4,6 +4,9 @@
 
 """Implementation of package repository service.
 
+Package and PackageInstance
+---------------------------
+
 Definitions:
   * Package: a named set of files that can be deployed to a client. Package name
     is a path-like string, e.g. "infra/tools/cipd".
@@ -32,9 +35,54 @@ summary. For example, a processor may ensure that the package has a valid format
 and grab a list of package files to display in UI. Processing can finish with
 any of two final states: success or failure. Transient errors are retried until
 some definite result is known.
+
+Tags
+----
+
+Each PackageInstance has a set of key:value pairs assigned to it, called tags.
+Examples of tags:
+  * git_revision:d42ba1b3df1c911b46fbf8ee217ff53cd207905b
+  * buildbot_build:chromium.infra/infra-continuous-trusty-64/115
+  * reitveld_cl:1234567
+  * ...
+
+The tag key doesn't have to be unique. For example, if two different git
+revisions of the source code produce exact same package instance, the instance
+would have two git_revision: tags (git_revision:<rev1>, git_revision:<rev2>).
+
+Tags are used in search queries, e.g. "give me package instance that corresponds
+to a given git revision".
+
+Only fully processed package (ones that pass all processors with success) can be
+tagged, since tagging a package makes it discoverable in the search.
+
+TODO(vadimsh): Support unique tags (i.e. only one package instance can be
+tagged with such tag)? For example, tags with keys that start with '@' can be
+unique: "@release:0.1".
+
+Access Control
+--------------
+
+Package namespace is a file-system like hierarchical structure where each node
+has an access control list inherited by all subnodes. ACL for some subpath
+contains a list of pairs (group | user, role) where possible roles are:
+  * READER - can fetch package instances.
+  * WRITER - same as READER + can register new instances in existing packages.
+  * OWNER - same as WRITER + can change ACLs and can create new subpackages.
+
+ACLs of a leaf package is a union of ACLs of all parent nodes. Exclusions or
+overrides are not supported.
+
+ACL changes are applied atomically (e.g. multiple ACLs can be changed all at
+once or none at all), but checks are still only eventually consistent (for
+performance and code simplicity).
+
+TODO(vadimsh): Add fine grain ACL for tags. Tags that are set by Buildbot
+builders should not be allowed to set by other WRITERs.
 """
 
 import collections
+import hashlib
 import json
 import logging
 import re
@@ -61,6 +109,12 @@ PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
 
 # Regular expression for a package path (path inside package namespace).
 PACKAGE_PATH_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
+
+# Maximum length of the tag (key + value).
+TAG_MAX_LEN = 400
+
+# Regular expression for a valid tag key.
+TAG_KEY_RE = re.compile(r'^[a-z0-9_\-]+$')
 
 # Hash algorithm used to derive package instance ID from package data.
 DIGEST_ALGO = 'SHA1'
@@ -276,6 +330,134 @@ class RepoService(object):
         DIGEST_ALGO, instance_id, caller)
     return upload_session.upload_url, upload_session_id
 
+  def query_tags(self, package_name, instance_id):
+    """Lists all tags attached to a package instance sorted by creation time.
+
+    Newest tags first.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+
+    Returns:
+      List of InstanceTag instances.
+    """
+    # TODO(vadimsh): Support cursors.
+    q = InstanceTag.query(
+        ancestor=package_instance_key(package_name, instance_id))
+    q = q.order(-InstanceTag.registered_ts)
+    return q.fetch()
+
+  def get_tags(self, package_name, instance_id, tags):
+    """Fetches information about given instance tags.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      tags: list of strings with tags to look for.
+
+    Returns:
+      {tag: corresponding InstanceTag or None if not attached}.
+    """
+    assert tags and all(is_valid_instance_tag(tag) for tag in tags), tags
+    attached = ndb.get_multi(
+        instance_tag_key(package_name, instance_id, tag)
+        for tag in tags)
+    return {tag: entity for tag, entity in zip(tags, attached)}
+
+  @ndb.transactional
+  def attach_tags(self, package_name, instance_id, tags, caller, now=None):
+    """Adds a bunch of tags to an existing package instance.
+
+    Idempotent. Skips existing tags.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      tags: list of strings with tags to attach.
+      caller: auth.Identity that issued the request.
+      now: datetime when the request was made (or None for current time).
+
+    Returns:
+      {tag: corresponding InstanceTag (just created or existing one)}.
+    """
+    assert tags and all(is_valid_instance_tag(tag) for tag in tags), tags
+    now = now or utils.utcnow()
+
+    # Caller should generally check instance presence before making the call.
+    assert package_instance_key(package_name, instance_id).get()
+
+    # Grab info about existing tags, register new ones.
+    existing = ndb.get_multi(
+        instance_tag_key(package_name, instance_id, tag)
+        for tag in tags)
+    to_create = [
+      InstanceTag(
+          key=instance_tag_key(package_name, instance_id, tag),
+          tag=tag,
+          registered_by=caller,
+          registered_ts=now)
+      for tag, ent in zip(tags, existing) if not ent
+    ]
+    ndb.put_multi(to_create)
+
+    attached = {}
+    attached.update({e.tag: e for e in existing if e})
+    attached.update({e.tag: e for e in to_create})
+    return attached
+
+  @ndb.transactional
+  def detach_tags(self, package_name, instance_id, tags):
+    """Detaches given tags from a package instance.
+
+    Idempotent. Skips missing tags.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      tags: list of strings with tags to detach.
+    """
+    # TODO(vadimsh): Write performed actions into some audit log.
+    assert tags and all(is_valid_instance_tag(tag) for tag in tags), tags
+    ndb.delete_multi(
+        instance_tag_key(package_name, instance_id, tag)
+        for tag in tags)
+
+  def search_by_tag(self, tag, package_name=None, callback=None):
+    """Returns package instances with a given tag.
+
+    Sorts by tagging time. Newest tags first.
+
+    Args:
+      tag: tag to search for.
+      package_name: if given, limit search only to given package.
+      callback: called as callback(package_name, instance_id), returns True to
+          continue processing the instance, False to skip. Used to plug in ACLs.
+
+    Returns:
+      List of PackageInstance entities.
+    """
+    # TODO(vadimsh): Support cursors.
+    assert is_valid_instance_tag(tag), tag
+    q = InstanceTag.query(
+        InstanceTag.tag == tag,
+        ancestor=package_key(package_name) if package_name else None)
+    q = q.order(-InstanceTag.registered_ts)
+    found = []
+    for tag_key in q.iter(keys_only=True):
+      package_name = tag_key.parent().parent().string_id()
+      instance_id = tag_key.parent().string_id()
+      if callback and not callback(package_name, instance_id):
+        continue
+      # TODO(vadimsh): This can be fetched asynchronously while next page of
+      # query results is being fetched.
+      inst = tag_key.parent().get()
+      if inst is None:  # pragma: no cover
+        continue
+      assert isinstance(inst, PackageInstance), inst
+      found.append(inst)
+    return found
+
   def process_instance(self, package_name, instance_id, processors):
     """Performs the post processing step creating ProcessingResult entities.
 
@@ -375,6 +557,14 @@ def is_valid_instance_id(instance_id):
   return instance_id and cas.is_valid_hash_digest(DIGEST_ALGO, instance_id)
 
 
+def is_valid_instance_tag(tag):
+  """True if string looks like a valid package instance tag."""
+  if not tag or ':' not in tag or len(tag) > TAG_MAX_LEN:
+    return False
+  # Care only about the key. Value can be anything (including empty string).
+  return bool(TAG_KEY_RE.match(tag.split(':', 1)[0]))
+
+
 def get_repo_service():
   """Factory method that returns configured RepoService instance.
 
@@ -448,6 +638,52 @@ def package_instance_key(package_name, instance_id):
   """Returns ndb.Key corresponding to particular PackageInstance."""
   assert is_valid_instance_id(instance_id), instance_id
   return ndb.Key(PackageInstance, instance_id, parent=package_key(package_name))
+
+
+################################################################################
+## Tags support.
+
+
+class InstanceTag(ndb.Model):
+  """Single tag of some package instance.
+
+  ID is hex-encoded SHA1 of the tag. Parent entity is corresponding
+  PackageInstance. The tag can't be made a part of the key because total key
+  length (including class names, all parent keys) is limited to 500 characters.
+  Tags can be pretty long.
+
+  Tags are separate entities (rather than repeated field in PackageInstance) for
+  two reasons:
+    * There can be many tags attached to an instance (e.g. 'git_revision:...'
+      tags for a package that doesn't change between revisions).
+    * PackageInstance entity is fetched pretty often, no need to pull all tags
+      all the time.
+  """
+  # The tag itself, as key:value string.
+  tag = ndb.StringProperty()
+  # Who added this tag.
+  registered_by = auth.IdentityProperty()
+  # When the tag was added.
+  registered_ts = ndb.DateTimeProperty()
+
+  @property
+  def package_name(self):
+    """Name of the package this tag belongs to."""
+    return self.key.parent().parent().string_id()
+
+  @property
+  def instance_id(self):
+    """Package instance ID this tag belongs to."""
+    return self.key.parent().string_id()
+
+
+def instance_tag_key(package_name, instance_id, tag):
+  """Returns ndb.Key corresponding to particular InstanceTag entity."""
+  assert is_valid_instance_tag(tag), tag
+  return ndb.Key(
+      InstanceTag,
+      hashlib.sha1(tag).hexdigest(),
+      parent=package_instance_key(package_name, instance_id))
 
 
 ################################################################################

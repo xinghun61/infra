@@ -46,6 +46,10 @@ class Status(messages.Enum):
   UPLOAD_FIRST = 7
   # Client binary is not available, the call should be retried later.
   NOT_EXTRACTED_YET = 8
+  # Some asynchronous package processing failed.
+  PROCESSING_FAILED = 9
+  # Asynchronous package processing is still running.
+  PROCESSING_NOT_FINISHED_YET = 10
 
 
 class Package(messages.Message):
@@ -55,12 +59,12 @@ class Package(messages.Message):
   registered_ts = messages.IntegerField(3, required=True)
 
 
-def package_to_proto(ent):
+def package_to_proto(entity):
   """Package entity -> Package proto message."""
   return Package(
-      package_name=ent.package_name,
-      registered_by=ent.registered_by.to_bytes(),
-      registered_ts=utils.datetime_to_timestamp(ent.registered_ts))
+      package_name=entity.package_name,
+      registered_by=entity.registered_by.to_bytes(),
+      registered_ts=utils.datetime_to_timestamp(entity.registered_ts))
 
 
 class PackageInstance(messages.Message):
@@ -71,13 +75,28 @@ class PackageInstance(messages.Message):
   registered_ts = messages.IntegerField(4, required=True)
 
 
-def instance_to_proto(ent):
+def instance_to_proto(entity):
   """PackageInstance entity -> PackageInstance proto message."""
   return PackageInstance(
-      package_name=ent.package_name,
-      instance_id=ent.instance_id,
-      registered_by=ent.registered_by.to_bytes(),
-      registered_ts=utils.datetime_to_timestamp(ent.registered_ts))
+      package_name=entity.package_name,
+      instance_id=entity.instance_id,
+      registered_by=entity.registered_by.to_bytes(),
+      registered_ts=utils.datetime_to_timestamp(entity.registered_ts))
+
+
+class InstanceTag(messages.Message):
+  """Some single package instance tag."""
+  tag = messages.StringField(1, required=True)
+  registered_by = messages.StringField(2, required=True)
+  registered_ts = messages.IntegerField(3, required=True)
+
+
+def tag_to_proto(entity):
+  """InstanceTag entity -> InstanceTag proto message."""
+  return InstanceTag(
+      tag=entity.tag,
+      registered_by=entity.registered_by.to_bytes(),
+      registered_ts=utils.datetime_to_timestamp(entity.registered_ts))
 
 
 class PackageACL(messages.Message):
@@ -152,6 +171,35 @@ def role_change_from_proto(proto, package_path):
       group=group)
 
 
+class Processor(messages.Message):
+  """Status of some package instance processor."""
+  class Status(messages.Enum):
+    PENDING = 1
+    SUCCESS = 2
+    FAILURE = 3
+  # Name of the processor, defines what it does.
+  name = messages.StringField(1, required=True)
+  # Status of the processing.
+  status = messages.EnumField(Status, 2, required=True)
+
+
+def processors_protos(instance):
+  """Given PackageInstance entity returns a list of Processor messages."""
+  def procs_to_msg(procs, status):
+    return [Processor(name=name, status=status) for name in procs ]
+  processors = []
+  processors += procs_to_msg(
+      instance.processors_pending,
+      Processor.Status.PENDING)
+  processors += procs_to_msg(
+      instance.processors_success,
+      Processor.Status.SUCCESS)
+  processors += procs_to_msg(
+      instance.processors_failure,
+      Processor.Status.FAILURE)
+  return processors
+
+
 ################################################################################
 
 
@@ -172,7 +220,6 @@ class FetchPackageResponse(messages.Message):
 
 class RegisterPackageResponse(messages.Message):
   """Results of registerPackage call."""
-
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
@@ -185,16 +232,6 @@ class RegisterPackageResponse(messages.Message):
 
 class FetchInstanceResponse(messages.Message):
   """Results of fetchInstance call."""
-  class Processor(messages.Message):
-    class Status(messages.Enum):
-      PENDING = 1
-      SUCCESS = 2
-      FAILURE = 3
-    # Name of the processor, defines what it does.
-    name = messages.StringField(1, required=True)
-    # Status of the processing.
-    status = messages.EnumField(Status, 2, required=True)
-
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
@@ -202,7 +239,7 @@ class FetchInstanceResponse(messages.Message):
   instance = messages.MessageField(PackageInstance, 3, required=False)
   # For SUCCESS, a signed url to fetch the package instance file from.
   fetch_url = messages.StringField(4, required=False)
-  # For SUCCESS, list of processors applies to the instance.
+  # For SUCCESS, list of processors applied to the instance.
   processors = messages.MessageField(Processor, 5, repeated=True)
 
 
@@ -231,6 +268,50 @@ class RegisterInstanceResponse(messages.Message):
   upload_session_id = messages.StringField(4, required=False)
   # For UPLOAD_FIRST status, URL to PUT file to via resumable upload protocol.
   upload_url = messages.StringField(5, required=False)
+
+
+################################################################################
+
+
+class FetchTagsResponse(messages.Message):
+  """Results of fetchTags call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, details about found tags.
+  tags = messages.MessageField(InstanceTag, 3, repeated=True)
+
+
+class AttachTagsRequest(messages.Message):
+  """Body of attachTags call."""
+  tags = messages.StringField(1, repeated=True)
+
+
+class AttachTagsResponse(messages.Message):
+  """Results of attachTag call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, details about attached tags.
+  tags = messages.MessageField(InstanceTag, 3, repeated=True)
+
+
+class DetachTagsResponse(messages.Message):
+  """Results of detachTags call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+
+################################################################################
+
+
+class SearchResponse(messages.Message):
+  """Results of searchInstances call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, list of instances found.
+  instances = messages.MessageField(PackageInstance, 3, repeated=True)
 
 
 ################################################################################
@@ -319,6 +400,18 @@ def validate_instance_id(instance_id):
   return instance_id
 
 
+def validate_tag(tag):
+  if not impl.is_valid_instance_tag(tag):
+    raise ValidationError('Invalid tag "%s"' % tag)
+  return tag
+
+
+def validate_tag_list(tags):
+  if not tags:
+    raise ValidationError('Tag list is empty')
+  return [validate_tag(tag) for tag in tags]
+
+
 def endpoints_method(request_message, response_message, **kwargs):
   """Wrapper around Endpoint methods to simplify error handling.
 
@@ -344,14 +437,6 @@ def endpoints_method(request_message, response_message, **kwargs):
   return decorator
 
 
-def container(body_cls, params):
-  """Sugar for endpoints.ResourceContainer(...)."""
-  kwargs = {}
-  for idx, param in enumerate(params):
-    kwargs[param] = messages.StringField(idx+1, required=True)
-  return endpoints.ResourceContainer(body_cls, **kwargs)
-
-
 ################################################################################
 
 
@@ -375,12 +460,28 @@ class PackageRepositoryApi(remote.Service):
             'Service is not configured')
     return self._service
 
+  def get_instance(self, package_name, instance_id):
+    """Grabs PackageInstance or raises appropriate *NotFoundError."""
+    instance = self.service.get_instance(package_name, instance_id)
+    if instance is None:
+      pkg = self.service.get_package(package_name)
+      if pkg is None:
+        raise PackageNotFoundError()
+      raise InstanceNotFoundError()
+    return instance
+
+  def verify_instance_exists(self, package_name, instance_id):
+    """Raises appropriate *NotFoundError if instance is missing."""
+    self.get_instance(package_name, instance_id)
+
 
   ### Package methods.
 
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_name']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True)),
       FetchPackageResponse,
       http_method='GET',
       path='package',
@@ -399,7 +500,9 @@ class PackageRepositoryApi(remote.Service):
     return FetchPackageResponse(package=package_to_proto(pkg))
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_name']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True)),
       RegisterPackageResponse,
       path='package',
       http_method='POST',
@@ -422,7 +525,10 @@ class PackageRepositoryApi(remote.Service):
 
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_name', 'instance_id']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True)),
       FetchInstanceResponse,
       http_method='GET',
       path='instance',
@@ -436,36 +542,17 @@ class PackageRepositoryApi(remote.Service):
     if not acl.can_fetch_instance(package_name, caller):
       raise auth.AuthorizationError()
 
-    instance = self.service.get_instance(package_name, instance_id)
-    if instance is None:
-      pkg = self.service.get_package(package_name)
-      if pkg is None:
-        raise PackageNotFoundError()
-      raise InstanceNotFoundError()
-
-    def procs_to_msg(procs, status):
-      return [
-        FetchInstanceResponse.Processor(name=name, status=status)
-        for name in procs
-      ]
-    processors = []
-    processors += procs_to_msg(
-        instance.processors_pending,
-        FetchInstanceResponse.Processor.Status.PENDING)
-    processors += procs_to_msg(
-        instance.processors_success,
-        FetchInstanceResponse.Processor.Status.SUCCESS)
-    processors += procs_to_msg(
-        instance.processors_failure,
-        FetchInstanceResponse.Processor.Status.FAILURE)
-
+    instance = self.get_instance(package_name, instance_id)
     return FetchInstanceResponse(
         instance=instance_to_proto(instance),
         fetch_url=self.service.generate_fetch_url(instance),
-        processors=processors)
+        processors=processors_protos(instance))
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_name', 'instance_id']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True)),
       RegisterInstanceResponse,
       path='instance',
       http_method='POST',
@@ -511,11 +598,155 @@ class PackageRepositoryApi(remote.Service):
         instance=instance_to_proto(instance))
 
 
+  ### Tags methods.
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True),
+          tag=messages.StringField(3, repeated=True)),
+      FetchTagsResponse,
+      path='tags',
+      http_method='GET',
+      name='fetchTags')
+  def fetch_tags(self, request):
+    """Lists package instance tags (in no particular order)."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    tags = validate_tag_list(request.tag) if request.tag else None
+
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      raise auth.AuthorizationError()
+    self.verify_instance_exists(package_name, instance_id)
+
+    if not tags:
+      # Fetch all.
+      attached = self.service.query_tags(package_name, instance_id)
+    else:
+      # Fetch selected only. "Is tagged by?" check essentially.
+      found = self.service.get_tags(package_name, instance_id, tags)
+      attached = [found[tag] for tag in tags if found[tag]]
+
+    return FetchTagsResponse(tags=[tag_to_proto(tag) for tag in attached])
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          AttachTagsRequest,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True)),
+      AttachTagsResponse,
+      path='tags',
+      http_method='POST',
+      name='attachTags')
+  def attach_tags(self, request):
+    """Attaches a set of tags to a package instance."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    tags = validate_tag_list(request.tags)
+
+    caller = auth.get_current_identity()
+    for tag in tags:
+      if not acl.can_attach_tag(package_name, tag, caller):
+        raise auth.AuthorizationError('Not authorized to attach "%s"' % tag)
+
+    instance = self.get_instance(package_name, instance_id)
+    if instance.processors_failure:
+      return AttachTagsResponse(
+          status=Status.PROCESSING_FAILED,
+          error_message=
+              'Failed processors: %s' % ', '.join(instance.processors_failure))
+    if instance.processors_pending:
+      return AttachTagsResponse(
+          status=Status.PROCESSING_NOT_FINISHED_YET,
+          error_message=
+              'Pending processors: %s' % ', '.join(instance.processors_pending))
+
+    attached = self.service.attach_tags(
+        package_name=package_name,
+        instance_id=instance_id,
+        tags=tags,
+        caller=caller,
+        now=utils.utcnow())
+    return AttachTagsResponse(tags=[tag_to_proto(attached[t]) for t in tags])
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True),
+          tag=messages.StringField(3, repeated=True)),
+      DetachTagsResponse,
+      path='tags',
+      http_method='DELETE',
+      name='detachTags')
+  def detach_tags(self, request):
+    """Removes given tags from a package instance."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    tags = validate_tag_list(request.tag)
+
+    caller = auth.get_current_identity()
+    for tag in tags:
+      if not acl.can_detach_tag(package_name, tag, caller):
+        raise auth.AuthorizationError('Not authorized to detach "%s"' % tag)
+    self.verify_instance_exists(package_name, instance_id)
+
+    self.service.detach_tags(
+        package_name=package_name,
+        instance_id=instance_id,
+        tags=tags)
+    return DetachTagsResponse()
+
+
+  ### Search methods.
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          tag=messages.StringField(1, required=True),
+          package_name=messages.StringField(2, required=False)),
+      SearchResponse,
+      path='instance/search',
+      http_method='GET',
+      name='searchInstances')
+  def search_instances(self, request):
+    """Returns package instances with given tag (in no particular order)."""
+    tag = validate_tag(request.tag)
+    if request.package_name:
+      package_name = validate_package_name(request.package_name)
+    else:
+      package_name = None
+
+    caller = auth.get_current_identity()
+    callback = None
+    if package_name:
+      # If search is limited to one package, check its ACL only once.
+      if not acl.can_fetch_instance(package_name, caller):
+        raise auth.AuthorizationError()
+    else:
+      # Filter out packages not allowed by ACL.
+      acl_cache = {}
+      def check_readable(package_name, _instance_id):
+        if package_name not in acl_cache:
+          acl_cache[package_name] = acl.can_fetch_instance(package_name, caller)
+        return acl_cache[package_name]
+      callback = check_readable
+
+    found = self.service.search_by_tag(tag, package_name, callback)
+    return SearchResponse(instances=[instance_to_proto(i) for i in found])
+
+
   ### ACL methods.
 
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_path']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_path=messages.StringField(1, required=True)),
       FetchACLResponse,
       http_method='GET',
       path='acl',
@@ -535,7 +766,9 @@ class PackageRepositoryApi(remote.Service):
         }))
 
   @endpoints_method(
-      container(ModifyACLRequest, ['package_path']),
+      endpoints.ResourceContainer(
+          ModifyACLRequest,
+          package_path=messages.StringField(1, required=True)),
       ModifyACLResponse,
       http_method='POST',
       path='acl',
@@ -576,7 +809,10 @@ class PackageRepositoryApi(remote.Service):
 
 
   @endpoints_method(
-      container(message_types.VoidMessage, ['package_name', 'instance_id']),
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True)),
       FetchClientBinaryResponse,
       http_method='GET',
       path='client',
@@ -592,14 +828,8 @@ class PackageRepositoryApi(remote.Service):
     if not acl.can_fetch_instance(package_name, caller):
       raise auth.AuthorizationError()
 
-    instance = self.service.get_instance(package_name, instance_id)
-    if instance is None:
-      pkg = self.service.get_package(package_name)
-      if pkg is None:
-        raise PackageNotFoundError()
-      raise InstanceNotFoundError()
-
     # Grab the location of the extracted binary.
+    instance = self.get_instance(package_name, instance_id)
     client_info, error_message = self.service.get_client_binary_info(instance)
     if error_message:
       raise Error(error_message)

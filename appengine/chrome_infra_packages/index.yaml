@@ -1,0 +1,13 @@
+indexes:
+
+- kind: InstanceTag
+  properties:
+  - name: tag
+  - name: registered_ts
+    direction: desc
+
+- kind: InstanceTag
+  ancestor: yes
+  properties:
+  - name: registered_ts
+    direction: desc
