@@ -282,7 +282,8 @@ def build_all(
     package_out_dir,
     package_def_files,
     upload,
-    service_account_json):
+    service_account_json,
+    json_output):
   """Rebuild python and Go universes and CIPD packages.
 
   Args:
@@ -293,6 +294,7 @@ def build_all(
     package_def_files: names of *.yaml files in package_def_dir or [] for all.
     upload: True to also upload built packages, False just to build them.
     service_account_json: path to *.json service account credential.
+    json_output: path to *.json file to write info about built packages to.
 
   Returns:
     0 on success, 1 or error.
@@ -314,8 +316,8 @@ def build_all(
   build_callback()
 
   # Package and upload it.
-  fails = []
-  successes = []
+  failed = []
+  succeeded = []
   for pkg_def_file in packages_to_build:
     # path/name.yaml -> out/name.cipd.
     name = os.path.splitext(os.path.basename(pkg_def_file))[0]
@@ -328,17 +330,26 @@ def build_all(
           package_vars,
           upload,
           service_account_json)
-      successes.append(info)
-    except BuildException:
-      fails.append(pkg_def_file)
+      succeeded.append({'pkg_def_name': name, 'info': info})
+    except BuildException as e:
+      failed.append({'pkg_def_name': name, 'error': str(e)})
 
   print_title('Summary')
-  for pkg_def_file in fails:
-    print 'FAILED %s, see log above' % os.path.basename(pkg_def_file)
-  for info in successes:
-    print '%s %s' % (info['package'], info['instance_id'])
+  for d in failed:
+    print 'FAILED %s, see log above' % d['pkg_def_name']
+  for d in succeeded:
+    print '%s %s' % (d['info']['package'], d['info']['instance_id'])
 
-  return 1 if fails else 0
+  if json_output:
+    with open(json_output, 'w') as f:
+      summary = {
+        'failed': failed,
+        'succeeded': succeeded,
+        'vars': package_vars,
+      }
+      json.dump(summary, f, sort_keys=True, indent=2, separators=(',', ': '))
+
+  return 1 if failed else 0
 
 
 def build_infra():
@@ -372,6 +383,9 @@ def main(
   parser.add_argument(
       '--service-account-json', metavar='PATH', dest='service_account_json',
       help='path to credentials for service account to use')
+  parser.add_argument(
+      '--json-output', metavar='PATH', dest='json_output',
+      help='where to dump info about built package instances')
   args = parser.parse_args(args)
   return build_all(
       go_workspace,
@@ -380,7 +394,8 @@ def main(
       package_out_dir,
       args.yamls,
       args.upload,
-      args.service_account_json)
+      args.service_account_json,
+      args.json_output)
 
 
 if __name__ == '__main__':
