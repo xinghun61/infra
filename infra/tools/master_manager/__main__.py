@@ -7,6 +7,7 @@
 import argparse
 import logging
 import os
+import socket
 import subprocess
 import sys
 
@@ -38,6 +39,9 @@ def parse_args():  # pragma: no cover
       default='.stop_master_lifecycle',
       help='filename of the emergency stop file. if this file is found in the '
            'master directory, exit immediately')
+  parser.add_argument('--hostname',
+      default=socket.getfqdn(),
+      help='override local hostname (currently %(default)s)')
   parser.add_argument('--prod', action='store_true',
       help='actually run commands instead of printing them.')
   parser.add_argument('--loop', action='store_true',
@@ -63,13 +67,27 @@ def parse_args():  # pragma: no cover
   return args
 
 
+def master_hostname_is_valid(local_hostname, abs_master_directory, logger):
+  master_hostname = master.get_mastermap_data(
+      abs_master_directory)['fullhost']
+  if master_hostname != local_hostname:
+    logger.error('%s does not match %s, aborting. use --hostname to override.',
+        local_hostname, master_hostname)
+    return False
+  return True
+
+
 def run_state_machine_pass(
     logger, matchlist, abs_master_directory, emergency_file, desired_state,
-    transition_time_utc, enable_gclient_sync, prod, connection_timeout):
+    transition_time_utc, enable_gclient_sync, prod, connection_timeout,
+    hostname):
   # pragma: no cover
   if os.path.exists(os.path.join(abs_master_directory, emergency_file)):
     logger.error('%s detected in %s, aborting!',
         emergency_file, abs_master_directory)
+    return 1
+
+  if not master_hostname_is_valid(hostname, abs_master_directory, logger):
     return 1
 
   evidence = buildbot_state.collect_evidence(
@@ -120,7 +138,7 @@ def main():  # pragma: no cover
   state_machine = partial(run_state_machine_pass, logger,
         matchlist, abs_master_directory, args.emergency_file,
         args.desired_state, args.transition_time_utc, args.enable_gclient_sync,
-        args.prod, args.connection_timeout)
+        args.prod, args.connection_timeout, args.hostname)
 
   if args.loop:
     loop_opts = outer_loop.process_argparse_options(args)

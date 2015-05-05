@@ -93,7 +93,7 @@ def get_last_no_new_builds(directory):
   return last_no_new_builds
 
 
-def _get_mastermap_data(directory):
+def get_mastermap_data(directory):
   """Get mastermap JSON from a master directory."""
 
   build_dir = os.path.join(directory, os.pardir, os.pardir, os.pardir, 'build')
@@ -119,7 +119,7 @@ def _get_mastermap_data(directory):
 
 def _get_master_web_port(directory):
   """Determine the web port of the master running in the given directory."""
-  mastermap_data = _get_mastermap_data(directory)
+  mastermap_data = get_mastermap_data(directory)
   if mastermap_data:
     return mastermap_data['port']
   return None
