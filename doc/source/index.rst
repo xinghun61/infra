@@ -29,6 +29,7 @@ Usage Guides
 
 * :doc:`user_guide/new_master` - How to set up a new buildbot master.
 * :doc:`user_guide/recipes` - Recipes user guide.
+* :doc:`user_guide/builders_pyl` - The builders.pyl file format for masters.
 * :doc:`master_auth`
 
 Contributer's Guides
