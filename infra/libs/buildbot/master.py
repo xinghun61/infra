@@ -152,16 +152,25 @@ def get_accepting_builds(directory, timeout=30):
 GclientSync, MakeStop, MakeWait, MakeStart, MakeNoNewBuilds = range(5)
 
 
+def _get_gclient_root(directory):
+  """Get root directory of a gclient solution."""
+  # If performance becomes an issue, consider memoizing this function.
+  return subprocess.check_output(
+      ['gclient', 'root'], cwd=directory).rstrip('\n')
+
+
 def convert_action_items_to_cli(
     action_items, directory, enable_gclient=False):
 
-  def cmd_dict(cmd, lockfile_prefix):
+  def cmd_dict(cmd, lockfile_prefix, directory_lock_override=None):
     # Using the same lockfile prefix for two actions will make them mutually
     # exclusive. So setting 'make' for all the make commands tries to prevent
     # two make actions happening at once in the same master directory.
+
+    directory_to_lock = directory_lock_override or directory
     lockfile = '%s_%s' % (
         lockfile_prefix,
-        re.sub('[^\w]', '_', directory.lower()))
+        re.sub('[^\w]', '_', directory_to_lock.lower()))
     return {
         'cwd': directory,
         'cmd': cmd,
@@ -173,7 +182,8 @@ def convert_action_items_to_cli(
       if enable_gclient:
         yield cmd_dict(
             ['gclient', 'sync', '--reset', '--force', '--auto_rebase'],
-            'gclient')
+            'gclient',
+            directory_lock_override=_get_gclient_root(directory))
     elif action_item == MakeStop:
       yield cmd_dict(['make', 'stop'], 'make')
     elif action_item == MakeWait:
