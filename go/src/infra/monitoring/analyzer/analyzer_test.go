@@ -101,7 +101,7 @@ func TestMasterAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 10)
+	a := New(&mockClient{}, 0, 10)
 
 	for _, test := range tests {
 		a.now = fakeNow(test.t)
@@ -124,12 +124,13 @@ func TestBuilderAlerts(t *testing.T) {
 	}{
 		{
 			name:         "Empty",
+			url:          "https://build.chromium.org/p/fake.master/json",
 			wantBuilders: []messages.Alert{},
 			wantMasters:  []messages.Alert{},
 		},
 		{
 			name: "No Alerts",
-			url:  "http://fake.master",
+			url:  "https://build.chromium.org/p/fake.master/json",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 			},
@@ -139,7 +140,7 @@ func TestBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 10)
+	a := New(&mockClient{}, 0, 10)
 
 	for _, test := range tests {
 		a.now = fakeNow(test.t)
@@ -213,10 +214,11 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			time: time.Unix(0, 0).Add(4 * time.Hour),
 			wantAlerts: []messages.Alert{
 				{
-					Key:   "fake.master.fake.builder.hung",
-					Title: "fake.master.fake.builder is hung in step fake_step.",
-					Time:  messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
-					Body:  "fake.master.fake.builder has been building for 3h59m50s (last step update 1970-01-01 00:00:10 +0000 UTC), past the alerting threshold of 3h0m0s",
+					Key:      "fake.master.fake.builder.hung",
+					Title:    "fake.master.fake.builder is hung in step fake_step.",
+					Time:     messages.TimeToEpochTime(time.Unix(0, 0).Add(4 * time.Hour)),
+					Body:     "fake.master.fake.builder has been building for 3h59m50s (last step update 1970-01-01 00:00:10 +0000 UTC), past the alerting threshold of 3h0m0s",
+					Severity: 1,
 					Links: []messages.Link{
 						{Title: "Builder", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder"},
 						{Title: "Last build", Href: "https://build.chromium.org/p/fake.master/builders/fake.builder/builds/3"},
@@ -228,7 +230,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(nil, 10)
+	a := New(nil, 0, 10)
 
 	for _, test := range tests {
 		a.now = fakeNow(test.time)
@@ -302,10 +304,10 @@ func TestReasonsForFailure(t *testing.T) {
 				},
 			},
 			testResults: &messages.TestResults{
-				Tests: map[string]messages.TestResult{
-					"test a": messages.TestResult{
-						Expected: "PASS",
-						Actual:   "FAIL",
+				Tests: map[string]interface{}{
+					"test a": map[string]interface{}{
+						"expected": "PASS",
+						"actual":   "FAIL",
 					},
 				},
 			},
@@ -314,7 +316,7 @@ func TestReasonsForFailure(t *testing.T) {
 	}
 
 	mc := &mockClient{}
-	a := New(mc, 10)
+	a := New(mc, 0, 10)
 
 	for _, test := range tests {
 		mc.testResults = test.testResults
@@ -390,7 +392,7 @@ func TestStepFailures(t *testing.T) {
 	}
 
 	mc := &mockClient{}
-	a := New(mc, 10)
+	a := New(mc, 0, 10)
 
 	for _, test := range tests {
 		mc.build = test.b
@@ -401,6 +403,79 @@ func TestStepFailures(t *testing.T) {
 		}
 		if !reflect.DeepEqual(err, test.wantErr) {
 			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.wantErr)
+		}
+	}
+}
+
+func TestStepFailureAlerts(t *testing.T) {
+	tests := []struct {
+		name        string
+		failures    []stepFailure
+		testResults messages.TestResults
+		alerts      []messages.Alert
+		err         error
+	}{
+		{
+			name:   "empty",
+			alerts: []messages.Alert{},
+		},
+		{
+			name: "single failure",
+			failures: []stepFailure{
+				{
+					masterName:  "fake.master",
+					builderName: "fake.builder",
+					build: messages.Builds{
+						Number: 2,
+					},
+					step: messages.Steps{
+						Name: "steps",
+					},
+				},
+				{
+					masterName:  "fake.master",
+					builderName: "fake.builder",
+					build: messages.Builds{
+						Number: 42,
+					},
+					step: messages.Steps{
+						Name: "fake_tests",
+					},
+				},
+			},
+			testResults: messages.TestResults{},
+			alerts: []messages.Alert{
+				{
+					Key:   "fake.master.fake.builder.fake_tests.",
+					Title: "Builder step failure: fake.master.fake.builder",
+					Type:  "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{
+								Name:          "fake.builder",
+								URL:           "https://build.chromium.org/p/fake.master/builders/fake.builder",
+								FirstFailure:  42,
+								LatestFailure: 42,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	mc := &mockClient{}
+	a := New(mc, 0, 10)
+	a.now = fakeNow(time.Unix(0, 0))
+
+	for _, test := range tests {
+		mc.testResults = &test.testResults
+		alerts, err := a.stepFailureAlerts(test.failures)
+		if !reflect.DeepEqual(alerts, test.alerts) {
+			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v", test.name, alerts, test.alerts)
+		}
+		if !reflect.DeepEqual(err, test.err) {
+			t.Errorf("%s failed. Got %+v, want %+v", test.name, err, test.err)
 		}
 	}
 }
@@ -524,7 +599,7 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 10)
+	a := New(&mockClient{}, 0, 10)
 	a.now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
 		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)

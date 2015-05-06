@@ -84,10 +84,12 @@ type BuildFailure struct {
 
 // AlertedBuilder represents an individual builder.
 type AlertedBuilder struct {
-	Name          string
-	URL           string
-	FirstFailure  EpochTime `json:"first_failure"`
-	LatestFailure EpochTime `json:"latest_failure"`
+	Name string
+	URL  string
+	// FirstFailure is the build number of first failure.
+	FirstFailure int64 `json:"first_failure"`
+	// LatestFailure is the build number of latest failure.
+	LatestFailure int64 `json:"latest_failure"`
 }
 
 // Reason contains information about why the Alert was triggered.

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -21,7 +22,13 @@ import (
 
 const (
 	// StepCompletedRun is a synthetic step name used to indicate the build run is complete.
-	StepCompletedRun = "completed run"
+	StepCompletedRun  = "completed run"
+	treeCloserPri     = 0
+	staleMasterSev    = 0
+	staleBuilderSev   = 0
+	hungBuilderSev    = 1
+	idleBuilderSev    = 1
+	offlineBuilderSev = 1
 )
 
 var (
@@ -56,6 +63,9 @@ type MasterAnalyzer struct {
 	// MaxRecentBuilds is the maximum number of recent builds to check, per builder.
 	MaxRecentBuilds int
 
+	// MinRecentBuilds is the minimum number of recent builds to check, per builder.
+	MinRecentBuilds int
+
 	// StepAnalzers are the set of build step failure analyzers to be checked on
 	// build step failures.
 	StepAnalyzers []StepAnalyzer
@@ -81,6 +91,14 @@ type MasterAnalyzer struct {
 
 	// bCache is a map of build cache key to Build message.
 	bCache map[string]*messages.Builds
+	// bLock protects bCache
+	bLock *sync.Mutex
+
+	// These limit the scope analysis, useful for debugging.
+	TreeOnly    string
+	MasterOnly  string
+	BuilderOnly string
+	BuildOnly   int64
 
 	// now is useful for mocking the system clock in testing.
 	now func() time.Time
@@ -88,7 +106,7 @@ type MasterAnalyzer struct {
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
 // maxBuilds is the maximum number of builds to check, per builder.
-func New(c client.Client, maxBuilds int) *MasterAnalyzer {
+func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
 	if c == nil {
 		c = client.New()
 	}
@@ -96,12 +114,14 @@ func New(c client.Client, maxBuilds int) *MasterAnalyzer {
 	return &MasterAnalyzer{
 		Client:                 c,
 		MaxRecentBuilds:        maxBuilds,
+		MinRecentBuilds:        minBuilds,
 		HungBuilderThresh:      3 * time.Hour,
 		OfflineBuilderThresh:   90 * time.Minute,
 		IdleBuilderCountThresh: 50,
 		StaleMasterThreshold:   10 * time.Minute,
 		StepAnalyzers: []StepAnalyzer{
 			&TestFailureAnalyzer{Client: c},
+			&CompileFailureAnalyzer{Client: c},
 		},
 
 		now: func() time.Time {
@@ -109,6 +129,7 @@ func New(c client.Client, maxBuilds int) *MasterAnalyzer {
 		},
 
 		bCache: map[string]*messages.Builds{},
+		bLock:  &sync.Mutex{},
 	}
 }
 
@@ -128,7 +149,7 @@ func (a *MasterAnalyzer) MasterAlerts(url string, be *messages.BuildExtract) []m
 			Key:      fmt.Sprintf("stale master: %v", url),
 			Title:    "Stale Master Data",
 			Body:     fmt.Sprintf("%s elapsed since last update (%s).", elapsed, be.CreatedTimestamp.Time()),
-			Severity: 0,
+			Severity: staleMasterSev,
 			Time:     messages.TimeToEpochTime(a.now()),
 			Links:    []messages.Link{{"Master", url}},
 			// No type or extension for now.
@@ -160,7 +181,12 @@ func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []
 
 	// TODO: get a list of all the running builds from be.Slaves? It
 	// appears to be used later on in the original py.
+	scannedBuilders := []string{}
 	for bn, b := range be.Builders {
+		if a.BuilderOnly != "" && bn != a.BuilderOnly {
+			continue
+		}
+		scannedBuilders = append(scannedBuilders, bn)
 		go func(bn string, b messages.Builders) {
 			out := r{bn: bn, b: b}
 			defer func() {
@@ -169,7 +195,6 @@ func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []
 
 			// This blocks on IO, hence the goroutine.
 			a.warmBuildCache(mn, bn, b.CachedBuilds)
-
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
@@ -178,7 +203,7 @@ func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []
 	}
 
 	ret := []messages.Alert{}
-	for bn := range be.Builders {
+	for _, bn := range scannedBuilders {
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
@@ -198,7 +223,11 @@ func masterName(URL string) (string, error) {
 		return "", err
 	}
 	pathParts := strings.Split(mURL.Path, "/")
-	return pathParts[len(pathParts)-1], nil
+	if len(pathParts) < 2 {
+		return "", fmt.Errorf("Couldn't parse master name from %s", URL)
+	}
+	// -2 to lop the /json off the http://.../{master.name}/json suffix
+	return pathParts[len(pathParts)-2], nil
 }
 
 func cacheKeyForBuild(master, builder string, number int64) string {
@@ -229,14 +258,19 @@ func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs [
 	// TODO: add FetchBuilds to the client interface. Take a list of {master, builder} and
 	// return (map[{master, builder}][]Builds, map [{master, builder}]error)
 	// That way we can do all of these in parallel.
+
 	status, err := a.Client.JSON(URL, &res)
 	if err != nil {
 		log.Errorf("Error (%d) fetching %s: %s", status, URL, err)
 	}
 
+	a.bLock.Lock()
 	for _, b := range res.Builds {
-		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = &b
+		// TODO: consider making res.Builds be []*messages.Builds instead of []messages.Builds
+		ba := b
+		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = &ba
 	}
+	a.bLock.Unlock()
 }
 
 // This type is used for sorting build IDs.
@@ -290,26 +324,64 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), mn, bn)
 
 	// Check for alertable step failures.
-	for _, buildID := range recentBuildIDs {
+	stepFailureAlerts := map[string]messages.Alert{}
+	firstFailureInstance := map[string]int64{}
+
+	for i, buildID := range recentBuildIDs {
 		failures, err := a.stepFailures(mn, bn, buildID)
 		if err != nil {
 			errs = append(errs, err)
 		}
+		if len(failures) == 0 && i > a.MinRecentBuilds {
+			// Bail as soon as we find a successful build prior to the most recent couple of builds.
+			break
+		}
+
 		as, err := a.stepFailureAlerts(failures)
 		if err != nil {
 			errs = append(errs, err)
 		}
-		alerts = append(alerts, as...)
+
+		lastKey := ""
+		// This probably isn't exactly what we want since multiple builders may have the same alert firing.
+		// This just merges build ranges on a per-builder basis.
+		for _, alr := range as {
+			// Only keep the most recent alert.  Since recentBuildIDs is
+			// sorted newest build first, ignore older instances of the alert.
+			if _, ok := stepFailureAlerts[alr.Key]; !ok {
+				stepFailureAlerts[alr.Key] = alr
+			}
+			if alr.Key == lastKey || lastKey == "" {
+				if bf, ok := alr.Extension.(messages.BuildFailure); ok {
+					firstFailureInstance[alr.Key] = bf.Builders[0].FirstFailure
+				} else {
+					log.Errorf("Couldn't cast alert extension to BuildFailure: %s", alr.Key)
+				}
+			}
+			lastKey = alr.Key
+		}
 	}
 
-	// Check for stale builders.  Latest build is the first in the list.
+	for _, alr := range stepFailureAlerts {
+		alr.Extension.(messages.BuildFailure).Builders[0].FirstFailure = firstFailureInstance[alr.Key]
+		alerts = append(alerts, alr)
+	}
+
+	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 	lastBuildID := recentBuildIDs[0]
 	log.Infof("Checking last build ID: %d", lastBuildID)
+
 	// TODO: get this from cache.
-	lastBuild, err := a.Client.Build(mn, bn, lastBuildID)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("Couldn't get latest build %d for %s.%s: %s", lastBuildID, mn, bn, err))
-		return alerts, errs
+	a.bLock.Lock()
+	lastBuild := a.bCache[cacheKeyForBuild(mn, bn, lastBuildID)]
+	a.bLock.Unlock()
+	if lastBuild == nil {
+		var err error
+		lastBuild, err = a.Client.Build(mn, bn, lastBuildID)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("Couldn't get latest build %d for %s.%s: %s", lastBuildID, mn, bn, err))
+			return alerts, errs
+		}
 	}
 
 	// Examining only the latest build is probably suboptimal since if it's still in progress it might
@@ -335,7 +407,7 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 				Key:      fmt.Sprintf("%s.%s.hung", mn, bn),
 				Title:    fmt.Sprintf("%s.%s is hung in step %s.", mn, bn, lastStep),
 				Body:     fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
-				Severity: 0,
+				Severity: hungBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
@@ -347,8 +419,8 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 			alerts = append(alerts, messages.Alert{
 				Key:      fmt.Sprintf("%s.%s.offline", mn, bn),
 				Title:    fmt.Sprintf("%s.%s is offline.", mn, bn),
-				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), a.OfflineBuilderThresh),
-				Severity: 0,
+				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s %v), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), float64(lastUpdated), a.OfflineBuilderThresh),
+				Severity: offlineBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
@@ -359,7 +431,7 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 				Key:      fmt.Sprintf("%s.%s.idle", mn, bn),
 				Title:    fmt.Sprintf("%s.%s is idle with too many pending builds.", mn, bn),
 				Body:     fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", mn, bn, b.PendingBuilds, a.IdleBuilderCountThresh),
-				Severity: 0,
+				Severity: idleBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
@@ -376,7 +448,9 @@ func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFa
 	cc := cacheKeyForBuild(mn, bn, bID)
 
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
+	a.bLock.Lock()
 	b, ok := a.bCache[cc]
+	a.bLock.Unlock()
 	if !ok {
 		log.Infof("Cache miss for %s", cc)
 		b, err = a.Client.Build(mn, bn, bID)
@@ -387,6 +461,7 @@ func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFa
 	}
 
 	ret := []stepFailure{}
+
 	for _, s := range b.Steps {
 		if !s.IsFinished || len(s.Results) == 0 {
 			continue
@@ -429,9 +504,15 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 	// Might not need full capacity buffer, since some failures are ignored below.
 	rs := make(chan res, len(failures))
 
+	scannedFailures := []stepFailure{}
 	for _, f := range failures {
 		// goroutine/channel because the reasonsForFailure call potentially
 		// blocks on IO.
+		if f.step.Name == "steps" {
+			continue
+			// The actual breaking step will appear later.
+		}
+		scannedFailures = append(scannedFailures, f)
 		go func(f stepFailure) {
 			alr := messages.Alert{
 				Title: fmt.Sprintf("Builder step failure: %s.%s", f.masterName, f.builderName),
@@ -439,14 +520,17 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 				Type:  "buildfailure",
 			}
 
+			// If the builder has been failing on the same step for multiple builds in a row,
+			// we should have only one alert but indicate the range of builds affected.
+			// These are set in FirstFailure and LastFailure.
 			bf := messages.BuildFailure{
 				// FIXME: group builders?
 				Builders: []messages.AlertedBuilder{
 					{
 						Name:          f.builderName,
-						URL:           f.URL(),
-						FirstFailure:  0,
-						LatestFailure: 1,
+						URL:           fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", f.masterName, f.builderName),
+						FirstFailure:  f.build.Number,
+						LatestFailure: f.build.Number,
 					},
 				},
 				// TODO: RegressionRanges:
@@ -458,29 +542,27 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 				bf.Reasons = append(bf.Reasons, messages.Reason{
 					TestName: r,
 					Step:     f.step.Name,
+					URL:      f.URL(),
 				})
 			}
 
 			alr.Extension = bf
 			if len(bf.Reasons) == 0 {
-				log.Warnf("No reasons for step failure: %s", alertKey(f.masterName, f.builderName, f.step.Name, ""))
-				rs <- res{
-					f: f,
-				}
+				alr.Key = alertKey(f.masterName, f.builderName, f.step.Name, "")
+				log.Warnf("No reasons for step failure: %s", alr.Key)
 			} else {
 				// Should the key include all of the reasons?
 				alr.Key = alertKey(f.masterName, f.builderName, f.step.Name, reasons[0])
-
-				rs <- res{
-					f:   f,
-					a:   &alr,
-					err: nil,
-				}
+			}
+			rs <- res{
+				f:   f,
+				a:   &alr,
+				err: nil,
 			}
 		}(f)
 	}
 
-	for _ = range failures {
+	for _ = range scannedFailures {
 		r := <-rs
 		if r.a != nil {
 			ret = append(ret, *r.a)
@@ -499,7 +581,9 @@ func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
 	for _, sfa := range a.StepAnalyzers {
 		res, err := sfa.Analyze(f)
 		if err != nil {
+			// TODO: return something that contains errors *and* reasons.
 			log.Errorf("Error get reasons from StepAnalyzer: %v", err)
+			continue
 		}
 		if res.Recognized {
 			recognized = true

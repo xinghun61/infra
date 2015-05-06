@@ -6,7 +6,8 @@
 // go run infra/monitoring/dispatcher
 // Expects gatekeeper.json to be in the current directory.
 // Runs a single check, prints out diagnosis and exits.
-// TODO(seanmccullough): Run continuously.
+// TODO(seanmccullough): Run continuously.  Also, consider renaming to 'patrol'
+// or 'scanner' because that's really what this thing does.
 
 package main
 
@@ -31,6 +32,9 @@ var (
 	mastersOnly         = flag.Bool("masters-only", false, "Just check for master alerts, not builders")
 	gatekeeperJSON      = flag.String("gatekeeper", "gatekeeper.json", "Location of gatekeeper json file")
 	gatekeeperTreesJSON = flag.String("gatekeeper-trees", "gatekeeper_trees.json", "Location of gatekeeper json file")
+	treeOnly            = flag.String("tree", "", "Only check this tree")
+	builderOnly         = flag.String("builder", "", "Only check this builder")
+	buildOnly           = flag.Int64("build", 0, "Only check this build")
 
 	log = logrus.New()
 
@@ -39,6 +43,8 @@ var (
 		// Weird. Are there ever multiple configs per master key?
 		Masters map[string][]messages.MasterConfig `json:"masters"`
 	}{}
+	// gkt is the gatekeeper trees config.
+	gkt              = map[string]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
 )
 
@@ -85,9 +91,27 @@ func main() {
 		log.Fatalf("Error reading gatekeeper json: %v", err)
 	}
 
-	// Use a direct reference to the client implementation so we can
-	// report request processing stats.
-	a := analyzer.New(nil, 10)
+	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
+	if err != nil {
+		log.Fatalf("Error reading gatekeeper json: %v", err)
+	}
+
+	a := analyzer.New(nil, 2, 5)
+
+	a.TreeOnly = *treeOnly
+	a.MasterOnly = *masterOnly
+	a.BuilderOnly = *builderOnly
+	a.BuildOnly = *buildOnly
+
+	if *treeOnly != "" {
+		if t, ok := gkt[*treeOnly]; ok {
+			for _, url := range t.Masters {
+				mURLs = append(mURLs, fmt.Sprintf("%s/json", url))
+			}
+		} else {
+			log.Fatalf("Unrecoginzed tree: %s", *treeOnly)
+		}
+	}
 
 	bes, errs := a.Client.BuildExtracts(mURLs)
 	log.Infof("Build Extracts read: %d", len(bes))

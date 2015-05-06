@@ -43,10 +43,10 @@ func TestTestStepFailureAlerts(t *testing.T) {
 				},
 			},
 			testResults: &messages.TestResults{
-				Tests: map[string]messages.TestResult{
-					"test_a": messages.TestResult{
-						Expected: "PASS",
-						Actual:   "FAIL",
+				Tests: map[string]interface{}{
+					"test_a": map[string]interface{}{
+						"expected": "PASS",
+						"actual":   "FAIL",
 					},
 				},
 			},

@@ -27,3 +27,9 @@ type BuilderConfig struct {
 	ClosingSteps      []string `json:"closing_steps"`
 	ClosingOptional   []string `json:"closing_optional"`
 }
+
+// TreeMasterConfig is a named group of masters. e.g. chromium, or blink.
+type TreeMasterConfig struct {
+	BuildDB string   `json:"build-db"`
+	Masters []string `json:"masters"`
+}
