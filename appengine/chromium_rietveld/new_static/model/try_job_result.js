@@ -21,6 +21,8 @@ function TryJobResult()
     this.requester = null; // User
     this.buildnumber = 0;
     this.revision = ""; // Number or HEAD
+    this.summary = "";
+    this.moreInfoUrl = "";
     Object.preventExtensions(this);
 }
 
@@ -68,4 +70,8 @@ TryJobResult.prototype.parseData = function(data)
     this.revision = data.revision || "";
     this.url = data.url || "";
     this.master = data.master || "";
+    this.summary = data.summary || "";
+    if (this.summary && this.summary.slice(-1) != ".")
+        this.summary += ".";
+    this.moreInfoUrl = data.moreInfoUrl || "";
 };

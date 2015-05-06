@@ -10,3 +10,16 @@ function TryJobResultSet(builder)
     this.results = [];
     Object.preventExtensions(this);
 }
+
+
+TryJobResultSet.prototype.latestSummaryAndMoreInfo = function()
+{
+    for (var i = this.results.length - 1; i >= 0; --i)
+        if (this.results[i].summary)
+            return {
+                summary: this.results[i].summary,
+                moreInfoUrl: this.results[i].moreInfoUrl,
+            };
+
+    return false;
+};

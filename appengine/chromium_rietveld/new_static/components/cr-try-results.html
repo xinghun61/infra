@@ -65,6 +65,18 @@ found in the LICENSE file. -->
                 background-color: #E75D54;
                 color: #F4F4F4;
             }
+
+            #summaries {
+              margin: 0.5em 16px;
+            }
+
+            .summary {
+              margin: 0.25em 4px;
+            }
+
+            .summary a {
+              margin-left: 1em;
+            }
         </style>
         <div id="builders">
             <template repeat="{{ set in results }}">
@@ -82,11 +94,29 @@ found in the LICENSE file. -->
                 </div>
             </template>
         </div>
+        <div id="summaries">
+            <template repeat="{{ set in results }}">
+              <template bind="{{ latestSummaryAndMoreInfo(set) as summaryInfo }}">
+                  <template if="{{ summaryInfo }}">
+                      <div class="summary">
+                          {{ set.builder }}:
+                          {{ summaryInfo.summary }}
+                          <template if="{{ summaryInfo.moreInfoUrl != '' }}">
+                              <a href="{{ summaryInfo.moreInfoUrl }}" target="_blank">Details</a>
+                          </template>
+                      </div>
+                  </template>
+              </template>
+            </template>
+        </div>
     </template>
     <script>
         Polymer({
             created: function() {
                 this.results = null;
+            },
+            latestSummaryAndMoreInfo: function(set) {
+                return set.latestSummaryAndMoreInfo();
             },
         });
     </script>
