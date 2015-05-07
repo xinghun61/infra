@@ -6,8 +6,8 @@
 # This is a bash configuration script that will configure your shell environment
 # in the same way that infra wrapper scripts like run.py and test.py do.  That
 # allows you to run unwrapped infra tool invocations directly from the shell
-# prompt.  To use it, run `source virtualenv.bashrc` from anywhere inside your
-# gclient root (you must specify the correct path to virtualenv.bashrc).
+# prompt.  To use it, run `source testenv.bashrc` from anywhere inside your
+# gclient root (you must specify the correct path to testenv.bashrc).
 
 unset _testenv_gclient_root
 unset _testenv_ae_root
