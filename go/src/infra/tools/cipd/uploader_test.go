@@ -214,6 +214,59 @@ func TestResumableUpload(t *testing.T) {
 	})
 }
 
+func TestAttachTagsWhenReady(t *testing.T) {
+	Convey("Mocking clock", t, func() {
+		mockClock(time.Now())
+
+		Convey("attachTagsWhenReady works", func() {
+			remote := mockRemoteServiceWithExpectations([]expectedHTTPCall{
+				{
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/tags",
+					Query: url.Values{
+						"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+						"package_name": []string{"pkgname"},
+					},
+					Reply: `{"status": "PROCESSING_NOT_FINISHED_YET"}`,
+				},
+				{
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/tags",
+					Query: url.Values{
+						"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+						"package_name": []string{"pkgname"},
+					},
+					Reply: `{"status": "SUCCESS"}`,
+				},
+			})
+			err := attachTagsWhenReady(
+				remote, "pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				[]string{"tag1:value1"}, logging.DefaultLogger)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("attachTagsWhenReady timeout", func() {
+			calls := []expectedHTTPCall{}
+			for i := 0; i < 20; i++ {
+				calls = append(calls, expectedHTTPCall{
+					Method: "POST",
+					Path:   "/_ah/api/repo/v1/tags",
+					Query: url.Values{
+						"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+						"package_name": []string{"pkgname"},
+					},
+					Reply: `{"status": "PROCESSING_NOT_FINISHED_YET"}`,
+				})
+			}
+			remote := mockRemoteServiceWithExpectations(calls)
+			err := attachTagsWhenReady(
+				remote, "pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				[]string{"tag1:value1"}, logging.DefaultLogger)
+			So(err, ShouldEqual, ErrAttachTagsTimeout)
+		})
+	})
+}
+
 func mockResumableUpload() {
 	prev := resumableUpload
 	resumableUpload = func(string, int64, UploadToCASOptions) error {

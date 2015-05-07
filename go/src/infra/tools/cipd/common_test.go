@@ -72,3 +72,16 @@ func TestValidateInstanceID(t *testing.T) {
 		So(ValidateInstanceID("AAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
 	})
 }
+
+func TestValidateInstanceTag(t *testing.T) {
+	Convey("ValidateInstanceTag works", t, func() {
+		So(ValidateInstanceTag(""), ShouldNotBeNil)
+		So(ValidateInstanceTag("notapair"), ShouldNotBeNil)
+		So(ValidateInstanceTag(strings.Repeat("long", 200)+":abc"), ShouldNotBeNil)
+		So(ValidateInstanceTag("BADKEY:value"), ShouldNotBeNil)
+		So(ValidateInstanceTag("good:tag"), ShouldBeNil)
+		So(ValidateInstanceTag("good_tag:"), ShouldBeNil)
+		So(ValidateInstanceTag("good:tag:blah"), ShouldBeNil)
+		So(ValidateInstanceTag("good_tag:asdad/asdad/adad/a\\asdasdad"), ShouldBeNil)
+	})
+}

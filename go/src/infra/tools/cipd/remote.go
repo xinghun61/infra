@@ -67,6 +67,16 @@ type roleChangeMsg struct {
 	Principal string `json:"principal"`
 }
 
+// pendingProcessingError is returned by attachTags if package instance is not
+// yet ready and the call should be retried later.
+type pendingProcessingError struct {
+	message string
+}
+
+func (e *pendingProcessingError) Error() string {
+	return e.message
+}
+
 // newRemoteService is mocked in tests.
 var newRemoteService = func(client *http.Client, url string, log logging.Logger) *remoteService {
 	log.Infof("cipd: service URL is %s", url)
@@ -339,6 +349,46 @@ func (r *remoteService) modifyACL(packagePath string, changes []PackageACLChange
 	return fmt.Errorf("Unexpected reply status: %s", reply.Status)
 }
 
+func (r *remoteService) attachTags(packageName, instanceID string, tags []string) error {
+	// Tags will be passed in the request body, not via URL.
+	endpoint, err := tagsEndpoint(packageName, instanceID, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(tags) == 0 {
+		return errors.New("At least one tag must be provided")
+	}
+	for _, tag := range tags {
+		err = ValidateInstanceTag(tag)
+		if err != nil {
+			return err
+		}
+	}
+	var request struct {
+		Tags []string `json:"tags"`
+	}
+	request.Tags = tags
+
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+	}
+	err = r.makeRequest(endpoint, "POST", &request, &reply)
+	if err != nil {
+		return err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		return nil
+	case "PROCESSING_NOT_FINISHED_YET":
+		return &pendingProcessingError{reply.ErrorMessage}
+	case "ERROR", "PROCESSING_FAILED":
+		return errors.New(reply.ErrorMessage)
+	}
+	return fmt.Errorf("Unexpected status when attaching tags: %s", reply.Status)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func instanceEndpoint(packageName, instanceID string) (string, error) {
@@ -364,6 +414,30 @@ func aclEndpoint(packagePath string) (string, error) {
 	params := url.Values{}
 	params.Add("package_path", packagePath)
 	return "repo/v1/acl?" + params.Encode(), nil
+}
+
+func tagsEndpoint(packageName, instanceID string, tags []string) (string, error) {
+	err := ValidatePackageName(packageName)
+	if err != nil {
+		return "", err
+	}
+	err = ValidateInstanceID(instanceID)
+	if err != nil {
+		return "", err
+	}
+	for _, tag := range tags {
+		err = ValidateInstanceTag(tag)
+		if err != nil {
+			return "", err
+		}
+	}
+	params := url.Values{}
+	params.Add("package_name", packageName)
+	params.Add("instance_id", instanceID)
+	for _, tag := range tags {
+		params.Add("tag", tag)
+	}
+	return "repo/v1/tags?" + params.Encode(), nil
 }
 
 // convertTimestamp coverts string with int64 timestamp in microseconds since

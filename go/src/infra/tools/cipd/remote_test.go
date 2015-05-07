@@ -84,6 +84,20 @@ func TestRemoteService(t *testing.T) {
 		return remote.modifyACL("pkgname", changes)
 	}
 
+	mockAttachTags := func(c C, tags []string, request, response string) error {
+		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
+			c.So(r.URL.Path, ShouldEqual, "/_ah/api/repo/v1/tags")
+			c.So(r.URL.Query().Get("package_name"), ShouldEqual, "pkgname")
+			c.So(r.URL.Query().Get("instance_id"), ShouldEqual, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+			c.So(r.Method, ShouldEqual, "POST")
+			body, err := ioutil.ReadAll(r.Body)
+			c.So(err, ShouldBeNil)
+			c.So(string(body), ShouldEqual, request)
+			w.Write([]byte(response))
+		})
+		return remote.attachTags("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", tags)
+	}
+
 	Convey("makeRequest POST works", t, func(c C) {
 		remote := mockRemoteService(func(w http.ResponseWriter, r *http.Request) {
 			c.So(r.Method, ShouldEqual, "POST")
@@ -432,6 +446,40 @@ func TestRemoteService(t *testing.T) {
 			"status": "ERROR",
 			"error_message": "Error message"
 		}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("attachTags SUCCESS", t, func(c C) {
+		err := mockAttachTags(
+			c, []string{"tag1:value1", "tag2:value2"},
+			`{"tags":["tag1:value1","tag2:value2"]}`,
+			`{"status":"SUCCESS"}`)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("attachTags no tags", t, func(c C) {
+		err := mockAttachTags(c, nil, "", "")
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("attachTags bad tag", t, func(c C) {
+		err := mockAttachTags(c, []string{"BADTAG"}, "", "")
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("attachTags PROCESSING_NOT_FINISHED_YET", t, func(c C) {
+		err := mockAttachTags(
+			c, []string{"tag1:value1", "tag2:value2"},
+			`{"tags":["tag1:value1","tag2:value2"]}`,
+			`{"status":"PROCESSING_NOT_FINISHED_YET", "error_message":"Blah"}`)
+		So(err, ShouldResemble, &pendingProcessingError{message: "Blah"})
+	})
+
+	Convey("attachTags ERROR", t, func(c C) {
+		err := mockAttachTags(
+			c, []string{"tag1:value1", "tag2:value2"},
+			`{"tags":["tag1:value1","tag2:value2"]}`,
+			`{"status":"ERROR", "error_message":"Blah"}`)
 		So(err, ShouldNotBeNil)
 	})
 }

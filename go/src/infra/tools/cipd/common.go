@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	"infra/libs/build"
 )
@@ -20,9 +21,12 @@ const packageServiceDir = ".cipdpkg"
 // Name of the directory inside an installation root reserved for cipd stuff.
 const siteServiceDir = ".cipd"
 
-// packageNameRe is a Regular expression for a package name: <word>/<word/<word>
+// packageNameRe is a regular expression for a package name: <word>/<word/<word>
 // Package names must be lower case.
 var packageNameRe = regexp.MustCompile(`^([a-z0-9_\-]+/)*[a-z0-9_\-]+$`)
+
+// instanceTagKeyRe is a regular expression for a tag key.
+var instanceTagKeyRe = regexp.MustCompile(`^[a-z0-9_\-]+$`)
 
 // Name of the manifest file inside the package.
 const manifestName = packageServiceDir + "/manifest.json"
@@ -54,6 +58,21 @@ func ValidateInstanceID(s string) error {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
 			return fmt.Errorf("Not a valid package instance ID \"%s\": wrong char %c", s, c)
 		}
+	}
+	return nil
+}
+
+// ValidateInstanceTag returns error if a string doesn't look like a valid tag.
+func ValidateInstanceTag(t string) error {
+	chunks := strings.SplitN(t, ":", 2)
+	if len(chunks) != 2 {
+		return fmt.Errorf("The string %q doesn't look like a tag (a key:value pair)", t)
+	}
+	if len(t) > 400 {
+		return fmt.Errorf("The tag is too long: %q", t)
+	}
+	if !instanceTagKeyRe.MatchString(chunks[0]) {
+		return fmt.Errorf("Invalid tag key in %q. Should be a lowercase word.", t)
 	}
 	return nil
 }

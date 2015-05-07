@@ -222,6 +222,42 @@ func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// TagsOptions mixin.
+
+// Tags holds array of '-tag' command line options.
+type Tags []string
+
+func (tags *Tags) String() string {
+	// String() for empty vars used in -help output.
+	if len(*tags) == 0 {
+		return "key:value"
+	}
+	return strings.Join(*tags, " ")
+}
+
+// Set is called by 'flag' package when parsing command line options.
+func (tags *Tags) Set(value string) error {
+	err := cipd.ValidateInstanceTag(value)
+	if err != nil {
+		return err
+	}
+	*tags = append(*tags, value)
+	return nil
+}
+
+// TagsOptions defines command line arguments for commands that accept a set
+// of tags.
+type TagsOptions struct {
+	// Set of tags to attach to the package instance.
+	tags Tags
+}
+
+func (opts *TagsOptions) registerFlags(f *flag.FlagSet) {
+	opts.tags = []string{}
+	f.Var(&opts.tags, "tag", "tag to attach to the package instance")
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // JSONOutputOptions mixin.
 
 // PackageInfo is put into JSON output by subcommands. It describes a built
@@ -289,6 +325,7 @@ var cmdCreate = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &createRun{}
 		c.InputOptions.registerFlags(&c.Flags)
+		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
@@ -298,6 +335,7 @@ var cmdCreate = &subcommands.Command{
 type createRun struct {
 	subcommands.CommandRunBase
 	InputOptions
+	TagsOptions
 	ServiceOptions
 	JSONOutputOptions
 }
@@ -306,7 +344,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	info, err := buildAndUploadInstance(c.InputOptions, c.ServiceOptions)
+	info, err := buildAndUploadInstance(c.InputOptions, c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
@@ -315,7 +353,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
+func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
 		return PackageInfo{}, err
@@ -328,7 +366,7 @@ func buildAndUploadInstance(inputOpts InputOptions, serviceOpts ServiceOptions) 
 	if err != nil {
 		return PackageInfo{}, err
 	}
-	return registerInstanceFile(f.Name(), serviceOpts)
+	return registerInstanceFile(f.Name(), tagsOpts, serviceOpts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -827,6 +865,7 @@ var cmdRegister = &subcommands.Command{
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &registerRun{}
+		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
@@ -835,6 +874,7 @@ var cmdRegister = &subcommands.Command{
 
 type registerRun struct {
 	subcommands.CommandRunBase
+	TagsOptions
 	ServiceOptions
 	JSONOutputOptions
 }
@@ -843,7 +883,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	info, err := registerInstanceFile(args[0], c.ServiceOptions)
+	info, err := registerInstanceFile(args[0], c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&info, err)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
@@ -852,7 +892,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, serviceOpts ServiceOptions) (PackageInfo, error) {
+func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
 	inst, err := cipd.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return PackageInfo{}, err
@@ -866,6 +906,7 @@ func registerInstanceFile(instanceFile string, serviceOpts ServiceOptions) (Pack
 	info := inspectInstance(inst, false)
 	return info, cipd.RegisterInstance(cipd.RegisterInstanceOptions{
 		PackageInstance: inst,
+		Tags:            tagsOpts.tags,
 		UploadOptions: cipd.UploadOptions{
 			ServiceURL: serviceOpts.serviceURL,
 			Client:     client,

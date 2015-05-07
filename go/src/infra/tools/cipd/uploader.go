@@ -18,6 +18,8 @@ import (
 var (
 	// ErrFinalizationTimeout is returned if CAS service can not finalize upload fast enough.
 	ErrFinalizationTimeout = errors.New("Timeout while waiting for CAS service to finalize the upload")
+	// ErrAttachTagsTimeout is returned when service refuses to accept tags for a long time.
+	ErrAttachTagsTimeout = errors.New("Timeout while attaching tags")
 )
 
 // UploadOptions contains upload related parameters shared by UploadToCAS and
@@ -135,8 +137,11 @@ func UploadToCAS(options UploadToCASOptions) error {
 type RegisterInstanceOptions struct {
 	UploadOptions
 
-	// PackageInstance is a package to upload.
+	// PackageInstance is a package instance to register.
 	PackageInstance PackageInstance
+	// Tags is a list of tags to attach to an instance. Will be attached even if
+	// the instance already existed before.
+	Tags []string
 }
 
 // RegisterInstance makes the package instance available for clients by
@@ -194,7 +199,7 @@ func RegisterInstance(options RegisterInstanceOptions) error {
 		log.Infof("cipd: instance %s:%s was successfully registered", inst.PackageName(), inst.InstanceID())
 	}
 
-	return nil
+	return attachTagsWhenReady(remote, inst.PackageName(), inst.InstanceID(), options.Tags, log)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -323,4 +328,35 @@ func getNextOffset(uploadURL string, length int64, client *http.Client) (offset 
 		err = errTransientError
 	}
 	return
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Tags related functions.
+
+// attachTagsWhenReady attaches tags to an instance retrying when receiving
+// PROCESSING_NOT_FINISHED_YET errors.
+func attachTagsWhenReady(remote *remoteService, packageName, instanceID string, tags []string, log logging.Logger) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	for _, tag := range tags {
+		log.Infof("cipd: attaching tag %s", tag)
+	}
+	deadline := clock.Now().Add(60 * time.Second)
+	for clock.Now().Before(deadline) {
+		err := remote.attachTags(packageName, instanceID, tags)
+		if err == nil {
+			log.Infof("cipd: all tags attached")
+			return nil
+		}
+		if _, ok := err.(*pendingProcessingError); ok {
+			log.Warningf("cipd: package instance is not ready yet - %s", err)
+			clock.Sleep(5 * time.Second)
+		} else {
+			log.Errorf("cipd: failed to attach tags - %s", err)
+			return err
+		}
+	}
+	log.Errorf("cipd: failed to attach tags - deadline exceeded")
+	return ErrAttachTagsTimeout
 }
