@@ -421,7 +421,7 @@ def main(
       args.yamls,
       args.upload,
       args.service_url,
-      args.tags,
+      args.tags or [],
       args.service_account_json,
       args.json_output)
 
