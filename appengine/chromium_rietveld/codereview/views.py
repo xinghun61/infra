@@ -2394,14 +2394,34 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
   if (try_jobs):
     values['try_job_results'] = [
         t.to_dict() for t in patchset.try_job_results]
-  for patch in models.Patch.query(ancestor=patchset.key):
+
+  all_no_base_file_keys_future = models.Content.query(
+      models.Content.file_too_large == True,
+      ancestor=patchset.key).fetch_async(10000, keys_only=True, batch_size=1000)
+  patches_future = models.Patch.query(ancestor=patchset.key).fetch_async(
+      10000, batch_size=1000)
+
+  all_comments_by_patch_id = {}
+  if comments:
+    comments = models.Comment.query(
+        ancestor=patchset.key).order(models.Comment.date).fetch(
+        10000, batch_size=1000)
+    for comment in comments:
+      patch_id_of_comment = comment.key.parent().id()
+      if patch_id_of_comment not in all_comments_by_patch_id:
+        all_comments_by_patch_id[patch_id_of_comment] = []
+      all_comments_by_patch_id[patch_id_of_comment].append(comment)
+
+  all_no_base_file_keys = set(all_no_base_file_keys_future.get_result())
+
+  for patch in patches_future.get_result():
     # num_comments and num_drafts are left out for performance reason:
     # they cause a datastore query on first access. They could be added
     # optionally if the need ever arises.
     values['files'][patch.filename] = {
         'id': patch.key.id(),
         'is_binary': patch.is_binary,
-        'no_base_file': patch.no_base_file,
+        'no_base_file': patch.content_key in all_no_base_file_keys,
         'num_added': patch.num_added,
         'num_chunks': patch.num_chunks,
         'num_removed': patch.num_removed,
@@ -2411,20 +2431,18 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
     if comments:
       visible_comments = []
       requester_email = request.user.email() if request.user else 'no email'
-      query = (models.Comment
-               .query(ancestor=patch.key)
-               .order(models.Comment.date))
-      for c in query:
-        if not c.draft or requester_email == c.author.email():
+      comments_on_patch = all_comments_by_patch_id.get(patch.key.id(), [])
+      for comment in comments_on_patch:
+        if not comment.draft or requester_email == comment.author.email():
           visible_comments.append({
-              'author': library.get_nickname(c.author, True, request),
-              'author_email': c.author.email(),
-              'date': str(c.date),
-              'lineno': c.lineno,
-              'text': c.text,
-              'left': c.left,
-              'draft': c.draft,
-              'message_id': c.message_id,
+              'author': library.get_nickname(comment.author, True, request),
+              'author_email': comment.author.email(),
+              'date': str(comment.date),
+              'lineno': comment.lineno,
+              'text': comment.text,
+              'left': comment.left,
+              'draft': comment.draft,
+              'message_id': comment.message_id,
               })
 
       values['files'][patch.filename]['messages'] = visible_comments

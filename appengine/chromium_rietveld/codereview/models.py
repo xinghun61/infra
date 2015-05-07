@@ -959,7 +959,7 @@ class Patch(ndb.Model):
 
   def count_startswith(self, prefix):
     """Returns the number of lines with the specified prefix."""
-    return len([l for l in self.lines if l.startswith(prefix)])
+    return sum(1 for l in self.lines if l.startswith(prefix))
 
   def make_inverted(self, patchset):
     """Calculates the inverse of this Patch.
