@@ -66,7 +66,7 @@ class TaskTarget(Target):
       job_name (str): specific name of this task.
       region (str): general region in which this task is running.
       hostname (str): specific machine on which this task is running.
-      task_num (str): replication id of this task.
+      task_num (int): replication id of this task.
     """
     super(TaskTarget, self).__init__()
     self._service_name = service_name

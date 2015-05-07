@@ -34,6 +34,7 @@ Library usage:
 import logging
 import re
 import socket
+import sys
 
 from monacq.proto import metrics_pb2
 
@@ -74,7 +75,8 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-endpoint',
       default='https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
-      help='url (including file://) to post monitoring metrics to')
+      help='url (including file://) to post monitoring metrics to.'
+           ' (default: %(default)s)')
   parser.add_argument(
       '--ts-mon-credentials',
       help='path to a pkcs8 json credential file')
@@ -82,20 +84,22 @@ def add_argparse_options(parser):
       '--ts-mon-flush',
       choices=('all', 'manual'), default='manual',
       help=('metric push behavior: all (send every metric individually), or '
-            'manual (only send when flush() is called)'))
+            'manual (only send when flush() is called). '
+            '(default: %(default)s)'))
 
   parser.add_argument(
       '--ts-mon-target-type',
       choices=('device', 'task'),
       default='device',
-      help='the type of target that is being monitored ("device" or "task")')
+      help='the type of target that is being monitored ("device" or "task").'
+           ' (default: %(default)s)')
 
   fqdn = socket.getfqdn()  # foo-[a|m]N.[chrome|golo].chromium.org
   host = fqdn.split('.')[0]  # foo-[a|m]N
   parser.add_argument(
       '--ts-mon-device-hostname',
       default=host,
-      help='name of this device')
+      help='name of this device, (default: %(default)s')
   try:
     region = fqdn.split('.')[1]  # [chrome|golo]
   except IndexError:
@@ -103,7 +107,7 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-device-region',
       default=region,
-      help='name of the region this devices lives in')
+      help='name of the region this devices lives in. (default: %(default)s)')
   try:
     # Regular expression that matches the vast majority of our host names.
     # Matches everything of the form 'masterN', 'masterNa', and 'foo-xN'.
@@ -113,7 +117,8 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-device-network',
       default=network,
-      help='name of the network this device is connected to')
+      help='name of the network this device is connected to. '
+           '(default: %(default)s)')
 
   parser.add_argument(
       '--ts-mon-task-service-name',
@@ -124,15 +129,17 @@ def add_argparse_options(parser):
   parser.add_argument(
       '--ts-mon-task-region',
       default=region,
-      help='name of the region in which this task is running')
+      help='name of the region in which this task is running '
+           '(default: %(default)s)')
   parser.add_argument(
       '--ts-mon-task-hostname',
       default=host,
-      help='name of the host on which this task is running')
+      help='name of the host on which this task is running '
+           '(default: %(default)s)')
   parser.add_argument(
       '--ts-mon-task-number', type=int, default=0,
       help='number (e.g. for replication) of this instance of this task '
-           '(default is %(default)s)')
+           '(default: %(default)s)')
 
 
 def process_argparse_options(args):
@@ -161,7 +168,16 @@ def process_argparse_options(args):
         args.ts_mon_device_region,
         args.ts_mon_device_network,
         args.ts_mon_device_hostname)
-  if args.ts_mon_target_type == 'task':
+  if args.ts_mon_target_type == 'task':  # pragma: no cover
+    # Reimplement ArgumentParser.error, since we don't have access to the parser
+    if not args.ts_mon_task_service_name:
+      print >> sys.stderr, ('Argument --ts-mon-task-service-name must be '
+                            'provided when the target type is "task".')
+      sys.exit(2)
+    if not args.ts_mon_task_job_name:  # pragma: no cover
+      print >> sys.stderr, ('Argument --ts-mon-task-job-name must be provided '
+                            'when the target type is "task".')
+      sys.exit(2)
     _state.default_target = TaskTarget(
         args.ts_mon_task_service_name,
         args.ts_mon_task_job_name,
