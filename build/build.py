@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Root of infra gclient solution.
 GCLIENT_ROOT = os.path.dirname(ROOT)
 
-# Where to upload packages to.
+# Where to upload packages to by default.
 PACKAGE_REPO_SERVICE = 'https://chrome-infra-packages.appspot.com'
 
 # .exe on Windows.
@@ -223,6 +223,8 @@ def build_pkg(
     out_file,
     package_vars,
     upload,
+    service_url,
+    tags,
     service_account):
   """Invokes CIPD client to build and (optionally) upload a package.
 
@@ -232,6 +234,8 @@ def build_pkg(
     out_file: where to store the built package.
     package_vars: dict with variables to pass as -pkg-var to cipd.
     upload: True to also upload the package to the package repository.
+    service_url: URL of a package repository service.
+    tags: a list of tags to attach to uploaded package instance.
     service_account: path to *.json file with service account to use.
 
   Returns:
@@ -259,7 +263,9 @@ def build_pkg(
 
   # Upload it.
   if upload:
-    args = ['-service-url', PACKAGE_REPO_SERVICE]
+    args = ['-service-url', service_url]
+    for tag in sorted(tags):
+      args.extend(['-tag', tag])
     if service_account:
       args.extend(['-service-account-json', service_account])
     args.append(out_file)
@@ -282,6 +288,8 @@ def build_all(
     package_out_dir,
     package_def_files,
     upload,
+    service_url,
+    tags,
     service_account_json,
     json_output):
   """Rebuild python and Go universes and CIPD packages.
@@ -293,6 +301,8 @@ def build_all(
     package_out_dir: where to put built packages.
     package_def_files: names of *.yaml files in package_def_dir or [] for all.
     upload: True to also upload built packages, False just to build them.
+    service_url: URL of a package repository service.
+    tags: a list of tags to attach to uploaded package instances.
     service_account_json: path to *.json service account credential.
     json_output: path to *.json file to write info about built packages to.
 
@@ -304,6 +314,8 @@ def build_all(
   package_vars = get_package_vars()
 
   print_title('Overview')
+  print 'Service URL: %s' % service_url
+  print
   print 'Package definition files to process:'
   for pkg_def_file in packages_to_build:
     print ' %s' % os.path.basename(pkg_def_file)
@@ -311,6 +323,11 @@ def build_all(
   print 'Variables to pass to CIPD:'
   for k, v in sorted(package_vars.items()):
     print '  %s = %s' % (k, v)
+  if tags:
+    print
+    print 'Tags to attach to uploaded packages:'
+    for tag in sorted(tags):
+      print '  %s' % tag
 
   # Build the world.
   build_callback()
@@ -329,6 +346,8 @@ def build_all(
           out_file,
           package_vars,
           upload,
+          service_url,
+          tags,
           service_account_json)
       succeeded.append({'pkg_def_name': name, 'info': info})
     except BuildException as e:
@@ -381,11 +400,18 @@ def main(
       '--upload',  action='store_true', dest='upload', default=False,
       help='upload packages into the repository')
   parser.add_argument(
+      '--service-url', metavar='URL', dest='service_url',
+      default=PACKAGE_REPO_SERVICE,
+      help='URL of the package repository service to use')
+  parser.add_argument(
       '--service-account-json', metavar='PATH', dest='service_account_json',
       help='path to credentials for service account to use')
   parser.add_argument(
       '--json-output', metavar='PATH', dest='json_output',
       help='where to dump info about built package instances')
+  parser.add_argument(
+      '--tags', metavar='KEY:VALUE', type=str, dest='tags', nargs='*',
+      help='tags to attach to uploaded package instances')
   args = parser.parse_args(args)
   return build_all(
       go_workspace,
@@ -394,6 +420,8 @@ def main(
       package_out_dir,
       args.yamls,
       args.upload,
+      args.service_url,
+      args.tags,
       args.service_account_json,
       args.json_output)
 
