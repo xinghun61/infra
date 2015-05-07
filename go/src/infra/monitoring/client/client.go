@@ -22,12 +22,12 @@ var (
 	log = logrus.New()
 )
 
-// Client provides access to read status information from various parts  of chrome
+// Client provides access to read status information from various parts of chrome
 // developer infrastructure.
 type Client interface {
 	// Build fetches the build summary for master mn, builder bn and build id bID
 	// from build.chromium.org.
-	Build(mn, bn string, bID int64) (*messages.Builds, error)
+	Build(mn, bn string, bID int64) (*messages.Build, error)
 
 	// TestResults fetches the results of a step failure's test run.
 	TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
@@ -64,11 +64,11 @@ func New() Client {
 	return &client{hc: http.DefaultClient}
 }
 
-func (c *client) Build(mn, bn string, bID int64) (*messages.Builds, error) {
+func (c *client) Build(mn, bn string, bID int64) (*messages.Build, error) {
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/json/builders/%s/builds/%d",
 		mn, bn, bID)
 
-	bld := &messages.Builds{}
+	bld := &messages.Build{}
 	if code, err := c.JSON(URL, bld); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err

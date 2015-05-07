@@ -90,7 +90,7 @@ type MasterAnalyzer struct {
 	StaleMasterThreshold time.Duration
 
 	// bCache is a map of build cache key to Build message.
-	bCache map[string]*messages.Builds
+	bCache map[string]*messages.Build
 	// bLock protects bCache
 	bLock *sync.Mutex
 
@@ -128,7 +128,7 @@ func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
 			return time.Now()
 		},
 
-		bCache: map[string]*messages.Builds{},
+		bCache: map[string]*messages.Build{},
 		bLock:  &sync.Mutex{},
 	}
 }
@@ -173,7 +173,7 @@ func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
 		bn     string
-		b      messages.Builders
+		b      messages.Builder
 		alerts []messages.Alert
 		err    []error
 	}
@@ -187,7 +187,7 @@ func (a *MasterAnalyzer) BuilderAlerts(url string, be *messages.BuildExtract) []
 			continue
 		}
 		scannedBuilders = append(scannedBuilders, bn)
-		go func(bn string, b messages.Builders) {
+		go func(bn string, b messages.Builder) {
 			out := r{bn: bn, b: b}
 			defer func() {
 				c <- out
@@ -252,7 +252,7 @@ func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs [
 
 	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_builds?%s", v.Encode())
 	res := struct {
-		Builds []messages.Builds `json:"builds"`
+		Builds []messages.Build `json:"builds"`
 	}{}
 
 	// TODO: add FetchBuilds to the client interface. Take a list of {master, builder} and
@@ -266,7 +266,7 @@ func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs [
 
 	a.bLock.Lock()
 	for _, b := range res.Builds {
-		// TODO: consider making res.Builds be []*messages.Builds instead of []messages.Builds
+		// TODO: consider making res.Builds be []*messages.Build instead of []messages.Build
 		ba := b
 		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = &ba
 	}
@@ -282,7 +282,7 @@ func (a buildIDs) Less(i, j int) bool { return a[i] > a[j] }
 
 // latestBuildStep returns the latest build step name and update time, and an error
 // if there were any errors.
-func (a *MasterAnalyzer) latestBuildStep(b *messages.Builds) (lastStep string, lastUpdate messages.EpochTime, err error) {
+func (a *MasterAnalyzer) latestBuildStep(b *messages.Build) (lastStep string, lastUpdate messages.EpochTime, err error) {
 	if len(b.Steps) == 0 {
 		return "", messages.TimeToEpochTime(a.now()), errNoBuildSteps
 	}
@@ -306,7 +306,7 @@ func (a *MasterAnalyzer) latestBuildStep(b *messages.Builds) (lastStep string, l
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builders) ([]messages.Alert, []error) {
+func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder) ([]messages.Alert, []error) {
 	alerts := []messages.Alert{}
 	errs := []error{}
 
@@ -629,8 +629,8 @@ func unexpected(expected, actual []string) []string {
 type stepFailure struct {
 	masterName  string
 	builderName string
-	build       messages.Builds
-	step        messages.Steps
+	build       messages.Build
+	step        messages.Step
 }
 
 // Sigh.  build.chromium.org doesn't accept + as an escaped space in URL paths.

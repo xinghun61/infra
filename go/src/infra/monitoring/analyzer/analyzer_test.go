@@ -19,7 +19,7 @@ func fakeNow(t time.Time) func() time.Time {
 }
 
 type mockClient struct {
-	build        *messages.Builds
+	build        *messages.Build
 	testResults  *messages.TestResults
 	stdioForStep []string
 	buildFetchError,
@@ -27,7 +27,7 @@ type mockClient struct {
 	stdioForStepError error
 }
 
-func (m mockClient) Build(mn, bn string, bID int64) (*messages.Builds, error) {
+func (m mockClient) Build(mn, bn string, bID int64) (*messages.Build, error) {
 	return m.build, m.buildFetchError
 }
 
@@ -156,8 +156,8 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 		name       string
 		master     string
 		builder    string
-		b          messages.Builders
-		builds     *messages.Builds
+		b          messages.Builder
+		builds     *messages.Build
 		time       time.Time
 		wantAlerts []messages.Alert
 		wantErrs   []error
@@ -171,8 +171,8 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			name:    "builders ok",
 			master:  "fake.master",
 			builder: "fake.builder",
-			builds: &messages.Builds{
-				Steps: []messages.Steps{
+			builds: &messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "fake_step",
 						Times: []messages.EpochTime{
@@ -182,7 +182,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 					},
 				},
 			},
-			b: messages.Builders{
+			b: messages.Builder{
 				BuilderName:   "fake.builder",
 				CachedBuilds:  []int64{0, 1, 2, 3},
 				CurrentBuilds: []int64{5, 6, 7, 8},
@@ -194,8 +194,8 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			name:    "builder building for too long",
 			master:  "fake.master",
 			builder: "fake.builder",
-			builds: &messages.Builds{
-				Steps: []messages.Steps{
+			builds: &messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "fake_step",
 						Times: []messages.EpochTime{
@@ -205,7 +205,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 					},
 				},
 			},
-			b: messages.Builders{
+			b: messages.Builder{
 				State:         messages.StateBuilding,
 				BuilderName:   "fake.builder",
 				CachedBuilds:  []int64{0, 1, 2, 3},
@@ -299,7 +299,7 @@ func TestReasonsForFailure(t *testing.T) {
 		{
 			name: "GTests",
 			f: stepFailure{
-				step: messages.Steps{
+				step: messages.Step{
 					Name: "something_tests",
 				},
 			},
@@ -331,9 +331,9 @@ func TestStepFailures(t *testing.T) {
 	tests := []struct {
 		name            string
 		master, builder string
-		b               *messages.Builds
+		b               *messages.Build
 		bID             int64
-		bCache          map[string]*messages.Builds
+		bCache          map[string]*messages.Build
 		want            []stepFailure
 		wantErr         error
 	}{
@@ -347,9 +347,9 @@ func TestStepFailures(t *testing.T) {
 			master:  "stepCheck.master",
 			builder: "fake.builder",
 			bID:     0,
-			bCache: map[string]*messages.Builds{
-				"stepCheck.master/fake.builder/0.json": &messages.Builds{
-					Steps: []messages.Steps{
+			bCache: map[string]*messages.Build{
+				"stepCheck.master/fake.builder/0.json": &messages.Build{
+					Steps: []messages.Step{
 						{
 							Name:       "ok_step",
 							IsFinished: true,
@@ -367,8 +367,8 @@ func TestStepFailures(t *testing.T) {
 				{
 					masterName:  "stepCheck.master",
 					builderName: "fake.builder",
-					build: messages.Builds{
-						Steps: []messages.Steps{
+					build: messages.Build{
+						Steps: []messages.Step{
 							{
 								Name:       "ok_step",
 								IsFinished: true,
@@ -381,7 +381,7 @@ func TestStepFailures(t *testing.T) {
 							},
 						},
 					},
-					step: messages.Steps{
+					step: messages.Step{
 						Name:       "broken_step",
 						IsFinished: true,
 						Results:    []interface{}{float64(3)},
@@ -425,20 +425,20 @@ func TestStepFailureAlerts(t *testing.T) {
 				{
 					masterName:  "fake.master",
 					builderName: "fake.builder",
-					build: messages.Builds{
+					build: messages.Build{
 						Number: 2,
 					},
-					step: messages.Steps{
+					step: messages.Step{
 						Name: "steps",
 					},
 				},
 				{
 					masterName:  "fake.master",
 					builderName: "fake.builder",
-					build: messages.Builds{
+					build: messages.Build{
 						Number: 42,
 					},
-					step: messages.Steps{
+					step: messages.Step{
 						Name: "fake_tests",
 					},
 				},
@@ -483,7 +483,7 @@ func TestStepFailureAlerts(t *testing.T) {
 func TestLatestBuildStep(t *testing.T) {
 	tests := []struct {
 		name       string
-		b          messages.Builds
+		b          messages.Build
 		wantStep   string
 		wantUpdate messages.EpochTime
 		wantErr    error
@@ -494,8 +494,8 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 		{
 			name: "done time is latest",
-			b: messages.Builds{
-				Steps: []messages.Steps{
+			b: messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "done step",
 						Times: []messages.EpochTime{
@@ -510,8 +510,8 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 		{
 			name: "started time is latest",
-			b: messages.Builds{
-				Steps: []messages.Steps{
+			b: messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "start step",
 						Times: []messages.EpochTime{
@@ -526,8 +526,8 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 		{
 			name: "started time is latest, multiple steps",
-			b: messages.Builds{
-				Steps: []messages.Steps{
+			b: messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "start step",
 						Times: []messages.EpochTime{
@@ -549,8 +549,8 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 		{
 			name: "done time is latest, multiple steps",
-			b: messages.Builds{
-				Steps: []messages.Steps{
+			b: messages.Build{
+				Steps: []messages.Step{
 					{
 						Name: "start step",
 						Times: []messages.EpochTime{
@@ -572,12 +572,12 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 		{
 			name: "build is done",
-			b: messages.Builds{
+			b: messages.Build{
 				Times: []messages.EpochTime{
 					messages.TimeToEpochTime(time.Unix(0, 0)),
 					messages.TimeToEpochTime(time.Unix(42, 0)),
 				},
-				Steps: []messages.Steps{
+				Steps: []messages.Step{
 					{
 						Name: "start step",
 						Times: []messages.EpochTime{

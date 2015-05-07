@@ -27,7 +27,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 			failure: stepFailure{
 				masterName:  "fake.master",
 				builderName: "fake_builder",
-				step: messages.Steps{
+				step: messages.Step{
 					Name: "tests_compile",
 				},
 			},
@@ -38,7 +38,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 			failure: stepFailure{
 				masterName:  "fake.master",
 				builderName: "fake_builder",
-				step: messages.Steps{
+				step: messages.Step{
 					Name: "something_tests",
 				},
 			},
