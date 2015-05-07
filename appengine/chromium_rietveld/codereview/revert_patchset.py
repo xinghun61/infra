@@ -200,6 +200,11 @@ def revert_patchset(request):
 
     try:
       patch = original_patch.make_inverted(patchset)
+    except exceptions.FetchError, e:
+      return HttpTextResponse(
+          'Revert failed: ' + e.message + '\nThis sometimes happens when a '
+          'file\'s contents are not uploaded because it is too large.' +
+          ERROR_MSG_POSTPEND, status=500)
     except DeadlineExceededError:
       return HttpTextResponse(
           'The patchset is too large to invert. Please revert manually.\n'

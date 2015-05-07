@@ -1026,7 +1026,7 @@ class Patch(ndb.Model):
           logging.warn('Patch.get_content: %s', msg)
           raise FetchError(msg)
         if content.is_uploaded and content.text == None:
-          msg = 'Upload in progress.'
+          msg = 'Upload of %s in progress.' % self.filename
           logging.warn('Patch.get_content: %s', msg)
           raise FetchError(msg)
         else:
