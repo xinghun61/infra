@@ -59,7 +59,8 @@ found in the LICENSE file. -->
                         value: "Issue " + issue.id + ": " + issue.subject
                     });
                     self.issue = issue;
-                    issue.patchsets.forEach(function(patchset) {
+                    var reversedPatchsets = issue.patchsets.clone().reverse();
+                    reversedPatchsets.forEach(function(patchset) {
                         patchset.loadDetails().catch(function(e) {
                             // TODO(esprehn): We should show an error message.
                             console.log(e);
