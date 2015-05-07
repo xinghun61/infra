@@ -22,6 +22,7 @@ import model
 MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
+BUILD_TIMEOUT = datetime.timedelta(days=1)
 
 
 validate_bucket_name = errors.validate_bucket_name
@@ -624,14 +625,14 @@ class BuildBucketService(object):
         'Build %s was cancelled by %s', build.key.id(), identity.to_bytes())
     return build
 
-  @ndb.transactional
-  def _reset_expired_build(self, build_key):
-    build = build_key.get()
+  @ndb.transactional_tasklet
+  def _reset_expired_build_async(self, build_id):
+    build = yield model.Build.get_by_id_async(build_id)
     if not build or build.lease_expiration_date is None:  # pragma: no cover
-      return False
+      return
     is_expired = build.lease_expiration_date <= utils.utcnow()
     if not is_expired:  # pragma: no cover
-      return False
+      return
 
     assert build.status != model.BuildStatus.COMPLETED, (
         'Completed build is leased')
@@ -639,15 +640,42 @@ class BuildBucketService(object):
     build.status = model.BuildStatus.SCHEDULED
     build.status_changed_time = utils.utcnow()
     build.url = None
-    build.put()
-    return True
+    yield build.put_async()
+    logging.info('Expired build %s was reset', build_id)
+
+  @ndb.transactional_tasklet
+  def _timeout_async(self, build_id):
+    build = yield model.Build.get_by_id_async(build_id)
+    if not build or build.status == model.BuildStatus.COMPLETED:
+      return  # pragma: no cover
+
+    self._clear_lease(build)
+    build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = utils.utcnow()
+    build.result = model.BuildResult.CANCELED
+    build.cancelation_reason = model.CancelationReason.TIMEOUT
+    yield build.put_async()
+    logging.info('Build %s: timeout', build_id)
 
   def reset_expired_builds(self):
     """For all building expired builds, resets their lease_key and state."""
+    futures = []
+
     q = model.Build.query(
         model.Build.is_leased == True,
         model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
     )
     for key in q.iter(keys_only=True):
-      if self._reset_expired_build(key):  # pragma: no branch
-        logging.info('Expired build %s was reset' % key.id())
+      futures.append(self._reset_expired_build_async(key.id()))
+
+    too_long_ago = utils.utcnow() - BUILD_TIMEOUT
+    q = model.Build.query(
+        model.Build.create_time < too_long_ago,
+        # Cannot use >1 inequality fitlers per query.
+        model.Build.status.IN(
+            [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]),
+    )
+    for key in q.iter(keys_only=True):
+      futures.append(self._timeout_async(key.id()))
+
+    ndb.Future.wait_all(futures)

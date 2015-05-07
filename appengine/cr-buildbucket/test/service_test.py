@@ -665,3 +665,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.service.reset_expired_builds()
     build = self.test_build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+
+  def test_build_timeout(self):
+    self.test_build.create_time = utils.utcnow() - datetime.timedelta(days=365)
+    self.test_build.put()
+
+    self.service.reset_expired_builds()
+    build = self.test_build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(build.result, model.BuildResult.CANCELED)
+    self.assertEqual(build.cancelation_reason, model.CancelationReason.TIMEOUT)
+    self.assertIsNone(build.lease_key)

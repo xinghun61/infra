@@ -11,3 +11,8 @@ indexes:
   properties:
   - name: is_leased
   - name: lease_expiration_date
+
+- kind: Build
+  properties:
+  - name: status
+  - name: create_time
