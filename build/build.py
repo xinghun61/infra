@@ -364,6 +364,7 @@ def build_all(
       summary = {
         'failed': failed,
         'succeeded': succeeded,
+        'tags': sorted(tags),
         'vars': package_vars,
       }
       json.dump(summary, f, sort_keys=True, indent=2, separators=(',', ': '))
