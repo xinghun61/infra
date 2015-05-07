@@ -19,6 +19,14 @@ CIPD_BUILDER_CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
 
 
 def build_cipd_packages(api):
+  tags = [
+    'buildbot_build:%s/%s/%s' % (
+        api.properties['mastername'],
+        api.properties['buildername'],
+        api.properties['buildnumber']),
+    'git_repository:%s' % api.properties['repository'],
+    'git_revision:%s' % api.properties['revision'],
+  ]
   try:
     return api.python(
         'build cipd packages',
@@ -27,7 +35,7 @@ def build_cipd_packages(api):
           '--upload',
           '--service-account-json', CIPD_BUILDER_CREDS,
           '--json-output', api.json.output(),
-        ])
+        ] + ['--tags'] + tags)
   finally:
     step_result = api.step.active_result
     output = step_result.json.output or {}
@@ -78,15 +86,24 @@ def GenTests(api):
 
   yield (
     api.test('infra') +
-    api.properties.tryserver(
-        buildername='infra-continuous') +
+    api.properties.git_scheduled(
+        buildername='infra-continuous',
+        buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    ) +
     api.override_step_data(
         'build cipd packages', api.json.output(cipd_json_output))
   )
   yield (
     api.test('infra_internal') +
-    api.properties.tryserver(
-        buildername='infra-internal-continuous') +
+    api.properties.git_scheduled(
+        buildername='infra-internal-continuous',
+        buildnumber=123,
+        mastername='internal.infra',
+        repository=
+            'https://chrome-internal.googlesource.com/infra/infra_internal',
+    ) +
     api.override_step_data(
         'build cipd packages', api.json.output(cipd_json_output))
   )
