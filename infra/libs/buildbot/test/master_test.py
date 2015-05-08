@@ -155,6 +155,18 @@ class TestMasterInformation(auto_stub.TestCase):
     self.mock(requests, 'get', timeout)
     self.assertIsNone(master.get_accepting_builds(self.chromium_fyi))
 
+  def testMastermapHost(self):
+    masters = [
+        {'fullhost': 'bananas.cool'},
+        {'fullhost': 'bananas.cool'},
+        {'fullhost': 'bananas_dos.cool'},
+    ]
+    self.mock(master, '_call_mastermap', lambda _x: masters)
+
+    self.assertEqual(
+        len(master.get_mastermap_for_host('fake', 'bananas.cool')),
+        2)
+
 class TestMasterManipulation(auto_stub.TestCase):
   def setUp(self):
     super(TestMasterManipulation, self).setUp()

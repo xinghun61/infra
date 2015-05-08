@@ -93,20 +93,37 @@ def get_last_no_new_builds(directory):
   return last_no_new_builds
 
 
-def get_mastermap_data(directory):
-  """Get mastermap JSON from a master directory."""
+def _call_mastermap(build_dir):
+  """Given a build/ directory, obtain the full mastermap.json.
 
-  build_dir = os.path.join(directory, os.pardir, os.pardir, os.pardir, 'build')
+  This checks if build_internal/ is checked out next to build/ and uses
+  mastermap_internal.py if present.
+  """
   runit = os.path.join(build_dir, 'scripts', 'tools', 'runit.py')
-  build_internal_dir = os.path.join(build_dir, os.pardir, 'build_internal')
+  build_internal_dir = os.path.join(
+      os.path.dirname(build_dir), 'build_internal')
 
   script_path = os.path.join(build_dir, 'scripts', 'tools', 'mastermap.py')
   if os.path.exists(build_internal_dir):
     script_path = os.path.join(
          build_internal_dir, 'scripts', 'tools', 'mastermap_internal.py')
 
-  script_data = json.loads(subprocess.check_output(
+  return json.loads(subprocess.check_output(
     [runit, script_path, '-f', 'json']))
+
+
+def get_mastermap_for_host(build_dir, hostname):
+  """Get mastermap JSON for all masters on a specific host."""
+  script_data = _call_mastermap(build_dir)
+  return [x for x in script_data if x.get('fullhost') == hostname]
+
+
+def get_mastermap_data(directory):
+  """Get mastermap JSON for a specific master."""
+
+  build_dir = os.path.join(
+      os.path.dirname(os.path.dirname(os.path.dirname(directory))), 'build')
+  script_data = _call_mastermap(build_dir)
 
   short_dirname = os.path.basename(directory)
   matches = [x for x in script_data if x.get('dirname') == short_dirname]
