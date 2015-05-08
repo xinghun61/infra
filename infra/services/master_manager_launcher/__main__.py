@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 from infra.libs import logs
+from infra.libs.process_invocation import multiprocess
 from infra.libs.service_utils import daemon
 from infra.services.master_lifecycle import buildbot_state
 from infra.services.master_manager_launcher import desired_state_parser
@@ -44,6 +45,10 @@ def parse_args():
       help='verify the desired master state JSON is valid, then exit')
   parser.add_argument('--prod', action='store_true',
       help='actually perform actions instead of doing a dry run')
+  parser.add_argument('--processes',
+      default=16, type=int,
+      help='maximum number of master_manager processes to run simultaneously '
+           '(default %(default)d)')
   logs.add_argparse_options(parser)
 
   args = parser.parse_args()
@@ -113,9 +118,7 @@ def main():
   if args.command_timeout:
     commands = [daemon.add_timeout(c, args.command_timeout) for c in commands]
 
-  for command in commands:
-    logging.info('running %s' % command)
-    subprocess.call(command)
+  multiprocess.safe_map(subprocess.call, commands, args.processes)
 
 
 if __name__ == '__main__':
