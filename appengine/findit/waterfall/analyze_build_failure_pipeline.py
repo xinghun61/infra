@@ -33,6 +33,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
           self.master_name, self.builder_name, self.build_number)
       if analysis:  # In case the analysis is deleted manually.
         analysis.status = wf_analysis_status.ERROR
+        analysis.result_status = None
         analysis.put()
        
   def finalized(self):
@@ -42,13 +43,17 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     """Returns an absolute path to look up the status of the pipeline."""
     return '/_ah/pipeline/status?root=%s&auto=false' % self.root_pipeline_id
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number):
+  def _ResetAnalysis(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.pipeline_status_path = self.pipeline_status_path()
     analysis.status = wf_analysis_status.ANALYZING
+    analysis.result_status = None
     analysis.start_time = datetime.utcnow()
     analysis.put()
+
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(self, master_name, builder_name, build_number):
+    self._ResetAnalysis(master_name, builder_name, build_number)
 
     # The yield statements below return PipelineFutures, which allow subsequent
     # pipelines to refer to previous output values.

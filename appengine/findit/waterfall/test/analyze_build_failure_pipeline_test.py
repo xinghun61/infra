@@ -131,6 +131,23 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     self.assertIsNotNone(analysis)
     self.assertEqual(wf_analysis_status.ANALYZED, analysis.status)
     self.assertEqual(expected_analysis_result, analysis.result)
+    self.assertIsNotNone(analysis.result_status)
+
+  def testBuildFailurePipelineStartWithNoneResultStatus(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    self._Setup(master_name, builder_name, build_number)
+
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
+                                                builder_name, 
+                                                build_number)
+    root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertIsNotNone(analysis)
+    self.assertEqual(wf_analysis_status.ANALYZING, analysis.status)
+    self.assertIsNone(analysis.result_status)
 
   def testAnalyzeBuildFailurePipelineAbortedWithAnalysis(self):
     master_name = 'm'
@@ -147,6 +164,7 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertEqual(wf_analysis_status.ERROR, analysis.status)
+    self.assertIsNone(analysis.result_status)
 
   def testAnalyzeBuildFailurePipelineAbortedWithoutAnalysis(self):
     master_name = 'm'
