@@ -15,6 +15,10 @@ _MASTER_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)'
 _BUILD_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
                                  'builders/([^/]+)/builds/([\d]+)(/.*)?$')
 
+_STEP_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
+                                 'builders/([^/]+)/builds/([\d]+)/steps/'
+                                 '([^/]+)(/.*)?$')
+
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
@@ -47,6 +51,24 @@ def ParseBuildUrl(url):
   master_name, builder_name, build_number, _ = match.groups()
   builder_name = urllib.unquote(builder_name)
   return master_name, builder_name, int(build_number)
+
+
+def ParseStepUrl(url):
+  """Parses the given step url.
+
+  Return:
+    (master_name, builder_name, build_number, step_name)
+  """
+  if not url:
+    return None
+
+  match = _STEP_URL_PATTERN.match(url)
+  if not match:
+    return None
+
+  master_name, builder_name, build_number, step_name, _ = match.groups()
+  builder_name = urllib.unquote(builder_name)
+  return master_name, builder_name, int(build_number), step_name
 
 
 def CreateArchivedBuildUrl(master_name, builder_name, build_number):

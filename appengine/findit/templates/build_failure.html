@@ -182,7 +182,13 @@
           {% for failure in analysis_result.failures %}
             {% if failure.suspected_cls|length == 0 %}
               <tr>
-                <td>{{failure.step_name}}</td>
+                <td>
+                {% if show_debug_info %}
+                <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
+                {% else %}
+                {{failure.step_name}}
+                {% endif %}         
+                </td>
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
                 {% if failure.last_pass %}
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>
@@ -194,7 +200,13 @@
             {% else %}
               {% set first_suspected_cl = failure.suspected_cls[0] %}
               <tr>
-                <td rowspan="{{failure.suspected_cls|length}}">{{failure.step_name}}</td>
+                <td rowspan="{{failure.suspected_cls|length}}">
+                {% if show_debug_info %}
+                <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
+                {% else %}
+                {{failure.step_name}}
+                {% endif %} 
+                </td>
                 <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
                 {% if failure.last_pass %}
                 <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>

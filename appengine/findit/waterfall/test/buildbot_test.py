@@ -57,6 +57,25 @@ class BuildBotTest(unittest.TestCase):
       result = buildbot.ParseBuildUrl(url)
       self.assertEqual(expected_result, result)
 
+  def testParseStepUrl(self):
+    cases = {
+        None: None,
+        '': None,
+        ('https://unknown_host/p/chromium/builders/Linux/builds/55833/'
+        '/steps/compile'): None,
+        'http://build.chromium.org/p/chromium/builders/Linux': None,
+        ('http://build.chromium.org/p/chromium/builders/Linux/builds/55833'
+         '/steps/compile'): (
+             'chromium', 'Linux', 55833, 'compile'),
+        ('http://build.chromium.org/p/chromium.win/builders/Win7%20Tests%20'
+         '%281%29/builds/33911/steps/interactive_ui'): (
+             'chromium.win', 'Win7 Tests (1)', 33911, 'interactive_ui'),
+    }
+
+    for url, expected_result in cases.iteritems():
+      result = buildbot.ParseStepUrl(url)
+      self.assertEqual(expected_result, result)
+
   def testCreateArchivedBuildUrl(self):
     master_name = 'a'
     builder_name = 'Win7 Tests (1)'
