@@ -1,0 +1,42 @@
+[
+  [
+    {
+      "author": "noone@chromium.org",
+      "commit-bot": true,
+      "date": "2014-11-23T22:38:39",
+      "revision": null
+    },
+    {
+      "author": "someone@chromium.org",
+      "commit-bot": false,
+      "date": "2014-10-22T22:38:39",
+      "revision": null
+    },
+    {
+      "author": "blink-deps-roller@chromium.org",
+      "commit-bot": true,
+      "date": "2014-10-21T23:38:39",
+      "revision": null
+    },
+    {
+      "author": "blink-deps-roller@chromium.org",
+      "commit-bot": false,
+      "date": "2014-10-21T22:38:39",
+      "revision": null
+    }
+  ],
+  {
+    "bot_commits": 2,
+    "bot_committers": 1,
+    "bot_manual_commits": 1,
+    "committers": 4,
+    "cq_commits": 3,
+    "manual_commits": 2,
+    "manual_committers": 2,
+    "manual_only_committers": {
+      "someone@chromium.org": 1
+    },
+    "total_commits": 5,
+    "users": 3
+  }
+]

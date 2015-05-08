@@ -1,0 +1,38 @@
+[
+  [
+    {
+      "author": "amikhaylova@google.com",
+      "commit-bot": true,
+      "date": "2014-11-01T20:49:20.468030+00:00",
+      "revprops": {
+        "commit-bot": "commit-bot@chromium.org"
+      }
+    },
+    {
+      "author": "amikhaylova@google.com",
+      "commit-bot": false,
+      "date": "2014-11-01T20:49:20.468030+00:00",
+      "revprops": {
+        "foo": "bar"
+      }
+    },
+    {
+      "author": "amikhaylova@google.com",
+      "commit-bot": false,
+      "date": "2014-11-01T20:49:20.468030+00:00",
+      "revprops": {}
+    }
+  ],
+  {
+    "bot_commits": 0,
+    "bot_committers": 0,
+    "bot_manual_commits": 0,
+    "committers": 1,
+    "cq_commits": 1,
+    "manual_commits": 2,
+    "manual_committers": 1,
+    "manual_only_committers": {},
+    "total_commits": 3,
+    "users": 1
+  }
+]
