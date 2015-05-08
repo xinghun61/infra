@@ -24,7 +24,14 @@ class InvalidDesiredMasterState(ValueError):
 
 def load_desired_state_file(filename):
   with open(filename) as f:
-    desired_state = json.load(f)
+    return parse_desired_state(f.read())
+
+
+def parse_desired_state(data):
+  try:
+    desired_state = json.loads(data)
+  except ValueError:
+    raise InvalidDesiredMasterState()
   if not desired_master_state_is_valid(desired_state):
     raise InvalidDesiredMasterState()
   return desired_state

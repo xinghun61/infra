@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 from infra.libs import logs
+from infra.libs.gitiles import gitiles
 from infra.libs.process_invocation import multiprocess
 from infra.libs.service_utils import daemon
 from infra.services.master_lifecycle import buildbot_state
@@ -36,9 +37,12 @@ def parse_args():
   parser.add_argument('--hostname',
       default=socket.getfqdn(),
       help='override local hostname (currently %(default)s)')
-  parser.add_argument('--json-location',
-      default='desired_master_state.json',
-      help='desired master state configuration (default: %(default)s)')
+  parser.add_argument('--json-file',
+      help='load desired master state from a file on disk')
+  parser.add_argument('--json-gitiles',
+      help='load desired master state from a gitiles location')
+  parser.add_argument('--netrc',
+      help='location of the netrc file when connecting to gitiles')
   parser.add_argument('--command-timeout',
       help='apply a timeout in seconds to each master_manager process')
   parser.add_argument('--verify', action='store_true',
@@ -53,6 +57,12 @@ def parse_args():
 
   args = parser.parse_args()
   logs.process_argparse_options(args)
+
+  if args.json_file and args.json_gitiles:
+    parser.error('Can\'t specify --json-file and --json-gitiles simultaneously')
+
+  if not args.json_gitiles and not args.json_file:
+    parser.error('Must specify either --json-gitiles or --json-file.')
 
   if not args.verify:
     if not args.build_dir:
@@ -100,8 +110,13 @@ def log_triggered_ignored(triggered, ignored, hostname):
 def main():
   args = parse_args()
 
-  desired_state = desired_state_parser.load_desired_state_file(
-      args.json_location)
+  if args.json_file:
+    desired_state = desired_state_parser.load_desired_state_file(
+        args.json_file)
+  else:
+    desired_state_data = gitiles.call_gitiles(
+        args.json_gitiles, 'text', netrc_path=args.netrc)
+    desired_state = desired_state_parser.parse_desired_state(desired_state_data)
 
   if args.verify:
     return 0  # File checks out, no need to continue.

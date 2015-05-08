@@ -78,6 +78,11 @@ class TestDesiredStateValidation(auto_stub.TestCase):
       desired_state_parser.load_desired_state_file(
           os.path.join(DATA_DIR, 'invalid.json'))
 
+  def testBrokenFile(self):
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      desired_state_parser.load_desired_state_file(
+          os.path.join(DATA_DIR, 'broken.json'))
+
 
 class TestMasterStateLookup(unittest.TestCase):
   STATES = [
