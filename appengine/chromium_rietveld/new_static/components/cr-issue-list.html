@@ -2,6 +2,7 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
+<link rel="import" href="../common/cr-date.html">
 <link rel="import" href="../common/cr-view-handler.html">
 
 <polymer-element name="cr-issue-list" attributes="issues approvals showRecentActivity">
@@ -107,7 +108,7 @@ found in the LICENSE file. -->
                     <span class="issue-id issue-data">{{ issue.id }}</span>
                     <span class="issue-subject issue-data">{{ issue.subject }}</span>
                     <span class="issue-owner issue-data"><span class="owner" title="{{ issue.owner.displayName }}">{{ issue.owner.displayName }}</span></span>
-                    <span class="issue-date issue-data">{{ issue.lastModified | formatDate }}</span>
+                    <span class="issue-date issue-data"><cr-date date="{{ issue.lastModified }}" relative></cr-date></span>
                     <template if="{{ approvals }}">
                         <span class="issue-approval issue-data">
                             <template if="{{ issue.approvalCount }}">
@@ -130,11 +131,6 @@ found in the LICENSE file. -->
                 this.issues = null;
                 this.approvals = false;
                 this.showRecentActivity = false;
-            },
-            formatDate: function(date) {
-                if (!date)
-                    return "";
-                return date.relative();
             },
             selectKeys: function(scores, selectedScore) {
                 var users = [];

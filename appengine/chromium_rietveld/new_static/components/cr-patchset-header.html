@@ -3,6 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-action.html">
+<link rel="import" href="../common/cr-date.html">
 <link rel="import" href="cr-patchset-edit-dialog.html">
 
 <polymer-element name="cr-patchset-header" attributes="patchset">
@@ -42,7 +43,7 @@ found in the LICENSE file. -->
                 {{ patchset.draftCount | pluralize("draft") }}
             </template>
         </div>
-        <div class="patchset-date">{{ patchset.created | formatDate }}</div>
+        <div class="patchset-date"><cr-date date="{{ patchset.created }}" relative></cr-date></div>
         <div class="patchset-actions">
             <template if="{{ patchset.issue.owner.isCurrentUser }}">
                 <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
@@ -61,11 +62,6 @@ found in the LICENSE file. -->
                 if (count == 1)
                     return count + " " + text;
                 return count + " " + text.pluralize();
-            },
-            formatDate: function(date) {
-                if (!date)
-                    return "";
-                return date.relative();
             },
             handleDialogTap: function(event) {
                 // Tapping on a dialog shouldn't collapse the header.

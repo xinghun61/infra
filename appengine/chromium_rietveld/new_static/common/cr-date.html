@@ -1,0 +1,36 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<polymer-element name="cr-date" attributes="date relative">
+    <template>
+        <template if="{{ relative }}">
+            <span title="{{ date | formatAbsolute }}">{{ date | formatRelative }}</span>
+        </template>
+        <template if="{{ !relative }}">
+            <span title="{{ date | formatRelative }}">{{ date | formatAbsolute }}</span>
+        </template>
+    </template>
+    <script>
+        Polymer({
+            publish: {
+                // relative == true means show a relative date (e.g., 2 days ago) as
+                // visible text on the page, and allow the user to hover to see the
+                // absolute date.  relative == false still offers both relative and
+                // absolute formats, but it makes the absolute date visible on the page
+                // and puts the relative date in the tooltip.
+                relative: false,
+            },
+            formatRelative: function(date) {
+                if (!date)
+                    return "";
+                return date.relative();
+            },
+            formatAbsolute: function(date) {
+                if (!date)
+                    return "";
+                return date.format("{Mon} {ord} {yyyy} {h}:{mm}{tt}");
+            },
+        });
+    </script>
+</polymer-element>

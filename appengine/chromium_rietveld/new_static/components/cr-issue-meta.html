@@ -3,6 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-view-handler.html">
+<link rel="import" href="../common/cr-date.html">
 
 <polymer-element name="cr-issue-meta" attributes="issue">
     <template>
@@ -57,11 +58,11 @@ found in the LICENSE file. -->
             </div>
             <div class="issue-created issue-meta-item">
                 <div class="issue-meta-type">Created</div>
-                <div class="issue-meta-value">{{ issue.created | formatDate }}</div>
+                <div class="issue-meta-value"><cr-date date="{{ issue.created }}"></cr-date></div>
             </div>
             <div class="issue-modified issue-meta-item">
                 <div class="issue-meta-type">Modified</div>
-                <div class="issue-meta-value">{{ issue.lastModified | formatDate }}</div>
+                <div class="issue-meta-value"><cr-date date="{{ issue.lastModified }}"></cr-date></div>
             </div>
             <div class="issue-modified issue-meta-item">
                 <div class="issue-meta-type">CQ</div>
@@ -116,9 +117,6 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.issue = null;
-            },
-            formatDate: function(date) {
-                return date.format("{Mon} {ord} {yyyy} {h}:{mm}{tt}");
             },
             contains: function(list, value) {
                 return list && list.indexOf(value) != -1;
