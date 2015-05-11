@@ -18,6 +18,7 @@ endef
 
 APPID?= `cat app.yaml | sed -n 's/^application: *//p'`
 STAGEID= $(APPID)-staging
+TESTINGID= rietveld-public-test
 
 SDK_PATH ?= $(shell python -c '$(DETECT_SDK)')
 
@@ -108,3 +109,13 @@ stage: update_revision
 
 stage_indexes:
 	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --oauth2 --application $(STAGEID)
+
+
+# This instance is for testing scripts that connect to Rieveld, not testing
+# Rietveld itself
+deploy_testing: update_revision
+	@echo "---[Deploying testing instance $(TESTINGID)]---"
+	$(APPCFG) $(APPCFG_FLAGS) update . --oauth2 --application $(TESTINGID) --version $(VERSION)
+
+deploy_testing_indexes:
+	$(APPCFG) $(APPCFG_FLAGS) update_indexes . --oauth2 --application $(TESTINGID)
