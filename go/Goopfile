@@ -1,10 +1,15 @@
 code.google.com/p/goauth2/oauth #f02aa781ad087b29b5b6276564da3215d39a6d61 !https://chromium.googlesource.com/infra/third_party/go/code.google.com/p/goauth2.git
-github.com/Sirupsen/logrus #f92b7950b372b1db80bd3527e4d40e42555fe6c2 !https://chromium.googlesource.com/external/github.com/Sirupsen/logrus.git
 github.com/go-yaml/yaml #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 github.com/jtolds/gls #f1ac7f4f24f50328e6bc838ca4437d1612a0243c !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
+github.com/kr/pretty #cb0850c1681cbca3233e84f7e6ec3e4c3f352085 !https://chromium.googlesource.com/external/github.com/kr/pretty.git
+github.com/kr/pty #5cf931ef8f76dccd0910001d74a58a7fca84a83d !https://chromium.googlesource.com/external/github.com/kr/pty.git
+github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.googlesource.com/external/github.com/kr/text.git
 github.com/maruel/subcommands #5bd08a04658ca8ee8a3acaad13f240017d2470b0 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
+github.com/maruel/ut #7a409e904fa721e4784f8295740480ed308a266d !https://chromium.googlesource.com/external/github.com/maruel/ut.git
 github.com/mjibson/goon #4aa92ab1b81cf479627de5e93f1c43e9d31c81ae !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
+github.com/Sirupsen/logrus #f92b7950b372b1db80bd3527e4d40e42555fe6c2 !https://chromium.googlesource.com/external/github.com/Sirupsen/logrus.git
 github.com/smartystreets/assertions #75acd402ca38dc205641a826bb58b9de014926dd !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 github.com/smartystreets/goconvey #b25107bbf9a85361c2498d1fdc329d3b09cc9896 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/texttheater/golang-levenshtein #9a5fc661c251580d9ddbd1ff6b24bfe82ee118df !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/tobi/airbrake-go #ce0ba05e080ba9d755c544ffa703a2a4dc0c6ecf !https://chromium.googlesource.com/external/github.com/tobi/airbrake-go.git
+github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git

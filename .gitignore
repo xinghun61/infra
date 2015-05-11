@@ -10,3 +10,4 @@ appengine/milo/vulcanized_main.html
 /doc/source/reference
 # build_cache is used by infra.services.builder_alerts
 build_cache
+go/src/github.com
