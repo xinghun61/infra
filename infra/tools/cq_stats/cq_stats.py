@@ -1093,6 +1093,17 @@ def print_stats(args, stats):
            p, stats['patchset-committed-durations'][p] / 3600.0,
            stats['patchset-committed-attempts'][p])
 
+  output()
+  output('Slowest CLs:')
+  slowest_cls = sorted(
+      stats['patch_stats'],
+      key=lambda p: stats['patch_stats'][p]['patchset-duration'],
+      reverse=True)
+  for p in slowest_cls[:40]:
+    output('%s (%s hrs)' % (
+        patch_url(p),
+        round(stats['patch_stats'][p]['patchset-duration'] / 3600.0, 1)))
+
   # TODO(sergeyberezin): add total try jobs / by CQ / unknown. Get it from CBE.
   # TODO(sergeyberezin): recompute bot flakiness from CBE. CQ does not
   # have enough info.

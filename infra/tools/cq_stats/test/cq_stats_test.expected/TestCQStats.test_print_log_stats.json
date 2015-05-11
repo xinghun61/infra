@@ -31,6 +31,8 @@
   "95:  0.0 hrs,  0 attempts",
   "99:  0.0 hrs,  0 attempts",
   "",
+  "Slowest CLs:",
+  "",
   "Top flaky builders (which fail and succeed in the same patch):",
   "Builder Name                             Succeeded       Flaky Failures  Flakiness (%)  "
 ]

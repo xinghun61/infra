@@ -619,6 +619,30 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         'false-reject-count': 1,
       },
     })
+    stats_set['patch_stats'].update({
+        (123, 1): {
+            'attempts': 1,
+            'false-rejections': 0,
+            'rejections': 1,
+            'committed': False,
+            'patchset-duration': 3600,
+            'patchset-duration-wallclock': 3600,
+            'failed-jobs-details': {
+                'builder_a': 1,
+            },
+        },
+        (456, 1): {
+            'attempts': 1,
+            'false-rejections': 0,
+            'rejections': 1,
+            'committed': False,
+            'patchset-duration': 7200,
+            'patchset-duration-wallclock': 7200,
+            'failed-jobs-details': {
+                'builder_a': 1,
+            },
+        },
+    })
 
     swapped_stats = copy.deepcopy(stats_set)
     swapped_stats['begin'], swapped_stats['end'] = (
