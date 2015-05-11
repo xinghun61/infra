@@ -5,13 +5,17 @@ found in the LICENSE file. -->
 <polymer-element name="cr-date" attributes="date relative">
     <template>
         <template if="{{ relative }}">
-            <span title="{{ date | formatAbsolute }}">{{ date | formatRelative }}</span>
+            <span title="{{ date | formatAbsolute }}">{{ date | formatRecentRelative }}</span>
         </template>
         <template if="{{ !relative }}">
             <span title="{{ date | formatRelative }}">{{ date | formatAbsolute }}</span>
         </template>
     </template>
     <script>
+    (function() {
+        var THREE_MONTHS_AGO = Date.create("3 months ago");
+        var SIX_MONTHS_AGO = Date.create("6 months ago");
+
         Polymer({
             publish: {
                 // relative == true means show a relative date (e.g., 2 days ago) as
@@ -21,10 +25,27 @@ found in the LICENSE file. -->
                 // and puts the relative date in the tooltip.
                 relative: false,
             },
+            formatRecentRelative: function(date) {
+                if (!date)
+                    return "";
+
+                // The main point of a relative date display is to let the user
+                // easily understand how recently a recent event happened.
+                if (date > THREE_MONTHS_AGO)
+                    return date.relative();  // E.g., "2 days ago"
+
+                // However, when the date is farther in the past, it is
+                // immedately understood that the event is old, and it is more
+                // useful to be able to compare it to other absolute dates.
+                if (date > SIX_MONTHS_AGO)
+                    return date.format("{Mon} {ord}");  // E.g., "Jul 11th"
+                else
+                    return date.format("{Mon} {yyyy}");  // E.g., "Jan 2011"
+            },
             formatRelative: function(date) {
                 if (!date)
                     return "";
-                return date.relative();
+                return date.relative();  // E.g., "2 days ago"
             },
             formatAbsolute: function(date) {
                 if (!date)
@@ -32,5 +53,6 @@ found in the LICENSE file. -->
                 return date.format("{Mon} {ord} {yyyy} {h}:{mm}{tt}");
             },
         });
+    })();
     </script>
 </polymer-element>
