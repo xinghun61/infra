@@ -166,10 +166,16 @@ class GlobalsTest(unittest.TestCase):
     self.assertFalse(fake_state.global_monitor.send.called)
     self.assertFalse(fake_metric.serialize_to.called)
 
-  def test_send_raises(self):
+  def test_send_all_raises(self):
     self.assertIsNone(interface._state.global_monitor)
+    interface._state.flush_mode = 'all'
     with self.assertRaises(MonitoringNoConfiguredMonitorError):
       interface.send(mock.MagicMock())
+
+  def test_send_manual_works(self):
+    self.assertIsNone(interface._state.global_monitor)
+    interface._state.flush_mode = 'manual'
+    interface.send(mock.MagicMock())
 
   @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
   def test_flush(self, fake_state):

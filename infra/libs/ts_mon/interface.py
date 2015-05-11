@@ -194,11 +194,11 @@ def send(metric):
   This is called automatically by Metric.set - you don't need to call it
   manually.
   """
-  if not _state.global_monitor:
-    raise MonitoringNoConfiguredMonitorError(metric._name)
-
   if _state.flush_mode != 'all':
     return
+
+  if not _state.global_monitor:
+    raise MonitoringNoConfiguredMonitorError(metric._name)
 
   proto = metrics_pb2.MetricsCollection()
   metric.serialize_to(proto, default_target=_state.default_target)
