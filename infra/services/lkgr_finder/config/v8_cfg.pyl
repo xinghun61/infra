@@ -81,9 +81,14 @@
         # 'Linux ASAN Builder',
         # 'Android Builder',
         'V8 Linux GN',
+      ],
+    },  # client.v8
+    'client.v8.fyi': {
+      'base_url': 'https://build.chromium.org/p/client.v8.fyi',
+      'builders': [
         'V8-Blink Linux 32',
         'V8-Blink Linux 64',
       ],
-    },  # client.v8
+    },  # client.v8.fyi
   },
 }
