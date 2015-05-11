@@ -348,8 +348,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     # Test that the result stats have the minimal expected dict keys
     # for print_stats().
     expected_keys = set(cq_stats.default_stats().keys())
-    self.assertFalse(expected_keys - set(result['latest'].keys()))
-    self.assertFalse(expected_keys - set(result['previous'].keys()))
+    self.assertFalse(expected_keys - set(result.keys()))
 
     self.assertIsNone(cq_stats.organize_stats({}))
 
@@ -589,7 +588,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
   def test_print_duration(self):
     self.mock(cq_stats, 'output', self.print_mock)
 
-    cq_stats.print_duration('mean', Args(), cq_stats.default_stats(), None)
+    cq_stats.print_duration('mean', cq_stats.default_stats(), None)
     return self.expectations
 
   def test_print_usage(self):
@@ -597,10 +596,10 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     stats = cq_stats.default_stats()
     stats['usage'] = cq_stats.derive_log_stats([], [])
-    cq_stats.print_usage(Args(), stats, stats)
+    cq_stats.print_usage(stats)
 
     stats['usage']['bot_manual_commits'] += 1
-    cq_stats.print_usage(Args(), stats, stats)
+    cq_stats.print_usage(stats)
 
     return self.expectations
 
@@ -625,10 +624,9 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     swapped_stats['begin'], swapped_stats['end'] = (
         swapped_stats['end'], swapped_stats['begin'])
 
-    cq_stats.print_stats(args, {'latest': None, 'previous': stats_set})
-    cq_stats.print_stats(args, {'latest': stats_set, 'previous': None})
-    cq_stats.print_stats(args, {'latest': swapped_stats, 'previous': stats_set})
-    cq_stats.print_stats(args, {'latest': stats_set, 'previous': stats_set})
+    cq_stats.print_stats(args, None)
+    cq_stats.print_stats(args, stats_set)
+    cq_stats.print_stats(args, swapped_stats)
     return self.expectations
 
   def test_print_log_stats(self):
@@ -638,7 +636,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     stats_set['begin'] = args.date
     stats_set['end'] = args.date + datetime.timedelta(days=7)
 
-    cq_stats.print_stats(args, {'latest': stats_set, 'previous': stats_set})
+    cq_stats.print_stats(args, stats_set)
     return self.expectations
 
   def test_acquire_stats(self):

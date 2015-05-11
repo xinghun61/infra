@@ -437,59 +437,54 @@ def default_stats():
   return stats
 
 
-def organize_stats(stats, latest_init=None, previous_init=None):
+def organize_stats(stats, init=None):
   """Changes cached lists of stats into dictionaries.
 
   Args:
     stats (dict): set of stats as returned by chromium-cq-status.
 
   Returns:
-    result (dict): mapping ('latest' | 'previous') -> stat.name
-    -> <stats json>.  If latest/previous_init are given, add to those
-    stats rather than compute them from scratch.
+    result (dict): mapping stat.name -> <stats json>.  If init is given,
+    add to those stats rather than compute them from scratch.
   """
   if 'results' not in stats:
     return None
-  result = {
-      'latest' : latest_init if latest_init else default_stats(),
-      'previous': previous_init if previous_init else default_stats(),
-  }
-  for dataset, name in zip(stats['results'], ['latest', 'previous']):
-    result[name]['begin'] = min(
+  result = init if init else default_stats()
+  for dataset in stats['results']:
+    result['begin'] = min(
         date_from_timestamp(dataset['begin']),
-        result[name].get('begin', datetime.datetime.now()))
-    result[name]['end'] = max(date_from_timestamp(dataset['end']),
-                              result[name]['end'])
+        result.get('begin', datetime.datetime.now()))
+    result['end'] = max(date_from_timestamp(dataset['end']), result['end'])
     re_trybot_pass_count = re.compile('^trybot-(.+)-pass-count$')
     re_trybot_false_reject_count = re.compile(
         '^trybot-(.+)-false-reject-count$')
-    assert 'jobs' in result[name] and isinstance(result[name]['jobs'], dict)
+    assert 'jobs' in result and isinstance(result['jobs'], dict)
     for data in dataset['stats']:
       if data['type'] == 'count':
-        result[name][data['name']] = data['count']
+        result[data['name']] = data['count']
         match_pass = re_trybot_pass_count.match(data['name'])
         match_false_reject = re_trybot_false_reject_count.match(data['name'])
         if match_pass:
           job_name = match_pass.group(1)
-          result[name]['jobs'].setdefault(job_name, {
+          result['jobs'].setdefault(job_name, {
               'pass-count': 0,
               'false-reject-count': 0,
           })
-          result[name]['jobs'][job_name]['pass-count'] += data['count']
+          result['jobs'][job_name]['pass-count'] += data['count']
           logging.debug('Job %s passed %d times. Jobs: %r',
-                        job_name, data['count'], result[name]['jobs'])
+                        job_name, data['count'], result['jobs'])
         if match_false_reject:
           job_name = match_false_reject.group(1)
-          result[name]['jobs'].setdefault(job_name, {
+          result['jobs'].setdefault(job_name, {
               'pass-count': 0,
               'false-reject-count': 0,
           })
-          result[name]['jobs'][job_name]['false-reject-count'] += data['count']
+          result['jobs'][job_name]['false-reject-count'] += data['count']
           logging.debug('Job %s flakily failed %d times',
                         job_name, data['count'])
       else:
         assert data['type'] == 'list'
-        result[name][data['name']] = {
+        result[data['name']] = {
             '10': data['percentile_10'],
             '25': data['percentile_25'],
             '50': data['percentile_50'],
@@ -959,127 +954,104 @@ def print_attempt_counts(stats, name, message, item_name='',
     output()
 
 
-def print_duration(name, args, latest, previous, print_name=None):
+def print_duration(name, stats, print_name=None):
   if not print_name:
     print_name = name.capitalize()
-  cq_only = round_timedelta(latest['patchset-durations'][name])
+  cq_only = round_timedelta(stats['patchset-durations'][name])
   wallclock = round_timedelta(
-      latest['patchset-total-commit-queue-durations'][name])
-  prev_cq_only = 'unknown'
-  prev_cq_only_s = 'unknown'
-  prev_wallclock = 'unknown'
-  prev_wallclock_s = 'unknown'
-  if previous:
-    prev_cq_only = round_timedelta(previous['patchset-durations'][name])
-    prev_cq_only_s = int(prev_cq_only.total_seconds() / 60)
-    prev_wallclock = round_timedelta(
-        previous['patchset-total-commit-queue-durations'][name])
-    prev_wallclock_s = int(prev_wallclock.total_seconds() / 60)
+      stats['patchset-total-commit-queue-durations'][name])
   output('\n%s duration in CQ trying a patch:', print_name)
   output(
-      '  wallclock:       %8s (%3d min). Prev. %s: %8s (%3s min).',
-      wallclock, round(wallclock.total_seconds() / 60.0), args.range,
-      prev_wallclock, prev_wallclock_s)
+      '  wallclock:       %8s (%3d min).',
+      wallclock, round(wallclock.total_seconds() / 60.0))
   output(
-      '  sum of attempts: %8s (%3d min). Prev. %s: %8s (%3s min).',
-      cq_only, round(cq_only.total_seconds() / 60.0), args.range,
-      prev_cq_only, prev_cq_only_s)
+      '  sum of attempts: %8s (%3d min).',
+      cq_only, round(cq_only.total_seconds() / 60.0))
 
 
-def print_usage(args, latest, previous):
-  if not latest['usage']:
+def print_usage(stats):
+  if not stats['usage']:
     return
   output()
   output(
       'CQ users:      %6d out of %6d total committers %6.2f%%',
-      latest['usage']['users'], latest['usage']['committers'],
-      percentage(latest['usage']['users'], latest['usage']['committers']))
+      stats['usage']['users'], stats['usage']['committers'],
+      percentage(stats['usage']['users'], stats['usage']['committers']))
   fmt_str = (
-      '  Committed    %6d out of %6d commits          %6.2f%%. '
-      'Prev. %s: %6.2f%%.')
-  data = percentage_tuple(latest['usage']['cq_commits'],
-                          latest['usage']['total_commits'])
-  data += (args.range, percentage(previous['usage']['cq_commits'],
-                                  previous['usage']['total_commits']))
-  if latest['usage']['bot_manual_commits']:
+      '  Committed    %6d out of %6d commits          %6.2f%%. ')
+  data = percentage_tuple(stats['usage']['cq_commits'],
+                          stats['usage']['total_commits'])
+  if stats['usage']['bot_manual_commits']:
     fmt_str += ' (%6.2f%% by humans)'
-    data += (percentage(latest['usage']['cq_commits'],
-                        latest['usage']['total_commits'] -
-                        latest['usage']['bot_manual_commits']),)
+    data += (percentage(stats['usage']['cq_commits'],
+                        stats['usage']['total_commits'] -
+                        stats['usage']['bot_manual_commits']),)
   output(fmt_str, *data)
 
   output()
   output('Bots:                %6d out of %6d total committers %6.2f%%',
-         *percentage_tuple(latest['usage']['bot_committers'],
-                           latest['usage']['committers']))
+         *percentage_tuple(stats['usage']['bot_committers'],
+                           stats['usage']['committers']))
   output('  Committed by CQ    %6d out of %6d commits          %6.2f%%',
-         *percentage_tuple(latest['usage']['bot_commits'],
-                           latest['usage']['total_commits']))
+         *percentage_tuple(stats['usage']['bot_commits'],
+                           stats['usage']['total_commits']))
   output('  Committed directly %6d out of %6d commits          %6.2f%%',
-         *percentage_tuple(latest['usage']['bot_manual_commits'],
-                           latest['usage']['total_commits']))
+         *percentage_tuple(stats['usage']['bot_manual_commits'],
+                           stats['usage']['total_commits']))
   output()
   output('Manual committers: %6d out of all %6d users   %6.2f%%',
-         *percentage_tuple(latest['usage']['manual_committers'],
-                           latest['usage']['committers']))
+         *percentage_tuple(stats['usage']['manual_committers'],
+                           stats['usage']['committers']))
   output('  Committed        %6d out of     %6d commits %6.2f%%',
-         *percentage_tuple(latest['usage']['manual_commits'],
-                           latest['usage']['total_commits']))
+         *percentage_tuple(stats['usage']['manual_commits'],
+                           stats['usage']['total_commits']))
 
 
-def print_tree_status(args, latest, previous):
+def print_tree_status(stats):
   output()
   output(
-      'Total time tree open: %.1f hours of %.1f hours (%.2f%%). '
-      'Prev. %s: %.2f%%.',
-      latest['tree']['open'] / 3600.0,
-      latest['tree']['total'] / 3600.0,
-      percentage(latest['tree']['open'], latest['tree']['total']),
-      args.range,
-      percentage(previous['tree']['open'], previous['tree']['total']))
+      'Total time tree open: %.1f hours of %.1f hours (%.2f%%). ',
+      stats['tree']['open'] / 3600.0,
+      stats['tree']['total'] / 3600.0,
+      percentage(stats['tree']['open'], stats['tree']['total']))
 
 
 def print_stats(args, stats):
-  latest = stats.get('latest')
-  previous = stats.get('previous')
-  if not latest:
+  if not stats:
     output('No stats to display.')
     return
-  if not previous:
-    output('No previous %s stats loaded.', args.range)
-    return
   output('Statistics for project %s', args.project)
-  if latest['begin'] > latest['end']:
+  if stats['begin'] > stats['end']:
     output('  No stats since %s', args.date)
     return
 
   output('from %s till %s (local time).',
-         latest['begin'], latest['end'])
+         stats['begin'], stats['end'])
 
-  print_usage(args, latest, previous)
-  print_tree_status(args, latest, previous)
+  print_usage(stats)
+  print_tree_status(stats)
 
   output()
   output(
       '%4d issues (%d patches) were tried by CQ, '
       'resulting in %d attempts.',
-      latest['issue-count'], latest['patchset-count'], latest['attempt-count'])
+      stats['issue-count'], stats['patchset-count'], stats['attempt-count'])
   output(
       '%4d patches (%.1f%% of tried patches, %.1f%% of attempts) '
       'were committed by CQ,',
-      latest['patchset-commit-count'],
-      percentage(latest['patchset-commit-count'], latest['patchset-count']),
-      percentage(latest['patchset-commit-count'], latest['attempt-count']))
+      stats['patchset-commit-count'],
+      percentage(stats['patchset-commit-count'], stats['patchset-count']),
+      percentage(stats['patchset-commit-count'], stats['attempt-count']))
 
 
   output()
   output('Rejections:')
-  print_attempt_counts(latest, 'rejections', 'were unsuccessful',
+  print_attempt_counts(stats, 'rejections', 'were unsuccessful',
                        item_name='failures',
                        committed=False)
   output('  This includes:')
   for reason in REASONS:
-    print_attempt_counts(latest, reason, REASONS[reason]['message'], indent=2,
+    print_attempt_counts(stats, reason, REASONS[reason]['message'], indent=2,
                          details=args.list_rejections,
                          item_name=REASONS[reason]['item'], committed=False)
 
@@ -1089,37 +1061,37 @@ def print_stats(args, stats):
   output()
   output('False Rejections:')
   if args.use_logs:
-    print_attempt_counts(latest, 'false-rejections', 'were false rejections',
+    print_attempt_counts(stats, 'false-rejections', 'were false rejections',
                          item_name='flakes', committed=True)
   else:
     output(
         '  %4d attempts (%.1f%% of %d attempts) were false rejections',
-        latest['attempt-false-reject-count'],
-        percentage(latest['attempt-false-reject-count'],
-                   latest['attempt-count']),
-        latest['attempt-count'])
+        stats['attempt-false-reject-count'],
+        percentage(stats['attempt-false-reject-count'],
+                   stats['attempt-count']),
+        stats['attempt-count'])
 
   output('  False rejections include:')
   for reason in FLAKY_REASONS.keys() + ['failed-unknown']:
-    print_attempt_counts(latest, reason, REASONS[reason]['message'], indent=2,
+    print_attempt_counts(stats, reason, REASONS[reason]['message'], indent=2,
                          item_name=REASONS[reason]['item'], committed=True,
                          details=args.list_false_rejections)
 
   output('  Other rejections in committed patches for valid reasons:')
   for reason in VALID_REASONS.keys():
-    print_attempt_counts(latest, reason, REASONS[reason]['message'], indent=2,
+    print_attempt_counts(stats, reason, REASONS[reason]['message'], indent=2,
                          item_name=REASONS[reason]['item'], committed=True,
                          details=args.list_false_rejections)
 
-  print_duration('mean', args, latest, previous)
-  print_duration('50', args, latest, previous, 'Median')
+  print_duration('mean', stats)
+  print_duration('50', stats, 'Median')
 
   output()
   output('Patches which eventually land percentiles:')
   for p in ['10', '25', '50', '75', '90', '95', '99']:
     output('%s: %4.1f hrs, %2d attempts',
-           p, latest['patchset-committed-durations'][p] / 3600.0,
-           latest['patchset-committed-attempts'][p])
+           p, stats['patchset-committed-durations'][p] / 3600.0,
+           stats['patchset-committed-attempts'][p])
 
   # TODO(sergeyberezin): add total try jobs / by CQ / unknown. Get it from CBE.
   # TODO(sergeyberezin): recompute bot flakiness from CBE. CQ does not
@@ -1127,23 +1099,22 @@ def print_stats(args, stats):
   output()
   output('Top flaky builders (which fail and succeed in the same patch):')
 
-  logging.debug('Found %d jobs', len(latest['jobs'].keys()))
+  logging.debug('Found %d jobs', len(stats['jobs'].keys()))
 
-  def flakiness(stats, job):
+  def flakiness(job):
     passes = stats['jobs'][job]['pass-count']
     failures = stats['jobs'][job]['false-reject-count']
     return percentage(failures, passes + failures)
 
-  jobs = sorted(latest['jobs'].iterkeys(), key=lambda j: flakiness(latest, j),
-                reverse=True)
+  jobs = sorted(stats['jobs'].iterkeys(), key=flakiness, reverse=True)
   output('%-40s %-15s %-15s %-15s',
          'Builder Name', 'Succeeded', 'Flaky Failures', 'Flakiness (%)')
   for job in jobs:
-    passes = latest['jobs'][job]['pass-count']
-    failures = latest['jobs'][job]['false-reject-count']
+    passes = stats['jobs'][job]['pass-count']
+    failures = stats['jobs'][job]['false-reject-count']
     output('%-40s %-15s %-15s %-15s',
            job, '%5d' % passes, '%5d' % failures,
-           '%6.2f%%' % flakiness(latest, job))
+           '%6.2f%%' % flakiness(job))
 
 
 def acquire_stats(args):
@@ -1152,43 +1123,35 @@ def acquire_stats(args):
                args.project, args.range, args.date,
                'logs' if args.use_logs else 'cache')
   end_date = args.date + datetime.timedelta(minutes=INTERVALS[args.range])
-  prev_date = args.date - datetime.timedelta(minutes=INTERVALS[args.range])
   if args.use_logs:
-    init_stats = {'latest': default_stats(), 'previous': default_stats()}
+    init_stats = default_stats()
     assert args.date
     # For weekly stats, collect job flakiness from daily cached stats.
     if args.range == 'week':
       for day in range(7):
         d = args.date + datetime.timedelta(minutes=INTERVALS['day']*day)
         raw_stats = fetch_stats(args, d, 'day')
-        init_stats = organize_stats(raw_stats, latest_init=init_stats['latest'])
+        init_stats = organize_stats(raw_stats, init=init_stats)
     elif args.range == 'day':
       for hour in range(24):
         d = args.date + datetime.timedelta(minutes=INTERVALS['hour']*hour)
         raw_stats = fetch_stats(args, d, 'hour')
-        init_stats = organize_stats(raw_stats, latest_init=init_stats['latest'])
+        init_stats = organize_stats(raw_stats, init=init_stats)
     else:
       init_stats = organize_stats(fetch_stats(args))
-    stats['latest'] = derive_stats(
-        args, args.date, init_stats=init_stats['latest'])
-    stats['previous'] = derive_stats(args, prev_date)
+    stats = derive_stats(
+        args, args.date, init_stats=init_stats)
   else:
     stats = organize_stats(fetch_stats(args))
 
-  stats['latest']['tree'] = derive_tree_stats(args.project, args.date, end_date)
-  stats['previous']['tree'] = derive_tree_stats(
-      args.project, prev_date, args.date)
+  stats['tree'] = derive_tree_stats(args.project, args.date, end_date)
 
   if PROJECTS[args.project]['type'] == 'git':
-    stats['latest']['usage'] = derive_git_stats(
+    stats['usage'] = derive_git_stats(
         args.project, args.date, end_date, args.bots)
-    stats['previous']['usage'] = derive_git_stats(
-        args.project, prev_date, args.date, args.bots)
   else:
-    stats['latest']['usage'] = derive_svn_stats(
+    stats['usage'] = derive_svn_stats(
         args.project, args.date, end_date, args.bots)
-    stats['previous']['usage'] = derive_svn_stats(
-        args.project, prev_date, args.date, args.bots)
 
   return stats
 
