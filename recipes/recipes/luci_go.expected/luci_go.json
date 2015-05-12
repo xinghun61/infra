@@ -1,0 +1,79 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[BUILD]/scripts/slave/bot_update.py",
+      "--master",
+      "chromium.infra",
+      "--builder",
+      "luci-go-linux64",
+      "--slave",
+      "TestSlavename",
+      "--spec",
+      "cache_dir = '[ROOT]/git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "--root",
+      "infra",
+      "--revision_mapping_file",
+      "{\"infra\": \"got_revision\"}",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "infra@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+      "--force"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "bot_update",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"5e03a58dc0850e5137a8ebbce29610670c756aed\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#197293}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#197293}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[DEPOT_TOOLS]/gclient.py",
+      "runhooks"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gclient runhooks"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
+      "go",
+      "build",
+      "github.com/luci/luci-go/cmd/..."
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go build"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
+      "go",
+      "test",
+      "github.com/luci/luci-go/..."
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go test"
+  }
+]
