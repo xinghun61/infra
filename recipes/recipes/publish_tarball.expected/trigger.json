@@ -8,7 +8,7 @@
       "[DEPOT_TOOLS]/gsutil.py",
       "--force-version",
       "3.25",
-      "--",
+      "----",
       "ls",
       "gs://chromium-browser-official/"
     ],
