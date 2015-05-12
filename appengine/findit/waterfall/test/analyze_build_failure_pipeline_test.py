@@ -97,8 +97,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     self._Setup(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
-                                                builder_name, 
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
+                                                builder_name,
                                                 build_number)
     root_pipeline.start(queue_name='default')
     self.execute_queued_tasks()
@@ -117,9 +117,9 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
                         'commit_position': 8888,
                         'url': ('https://chromium.googlesource.com/chromium'
                                 '/src/+/some_git_hash'),
-                        'score': 1,
+                        'score': 2,
                         'hints': {
-                            'modified x.cc (and it was in log)': 1,
+                            'modified x.cc (and it was in log)': 2,
                         },
                     }
                 ],

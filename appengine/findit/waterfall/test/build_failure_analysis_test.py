@@ -66,7 +66,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         'files': {
             'src/a/b/f1.cc': [],
             'd/e/a2_test.cc': [],
-            'b/c/f2.h': [10, 20],
+            'b/c/f2.cc': [10, 20],
             'd/e/f3.h': [],
             'x/y/f4.py': [],
             'f5_impl.cc': []
@@ -118,12 +118,12 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     # The score is 14 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
     # +1 added d/e/a2.cc (related file a2_test.cc in failure_signal log)
-    # +1 modified b/c/f2.h (same file a/b/c/f2.h in failure_signal log)
-    # +1 modified d/e/f3.h (same file d/e/f3.h in failure_signal log)
+    # +1 modified b/c/f2.h (related file a/b/c/f2.cc in failure_signal log)
+    # +2 modified d/e/f3.h (same file d/e/f3.h in failure_signal log)
     # +5 deleted x/y/f4.py (same file x/y/f4.py in failure_signal log)
     # +1 deleted h/f5.h (related file f5_impl.cc in failure_signal log)
     # +0 renamed t/y/x.cc -> s/z/x.cc (no related file in failure_signal log)
-    self.assertEqual(14, justification['score'])
+    self.assertEqual(15, justification['score'])
 
   def testCheckFilesAgainstUnrelatedCL(self):
     failure_signal_json = {
@@ -237,9 +237,9 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                         'revision': 'r99_2',
                         'commit_position': None,
                         'url': None,
-                        'score': 1,
+                        'score': 2,
                         'hints': {
-                            'modified f99_2.cc (and it was in log)': 1,
+                            'modified f99_2.cc (and it was in log)': 2,
                         },
                     }
                 ],

@@ -225,7 +225,7 @@
                 </td>
                 <td>{{first_suspected_cl.score}}</td>
                 <td>
-                  {% for hint in first_suspected_cl.hints %}
+                  {% for hint, _ in first_suspected_cl.hints|dictsort(case_sensitive=True, by='value')|reverse %}
                     <li>{{hint}}</li>
                   {% endfor %}
                 </td>
@@ -244,7 +244,7 @@
                 </td>
                 <td>{{suspected_cl.score}}</td>
                 <td>
-                  {% for hint in suspected_cl.hints %}
+                  {% for hint, _ in suspected_cl.hints|dictsort(case_sensitive=True, by='value')|reverse %}
                     <li>{{hint}}</li>
                   {% endfor %}
                 </td>
