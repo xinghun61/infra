@@ -76,11 +76,6 @@
         'V8 GC Stress - 1',
         'V8 GC Stress - 2',
         'V8 GC Stress - 3',
-        # FIXME(machenbach,hinoka): bot_update revision issues.
-        # 'Linux Debug Builder',
-        # 'Linux ASAN Builder',
-        # 'Android Builder',
-        'V8 Linux GN',
       ],
     },  # client.v8
     'client.v8.fyi': {
@@ -88,6 +83,10 @@
       'builders': [
         'V8-Blink Linux 32',
         'V8-Blink Linux 64',
+        'Linux Debug Builder',
+        'Linux ASAN Builder',
+        'Android Builder',
+        'V8 Linux GN',
       ],
     },  # client.v8.fyi
   },
