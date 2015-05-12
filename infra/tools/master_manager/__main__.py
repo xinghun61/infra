@@ -115,7 +115,10 @@ def run_state_machine_pass(
       if prod:
         try:
           with daemon.flock(cmd['lockfile']):
-            subprocess.check_call([str(x) for x in cmd['cmd']], cwd=cmd['cwd'])
+            subprocess.check_call(
+                [str(x) for x in cmd['cmd']],
+                cwd=cmd['cwd'],
+                close_fds=True)
         except daemon.LockAlreadyLocked:
           logger.warn('  lock on %s could not be acquired, no action taken.',
               cmd['lockfile'])
