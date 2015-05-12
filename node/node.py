@@ -77,10 +77,11 @@ def install_latest_node_js(version, tmp_dir):
   return bin_location
 
 
-def main():
+def main(mode=None):
   parser = optparse.OptionParser(prog='python -m %s' % __package__)
   parser.add_option('-v', '--version', default=DEFAULT_VERSION,
                     help='Specify a version, default %s' % DEFAULT_VERSION)
+
   options, args = parser.parse_args()
 
   try:
@@ -89,6 +90,10 @@ def main():
   finally:
     if os.path.exists(tmp_dir):
       shutil.rmtree(tmp_dir)
+
+  if mode == 'npm':
+    # TODO(hinoka): How about Windows...?
+    bin_location = os.path.join(os.path.dirname(bin_location), 'npm')
 
   return subprocess.call([bin_location,] + args)
 
