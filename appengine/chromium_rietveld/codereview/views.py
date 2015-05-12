@@ -565,10 +565,16 @@ class StringListField(forms.CharField):
 
 class ClientIDAndSecretForm(forms.Form):
   """Simple form for collecting Client ID and Secret."""
-  client_id = forms.CharField()
-  client_secret = forms.CharField()
-  additional_client_ids = StringListField()
-
+  client_id = forms.CharField(
+    help_text='Enter a single service account Client ID.',
+    widget=forms.TextInput(attrs={'size': '100'}))
+  client_secret = forms.CharField(
+    required=False,
+    widget=forms.TextInput(attrs={'size': '100'}))
+  additional_client_ids = StringListField(
+    required=False,
+    help_text='Enter a comma-separated list of Client IDs.',
+    widget=forms.TextInput(attrs={'size': '100'}))
 
 class UpdateStatsForm(forms.Form):
   tasks_to_trigger = forms.CharField(
@@ -3252,7 +3258,10 @@ def publish(request):
   else:
     reviewers = issue.reviewers
     required_reviewers = issue.required_reviewers
-  if (form.is_valid() and form.cleaned_data.get('add_as_reviewer', True) and
+  # Avoid adding service accounts to reviewers
+  if (form.is_valid() and
+      form.cleaned_data.get('add_as_reviewer', True) and
+      not request.user.email().endswith('gserviceaccount.com') and
       request.user != issue.owner and
       request.user.email() not in reviewers and
       not issue.is_collaborator(request.user)):
@@ -3595,7 +3604,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
     reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
     reply_to = ', '.join(reply_to)
-    if accounts[my_email].send_from_email_addr:
+    if my_email not in accounts or accounts[my_email].send_from_email_addr:
       sender = my_email
     else:
       sender = django_settings.RIETVELD_INCOMING_MAIL_ADDRESS
@@ -4447,7 +4456,10 @@ def set_client_id_and_secret(request):
                                       additional_client_ids)
     return HttpResponseRedirect(reverse(set_client_id_and_secret))
   else:
-    form = ClientIDAndSecretForm()
+    form = ClientIDAndSecretForm(initial={
+      'client_id': client_id,
+      'client_secret': client_secret,
+      'additional_client_ids': additional_client_ids})
     return respond(request, 'set_client_id_and_secret.html', {'form': form})
 
 

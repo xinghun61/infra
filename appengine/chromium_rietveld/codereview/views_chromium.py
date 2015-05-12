@@ -490,9 +490,11 @@ def status_listener(request):
   """
   packets = request.POST.get('packets')
   if not packets:
+    logging.error('No packets given')
     return HttpResponseBadRequest('No packets given')
   base_url = request.POST.get('base_url')
   if not base_url:
+    logging.error('No base url given')
     return HttpResponseBadRequest('No base url given')
   # Using deferred means that we could lose some packets if processing fails.
   # Until a good solution is found for this problem, process the packets

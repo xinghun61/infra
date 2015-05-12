@@ -137,7 +137,8 @@ class Issue(ndb.Model):
 
   def user_can_edit(self, user):
     """Returns True if the given user has permission to edit this issue."""
-    return user and (user == self.owner or self.is_collaborator(user) or
+    return user and (user.email() == self.owner.email() or
+                     self.is_collaborator(user) or
                      auth_utils.is_current_user_admin() or
                      is_privileged_user(user))
 
@@ -151,7 +152,8 @@ class Issue(ndb.Model):
 
     This is stricter than user_can_edit because users cannot qualify just based
     on their email address domain."""
-    return user and (user == self.owner or self.is_collaborator(user) or
+    return user and (user.email() == self.owner.email() or
+                     self.is_collaborator(user) or
                      auth_utils.is_current_user_admin())
 
   @property
