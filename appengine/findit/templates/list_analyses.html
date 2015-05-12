@@ -11,6 +11,41 @@
       border: 1px solid gray;
     }
   </style>
+  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script>
+    parameters = {
+      'triage': '{{triage}}' == '-1' ? undefined : '{{triage}}',
+      'days': '{{days}}' == '-1' ? undefined : '{{days}}',
+      'count': '{{count}}' == '-1' ? undefined : '{{count}}',
+      'result_status': '{{result_status}}' == '-1' ? undefined : '{{result_status}}'
+    };
+
+    function CreateUrl() {
+      var params = [];
+      for(var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return './list-analyses'
+      } else {
+        return './list-analyses?' + params.join('&');
+      }
+    }
+
+    $(document).ready(function() {
+      if ('{{result_status}}' != '-1') {
+        $('#result_status').val('{{result_status}}');
+      }
+      $('#result_status').change(function() {
+        parameters['result_status'] = $(this).val() == 'default' ? undefined : $(this).val()
+        newUrl = CreateUrl();
+        window.location.replace(newUrl);
+      });
+    });
+  </script>
 </head>
 <body>
   <b>Builds and Analysis Results:</b>
@@ -22,7 +57,17 @@
         <th>Build</th>
         <th>Status</th>
         <th>Suspected CLs</th>
-        <th>Result Status</th>
+        <th>
+          <select id="result_status">
+            <option value="default">Result Status</option>
+            <option value="0">Correct - Found</option>
+            <option value="10">Incorrect - Found</option>
+            <option value="20">Incorrect - Not Found</option>
+            <option value="30">Untriaged - Found</option>
+            <option value="40">Untriaged - Not Found</option>
+            <option value="50">Correct - Not Found</option>
+          </select>
+        </th>
       </tr>
 
       <tbody>
@@ -30,7 +75,7 @@
         <tr>
           <td>{{loop.index}}</td>
           <td>{{analysis.build_start_time}}</td>
-          <td>{{analysis.master_name}}, {{analysis.builder_name}}, 
+          <td>{{analysis.master_name}}, {{analysis.builder_name}},
             <a href="./build-failure?url=https://build.chromium.org/p
 /{{analysis.master_name}}/builders/{{analysis.builder_name}}
 /builds/{{analysis.build_number}}">
@@ -42,7 +87,7 @@
           {% if analysis.suspected_cls %}
             {% for suspected_cl in analysis.suspected_cls %}
               <li>
-                {{suspected_cl.repo_name}}: 
+                {{suspected_cl.repo_name}}:
                 {% if suspected_cl.commit_position %}
                   <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>
                 {% else %}
@@ -56,7 +101,6 @@
         </tr>
       {% endfor %}
       </tbody>
-
     </table>
   </div>
 </body>

@@ -34,7 +34,7 @@ class ListAnalyses(BaseHandler):
         results regardless of result_status.
     """
     # TODO: Add a dropdown for users to select single result_status.
-    status_code = int(self.request.get('result_status',-1))
+    status_code = int(self.request.get('result_status','-1'))
     if status_code >= 0:
       analysis_query = WfAnalysis.query(WfAnalysis.result_status==status_code)
     elif self.request.get('triage') == '1':
@@ -91,7 +91,11 @@ class ListAnalyses(BaseHandler):
       analyses.append(analysis)
 
     data = {
-        'analyses': analyses
+        'analyses': analyses,
+        'triage': self.request.get('triage', '-1'),
+        'days': self.request.get('days', '-1'),
+        'count': self.request.get('count', '-1'),
+        'result_status': self.request.get('result_status', '-1')
     }
     return {'template': 'list_analyses.html', 'data': data}
 
