@@ -50,6 +50,8 @@ class Status(messages.Enum):
   PROCESSING_FAILED = 9
   # Asynchronous package processing is still running.
   PROCESSING_NOT_FINISHED_YET = 10
+  # More than one instance matches criteria in resolveVersion.
+  AMBIGUOUS_VERSION = 11
 
 
 class Package(messages.Message):
@@ -314,6 +316,15 @@ class SearchResponse(messages.Message):
   instances = messages.MessageField(PackageInstance, 3, repeated=True)
 
 
+class ResolveVersionResponse(messages.Message):
+  """Results of resolveVersion call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, concrete existing instance ID.
+  instance_id = messages.StringField(3, required=False)
+
+
 ################################################################################
 
 
@@ -400,16 +411,22 @@ def validate_instance_id(instance_id):
   return instance_id
 
 
-def validate_tag(tag):
+def validate_instance_tag(tag):
   if not impl.is_valid_instance_tag(tag):
     raise ValidationError('Invalid tag "%s"' % tag)
   return tag
 
 
-def validate_tag_list(tags):
+def validate_instance_tag_list(tags):
   if not tags:
     raise ValidationError('Tag list is empty')
-  return [validate_tag(tag) for tag in tags]
+  return [validate_instance_tag(tag) for tag in tags]
+
+
+def validate_instance_version(version):
+  if not impl.is_valid_instance_version(version):
+    raise ValidationError('Not a valid instance ID or tag: "%s"' % version)
+  return version
 
 
 def endpoints_method(request_message, response_message, **kwargs):
@@ -615,7 +632,7 @@ class PackageRepositoryApi(remote.Service):
     """Lists package instance tags (in no particular order)."""
     package_name = validate_package_name(request.package_name)
     instance_id = validate_instance_id(request.instance_id)
-    tags = validate_tag_list(request.tag) if request.tag else None
+    tags = validate_instance_tag_list(request.tag) if request.tag else None
 
     caller = auth.get_current_identity()
     if not acl.can_fetch_instance(package_name, caller):
@@ -645,7 +662,7 @@ class PackageRepositoryApi(remote.Service):
     """Attaches a set of tags to a package instance."""
     package_name = validate_package_name(request.package_name)
     instance_id = validate_instance_id(request.instance_id)
-    tags = validate_tag_list(request.tags)
+    tags = validate_instance_tag_list(request.tags)
 
     caller = auth.get_current_identity()
     for tag in tags:
@@ -686,7 +703,7 @@ class PackageRepositoryApi(remote.Service):
     """Removes given tags from a package instance."""
     package_name = validate_package_name(request.package_name)
     instance_id = validate_instance_id(request.instance_id)
-    tags = validate_tag_list(request.tag)
+    tags = validate_instance_tag_list(request.tag)
 
     caller = auth.get_current_identity()
     for tag in tags:
@@ -715,7 +732,7 @@ class PackageRepositoryApi(remote.Service):
       name='searchInstances')
   def search_instances(self, request):
     """Returns package instances with given tag (in no particular order)."""
-    tag = validate_tag(request.tag)
+    tag = validate_instance_tag(request.tag)
     if request.package_name:
       package_name = validate_package_name(request.package_name)
     else:
@@ -738,6 +755,38 @@ class PackageRepositoryApi(remote.Service):
 
     found = self.service.search_by_tag(tag, package_name, callback)
     return SearchResponse(instances=[instance_to_proto(i) for i in found])
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          version=messages.StringField(2, required=True)),
+      ResolveVersionResponse,
+      path='instance/resolve',
+      http_method='GET',
+      name='resolveVersion')
+  def resolve_version(self, request):
+    """Returns instance ID of an existing instance given a tag or a ref."""
+    package_name = validate_package_name(request.package_name)
+    version = validate_instance_version(request.version)
+
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      raise auth.AuthorizationError()
+
+    pkg = self.service.get_package(package_name)
+    if pkg is None:
+      raise PackageNotFoundError()
+
+    ids = self.service.resolve_version(package_name, version, limit=2)
+    if not ids:
+      raise InstanceNotFoundError()
+    if len(ids) > 1:
+      return ResolveVersionResponse(
+          status=Status.AMBIGUOUS_VERSION,
+          error_message='More than one instance has tag "%s" set' % version)
+    return ResolveVersionResponse(instance_id=ids[0])
 
 
   ### ACL methods.

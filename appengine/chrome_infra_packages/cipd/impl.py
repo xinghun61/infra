@@ -458,6 +458,36 @@ class RepoService(object):
       found.append(inst)
     return found
 
+  def resolve_version(self, package_name, version, limit):
+    """Given an instance ID or a tag returns instance IDs that match it.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      version: version to resolve.
+      limit: maximum number of matching instance IDs to return.
+
+    Returns:
+      List of instance IDs (not ordered).
+    """
+    assert is_valid_instance_version(version), version
+
+    # Instance ID is already provided as input? Ensure the instance exists.
+    if is_valid_instance_id(version):
+      inst = self.get_instance(package_name, version)
+      return [inst.instance_id] if inst else []
+
+    # If looks like a tag, resolve it to a list of instance IDs.
+    if is_valid_instance_tag(version):
+      q = InstanceTag.query(
+          InstanceTag.tag == version,
+          ancestor=package_key(package_name))
+      return [
+        k.parent().string_id()
+        for k in q.iter(keys_only=True, limit=limit)
+      ]
+
+    raise AssertionError('Impossible state')
+
   def process_instance(self, package_name, instance_id, processors):
     """Performs the post processing step creating ProcessingResult entities.
 
@@ -563,6 +593,11 @@ def is_valid_instance_tag(tag):
     return False
   # Care only about the key. Value can be anything (including empty string).
   return bool(TAG_KEY_RE.match(tag.split(':', 1)[0]))
+
+
+def is_valid_instance_version(version):
+  """True if string looks like an instance ID or a tag."""
+  return is_valid_instance_id(version) or is_valid_instance_tag(version)
 
 
 def get_repo_service():

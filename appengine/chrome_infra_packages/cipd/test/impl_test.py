@@ -447,6 +447,36 @@ class TestRepoService(testing.AppengineTestCase):
     found = self.service.search_by_tag('tag1:value1')
     self.assertFalse(found)
 
+  def add_tagged_instance(self, package_name, instance_id, tags):
+    self.service.register_instance(
+        package_name=package_name,
+        instance_id=instance_id,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.attach_tags(
+        package_name=package_name,
+        instance_id=instance_id,
+        tags=tags,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+
+  def test_resolve_version(self):
+    self.add_tagged_instance('a/b', 'a'*40, ['tag1:value1', 'tag2:value2'])
+    self.add_tagged_instance('a/b', 'b'*40, ['tag1:value1'])
+    self.add_tagged_instance('a/b', 'c'*40, ['tag1:value1'])
+
+    self.assertEqual([], self.service.resolve_version('a/b', 'd'*40, 2))
+    self.assertEqual([], self.service.resolve_version('a/b', 'tag3:', 2))
+    self.assertEqual([], self.service.resolve_version('a/b/c/d', 'a'*40, 2))
+    self.assertEqual(['a'*40], self.service.resolve_version('a/b', 'a'*40, 2))
+    self.assertEqual(
+        ['a'*40], self.service.resolve_version('a/b', 'tag2:value2', 2))
+
+    # No order guarantees when multiple results match.
+    res = self.service.resolve_version('a/b', 'tag1:value1', 2)
+    self.assertEqual(2, len(res))
+    self.assertTrue(set(['a'*40, 'b'*40, 'c'*40]).issuperset(res))
+
 
 class MockedCASService(object):
   def __init__(self):

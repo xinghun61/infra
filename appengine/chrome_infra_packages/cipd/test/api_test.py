@@ -889,7 +889,6 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'package_name': 'a/b',
       })
 
-
   def test_search_no_access_globally(self):
     def mocked_can_fetch_instance(pkg, _ident):
       return pkg == 'd/e'
@@ -912,6 +911,81 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         },
       ],
       'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_resolve_version_works_instance_id(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'a'*40,
+    })
+    self.assertEqual({
+      'instance_id': 'a'*40,
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_resolve_version_works_tag(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'tag1:',
+    })
+    self.assertEqual({
+      'instance_id': 'a'*40,
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_resolve_version_not_valid_version(self):
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'NOT A VALID VERSION',
+    })
+    self.assertEqual({
+      'error_message': 'Not a valid instance ID or tag: "NOT A VALID VERSION"',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_resolve_version_no_access(self):
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('resolve_version', {
+        'package_name': 'a/b',
+        'version': 'tag1:',
+      })
+
+  def test_resolve_version_no_package(self):
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'tag1:',
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_resolve_version_no_instance_id(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'b'*40,
+    })
+    self.assertEqual({'status': 'INSTANCE_NOT_FOUND'}, resp.json_body)
+
+  def test_resolve_version_no_tag(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'tag2:',
+    })
+    self.assertEqual({'status': 'INSTANCE_NOT_FOUND'}, resp.json_body)
+
+  def test_resolve_version_ambigious_tag(self):
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'a'*40)
+    self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1), 'b'*40)
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'tag1:',
+    })
+    self.assertEqual({
+      'error_message': 'More than one instance has tag "tag1:" set',
+      'status': 'AMBIGUOUS_VERSION',
     }, resp.json_body)
 
 
