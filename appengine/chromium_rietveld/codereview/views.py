@@ -3503,8 +3503,10 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     to.remove(my_email)
   if my_email in cc:
     cc.remove(my_email)
+
   issue_id = issue.key.id()
   subject = issue.mail_subject()
+
   patch = None
   if attach_patch:
     subject = 'PATCH: ' + subject
@@ -3632,6 +3634,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
           if previous_sender not in send_args['to']:
             send_args['to'].append(previous_sender)
           send_args['sender'] = django_settings.RIETVELD_INCOMING_MAIL_ADDRESS
+          logging.info('Replacing sender by %s' % send_args['sender'])
         else:
           raise
       except apiproxy_errors.DeadlineExceededError:
@@ -3639,6 +3642,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
         # deadline of an API call is reached (e.g. for mail it's
         # something about 5 seconds). It's not the same as the lethal
         # runtime.DeadlineExeededError.
+        logging.warn('Deadline exceeded, retrying...')
         attempts += 1
         if attempts >= 3:
           raise
@@ -4452,10 +4456,15 @@ def set_client_id_and_secret(request):
       client_id = form.cleaned_data['client_id']
       client_secret = form.cleaned_data['client_secret']
       additional_client_ids = form.cleaned_data['additional_client_ids']
+      logging.info('Adding client_id: %s' % client_id)
       auth_utils.SecretKey.set_config(client_id, client_secret,
                                       additional_client_ids)
+    else:
+      logging.info('Form is invalid')
     return HttpResponseRedirect(reverse(set_client_id_and_secret))
   else:
+    client_id, client_secret, additional_client_ids = \
+      auth_utils.SecretKey.get_config()
     form = ClientIDAndSecretForm(initial={
       'client_id': client_id,
       'client_secret': client_secret,

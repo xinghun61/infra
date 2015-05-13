@@ -104,7 +104,7 @@ def _get_client_id(tries=3):
       if attempt == tries - 1:
         raise
 
-  
+
 def get_current_rietveld_oauth_user():
   """Gets the current OAuth 2.0 user associated with a request.
 
@@ -118,9 +118,15 @@ def get_current_rietveld_oauth_user():
   # TODO(dhermes): Address local environ here as well.
   try:
     current_client_id = _get_client_id()
-  except oauth.Error:
+  except oauth.Error as e:
+    logging.debug('OAuth error occurred: %s' % str(e.__class__.__name__))
     return
 
+  # SecretKey.get_config() below returns client ids of service accounts that
+  # are authorized to connect to this instance.
+  # If modifying the following lines, please look for places where
+  # 'developer.gserviceaccount.com' (service account domain) is used. Some
+  # code relies on the filtering performed here.
   accepted_client_id, _, additional_client_ids = SecretKey.get_config()
   if (accepted_client_id != current_client_id and
       current_client_id not in additional_client_ids):
@@ -131,7 +137,7 @@ def get_current_rietveld_oauth_user():
   try:
     return oauth.get_current_user(EMAIL_SCOPE)
   except oauth.Error:
-    logging.warning('A Client ID was retrieved with no corresponsing user.')
+    logging.warning('A Client ID was retrieved with no corresponding user.')
 
 
 def get_current_user():

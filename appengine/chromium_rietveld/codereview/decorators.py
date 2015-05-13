@@ -354,6 +354,7 @@ def xsrf_required(func):
     if request.method == 'POST':
       post_token = request.POST.get('xsrf_token')
       if not post_token:
+        logging.warning('Rejecting request because of missing XSRF token')
         return HttpTextResponse('Missing XSRF token.', status=403)
       account = models.Account.current_user_account
       if not account:
@@ -372,6 +373,7 @@ def xsrf_required(func):
               msg.append(u'%s: %s' % (key, request.POST[key]))
             msg.extend([u'', u'-'*10,
                         u'Please reload the previous page and post again.'])
+            logging.warning('Rejecting request because of invalid XSRF token')
           return HttpTextResponse(u'\n'.join(msg), status=403)
     return func(request, *args, **kwds)
 
