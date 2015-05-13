@@ -17,6 +17,8 @@ from infra.libs.ts_mon.interface import add_argparse_options
 from infra.libs.ts_mon.interface import process_argparse_options
 from infra.libs.ts_mon.interface import send
 from infra.libs.ts_mon.interface import flush
+from infra.libs.ts_mon.interface import register
+from infra.libs.ts_mon.interface import unregister
 
 from infra.libs.ts_mon.target import DeviceTarget
 from infra.libs.ts_mon.target import TaskTarget
@@ -30,3 +32,4 @@ from infra.libs.ts_mon.metric import FloatMetric
 
 from infra.libs.ts_mon.monitor import ApiMonitor
 from infra.libs.ts_mon.monitor import DiskMonitor
+from infra.libs.ts_mon.monitor import NullMonitor
