@@ -22,6 +22,7 @@
   "failed-patch": [],
   "failed-presubmit-bot": [],
   "failed-presubmit-check": [],
+  "failed-remote-ref-presubmit": [],
   "failed-to-trigger": [],
   "failed-unknown": [],
   "false-rejections": [],

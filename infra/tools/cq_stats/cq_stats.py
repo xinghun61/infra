@@ -78,6 +78,11 @@ VALID_REASONS = collections.OrderedDict([
         'item': 'failures',
         'message': 'failed presubmit bot (often due to missing OWNERS LGTM)',
     }),
+    ('failed-remote-ref-presubmit', {
+        'item': 'failures',
+        'message': 'did not contain NOTRY & NOPRESUBMIT for non master remote '
+                   'ref',
+    }),
 ])
 FLAKY_REASONS = collections.OrderedDict([
     ('failed-commit', {
@@ -733,6 +738,8 @@ def derive_patch_stats(end_date, patch_id):
         attempt['failed-patch'] = True
       if 'Presubmit check' in message:
         attempt['failed-presubmit-check'] = True
+      if 'CLs for remote refs other than refs/heads/master' in message:
+        attempt['failed-remote-ref-presubmit'] = True
       if 'Try jobs failed' in message:
         if 'presubmit' in message:
           attempt['failed-presubmit-bot'] = True
