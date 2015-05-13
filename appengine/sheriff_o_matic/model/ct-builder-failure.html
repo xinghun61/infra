@@ -15,4 +15,10 @@ function CTBuilderFailure(tree, masterUrl, builder, state, timeSinceLastUpdate, 
   this.pendingBuilds = pendingBuilds;
   this.hoursSinceLastUpdate = (timeSinceLastUpdate / (60 * 60)).toFixed(2);
 }
+
+CTBuilderFailure.prototype.annotations = function() {
+  return this.annotation ? [this.annotation] : [];
+};
+
+
 </script>

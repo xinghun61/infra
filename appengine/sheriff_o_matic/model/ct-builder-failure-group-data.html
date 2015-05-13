@@ -18,8 +18,7 @@ function CTBuilderFailureGroupData(failure, bot, examineUrl) {
 };
 
 CTBuilderFailureGroupData.prototype.getAnnotations = function() {
-  // FIXME: Merge in annotations! crbug.com/413499
-  return [];
+  return this.annotation ? [this.annotation] : [];
 };
 
 CTBuilderFailureGroupData.prototype.failureKeys = function() {

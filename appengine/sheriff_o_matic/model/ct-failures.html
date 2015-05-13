@@ -140,7 +140,7 @@ CTFailures.prototype.update = function() {
     }.bind(this));
 
     sheriff_data.stale_builder_alerts.forEach(function(alert) {
-      this._processBuilderFailure(newFailures, alert);
+      this._processBuilderFailure(newFailures, alert, annotations);
     }.bind(this));
 
     // Sort failure groups so that newer failures are shown at the top
@@ -189,7 +189,7 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
       failure_array = trooper_failures;
     }
     failuresByTree.forEach(function(failure) {
-      if (failure.category == 'builder' || failure.category == 'master') {
+      if (failure.category == 'builder' || failure.category == 'master' || failure.category=='snoozed') {
         failure_array.push(failure);
       }
     });
@@ -314,7 +314,7 @@ CTFailures.prototype._processFailuresForRangeGroup = function(newFailures, range
   }.bind(this));
 };
 
-CTFailures.prototype._processBuilderFailure = function(newFailures, alert) {
+CTFailures.prototype._processBuilderFailure = function(newFailures, alert, annotations) {
   var timeSinceLastUpdate = (this.lastUpdateDate.valueOf() / 1000) - alert.last_update_time;
 
   var failure;
@@ -328,6 +328,8 @@ CTFailures.prototype._processBuilderFailure = function(newFailures, alert) {
     failure = new CTMasterFailure(alert.tree, alert.master_url, timeSinceLastUpdate);
     data = new CTMasterFailureGroupData(failure, alert.master_url);
   }
+  data.annotation = annotations[failure.key];
+
   if (!newFailures[alert.tree])
     newFailures[alert.tree] = [];
   newFailures[alert.tree].push(new CTFailureGroup(alert.tree, data, 'builder'));
