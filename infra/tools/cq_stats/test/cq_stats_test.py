@@ -114,6 +114,13 @@ class TestCQStats(auto_stub.TestCase):
     self.assertIsNone(cq_stats.date_from_git('bad time'))
     self.assertEqual(cq_stats.date_from_git('Tue Oct 21 22:38:39 2014'),
                      datetime.datetime(2014, 10, 21, 22, 38, 39))
+    # Test dates with offsets.
+    self.assertEqual(cq_stats.date_from_git('Tue Oct 21 22:38:39 2014 +0100'),
+                     datetime.datetime(2014, 10, 21, 21, 38, 39))
+    self.assertEqual(cq_stats.date_from_git('Tue Oct 21 22:38:39 2014 -0100'),
+                     datetime.datetime(2014, 10, 21, 23, 38, 39))
+    self.assertEqual(cq_stats.date_from_git('Tue Oct 21 22:38:39 2014 -0111'),
+                     datetime.datetime(2014, 10, 21, 23, 49, 39))
 
   def test_fetch_json(self):
     self.mock(time, 'sleep', lambda n: None)

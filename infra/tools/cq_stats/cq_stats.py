@@ -40,6 +40,11 @@ PROJECTS = {
         'type': 'svn',
         'repo': 'svn://svn.chromium.org/blink/trunk/',
     },
+    'skia': {
+        'tree-status': TREE_STATUS_URL % 'skia-tree',
+        'type': 'git',
+        'repo': 'https://skia.googlesource.com/skia',
+    },
 }
 # Map of intervals to minutes.
 INTERVALS = {
@@ -184,8 +189,12 @@ def date_from_git(date_str):
     return None
   date = None
   try:
-    date = datetime.datetime.strptime(
-        date_str, '%a %b %d %H:%M:%S %Y')
+    date = dateutil.parser.parse(date_str)
+    if date.tzinfo:
+      # Convert date to UTC timezone.
+      date = date.astimezone(dateutil.tz.tzutc())
+      # Make date offset-naive like the other date objects in this module.
+      date = date.replace(tzinfo=None)
   except ValueError:
     pass
   return date
