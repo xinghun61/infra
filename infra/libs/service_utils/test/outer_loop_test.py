@@ -6,6 +6,7 @@ import time
 
 from testing_support import auto_stub
 
+from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
 
 
@@ -19,6 +20,12 @@ class TestOuterLoop(auto_stub.TestCase):
       self.now += t
     self.mock(time, 'sleep', mocked_sleep)
     self.mock(time, 'time', lambda: self.now)
+    # TODO(agable): Switch to using infra.libs.ts_mon.stubs when that exists.
+    ts_mon.interface._state.metrics = set()
+
+  def tearDown(self):
+    super(TestOuterLoop, self).tearDown()
+    ts_mon.interface._state.metrics = set()
 
   def testLongUnsuccessfulJobStillFails(self):
     ret = outer_loop.loop(

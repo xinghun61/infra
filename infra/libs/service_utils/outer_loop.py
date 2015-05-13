@@ -8,6 +8,8 @@ import collections
 import logging
 import time
 
+from infra.libs import ts_mon
+
 LOGGER = logging.getLogger(__name__)
 
 LoopResults = collections.namedtuple(
@@ -45,6 +47,8 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   failed = False
   loop_count = 0
   error_count = 0
+  count_metric = ts_mon.CounterMetric('proc/outer_loop/count')
+  success_metric = ts_mon.BooleanMetric('proc/outer_loop/success')
   try:
     while True:
       # Log that new attempt is starting.
@@ -60,7 +64,10 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
       # Do it. Abort if number of consecutive errors is too large.
       attempt_success = False
       try:
-        attempt_success = task()
+        with ts_mon.ScopedIncrementCounter(count_metric) as cm:
+          attempt_success = task()
+          if not attempt_success:  # pragma: no cover
+            cm.set_failure()       # Due to branch coverage bug in coverage.py
       except KeyboardInterrupt:
         raise
       except Exception:
@@ -102,7 +109,9 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
     seen_success = True
     LOGGER.warn('Stopping due to KeyboardInterrupt')
 
-  return LoopResults(not failed and seen_success, error_count)
+  success = not failed and seen_success
+  success_metric.set(success)
+  return LoopResults(success, error_count)
 
 
 def add_argparse_options(parser):  # pragma: no cover

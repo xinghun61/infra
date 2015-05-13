@@ -14,6 +14,11 @@ class ErrorsTest(unittest.TestCase):
       raise errors.MonitoringDecreasingValueError('test', 1, 0)
     str(e.exception)
 
+  def test_duplicate_registration(self):
+    with self.assertRaises(errors.MonitoringDuplicateRegistrationError) as e:
+      raise errors.MonitoringDuplicateRegistrationError('test')
+    str(e.exception)
+
   def test_increment_unset_value(self):
     with self.assertRaises(errors.MonitoringIncrementUnsetValueError) as e:
       raise errors.MonitoringIncrementUnsetValueError('test')

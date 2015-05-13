@@ -23,6 +23,17 @@ class MonitoringDecreasingValueError(MonitoringError):
                 self.metric, self.new_value, self.old_value))
 
 
+class MonitoringDuplicateRegistrationError(MonitoringError):
+  """Raised when trying to register a metric with the same name as another."""
+
+  def __init__(self, metric):
+    self.metric = metric
+
+  def __str__(self):
+    return 'Different metrics with the same name "%s" were both registered.' % (
+        self.metric)
+
+
 class MonitoringIncrementUnsetValueError(MonitoringError):
   """Raised when trying to increment a metric which hasn't been set."""
 

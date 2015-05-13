@@ -38,6 +38,7 @@ import sys
 
 from monacq.proto import metrics_pb2
 
+from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor, NullMonitor
 from infra.libs.ts_mon.target import DeviceTarget, TaskTarget
@@ -223,8 +224,14 @@ def register(metric):
   This is called automatically by Metric's constructor - you don't need to call
   it manually.
   """
-  if metric not in _state.metrics:
-    _state.metrics.add(metric)
+  # If someone is registering the same metric object twice, that's okay, but
+  # registering two different metric objects with the same metric name is not.
+  if metric in _state.metrics:
+    return
+  if any([metric._name == m._name for m in _state.metrics]):
+    raise MonitoringDuplicateRegistrationError(metric._name)
+
+  _state.metrics.add(metric)
 
 
 def unregister(metric):

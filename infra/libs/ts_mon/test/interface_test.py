@@ -13,6 +13,7 @@ from monacq.proto import metrics_pb2
 
 import infra.libs.ts_mon.interface as interface
 
+from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
 from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 
@@ -200,20 +201,31 @@ class GlobalsTest(unittest.TestCase):
   @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
   def test_register_unregister(self, fake_state):
     fake_metric = mock.Mock()
-    other_fake_metric = mock.Mock()
-
     self.assertEqual(0, len(fake_state.metrics))
     interface.register(fake_metric)
-    self.assertEqual(1, len(fake_state.metrics))
-
-    # Registering the same one twice doesn't do anything
-    interface.register(fake_metric)
-    self.assertEqual(1, len(fake_state.metrics))
-
-    # Trying to unregister something that isn't registered raises an exception.
-    with self.assertRaises(KeyError):
-      interface.unregister(other_fake_metric)
-
     self.assertEqual(1, len(fake_state.metrics))
     interface.unregister(fake_metric)
     self.assertEqual(0, len(fake_state.metrics))
+
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
+  def test_identical_register(self, fake_state):
+    fake_metric = mock.Mock(_name='foo')
+    interface.register(fake_metric)
+    interface.register(fake_metric)
+    self.assertEqual(1, len(fake_state.metrics))
+
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
+  def test_duplicate_register_raises(self, fake_state):
+    fake_metric = mock.Mock(_name='foo')
+    phake_metric = mock.Mock(_name='foo')
+    interface.register(fake_metric)
+    with self.assertRaises(MonitoringDuplicateRegistrationError):
+      interface.register(phake_metric)
+    self.assertEqual(1, len(fake_state.metrics))
+
+  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
+  def test_unregister_missing_raises(self, fake_state):
+    fake_metric = mock.Mock(_name='foo')
+    self.assertEqual(0, len(fake_state.metrics))
+    with self.assertRaises(KeyError):
+      interface.unregister(fake_metric)

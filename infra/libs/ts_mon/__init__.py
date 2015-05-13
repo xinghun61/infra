@@ -4,6 +4,7 @@
 
 from infra.libs.ts_mon.errors import MonitoringError
 from infra.libs.ts_mon.errors import MonitoringDecreasingValueError
+from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
 from infra.libs.ts_mon.errors import MonitoringIncrementUnsetValueError
 from infra.libs.ts_mon.errors import MonitoringInvalidFieldTypeError
 from infra.libs.ts_mon.errors import MonitoringInvalidValueTypeError
