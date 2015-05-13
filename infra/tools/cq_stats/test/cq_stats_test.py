@@ -478,6 +478,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         attempt('Failed to commit', reason='commit'),
         attempt('Failed to apply patch'),
         attempt('Presubmit check'),
+        attempt('CLs for remote refs other than refs/heads/master'),
         attempt('Try jobs failed:\n test_dbg', reason='simple try job'),
         attempt('Try jobs failed:\n chromium_presubmit'),
         attempt('Exceeded time limit waiting for builds to trigger'),
