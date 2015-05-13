@@ -65,7 +65,9 @@
       background-color: #e98080;
     }
   </style>
-  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
     analysisCompleted = '{{analysis_completed}}' == 'True';
     analysisFailed = '{{analysis_failed}}' == 'True';
@@ -120,6 +122,15 @@
           $('.thumb-down').addClass('triaged').removeClass('triage');
         }
       }
+
+      $('#score-explanation-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width:600,
+      });
+      $('#score-info').click(function() {
+        $('#score-explanation-dialog').dialog('open');
+      });
     });
   </script>
 </head>
@@ -166,17 +177,17 @@
       <div id="analysis_result">
         <table id="failures">
           <tr>
-            <th rowspan="2">Step</th>
-            <th rowspan="2">First Failure</th>
-            <th rowspan="2">Last Pass<br>Before Failure</th>
+            <th rowspan="2" title="Failed step name">Step</th>
+            <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
+            <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
             <th colspan="7">Suspected CLs</th>
           </tr>
           <tr>
-            <th>Build Number</th>
-            <th>Repo Name</th>
-            <th>Commit</th>
-            <th>Score</th>
-            <th>Hints</th>
+            <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
+            <th title="The Git repo name of the CL">Repo Name</th>
+            <th title="Git commit position/hash">Commit</th>
+            <th title="The higher score, the more suspected">Score (<a id="score-info" href="javascript:">?</a>)</th>
+            <th title="Why this CL is related to the failure">Hints</th>
           </tr>
           <tbody>
           {% for failure in analysis_result.failures %}
@@ -184,10 +195,10 @@
               <tr>
                 <td>
                 {% if show_debug_info %}
-                <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
+                  <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% else %}
-                {{failure.step_name}}
-                {% endif %}         
+                  {{failure.step_name}}
+                {% endif %}
                 </td>
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
                 {% if failure.last_pass %}
@@ -202,10 +213,10 @@
               <tr>
                 <td rowspan="{{failure.suspected_cls|length}}">
                 {% if show_debug_info %}
-                <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
+                  <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% else %}
-                {{failure.step_name}}
-                {% endif %} 
+                  {{failure.step_name}}
+                {% endif %}
                 </td>
                 <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
                 {% if failure.last_pass %}
@@ -256,4 +267,14 @@
       </div>
     {% endif %}
   {% endif %}
+  <div id="score-explanation-dialog" title="Score Explanation">
+    The total score is a sum of scores for all hints.<br>
+    Rules to set a score to an hint:
+    <ul>
+      <li>5: The CL added or deleted a file that appears in the failure log.</li>
+      <li>2: The CL modified a file that appears in the failure log.</li>
+      <li>1: The CL modified a file that is related to another file appearing in the failure log. (eg: file.h vs file_unittest.cc or file_impl.cc)</li>
+    </ul>
+    (More rules will be added when implemented.)
+  </div>
 </body>
