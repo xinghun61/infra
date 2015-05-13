@@ -10,16 +10,8 @@ import time
 
 from monacq.proto import metrics_pb2
 
-from infra.libs.ts_mon.errors import MonitoringDecreasingValueError
-from infra.libs.ts_mon.errors import MonitoringIncrementUnsetValueError
-from infra.libs.ts_mon.errors import MonitoringInvalidFieldTypeError
-from infra.libs.ts_mon.errors import MonitoringInvalidValueTypeError
-from infra.libs.ts_mon.errors import MonitoringTooManyFieldsError
-from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
-
-from infra.libs.ts_mon.interface import register
-from infra.libs.ts_mon.interface import send
-from infra.libs.ts_mon.interface import unregister
+from infra.libs.ts_mon import errors
+from infra.libs.ts_mon import interface
 
 
 class Metric(object):
@@ -65,14 +57,14 @@ class Metric(object):
     self._target = target
     fields = fields or {}
     if len(fields) > 7:
-      raise MonitoringTooManyFieldsError(self._name, fields)
+      raise errors.MonitoringTooManyFieldsError(self._name, fields)
     self._fields = fields
     self._normalized_fields = self._normalize_fields(self._fields)
 
-    register(self)
+    interface.register(self)
 
   def unregister(self):
-    unregister(self)
+    interface.unregister(self)
 
   def serialize_to(self, collection_pb, default_target=None):
     """Add this Metric to a metrics_pb2.MetricsCollection protobuf.
@@ -100,7 +92,7 @@ class Metric(object):
       elif default_target:
         default_target._populate_target_pb(metric_pb)
       else:
-        raise MonitoringNoConfiguredTargetError(self._name)
+        raise errors.MonitoringNoConfiguredTargetError(self._name)
 
   def _populate_fields(self, metric, fields):
     """Fill in the fields attribute of a metric protocol buffer.
@@ -125,7 +117,7 @@ class Metric(object):
         field.type = metrics_pb2.MetricsField.INT
         field.int_value = value
       else:
-        raise MonitoringInvalidFieldTypeError(self._name, key, value)
+        raise errors.MonitoringInvalidFieldTypeError(self._name, key, value)
 
   def _normalize_fields(self, fields):
     """Merges the fields with the default fields and returns something hashable.
@@ -147,7 +139,7 @@ class Metric(object):
     all_fields.update(fields)
 
     if len(all_fields) > 7:
-      raise MonitoringTooManyFieldsError(self._name, all_fields)
+      raise errors.MonitoringTooManyFieldsError(self._name, all_fields)
 
     return tuple(sorted(all_fields.iteritems()))
 
@@ -159,7 +151,7 @@ class Metric(object):
       fields (dict): additional metric fields to complement those on self
     """
     self._values[self._normalize_fields(fields)] = value
-    send(self)
+    interface.send(self)
 
   def _populate_value(self, metric, value):
     """Fill in the the data values of a metric protocol buffer.
@@ -199,7 +191,7 @@ class StringMetric(Metric):
 
   def set(self, value, fields=None):
     if not isinstance(value, basestring):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     self._set_and_send_value(value, fields)
 
 
@@ -211,7 +203,7 @@ class BooleanMetric(Metric):
 
   def set(self, value, fields=None):
     if not isinstance(value, bool):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     self._set_and_send_value(value, fields)
 
   def toggle(self, fields=None):
@@ -227,7 +219,7 @@ class NumericMetric(Metric):  # pylint: disable=abstract-method
 
   def increment_by(self, step, fields=None):
     if self.get(fields) is None:
-      raise MonitoringIncrementUnsetValueError(self._name)
+      raise errors.MonitoringIncrementUnsetValueError(self._name)
     self.set(self.get(fields) + step, fields)
 
 
@@ -246,9 +238,9 @@ class CounterMetric(NumericMetric):
 
   def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     if value < self.get(fields):
-      raise MonitoringDecreasingValueError(
+      raise errors.MonitoringDecreasingValueError(
           self._name, self.get(fields), value)
     self._set_and_send_value(value, fields)
 
@@ -261,7 +253,7 @@ class GaugeMetric(NumericMetric):
 
   def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     self._set_and_send_value(value, fields)
 
 
@@ -280,9 +272,9 @@ class CumulativeMetric(NumericMetric):
 
   def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     if value < self.get(fields):
-      raise MonitoringDecreasingValueError(
+      raise errors.MonitoringDecreasingValueError(
           self._name, self.get(fields), value)
     self._set_and_send_value(float(value), fields)
 
@@ -295,5 +287,5 @@ class FloatMetric(NumericMetric):
 
   def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
-      raise MonitoringInvalidValueTypeError(self._name, value)
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
     self._set_and_send_value(float(value), fields)

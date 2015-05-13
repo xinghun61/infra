@@ -4,7 +4,7 @@
 
 import unittest
 
-import infra.libs.ts_mon.errors as errors
+from infra.libs.ts_mon import errors
 
 
 class ErrorsTest(unittest.TestCase):

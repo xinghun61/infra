@@ -11,11 +11,8 @@ import mock
 
 from monacq.proto import metrics_pb2
 
-import infra.libs.ts_mon.interface as interface
-
-from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
-from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
-from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
+from infra.libs.ts_mon import errors
+from infra.libs.ts_mon import interface
 
 
 class FakeState(interface.State):
@@ -33,8 +30,8 @@ class GlobalsTest(unittest.TestCase):
     interface._state = interface.State()
 
   @mock.patch('socket.getfqdn')
-  @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
-  @mock.patch('infra.libs.ts_mon.interface.DeviceTarget')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -53,8 +50,8 @@ class GlobalsTest(unittest.TestCase):
     self.assertEquals(args.ts_mon_flush, 'manual')
 
   @mock.patch('socket.getfqdn')
-  @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
-  @mock.patch('infra.libs.ts_mon.interface.DeviceTarget')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -71,7 +68,7 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('', '', 'foo')
     self.assertIs(interface._state.default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   def test_monitor_args(self, fake_monitor):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -84,7 +81,7 @@ class GlobalsTest(unittest.TestCase):
         '/path/to/creds.p8.json', 'https://foo.tld/api')
     self.assertIs(interface._state.global_monitor, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface.DiskMonitor')
+  @mock.patch('infra.libs.ts_mon.monitors.DiskMonitor')
   def test_dryrun_args(self, fake_monitor):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -95,8 +92,8 @@ class GlobalsTest(unittest.TestCase):
     fake_monitor.assert_called_once_with('foo.txt')
     self.assertIs(interface._state.global_monitor, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
-  @mock.patch('infra.libs.ts_mon.interface.DeviceTarget')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_device_args(self, fake_target, _fake_monitor):
     singleton = object()
     fake_target.return_value = singleton
@@ -111,8 +108,8 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('reg', 'net', 'host')
     self.assertIs(interface._state.default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface.ApiMonitor')
-  @mock.patch('infra.libs.ts_mon.interface.TaskTarget')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.targets.TaskTarget')
   def test_task_args(self, fake_target, _fake_monitor):
     singleton = object()
     fake_target.return_value = singleton
@@ -129,7 +126,7 @@ class GlobalsTest(unittest.TestCase):
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
     self.assertIs(interface._state.default_target, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface.NullMonitor')
+  @mock.patch('infra.libs.ts_mon.monitors.NullMonitor')
   def test_no_args(self, fake_monitor):
     singleton = object()
     fake_monitor.return_value = singleton
@@ -170,7 +167,7 @@ class GlobalsTest(unittest.TestCase):
   def test_send_all_raises(self):
     self.assertIsNone(interface._state.global_monitor)
     interface._state.flush_mode = 'all'
-    with self.assertRaises(MonitoringNoConfiguredMonitorError):
+    with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
       interface.send(mock.MagicMock())
 
   def test_send_manual_works(self):
@@ -195,7 +192,7 @@ class GlobalsTest(unittest.TestCase):
 
   def test_flush_raises(self):
     self.assertIsNone(interface._state.global_monitor)
-    with self.assertRaises(MonitoringNoConfiguredMonitorError):
+    with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
       interface.flush()
 
   @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
@@ -219,7 +216,7 @@ class GlobalsTest(unittest.TestCase):
     fake_metric = mock.Mock(_name='foo')
     phake_metric = mock.Mock(_name='foo')
     interface.register(fake_metric)
-    with self.assertRaises(MonitoringDuplicateRegistrationError):
+    with self.assertRaises(errors.MonitoringDuplicateRegistrationError):
       interface.register(phake_metric)
     self.assertEqual(1, len(fake_state.metrics))
 

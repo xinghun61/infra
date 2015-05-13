@@ -21,16 +21,16 @@ from infra.libs.ts_mon.interface import flush
 from infra.libs.ts_mon.interface import register
 from infra.libs.ts_mon.interface import unregister
 
-from infra.libs.ts_mon.target import DeviceTarget
-from infra.libs.ts_mon.target import TaskTarget
+from infra.libs.ts_mon.targets import DeviceTarget
+from infra.libs.ts_mon.targets import TaskTarget
 
-from infra.libs.ts_mon.metric import StringMetric
-from infra.libs.ts_mon.metric import BooleanMetric
-from infra.libs.ts_mon.metric import CounterMetric
-from infra.libs.ts_mon.metric import GaugeMetric
-from infra.libs.ts_mon.metric import CumulativeMetric
-from infra.libs.ts_mon.metric import FloatMetric
+from infra.libs.ts_mon.metrics import StringMetric
+from infra.libs.ts_mon.metrics import BooleanMetric
+from infra.libs.ts_mon.metrics import CounterMetric
+from infra.libs.ts_mon.metrics import GaugeMetric
+from infra.libs.ts_mon.metrics import CumulativeMetric
+from infra.libs.ts_mon.metrics import FloatMetric
 
-from infra.libs.ts_mon.monitor import ApiMonitor
-from infra.libs.ts_mon.monitor import DiskMonitor
-from infra.libs.ts_mon.monitor import NullMonitor
+from infra.libs.ts_mon.monitors import ApiMonitor
+from infra.libs.ts_mon.monitors import DiskMonitor
+from infra.libs.ts_mon.monitors import NullMonitor

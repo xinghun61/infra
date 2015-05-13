@@ -6,39 +6,39 @@ import unittest
 
 import mock
 
-import infra.libs.ts_mon.helpers as helpers
-import infra.libs.ts_mon.metric as metric
+from infra.libs.ts_mon import helpers
+from infra.libs.ts_mon import metrics
 
 
 class ScopedIncrementCounterTest(unittest.TestCase):
 
   def test_success(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with helpers.ScopedIncrementCounter(counter):
       pass
     counter.increment.assert_called_once_with({'status': 'success'})
 
   def test_exception(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with self.assertRaises(Exception):
       with helpers.ScopedIncrementCounter(counter):
         raise Exception()
     counter.increment.assert_called_once_with({'status': 'failure'})
 
   def test_custom_status(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with helpers.ScopedIncrementCounter(counter) as sc:
       sc.set_status('foo')
     counter.increment.assert_called_once_with({'status': 'foo'})
 
   def test_set_failure(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with helpers.ScopedIncrementCounter(counter) as sc:
       sc.set_failure()
     counter.increment.assert_called_once_with({'status': 'failure'})
 
   def test_custom_status_and_exception(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with self.assertRaises(Exception):
       with helpers.ScopedIncrementCounter(counter) as sc:
         sc.set_status('foo')
@@ -46,20 +46,20 @@ class ScopedIncrementCounterTest(unittest.TestCase):
     counter.increment.assert_called_once_with({'status': 'foo'})
 
   def test_multiple_custom_status_calls(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with helpers.ScopedIncrementCounter(counter) as sc:
       sc.set_status('foo')
       sc.set_status('bar')
     counter.increment.assert_called_once_with({'status': 'bar'})
 
   def test_custom_label_success(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with helpers.ScopedIncrementCounter(counter, 'a', 'b', 'c'):
       pass
     counter.increment.assert_called_once_with({'a': 'b'})
 
   def test_custom_label_exception(self):
-    counter = mock.Mock(metric.CounterMetric)
+    counter = mock.Mock(metrics.CounterMetric)
     with self.assertRaises(Exception):
       with helpers.ScopedIncrementCounter(counter, 'a', 'b', 'c'):
         raise Exception()

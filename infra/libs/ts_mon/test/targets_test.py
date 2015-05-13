@@ -6,14 +6,14 @@ import unittest
 
 from monacq.proto import metrics_pb2
 
-import infra.libs.ts_mon.target as target
+from infra.libs.ts_mon import targets
 
 
 class DeviceTargetTest(unittest.TestCase):
 
   def test_populate_target(self):
     pb = metrics_pb2.MetricsData()
-    t = target.DeviceTarget('reg', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     t._populate_target_pb(pb)
     self.assertEquals(pb.network_device.metro, 'reg')
     self.assertEquals(pb.network_device.hostgroup, 'net')
@@ -26,7 +26,7 @@ class TaskTargetTest(unittest.TestCase):
 
   def test_populate_target(self):
     pb = metrics_pb2.MetricsData()
-    t = target.TaskTarget('serv', 'job', 'reg', 'host')
+    t = targets.TaskTarget('serv', 'job', 'reg', 'host')
     t._populate_target_pb(pb)
     self.assertEquals(pb.task.service_name, 'serv')
     self.assertEquals(pb.task.job_name, 'job')

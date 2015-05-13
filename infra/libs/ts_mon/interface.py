@@ -38,10 +38,9 @@ import sys
 
 from monacq.proto import metrics_pb2
 
-from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
-from infra.libs.ts_mon.errors import MonitoringNoConfiguredMonitorError
-from infra.libs.ts_mon.monitor import ApiMonitor, DiskMonitor, NullMonitor
-from infra.libs.ts_mon.target import DeviceTarget, TaskTarget
+from infra.libs.ts_mon import errors
+from infra.libs.ts_mon import monitors
+from infra.libs.ts_mon import targets
 
 
 class State(object):
@@ -155,17 +154,18 @@ def process_argparse_options(args):
     args (argparse.Namespace): the result of parsing the command line arguments
   """
   if args.ts_mon_endpoint.startswith('file://'):
-    _state.global_monitor = DiskMonitor(args.ts_mon_endpoint[len('file://'):])
+    _state.global_monitor = monitors.DiskMonitor(
+        args.ts_mon_endpoint[len('file://'):])
   elif args.ts_mon_credentials:
-    _state.global_monitor = ApiMonitor(args.ts_mon_credentials,
-                                       args.ts_mon_endpoint)
+    _state.global_monitor = monitors.ApiMonitor(
+        args.ts_mon_credentials, args.ts_mon_endpoint)
   else:
     logging.warning('Monitoring is disabled because --ts-mon-credentials was '
                     'not set')
-    _state.global_monitor = NullMonitor()
+    _state.global_monitor = monitors.NullMonitor()
 
   if args.ts_mon_target_type == 'device':
-    _state.default_target = DeviceTarget(
+    _state.default_target = targets.DeviceTarget(
         args.ts_mon_device_region,
         args.ts_mon_device_network,
         args.ts_mon_device_hostname)
@@ -179,7 +179,7 @@ def process_argparse_options(args):
       print >> sys.stderr, ('Argument --ts-mon-task-job-name must be provided '
                             'when the target type is "task".')
       sys.exit(2)
-    _state.default_target = TaskTarget(
+    _state.default_target = targets.TaskTarget(
         args.ts_mon_task_service_name,
         args.ts_mon_task_job_name,
         args.ts_mon_task_region,
@@ -199,7 +199,7 @@ def send(metric):
     return
 
   if not _state.global_monitor:
-    raise MonitoringNoConfiguredMonitorError(metric._name)
+    raise errors.MonitoringNoConfiguredMonitorError(metric._name)
 
   proto = metrics_pb2.MetricsCollection()
   metric.serialize_to(proto, default_target=_state.default_target)
@@ -209,7 +209,7 @@ def send(metric):
 def flush():
   """Send all metrics that are registered in the application."""
   if not _state.global_monitor:
-    raise MonitoringNoConfiguredMonitorError(None)
+    raise errors.MonitoringNoConfiguredMonitorError(None)
 
   proto = metrics_pb2.MetricsCollection()
   for metric in _state.metrics:
@@ -229,7 +229,7 @@ def register(metric):
   if metric in _state.metrics:
     return
   if any([metric._name == m._name for m in _state.metrics]):
-    raise MonitoringDuplicateRegistrationError(metric._name)
+    raise errors.MonitoringDuplicateRegistrationError(metric._name)
 
   _state.metrics.add(metric)
 
