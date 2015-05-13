@@ -21,7 +21,8 @@ describe("TryJobResult", function() {
             key: "xyz",
             requester: "esprehn@chromium.org",
             buildnumber: 123,
-            revision: "HEAD"
+            revision: "HEAD",
+            build_properties: '{"summary": "a summary"}'
         };
     }
 
@@ -39,6 +40,7 @@ describe("TryJobResult", function() {
         assert.equal(tryResult.buildnumber, 123);
         assert.equal(tryResult.master, "tryserver.blink");
         assert.equal(tryResult.url, BUILDER_URL);
+        assert.equal(tryResult.summary, "a summary");
     });
     it("should convert results ids to names", function() {
         var data = createData();
