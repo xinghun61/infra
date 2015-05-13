@@ -70,8 +70,8 @@ TryJobResult.prototype.parseData = function(data)
     this.revision = data.revision || "";
     this.url = data.url || "";
     this.master = data.master || "";
-    this.summary = data.summary || "";
-    if (this.summary && this.summary.slice(-1) != ".")
-        this.summary += ".";
-    this.moreInfoUrl = data.moreInfoUrl || "";
+
+    var build_properties = JSON.parse(data.build_properties);
+    this.summary = build_properties.summary || "";
+    this.moreInfoUrl = build_properties.moreInfoURL || "";
 };
