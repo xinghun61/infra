@@ -81,6 +81,17 @@ def makedirs(path):
       raise
 
 
+def get_goos():
+  """Converts sys.platform to GOOS value."""
+  if sys.platform.startswith('win'):
+    return 'windows'
+  if sys.platform.startswith('darwin'):
+    return 'darwin'
+  if sys.platform.startswith('linux'):
+    return 'linux'
+  raise ValueError('Unrecognized platform: %s' % sys.platform)
+
+
 _package_info_cache = {}
 
 def get_package_info(package):
@@ -89,7 +100,7 @@ def get_package_info(package):
   *.infra_testing contains a JSON dict with the following keys:
   {
     // Do not run tests in this package at all. Default 'false'.
-    "skip_testing": boolean,
+    "skip_testing": a list of platforms (GOOS) to skip tests on,
     // Minimum allowed code coverage percentage, see below. Default '100'.
     "expected_coverage_min": number,
     // Maximum allowed code coverage percentage, see below. Default '100'.
@@ -140,14 +151,21 @@ def get_package_info(package):
 
 def should_skip(package):
   """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
-  return get_package_info(package).get('skip_testing', False)
+  skip = get_package_info(package).get('skip_testing', [])
+  if not isinstance(skip, list):
+    raise TypeError(
+        '%s: "skip_testing" should be a list of platforms to skip tests on, '
+        'got %r instead' % (package, skip))
+  return get_goos() in skip
+
 
 def get_build_tags(package):
-  """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
+  """Build tags to use when building a package, read from *.infra_testing."""
   tags = get_package_info(package).get('build_tags', ())
   if tags:
     return '-tags='+(','.join(tags))
   return None
+
 
 def get_expected_coverage(package):
   """Returns allowed code coverage percentage as a pair (min, max)."""
@@ -257,10 +275,28 @@ def run_tests(package_root, coverage_dir):
 
   # Code coverage report requires tests to be run against a single package, so
   # discover all individual packages.
-  packages = [p for p in list_packages(package_root) if not should_skip(p)]
-  if not packages:
+  skipped = []
+  packages = []
+  for p in list_packages(package_root):
+    if should_skip(p):
+      skipped.append(p)
+    else:
+      packages.append(p)
+
+  if skipped:
+    print 'Skipping these packages (see "skip_testing" in *.infra_testing):'
+    for p in sorted(skipped):
+      print '    %s' % p
+    print
+
+  if packages:
+    print 'About to run tests for: '
+    for p in sorted(packages):
+      print '    %s' % p
+  else:
     print 'No tests to run'
     return 0
+  print '-' * 80
 
   failed = []
   bad_cover = []
