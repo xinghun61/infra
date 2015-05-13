@@ -40,24 +40,31 @@ else:
   if not sys.argv[1] in ('list', 'train', 'test', 'debug'):
     usage()
 
-python_bin = os.path.join('ENV', 'bin', 'python')
-expect_tests_path = os.path.join('ENV', 'bin', 'expect_tests')
+if sys.platform == 'win32':
+  python_bin = os.path.join('ENV', 'Scripts', 'python')
+  expect_tests_path = os.path.join('ENV', 'Scripts', 'expect_tests')
+else:
+  python_bin = os.path.join('ENV', 'bin', 'python')
+  expect_tests_path = os.path.join('ENV', 'bin', 'expect_tests')
 
 args = sys.argv[1:]
 
 # Set up default list of packages/directories if none have been provided.
 if all([arg.startswith('--') for arg in sys.argv[2:]]):
   args.extend(['infra'])  # TODO(pgervais): add 'test/'
-  appengine_dirs = [os.path.join('appengine', d)
-                    for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))]
-
-  # Use relative paths to shorten the command-line
-  args.extend(itertools.chain(
+  if sys.platform != 'win32':
+    appengine_dirs = [
+      os.path.join('appengine', d)
+      for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))
+    ]
+    # Use relative paths to shorten the command-line
+    args.extend(itertools.chain(
       [d for d in appengine_dirs if os.path.isfile(os.path.join(d, 'app.yaml'))]
-  ))
+    ))
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
 if '--help' not in sys.argv and '-h' not in sys.argv:
-  subprocess.check_call(os.path.join('bootstrap', 'remove_orphaned_pycs.py'))
+  subprocess.check_call(
+      [python_bin, os.path.join('bootstrap', 'remove_orphaned_pycs.py')])
 sys.exit(subprocess.call([python_bin, expect_tests_path] + args))
