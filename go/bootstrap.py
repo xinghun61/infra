@@ -45,6 +45,9 @@ WORKSPACE = os.path.join(ROOT, 'go')
 # Platform depended suffix for executable files.
 EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 
+# On Windows we use git from depot_tools.
+GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
+
 # Pinned version of Go toolset to download.
 TOOLSET_VERSION = 'go1.4'
 
@@ -273,7 +276,7 @@ def maybe_patch_appengine_sdk(toolset_root, go_appengine):
                for p in os.listdir(os.path.join(WORKSPACE, 'patches'))
                if p.endswith('.patch')]
     for patch in patches:
-      subprocess.check_call(['git', 'apply'], cwd=toolset_root,
+      subprocess.check_call([GIT_EXE, 'apply'], cwd=toolset_root,
                             stdin=open(patch), stdout=sys.stderr)
 
     to_build = []
@@ -354,9 +357,8 @@ def ensure_tools_installed(toolset_root):
 
 def fetch_tools_code(workspace, spec):
   """Fetches goop and golint source code with dependencies."""
-  git_exe = 'git.bat' if sys.platform == 'win32' else 'git'
   def git(cmd, cwd):
-    subprocess.check_call([git_exe] + cmd, cwd=cwd, stdout=sys.stderr)
+    subprocess.check_call([GIT_EXE] + cmd, cwd=cwd, stdout=sys.stderr)
   for path, repo in sorted(spec.iteritems()):
     path = os.path.join(workspace, path.replace('/', os.sep))
     os.makedirs(path)
