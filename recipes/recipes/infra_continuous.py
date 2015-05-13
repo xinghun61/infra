@@ -7,6 +7,7 @@ DEPS = [
   'gclient',
   'json',
   'path',
+  'platform',
   'properties',
   'python',
   'step',
@@ -61,13 +62,17 @@ def GenSteps(api):
   api.gclient.runhooks()
 
   with api.step.defer_results():
-    api.python('infra python tests',
-               'test.py', ['test'], cwd=api.path['checkout'])
+    # TODO(crbug.com/487485): expect_test + venv is broken on Windows.
+    if not api.platform.is_win:
+      api.python('infra python tests',
+                 'test.py', ['test'], cwd=api.path['checkout'])
     # Note: env.py knows how to expand 'python' into sys.executable.
     api.python('infra go tests', api.path['checkout'].join('go', 'env.py'),
                ['python', api.path['checkout'].join('go', 'test.py')])
 
-  build_cipd_packages(api)
+  # TODO(crbug.com/481661): CIPD client doesn't support Windows yet.
+  if not api.platform.is_win:
+    build_cipd_packages(api)
 
 
 def GenTests(api):
@@ -94,6 +99,16 @@ def GenTests(api):
     ) +
     api.override_step_data(
         'build cipd packages', api.json.output(cipd_json_output))
+  )
+  yield (
+    api.test('infra_win') +
+    api.properties.git_scheduled(
+        buildername='infra-continuous',
+        buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    ) +
+    api.platform.name('win')
   )
   yield (
     api.test('infra_internal') +
