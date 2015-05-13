@@ -2,47 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package common
 
 import (
-	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func TestReadManifest(t *testing.T) {
-	var goodManifest = `{
-  "format_version": "1",
-  "package_name": "package/name"
-}`
-
-	Convey("readManifest can read valid manifest", t, func() {
-		manifest, err := readManifest(strings.NewReader(goodManifest))
-		So(manifest, ShouldResemble, Manifest{
-			FormatVersion: "1",
-			PackageName:   "package/name",
-		})
-		So(err, ShouldBeNil)
-	})
-
-	Convey("readManifest rejects invalid manifest", t, func() {
-		manifest, err := readManifest(strings.NewReader("I'm not a manifest"))
-		So(manifest, ShouldResemble, Manifest{})
-		So(err, ShouldNotBeNil)
-	})
-
-	Convey("writeManifest works", t, func() {
-		buf := &bytes.Buffer{}
-		m := Manifest{
-			FormatVersion: "1",
-			PackageName:   "package/name",
-		}
-		So(writeManifest(&m, buf), ShouldBeNil)
-		So(string(buf.Bytes()), ShouldEqual, goodManifest)
-	})
-}
 
 func TestValidatePackageName(t *testing.T) {
 	Convey("ValidatePackageName works", t, func() {
@@ -83,5 +51,22 @@ func TestValidateInstanceTag(t *testing.T) {
 		So(ValidateInstanceTag("good_tag:"), ShouldBeNil)
 		So(ValidateInstanceTag("good:tag:blah"), ShouldBeNil)
 		So(ValidateInstanceTag("good_tag:asdad/asdad/adad/a\\asdasdad"), ShouldBeNil)
+	})
+}
+
+func TestValidatePin(t *testing.T) {
+	Convey("TestValidatePin works", t, func() {
+		So(ValidatePin(Pin{"good/name", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}), ShouldBeNil)
+		So(ValidatePin(Pin{"BAD/name", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}), ShouldNotBeNil)
+		So(ValidatePin(Pin{"good/name", "aaaaaaaaaaa"}), ShouldNotBeNil)
+	})
+}
+
+func TestPinToString(t *testing.T) {
+	Convey("Pin.String works", t, func() {
+		So(
+			fmt.Sprintf("%s", Pin{"good/name", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}),
+			ShouldEqual,
+			"good/name:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	})
 }

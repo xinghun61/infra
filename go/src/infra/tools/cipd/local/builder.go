@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"archive/zip"
@@ -13,6 +13,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"infra/libs/logging"
+	"infra/tools/cipd/common"
 )
 
 // BuildInstanceOptions defines options for BuildInstance function.
@@ -23,6 +26,8 @@ type BuildInstanceOptions struct {
 	Output io.Writer
 	// Package name, e.g. 'infra/tools/cipd'.
 	PackageName string
+	// Log defines logger to use.
+	Log logging.Logger
 }
 
 // BuildInstance builds a new package instance for package named opts.PackageName
@@ -30,7 +35,10 @@ type BuildInstanceOptions struct {
 // to opts.Output. Some output may be written even if BuildInstance eventually
 // returns an error.
 func BuildInstance(opts BuildInstanceOptions) error {
-	err := ValidatePackageName(opts.PackageName)
+	if opts.Log == nil {
+		opts.Log = logging.DefaultLogger
+	}
+	err := common.ValidatePackageName(opts.PackageName)
 	if err != nil {
 		return err
 	}
@@ -60,12 +68,12 @@ func BuildInstance(opts BuildInstanceOptions) error {
 	}
 
 	// Write the final zip file.
-	return zipInputFiles(files, opts.Output)
+	return zipInputFiles(files, opts.Output, opts.Log)
 }
 
 // zipInputFiles deterministically builds a zip archive out of input files and
 // writes it to the writer. Files are written in the order given.
-func zipInputFiles(files []File, w io.Writer) error {
+func zipInputFiles(files []File, w io.Writer, log logging.Logger) error {
 	writer := zip.NewWriter(w)
 	defer writer.Close()
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"archive/zip"
@@ -12,16 +12,16 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+
+	"infra/tools/cipd/common"
 )
 
 // PackageInstance represents a binary package file.
 type PackageInstance interface {
 	// Close shuts down the package and its data provider.
 	Close() error
-	// PackageName returns package name, as defined in the manifest.
-	PackageName() string
-	// InstanceID returns id that identifies particular built of the package. It's a hash of the package data.
-	InstanceID() string
+	// Pin identifies package name and concreted package instance ID of this package file.
+	Pin() common.Pin
 	// Files returns a list of files inside the package.
 	Files() []File
 	// DataReader returns reader that reads raw package data.
@@ -186,8 +186,13 @@ func (inst *packageInstance) Close() error {
 	return nil
 }
 
-func (inst *packageInstance) InstanceID() string        { return inst.instanceID }
-func (inst *packageInstance) PackageName() string       { return inst.manifest.PackageName }
+func (inst *packageInstance) Pin() common.Pin {
+	return common.Pin{
+		PackageName: inst.manifest.PackageName,
+		InstanceID:  inst.instanceID,
+	}
+}
+
 func (inst *packageInstance) Files() []File             { return inst.files }
 func (inst *packageInstance) DataReader() io.ReadSeeker { return inst.data }
 

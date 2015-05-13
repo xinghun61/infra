@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"bytes"
@@ -15,6 +15,8 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	. "infra/tools/cipd/common"
 )
 
 func TestUtilities(t *testing.T) {
@@ -133,10 +135,7 @@ func TestDeployInstance(t *testing.T) {
 			inst := makeTestInstance("test/package", nil)
 			info, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
-			So(info, ShouldResemble, PackageState{
-				PackageName: "test/package",
-				InstanceID:  inst.InstanceID(),
-			})
+			So(info, ShouldResemble, inst.Pin())
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
 				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
@@ -145,9 +144,9 @@ func TestDeployInstance(t *testing.T) {
 
 		Convey("DeployInstance new non-empty package instance", func() {
 			inst := makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path", "data a", false),
-				makeTestFile("some/executable", "data b", true),
-				makeTestSymlink("some/symlink", "executable"),
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+				NewTestSymlink("some/symlink", "executable"),
 			})
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
@@ -173,9 +172,9 @@ func TestDeployInstance(t *testing.T) {
 
 		Convey("Redeploy same package instance", func() {
 			inst := makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path", "data a", false),
-				makeTestFile("some/executable", "data b", true),
-				makeTestSymlink("some/symlink", "executable"),
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+				NewTestSymlink("some/symlink", "executable"),
 			})
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
@@ -195,24 +194,24 @@ func TestDeployInstance(t *testing.T) {
 
 		Convey("DeployInstance package update", func() {
 			oldPkg := makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path", "data a old", false),
-				makeTestFile("some/executable", "data b old", true),
-				makeTestFile("old only", "data c old", true),
-				makeTestFile("mode change 1", "data d", true),
-				makeTestFile("mode change 2", "data e", false),
-				makeTestSymlink("symlink unchanged", "target"),
-				makeTestSymlink("symlink changed", "old target"),
-				makeTestSymlink("symlink removed", "target"),
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("old only", "data c old", true),
+				NewTestFile("mode change 1", "data d", true),
+				NewTestFile("mode change 2", "data e", false),
+				NewTestSymlink("symlink unchanged", "target"),
+				NewTestSymlink("symlink changed", "old target"),
+				NewTestSymlink("symlink removed", "target"),
 			})
 			oldPkg.instanceID = "0000000000000000000000000000000000000000"
 
 			newPkg := makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path", "data a new", false),
-				makeTestFile("some/executable", "data b new", true),
-				makeTestFile("mode change 1", "data d", false),
-				makeTestFile("mode change 2", "data d", true),
-				makeTestSymlink("symlink unchanged", "target"),
-				makeTestSymlink("symlink changed", "new target"),
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("mode change 1", "data d", false),
+				NewTestFile("mode change 2", "data d", true),
+				NewTestSymlink("symlink unchanged", "target"),
+				NewTestSymlink("symlink changed", "new target"),
 			})
 			newPkg.instanceID = "1111111111111111111111111111111111111111"
 
@@ -241,17 +240,17 @@ func TestDeployInstance(t *testing.T) {
 
 		Convey("DeployInstance two different packages", func() {
 			pkg1 := makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path", "data a old", false),
-				makeTestFile("some/executable", "data b old", true),
-				makeTestFile("pkg1 file", "data c", false),
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("pkg1 file", "data c", false),
 			})
 			pkg1.instanceID = "0000000000000000000000000000000000000000"
 
 			// Nesting in package names is allowed.
 			pkg2 := makeTestInstance("test/package/another", []File{
-				makeTestFile("some/file/path", "data a new", false),
-				makeTestFile("some/executable", "data b new", true),
-				makeTestFile("pkg2 file", "data d", false),
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("pkg2 file", "data d", false),
 			})
 			pkg2.instanceID = "1111111111111111111111111111111111111111"
 
@@ -320,23 +319,11 @@ func TestFindDeployed(t *testing.T) {
 			// Verify it is discoverable.
 			out, err := FindDeployed(tempDir)
 			So(err, ShouldBeNil)
-			So(out, ShouldResemble, []PackageState{
-				PackageState{
-					PackageName: "test",
-					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
-				},
-				PackageState{
-					PackageName: "test/pkg",
-					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
-				},
-				PackageState{
-					PackageName: "test/pkg/123",
-					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
-				},
-				PackageState{
-					PackageName: "test/pkg/456",
-					InstanceID:  "0123456789abcdef00000123456789abcdef0000",
-				},
+			So(out, ShouldResemble, []Pin{
+				{"test", "0123456789abcdef00000123456789abcdef0000"},
+				{"test/pkg", "0123456789abcdef00000123456789abcdef0000"},
+				{"test/pkg/123", "0123456789abcdef00000123456789abcdef0000"},
+				{"test/pkg/456", "0123456789abcdef00000123456789abcdef0000"},
 			})
 		})
 	})
@@ -356,17 +343,17 @@ func TestRemoveDeployed(t *testing.T) {
 		Convey("RemoveDeployed works", func() {
 			// Deploy some instance (to keep it).
 			inst := makeTestInstance("test/package/123", []File{
-				makeTestFile("some/file/path1", "data a", false),
-				makeTestFile("some/executable1", "data b", true),
+				NewTestFile("some/file/path1", "data a", false),
+				NewTestFile("some/executable1", "data b", true),
 			})
 			_, err := DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
 
 			// Deploy another instance (to remove it).
 			inst = makeTestInstance("test/package", []File{
-				makeTestFile("some/file/path2", "data a", false),
-				makeTestFile("some/executable2", "data b", true),
-				makeTestSymlink("some/symlink", "executable"),
+				NewTestFile("some/file/path2", "data a", false),
+				NewTestFile("some/executable2", "data b", true),
+				NewTestSymlink("some/symlink", "executable"),
 			})
 			_, err = DeployInstance(tempDir, inst)
 			So(err, ShouldBeNil)
@@ -407,7 +394,7 @@ func makeTestInstance(name string, files []File) *testPackageInstance {
 	if err != nil {
 		panic("Failed to write a manifest")
 	}
-	files = append(files, makeTestFile(manifestName, string(out.Bytes()), false))
+	files = append(files, NewTestFile(manifestName, string(out.Bytes()), false))
 	return &testPackageInstance{
 		packageName: name,
 		instanceID:  "0123456789abcdef00000123456789abcdef0000",
@@ -416,8 +403,7 @@ func makeTestInstance(name string, files []File) *testPackageInstance {
 }
 
 func (f *testPackageInstance) Close() error              { return nil }
-func (f *testPackageInstance) PackageName() string       { return f.packageName }
-func (f *testPackageInstance) InstanceID() string        { return f.instanceID }
+func (f *testPackageInstance) Pin() Pin                  { return Pin{f.packageName, f.instanceID} }
 func (f *testPackageInstance) Files() []File             { return f.files }
 func (f *testPackageInstance) DataReader() io.ReadSeeker { panic("Not implemented") }
 

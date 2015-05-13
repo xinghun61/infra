@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"sort"
 
 	"github.com/go-yaml/yaml"
+
+	"infra/tools/cipd/common"
 )
 
 // PackageDef defines how exactly to build a package: what files to put into it,
@@ -61,7 +63,7 @@ func LoadPackageDef(r io.Reader, vars map[string]string) (out PackageDef, err er
 	}
 
 	// Validate package name right away.
-	err = ValidatePackageName(out.Package)
+	err = common.ValidatePackageName(out.Package)
 	if err != nil {
 		return
 	}
@@ -108,7 +110,7 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 		}
 	}
 
-	log.Info("Enumerating files to zip...")
+	log.Infof("Enumerating files to zip...")
 	for _, chunk := range def.Data {
 		// Individual file.
 		if chunk.File != "" {
@@ -191,7 +193,7 @@ func makeExclusionFilter(startDir string, patterns []string) (ScanFilter, error)
 	return func(abs string) bool {
 		rel, err := filepath.Rel(startDir, abs)
 		if err != nil {
-			log.Warnf("Unexpected error when evaluating %s: %s", abs, err)
+			log.Warningf("Unexpected error when evaluating %s: %s", abs, err)
 			return true
 		}
 		// Do not evaluate paths outside of startDir.

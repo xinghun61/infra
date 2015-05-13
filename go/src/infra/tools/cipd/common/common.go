@@ -2,24 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+/*
+Package common defines structures and functions used by all other cipd/ packages.
+*/
+package common
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
-
-	"infra/libs/build"
 )
-
-// Name of the directory inside the package reserved for cipd stuff.
-const packageServiceDir = ".cipdpkg"
-
-// Name of the directory inside an installation root reserved for cipd stuff.
-const siteServiceDir = ".cipd"
 
 // packageNameRe is a regular expression for a package name: <word>/<word/<word>
 // Package names must be lower case.
@@ -28,16 +20,15 @@ var packageNameRe = regexp.MustCompile(`^([a-z0-9_\-]+/)*[a-z0-9_\-]+$`)
 // instanceTagKeyRe is a regular expression for a tag key.
 var instanceTagKeyRe = regexp.MustCompile(`^[a-z0-9_\-]+$`)
 
-// Name of the manifest file inside the package.
-const manifestName = packageServiceDir + "/manifest.json"
+// Pin uniquely identifies an instance of some package.
+type Pin struct {
+	PackageName string `json:"package"`
+	InstanceID  string `json:"instance_id"`
+}
 
-// Format version to write to the manifest file.
-const manifestFormatVersion = "1"
-
-// Manifest defines structure of manifest.json file.
-type Manifest struct {
-	FormatVersion string `json:"format_version"`
-	PackageName   string `json:"package_name"`
+// String converts pin to a human readable string.
+func (pin Pin) String() string {
+	return fmt.Sprintf("%s:%s", pin.PackageName, pin.InstanceID)
 }
 
 // ValidatePackageName returns error if a string doesn't look like a valid package name.
@@ -62,6 +53,17 @@ func ValidateInstanceID(s string) error {
 	return nil
 }
 
+// ValidatePin returns error if package name of instance id of a pin are not valid.
+func ValidatePin(pin Pin) error {
+	if err := ValidatePackageName(pin.PackageName); err != nil {
+		return err
+	}
+	if err := ValidateInstanceID(pin.InstanceID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ValidateInstanceTag returns error if a string doesn't look like a valid tag.
 func ValidateInstanceTag(t string) error {
 	chunks := strings.SplitN(t, ":", 2)
@@ -75,44 +77,4 @@ func ValidateInstanceTag(t string) error {
 		return fmt.Errorf("Invalid tag key in %q. Should be a lowercase word.", t)
 	}
 	return nil
-}
-
-// DefaultServiceURL returns URL to a backend to use by default.
-func DefaultServiceURL() string {
-	if build.ReleaseBuild {
-		return "https://chrome-infra-packages.appspot.com"
-	}
-	return "https://chrome-infra-packages-dev.appspot.com"
-}
-
-// readManifest reads and decodes manifest JSON from io.Reader.
-func readManifest(r io.Reader) (Manifest, error) {
-	blob, err := ioutil.ReadAll(r)
-	if err != nil {
-		return Manifest{}, err
-	}
-	manifest := Manifest{}
-	err = json.Unmarshal(blob, &manifest)
-	if err != nil {
-		return Manifest{}, err
-	}
-	return manifest, nil
-}
-
-// writeManifest encodes and writes manifest JSON to io.Writer.
-func writeManifest(m *Manifest, w io.Writer) error {
-	data, err := json.MarshalIndent(m, "", "  ")
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(data)
-	return err
-}
-
-// userAgent returns user agent string to send with each request.
-func userAgent() string {
-	if build.ReleaseBuild {
-		return "cipd 1.0 release"
-	}
-	return "cipd 1.0 testing"
 }

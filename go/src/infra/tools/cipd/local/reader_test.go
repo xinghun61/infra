@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"bytes"
@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	. "infra/tools/cipd/common"
 )
 
 func TestPackageReading(t *testing.T) {
@@ -36,8 +38,7 @@ func TestPackageReading(t *testing.T) {
 		}
 		So(inst, ShouldNotBeNil)
 		So(err, ShouldBeNil)
-		So(inst.PackageName(), ShouldEqual, "testing")
-		So(inst.InstanceID(), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
+		So(inst.Pin(), ShouldResemble, Pin{"testing", "23f2c4900785ac8faa2f38e473925b840e574ccc"})
 		So(len(inst.Files()), ShouldEqual, 1)
 
 		// Contains single manifest file.
@@ -106,10 +107,10 @@ func TestPackageReading(t *testing.T) {
 		out := bytes.Buffer{}
 		err := BuildInstance(BuildInstanceOptions{
 			Input: []File{
-				makeTestFile("testing/qwerty", "12345", false),
-				makeTestFile("abc", "duh", true),
-				makeTestSymlink("rel_symlink", "abc"),
-				makeTestSymlink("abs_symlink", "/abc/def"),
+				NewTestFile("testing/qwerty", "12345", false),
+				NewTestFile("abc", "duh", true),
+				NewTestSymlink("rel_symlink", "abc"),
+				NewTestSymlink("abs_symlink", "/abc/def"),
 			},
 			Output:      &out,
 			PackageName: "testing",

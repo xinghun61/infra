@@ -27,6 +27,8 @@ import (
 	"infra/libs/logging"
 
 	"infra/tools/cipd"
+	"infra/tools/cipd/common"
+	"infra/tools/cipd/local"
 
 	"github.com/maruel/subcommands"
 )
@@ -88,13 +90,20 @@ func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
 	f.StringVar(&opts.serviceAccountJSON, "service-account-json", "", "Path to JSON file with service account credentials to use.")
 }
 
-func (opts *ServiceOptions) makeClient() (*http.Client, error) {
-	authOpts := auth.Options{}
-	if opts.serviceAccountJSON != "" {
-		authOpts.Method = auth.ServiceAccountMethod
-		authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
+func (opts *ServiceOptions) makeCipdClient() (*cipd.Client, error) {
+	client := cipd.NewClient()
+	if opts.serviceURL != "" {
+		client.ServiceURL = opts.serviceURL
 	}
-	return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+	client.AuthenticatedClientFactory = func() (*http.Client, error) {
+		authOpts := auth.Options{}
+		if opts.serviceAccountJSON != "" {
+			authOpts.Method = auth.ServiceAccountMethod
+			authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
+		}
+		return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+	}
+	return client, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,8 +162,8 @@ func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
 // prepareInput processes InputOptions by collecting all files to be added to
 // a package and populating BuildInstanceOptions. Caller is still responsible to
 // fill out Output field of BuildInstanceOptions.
-func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
-	out := cipd.BuildInstanceOptions{}
+func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
+	out := local.BuildInstanceOptions{}
 	cmdErr := fmt.Errorf("Invalid command line options")
 
 	// Handle -name and -in if defined. Do not allow -pkg-def and -pkg-var in that case.
@@ -173,12 +182,12 @@ func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
 		}
 
 		// Simply enumerate files in the directory.
-		var files []cipd.File
-		files, err := cipd.ScanFileSystem(opts.inputDir, opts.inputDir, nil)
+		var files []local.File
+		files, err := local.ScanFileSystem(opts.inputDir, opts.inputDir, nil)
 		if err != nil {
 			return out, err
 		}
-		out = cipd.BuildInstanceOptions{
+		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: opts.packageName,
 		}
@@ -198,7 +207,7 @@ func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
 			return out, err
 		}
 		defer f.Close()
-		pkgDef, err := cipd.LoadPackageDef(f, opts.vars)
+		pkgDef, err := local.LoadPackageDef(f, opts.vars)
 		if err != nil {
 			return out, err
 		}
@@ -209,7 +218,7 @@ func (opts *InputOptions) prepareInput() (cipd.BuildInstanceOptions, error) {
 		if err != nil {
 			return out, err
 		}
-		out = cipd.BuildInstanceOptions{
+		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: pkgDef.Package,
 		}
@@ -237,7 +246,7 @@ func (tags *Tags) String() string {
 
 // Set is called by 'flag' package when parsing command line options.
 func (tags *Tags) Set(value string) error {
-	err := cipd.ValidateInstanceTag(value)
+	err := common.ValidateInstanceTag(value)
 	if err != nil {
 		return err
 	}
@@ -259,13 +268,6 @@ func (opts *TagsOptions) registerFlags(f *flag.FlagSet) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // JSONOutputOptions mixin.
-
-// PackageInfo is put into JSON output by subcommands. It describes a built
-// package instance.
-type PackageInfo struct {
-	Package    string `json:"package"`
-	InstanceID string `json:"instance_id"`
-}
 
 // JSONOutputOptions define -json-output option that is used to return
 // structured operation result back to caller.
@@ -344,8 +346,8 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	info, err := buildAndUploadInstance(c.InputOptions, c.TagsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(&info, err)
+	pin, err := buildAndUploadInstance(c.InputOptions, c.TagsOptions, c.ServiceOptions)
+	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		reportError("Error while uploading the package: %s", err)
 		return 1
@@ -353,10 +355,10 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
+func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
-		return PackageInfo{}, err
+		return common.Pin{}, err
 	}
 	defer func() {
 		f.Close()
@@ -364,7 +366,7 @@ func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, servic
 	}()
 	err = buildInstanceFile(f.Name(), inputOpts)
 	if err != nil {
-		return PackageInfo{}, err
+		return common.Pin{}, err
 	}
 	return registerInstanceFile(f.Name(), tagsOpts, serviceOpts)
 }
@@ -411,16 +413,15 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 		return err
 	}
 	defer f.Close()
-	desiredState, err := cipd.ParseDesiredState(f)
+	client, err := serviceOpts.makeCipdClient()
 	if err != nil {
 		return err
 	}
-	return cipd.EnsurePackages(cipd.EnsurePackagesOptions{
-		ServiceURL:    serviceOpts.serviceURL,
-		ClientFactory: func() (*http.Client, error) { return serviceOpts.makeClient() },
-		Root:          root,
-		Packages:      desiredState,
-	})
+	desiredState, err := client.ProcessEnsureFile(f)
+	if err != nil {
+		return err
+	}
+	return client.EnsurePackages(root, desiredState)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -455,17 +456,11 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 }
 
 func listACL(packagePath string, serviceOpts ServiceOptions) error {
-	client, err := serviceOpts.makeClient()
+	client, err := serviceOpts.makeCipdClient()
 	if err != nil {
 		return err
 	}
-	acls, err := cipd.FetchACL(cipd.FetchACLOptions{
-		ACLOptions: cipd.ACLOptions{
-			ServiceURL:  serviceOpts.serviceURL,
-			Client:      client,
-			PackagePath: packagePath,
-		},
-	})
+	acls, err := client.FetchACL(packagePath)
 	if err != nil {
 		return err
 	}
@@ -581,19 +576,11 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 		return nil
 	}
 
-	client, err := serviceOpts.makeClient()
+	client, err := serviceOpts.makeCipdClient()
 	if err != nil {
 		return err
 	}
-
-	err = cipd.ModifyACL(cipd.ModifyACLOptions{
-		ACLOptions: cipd.ACLOptions{
-			ServiceURL:  serviceOpts.serviceURL,
-			Client:      client,
-			PackagePath: packagePath,
-		},
-		Changes: changes,
-	})
+	err = client.ModifyACL(packagePath, changes)
 	if err != nil {
 		return err
 	}
@@ -635,8 +622,8 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 	// Print information about built package, also verify it is readable.
-	info, err := inspectInstanceFile(c.outputFile, false)
-	err = c.writeJSONOutput(&info, err)
+	pin, err := inspectInstanceFile(c.outputFile, false)
+	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		reportError("Error while building the package: %s", err)
 		return 1
@@ -659,7 +646,7 @@ func buildInstanceFile(instanceFile string, inputOpts InputOptions) error {
 	buildOpts.Output = out
 
 	// Build the package.
-	err = cipd.BuildInstance(buildOpts)
+	err = local.BuildInstance(buildOpts)
 	out.Close()
 	if err != nil {
 		os.Remove(instanceFile)
@@ -701,13 +688,13 @@ func (c *deployRun) Run(a subcommands.Application, args []string) int {
 }
 
 func deployInstanceFile(root string, instanceFile string) error {
-	inst, err := cipd.OpenInstanceFile(instanceFile, "")
+	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return err
 	}
 	defer inst.Close()
 	inspectInstance(inst, false)
-	_, err = cipd.DeployInstance(root, inst)
+	_, err = local.DeployInstance(root, inst)
 	return err
 }
 
@@ -741,7 +728,8 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	err := fetchInstanceFile(c.packageName, c.instanceID, c.outputPath, c.ServiceOptions)
+	pin := common.Pin{PackageName: c.packageName, InstanceID: c.instanceID}
+	err := fetchInstanceFile(pin, c.outputPath, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while fetching the package: %s", err)
 		return 1
@@ -749,7 +737,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func fetchInstanceFile(packageName, instanceID, instanceFile string, serviceOpts ServiceOptions) error {
+func fetchInstanceFile(pin common.Pin, instanceFile string, serviceOpts ServiceOptions) error {
 	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
@@ -762,18 +750,11 @@ func fetchInstanceFile(packageName, instanceID, instanceFile string, serviceOpts
 		}
 	}()
 
-	client, err := serviceOpts.makeClient()
+	client, err := serviceOpts.makeCipdClient()
 	if err != nil {
 		return err
 	}
-
-	err = cipd.FetchInstance(cipd.FetchInstanceOptions{
-		ServiceURL:  serviceOpts.serviceURL,
-		Client:      client,
-		PackageName: packageName,
-		InstanceID:  instanceID,
-		Output:      out,
-	})
+	err = client.FetchInstance(pin, out)
 	if err != nil {
 		return err
 	}
@@ -781,7 +762,7 @@ func fetchInstanceFile(packageName, instanceID, instanceFile string, serviceOpts
 	// Verify it (by checking that instanceID matches the file content).
 	out.Close()
 	ok = true
-	inst, err := cipd.OpenInstanceFile(instanceFile, instanceID)
+	inst, err := local.OpenInstanceFile(instanceFile, pin.InstanceID)
 	if err != nil {
 		os.Remove(instanceFile)
 		return err
@@ -814,8 +795,8 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	info, err := inspectInstanceFile(args[0], true)
-	err = c.writeJSONOutput(&info, err)
+	pin, err := inspectInstanceFile(args[0], true)
+	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		reportError("Error while inspecting the package: %s", err)
 		return 1
@@ -823,18 +804,18 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func inspectInstanceFile(instanceFile string, listFiles bool) (PackageInfo, error) {
-	inst, err := cipd.OpenInstanceFile(instanceFile, "")
+func inspectInstanceFile(instanceFile string, listFiles bool) (common.Pin, error) {
+	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
-		return PackageInfo{}, err
+		return common.Pin{}, err
 	}
 	defer inst.Close()
-	return inspectInstance(inst, listFiles), nil
+	inspectInstance(inst, listFiles)
+	return inst.Pin(), nil
 }
 
-func inspectInstance(inst cipd.PackageInstance, listFiles bool) PackageInfo {
-	logging.Infof("Package name: %s", inst.PackageName())
-	logging.Infof("Instance ID:  %s", inst.InstanceID())
+func inspectInstance(inst local.PackageInstance, listFiles bool) {
+	logging.Infof("Instance: %s", inst.Pin())
 	if listFiles {
 		logging.Infof("Package files:")
 		for _, f := range inst.Files() {
@@ -849,10 +830,6 @@ func inspectInstance(inst cipd.PackageInstance, listFiles bool) PackageInfo {
 				logging.Infof(" F %s", f.Name())
 			}
 		}
-	}
-	return PackageInfo{
-		Package:    inst.PackageName(),
-		InstanceID: inst.InstanceID(),
 	}
 }
 
@@ -883,8 +860,8 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	info, err := registerInstanceFile(args[0], c.TagsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(&info, err)
+	pin, err := registerInstanceFile(args[0], c.TagsOptions, c.ServiceOptions)
+	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		reportError("Error while registering the package: %s", err)
 		return 1
@@ -892,26 +869,26 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (PackageInfo, error) {
-	inst, err := cipd.OpenInstanceFile(instanceFile, "")
+func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
-		return PackageInfo{}, err
+		return common.Pin{}, err
 	}
 	defer inst.Close()
-	client, err := serviceOpts.makeClient()
+	client, err := serviceOpts.makeCipdClient()
 	if err != nil {
-		return PackageInfo{}, err
+		return common.Pin{}, err
 	}
-	logging.Infof("Registering package %s:%s", inst.PackageName(), inst.InstanceID())
-	info := inspectInstance(inst, false)
-	return info, cipd.RegisterInstance(cipd.RegisterInstanceOptions{
-		PackageInstance: inst,
-		Tags:            tagsOpts.tags,
-		UploadOptions: cipd.UploadOptions{
-			ServiceURL: serviceOpts.serviceURL,
-			Client:     client,
-		},
-	})
+	inspectInstance(inst, false)
+	err = client.RegisterInstance(inst)
+	if err != nil {
+		return common.Pin{}, err
+	}
+	err = client.AttachTagsWhenReady(inst.Pin(), tagsOpts.tags)
+	if err != nil {
+		return common.Pin{}, err
+	}
+	return inst.Pin(), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

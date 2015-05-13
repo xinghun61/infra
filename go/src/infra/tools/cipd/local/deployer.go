@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cipd
+package local
 
 import (
 	"crypto/sha1"
@@ -15,9 +15,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"infra/libs/logging"
+	"infra/tools/cipd/common"
 )
 
-// TODO(vadimsh): Make it work on Windows, verify it works on Mac.
+// TODO(vadimsh): Make it work on Windows.
 
 // TODO(vadimsh): How to handle path conflicts between two packages? Currently
 // the last one installed wins.
@@ -42,74 +45,67 @@ import (
 // Some efforts are made to make sure that during the deployment a window of
 // inconsistency in the file system is as small as possible.
 
-// Subdirectory of site root to extract packages to.
-const packagesDir = siteServiceDir + "/pkgs"
+// packagesDir is a subdirectory of site root to extract packages to.
+const packagesDir = SiteServiceDir + "/pkgs"
 
-// Name of a symlink that points to latest deployed version.
+// currentSymlink is a name of a symlink that points to latest deployed version.
 const currentSymlink = "_current"
 
-// PackageState contains information about single deployed package.
-type PackageState struct {
-	// PackageName identifies the package.
-	PackageName string
-	// InstanceID is ID of the installed package instance (SHA1 of package contents).
-	InstanceID string
-}
+// log is logger to use for logs produced by this file.
+// TODO(vadimsh): Propagate as parameter.
+var log = logging.DefaultLogger
 
-// DeployInstance installs a specific instance of a package (identified by
-// InstanceID()) into a site root directory. It unpacks the package into
-// <root>/.cipd/pkgs/*, and rearranges symlinks to point to unpacked files.
-// It tries to make it as "atomic" as possibly.
-func DeployInstance(root string, inst PackageInstance) (state PackageState, err error) {
-	root, err = filepath.Abs(filepath.Clean(root))
+// DeployInstance installs a specific instance of a package into a site root
+// directory. It unpacks the package into <root>/.cipd/pkgs/*, and rearranges
+// symlinks to point to unpacked files. It tries to make it as "atomic" as
+// possible. Returns information about the deployed instance.
+func DeployInstance(root string, inst PackageInstance) (common.Pin, error) {
+	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
-		return
+		return common.Pin{}, err
 	}
-	log.Infof("Deploying %s:%s into %s", inst.PackageName(), inst.InstanceID(), root)
+	pin := inst.Pin()
+	log.Infof("Deploying %s into %s", pin, root)
 
 	// Be paranoid.
-	err = ValidatePackageName(inst.PackageName())
+	err = common.ValidatePin(pin)
 	if err != nil {
-		return
-	}
-	err = ValidateInstanceID(inst.InstanceID())
-	if err != nil {
-		return
+		return common.Pin{}, err
 	}
 
 	// Remember currently deployed version (to remove it later). Do not freak out
 	// if it's not there (prevID is "" in that case).
 	oldFiles := makeStringSet()
-	prevID := findDeployedInstance(root, inst.PackageName(), oldFiles)
+	prevID := findDeployedInstance(root, pin.PackageName, oldFiles)
 
 	// Extract new version to a final destination.
 	newFiles := makeStringSet()
 	destPath, err := deployInstance(root, inst, newFiles)
 	if err != nil {
-		return
+		return common.Pin{}, err
 	}
 
 	// Switch '_current' symlink to point to a new package instance. It is a
 	// point of no return. The function must not fail going forward.
-	mainSymlinkPath := packagePath(root, inst.PackageName(), currentSymlink)
-	err = ensureSymlink(mainSymlinkPath, inst.InstanceID())
+	mainSymlinkPath := packagePath(root, pin.PackageName, currentSymlink)
+	err = ensureSymlink(mainSymlinkPath, pin.InstanceID)
 	if err != nil {
 		ensureDirectoryGone(destPath)
-		return
+		return common.Pin{}, err
 	}
 
 	// Asynchronously remove previous version (best effort).
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
-	if prevID != "" && prevID != inst.InstanceID() {
+	if prevID != "" && prevID != pin.InstanceID {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ensureDirectoryGone(packagePath(root, inst.PackageName(), prevID))
+			ensureDirectoryGone(packagePath(root, pin.PackageName, prevID))
 		}()
 	}
 
-	log.Infof("Adjusting symlinks for %s", inst.PackageName())
+	log.Infof("Adjusting symlinks for %s", pin.PackageName)
 
 	// Make symlinks in the site directory for all new files. Reference a package
 	// root via '_current' symlink (instead of direct destPath), to make
@@ -123,33 +119,30 @@ func DeployInstance(root string, inst PackageInstance) (state PackageState, err 
 	}
 
 	// Verify it's all right, read the manifest.
-	state, err = CheckDeployed(root, inst.PackageName())
-	if err == nil && state.InstanceID != inst.InstanceID() {
-		err = fmt.Errorf("Other package instance (%s) was deployed concurrently", state.InstanceID)
+	newPin, err := CheckDeployed(root, pin.PackageName)
+	if err == nil && newPin.InstanceID != pin.InstanceID {
+		err = fmt.Errorf("Other instance (%s) was deployed concurrently", newPin.InstanceID)
 	}
 	if err == nil {
-		log.Infof("Successfully deployed %s:%s", inst.PackageName(), inst.InstanceID())
+		log.Infof("Successfully deployed %s", pin)
 	} else {
-		log.Errorf("Failed to deploy %s:%s: %s", inst.PackageName(), inst.InstanceID(), err.Error())
+		log.Errorf("Failed to deploy %s: %s", pin, err)
 	}
-	return
+	return newPin, err
 }
 
 // CheckDeployed checks whether a given package is deployed and returns
 // information about it if it is.
-func CheckDeployed(root string, pkg string) (state PackageState, err error) {
-	state, err = readPackageState(packagePath(root, pkg))
-	if err != nil {
-		return
-	}
-	if state.PackageName != pkg {
+func CheckDeployed(root string, pkg string) (common.Pin, error) {
+	pin, err := readPackageState(packagePath(root, pkg))
+	if err == nil && pin.PackageName != pkg {
 		err = fmt.Errorf("Package path and package name in the manifest do not match")
 	}
-	return
+	return pin, err
 }
 
 // FindDeployed returns a list of packages deployed to a site root.
-func FindDeployed(root string) (out []PackageState, err error) {
+func FindDeployed(root string) (out []common.Pin, err error) {
 	root, err = filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return
@@ -167,18 +160,18 @@ func FindDeployed(root string) (out []PackageState, err error) {
 	}
 
 	// Read the package name from the package manifest. Skip broken stuff.
-	found := map[string]PackageState{}
+	found := map[string]common.Pin{}
 	keys := []string{}
 	for _, info := range infos {
 		// Attempt to read the manifest. If it is there -> valid package is found.
 		if info.IsDir() {
-			state, err := readPackageState(filepath.Join(pkgs, info.Name()))
+			pin, err := readPackageState(filepath.Join(pkgs, info.Name()))
 			if err == nil {
 				// Ignore duplicate entries, they can appear if someone messes with
 				// pkgs/* structure manually.
-				if _, ok := found[state.PackageName]; !ok {
-					keys = append(keys, state.PackageName)
-					found[state.PackageName] = state
+				if _, ok := found[pin.PackageName]; !ok {
+					keys = append(keys, pin.PackageName)
+					found[pin.PackageName] = pin
 				}
 			}
 		}
@@ -186,7 +179,7 @@ func FindDeployed(root string) (out []PackageState, err error) {
 
 	// Sort by package name.
 	sort.Strings(keys)
-	out = make([]PackageState, len(found))
+	out = make([]common.Pin, len(found))
 	for i, k := range keys {
 		out[i] = found[k]
 	}
@@ -202,7 +195,7 @@ func RemoveDeployed(root string, packageName string) error {
 	log.Infof("Removing %s from %s", packageName, root)
 
 	// Be paranoid.
-	err = ValidatePackageName(packageName)
+	err = common.ValidatePackageName(packageName)
 	if err != nil {
 		return err
 	}
@@ -244,13 +237,13 @@ func deployInstance(root string, inst PackageInstance, files stringSet) (string,
 	// Extract new version to a final destination. ExtractPackageInstance knows
 	// how to build full paths and how to atomically extract a package. No need
 	// to delete garbage if it fails.
-	destPath := packagePath(root, inst.PackageName(), inst.InstanceID())
+	destPath := packagePath(root, inst.Pin().PackageName, inst.Pin().InstanceID)
 	err := ExtractInstance(inst, NewFileSystemDestination(destPath))
 	if err != nil {
 		return "", err
 	}
 	// Enumerate files inside. Nuke it and fail if it's unreadable.
-	err = scanPackageDir(packagePath(root, inst.PackageName(), inst.InstanceID()), files)
+	err = scanPackageDir(packagePath(root, inst.Pin().PackageName, inst.Pin().InstanceID), files)
 	if err != nil {
 		ensureDirectoryGone(destPath)
 		return "", err
@@ -270,12 +263,12 @@ func linkFilesToRoot(root string, packageRoot string, files stringSet) {
 		// E.g. ../.cipd/pkgs/name/_current/bin/tool.
 		targetRel, err := filepath.Rel(filepath.Dir(symlinkAbs), targetAbs)
 		if err != nil {
-			log.Warnf("Can't get relative path from %s to %s", filepath.Dir(symlinkAbs), targetAbs)
+			log.Warningf("Can't get relative path from %s to %s", filepath.Dir(symlinkAbs), targetAbs)
 			continue
 		}
 		err = ensureSymlink(symlinkAbs, targetRel)
 		if err != nil {
-			log.Warnf("Failed to create symlink for %s", relPath)
+			log.Warningf("Failed to create symlink for %s", relPath)
 			continue
 		}
 	}
@@ -307,7 +300,7 @@ func packagePath(root string, pkg string, rest ...string) string {
 // components of the package name + stripped SHA1 of the whole package name.
 func packageNameDigest(pkg string) string {
 	// Be paranoid.
-	err := ValidatePackageName(pkg)
+	err := common.ValidatePackageName(pkg)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -329,34 +322,32 @@ func packageNameDigest(pkg string) string {
 }
 
 // readPackageState reads package manifest of a deployed package instance and
-// returns corresponding PackageState object.
-func readPackageState(packageDir string) (state PackageState, err error) {
+// returns corresponding Pin object.
+func readPackageState(packageDir string) (common.Pin, error) {
 	// Resolve _current symlink to a concrete instance ID.
 	current, err := os.Readlink(filepath.Join(packageDir, currentSymlink))
 	if err != nil {
-		return
+		return common.Pin{}, err
 	}
-	err = ValidateInstanceID(current)
+	err = common.ValidateInstanceID(current)
 	if err != nil {
-		err = fmt.Errorf("Symlink target doesn't look like a valid instance id")
-		return
+		return common.Pin{}, fmt.Errorf("Symlink target doesn't look like a valid instance id")
 	}
 	// Read the manifest from the instance directory.
 	manifestPath := filepath.Join(packageDir, current, filepath.FromSlash(manifestName))
 	r, err := os.Open(manifestPath)
 	if err != nil {
-		return
+		return common.Pin{}, err
 	}
 	defer r.Close()
 	manifest, err := readManifest(r)
 	if err != nil {
-		return
+		return common.Pin{}, err
 	}
-	state = PackageState{
+	return common.Pin{
 		PackageName: manifest.PackageName,
 		InstanceID:  current,
-	}
-	return
+	}, nil
 }
 
 // ensureSymlink atomically creates a symlink pointing to a target. It will
@@ -405,7 +396,7 @@ func scanPackageDir(root string, out stringSet) error {
 		if err != nil {
 			return err
 		}
-		if rel == packageServiceDir || rel == siteServiceDir {
+		if rel == packageServiceDir || rel == SiteServiceDir {
 			return filepath.SkipDir
 		}
 		if info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
@@ -422,14 +413,14 @@ func ensureDirectoryGone(path string) error {
 	err := os.Rename(path, temp)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.Warnf("Failed to rename directory %s: %v", path, err)
+			log.Warningf("Failed to rename directory %s: %v", path, err)
 			return err
 		}
 		return nil
 	}
 	err = os.RemoveAll(temp)
 	if err != nil {
-		log.Warnf("Failed to remove directory %s: %v", temp, err)
+		log.Warningf("Failed to remove directory %s: %v", temp, err)
 		return err
 	}
 	return nil
@@ -439,7 +430,7 @@ func ensureDirectoryGone(path string) error {
 func ensureFileGone(path string) error {
 	err := os.Remove(path)
 	if err != nil && !os.IsNotExist(err) {
-		log.Warnf("Failed to remove %s", path)
+		log.Warningf("Failed to remove %s", path)
 		return err
 	}
 	return nil
