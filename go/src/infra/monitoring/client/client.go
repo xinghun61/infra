@@ -22,6 +22,27 @@ var (
 	log = logrus.New()
 )
 
+// BuilderURL returns the builder URL for the given master and builder.
+func BuilderURL(master, builder string) string {
+	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", master, oldEscape(builder))
+}
+
+// BuildURL returns the build URL for the given master, builder and build number.
+func BuildURL(master, builder string, buildNum int64) string {
+	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d", master, oldEscape(builder), buildNum)
+}
+
+// StepURL returns the step URL for the given master, builder, step and build number.
+func StepURL(master, builder, step string, buildNum int64) string {
+	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s",
+		master, oldEscape(builder), buildNum, oldEscape(step))
+}
+
+// Sigh.  build.chromium.org doesn't accept + as an escaped space in URL paths.
+func oldEscape(s string) string {
+	return strings.Replace(url.QueryEscape(s), "+", "%20", -1)
+}
+
 // Client provides access to read status information from various parts of chrome
 // developer infrastructure.
 type Client interface {

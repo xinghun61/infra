@@ -29,6 +29,8 @@ const (
 	hungBuilderSev    = 1
 	idleBuilderSev    = 1
 	offlineBuilderSev = 1
+	resOK             = float64(1)
+	resInfraFailure   = float64(4)
 )
 
 var (
@@ -36,8 +38,9 @@ var (
 )
 
 var (
-	errNoBuildSteps   = errors.New("No build steps")
-	errNoRecentBuilds = errors.New("No recent builds")
+	errNoBuildSteps      = errors.New("No build steps")
+	errNoRecentBuilds    = errors.New("No recent builds")
+	errNoCompletedBuilds = errors.New("No completed builds")
 )
 
 // StepAnalyzer reasons about a stepFailure and produces a set of reasons for the
@@ -223,8 +226,8 @@ func filenameForCacheKey(cc string) string {
 	return fmt.Sprintf("/tmp/dispatcher.cache/%s", cc)
 }
 
-func alertKey(master, builder, step, reason string) string {
-	return fmt.Sprintf("%s.%s.%s.%s", master, builder, step, reason)
+func alertKey(master, builder, step string) string {
+	return fmt.Sprintf("%s.%s.%s", master, builder, step)
 }
 
 func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) {
@@ -286,6 +289,40 @@ func (a *MasterAnalyzer) latestBuildStep(b *messages.Build) (lastStep string, la
 	return
 }
 
+// lastBuild returns the last build (which may or may not have completed) and the last completed build (which may be
+// the same as the last build), and any error that occurred while finding them.
+func (a *MasterAnalyzer) lastBuilds(mn, bn string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
+	// Check for stale/idle/offline builders.  Latest build is the first in the list.
+
+	for i, buildID := range recentBuildIDs {
+		log.Infof("Checking last %s/%s build ID: %d", mn, bn, buildID)
+
+		// TODO: get this from cache.
+		a.bLock.Lock()
+		build := a.bCache[cacheKeyForBuild(mn, bn, buildID)]
+		a.bLock.Unlock()
+
+		if build == nil {
+			build, err = a.Client.Build(mn, bn, buildID)
+			if err != nil {
+				return
+			}
+		}
+
+		if i == 0 {
+			lastBuild = build
+		}
+
+		lastStep, _, _ := a.latestBuildStep(build)
+		if lastStep == StepCompletedRun {
+			lastCompletedBuild = build
+			return
+		}
+	}
+
+	return nil, nil, errNoCompletedBuilds
+}
+
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
 func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder) ([]messages.Alert, []error) {
@@ -300,24 +337,13 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	if len(recentBuildIDs) > a.MaxRecentBuilds {
 		recentBuildIDs = recentBuildIDs[:a.MaxRecentBuilds]
 	}
-	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), mn, bn)
-	alerts, errs := a.builderStepAlerts(mn, bn, recentBuildIDs)
 
-	// Check for stale/idle/offline builders.  Latest build is the first in the list.
-	lastBuildID := recentBuildIDs[0]
-	log.Infof("Checking last %s/%s build ID: %d", mn, bn, lastBuildID)
+	alerts, errs := []messages.Alert{}, []error{}
 
-	// TODO: get this from cache.
-	a.bLock.Lock()
-	lastBuild := a.bCache[cacheKeyForBuild(mn, bn, lastBuildID)]
-	a.bLock.Unlock()
-	if lastBuild == nil {
-		var err error
-		lastBuild, err = a.Client.Build(mn, bn, lastBuildID)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("Couldn't get latest build %d for %s.%s: %s", lastBuildID, mn, bn, err))
-			return alerts, errs
-		}
+	lastBuild, lastCompletedBuild, err := a.lastBuilds(mn, bn, recentBuildIDs)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	// Examining only the latest build is probably suboptimal since if it's still in progress it might
@@ -327,13 +353,12 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	if err != nil {
 		errs = append(errs, fmt.Errorf("Couldn't get latest build step for %s.%s: %v", mn, bn, err))
 		return alerts, errs
-
 	}
 	elapsed := a.now().Sub(lastUpdated.Time())
 	links := []messages.Link{
-		{"Builder", fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", mn, bn)},
-		{"Last build", fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d", mn, bn, lastBuildID)},
-		{"Last build step", fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s", mn, bn, lastBuildID, lastStep)},
+		{"Builder", client.BuilderURL(mn, bn)},
+		{"Last build", client.BuildURL(mn, bn, lastBuild.Number)},
+		{"Last build step", client.StepURL(mn, bn, lastStep, lastBuild.Number)},
 	}
 
 	switch b.State {
@@ -376,6 +401,22 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 		log.Errorf("Unknown %s.%s builder state: %s", mn, bn, b.State)
 	}
 
+	// Check for alerts on the most recent complete build
+	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), mn, bn)
+	as, es := a.builderStepAlerts(mn, bn, []int64{lastCompletedBuild.Number})
+
+	if len(as) > 0 {
+		mostRecentComplete := 0
+		for i, id := range recentBuildIDs {
+			if id == lastCompletedBuild.Number {
+				mostRecentComplete = i
+			}
+		}
+		as, es = a.builderStepAlerts(mn, bn, recentBuildIDs[mostRecentComplete:])
+		alerts = append(alerts, as...)
+		errs = append(errs, es...)
+	}
+
 	return alerts, errs
 }
 
@@ -388,13 +429,13 @@ func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
 
-	for i, buildID := range recentBuildIDs {
+	for _, buildID := range recentBuildIDs {
 		failures, err := a.stepFailures(mn, bn, buildID)
 		if err != nil {
 			errs = append(errs, err)
 		}
-		if len(failures) == 0 && i > a.MinRecentBuilds {
-			// Bail as soon as we find a successful build prior to the most recent couple of builds.
+		if len(failures) == 0 {
+			// Bail as soon as we find a successful build.
 			break
 		}
 
@@ -500,13 +541,13 @@ func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFa
 		// doesn't have any type information to assert about it. We have to do
 		// some ugly runtime type assertion ourselves.
 		if r, ok := s.Results[0].(float64); ok {
-			if r == 0 || r == 1 {
+			if r <= resOK {
 				// This 0/1 check seems to be a convention or heuristic. A 0 or 1
 				// result is apparently "ok", accoring to the original python code.
 				continue
 			}
 		} else {
-			log.Errorf("Couldn't unmarshal first step result into an int: %v", s.Results[0])
+			log.Errorf("Couldn't unmarshal first step result into a float64: %v", s.Results[0])
 		}
 
 		// We have a failure of some kind, so queue it up to check later.
@@ -539,6 +580,15 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 		// goroutine/channel because the reasonsForFailure call potentially
 		// blocks on IO.
 		if failure.step.Name == "steps" {
+			// check results to see if it's an array of [4]
+			// That's a purple failure, which should go to infra/trooper.
+			log.Infof("steps results: %+v", failure.step)
+			if len(failure.step.Results) > 0 {
+				if r, ok := failure.step.Results[0].(float64); ok && r == resInfraFailure {
+					// TODO: Create a trooper alert about this.
+					log.Errorf("INFRA FAILURE: %+v", failure)
+				}
+			}
 			continue
 			// The actual breaking step will appear later.
 		}
@@ -554,8 +604,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 			revsByRepo := map[string][]string{}
 
 			for _, change := range f.build.SourceStamp.Changes {
-				log.Infof("change: %+v", change)
-				revsByRepo[change.Repository] = append(revsByRepo[change.Repository], fmt.Sprintf("%d", change.Number))
+				revsByRepo[change.Repository] = append(revsByRepo[change.Repository], change.Revision)
 			}
 			for repo, revs := range revsByRepo {
 				regRanges = append(regRanges, messages.RegressionRange{
@@ -572,7 +621,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 				Builders: []messages.AlertedBuilder{
 					{
 						Name:          f.builderName,
-						URL:           fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", f.masterName, f.builderName),
+						URL:           client.BuilderURL(f.masterName, f.builderName),
 						FirstFailure:  f.build.Number,
 						LatestFailure: f.build.Number,
 					},
@@ -589,16 +638,13 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 				})
 			}
 
+			alr.Key = alertKey(f.masterName, f.builderName, f.step.Name)
 			if len(bf.Reasons) == 0 {
-				alr.Key = alertKey(f.masterName, f.builderName, f.step.Name, "")
 				log.Warnf("No reasons for step failure: %s", alr.Key)
 				bf.Reasons = append(bf.Reasons, messages.Reason{
 					Step: f.step.Name,
 					URL:  f.URL(),
 				})
-			} else {
-				// Should the key include all of the reasons?
-				alr.Key = alertKey(f.masterName, f.builderName, f.step.Name, reasons[0])
 			}
 
 			alr.Extension = bf
@@ -682,13 +728,7 @@ type stepFailure struct {
 	step        messages.Step
 }
 
-// Sigh.  build.chromium.org doesn't accept + as an escaped space in URL paths.
-func oldEscape(s string) string {
-	return strings.Replace(url.QueryEscape(s), "+", "%20", -1)
-}
-
 // URL returns a url to builder step failure page.
 func (f stepFailure) URL() string {
-	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s",
-		f.masterName, oldEscape(f.builderName), f.build.Number, oldEscape(f.step.Name))
+	return client.StepURL(f.masterName, f.builderName, f.step.Name, f.build.Number)
 }
