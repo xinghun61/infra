@@ -34,7 +34,7 @@ type Client interface {
 
 	// BuildExtracts fetches build information for masters from CBE in parallel.
 	// Returns a map of url to error for any requests that had errors.
-	BuildExtracts(urls []string) (map[string]*messages.BuildExtract, map[string]error)
+	BuildExtracts(masterNames []string) (map[string]*messages.BuildExtract, map[string]error)
 
 	// StdioForStep fetches the standard output for a given build step, and an error if any
 	// occurred.
@@ -101,39 +101,41 @@ func (c *client) TestResults(masterName, builderName, stepName string, buildNumb
 	return tr, nil
 }
 
-// It might make sense to add this to the Client interface, but none of the currently
-// test-covered code paths depend on it.  Also, make this and the other funcs consistent on
-// whether or not they do batch requests.  I think the existence of some data dependencies
-// between responses and requests they generate makes this a hard choice.
-func (c *client) BuildExtracts(urls []string) (map[string]*messages.BuildExtract, map[string]error) {
+// BuildExtracts fetches a BuildExtract for each of the masters in masterNames, and a map of
+// masterName to error for any that could not be fetched.
+func (c *client) BuildExtracts(masterNames []string) (map[string]*messages.BuildExtract, map[string]error) {
 	type r struct {
-		url string
-		be  *messages.BuildExtract
-		err error
+		url, masterName string
+		be              *messages.BuildExtract
+		err             error
 	}
 
-	ch := make(chan r, len(urls))
+	ch := make(chan r, len(masterNames))
 
-	for _, u := range urls {
-		go func(url string) {
-			out := r{url: url}
+	for _, mn := range masterNames {
+		go func(m string) {
+			out := r{
+				masterName: m,
+				url:        fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", m),
+			}
+
 			defer func() {
 				ch <- out
 			}()
 
 			out.be = &messages.BuildExtract{}
-			_, out.err = c.JSON(url, out.be)
-		}(u)
+			_, out.err = c.JSON(out.url, out.be)
+		}(mn)
 	}
 
 	ret := map[string]*messages.BuildExtract{}
 	errs := map[string]error{}
-	for _ = range urls {
+	for _ = range masterNames {
 		r := <-ch
 		if r.err != nil {
-			errs[r.url] = r.err
+			errs[r.masterName] = r.err
 		} else {
-			ret[r.url] = r.be
+			ret[r.masterName] = r.be
 		}
 	}
 

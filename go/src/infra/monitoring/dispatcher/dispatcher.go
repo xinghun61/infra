@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -55,13 +56,13 @@ func init() {
 	}
 }
 
-func analyzeBuildExtract(a *analyzer.MasterAnalyzer, url string, b *messages.BuildExtract) []messages.Alert {
-	ret := a.MasterAlerts(url, b)
+func analyzeBuildExtract(a *analyzer.MasterAnalyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
+	ret := a.MasterAlerts(masterName, b)
 	if *mastersOnly {
 		return ret
 	}
-
-	return append(ret, a.BuilderAlerts(url, b)...)
+	log.Infof("getting builder alerts for %s", masterName)
+	return append(ret, a.BuilderAlerts(masterName, b)...)
 }
 
 // readJSONFile reads a file and decode it as JSON.
@@ -81,9 +82,9 @@ func main() {
 	start := time.Now()
 	flag.Parse()
 
-	mURLs := []string{}
+	masterNames := []string{}
 	if *masterOnly != "" {
-		mURLs = append(mURLs, *masterOnly)
+		masterNames = append(masterNames, *masterOnly)
 	}
 
 	err := readJSONFile(*gatekeeperJSON, &gk)
@@ -106,14 +107,15 @@ func main() {
 	if *treeOnly != "" {
 		if t, ok := gkt[*treeOnly]; ok {
 			for _, url := range t.Masters {
-				mURLs = append(mURLs, fmt.Sprintf("%s/json", url))
+				parts := strings.Split(url, "/")
+				masterNames = append(masterNames, parts[len(parts)-1])
 			}
 		} else {
 			log.Fatalf("Unrecoginzed tree: %s", *treeOnly)
 		}
 	}
 
-	bes, errs := a.Client.BuildExtracts(mURLs)
+	bes, errs := a.Client.BuildExtracts(masterNames)
 	log.Infof("Build Extracts read: %d", len(bes))
 	log.Infof("Errors: %d", len(errs))
 	for url, err := range errs {
@@ -122,8 +124,8 @@ func main() {
 
 	alerts := &messages.Alerts{}
 
-	for url, be := range bes {
-		alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, url, be)...)
+	for masterName, be := range bes {
+		alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
 	}
 	alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
