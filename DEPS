@@ -1,3 +1,10 @@
+vars = {
+  # npm_modules.git is special: we can't check it out on Windows because paths
+  # there are too long for Windows. Instead we use 'deps_os' gclient feature to
+  # checkout it out only on Linux and Mac.
+  "npm_modules_revision": "f6115d7f7fd45fa25a34518c3487f2654590ed83",
+}
+
 deps = {
   "build":
     "https://chromium.googlesource.com/chromium/tools/build.git",
@@ -28,10 +35,6 @@ deps = {
     ("https://chromium.googlesource.com/infra/third_party/highlight.js.git"
      "@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba"),
 
-  "infra/appengine/third_party/npm_modules":
-    ("https://chromium.googlesource.com/infra/third_party/npm_modules.git"
-     "@f6115d7f7fd45fa25a34518c3487f2654590ed83"),
-
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
      "appengine-pipeline.git"
@@ -61,6 +64,20 @@ deps = {
   "infra/appengine/third_party/src/github.com/golang/oauth2":
   ("https://chromium.googlesource.com/external/github.com/golang/oauth2.git"
    "@cb029f4c1f58850787981eefaf9d9bf547c1a722"),
+}
+
+
+deps_os = {
+  "unix": {
+    "infra/appengine/third_party/npm_modules":
+      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@" +
+      Var("npm_modules_revision")),
+  },
+  "mac": {
+    "infra/appengine/third_party/npm_modules":
+      ("https://chromium.googlesource.com/infra/third_party/npm_modules.git@" +
+      Var("npm_modules_revision")),
+  }
 }
 
 hooks = [
