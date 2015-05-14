@@ -1,4 +1,6 @@
-This the the source for the world-visible Chrome Infra docs.
+This is the source for the world-visible Chrome Infra docs.
 
 The fully-rendered version is at:
 https://storage.googleapis.com/chromium-infra-docs/infra/html/index.html
+
+To generate this documentation yourself run ../docgen.py.
