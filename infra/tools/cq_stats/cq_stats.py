@@ -1134,12 +1134,13 @@ def print_stats(args, stats):
     return percentage(failures, passes + failures)
 
   jobs = sorted(stats['jobs'].iterkeys(), key=flakiness, reverse=True)
-  output('%-40s %-15s %-15s %-15s',
+  job_spaces = reduce(max, map(len, jobs)) if jobs else 0
+  output('%-' + str(job_spaces)  + 's %-15s %-15s %-15s',
          'Builder Name', 'Succeeded', 'Flaky Failures', 'Flakiness (%)')
   for job in jobs:
     passes = stats['jobs'][job]['pass-count']
     failures = stats['jobs'][job]['false-reject-count']
-    output('%-40s %-15s %-15s %-15s',
+    output('%-' + str(job_spaces) + 's %-15s %-15s %-15s',
            job, '%5d' % passes, '%5d' % failures,
            '%6.2f%%' % flakiness(job))
 

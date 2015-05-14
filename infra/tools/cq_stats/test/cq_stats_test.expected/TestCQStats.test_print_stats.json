@@ -38,8 +38,8 @@
   "http://chromium-cq-status.appspot.com/patch-status/123/1 (1.0 hrs)",
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Builder Name                             Succeeded       Flaky Failures  Flakiness (%)  ",
-  "foo_builder                                100               1             0.99%        ",
+  "Builder Name Succeeded       Flaky Failures  Flakiness (%)  ",
+  "foo_builder   100               1             0.99%        ",
   "Statistics for project test_project",
   "  No stats since 2014-01-01 00:00:00"
 ]
