@@ -38,17 +38,44 @@ class LoadBalancer(object):
   def __init__(self):
     pass
 
+  @staticmethod
+  def biased_choice(items):
+    """Randomly select an item biased by its weight.
+
+    Args:
+      items (dict): map of names to weights (non-negative numbers).
+        The bigger the weight, the higher is the chance of selecting this item.
+    """
+    # Line up the items on a single line as intervals, and randomly
+    # pick a point on the line.
+    thresholds = []
+    total_weight = 0.0
+    for name, weight in items.iteritems():
+      thresholds.append((name, total_weight))
+      total_weight += weight
+    thresholds.reverse()
+    choice = random.uniform(0.0, total_weight)
+    for name, threshold in thresholds:
+      if choice >= threshold:
+        return name
+
   def choose_module(self):
     """Select a module to send the data to."""
     # TODO(sergeyberezin) Implement load percentages for modules, for
     # draining / canary / live rolling updates.
     # TODO(sergeyberezin): perform health checks for the corresponding
     # NAT boxes and drain modules appropriately.
-    return random.choice(VM_MODULES)
+    return self.biased_choice(common.TrafficSplit.get_or_insert(
+        common.TRAFFIC_SPLIT_KEY).to_dict())
 
 
-def forward_data(data):
-  """Forwards the raw data to the backend."""
+def forward_data(data, ip):
+  """Forwards the raw data to the backend.
+
+  Args:
+    data (str): raw binary data to forward.
+    ip (str):   the IP address of the data source (used for traffic split).
+  """
   lb = LoadBalancer()
   module_name = lb.choose_module()
   logging.info('Forwarding request to module: %s', module_name)
@@ -58,7 +85,7 @@ def forward_data(data):
     hostname = 'localhost:808%s' % module_name[-1]
   else:
     protocol = 'https'
-  url = '%s://%s/%s' % (protocol, hostname, module_name)
+  url = '%s://%s/%s/%s' % (protocol, hostname, module_name, ip)
   request = urllib2.Request(url, data)
   urllib2.urlopen(request)
 
@@ -68,7 +95,7 @@ class MonacqHandler(auth.AuthenticatingHandler):
   @auth.require(lambda: auth.is_group_member(
       'service-account-monitoring-proxy'))
   def post(self):
-    forward_data(self.request.body)
+    forward_data(self.request.body, self.request.remote_addr)
 
 
 class MainHandler(handler_utils.BaseAuthHandler):

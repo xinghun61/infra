@@ -7,6 +7,7 @@ import httplib2
 import json
 import logging
 import os
+import random
 import traceback
 import webapp2
 
@@ -23,26 +24,28 @@ def _is_development_server():
 
 
 def _get_config_data():
-  data_entity = common.MonAcqData.get_by_id(common.CONFIG_DATA_KEY)
-  logging.info('get_config_data(): entity = %r', data_entity)
+  data_entity = common.ConfigData.get_by_id(common.CONFIG_DATA_KEY)
   if not data_entity:
     return None
-  return data_entity.to_dict()
+  return data_entity
 
 
-def _get_credentials(credentials_dict, scopes):
+def _get_credentials(credentials, scopes):
   """Obtain Aquisition API credentials as Credentials object."""
+  if not credentials.client_email:
+    return None
+
+  # TODO(sergeyberezin): migrate to using ServiceAccountKey.
+  # See https://goo.gl/Q57gm3.
   from oauth2client.client import SignedJwtAssertionCredentials
 
-  # Ideally, we should have loaded credentials with GoogleCredentials.
-  # However, it insists to load only from a file. So, here's a hack.
   return SignedJwtAssertionCredentials(
-      service_account_name=credentials_dict['client_email'],
-      private_key=credentials_dict['private_key'],
+      service_account_name=credentials.client_email,
+      private_key=credentials.private_key,
       scope=scopes,
       # Extra **kwargs, just in case.
-      service_account_id=credentials_dict['client_id'],
-      private_key_id=credentials_dict['private_key_id'],
+      service_account_id=credentials.client_id,
+      private_key_id=credentials.private_key_id,
   )
 
 
@@ -55,7 +58,7 @@ class VMHandler(webapp2.RequestHandler):
   def requester_is_task(self):
     return bool(self.request.headers.get('X-AppEngine-TaskName'))
 
-  def post(self):
+  def post(self, ip):
     authorized = (
         _is_development_server() or
         self.requester_is_task() or self.requester_is_me())
@@ -63,30 +66,33 @@ class VMHandler(webapp2.RequestHandler):
       self.abort(403)
     data = _get_config_data()
     if not data:
-      self.abort_admin_error('Endpoint data is not set')
-    if not all(f in data for f in ['credentials', 'url']):
-      self.abort_admin_error('Missing required fields: credentials, url')
+      self.abort_admin_error('Endpoints are not defined')
 
-    url = data['url']
     http_auth = httplib2.Http()
-    try:
-      credentials = _get_credentials(data['credentials'], data['scopes'])
-    except KeyError as e:
-      self.abort_admin_error('Bad credentials format: missing field %s' % e)
-    http_auth = credentials.authorize(http_auth)
+    # Make the traffic split deterministic in the source IP.
+    random.seed(ip)
+    if random.uniform(0, 100) < data.secondary_endpoint_load:
+      endpoint = data.secondary_endpoint
+    else:
+      endpoint = data.primary_endpoint
+    credentials = _get_credentials(endpoint.credentials, endpoint.scopes)
+    url = endpoint.url
+    if credentials:
+      http_auth = credentials.authorize(http_auth)
     def callback(response, _content):
       success = 200 <= response.status and response.status <= 299
       if not success:
         logging.error('Failed to send data to %s: %d %s',
                       url, response.status, response.reason)
-    # Important: set content-type to binary, otherwise httplib2 mangles it.
-    data.setdefault('headers', {}).update({
+    # Important: set correct content-type, otherwise httplib2 mangles it.
+    headers = endpoint.headers
+    headers.update({
         'content-length': str(len(self.request.body)),
         'content-type': 'application/x-protobuf',
     })
     request = googleapiclient.http.HttpRequest(
         http_auth, callback, url, method='POST', body=self.request.body,
-        headers=data['headers'])
+        headers=headers)
     logging.debug('Sending the payload (synchronously).')
     request.execute()
     logging.debug('Done sending the payload.')
@@ -99,5 +105,5 @@ class VMHandler(webapp2.RequestHandler):
 
 logging.basicConfig(level=logging.DEBUG)
 app = webapp2.WSGIApplication([
-    ('/vm.*', VMHandler),
+    (r'/vm.*/(.*)', VMHandler),
     ], debug=True)

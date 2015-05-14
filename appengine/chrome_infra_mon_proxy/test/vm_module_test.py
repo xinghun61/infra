@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import random
 import webtest
 
 import oauth2client.client
@@ -17,17 +18,13 @@ import vm_module
 
 
 class VMModuleTest(testing.AppengineTestCase):
+
   def test_get_config_data(self):
     self.assertIsNone(vm_module._get_config_data())
 
-    data = common.MonAcqData()
-    class MonAcqMock(object):
-      @classmethod
-      def get_by_id(cls, _key):
-        return data
-
-    self.mock(common, 'MonAcqData', MonAcqMock)
-    self.assertIsInstance(vm_module._get_config_data(), dict)
+    data = common.ConfigData(id=common.CONFIG_DATA_KEY)
+    data.put()
+    self.assertEquals(vm_module._get_config_data(), data)
 
   def test_get_credentials(self):
     class CredentialsMock(object):
@@ -35,14 +32,16 @@ class VMModuleTest(testing.AppengineTestCase):
         pass
     self.mock(oauth2client.client, 'SignedJwtAssertionCredentials',
               CredentialsMock)
-    creds = {
-        'client_email': 'we@you.me',
-        'client_id': 'agent007',
-        'private_key': 'deadbeafyoudneverguess',
-        'private_key_id': '!@#$%',
-    }
+    creds = common.Credentials()
     scopes = ['this', 'that']
-    self.assertIsInstance(vm_module._get_credentials(creds, scopes), object)
+    self.assertIsNone(vm_module._get_credentials(creds, scopes))
+
+    creds = common.Credentials(
+        client_email='we@you.me',
+        client_id='agent007',
+        private_key='deadbeafyoudneverguess',
+        private_key_id='!@#$%')
+    self.assertIsNotNone(vm_module._get_credentials(creds, scopes))
 
 
 class VMHandlerTest(testing.AppengineTestCase):
@@ -53,7 +52,7 @@ class VMHandlerTest(testing.AppengineTestCase):
 
   def test_get(self):
     with self.assertRaises(webtest.AppError) as cm:
-      self.test_app.get('/vm1')
+      self.test_app.get('/vm1/1.2.3.4')
     logging.info('exception = %s', cm.exception)
     self.assertIn('405', str(cm.exception))
 
@@ -65,7 +64,7 @@ class VMHandlerTest(testing.AppengineTestCase):
     # Authentication fails.
     self.mock(app_identity, 'get_application_id', lambda: 'bad-app-id')
     with self.assertRaises(webtest.AppError) as cm:
-      self.test_app.post('/vm1', '', headers=headers)
+      self.test_app.post('/vm1/5.6.7.8', '', headers=headers)
     logging.info('exception = %s', cm.exception)
     self.assertIn('403', str(cm.exception))
 
@@ -75,34 +74,17 @@ class VMHandlerTest(testing.AppengineTestCase):
     # No data is configured.
     self.mock(vm_module, '_get_config_data', lambda: None)
     with self.assertRaises(webtest.AppError) as cm:
-      self.test_app.post('/vm1', '', headers=headers)
+      self.test_app.post('/vm1/1.3.6.9', '', headers=headers)
     logging.info('exception = %s', cm.exception)
     self.assertIn('500', str(cm.exception))
 
-    # Not all required data is present.
-    self.mock(vm_module, '_get_config_data',
-              lambda: {'url': 'foo://', 'bad': 'data'})
-    with self.assertRaises(webtest.AppError) as cm:
-      self.test_app.post('/vm1', '', headers=headers)
-    logging.info('exception = %s', cm.exception)
-    self.assertIn('500', str(cm.exception))
+    # Data is correct. url2 is 20%, and is selected.
+    creds = common.Credentials(
+        client_email='we@you.me',
+        client_id='agent007',
+        private_key='deadbeafyoudneverguess',
+        private_key_id='!@#$%')
 
-    # Credentials are malformed.
-    self.mock(vm_module, '_get_config_data', lambda: {
-        'url': 'foo://', 'scopes': ['this', 'that'],
-        'credentials': {'bad': 'value'}})
-    with self.assertRaises(webtest.AppError) as cm:
-      self.test_app.post('/vm1', '', headers=headers)
-    logging.info('exception = %s', cm.exception)
-    self.assertIn('500', str(cm.exception))
-
-    # Data is correct.
-    creds = {
-        'client_email': 'we@you.me',
-        'client_id': 'agent007',
-        'private_key': 'deadbeafyoudneverguess',
-        'private_key_id': '!@#$%',
-    }
     class CredentialsMock(object):
       def __init__(self, **kwargs):
         pass
@@ -112,9 +94,13 @@ class VMHandlerTest(testing.AppengineTestCase):
 
     self.mock(oauth2client.client, 'SignedJwtAssertionCredentials',
               CredentialsMock)
-    self.mock(vm_module, '_get_config_data', lambda: {
-        'url': 'foo://', 'scopes': ['this', 'that'],
-        'credentials': creds})
+    data = common.ConfigData(
+        primary_endpoint=common.Endpoint(url='foo://', scopes=['this', 'that']),
+        secondary_endpoint=common.Endpoint(url='bar://', credentials=creds),
+        secondary_endpoint_load=20,
+        id=common.CONFIG_DATA_KEY)
+    self.mock(vm_module, '_get_config_data', lambda: data)
+    self.mock(random, 'uniform', lambda _a, _b: 10.0)
 
     class ResponseMock(dict):
       def __init__(self, status, reason):
@@ -126,21 +112,27 @@ class VMHandlerTest(testing.AppengineTestCase):
       self.postproc(ResponseMock(404, 'Not OK'), 'content')
     self.mock(googleapiclient.http.HttpRequest, 'execute', execute_mock_bad)
 
-    response = self.test_app.post('/vm1', '', headers=headers)
+    response = self.test_app.post('/vm1/2620:0:1000', '', headers=headers)
     logging.info('response = %s', response)
     self.assertEquals(200, response.status_int)
 
-    # Production server, successful request.
+    # Production server, secondary URL, successful request.
     def execute_mock_good(self):
       self.postproc(ResponseMock(200, 'OK'), 'content')
     self.mock(googleapiclient.http.HttpRequest, 'execute', execute_mock_good)
 
-    response = self.test_app.post('/vm1', '', headers=headers)
+    response = self.test_app.post('/vm1/10.9.8.7', '', headers=headers)
+    logging.info('response = %s', response)
+    self.assertEquals(200, response.status_int)
+
+    # Same for the primary URL, for branch coverage.
+    self.mock(random, 'uniform', lambda _a, _b: 21.0)
+    response = self.test_app.post('/vm1/10.9.8.7', '', headers=headers)
     logging.info('response = %s', response)
     self.assertEquals(200, response.status_int)
 
     # Dev appserver (for branch coverage).
     self.mock(os, 'environ', {'SERVER_SOFTWARE': 'Development server'})
-    response = self.test_app.post('/vm1', '', headers=headers)
+    response = self.test_app.post('/vm1/25.36.47.79', '', headers=headers)
     logging.info('response = %s', response)
     self.assertEquals(200, response.status_int)

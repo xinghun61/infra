@@ -9,14 +9,38 @@ import os
 from google.appengine.ext import ndb
 
 CONFIG_DATA_KEY = 'config_data_key'
+TRAFFIC_SPLIT_KEY = 'traffic_split_key'
 
 
-class MonAcqData(ndb.Model):
-  """Store the sensitive endpoint data."""
-  credentials = ndb.JsonProperty()
-  url = ndb.StringProperty()
+class Credentials(ndb.Model):
+  """Store a service account credentials."""
+  client_email   = ndb.StringProperty(required=True, default='')
+  private_key    = ndb.StringProperty(required=True, default='')
+  private_key_id = ndb.StringProperty(required=True, default='')
+  client_id      = ndb.StringProperty(default='')
+
+
+class Endpoint(ndb.Model):
+  url = ndb.StringProperty(required=True)
+  credentials = ndb.StructuredProperty(Credentials, default=Credentials())
   scopes = ndb.StringProperty(repeated=True)
   headers = ndb.JsonProperty(default={})
+
+
+class ConfigData(ndb.Model):
+  primary_endpoint = ndb.StructuredProperty(Endpoint, default=Endpoint())
+  secondary_endpoint = ndb.StructuredProperty(Endpoint, default=Endpoint())
+  secondary_endpoint_load = ndb.IntegerProperty(default=0)
+
+
+class TrafficSplit(ndb.Model):
+  """Store load percentage [0..100] for each VM module.
+
+  Used to drain / ramp up the modules for rolling updates in production.
+  """
+  vm1 = ndb.IntegerProperty(default=100)
+  vm2 = ndb.IntegerProperty(default=100)
+  vm3 = ndb.IntegerProperty(default=100)
 
 
 def payload_stats(data):
