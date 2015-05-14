@@ -15,10 +15,19 @@ def GenSteps(api):
   api.gclient.set_config('luci_go')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
+
+  # This downloads the third parties, so that the next step doesn't have junk
+  # output in it.
+  api.python(
+      'go third parties',
+      api.path['checkout'].join('go', 'env.py'),
+      ['go', 'version'])
+
   api.python(
       'go build',
       api.path['checkout'].join('go', 'env.py'),
-      ['go', 'build', 'github.com/luci/luci-go/cmd/...'])
+      ['go', 'build', 'github.com/luci/luci-go/...'])
+
   api.python(
       'go test',
       api.path['checkout'].join('go', 'env.py'),

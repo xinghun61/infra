@@ -60,8 +60,19 @@
       "-u",
       "[SLAVE_BUILD]/infra/go/env.py",
       "go",
+      "version"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go third parties"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
+      "go",
       "build",
-      "github.com/luci/luci-go/cmd/..."
+      "github.com/luci/luci-go/..."
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "go build"
