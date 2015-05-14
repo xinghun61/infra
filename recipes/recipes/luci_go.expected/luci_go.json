@@ -19,7 +19,9 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+      "infra@origin/master",
+      "--revision",
+      "infra/go/src/github.com/luci/luci-go@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
       "--force"
     ],
     "cwd": "[SLAVE_BUILD]",

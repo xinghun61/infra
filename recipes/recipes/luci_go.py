@@ -12,7 +12,7 @@ DEPS = [
 
 
 def GenSteps(api):
-  api.gclient.set_config('infra')
+  api.gclient.set_config('luci_go')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
   api.python(
