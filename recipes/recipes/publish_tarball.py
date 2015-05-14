@@ -29,7 +29,8 @@ def export_tarball(api, args, source, destination):
     api.gsutil.upload(
         api.path.join(temp_dir, source),
         'chromium-browser-official',
-        destination)
+        destination,
+        args=['-a', 'public-read'])
   finally:
     api.file.rmtree('temp dir', temp_dir)
 
