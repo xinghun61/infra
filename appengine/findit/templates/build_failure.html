@@ -197,7 +197,7 @@
                 {% if show_debug_info %}
                   <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% else %}
-                  {{failure.step_name}}
+                  <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% endif %}
                 </td>
                 <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
@@ -215,7 +215,7 @@
                 {% if show_debug_info %}
                   <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% else %}
-                  {{failure.step_name}}
+                  <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
                 {% endif %}
                 </td>
                 <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
