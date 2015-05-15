@@ -623,6 +623,8 @@ def derive_stats(args, begin_date, init_stats=None):
     pool = ThreadPool(min(args.thread_pool, len(patches)))
     iterable = pool.imap_unordered(get_patch_stats, patches)
   for patch_id, pstats in iterable:
+    if not pstats['supported']:
+      continue
     patch_stats[patch_id] = pstats
 
   stats['patch_stats'] = patch_stats
@@ -686,6 +688,7 @@ def derive_patch_stats(end_date, patch_id):
         'actions': [],
         'committed': False,
         'reason': {},
+        'supported': True,
     }
     for reason in REASONS:
       attempt_empty[reason] = False
@@ -773,12 +776,15 @@ def derive_patch_stats(end_date, patch_id):
         # Remove presubmit bot - it's accounted separately.
         failed_jobs = [j for j in failed_jobs if 'presubmit' in j[1]]
         attempt['failed-jobs'] = failed_jobs
+    if action == 'verifier_custom_trybots':
+      attempt['supported'] = False
 
   stats = {}
   committed_set = set(a['id'] for a in attempts if a['committed'])
   stats['committed'] = len(committed_set)
   stats['attempts'] = len(attempts)
   stats['rejections'] = stats['attempts'] - stats['committed']
+  stats['supported'] = all(a['supported'] for a in attempts)
 
   logging.info('derive_patch_stats: %s has %d attempts, committed=%d',
                patch_url(patch_id), len(attempts), stats['committed'])

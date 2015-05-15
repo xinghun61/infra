@@ -383,22 +383,25 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     self.assertEqual(cq_stats.derive_list_stats([])['size'], 1)
 
-  def mock_derive_patch_stats(self, _, patch_id):
-    # The original function expects patch_id to be a 2-tuple.
-    self.assertIsInstance(patch_id, tuple)
-    self.assertEqual(len(patch_id), 2)
-    # Note: these fields are required by derive_stats(). Make sure
-    # they are present in the unit tests for derive_patch_stats().
-    stats = {
-        'attempts': 3,
-        'false-rejections': 1,
-        'rejections': 2,
-        'committed': True,
-        'patchset-duration-wallclock': 1234.56,
-        'patchset-duration': 999.99,
-        'failed-jobs-details': {'tester': 2},
-    }
-    return patch_id, stats
+  def get_mock_derive_patch_stats(self, supported=True):
+    def mock_derive_patch_stats(_, patch_id):
+      # The original function expects patch_id to be a 2-tuple.
+      self.assertIsInstance(patch_id, tuple)
+      self.assertEqual(len(patch_id), 2)
+      # Note: these fields are required by derive_stats(). Make sure
+      # they are present in the unit tests for derive_patch_stats().
+      stats = {
+          'attempts': 3,
+          'false-rejections': 1,
+          'rejections': 2,
+          'committed': True,
+          'patchset-duration-wallclock': 1234.56,
+          'patchset-duration': 999.99,
+          'failed-jobs-details': {'tester': 2},
+          'supported': supported,
+      }
+      return patch_id, stats
+    return mock_derive_patch_stats
 
   def test_derive_stats(self):
     # Unused args: pylint: disable=W0613
@@ -412,7 +415,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
           },
       ]
 
-    self.mock(cq_stats, 'derive_patch_stats', self.mock_derive_patch_stats)
+    self.mock(cq_stats, 'derive_patch_stats', self.get_mock_derive_patch_stats(
+        supported=True))
     # Test empty logs.
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_0)
     self.assertEqual(dict, type(cq_stats.derive_stats(
@@ -421,6 +425,9 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs)
     self.assertEqual(dict, type(cq_stats.derive_stats(
         Args(seq=False), datetime.datetime(2014, 10, 15))))
+
+    self.mock(cq_stats, 'derive_patch_stats', self.get_mock_derive_patch_stats(
+        supported=False))
     self.assertEqual(dict, type(cq_stats.derive_stats(
         Args(seq=True), datetime.datetime(2014, 10, 15))))
 
@@ -452,11 +459,15 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
   def test_derive_patch_stats(self):
     time_obj = {'time': 1415150492.4}
-    def attempt(message, commit=False, reason=''):
+    def attempt(message, commit=False, supported=True, reason=''):
       time_obj['time'] += 1.37  # Trick python to use global var.
       entries = []
       entries.append({'fields': {'action': 'patch_start'},
                       'timestamp': time_obj['time']})
+      time_obj['time'] += 1.37
+      if not supported:
+        entries.append({'fields': {'action': 'verifier_custom_trybots'},
+                        'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       if commit:
         entries.append({'fields': {'action': 'patch_committed'},
@@ -478,6 +489,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         attempt('Failed to commit', reason='commit'),
         attempt('Failed to apply patch'),
         attempt('Presubmit check'),
+        attempt('Custom trybots', supported=False),
         attempt('CLs for remote refs other than refs/heads/master'),
         attempt('Try jobs failed:\n test_dbg', reason='simple try job'),
         attempt('Try jobs failed:\n chromium_presubmit'),
@@ -509,7 +521,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         datetime.datetime(2014, 10, 15), patch_id)
     self.assertEqual(patch_id, pid)
     # Check required fields in the result.
-    for k in self.mock_derive_patch_stats(None, patch_id)[1]:
+    mock_derive_patch_stats = self.get_mock_derive_patch_stats()
+    for k in mock_derive_patch_stats(None, patch_id)[1]:
       self.assertIsNotNone(stats.get(k))
     # A few sanity checks.
     self.assertEqual(stats['attempts'], len(attempts))
