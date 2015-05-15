@@ -3606,10 +3606,17 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
     reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
     reply_to = ', '.join(reply_to)
+    app_id = app_identity.get_application_id()
+    canonical_host = '%s.appspot.com' % app_id
+    host = django_settings.PREFERRED_DOMAIN_NAMES.get(
+      django_settings.APP_ID, canonical_host)
+    friendly_sender = ("'%s' via %s <%s>" % (
+        my_nickname, host, django_settings.RIETVELD_INCOMING_MAIL_ADDRESS))
+
     if my_email not in accounts or accounts[my_email].send_from_email_addr:
       sender = my_email
     else:
-      sender = django_settings.RIETVELD_INCOMING_MAIL_ADDRESS
+      sender = friendly_sender
 
     logging.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
     send_args = {'sender': sender,
@@ -3633,7 +3640,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
           previous_sender = send_args['sender']
           if previous_sender not in send_args['to']:
             send_args['to'].append(previous_sender)
-          send_args['sender'] = django_settings.RIETVELD_INCOMING_MAIL_ADDRESS
+          send_args['sender'] = friendly_sender
           logging.info('Replacing sender by %s' % send_args['sender'])
         else:
           raise
