@@ -10,6 +10,7 @@ import time
 
 from monacq.proto import metrics_pb2
 
+from infra.libs.ts_mon import distribution
 from infra.libs.ts_mon import errors
 from infra.libs.ts_mon import interface
 
@@ -289,3 +290,83 @@ class FloatMetric(NumericMetric):
     if not isinstance(value, (float, int)):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
     self._set_and_send_value(float(value), fields)
+
+
+class DistributionMetric(Metric):
+  """A metric that holds a distribution of values.
+
+  By default buckets are chosen from a geometric progression, each bucket being
+  approximately 1.59 times bigger than the last.  In practice this is suitable
+  for many kinds of data, but you may want to provide a FixedWidthBucketer or
+  GeometricBucketer with different parameters."""
+
+  CANONICAL_SPEC_TYPES = {
+      2: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_2,
+      10**0.2: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10_P_0_2,
+      10: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10,
+  }
+
+  def __init__(self, name, bucketer=None, target=None, fields=None):
+    super(DistributionMetric, self).__init__(name, target, fields)
+
+    if bucketer is None:
+      bucketer = distribution.GeometricBucketer()
+
+    self.bucketer = bucketer
+
+  def _populate_value(self, metric, value):
+    pb = metric.distribution
+
+    # Copy the bucketer params.
+    if (value.bucketer.width == 0 and
+        value.bucketer.growth_factor in self.CANONICAL_SPEC_TYPES):
+      pb.spec_type = self.CANONICAL_SPEC_TYPES[value.bucketer.growth_factor]
+    else:
+      pb.spec_type = metrics_pb2.PrecomputedDistribution.CUSTOM_PARAMETERIZED
+      pb.width = value.bucketer.width
+      pb.growth_factor = value.bucketer.growth_factor
+      pb.num_buckets = value.bucketer.num_finite_buckets
+
+    # Copy the distribution bucket values.  Only include the finite buckets, not
+    # the overflow buckets on each end.
+    pb.bucket.extend(self._running_zero_generator(
+        value.buckets.get(i, 0) for i in
+        xrange(1, value.bucketer.total_buckets - 1)))
+
+    # Add the overflow buckets if present.
+    if value.bucketer.underflow_bucket in value.buckets:
+      pb.underflow = value.buckets[value.bucketer.underflow_bucket]
+    if value.bucketer.overflow_bucket in value.buckets:
+      pb.overflow = value.buckets[value.bucketer.overflow_bucket]
+
+    if value.count != 0:
+      pb.mean = float(value.sum) / value.count
+
+  @staticmethod
+  def _running_zero_generator(iterable):
+    """Compresses sequences of zeroes in the iterable into negative zero counts.
+
+    For example an input of [1, 0, 0, 0, 2] is converted to [1, -3, 2].
+    """
+
+    count = 0
+
+    for value in iterable:
+      if value == 0:
+        count += 1
+      else:
+        if count != 0:
+          yield -count
+          count = 0
+        yield value
+
+  def add(self, value, fields=None):
+    dist = self.get(fields)
+    if dist is None:
+      dist = distribution.Distribution(self.bucketer)
+
+    dist.add(value)
+    self._set_and_send_value(dist, fields)
+
+  def set(self, value, fields=None):
+    raise TypeError('Cannot set() a DistributionMetric (use add() instead)')

@@ -10,6 +10,7 @@ import mock
 
 from monacq.proto import metrics_pb2
 
+from infra.libs.ts_mon import distribution
 from infra.libs.ts_mon import errors
 from infra.libs.ts_mon import interface
 from infra.libs.ts_mon import metrics
@@ -406,3 +407,149 @@ class FloatMetricTest(MetricTestBase):
     m = metrics.FloatMetric('test')
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
+
+
+class RunningZeroGeneratorTest(unittest.TestCase):
+  def assertZeroes(self, expected, sequence):
+    self.assertEquals(expected,
+        list(metrics.DistributionMetric._running_zero_generator(sequence)))
+
+  def test_running_zeroes(self):
+    self.assertZeroes([1, -1, 1], [1, 0, 1])
+    self.assertZeroes([1, -2, 1], [1, 0, 0, 1])
+    self.assertZeroes([1, -3, 1], [1, 0, 0, 0, 1])
+    self.assertZeroes([1, -1, 1, -1, 2], [1, 0, 1, 0, 2])
+    self.assertZeroes([1, -1, 1, -2, 2], [1, 0, 1, 0, 0, 2])
+    self.assertZeroes([1, -2, 1, -2, 2], [1, 0, 0, 1, 0, 0, 2])
+
+  def test_leading_zeroes(self):
+    self.assertZeroes([-1, 1], [0, 1])
+    self.assertZeroes([-2, 1], [0, 0, 1])
+    self.assertZeroes([-3, 1], [0, 0, 0, 1])
+
+  def test_trailing_zeroes(self):
+    self.assertZeroes([1], [1])
+    self.assertZeroes([1], [1, 0])
+    self.assertZeroes([1], [1, 0, 0])
+    self.assertZeroes([], [])
+    self.assertZeroes([], [0])
+    self.assertZeroes([], [0, 0])
+
+
+class DistributionMetricTest(MetricTestBase):
+
+  def test_populate_canonical(self):
+    pb = metrics_pb2.MetricsData()
+    m = metrics.DistributionMetric('test')
+    m._populate_value(pb,
+        distribution.Distribution(distribution.GeometricBucketer()))
+    self.assertEquals(pb.distribution.spec_type,
+        metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10_P_0_2)
+
+    m._populate_value(pb,
+        distribution.Distribution(distribution.GeometricBucketer(2)))
+    self.assertEquals(pb.distribution.spec_type,
+        metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_2)
+
+    m._populate_value(pb,
+        distribution.Distribution(distribution.GeometricBucketer(10)))
+    self.assertEquals(pb.distribution.spec_type,
+        metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10)
+
+  def test_populate_custom(self):
+    pb = metrics_pb2.MetricsData()
+    m = metrics.DistributionMetric('test')
+    m._populate_value(pb,
+        distribution.Distribution(distribution.GeometricBucketer(4)))
+    self.assertEquals(pb.distribution.spec_type,
+        metrics_pb2.PrecomputedDistribution.CUSTOM_PARAMETERIZED)
+    self.assertEquals(0, pb.distribution.width)
+    self.assertEquals(4, pb.distribution.growth_factor)
+    self.assertEquals(100, pb.distribution.num_buckets)
+
+    m._populate_value(pb,
+        distribution.Distribution(distribution.FixedWidthBucketer(10)))
+    self.assertEquals(pb.distribution.spec_type,
+        metrics_pb2.PrecomputedDistribution.CUSTOM_PARAMETERIZED)
+    self.assertEquals(10, pb.distribution.width)
+    self.assertEquals(0, pb.distribution.growth_factor)
+    self.assertEquals(100, pb.distribution.num_buckets)
+
+  def test_populate_buckets(self):
+    pb = metrics_pb2.MetricsData()
+    m = metrics.DistributionMetric('test')
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10))
+    d.add(5)
+    d.add(15)
+    d.add(35)
+    d.add(65)
+
+    m._populate_value(pb, d)
+    self.assertEquals([1, 1, -1, 1, -2, 1], pb.distribution.bucket)
+    self.assertEquals(0, pb.distribution.underflow)
+    self.assertEquals(0, pb.distribution.overflow)
+    self.assertEquals(30, pb.distribution.mean)
+
+    pb = metrics_pb2.MetricsData()
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10, num_finite_buckets=1))
+    d.add(5)
+    d.add(15)
+    d.add(25)
+
+    m._populate_value(pb, d)
+    self.assertEquals([1], pb.distribution.bucket)
+    self.assertEquals(0, pb.distribution.underflow)
+    self.assertEquals(2, pb.distribution.overflow)
+    self.assertEquals(15, pb.distribution.mean)
+
+  def test_populate_buckets_last_zero(self):
+    pb = metrics_pb2.MetricsData()
+    m = metrics.DistributionMetric('test')
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10, num_finite_buckets=10))
+    d.add(5)
+    d.add(105)
+
+    m._populate_value(pb, d)
+    self.assertEquals([1], pb.distribution.bucket)
+    self.assertEquals(1, pb.distribution.overflow)
+
+  def test_populate_buckets_underflow(self):
+    pb = metrics_pb2.MetricsData()
+    m = metrics.DistributionMetric('test')
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10, num_finite_buckets=10))
+    d.add(-5)
+    d.add(-1000000)
+
+    m._populate_value(pb, d)
+    self.assertEquals([], pb.distribution.bucket)
+    self.assertEquals(2, pb.distribution.underflow)
+    self.assertEquals(0, pb.distribution.overflow)
+    self.assertEquals(-500002.5, pb.distribution.mean)
+
+  def test_add(self):
+    m = metrics.DistributionMetric('test')
+    m.add(1)
+    m.add(10)
+    m.add(100)
+    self.assertEquals({2: 1, 6: 1, 11: 1}, m.get().buckets)
+    self.assertEquals(111, m.get().sum)
+    self.assertEquals(3, m.get().count)
+
+  def test_add_custom_bucketer(self):
+    m = metrics.DistributionMetric('test',
+        bucketer=distribution.FixedWidthBucketer(10))
+    m.add(1)
+    m.add(10)
+    m.add(100)
+    self.assertEquals({1: 1, 2: 1, 11: 1}, m.get().buckets)
+    self.assertEquals(111, m.get().sum)
+    self.assertEquals(3, m.get().count)
+
+  def test_set(self):
+    m = metrics.DistributionMetric('test')
+    with self.assertRaises(TypeError):
+      m.set(1)

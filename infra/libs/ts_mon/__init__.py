@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from infra.libs.ts_mon.distribution import Distribution
+from infra.libs.ts_mon.distribution import FixedWidthBucketer
+from infra.libs.ts_mon.distribution import GeometricBucketer
+
 from infra.libs.ts_mon.errors import MonitoringError
 from infra.libs.ts_mon.errors import MonitoringDecreasingValueError
 from infra.libs.ts_mon.errors import MonitoringDuplicateRegistrationError
@@ -24,12 +28,13 @@ from infra.libs.ts_mon.interface import unregister
 from infra.libs.ts_mon.targets import DeviceTarget
 from infra.libs.ts_mon.targets import TaskTarget
 
-from infra.libs.ts_mon.metrics import StringMetric
 from infra.libs.ts_mon.metrics import BooleanMetric
 from infra.libs.ts_mon.metrics import CounterMetric
-from infra.libs.ts_mon.metrics import GaugeMetric
 from infra.libs.ts_mon.metrics import CumulativeMetric
+from infra.libs.ts_mon.metrics import DistributionMetric
 from infra.libs.ts_mon.metrics import FloatMetric
+from infra.libs.ts_mon.metrics import GaugeMetric
+from infra.libs.ts_mon.metrics import StringMetric
 
 from infra.libs.ts_mon.monitors import ApiMonitor
 from infra.libs.ts_mon.monitors import DiskMonitor
