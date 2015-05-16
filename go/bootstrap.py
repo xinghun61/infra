@@ -24,8 +24,6 @@ import tempfile
 import urllib
 import zipfile
 
-# TODO(vadimsh): Migrate to new golang.org/x/ paths once Golang moves to
-# git completely.
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,13 +70,10 @@ DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
 # hosted in Hg currently). Also revisions of go.tools repo in TOOLS_SOURCE and
 # Goopfile.lock would have to be kept in sync.
 TOOLS_SOURCE = {
-  'src/code.google.com/p/go.tools': {
-    'url': (
-      'https://chromium.googlesource.com/infra/third_party/go/'
-      'code.google.com/p/go.tools'
-    ),
+  'src/golang.org/x/tools': {
+    'url': 'https://go.googlesource.com/tools',
     'ref': 'refs/heads/master',
-    'rev': '769e3df57984a798ef0b939485db1d954122c130',
+    'rev': '7d75e8b219c3efda2d08ae38acd6b42f8da4f5f9',
   },
   'src/github.com/nitrous-io/goop': {
     'url': (
@@ -86,7 +81,7 @@ TOOLS_SOURCE = {
       'github.com/nitrous-io/goop'
     ),
     'ref': 'refs/heads/chromium',
-    'rev': 'a42caf29ee8bf072e981fde447c9348635429ef7',
+    'rev': 'f1473c14fd226c2e50d7b08d6d16504aa6c6200f',
   },
   'src/github.com/golang/lint': {
     'url': (
@@ -94,7 +89,7 @@ TOOLS_SOURCE = {
         'github.com/golang/lint.git'
     ),
     'ref': 'refs/heads/master',
-    'rev': '8ca23475bcb43213a55dd8210b69363f6b0e09c1',
+    'rev': 'dea130113ab8ebacb52dbce09c9a4c92951afdca',
   },
 }
 
