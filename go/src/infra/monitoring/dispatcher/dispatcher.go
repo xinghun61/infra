@@ -78,6 +78,11 @@ func readJSONFile(filePath string, object interface{}) error {
 	return nil
 }
 
+func masterFromURL(masterURL string) string {
+	parts := strings.Split(masterURL, "/")
+	return parts[len(parts)-1]
+}
+
 func main() {
 	start := time.Now()
 	flag.Parse()
@@ -99,6 +104,15 @@ func main() {
 
 	a := analyzer.New(nil, 2, 5)
 
+	for masterURL, masterCfgs := range gk.Masters {
+		if len(masterCfgs) != 1 {
+			log.Fatalf("Multiple configs for master: %s", masterURL)
+		}
+		masterName := masterFromURL(masterURL)
+		log.Infof("masterName: %s", masterName)
+		a.MasterCfgs[masterName] = masterCfgs[0]
+	}
+
 	a.TreeOnly = *treeOnly
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly
@@ -107,8 +121,7 @@ func main() {
 	if *treeOnly != "" {
 		if t, ok := gkt[*treeOnly]; ok {
 			for _, url := range t.Masters {
-				parts := strings.Split(url, "/")
-				masterNames = append(masterNames, parts[len(parts)-1])
+				masterNames = append(masterNames, masterFromURL(url))
 			}
 		} else {
 			log.Fatalf("Unrecoginzed tree: %s", *treeOnly)

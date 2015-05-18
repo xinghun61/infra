@@ -93,6 +93,9 @@ type MasterAnalyzer struct {
 	// triggering a "stale master" alert.
 	StaleMasterThreshold time.Duration
 
+	// MasterCfgs is a map of master name to MasterConfig
+	MasterCfgs map[string]messages.MasterConfig
+
 	// bCache is a map of build cache key to Build message.
 	bCache map[string]*messages.Build
 	// bLock protects bCache
@@ -127,6 +130,7 @@ func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
 			&TestFailureAnalyzer{Client: c},
 			&CompileFailureAnalyzer{Client: c},
 		},
+		MasterCfgs: map[string]messages.MasterConfig{},
 
 		now: func() time.Time {
 			return time.Now()
@@ -592,6 +596,12 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 			continue
 			// The actual breaking step will appear later.
 		}
+
+		// Check the gatekeeper configs to see if this is ignorable.
+		if a.excludeFailure(failure.masterName, failure.builderName, failure.step.Name) {
+			continue
+		}
+
 		scannedFailures = append(scannedFailures, failure)
 		go func(f stepFailure) {
 			alr := messages.Alert{
@@ -604,6 +614,8 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 			revsByRepo := map[string][]string{}
 
 			for _, change := range f.build.SourceStamp.Changes {
+				// check change.Comments for text like
+				// "Cr-Commit-Position: refs/heads/master@{#330158}" to pick out revs from git commits.
 				revsByRepo[change.Repository] = append(revsByRepo[change.Repository], change.Revision)
 			}
 			for repo, revs := range revsByRepo {
@@ -626,6 +638,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 						LatestFailure: f.build.Number,
 					},
 				},
+				TreeCloser:       a.wouldCloseTree(f.masterName, f.builderName, f.step.Name),
 				RegressionRanges: regRanges,
 			}
 
@@ -693,6 +706,76 @@ func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
 	}
 
 	return ret
+}
+
+func (a *MasterAnalyzer) excludeFailure(master, builder, step string) bool {
+	mc, ok := a.MasterCfgs[master]
+	if !ok {
+		log.Errorf("Can't filter unknown master %s", master)
+		return false
+	}
+
+	for _, ebName := range mc.ExcludedBuilders {
+		if ebName == "*" || ebName == builder {
+			return true
+		}
+	}
+
+	// Not clear that builder_alerts even looks at the rest of these condtions
+	// even though they're specified in gatekeeper.json
+	for _, s := range mc.ExcludedSteps {
+		if step == s {
+			return true
+		}
+	}
+
+	bc, ok := mc.Builders[builder]
+	if !ok {
+		if bc, ok = mc.Builders["*"]; !ok {
+			log.Warnf("Unknown %s builder %s", master, builder)
+			return true
+		}
+	}
+
+	for _, esName := range bc.ExcludedSteps {
+		if esName == step || esName == "*" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *MasterAnalyzer) wouldCloseTree(master, builder, step string) bool {
+	mc, ok := a.MasterCfgs[master]
+	if !ok {
+		log.Errorf("Missing master cfg: %s", master)
+		return false
+	}
+	bc, ok := mc.Builders[builder]
+	if !ok {
+		bc = mc.Builders["*"]
+	}
+
+	for _, xstep := range bc.ExcludedSteps {
+		if xstep == step {
+			return false
+		}
+	}
+
+	csteps := []string{}
+	csteps = append(csteps, bc.ForgivingSteps...)
+	csteps = append(csteps, bc.ForgivingOptional...)
+	csteps = append(csteps, bc.ClosingSteps...)
+	csteps = append(csteps, bc.ClosingOptional...)
+
+	for _, cs := range csteps {
+		if cs == "*" || cs == step {
+			return true
+		}
+	}
+
+	return false
 }
 
 // unexpected returns the set of expected xor actual.

@@ -867,3 +867,81 @@ func TestLatestBuildStep(t *testing.T) {
 		}
 	}
 }
+
+func TestExcludeFailure(t *testing.T) {
+	tests := []struct {
+		name                  string
+		cfgs                  map[string]messages.MasterConfig
+		master, builder, step string
+		want                  bool
+	}{
+		{
+			name:    "empty config",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			want:    false,
+		},
+		{
+			name:    "specifically excluded builder",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			cfgs: map[string]messages.MasterConfig{
+				"fake.master": messages.MasterConfig{
+					ExcludedBuilders: []string{"fake.builder"},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "specifically excluded master step",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			cfgs: map[string]messages.MasterConfig{
+				"fake.master": messages.MasterConfig{
+					ExcludedSteps: []string{"fake_step"},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "specifically excluded builder step",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			cfgs: map[string]messages.MasterConfig{
+				"fake.master": messages.MasterConfig{
+					Builders: map[string]messages.BuilderConfig{
+						"fake.builder": messages.BuilderConfig{
+							ExcludedSteps: []string{"fake_step"},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "wildcard builder excluded",
+			master:  "fake.master",
+			builder: "fake.builder",
+			step:    "fake_step",
+			cfgs: map[string]messages.MasterConfig{
+				"fake.master": messages.MasterConfig{
+					ExcludedBuilders: []string{"*"},
+				},
+			},
+			want: true,
+		},
+	}
+
+	a := New(&mockClient{}, 0, 10)
+	for _, test := range tests {
+		a.MasterCfgs = test.cfgs
+		got := a.excludeFailure(test.master, test.builder, test.step)
+		if got != test.want {
+			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
+		}
+	}
+}
