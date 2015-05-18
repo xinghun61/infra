@@ -14,13 +14,13 @@ the root of the repository. Here are some commands for the impatient:
 | ``./test.py list``                      | List all tests in the repository,   |
 |                                         | without running them.               |
 +-----------------------------------------+-------------------------------------+
-| ``./test.py test infra_internal``       | Run only tests found in the         |
-|                                         | infra_internal package.             |
+| ``./test.py test infra``                | Run only tests found in the         |
+|                                         | infra package.                      |
 +-----------------------------------------+-------------------------------------+
 | ``./test.py train``                     | Run all tests and write             |
 |                                         | expectations.                       |
 +-----------------------------------------+-------------------------------------+
-| ``./test.py test infra_internal:*foo*`` | Run tests from infra_internal with  |
+| ``./test.py test infra:*foo*``          | Run tests from infra with           |
 |                                         | 'foo' in their name.                |
 +-----------------------------------------+-------------------------------------+
 
