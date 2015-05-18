@@ -16,6 +16,14 @@ class TestOuterLoop(auto_stub.TestCase):
     self.sleeps = []
     self.now = 0
     def mocked_sleep(t):
+      # Sometimes we see tens of thousands of calls to sleep in testUntilCtrlC,
+      # resulting in an assertion failure. We log the source of one call
+      # here so we can see if they're expected or an actual bug.
+      # TODO(estaab): Remove this once we resolve crbug.com/488224.
+      if len(self.sleeps) == 10000:  # pragma: no cover
+        print 'Current stack in time.sleep() for debugging crbug.com/488224:'
+        import traceback
+        traceback.print_stack()
       self.sleeps.append(t)
       self.now += t
     self.mock(time, 'sleep', mocked_sleep)
