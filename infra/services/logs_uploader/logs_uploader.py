@@ -19,7 +19,7 @@ import urlparse
 
 import requests
 
-from infra.libs import logs as infra_logs
+from infra_libs import logs as infra_logs
 
 # This logger is modified by setup_logging() below.
 LOGGER = logging.getLogger(__name__)

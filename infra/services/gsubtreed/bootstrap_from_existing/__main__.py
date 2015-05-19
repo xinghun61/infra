@@ -8,8 +8,8 @@ import argparse
 import hashlib
 import sys
 
-from infra.libs import logs
 from infra.libs.git2 import Repo
+from infra_libs import logs
 
 from infra.services.gsubtreed.gsubtreed import MIRRORED_COMMIT
 
