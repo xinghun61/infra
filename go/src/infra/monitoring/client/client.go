@@ -22,6 +22,11 @@ var (
 	log = logrus.New()
 )
 
+// MasterURL returns the builder URL for the given master.
+func MasterURL(master string) string {
+	return fmt.Sprintf("https://build.chromium.org/p/%s", master)
+}
+
 // BuilderURL returns the builder URL for the given master and builder.
 func BuilderURL(master, builder string) string {
 	return fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s", master, oldEscape(builder))

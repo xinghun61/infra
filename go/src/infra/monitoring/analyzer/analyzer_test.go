@@ -6,6 +6,7 @@ package analyzer
 
 import (
 	"fmt"
+	"infra/monitoring/client"
 	"infra/monitoring/messages"
 	"reflect"
 	"testing"
@@ -61,20 +62,20 @@ func (m mockClient) DumpStats() {
 
 func TestMasterAlerts(t *testing.T) {
 	tests := []struct {
-		name string
-		url  string
-		be   messages.BuildExtract
-		t    time.Time
-		want []messages.Alert
+		name   string
+		master string
+		be     messages.BuildExtract
+		t      time.Time
+		want   []messages.Alert
 	}{
 		{
-			name: "empty",
-			url:  "http://fake-empty",
-			want: []messages.Alert{},
+			name:   "empty",
+			master: "fake-empty",
+			want:   []messages.Alert{},
 		},
 		{
-			name: "Not stale master",
-			url:  "http://fake-not-stale",
+			name:   "Not stale master",
+			master: "fake-not-stale",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 			},
@@ -82,25 +83,25 @@ func TestMasterAlerts(t *testing.T) {
 			want: []messages.Alert{},
 		},
 		{
-			name: "Stale master",
-			url:  "http://fake.master",
+			name:   "Stale master",
+			master: "fake.master",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(100),
 			},
 			t: time.Unix(100, 0).Add(20 * time.Minute),
 			want: []messages.Alert{
 				{
-					Key:   "stale master: http://fake.master",
-					Title: "Stale Master Data",
+					Key:   "stale master: fake.master",
+					Title: "Stale fake.master master data",
 					Body:  fmt.Sprintf("%s elapsed since last update (1970-01-01 00:01:40 +0000 UTC).", 20*time.Minute),
 					Time:  messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
-					Links: []messages.Link{{"Master", "http://fake.master"}},
+					Links: []messages.Link{{"Master", client.MasterURL("fake.master")}},
 				},
 			},
 		},
 		{
-			name: "Future master",
-			url:  "http://fake.master",
+			name:   "Future master",
+			master: "fake.master",
 			be: messages.BuildExtract{
 				CreatedTimestamp: messages.EpochTime(110),
 			},
@@ -113,7 +114,7 @@ func TestMasterAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.now = fakeNow(test.t)
-		got := a.MasterAlerts(test.url, &test.be)
+		got := a.MasterAlerts(test.master, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.want)
 		}
@@ -489,6 +490,193 @@ func TestBuilderStepAlerts(t *testing.T) {
 		}
 		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
+		}
+	}
+}
+
+func TestMergeAlertsByStep(t *testing.T) {
+	tests := []struct {
+		name     string
+		in, want []messages.Alert
+	}{
+		{
+			name: "empty",
+			want: []messages.Alert{},
+		},
+		{
+			name: "no merges",
+			in: []messages.Alert{
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.a",
+							},
+						},
+					},
+				},
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder B"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_b",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.b",
+							},
+						},
+					},
+				},
+			},
+			want: []messages.Alert{
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.a",
+							},
+						},
+					},
+				},
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder B"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_b",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.b",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple builders fail on step_a",
+			in: []messages.Alert{
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.a",
+							},
+						},
+					},
+				},
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder B"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.b",
+							},
+						},
+					},
+				},
+				{
+					Type: "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder C"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.c",
+							},
+						},
+					},
+				},
+			},
+			want: []messages.Alert{
+				{
+					Title: "step_a failing on 3 builders",
+					Type:  "buildfailure",
+					Extension: messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{Name: "builder A"},
+							{Name: "builder B"},
+							{Name: "builder C"},
+						},
+						Reasons: []messages.Reason{
+							{
+								Step: "step_a",
+							},
+						},
+						RegressionRanges: []messages.RegressionRange{
+							{
+								Repo: "repo.a",
+							},
+							{
+								Repo: "repo.b",
+							},
+							{
+								Repo: "repo.c",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	a := New(&mockClient{}, 0, 10)
+	for _, test := range tests {
+		got := a.mergeAlertsByStep(test.in)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
 		}
 	}
 }

@@ -141,8 +141,8 @@ func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
 	}
 }
 
-// MasterAlerts returns alerts generated from the master at URL.
-func (a *MasterAnalyzer) MasterAlerts(url string, be *messages.BuildExtract) []messages.Alert {
+// MasterAlerts returns alerts generated from the master.
+func (a *MasterAnalyzer) MasterAlerts(master string, be *messages.BuildExtract) []messages.Alert {
 	ret := []messages.Alert{}
 
 	// Copied logic from builder_messages.
@@ -154,18 +154,18 @@ func (a *MasterAnalyzer) MasterAlerts(url string, be *messages.BuildExtract) []m
 	elapsed := a.now().Sub(be.CreatedTimestamp.Time())
 	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
-			Key:      fmt.Sprintf("stale master: %v", url),
-			Title:    "Stale Master Data",
+			Key:      fmt.Sprintf("stale master: %v", master),
+			Title:    fmt.Sprintf("Stale %s master data", master),
 			Body:     fmt.Sprintf("%s elapsed since last update (%s).", elapsed, be.CreatedTimestamp.Time()),
 			Severity: staleMasterSev,
 			Time:     messages.TimeToEpochTime(a.now()),
-			Links:    []messages.Link{{"Master", url}},
+			Links:    []messages.Link{{"Master", client.MasterURL(master)}},
 			// No type or extension for now.
 		})
 	}
 	if elapsed < 0 {
 		// Add this to the alerts returned, rather than just log it?
-		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", url, a.now(), elapsed)
+		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", master, a.now(), elapsed)
 	}
 
 	return ret
@@ -216,6 +216,7 @@ func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtr
 		}
 	}
 
+	ret = a.mergeAlertsByStep(ret)
 	return ret
 }
 
@@ -424,6 +425,98 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	return alerts, errs
 }
 
+// mergeAlertsByStep merges alerts for step failures occurring across multiple builders into
+// one alert with multiple builders indicated.
+func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
+	mergedAlerts := []messages.Alert{}
+	byStep := map[string][]messages.Alert{}
+	for _, alert := range alerts {
+		bf, ok := alert.Extension.(messages.BuildFailure)
+		if !ok {
+			// Not a builder failure, so don't bother trying to group it by step name.
+			mergedAlerts = append(mergedAlerts, alert)
+			continue
+		}
+		for _, r := range bf.Reasons {
+			// TODO: also check r.Test?  That might leave too many alerts.
+			byStep[r.Step] = append(byStep[r.Step], alert)
+		}
+	}
+
+	sortedSteps := []string{}
+	for step := range byStep {
+		sortedSteps = append(sortedSteps, step)
+	}
+
+	sort.Strings(sortedSteps)
+
+	// Merge build failures by step, then make a single alert listing all of the builders
+	// failing for that step.
+	for _, step := range sortedSteps {
+		stepAlerts := byStep[step]
+		if len(stepAlerts) == 1 {
+			mergedAlerts = append(mergedAlerts, stepAlerts[0])
+			continue
+		}
+
+		merged := stepAlerts[0]
+
+		mergedBF := merged.Extension.(messages.BuildFailure)
+		if len(mergedBF.Builders) > 1 {
+			log.Errorf("Alert shouldn't have multiple builders before merging by step: %+v", mergedBF)
+		}
+
+		// Clear out the list of builders because we're going to reconstruct it.
+		mergedBF.Builders = []messages.AlertedBuilder{}
+		mergedBF.RegressionRanges = []messages.RegressionRange{}
+
+		builders := map[string]messages.AlertedBuilder{}
+		regressionRanges := map[string][]messages.RegressionRange{}
+
+		for _, alert := range stepAlerts {
+			bf := alert.Extension.(messages.BuildFailure)
+			if len(bf.Builders) > 1 {
+				log.Errorf("Alert shouldn't have multiple builders before merging by step: %+v", mergedBF)
+			}
+
+			builder := bf.Builders[0]
+			// If any of the builders would call it a tree closer,
+			// mark the merged alert as one.
+			mergedBF.TreeCloser = bf.TreeCloser || mergedBF.TreeCloser
+			if ab, ok := builders[builder.Name]; ok {
+				if ab.FirstFailure < builder.FirstFailure {
+					builder.FirstFailure = ab.FirstFailure
+				}
+				if ab.LatestFailure > builder.LatestFailure {
+					builder.LatestFailure = ab.LatestFailure
+				}
+			}
+			builders[builder.Name] = builder
+			regressionRanges[builder.Name] = bf.RegressionRanges
+		}
+
+		builderNames := []string{}
+		for name := range builders {
+			builderNames = append(builderNames, name)
+		}
+		sort.Strings(builderNames)
+
+		for _, name := range builderNames {
+			builder := builders[name]
+			mergedBF.Builders = append(mergedBF.Builders, builder)
+			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, regressionRanges[builder.Name]...)
+		}
+
+		if len(mergedBF.Builders) > 1 {
+			merged.Title = fmt.Sprintf("%s failing on %d builders", step, len(mergedBF.Builders))
+		}
+		merged.Extension = mergedBF
+		mergedAlerts = append(mergedAlerts, merged)
+	}
+
+	return mergedAlerts
+}
+
 // builderStepAlerts scans the steps of recent builds done on a particular builder,
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
@@ -475,8 +568,9 @@ func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64
 				log.Errorf("Couldn't cast a %q extension as BuildFailure", alr.Type)
 				continue
 			}
-			// TODO: iterate over Builders. For now, there's only one builder per failure because
-			// alert keys include the builder name.
+			// At this point, there should only be one builder per failure because
+			// alert keys include the builder name.  We merge builders by step failure
+			// in another pass, after this funtion is called.
 			if bf.Builders[0].FirstFailure < mergedBF.Builders[0].FirstFailure {
 				mergedBF.Builders[0].FirstFailure = bf.Builders[0].FirstFailure
 			}
@@ -754,7 +848,10 @@ func (a *MasterAnalyzer) wouldCloseTree(master, builder, step string) bool {
 	}
 	bc, ok := mc.Builders[builder]
 	if !ok {
-		bc = mc.Builders["*"]
+		bc, ok = mc.Builders["*"]
+		if ok {
+			return true
+		}
 	}
 
 	for _, xstep := range bc.ExcludedSteps {
@@ -764,8 +861,6 @@ func (a *MasterAnalyzer) wouldCloseTree(master, builder, step string) bool {
 	}
 
 	csteps := []string{}
-	csteps = append(csteps, bc.ForgivingSteps...)
-	csteps = append(csteps, bc.ForgivingOptional...)
 	csteps = append(csteps, bc.ClosingSteps...)
 	csteps = append(csteps, bc.ClosingOptional...)
 

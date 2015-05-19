@@ -109,7 +109,6 @@ func main() {
 			log.Fatalf("Multiple configs for master: %s", masterURL)
 		}
 		masterName := masterFromURL(masterURL)
-		log.Infof("masterName: %s", masterName)
 		a.MasterCfgs[masterName] = masterCfgs[0]
 	}
 
