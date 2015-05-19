@@ -5,7 +5,7 @@ Logging in infra.git
 Features
 --------
 
-The ``infra.libs.logs`` package contains some code to simplify logging
+The ``infra_libs.logs`` package contains some code to simplify logging
 and make it consistent and easily configurable. Using it makes your code
 future-proof.
 
@@ -28,20 +28,20 @@ Sample code
 -----------
 
 This is the standard way to set up logging so as to take advantage of the
-goodness provided by ``infra.libs.logs``.
+goodness provided by ``infra_libs.logs``.
 
 In top-level files (other example in ``infra.tools.sysmon.__main__``):
 
 .. code-block:: python
 
   import argparse
-  import infra.libs.logs
+  import infra_libs.logs
 
   parser = argparse.ArgumentParser()
-  infra.libs.logs.add_argparse_options(parser)
+  infra_libs.logs.add_argparse_options(parser)
 
   options = parser.parse_args()
-  infra.libs.logs.process_argparse_options(options)
+  infra_libs.logs.process_argparse_options(options)
 
 
 Logging messages should be done this way (other example in
@@ -58,8 +58,8 @@ Logging messages should be done this way (other example in
 
 
 Using ``logging.getLogger`` good practice in general (not restricted to using
-infra.libs.logs) because it allows for module blacklisting and other goodness.
+infra_libs.logs) because it allows for module blacklisting and other goodness.
 It should be done at import time. See also the official `logging HOWTO
-<https://docs.python.org/2/howto/logging.html>`_. ``infra.libs.logs`` also
+<https://docs.python.org/2/howto/logging.html>`_. ``infra_libs.logs`` also
 formats the output of the root logger, but using this logger is not recommended.
 
