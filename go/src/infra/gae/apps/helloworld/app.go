@@ -12,8 +12,7 @@ import (
 	"appengine"
 	"appengine/user"
 
-	"code.google.com/p/goauth2/oauth" // vendored packages work
-	"infra/libs/build"                // infra packages work
+	"infra/libs/build"
 )
 
 func init() {
@@ -42,7 +41,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	u := user.Current(c)
 	fmt.Fprintf(w, "Hello, %v!\n", u)
-	fmt.Fprintf(w, "OAuth stuff works: %v\n", &oauth.Config{})
 	fmt.Fprintf(w, "Infra stuff works: %v\n", build.ReleaseBuild)
 	fmt.Fprintf(w, "GOROOT: %s\n", runtime.GOROOT())
 	fmt.Fprintf(w, "GOARCH: %s\n", runtime.GOARCH)

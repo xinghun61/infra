@@ -1,4 +1,3 @@
-code.google.com/p/goauth2/oauth #f02aa781ad087b29b5b6276564da3215d39a6d61 !https://chromium.googlesource.com/infra/third_party/go/code.google.com/p/goauth2.git
 github.com/bradfitz/http2 #f8202bc903bda493ebba4aa54922d78430c2c42f !https://chromium.googlesource.com/external/github.com/bradfitz/http2.git
 github.com/go-yaml/yaml #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromium.googlesource.com/external/github.com/golang/glog.git

@@ -81,27 +81,26 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 // ServiceOptions defines command line arguments related to communication
 // with the remote service. Subcommands that interact with the network embed it.
 type ServiceOptions struct {
-	serviceURL         string
-	serviceAccountJSON string
+	authFlags  auth.Flags
+	serviceURL string
 }
 
 func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
 	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one")
-	f.StringVar(&opts.serviceAccountJSON, "service-account-json", "", "Path to JSON file with service account credentials to use.")
+	opts.authFlags.Register(f)
 }
 
 func (opts *ServiceOptions) makeCipdClient() (*cipd.Client, error) {
+	authOpts, err := opts.authFlags.Options()
+	if err != nil {
+		return nil, err
+	}
 	client := cipd.NewClient()
 	if opts.serviceURL != "" {
 		client.ServiceURL = opts.serviceURL
 	}
 	client.AuthenticatedClientFactory = func() (*http.Client, error) {
-		authOpts := auth.Options{}
-		if opts.serviceAccountJSON != "" {
-			authOpts.Method = auth.ServiceAccountMethod
-			authOpts.ServiceAccountJSONPath = opts.serviceAccountJSON
-		}
-		return auth.AuthenticatedClient(false, auth.NewAuthenticator(authOpts))
+		return auth.AuthenticatedClient(auth.OptionalLogin, auth.NewAuthenticator(authOpts))
 	}
 	return client, nil
 }
