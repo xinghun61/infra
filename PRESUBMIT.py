@@ -162,6 +162,32 @@ def DirtyRootsFromAffectedFiles(changed_py_files, root_to_paths):
   return dirty_roots
 
 
+def NoForkCheck(input_api, output_api): # pragma: no cover
+  """Warn when a file that should not be modified is modified.
+
+  This is useful when a file is to be moved to a different place
+  and is temporarily copied to preserve backward compatibility. We don't
+  want the original file to be modified.
+  """
+  # Files that must not be modified (regex)
+  # Paths tested are relative to the directory containing this file.
+  # Ex: infra/libs/logs.py
+  black_list = ['^infra/libs']
+  black_list_re = [input_api.re.compile(regexp) for regexp in black_list]
+  offending_files = []
+  for filename in input_api.AffectedTextFiles():
+    if any(regexp.search(filename.LocalPath()) for regexp in black_list_re):
+      offending_files.append(filename.LocalPath())
+  if offending_files:
+    return [output_api.PresubmitPromptWarning(
+      'You modified files that should not be modified. Look for a NOFORK file\n'
+      + 'in a directory above those files to get more context:\n%s'
+      % '\n'.join(offending_files)
+      )]
+  return []
+
+
+
 def EmptiedFilesCheck(input_api, output_api): # pragma: no cover
   """Warns if a CL empties a file.
 
@@ -247,6 +273,7 @@ def CommonChecks(input_api, output_api):  # pragma: no cover
 
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
+  output.extend(NoForkCheck(input_api, output_api))
   output.extend(EmptiedFilesCheck(input_api, output_api))
   return output
 

@@ -1,0 +1,5 @@
+This subtree is being extracted to a separate package named infra_libs. 
+You modify infra_libs instead of the present infra.libs one.
+
+Please reach out to pgervais@chromium.org for more context.
+See also https://crbug.com/487298
