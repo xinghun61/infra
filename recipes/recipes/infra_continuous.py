@@ -4,6 +4,7 @@
 
 DEPS = [
   'bot_update',
+  'file',
   'gclient',
   'json',
   'path',
@@ -57,6 +58,9 @@ def GenSteps(api):
     raise ValueError('This recipe is not intended for builder %s. '
                      % builder_name)
 
+  # Only build luci-go executables on 64 bits.
+  build_luci = builder_name.endswith('-64')
+
   api.gclient.set_config(project_name)
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
@@ -73,6 +77,27 @@ def GenSteps(api):
   # TODO(crbug.com/481661): CIPD client doesn't support Windows yet.
   if not api.platform.is_win:
     build_cipd_packages(api)
+
+  if build_luci:
+    go_bin = api.path['checkout'].join('go', 'bin')
+    go_env = api.path['checkout'].join('go', 'env.py')
+    api.file.rmcontents('clean go/bin', go_bin)
+
+    api.python(
+        'build luci-go', go_env,
+        ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
+
+    files = api.file.listdir('listing go/bin', go_bin)
+    absfiles = [api.path.join(go_bin, i) for i in files]
+    api.python(
+        'upload go/bin',
+        api.path['depot_tools'].join('upload_to_google_storage.py'),
+        ['-b', 'chromium-luci'] + absfiles)
+    for name, abspath in zip(files, absfiles):
+      sha1 = api.file.read(
+          '%s sha1' % str(name), abspath + '.sha1',
+          test_data='0123456789abcdeffedcba987654321012345678')
+      api.step.active_result.presentation.step_text = sha1
 
 
 def GenTests(api):
@@ -121,4 +146,13 @@ def GenTests(api):
     ) +
     api.override_step_data(
         'build cipd packages', api.json.output(cipd_json_output))
+  )
+  yield (
+    api.test('infra-64') +
+    api.properties.git_scheduled(
+        buildername='infra-continuous-64',
+        buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    )
   )
