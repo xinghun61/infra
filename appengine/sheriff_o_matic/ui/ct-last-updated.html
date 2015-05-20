@@ -18,8 +18,15 @@ found in the LICENSE file.
           background-color: red;
           color: black;
         }
+        .date_shown {
+          display: inline;
+        }
+        .date_hidden {
+          display: none;
+        }
       </style>
-      <span class="{{ date | _style }}">Updated @ {{ date | _hours }}:{{ date | _minutes }}</div>
+      <span class="{{ date | _style }}">Updated @ {{ date | _hours }}:{{ date | _minutes }}</span>
+      <span class='{{ date | _dateStyle }}'>{{ date | _date }}</span>
     </template>
   </template>
   <script>
@@ -36,12 +43,17 @@ found in the LICENSE file.
           return "stale_5minutes";
         return "";
       },
-
       _hours: function(date) {
         return date.getHours();
       },
       _minutes: function(date) {
         return date.getMinutes().toString().padLeft(2, '0');
+      },
+      _date: function(date) {
+        return date.toDateString();
+      },
+      _dateStyle: function(date) {
+        return date.hoursAgo() > 12 ? 'date_shown' : 'date_hidden';
       },
     });
   })();

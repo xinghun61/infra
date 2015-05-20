@@ -22,6 +22,7 @@ function CTFailures(repositories) {
   // Maps a tree id to an array of CTFailureGroups within that tree.
   this.failures = null;
   this.lastUpdateDate = null;
+  this.alertsHistoryKey = null;
 }
 
 (function() {
@@ -103,14 +104,14 @@ CTFailures.prototype._mungeAlerts = function(alerts) {
 
 CTFailures.prototype.update = function() {
   var annotationPromise = CTFailureGroup.fetchAnnotations();
-  var alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts';
+  var alertsUrl = 'https://4d2738f-dot-sheriff-o-matic.appspot.com/alerts';
 
   if (window.location.search) {
     var parts = window.location.search.split('&');
     parts.forEach(function(part) {
       var v = part.split('=');
       if (v[0].replace('?', "") == 'history') {
-        alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts-history/' + v[1];
+        alertsUrl = 'https://4d2738f-dot-sheriff-o-matic.appspot.com/alerts-history/' + v[1];
       }
     });
   }
@@ -126,6 +127,7 @@ CTFailures.prototype.update = function() {
 
     var lastPosted = (sheriff_data.last_posted || sheriff_data.date) * 1000;
     this.lastUpdateDate = new Date(lastPosted);
+    this.alertsHistoryKey = sheriff_data.key;
 
     this._mungeAlerts(sheriff_data.alerts);
     // FIXME: Change builder_alerts to expose the alerts as a map instead of an array.

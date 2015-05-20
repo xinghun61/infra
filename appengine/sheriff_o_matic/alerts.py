@@ -98,7 +98,8 @@ class AlertsHandler(webapp2.RequestHandler):
       if last_entry.use_gcs:
         data = self.get_from_gcs(alerts_type)
       data = json.loads(data)
-      data["stale_alerts_thresh"] = self.MAX_STALENESS
+      data['key'] = last_entry.key.integer_id()
+      data['stale_alerts_thresh'] = self.MAX_STALENESS
 
       data['last_posted'] = None
       last_updated = ndb.Key(LastUpdated, alerts_type).get()
@@ -112,7 +113,7 @@ class AlertsHandler(webapp2.RequestHandler):
       if data['last_posted']:
         posted_date = data['last_posted']
       if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
-        data["stale_alerts_json"] = True
+        data['stale_alerts_json'] = True
 
       data = self.generate_json_dump(data)
 
@@ -139,8 +140,8 @@ class AlertsHandler(webapp2.RequestHandler):
       if data['last_posted']:
         posted_date = data['last_posted']
       if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
-        data["stale_alerts_json"] = True
-      data["stale_alerts_thresh"] = self.MAX_STALENESS
+        data['stale_alerts_json'] = True
+      data['stale_alerts_thresh'] = self.MAX_STALENESS
 
       data = self.generate_json_dump(data)
       self.send_json_data(data)
@@ -244,7 +245,9 @@ class AlertsHistory(webapp2.RequestHandler):
     ndb_key = ndb.Key(AlertsJSON, key)
     result = query.filter(AlertsJSON.key == ndb_key).get()
     if result:
-      return json.loads(result.json)
+      data = json.loads(result.json)
+      data['key'] = key
+      return data
     else:
       self.response.set_status(404, 'Failed to find key %s' % key)
       return {}
