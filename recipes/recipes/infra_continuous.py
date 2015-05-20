@@ -81,16 +81,16 @@ def GenSteps(api):
   if build_luci:
     go_bin = api.path['checkout'].join('go', 'bin')
     go_env = api.path['checkout'].join('go', 'env.py')
-    api.file.rmcontents('clean go/bin', go_bin)
+    api.file.rmcontents('clean go bin', go_bin)
 
     api.python(
         'build luci-go', go_env,
         ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
 
-    files = api.file.listdir('listing go/bin', go_bin)
+    files = api.file.listdir('listing go bin', go_bin)
     absfiles = [api.path.join(go_bin, i) for i in files]
     api.python(
-        'upload go/bin',
+        'upload go bin',
         api.path['depot_tools'].join('upload_to_google_storage.py'),
         ['-b', 'chromium-luci'] + absfiles)
     for name, abspath in zip(files, absfiles):

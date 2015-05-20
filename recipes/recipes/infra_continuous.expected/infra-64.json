@@ -103,7 +103,7 @@
       "[SLAVE_BUILD]/infra/go/bin"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "rmcontents clean go/bin",
+    "name": "rmcontents clean go bin",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
@@ -138,7 +138,7 @@
       "/path/to/tmp/json"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "listdir listing go/bin",
+    "name": "listdir listing go bin",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@[@@@",
       "@@@STEP_LOG_LINE@json.output@  \"file 1\", @@@",
@@ -164,7 +164,7 @@
       "[SLAVE_BUILD]/infra/go/bin/file 2"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "upload go/bin"
+    "name": "upload go bin"
   },
   {
     "cmd": [
