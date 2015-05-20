@@ -18,7 +18,7 @@ import traceback
 import requests
 import requests_cache
 
-from infra_libs import logs
+from infra.libs import logs
 from infra.libs.service_utils import outer_loop
 
 from infra.services.builder_alerts import analysis

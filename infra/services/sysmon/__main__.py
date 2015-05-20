@@ -10,9 +10,9 @@ import sys
 
 import psutil
 
+from infra.libs import logs
 from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
-from infra_libs import logs
 
 
 cpu_count = ts_mon.GaugeMetric('dev/cpu/count')

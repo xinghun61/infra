@@ -13,11 +13,11 @@ import sys
 
 from functools import partial
 
+from infra.libs import logs
 from infra.libs.buildbot import master
 from infra.libs.service_utils import daemon
 from infra.libs.service_utils import outer_loop
 from infra.services.master_lifecycle import buildbot_state
-from infra_libs import logs
 
 
 def parse_args():  # pragma: no cover

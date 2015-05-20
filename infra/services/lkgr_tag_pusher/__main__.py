@@ -12,8 +12,8 @@ import sys
 import urlparse
 
 from infra.libs import git2
+from infra.libs import logs
 from infra.libs.service_utils import outer_loop
-from infra_libs import logs
 
 
 # Git revision re.

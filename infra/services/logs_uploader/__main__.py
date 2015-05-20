@@ -16,7 +16,7 @@ import logging
 import os
 import sys
 
-from infra_libs import logs as infra_logs
+from infra.libs import logs as infra_logs
 from infra.services.logs_uploader import logs_uploader
 
 LOGGER = logging.getLogger(__name__)

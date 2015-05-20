@@ -6,7 +6,7 @@ import argparse
 import sys
 
 import infra.libs.event_mon as event_mon
-import infra_libs.logs
+import infra.libs.logs
 
 
 def get_arguments(argv):
@@ -105,7 +105,7 @@ def get_arguments(argv):
                            'been provided or not.')
 
   event_mon.add_argparse_options(parser)
-  infra_libs.logs.add_argparse_options(parser)
+  infra.libs.logs.add_argparse_options(parser)
 
   args = parser.parse_args(argv)
 
