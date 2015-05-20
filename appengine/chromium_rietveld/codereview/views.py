@@ -120,6 +120,9 @@ MAX_DB_KEY_LENGTH = 1000
 DB_WRITE_TRIES = 3
 DB_WRITE_PAUSE = 4
 
+CQ_SERVICE_ACCOUNT = ('5071639625-1lppvbtck1morgivc6sq4dul7klu27sd@'
+                      'developer.gserviceaccount.com')
+
 
 ### Form classes ###
 
@@ -3503,6 +3506,11 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     to.remove(my_email)
   if my_email in cc:
     cc.remove(my_email)
+
+  # The commit queue service account must appear as commit-bot@chromium.org,
+  # because this value is hardcoded in many places, in different tools.
+  if my_email == CQ_SERVICE_ACCOUNT:
+    my_email = 'commit-bot@chromium.org'
 
   issue_id = issue.key.id()
   subject = issue.mail_subject()
