@@ -240,7 +240,7 @@ def _CheckFiles(failure_signal, change_log):
   Args:
     failure_signal (FailureSignal): The failure signal of a failed step or test.
     change_log (dict): The change log of a CL as returned by
-        common.change_log.ChangeLog.ToJson().  # TODO(stgao): ToJson -> ToDict.
+        common.change_log.ChangeLog.ToDict().
 
   Returns:
     A dict as returned by _Justification.ToDict() if the CL is suspected for the
@@ -338,7 +338,7 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
   failed_steps = failure_info['failed_steps']
   builds = failure_info['builds']
   for step_name, step_failure_info in failed_steps.iteritems():
-    failure_signal = FailureSignal.FromJson(failure_signals[step_name])
+    failure_signal = FailureSignal.FromDict(failure_signals[step_name])
     failed_build_number = step_failure_info['current_failure']
     build_number = step_failure_info['first_failure']
 

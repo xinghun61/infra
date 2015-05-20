@@ -25,7 +25,7 @@ class PullChangelogPipeline(BasePipeline):
     Returns:
       A dict with the following form:
       {
-        'git_hash_revision1': common.change_log.ChangeLog.ToJson(),
+        'git_hash_revision1': common.change_log.ChangeLog.ToDict(),
         ...
       }
     """
@@ -38,6 +38,6 @@ class PullChangelogPipeline(BasePipeline):
           raise pipeline.Retry('Failed to get change log for %s' % revision)
 
         # TODO: save in datastore?
-        change_logs[revision] = change_log.ToJson()
+        change_logs[revision] = change_log.ToDict()
 
     return change_logs

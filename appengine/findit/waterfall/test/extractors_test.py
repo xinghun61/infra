@@ -14,7 +14,7 @@ class ExtractorsTest(unittest.TestCase):
   def _RunTest(self, failure_log, extractor_class, expected_signal_json):
     signal = extractor_class().Extract(
         failure_log, 'suite.test', 'step', 'bot', 'master')
-    self.assertEqual(expected_signal_json, signal.ToJson())
+    self.assertEqual(expected_signal_json, signal.ToDict())
 
   def testGeneralExtractor(self):
     failure_log = textwrap.dedent("""

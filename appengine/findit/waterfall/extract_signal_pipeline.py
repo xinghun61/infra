@@ -55,7 +55,7 @@ class ExtractSignalPipeline(BasePipeline):
     Returns:
       A dict like below:
       {
-        'step_name1': waterfall.failure_signal.FailureSignal.ToJson(),
+        'step_name1': waterfall.failure_signal.FailureSignal.ToDict(),
         ...
       }
     """
@@ -105,6 +105,6 @@ class ExtractSignalPipeline(BasePipeline):
 
       # TODO: save result in datastore?
       signals[step_name] = extractors.ExtractSignal(
-          master_name, builder_name, step_name, None, stdio_log).ToJson()
+          master_name, builder_name, step_name, None, stdio_log).ToDict()
 
     return signals

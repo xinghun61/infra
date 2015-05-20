@@ -30,4 +30,4 @@ class ExtractorTest(unittest.TestCase):
     for case in cases:
       signal = FailureSignal()
       extractor.ExtractFiles(case, signal)
-      self.assertEqual(cases[case], signal.ToJson()['files'])
+      self.assertEqual(cases[case], signal.ToDict()['files'])

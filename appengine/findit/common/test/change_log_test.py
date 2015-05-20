@@ -9,16 +9,16 @@ from common.change_log import ChangeLog
 
 class ChangeLogTest(unittest.TestCase):
   def testFileChangeinfo(self):
-    json_info = {
+    filechange_dict = {
         'change_type': 'copy',
         'old_path': 'a',
         'new_path': 'b'
     }
-    filechange_info = FileChangeInfo.FromJson(json_info)
-    self.assertEqual(json_info, filechange_info.ToJson())
+    filechange_info = FileChangeInfo.FromDict(filechange_dict)
+    self.assertEqual(filechange_dict, filechange_info.ToDict())
 
   def testChangeLog(self):
-    json_info = {
+    change_log_dict = {
       'author_name': 'a',
       'author_email': 'b@email.com',
       'author_time': '2014-08-13 00:53:12',
@@ -44,5 +44,5 @@ class ChangeLogTest(unittest.TestCase):
       'code_review_url': 'https://codereview.chromium.org/2222',
     }
 
-    change_log = ChangeLog.FromJson(json_info)
-    self.assertEqual(json_info, change_log.ToJson())
+    change_log = ChangeLog.FromDict(change_log_dict)
+    self.assertEqual(change_log_dict, change_log.ToDict())

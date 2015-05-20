@@ -29,7 +29,7 @@ class FailureSignal(object):
     if keyword:
       self.keywords[keyword] += 1
 
-  def ToJson(self):
+  def ToDict(self):
     return {
       'files': self.files,
       'tests': self.tests,
@@ -37,7 +37,7 @@ class FailureSignal(object):
     }
 
   @staticmethod
-  def FromJson(data):
+  def FromDict(data):
     signal = FailureSignal()
     signal.files.update(copy.deepcopy(data.get('files', {})))
     signal.tests.extend(data.get('tests', []))

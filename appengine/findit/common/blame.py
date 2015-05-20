@@ -14,7 +14,7 @@ class Region(object):
     self.author_email = author_email
     self.author_time = author_time
 
-  def ToJson(self):
+  def ToDict(self):
     return {
         'start': self.start,
         'count': self.count,
@@ -35,10 +35,10 @@ class Blame(list):
   def AddRegion(self, region):
     self.append(region)
 
-  def ToJson(self):
+  def ToDict(self):
     regions = []
     for region in self:
-      regions.append(region.ToJson())
+      regions.append(region.ToDict())
     return {
         'revision': self.revision,
         'path': self.path,

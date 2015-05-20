@@ -9,7 +9,7 @@ class FileChangeInfo(object):
     self.old_path = old_path
     self.new_path = new_path
 
-  def ToJson(self):
+  def ToDict(self):
     return {
         'change_type': self.change_type,
         'old_path': self.old_path,
@@ -17,7 +17,7 @@ class FileChangeInfo(object):
     }
 
   @staticmethod
-  def FromJson(info):
+  def FromDict(info):
     return FileChangeInfo(
         info['change_type'], info['old_path'], info['new_path'])
 
@@ -41,7 +41,7 @@ class ChangeLog(object):
     self.commit_url = commit_url
     self.code_review_url = code_review_url
 
-  def ToJson(self):
+  def ToDict(self):
     """Returns the change log as a Json object."""
     json_data = {
       'author_name': self.author_name,
@@ -58,15 +58,15 @@ class ChangeLog(object):
       'code_review_url': self.code_review_url,
     }
     for touched_file in self.touched_files:
-      json_data['touched_files'].append(touched_file.ToJson())
+      json_data['touched_files'].append(touched_file.ToDict())
     return json_data
 
   @staticmethod
-  def FromJson(info):
+  def FromDict(info):
     """Returns a ChangeLog instance represented by the given Json info."""
     touched_files = []
     for touched_file_info in info['touched_files']:
-      touched_files.append(FileChangeInfo.FromJson(touched_file_info))
+      touched_files.append(FileChangeInfo.FromDict(touched_file_info))
 
     return ChangeLog(
         info['author_name'], info['author_email'], info['author_time'],

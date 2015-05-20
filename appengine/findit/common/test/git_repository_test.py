@@ -341,7 +341,7 @@ class GitRepositoryTest(unittest.TestCase):
     change_log = self.git_repo.GetChangeLog(
         'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb')
 
-    self.assertEqual(EXPECTED_CHANGE_LOG_JSON, change_log.ToJson())
+    self.assertEqual(EXPECTED_CHANGE_LOG_JSON, change_log.ToDict())
 
   def testUnknownChangeType(self):
     self.http_client_for_git.SetResponseForUrl(
@@ -373,7 +373,7 @@ class GitRepositoryTest(unittest.TestCase):
         GITILES_FILE_BLAME_RESULT)
 
     blame = self.git_repo.GetBlame(path, git_revision)
-    self.assertEqual(EXPECTED_FILE_BLAME_JSON, blame.ToJson())
+    self.assertEqual(EXPECTED_FILE_BLAME_JSON, blame.ToDict())
 
   def testGetSource(self):
     self.assertIsNone(self.git_repo.GetSource('path', 'not_existing_revision'))

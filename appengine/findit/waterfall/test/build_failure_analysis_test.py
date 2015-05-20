@@ -113,7 +113,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromJson(failure_signal_json), change_log_json)
+        FailureSignal.FromDict(failure_signal_json), change_log_json)
     self.assertIsNotNone(justification)
     # The score is 14 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
@@ -142,7 +142,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromJson(failure_signal_json), change_log_json)
+        FailureSignal.FromDict(failure_signal_json), change_log_json)
     self.assertIsNone(justification)
 
   def testAnalyzeSuccessfulBuild(self):

@@ -34,7 +34,7 @@ class FailureSignalTest(unittest.TestCase):
     signal.AddKeyword('a')
     self.assertEqual({'a': 2, 'b': 1}, signal.keywords)
 
-  def testToFromJson(self):
+  def testToFromDict(self):
     data = {
         'files': {
             'a.cc': [2],
@@ -47,5 +47,5 @@ class FailureSignalTest(unittest.TestCase):
             'k1': 3
         }
     }
-    signal = FailureSignal.FromJson(data)
-    self.assertEqual(data, signal.ToJson())
+    signal = FailureSignal.FromDict(data)
+    self.assertEqual(data, signal.ToDict())
