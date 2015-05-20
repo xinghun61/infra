@@ -11,23 +11,22 @@ from infra.libs.service_utils import outer_loop
 
 
 class TestOuterLoop(auto_stub.TestCase):
-  def setUp(self):
-    super(TestOuterLoop, self).setUp()
-    self.sleeps = []
-    self.now = 0
-    def mocked_sleep(t):
-      # Sometimes we see tens of thousands of calls to sleep in testUntilCtrlC,
-      # resulting in an assertion failure. We log the source of one call
-      # here so we can see if they're expected or an actual bug.
-      # TODO(estaab): Remove this once we resolve crbug.com/488224.
-      if len(self.sleeps) == 10000:  # pragma: no cover
-        print 'Current stack in time.sleep() for debugging crbug.com/488224:'
-        import traceback
-        traceback.print_stack()
+
+  class MyTime():
+    def __init__(self):
+      self.sleeps = []
+      self.now = 0
+    def sleep(self, t):
       self.sleeps.append(t)
       self.now += t
-    self.mock(time, 'sleep', mocked_sleep)
-    self.mock(time, 'time', lambda: self.now)
+    def time(self):
+      return self.now
+
+  def setUp(self):
+    super(TestOuterLoop, self).setUp()
+
+    self.time_mod = TestOuterLoop.MyTime()
+
     # TODO(agable): Switch to using infra.libs.ts_mon.stubs when that exists.
     ts_mon.interface._state.metrics = set()
 
@@ -36,11 +35,11 @@ class TestOuterLoop(auto_stub.TestCase):
     ts_mon.interface._state.metrics = set()
 
   def testLongUnsuccessfulJobStillFails(self):
-    ret = outer_loop.loop(
-      lambda: time.sleep(100), sleep_timeout=lambda: 1, duration=1,
-      max_errors=5)
+    ret = outer_loop.loop(lambda: self.time_mod.sleep(100),
+                          sleep_timeout=lambda: 1, duration=1, max_errors=5,
+                          time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(False, 1), ret)
-    self.assertEqual([100], self.sleeps)
+    self.assertEqual([100], self.time_mod.sleeps)
 
   def testUntilCtrlC(self):
     tasks = [None, None, None]
@@ -49,28 +48,30 @@ class TestOuterLoop(auto_stub.TestCase):
         raise KeyboardInterrupt()
       tasks.pop(0)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=lambda: 1)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
-    self.assertEqual([1, 1, 1], self.sleeps)
+    self.assertEqual([1, 1, 1], self.time_mod.sleeps)
 
   def testUntilDeadlineFastTask(self):
     calls = []
     def task():
       calls.append(1)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=lambda: 3, duration=10)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 3, duration=10,
+                          time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
     self.assertEqual(4, len(calls))
-    self.assertEqual([3, 3, 3], self.sleeps)
+    self.assertEqual([3, 3, 3], self.time_mod.sleeps)
 
   def testUntilDeadlineSlowTask(self):
     # This test exists mostly to satisfy 100% code coverage requirement.
     def task():
-      time.sleep(6)
+      self.time_mod.sleep(6)
       return True
-    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, duration=5)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, duration=5,
+                          time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(True, 0), ret)
-    self.assertEqual([6], self.sleeps)
+    self.assertEqual([6], self.time_mod.sleeps)
 
   def testUntilCtrlCWithErrors(self):
     tasks = [None, None, None]
@@ -79,9 +80,9 @@ class TestOuterLoop(auto_stub.TestCase):
         raise KeyboardInterrupt()
       tasks.pop(0)
       raise Exception('Error')
-    ret = outer_loop.loop(task, sleep_timeout=lambda: 1)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(True, 3), ret)
-    self.assertEqual([1, 1, 1], self.sleeps)
+    self.assertEqual([1, 1, 1], self.time_mod.sleeps)
 
   def testMaxErrorCount(self):
     tasks = ['ok', 'err', 'false', 'ok', 'err', 'false', 'err', 'skipped']
@@ -92,7 +93,8 @@ class TestOuterLoop(auto_stub.TestCase):
       if t == 'false':
         return False
       return True
-    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, max_errors=3)
+    ret = outer_loop.loop(task, sleep_timeout=lambda: 1, max_errors=3,
+                          time_mod=self.time_mod)
     self.assertEqual(outer_loop.LoopResults(False, 5), ret)
     self.assertEqual(['skipped'], tasks)
-    self.assertEqual([1, 1, 1, 1, 1, 1], self.sleeps)
+    self.assertEqual([1, 1, 1, 1, 1, 1], self.time_mod.sleeps)

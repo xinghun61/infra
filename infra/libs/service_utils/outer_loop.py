@@ -23,7 +23,7 @@ LoopResults = collections.namedtuple(
 )
 
 
-def loop(task, sleep_timeout, duration=None, max_errors=None):
+def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
   """Runs the task in a loop for a given duration.
 
   Handles and logs all uncaught exceptions. ``task`` callback should return True
@@ -41,7 +41,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   Returns:
     @returns LoopResults.
   """
-  deadline = None if duration is None else (time.time() + duration)
+  deadline = None if duration is None else (time_mod.time() + duration)
   errors_left = max_errors
   seen_success = False
   failed = False
@@ -52,7 +52,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
   try:
     while True:
       # Log that new attempt is starting.
-      start = time.time()
+      start = time_mod.time()
       LOGGER.info('-------------------')
       if deadline is not None:
         LOGGER.info(
@@ -73,7 +73,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
       except Exception:
         LOGGER.exception('Uncaught exception in the task')
       finally:
-        LOGGER.info('End loop %d (%f sec)', loop_count, time.time() - start)
+        LOGGER.info('End loop %d (%f sec)', loop_count, time_mod.time() - start)
         LOGGER.info('-------------------')
 
       # Reset error counter on success, or abort on too many errors.
@@ -92,7 +92,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
 
       # Sleep before trying again.
       # TODO(vadimsh): Make sleep timeout dynamic.
-      now = time.time()
+      now = time_mod.time()
       timeout = sleep_timeout()
       if deadline is not None and now + timeout >= deadline:
         when = now - deadline
@@ -102,7 +102,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None):
           LOGGER.info('Deadline is in %.1f sec, stopping now', -when)
         break
       LOGGER.debug('Sleeping %.1f sec', timeout)
-      time.sleep(timeout)
+      time_mod.sleep(timeout)
 
       loop_count += 1
   except KeyboardInterrupt:
