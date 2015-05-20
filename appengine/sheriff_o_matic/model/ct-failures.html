@@ -104,14 +104,14 @@ CTFailures.prototype._mungeAlerts = function(alerts) {
 
 CTFailures.prototype.update = function() {
   var annotationPromise = CTFailureGroup.fetchAnnotations();
-  var alertsUrl = 'https://4d2738f-dot-sheriff-o-matic.appspot.com/alerts';
+  var alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts';
 
   if (window.location.search) {
     var parts = window.location.search.split('&');
     parts.forEach(function(part) {
       var v = part.split('=');
       if (v[0].replace('?', "") == 'history') {
-        alertsUrl = 'https://4d2738f-dot-sheriff-o-matic.appspot.com/alerts-history/' + v[1];
+        alertsUrl = 'https://sheriff-o-matic.appspot.com/alerts-history/' + v[1];
       }
     });
   }
