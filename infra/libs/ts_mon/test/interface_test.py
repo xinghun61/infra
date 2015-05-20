@@ -10,24 +10,18 @@ import unittest
 import mock
 
 from monacq.proto import metrics_pb2
+from testing_support import auto_stub
 
 from infra.libs.ts_mon import errors
 from infra.libs.ts_mon import interface
+from infra.libs.ts_mon.test import stubs
 
 
-class FakeState(interface.State):
-  def __init__(self):
-    super(FakeState, self).__init__()
-    self.global_monitor = mock.Mock()
-
-
-class GlobalsTest(unittest.TestCase):
+class GlobalsTest(auto_stub.TestCase):
 
   def setUp(self):
-    interface._state = interface.State()
-
-  def tearDown(self):
-    interface._state = interface.State()
+    super(GlobalsTest, self).setUp()
+    self.mock(interface, '_state', stubs.MockState())
 
   @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
@@ -137,31 +131,31 @@ class GlobalsTest(unittest.TestCase):
     fake_monitor.assert_called_once()
     self.assertIs(interface._state.global_monitor, singleton)
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_send(self, fake_state):
+  def test_send(self):
+    interface._state.flush_mode = 'all'
+    interface._state.global_monitor = stubs.MockMonitor()
+
     def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
       pb.data.add().name = 'foo'
-
-    interface._state.flush_mode = 'all'
 
     fake_metric = mock.Mock()
     fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
 
     interface.send(fake_metric)
-    fake_state.global_monitor.send.assert_called_once()
-    proto = fake_state.global_monitor.send.call_args[0][0]
+    interface._state.global_monitor.send.assert_called_once()
+    proto = interface._state.global_monitor.send.call_args[0][0]
     self.assertEqual(1, len(proto.data))
     self.assertEqual('foo', proto.data[0].name)
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_send_manual(self, fake_state):
+  def test_send_manual(self):
     interface._state.flush_mode = 'manual'
+    interface._state.global_monitor = stubs.MockMonitor()
 
     fake_metric = mock.Mock()
     fake_metric.serialize_to = mock.Mock()
 
     interface.send(fake_metric)
-    self.assertFalse(fake_state.global_monitor.send.called)
+    self.assertFalse(interface._state.global_monitor.send.called)
     self.assertFalse(fake_metric.serialize_to.called)
 
   def test_send_all_raises(self):
@@ -175,18 +169,19 @@ class GlobalsTest(unittest.TestCase):
     interface._state.flush_mode = 'manual'
     interface.send(mock.MagicMock())
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_flush(self, fake_state):
+  def test_flush(self):
+    interface._state.global_monitor = stubs.MockMonitor()
+
     def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
       pb.data.add().name = 'foo'
 
     fake_metric = mock.Mock()
     fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
-    fake_state.metrics.add(fake_metric)
+    interface._state.metrics.add(fake_metric)
 
     interface.flush()
-    fake_state.global_monitor.send.assert_called_once()
-    proto = fake_state.global_monitor.send.call_args[0][0]
+    interface._state.global_monitor.send.assert_called_once()
+    proto = interface._state.global_monitor.send.call_args[0][0]
     self.assertEqual(1, len(proto.data))
     self.assertEqual('foo', proto.data[0].name)
 
@@ -195,34 +190,30 @@ class GlobalsTest(unittest.TestCase):
     with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
       interface.flush()
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_register_unregister(self, fake_state):
+  def test_register_unregister(self):
     fake_metric = mock.Mock()
-    self.assertEqual(0, len(fake_state.metrics))
+    self.assertEqual(0, len(interface._state.metrics))
     interface.register(fake_metric)
-    self.assertEqual(1, len(fake_state.metrics))
+    self.assertEqual(1, len(interface._state.metrics))
     interface.unregister(fake_metric)
-    self.assertEqual(0, len(fake_state.metrics))
+    self.assertEqual(0, len(interface._state.metrics))
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_identical_register(self, fake_state):
+  def test_identical_register(self):
     fake_metric = mock.Mock(_name='foo')
     interface.register(fake_metric)
     interface.register(fake_metric)
-    self.assertEqual(1, len(fake_state.metrics))
+    self.assertEqual(1, len(interface._state.metrics))
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_duplicate_register_raises(self, fake_state):
+  def test_duplicate_register_raises(self):
     fake_metric = mock.Mock(_name='foo')
     phake_metric = mock.Mock(_name='foo')
     interface.register(fake_metric)
     with self.assertRaises(errors.MonitoringDuplicateRegistrationError):
       interface.register(phake_metric)
-    self.assertEqual(1, len(fake_state.metrics))
+    self.assertEqual(1, len(interface._state.metrics))
 
-  @mock.patch('infra.libs.ts_mon.interface._state', new_callable=FakeState)
-  def test_unregister_missing_raises(self, fake_state):
+  def test_unregister_missing_raises(self):
     fake_metric = mock.Mock(_name='foo')
-    self.assertEqual(0, len(fake_state.metrics))
+    self.assertEqual(0, len(interface._state.metrics))
     with self.assertRaises(KeyError):
       interface.unregister(fake_metric)

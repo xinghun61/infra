@@ -6,8 +6,10 @@ import time
 
 from testing_support import auto_stub
 
-from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
+
+from infra.libs.ts_mon import interface
+from infra.libs.ts_mon.test import stubs
 
 
 class TestOuterLoop(auto_stub.TestCase):
@@ -24,15 +26,12 @@ class TestOuterLoop(auto_stub.TestCase):
 
   def setUp(self):
     super(TestOuterLoop, self).setUp()
-
     self.time_mod = TestOuterLoop.MyTime()
-
-    # TODO(agable): Switch to using infra.libs.ts_mon.stubs when that exists.
-    ts_mon.interface._state.metrics = set()
+    self.mock(interface, 'register', stubs.MockInterfaceModule().register)
 
   def tearDown(self):
     super(TestOuterLoop, self).tearDown()
-    ts_mon.interface._state.metrics = set()
+    interface._state.metrics = set()
 
   def testLongUnsuccessfulJobStillFails(self):
     ret = outer_loop.loop(lambda: self.time_mod.sleep(100),
