@@ -182,6 +182,46 @@ func (r *remoteImpl) finalizeUpload(sessionID string) (finished bool, err error)
 	return
 }
 
+func (r *remoteImpl) resolveVersion(packageName, version string) (pin common.Pin, err error) {
+	if err = common.ValidatePackageName(packageName); err != nil {
+		return
+	}
+	if err = common.ValidateInstanceVersion(version); err != nil {
+		return
+	}
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+		InstanceID   string `json:"instance_id"`
+	}
+	params := url.Values{}
+	params.Add("package_name", packageName)
+	params.Add("version", version)
+	err = r.makeRequest("repo/v1/instance/resolve?"+params.Encode(), "GET", nil, &reply)
+	if err != nil {
+		return
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		if common.ValidateInstanceID(reply.InstanceID) != nil {
+			err = fmt.Errorf("Backend returned invalid instance ID: %s", reply.InstanceID)
+		} else {
+			pin = common.Pin{PackageName: packageName, InstanceID: reply.InstanceID}
+		}
+	case "PACKAGE_NOT_FOUND":
+		err = fmt.Errorf("Package '%s' is not registered", packageName)
+	case "INSTANCE_NOT_FOUND":
+		err = fmt.Errorf("Package '%s' doesn't have instance with version '%s'", packageName, version)
+	case "AMBIGUOUS_VERSION":
+		err = fmt.Errorf("More than one instance of package '%s' match version '%s'", packageName, version)
+	case "ERROR":
+		err = errors.New(reply.ErrorMessage)
+	default:
+		err = fmt.Errorf("Unexpected backend response: %s", reply.Status)
+	}
+	return
+}
+
 func (r *remoteImpl) registerInstance(pin common.Pin) (*registerInstanceResponse, error) {
 	endpoint, err := instanceEndpoint(pin)
 	if err != nil {
@@ -249,7 +289,7 @@ func (r *remoteImpl) fetchInstance(pin common.Pin) (*fetchInstanceResponse, erro
 			registeredTs: ts,
 		}, nil
 	case "PACKAGE_NOT_FOUND":
-		return nil, fmt.Errorf("Package '%s' is not registered or you do not have permission to fetch it", pin.PackageName)
+		return nil, fmt.Errorf("Package '%s' is not registered", pin.PackageName)
 	case "INSTANCE_NOT_FOUND":
 		return nil, fmt.Errorf("Package '%s' doesn't have instance '%s'", pin.PackageName, pin.InstanceID)
 	case "ERROR":

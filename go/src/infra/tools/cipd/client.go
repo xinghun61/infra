@@ -269,6 +269,23 @@ func (client *Client) UploadToCAS(sha1 string, data io.ReadSeeker, session *Uplo
 	}
 }
 
+// ResolveVersion converts an instance ID, a tag or a ref into a concrete Pin
+// by contacting the backend.
+func (client *Client) ResolveVersion(packageName, version string) (common.Pin, error) {
+	if err := common.ValidatePackageName(packageName); err != nil {
+		return common.Pin{}, err
+	}
+	// Is it instance ID already? Don't bother calling the backend.
+	if common.ValidateInstanceID(version) == nil {
+		return common.Pin{PackageName: packageName, InstanceID: version}, nil
+	}
+	if err := common.ValidateInstanceVersion(version); err != nil {
+		return common.Pin{}, err
+	}
+	client.Log.Infof("cipd: resolving version %q of %q...", version, packageName)
+	return client.remote.resolveVersion(packageName, version)
+}
+
 // RegisterInstance makes the package instance available for clients by
 // uploading it to the storage and registering it in the package repository.
 // 'instance' is a package instance to register.
@@ -407,10 +424,8 @@ func (client *Client) FetchAndDeployInstance(root string, pin common.Pin) error 
 // by EnsurePackages function. It is a text file where each line has a form:
 // <package name> <desired version>. Whitespaces are ignored. Lines that start
 // with '#' are ignored. Version can be specified as instance ID, tag or ref.
-// Will resolve tags and refs to concrete instance IDs.
+// Will resolve tags and refs to concrete instance IDs by calling the backend.
 func (client *Client) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
-	// TODO(vadimsh): Resolve tags to instance IDs.
-
 	lineNo := 0
 	makeError := func(msg string) error {
 		return fmt.Errorf("Failed to parse desired state (line %d): %s", lineNo, msg)
@@ -443,13 +458,17 @@ func (client *Client) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
 		if err != nil {
 			return nil, makeError(err.Error())
 		}
-		err = common.ValidateInstanceID(tokens[1])
+		err = common.ValidateInstanceVersion(tokens[1])
 		if err != nil {
 			return nil, makeError(err.Error())
 		}
 
 		// Good enough.
-		out = append(out, common.Pin{PackageName: tokens[0], InstanceID: tokens[1]})
+		pin, err := client.ResolveVersion(tokens[0], tokens[1])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, pin)
 	}
 
 	return out, nil
@@ -557,6 +576,8 @@ type clock interface {
 type remote interface {
 	fetchACL(packagePath string) ([]PackageACL, error)
 	modifyACL(packagePath string, changes []PackageACLChange) error
+
+	resolveVersion(packageName, version string) (common.Pin, error)
 
 	initiateUpload(sha1 string) (*UploadSession, error)
 	finalizeUpload(sessionID string) (bool, error)

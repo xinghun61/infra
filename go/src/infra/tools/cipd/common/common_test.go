@@ -55,10 +55,18 @@ func TestValidateInstanceTag(t *testing.T) {
 }
 
 func TestValidatePin(t *testing.T) {
-	Convey("TestValidatePin works", t, func() {
+	Convey("ValidatePin works", t, func() {
 		So(ValidatePin(Pin{"good/name", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}), ShouldBeNil)
 		So(ValidatePin(Pin{"BAD/name", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}), ShouldNotBeNil)
 		So(ValidatePin(Pin{"good/name", "aaaaaaaaaaa"}), ShouldNotBeNil)
+	})
+}
+
+func TestValidateInstanceVersion(t *testing.T) {
+	Convey("ValidateInstanceVersion works", t, func() {
+		So(ValidateInstanceVersion("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeNil)
+		So(ValidateInstanceVersion("good:tag"), ShouldBeNil)
+		So(ValidateInstanceVersion("BADTAG:"), ShouldNotBeNil)
 	})
 }
 

@@ -70,6 +70,54 @@ func TestUploadToCAS(t *testing.T) {
 	})
 }
 
+func TestResolveVersion(t *testing.T) {
+	Convey("ResolveVersion works", t, func(c C) {
+		client := mockClient(c, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/instance/resolve",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"version":      []string{"tag_key:value"},
+				},
+				Reply: `{
+					"status": "SUCCESS",
+					"instance_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+				}`,
+			},
+		})
+		pin, err := client.ResolveVersion("pkgname", "tag_key:value")
+		So(err, ShouldBeNil)
+		So(pin, ShouldResemble, common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		})
+	})
+
+	Convey("ResolveVersion with instance ID", t, func(c C) {
+		// No calls to the backend expected.
+		client := mockClient(c, nil)
+		pin, err := client.ResolveVersion("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		So(err, ShouldBeNil)
+		So(pin, ShouldResemble, common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		})
+	})
+
+	Convey("ResolveVersion bad package name", t, func(c C) {
+		client := mockClient(c, nil)
+		_, err := client.ResolveVersion("bad package", "tag_key:value")
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("ResolveVersion bad version", t, func(c C) {
+		client := mockClient(c, nil)
+		_, err := client.ResolveVersion("pkgname", "BAD_TAG:")
+		So(err, ShouldNotBeNil)
+	})
+}
+
 func TestRegisterInstance(t *testing.T) {
 	Convey("Mocking a package instance", t, func() {
 		// Build an empty package to be uploaded.
@@ -260,8 +308,8 @@ func TestFetch(t *testing.T) {
 }
 
 func TestProcessEnsureFile(t *testing.T) {
-	call := func(c C, data string) ([]common.Pin, error) {
-		client := mockClient(c, nil)
+	call := func(c C, data string, calls []expectedHTTPCall) ([]common.Pin, error) {
+		client := mockClient(c, calls)
 		return client.ProcessEnsureFile(bytes.NewBufferString(data))
 	}
 
@@ -271,7 +319,7 @@ func TestProcessEnsureFile(t *testing.T) {
 
 			pkg/a  0000000000000000000000000000000000000000
 			pkg/b  1000000000000000000000000000000000000000
-		`)
+		`, nil)
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, []common.Pin{
 			{"pkg/a", "0000000000000000000000000000000000000000"},
@@ -279,24 +327,42 @@ func TestProcessEnsureFile(t *testing.T) {
 		})
 	})
 
+	Convey("ProcessEnsureFile resolves versions", t, func(c C) {
+		out, err := call(c, "pkg/a tag_key:value", []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/instance/resolve",
+				Query: url.Values{
+					"package_name": []string{"pkg/a"},
+					"version":      []string{"tag_key:value"},
+				},
+				Reply: `{"status":"SUCCESS","instance_id":"0000000000000000000000000000000000000000"}`,
+			},
+		})
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, []common.Pin{
+			{"pkg/a", "0000000000000000000000000000000000000000"},
+		})
+	})
+
 	Convey("ProcessEnsureFile empty", t, func(c C) {
-		out, err := call(c, "")
+		out, err := call(c, "", nil)
 		So(err, ShouldBeNil)
 		So(out, ShouldResemble, []common.Pin{})
 	})
 
 	Convey("ProcessEnsureFile bad package name", t, func(c C) {
-		_, err := call(c, "bad.package.name/a  0000000000000000000000000000000000000000")
+		_, err := call(c, "bad.package.name/a 0000000000000000000000000000000000000000", nil)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("ProcessEnsureFile bad instance ID", t, func(c C) {
-		_, err := call(c, "pkg/a  0000")
+		_, err := call(c, "pkg/a 0000", nil)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("ProcessEnsureFile bad line", t, func(c C) {
-		_, err := call(c, "pkg/a")
+		_, err := call(c, "pkg/a", nil)
 		So(err, ShouldNotBeNil)
 	})
 }

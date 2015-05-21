@@ -423,6 +423,54 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'resolve' subcommand.
+
+var cmdResolve = &subcommands.Command{
+	UsageLine: "resolve [options]",
+	ShortDesc: "returns concrete package instance ID given a version",
+	LongDesc:  "Returns concrete package instance ID given a version.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &resolveRun{}
+		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
+		c.Flags.StringVar(&c.version, "version", "<version>", "package version to resolve")
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.JSONOutputOptions.registerFlags(&c.Flags)
+		return c
+	},
+}
+
+type resolveRun struct {
+	subcommands.CommandRunBase
+	ServiceOptions
+	JSONOutputOptions
+
+	packageName string
+	version     string
+}
+
+func (c *resolveRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 0) {
+		return 1
+	}
+	pin, err := resolveVersion(c.packageName, c.version, c.ServiceOptions)
+	err = c.writeJSONOutput(&pin, err)
+	if err != nil {
+		reportError("%s", err)
+		return 1
+	}
+	logging.Infof("Instance: %s", pin)
+	return 0
+}
+
+func resolveVersion(packageName, version string, serviceOpts ServiceOptions) (common.Pin, error) {
+	client, err := serviceOpts.makeCipdClient()
+	if err != nil {
+		return common.Pin{}, err
+	}
+	return client.ResolveVersion(packageName, version)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'acl-list' subcommand.
 
 var cmdListACL = &subcommands.Command{
@@ -706,7 +754,7 @@ var cmdFetch = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &fetchRun{}
 		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
-		c.Flags.StringVar(&c.instanceID, "instance-id", "<instance id>", "package instance ID to fetch")
+		c.Flags.StringVar(&c.version, "version", "<version>", "package version to fetch")
 		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
 		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
@@ -718,7 +766,7 @@ type fetchRun struct {
 	ServiceOptions
 
 	packageName string
-	instanceID  string
+	version     string
 	outputPath  string
 }
 
@@ -726,8 +774,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	pin := common.Pin{PackageName: c.packageName, InstanceID: c.instanceID}
-	err := fetchInstanceFile(pin, c.outputPath, c.ServiceOptions)
+	err := fetchInstanceFile(c.packageName, c.version, c.outputPath, c.ServiceOptions)
 	if err != nil {
 		reportError("Error while fetching the package: %s", err)
 		return 1
@@ -735,7 +782,16 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func fetchInstanceFile(pin common.Pin, instanceFile string, serviceOpts ServiceOptions) error {
+func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts ServiceOptions) error {
+	client, err := serviceOpts.makeCipdClient()
+	if err != nil {
+		return err
+	}
+	pin, err := client.ResolveVersion(packageName, version)
+	if err != nil {
+		return err
+	}
+
 	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
@@ -748,10 +804,6 @@ func fetchInstanceFile(pin common.Pin, instanceFile string, serviceOpts ServiceO
 		}
 	}()
 
-	client, err := serviceOpts.makeCipdClient()
-	if err != nil {
-		return err
-	}
 	err = client.FetchInstance(pin, out)
 	if err != nil {
 		return err
@@ -901,6 +953,7 @@ var application = &subcommands.DefaultApplication{
 		// High level commands.
 		cmdCreate,
 		cmdEnsure,
+		cmdResolve,
 
 		// Authentication related commands.
 		auth.SubcommandInfo("auth-info"),

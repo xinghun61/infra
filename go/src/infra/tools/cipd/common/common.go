@@ -78,3 +78,12 @@ func ValidateInstanceTag(t string) error {
 	}
 	return nil
 }
+
+// ValidateInstanceVersion return error if a string doesn't look like
+// an instance ID or an instance tag.
+func ValidateInstanceVersion(v string) error {
+	if ValidateInstanceID(v) == nil || ValidateInstanceTag(v) == nil {
+		return nil
+	}
+	return fmt.Errorf("Bad version (not an instance ID or a tag): %q", v)
+}

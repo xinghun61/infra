@@ -109,6 +109,21 @@ func TestRemoteImpl(t *testing.T) {
 		return remote.attachTags(Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, tags)
 	}
 
+	mockResolveVersion := func(c C, reply string) (Pin, error) {
+		remote := mockRemoteImpl(c, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/instance/resolve",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"version":      []string{"tag_key:value"},
+				},
+				Reply: reply,
+			},
+		})
+		return remote.resolveVersion("pkgname", "tag_key:value")
+	}
+
 	Convey("makeRequest POST works", t, func(c C) {
 		remote := mockRemoteImpl(c, []expectedHTTPCall{
 			{
@@ -490,6 +505,48 @@ func TestRemoteImpl(t *testing.T) {
 			c, []string{"tag1:value1", "tag2:value2"},
 			`{"tags":["tag1:value1","tag2:value2"]}`,
 			`{"status":"ERROR", "error_message":"Blah"}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion SUCCESS", t, func(c C) {
+		pin, err := mockResolveVersion(c, `{
+			"status": "SUCCESS",
+			"instance_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		}`)
+		So(err, ShouldBeNil)
+		So(pin, ShouldResemble, Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+	})
+
+	Convey("resolveVersion SUCCESS and bad instance ID", t, func(c C) {
+		_, err := mockResolveVersion(c, `{
+			"status": "SUCCESS",
+			"instance_id": "bad_id"
+		}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion PACKAGE_NOT_FOUND", t, func(c C) {
+		_, err := mockResolveVersion(c, `{"status": "PACKAGE_NOT_FOUND"}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion INSTANCE_NOT_FOUND", t, func(c C) {
+		_, err := mockResolveVersion(c, `{"status": "INSTANCE_NOT_FOUND"}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion AMBIGUOUS_VERSION", t, func(c C) {
+		_, err := mockResolveVersion(c, `{"status": "AMBIGUOUS_VERSION"}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion ERROR", t, func(c C) {
+		_, err := mockResolveVersion(c, `{"status": "ERROR", "error_message":"Blah"}`)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("resolveVersion bad status", t, func(c C) {
+		_, err := mockResolveVersion(c, `{"status": "HUH?"}`)
 		So(err, ShouldNotBeNil)
 	})
 }
