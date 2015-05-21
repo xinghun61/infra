@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"infra/libs/auth"
-	"infra/libs/build"
 	"infra/libs/logging"
 
 	"infra/tools/cipd"
@@ -895,7 +894,7 @@ func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts
 
 var application = &subcommands.DefaultApplication{
 	Name:  "cipd",
-	Title: "Chrome infra package deployer " + build.InfoString(),
+	Title: "Chrome infra package deployer",
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 

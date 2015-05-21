@@ -12,14 +12,13 @@ import (
 	"os"
 
 	"infra/libs/auth"
-	"infra/libs/build"
 
 	"github.com/maruel/subcommands"
 )
 
 var application = &subcommands.DefaultApplication{
 	Name:  "auth",
-	Title: "Chrome Infra Authentication tool " + build.InfoString(),
+	Title: "Chrome Infra Authentication tool",
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 

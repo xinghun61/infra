@@ -97,9 +97,8 @@ def print_title(title):
 def build_go(go_workspace, packages):
   """Bootstraps go environment and rebuilds (and installs) Go packages.
 
-  Compiles them with 'release' tag set (and only it), and then installs
-  into default GOBIN, which is <path>/go/bin/ (it is setup by go/env.py and
-  depends on what workspace is used).
+  Compiles and installs packages into default GOBIN, which is <path>/go/bin/
+  (it is setup by go/env.py and depends on what workspace is used).
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
@@ -125,13 +124,12 @@ def build_go(go_workspace, packages):
   shutil.rmtree(os.path.join(new_workspace, 'bin'), ignore_errors=True)
   shutil.rmtree(os.path.join(new_workspace, 'pkg'), ignore_errors=True)
 
-  # Recompile ('-a') with 'release' tag set.
+  # Recompile ('-a').
   try:
     subprocess.check_call(
         args=[
           'python', '-u', os.path.join(new_workspace, 'env.py'),
           'go', 'install', '-a', '-v',
-          '-tags', 'release',
         ] + list(packages),
         executable=sys.executable,
         stderr=subprocess.STDOUT)

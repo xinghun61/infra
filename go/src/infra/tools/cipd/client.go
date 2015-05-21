@@ -46,7 +46,6 @@ import (
 	"strings"
 	"time"
 
-	"infra/libs/build"
 	"infra/libs/logging"
 
 	"infra/tools/cipd/common"
@@ -70,10 +69,8 @@ const (
 	// UserAgent is HTTP user agent string for CIPD client.
 	UserAgent = "cipd 1.0"
 
-	// ProdServiceURL is URL of a backend to connect to if client is build with +release tag.
-	ProdServiceURL = "https://chrome-infra-packages.appspot.com"
-	// TestingServiceURL is URL of a backend to connect to if client is build without +release tag.
-	TestingServiceURL = "https://chrome-infra-packages-dev.appspot.com"
+	// ServiceURL is URL of a backend to connect to by default.
+	ServiceURL = "https://chrome-infra-packages.appspot.com"
 )
 
 var (
@@ -168,16 +165,12 @@ type UploadSession struct {
 // tweaked after this call.
 func NewClient() *Client {
 	c := &Client{
-		ServiceURL: ProdServiceURL,
+		ServiceURL: ServiceURL,
 		Log:        logging.DefaultLogger,
 		AuthenticatedClientFactory: func() (*http.Client, error) { return http.DefaultClient, nil },
 		AnonymousClientFactory:     func() (*http.Client, error) { return http.DefaultClient, nil },
 		UserAgent:                  UserAgent,
 		clock:                      &clockImpl{},
-	}
-	if !build.ReleaseBuild {
-		c.ServiceURL = TestingServiceURL
-		c.UserAgent += " testing"
 	}
 	c.remote = &remoteImpl{c}
 	c.storage = &storageImpl{c, uploadChunkSize}
