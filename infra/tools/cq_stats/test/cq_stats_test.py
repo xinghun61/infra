@@ -37,23 +37,16 @@ class Args(object):
 
 class ResponseMock(object):
   """Mock out Response class for urllib2.urlopen()."""
-  def __init__(self, lines, retries):
+  def __init__(self, lines):
     self.lines = lines
-    self.retries = retries
-
-  def read(self):
-    return '\n'.join(self.lines)
 
   def __iter__(self):
     return self.lines.__iter__()
 
 
-def urlopen_mock(lines, retries=0):
-  obj = ResponseMock(lines, retries)
+def urlopen_mock(lines):
+  obj = ResponseMock(lines)
   def func(_):
-    if obj.retries:
-      obj.retries -= 1
-      raise IOError('mock error')
     return obj
   return func
 
@@ -123,19 +116,11 @@ class TestCQStats(auto_stub.TestCase):
                      datetime.datetime(2014, 10, 21, 23, 49, 39))
 
   def test_fetch_json(self):
-    self.mock(time, 'sleep', lambda n: None)
-
-    self.mock(urllib2, 'urlopen', urlopen_mock(['{"a": "b"}']))
-    self.assertEqual(cq_stats.fetch_json('https://'), {'a': 'b'})
-
-    self.mock(urllib2, 'urlopen', urlopen_mock(['{"a": "b"}'], retries=1))
-    self.assertEqual(cq_stats.fetch_json('https://'), {'a': 'b'})
-
-    self.mock(urllib2, 'urlopen', urlopen_mock(['{"a": "b"}'], retries=100))
-    self.assertEqual(cq_stats.fetch_json('https://'), {'error': '404'})
-
-    self.mock(urllib2, 'urlopen', urlopen_mock(['{([bad json']))
-    self.assertEqual(cq_stats.fetch_json('https://'), {'error': '404'})
+    class MockResponse(object):
+      def json(self):
+        return {}
+    self.mock(cq_stats.session, 'get', lambda url: MockResponse())
+    self.assertEqual(cq_stats.fetch_json('foo'), {})
 
   def test_fetch_tree_status(self):
     # Invalid result

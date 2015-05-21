@@ -25,6 +25,9 @@ import urllib
 import urllib2
 import urlparse
 
+import requests
+from requests.packages import urllib3
+
 
 STATS_URL = 'http://chromium-cq-status.appspot.com'
 # Expects % project.
@@ -215,19 +218,16 @@ def local_to_utc(local_time):
   return utcTime
 
 
+session = requests.Session()
+http_adapter = requests.adapters.HTTPAdapter(
+    max_retries=urllib3.util.Retry(total=4, backoff_factor=0.5),
+    pool_block=True)
+session.mount('http://', http_adapter)
+session.mount('https://', http_adapter)
+
+
 def fetch_json(url):
-  result = {'error': '404'}
-  delays = [0.0, 0.5, 1.0, 2.0]
-  for retry in range(len(delays)):
-    if retry:
-      time.sleep(delays[retry])
-    try:
-      result = json.loads(urllib2.urlopen(url).read())
-      return result
-    except (IOError, ValueError) as e:
-      logging.warning('Failed to fetch (attempt %d) %s: %s', retry + 1, url, e)
-  logging.error('Permanently failed to fetch %s: %s', url, e)
-  return result
+  return session.get(url).json()
 
 
 def fetch_tree_status(project, end_date, start_date=None, limit=1000):

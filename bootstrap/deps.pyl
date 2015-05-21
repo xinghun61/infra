@@ -184,10 +184,10 @@
     # Soft requirement of expect_tests
   },
   'requests': {
-    'version': '2.3.0',
+    'version': '2.5.1',
     'build': '0',
     'repo': 'external/github.com/kennethreitz/requests',
-    'rev': '6366d3dd190a9e58ca582955cddf7e2ac5f32dcc',
+    'rev': 'b83131779c701720a9ae9efae78996277d416269',
   },
   'requests_cache': {
     'version': '0.4.4',
