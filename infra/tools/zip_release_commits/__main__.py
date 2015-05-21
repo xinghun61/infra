@@ -14,9 +14,8 @@ import argparse
 import os
 import sys
 
-from infra.libs import logs
-
 from infra.libs.git2 import Repo, INVALID, CalledProcessError
+from infra_libs import logs
 
 
 def main(argv):

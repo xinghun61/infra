@@ -38,7 +38,7 @@ import os
 from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
-from infra.libs import logs
+from infra_libs import logs
 
 
 def _logging_callback(resp, content):  # pragma: no cover

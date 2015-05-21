@@ -5,7 +5,7 @@
 import sys
 
 import infra.libs.event_mon as event_mon
-import infra.libs.logs
+import infra_libs.logs
 
 from infra.tools.send_monitoring_event import send_event
 
@@ -21,7 +21,7 @@ def main(argv):  # pragma: no cover
   args = send_event.get_arguments(argv)
 
   event_mon.process_argparse_options(args)
-  infra.libs.logs.process_argparse_options(args)
+  infra_libs.logs.process_argparse_options(args)
 
   if args.build_event_type:
     send_event.send_build_event(args)

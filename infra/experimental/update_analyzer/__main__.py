@@ -12,7 +12,7 @@ import sys
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
-from infra.libs import logs
+import infra_libs.logs
 from infra.libs.git2 import Repo
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -76,9 +76,9 @@ def parse_args(args):  # pragma: no cover
   parser = argparse.ArgumentParser('./run.py %s' % __package__)
   parser.add_argument('-j', '--jobs', metavar='N', type=int, default=10,
                       help='Number of parallel logs-fetching threads to run.')
-  logs.add_argparse_options(parser)
+  infra_libs.logs.add_argparse_options(parser)
   opts = parser.parse_args(args)
-  logs.process_argparse_options(opts)
+  infra_libs.logs.process_argparse_options(opts)
   return opts
 
 

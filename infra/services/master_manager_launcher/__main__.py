@@ -7,20 +7,17 @@
 # pragma: no cover
 
 import argparse
-import json
 import logging
-import operator
 import os
 import socket
 import subprocess
 import sys
 
-from infra.libs import logs
 from infra.libs.gitiles import gitiles
 from infra.libs.process_invocation import multiprocess
 from infra.libs.service_utils import daemon
-from infra.services.master_lifecycle import buildbot_state
 from infra.services.master_manager_launcher import desired_state_parser
+from infra_libs import logs
 
 
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))

@@ -11,7 +11,7 @@ import datetime
 import dateutil.parser
 import dateutil.tz
 from xml.etree import ElementTree
-import infra.libs.logs
+import infra_libs.logs
 import json
 import logging
 from multiprocessing.pool import ThreadPool
@@ -166,7 +166,7 @@ def parse_args():
                       choices=INTERVALS.keys(),
                       default='week',
                       help='Time range to print stats for.')
-  infra.libs.logs.add_argparse_options(parser, default_level=logging.ERROR)
+  infra_libs.logs.add_argparse_options(parser, default_level=logging.ERROR)
 
   args = parser.parse_args()
 
@@ -1194,7 +1194,7 @@ def main():
   logger = logging.getLogger()
   # TODO(sergeyberezin): how do I derive local timezone string?
   # Need to be able to pass dateutil.tz.tzlocal() directly.
-  infra.libs.logs.process_argparse_options(args, logger)
+  infra_libs.logs.process_argparse_options(args, logger)
   stats = acquire_stats(args)
   print_stats(args, stats)
 
