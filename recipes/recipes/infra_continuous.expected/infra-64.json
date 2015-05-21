@@ -99,7 +99,7 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport os, sys\nfrom common import chromium_utils\n\nfor p in [os.path.join(sys.argv[1], x) for x in os.listdir(sys.argv[1])]:\n  if os.path.isdir(p):\n    chromium_utils.RemoveDirectory(p)\n  else:\n    os.unlink(p)\n",
+      "\nimport os, sys\nfrom common import chromium_utils\n\npath = sys.argv[1]\nif os.path.exists(path):\n  for p in (os.path.join(path, x) for x in os.listdir(path)):\n    if os.path.isdir(p):\n      chromium_utils.RemoveDirectory(p)\n    else:\n      os.unlink(p)\n",
       "[SLAVE_BUILD]/infra/go/bin"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -109,11 +109,13 @@
       "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
       "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@for p in [os.path.join(sys.argv[1], x) for x in os.listdir(sys.argv[1])]:@@@",
-      "@@@STEP_LOG_LINE@python.inline@  if os.path.isdir(p):@@@",
-      "@@@STEP_LOG_LINE@python.inline@    chromium_utils.RemoveDirectory(p)@@@",
-      "@@@STEP_LOG_LINE@python.inline@  else:@@@",
-      "@@@STEP_LOG_LINE@python.inline@    os.unlink(p)@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  for p in (os.path.join(path, x) for x in os.listdir(path)):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    if os.path.isdir(p):@@@",
+      "@@@STEP_LOG_LINE@python.inline@      chromium_utils.RemoveDirectory(p)@@@",
+      "@@@STEP_LOG_LINE@python.inline@    else:@@@",
+      "@@@STEP_LOG_LINE@python.inline@      os.unlink(p)@@@",
       "@@@STEP_LOG_END@python.inline@@@"
     ]
   },
