@@ -46,7 +46,7 @@ CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
 PRIVILEGED_SERVICE_ACCOUNTS = (
   # CQ and commit_position_bot .
-  '446450136466-fbmefp0bhdv7nugkaq8jba0pf6gaahba@developer.gserviceaccount.com',
+  '5071639625-1lppvbtck1morgivc6sq4dul7klu27sd@developer.gserviceaccount.com',
 )
 PROJECTS_WITHOUT_CQ = ('webrtc',)
 
