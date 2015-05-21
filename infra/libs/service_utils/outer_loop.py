@@ -37,6 +37,8 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
                           invocations (sec), called once per loop.
     @param duration: How long to run the loop (sec), or None for forever.
     @param max_errors: Max number of consecutive errors before loop aborts.
+    @param time_mod: Object implementing the interface of the standard `time`
+                     module. Used by tests to mock time.time and time.sleep.
 
   Returns:
     @returns LoopResults.
@@ -49,6 +51,7 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
   error_count = 0
   count_metric = ts_mon.CounterMetric('proc/outer_loop/count')
   success_metric = ts_mon.BooleanMetric('proc/outer_loop/success')
+  durations_metric = ts_mon.DistributionMetric('proc/outer_loop/durations')
   try:
     while True:
       # Log that new attempt is starting.
@@ -73,7 +76,9 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
       except Exception:
         LOGGER.exception('Uncaught exception in the task')
       finally:
-        LOGGER.info('End loop %d (%f sec)', loop_count, time_mod.time() - start)
+        elapsed = time_mod.time() - start
+        LOGGER.info('End loop %d (%f sec)', loop_count, elapsed)
+        durations_metric.add(elapsed)
         LOGGER.info('-------------------')
 
       # Reset error counter on success, or abort on too many errors.

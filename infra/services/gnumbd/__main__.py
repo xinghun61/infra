@@ -12,6 +12,7 @@ import urlparse
 from infra.libs import git2
 from infra.libs import infra_types
 from infra.libs import logs
+from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
 
 from infra.services.gnumbd import gnumbd
@@ -42,11 +43,13 @@ def parse_args(args):  # pragma: no cover
   parser.add_argument('repo', nargs=1, help='The url of the repo to act on.',
                       type=check_url)
   logs.add_argparse_options(parser)
+  ts_mon.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
 
   opts = parser.parse_args(args)
 
   logs.process_argparse_options(opts)
+  ts_mon.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
   repo = opts.repo[0]
@@ -58,6 +61,7 @@ def parse_args(args):  # pragma: no cover
 
 def main(args):  # pragma: no cover
   opts = parse_args(args)
+  commits_counter = ts_mon.CounterMetric('gnumbd/commit_count')
   cref = gnumbd.GnumbdConfigRef(opts.repo)
   opts.repo.reify()
 
@@ -65,6 +69,7 @@ def main(args):  # pragma: no cover
   def outer_loop_iteration():
     success, commits = gnumbd.inner_loop(opts.repo, cref)
     all_commits.extend(commits)
+    commits_counter.increment_by(len(commits))
     return success
 
   # TODO(iannucci): sleep_timeout should be an exponential backon/off.
