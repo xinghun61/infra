@@ -147,6 +147,9 @@ a pure python module by looking at the name of the wheel file. For example::
 Is compatible with Python 2 and Python 3 (py2.py3) any python ABI (none), and
 any OS platform (any).
 
+Running ``build_deps.py`` will only attempt to build dependencies which are
+missing for the current platform.
+
 If the module does contain compiled extensions, you must run ``build_deps.py``
 on the following systems (all with CPython 2.7):
   * OS X 10.9 - ``x86_64``
@@ -158,13 +161,12 @@ TODO(iannucci): Add job to build wheels on all appropriate systems.
 Once a wheel is sucessfully built, it is uploaded to
 ``gs://chrome-python-wheelhouse/wheels`` if it is not there already.
 
-Running ``build_deps.py`` will only attempt to build dependencies which are
-missing for the current platform.
+Only Googlers have access to that bucket. Make sure to run the following
+command to authenticate first:
+  `depot_tools/third_party/gsutil/gsutil config`
 
 ``build_deps.py`` assumes that it can find ``gsutil`` on ``PATH``, so go ahead
-and install it appropriately for whichever platform you're on. You will also
-need write access to the ``chrome-python-wheelhouse`` bucket.
-
+and install it appropriately for whichever platform you're on.
 
 custom builds
 ~~~~~~~~~~~~~
