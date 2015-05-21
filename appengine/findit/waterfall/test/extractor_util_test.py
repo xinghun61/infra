@@ -114,6 +114,7 @@ class ExtractorUtilTest(unittest.TestCase):
         '35:WARNING:data_reduction_proxy_settings.cc(328)] SPDY proxy': True,
         '36:ERROR:desktop_window_tree_host_x11.cc(810)] Not implemented': True,
         '09:INFO:CONSOLE(0)] "[SUCCESS] ... /test.js (98)': True,
+        'SUMMARY: AddressSanitizer: x/y/z.cc:123:9': True,
     }
     for case in cases:
       self.assertEqual(extractor_util.ShouldIgnoreLine(case), cases[case])

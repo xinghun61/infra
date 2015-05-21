@@ -155,4 +155,8 @@ def ShouldIgnoreLine(line):
   for log_level in ('INFO:', 'WARNING:', 'ERROR:', 'VERBOSE2:'):
     if log_level in line:
       return True
+
+  if 'SUMMARY: AddressSanitizer' in line:
+    return True
+
   return False

@@ -41,7 +41,7 @@ class ExtractorsTest(unittest.TestCase):
         #3 0x113b7d0c4 in ... render_frame_impl.cc:1084:8
         #4 0x113bb7b2d in ... base/tuple.h:246:3
         ...
-
+        SUMMARY: AddressSanitizer: x/y/z.cc:123:9
         Only this file should be extracted: a/b/c.h:90""")
     expected_signal_json = {
         'files': {
