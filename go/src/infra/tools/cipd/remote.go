@@ -96,7 +96,6 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 		req.Header.Set("User-Agent", r.client.UserAgent)
 
 		// Connect, read response.
-		r.client.Log.Debugf("cipd: %s %s", method, url)
 		resp, err := r.client.doAuthenticatedHTTPRequest(req)
 		if err != nil {
 			if isTemporaryNetError(err) {
@@ -114,7 +113,6 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 			}
 			return err
 		}
-		r.client.Log.Debugf("cipd: http %d: %s", resp.StatusCode, body)
 		if isTemporaryHTTPError(resp.StatusCode) {
 			continue
 		}
