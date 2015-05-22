@@ -340,7 +340,11 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
   for step_name, step_failure_info in failed_steps.iteritems():
     failure_signal = FailureSignal.FromDict(failure_signals[step_name])
     failed_build_number = step_failure_info['current_failure']
-    build_number = step_failure_info['first_failure']
+
+    if step_failure_info.get('last_pass') != None:
+      build_number = step_failure_info.get('last_pass') + 1
+    else:
+      build_number = step_failure_info['first_failure']
 
     step_analysis_result = {
         'step_name': step_name,

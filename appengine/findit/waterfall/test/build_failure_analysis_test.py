@@ -164,6 +164,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             'b': {
                 'current_failure': 99,
                 'first_failure': 98,
+                'last_pass': 96,
             },
         },
         'builds': {
@@ -173,17 +174,18 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             '98': {
                 'blame_list': ['r98_1'],
             },
+            '97': {
+                'blame_list': ['r97_1'],
+            },
+            '96': {
+                'blame_list': ['r96_1', 'r96_2'],
+            },
         }
     }
     change_logs = {
         'r99_1': {
             'revision': 'r99_1',
             'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
                 {
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'a/b/f99_1.cc',
@@ -208,6 +210,31 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                     'change_type': ChangeType.MODIFY,
                     'old_path': 'y/z/f98.cc',
                     'new_path': 'y/z/f98.cc'
+                },
+            ],
+        },
+        'r97_1': {
+            'revision': 'r97_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.ADD,
+                    'old_path': '/dev/null',
+                    'new_path': 'x/y/f99_1.cc'
+                },
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+        },
+        'r96_1': {
+            'revision': 'r96_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f96_1.cc',
+                    'new_path': 'a/b/f96_1.cc'
                 },
             ],
         },
@@ -247,12 +274,12 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             {
                 'step_name': 'b',
                 'first_failure': 98,
-                'last_pass': None,
+                'last_pass': 96,
                 'suspected_cls': [
                     {
-                        'build_number': 99,
+                        'build_number': 97,
                         'repo_name': 'chromium',
-                        'revision': 'r99_1',
+                        'revision': 'r97_1',
                         'commit_position': None,
                         'url': None,
                         'score': 5,

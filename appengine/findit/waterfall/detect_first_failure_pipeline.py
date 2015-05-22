@@ -143,7 +143,7 @@ class DetectFirstFailurePipeline(BasePipeline):
     """
     # Look back for first known failures.
     earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
-    for n in range(build_number - 1, earliest_build_number -1, -1):  
+    for n in range(build_number - 1, earliest_build_number - 1, -1):
       # Extraction should stop when when we reach to the first build
       build_info = self._ExtractBuildInfo(
           master_name, builder_name, n)
@@ -167,7 +167,7 @@ class DetectFirstFailurePipeline(BasePipeline):
         # steps here.
 
         for step_name in build_info.failed_steps:
-          if (step_name in failed_steps and 
+          if (step_name in failed_steps and
               not 'last_pass' in failed_steps[step_name]):
             failed_steps[step_name]['first_failure'] = build_info.build_number
 

@@ -84,7 +84,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     if build_data is None:
       build_data = self._GetBuildData(master_name, builder_name, build_number)
 
-    if archive:  
+    if archive:
       if build_data == 'Test get build data':
         build_data = build_data + ' from archive'
       archived_build_url = buildbot.CreateArchivedBuildUrl(
@@ -102,8 +102,8 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
 
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123, 
-                                    build_data='Test get build data', 
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
+                                    build_data='Test get build data',
                                     archive=True)
 
     pipeline = DetectFirstFailurePipeline()
@@ -219,7 +219,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123, 
+    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
                                     build_data=None, archive=True)
     self._MockUrlfetchWithBuildData(
         master_name, builder_name, 122, build_data='Blow up if used!')
