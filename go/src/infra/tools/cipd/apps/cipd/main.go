@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"infra/libs/auth"
-	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 
 	"infra/tools/cipd"
 	"infra/tools/cipd/common"
@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	log = logging.DefaultLogger
+	log = deflogger.Get()
 )
 
 ////////////////////////////////////////////////////////////////////////////////

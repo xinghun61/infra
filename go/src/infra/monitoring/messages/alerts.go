@@ -11,12 +11,12 @@ import (
 	"os"
 	"time"
 
-	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 )
 
 var (
 	googLoc *time.Location
-	log     = logging.DefaultLogger
+	log     = deflogger.Get()
 )
 
 const (

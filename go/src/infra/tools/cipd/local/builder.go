@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 	"infra/tools/cipd/common"
 )
 
@@ -36,7 +37,7 @@ type BuildInstanceOptions struct {
 // returns an error.
 func BuildInstance(opts BuildInstanceOptions) error {
 	if opts.Log == nil {
-		opts.Log = logging.DefaultLogger
+		opts.Log = deflogger.Get()
 	}
 	err := common.ValidatePackageName(opts.PackageName)
 	if err != nil {

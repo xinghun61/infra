@@ -47,6 +47,7 @@ import (
 	"time"
 
 	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 
 	"infra/tools/cipd/common"
 	"infra/tools/cipd/local"
@@ -105,7 +106,7 @@ type HTTPClientFactory func() (*http.Client, error)
 type Client struct {
 	// ServiceURL is root URL of the backend service.
 	ServiceURL string
-	// Log is a logger to use for logs, default is logging.DefaultLogger.
+	// Log is a logger to use for logs, default is deflogger.Get()
 	Log logging.Logger
 	// AuthenticatedClientFactory lazily creates http.Client to use for making RPC requests.
 	AuthenticatedClientFactory HTTPClientFactory
@@ -166,7 +167,7 @@ type UploadSession struct {
 func NewClient() *Client {
 	c := &Client{
 		ServiceURL: ServiceURL,
-		Log:        logging.DefaultLogger,
+		Log:        deflogger.Get(),
 		AuthenticatedClientFactory: func() (*http.Client, error) { return http.DefaultClient, nil },
 		AnonymousClientFactory:     func() (*http.Client, error) { return http.DefaultClient, nil },
 		UserAgent:                  UserAgent,

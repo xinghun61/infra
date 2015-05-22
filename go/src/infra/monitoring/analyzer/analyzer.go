@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	log = logging.DefaultLogger
+	log = deflogger.Get()
 )
 
 var (
@@ -764,7 +764,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 		}(failure)
 	}
 
-	for _ = range scannedFailures {
+	for range scannedFailures {
 		r := <-rs
 		if r.a != nil {
 			ret = append(ret, *r.a)

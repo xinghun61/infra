@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 	"infra/tools/cipd/common"
 )
 
@@ -53,7 +53,7 @@ const currentSymlink = "_current"
 
 // log is logger to use for logs produced by this file.
 // TODO(vadimsh): Propagate as parameter.
-var log = logging.DefaultLogger
+var log = deflogger.Get()
 
 // DeployInstance installs a specific instance of a package into a site root
 // directory. It unpacks the package into <root>/.cipd/pkgs/*, and rearranges

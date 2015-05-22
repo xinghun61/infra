@@ -13,13 +13,13 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"infra/libs/logging"
+	"infra/libs/logging/deflogger"
 
 	"infra/monitoring/messages"
 )
 
 var (
-	log = logging.DefaultLogger
+	log = deflogger.Get()
 )
 
 // MasterURL returns the builder URL for the given master.
@@ -156,7 +156,7 @@ func (c *client) BuildExtracts(masterNames []string) (map[string]*messages.Build
 
 	ret := map[string]*messages.BuildExtract{}
 	errs := map[string]error{}
-	for _ = range masterNames {
+	for range masterNames {
 		r := <-ch
 		if r.err != nil {
 			errs[r.masterName] = r.err
