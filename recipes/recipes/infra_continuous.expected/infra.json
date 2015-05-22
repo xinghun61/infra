@@ -67,6 +67,17 @@
       "python",
       "-u",
       "[SLAVE_BUILD]/infra/go/env.py",
+      "go",
+      "version"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go third parties"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
       "python",
       "[SLAVE_BUILD]/infra/go/test.py"
     ],
@@ -86,7 +97,7 @@
       "--tags",
       "buildbot_build:chromium.infra/infra-continuous/123",
       "git_repository:https://chromium.googlesource.com/infra/infra",
-      "git_revision:c14d891d44f0afff64e56ed7c9702df1d807b1ee"
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "build cipd packages",
