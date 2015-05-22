@@ -92,42 +92,54 @@ def get_goos():
   raise ValueError('Unrecognized platform: %s' % sys.platform)
 
 
-_package_info_cache = {}
+class PackageBundle(object):
+  """Bunch of packages rooted at a single package."""
 
-def get_package_info(package):
-  """Returns contents of <package>/<name>.infra_testing file or {} if missing.
+  def __init__(self, root):
+    out = subprocess.check_output(
+        ['go', 'list', '-f', '{{.ImportPath}} {{.Dir}}', '%s/...' % root])
+    self.packages = {}
+    for line in out.splitlines():
+      line = line.strip()
+      if not line:
+        continue
+      pkg, path = line.split(' ', 1)
+      self.packages[pkg] = path
 
-  *.infra_testing contains a JSON dict with the following keys:
-  {
-    // Do not run tests in this package at all. Default 'false'.
-    "skip_testing": a list of platforms (GOOS) to skip tests on,
-    // Minimum allowed code coverage percentage, see below. Default '100'.
-    "expected_coverage_min": number,
-    // Maximum allowed code coverage percentage, see below. Default '100'.
-    "expected_coverage_max": number
-  }
-
-  expected_coverage_min and expected_coverage_max set a boundary on what the
-  code coverage percentage of the package is expected to be. test.py will fail
-  if code coverage is less than 'expected_coverage_min' (meaning the package
-  code has degraded), or larger than 'expected_coverage_max' (meaning the
-  package code has improved and expected_coverage_min should probably be changed
-  too).
-
-  Setting expected_coverage_min=0 and expected_coverage_max=100 effectively
-  disables code coverage checks for a package (test.py still will generate HTML
-  coverage reports though).
-  """
-  # Performs actual reading if the info is not in cache already.
-  def do_read():
+  def get_magic_file_path(self, package, extension):
+    """Full package name -> path to <package>/<package name>.<extension>."""
     # Name of the package is the last component.
     if '/' not in package:
       name = package
     else:
       name = package.split('/')[-1]
-    # Resolve package name to a file system directory with source code.
-    path = subprocess.check_output(['go', 'list', '-f={{.Dir}}', package])
-    info_file = os.path.join(path.strip(), '%s.infra_testing' % name)
+    return os.path.join(self.packages[package], '%s.%s' % (name, extension))
+
+  def get_package_info(self, package):
+    """Returns contents of <package>/<name>.infra_testing file or {} if missing.
+
+    *.infra_testing contains a JSON dict with the following keys:
+    {
+      // Do not run tests in this package at all. Default 'false'.
+      "skip_testing": a list of platforms (GOOS) to skip tests on,
+      // Minimum allowed code coverage percentage, see below. Default '100'.
+      "expected_coverage_min": number,
+      // Maximum allowed code coverage percentage, see below. Default '100'.
+      "expected_coverage_max": number
+    }
+
+    expected_coverage_min and expected_coverage_max set a boundary on what the
+    code coverage percentage of the package is expected to be. test.py will fail
+    if code coverage is less than 'expected_coverage_min' (meaning the package
+    code has degraded), or larger than 'expected_coverage_max' (meaning the
+    package code has improved and expected_coverage_min should probably be
+    changed too).
+
+    Setting expected_coverage_min=0 and expected_coverage_max=100 effectively
+    disables code coverage checks for a package (test.py still will generate
+    HTML coverage reports though).
+    """
+    info_file = self.get_magic_file_path(package, 'infra_testing')
     try:
       with open(info_file, 'r') as f:
         info = json.load(f)
@@ -144,109 +156,104 @@ def get_package_info(package):
       print >> sys.stderr, 'Not a valid JSON file: %s' % info_file
       return {}
 
-  if package not in _package_info_cache:
-    _package_info_cache[package] = do_read()
-  return _package_info_cache[package]
+  def should_skip(self, package):
+    """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
+    skip = self.get_package_info(package).get('skip_testing', [])
+    if not isinstance(skip, list):
+      raise TypeError(
+          '%s: "skip_testing" should be a list of platforms to skip tests on, '
+          'got %r instead' % (package, skip))
+    return get_goos() in skip
 
+  def get_build_tags(self, package):
+    """Build tags to use when building a package, read from *.infra_testing."""
+    tags = self.get_package_info(package).get('build_tags', ())
+    if tags:
+      return '-tags='+(','.join(tags))
+    return None
 
-def should_skip(package):
-  """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
-  skip = get_package_info(package).get('skip_testing', [])
-  if not isinstance(skip, list):
-    raise TypeError(
-        '%s: "skip_testing" should be a list of platforms to skip tests on, '
-        'got %r instead' % (package, skip))
-  return get_goos() in skip
+  def get_expected_coverage(self, package):
+    """Returns allowed code coverage percentage as a pair (min, max)."""
+    info = self.get_package_info(package)
+    min_cover = info.get('expected_coverage_min', 100.0)
+    max_cover = info.get('expected_coverage_max', 100.0)
+    if max_cover < min_cover:
+      max_cover = min_cover
+    return (min_cover, max_cover)
 
+  def get_goconvey_test_flags(self, package):
+    """Reads <package>/*.goconvey file with flags for "go test" if it exists."""
+    path = self.get_magic_file_path(package, 'goconvey')
+    if os.path.exists(path):
+      with open(path, 'r') as f:
+        return f.read().strip().split()
+    return []
 
-def get_build_tags(package):
-  """Build tags to use when building a package, read from *.infra_testing."""
-  tags = get_package_info(package).get('build_tags', ())
-  if tags:
-    return '-tags='+(','.join(tags))
-  return None
+  def run_package_tests(self, package, coverage_file):
+    """Runs unit tests for a single package.
 
+    Also perform code coverage check for that package. Tests from other packages
+    do not contribute to total code coverage for the package. Required code
+    coverage percentage is read from <package>/<name>.infra_testing file.
 
-def get_expected_coverage(package):
-  """Returns allowed code coverage percentage as a pair (min, max)."""
-  info = get_package_info(package)
-  min_cover = info.get('expected_coverage_min', 100.0)
-  max_cover = info.get('expected_coverage_max', 100.0)
-  if max_cover < min_cover:
-    max_cover = min_cover
-  return (min_cover, max_cover)
+    Args:
+      package: package name (e.g. infra/package).
+      coverage_file: prefix for code coverage files (*.out and *.html).
 
+    Returns:
+      TestResults tuple.
+    """
+    assert os.path.isabs(coverage_file), coverage_file
 
-def list_packages(package_root):
-  """Returns a list of Go packages under |package_root| package path."""
-  out = subprocess.check_output(['go', 'list', '%s/...' % package_root])
-  return filter(bool, out.splitlines())
+    # Ask go test to collect coverage to a file, to convert it to HTML later.
+    cmd = ['go', 'test', package]
+    build_tags = self.get_build_tags(package)
+    if build_tags:
+      cmd.append(build_tags)
+    cmd.extend(self.get_goconvey_test_flags(package))
+    makedirs(os.path.dirname(coverage_file))
+    coverage_out = '%s.out' % coverage_file
+    cmd.extend(['-coverprofile', coverage_out])
 
+    # Run the test.
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    if proc.returncode:
+      return TestResults(
+          package=package,
+          tests_pass=False,
+          coverage_percent=None,
+          coverage_expected=None,
+          coverage_pass=False,
+          coverage_html=None,
+          stdout=out,
+          stderr=err)
 
-def run_package_tests(package, coverage_file):
-  """Runs unit tests for a single package.
+    # Convert coverage report to fancy HTML. Coverage report may be missing if
+    # package has no tests at all.
+    if os.path.exists(coverage_out):
+      coverage_html = '%s.html' % coverage_file
+      subprocess.check_output(
+          ['go', 'tool', 'cover', '-html', coverage_out, '-o', coverage_html],
+          stderr=subprocess.STDOUT)
+    else:
+      coverage_html = None
 
-  Also perform code coverage check for that package. Tests from other packages
-  do not contribute to total code coverage for the package. Required code
-  coverage percentage is read from <package>/<name>.infra_testing file.
-
-  Args:
-    package: package name (e.g. infra/package).
-    coverage_file: prefix for code coverage files (*.out and *.html).
-
-  Returns:
-    TestResults tuple.
-  """
-  assert os.path.isabs(coverage_file), coverage_file
-
-  # Ask go test to collect coverage to a file, to convert it to HTML later.
-  cmd = ['go', 'test', package]
-  build_tags = get_build_tags(package)
-  if build_tags:
-    cmd.append(build_tags)
-  makedirs(os.path.dirname(coverage_file))
-  coverage_out = '%s.out' % coverage_file
-  cmd.extend(['-coverprofile', coverage_out])
-
-  # Run the test.
-  proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  out, err = proc.communicate()
-  if proc.returncode:
+    # Assume 0% coverage if package does not define any tests.
+    match = re.search('coverage: ([\d\.]+)% of statements', out)
+    coverage = float(match.group(1)) if match else 0
+    coverage_expected = self.get_expected_coverage(package)
+    coverage_pass = (
+        coverage >= coverage_expected[0] and coverage <= coverage_expected[1])
     return TestResults(
         package=package,
-        tests_pass=False,
-        coverage_percent=None,
-        coverage_expected=None,
-        coverage_pass=False,
-        coverage_html=None,
+        tests_pass=True,
+        coverage_percent=coverage,
+        coverage_expected=coverage_expected,
+        coverage_pass=coverage_pass,
+        coverage_html=coverage_html,
         stdout=out,
         stderr=err)
-
-  # Convert coverage report to fancy HTML. Coverage report may be missing if
-  # package has no tests at all.
-  if os.path.exists(coverage_out):
-    coverage_html = '%s.html' % coverage_file
-    subprocess.check_output(
-        ['go', 'tool', 'cover', '-html', coverage_out, '-o', coverage_html],
-        stderr=subprocess.STDOUT)
-  else:
-    coverage_html = None
-
-  # Assume 0% coverage if package does not define any tests.
-  match = re.search('coverage: ([\d\.]+)% of statements', out)
-  coverage = float(match.group(1)) if match else 0
-  coverage_expected = get_expected_coverage(package)
-  coverage_pass = (
-      coverage >= coverage_expected[0] and coverage <= coverage_expected[1])
-  return TestResults(
-      package=package,
-      tests_pass=True,
-      coverage_percent=coverage,
-      coverage_expected=coverage_expected,
-      coverage_pass=coverage_pass,
-      coverage_html=coverage_html,
-      stdout=out,
-      stderr=err)
 
 
 def run_tests(package_root, coverage_dir):
@@ -273,25 +280,28 @@ def run_tests(package_root, coverage_dir):
     shutil.rmtree(coverage_dir)
     makedirs(coverage_dir)
 
+  # PackageBundle is used to batch "go list ..." calls since they are too slow.
+  bundle = PackageBundle(package_root)
+
   # Code coverage report requires tests to be run against a single package, so
   # discover all individual packages.
   skipped = []
   packages = []
-  for p in list_packages(package_root):
-    if should_skip(p):
+  for p in sorted(bundle.packages):
+    if bundle.should_skip(p):
       skipped.append(p)
     else:
       packages.append(p)
 
   if skipped:
-    print 'Skipping these packages (see "skip_testing" in *.infra_testing):'
-    for p in sorted(skipped):
+    print 'Skipping (see "skip_testing" in *.infra_testing):'
+    for p in skipped:
       print '    %s' % p
     print
 
   if packages:
     print 'About to run tests for: '
-    for p in sorted(packages):
+    for p in packages:
       print '    %s' % p
   else:
     print 'No tests to run'
@@ -303,7 +313,7 @@ def run_tests(package_root, coverage_dir):
   tpool = ThreadPool(len(packages))
   def run(pkg):
     coverage_file = os.path.join(coverage_dir, pkg.replace('/', os.sep))
-    return run_package_tests(pkg, coverage_file)
+    return bundle.run_package_tests(pkg, coverage_file)
   for result in tpool.imap_unordered(run, packages):
     if result.tests_pass and result.coverage_pass:
       sys.stdout.write('.')
