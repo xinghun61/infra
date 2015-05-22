@@ -44,10 +44,6 @@ from codereview.exceptions import FetchError
 REQUIRED_REVIEWER_PREFIX = '*'
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
-PRIVILEGED_SERVICE_ACCOUNTS = (
-  # CQ and commit_position_bot .
-  '5071639625-1lppvbtck1morgivc6sq4dul7klu27sd@developer.gserviceaccount.com',
-)
 PROJECTS_WITHOUT_CQ = ('webrtc',)
 
 
@@ -72,7 +68,6 @@ def is_privileged_user(user):
     return False
   email = user.email().lower()
   return (email.endswith(PRIVILEGED_USER_DOMAINS) or
-          email in PRIVILEGED_SERVICE_ACCOUNTS or
           email in committer_list.Committers())
 
 
