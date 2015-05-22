@@ -1,5 +1,0 @@
-{
-  "skip_testing": ["darwin", "linux", "windows"],
-  "expected_coverage_min": 0.0,
-  "build_tags": ["appengine"]
-}
