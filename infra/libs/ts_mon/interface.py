@@ -35,6 +35,8 @@ import logging
 import re
 import socket
 import sys
+import threading
+import time
 
 from monacq.proto import metrics_pb2
 
@@ -59,6 +61,10 @@ class State(object):
     self.default_target = None
     # The flush mode being used to control when metrics are pushed.
     self.flush_mode = None
+    # The background thread that flushes metrics every
+    # --ts-mon-flush-interval-secs seconds.  May be None if
+    # --ts-mon-flush != 'auto' or --ts-mon-flush-interval-secs == 0.
+    self.flush_thread = None
     # All metrics created by this application.
     self.metrics = set()
 
@@ -82,10 +88,17 @@ def add_argparse_options(parser):
       help='path to a pkcs8 json credential file')
   parser.add_argument(
       '--ts-mon-flush',
-      choices=('all', 'manual'), default='manual',
-      help=('metric push behavior: all (send every metric individually), or '
-            'manual (only send when flush() is called). '
+      choices=('all', 'manual', 'auto'), default='auto',
+      help=('metric push behavior: all (send every metric individually), '
+            'manual (only send when flush() is called), or auto (send '
+            'automatically every --ts-mon-flush-interval-secs seconds).'
             '(default: %(default)s)'))
+  parser.add_argument(
+      '--ts-mon-flush-interval-secs',
+      type=int,
+      default=60,
+      help=('automatically push metrics on this interval if '
+            '--ts-mon-flush=auto.'))
 
   parser.add_argument(
       '--ts-mon-target-type',
@@ -150,6 +163,9 @@ def process_argparse_options(args):
   This is generally a bad idea, as many libraries rely on the default target
   being set up.
 
+  Starts a background thread to automatically flush monitoring metrics if not
+  disabled by command line arguments.
+
   Args:
     args (argparse.Namespace): the result of parsing the command line arguments
   """
@@ -187,6 +203,10 @@ def process_argparse_options(args):
         args.ts_mon_task_number)
 
   _state.flush_mode = args.ts_mon_flush
+
+  if args.ts_mon_flush == 'auto':
+    _state.flush_thread = _FlushThread(args.ts_mon_flush_interval_secs)
+    _state.flush_thread.start()
 
 
 def send(metric):
@@ -237,3 +257,56 @@ def register(metric):
 def unregister(metric):
   """Removes the metric from the list of metrics sent by flush()."""
   _state.metrics.remove(metric)
+
+
+def close():
+  """Stops any background threads and waits for them to exit."""
+  if _state.flush_thread is not None:
+    _state.flush_thread.stop()
+
+
+class _FlushThread(threading.Thread):
+  """Background thread that flushes metrics on an interval."""
+
+  def __init__(self, interval_secs, stop_event=None):
+    super(_FlushThread, self).__init__(name='ts_mon')
+
+    if stop_event is None:
+      stop_event = threading.Event()
+
+    self.daemon = True
+    self.interval_secs = interval_secs
+    self.stop_event = stop_event
+
+  def _flush_and_log_exceptions(self):
+    try:
+      flush()
+    except Exception:
+      logging.exception('Automatic monitoring flush failed.')
+
+  def run(self):
+    next_timeout = self.interval_secs
+    while True:
+      if self.stop_event.wait(next_timeout):
+        self._flush_and_log_exceptions()
+        return
+
+      # Try to flush every N seconds exactly so rate calculations are more
+      # consistent.
+      start = time.time()
+      self._flush_and_log_exceptions()
+      flush_duration = time.time() - start
+      next_timeout = self.interval_secs - flush_duration
+
+      if next_timeout < 0:
+        logging.warning(
+            'Last monitoring flush took %f seconds (longer than '
+            '--ts-mon-flush-interval-secs = %f seconds)',
+            flush_duration, self.interval_secs)
+        next_timeout = 0
+
+  def stop(self):
+    """Stops the background thread and performs a final flush."""
+
+    self.stop_event.set()
+    self.join()

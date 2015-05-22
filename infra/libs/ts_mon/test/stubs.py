@@ -15,6 +15,7 @@ class MockState(interface.State):  # pragma: no cover
     self.global_monitor = None
     self.default_target = None
     self.flush_mode = None
+    self.flush_thread = None
     self.metrics = set()
 
 

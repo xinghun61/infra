@@ -3,8 +3,12 @@
 # found in the LICENSE file.
 
 import argparse
+import contextlib
 import copy
+import functools
 import tempfile
+import threading
+import time
 import unittest
 
 import mock
@@ -23,11 +27,14 @@ class GlobalsTest(auto_stub.TestCase):
     super(GlobalsTest, self).setUp()
     self.mock(interface, '_state', stubs.MockState())
 
+  def tearDown(self):
+    interface.close()
+
   @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
-    singleton = object()
+    singleton = mock.Mock()
     fake_monitor.return_value = singleton
     fake_target.return_value = singleton
     fake_fqdn.return_value = 'slave1-a1.reg.tld'
@@ -41,13 +48,14 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertIs(interface._state.global_monitor, singleton)
     fake_target.assert_called_once_with('reg', '1', 'slave1-a1')
     self.assertIs(interface._state.default_target, singleton)
-    self.assertEquals(args.ts_mon_flush, 'manual')
+    self.assertEquals(args.ts_mon_flush, 'auto')
+    self.assertIsNotNone(interface._state.flush_thread)
 
   @mock.patch('socket.getfqdn')
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
-    singleton = object()
+    singleton = mock.Mock()
     fake_monitor.return_value = singleton
     fake_target.return_value = singleton
     fake_fqdn.return_value = 'foo'
@@ -62,9 +70,23 @@ class GlobalsTest(auto_stub.TestCase):
     fake_target.assert_called_once_with('', '', 'foo')
     self.assertIs(interface._state.default_target, singleton)
 
+  @mock.patch('socket.getfqdn')
+  @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
+  def test_manual_flush(self, fake_target, fake_monitor, fake_fqdn):
+    singleton = mock.Mock()
+    fake_monitor.return_value = singleton
+    fake_target.return_value = singleton
+    fake_fqdn.return_value = 'foo'
+    p = argparse.ArgumentParser()
+    interface.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-flush', 'manual'])
+    interface.process_argparse_options(args)
+    self.assertIsNone(interface._state.flush_thread)
+
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   def test_monitor_args(self, fake_monitor):
-    singleton = object()
+    singleton = mock.Mock()
     fake_monitor.return_value = singleton
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
@@ -77,7 +99,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('infra.libs.ts_mon.monitors.DiskMonitor')
   def test_dryrun_args(self, fake_monitor):
-    singleton = object()
+    singleton = mock.Mock()
     fake_monitor.return_value = singleton
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
@@ -89,7 +111,7 @@ class GlobalsTest(auto_stub.TestCase):
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.targets.DeviceTarget')
   def test_device_args(self, fake_target, _fake_monitor):
-    singleton = object()
+    singleton = mock.Mock()
     fake_target.return_value = singleton
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
@@ -105,7 +127,7 @@ class GlobalsTest(auto_stub.TestCase):
   @mock.patch('infra.libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra.libs.ts_mon.targets.TaskTarget')
   def test_task_args(self, fake_target, _fake_monitor):
-    singleton = object()
+    singleton = mock.Mock()
     fake_target.return_value = singleton
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
@@ -122,7 +144,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('infra.libs.ts_mon.monitors.NullMonitor')
   def test_no_args(self, fake_monitor):
-    singleton = object()
+    singleton = mock.Mock()
     fake_monitor.return_value = singleton
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
@@ -217,3 +239,146 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(0, len(interface._state.metrics))
     with self.assertRaises(KeyError):
       interface.unregister(fake_metric)
+
+  def test_close_stops_flush_thread(self):
+    interface._state.flush_thread = interface._FlushThread(10)
+    interface._state.flush_thread.start()
+
+    self.assertTrue(interface._state.flush_thread.is_alive())
+    interface.close()
+    self.assertFalse(interface._state.flush_thread.is_alive())
+
+
+class FakeThreadingEvent(object):
+  """A fake threading.Event that doesn't use the clock for timeouts."""
+
+  def __init__(self):
+    # If not None, called inside wait() with the timeout (in seconds) to
+    # increment a fake clock.
+    self.increment_time_func = None
+
+    self._is_set = False  # Return value of the next call to wait.
+    self._last_wait_timeout = None  # timeout argument of the last call to wait.
+
+    self._wait_enter_semaphore = threading.Semaphore(0)
+    self._wait_exit_semaphore = threading.Semaphore(0)
+
+  def timeout_wait(self):
+    """Blocks until the next time the code under test calls wait().
+
+    Makes the wait() call return False (indicating a timeout), and this call
+    returns the timeout argument given to the wait() method.
+
+    Called by the test.
+    """
+
+    self._wait_enter_semaphore.release()
+    self._wait_exit_semaphore.acquire()
+    return self._last_wait_timeout
+
+  def set(self, blocking=True):
+    """Makes the next wait() call return True.
+
+    By default this blocks until the next call to wait(), but you can pass
+    blocking=False to just set the flag, wake up any wait() in progress (if any)
+    and return immediately.
+    """
+
+    self._is_set = True
+    self._wait_enter_semaphore.release()
+    if blocking:
+      self._wait_exit_semaphore.acquire()
+
+  def wait(self, timeout):
+    """Block until either set() or timeout_wait() is called by the test."""
+
+    self._wait_enter_semaphore.acquire()
+    self._last_wait_timeout = timeout
+    if self.increment_time_func is not None:  # pragma: no cover
+      self.increment_time_func(timeout)
+    ret = self._is_set
+    self._wait_exit_semaphore.release()
+    return ret
+
+
+class FlushThreadTest(unittest.TestCase):
+
+  def setUp(self):
+    mock.patch('infra.libs.ts_mon.interface.flush').start()
+    mock.patch('time.time').start()
+
+    self.fake_time = 0
+    time.time.side_effect = lambda: self.fake_time
+
+    self.stop_event = FakeThreadingEvent()
+    self.stop_event.increment_time_func = self.increment_time
+
+    self.t = interface._FlushThread(60, stop_event=self.stop_event)
+
+  def increment_time(self, delta):
+    self.fake_time += delta
+
+  def tearDown(self):
+    # Ensure the thread exits.
+    self.stop_event.set(blocking=False)
+    self.t.join()
+
+    mock.patch.stopall()
+
+  def test_run_calls_flush(self):
+    self.t.start()
+
+    self.assertEqual(0, interface.flush.call_count)
+
+    # The wait is for the whole interval.
+    self.assertEqual(60, self.stop_event.timeout_wait())
+
+    # Return from the second wait, which exits the thread.
+    self.stop_event.set()
+    self.t.join()
+    self.assertEqual(2, interface.flush.call_count)
+
+  def test_run_catches_exceptions(self):
+    interface.flush.side_effect = Exception()
+    self.t.start()
+
+    self.stop_event.timeout_wait()
+    # flush is called now and raises an exception.  The exception is caught, so
+    # wait is called again.
+
+    # Do it again to make sure the exception doesn't terminate the loop.
+    self.stop_event.timeout_wait()
+
+    # Return from the third wait, which exits the thread.
+    self.stop_event.set()
+    self.t.join()
+    self.assertEqual(3, interface.flush.call_count)
+
+  def test_stop_stops(self):
+    self.t.start()
+
+    self.assertTrue(self.t.is_alive())
+
+    self.t.stop()
+    self.assertFalse(self.t.is_alive())
+    self.assertEqual(1, interface.flush.call_count)
+
+  def test_sleeps_for_exact_interval(self):
+    self.t.start()
+
+    # Flush takes 5 seconds.
+    interface.flush.side_effect = functools.partial(self.increment_time, 5)
+
+    self.assertEqual(60, self.stop_event.timeout_wait())
+    self.assertEqual(55, self.stop_event.timeout_wait())
+    self.assertEqual(55, self.stop_event.timeout_wait())
+
+  def test_sleeps_for_minimum_zero_secs(self):
+    self.t.start()
+
+    # Flush takes 65 seconds.
+    interface.flush.side_effect = functools.partial(self.increment_time, 65)
+
+    self.assertEqual(60, self.stop_event.timeout_wait())
+    self.assertEqual(0, self.stop_event.timeout_wait())
+    self.assertEqual(0, self.stop_event.timeout_wait())

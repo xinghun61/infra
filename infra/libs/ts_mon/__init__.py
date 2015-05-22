@@ -19,6 +19,7 @@ from infra.libs.ts_mon.errors import MonitoringNoConfiguredTargetError
 from infra.libs.ts_mon.helpers import ScopedIncrementCounter
 
 from infra.libs.ts_mon.interface import add_argparse_options
+from infra.libs.ts_mon.interface import close
 from infra.libs.ts_mon.interface import process_argparse_options
 from infra.libs.ts_mon.interface import send
 from infra.libs.ts_mon.interface import flush
