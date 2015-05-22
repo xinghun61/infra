@@ -3582,7 +3582,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
 
     cc_nicknames = ', '.join(library.get_nickname(cc_temp, True, request)
                              for cc_temp in cc)
-    my_nickname = library.get_nickname(request.user, True, request)
+    my_nickname = library.get_nickname(my_email, True, request)
     description = (issue.description or '').replace('\r\n', '\n')
     home = request.build_absolute_uri(reverse(index))
     modified_added_count, modified_removed_count = _get_modified_counts(issue)
