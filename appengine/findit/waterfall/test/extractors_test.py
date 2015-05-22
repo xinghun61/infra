@@ -3,14 +3,15 @@
 # found in the LICENSE file.
 
 import textwrap
-import unittest
+
+from testing_utils import testing
 
 from waterfall.extractor import Extractor
 from waterfall import extractors
 from waterfall.failure_signal import FailureSignal
 
 
-class ExtractorsTest(unittest.TestCase):
+class ExtractorsTest(testing.AppengineTestCase):
   def _RunTest(self, failure_log, extractor_class, expected_signal_json):
     signal = extractor_class().Extract(
         failure_log, 'suite.test', 'step', 'bot', 'master')
@@ -135,7 +136,7 @@ class ExtractorsTest(unittest.TestCase):
     failure_log = textwrap.dedent("""
         ninja -C /a/b/c/ all -j50
         ninja: Entering directory `../da/b/build/sl/M/'
-        ninja: error: '../../r/w/c/sess.js', needed by 'ob/r/w/h.stamp', 
+        ninja: error: '../../r/w/c/sess.js', needed by 'ob/r/w/h.stamp',
         missing and no known rule to make it""")
     expected_signal_json = {
         'files': {
@@ -167,38 +168,34 @@ class ExtractorsTest(unittest.TestCase):
         failure_log, extractors.CheckPermExtractor, expected_signal_json)
 
   def testExtractSignal(self):
-    class _DummyGeneralExtractor(Extractor):
+    class DummyGeneralExtractor(Extractor):
       def Extract(self, *_):
         return '0'
 
-    class _DummyExtractor1(Extractor):
+    class DummyExtractor1(Extractor):
       def Extract(self, *_):
         return '1'
 
-    class _DummyExtractor2(Extractor):
+    class DummyExtractor2(Extractor):
       def Extract(self, *_):
         return '2'
 
-    original_GeneralExtractor = extractors.GeneralExtractor
-    original_EXTRACTORS = extractors.EXTRACTORS
-    try:
-      extractors.GeneralExtractor = _DummyGeneralExtractor
-      extractors.EXTRACTORS = {
-          '1': _DummyExtractor1,
-          '2': _DummyExtractor2
-      }
+    DUMMY_EXTRACTORS = {
+        '1': DummyExtractor1,
+        '2': DummyExtractor2
+    }
 
-      cases = {
-          # step_name: result
-          '1': '1',
-          '2': '2',
-          '32434': '0'
-      }
+    self.mock(extractors, 'GeneralExtractor', DummyGeneralExtractor)
+    self.mock(extractors, 'EXTRACTORS', DUMMY_EXTRACTORS)
 
-      for step_name, expected_result in cases.iteritems():
-        result = extractors.ExtractSignal(
-            'master', 'bot', step_name, 'test', '')
-        self.assertEqual(expected_result, result)
-    finally:
-      extractors.GeneralExtractor = original_GeneralExtractor
-      extractors.EXTRACTORS = original_EXTRACTORS
+    cases = {
+        # step_name: result
+        '1': '1',
+        '2': '2',
+        '32434': '0'
+    }
+
+    for step_name, expected_result in cases.iteritems():
+      result = extractors.ExtractSignal(
+          'master', 'bot', step_name, 'test', '')
+      self.assertEqual(expected_result, result)

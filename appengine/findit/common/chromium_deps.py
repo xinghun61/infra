@@ -27,31 +27,29 @@ class DEPSDownloader(deps_parser.DEPSLoader):
     # from SVN to GIT.
     if content is None:
       content = repo.GetSource(deps_file, revision)
-    else:
-      return content
 
     if content is None:
       raise Exception('Failed to pull %s file.' % deps_file)
-    else:
-      return content
+
+    return content
 
 
 def GetChromeDependency(revision, os_platform):
   """Return all dependencies of Chrome as a dict for the given revision and os.
 
   Args:
-    revision: The revision of a Chrome build.
-    os_platform: The target platform of the Chrome build, should be one of
-                 'win', 'ios', 'mac', 'unix', 'android', or 'all'.
+    revision (str): The revision of a Chrome build.
+    os_platform (str): The target platform of the Chrome build, should be one of
+        'win', 'ios', 'mac', 'unix', 'android', or 'all'.
 
   Returns:
-    A map from component path to dependency.
+    A map from dependency path to the dependency info.
   """
   root_dep = dependency.Dependency(
       'src/', 'https://chromium.googlesource.com/chromium/src.git', revision,
       'DEPS')
 
-  deps_parser.UpdateDependencyTree(root_dep, os_platform, DEPSDownloader())
+  deps_parser.UpdateDependencyTree(root_dep, [os_platform], DEPSDownloader())
 
   dependencies = {}
 

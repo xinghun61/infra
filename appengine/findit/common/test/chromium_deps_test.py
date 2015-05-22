@@ -3,9 +3,12 @@
 # found in the LICENSE file.
 
 import collections
-import unittest
+
+from testing_utils import testing
 
 from common import chromium_deps
+from common import deps_parser
+from common import git_repository
 from common import repository
 from common.dependency import Dependency
 
@@ -20,7 +23,7 @@ class DummyGitRepository(repository.Repository):
     return self.RESPONSES.get(path, {}).get(revision, None)
 
 
-class ChromiumDEPSTest(unittest.TestCase):
+class ChromiumDEPSTest(testing.AppengineTestCase):
   DEPS_GIT = '.DEPS.git'
   DEPS = 'DEPS'
 
@@ -37,15 +40,11 @@ class ChromiumDEPSTest(unittest.TestCase):
         },
     }
 
-    real_GitRepository = chromium_deps.git_repository.GitRepository
-    try:
-      chromium_deps.git_repository.GitRepository = DummyGitRepository
+    self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-      content = chromium_deps.DEPSDownloader().Load(
-          'https://src.git', revision, 'DEPS')
-      self.assertEqual(expected_content, content)
-    finally:
-      chromium_deps.git_repository.GitRepository = real_GitRepository
+    content = chromium_deps.DEPSDownloader().Load(
+        'https://src.git', revision, 'DEPS')
+    self.assertEqual(expected_content, content)
 
   def testUseSlaveDEPS(self):
     revision = 'abc'
@@ -60,35 +59,27 @@ class ChromiumDEPSTest(unittest.TestCase):
         },
     }
 
-    real_GitRepository = chromium_deps.git_repository.GitRepository
-    try:
-      chromium_deps.git_repository.GitRepository = DummyGitRepository
+    self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-      content = chromium_deps.DEPSDownloader().Load(
-          'https://src.git', revision, 'slave.DEPS')
-      self.assertEqual(expected_content, content)
-    finally:
-      chromium_deps.git_repository.GitRepository = real_GitRepository
+    content = chromium_deps.DEPSDownloader().Load(
+        'https://src.git', revision, 'slave.DEPS')
+    self.assertEqual(expected_content, content)
 
   def testFailedToPullDEPSFile(self):
     DummyGitRepository.RESPONSES = {}
 
-    real_GitRepository = chromium_deps.git_repository.GitRepository
-    try:
-      chromium_deps.git_repository.GitRepository = DummyGitRepository
+    self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-      deps_downloader = chromium_deps.DEPSDownloader()
-      self.assertRaisesRegexp(Exception, 'Failed to pull DEPS file.',
-                              deps_downloader.Load,
-                              'https://src.git', 'abc', 'DEPS')
-    finally:
-      chromium_deps.git_repository.GitRepository = real_GitRepository
+    deps_downloader = chromium_deps.DEPSDownloader()
+    self.assertRaisesRegexp(Exception, 'Failed to pull DEPS file.',
+                            deps_downloader.Load,
+                            'https://src.git', 'abc', 'DEPS')
 
   def testGetChromeDependency(self):
     src_path = 'src/'
     src_repo_url = 'https://chromium.googlesource.com/chromium/src.git'
     src_revision = '123a'
-    os_platform = ['unix']
+    os_platform = 'unix'
 
     child1_dep = Dependency('src/a/', 'https://a.git', '123a', 'DEPS')
     child2_dep = Dependency('src/b/', 'https://b.git', '123b', 'DEPS')
@@ -104,19 +95,15 @@ class ChromiumDEPSTest(unittest.TestCase):
       self.assertEqual(src_path, root_dep.path)
       self.assertEqual(src_repo_url, root_dep.repo_url)
       self.assertEqual(src_revision, root_dep.revision)
-      self.assertEqual(os_platform, target_os_list)
+      self.assertEqual([os_platform], target_os_list)
 
       expected_dependency_dict[root_dep.path] = root_dep
       child1_dep.SetParent(root_dep)
       child2_dep.SetParent(root_dep)
       grand_child1.SetParent(child1_dep)
 
-    real_GetDependencyTree = chromium_deps.deps_parser.UpdateDependencyTree
-    try:
-      chromium_deps.deps_parser.UpdateDependencyTree = DummyUpdateDependencyTree
+    self.mock(deps_parser, 'UpdateDependencyTree', DummyUpdateDependencyTree)
 
-      dependency_dict = chromium_deps.GetChromeDependency(
-          src_revision, os_platform)
-      self.assertEqual(expected_dependency_dict, dependency_dict)
-    finally:
-      chromium_deps.deps_parser.UpdateDependencyTree = real_GetDependencyTree
+    dependency_dict = chromium_deps.GetChromeDependency(
+        src_revision, os_platform)
+    self.assertEqual(expected_dependency_dict, dependency_dict)

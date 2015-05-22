@@ -159,7 +159,7 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
   """
   def _NormalizeTargetOSName(target_os):
     os_name = target_os.lower()
-    assert os_name in DEPS_OS_CHOICES
+    assert os_name in DEPS_OS_CHOICES, 'Target OS "%s" is invalid' % os_name
     return os_name
 
   if 'all' in target_os_list:
