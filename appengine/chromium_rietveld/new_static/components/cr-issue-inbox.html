@@ -2,9 +2,13 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
+<link rel="import" href="../common/cr-cursor-manager.html">
+<link rel="import" href="../common/cr-keyboard.html">
 <link rel="import" href="cr-issue-inbox-section.html">
 
-<polymer-element name="cr-issue-inbox" attributes="issues weeks showRecentActivity" noscript>
+<polymer-element name="cr-issue-inbox" attributes="issues weeks showRecentActivity"
+                 on-expanded="{{ handleSectionToggled }}"
+                 on-collapsed="{{ handleSectionToggled }}">
     <template>
         <link rel="stylesheet" href="../common/common.css">
 
@@ -37,5 +41,39 @@ found in the LICENSE file. -->
             <h1>Recently Closed</h1>
             <cr-issue-inbox-section issues="{{ issues.closed }}" weeks="{{ weeks }}" showRecentActivity="{{ showRecentActivity }}"></cr-issue-inbox-section>
         </template>
+
+        <cr-cursor-manager id="cursormanager"
+                           stopSelector="cr-issue-inbox-section /deep/ .issue"
+                           ></cr-cursor-manager>
+        <cr-keyboard on-key-j="{{ handleNextIssueKey }}"
+                     on-key-k="{{ handlePreviousIssueKey }}"
+                     on-key-enter="{{ handleOpenTargetIssueKey }}"
+                     on-key-o="{{ handleOpenTargetIssueKey }}"
+                     global></cr-keyboard>
     </template>
+    <script>
+        Polymer({
+            issuesChanged: function() {
+                this.$.cursormanager.resetStops();
+            },
+            weeksChanged: function() {
+                this.$.cursormanager.resetStops();
+            },
+            showRecentActivityChanged: function() {
+                this.$.cursormanager.resetStops();
+            },
+            handleSectionToggled: function(event) {
+                this.$.cursormanager.resetStops();
+            },
+            handleNextIssueKey: function(event) {
+                this.$.cursormanager.next(event);
+            },
+            handlePreviousIssueKey: function(event) {
+                this.$.cursormanager.previous(event);
+            },
+            handleOpenTargetIssueKey: function(event) {
+                this.$.cursormanager.open(event);
+            },
+        });
+    </script>
 </polymer-element>

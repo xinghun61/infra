@@ -5,6 +5,7 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-butterbar.html">
 <link rel="import" href="../common/cr-button.html">
+<link rel="import" href="../common/cr-cursor-manager.html">
 <link rel="import" href="../common/cr-keyboard.html">
 <link rel="import" href="../common/cr-toolbar.html">
 <link rel="import" href="../common/cr-view-handler.html">
@@ -93,7 +94,10 @@ found in the LICENSE file. -->
             </div>
         </header>
 
-        <cr-issue-patchsets patchsets="{{ issue.patchsets }}"></cr-issue-patchsets>
+        <cr-issue-patchsets id="patchsets" patchsets="{{ issue.patchsets }}"
+                            on-expanded="{{ handlePatchsetToggled }}"
+                            on-collapsed="{{ handlePatchsetToggled }}"
+                            ></cr-issue-patchsets>
 
         <template if="{{ issue.messages.length }}">
             <header>
@@ -109,7 +113,14 @@ found in the LICENSE file. -->
 
         <div id="dialogs"></div>
 
-        <cr-keyboard on-key-m="{{ handlePublishKey }}" global></cr-keyboard>
+        <cr-cursor-manager id="cursormanager"
+                           stopSelector="* /deep/ cr-issue-patchfile"
+                           ></cr-cursor-manager>
+        <cr-keyboard on-key-m="{{ handlePublishKey }}"
+                     on-key-j="{{ handleNextPatchKey }}"
+                     on-key-k="{{ handlePreviousPatchKey }}"
+                     on-key-enter="{{ handleToggleTargetPatchKey }}"
+                     global></cr-keyboard>
     </template>
     <script>
         Polymer({
@@ -264,6 +275,20 @@ found in the LICENSE file. -->
                     console.log(e);
                     // TODO(esprehn): We should show an error message.
                 });
+            },
+            handlePatchsetToggled: function(event) {
+                this.$.cursormanager.resetStops();
+            },
+            handleNextPatchKey: function(event) {
+                this.$.cursormanager.next(event);
+            },
+            handlePreviousPatchKey: function(event) {
+                this.$.cursormanager.previous(event);
+            },
+            handleToggleTargetPatchKey: function(event) {
+                event.preventDefault();
+                if (this.$.cursormanager.target)
+                    this.$.cursormanager.target.toggleDiff();
             },
         });
     </script>

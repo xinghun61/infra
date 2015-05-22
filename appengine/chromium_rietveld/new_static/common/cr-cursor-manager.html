@@ -1,0 +1,106 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<!-- This element helps implement keyboard navigation such as j and k
+     keystrokes to select items in a list.  This class keeps track
+     of the current cursor position and navigates to the previous or next
+     item in the list.
+
+     Possible cursor locations on the page should have class "cursor-stop".
+     The current cursor location will add class "cursor-target".  Only one
+     element on the entire page should have class cursor-target at any time.
+     That element can also be accessed via the target attribute.
+
+     All features are accessed through method calls, so to actually connect
+     them to keystrokes, use cr-keyboard as in this example:
+
+     <div id="content">
+       <h1>Cities</h1>
+       <ul>
+         <li class="cursor-stop">New York</li>
+         <li class="cursor-stop">London</li>
+         <li class="cursor-stop">Paris</li>
+         <li class="cursor-stop">Munich</li>
+       </ul>
+       <cr-cursor-manager id="cursormanager" target="{{ currentCity }}"></cr-cursor-manager>
+       <cr-keyboard
+          on-key-j="{{ forward }}"
+          on-key-k="{{ back }}"
+          on-key-enter="{{ talkAboutCity }}"
+          ></cr-keyboard>
+     </div>
+
+     The cursor manager can be customized by setting the CSS selectors that are
+     used to find cursor stops and the CSS class to add to the target element.
+-->
+
+<polymer-element name="cr-cursor-manager" attributes="target stopSelector targetClassName">
+    <template>
+      <style>
+          :host { display: none; }
+      </style>
+      <content></content>
+    </template>
+    <script>
+        Polymer({
+            created: function() {
+                this.target = null;
+                this.targetIndex = -1;
+                this.stopSelector = "* /deep/ .cursor-stop";
+                this.targetClassName = "cursor-target";
+                this.stops = null;
+            },
+            resetStops: function() {
+                this.stops = null;
+                // The next movement will find stops again.
+            },
+            findStops: function() {
+                var allStops = document.querySelectorAll(this.stopSelector).array();
+                var visibleStops = allStops.filter(function(el) {
+                    return el.clientHeight > 0;
+                });
+                this.stops = visibleStops;
+                if (this.target)
+                    this.targetIndex = this.stops.indexOf(this.target);
+            },
+            targetChanged: function(oldEl, newEl) {
+                if (oldEl)
+                    oldEl.classList.remove(this.targetClassName);
+                if (newEl)
+                    newEl.classList.add(this.targetClassName);
+                newEl.scrollIntoViewIfNeeded();
+            },
+            moveTargetIndex: function(delta) {
+                if (this.stops === null)
+                    this.findStops();
+                var newIndex = this.targetIndex + delta;
+                if (newIndex < 0)
+                    this.fire("before-first-stop");
+                else if (newIndex >= this.stops.length)
+                    this.fire("past-last-stop");
+                else {
+                    this.targetIndex = newIndex;
+                    this.target = this.stops[newIndex];
+                }
+            },
+            next: function(event) {
+                if (event)
+                    event.preventDefault();
+                this.moveTargetIndex(1);
+            },
+            previous: function(event) {
+                if (event)
+                    event.preventDefault();
+                this.moveTargetIndex(-1);
+            },
+            open: function(event) {
+                event.preventDefault();
+                if (this.target && this.target.href)
+                    this.asyncFire("navigate", {
+                        url: this.target.href
+                    });
+            },
+        });
+    </script>
+</polymer-element>

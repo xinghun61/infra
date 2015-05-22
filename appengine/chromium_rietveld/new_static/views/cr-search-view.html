@@ -3,6 +3,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-button.html">
+<link rel="import" href="../common/cr-cursor-manager.html">
 <link rel="import" href="../common/cr-keyboard.html">
 <link rel="import" href="../common/cr-toolbar.html">
 <link rel="import" href="../components/cr-issue-list.html">
@@ -132,6 +133,14 @@ found in the LICENSE file. -->
                 </template>
             </div>
         </div>
+
+        <cr-cursor-manager id="cursormanager"
+                           stopSelector="cr-issue-list /deep/ .issue"
+                           ></cr-cursor-manager>
+        <cr-keyboard on-key-j="{{ handleNextIssueKey }}"
+                     on-key-k="{{ handlePreviousIssueKey }}"
+                     on-key-o="{{ handleOpenTargetIssueKey }}"
+                     global></cr-keyboard>
         <cr-keyboard on-key-enter="{{ handleEnterKey }}"></cr-keyboard>
     </template>
     <script>
@@ -219,6 +228,16 @@ found in the LICENSE file. -->
             updateResult: function(result) {
                 this.result = result;
                 this.cursor = result.cursor;
+                this.$.cursormanager.resetStops();
+            },
+            handleNextIssueKey: function(event) {
+                this.$.cursormanager.next(event);
+            },
+            handlePreviousIssueKey: function(event) {
+                this.$.cursormanager.previous(event);
+            },
+            handleOpenTargetIssueKey: function(event) {
+                this.$.cursormanager.open(event);
             },
         });
     </script>

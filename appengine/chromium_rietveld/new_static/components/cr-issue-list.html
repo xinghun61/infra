@@ -101,6 +101,10 @@ found in the LICENSE file. -->
                 display: block;
                 overflow: hidden;
             }
+
+            .issues .issue.cursor-target>span {
+                background-color: rgba(0, 0, 200, .1);
+            }
         </style>
         <div class="issues">
             <template repeat="{{ issue in issues }}">
