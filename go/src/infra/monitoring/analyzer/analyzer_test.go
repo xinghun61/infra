@@ -56,6 +56,10 @@ func (m mockClient) JSON(url string, v interface{}) (int, error) {
 	return 0, nil // Not actually used.
 }
 
+func (m mockClient) PostAlerts(alerts *messages.Alerts) error {
+	return nil
+}
+
 func (m mockClient) DumpStats() {
 	// Not actually used.
 }

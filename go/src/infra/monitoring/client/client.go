@@ -5,6 +5,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -70,6 +71,9 @@ type Client interface {
 	// http response code and error, if any.
 	JSON(URL string, v interface{}) (int, error)
 
+	// PostAlerts posts alerts to Sheriff-o-Matic.
+	PostAlerts(alerts *messages.Alerts) error
+
 	// DumpStats logs stats about the client to stdout.
 	DumpStats()
 }
@@ -83,11 +87,12 @@ type client struct {
 	totalErrs  int64
 	totalBytes int64
 	currReqs   int64
+	alertsBase string
 }
 
-// New returns a new Client.
-func New() Client {
-	return &client{hc: http.DefaultClient}
+// New returns a new Client, which will post alerts to alertsBase.
+func New(alertsBase string) Client {
+	return &client{hc: http.DefaultClient, alertsBase: alertsBase}
 }
 
 func (c *client) Build(mn, bn string, bID int64) (*messages.Build, error) {
@@ -172,6 +177,33 @@ func (c *client) StdioForStep(master, builder, step string, bID int64) ([]string
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, bID, step)
 	res, _, err := c.Text(URL)
 	return strings.Split(res, "\n"), err
+}
+
+func (c *client) PostAlerts(alerts *messages.Alerts) error {
+	return c.trackRequestStats(func() (length int64, err error) {
+		log.Infof("POSTing alerts to %s", c.alertsBase)
+		b, err := json.Marshal(alerts)
+		if err != nil {
+			return
+		}
+
+		req, err := http.NewRequest("POST", c.alertsBase, bytes.NewBuffer(b))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := c.hc.Do(req)
+		if err != nil {
+			return
+		}
+
+		if resp.StatusCode >= 400 {
+			err = fmt.Errorf("http status %d: %s", resp.StatusCode, c.alertsBase)
+			return
+		}
+
+		defer resp.Body.Close()
+		length = resp.ContentLength
+
+		return
+	})
 }
 
 func (c *client) startReq() {

@@ -23,6 +23,7 @@ import (
 	"infra/libs/logging/gologger"
 
 	"infra/monitoring/analyzer"
+	"infra/monitoring/client"
 	"infra/monitoring/messages"
 )
 
@@ -104,7 +105,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := analyzer.New(nil, 2, 5)
+	a := analyzer.New(client.New(*dataURL), 2, 5)
 
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
@@ -156,6 +157,13 @@ func main() {
 
 		if err := ioutil.WriteFile("alerts.json", abytes, 0644); err != nil {
 			log.Errorf("Couldn't write to alerts.json: %v", err)
+			os.Exit(1)
+		}
+	} else {
+		log.Infof("Posting alerts to %s", *dataURL)
+		err := a.Client.PostAlerts(alerts)
+		if err != nil {
+			log.Errorf("Couldn't post alerts: %v", err)
 			os.Exit(1)
 		}
 	}
