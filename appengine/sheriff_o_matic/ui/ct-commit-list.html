@@ -27,6 +27,13 @@ found in the LICENSE file.
       ct-commit {
         margin-left: 10px;
       }
+      .first {
+        margin-top: -4px;
+      }
+      .notfirst {
+        border-top: 1px solid lightgrey;
+        margin-top: 3px;
+      }
     </style>
     <template if="{{ totalSuspectedCommits_ > 0 }}">
       <a href="https://findit-for-me.appspot.com/build-failure?url={{ representiveBuildUrl_ }}">Findit found {{ totalSuspectedCommits_ }} suspected CL(s).</a>
@@ -47,12 +54,12 @@ found in the LICENSE file.
           <span style="color: red">{{ _numberOfSuspectedCL(repository.name) }} suspected CL(s)</span>
         </template>
         <template if="{{ repository.expanded }}">
-          <template repeat="{{ commit in repository.commits }}">
+          <template repeat="{{ commit, commit_index in repository.commits }}">
             <template if="{{ !detailed }}">
-              <ct-commit data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-commit>
+              <ct-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-commit>
             </template>
             <template if="{{ detailed }}">
-            <ct-detailed-commit data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-detailed-commit>
+              <ct-detailed-commit class="{{ commit_index == 0 ? 'first' : 'notfirst' }}" data="{{ commit }}" suspected="{{ commit.revision | _isSuspected(repository.name) }}"></ct-detailed-commit>
             </template>
           </template>
         </template>
