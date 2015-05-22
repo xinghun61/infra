@@ -57,7 +57,7 @@ def build_luci(api):
       'build luci-go', go_env,
       ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
 
-  files = api.file.listdir('listing go bin', go_bin)
+  files = sorted(api.file.listdir('listing go bin', go_bin))
   absfiles = [api.path.join(go_bin, i) for i in files]
   api.python(
       'upload go bin',
