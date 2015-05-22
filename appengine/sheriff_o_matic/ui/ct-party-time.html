@@ -4,7 +4,7 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
-<polymer-element name="ct-party-time" noscript>
+<polymer-element name="ct-party-time">
   <template>
     <style>
       :host {
@@ -13,12 +13,18 @@ found in the LICENSE file.
         justify-content: center;
         flex-direction: column;
       }
-      .party-popper {
-        font-size:172pt;
-        color: #25A825;
-      }
     </style>
     <div>No failures!</div>
-    <div class='party-popper'>🎉</div>
+    <img src="{{ partytime }}">
   </template>
+  <script>
+    Polymer({
+      created: function() {
+        this.partytime = "../images/partytime.gif";
+        setTimeout(function() {
+          this.partytime = "../images/partytime-still.gif"
+        }.bind(this), 10000);
+      }
+    });
+  </script>
 </polymer-element>
