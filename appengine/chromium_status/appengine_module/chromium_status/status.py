@@ -374,6 +374,7 @@ class StatusPage(BasePage):
     The main difference with MainPage.post() is that it doesn't look for
     conflicts and doesn't redirect to /.
     """
+    # TODO(tandrii): switch to using service accounts.
     message = self.request.get('message')
     message = limit_length(message, 500)
     username = self.request.get('username')
