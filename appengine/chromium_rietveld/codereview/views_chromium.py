@@ -368,6 +368,8 @@ def edit_flags(request):
     request.issue.commit = form.cleaned_data['commit']
     request.issue.cq_dry_run = form.cleaned_data['cq_dry_run']
     user_email = request.user.email().lower()
+    if user_email == views.CQ_SERVICE_ACCOUNT:
+      user_email = views.CQ_COMMIT_BOT_EMAIL
     if (request.issue.commit and  # Add as reviewer if setting, not clearing.
         user_email != request.issue.owner.email() and
         user_email not in request.issue.reviewers and

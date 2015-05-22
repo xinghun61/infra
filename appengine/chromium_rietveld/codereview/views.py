@@ -122,6 +122,7 @@ DB_WRITE_PAUSE = 4
 
 CQ_SERVICE_ACCOUNT = ('5071639625-1lppvbtck1morgivc6sq4dul7klu27sd@'
                       'developer.gserviceaccount.com')
+CQ_COMMIT_BOT_EMAIL = 'commit-bot@chromium.org'
 
 
 ### Form classes ###
@@ -3309,7 +3310,7 @@ def publish(request):
   # Email only the triggerer and the CL owner if it was a CQ dry run request.
   # More details are in crbug.com/476883
   email_to = None
-  if (request.user.email().lower() == 'commit-bot@chromium.org' and
+  if (request.user.email().lower() == CQ_COMMIT_BOT_EMAIL and
       'dry run' in form.cleaned_data['message'].lower()):
     email_to = [issue.owner.email()]
     if (issue.cq_dry_run_last_triggered_by and
@@ -3510,7 +3511,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
   # The commit queue service account must appear as commit-bot@chromium.org,
   # because this value is hardcoded in many places, in different tools.
   if my_email == CQ_SERVICE_ACCOUNT:
-    my_email = 'commit-bot@chromium.org'
+    my_email = CQ_COMMIT_BOT_EMAIL
 
   issue_id = issue.key.id()
   subject = issue.mail_subject()
