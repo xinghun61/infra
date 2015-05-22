@@ -12,7 +12,10 @@ import (
 	"appengine"
 	"appengine/user"
 
-	"infra/libs/build"
+	"golang.org/x/net/context"
+
+	"infra/libs/logging"
+	"infra/libs/logging/gaelogger"
 )
 
 func init() {
@@ -37,11 +40,16 @@ func requireLogin(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func sayHi(ctx context.Context) {
+	logging.Get(ctx).Infof("Hi!")
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	u := user.Current(c)
+	ctx := gaelogger.Use(context.Background(), c)
+	sayHi(ctx)
 	fmt.Fprintf(w, "Hello, %v!\n", u)
-	fmt.Fprintf(w, "AppengineBuild: %v\n", build.AppengineBuild)
 	fmt.Fprintf(w, "GOROOT: %s\n", runtime.GOROOT())
 	fmt.Fprintf(w, "GOARCH: %s\n", runtime.GOARCH)
 	fmt.Fprintf(w, "GOOS: %s\n", runtime.GOOS)
