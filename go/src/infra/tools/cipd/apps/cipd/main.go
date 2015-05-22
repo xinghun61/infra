@@ -22,10 +22,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/maruel/subcommands"
+	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/logging/gologger"
 
-	"infra/libs/auth"
-	"infra/libs/logging/gologger"
+	"github.com/maruel/subcommands"
 
 	"infra/tools/cipd"
 	"infra/tools/cipd/common"

@@ -44,7 +44,7 @@ import (
 	"strings"
 	"time"
 
-	"infra/libs/logging"
+	"github.com/luci/luci-go/common/logging"
 
 	"infra/tools/cipd/common"
 	"infra/tools/cipd/local"

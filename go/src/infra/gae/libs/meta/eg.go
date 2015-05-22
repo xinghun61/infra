@@ -9,8 +9,9 @@ package meta
 import (
 	"appengine/datastore"
 
+	"github.com/luci/luci-go/common/errors"
+
 	"infra/gae/libs/context"
-	"infra/libs/errors"
 )
 
 var mark = errors.MakeMarkFn("eg")

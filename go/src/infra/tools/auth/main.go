@@ -11,10 +11,10 @@ package main
 import (
 	"os"
 
-	"github.com/maruel/subcommands"
+	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/logging/gologger"
 
-	"infra/libs/auth"
-	"infra/libs/logging/gologger"
+	"github.com/maruel/subcommands"
 )
 
 func main() {

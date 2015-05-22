@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"infra/libs/logging/gologger"
+	"github.com/luci/luci-go/common/logging/gologger"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"infra/libs/logging/gologger"
+	"github.com/luci/luci-go/common/logging/gologger"
 
 	"infra/monitoring/analyzer"
 	"infra/monitoring/client"

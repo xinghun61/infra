@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/libs/logging"
-	"infra/libs/logging/gaelogger"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/gaelogger"
 )
 
 func init() {

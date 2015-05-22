@@ -16,7 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"infra/libs/logging"
+	"github.com/luci/luci-go/common/logging"
+
 	"infra/tools/cipd/common"
 )
 
