@@ -5,10 +5,10 @@
 import logging
 import socket
 
-from infra.libs import authentication
 from infra.libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra.libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra.libs.event_mon.router import _Router
+from infra_libs import authentication
 
 DEFAULT_SERVICE_ACCOUNT_CREDS = 'service-account-event-mon.json'
 
