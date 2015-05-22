@@ -154,6 +154,11 @@ found in the LICENSE file.
             <paper-item id="help_calendar" label="Rotation Calendar" horizontal center layout>Rotation Calendar</paper-item>
             <paper-item id="health" label="System Health" horizontal center layout>System Health</paper-item>
           </core-menu>
+          <div flex vertical layout center>
+            <paper-button id="feedback_button" on-click="{{ fileSoMBug }}" raised="" role="button">
+              <core-icon icon="bug-report" aria-label="bug-report" role="img"></core-icon>&nbsp;File a Bug
+            </paper-button>
+          </div>
         </div>
       </core-header-panel>
 
@@ -331,6 +336,16 @@ found in the LICENSE file.
         }
 
         this._pendingFailureGroupKey = '';
+      },
+      fileSoMBug: function() {
+        var url = 'https://code.google.com/p/chromium/issues/entry' +
+            '?template=Build%20Infrastructure&labels=Infra-Monitoring,SheriffOMatic,Pri-2&' +
+            'cc=seanmccullough@chromium.org&'+
+            `comment=Problem+with+Sheriff-o-Matic:%0A${encodeURI(window.location.href)}%0A`;
+        if (this.alertsHistoryKey) {
+          url += `%0AAlerts+history+key:%0A${this.alertsHistoryKey}%0A`;
+        }
+        window.open(url, '_blank');
       },
     });
   </script>
