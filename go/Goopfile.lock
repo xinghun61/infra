@@ -9,11 +9,10 @@ github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.g
 github.com/maruel/subcommands #3a25827b419f7ec71b1f54d075cdc43fef2e3a59 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 github.com/maruel/ut #814808268666eb186d9691c504a057988da05a05 !https://chromium.googlesource.com/external/github.com/maruel/ut.git
 github.com/mjibson/goon #b3d2e1ef84070229eeee1e8511b50e09f97e0749 !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
-github.com/Sirupsen/logrus #f92b7950b372b1db80bd3527e4d40e42555fe6c2 !https://chromium.googlesource.com/external/github.com/Sirupsen/logrus.git
+github.com/op/go-logging #b45e089a5a94cc79c8e78fc03cd83d04b5d8410f !https://chromium.googlesource.com/external/github.com/op/go-logging.git
 github.com/smartystreets/assertions #c702abfa8e05e48f79068ed1cf1aac7cf43f5eef !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 github.com/smartystreets/goconvey #7a3785c3002a330211525464d402c07b2afce5a7 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/texttheater/golang-levenshtein #243f206144276890fddc49a38b565eedee7563c2 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
-github.com/tobi/airbrake-go #5b5e269e1bc398d43f67e43dafff3414a59cd5a2 !https://chromium.googlesource.com/external/github.com/tobi/airbrake-go.git
 github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
 golang.org/x/crypto #4d48e5fa3d62b5e6e71260571bf76c767198ca02
 golang.org/x/net #5aa7325eaa14d7ed4b520f40d58adf2834c8de01

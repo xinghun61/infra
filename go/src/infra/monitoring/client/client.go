@@ -13,13 +13,13 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/Sirupsen/logrus"
+	"infra/libs/logging"
 
 	"infra/monitoring/messages"
 )
 
 var (
-	log = logrus.New()
+	log = logging.DefaultLogger
 )
 
 // MasterURL returns the builder URL for the given master.

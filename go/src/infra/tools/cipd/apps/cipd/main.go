@@ -32,28 +32,23 @@ import (
 	"github.com/maruel/subcommands"
 )
 
+var (
+	log = logging.DefaultLogger
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // Utility functions.
-
-// reportError writes a error message to stderr and log file.
-func reportError(format string, params ...interface{}) {
-	msg := fmt.Sprintf(format, params...)
-	logging.Errorf("%s", msg)
-	if !logging.IsTerminal {
-		fmt.Fprintf(os.Stderr, msg+"\n")
-	}
-}
 
 // checkCommandLine ensures all required positional and flag-like parameters
 // are set. Returns true if they are, or false (and prints to stderr) if not.
 func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) bool {
 	// Check number of expected positional arguments.
 	if positionalCount == 0 && len(args) != 0 {
-		reportError("Unexpected arguments: %v", args)
+		log.Errorf("Unexpected arguments: %v", args)
 		return false
 	}
 	if len(args) != positionalCount {
-		reportError("Expecting %d arguments, got %d", positionalCount, len(args))
+		log.Errorf("Expecting %d arguments, got %d", positionalCount, len(args))
 		return false
 	}
 	// Check required unset flags.
@@ -68,7 +63,7 @@ func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) b
 		for _, f := range unset {
 			missing = append(missing, f.Name)
 		}
-		reportError("Missing required flags: %v", missing)
+		log.Errorf("Missing required flags: %v", missing)
 		return false
 	}
 	return true
@@ -167,15 +162,15 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	// Handle -name and -in if defined. Do not allow -pkg-def and -pkg-var in that case.
 	if opts.inputDir != "" {
 		if opts.packageName == "" {
-			reportError("Missing required flag: -name")
+			log.Errorf("Missing required flag: -name")
 			return out, cmdErr
 		}
 		if opts.packageDef != "" {
-			reportError("-pkg-def and -in can not be used together")
+			log.Errorf("-pkg-def and -in can not be used together")
 			return out, cmdErr
 		}
 		if len(opts.vars) != 0 {
-			reportError("-pkg-var and -in can not be used together")
+			log.Errorf("-pkg-var and -in can not be used together")
 			return out, cmdErr
 		}
 
@@ -195,7 +190,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	// Handle -pkg-def case. -in is "" (already checked), reject -name.
 	if opts.packageDef != "" {
 		if opts.packageName != "" {
-			reportError("-pkg-def and -name can not be used together")
+			log.Errorf("-pkg-def and -name can not be used together")
 			return out, cmdErr
 		}
 
@@ -224,7 +219,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	}
 
 	// All command line options are missing.
-	reportError("-pkg-def or -name/-in are required")
+	log.Errorf("-pkg-def or -name/-in are required")
 	return out, cmdErr
 }
 
@@ -296,7 +291,7 @@ func (opts *JSONOutputOptions) writeJSONOutput(result interface{}, err error) er
 	body.Result = result
 	out, e := json.MarshalIndent(&body, "", "  ")
 	if e != nil {
-		reportError("Failed to serialize JSON output: %s", e)
+		log.Errorf("Failed to serialize JSON output: %s", e)
 		if err == nil {
 			err = e
 		}
@@ -305,7 +300,7 @@ func (opts *JSONOutputOptions) writeJSONOutput(result interface{}, err error) er
 
 	e = ioutil.WriteFile(opts.jsonOutput, out, 0600)
 	if e != nil {
-		reportError("Failed write JSON output to %s: %s", opts.jsonOutput, e)
+		log.Errorf("Failed write JSON output to %s: %s", opts.jsonOutput, e)
 		if err == nil {
 			err = e
 		}
@@ -347,7 +342,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	pin, err := buildAndUploadInstance(c.InputOptions, c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
-		reportError("Error while uploading the package: %s", err)
+		log.Errorf("Error while uploading the package: %s", err)
 		return 1
 	}
 	return 0
@@ -399,7 +394,7 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := ensurePackages(c.rootDir, c.listFile, c.ServiceOptions)
 	if err != nil {
-		reportError("Error while updating packages: %s", err)
+		log.Errorf("Error while updating packages: %s", err)
 		return 1
 	}
 	return 0
@@ -455,10 +450,10 @@ func (c *resolveRun) Run(a subcommands.Application, args []string) int {
 	pin, err := resolveVersion(c.packageName, c.version, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
-		reportError("%s", err)
+		log.Errorf("%s", err)
 		return 1
 	}
-	logging.Infof("Instance: %s", pin)
+	log.Infof("Instance: %s", pin)
 	return 0
 }
 
@@ -495,7 +490,7 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := listACL(args[0], c.ServiceOptions)
 	if err != nil {
-		reportError("Error while listing ACL: %s", err)
+		log.Errorf("Error while listing ACL: %s", err)
 		return 1
 	}
 	return 0
@@ -520,15 +515,15 @@ func listACL(packagePath string, serviceOpts ServiceOptions) error {
 	}
 
 	listRoleACL := func(title string, acls []cipd.PackageACL) {
-		logging.Infof("%s:", title)
+		log.Infof("%s:", title)
 		if len(acls) == 0 {
-			logging.Infof("  none")
+			log.Infof("  none")
 			return
 		}
 		for _, a := range acls {
-			logging.Infof("  via '%s':", a.PackagePath)
+			log.Infof("  via '%s':", a.PackagePath)
 			for _, u := range a.Principals {
-				logging.Infof("    %s", u)
+				log.Infof("    %s", u)
 			}
 		}
 	}
@@ -591,7 +586,7 @@ func (c *editACLRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.ServiceOptions)
 	if err != nil {
-		reportError("Error while editing ACL: %s", err)
+		log.Errorf("Error while editing ACL: %s", err)
 		return 1
 	}
 	return 0
@@ -630,7 +625,7 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 	if err != nil {
 		return err
 	}
-	logging.Infof("ACL changes applied.")
+	log.Infof("ACL changes applied.")
 	return nil
 }
 
@@ -664,14 +659,14 @@ func (c *buildRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := buildInstanceFile(c.outputFile, c.InputOptions)
 	if err != nil {
-		reportError("Error while building the package: %s", err)
+		log.Errorf("Error while building the package: %s", err)
 		return 1
 	}
 	// Print information about built package, also verify it is readable.
 	pin, err := inspectInstanceFile(c.outputFile, false)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
-		reportError("Error while building the package: %s", err)
+		log.Errorf("Error while building the package: %s", err)
 		return 1
 	}
 	return 0
@@ -727,7 +722,7 @@ func (c *deployRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := deployInstanceFile(c.rootDir, args[0])
 	if err != nil {
-		reportError("Error while deploying the package: %s", err)
+		log.Errorf("Error while deploying the package: %s", err)
 		return 1
 	}
 	return 0
@@ -776,7 +771,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 	}
 	err := fetchInstanceFile(c.packageName, c.version, c.outputPath, c.ServiceOptions)
 	if err != nil {
-		reportError("Error while fetching the package: %s", err)
+		log.Errorf("Error while fetching the package: %s", err)
 		return 1
 	}
 	return 0
@@ -848,7 +843,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string) int {
 	pin, err := inspectInstanceFile(args[0], true)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
-		reportError("Error while inspecting the package: %s", err)
+		log.Errorf("Error while inspecting the package: %s", err)
 		return 1
 	}
 	return 0
@@ -865,19 +860,19 @@ func inspectInstanceFile(instanceFile string, listFiles bool) (common.Pin, error
 }
 
 func inspectInstance(inst local.PackageInstance, listFiles bool) {
-	logging.Infof("Instance: %s", inst.Pin())
+	log.Infof("Instance: %s", inst.Pin())
 	if listFiles {
-		logging.Infof("Package files:")
+		log.Infof("Package files:")
 		for _, f := range inst.Files() {
 			if f.Symlink() {
 				target, err := f.SymlinkTarget()
 				if err != nil {
-					logging.Infof(" E %s (%s)", f.Name(), err)
+					log.Infof(" E %s (%s)", f.Name(), err)
 				} else {
-					logging.Infof(" S %s -> %s", f.Name(), target)
+					log.Infof(" S %s -> %s", f.Name(), target)
 				}
 			} else {
-				logging.Infof(" F %s", f.Name())
+				log.Infof(" F %s", f.Name())
 			}
 		}
 	}
@@ -913,7 +908,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	pin, err := registerInstanceFile(args[0], c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
-		reportError("Error while registering the package: %s", err)
+		log.Errorf("Error while registering the package: %s", err)
 		return 1
 	}
 	return 0

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"infra/libs/logging"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	log = logrus.New()
+	log = logging.DefaultLogger
 )
 
 var (
@@ -747,7 +747,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 
 			alr.Key = alertKey(f.masterName, f.builderName, f.step.Name)
 			if len(bf.Reasons) == 0 {
-				log.Warnf("No reasons for step failure: %s", alr.Key)
+				log.Warningf("No reasons for step failure: %s", alr.Key)
 				bf.Reasons = append(bf.Reasons, messages.Reason{
 					Step: f.step.Name,
 					URL:  f.URL(),
@@ -826,7 +826,7 @@ func (a *MasterAnalyzer) excludeFailure(master, builder, step string) bool {
 	bc, ok := mc.Builders[builder]
 	if !ok {
 		if bc, ok = mc.Builders["*"]; !ok {
-			log.Warnf("Unknown %s builder %s", master, builder)
+			log.Warningf("Unknown %s builder %s", master, builder)
 			return true
 		}
 	}

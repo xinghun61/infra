@@ -11,12 +11,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"infra/libs/logging"
 )
 
 var (
 	googLoc *time.Location
-	log     = logrus.New()
+	log     = logging.DefaultLogger
 )
 
 const (

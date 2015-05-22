@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"infra/libs/logging"
 
 	"infra/monitoring/analyzer"
 	"infra/monitoring/messages"
@@ -37,7 +37,7 @@ var (
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
 
-	log = logrus.New()
+	log = logging.DefaultLogger
 
 	// gk is the gatekeeper config.
 	gk = &struct {
@@ -94,19 +94,22 @@ func main() {
 
 	err := readJSONFile(*gatekeeperJSON, &gk)
 	if err != nil {
-		log.Fatalf("Error reading gatekeeper json: %v", err)
+		log.Errorf("Error reading gatekeeper json: %v", err)
+		os.Exit(1)
 	}
 
 	err = readJSONFile(*gatekeeperTreesJSON, &gkt)
 	if err != nil {
-		log.Fatalf("Error reading gatekeeper json: %v", err)
+		log.Errorf("Error reading gatekeeper json: %v", err)
+		os.Exit(1)
 	}
 
 	a := analyzer.New(nil, 2, 5)
 
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
-			log.Fatalf("Multiple configs for master: %s", masterURL)
+			log.Errorf("Multiple configs for master: %s", masterURL)
+			os.Exit(1)
 		}
 		masterName := masterFromURL(masterURL)
 		a.MasterCfgs[masterName] = masterCfgs[0]
@@ -123,7 +126,8 @@ func main() {
 				masterNames = append(masterNames, masterFromURL(url))
 			}
 		} else {
-			log.Fatalf("Unrecoginzed tree: %s", *treeOnly)
+			log.Errorf("Unrecoginzed tree: %s", *treeOnly)
+			os.Exit(1)
 		}
 	}
 
