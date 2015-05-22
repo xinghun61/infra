@@ -11,23 +11,23 @@ package main
 import (
 	"os"
 
-	"infra/libs/auth"
-
 	"github.com/maruel/subcommands"
+
+	"infra/libs/auth"
+	"infra/libs/logging/gologger"
 )
 
-var application = &subcommands.DefaultApplication{
-	Name:  "auth",
-	Title: "Chrome Infra Authentication tool",
-	Commands: []*subcommands.Command{
-		subcommands.CmdHelp,
-
-		auth.SubcommandInfo("info"),
-		auth.SubcommandLogin("login"),
-		auth.SubcommandLogout("logout"),
-	},
-}
-
 func main() {
+	opts := auth.Options{Logger: gologger.Get()}
+	application := &subcommands.DefaultApplication{
+		Name:  "auth",
+		Title: "Chrome Infra Authentication tool",
+		Commands: []*subcommands.Command{
+			subcommands.CmdHelp,
+			auth.SubcommandInfo(opts, "info"),
+			auth.SubcommandLogin(opts, "login"),
+			auth.SubcommandLogout(opts, "logout"),
+		},
+	}
 	os.Exit(subcommands.Run(application, nil))
 }

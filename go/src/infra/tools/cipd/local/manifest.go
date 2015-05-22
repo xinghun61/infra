@@ -10,17 +10,16 @@ import (
 	"io/ioutil"
 )
 
-// Name of the directory inside an installation root reserved for cipd stuff.
-const SiteServiceDir = ".cipd"
-
-// Name of the directory inside the package reserved for cipd stuff.
-const packageServiceDir = ".cipdpkg"
-
-// Name of the manifest file inside the package.
-const manifestName = packageServiceDir + "/manifest.json"
-
-// Format version to write to the manifest file.
-const manifestFormatVersion = "1"
+const (
+	// Name of the directory inside an installation root reserved for cipd stuff.
+	siteServiceDir = ".cipd"
+	// Name of the directory inside the package reserved for cipd stuff.
+	packageServiceDir = ".cipdpkg"
+	// Name of the manifest file inside the package.
+	manifestName = packageServiceDir + "/manifest.json"
+	// Format version to write to the manifest file.
+	manifestFormatVersion = "1"
+)
 
 // Manifest defines structure of manifest.json file.
 type Manifest struct {

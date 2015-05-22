@@ -15,7 +15,6 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-
 	. "infra/tools/cipd/common"
 )
 
@@ -93,32 +92,32 @@ func TestUtilities(t *testing.T) {
 		})
 
 		Convey("ensureDirectoryGone works with missing dir", func() {
-			So(ensureDirectoryGone(filepath.Join(tempDir, "missing")), ShouldBeNil)
+			So(ensureDirectoryGone(filepath.Join(tempDir, "missing"), nil), ShouldBeNil)
 		})
 
 		Convey("ensureDirectoryGone works", func() {
 			touch("dir/a/1")
 			touch("dir/a/2")
 			touch("dir/b/1")
-			So(ensureDirectoryGone(filepath.Join(tempDir, "dir")), ShouldBeNil)
+			So(ensureDirectoryGone(filepath.Join(tempDir, "dir"), nil), ShouldBeNil)
 			_, err := os.Stat(filepath.Join(tempDir, "dir"))
 			So(os.IsNotExist(err), ShouldBeTrue)
 		})
 
 		Convey("ensureFileGone works", func() {
 			touch("abc")
-			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
 			_, err := os.Stat(filepath.Join(tempDir, "abc"))
 			So(os.IsNotExist(err), ShouldBeTrue)
 		})
 
 		Convey("ensureFileGone works with missing file", func() {
-			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
 		})
 
 		Convey("ensureFileGone works with symlink", func() {
 			ensureLink("abc", "target")
-			So(ensureFileGone(filepath.Join(tempDir, "abc")), ShouldBeNil)
+			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
 			_, err := os.Stat(filepath.Join(tempDir, "abc"))
 			So(os.IsNotExist(err), ShouldBeTrue)
 		})
@@ -133,7 +132,7 @@ func TestDeployInstance(t *testing.T) {
 
 		Convey("DeployInstance new empty package instance", func() {
 			inst := makeTestInstance("test/package", nil)
-			info, err := DeployInstance(tempDir, inst)
+			info, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(info, ShouldResemble, inst.Pin())
 			So(scanDir(tempDir), ShouldResemble, []string{
@@ -148,7 +147,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/executable", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
 			})
-			_, err := DeployInstance(tempDir, inst)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
@@ -176,9 +175,9 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/executable", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
 			})
-			_, err := DeployInstance(tempDir, inst)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, inst)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
@@ -215,9 +214,9 @@ func TestDeployInstance(t *testing.T) {
 			})
 			newPkg.instanceID = "1111111111111111111111111111111111111111"
 
-			_, err := DeployInstance(tempDir, oldPkg)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(oldPkg)
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, newPkg)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(newPkg)
 			So(err, ShouldBeNil)
 
 			So(scanDir(tempDir), ShouldResemble, []string{
@@ -254,9 +253,9 @@ func TestDeployInstance(t *testing.T) {
 			})
 			pkg2.instanceID = "1111111111111111111111111111111111111111"
 
-			_, err := DeployInstance(tempDir, pkg1)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(pkg1)
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, pkg2)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(pkg2)
 			So(err, ShouldBeNil)
 
 			// TODO: Conflicting symlinks point to last installed package, it is not
@@ -280,14 +279,14 @@ func TestDeployInstance(t *testing.T) {
 		})
 
 		Convey("Try to deploy package instance with bad package name", func() {
-			_, err := DeployInstance(tempDir, makeTestInstance("../test/package", nil))
+			_, err := NewDeployer(tempDir, nil).DeployInstance(makeTestInstance("../test/package", nil))
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Try to deploy package instance with bad instance ID", func() {
 			inst := makeTestInstance("test/package", nil)
 			inst.instanceID = "../000000000"
-			_, err := DeployInstance(tempDir, inst)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -300,24 +299,26 @@ func TestFindDeployed(t *testing.T) {
 		Reset(func() { os.RemoveAll(tempDir) })
 
 		Convey("FindDeployed works with empty dir", func() {
-			out, err := FindDeployed(tempDir)
+			out, err := NewDeployer(tempDir, nil).FindDeployed()
 			So(err, ShouldBeNil)
 			So(out, ShouldBeNil)
 		})
 
 		Convey("FindDeployed works", func() {
+			d := NewDeployer(tempDir, nil)
+
 			// Deploy a bunch of stuff.
-			_, err := DeployInstance(tempDir, makeTestInstance("test/pkg/123", nil))
+			_, err := d.DeployInstance(makeTestInstance("test/pkg/123", nil))
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, makeTestInstance("test/pkg/456", nil))
+			_, err = d.DeployInstance(makeTestInstance("test/pkg/456", nil))
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, makeTestInstance("test/pkg", nil))
+			_, err = d.DeployInstance(makeTestInstance("test/pkg", nil))
 			So(err, ShouldBeNil)
-			_, err = DeployInstance(tempDir, makeTestInstance("test", nil))
+			_, err = d.DeployInstance(makeTestInstance("test", nil))
 			So(err, ShouldBeNil)
 
 			// Verify it is discoverable.
-			out, err := FindDeployed(tempDir)
+			out, err := d.FindDeployed()
 			So(err, ShouldBeNil)
 			So(out, ShouldResemble, []Pin{
 				{"test", "0123456789abcdef00000123456789abcdef0000"},
@@ -336,17 +337,19 @@ func TestRemoveDeployed(t *testing.T) {
 		Reset(func() { os.RemoveAll(tempDir) })
 
 		Convey("RemoveDeployed works with missing package", func() {
-			err := RemoveDeployed(tempDir, "package/path")
+			err := NewDeployer(tempDir, nil).RemoveDeployed("package/path")
 			So(err, ShouldBeNil)
 		})
 
 		Convey("RemoveDeployed works", func() {
+			d := NewDeployer(tempDir, nil)
+
 			// Deploy some instance (to keep it).
 			inst := makeTestInstance("test/package/123", []File{
 				NewTestFile("some/file/path1", "data a", false),
 				NewTestFile("some/executable1", "data b", true),
 			})
-			_, err := DeployInstance(tempDir, inst)
+			_, err := d.DeployInstance(inst)
 			So(err, ShouldBeNil)
 
 			// Deploy another instance (to remove it).
@@ -355,11 +358,11 @@ func TestRemoveDeployed(t *testing.T) {
 				NewTestFile("some/executable2", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
 			})
-			_, err = DeployInstance(tempDir, inst)
+			_, err = d.DeployInstance(inst)
 			So(err, ShouldBeNil)
 
 			// Now remove the second package.
-			err = RemoveDeployed(tempDir, "test/package")
+			err = d.RemoveDeployed("test/package")
 			So(err, ShouldBeNil)
 
 			// Verify the final state (only first package should survive).

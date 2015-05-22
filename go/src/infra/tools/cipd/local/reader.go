@@ -96,8 +96,7 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 	}
 
 	files := inst.Files()
-	for i, f := range files {
-		log.Infof("[%d/%d] inflating %s", i+1, len(files), f.Name())
+	for _, f := range files {
 		if f.Symlink() {
 			err = extractSymlinkFile(f)
 		} else {

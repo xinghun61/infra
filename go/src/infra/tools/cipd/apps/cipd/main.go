@@ -22,18 +22,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/maruel/subcommands"
+
 	"infra/libs/auth"
-	"infra/libs/logging/deflogger"
+	"infra/libs/logging/gologger"
 
 	"infra/tools/cipd"
 	"infra/tools/cipd/common"
 	"infra/tools/cipd/local"
-
-	"github.com/maruel/subcommands"
 )
 
 var (
-	log = deflogger.Get()
+	log = gologger.Get()
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,19 +84,19 @@ func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
 	opts.authFlags.Register(f)
 }
 
-func (opts *ServiceOptions) makeCipdClient() (*cipd.Client, error) {
+func (opts *ServiceOptions) makeCipdClient(root string) (cipd.Client, error) {
 	authOpts, err := opts.authFlags.Options()
 	if err != nil {
 		return nil, err
 	}
-	client := cipd.NewClient()
-	if opts.serviceURL != "" {
-		client.ServiceURL = opts.serviceURL
-	}
-	client.AuthenticatedClientFactory = func() (*http.Client, error) {
-		return auth.AuthenticatedClient(auth.OptionalLogin, auth.NewAuthenticator(authOpts))
-	}
-	return client, nil
+	return cipd.NewClient(cipd.ClientOptions{
+		ServiceURL: opts.serviceURL,
+		Root:       root,
+		Logger:     log,
+		AuthenticatedClientFactory: func() (*http.Client, error) {
+			return auth.AuthenticatedClient(auth.OptionalLogin, auth.NewAuthenticator(authOpts))
+		},
+	}), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
 // a package and populating BuildInstanceOptions. Caller is still responsible to
 // fill out Output field of BuildInstanceOptions.
 func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
-	out := local.BuildInstanceOptions{}
+	out := local.BuildInstanceOptions{Logger: log}
 	cmdErr := fmt.Errorf("Invalid command line options")
 
 	// Handle -name and -in if defined. Do not allow -pkg-def and -pkg-var in that case.
@@ -183,6 +183,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: opts.packageName,
+			Logger:      log,
 		}
 		return out, nil
 	}
@@ -207,6 +208,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 
 		// Scan the file system. Package definition may use path relative to the
 		// package definition file itself, so pass its location.
+		log.Infof("Enumerating files to zip...")
 		files, err := pkgDef.FindFiles(filepath.Dir(opts.packageDef))
 		if err != nil {
 			return out, err
@@ -214,6 +216,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: pkgDef.Package,
+			Logger:      log,
 		}
 		return out, nil
 	}
@@ -406,7 +409,7 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 		return err
 	}
 	defer f.Close()
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient(root)
 	if err != nil {
 		return err
 	}
@@ -414,7 +417,7 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 	if err != nil {
 		return err
 	}
-	return client.EnsurePackages(root, desiredState)
+	return client.EnsurePackages(desiredState)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -458,7 +461,7 @@ func (c *resolveRun) Run(a subcommands.Application, args []string) int {
 }
 
 func resolveVersion(packageName, version string, serviceOpts ServiceOptions) (common.Pin, error) {
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return common.Pin{}, err
 	}
@@ -497,7 +500,7 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 }
 
 func listACL(packagePath string, serviceOpts ServiceOptions) error {
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return err
 	}
@@ -617,7 +620,7 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 		return nil
 	}
 
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return err
 	}
@@ -735,7 +738,7 @@ func deployInstanceFile(root string, instanceFile string) error {
 	}
 	defer inst.Close()
 	inspectInstance(inst, false)
-	_, err = local.DeployInstance(root, inst)
+	_, err = local.NewDeployer(root, log).DeployInstance(inst)
 	return err
 }
 
@@ -778,7 +781,7 @@ func (c *fetchRun) Run(a subcommands.Application, args []string) int {
 }
 
 func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts ServiceOptions) error {
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return err
 	}
@@ -920,7 +923,7 @@ func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts
 		return common.Pin{}, err
 	}
 	defer inst.Close()
-	client, err := serviceOpts.makeCipdClient()
+	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return common.Pin{}, err
 	}
@@ -951,9 +954,9 @@ var application = &subcommands.DefaultApplication{
 		cmdResolve,
 
 		// Authentication related commands.
-		auth.SubcommandInfo("auth-info"),
-		auth.SubcommandLogin("auth-login"),
-		auth.SubcommandLogout("auth-logout"),
+		auth.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),
+		auth.SubcommandLogin(auth.Options{Logger: log}, "auth-login"),
+		auth.SubcommandLogout(auth.Options{Logger: log}, "auth-logout"),
 
 		// ACLs.
 		cmdListACL,

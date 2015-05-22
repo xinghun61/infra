@@ -109,5 +109,5 @@ func TestDownload(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func mockStorageImpl(c C, expectations []expectedHTTPCall) *storageImpl {
-	return &storageImpl{client: mockClient(c, expectations), chunkSize: 5}
+	return &storageImpl{client: mockClient(c, "", expectations), chunkSize: 5}
 }

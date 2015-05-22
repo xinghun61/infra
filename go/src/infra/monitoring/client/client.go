@@ -13,13 +13,13 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"infra/libs/logging/deflogger"
+	"infra/libs/logging/gologger"
 
 	"infra/monitoring/messages"
 )
 
 var (
-	log = deflogger.Get()
+	log = gologger.Get()
 )
 
 // MasterURL returns the builder URL for the given master.

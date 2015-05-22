@@ -48,7 +48,7 @@ func (e *pendingProcessingError) Error() string {
 
 // remoteImpl implements remote on top of real HTTP calls.
 type remoteImpl struct {
-	client *Client
+	client *clientImpl
 }
 
 func isTemporaryNetError(err error) bool {
@@ -77,7 +77,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 	url := fmt.Sprintf("%s/_ah/api/%s", r.client.ServiceURL, path)
 	for attempt := 0; attempt < remoteMaxRetries; attempt++ {
 		if attempt != 0 {
-			r.client.Log.Warningf("cipd: retrying request to %s", url)
+			r.client.Logger.Warningf("cipd: retrying request to %s", url)
 			r.client.clock.sleep(2 * time.Second)
 		}
 
@@ -99,7 +99,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 		resp, err := r.client.doAuthenticatedHTTPRequest(req)
 		if err != nil {
 			if isTemporaryNetError(err) {
-				r.client.Log.Warningf("cipd: connectivity error (%s)", err)
+				r.client.Logger.Warningf("cipd: connectivity error (%s)", err)
 				continue
 			}
 			return err
@@ -108,7 +108,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 		resp.Body.Close()
 		if err != nil {
 			if isTemporaryNetError(err) {
-				r.client.Log.Warningf("cipd: temporary error when reading response (%s)", err)
+				r.client.Logger.Warningf("cipd: temporary error when reading response (%s)", err)
 				continue
 			}
 			return err

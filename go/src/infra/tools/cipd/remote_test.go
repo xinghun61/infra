@@ -554,5 +554,5 @@ func TestRemoteImpl(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func mockRemoteImpl(c C, expectations []expectedHTTPCall) *remoteImpl {
-	return &remoteImpl{mockClient(c, expectations)}
+	return &remoteImpl{mockClient(c, "", expectations)}
 }

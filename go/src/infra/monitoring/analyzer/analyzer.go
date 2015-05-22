@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"infra/libs/logging/deflogger"
+	"infra/libs/logging/gologger"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	log = deflogger.Get()
+	log = gologger.Get()
 )
 
 var (

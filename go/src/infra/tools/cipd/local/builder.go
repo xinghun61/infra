@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"infra/libs/logging"
-	"infra/libs/logging/deflogger"
 	"infra/tools/cipd/common"
 )
 
@@ -28,7 +27,7 @@ type BuildInstanceOptions struct {
 	// Package name, e.g. 'infra/tools/cipd'.
 	PackageName string
 	// Log defines logger to use.
-	Log logging.Logger
+	Logger logging.Logger
 }
 
 // BuildInstance builds a new package instance for package named opts.PackageName
@@ -36,8 +35,8 @@ type BuildInstanceOptions struct {
 // to opts.Output. Some output may be written even if BuildInstance eventually
 // returns an error.
 func BuildInstance(opts BuildInstanceOptions) error {
-	if opts.Log == nil {
-		opts.Log = deflogger.Get()
+	if opts.Logger == nil {
+		opts.Logger = logging.Null()
 	}
 	err := common.ValidatePackageName(opts.PackageName)
 	if err != nil {
@@ -69,7 +68,7 @@ func BuildInstance(opts BuildInstanceOptions) error {
 	}
 
 	// Write the final zip file.
-	return zipInputFiles(files, opts.Output, opts.Log)
+	return zipInputFiles(files, opts.Output, opts.Logger)
 }
 
 // zipInputFiles deterministically builds a zip archive out of input files and

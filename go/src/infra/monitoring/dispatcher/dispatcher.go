@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"infra/libs/logging/deflogger"
+	"infra/libs/logging/gologger"
 
 	"infra/monitoring/analyzer"
 	"infra/monitoring/messages"
@@ -37,7 +37,7 @@ var (
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
 
-	log = deflogger.Get()
+	log = gologger.Get()
 
 	// gk is the gatekeeper config.
 	gk = &struct {

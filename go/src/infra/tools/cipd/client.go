@@ -39,15 +39,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"infra/libs/logging"
-	"infra/libs/logging/deflogger"
 
 	"infra/tools/cipd/common"
 	"infra/tools/cipd/local"
@@ -99,35 +96,6 @@ var (
 	ErrEnsurePackagesFailed = errors.New("Failed to update packages, see the log")
 )
 
-// HTTPClientFactory lazily creates http.Client to use for making requests.
-type HTTPClientFactory func() (*http.Client, error)
-
-// Client provides high-level CIPD client interface.
-type Client struct {
-	// ServiceURL is root URL of the backend service.
-	ServiceURL string
-	// Log is a logger to use for logs, default is deflogger.Get()
-	Log logging.Logger
-	// AuthenticatedClientFactory lazily creates http.Client to use for making RPC requests.
-	AuthenticatedClientFactory HTTPClientFactory
-	// AnonymousClientFactory lazily creates http.Client to use for making requests to storage.
-	AnonymousClientFactory HTTPClientFactory
-	// UserAgent is put into User-Agent HTTP header with each request.
-	UserAgent string
-
-	// clock provides current time and ability to sleep.
-	clock clock
-	// remote knows how to call backend REST API.
-	remote remote
-	// storage knows how to upload and download raw binaries using signed URLs.
-	storage storage
-
-	// authClient is a lazily created http.Client to use for authenticated requests.
-	authClient *http.Client
-	// anonClient is a lazily created http.Client to use for anonymous requests.
-	anonClient *http.Client
-}
-
 // PackageACL is per package path per role access control list that is a part of
 // larger overall ACL: ACL for package "a/b/c" is a union of PackageACLs for "a"
 // "a/b" and "a/b/c".
@@ -162,24 +130,124 @@ type UploadSession struct {
 	URL string
 }
 
-// NewClient initializes default CIPD client object. Its fields can be further
-// tweaked after this call.
-func NewClient() *Client {
-	c := &Client{
-		ServiceURL: ServiceURL,
-		Log:        deflogger.Get(),
-		AuthenticatedClientFactory: func() (*http.Client, error) { return http.DefaultClient, nil },
-		AnonymousClientFactory:     func() (*http.Client, error) { return http.DefaultClient, nil },
-		UserAgent:                  UserAgent,
-		clock:                      &clockImpl{},
+// Client provides high-level CIPD client interface.
+type Client interface {
+	// FetchACL returns a list of PackageACL objects (parent paths first) that
+	// together define the access control list for the given package subpath.
+	FetchACL(packagePath string) ([]PackageACL, error)
+
+	// ModifyACL applies a set of PackageACLChanges to a package path.
+	ModifyACL(packagePath string, changes []PackageACLChange) error
+
+	// UploadToCAS uploads package data blob to Content Addressed Store if it is
+	// not there already. The data is addressed by SHA1 hash (also known as
+	// package's InstanceID). It can be used as a standalone function (if
+	// 'session' is nil) or as a part of more high level upload process (in that
+	// case upload session can be opened elsewhere and its properties passed here
+	// via 'session' argument). Returns nil on successful upload.
+	UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error
+
+	// ResolveVersion converts an instance ID, a tag or a ref into a concrete Pin
+	// by contacting the backend.
+	ResolveVersion(packageName, version string) (common.Pin, error)
+
+	// RegisterInstance makes the package instance available for clients by
+	// uploading it to the storage and registering it in the package repository.
+	// 'instance' is a package instance to register.
+	RegisterInstance(instance local.PackageInstance) error
+
+	// AttachTagsWhenReady attaches tags to an instance retrying on "not yet
+	// processed" responses.
+	AttachTagsWhenReady(pin common.Pin, tags []string) error
+
+	// FetchInstance downloads package instance file from the repository.
+	FetchInstance(pin common.Pin, output io.WriteSeeker) error
+
+	// FetchAndDeployInstance fetches the package instance and deploys it into
+	// the site root. It doesn't check whether the instance is already deployed.
+	FetchAndDeployInstance(pin common.Pin) error
+
+	// ProcessEnsureFile parses text file that describes what should be installed
+	// by EnsurePackages function. It is a text file where each line has a form:
+	// <package name> <desired version>. Whitespaces are ignored. Lines that start
+	// with '#' are ignored. Version can be specified as instance ID, tag or ref.
+	// Will resolve tags and refs to concrete instance IDs by calling the backend.
+	ProcessEnsureFile(r io.Reader) ([]common.Pin, error)
+
+	// EnsurePackages is high-level interface for installation, removal and update
+	// of packages inside the installation site root. Given a description of
+	// what packages (and versions) should be installed it will do all necessary
+	// actions to bring the state of the site root to the desired one.
+	EnsurePackages(pins []common.Pin) error
+}
+
+// HTTPClientFactory lazily creates http.Client to use for making requests.
+type HTTPClientFactory func() (*http.Client, error)
+
+// ClientOptions is passed to NewClient factory function.
+type ClientOptions struct {
+	// ServiceURL is root URL of the backend service.
+	ServiceURL string
+	// Root is a site root directory (where packages will be installed). It can
+	// be empty string if client is not going to be used to deploy or remove local packages.
+	Root string
+	// Logger is a logger to use for logs (null-logger by default).
+	Logger logging.Logger
+	// AuthenticatedClientFactory lazily creates http.Client to use for making RPC requests.
+	AuthenticatedClientFactory HTTPClientFactory
+	// AnonymousClientFactory lazily creates http.Client to use for making requests to storage.
+	AnonymousClientFactory HTTPClientFactory
+	// UserAgent is put into User-Agent HTTP header with each request.
+	UserAgent string
+}
+
+// NewClient initializes CIPD client object.
+func NewClient(opts ClientOptions) Client {
+	if opts.ServiceURL == "" {
+		opts.ServiceURL = ServiceURL
+	}
+	if opts.Logger == nil {
+		opts.Logger = logging.Null()
+	}
+	if opts.AnonymousClientFactory == nil {
+		opts.AnonymousClientFactory = func() (*http.Client, error) { return http.DefaultClient, nil }
+	}
+	if opts.AuthenticatedClientFactory == nil {
+		opts.AuthenticatedClientFactory = opts.AnonymousClientFactory
+	}
+	if opts.UserAgent == "" {
+		opts.UserAgent = UserAgent
+	}
+	c := &clientImpl{
+		ClientOptions: opts,
+		clock:         &clockImpl{},
 	}
 	c.remote = &remoteImpl{c}
 	c.storage = &storageImpl{c, uploadChunkSize}
+	c.deployer = local.NewDeployer(opts.Root, opts.Logger)
 	return c
 }
 
+type clientImpl struct {
+	ClientOptions
+
+	// clock provides current time and ability to sleep.
+	clock clock
+	// remote knows how to call backend REST API.
+	remote remote
+	// storage knows how to upload and download raw binaries using signed URLs.
+	storage storage
+	// deployer knows how to install packages to local file system.
+	deployer local.Deployer
+
+	// authClient is a lazily created http.Client to use for authenticated requests.
+	authClient *http.Client
+	// anonClient is a lazily created http.Client to use for anonymous requests.
+	anonClient *http.Client
+}
+
 // doAuthenticatedHTTPRequest is used by remote implementation to make HTTP calls.
-func (client *Client) doAuthenticatedHTTPRequest(req *http.Request) (*http.Response, error) {
+func (client *clientImpl) doAuthenticatedHTTPRequest(req *http.Request) (*http.Response, error) {
 	if client.authClient == nil {
 		var err error
 		client.authClient, err = client.AuthenticatedClientFactory()
@@ -191,7 +259,7 @@ func (client *Client) doAuthenticatedHTTPRequest(req *http.Request) (*http.Respo
 }
 
 // doAnonymousHTTPRequest is used by storage implementation to make HTTP calls.
-func (client *Client) doAnonymousHTTPRequest(req *http.Request) (*http.Response, error) {
+func (client *clientImpl) doAnonymousHTTPRequest(req *http.Request) (*http.Response, error) {
 	if client.anonClient == nil {
 		var err error
 		client.anonClient, err = client.AnonymousClientFactory()
@@ -202,35 +270,26 @@ func (client *Client) doAnonymousHTTPRequest(req *http.Request) (*http.Response,
 	return client.anonClient.Do(req)
 }
 
-// FetchACL returns a list of PackageACL objects (parent paths first) that
-// together define the access control list for the given package subpath.
-func (client *Client) FetchACL(packagePath string) ([]PackageACL, error) {
+func (client *clientImpl) FetchACL(packagePath string) ([]PackageACL, error) {
 	return client.remote.fetchACL(packagePath)
 }
 
-// ModifyACL applies a set of PackageACLChanges to a package path.
-func (client *Client) ModifyACL(packagePath string, changes []PackageACLChange) error {
+func (client *clientImpl) ModifyACL(packagePath string, changes []PackageACLChange) error {
 	return client.remote.modifyACL(packagePath, changes)
 }
 
-// UploadToCAS uploads package data blob to Content Addressed Store if it is not
-// there already. The data is addressed by SHA1 hash (also known as package's
-// InstanceID). It can be used as a standalone function (if 'session' is nil)
-// or as a part of more high level upload process (in that case upload session
-// can be opened elsewhere and its properties passed here via 'session'
-// argument). Returns nil on successful upload.
-func (client *Client) UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error {
+func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error {
 	// Open new upload session if an existing is not provided.
 	var err error
 	if session == nil {
-		client.Log.Infof("cipd: uploading %s: initiating", sha1)
+		client.Logger.Infof("cipd: uploading %s: initiating", sha1)
 		session, err = client.remote.initiateUpload(sha1)
 		if err != nil {
-			client.Log.Warningf("cipd: can't upload %s - %s", sha1, err)
+			client.Logger.Warningf("cipd: can't upload %s - %s", sha1, err)
 			return err
 		}
 		if session == nil {
-			client.Log.Infof("cipd: %s is already uploaded", sha1)
+			client.Logger.Infof("cipd: %s is already uploaded", sha1)
 			return nil
 		}
 	} else {
@@ -251,18 +310,18 @@ func (client *Client) UploadToCAS(sha1 string, data io.ReadSeeker, session *Uplo
 	for {
 		published, err := client.remote.finalizeUpload(session.ID)
 		if err != nil {
-			client.Log.Warningf("cipd: upload of %s failed: %s", sha1, err)
+			client.Logger.Warningf("cipd: upload of %s failed: %s", sha1, err)
 			return err
 		}
 		if published {
-			client.Log.Infof("cipd: successfully uploaded %s", sha1)
+			client.Logger.Infof("cipd: successfully uploaded %s", sha1)
 			return nil
 		}
 		if client.clock.now().Sub(started) > CASFinalizationTimeout {
-			client.Log.Warningf("cipd: upload of %s failed: timeout", sha1)
+			client.Logger.Warningf("cipd: upload of %s failed: timeout", sha1)
 			return ErrFinalizationTimeout
 		}
-		client.Log.Infof("cipd: uploading - verifying")
+		client.Logger.Infof("cipd: uploading - verifying")
 		client.clock.sleep(delay)
 		if delay < 4*time.Second {
 			delay += 500 * time.Millisecond
@@ -270,9 +329,7 @@ func (client *Client) UploadToCAS(sha1 string, data io.ReadSeeker, session *Uplo
 	}
 }
 
-// ResolveVersion converts an instance ID, a tag or a ref into a concrete Pin
-// by contacting the backend.
-func (client *Client) ResolveVersion(packageName, version string) (common.Pin, error) {
+func (client *clientImpl) ResolveVersion(packageName, version string) (common.Pin, error) {
 	if err := common.ValidatePackageName(packageName); err != nil {
 		return common.Pin{}, err
 	}
@@ -283,16 +340,13 @@ func (client *Client) ResolveVersion(packageName, version string) (common.Pin, e
 	if err := common.ValidateInstanceVersion(version); err != nil {
 		return common.Pin{}, err
 	}
-	client.Log.Infof("cipd: resolving version %q of %q...", version, packageName)
+	client.Logger.Infof("cipd: resolving version %q of %q...", version, packageName)
 	return client.remote.resolveVersion(packageName, version)
 }
 
-// RegisterInstance makes the package instance available for clients by
-// uploading it to the storage and registering it in the package repository.
-// 'instance' is a package instance to register.
-func (client *Client) RegisterInstance(instance local.PackageInstance) error {
+func (client *clientImpl) RegisterInstance(instance local.PackageInstance) error {
 	// Attempt to register.
-	client.Log.Infof("cipd: registering %s", instance.Pin())
+	client.Logger.Infof("cipd: registering %s", instance.Pin())
 	result, err := client.remote.registerInstance(instance.Pin())
 	if err != nil {
 		return err
@@ -305,7 +359,7 @@ func (client *Client) RegisterInstance(instance local.PackageInstance) error {
 			return err
 		}
 		// Try again, now that file is uploaded.
-		client.Log.Infof("cipd: registering %s", instance.Pin())
+		client.Logger.Infof("cipd: registering %s", instance.Pin())
 		result, err = client.remote.registerInstance(instance.Pin())
 		if err != nil {
 			return err
@@ -316,18 +370,17 @@ func (client *Client) RegisterInstance(instance local.PackageInstance) error {
 	}
 
 	if result.alreadyRegistered {
-		client.Log.Infof(
+		client.Logger.Infof(
 			"cipd: instance %s is already registered by %s on %s",
 			instance.Pin(), result.registeredBy, result.registeredTs)
 	} else {
-		client.Log.Infof("cipd: instance %s was successfully registered", instance.Pin())
+		client.Logger.Infof("cipd: instance %s was successfully registered", instance.Pin())
 	}
 
 	return nil
 }
 
-// AttachTagsWhenReady attaches tags to an instance retrying on "not yet processed" responses.
-func (client *Client) AttachTagsWhenReady(pin common.Pin, tags []string) error {
+func (client *clientImpl) AttachTagsWhenReady(pin common.Pin, tags []string) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
 		return err
@@ -336,49 +389,46 @@ func (client *Client) AttachTagsWhenReady(pin common.Pin, tags []string) error {
 		return nil
 	}
 	for _, tag := range tags {
-		client.Log.Infof("cipd: attaching tag %s", tag)
+		client.Logger.Infof("cipd: attaching tag %s", tag)
 	}
 	deadline := client.clock.now().Add(TagAttachTimeout)
 	for client.clock.now().Before(deadline) {
 		err = client.remote.attachTags(pin, tags)
 		if err == nil {
-			client.Log.Infof("cipd: all tags attached")
+			client.Logger.Infof("cipd: all tags attached")
 			return nil
 		}
 		if _, ok := err.(*pendingProcessingError); ok {
-			client.Log.Warningf("cipd: package instance is not ready yet - %s", err)
+			client.Logger.Warningf("cipd: package instance is not ready yet - %s", err)
 			client.clock.sleep(5 * time.Second)
 		} else {
-			client.Log.Errorf("cipd: failed to attach tags - %s", err)
+			client.Logger.Errorf("cipd: failed to attach tags - %s", err)
 			return err
 		}
 	}
-	client.Log.Errorf("cipd: failed to attach tags - deadline exceeded")
+	client.Logger.Errorf("cipd: failed to attach tags - deadline exceeded")
 	return ErrAttachTagsTimeout
 }
 
-// FetchInstance downloads package instance file from the repository.
-func (client *Client) FetchInstance(pin common.Pin, output io.WriteSeeker) error {
+func (client *clientImpl) FetchInstance(pin common.Pin, output io.WriteSeeker) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
 		return err
 	}
-	client.Log.Infof("cipd: resolving fetch URL for %s", pin)
+	client.Logger.Infof("cipd: resolving fetch URL for %s", pin)
 	fetchInfo, err := client.remote.fetchInstance(pin)
 	if err == nil {
 		err = client.storage.download(fetchInfo.fetchURL, output)
 	}
 	if err != nil {
-		client.Log.Errorf("cipd: failed to fetch %s - %s", pin, err)
+		client.Logger.Errorf("cipd: failed to fetch %s - %s", pin, err)
 		return err
 	}
-	client.Log.Infof("cipd: successfully fetched %s", pin)
+	client.Logger.Infof("cipd: successfully fetched %s", pin)
 	return nil
 }
 
-// FetchAndDeployInstance fetches the package instance and deploys it into
-// a site root. It doesn't check whether the instance is already deployed.
-func (client *Client) FetchAndDeployInstance(root string, pin common.Pin) error {
+func (client *clientImpl) FetchAndDeployInstance(pin common.Pin) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
 		return err
@@ -386,12 +436,7 @@ func (client *Client) FetchAndDeployInstance(root string, pin common.Pin) error 
 
 	// Use temp file for storing package file. Delete it when done.
 	var instance local.PackageInstance
-	tempPath := filepath.Join(root, local.SiteServiceDir, "tmp")
-	err = os.MkdirAll(tempPath, 0777)
-	if err != nil {
-		return err
-	}
-	f, err := ioutil.TempFile(tempPath, pin.InstanceID)
+	f, err := client.deployer.TempFile(pin.InstanceID)
 	if err != nil {
 		return err
 	}
@@ -417,16 +462,11 @@ func (client *Client) FetchAndDeployInstance(root string, pin common.Pin) error 
 	defer instance.Close()
 
 	// Deploy it. 'defer' will take care of removing the temp file if needed.
-	_, err = local.DeployInstance(root, instance)
+	_, err = client.deployer.DeployInstance(instance)
 	return err
 }
 
-// ProcessEnsureFile parses text file that describes what should be installed
-// by EnsurePackages function. It is a text file where each line has a form:
-// <package name> <desired version>. Whitespaces are ignored. Lines that start
-// with '#' are ignored. Version can be specified as instance ID, tag or ref.
-// Will resolve tags and refs to concrete instance IDs by calling the backend.
-func (client *Client) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
+func (client *clientImpl) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
 	lineNo := 0
 	makeError := func(msg string) error {
 		return fmt.Errorf("Failed to parse desired state (line %d): %s", lineNo, msg)
@@ -475,11 +515,7 @@ func (client *Client) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
 	return out, nil
 }
 
-// EnsurePackages is high-level interface for installation, removal and updates
-// of packages inside some installation site root. Given a description of
-// what packages (and versions) should be installed it will do all necessary
-// actions to bring the state of the site root to the desired one.
-func (client *Client) EnsurePackages(root string, pins []common.Pin) error {
+func (client *clientImpl) EnsurePackages(pins []common.Pin) error {
 	// Make sure a package is specified only once.
 	seen := make(map[string]bool, len(pins))
 	for _, p := range pins {
@@ -489,78 +525,52 @@ func (client *Client) EnsurePackages(root string, pins []common.Pin) error {
 		seen[p.PackageName] = true
 	}
 
-	// Ensure site root is a directory (or missing).
-	root, err := filepath.Abs(filepath.Clean(root))
+	// Enumerate existing packages.
+	existing, err := client.deployer.FindDeployed()
 	if err != nil {
 		return err
-	}
-	stat, err := os.Stat(root)
-	if err == nil && !stat.IsDir() {
-		return fmt.Errorf("Path %s is not a directory", root)
-	}
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	rootExists := (err == nil)
-
-	// Enumerate existing packages (only if root already exists).
-	existing := []common.Pin{}
-	if rootExists {
-		existing, err = local.FindDeployed(root)
-		if err != nil {
-			client.Log.Errorf("Failed to enumerate installed packages - %s", err)
-			return err
-		}
 	}
 
 	// Figure out what needs to be updated and deleted, log it.
 	toDeploy, toDelete := buildActionPlan(pins, existing)
 	if len(toDeploy) == 0 && len(toDelete) == 0 {
-		client.Log.Infof("Everything is up-to-date.")
+		client.Logger.Infof("Everything is up-to-date.")
 		return nil
 	}
 	if len(toDeploy) != 0 {
-		client.Log.Infof("Packages to be installed:")
+		client.Logger.Infof("Packages to be installed:")
 		for _, pin := range toDeploy {
-			client.Log.Infof("  %s", pin)
+			client.Logger.Infof("  %s", pin)
 		}
 	}
 	if len(toDelete) != 0 {
-		client.Log.Infof("Packages to be removed:")
+		client.Logger.Infof("Packages to be removed:")
 		for _, pin := range toDelete {
-			client.Log.Infof("  %s", pin)
-		}
-	}
-
-	// Create the site root directory before installing anything there.
-	if len(toDeploy) != 0 && !rootExists {
-		err = os.MkdirAll(root, 0777)
-		if err != nil {
-			return err
+			client.Logger.Infof("  %s", pin)
 		}
 	}
 
 	// Remove all unneeded stuff.
 	fail := false
 	for _, pin := range toDelete {
-		err = local.RemoveDeployed(root, pin.PackageName)
+		err = client.deployer.RemoveDeployed(pin.PackageName)
 		if err != nil {
-			client.Log.Errorf("Failed to remove %s - %s", pin.PackageName, err)
+			client.Logger.Errorf("Failed to remove %s - %s", pin.PackageName, err)
 			fail = true
 		}
 	}
 
 	// Install all new stuff.
 	for _, pin := range toDeploy {
-		err = client.FetchAndDeployInstance(root, pin)
+		err = client.FetchAndDeployInstance(pin)
 		if err != nil {
-			client.Log.Errorf("Failed to install %s - %s", pin, err)
+			client.Logger.Errorf("Failed to install %s - %s", pin, err)
 			fail = true
 		}
 	}
 
 	if !fail {
-		client.Log.Infof("All changes applied.")
+		client.Logger.Infof("All changes applied.")
 		return nil
 	}
 	return ErrEnsurePackagesFailed

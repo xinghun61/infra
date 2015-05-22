@@ -110,7 +110,6 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 		}
 	}
 
-	log.Infof("Enumerating files to zip...")
 	for _, chunk := range def.Data {
 		// Individual file.
 		if chunk.File != "" {
@@ -165,7 +164,7 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 // against a list of regexps (defined against slash separated paths relative to
 // 'startDir'). The predicate takes absolute native path, converts it to slash
 // separated path relative to 'startDir' and checks against list of regexps in
-// 'patterns'. Returns true on match.
+// 'patterns'. Returns true to exclude a path.
 func makeExclusionFilter(startDir string, patterns []string) (ScanFilter, error) {
 	if len(patterns) == 0 {
 		return nil, nil
@@ -193,7 +192,6 @@ func makeExclusionFilter(startDir string, patterns []string) (ScanFilter, error)
 	return func(abs string) bool {
 		rel, err := filepath.Rel(startDir, abs)
 		if err != nil {
-			log.Warningf("Unexpected error when evaluating %s: %s", abs, err)
 			return true
 		}
 		// Do not evaluate paths outside of startDir.

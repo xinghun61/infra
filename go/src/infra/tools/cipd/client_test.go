@@ -25,7 +25,7 @@ import (
 
 func TestUploadToCAS(t *testing.T) {
 	Convey("UploadToCAS full flow", t, func(c C) {
-		client := mockClient(c, []expectedHTTPCall{
+		client := mockClient(c, "", []expectedHTTPCall{
 			{
 				Method: "POST",
 				Path:   "/_ah/api/cas/v1/upload/SHA1/abc",
@@ -63,7 +63,7 @@ func TestUploadToCAS(t *testing.T) {
 				Reply:  `{"status":"VERIFYING"}`,
 			})
 		}
-		client := mockClient(c, calls)
+		client := mockClient(c, "", calls)
 		client.storage = &mockedStorage{c, nil}
 		err := client.UploadToCAS("abc", nil, nil)
 		So(err, ShouldEqual, ErrFinalizationTimeout)
@@ -72,7 +72,7 @@ func TestUploadToCAS(t *testing.T) {
 
 func TestResolveVersion(t *testing.T) {
 	Convey("ResolveVersion works", t, func(c C) {
-		client := mockClient(c, []expectedHTTPCall{
+		client := mockClient(c, "", []expectedHTTPCall{
 			{
 				Method: "GET",
 				Path:   "/_ah/api/repo/v1/instance/resolve",
@@ -96,7 +96,7 @@ func TestResolveVersion(t *testing.T) {
 
 	Convey("ResolveVersion with instance ID", t, func(c C) {
 		// No calls to the backend expected.
-		client := mockClient(c, nil)
+		client := mockClient(c, "", nil)
 		pin, err := client.ResolveVersion("pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 		So(err, ShouldBeNil)
 		So(pin, ShouldResemble, common.Pin{
@@ -106,13 +106,13 @@ func TestResolveVersion(t *testing.T) {
 	})
 
 	Convey("ResolveVersion bad package name", t, func(c C) {
-		client := mockClient(c, nil)
+		client := mockClient(c, "", nil)
 		_, err := client.ResolveVersion("bad package", "tag_key:value")
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("ResolveVersion bad version", t, func(c C) {
-		client := mockClient(c, nil)
+		client := mockClient(c, "", nil)
 		_, err := client.ResolveVersion("pkgname", "BAD_TAG:")
 		So(err, ShouldNotBeNil)
 	})
@@ -135,7 +135,7 @@ func TestRegisterInstance(t *testing.T) {
 		Reset(func() { inst.Close() })
 
 		Convey("RegisterInstance full flow", func(c C) {
-			client := mockClient(c, []expectedHTTPCall{
+			client := mockClient(c, "", []expectedHTTPCall{
 				{
 					Method: "POST",
 					Path:   "/_ah/api/repo/v1/instance",
@@ -176,7 +176,7 @@ func TestRegisterInstance(t *testing.T) {
 		})
 
 		Convey("RegisterInstance already registered", func(c C) {
-			client := mockClient(c, []expectedHTTPCall{
+			client := mockClient(c, "", []expectedHTTPCall{
 				{
 					Method: "POST",
 					Path:   "/_ah/api/repo/v1/instance",
@@ -202,7 +202,7 @@ func TestRegisterInstance(t *testing.T) {
 
 func TestAttachTagsWhenReady(t *testing.T) {
 	Convey("AttachTagsWhenReady works", t, func(c C) {
-		client := mockClient(c, []expectedHTTPCall{
+		client := mockClient(c, "", []expectedHTTPCall{
 			{
 				Method: "POST",
 				Path:   "/_ah/api/repo/v1/tags",
@@ -246,7 +246,7 @@ func TestAttachTagsWhenReady(t *testing.T) {
 				Reply: `{"status": "PROCESSING_NOT_FINISHED_YET"}`,
 			})
 		}
-		client := mockClient(c, calls)
+		client := mockClient(c, "", calls)
 		pin := common.Pin{
 			PackageName: "pkgname",
 			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -276,7 +276,7 @@ func TestFetch(t *testing.T) {
 				}
 			}()
 
-			client := mockClientForFetch(c, []local.PackageInstance{inst})
+			client := mockClientForFetch(c, "", []local.PackageInstance{inst})
 			err = client.FetchInstance(inst.Pin(), out)
 			So(err, ShouldBeNil)
 			out.Close()
@@ -295,8 +295,8 @@ func TestFetch(t *testing.T) {
 			defer inst.Close()
 
 			// Install the package, fetching it from the fake server.
-			client := mockClientForFetch(c, []local.PackageInstance{inst})
-			err = client.FetchAndDeployInstance(tempDir, inst.Pin())
+			client := mockClientForFetch(c, tempDir, []local.PackageInstance{inst})
+			err = client.FetchAndDeployInstance(inst.Pin())
 			So(err, ShouldBeNil)
 
 			// The file from the package should be installed.
@@ -309,7 +309,7 @@ func TestFetch(t *testing.T) {
 
 func TestProcessEnsureFile(t *testing.T) {
 	call := func(c C, data string, calls []expectedHTTPCall) ([]common.Pin, error) {
-		client := mockClient(c, calls)
+		client := mockClient(c, "", calls)
 		return client.ProcessEnsureFile(bytes.NewBufferString(data))
 	}
 
@@ -391,12 +391,19 @@ func TestEnsurePackages(t *testing.T) {
 			// Calls EnsurePackages, mocking fetch backend first. Backend will be mocked
 			// to serve only 'fetched' packages.
 			callEnsure := func(instances []local.PackageInstance, fetched []local.PackageInstance) error {
-				client := mockClientForFetch(c, fetched)
+				client := mockClientForFetch(c, tempDir, fetched)
 				pins := []common.Pin{}
 				for _, i := range instances {
 					pins = append(pins, i.Pin())
 				}
-				return client.EnsurePackages(tempDir, pins)
+				return client.EnsurePackages(pins)
+			}
+
+			findDeployed := func(root string) []common.Pin {
+				deployer := local.NewDeployer(root, nil)
+				pins, err := deployer.FindDeployed()
+				So(err, ShouldBeNil)
+				return pins
 			}
 
 			// Noop run on top of empty directory.
@@ -411,49 +418,37 @@ func TestEnsurePackages(t *testing.T) {
 			err = callEnsure([]local.PackageInstance{a1}, []local.PackageInstance{a1})
 			So(err, ShouldBeNil)
 			assertFile("file a 1", "test data")
-			deployed, err := local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{a1.Pin()})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin()})
 
 			// Noop run. Nothing is fetched.
 			err = callEnsure([]local.PackageInstance{a1}, nil)
 			So(err, ShouldBeNil)
 			assertFile("file a 1", "test data")
-			deployed, err = local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{a1.Pin()})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin()})
 
 			// Upgrade a1 to a2.
 			err = callEnsure([]local.PackageInstance{a2}, []local.PackageInstance{a2})
 			So(err, ShouldBeNil)
 			assertFile("file a 2", "test data")
-			deployed, err = local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{a2.Pin()})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a2.Pin()})
 
 			// Remove a2 and install b.
 			err = callEnsure([]local.PackageInstance{b}, []local.PackageInstance{b})
 			So(err, ShouldBeNil)
 			assertFile("file b", "test data")
-			deployed, err = local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{b.Pin()})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{b.Pin()})
 
 			// Remove b.
 			err = callEnsure(nil, nil)
 			So(err, ShouldBeNil)
-			deployed, err = local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{})
 
 			// Install a1 and b.
 			err = callEnsure([]local.PackageInstance{a1, b}, []local.PackageInstance{a1, b})
 			So(err, ShouldBeNil)
 			assertFile("file a 1", "test data")
 			assertFile("file b", "test data")
-			deployed, err = local.FindDeployed(tempDir)
-			So(err, ShouldBeNil)
-			So(deployed, ShouldResemble, []common.Pin{a1.Pin(), b.Pin()})
+			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin(), b.Pin()})
 		})
 	})
 }
@@ -478,7 +473,7 @@ func buildInstanceInMemory(pkgName string, files []local.File) local.PackageInst
 ////////////////////////////////////////////////////////////////////////////////
 
 // mockClientForFetch returns Client with fetch related calls mocked.
-func mockClientForFetch(c C, instances []local.PackageInstance) *Client {
+func mockClientForFetch(c C, root string, instances []local.PackageInstance) *clientImpl {
 	// Mock RPC calls.
 	calls := []expectedHTTPCall{}
 	for _, inst := range instances {
@@ -499,7 +494,7 @@ func mockClientForFetch(c C, instances []local.PackageInstance) *Client {
 			}`, inst.Pin().InstanceID),
 		})
 	}
-	client := mockClient(c, calls)
+	client := mockClient(c, root, calls)
 
 	// Mock storage.
 	data := map[string][]byte{}
@@ -563,8 +558,8 @@ type expectedHTTPCall struct {
 }
 
 // mockClient returns Client with clock and HTTP calls mocked.
-func mockClient(c C, expectations []expectedHTTPCall) *Client {
-	client := NewClient()
+func mockClient(c C, root string, expectations []expectedHTTPCall) *clientImpl {
+	client := NewClient(ClientOptions{Root: root}).(*clientImpl)
 	client.clock = &mockedClocked{}
 
 	// Kill factories. They should not be called for mocked client.
