@@ -31,7 +31,7 @@ def get_gae_sdk_version(gae_path):
 
 def get_latest_gae_sdk_url(name):
   """Returns the url to get the latest GAE SDK and its version."""
-  url = 'https://code.google.com/appengine/downloads.html'
+  url = 'https://cloud.google.com/appengine/downloads.html'
   logging.debug('%s', url)
   content = urllib2.urlopen(url).read()
   regexp = (
