@@ -188,12 +188,13 @@
     'build': '0',
     'repo': 'external/github.com/kennethreitz/requests',
     'rev': 'b83131779c701720a9ae9efae78996277d416269',
+    # When upgrading, ensure requests_cache is compatible with new version!
   },
   'requests_cache': {
-    'version': '0.4.4',
+    'version': '0.4.7',
     'build': '0',
     'repo': 'external/github.com/reclosedev/requests-cache',
-    'rev': 'b347a9c516f1b7c1d65c376ce255eca274b88999',
+    'rev': '5799155b63ac92f9d3e8080e0a243bc4319da917',
   },
   'rsa': {
     'version': '3.1.4',
