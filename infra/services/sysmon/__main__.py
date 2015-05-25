@@ -89,7 +89,10 @@ def parse_args(argv):
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
   outer_loop.add_argparse_options(p)
+
+  p.set_defaults(ts_mon_flush='manual')
   opts = p.parse_args(argv)
+
   logs.process_argparse_options(opts)
   ts_mon.process_argparse_options(opts)
 
