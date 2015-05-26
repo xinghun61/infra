@@ -8,7 +8,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-detailed-commit.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 
-<polymer-element name="ct-commit-list" attributes="commitList detailed suspectedCLsByRepo">
+<polymer-element name="ct-commit-list" attributes="flex commitList detailed suspectedCLsByRepo">
   <template>
     <style>
       :host {
@@ -84,6 +84,16 @@ found in the LICENSE file.
         return item.name === repo;
       });
       r.expanded = !r.expanded;
+
+      var anyExpanded = this.commitList.repositories.some(function(item) {
+        return item.expanded;
+      });
+
+      if (anyExpanded) {
+        this.setAttribute('flex', r.expanded);
+      } else {
+        this.removeAttribute('flex');
+      }
     },
 
     _updateSuspectedCommitInfo: function() {

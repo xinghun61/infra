@@ -18,11 +18,11 @@ found in the LICENSE file.
     </template>
     <template repeat="{{urlGroup in _urlGroups}}">
       <template if="{{urlGroup.urls[_kUnknownKind]}}">
-        <ct-test-output type="{{urlGroup.type}}" url="{{urlGroup.urls[_kUnknownKind]}}"></ct-test-output>
+        <ct-test-output type="{{urlGroup.type}}" url="{{urlGroup.urls[_kUnknownKind]}}" flex layout vertical></ct-test-output>
       </template>
       <template if="{{!urlGroup.urls[_kUnknownKind]}}">
         <ct-results-comparison type="{{urlGroup.type}}" expectedUrl="{{urlGroup.urls[_kExpectedKind]}}"
-            actualUrl="{{urlGroup.urls[_kActualKind]}}" diffUrl="{{urlGroup.urls[_kDiffKind]}}"></ct-results-comparison>
+            actualUrl="{{urlGroup.urls[_kActualKind]}}" diffUrl="{{urlGroup.urls[_kDiffKind]}}" flex layout vertical></ct-results-comparison>
       </template>
     </template>
   </template>

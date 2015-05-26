@@ -202,9 +202,9 @@ found in the LICENSE file.
               </template>
             </app-route>
 
-            <app-route path="/:tree/failure/:failureGroupKey" on-before-data-binding="{{ modifyFailureGroupModel }}">
+            <app-route path="/:tree/failure/:failureGroupKey" fit on-before-data-binding="{{ modifyFailureGroupModel }}">
               <template>
-              <ct-results-panel id="resultsPanel" group="{{ examinedFailureGroup }}" failureGroupKey="{{ failureGroupKey }}" tree="{{ tree || 'chromium' }}"></ct-results-panel>
+              <ct-results-panel fit id="resultsPanel" group="{{ examinedFailureGroup }}" failureGroupKey="{{ failureGroupKey }}" tree="{{ tree || 'chromium' }}"></ct-results-panel>
               </template>
             </app-route>
 

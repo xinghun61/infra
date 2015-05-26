@@ -21,13 +21,13 @@ found in the LICENSE file.
             }
         </style>
 
-        <div class="result">
+        <div class="result" flex layout vertical>
             <template if="{{url}}">
                 <template if="{{type == _kImageType}}">
                     <img src="{{url}}">
                 </template>
                 <template if="{{type == _kTextType}}">
-                    <ct-popout-iframe src="{{url}}"></ct-popout-iframe>
+                    <ct-popout-iframe src="{{url}}" flex></ct-popout-iframe>
                 </template>
                 <template if="{{type == _kAudioType}}">
                     <audio controls src="{{url}}"></audio>
