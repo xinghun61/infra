@@ -44,15 +44,23 @@ def parse_args(args):  # pragma: no cover
   ts_mon.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
 
-  opts = parser.parse_args(args)
+  parser.set_defaults(
+      ts_mon_target_type='task',
+      ts_mon_task_service_name='gsubtreed',
+  )
 
-  logs.process_argparse_options(opts)
-  ts_mon.process_argparse_options(opts)
-  loop_opts = outer_loop.process_argparse_options(opts)
+  opts = parser.parse_args(args)
 
   repo = opts.repo[0]
   repo.dry_run = opts.dry_run
   repo.repos_dir = os.path.abspath(opts.repo_dir)
+
+  if not opts.ts_mon_task_job_name:
+    opts.ts_mon_task_job_name = urlparse.urlparse(repo.url).path
+
+  logs.process_argparse_options(opts)
+  ts_mon.process_argparse_options(opts)
+  loop_opts = outer_loop.process_argparse_options(opts)
 
   return Options(repo, loop_opts, opts.json_output)
 
