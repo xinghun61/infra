@@ -17,6 +17,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-patchsets.html">
 <link rel="import" href="cr-issue-publish-dialog.html">
 <link rel="import" href="cr-issue-revert-dialog.html">
+<link rel="import" href="cr-issue-subject.html">
 <link rel="import" href="cr-try-dialog.html">
 <link rel="import" href="cr-try-results.html">
 
@@ -28,9 +29,7 @@ found in the LICENSE file. -->
 
         <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
 
-        <h1 class="issue-subject">
-            Issue <a href="/{{ issue.id }}">{{ issue.id }}</a><template if="{{ issue.closed }}"> (Closed)</template>: {{ issue.subject }}
-        </h1>
+        <cr-issue-subject issue="{{ issue }}"></cr-issue-subject>
 
         <div class="issue-body">
             <cr-issue-meta issue="{{ issue }}"></cr-issue-meta>
@@ -132,6 +131,8 @@ found in the LICENSE file. -->
             attached: function() {
                 if (window.location.pathname.endsWith("/revert"))
                     this.showRevertDialog();
+                if (window.location.pathname.endsWith("/publish"))
+                    this.showPublishDialog();
             },
             issueChanged: function(oldValue, newValue) {
                 this.loadCommitTryJobs();

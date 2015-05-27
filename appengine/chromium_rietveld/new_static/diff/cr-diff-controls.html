@@ -1,0 +1,39 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<polymer-element name="cr-diff-controls" attributes="mode view">
+    <template>
+        <style>
+            .side-by-side {
+                margin-left: 8px;
+            }
+        </style>
+        <label class="side-by-side">
+            <input type="checkbox" checked="{{ sideBySide }}">
+            <span>Side by side</span>
+        </label>
+    </template>
+    <script>
+        Polymer({
+            created: function() {
+                this.view = "cr-issue-patchset";
+                this.sideBySide = false;
+            },
+            getKey: function() {
+                return this.view + ".sideBySide";
+            },
+            attached: function() {
+                this.sideBySide = localStorage.getItem(this.getKey()) == "true";
+                this.updateMode();
+            },
+            sideBySideChanged: function(oldValue, newValue) {
+                this.updateMode();
+                localStorage.setItem(this.getKey(), newValue);
+            },
+            updateMode: function() {
+                this.mode = this.sideBySide ? "side-by-side" : "unified";
+            },
+        });
+    </script>
+</polymer-element>

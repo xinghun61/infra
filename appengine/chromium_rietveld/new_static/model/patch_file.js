@@ -26,6 +26,8 @@ function PatchFile(patchset, name)
     this.diff = null;
     this.isLayoutTest = this.name.startsWith("LayoutTests/");
     this.isHeader = false;
+    this.previousFile = null;
+    this.nextFile = null;
     Object.preventExtensions(this);
 
     var dotIndex = this.name.lastIndexOf(".");
@@ -41,6 +43,7 @@ PatchFile.DIFF_URL = "/download/issue{1}_{2}_{3}.diff";
 PatchFile.CONTEXT_URL = "/{1}/diff_skipped_lines/{2}/{3}/{4}/{5}/a/2000";
 PatchFile.DRAFT_URL = "/api/{1}/{2}/{3}/draft_message";
 PatchFile.IMAGE_URL = "/{1}/image/{2}/{3}/{4}";
+PatchFile.SINGLE_VIEW_URL = "/{1}/diff/{2}/{3}";
 
 PatchFile.SYNTAX_LANGUAGES = {
     "cc": "cpp",
@@ -155,6 +158,14 @@ PatchFile.prototype.getDiffUrl = function()
         encodeURIComponent(this.patchset.issue.id),
         encodeURIComponent(this.patchset.id),
         encodeURIComponent(this.id));
+};
+
+PatchFile.prototype.getSingleViewUrl = function()
+{
+    return PatchFile.SINGLE_VIEW_URL.assign(
+        encodeURIComponent(this.patchset.issue.id),
+        encodeURIComponent(this.patchset.id),
+        this.name);
 };
 
 PatchFile.prototype.getOldImageUrl = function()

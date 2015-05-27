@@ -2289,6 +2289,8 @@ def fields(request):
 @deco.patch_required
 def patch(request):
   """/<issue>/patch/<patchset>/<patch> - View a raw patch."""
+  if _use_new_ui(request):
+    return _serve_new_ui(request)
   return patch_helper(request)
 
 
@@ -2559,6 +2561,9 @@ def _get_tab_spaces_for_user(request):
 @deco.patch_filename_required
 def diff(request):
   """/<issue>/diff/<patchset>/<patch> - View a patch as a side-by-side diff"""
+  if _use_new_ui(request):
+    return _serve_new_ui(request)
+
   if request.patch.no_base_file:
     # Can't show side-by-side diff since we don't have the base file.  Show the
     # unified diff instead.
@@ -3213,6 +3218,8 @@ def publish(request):
         ancestor=issue.key)
     draft_message = query.get()
   if request.method != 'POST':
+    if _use_new_ui(request):
+      return _serve_new_ui(request)
     reviewers = issue.reviewers[:]
     cc = issue.cc[:]
     reviewers = [models.Account.get_nickname_for_email(reviewer,

@@ -42,10 +42,6 @@ header .ui-actions {
     margin-right: 4px;
 }
 
-.side-by-side {
-    margin-left: 8px;
-}
-
 .files {
     overflow-x: auto;
 }

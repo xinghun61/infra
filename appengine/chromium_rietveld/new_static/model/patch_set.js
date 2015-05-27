@@ -67,6 +67,16 @@ PatchSet.prototype.loadDetails = function()
     });
 };
 
+PatchSet.prototype.findFileById = function(id)
+{
+    return this.files.find({id: id});
+};
+
+PatchSet.prototype.findFileByName = function(name)
+{
+    return this.files.find({name: name});
+};
+
 PatchSet.prototype.revert = function(options)
 {
     if (!options.reason)
@@ -121,6 +131,13 @@ PatchSet.prototype.parseData = function(data)
     });
 
     this.files.sort(PatchFile.compare);
+    // Make a doubly linked list of files
+    if (this.files.length > 1) {
+        for (var i = 0; i < this.files.length; ++i) {
+            this.files[i].nextFile = this.files[i + 1];
+            this.files[i].previousFile = this.files[i - 1];
+        }
+    }
 
     this.files.forEach(function(file) {
         if (file.isLayoutTest)

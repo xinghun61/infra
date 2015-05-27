@@ -69,10 +69,10 @@ describe("IntralineDiffSide", function() {
         side.ranges = [{start: 0, end: 100}];
         var src = "bubblesort()";
         var html = "<span class=ident>bubblesort</span>()";
-        var div = {className: "text"};
+        var div = {classList: ["text"]};
         var newHtml = side.processLine(div, src, html);
         assert.equal(newHtml, html);
-        assert.equal(div.className, "text whole-line");
+        assert.deepEqual(div.classList, ["text", "whole-line"]);
     });
 
     it("converts ranges to local ranges", function() {

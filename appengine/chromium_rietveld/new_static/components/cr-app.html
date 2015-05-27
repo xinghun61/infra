@@ -46,6 +46,7 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-title-handler.html">
 <link rel="import" href="../common/cr-view-handler.html">
 
+<link rel="import" href="../views/cr-file-view.html">
 <link rel="import" href="../views/cr-inbox-view.html">
 <link rel="import" href="../views/cr-issue-view.html">
 <link rel="import" href="../views/cr-search-view.html">
@@ -151,7 +152,10 @@ found in the LICENSE file. -->
             <app-route path="/settings" element="cr-settings-view"></app-route>
             <app-route path="/user/:username" element="cr-user-view"></app-route>
             <app-route path="/:issueId" element="cr-issue-view"></app-route>
+            <app-route path="/:issueId/publish" element="cr-issue-view"></app-route>
             <app-route path="/:issueId/revert" element="cr-issue-view"></app-route>
+            <app-route path="/\d+\/diff\/\d+\/.*/" regex element="cr-file-view"></app-route>
+            <app-route path="/\d+\/patch\/\d+\/\d+/" regex element="cr-file-view"></app-route>
         </cr-view>
     </template>
     <script>

@@ -7,6 +7,7 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-cq-dry-run-dialog.html">
 <link rel="import" href="cr-issue-patchfile.html">
 <link rel="import" href="cr-try-results.html">
+<link rel="import" href="../diff/cr-diff-controls.html">
 
 <polymer-element name="cr-issue-patchset" attributes="patchset mode">
     <template>
@@ -19,10 +20,7 @@ found in the LICENSE file. -->
                     <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
                     <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                     <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
-                    <label class="side-by-side">
-                        <input type="checkbox" checked="{{ sideBySide }}">
-                        <span>Side by side</span>
-                    </label>
+                    <cr-diff-controls mode="{{ mode }}"></cr-diff-controls>
                 </div>
             </header>
             <div class="files">
@@ -39,10 +37,7 @@ found in the LICENSE file. -->
                         <a is="cr-action" on-tap="{{ expandAllDiffs }}">Show diffs</a> /
                         <a is="cr-action" on-tap="{{ collapseAllDiffs }}">Hide diffs</a> /
                         <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}.diff" target="_blank">Raw diff</a>
-                        <label class="side-by-side">
-                            <input type="checkbox" checked="{{ sideBySide }}">
-                            <span>Side by side</span>
-                        </label>
+                        <cr-diff-controls mode="{{ mode }}"></cr-diff-controls>
                     </div>
                 </template>
             </header>
@@ -72,16 +67,10 @@ found in the LICENSE file. -->
         <div id="dialogs"></div>
     </template>
     <script>
-    (function() {
-        var SIDE_BY_SIDE_KEY = "cr-issue-patchset.sideBySide";
-
         Polymer({
             created: function() {
                 this.patchset = null;
                 this.tryJobResults = null;
-                this.mode = "";
-                this.sideBySide = localStorage.getItem(SIDE_BY_SIDE_KEY) == "true";
-                this.updateMode();
             },
             showDryRunDialog: function() {
               if (this.patchset.issue.closed)
@@ -106,13 +95,6 @@ found in the LICENSE file. -->
                     console.log(e);
                 });
             },
-            sideBySideChanged: function(oldValue, newValue) {
-                this.updateMode();
-                localStorage.setItem(SIDE_BY_SIDE_KEY, newValue);
-            },
-            updateMode: function() {
-                this.mode = this.sideBySide ? "side-by-side" : "unified";
-            },
             getFiles: function() {
                 // TODO(esprehn): Use an id instead.
                 return this.shadowRoot.querySelectorAll("cr-issue-patchfile").array();
@@ -131,6 +113,5 @@ found in the LICENSE file. -->
                 this.fire("show-try-dialog");
             },
         });
-    })();
     </script>
 </polymer-element>

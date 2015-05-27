@@ -1,0 +1,247 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../common/cr-keyboard.html">
+<link rel="import" href="../common/cr-view-handler.html">
+<link rel="import" href="../diff/cr-diff.html">
+<link rel="import" href="../diff/cr-diff-controls.html">
+
+<polymer-element name="cr-file-view">
+    <template>
+        <link rel="stylesheet" href="../common/common.css">
+        <style>
+            :host { display: block; }
+
+            p {
+                padding: 1em;
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1em;
+                margin: 0 16px;
+                padding: 0;
+                -webkit-user-select: none;
+                cursor: default;
+            }
+
+            header {
+                padding: 1em;
+                display: -webkit-flex;
+                display: flex;
+            }
+
+            header.file-navigation {
+                background: #f6f6f6;
+                border-bottom: 1px solid #ebebeb;
+            }
+
+            header .info {
+                flex: 1;
+                -webkit-flex: 1;
+                white-space: nowrap;
+            }
+
+            header .ui-actions {
+                padding: 0 16px;
+                flex-shrink: 0;
+                -webkit-flex-shrink: 0;
+            }
+
+            .ui-actions label {
+                display: inline-flex;
+                display: -webkit-inline-flex;
+                align-items: baseline;
+                -webkit-align-items: baseline;
+            }
+
+            .ui-actions input {
+                margin-right: 4px;
+            }
+
+            select {
+              min-width: 12em;
+              margin: 0 0.5em;
+            }
+
+            cr-issue-subject {
+                margin-bottom: .5em;
+            }
+
+            cr-diff {
+                margin: 0.25em 16px;
+                border: 1px solid #dcdcdc;
+                box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+                border-radius: 2px;
+            }
+
+            .left {
+                background: #fdd;
+            }
+
+            .right {
+                background: #dfd;
+            }
+
+            .patchset-heading-label {
+                width: 3em;
+                display: inline-block;
+                margin-right: 8px;
+                padding-left: 4px;
+            }
+        </style>
+        <cr-view-handler></cr-view-handler>
+        
+        <template if="{{ issue && !failed }}">
+            <cr-issue-subject issue="{{ issue }}"></cr-issue-subject>
+        </template>
+
+        <template if="{{ filename }}">
+            <header class="file-navigation">
+                <h2 class="info">{{ filename }}</h2>
+                <div class="ui-actions">
+                    <a is="cr-action" on-tap="{{ handlePrevious }}" title="Previous file (k)"
+                       disabled?="{{ !hasPreviousFile(file) }}">Previous</a>
+                    <a is="cr-action" on-tap="{{ handleNext }}" title="Next file (j)"
+                       disabled?="{{ !hasNextFile(file) }}">Next</a>
+               </div>
+            </header>
+        </template>
+
+
+        <header>
+            <template if="{{ patchset }}">
+                <div class="info">
+                  <div><div class="left patchset-heading-label">Old</div> Base files</div>
+                  <div><div class="right patchset-heading-label">New</div> Patchset {{ patchset.sequence }}: {{ patchset.title }}</div>
+               </div>
+            </template>
+            <div class="ui-actions">
+                <a href="/download/issue{{ patchset.issue.id }}_{{ patchset.id }}_{{ file.id }}.diff" target="_blank">Raw diff</a> /
+                <cr-diff-controls mode="{{ mode }}" view="cr-file-view"></cr-diff-controls>
+            </div>                
+        </header>
+
+        <template if="{{ !patchset && !failed }}">
+            <p>Loading patch...</p>
+        </template>
+
+        <template if="{{ failed }}">
+            <p>Failed to load. :(</p>
+        </template>
+
+        <cr-diff id="diff" file="{{ file }}" mode="{{ mode }}"></cr-diff>
+
+        <div id="dialogs"></div>
+
+        <cr-keyboard on-key-m="{{ handlePublish }}"
+                     on-key-j="{{ handleNext }}"
+                     on-key-k="{{ handlePrevious }}"
+                     on-key-u="{{ handleUpToIssue }}"
+                     global></cr-keyboard>
+    </template>
+    <script>
+        Polymer({
+            created: function() {
+                this.issueId = 0;
+                this.issue = null;
+                this.mode = "unified";
+                this.patchset = null;
+                this.file = null;
+            },
+            // TODO(jrobbins): Scroll to a specific line mentioned in the anchor.
+            attached: function() {
+                var self = this;
+                this.parseUrl();
+                User.loadCurrentUser({cached: true}).either(function() {
+                    self.loadIssue();
+                });
+            },
+            // TODO(jrobbins): Upgrade to newer polymer, and newer app-router, then
+            // simplify or remove this function.
+            parseUrl: function () {
+                var urlFormat = /([0-9]+)\/(patch|diff)\/([0-9]+)\/(.+)/;
+                var matches = urlFormat.exec(window.location.pathname);
+                if (matches) {
+                    this.issueId = Number(matches[1]);
+                    this.issue = new Issue(this.issueId);
+                    this.patchsetId = Number(matches[3]);
+                    if (matches[2] == "patch")
+                        this.patchId = Number(matches[4]);
+                    else
+                        this.filename = matches[4];
+                }
+            },
+            loadIssue: function() {
+                var self = this;
+                return this.issue.loadDetails().then(function() {
+                    self.loadPatchsetDetails();
+                }).catch(function(error) {
+                    console.log(error);
+                    self.failed = true;
+                });
+             },
+             loadPatchsetDetails: function() {
+                var self = this;
+                this.patchset = this.issue.patchsets.find({id: this.patchsetId});
+                return this.patchset.loadDetails().then(function () {
+                    self.showFile();
+                });
+            },
+            hasPreviousFile: function() {
+                return this.file && this.file.previousFile;
+            },
+            hasNextFile: function() {
+                return this.file && this.file.nextFile;
+            },
+            // When the filename changes, just find the file and pushState()
+            // the URL.  Don't go through app-router again because that resets
+            // too much state.
+            showFile: function() {
+                var self = this;
+                if (this.patchId)
+                    this.file = this.patchset.findFileById(this.patchId);
+                else
+                    this.file = this.patchset.findFileByName(this.filename);
+
+                if (this.file) {
+                    var fileUrl = this.file.getSingleViewUrl();
+                    if (window.location.pathname != fileUrl)
+                        window.history.pushState(null, null, fileUrl);
+                    this.$.diff.hideDiff();
+                    this.filename = this.file.name;
+                    this.$.diff.file = this.file;
+                    this.$.diff.showDiff();
+                }
+            },
+            filenameChanged: function(oldValue, newValue) {
+                if (!newValue || !newValue.length)
+                    return;
+                this.fire("title-change", {
+                    value: "Issue " + this.issueId + ": " + newValue
+                });
+                if (this.patchset)
+                    this.showFile();
+            },
+            handlePublish: function() {
+                this.asyncFire("navigate", {
+                    url: "/" + this.issueId + "/publish",
+                });
+            },
+            handlePrevious: function() {
+                if (this.file && this.file.previousFile)
+                    this.filename = this.file.previousFile.name;
+            },
+            handleNext: function() {
+                if (this.file && this.file.nextFile)
+                    this.filename = this.file.nextFile.name;
+            },
+            handleUpToIssue: function() {
+                this.asyncFire("navigate", {
+                    url: "/" + this.issueId,
+                });
+            },
+        });
+    </script>
+</polymer-element>

@@ -64,6 +64,14 @@ a:hover {
     text-decoration: underline;
 }
 
+a[disabled] {
+    color: #888;
+}
+
+a[disabled]:hover {
+    text-decoration: none;
+}
+
 select,
 input {
     margin: 0;

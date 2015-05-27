@@ -1,0 +1,20 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../common/cr-view-handler.html">
+
+<polymer-element name="cr-issue-subject" attributes="issue" noscript>
+    <template>
+        <link rel="stylesheet" href="../common/common.css">
+        <style>
+            .issue-subject {
+                margin-bottom: 0;
+            }
+        </style>
+        <cr-view-handler></cr-view-handler>
+        <h1 class="issue-subject">
+            Issue <a href="/{{ issue.id }}">{{ issue.id }}</a><template if="{{ issue.closed }}"> (Closed)</template>: {{ issue.subject }}
+        </h1>
+    </template>
+</polymer-element>
