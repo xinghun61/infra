@@ -615,7 +615,7 @@ def derive_stats(args, begin_date, init_stats=None):
   patch_stats = {}
   # Fetch and process each patchset log
   def get_patch_stats(patch_id):
-    return derive_patch_stats(end_date, patch_id)
+    return derive_patch_stats(begin_date, end_date, patch_id)
 
   if args.seq or not args.thread_pool:
     iterable = map(get_patch_stats, patches)
@@ -668,9 +668,9 @@ def parse_failing_tryjobs(message):
   return builders
 
 
-def derive_patch_stats(end_date, patch_id):
+def derive_patch_stats(begin_date, end_date, patch_id):
   """``patch_id`` is a tuple (issue, patchset)."""
-  results = fetch_cq_logs(end_date=end_date, filters=[
+  results = fetch_cq_logs(start_date=begin_date, end_date=end_date, filters=[
       'issue=%s' % patch_id[0], 'patchset=%s' % patch_id[1]])
   # The results should already ordered, but sort it again just to be sure.
   results = sorted(results, key=lambda r: r['timestamp'], reverse=True)

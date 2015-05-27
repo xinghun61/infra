@@ -369,7 +369,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.assertEqual(cq_stats.derive_list_stats([])['size'], 1)
 
   def get_mock_derive_patch_stats(self, supported=True):
-    def mock_derive_patch_stats(_, patch_id):
+    def mock_derive_patch_stats(_begin_date, _end_date, patch_id):
       # The original function expects patch_id to be a 2-tuple.
       self.assertIsInstance(patch_id, tuple)
       self.assertEqual(len(patch_id), 2)
@@ -390,10 +390,10 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
   def test_derive_stats(self):
     # Unused args: pylint: disable=W0613
-    def mock_fetch_cq_logs_0(begin_date=None, end_date=None, filters=None):
+    def mock_fetch_cq_logs_0(start_date=None, end_date=None, filters=None):
       return []
     # Unused args: pylint: disable=W0613
-    def mock_fetch_cq_logs(begin_date=None, end_date=None, filters=None):
+    def mock_fetch_cq_logs(start_date=None, end_date=None, filters=None):
       return [
           {'fields': {'issue': 12345, 'patchset': 1},
            'timestamp': 1415150483.18568,
@@ -486,28 +486,30 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     ]
 
     # Dangerous default value, unused args: pylint: disable=W0102,W0613
-    def mock_fetch_cq_logs(begin_date=None, end_date=None, filters=[]):
+    def mock_fetch_cq_logs(start_date=None, end_date=None, filters=[]):
       entries = list(itertools.chain(*attempts))
       entries.reverse()
       return entries
 
     # Dangerous default value, unused args: pylint: disable=W0102,W0613
-    def mock_fetch_cq_logs_0(begin_date=None, end_date=None, filters=[]):
+    def mock_fetch_cq_logs_0(start_date=None, end_date=None, filters=[]):
       return []
 
     # Dangerous default value, unused args: pylint: disable=W0102,W0613
-    def mock_fetch_cq_logs_junk(begin_date=None, end_date=None, filters=[]):
+    def mock_fetch_cq_logs_junk(start_date=None, end_date=None, filters=[]):
       return [{'fields': {'action': 'cq_start'}, 'timestamp': 1415150662.3}]
 
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs)
 
     patch_id = ('pid', 5)
     pid, stats = cq_stats.derive_patch_stats(
-        datetime.datetime(2014, 10, 15), patch_id)
+        datetime.datetime(2014, 10, 15),
+        datetime.datetime(2014, 10, 15),
+        patch_id)
     self.assertEqual(patch_id, pid)
     # Check required fields in the result.
     mock_derive_patch_stats = self.get_mock_derive_patch_stats()
-    for k in mock_derive_patch_stats(None, patch_id)[1]:
+    for k in mock_derive_patch_stats(None, None, patch_id)[1]:
       self.assertIsNotNone(stats.get(k))
     # A few sanity checks.
     self.assertEqual(stats['attempts'], len(attempts))
@@ -516,11 +518,15 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_0)
     pid, stats = cq_stats.derive_patch_stats(
-        datetime.datetime(2014, 10, 15), patch_id)
+        datetime.datetime(2014, 10, 15),
+        datetime.datetime(2014, 10, 15),
+        patch_id)
     # Cover the case when there are actions, but no CQ attempts.
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_junk)
     pid, stats = cq_stats.derive_patch_stats(
-        datetime.datetime(2014, 10, 15), patch_id)
+        datetime.datetime(2014, 10, 15),
+        datetime.datetime(2014, 10, 15),
+        patch_id)
 
 
   def test_derive_tree_stats(self):
