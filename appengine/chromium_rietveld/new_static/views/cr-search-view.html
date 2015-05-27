@@ -134,7 +134,7 @@ found in the LICENSE file. -->
             </div>
         </div>
 
-        <cr-cursor-manager id="cursormanager"
+        <cr-cursor-manager id="cursorManager"
                            stopSelector="cr-issue-list /deep/ .issue"
                            ></cr-cursor-manager>
         <cr-keyboard on-key-j="{{ handleNextIssueKey }}"
@@ -228,16 +228,16 @@ found in the LICENSE file. -->
             updateResult: function(result) {
                 this.result = result;
                 this.cursor = result.cursor;
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             handleNextIssueKey: function(event) {
-                this.$.cursormanager.next(event);
+                this.$.cursorManager.next(event);
             },
             handlePreviousIssueKey: function(event) {
-                this.$.cursormanager.previous(event);
+                this.$.cursorManager.previous(event);
             },
             handleOpenTargetIssueKey: function(event) {
-                this.$.cursormanager.open(event);
+                this.$.cursorManager.open(event);
             },
         });
     </script>

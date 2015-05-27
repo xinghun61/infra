@@ -42,7 +42,7 @@ found in the LICENSE file. -->
             <cr-issue-inbox-section issues="{{ issues.closed }}" weeks="{{ weeks }}" showRecentActivity="{{ showRecentActivity }}"></cr-issue-inbox-section>
         </template>
 
-        <cr-cursor-manager id="cursormanager"
+        <cr-cursor-manager id="cursorManager"
                            stopSelector="cr-issue-inbox-section /deep/ .issue"
                            ></cr-cursor-manager>
         <cr-keyboard on-key-j="{{ handleNextIssueKey }}"
@@ -54,25 +54,25 @@ found in the LICENSE file. -->
     <script>
         Polymer({
             issuesChanged: function() {
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             weeksChanged: function() {
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             showRecentActivityChanged: function() {
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             handleSectionToggled: function(event) {
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             handleNextIssueKey: function(event) {
-                this.$.cursormanager.next(event);
+                this.$.cursorManager.next(event);
             },
             handlePreviousIssueKey: function(event) {
-                this.$.cursormanager.previous(event);
+                this.$.cursorManager.previous(event);
             },
             handleOpenTargetIssueKey: function(event) {
-                this.$.cursormanager.open(event);
+                this.$.cursorManager.open(event);
             },
         });
     </script>

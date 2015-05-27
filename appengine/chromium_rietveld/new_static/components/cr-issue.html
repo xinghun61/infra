@@ -113,7 +113,7 @@ found in the LICENSE file. -->
 
         <div id="dialogs"></div>
 
-        <cr-cursor-manager id="cursormanager"
+        <cr-cursor-manager id="cursorManager"
                            stopSelector="* /deep/ cr-issue-patchfile"
                            ></cr-cursor-manager>
         <cr-keyboard on-key-m="{{ handlePublishKey }}"
@@ -277,18 +277,18 @@ found in the LICENSE file. -->
                 });
             },
             handlePatchsetToggled: function(event) {
-                this.$.cursormanager.resetStops();
+                this.$.cursorManager.resetStops();
             },
             handleNextPatchKey: function(event) {
-                this.$.cursormanager.next(event);
+                this.$.cursorManager.next(event);
             },
             handlePreviousPatchKey: function(event) {
-                this.$.cursormanager.previous(event);
+                this.$.cursorManager.previous(event);
             },
             handleToggleTargetPatchKey: function(event) {
                 event.preventDefault();
-                if (this.$.cursormanager.target)
-                    this.$.cursormanager.target.toggleDiff();
+                if (this.$.cursorManager.target)
+                    this.$.cursorManager.target.toggleDiff();
             },
         });
     </script>

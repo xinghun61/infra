@@ -67,10 +67,6 @@ header .ui-actions {
     margin: 0 8px 0 8px;
 }
 
-.cursor-target /deep/ .file {
-  background-color: rgba(0, 0, 200, .1);
-}
-
 @media (max-width: 600px) {
     header h2 {
         display: none;

@@ -23,7 +23,7 @@ found in the LICENSE file. -->
          <li class="cursor-stop">Paris</li>
          <li class="cursor-stop">Munich</li>
        </ul>
-       <cr-cursor-manager id="cursormanager" target="{{ currentCity }}"></cr-cursor-manager>
+       <cr-cursor-manager id="cursorManager" target="{{ currentCity }}"></cr-cursor-manager>
        <cr-keyboard
           on-key-j="{{ forward }}"
           on-key-k="{{ back }}"
@@ -96,10 +96,11 @@ found in the LICENSE file. -->
             },
             open: function(event) {
                 event.preventDefault();
-                if (this.target && this.target.href)
+                if (this.target && this.target.href) {
                     this.asyncFire("navigate", {
                         url: this.target.href
                     });
+                }
             },
         });
     </script>
