@@ -35,6 +35,10 @@ deps = {
     ("https://chromium.googlesource.com/infra/third_party/highlight.js.git"
      "@fa5bfec38aebd1415a81c9c674d0fde8ee5ef0ba"),
 
+  "infra/appengine/third_party/difflibjs":
+    ("https://chromium.googlesource.com/external/github.com/qiao/difflib.js.git"
+     "@e11553ba3e303e2db206d04c95f8e51c5692ca28"),
+
   "infra/appengine/third_party/pipeline":
     ("https://chromium.googlesource.com/infra/third_party/"
      "appengine-pipeline.git"

@@ -13,36 +13,47 @@ DiffBuilderSideBySide.extends(DiffBuilderBase);
 
 DiffBuilderSideBySide.prototype.emitGroup = function(group, beforeSection)
 {
+    this.intralineContext.setGroup(group);
     var section = document.createElement("div");
     section.className = "section side-by-side " + group.type;
     var pairs = group.getSideBySidePairs();
     for (var i = 0; i < pairs.length; ++i) {
-        var left = document.createElement("div");
-        left.className = "left";
-        var right = document.createElement("div");
-        right.className = "right";
-        var pair = document.createElement("div");
-        pair.className = "pair";
-        pair.appendChild(left);
-        pair.appendChild(right);
+        var pair = this.createPair(section, pairs[i].left, pairs[i].right);
         section.appendChild(pair);
-        var leftLine = pairs[i].left;
-        left.appendChild(this.createRow(section, leftLine, leftLine.beforeNumber));
-        if (leftLine.type != "both") {
-            var leftMessages = this.createMessages(leftLine);
-            if (leftMessages)
-                left.appendChild(leftMessages);
-        }
-        var rightLine = pairs[i].right;
-        right.appendChild(this.createRow(section, rightLine, rightLine.afterNumber));
-        var rightMessages = this.createMessages(rightLine);
-        if (rightMessages)
-            right.appendChild(rightMessages);
     }
     this.output.insertBefore(section, beforeSection);
 };
 
-DiffBuilderSideBySide.prototype.createRow = function(section, line, lineNumber)
+DiffBuilderSideBySide.prototype.createPair = function(
+    section, leftLine, rightLine)
+{
+    var left = document.createElement("div");
+    left.className = "left";
+    var right = document.createElement("div");
+    right.className = "right";
+    var pair = document.createElement("div");
+    pair.className = "pair";
+    pair.appendChild(left);
+    pair.appendChild(right);
+    left.appendChild(this.createRow(
+        section, leftLine, leftLine.beforeNumber,
+        this.intralineContext.left));
+    if (leftLine.type != "both") {
+        var leftMessages = this.createMessages(leftLine);
+        if (leftMessages)
+            left.appendChild(leftMessages);
+    }
+    right.appendChild(this.createRow(
+        section, rightLine, rightLine.afterNumber,
+        this.intralineContext.right));
+    var rightMessages = this.createMessages(rightLine);
+    if (rightMessages)
+        right.appendChild(rightMessages);
+    return pair;
+};
+
+DiffBuilderSideBySide.prototype.createRow = function(
+    section, line, lineNumber, intralineSide)
 {
     var row = document.createElement("div");
     row.className = "row " + line.type;
@@ -51,7 +62,7 @@ DiffBuilderSideBySide.prototype.createRow = function(section, line, lineNumber)
         return row;
 
     row.appendChild(this.createLineNumber(line, lineNumber, line.type));
-    row.appendChild(this.createText(line));
+    row.appendChild(this.createText(line, intralineSide));
     var action = this.createContextAction(section, line);
     if (action)
         row.appendChild(action);

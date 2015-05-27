@@ -20,11 +20,25 @@
 }
 
 .remove .text {
-    background-color: #fdd;
+    background-color: #fee;
 }
 
 .add .text {
-    background-color: #dfd;
+    background-color: #efe;
+}
+
+.remove .text del,
+.remove .whole-line {
+    text-decoration: none;
+    background-color: #ffd4d4;
+    display: inline-block;
+}
+
+.add .text ins,
+.add .whole-line {
+    text-decoration: none;
+    background-color: #d4ffd4;
+    display: inline-block;
 }
 
 .row,
