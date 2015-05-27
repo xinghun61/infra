@@ -5,7 +5,7 @@
 import argparse
 import sys
 
-import infra.libs.event_mon as event_mon
+from infra_libs import event_mon
 import infra_libs.logs
 
 

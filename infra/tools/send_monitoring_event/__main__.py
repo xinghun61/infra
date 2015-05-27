@@ -4,7 +4,7 @@
 
 import sys
 
-import infra.libs.event_mon as event_mon
+import infra_libs.event_mon as event_mon
 import infra_libs.logs
 
 from infra.tools.send_monitoring_event import send_event

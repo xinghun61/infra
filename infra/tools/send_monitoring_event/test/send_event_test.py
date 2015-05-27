@@ -6,7 +6,7 @@ import argparse
 import os
 import unittest
 
-from infra.libs import event_mon
+from infra_libs import event_mon
 from infra.tools.send_monitoring_event import send_event
 
 
