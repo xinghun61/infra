@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import gzip
 import os
 import unittest
 
@@ -118,6 +119,19 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(
         expected_stdio_log_url,
         buildbot.CreateStdioLogUrl(
+            master_name, builder_name, build_number, step_name))
+
+  def testCreateGtestResultPath(self):
+    master_name = 'a'
+    builder_name = 'Win7 Tests (1)'
+    build_number = 123
+    step_name = '[trigger] abc_tests'
+    expected_stdio_log_url = ('/chrome-gtest-results/buildbot/a/Win7 Tests '
+                              '(1)/123/[trigger] abc_tests.json.gz')
+
+    self.assertEqual(
+        expected_stdio_log_url,
+        buildbot.CreateGtestResultPath(
             master_name, builder_name, build_number, step_name))
 
   def testGetBuildDataFromArchiveSuccess(self):

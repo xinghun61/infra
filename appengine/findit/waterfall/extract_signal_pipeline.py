@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import cStringIO
 import logging
+import json
 
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
@@ -45,6 +47,48 @@ class ExtractSignalPipeline(BasePipeline):
     else:
       return log_data  # pragma: no cover - this won't be reached.
 
+  @staticmethod
+  def _GetReliableTestFailureLog(gtest_result):
+    """Analyze the archived gtest json results and extract reliable failures.
+
+    Args:
+      gtest_result (str): A JSON file for failed step log.
+
+    Returns:
+      A string contains the names of reliable test failures and related
+      log content.
+      If gtest_results in gtest json result is 'invalid', we will return
+      'invalid' as the result.
+      If we find out that all the test failures in this step are flaky, we will
+      return 'flaky' as result.
+    """
+    step_failure_data = json.loads(gtest_result)
+
+    if step_failure_data['gtest_results'] == 'invalid':  # pragma: no cover
+      return 'invalid'
+
+    sio = cStringIO.StringIO()
+    for iteration in step_failure_data['gtest_results']['per_iteration_data']:
+      for test_name in iteration.keys():
+        is_reliable_failure = True
+
+        for test_run in iteration[test_name]:
+          # We will ignore the test if some of the attempts were success.
+          if test_run['status'] == 'SUCCESS':
+            is_reliable_failure = False
+            break
+
+        if is_reliable_failure:  # all attempts failed
+          for test_run in iteration[test_name]:
+            sio.write("'%s': %s\n" % (test_name, test_run['output_snippet']))
+
+    failed_test_log = sio.getvalue()
+    sio.close()
+
+    if not failed_test_log:
+      return 'flaky'
+
+    return failed_test_log
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
@@ -67,44 +111,49 @@ class ExtractSignalPipeline(BasePipeline):
     for step_name in failure_info.get('failed_steps', []):
       step = WfStep.Get(master_name, builder_name, build_number, step_name)
       if step and step.log_data:
-        stdio_log = step.log_data
+        failure_log = step.log_data
       else:
-        if not lock_util.WaitUntilDownloadAllowed(
-            master_name):  # pragma: no cover
-          raise pipeline.Retry('Failed to pull stdio of step %s of master %s'
-                               % (step_name, master_name))
-
         # TODO: do test-level analysis instead of step-level.
-        try:
-          stdio_log = buildbot.GetStepStdio(
-              master_name, builder_name, build_number, step_name,
-              self.HTTP_CLIENT)
-        except ResponseTooLargeError:  # pragma: no cover.
-          logging.exception(
-              'Log of step "%s" is too large for urlfetch.', step_name)
-          # If the stdio log of a step is too large, we don't want to pull it
-          # again in next run, because that might lead to DDoS to the master.
-          # TODO: Use archived stdio logs in Google Storage instead.
-          stdio_log = 'Stdio log is too large for urlfetch.'
+        gtest_result = buildbot.GetGtestResultLog(
+              master_name, builder_name, build_number, step_name)
+        if gtest_result:
+          failure_log = self._GetReliableTestFailureLog(gtest_result)
+        if gtest_result is None or failure_log == 'invalid':
+          if not lock_util.WaitUntilDownloadAllowed(
+              master_name):  # pragma: no cover
+            raise pipeline.Retry('Failed to pull log of step %s of master %s'
+                                 % (step_name, master_name))
+          try:
+            failure_log = buildbot.GetStepStdio(
+                master_name, builder_name, build_number, step_name,
+                self.HTTP_CLIENT)
+          except ResponseTooLargeError:  # pragma: no cover.
+            logging.exception(
+                'Log of step "%s" is too large for urlfetch.', step_name)
+            # If the stdio log of a step is too large, we don't want to pull it
+            # again in next run, because that might lead to DDoS to the master.
+            # TODO: Use archived stdio logs in Google Storage instead.
+            failure_log = 'Stdio log is too large for urlfetch.'
 
-        if not stdio_log:  # pragma: no cover
-          raise pipeline.Retry('Failed to pull stdio of step %s of master %s'
-                               % (step_name, master_name))
+          if not failure_log:  # pragma: no cover
+            raise pipeline.Retry('Failed to pull stdio of step %s of master %s'
+                                 % (step_name, master_name))
 
-        # Save stdio in datastore and avoid downloading again during retry.
+        # Save step log in datastore and avoid downloading again during retry.
         if not step:  # pragma: no cover
           step = WfStep.Create(
               master_name, builder_name, build_number, step_name)
 
-        step.log_data = self._ExtractStorablePortionOfLog(stdio_log)
+        step.log_data = self._ExtractStorablePortionOfLog(failure_log)
+
         try:
           step.put()
         except Exception as e:  # pragma: no cover
-          # Sometimes, the stdio log is too large to save in datastore.
+          # Sometimes, the step log is too large to save in datastore.
           logging.exception(e)
 
       # TODO: save result in datastore?
       signals[step_name] = extractors.ExtractSignal(
-          master_name, builder_name, step_name, None, stdio_log).ToDict()
+          master_name, builder_name, step_name, None, failure_log).ToDict()
 
     return signals

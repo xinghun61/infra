@@ -28,7 +28,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     Args:
       was_aborted (bool): True if the pipeline was aborted, otherwise False.
     """
-    if was_aborted:  
+    if was_aborted:
       analysis = WfAnalysis.Get(
           self.master_name, self.builder_name, self.build_number)
       if analysis:  # In case the analysis is deleted manually.
@@ -37,7 +37,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
         analysis.put()
        
   def finalized(self):
-    self._LogUnexpectedAborting(self.was_aborted)      
+    self._LogUnexpectedAborting(self.was_aborted)
 
   def pipeline_status_path(self):
     """Returns an absolute path to look up the status of the pipeline."""

@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
@@ -78,16 +80,19 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     self.assertEqual(self.FAILURE_SIGNALS, signals)
 
+  def MockGetStdiolog(self, master_name, builder_name, build_number, step_name):
+    step_log_url = buildbot.CreateStdioLogUrl(
+        master_name, builder_name, build_number, step_name)
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(step_log_url, self.ABC_TEST_FAILURE_LOG)
+
   def testWfStepStdioLogNotDownloadedYet(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 'abc_test'
 
-    step_log_url = buildbot.CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
-    with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(step_log_url, self.ABC_TEST_FAILURE_LOG)
+    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
     pipeline.start()
@@ -95,3 +100,158 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
     self.assertIsNotNone(step)
+
+  def _GetGtestResultLog(self,
+                         master_name, builder_name, build_number, step_name):
+    file_name = os.path.join(
+        os.path.dirname(__file__), 'data',
+        '%s_%s_%d_%s.json' % (master_name,
+                              builder_name, build_number, step_name))
+    with open(file_name, 'r') as f:
+      return f.read()
+
+  def testGetTestLevelFailures(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'abc_test'
+
+    expected_failure_log = ('\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure'
+                            '\\n[2]: 2594735000 bogo-microseconds\\n\n'
+                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
+                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
+                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
+                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
+                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
+                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
+                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
+                           )
+
+    step_log = self._GetGtestResultLog(master_name,
+                                builder_name, build_number, step_name)
+
+    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)
+
+  def testGetTestLevelFailuresFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    step_name = 'abc_test'
+
+    expected_failure_log = 'flaky'
+
+    step_log = self._GetGtestResultLog(master_name,
+                                builder_name, build_number, step_name)
+
+    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)
+
+  def testGetTestLevelFailuresInvalid(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 125
+    step_name = 'abc_test'
+
+    expected_failure_log = 'invalid'
+
+    step_log = self._GetGtestResultLog(master_name,
+                                builder_name, build_number, step_name)
+
+    failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)
+
+
+
+  def MockGetGtestJsonResult(self):
+    self.mock(buildbot, 'GetGtestResultLog',self._GetGtestResultLog)
+
+  def testGetSignalFromStepLog(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'abc_test'
+
+    # Mock both stdiolog and gtest json results to test whether Findit will
+    # go to step log first when both logs exist.
+    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
+    self.MockGetGtestJsonResult()
+    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
+    signals = pipeline.run(self.FAILURE_INFO)
+
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+
+    expected_files = {
+        'a/b/u2s1.cc': [567],
+        'a/b/u3s2.cc': [110]
+    }
+
+    self.assertIsNotNone(step)
+    self.assertIsNotNone(step.log_data)
+    self.assertEqual(expected_files, signals['abc_test']['files'])
+
+  def testGetSignalFromStepLogFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    step_name = 'abc_test'
+
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 124,
+        'failed_steps': {
+            'abc_test': {
+                'last_pass': 123,
+                'current_failure': 124,
+                'first_failure': 124,
+            }
+        }
+    }
+
+    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
+    self.MockGetGtestJsonResult()
+    pipeline = ExtractSignalPipeline(failure_info)
+    signals = pipeline.run(failure_info)
+
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+
+    self.assertIsNotNone(step)
+    self.assertIsNotNone(step.log_data)
+    self.assertEqual('flaky', step.log_data)
+    self.assertEqual({}, signals['abc_test']['files'])
+
+  def testGetSignalFromStepLogInvalid(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 125
+    step_name = 'abc_test'
+
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 125,
+        'failed_steps': {
+            'abc_test': {
+                'last_pass': 124,
+                'current_failure': 125,
+                'first_failure': 125,
+            }
+        }
+    }
+
+    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
+    self.MockGetGtestJsonResult()
+
+    pipeline = ExtractSignalPipeline(failure_info)
+    signals = pipeline.run(failure_info)
+
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
+
+    expected_files = {
+        'content/common/gpu/media/v4l2_video_encode_accelerator.cc': [306]
+    }
+
+    self.assertIsNotNone(step)
+    self.assertIsNotNone(step.log_data)
+    self.assertEqual(expected_files, signals['abc_test']['files'])

@@ -2,10 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 from datetime import datetime
+import gzip
 import json
 import re
 import urllib
+
+import cloudstorage as gcs
 
 from waterfall.build_info import BuildInfo
 
@@ -97,7 +101,12 @@ def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
               master_name, builder_name, build_number, step_name)
 
 
-def GetBuildDataFromBuildMaster(master_name, 
+def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
+  return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (
+              master_name, builder_name, build_number, step_name)
+
+
+def GetBuildDataFromBuildMaster(master_name,
                                 builder_name, build_number, http_client):
   """Returns the json-format data of the build from buildbot json API."""
   status_code, data = http_client.Get(
@@ -108,7 +117,7 @@ def GetBuildDataFromBuildMaster(master_name,
     return data
 
 
-def GetBuildDataFromArchive(master_name, 
+def GetBuildDataFromArchive(master_name,
                             builder_name, build_number, http_client):
   """Returns the json-format data of the build from build archive."""
   status_code, data = http_client.Get(
@@ -128,6 +137,19 @@ def GetStepStdio(master_name, builder_name, build_number,
     return None
   else:
     return data
+
+
+def GetGtestResultLog(
+    master_name, builder_name, build_number, step_name):  # pragma: no cover
+  """Returns the content of the gtest json results for the gtest-based step."""
+  try:
+    archived_log_path = CreateGtestResultPath(
+        master_name, builder_name, build_number, step_name)
+    with contextlib.closing(gcs.open(archived_log_path)) as gtest_result_file:
+      with gzip.open(gtest_result_file) as unzipped_gtest_result_file:
+        return unzipped_gtest_result_file.read()
+  except gcs.NotFoundError:
+    return None
 
 
 def GetStepResult(step_data_json):
