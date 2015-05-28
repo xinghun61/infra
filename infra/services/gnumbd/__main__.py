@@ -11,10 +11,10 @@ import urlparse
 
 from infra.libs import git2
 from infra.libs import infra_types
-from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
 from infra.services.gnumbd import gnumbd
 from infra_libs import logs
+from infra_libs import ts_mon
 
 
 # Return value of parse_args.

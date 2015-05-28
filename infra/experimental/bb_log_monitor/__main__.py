@@ -9,7 +9,7 @@ import os
 import re
 import sys
 
-from infra.libs import ts_mon, logs
+from infra_libs import ts_mon, logs
 
 # Regex to identify build logs. e.g., "24-log-shell-stdio". Note that several
 # build logs may be compressed (extension); we'll probably want to skip these.

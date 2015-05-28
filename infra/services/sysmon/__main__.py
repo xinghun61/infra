@@ -10,8 +10,8 @@ import sys
 
 import psutil
 
-from infra.libs import ts_mon
 from infra.libs.service_utils import outer_loop
+from infra_libs import ts_mon
 from infra_libs import logs
 
 

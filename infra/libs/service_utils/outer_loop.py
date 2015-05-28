@@ -8,7 +8,7 @@ import collections
 import logging
 import time
 
-from infra.libs import ts_mon
+from infra_libs import ts_mon
 
 LOGGER = logging.getLogger(__name__)
 
