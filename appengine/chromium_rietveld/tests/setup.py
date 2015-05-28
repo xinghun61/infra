@@ -19,11 +19,7 @@ import sys
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-POSSIBLE_SDK_PATHS = [
-  "../../google_appengine",
-  "/usr/local/google_appengine",
-  ".locally/google_appengine",
-  ]
+SDK_PATH = "../../../google_appengine"
 
 
 def setup_test_env(sdk_path):
@@ -49,12 +45,7 @@ def setup_test_env(sdk_path):
 
 def process_args():
   """Scans for a path to dev_appserver in sys.argv and pops it."""
-  sdk_path = os.path.join(TESTS_DIR, '..', '..', 'google_appengine')
-  for possible_path in POSSIBLE_SDK_PATHS:
-    if os.path.exists(os.path.join(possible_path, 'dev_appserver.py')):
-      sdk_path = possible_path
-      break
-  if not os.path.exists(os.path.join(sdk_path, 'dev_appserver.py')):
+  if not os.path.exists(os.path.join(SDK_PATH, 'dev_appserver.py')):
     sys.stderr.write('Could not find google_appengine SDK path')
     sys.exit(1)
-  setup_test_env(sdk_path)
+  setup_test_env(SDK_PATH)
