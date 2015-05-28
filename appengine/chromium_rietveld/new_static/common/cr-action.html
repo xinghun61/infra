@@ -39,6 +39,8 @@ found in the LICENSE file. -->
                 }
             },
             handleClick: function(event) {
+                if (this.href != "/#" && (event.metaKey || event.ctrlKey))
+                    return;
                 event.preventDefault();
             },
         });
