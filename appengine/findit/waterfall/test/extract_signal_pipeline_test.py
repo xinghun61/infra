@@ -116,15 +116,15 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     build_number = 123
     step_name = 'abc_test'
 
-    expected_failure_log = ('\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure'
-                            '\\n[2]: 2594735000 bogo-microseconds\\n\n'
-                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
-                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
-                            '\'Unittest2.Subtest1\': a/b/u2s1.cc:567: Failure\n'
-                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
-                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
-                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
-                            '\'Unittest3.Subtest2\': a/b/u3s2.cc:110: Failure\n'
+    expected_failure_log = ('ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            '[2]: 2594735000 bogo-microseconds\n'
+                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
                            )
 
     step_log = self._GetGtestResultLog(master_name,

@@ -146,8 +146,8 @@ def GetGtestResultLog(
     archived_log_path = CreateGtestResultPath(
         master_name, builder_name, build_number, step_name)
     with contextlib.closing(gcs.open(archived_log_path)) as gtest_result_file:
-      with gzip.open(gtest_result_file) as unzipped_gtest_result_file:
-        return unzipped_gtest_result_file.read()
+      with gzip.GzipFile(fileobj=gtest_result_file) as unzipped_gtest_file:
+        return unzipped_gtest_file.read()
   except gcs.NotFoundError:
     return None
 

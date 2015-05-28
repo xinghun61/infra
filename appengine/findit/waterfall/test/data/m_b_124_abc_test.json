@@ -17,30 +17,30 @@
                         "losless_snippet": true,
                         "output_snippet": "[       OK ]",
                         "status": "SUCCESS",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                     }
                 ],
                 "Unittest1.Subtest2": [
                     {
                         "elapsed_time_ms": 66,
                         "losless_snippet": true,
-                        "output_snippet": "a/b/u1s2.cc:1234: Failure",
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
                         "status": "FAILURE",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
                     },
                     {
                         "elapsed_time_ms": 64,
                         "losless_snippet": true,
-                        "output_snippet": "a/b/u1s2.cc:1234: Failure",
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
                         "status": "FAILURE",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
                     },
                     {
                         "elapsed_time_ms": 50,
                         "losless_snippet": true,
                         "output_snippet": "[       OK ]",
                         "status": "SUCCESS",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                     }
                 ],
                 "Unittest2.Subtest1": [
@@ -49,14 +49,14 @@
                         "losless_snippet": true,
                         "output_snippet": "a/b/u2s1.cc:567: Failure\\n[2]: 2594735000 bogo-microseconds\\n",
                         "status": "FAILURE",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "YS9iL3UyczEuY2M6NTY3OiBGYWlsdXJlClsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jvc2Vjb25kcwo="
                     },
                     {
                         "elapsed_time_ms": 58,
                         "losless_snippet": true,
                         "output_snippet": "[       OK ]",
                         "status": "SUCCESS",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                     }
                 ],
                 "Unittest2.Subtest2": [
@@ -65,7 +65,7 @@
                         "losless_snippet": true,
                         "output_snippet": "[       OK ]",
                         "status": "SUCCESS",
-                        "output_snippet_base64": "WyBSVU4gICAgICBdIExheWVyQW5pbWF0aW9"
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                     }
                 ]
             }

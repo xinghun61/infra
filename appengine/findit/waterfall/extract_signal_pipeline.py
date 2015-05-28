@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import cStringIO
 import logging
 import json
@@ -80,7 +81,7 @@ class ExtractSignalPipeline(BasePipeline):
 
         if is_reliable_failure:  # all attempts failed
           for test_run in iteration[test_name]:
-            sio.write("'%s': %s\n" % (test_name, test_run['output_snippet']))
+            sio.write(base64.b64decode(test_run['output_snippet_base64']))
 
     failed_test_log = sio.getvalue()
     sio.close()
@@ -118,6 +119,7 @@ class ExtractSignalPipeline(BasePipeline):
               master_name, builder_name, build_number, step_name)
         if gtest_result:
           failure_log = self._GetReliableTestFailureLog(gtest_result)
+
         if gtest_result is None or failure_log == 'invalid':
           if not lock_util.WaitUntilDownloadAllowed(
               master_name):  # pragma: no cover
@@ -155,5 +157,4 @@ class ExtractSignalPipeline(BasePipeline):
       # TODO: save result in datastore?
       signals[step_name] = extractors.ExtractSignal(
           master_name, builder_name, step_name, None, failure_log).ToDict()
-
     return signals
