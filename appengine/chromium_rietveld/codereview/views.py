@@ -1599,6 +1599,8 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
     issue.reviewers, issue.required_reviewers = _get_emails(form, 'reviewers')
     issue.cc, _ = _get_emails(form, 'cc')
   issue.commit = False
+  # The project name might have changed when rebasing to ToT.
+  issue.project = form.cleaned_data.get('project', issue.project)
   issue.target_ref = _get_target_ref(form, issue.key, issue.project)
   issue.cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
   issue.cq_dry_run_last_triggered_by = account.email if issue.cq_dry_run else ''
@@ -3043,7 +3045,6 @@ def api_draft_message(request):
   """
   user = request.user
   patch = request.patch
-  patchset = request.patchset
   issue = request.issue
   left = (request.POST['left'] == 'true')
   text = request.POST['text']
