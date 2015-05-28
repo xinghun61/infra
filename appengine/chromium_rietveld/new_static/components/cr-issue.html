@@ -118,7 +118,6 @@ found in the LICENSE file. -->
         <cr-keyboard on-key-m="{{ handlePublishKey }}"
                      on-key-j="{{ handleNextPatchKey }}"
                      on-key-k="{{ handlePreviousPatchKey }}"
-                     on-key-enter="{{ handleToggleTargetPatchKey }}"
                      global></cr-keyboard>
     </template>
     <script>
@@ -285,11 +284,6 @@ found in the LICENSE file. -->
             },
             handlePreviousPatchKey: function(event) {
                 this.$.cursorManager.previous(event);
-            },
-            handleToggleTargetPatchKey: function(event) {
-                event.preventDefault();
-                if (this.$.cursorManager.target)
-                    this.$.cursorManager.target.toggleDiff();
             },
         });
     </script>
