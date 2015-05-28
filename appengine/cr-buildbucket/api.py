@@ -14,7 +14,6 @@ from protorpc import message_types
 from protorpc import remote
 import endpoints
 
-import acl
 import errors
 import model
 import service
@@ -118,36 +117,6 @@ def build_to_message(build, include_lease_key=False):
 
 def build_to_response_message(build, include_lease_key=False):
   return BuildResponseMessage(build=build_to_message(build, include_lease_key))
-
-
-class BucketAclMessage(messages.Message):
-  class RuleMessage(messages.Message):
-    role = messages.EnumField(acl.Role, 1, required=True)
-    group = messages.StringField(2, required=True)
-
-  rules = messages.MessageField(RuleMessage, 1, repeated=True)
-  modified_by = messages.StringField(2)
-  modified_ts = messages.IntegerField(3)
-
-
-class BucketAclResponseMessage(messages.Message):
-  acl = messages.MessageField(BucketAclMessage, 1)
-  error = messages.MessageField(ErrorMessage, 2)
-
-
-def bucket_acl_to_response_message(bucket_acl):
-  response = BucketAclResponseMessage()
-  if bucket_acl:
-    response.acl = BucketAclMessage(
-        rules=[
-            BucketAclMessage.RuleMessage(
-                role=rule.role,
-                group=rule.group,
-            ) for rule in bucket_acl.rules],
-        modified_by=bucket_acl.modified_by.to_bytes(),
-        modified_ts=utils.datetime_to_timestamp(bucket_acl.modified_time),
-    )
-  return response
 
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
@@ -547,51 +516,3 @@ class BuildBucketApi(remote.Service):
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)
     return res
-
-  #################################  GET ACL  ##################################
-
-  GET_ACL_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      message_types.VoidMessage,
-      bucket=messages.StringField(1, required=True),
-  )
-
-  @buildbucket_api_method(
-      GET_ACL_REQUEST_RESOURCE_CONTAINER, BucketAclResponseMessage,
-      path='bucket/{bucket}/acl', http_method='GET',
-      name='acl.get')
-  def get_acl(self, request):
-    """Returns bucket ACL."""
-    service.validate_bucket_name(request.bucket)
-    bucket_acl = acl.get_acl(request.bucket)
-    return bucket_acl_to_response_message(bucket_acl)
-
-  #################################  SET ACL  ##################################
-
-  class SetAclRequestBodyMessage(messages.Message):
-    rules = messages.MessageField(
-        BucketAclMessage.RuleMessage, 1, repeated=True)
-
-  SET_ACL_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
-      SetAclRequestBodyMessage,
-      bucket=messages.StringField(1, required=True),
-  )
-
-  @buildbucket_api_method(
-      SET_ACL_REQUEST_RESOURCE_CONTAINER, BucketAclResponseMessage,
-      path='bucket/{bucket}/acl', http_method='POST',
-      name='acl.set')
-  def set_acl(self, request):
-    """Sets bucket ACL."""
-    service.validate_bucket_name(request.bucket)
-    # Do not validate rules here, rely on acl.set_acl's validation.
-    bucket_acl = acl.BucketAcl(
-        rules=[
-            acl.Rule(
-                role=rule.role,
-                group=rule.group,
-            )
-            for rule in request.rules
-        ],
-    )
-    bucket_acl = acl.set_acl(request.bucket, bucket_acl)
-    return bucket_acl_to_response_message(bucket_acl)

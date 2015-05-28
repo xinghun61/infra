@@ -16,6 +16,7 @@ DISABLED_PROJECTS = [
 
     # Don't bother pylinting (these could also move to .gitignore):
     '.*/__pycache__',
+    '.+_pb2.py',
     '\.git',
     '\.wheelcache',
     'bootstrap/virtualenv',

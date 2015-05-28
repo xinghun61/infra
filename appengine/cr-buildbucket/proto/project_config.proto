@@ -1,0 +1,42 @@
+// Copyright 2015 The Swarming Authors. All rights reserved.
+// Use of this source code is governed by the Apache v2.0 license that can be
+// found in the LICENSE file.
+
+// Schemas for project configs.
+
+syntax = "proto2";
+
+package buildbucket;
+
+// A single access control rule.
+message Acl {
+  enum Role {
+    // Can do read-only operations, such as search for builds.
+    READER = 0;
+    // Same as READER + can schedule and cancel builds.
+    SCHEDULER = 1;
+    // Can do all write operations.
+    WRITER = 2;
+  }
+  // Role denotes a list of actions that an identity can perform.
+  optional Role role = 1;
+  // Name of the group defined in the auth service.
+  optional string group = 2;
+}
+
+
+// Defines one bucket in buildbucket.cfg
+message Bucket {
+  // Name of the bucket. Names are unique within one instance of buildbucket.
+  // If another project already uses this name, a config will be rejected.
+  // Name reservation is first-come first-serve.
+  optional string name = 1;
+  // List of access control rules for the bucket.
+  repeated Acl acls = 2;
+}
+
+// Schema of buildbucket.cfg file, a project config.
+message BuildbucketCfg {
+  // All buckets defined for this project.
+  repeated Bucket buckets = 1;
+}

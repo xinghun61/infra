@@ -5,6 +5,7 @@
 from components import decorators
 import webapp2
 
+import config
 import metrics
 import service
 
@@ -25,6 +26,13 @@ class CronSendMetrics(webapp2.RequestHandler):  # pragma: no cover
   @decorators.require_cronjob
   def get(self):
     metrics.send_all_metrics()
+
+
+class CronUpdateBuckets(webapp2.RequestHandler):  # pragma: no cover
+  """Updates buckets from configs."""
+  @decorators.require_cronjob
+  def get(self):
+    config.cron_update_buckets()
 
 
 class BuildHandler(webapp2.RequestHandler):  # pragma: no cover
@@ -48,4 +56,7 @@ def get_backend_routes():
       webapp2.Route(
           r'/internal/cron/buildbucket/send_metrics',
           CronSendMetrics),
+      webapp2.Route(
+          r'/internal/cron/buildbucket/update_buckets',
+          CronUpdateBuckets),
   ]

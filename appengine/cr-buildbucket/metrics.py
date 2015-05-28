@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 
 from components import metrics
 
-import acl
+import config
 import model
 
 
@@ -38,21 +38,15 @@ def send_build_status_metric(buf, bucket, metric, status):
   buf.set_gauge(metric, value, {LABEL_BUCKET: bucket})
 
 
-def iter_all_buckets():
-  keys = acl.BucketAcl.query().iter(keys_only=True)
-  for key in keys:
-    yield key.id()
-
-
 def send_all_metrics():
   buf = metrics.Buffer()
   futures = []
-  for b in iter_all_buckets():
+  for b in config.get_buckets():
     futures.extend([
         send_build_status_metric(
-            buf, b, METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED),
+            buf, b.name, METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED),
         send_build_status_metric(
-            buf, b, METRIC_RUNNING_BUILDS, model.BuildStatus.STARTED),
+            buf, b.name, METRIC_RUNNING_BUILDS, model.BuildStatus.STARTED),
     ])
   ndb.Future.wait_all(futures)
   buf.flush()

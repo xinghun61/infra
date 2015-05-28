@@ -6,10 +6,13 @@ import os
 import sys
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(APP_DIR, 'third_party'))
+import google
+google.__path__.insert(
+    0, os.path.join(APP_DIR, 'components', 'third_party', 'protobuf', 'google'))
 
-from components import utils
+from components import config
 from components import ereporter2
+from components import utils
 import endpoints
 import webapp2
 
@@ -25,7 +28,7 @@ def create_html_app():  # pragma: no cover
 
 def create_endpoints_app():  # pragma: no cover
   """Returns WSGI app that serves cloud endpoints requests."""
-  return endpoints.api_server([api.BuildBucketApi])
+  return endpoints.api_server([api.BuildBucketApi, config.ConfigApi])
 
 
 def create_backend_app():  # pragma: no cover

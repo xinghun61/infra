@@ -17,17 +17,13 @@ from components import utils
 from testing_utils import testing
 
 
-from test import acl_test
-import acl
+from proto import project_config_pb2
+import config
 import metrics
 import model
 
 
 class MerticsTest(testing.AppengineTestCase):
-  def setUp(self):
-    super(MerticsTest, self).setUp()
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
-
   def test_send_build_status_metric(self):
     buf = mock.Mock()
 
@@ -49,12 +45,10 @@ class MerticsTest(testing.AppengineTestCase):
     buf = mock.Mock()
     self.mock(metrics_component, 'Buffer', lambda: buf)
 
-    acl.BucketAcl(
-        id='x',
-        rules=[],
-        modified_by=auth.Identity('user', 'x@x.x'),
-        modified_time=utils.utcnow(),
-    ).put()
+    self.mock(config, 'get_buckets', mock.Mock())
+    config.get_buckets.return_value = [
+      project_config_pb2.Bucket(name='x')
+    ]
     self.mock(metrics, 'send_build_status_metric', mock.Mock())
 
     metrics.send_all_metrics()

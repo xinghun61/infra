@@ -127,7 +127,7 @@ class BuildBucketService(object):
 
     ctx = ndb.get_context()
     identity = auth.get_current_identity()
-    if not acl.can_add_build(bucket, identity):
+    if not acl.can_add_build(bucket):
       raise current_identity_cannot('add builds to bucket %s', bucket)
 
     if client_operation_id is not None:
@@ -172,8 +172,7 @@ class BuildBucketService(object):
     build = model.Build.get_by_id(build_id)
     if not build:
       return None
-    identity = auth.get_current_identity()
-    if not acl.can_view_build(build, identity):
+    if not acl.can_view_build(build):
       raise current_identity_cannot('view build %s', build.key.id())
     return build
 
@@ -211,9 +210,8 @@ class BuildBucketService(object):
     for bucket in buckets:
       validate_bucket_name(bucket)
 
-    identity = auth.get_current_identity()
     for bucket in buckets:
-      if not acl.can_search_builds(bucket, identity):
+      if not acl.can_search_builds(bucket):
         raise current_identity_cannot('search builds in bucket %s', bucket)
 
   def search(
@@ -336,8 +334,7 @@ class BuildBucketService(object):
     build = model.Build.get_by_id(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    identity = auth.get_current_identity()
-    if not acl.can_lease_build(build, identity):
+    if not acl.can_lease_build(build):
       raise current_identity_cannot('lease build %s', build.key.id())
     return build
 
@@ -362,8 +359,6 @@ class BuildBucketService(object):
     if lease_expiration_date is None:
       lease_expiration_date = utils.utcnow() + DEFAULT_LEASE_DURATION
 
-    identity = auth.get_current_identity()
-
     @ndb.transactional
     def try_lease():
       build = self._get_leasable_build(build_id)
@@ -373,7 +368,7 @@ class BuildBucketService(object):
 
       build.lease_expiration_date = lease_expiration_date
       build.regenerate_lease_key()
-      build.leasee = identity
+      build.leasee = auth.get_current_identity()
       build.put()
       logging.info(
           'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
@@ -608,8 +603,7 @@ class BuildBucketService(object):
     build = model.Build.get_by_id(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    identity = auth.get_current_identity()
-    if not acl.can_cancel_build(build, identity):
+    if not acl.can_cancel_build(build):
       raise current_identity_cannot('cancel build %s', build.key.id())
     if build.status == model.BuildStatus.COMPLETED:
       if build.result == model.BuildResult.CANCELED:
@@ -622,7 +616,8 @@ class BuildBucketService(object):
     self._clear_lease(build)
     build.put()
     logging.info(
-        'Build %s was cancelled by %s', build.key.id(), identity.to_bytes())
+        'Build %s was cancelled by %s', build.key.id(),
+        auth.get_current_identity().to_bytes())
     return build
 
   @ndb.transactional_tasklet
