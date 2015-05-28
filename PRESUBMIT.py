@@ -32,6 +32,11 @@ DISABLED_PROJECTS = [
     'bootstrap/virtualenv',
 ]
 
+# List of directories to jshint.
+JSHINT_PROJECTS = [
+  'appengine/milo',
+]
+
 
 # Forked from depot_tools/presubmit_canned_checks._FetchAllFiles
 def FetchAllFiles(input_api, white_list, black_list):
@@ -265,8 +270,44 @@ def PylintChecks(input_api, output_api):  # pragma: no cover
   return tests
 
 
+def GetAffectedJsFiles(input_api, include_deletes=False):
+  """Returns a list of absolute paths to modified *.js files."""
+  infra_root = input_api.PresubmitLocalPath()
+  whitelisted_paths = [
+      input_api.os_path.join(infra_root, project)
+      for project in JSHINT_PROJECTS]
+
+  def keep_whitelisted_files(affected_file):
+    return any([
+        affected_file.AbsoluteLocalPath().startswith(path)
+        for path in whitelisted_paths
+    ])
+  return sorted(
+      f.AbsoluteLocalPath()
+      for f in input_api.AffectedFiles(
+          include_deletes=include_deletes, file_filter=keep_whitelisted_files)
+      if f.AbsoluteLocalPath().endswith('.js'))
+
+
+def JshintChecks(input_api, output_api):  # pragma: no cover
+  """Runs Jshint on all .js files under appengine/."""
+  infra_root = input_api.PresubmitLocalPath()
+  node_jshint_path = input_api.os_path.join(infra_root, 'node', 'jshint.py')
+
+  tests = []
+  for js_file in GetAffectedJsFiles(input_api):
+    cmd = [input_api.python_executable, node_jshint_path, js_file]
+    tests.append(input_api.Command(
+        name='Jshint %s' % js_file,
+        cmd=cmd,
+        kwargs={},
+        message=output_api.PresubmitError))
+  return tests
+
+
 def CommonChecks(input_api, output_api):  # pragma: no cover
   output = input_api.RunTests(PylintChecks(input_api, output_api))
+  output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
   return output
 
