@@ -240,7 +240,7 @@ class AlertsHistory(webapp2.RequestHandler):
       key = int(key)
     except ValueError:
       self.response.set_status(400, 'Invalid key format')
-      return {}
+      self.abort(400)
 
     ndb_key = ndb.Key(AlertsJSON, key)
     result = query.filter(AlertsJSON.key == ndb_key).get()
@@ -250,7 +250,7 @@ class AlertsHistory(webapp2.RequestHandler):
       return data
     else:
       self.response.set_status(404, 'Failed to find key %s' % key)
-      return {}
+      self.abort(404)
 
   def get_list(self, query):
     cursor = self.request.get('cursor')
