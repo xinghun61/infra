@@ -58,7 +58,6 @@ Here's a simple file containing all of the required fields::
     "master_base_class": "Master1",
     "master_port": 20100,
     "master_port_alt": 40100,
-    "master_type": "waterfall",
     "slave_pools": {
       "linux_precise": {
         "slave_data": {
@@ -84,40 +83,30 @@ builders
   respective configurations; those configurations are described in
   the per-builder keys section, below.
 
-master_type
-  This key is *required* and must contain one of two values: "waterfall"
-  or "tryserver". A waterfall buildbot typically polls a single
-  source repository looking for changes, and runs builds on every change.
-  A tryserver buildbot typically polls a code review tool looking
-  for new (unlanded) changes to test.
-
-  If the value is "waterfall", the top-level dict must set the "git_repo_url"
-  key.
-
-  If the value is "tryserver", the top-level dict must set the 
-  "buildbucket_bucket" and "service_account_file" keys.
-
 buildbucket_bucket
-  This key is *required* if the master_type key is set to "tryserver", and
-  must not be present otherwise.
+  This key is *optional* but must be present if the builders on the
+  master are intended to be scheduled through buildbucket (i.e., they
+  are tryservers or triggered from other builders, possibly on other masters).
 
-  It should contain the string value of the `buildbucket bucket`_ created
-  for this buildbot.
+  If set, it should contain the string value of the `buildbucket bucket`_
+  created for this buildbot. If it is not set, it defaults to `None`.
+  By convention, buckets are named to match the master name, e.g.
+  "master.tryserver.nacl".
 
 git_repo_url
-  This key is *required* if the master_type key has the value "waterfall",
-  and must not be present otherwise.
-  
-  It should contain a string value that is the URL for a repo
-  to be cloned and polled for changes.
+  This key is *optional*. If it is not set, the builders on the waterfall
+  will only be triggerable by buildbucket (or directly).
+
+  It should contain a string value that is the URL for a repo to be cloned and
+  polled for changes.
 
 master_base_class
   This key is *required*. It should specify the name of the Python
   class of the buildbot master that this master is based on. This is 
   usually one of the classes defined in build/site_config/config_bootstrap.py.
-  
-  For example, if you were setting up a new master in the -m1 VLAN, you would be
-  subclassing Master.Master1, so this value would be 'Master1'.
+
+  For example, if you were setting up a new master in the -m1 VLAN, you would
+  be subclassing Master.Master1, so this value would be 'Master1'.
 
 master_port
   This key is *required*. It is the main IP port that the buildbot
@@ -130,12 +119,15 @@ master_port_alt
   from the admins.
 
 service_account_file
-  This key is *required* if the master_type key has the value "tryserver",
-  and must not be present otherwise.
+  This key is *optional* but must be present if the builders on the
+  master are intended to be scheduled through buildbucket (i.e., they
+  are tryservers or triggered from other bots).
 
-  It should point to a file under "/creds/service_accounts" on the slave
-  machine, and contain the `OAuth service account info`_
-  the slave will use to connect to buildbucket.
+  If set, it should point to the filename in the credentials directory on the
+  slave machine (i.e., just the basename + extension, no directory part), that
+  contains the `OAuth service account info`_ the slave will use to connect to
+  buildbucket. By convention, the value is "service-account-<project>.json".
+  If not set, it defaults to `None`.
 
 slave_pools
   This key is *required* and must contain a dict of pool names and
