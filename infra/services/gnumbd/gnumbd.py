@@ -17,8 +17,8 @@ import time
 
 from infra.libs import git2
 from infra.libs.git2 import data
-from infra.libs import infra_types
 from infra.libs.git2 import config_ref
+from infra_libs import infra_types
 
 
 LOGGER = logging.getLogger(__name__)

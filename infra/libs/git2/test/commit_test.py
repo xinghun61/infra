@@ -4,10 +4,10 @@
 
 import collections
 
-from infra.libs.infra_types import freeze
-
 from infra.libs import git2
 from infra.libs.git2.test import test_util
+
+from infra_libs.infra_types import freeze
 
 
 class TestCommit(test_util.TestBasis):

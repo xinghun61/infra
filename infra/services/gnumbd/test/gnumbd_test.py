@@ -11,11 +11,11 @@ from cStringIO import StringIO
 
 import expect_tests
 
-from infra.libs import infra_types
 from infra.libs.git2.testing_support import TestClock
 from infra.libs.git2.testing_support import TestRepo
 from infra.services.gnumbd import gnumbd
 from infra.services.gnumbd.test import gnumbd_test_definitions
+from infra_libs import infra_types
 
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))

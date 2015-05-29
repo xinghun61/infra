@@ -9,9 +9,8 @@ import re
 from cStringIO import StringIO
 
 from infra.libs.decorators import cached_property
-from infra.libs.infra_types import freeze
-
 from infra.libs.git2.data.data import Alterable
+from infra_libs.infra_types import freeze
 
 LOGGER = logging.getLogger(__name__)
 

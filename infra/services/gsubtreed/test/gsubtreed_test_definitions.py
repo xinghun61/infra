@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 from infra.libs.git2 import repo
 from infra.libs.git2.testing_support import GitEntry
-from infra.libs.infra_types import thaw
+from infra_libs.infra_types import thaw
 
 GSUBTREED_TESTS = {}
 def test(f):
