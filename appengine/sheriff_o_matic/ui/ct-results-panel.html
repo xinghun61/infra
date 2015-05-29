@@ -74,7 +74,7 @@ found in the LICENSE file.
       </template>
       <div class="results" layout vertical>
         <template if="{{ group.data.failures[selected].testName }}">
-          <ct-embedded-flakiness-dashboard flex test="{{ group.data.failures[selected] }}"></ct-embedded-flakiness-dashboard>
+          <ct-embedded-flakiness-dashboard flex layout vertical test="{{ group.data.failures[selected] }}"></ct-embedded-flakiness-dashboard>
         </template>
         <ct-results-by-builder flex layout vertical failure="{{ group.data.failures[selected] }}"></ct-results-by-builder>
         <ct-commit-list commitList="{{ group.data.commitList }}" detailed="true"></ct-commit-list>
