@@ -8,10 +8,11 @@ from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall.base_pipeline import BasePipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
+from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
-  
+
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
@@ -21,10 +22,10 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
-  
+
   def _LogUnexpectedAborting(self, was_aborted):
     """Marks the WfAnalysis status as error, indicating that it was aborted.
-       
+
     Args:
       was_aborted (bool): True if the pipeline was aborted, otherwise False.
     """
@@ -35,7 +36,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
         analysis.status = wf_analysis_status.ERROR
         analysis.result_status = None
         analysis.put()
-       
+
   def finalized(self):
     self._LogUnexpectedAborting(self.was_aborted)
 
@@ -61,5 +62,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     failure_info = yield DetectFirstFailurePipeline(
         master_name, builder_name, build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
+    deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
     signals = yield ExtractSignalPipeline(failure_info)
-    yield IdentifyCulpritPipeline(failure_info, change_logs, signals)
+    yield IdentifyCulpritPipeline(
+        failure_info, change_logs, deps_info, signals)

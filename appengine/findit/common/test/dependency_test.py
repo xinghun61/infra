@@ -5,6 +5,7 @@
 import unittest
 
 from common.dependency import Dependency
+from common.dependency import DependencyRoll
 
 
 class DependencyTest(unittest.TestCase):
@@ -24,7 +25,7 @@ class DependencyTest(unittest.TestCase):
         'a/', 'https://cr.googlesource.com/cr/a.git', '12a', 'DEPS')
     sub_dep = Dependency(
         'a/b/', 'https://cr.googlesource.com/cr/b.git', '12b', 'DEPS')
-    expected_dep_tree_json = {
+    expected_dep_tree_dict = {
         'path': 'a/',
         'repo_url': 'https://cr.googlesource.com/cr/a.git',
         'revision': '12a',
@@ -42,4 +43,19 @@ class DependencyTest(unittest.TestCase):
     }
 
     sub_dep.SetParent(root_dep)
-    self.assertEqual(expected_dep_tree_json, root_dep.ToDict())
+    self.assertEqual(expected_dep_tree_dict, root_dep.ToDict())
+
+
+class DependencyRollTest(unittest.TestCase):
+  def testToDict(self):
+    dep_roll = DependencyRoll(
+        'third_party/dep/', 'https://cr.googlesource.com/cr/dep.git',
+        'rev1', 'rev2')
+    expected_dep_roll_dict = {
+        'path': 'third_party/dep/',
+        'repo_url': 'https://cr.googlesource.com/cr/dep.git',
+        'old_revision': 'rev1',
+        'new_revision': 'rev2',
+    }
+
+    self.assertEqual(expected_dep_roll_dict, dep_roll.ToDict())

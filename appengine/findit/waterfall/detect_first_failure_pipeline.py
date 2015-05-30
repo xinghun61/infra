@@ -53,7 +53,7 @@ class DetectFirstFailurePipeline(BasePipeline):
             master_name):  # pragma: no cover
           raise pipeline.Retry('Too many download from %s' % master_name)
 
-        # Retrieve build data from build master. 
+        # Retrieve build data from build master.
         build.data = buildbot.GetBuildDataFromBuildMaster(
             build.master_name, build.builder_name, build.build_number,
             self.HTTP_CLIENT)
@@ -236,6 +236,7 @@ class DetectFirstFailurePipeline(BasePipeline):
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
+        'chromium_revision': build_info.chromium_revision,
         'builds': {},
         'failed_steps': [],
     }

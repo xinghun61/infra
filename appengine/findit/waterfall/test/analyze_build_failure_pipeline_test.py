@@ -7,6 +7,7 @@ import os
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
+from common import chromium_deps
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall import buildbot
@@ -16,7 +17,7 @@ from waterfall import lock_util
 
 class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
   app_module = handlers._APP
-  
+
   def _MockChangeLog(
       self, urlfetch, user_name, revision, commit_position, file_path):
     url = ('https://chromium.googlesource.com/chromium/src/+/%s?format=json'
@@ -59,15 +60,15 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
         'COMMIT_POSITION', str(commit_position)).replace('FILE_PATH', file_path)
     urlfetch.register_handler(url, commit_log)
 
-  def _Setup(self, master_name, builder_name, build_number):    
+  def _Setup(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = wf_analysis_status.ANALYZING
     analysis.put()
 
-    def _WaitUntilDownloadAllowed(*_):
+    def MockWaitUntilDownloadAllowed(*_):
       return True
-
-    self.mock(lock_util, 'WaitUntilDownloadAllowed', _WaitUntilDownloadAllowed)
+    self.mock(
+        lock_util, 'WaitUntilDownloadAllowed', MockWaitUntilDownloadAllowed)
 
     with self.mock_urlfetch() as urlfetch:
       # Mock build data.
@@ -89,6 +90,10 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
       self._MockChangeLog(
           urlfetch, 'user1', '64c72819e898e952103b63eabc12772f9640af07',
           8887, 'd/e/y.cc')
+
+    def MockGetChromeDependency(*_):
+      return {}
+    self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
 
   def testBuildFailurePipeline(self):
     master_name = 'm'
@@ -140,8 +145,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     self._Setup(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
-                                                builder_name, 
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
+                                                builder_name,
                                                 build_number)
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -156,8 +161,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     self._Setup(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
-                                                builder_name, 
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
+                                                builder_name,
                                                 build_number)
     root_pipeline._LogUnexpectedAborting(True)
 
@@ -171,8 +176,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 124
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
-                                                builder_name, 
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
+                                                builder_name,
                                                 build_number)
     root_pipeline._LogUnexpectedAborting(True)
 
@@ -186,8 +191,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
     self._Setup(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, 
-                                                builder_name, 
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name,
+                                                builder_name,
                                                 build_number)
     root_pipeline._LogUnexpectedAborting(False)
 

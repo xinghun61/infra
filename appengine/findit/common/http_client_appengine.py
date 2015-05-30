@@ -17,7 +17,6 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     result = urlfetch.fetch(url, deadline=timeout, validate_certificate=True)
 
     if result.status_code != 200:
-      logging.error('Request to %s failed with code=%d: %s',
-                    url, result.status_code, result.content)
+      logging.error('Request to %s resulted in %d', url, result.status_code)
 
     return result.status_code, result.content

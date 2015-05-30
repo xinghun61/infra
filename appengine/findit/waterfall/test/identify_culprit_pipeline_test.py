@@ -213,6 +213,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
       'build_number': build_number,
     }
     change_logs = {}
+    deps_info = {}
     signals = {}
 
     dummy_result = {'failures': []}
@@ -224,7 +225,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
               'AnalyzeBuildFailure', MockAnalyzeBuildFailure)
 
     pipeline = identify_culprit_pipeline.IdentifyCulpritPipeline(
-        failure_info, change_logs, signals)
+        failure_info, change_logs, deps_info, signals)
     pipeline.start()
     self.execute_queued_tasks()
 

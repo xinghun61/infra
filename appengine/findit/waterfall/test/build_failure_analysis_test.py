@@ -73,6 +73,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         }
     }
     change_log_json = {
+        'revision': 'rev',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -111,11 +112,12 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             },
         ]
     }
+    deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json)
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
-    # The score is 14 because:
+    # The score is 15 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
     # +1 added d/e/a2.cc (related file a2_test.cc in failure_signal log)
     # +1 modified b/c/f2.h (related file a/b/c/f2.cc in failure_signal log)
@@ -132,6 +134,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         }
     }
     change_log_json = {
+        'revision': 'rev',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -140,17 +143,60 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             },
         ]
     }
+    deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json)
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNone(justification)
+
+  def testCheckFilesAgainstDEPSRoll(self):
+    failure_signal_json = {
+        'files': {
+            'src/third_party/dep1/f.cc': [123],
+        }
+    }
+    change_log_json = {
+        'revision': 'rev',
+        'touched_files': [
+            {
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'DEPS',
+                'new_path': 'DEPS'
+            },
+        ]
+    }
+    deps_info = {
+        'deps_rolls': {
+            'rev': [
+                {
+                    'path': 'src/third_party/dep1/',
+                    'repo_url': 'https://url_dep1',
+                    'old_revision': '7',
+                    'new_revision': '9',
+                },
+                {
+                    'path': 'third_party/dep2',
+                    'repo_url': 'https://url_dep2',
+                    'old_revision': None,
+                    'new_revision': '1',
+                },
+            ]
+        }
+    }
+
+    justification = build_failure_analysis._CheckFiles(
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+    self.assertIsNotNone(justification)
+    # The score is 2 because:
+    # +2 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
+    self.assertEqual(2, justification['score'])
 
   def testAnalyzeSuccessfulBuild(self):
     failure_info = {
         'failed': False,
     }
     result = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, None, None)
+        failure_info, change_logs=None, deps_info=None, failure_signals=None)
     self.assertEqual(0, len(result['failures']))
 
   def testAnalyzeBuildFailure(self):
@@ -239,6 +285,7 @@ class BuildFailureAnalysisTest(unittest.TestCase):
             ],
         },
     }
+    deps_info = {}
     failure_signals_json = {
         'a': {
           'files': {
@@ -293,5 +340,5 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
 
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, failure_signals_json)
+        failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)

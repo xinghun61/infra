@@ -2,10 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 
 class Dependency(object):
-  """Represent a dependency in Chrome, like blink, v8, pdfium, etc."""
-  def __init__(self, path, repo_url, revision, deps_file):
+  """Represents a dependency in Chrome, like blink, v8, pdfium, etc."""
+  def __init__(self, path, repo_url, revision, deps_file='DEPS'):
     self.path = path
     self.repo_url = repo_url
     self.revision = revision
@@ -32,3 +33,15 @@ class Dependency(object):
         'deps_file': self.deps_file,
         'children': children_dict,
     }
+
+
+class DependencyRoll(collections.namedtuple(
+    'DependencyRoll', ('path', 'repo_url', 'old_revision', 'new_revision'))):
+  """Represents a dependency roll (revision update) in chromium.
+
+  Note: It is possible that the DEPS roll is a revert so that |new_revision| is
+  actually older than |old_revision| in the dependency.
+  """
+
+  def ToDict(self):
+    return self._asdict()

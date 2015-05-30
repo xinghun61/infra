@@ -107,3 +107,42 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     dependency_dict = chromium_deps.GetChromeDependency(
         src_revision, os_platform)
     self.assertEqual(expected_dependency_dict, dependency_dict)
+
+  def testGetChromiumDEPSRolls(self):
+    def MockGetChromeDependency(revision, os_platform):
+      self.assertEqual('unix', os_platform)
+      if revision == 'rev2':
+        return {
+            'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
+            'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
+            'src/dep3': Dependency('src/dep3', 'https://url_dep3', '1', 'DEPS'),
+        }
+      else:
+        self.assertEqual('rev1', revision)
+        return {
+            'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
+            'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
+        }
+
+    self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
+
+    expected_deps_rolls = [
+        {
+            'path': 'src/dep1',
+            'repo_url': 'https://url_dep1',
+            'old_revision': '7',
+            'new_revision': '9',
+        },
+        {
+            'path': 'src/dep3',
+            'repo_url': 'https://url_dep3',
+            'old_revision': None,
+            'new_revision': '1',
+        },
+    ]
+
+    deps_rolls = chromium_deps.GetChromiumDEPSRolls('rev1', 'rev2', 'unix')
+    self.assertEqual(expected_deps_rolls,
+                     [roll.ToDict() for roll in deps_rolls])

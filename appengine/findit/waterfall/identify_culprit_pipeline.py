@@ -23,7 +23,7 @@ def _GetResultAnalysisStatus(analysis_result):
     return None
 
   for failure in analysis_result['failures']:
-    if failure['suspected_cls']: 
+    if failure['suspected_cls']:
       return wf_analysis_result_status.FOUND_UNTRIAGED
 
   return wf_analysis_result_status.NOT_FOUND_UNTRIAGED
@@ -52,7 +52,7 @@ class IdentifyCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a build failure."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info, change_logs, signals):
+  def run(self, failure_info, change_logs, deps_info, signals):
     """
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
@@ -68,7 +68,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     build_number = failure_info['build_number']
 
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, signals)
+        failure_info, change_logs, deps_info, signals)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.result = analysis_result
     analysis.status = wf_analysis_status.ANALYZED

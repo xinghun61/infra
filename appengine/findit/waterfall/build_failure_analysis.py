@@ -159,6 +159,15 @@ class _Justification(object):
     self._hints[hint] += score
     self._score += score
 
+  def AddDEPSRoll(self, dep_path, dep_repo_url, dep_new_revision,
+                  dep_old_revision, file_path_in_log, score):
+    url_to_changes_in_roll = '%s/+log/%s..%s?pretty=fuller' % (
+        dep_repo_url, dep_old_revision[:12], dep_new_revision[:12])
+    hint = ('Rolled %s with changes %s (and %s was in log)' % (
+        dep_path, url_to_changes_in_roll, file_path_in_log))
+    self._hints[hint] = score
+    self._score += score
+
   def ToDict(self):
     return {
         'score': self._score,
@@ -234,13 +243,15 @@ def _CheckFile(touched_file,
                                   score,
                                   file_name_occurrences.get(file_name))
 
-def _CheckFiles(failure_signal, change_log):
+
+def _CheckFiles(failure_signal, change_log, deps_info):
   """Check files in the given change log of a CL against the failure signal.
 
   Args:
     failure_signal (FailureSignal): The failure signal of a failed step or test.
     change_log (dict): The change log of a CL as returned by
         common.change_log.ChangeLog.ToDict().
+    deps_info (dict): Output of pipeline ExtractDEPSInfoPipeline.
 
   Returns:
     A dict as returned by _Justification.ToDict() if the CL is suspected for the
@@ -262,13 +273,20 @@ def _CheckFiles(failure_signal, change_log):
   justification = _Justification()
 
   for file_path_in_log, _ in failure_signal.files.iteritems():
-    # TODO(stgao): remove this hack when DEPS parsing is supported.
-    if file_path_in_log.startswith('src/'):
-      file_path_in_log = file_path_in_log[4:]
+    # Strip src/ from file path to make all files relative to the chromium root
+    # directory.
+    file_path_in_log = file_path_in_log.lstrip('src/')
 
     for touched_file in change_log['touched_files']:
       _CheckFile(
           touched_file, file_path_in_log, justification, file_name_occurrences)
+
+    for roll in deps_info.get('deps_rolls', {}).get(change_log['revision'], []):
+      dep_path = roll['path'].lstrip('src/')
+      if file_path_in_log.startswith(dep_path):
+        justification.AddDEPSRoll(
+            dep_path, roll['repo_url'], roll['new_revision'],
+            roll['old_revision'], file_path_in_log[len(dep_path):], 2)
 
   if not justification.score:
     return None
@@ -276,12 +294,14 @@ def _CheckFiles(failure_signal, change_log):
     return justification.ToDict()
 
 
-def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
+def AnalyzeBuildFailure(
+    failure_info, change_logs, deps_info, failure_signals):
   """Analyze the given failure signals, and figure out culprit CLs.
 
   Args:
     failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
     change_logs (dict): Output of pipeline PullChangelogPipeline.
+    deps_info (dict): Output of pipeline ExtractDEPSInfoPipeline.
     failure_signals (dict): Output of pipeline ExtractSignalPipeline.
 
   Returns:
@@ -355,7 +375,8 @@ def AnalyzeBuildFailure(failure_info, change_logs, failure_signals):
 
     while build_number <= failed_build_number:
       for revision in builds[str(build_number)]['blame_list']:
-        justification_dict = _CheckFiles(failure_signal, change_logs[revision])
+        justification_dict = _CheckFiles(
+            failure_signal, change_logs[revision], deps_info)
 
         if not justification_dict:
           continue
