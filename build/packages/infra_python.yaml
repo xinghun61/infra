@@ -23,6 +23,11 @@ data:
       - path_hacks
       - tools/docgen
 
+  # Base infra libraries, required by infra
+  - dir: "infra_libs"
+    exclude:
+      - .*\.pyc
+
   # Launcher with dependencies, knows how to boot venv.
   - file: run.py
   - file: test.py
