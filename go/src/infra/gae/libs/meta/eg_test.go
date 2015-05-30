@@ -19,7 +19,7 @@ func TestGetEntityGroupVersion(t *testing.T) {
 	t.Parallel()
 
 	Convey("GetEntityGroupVersion", t, func() {
-		c := memory.Use(memory.Enable(context.Background()))
+		c := memory.Use(context.Background())
 		ds := wrapper.GetDS(c)
 
 		type A struct {
