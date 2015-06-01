@@ -383,6 +383,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
           'patchset-duration-wallclock': 1234.56,
           'patchset-duration': 999.99,
           'failed-jobs-details': {'tester': 2},
+          'tryjob-retries': 0,
           'supported': supported,
       }
       return patch_id, stats
@@ -444,7 +445,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
   def test_derive_patch_stats(self):
     time_obj = {'time': 1415150492.4}
-    def attempt(message, commit=False, supported=True, reason=''):
+    def attempt(message, commit=False, supported=True, reason='', retry=False):
       time_obj['time'] += 1.37  # Trick python to use global var.
       entries = []
       entries.append({'fields': {'action': 'patch_start'},
@@ -452,6 +453,10 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       time_obj['time'] += 1.37
       if not supported:
         entries.append({'fields': {'action': 'verifier_custom_trybots'},
+                        'timestamp': time_obj['time']})
+      time_obj['time'] += 1.37
+      if retry:
+        entries.append({'fields': {'action': 'verifier_retry'},
                         'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       if commit:
@@ -475,6 +480,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         attempt('Failed to apply patch'),
         attempt('Presubmit check'),
         attempt('Custom trybots', supported=False),
+        attempt('Retrying', retry=True),
         attempt('CLs for remote refs other than refs/heads/master'),
         attempt('Try jobs failed:\n test_dbg', reason='simple try job'),
         attempt('Try jobs failed:\n chromium_presubmit'),

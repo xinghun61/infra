@@ -442,6 +442,7 @@ def default_stats():
       'patchset-committed-durations': derive_list_stats([0]),
       'patchset-attempts': derive_list_stats([0]),
       'patchset-committed-attempts': derive_list_stats([0]),
+      'patchset-committed-tryjob-retries': derive_list_stats([0]),
       'jobs': {},
       'tree': {'open': 0.0, 'total': 0.0},
       'usage': {},
@@ -587,6 +588,9 @@ def _derive_stats_from_patch_stats(stats):
   stats['patchset-committed-attempts'] = derive_list_stats([
       patch_stats[p]['attempts'] for p in patch_stats
       if patch_stats[p]['committed']])
+  stats['patchset-committed-tryjob-retries'] = derive_list_stats([
+      patch_stats[p]['tryjob-retries'] for p in patch_stats
+      if patch_stats[p]['committed']])
 
 
 def derive_stats(args, begin_date, init_stats=None):
@@ -688,6 +692,7 @@ def derive_patch_stats(begin_date, end_date, patch_id):
         'actions': [],
         'committed': False,
         'reason': {},
+        'tryjob-retries': 0,
         'supported': True,
     }
     for reason in REASONS:
@@ -778,6 +783,8 @@ def derive_patch_stats(begin_date, end_date, patch_id):
         attempt['failed-jobs'] = failed_jobs
     if action == 'verifier_custom_trybots':
       attempt['supported'] = False
+    if action == 'verifier_retry':
+      attempt['tryjob-retries'] += 1
 
   stats = {}
   committed_set = set(a['id'] for a in attempts if a['committed'])
@@ -811,6 +818,7 @@ def derive_patch_stats(begin_date, end_date, patch_id):
         attempts[-1]['end'] - attempts[0]['begin'])
   else:
     stats['patchset-duration-wallclock'] = 0.0
+  stats['tryjob-retries'] = sum(a['tryjob-retries'] for a in attempts)
   return patch_id, stats
 
 
@@ -1111,9 +1119,10 @@ def print_stats(args, stats):
   output()
   output('Patches which eventually land percentiles:')
   for p in ['10', '25', '50', '75', '90', '95', '99']:
-    output('%s: %4.1f hrs, %2d attempts',
+    output('%s: %4.1f hrs, %2d attempts, %2d tryjob retries',
            p, stats['patchset-committed-durations'][p] / 3600.0,
-           stats['patchset-committed-attempts'][p])
+           stats['patchset-committed-attempts'][p],
+           stats['patchset-committed-tryjob-retries'][p])
 
   output()
   output('Slowest CLs:')
