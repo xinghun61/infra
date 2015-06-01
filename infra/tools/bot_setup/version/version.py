@@ -8,7 +8,7 @@
 import fnmatch
 
 
-LKGR = 'd4578c002501d502e7cc688e22154676e39a57b9'
+LKGR = '22613effa47a3569fd4f4fc0b0d48d9143d48772'
 DISABLED_BUILDERS = [
     'test_disabled_slave'
 ]
