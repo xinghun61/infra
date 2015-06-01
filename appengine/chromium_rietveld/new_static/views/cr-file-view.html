@@ -103,6 +103,11 @@ found in the LICENSE file. -->
                 <div class="ui-actions">
                     <a is="cr-action" on-tap="{{ handlePrevious }}" title="Previous file (k)"
                        disabled?="{{ !hasPreviousFile(file) }}">Previous</a>
+                    <select value="{{ filename }}">
+                        <template repeat="{{ destinationFile in patchset.files }}">
+                            <option value="{{ destinationFile.name }}" selected?="{{ filename == destinationFile.name }}">{{destinationFile.name}}</option>
+                        </template>
+                    </select>
                     <a is="cr-action" on-tap="{{ handleNext }}" title="Next file (j)"
                        disabled?="{{ !hasNextFile(file) }}">Next</a>
                </div>
