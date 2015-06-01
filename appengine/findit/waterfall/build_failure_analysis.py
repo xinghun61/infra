@@ -272,17 +272,22 @@ def _CheckFiles(failure_signal, change_log, deps_info):
 
   justification = _Justification()
 
-  for file_path_in_log, _ in failure_signal.files.iteritems():
+  def StripChromiumRootDirectory(file_path):
     # Strip src/ from file path to make all files relative to the chromium root
     # directory.
-    file_path_in_log = file_path_in_log.lstrip('src/')
+    if file_path.startswith('src/'):
+      file_path = file_path[4:]
+    return file_path
+
+  for file_path_in_log, _ in failure_signal.files.iteritems():
+    file_path_in_log = StripChromiumRootDirectory(file_path_in_log)
 
     for touched_file in change_log['touched_files']:
       _CheckFile(
           touched_file, file_path_in_log, justification, file_name_occurrences)
 
     for roll in deps_info.get('deps_rolls', {}).get(change_log['revision'], []):
-      dep_path = roll['path'].lstrip('src/')
+      dep_path = StripChromiumRootDirectory(roll['path'])
       if file_path_in_log.startswith(dep_path):
         justification.AddDEPSRoll(
             dep_path, roll['repo_url'], roll['new_revision'],
