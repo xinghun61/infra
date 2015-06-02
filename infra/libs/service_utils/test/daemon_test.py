@@ -4,6 +4,7 @@
 
 import contextlib
 import collections
+import errno
 import fcntl
 import os
 import sys
@@ -11,6 +12,8 @@ import unittest
 
 from testing_support import auto_stub
 from infra.libs.service_utils import daemon
+
+import mock
 
 
 Stat = collections.namedtuple('Stat', ['st_ino'])
@@ -159,3 +162,66 @@ class TestTimeout(auto_stub.TestCase):
     self.assertEqual(
         ['timeout', '600', 'echo', 'hey'],
         daemon.add_timeout(['echo', 'hey'], 600))
+
+
+@mock.patch('os.fork', return_value=0)
+@mock.patch('os.setsid')
+@mock.patch('os.close')
+@mock.patch('os.open')
+@mock.patch('os.dup2')
+@mock.patch('os.chdir')
+@mock.patch('os._exit')
+class TestBecomeDaemon(unittest.TestCase):
+  def testClosesFds(self, _mock_exit, _mock_chdir, _mock_dup2, _mock_open,
+                    mock_close, _mock_setsid, _mock_fork):
+    daemon.become_daemon()
+
+    self.assertEqual(2048, mock_close.call_count)
+    self.assertEqual([((i,),) for i in reversed(range(2048))],
+                     mock_close.call_args_list)
+
+  def testClosesFdWithExceptions(self, _mock_exit, _mock_chdir, _mock_dup2,
+                                 _mock_open, mock_close, _mock_setsid,
+                                 _mock_fork):
+    daemon.become_daemon(keep_fds={42})
+
+    self.assertEqual(2047, mock_close.call_count)
+    self.assertEqual([((i,),) for i in reversed(range(2048)) if i != 42],
+                     mock_close.call_args_list)
+
+  def testClosesInvalidFds(self, _mock_exit, _mock_chdir, _mock_dup2,
+                           _mock_open, mock_close, _mock_setsid, _mock_fork):
+    mock_close.side_effect = EnvironmentError(errno.EIO, '')
+    with self.assertRaises(EnvironmentError):
+      daemon.become_daemon()
+
+    mock_close.side_effect = EnvironmentError(errno.EBADF, '')
+    daemon.become_daemon()
+
+  def testOpensDevNull(self, _mock_exit, _mock_chdir, mock_dup2, mock_open,
+                       _mock_close, _mock_setsid, _mock_fork):
+    handle = object()
+    mock_open.return_value = handle
+
+    daemon.become_daemon()
+
+    self.assertEqual([
+        ((handle, 0),),
+        ((handle, 1),),
+        ((handle, 2),),
+    ], mock_dup2.call_args_list)
+
+  def testChangesToRoot(self, _mock_exit, mock_chdir, _mock_dup2, _mock_open,
+                        _mock_close, _mock_setsid, _mock_fork):
+    daemon.become_daemon()
+    mock_chdir.assert_called_with('/')
+
+  def testForkExitsParent(self, mock_exit, _mock_chdir, _mock_dup2, _mock_open,
+                          _mock_close, _mock_setsid, mock_fork):
+    mock_fork.return_value = 0
+    daemon.become_daemon()
+    self.assertFalse(mock_exit.called)
+
+    mock_fork.return_value = 123
+    daemon.become_daemon()
+    self.assertTrue(mock_exit.called)

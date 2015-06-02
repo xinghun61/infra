@@ -5,6 +5,7 @@
 """Locking, timeout, and other process management functions."""
 
 import contextlib
+import errno
 import fcntl
 import os
 import sys
@@ -108,3 +109,42 @@ def add_timeout(cmd, timeout_secs):
     raise NotImplementedError  # pragma: no cover
 
   return ['timeout', str(timeout_secs)] + cmd
+
+
+def _fork_then_exit_parent():
+  pid = os.fork()
+  if pid > 0:
+    os._exit(0)
+
+
+def become_daemon(keep_fds=None):
+  """Makes this process a daemon process.
+
+  Starts a new process group, closes all open file handles, opens /dev/null on
+  stdin, stdout and stderr, and changes the current working directory to /.
+  """
+
+  if keep_fds is None:
+    keep_fds = set()
+
+  _fork_then_exit_parent()
+  os.setsid()
+  _fork_then_exit_parent()
+
+  # Close all open files.
+  for fd in reversed(range(2048)):
+    if fd in keep_fds:
+      continue
+
+    try:
+      os.close(fd)
+    except EnvironmentError as ex:
+      if ex.errno != errno.EBADF:
+        raise
+
+  # Open /dev/null on stdin, stdout and stderr.
+  null = os.open(os.devnull, os.O_RDWR)
+  for i in range(3):
+    os.dup2(null, i)
+
+  os.chdir('/')
