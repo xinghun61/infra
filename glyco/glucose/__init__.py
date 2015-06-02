@@ -1,1 +1,1 @@
-from glucose.main import main
+from glucose.main_ import main

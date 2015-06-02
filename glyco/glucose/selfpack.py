@@ -10,8 +10,6 @@ import zipfile
 # Directory containing the glucose package
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-dirname = None
-
 
 def selfpack(args):
   if not args.output_file.endswith('.zip'):
@@ -19,7 +17,6 @@ def selfpack(args):
   print 'Writing output in {}'.format(args.output_file)
 
   with zipfile.ZipFile(args.output_file, 'w') as f:
-    # Entry point
     f.write(os.path.join(ROOT_DIR, 'glyco'), '__main__.py')
 
     def filter_filenames(_current_dir, fnames):

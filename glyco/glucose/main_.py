@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 import argparse
-from glucose import selfpack
+import sys
 
+from glucose import selfpack
 
 def add_argparse_options(parser):
   subparsers = parser.add_subparsers()
   selfpack.add_subparser(subparsers)
-
 
 def process_argparse_options(options):
   options.command(options)
@@ -20,6 +20,6 @@ def main():
     description="Glyco is a tool to pack and unpack wheel files.")
   add_argparse_options(parser)
 
-  options = parser.parse_args()
+  options = parser.parse_args(sys.argv[1:])
 
   process_argparse_options(options)
