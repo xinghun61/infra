@@ -34,6 +34,7 @@ DISABLED_PROJECTS = [
 
 # List of directories to jshint.
 JSHINT_PROJECTS = [
+  'appengine/chromium_cq_status',
   'appengine/milo',
 ]
 
