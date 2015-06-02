@@ -97,7 +97,7 @@ function addRow(record) {
       indexSelected[index] = !indexSelected[index];
       updateSelectedRecords();
     }
-  })
+  });
   table.appendChild(row);
 }
 
@@ -171,9 +171,11 @@ function updateFilterList() {
   tags.forEach(function(tag, i) {
     var otherTags = tags.slice();
     otherTags.splice(i, 1);
-    i && filterList.appendChild(newElement('span', ', '));
+    if(i) {
+      filterList.appendChild(newElement('span', ', '));
+    }
     filterList.appendChild(newLink(tag, '#' + otherTags.join(',')));
-  })
+  });
   filterList.appendChild(newElement('span', ' '));
   var a = newElement('a', '[clear all]');
   a.href = '';
