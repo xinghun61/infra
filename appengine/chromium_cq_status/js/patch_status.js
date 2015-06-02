@@ -132,7 +132,7 @@ function loadPatchsetRecords(callback) {
           callback(records);
         }
       }
-    }
+    };
     xhr.send();
   }
   queryRecords(null);
@@ -158,8 +158,8 @@ function displayAttempts(records) {
     recordGroup.forEach(function(record) {
       var info = actionInfo[record.fields.action];
       if (!info) {
-        console.warn('Unexpected action ' + record.fields.action
-                     + ' at timestamp ' + record.timestamp);
+        console.warn('Unexpected action ' + record.fields.action +
+                     ' at timestamp ' + record.timestamp);
         return;
       }
       if (typeof info === 'function') {
@@ -205,13 +205,13 @@ function splitByAttempts(records) {
     if (recordGroup) {
       recordGroup.push(record);
     } else {
-      console.warn('Attempt record encountered before start signal.')
+      console.warn('Attempt record encountered before start signal.');
     }
     if (record.fields.action == attemptEnd) {
       if (recordGroup) {
         recordGroups.push(recordGroup);
       } else {
-        console.warn('Attempt group ended before starting.')
+        console.warn('Attempt group ended before starting.');
       }
       recordGroup = null;
     }
@@ -226,7 +226,7 @@ function newRow(timestamp, duration, description, message, cls) {
   var row = newElement('row', '', cls);
   row.appendChild(newElement('timestamp', new Date(timestamp * 1000)));
   row.appendChild(newElement('duration', '(' + duration + ')'));
-  var descriptionNode = newElement('description')
+  var descriptionNode = newElement('description');
   if (typeof description === 'string') {
     descriptionNode.textContent = description;
   } else {
@@ -309,14 +309,14 @@ function tryjobVerifierCheck(record) {
 }
 
 function verifierRetryInfo(attempt, record) {
-  var builder = record.fields.builder
+  var builder = record.fields.builder;
   var node = newElement('div');
-  node.appendChild(newElement('span', 'Retrying failed tryjob: ' + builder))
+  node.appendChild(newElement('span', 'Retrying failed tryjob: ' + builder));
   return {
     description: node,
     cls: 'bad',
     filter: tryjobVerifierCheck,
-  }
+  };
 }
 
 function jobsUpdateInfo(attempt, record) {
@@ -340,12 +340,12 @@ function jobsUpdateInfo(attempt, record) {
         tryjobs.push(attempt.tryjobs[builder]);
       }
     });
-    if(tryjobs.length == 0) return null;
+    if(tryjobs.length === 0) return null;
     if (!firstLine) {
       node.appendChild(newElement('br'));
     }
     firstLine = false;
-    node.appendChild(newElement('span', 'Tryjob' + plural(tryjobs.length) + ' ' + jobStatePrint(jobState) + ': '))
+    node.appendChild(newElement('span', 'Tryjob' + plural(tryjobs.length) + ' ' + jobStatePrint(jobState) + ': '));
     tryjobs.forEach(function(tryjob, i) {
       node.appendChild(newTryjobBubble(
         tryjob.builder, tryjob.status, tryjob.url));

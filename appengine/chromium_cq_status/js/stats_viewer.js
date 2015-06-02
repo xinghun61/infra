@@ -41,7 +41,7 @@ function loadCQStatsList(callback) {
           callback(cqStatsList);
         }
       }
-    }
+    };
     xhr.send();
   }
   queryCQStatsList(null);
@@ -50,8 +50,8 @@ function loadCQStatsList(callback) {
 function buildGraphs(cqStatsList) {
   var graphs = {};
   cqStatsList.forEach(function(cqStats) {
-    var date = new Date(cqStats['end'] * 1000);
-    cqStats['stats'].forEach(function(stats) {
+    var date = new Date(cqStats.end * 1000);
+    cqStats.stats.forEach(function(stats) {
       ensureGraph(graphs, stats);
       updateGraph(graphs, date, stats);
     });
@@ -60,16 +60,16 @@ function buildGraphs(cqStatsList) {
 }
 
 function ensureGraph(graphs, stats) {
-  var name = stats['name'];
+  var name = stats.name;
   if (!graphs[name]) {
     var graph = {
-      type: stats['type'],
-      name: stats['name'],
-      description: stats['description'],
+      type: stats.type,
+      name: stats.name,
+      description: stats.description,
       rows: [],
     };
     if (graph.type === 'list') {
-      graph.unit = stats['unit'];
+      graph.unit = stats.unit;
       graph.multiplier = 1;
       if (graph.unit === 'seconds') {
         graph.unit = 'minutes';
@@ -81,23 +81,23 @@ function ensureGraph(graphs, stats) {
 }
 
 function updateGraph(graphs, date, stats) {
-  var graph = graphs[stats['name']];
-  console.assert(stats['type'] == graph.type);
+  var graph = graphs[stats.name];
+  console.assert(stats.type == graph.type);
   if (graph.type == 'count') {
     graph.rows.push([
       date,
-      stats['count'],
+      stats.count,
     ]);
   } else if (graph.type === 'list') {
     graph.rows.push([
       date,
-      stats['sample_size'],
-      stats['max'] * graph.multiplier,
-      stats['percentile_99'] * graph.multiplier,
-      stats['percentile_90'] * graph.multiplier,
-      stats['percentile_50'] * graph.multiplier,
-      stats['min'] * graph.multiplier,
-      stats['mean'] * graph.multiplier,
+      stats.sample_size,
+      stats.max * graph.multiplier,
+      stats.percentile_99 * graph.multiplier,
+      stats.percentile_90 * graph.multiplier,
+      stats.percentile_50 * graph.multiplier,
+      stats.min * graph.multiplier,
+      stats.mean * graph.multiplier,
     ]);
   } else {
     console.assert(false, 'Unknown type: ' + graph.type);
@@ -172,7 +172,7 @@ function titleFromName(name) {
 }
 
 function createElement(className, parent, tagName) {
-  tagName = tagName || 'div'
+  tagName = tagName || 'div';
   var div = document.createElement(tagName);
   if (className) {
     div.classList.add(className);
