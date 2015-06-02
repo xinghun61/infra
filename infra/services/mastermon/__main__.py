@@ -32,7 +32,11 @@ def parse_args(argv):
   ts_mon.add_argparse_options(p)
   outer_loop.add_argparse_options(p)
 
-  p.set_defaults(ts_mon_flush='manual')
+  p.set_defaults(
+      ts_mon_flush='manual',
+      ts_mon_target_type='task',
+      ts_mon_task_service_name='mastermon',
+  )
   opts = p.parse_args(argv)
 
   logs.process_argparse_options(opts)

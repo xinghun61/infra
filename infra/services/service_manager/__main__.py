@@ -6,6 +6,7 @@
 import argparse
 import logging
 import signal
+import socket
 import sys
 import time
 
@@ -40,6 +41,12 @@ def parse_args(argv):
 
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
+
+  p.set_defaults(
+      ts_mon_target_type='task',
+      ts_mon_task_service_name='service_manager',
+      ts_mon_task_job_name=socket.getfqdn(),
+  )
 
   opts = p.parse_args(argv)
 
