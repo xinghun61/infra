@@ -33,7 +33,7 @@ found in the LICENSE file. -->
                 margin-left: 8px;
             }
         </style>
-        <div class="patchset-title">
+        <div class="patchset-title" title="{{ patchset.id }}">
             Patch {{ patchset.sequence }}<template if="{{ patchset.title }}">: {{ patchset.title }}</template>
         </div>
         <div class="patchset-comments">

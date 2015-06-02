@@ -76,11 +76,19 @@ found in the LICENSE file. -->
                 this.olderPatchsets = null;
                 this.currentPatchset = null;
             },
+            attached: function() {
+                if (window.location.hash.startsWith('#ps')) {
+                  var psId = parseInt(window.location.hash.substring(3));
+                  this.showOlderPatchsets = true;
+                  this.patchsets.forEach(function(patchset) {
+                    patchset.active = (patchset.id == psId);
+                  });
+                }
+            },
             patchsetsChanged: function(oldValue, newValue) {
                 var value = newValue || [];
                 this.olderPatchsets = value.to(-1);
                 this.currentPatchset = value.last();
-                this.showOlderPatchsets = false;
             },
             pluralize: function(text, count) {
                 if (!count)
