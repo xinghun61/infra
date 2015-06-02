@@ -38,6 +38,11 @@ JSHINT_PROJECTS = [
   'appengine/milo',
 ]
 
+# Files that must not be modified (regex)
+# Paths tested are relative to the directory containing this file.
+# Ex: infra/libs/logs.py
+NOFORK_PATHS = []
+
 
 # Forked from depot_tools/presubmit_canned_checks._FetchAllFiles
 def FetchAllFiles(input_api, white_list, black_list):
@@ -175,11 +180,7 @@ def NoForkCheck(input_api, output_api): # pragma: no cover
   and is temporarily copied to preserve backward compatibility. We don't
   want the original file to be modified.
   """
-  # Files that must not be modified (regex)
-  # Paths tested are relative to the directory containing this file.
-  # Ex: infra/libs/logs.py
-  black_list = ['^infra/libs']
-  black_list_re = [input_api.re.compile(regexp) for regexp in black_list]
+  black_list_re = [input_api.re.compile(regexp) for regexp in NOFORK_PATHS]
   offending_files = []
   for filename in input_api.AffectedTextFiles():
     if any(regexp.search(filename.LocalPath()) for regexp in black_list_re):
