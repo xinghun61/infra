@@ -41,7 +41,9 @@ TryJobResultList.prototype.parseData = function(data)
                 var result = new TryJobResult();
                 result.parseData(resultData);
                 return result;
-            }).reverse();
+            }).sort(function(a, b) {
+                return a.timestamp - b.timestamp;
+            });
             return jobSet;
         });
 };
