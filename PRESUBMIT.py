@@ -35,6 +35,7 @@ DISABLED_PROJECTS = [
 # List of directories to jshint.
 JSHINT_PROJECTS = [
   'appengine/chromium_cq_status',
+  'appengine/chromium_status',
   'appengine/milo',
 ]
 # List of blacklisted directories that we don't want to jshint.
