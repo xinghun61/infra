@@ -263,7 +263,7 @@ func TestFileSystemDestination(t *testing.T) {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		destDir := filepath.Join(tempDir, "dest")
 		So(err, ShouldBeNil)
-		dest := NewFileSystemDestination(destDir)
+		dest := NewFileSystemDestination(destDir, nil)
 		Reset(func() { os.RemoveAll(tempDir) })
 
 		writeFileToDest := func(name string, executable bool, data string) {

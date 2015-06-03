@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/luci/luci-go/common/logging"
 
@@ -82,7 +81,7 @@ func NewDeployer(root string, logger logging.Logger) Deployer {
 	if logger == nil {
 		logger = logging.Null()
 	}
-	return &deployerImpl{root, logger}
+	return &deployerImpl{NewFileSystem(root, logger), logger}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,19 +106,19 @@ const currentSymlink = "_current"
 
 // deployerImpl implements Deployer interface.
 type deployerImpl struct {
-	root   string
+	fs     FileSystem
 	logger logging.Logger
 }
 
 func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) {
 	pin := inst.Pin()
-	d.logger.Infof("Deploying %s into %s", pin, d.root)
+	d.logger.Infof("Deploying %s into %s", pin, d.fs.Root())
 
 	// Be paranoid.
 	if err := common.ValidatePin(pin); err != nil {
 		return common.Pin{}, err
 	}
-	if err := d.ensureRootExists(); err != nil {
+	if _, err := d.fs.EnsureDirectory(d.fs.Root()); err != nil {
 		return common.Pin{}, err
 	}
 
@@ -138,9 +137,9 @@ func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) 
 	// Switch '_current' symlink to point to a new package instance. It is a
 	// point of no return. The function must not fail going forward.
 	mainSymlinkPath := d.packagePath(pin.PackageName, currentSymlink)
-	err = ensureSymlink(mainSymlinkPath, pin.InstanceID)
+	err = d.fs.EnsureSymlink(mainSymlinkPath, pin.InstanceID)
 	if err != nil {
-		ensureDirectoryGone(destPath, d.logger)
+		d.fs.EnsureDirectoryGone(destPath)
 		return common.Pin{}, err
 	}
 
@@ -151,7 +150,7 @@ func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ensureDirectoryGone(d.packagePath(pin.PackageName, prevID), d.logger)
+			d.fs.EnsureDirectoryGone(d.packagePath(pin.PackageName, prevID))
 		}()
 	}
 
@@ -165,7 +164,7 @@ func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) 
 
 	// Delete symlinks to files no longer needed i.e. set(old) - set(new).
 	for relPath := range oldFiles.diff(newFiles) {
-		ensureFileGone(filepath.Join(d.root, relPath), d.logger)
+		d.fs.EnsureFileGone(filepath.Join(d.fs.Root(), relPath))
 	}
 
 	// Verify it's all right, read the manifest.
@@ -191,7 +190,7 @@ func (d *deployerImpl) CheckDeployed(pkg string) (common.Pin, error) {
 
 func (d *deployerImpl) FindDeployed() (out []common.Pin, err error) {
 	// Directories with packages are direct children of .cipd/pkgs/.
-	pkgs := filepath.Join(d.root, filepath.FromSlash(packagesDir))
+	pkgs := filepath.Join(d.fs.Root(), filepath.FromSlash(packagesDir))
 	infos, err := ioutil.ReadDir(pkgs)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -229,7 +228,7 @@ func (d *deployerImpl) FindDeployed() (out []common.Pin, err error) {
 }
 
 func (d *deployerImpl) RemoveDeployed(packageName string) error {
-	d.logger.Infof("Removing %s from %s", packageName, d.root)
+	d.logger.Infof("Removing %s from %s", packageName, d.fs.Root())
 
 	// Be paranoid.
 	err := common.ValidatePackageName(packageName)
@@ -244,37 +243,24 @@ func (d *deployerImpl) RemoveDeployed(packageName string) error {
 	// If was installed, removed symlinks pointing to the package files.
 	if instanceID != "" {
 		for relPath := range files {
-			ensureFileGone(filepath.Join(d.root, relPath), d.logger)
+			d.fs.EnsureFileGone(filepath.Join(d.fs.Root(), relPath))
 		}
 	}
 
 	// Ensure all garbage is gone even if instanceID == "" was returned.
-	return ensureDirectoryGone(d.packagePath(packageName), d.logger)
+	return d.fs.EnsureDirectoryGone(d.packagePath(packageName))
 }
 
 func (d *deployerImpl) TempFile(prefix string) (*os.File, error) {
-	if err := d.ensureRootExists(); err != nil {
-		return nil, err
-	}
-	tempPath := filepath.Join(d.root, siteServiceDir, "tmp")
-	err := os.MkdirAll(tempPath, 0777)
+	dir, err := d.fs.EnsureDirectory(filepath.Join(d.fs.Root(), siteServiceDir, "tmp"))
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.TempFile(tempPath, prefix)
+	return ioutil.TempFile(dir, prefix)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Utility methods.
-
-// ensureRootExists makes site root directory if it is missing.
-func (d *deployerImpl) ensureRootExists() error {
-	err := os.MkdirAll(d.root, 0777)
-	if err == nil || os.IsExist(err) {
-		return nil
-	}
-	return err
-}
 
 // findDeployedInstance returns instanceID of a currently deployed package
 // instance and finds all files in it (adding them to 'files' set). Returns ""
@@ -296,14 +282,14 @@ func (d *deployerImpl) deployInstance(inst PackageInstance, files stringSet) (st
 	// how to build full paths and how to atomically extract a package. No need
 	// to delete garbage if it fails.
 	destPath := d.packagePath(inst.Pin().PackageName, inst.Pin().InstanceID)
-	err := ExtractInstance(inst, NewFileSystemDestination(destPath))
+	err := ExtractInstance(inst, NewFileSystemDestination(destPath, d.fs))
 	if err != nil {
 		return "", err
 	}
 	// Enumerate files inside. Nuke it and fail if it's unreadable.
 	err = scanPackageDir(d.packagePath(inst.Pin().PackageName, inst.Pin().InstanceID), files)
 	if err != nil {
-		ensureDirectoryGone(destPath, d.logger)
+		d.fs.EnsureDirectoryGone(destPath)
 		return "", err
 	}
 	return destPath, err
@@ -315,7 +301,7 @@ func (d *deployerImpl) deployInstance(inst PackageInstance, files stringSet) (st
 func (d *deployerImpl) linkFilesToRoot(packageRoot string, files stringSet) {
 	for relPath := range files {
 		// E.g <root>/bin/tool.
-		symlinkAbs := filepath.Join(d.root, relPath)
+		symlinkAbs := filepath.Join(d.fs.Root(), relPath)
 		// E.g. <root>/.cipd/pkgs/name/_current/bin/tool.
 		targetAbs := filepath.Join(packageRoot, relPath)
 		// E.g. ../.cipd/pkgs/name/_current/bin/tool.
@@ -324,7 +310,7 @@ func (d *deployerImpl) linkFilesToRoot(packageRoot string, files stringSet) {
 			d.logger.Warningf("Can't get relative path from %s to %s", filepath.Dir(symlinkAbs), targetAbs)
 			continue
 		}
-		err = ensureSymlink(symlinkAbs, targetRel)
+		err = d.fs.EnsureSymlink(symlinkAbs, targetRel)
 		if err != nil {
 			d.logger.Warningf("Failed to create symlink for %s", relPath)
 			continue
@@ -334,7 +320,7 @@ func (d *deployerImpl) linkFilesToRoot(packageRoot string, files stringSet) {
 
 // packagePath joins paths together to return absolute path to .cipd/pkgs sub path.
 func (d *deployerImpl) packagePath(pkg string, rest ...string) string {
-	root := filepath.Join(d.root, filepath.FromSlash(packagesDir), packageNameDigest(pkg))
+	root := filepath.Join(d.fs.Root(), filepath.FromSlash(packagesDir), packageNameDigest(pkg))
 	result := filepath.Join(append([]string{root}, rest...)...)
 
 	// Be paranoid and check that everything is inside .cipd directory.
@@ -411,38 +397,6 @@ func readPackageState(packageDir string) (common.Pin, error) {
 	}, nil
 }
 
-// ensureSymlink atomically creates a symlink pointing to a target. It will
-// create full directory path if necessary.
-func ensureSymlink(symlink string, target string) error {
-	// Already set?
-	existing, err := os.Readlink(symlink)
-	if err != nil && existing == target {
-		return nil
-	}
-
-	// Make sure path exists.
-	err = os.MkdirAll(filepath.Dir(symlink), 0777)
-	if err != nil {
-		return err
-	}
-
-	// Create a new symlink file, can't modify existing one.
-	temp := fmt.Sprintf("%s_%v", symlink, time.Now().UnixNano())
-	err = os.Symlink(target, temp)
-	if err != nil {
-		return err
-	}
-
-	// Atomically replace current symlink with a new one.
-	err = os.Rename(temp, symlink)
-	if err != nil {
-		os.Remove(temp)
-		return err
-	}
-
-	return nil
-}
-
 // scanPackageDir finds a set of regular files (and symlinks) in a package
 // instance directory. Adds paths relative to 'dir' to 'out'. Skips package
 // service directories (.cipdpkg and .cipd) since they contain package deployer
@@ -464,42 +418,6 @@ func scanPackageDir(dir string, out stringSet) error {
 		}
 		return nil
 	})
-}
-
-// ensureDirectoryGone removes the directory as instantly as possible by
-// renaming it first and only then recursively deleting.
-func ensureDirectoryGone(path string, logger logging.Logger) error {
-	temp := fmt.Sprintf("%s_%v", path, time.Now().UnixNano())
-	err := os.Rename(path, temp)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			if logger != nil {
-				logger.Warningf("Failed to rename directory %s: %v", path, err)
-			}
-			return err
-		}
-		return nil
-	}
-	err = os.RemoveAll(temp)
-	if err != nil {
-		if logger != nil {
-			logger.Warningf("Failed to remove directory %s: %v", temp, err)
-		}
-		return err
-	}
-	return nil
-}
-
-// ensureFileGone removes file, logging the errors (if any).
-func ensureFileGone(path string, logger logging.Logger) error {
-	err := os.Remove(path)
-	if err != nil && !os.IsNotExist(err) {
-		if logger != nil {
-			logger.Warningf("Failed to remove %s", path)
-		}
-		return err
-	}
-	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

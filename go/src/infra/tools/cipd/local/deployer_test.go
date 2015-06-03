@@ -34,29 +34,8 @@ func TestUtilities(t *testing.T) {
 			f.Close()
 		}
 		ensureLink := func(symlinkRel string, target string) error {
-			return ensureSymlink(filepath.Join(tempDir, symlinkRel), target)
+			return os.Symlink(target, filepath.Join(tempDir, symlinkRel))
 		}
-		readLink := func(symlinkRel string) string {
-			val, err := os.Readlink(filepath.Join(tempDir, symlinkRel))
-			So(err, ShouldBeNil)
-			return val
-		}
-
-		Convey("ensureSymlink creates new symlink", func() {
-			So(ensureLink("symlink", "target"), ShouldBeNil)
-			So(readLink("symlink"), ShouldEqual, "target")
-		})
-
-		Convey("ensureSymlink builds full path", func() {
-			So(ensureLink(filepath.Join("a", "b", "c"), "target"), ShouldBeNil)
-			So(readLink(filepath.Join("a", "b", "c")), ShouldEqual, "target")
-		})
-
-		Convey("ensureSymlink replaces existing one", func() {
-			So(ensureLink("symlink", "target"), ShouldBeNil)
-			So(ensureLink("symlink", "another"), ShouldBeNil)
-			So(readLink("symlink"), ShouldEqual, "another")
-		})
 
 		Convey("scanPackageDir works with empty dir", func() {
 			err := os.Mkdir(filepath.Join(tempDir, "dir"), 0777)
@@ -89,37 +68,6 @@ func TestUtilities(t *testing.T) {
 				"a/sym_link",
 				"b/1",
 			})
-		})
-
-		Convey("ensureDirectoryGone works with missing dir", func() {
-			So(ensureDirectoryGone(filepath.Join(tempDir, "missing"), nil), ShouldBeNil)
-		})
-
-		Convey("ensureDirectoryGone works", func() {
-			touch("dir/a/1")
-			touch("dir/a/2")
-			touch("dir/b/1")
-			So(ensureDirectoryGone(filepath.Join(tempDir, "dir"), nil), ShouldBeNil)
-			_, err := os.Stat(filepath.Join(tempDir, "dir"))
-			So(os.IsNotExist(err), ShouldBeTrue)
-		})
-
-		Convey("ensureFileGone works", func() {
-			touch("abc")
-			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
-			_, err := os.Stat(filepath.Join(tempDir, "abc"))
-			So(os.IsNotExist(err), ShouldBeTrue)
-		})
-
-		Convey("ensureFileGone works with missing file", func() {
-			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
-		})
-
-		Convey("ensureFileGone works with symlink", func() {
-			ensureLink("abc", "target")
-			So(ensureFileGone(filepath.Join(tempDir, "abc"), nil), ShouldBeNil)
-			_, err := os.Stat(filepath.Join(tempDir, "abc"))
-			So(os.IsNotExist(err), ShouldBeTrue)
 		})
 	})
 }

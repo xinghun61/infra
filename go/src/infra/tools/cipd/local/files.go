@@ -234,6 +234,8 @@ func isSubpath(path, root string) bool {
 type fileSystemDestination struct {
 	// Destination directory.
 	dir string
+	// FileSystem implementation to use.
+	fs FileSystem
 	// Root temporary directory.
 	tempDir string
 	// Where to extract all temp files, subdirectory of tempDir.
@@ -243,39 +245,44 @@ type fileSystemDestination struct {
 }
 
 // NewFileSystemDestination returns a destination in the file system (directory)
-// to extract a package to.
-func NewFileSystemDestination(dir string) Destination {
+// to extract a package to. Will use a provided FileSystem object to operate on
+// files if given, otherwise use a default one. If FileSystem is provided, dir
+// must be in a subdirectory of the given FileSystem root.
+func NewFileSystemDestination(dir string, fs FileSystem) Destination {
+	if fs == nil {
+		fs = NewFileSystem(filepath.Dir(dir), nil)
+	}
 	return &fileSystemDestination{
 		dir:       dir,
+		fs:        fs,
 		openFiles: map[string]*os.File{},
 	}
 }
 
-func (d *fileSystemDestination) Begin() (err error) {
+func (d *fileSystemDestination) Begin() error {
 	if d.tempDir != "" {
 		return fmt.Errorf("Destination is already open")
 	}
 
-	// Ensure parent directory of destination directory exists.
-	d.dir, err = filepath.Abs(filepath.Clean(d.dir))
-	if err != nil {
+	// Ensure a parent directory of the destination directory exists.
+	var err error
+	if d.dir, err = d.fs.ToAbsPath(d.dir); err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Dir(d.dir), 0777)
-	if err != nil {
+	if _, err := d.fs.EnsureDirectory(filepath.Dir(d.dir)); err != nil {
 		return err
 	}
 
 	// Called in case something below fails.
 	cleanup := func() {
 		if d.tempDir != "" {
-			os.RemoveAll(d.tempDir)
+			d.fs.EnsureDirectoryGone(d.tempDir)
 		}
 		d.tempDir = ""
 		d.outDir = ""
 	}
 
-	// Create root temp dir, on the same level as destination directory.
+	// Create root temp dir, on the same level as the destination directory.
 	d.tempDir, err = ioutil.TempDir(filepath.Dir(d.dir), filepath.Base(d.dir)+"_")
 	if err != nil {
 		cleanup()
@@ -283,8 +290,7 @@ func (d *fileSystemDestination) Begin() (err error) {
 	}
 
 	// Create a staging output directory where everything will be extracted.
-	d.outDir = filepath.Join(d.tempDir, "out")
-	err = os.MkdirAll(d.outDir, 0777)
+	d.outDir, err = d.fs.EnsureDirectory(filepath.Join(d.tempDir, "out"))
 	if err != nil {
 		cleanup()
 		return err
@@ -294,8 +300,7 @@ func (d *fileSystemDestination) Begin() (err error) {
 }
 
 func (d *fileSystemDestination) CreateFile(name string, executable bool) (io.WriteCloser, error) {
-	_, ok := d.openFiles[name]
-	if ok {
+	if _, ok := d.openFiles[name]; ok {
 		return nil, fmt.Errorf("File %s is already open", name)
 	}
 
@@ -341,7 +346,7 @@ func (d *fileSystemDestination) CreateSymlink(name string, target string) error 
 		}
 	}
 
-	return os.Symlink(target, path)
+	return d.fs.EnsureSymlink(path, target)
 }
 
 func (d *fileSystemDestination) End(success bool) error {
@@ -354,29 +359,15 @@ func (d *fileSystemDestination) End(success bool) error {
 
 	// Clean up temp dir and the state no matter what.
 	defer func() {
-		os.RemoveAll(d.tempDir)
+		d.fs.EnsureDirectoryGone(d.tempDir)
 		d.tempDir = ""
 		d.outDir = ""
 	}()
 
 	if success {
-		// Move existing directory away, if it is there.
-		old := filepath.Join(d.tempDir, "old")
-		if os.Rename(d.dir, old) != nil {
-			old = ""
-		}
-
-		// Move new directory in place.
-		err := os.Rename(d.outDir, d.dir)
-		if err != nil {
-			// Try to return the original directory back...
-			if old != "" {
-				os.Rename(old, d.dir)
-			}
-			return err
-		}
+		return d.fs.Replace(d.outDir, d.dir)
 	}
-
+	// Let the defer to clean the garbage in tempDir.
 	return nil
 }
 
@@ -392,8 +383,7 @@ func (d *fileSystemDestination) prepareFilePath(name string) (string, error) {
 	if !isSubpath(path, d.outDir) {
 		return "", fmt.Errorf("Invalid relative file name: %s", name)
 	}
-	err := os.MkdirAll(filepath.Dir(path), 0777)
-	if err != nil {
+	if _, err := d.fs.EnsureDirectory(filepath.Dir(path)); err != nil {
 		return "", err
 	}
 	return path, nil
