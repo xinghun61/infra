@@ -9,6 +9,7 @@ import datetime
 import itertools
 import logging
 import subprocess
+import tempfile
 import time
 import unittest
 import urllib2
@@ -705,7 +706,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
   def test_main(self):
     self.mock(cq_stats, 'output', self.print_mock)
     self.mock(cq_stats, 'parse_args', lambda: Args(
-        project='chromium', log_level=logging.CRITICAL, logs_black_list=None))
+        project='chromium', log_level=logging.CRITICAL, logs_black_list=None,
+        logs_directory=tempfile.gettempdir()))
     self.mock(cq_stats, 'acquire_stats', lambda _: cq_stats.default_stats())
     cq_stats.main()
     return self.expectations

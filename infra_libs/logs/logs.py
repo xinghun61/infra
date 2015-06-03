@@ -28,10 +28,21 @@ The last line should print something like::
 """
 
 import datetime
+import getpass
 import logging
+import logging.handlers
+import os
 import re
+import socket
+import sys
+import tempfile
 
 import pytz
+
+if sys.platform == 'win32':  # pragma: no cover
+  DEFAULT_LOG_DIRECTORY = 'C:\\chrome-infra-logs'
+else:
+  DEFAULT_LOG_DIRECTORY = '/var/log/chrome-infra'
 
 
 class InfraFilter(logging.Filter):  # pragma: no cover
@@ -78,7 +89,7 @@ class InfraFormatter(logging.Formatter):  # pragma: no cover
 
 
 def add_handler(logger, handler=None, timezone='UTC',
-                level=logging.WARN,
+                level=logging.WARNING,
                 logger_name_blacklist=None):  # pragma: no cover
   """Configures and adds a handler to a logger the standard way for infra.
 
@@ -89,7 +100,7 @@ def add_handler(logger, handler=None, timezone='UTC',
     handler (logging.Handler): handler to add to the logger. defaults to
        logging.StreamHandler.
     timezone (str): timezone to use for timestamps.
-    level (int): logging level. Could be one of DEBUG, INFO, WARN, CRITICAL
+    level (int): logging level. Could be one of DEBUG, INFO, WARNING, CRITICAL
     logger_name_blacklist (str): do not print log lines from loggers whose name
       matches this regular expression.
 
@@ -118,11 +129,12 @@ def add_handler(logger, handler=None, timezone='UTC',
 
 
 def add_argparse_options(parser,
-                         default_level=logging.WARN):  # pragma: no cover
+                         default_level=logging.WARNING):  # pragma: no cover
   """Adds logging related options to an argparse.ArgumentParser.
 
   See also: :func:`process_argparse_options`
   """
+
   parser = parser.add_argument_group('Logging Options')
   g = parser.add_mutually_exclusive_group()
   g.set_defaults(log_level=default_level)
@@ -130,7 +142,7 @@ def add_argparse_options(parser,
                  action='store_const', const=logging.ERROR,
                  dest='log_level', help='Make the output quieter (ERROR).')
   g.add_argument('--logs-warning', '--warning',
-                 action='store_const', const=logging.WARN,
+                 action='store_const', const=logging.WARNING,
                  dest='log_level',
                  help='Set the output to an average verbosity (WARNING).')
   g.add_argument('--logs-verbose', '--verbose',
@@ -142,6 +154,11 @@ def add_argparse_options(parser,
   parser.add_argument('--logs-black-list', metavar='REGEX',
                       help='hide log lines emitted by loggers whose name '
                            'matches this regular expression.')
+  parser.add_argument('--logs-directory', default=DEFAULT_LOG_DIRECTORY,
+                      help='directory into which to write logs (default: '
+                           '%%(default)s). The temporary directory (%s) will '
+                           'be used instead if this directory is not '
+                           'writable.' % tempfile.gettempdir())
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -165,7 +182,47 @@ def process_argparse_options(options, logger=None):  # pragma: no cover
     options = parser.parse_args(sys.path[1:])
     infra_libs.logs.process_argparse_options(options)
   """
+
   if logger is None:
     logger = logging.root
+
   add_handler(logger, level=options.log_level,
               logger_name_blacklist=options.logs_black_list)
+
+  # Test whether we can write to the log directory.  If not, write to a
+  # temporary directory instead.  The DEFAULT_LOG_DIRECTORY is created on the
+  # real production machines by puppet, so /tmp should only be used when running
+  # locally on developers' workstations.
+  try:
+    with tempfile.TemporaryFile(dir=options.logs_directory):
+      pass
+  except OSError:
+    options.logs_directory = tempfile.gettempdir()
+
+  # Use argv[0] as the program name, except when it's '__main__.py' which is the
+  # case when we were invoked by run.py.  In this case look at the main module's
+  # __package__ variable which is set by runpy.
+  program_name = os.path.basename(sys.argv[0])
+  if program_name == '__main__.py':
+    package = sys.modules['__main__'].__package__
+    if package is not None:
+      program_name = package.split('.')[-1]
+
+  # Log files are named with this pattern:
+  # <program>.<hostname>.<username>.log.<level>.YYYYMMDD-HHMMSS.<pid>
+  pattern = "%s.%s.%s.log.%%s.%s.%d" % (
+      program_name,
+      socket.getfqdn().split('.')[0],
+      getpass.getuser(),
+      datetime.datetime.utcnow().strftime('%Y%m%d-%H%M%S'),
+      os.getpid())
+
+  for level in (logging.INFO, logging.WARNING, logging.ERROR):
+    add_handler(
+        logger,
+        handler=logging.handlers.RotatingFileHandler(
+            filename=os.path.join(
+                options.logs_directory, pattern % logging.getLevelName(level)),
+            maxBytes=10 * 1024 * 1024,
+            backupCount=10),
+        level=level)
