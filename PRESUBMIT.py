@@ -37,6 +37,10 @@ JSHINT_PROJECTS = [
   'appengine/chromium_cq_status',
   'appengine/milo',
 ]
+# List of blacklisted directories that we don't want to jshint.
+JSHINT_PROJECTS_BLACKLIST = [
+  'appengine/third_party',
+]
 
 # Files that must not be modified (regex)
 # Paths tested are relative to the directory containing this file.
@@ -276,13 +280,20 @@ def GetAffectedJsFiles(input_api, include_deletes=False):
   """Returns a list of absolute paths to modified *.js files."""
   infra_root = input_api.PresubmitLocalPath()
   whitelisted_paths = [
-      input_api.os_path.join(infra_root, project)
-      for project in JSHINT_PROJECTS]
+      input_api.os_path.join(infra_root, path)
+      for path in JSHINT_PROJECTS]
+  blacklisted_paths = [
+      input_api.os_path.join(infra_root, path)
+      for path in JSHINT_PROJECTS_BLACKLIST]
 
   def keep_whitelisted_files(affected_file):
     return any([
-        affected_file.AbsoluteLocalPath().startswith(path)
-        for path in whitelisted_paths
+        affected_file.AbsoluteLocalPath().startswith(whitelisted_path) and
+        all([
+            not affected_file.AbsoluteLocalPath().startswith(blacklisted_path)
+            for blacklisted_path in blacklisted_paths
+        ])
+        for whitelisted_path in whitelisted_paths
     ])
   return sorted(
       f.AbsoluteLocalPath()
