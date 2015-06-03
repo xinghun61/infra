@@ -74,7 +74,7 @@ def main(argv):
       watcher.run()
       signal.signal(signal.SIGINT, previous_sigint_handler)
   except daemon.LockAlreadyLocked:
-    logging.error('Another instance of service_manager is already running')
+    # Another instance is already running.
     return 1
   else:
     ts_mon.close()
