@@ -15,13 +15,14 @@ LOGGER = logging.getLogger(__name__)
 class Poller(object):
   endpoint = None
 
-  def __init__(self, base_url):
-    self.url = '%s/json%s' % (base_url, self.endpoint)
+  def __init__(self, base_url, metric_fields):
+    self._url = '%s/json%s' % (base_url.rstrip('/'), self.endpoint)
+    self._metric_fields = metric_fields
 
   def poll(self):
-    LOGGER.info('Requesting %s', self.url)
+    LOGGER.info('Requesting %s', self._url)
 
-    response = requests.get(self.url)
+    response = requests.get(self._url)
     if response.status_code != requests.codes.ok:
       return False
 
@@ -31,13 +32,21 @@ class Poller(object):
   def handle_response(self, data):
     raise NotImplementedError
 
+  def fields(self, extra_fields=None):
+    if extra_fields is None:
+      return self._metric_fields
+
+    ret = self._metric_fields.copy()
+    ret.update(extra_fields)
+    return ret
+
 
 class ClockPoller(Poller):
   endpoint = '/clock'
   uptime = ts_mon.FloatMetric('uptime')
 
   def handle_response(self, data):
-    self.uptime.set(data['server_uptime'])
+    self.uptime.set(data['server_uptime'], fields=self.fields())
 
 
 class BuildStatePoller(Poller):
@@ -48,13 +57,13 @@ class BuildStatePoller(Poller):
   state = ts_mon.StringMetric('buildbot/master/builders/state')
 
   def handle_response(self, data):
-    self.accepting_builds.set(data['accepting_builds'])
+    self.accepting_builds.set(data['accepting_builds'], self.fields())
 
     for builder in data['builders']:
-      labels = {'builder': builder['builderName']}
-      self.current_builds.set(len(builder['currentBuilds']), labels)
-      self.pending_builds.set(builder['pendingBuilds'], labels)
-      self.state.set(builder['state'], labels)
+      fields = self.fields({'builder': builder['builderName']})
+      self.current_builds.set(len(builder['currentBuilds']), fields=fields)
+      self.pending_builds.set(builder['pendingBuilds'], fields=fields)
+      self.state.set(builder['state'], fields=fields)
 
 
 class SlavesPoller(Poller):
@@ -70,7 +79,7 @@ class SlavesPoller(Poller):
 
     def set_metric(dictionary, metric):
       for builder_name, value in dictionary.iteritems():
-        metric.set(value, {'builder': builder_name})
+        metric.set(value, self.fields({'builder': builder_name}))
 
     totals = collections.defaultdict(int)
     connected = collections.defaultdict(int)

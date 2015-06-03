@@ -13,7 +13,7 @@ class FakePoller(pollers.Poller):
   endpoint = '/foo'
 
   def __init__(self, base_url):
-    super(FakePoller, self).__init__(base_url)
+    super(FakePoller, self).__init__(base_url, {})
     self.called_with_data = None
 
   def handle_response(self, data):
@@ -28,6 +28,16 @@ class PollerTest(unittest.TestCase):
     response.status_code = 200
 
     p = FakePoller('http://foobar')
+    self.assertTrue(p.poll())
+
+    mock_get.assert_called_once_with('http://foobar/json/foo')
+
+  def test_strips_trailing_slashes(self, mock_get):
+    response = mock_get.return_value
+    response.json.return_value = {'foo': 'bar'}
+    response.status_code = 200
+
+    p = FakePoller('http://foobar////')
     self.assertTrue(p.poll())
 
     mock_get.assert_called_once_with('http://foobar/json/foo')
@@ -51,15 +61,15 @@ class PollerTest(unittest.TestCase):
 
 class ClockPollerTest(unittest.TestCase):
   def test_response(self):
-    p = pollers.ClockPoller('')
+    p = pollers.ClockPoller('', {'x': 'y'})
 
     p.handle_response({'server_uptime': 123})
-    self.assertEqual(123, p.uptime.get())
+    self.assertEqual(123, p.uptime.get({'x': 'y'}))
 
 
 class BuildStatePollerTest(unittest.TestCase):
   def test_response(self):
-    p = pollers.BuildStatePoller('')
+    p = pollers.BuildStatePoller('', {'x': 'y'})
 
     p.handle_response({
       'accepting_builds': True,
@@ -78,18 +88,18 @@ class BuildStatePollerTest(unittest.TestCase):
         },
       ]
     })
-    self.assertEqual(True, p.accepting_builds.get())
-    self.assertEqual(0, p.current_builds.get({'builder': 'foo'}))
-    self.assertEqual(4, p.pending_builds.get({'builder': 'foo'}))
-    self.assertEqual('offline', p.state.get({'builder': 'foo'}))
-    self.assertEqual(3, p.current_builds.get({'builder': 'bar'}))
-    self.assertEqual(0, p.pending_builds.get({'builder': 'bar'}))
-    self.assertEqual('building', p.state.get({'builder': 'bar'}))
+    self.assertEqual(True, p.accepting_builds.get({'x': 'y'}))
+    self.assertEqual(0, p.current_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(4, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(3, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(0, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual('building', p.state.get({'builder': 'bar', 'x': 'y'}))
 
 
 class SlavesPollerTest(unittest.TestCase):
   def test_response(self):
-    p = pollers.SlavesPoller('')
+    p = pollers.SlavesPoller('', {})
 
     p.handle_response({
       'slave1': {

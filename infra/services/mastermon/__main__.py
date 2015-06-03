@@ -6,10 +6,13 @@
 """Send buildbot master monitoring data to the timeseries monitoring API."""
 
 import argparse
+import socket
 import sys
+import urlparse
 
 import requests
 
+from infra.libs.buildbot import master
 from infra.libs.service_utils import outer_loop
 from infra.services.mastermon import pollers
 from infra_libs import logs
@@ -19,25 +22,51 @@ from infra_libs import ts_mon
 def parse_args(argv):
   p = argparse.ArgumentParser()
 
-  p.add_argument(
+  group = p.add_mutually_exclusive_group(required=True)
+  group.add_argument(
       '--url',
-      required=True,
-      help='URL of the buildbot master to monitor')
+      help='URL of one buildbot master to monitor')
+  group.add_argument('--build-dir',
+      help='location of the tools/build directory. Used with --hostname to get '
+      'the list of all buildbot masters on this host to monitor. Cannot be '
+      'used with --url')
+
+  p.add_argument('--hostname',
+      default=socket.getfqdn(),
+      help='override local hostname (currently %(default)s). Used with '
+      '--build-dir to get the list of all buildbot masters on this host to '
+      'monitor')
   p.add_argument(
       '--interval',
-      default=60, type=int,
+      default=300, type=int,
       help='time (in seconds) between sampling the buildbot master')
 
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
   outer_loop.add_argparse_options(p)
 
+  DEFAULT_ARG_VALUE = '(default)'
+
   p.set_defaults(
       ts_mon_flush='manual',
       ts_mon_target_type='task',
       ts_mon_task_service_name='mastermon',
+      ts_mon_task_job_name=DEFAULT_ARG_VALUE,
   )
   opts = p.parse_args(argv)
+
+  if opts.ts_mon_task_job_name == DEFAULT_ARG_VALUE:
+    # The ts_mon job name defaults to either the hostname when monitoring all
+    # masters on a host, or the name of the master extracted from the URL.
+    if opts.build_dir:
+      opts.ts_mon_task_job_name = opts.hostname
+    else:
+      parsed_url = urlparse.urlsplit(opts.url)
+      path_components = [x for x in parsed_url.path.split('/') if x]
+      if path_components:
+        opts.ts_mon_task_job_name = path_components[-1]
+      else:
+        opts.ts_mon_task_job_name = parsed_url.netloc
 
   logs.process_argparse_options(opts)
   ts_mon.process_argparse_options(opts)
@@ -46,26 +75,49 @@ def parse_args(argv):
   return opts, loop_opts
 
 
-def main(argv):
-  opts, loop_opts = parse_args(argv)
+class MasterMonitor(object):
+  up = ts_mon.BooleanMetric('master/up')
 
-  poller_classes = [
+  POLLER_CLASSES = [
     pollers.ClockPoller,
     pollers.BuildStatePoller,
     pollers.SlavesPoller,
   ]
 
-  poller_objects = [cls(opts.url) for cls in poller_classes]
+  def __init__(self, url, name=None):
+    if name is None:
+      self._metric_fields = {}
+    else:
+      self._metric_fields = {'master': name}
 
-  up = ts_mon.BooleanMetric('master/up')
+    self._pollers = [
+        cls(url, self._metric_fields) for cls in self.POLLER_CLASSES]
 
-  def single_iteration():
-    for poller in poller_objects:
+  def poll(self):
+    for poller in self._pollers:
       if not poller.poll():
-        up.set(False)
+        self.up.set(False, fields=self._metric_fields)
         break
     else:
-      up.set(True)
+      self.up.set(True, fields=self._metric_fields)
+
+
+def main(argv):
+  opts, loop_opts = parse_args(argv)
+
+  if opts.url:
+    # Monitor a single master specified on the commandline.
+    monitors = [MasterMonitor(opts.url)]
+  else:
+    # Query the mastermap and monitor all the masters on a host.
+    monitors = [
+        MasterMonitor(entry['buildbot_url'], entry['dirname'])
+        for entry
+        in master.get_mastermap_for_host(opts.build_dir, opts.hostname)]
+
+  def single_iteration():
+    for monitor in monitors:
+      monitor.poll()
 
     ts_mon.flush()
     return True
