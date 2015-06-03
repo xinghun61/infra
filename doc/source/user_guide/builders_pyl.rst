@@ -9,7 +9,7 @@ non-buildbot-guru cares about.
 What is the .pyl format?
 ------------------------
 
-`.pyl` is short for PYthon Literal. It is a subset of Python syntax
+``.pyl`` is short for PYthon Literal. It is a subset of Python syntax
 intended to capture pure declarations of expressions. 
 It is roughly analogous to JSON: you can specify any Python object,
 but should limit yourself to things like dicts, arrays, strings,
@@ -19,23 +19,27 @@ comments and trailing commas are allowed.
 Overview
 --------
 
-Each builders.pyl describes a single "waterfall", which is a collection
-of buildbot "builders" that talk to a single buildbot "master". Each
-"builder" may be implemented by multiple "slaves"; you can think of
-a slave as a single VM.
+Each builders.pyl describes a single *waterfall*, which is a collection of
+buildbot *builders* that talk to a single buildbot *master*. Each builder may
+be implemented by multiple *slaves*; you can think of a slave as a single VM.
 
 Each master has one or more builders. A builder is basically a 
 single configuration running a single series of steps, collected together
 into a `recipe`_. Each builder may have per-builder properties set for
 it (to control the logic the recipe executes), and each builder may
-also pass along properties from the slave, so there are three levels
+also pass along properties from the slave, so there are four types
 of configuration:
 
 1. overall per-master
 2. per-builder
-3. per-slave
+3. per-scheduler
+4. per-slave
 
-Slaves are usually collected into "pools", so that they can be load
+The keys in the dict should follow that order; within each section,
+all required keys should appear first (sorted alphabetically),
+then all optional keys (sorted alphabetically).
+
+Slaves are usually collected into *pools*, so that they can be load
 balanced. Every slave in the pool has the same configuration.
 
 (Side note: the "master"/"slave" terminology is buildbot's; we don't
@@ -48,16 +52,27 @@ Here's a simple file containing all of the required fields::
 
   % cat builders.pyl
   {
-    "builders": {
-       "Chromium Mojo Linux": {
-         "recipe": "chromium_mojo",
-         "slave_pools": ["linux_precise"],
-       },
-    },
-    "git_repo_url": "https://chromium.googlesource.com/chromium/src.git",
     "master_base_class": "Master1",
     "master_port": 20100,
     "master_port_alt": 40100,
+    "slave_port": 30100,
+    "templates": ["../master.chromium/templates"],
+
+    "builders": {
+       "Chromium Mojo Linux": {
+         "recipe": "chromium_mojo",
+         "scheduler": "chromium_src_commits",
+         "slave_pools": ["linux_precise"],
+       },
+    },
+
+    "schedulers": {
+      "chromium_src_commits": {
+        "type": "git_poller",
+        "git_repo_url": "https://chromium.googlesource.com/chromium/src.git",
+      },
+    },
+
     "slave_pools": {
       "linux_precise": {
         "slave_data": {
@@ -68,7 +83,6 @@ Here's a simple file containing all of the required fields::
         "slaves": ["vm46-m1"],
       },
     },
-    "slave_port": 30100,
   }
   %
 
@@ -78,50 +92,64 @@ Top-level keys
 At the top-level, builders.pyl files contain a single Python dictionary
 containing things that are configured per-master.
 
-builders
-  This key is *required* and contains a dict of builder names and their
-  respective configurations; those configurations are described in
-  the per-builder keys section, below.
-
-buildbucket_bucket
-  This key is *optional* but must be present if the builders on the
-  master are intended to be scheduled through buildbucket (i.e., they
-  are tryservers or triggered from other builders, possibly on other masters).
-
-  If set, it should contain the string value of the `buildbucket bucket`_
-  created for this buildbot. If it is not set, it defaults to `None`.
-  By convention, buckets are named to match the master name, e.g.
-  "master.tryserver.nacl".
-
-git_repo_url
-  This key is *optional*. If it is not set, the builders on the waterfall
-  will only be triggerable by buildbucket (or directly).
-
-  It should contain a string value that is the URL for a repo to be cloned and
-  polled for changes.
-
-master_base_class
-  This key is *required*. It should specify the name of the Python
+``master_base_class``
+  This is a *required* field. It must be set to the name of the Python
   class of the buildbot master that this master is based on. This is 
   usually one of the classes defined in build/site_config/config_bootstrap.py.
 
   For example, if you were setting up a new master in the -m1 VLAN, you would
-  be subclassing Master.Master1, so this value would be 'Master1'.
+  be subclassing Master.Master1, so this value would be ``"Master1"``.
 
-master_port
-  This key is *required*. It is the main IP port that the buildbot
-  master instance runs on. You should set this to the port obtained
-  from the admins.
+``master_port``
+  This is a *required* field. It must be set to the main IP port that
+  the buildbot master instance runs on. You should set this to the
+  port obtained from the admins.
 
-master_port_alt
-  This key is *required*. It is the alternate IP port that the buildbot
-  master instance runs on. You should set this to the port obtained
-  from the admins.
+``master_port_alt``
+  This is a *required* field. It must be set to the alternate IP port 
+  that the buildbot master instance runs on. You should set this to
+  the port obtained from the admins.
 
-service_account_file
-  This key is *optional* but must be present if the builders on the
+``slave_port``
+  This is a *required* field. It must be set to the port that the
+  buildbot slaves will attempt to connect to on the master.
+
+``templates``
+  This is a *required* field. It must be set to a list of
+  directory paths (relative to the master directory) that contains
+  the HTML templates that will be used to display the builds. Each
+  directory is searched in order for templates as needed (so earlier
+  directories override later directories).
+
+``buildbucket_bucket``
+  This is an *optional* field but must be present if the builders on the
   master are intended to be scheduled through buildbucket (i.e., they
-  are tryservers or triggered from other bots).
+  are tryservers or triggered from other bots). Such builders
+  normally have their scheduler set to ``None``, so, equivalently,
+  if any of the builders have their scheduler set to ``None``, this
+  field must be present.
+
+  If set, it should contain the string value of the `buildbucket bucket`_
+  created for this buildbot. If it is not set, it defaults to ``None``.
+  By convention, buckets are named to match the master name, e.g.
+  "master.tryserver.nacl".
+
+``master_classname``
+  This is an *optional* field. If it is not specified, it is synthesized
+  from the name of the directory containing the builders.pyl file.
+  
+  For example, if the builders.pyl file was in
+  ``masters/master.client.crashpad``, the master_classname would default
+  to ``ClientCrashpad``.
+ 
+``service_account_file``
+  This is an *optional* field but must be present if the builders on the
+  master are intended to be scheduled through buildbucket (i.e., they
+  are tryservers or triggered from other builders, possibly on other masters).
+  
+  Such builders normally have their scheduler set to ``None``, so,
+  equivalently, if any of the builders have their scheduler set to ``None``,
+  this field must be present.
 
   If set, it should point to the filename in the credentials directory on the
   slave machine (i.e., just the basename + extension, no directory part), that
@@ -129,30 +157,96 @@ service_account_file
   buildbucket. By convention, the value is "service-account-<project>.json".
   If not set, it defaults to `None`.
 
-slave_pools
-  This key is *required* and must contain a dict of pool names and
-  properties, as described below.
+``builders``
+  This is a *required* field and must be a dict of builder names and their
+  respective configurations; valid values for those configurations are
+  described in the per-builder configurations section, below.
 
-slave_port
-  This key is *required*. It is the port that the buildbot slaves will
-  attempt to connect to on the master.
+``schedulers``
+  This is a *required* field and must be a dict of scheduler names and
+  their respective configurations; valid values for those configurations are
+  described in the per-scheduler configurations section, below. The
+  dict may be empty, if there are no scheduled builders, only tryservers,
+  but it must be present even in that case.
+
+``slave_pools``
+  This is a *required* field and must be a dict of pool names and
+  properties, as described below.
 
 
 Per-builder configurations
 --------------------------
 
-Each builder is described by a dict that contains two or three fields:
+Each builder is described by a dict that contains three or four fields:
 
-properties
-  This is an *optional* dict of settings that will be
-  passed to the `recipe`_ as (key-value) properties.
-
-recipe
+``recipe``
   This is a *required* field that specifies the `recipe name`_.
 
-slave_pools
+``scheduler``
+  This is a *required* field that indicates which scheduler will be
+  used to schedule builds on the builder.
+  
+  The field have must be set to either ``None`` or to one of the keys in the
+  top-level ``schedulers`` dict.  If it is set to None, then the builder will
+  only be schedulable via buildbucket; in this situation, the master must have
+  top-level ``buildbucket_bucket`` and ``service_account_file`` values set
+  (as noted above).
+
+  A builder that has a scheduler specified may also potentially be
+  scheduled via buildbucket, but that doing so would be unusual
+  (builders should normally only have one purpose).
+
+``slave_pools``
   This is a *required* field that specifies one or more pools of 
   slaves that can be builders.
+
+``auto_reboot``
+  This is an *optional* field that specifies whether the builder should
+  reboot after each build. If not specified, it defaults to ``True``.
+
+``properties``
+  This is an *optional* field that is a dict of settings that will be
+  passed to the `recipe`_ as key/value properties.
+
+``slavebuilddir``
+  This is an *optional* field; if it is not set, it defaults to the 
+  builder name. This field can be used to share a single build
+  directory between multiple builders (so, for example, you don't have
+  to check out the source tree twice for a debug builder and a release
+  builder).
+  
+Per-scheduler configurations
+----------------------------
+
+``type``
+  This is a *required* field used to the type of scheduler this is; it
+  must have one of the following two values: ``"cron"`` or ``"git_poller"``.
+  
+  The former indicates that builds will be scheduled periodically (one or more
+  times every day); the latter indicates that builds will be scheduled when
+  there are new commits to the given repo.
+
+  If the type is "cron", the scheduler dict must also have the "cron"
+  field; if the type is "git_poller"; the scheduler dict must also have the
+  "git_repo_url" field.
+
+``cron``
+  This is an *optional* field but must be present if the scheduler type
+  is "cron".
+  
+  It must contain a dict with two fields, ``hour``, and ``minute``.
+  Each field may have a value of either ``"*"``, an integer, or a list
+  of integers. The integer values must be in the range [0, 23) for ``hour``
+  and [0, 60) for ``minute``; the value ``"*"`` is equivalent to specifying
+  a list containing every value in the range. This matches the syntax
+  used for the ``Nightly`` scheduler in buildbot.
+
+``git_repo_url``
+  This is an *optional* field but must be present if the scheduler type
+  is "git_poller".
+  
+  It must contain a string value that is the URL for a repo
+  to be cloned and polled for changes.
 
 Per-pool configurations
 -----------------------
@@ -161,37 +255,39 @@ Each pool (or group) of slaves consists of a set of machines that
 all have the same characteristics. The pool is described by a dict
 that contains two fields
 
-slave_data
+``slave_data``
   This is a *required* field that contains a dict describing the
-  characteristcs of all the slaves in the pool, as described below.
+  configuration of every slaves in the pool, as described below.
 
-slaves
+``slaves``
   This is a *required* field that contains list of individual hostnames,
   one for each VM (do not specify the domain, just the basename).
 
-Slave data
-----------
+Per-slave configurations
+------------------------
 
 The slave_data dict provides a bare description of the physical
 characteristics of each machine: operating system name, version, and
 architecture, with the following keys:
 
-bits
+``bits``
   This is a *required* field and must have either the value 32
   or 64 (as numbers, not strings).
 
-os
+``os``
   This is a *required* field that must have one of the following values:
-  "mac", "linux", or "win".
+  ``"mac"``, ``"linux"``, or ``"win"``.
 
-version
+``version``
   This is a *required* field and must have one of the following values:
 
-  If os is "mac": "10.6", "10.7", "10.8", "10.9", "10.10".
+  If os is ``"mac"``: ``"10.6"``, ``"10.7"``, ``"10.8"``, ``"10.9"``, 
+  ``"10.10"``.
 
-  If os is "linux": "precise" or "trusty".
+  If os is ``"linux"``: ``"precise"`` or ``"trusty"``.
 
-  If os is "win": "xp", "vista", "win7", "win8", "2008"
+  If os is ``"win"``: ``"xp"``, ``"vista"``, ``"win7"``, ``"win8"``,
+  ``"2008"``.
 
 .. _`buildbucket bucket`: https://cr-buildbucket.appspot.com
 .. _`OAuth service account info`: ../master_auth.html
