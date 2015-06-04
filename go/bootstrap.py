@@ -46,8 +46,8 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 # On Windows we use git from depot_tools.
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
-# Pinned version of Go toolset to download.
-TOOLSET_VERSION = 'go1.4'
+# Pinned version of Go toolset to download. See http://golang.org/dl/.
+TOOLSET_VERSION = 'go1.4.2'
 
 # Platform dependent portion of a download URL. See http://golang.org/dl/.
 TOOLSET_VARIANTS = {
@@ -473,13 +473,13 @@ def call_go_tool(
       **kwargs)
 
 
-def bootstrap(vendor_paths, logging_level):
+def bootstrap(go_paths, logging_level):
   """Installs all dependencies in default locations.
 
   Supposed to be called at the beginning of some script (it modifies logger).
 
   Args:
-    vendor_paths: list of paths to search for Goopfile.lock, for each path goop
+    go_paths: list of paths to search for Goopfile.lock, for each path goop
         will install all dependencies in <path>/.vendor.
     logging_level: logging level of bootstrap process.
   """
@@ -487,8 +487,14 @@ def bootstrap(vendor_paths, logging_level):
   LOGGER.setLevel(logging_level)
   updated = ensure_toolset_installed(TOOLSET_ROOT, GO_APPENGINE)
   ensure_tools_installed(TOOLSET_ROOT)
-  for p in vendor_paths:
+  for p in go_paths:
     update_vendor_packages(TOOLSET_ROOT, p, force=updated)
+  if updated:
+    # GOPATH/pkg may have binaries generated with previous version of toolset,
+    # they may not be compatible and "go build" isn't smart enough to rebuild
+    # them.
+    for p in go_paths:
+      remove_directory([p, 'pkg'])
 
 
 def prepare_go_environ(skip_goop_update=False):
