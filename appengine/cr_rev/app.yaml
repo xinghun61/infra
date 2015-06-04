@@ -28,7 +28,7 @@ handlers:
   script: appengine_module.cr_rev.app.app
   secure: always
 
-- url: /cron/.*
+- url: /admin/.*
   script: appengine_module.cr_rev.app.app
   secure: always
   login: admin

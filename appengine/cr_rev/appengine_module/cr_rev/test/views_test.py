@@ -40,11 +40,11 @@ class TestViews(testing.AppengineTestCase):
 
   def test_scan_projects(self):
     """Test that the project scan cron job."""
-    self.test_app.get('/cron/scan_projects')
+    self.test_app.get('/admin/scan_projects')
 
   def test_scan_repos(self):
     """Test that the repo scan cron job."""
-    self.test_app.get('/cron/scan_repos')
+    self.test_app.get('/admin/scan_repos')
 
   def test_redirect_paths(self):
     """Test that a redirect retains extra path information."""
