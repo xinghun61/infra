@@ -143,10 +143,16 @@ def get_build_steps(master, builder):  # pragma: no cover
       properties[prop[0]] = prop[1]
     revision = properties.get('got_revision',
         properties.get('revision', None))
+    buildbucket_ts = properties.get('buildbucket', {}).get('build', {}).get(
+        'created_ts')
+    if buildbucket_ts:
+      scheduled_time = int(buildbucket_ts) / 1000.0
+    else:
+      scheduled_time = properties.get('requestedAt')
     starttime = build.get('times', [None, None])[0]
-    totaltime = build.get('times', [None, None])[1] - starttime
+    endtime = build.get('times', [None, None])[1]
+    totaltime = endtime - starttime
     buildresult = build.get('results', 0)
-
     number = build.get('number')
 
     steps = {}
@@ -157,6 +163,27 @@ def get_build_steps(master, builder):  # pragma: no cover
       'time': totaltime,
       'starttime': datetime.utcfromtimestamp(starttime),
     }
+
+    if scheduled_time:
+      schedule_sigil = 'build__schedule__time__'
+      steps[schedule_sigil] = {
+        'name': schedule_sigil,
+        'result': buildresult,
+        # because scheduled_time is an int, there might be floating point
+        # roundoff issues.
+        'time': max(starttime - scheduled_time, 0.0),
+        'starttime': datetime.utcfromtimestamp(scheduled_time),
+      }
+
+      overall_schedule_sigil = 'overall__queued__time__'
+      steps[overall_schedule_sigil] = {
+        'name': overall_schedule_sigil,
+        'result': buildresult,
+        # because scheduled_time is an int, there might be floating point
+        # roundoff issues.
+        'time': max(endtime - scheduled_time, 0.0),
+        'starttime': datetime.utcfromtimestamp(scheduled_time),
+      }
 
     for step in build.get('steps', []):
       if not step.get('isStarted') or not step.get('isFinished'):
