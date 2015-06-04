@@ -52,10 +52,11 @@ args = sys.argv[1:]
 # Set up default list of packages/directories if none have been provided.
 if all([arg.startswith('--') for arg in sys.argv[2:]]):
   args.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
-  if sys.platform != 'win32':
+  appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
+  if sys.platform != 'win32' and os.path.isdir(appengine_dir):
     appengine_dirs = [
       os.path.join('appengine', d)
-      for d in os.listdir(os.path.join(INFRA_ROOT, 'appengine'))
+      for d in os.listdir(appengine_dir)
     ]
     # Use relative paths to shorten the command-line
     args.extend(itertools.chain(
