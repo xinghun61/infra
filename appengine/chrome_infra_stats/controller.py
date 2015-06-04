@@ -146,7 +146,7 @@ def get_build_steps(master, builder):  # pragma: no cover
     buildbucket_ts = properties.get('buildbucket', {}).get('build', {}).get(
         'created_ts')
     if buildbucket_ts:
-      scheduled_time = int(buildbucket_ts) / 1000.0
+      scheduled_time = int(buildbucket_ts) / 1000000.0
     else:
       scheduled_time = properties.get('requestedAt')
     starttime = build.get('times', [None, None])[0]
