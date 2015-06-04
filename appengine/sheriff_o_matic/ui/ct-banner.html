@@ -1,0 +1,35 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../appengine_module/components/net.html">
+<polymer-element name="ct-banner" attributes = "message">
+  <template>
+  <style>
+    .message {
+      text-align: center;
+      font-weight: bold;
+      color: red;
+      background-color: white;
+      border-radius: 4px;
+    }
+  </style>
+    <template if="{{ message }}">
+    <div class="message">{{ message }}</div>
+    </template>
+  </template>
+  <script>
+  Polymer({
+    update: function() {
+      return net.json('/banner-msg').then(function(data) {
+        this.message = data.message;
+      }.bind(this), function(err) {
+        window.console.log("Banner message error: " + err);
+      });
+    }
+  });
+  </script>
+</polymer-element>
+

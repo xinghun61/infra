@@ -5,6 +5,7 @@
 import calendar
 import contextlib
 import datetime
+import datetime_encoder
 import json
 import logging
 import webapp2
@@ -19,15 +20,6 @@ from google.appengine.datastore import datastore_query
 from google.appengine.ext import ndb
 
 LOGGER = logging.getLogger(__name__)
-
-
-class DateTimeEncoder(json.JSONEncoder):
-
-  def default(self, obj):  # pylint: disable=E0202
-    if isinstance(obj, datetime.datetime):
-      return calendar.timegm(obj.timetuple())
-    # Let the base class default method raise the TypeError.
-    return json.JSONEncoder.default(self, obj)
 
 
 class AlertsJSON(ndb.Model):
@@ -65,7 +57,7 @@ class AlertsHandler(webapp2.RequestHandler):
 
   @staticmethod
   def generate_json_dump(alerts):
-    return json.dumps(alerts, cls=DateTimeEncoder, indent=1)
+    return json.dumps(alerts, cls=datetime_encoder.DateTimeEncoder, indent=1)
 
   @staticmethod
   def get_last_datastore(alerts_type):

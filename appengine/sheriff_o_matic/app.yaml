@@ -22,6 +22,14 @@ handlers:
   script: internal_alerts.app
   secure: always
 
+- url: /banner-msg
+  script: banner_msg.app
+  secure: always
+
+- url: /banner-msg-form
+  script: banner_msg.app
+  secure: always
+
 # Static resources.
 - url: /favicon.ico
   static_files: favicon.ico
@@ -78,6 +86,15 @@ skip_files:
 - ^(.*/)?README$
 - ^(.*/)?Makefile$
 
+includes:
+- components/auth
+- components/static_third_party.yaml
+
 libraries:
 - name: webapp2
   version: "latest"
+- name: pycrypto
+  version: "latest"
+- name: jinja2
+  version: "latest"
+

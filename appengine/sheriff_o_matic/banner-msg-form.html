@@ -1,0 +1,32 @@
+<html>
+  <body>
+
+{% if user %}
+<!--
+  TODO(seanmccullough): add validation code to catch the situation where
+  the user has entered text, but then hit "Deactivate" instead of
+  "Set Banner Message".
+-->
+  <p>Hi, {{ user }}</p>
+  {% if latest_msg is defined %}
+    <form action="/banner-msg-form?deactivate=true" method="post">
+      Latest message: {{ latest_msg.content }}<br/>
+      By: {{ latest_msg.who }}<br/>
+      {{ latest_msg.date }} (GMT)
+      <div><input type="submit" value="Deactivate Banner Message"></div>
+      <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}"></input>
+    </form>
+  {% else %}
+   <div>No currently active Trooper message.</div>
+  {% endif %}
+
+  Set new banner message:
+  <form action="/banner-msg-form" method="post">
+    <div><textarea name="content" rows="3" cols="60"></textarea></div>
+    <div><input type="submit" value="Set Banner Message"></div>
+    <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}"></input>
+  </form>
+{% endif %}
+  </body>
+</html>
+
