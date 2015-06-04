@@ -32,7 +32,11 @@ EXE_SUFFIX = '.exe' if sys.platform == 'win32' else ''
 
 
 class BuildException(Exception):
-  """Raised on errors."""
+  """Raised on errors during package build step."""
+
+
+class UploadException(Exception):
+  """Raised on errors during package upload step."""
 
 
 def run_python(script, args):
@@ -215,29 +219,17 @@ def get_package_vars():
   }
 
 
-def build_pkg(
-    go_workspace,
-    pkg_def_file,
-    out_file,
-    package_vars,
-    upload,
-    service_url,
-    tags,
-    service_account):
-  """Invokes CIPD client to build and (optionally) upload a package.
+def build_pkg(go_workspace, pkg_def_file, out_file, package_vars):
+  """Invokes CIPD client to build a package.
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
     pkg_def_file: path to *.yaml file with package definition.
     out_file: where to store the built package.
     package_vars: dict with variables to pass as -pkg-var to cipd.
-    upload: True to also upload the package to the package repository.
-    service_url: URL of a package repository service.
-    tags: a list of tags to attach to uploaded package instance.
-    service_account: path to *.json file with service account to use.
 
   Returns:
-    Dict with info about built package (result of -json-out of CIPD).
+    {'package': <name>, 'instance_id': <sha1>}
 
   Raises:
     BuildException on error.
@@ -259,32 +251,53 @@ def build_pkg(
     print >> sys.stderr, 'FAILED! ' * 10
     raise BuildException('Failed to build the CIPD package, see logs')
 
-  # Upload it.
-  if upload:
-    args = ['-service-url', service_url]
-    for tag in sorted(tags):
-      args.extend(['-tag', tag])
-    if service_account:
-      args.extend(['-service-account-json', service_account])
-    args.append(out_file)
-    exit_code, json_output = run_cipd(go_workspace, 'pkg-register', args)
-    if exit_code:
-      print
-      print >> sys.stderr, 'FAILED! ' * 10
-      raise BuildException('Failed to upload the CIPD package, see logs')
-
   # Expected result is {'package': 'name', 'instance_id': 'sha1'}
   info = json_output['result']
   print '%s %s' % (info['package'], info['instance_id'])
   return info
 
 
-def build_all(
+def upload_pkg(go_workspace, pkg_file, service_url, tags, service_account):
+  """Uploads existing *.cipd file to the storage and tags it.
+
+  Args:
+    go_workspace: path to 'infra/go' or 'infra_internal/go'.
+    pkg_file: path to *.cipd file to upload.
+    service_url: URL of a package repository service.
+    tags: a list of tags to attach to uploaded package instance.
+    service_account: path to *.json file with service account to use.
+
+  Returns:
+    {'package': <name>, 'instance_id': <sha1>}
+
+  Raises:
+    UploadException on error.
+  """
+  print_title('Uploading: %s' % os.path.basename(pkg_file))
+
+  args = ['-service-url', service_url]
+  for tag in sorted(tags):
+    args.extend(['-tag', tag])
+  if service_account:
+    args.extend(['-service-account-json', service_account])
+  args.append(pkg_file)
+  exit_code, json_output = run_cipd(go_workspace, 'pkg-register', args)
+  if exit_code:
+    print
+    print >> sys.stderr, 'FAILED! ' * 10
+    raise UploadException('Failed to upload the CIPD package, see logs')
+  info = json_output['result']
+  print '%s %s' % (info['package'], info['instance_id'])
+  return info
+
+
+def run(
     go_workspace,
     build_callback,
     package_def_dir,
     package_out_dir,
     package_def_files,
+    build,
     upload,
     service_url,
     tags,
@@ -298,6 +311,7 @@ def build_all(
     package_def_dir: path to build/packages dir to search for *.yaml.
     package_out_dir: where to put built packages.
     package_def_files: names of *.yaml files in package_def_dir or [] for all.
+    build: False to skip building packages (valid only when upload==True).
     upload: True to also upload built packages, False just to build them.
     service_url: URL of a package repository service.
     tags: a list of tags to attach to uploaded package instances.
@@ -307,6 +321,8 @@ def build_all(
   Returns:
     0 on success, 1 or error.
   """
+  assert build or upload, 'Both build and upload are False, nothing to do'
+
   packages_to_build = enumerate_packages_to_build(
       package_def_dir, package_def_files)
   package_vars = get_package_vars()
@@ -328,9 +344,10 @@ def build_all(
       print '  %s' % tag
 
   # Build the world.
-  build_callback()
+  if build:
+    build_callback()
 
-  # Package and upload it.
+  # Package  it.
   failed = []
   succeeded = []
   for pkg_def_file in packages_to_build:
@@ -338,17 +355,19 @@ def build_all(
     name = os.path.splitext(os.path.basename(pkg_def_file))[0]
     out_file = os.path.join(package_out_dir, name + '.cipd')
     try:
-      info = build_pkg(
-          go_workspace,
-          pkg_def_file,
-          out_file,
-          package_vars,
-          upload,
-          service_url,
-          tags,
-          service_account_json)
+      info = None
+      if build:
+        info = build_pkg(go_workspace, pkg_def_file, out_file, package_vars)
+      if upload:
+        info = upload_pkg(
+            go_workspace,
+            out_file,
+            service_url,
+            tags,
+            service_account_json)
+      assert info is not None
       succeeded.append({'pkg_def_name': name, 'info': info})
-    except BuildException as e:
+    except (BuildException, UploadException) as e:
       failed.append({'pkg_def_name': name, 'error': str(e)})
 
   print_title('Summary')
@@ -399,6 +418,9 @@ def main(
       '--upload',  action='store_true', dest='upload', default=False,
       help='upload packages into the repository')
   parser.add_argument(
+      '--no-rebuild',  action='store_false', dest='build', default=True,
+      help='when used with --upload means upload existing *.cipd files')
+  parser.add_argument(
       '--service-url', metavar='URL', dest='service_url',
       default=PACKAGE_REPO_SERVICE,
       help='URL of the package repository service to use')
@@ -412,12 +434,15 @@ def main(
       '--tags', metavar='KEY:VALUE', type=str, dest='tags', nargs='*',
       help='tags to attach to uploaded package instances')
   args = parser.parse_args(args)
-  return build_all(
+  if not args.build and not args.upload:
+    parser.error('--no-rebuild doesn\'t make sense without --upload')
+  return run(
       go_workspace,
       build_callback,
       package_def_dir,
       package_out_dir,
       args.yamls,
+      args.build,
       args.upload,
       args.service_url,
       args.tags or [],
