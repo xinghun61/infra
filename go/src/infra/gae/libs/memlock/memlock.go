@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"errors"
 	"infra/gae/libs/wrapper"
+	"infra/libs/clock"
 	"sync/atomic"
 	"time"
 
@@ -58,15 +59,15 @@ var memcacheLockTime = 16 * time.Second
 // the same data must use the same key. clientID is the unique identifier for
 // this client (lock-holder). If it's empty then TryWithLock() will return
 // ErrEmptyClientID.
-func TryWithLock(c context.Context, key, clientID string, f func(check func() bool) error) error {
+func TryWithLock(ctx context.Context, key, clientID string, f func(check func() bool) error) error {
 	if len(clientID) == 0 {
 		return ErrEmptyClientID
 	}
 
-	c = logging.SetField(c, "key", key)
-	c = logging.SetField(c, "clientID", clientID)
-	log := logging.Get(c)
-	mc := wrapper.GetMC(c)
+	ctx = logging.SetField(ctx, "key", key)
+	ctx = logging.SetField(ctx, "clientID", clientID)
+	log := logging.Get(ctx)
+	mc := wrapper.GetMC(ctx)
 
 	key = memlockKeyPrefix + key
 	cid := []byte(clientID)
@@ -151,12 +152,12 @@ func TryWithLock(c context.Context, key, clientID string, f func(check func() bo
 			select {
 			case <-stopChan:
 				break checkLoop
-			case <-time.After(delay):
+			case <-clock.Get(ctx).After(delay):
 			}
 			if !checkAnd(refresh) {
 				atomic.StoreUint32(&held, 0)
 				log.Warningf("lost lock: %s", err)
-				break
+				return
 			}
 		}
 
