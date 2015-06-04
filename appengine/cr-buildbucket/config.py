@@ -57,12 +57,14 @@ def parse_bucket_config(text):
   return cfg
 
 
+@ndb.non_transactional
 def get_buckets():
   """Returns a list of project_config_pb2.Bucket objects."""
   buckets = Bucket.query().fetch()
   return [parse_bucket_config(b.config_content) for b in buckets]
 
 
+@ndb.non_transactional
 def get_bucket(name):
   """Returns a project_config_pb2.Bucket by name."""
   bucket = Bucket.get_by_id(name)
