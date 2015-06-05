@@ -42,7 +42,26 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-    content = chromium_deps.DEPSDownloader().Load(
+    content = chromium_deps.DEPSDownloader(check_deps_git_first=True).Load(
+        'https://src.git', revision, 'DEPS')
+    self.assertEqual(expected_content, content)
+
+  def testNotUseDEPS_GIT(self):
+    revision = 'abc'
+    expected_content = 'DEPS test'
+
+    DummyGitRepository.RESPONSES = {
+        self.DEPS_GIT: {
+            revision: '.DEPS.git content'
+        },
+        self.DEPS: {
+            revision: expected_content
+        },
+    }
+
+    self.mock(git_repository, 'GitRepository', DummyGitRepository)
+
+    content = chromium_deps.DEPSDownloader(check_deps_git_first=False).Load(
         'https://src.git', revision, 'DEPS')
     self.assertEqual(expected_content, content)
 
@@ -61,7 +80,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(git_repository, 'GitRepository', DummyGitRepository)
 
-    content = chromium_deps.DEPSDownloader().Load(
+    content = chromium_deps.DEPSDownloader(check_deps_git_first=True).Load(
         'https://src.git', revision, 'slave.DEPS')
     self.assertEqual(expected_content, content)
 
@@ -109,7 +128,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.assertEqual(expected_dependency_dict, dependency_dict)
 
   def testGetChromiumDEPSRolls(self):
-    def MockGetChromeDependency(revision, os_platform):
+    def MockGetChromeDependency(revision, os_platform, _=False):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {

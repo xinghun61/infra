@@ -14,6 +14,12 @@ _CHROMIUM_REPO_MASTER = 'https://chromium.googlesource.com/chromium/src.git'
 
 class DEPSDownloader(deps_parser.DEPSLoader):
   """Downloads DEPS from remote Git repo."""
+  def __init__(self, check_deps_git_first=False):
+    """
+    Args:
+      check_deps_git_first (bool): If True, use .DEPS.git instead of DEPS.
+    """
+    self.check_deps_git_first = check_deps_git_first
 
   def Load(self, repo_url, revision, deps_file):
     http_client = http_client_appengine.HttpClientAppengine()
@@ -21,14 +27,14 @@ class DEPSDownloader(deps_parser.DEPSLoader):
 
     content = None
 
-    # Try .DEPS.git first if the given deps_file is "DEPS", because before
-    # migration from SVN to Git, .DEPS.git contains dependencies from Git while
-    # DEPS contains those from SVN.
-    if deps_file == 'DEPS':
+    if self.check_deps_git_first and deps_file == 'DEPS':
+      # When the given deps_file is "DEPS" and .DEPS.git should be checked
+      # first, it's because before migration from SVN to Git, .DEPS.git contains
+      # dependencies hosted in Git while DEPS contains those in SVN.
+      # If .DEPS.git is not found, fallback to the given deps_file. Assume it is
+      # a commit after migration from SVN to Git.
       content = repo.GetSource('.DEPS.git', revision)
 
-    # If .DEPS.git is not found, use DEPS. Assume it is a commit after migration
-    # from SVN to Git.
     if content is None:
       content = repo.GetSource(deps_file, revision)
 
@@ -38,13 +44,14 @@ class DEPSDownloader(deps_parser.DEPSLoader):
     return content
 
 
-def GetChromeDependency(revision, os_platform):
+def GetChromeDependency(revision, os_platform, check_deps_git_first=False):
   """Returns all dependencies of Chrome as a dict for the given revision and OS.
 
   Args:
     revision (str): The revision of a Chrome build.
     os_platform (str): The target platform of the Chrome build, should be one of
         'win', 'ios', 'mac', 'unix', 'android', or 'all'.
+    check_deps_git_first (bool): If True, use .DEPS.git instead of DEPS.
 
   Returns:
     A map from dependency path to the dependency info.
@@ -52,7 +59,8 @@ def GetChromeDependency(revision, os_platform):
   root_dep = dependency.Dependency(
       _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER, revision, 'DEPS')
 
-  deps_parser.UpdateDependencyTree(root_dep, [os_platform], DEPSDownloader())
+  deps_parser.UpdateDependencyTree(
+      root_dep, [os_platform], DEPSDownloader(check_deps_git_first))
 
   dependencies = {}
 
@@ -67,16 +75,20 @@ def GetChromeDependency(revision, os_platform):
   return dependencies
 
 
-def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, os_platform):
+def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, os_platform,
+                         check_deps_git_first=False):
   """Returns a list of dependency rolls between the given Chromium revisions.
 
   Args:
     old_cr_revision (str): The Git commit hash for the old Chromium revision.
     new_cr_revision (str): The Git commit hash for the new Chromium revision.
     os_platform (str): The target OS platform of the Chrome or test binary.
+    check_deps_git_first (bool): If True, use .DEPS.git instead of DEPS.
   """
-  old_deps = GetChromeDependency(old_cr_revision, os_platform)
-  new_deps = GetChromeDependency(new_cr_revision, os_platform)
+  old_deps = GetChromeDependency(
+      old_cr_revision, os_platform, check_deps_git_first)
+  new_deps = GetChromeDependency(
+      new_cr_revision, os_platform, check_deps_git_first)
 
   rolls = []
 

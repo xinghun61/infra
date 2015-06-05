@@ -15,7 +15,7 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
   app_module = handlers._APP
 
   def testExtractDEPSInfo(self):
-    def MockGetChromeDependency(revision, os_platform):
+    def MockGetChromeDependency(revision, os_platform, _=False):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {
