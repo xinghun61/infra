@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import unittest
 import urllib
+
+from testing_utils import testing
 
 from common import retry_http_client
 
@@ -16,6 +17,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     self.simulated_failures = simulated_failures
     self.failure_status = failure_status
 
+  def GetBackoff(self, *_):
+    return 0
+
   def _Get(self, url, timeout_seconds):
     self.requests.append({
         'url': url,
@@ -27,7 +31,7 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     else:
       return self.failure_status, 'failure'
 
-class HttpClientTest(unittest.TestCase):
+class HttpClientTest(testing.AppengineTestCase):
   def testRequestWithTimeout(self):
     url = 'http://test'
     timeout_seconds = 70
@@ -57,50 +61,41 @@ class HttpClientTest(unittest.TestCase):
       self.assertIn(name, params)
       self.assertEqual(urllib.quote(str(params[name])), value)
 
+  def testGetBackoff(self):
+    cases = [
+        # (retry_backoff, tries, expected_backoff)
+        (1, 1, 1),
+        (1, 2, 1),
+        (2, 1, 2),
+        (2, 2, 4)
+    ]
+    for retry_backoff, tries, expected_backoff in cases:
+      http_client = retry_http_client.RetryHttpClient()
+      self.assertLessEqual(expected_backoff,
+                           http_client.GetBackoff(retry_backoff, tries))
+
   def testRequestWithRetry(self):
     url = 'http://test'
     simulated_failures = 2
 
-    original_time_sleep = retry_http_client.time.sleep
-    try:
-      def RunWithInterval(retry_interval):
-        sleep_time = []
-        def DummyTimeSleep(seconds):
-          sleep_time.append(seconds)
-        retry_http_client.time.sleep = DummyTimeSleep
+    self.mock_sleep()
 
-        dummy_http_client = DummyHttpClient(simulated_failures, 503)
+    dummy_http_client = DummyHttpClient(simulated_failures, 503)
+    retry_backoff = 1
 
-        status_code, content = dummy_http_client.Get(
-            url, max_retries=simulated_failures + 2,
-            retry_interval=retry_interval)
-        self.assertEquals(200, status_code)
-        self.assertEquals('success', content)
-        self.assertEquals(simulated_failures + 1,
-                          dummy_http_client.request_count)
-
-        count = 0
-        for request in dummy_http_client.requests:
-          count += 1
-
-          self.assertEquals(url, request['url'])
-          if count > 1:
-            if retry_interval > 1:
-              expected_interval = retry_interval ** (count - 1)
-            else:
-              expected_interval = retry_interval
-            self.assertLessEqual(expected_interval, sleep_time[count - 2])
-
-      RunWithInterval(0.1)
-      RunWithInterval(1.1)
-    finally:
-      retry_http_client.time.sleep = original_time_sleep
+    status_code, content = dummy_http_client.Get(
+        url, max_retries=simulated_failures + 2,
+        retry_backoff=retry_backoff)
+    self.assertEquals(200, status_code)
+    self.assertEquals('success', content)
+    self.assertEquals(simulated_failures + 1,
+                      dummy_http_client.request_count)
 
   def testFailedRequest(self):
     url = 'http://test'
     dummy_http_client = DummyHttpClient(5, 503)
     status_code, content = dummy_http_client.Get(
-        url, max_retries=2, retry_interval=0.01)
+        url, max_retries=2, retry_backoff=0.01)
     self.assertEquals(2, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
     self.assertEquals('failure', content)
@@ -111,7 +106,7 @@ class HttpClientTest(unittest.TestCase):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
       status_code, content = dummy_http_client.Get(
-          url, max_retries=2000, retry_interval=0.1)
+          url, max_retries=2000, retry_backoff=0.1)
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
       self.assertEquals('failure', content)

@@ -18,9 +18,9 @@ class DummyHttpClient(RetryHttpClient):
     self.response_content = response_content
     self.requests = []
 
-  def WaitForNextRetry(self, *_):  # pragma: no cover
+  def GetBackoff(self, *_):  # pragma: no cover
     """Override to avoid sleep."""
-    pass
+    return 0
 
   def _Get(self, url, _):
     self.requests.append(url)

@@ -236,9 +236,9 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
   def SetResponseForUrl(self, url, response):
     self.response_for_url[url] = response
 
-  def WaitForNextRetry(self, *_):  # pragma: no cover
+  def GetBackoff(self, *_):  # pragma: no cover
     """Override to avoid sleep."""
-    pass
+    return 0
 
   def _Get(self, url, _):
     response = self.response_for_url.get(url)
