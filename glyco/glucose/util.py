@@ -3,9 +3,29 @@
 # found in the LICENSE file.
 
 import contextlib
+import os
+import platform
 import tempfile
 import shutil
+import subprocess
 import sys
+
+
+class GlycoSetupError(Exception):
+  """Issue outside the reach of Glyco that prevents execution."""
+
+
+def pip(*args, **kwargs):
+  """Run pip from the current environment."""
+  bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
+  subprocess.check_call(
+      (os.path.join(sys.prefix, bin_dir, 'pip'),) + args, **kwargs)
+
+
+def platform_tag():
+  if sys.platform.startswith('linux'):
+    return '_{0}_{1}'.format(*platform.linux_distribution())
+  return ''
 
 
 # pylint: disable=redefined-builtin

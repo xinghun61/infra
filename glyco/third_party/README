@@ -1,0 +1,16 @@
+Packages in this directory have been installed there using pip, based on a wheel file:
+pip install -t third_party --no-index --no-deps <package>.whl
+
+Installation of virtualenv.
+The following assumes that pip and wheel are installed.
+
+git clone https://github.com/pypa/virtualenv/
+cd virtualenv
+git checkout 13.0.3
+
+# Generate the wheel file:
+pip wheel --no-index --no-deps --wheel-dir ./wheelhouse virtualenv/
+# Install the wheel file
+pip install -t ./third_party --no-index --no-deps wheelhouse/virtualenv-13.0.3-py2.py3-none-any.whl
+
+

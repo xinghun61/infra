@@ -5,14 +5,27 @@
 import argparse
 import sys
 
+from glucose import pack
 from glucose import selfpack
+from glucose import util
+
 
 def add_argparse_options(parser):
+  parser.add_argument('--keep-tmp-directories', action='store_true',
+                      help="Do not erase temporary directories created. This is"
+                      " intended for debugging Glyco only.")
+
   subparsers = parser.add_subparsers()
   selfpack.add_subparser(subparsers)
+  pack.add_subparser(subparsers)
+
 
 def process_argparse_options(options):
-  options.command(options)
+  try:
+    options.command(options)
+  except util.GlycoSetupError as err:
+    print >> sys.stderr, err.message
+    sys.exit(2)
 
 
 def main():
