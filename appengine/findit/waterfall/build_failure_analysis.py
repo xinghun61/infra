@@ -159,12 +159,18 @@ class _Justification(object):
     self._hints[hint] += score
     self._score += score
 
-  def AddDEPSRoll(self, dep_path, dep_repo_url, dep_new_revision,
+  def AddDEPSRoll(self, change_action, dep_path, dep_repo_url, dep_new_revision,
                   dep_old_revision, file_path_in_log, score):
-    url_to_changes_in_roll = '%s/+log/%s..%s?pretty=fuller' % (
-        dep_repo_url, dep_old_revision[:12], dep_new_revision[:12])
-    hint = ('Rolled %s with changes %s (and %s was in log)' % (
-        dep_path, url_to_changes_in_roll, file_path_in_log))
+    if dep_old_revision is not None and dep_new_revision is not None:
+      url_to_changes_in_roll = '%s/+log/%s..%s?pretty=fuller' % (
+          dep_repo_url, dep_old_revision[:12], dep_new_revision[:12])
+    elif dep_new_revision is not None:
+      url_to_changes_in_roll = '%s/+log/%s' % (dep_repo_url, dep_new_revision)
+    else:  # New revision is None. (Old revision should not be None.)
+      url_to_changes_in_roll = '%s/+log/%s' % (dep_repo_url, dep_old_revision)
+
+    hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
+        change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
     self._hints[hint] = score
     self._score += score
 
@@ -244,6 +250,51 @@ def _CheckFile(touched_file,
                                   file_name_occurrences.get(file_name))
 
 
+def _StripChromiumRootDirectory(file_path):
+  # Strip src/ from file path to make all files relative to the chromium root
+  # directory.
+  if file_path.startswith('src/'):
+    file_path = file_path[4:]
+  return file_path
+
+
+def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification):
+  """Checks if the file is in a dependency roll and updates the justification.
+
+  Args:
+    file_path_in_log (str): File path appearing in the failure log.
+    rolls (list): A list of dependency rolls made by a single commit/CL, each
+        roll is a dict in the following form:
+        {
+          'path': 'path/to/dependency',
+          'repo_url': 'https://url/to/dep.git',
+          'old_revision': 'git_hash1',
+          'new_revision': 'git_hash2'
+        }
+    justification (_Justification): An instance of _Justification.
+  """
+  for roll in rolls:
+    dep_path = _StripChromiumRootDirectory(roll['path'])
+    if not file_path_in_log.startswith(dep_path):
+      continue
+
+    if roll['old_revision'] is not None and roll['new_revision'] is not None:
+      change_action = 'rolled'
+      score = 1
+      # TODO: use Git blame to check whether the file is changed during the
+      # dependency roll, and give higher score if so.
+    elif roll['new_revision'] is not None:
+      change_action = 'added'
+      score = 5
+    else:  # New revision is None. (Old revision should not be None.)
+      change_action = 'deleted'
+      score = 5
+
+    justification.AddDEPSRoll(
+        change_action, dep_path, roll['repo_url'], roll['new_revision'],
+        roll['old_revision'], file_path_in_log[len(dep_path):], score)
+
+
 def _CheckFiles(failure_signal, change_log, deps_info):
   """Check files in the given change log of a CL against the failure signal.
 
@@ -272,26 +323,15 @@ def _CheckFiles(failure_signal, change_log, deps_info):
 
   justification = _Justification()
 
-  def StripChromiumRootDirectory(file_path):
-    # Strip src/ from file path to make all files relative to the chromium root
-    # directory.
-    if file_path.startswith('src/'):
-      file_path = file_path[4:]
-    return file_path
-
+  rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
   for file_path_in_log, _ in failure_signal.files.iteritems():
-    file_path_in_log = StripChromiumRootDirectory(file_path_in_log)
+    file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 
     for touched_file in change_log['touched_files']:
       _CheckFile(
           touched_file, file_path_in_log, justification, file_name_occurrences)
 
-    for roll in deps_info.get('deps_rolls', {}).get(change_log['revision'], []):
-      dep_path = StripChromiumRootDirectory(roll['path'])
-      if file_path_in_log.startswith(dep_path):
-        justification.AddDEPSRoll(
-            dep_path, roll['repo_url'], roll['new_revision'],
-            roll['old_revision'], file_path_in_log[len(dep_path):], 2)
+    _CheckFileInDependencyRolls(file_path_in_log, rolls, justification)
 
   if not justification.score:
     return None
@@ -366,7 +406,7 @@ def AnalyzeBuildFailure(
     failure_signal = FailureSignal.FromDict(failure_signals[step_name])
     failed_build_number = step_failure_info['current_failure']
 
-    if step_failure_info.get('last_pass') != None:
+    if step_failure_info.get('last_pass') is not None:
       build_number = step_failure_info.get('last_pass') + 1
     else:
       build_number = step_failure_info['first_failure']

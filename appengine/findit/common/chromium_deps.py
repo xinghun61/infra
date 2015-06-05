@@ -93,7 +93,10 @@ def GetChromiumDEPSRolls(old_cr_revision, new_cr_revision, os_platform):
           dependency.DependencyRoll(
               path, new_dep.repo_url, old_revision, new_dep.revision))
 
-  # Note: dependencies could be deleted too. However, regressions caused by that
-  # seems rare. Thus, ignore them for now.
+  for path, old_dep in old_deps.iteritems():
+    if path not in new_deps:
+      rolls.append(
+          dependency.DependencyRoll(
+              path, old_dep.repo_url, old_dep.revision, None))
 
   return rolls

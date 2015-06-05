@@ -149,6 +149,69 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNone(justification)
 
+  def _testCheckFileInDependencyRoll(
+      self, file_path_in_log, rolls, expected_score):
+    justification = build_failure_analysis._Justification()
+    build_failure_analysis._CheckFileInDependencyRolls(
+        file_path_in_log, rolls, justification)
+    self.assertEqual(expected_score, justification.score)
+
+  def testCheckFileInDependencyRollWhenUnrelatedDependencyIsRolled(self):
+    file_path_in_log = 'third_party/dep/f.cc'
+    rolls = [
+        {  # An unrelated dependency was rolled to a new revision.
+            'path': 'src/third_party/dep2/',
+            'repo_url': 'https://url_dep2',
+            'old_revision': '6',
+            'new_revision': '8',
+        },
+    ]
+    expected_score = 0
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score)
+
+  def testCheckFileInDependencyRollWhenRelatedDependencyIsRolled(self):
+    file_path_in_log = 'third_party/dep/f.cc'
+    rolls = [
+        {  # Dependency was rolled to a new revision.
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': '7',
+            'new_revision': '9',
+        },
+    ]
+    expected_score = 1
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score)
+
+  def testCheckFileInDependencyRollWhenRelatedDependencyIsAdded(self):
+    file_path_in_log = 'third_party/dep/f.cc'
+    rolls = [
+        {  # Dependency was newly-added.
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': None,
+            'new_revision': '9',
+        },
+    ]
+    expected_score = 5
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score)
+
+  def testCheckFileInDependencyRollWhenRelatedDependencyIsDeleted(self):
+    file_path_in_log = 'third_party/dep/f.cc'
+    rolls = [
+        {  # Dependency was deleted.
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': '7',
+            'new_revision': None,
+        },
+    ]
+    expected_score = 5
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score)
+
   def testCheckFilesAgainstDEPSRoll(self):
     failure_signal_json = {
         'files': {
@@ -174,12 +237,6 @@ class BuildFailureAnalysisTest(unittest.TestCase):
                     'old_revision': '7',
                     'new_revision': '9',
                 },
-                {
-                    'path': 'third_party/dep2',
-                    'repo_url': 'https://url_dep2',
-                    'old_revision': None,
-                    'new_revision': '1',
-                },
             ]
         }
     }
@@ -187,9 +244,9 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     justification = build_failure_analysis._CheckFiles(
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
-    # The score is 2 because:
-    # +2 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
-    self.assertEqual(2, justification['score'])
+    # The score is 1 because:
+    # +1 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
+    self.assertEqual(1, justification['score'])
 
   def testAnalyzeSuccessfulBuild(self):
     failure_info = {

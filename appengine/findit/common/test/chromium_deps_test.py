@@ -116,7 +116,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
             'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
             'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
             'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
-            'src/dep3': Dependency('src/dep3', 'https://url_dep3', '1', 'DEPS'),
+            'src/dep4': Dependency('src/dep4', 'https://url_dep4', '1', 'DEPS'),
         }
       else:
         self.assertEqual('rev1', revision)
@@ -124,6 +124,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
             'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
             'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
             'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
+            'src/dep3': Dependency('src/dep3', 'https://url_dep3', '3', 'DEPS'),
         }
 
     self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
@@ -136,10 +137,16 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
             'new_revision': '9',
         },
         {
-            'path': 'src/dep3',
-            'repo_url': 'https://url_dep3',
+            'path': 'src/dep4',
+            'repo_url': 'https://url_dep4',
             'old_revision': None,
             'new_revision': '1',
+        },
+        {
+            'path': 'src/dep3',
+            'repo_url': 'https://url_dep3',
+            'old_revision': '3',
+            'new_revision': None,
         },
     ]
 

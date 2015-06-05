@@ -126,7 +126,7 @@
       $('#score-explanation-dialog').dialog({
         autoOpen: false,
         modal: true,
-        width:600,
+        width: 600,
       });
       $('#score-info').click(function() {
         $('#score-explanation-dialog').dialog('open');
@@ -273,7 +273,13 @@
     <ul>
       <li>5: The CL added or deleted a file that appears in the failure log.</li>
       <li>2: The CL modified a file that appears in the failure log.</li>
-      <li>1: The CL modified a file that is related to another file appearing in the failure log. (eg: file.h vs file_unittest.cc or file_impl.cc)</li>
+      <li>1: The CL modified a file that is related to another file
+             appearing in the failure log. (eg: file.h was changed and
+             file_unittest.cc or file_impl.cc appeared in the log.)</li>
+      <li>1: The CL rolled a dependency within src/DEPS and a file of that
+             dependency appears in the failure log. (eg: third_party/dep
+             was changed in src/DEPS and third_party/dep/f.cpp appeared
+             in the log.)</li>
     </ul>
     (More rules will be added when implemented.)
   </div>
