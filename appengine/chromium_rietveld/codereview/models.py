@@ -44,7 +44,7 @@ from codereview.exceptions import FetchError
 REQUIRED_REVIEWER_PREFIX = '*'
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
-PROJECTS_WITHOUT_CQ = ('webrtc',)
+PROJECTS_WITHOUT_CQ = ()
 
 
 def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
