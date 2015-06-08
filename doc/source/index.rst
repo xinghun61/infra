@@ -39,7 +39,7 @@ Contributer's Guides
   on the compilation/deployment pipeline.
 * :doc:`testing` - tools used, how and why.
 * :doc:`logging` - how logging works in infra.git.
-
+* :doc:`flags` - how to process command-line arguments.
 * :doc:`appengine` - How to develop an appengine app in infra.git
 
 TBD:
