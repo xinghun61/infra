@@ -721,8 +721,9 @@ def derive_patch_stats(begin_date, end_date, patch_id):
   attempt_counter = 0
   for result in reversed(results):
     action = result['fields'].get('action')
+    dry_run = result['fields'].get('dry_run')
     if state == 'stop':
-      if action == 'patch_start':
+      if action == 'patch_start' and not dry_run:
         state = 'start'
         attempt['begin'] = result['timestamp']
     if state != 'start':
