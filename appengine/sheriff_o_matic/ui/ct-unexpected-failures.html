@@ -35,6 +35,7 @@ found in the LICENSE file.
       <ct-tree-status status="{{ treeStatuses['blink'] }}" state="{{ treeStatuses['blink'].status }}"></ct-tree-status>
     </template>
     <template if="{{ tree == 'trooper' }}">
+      <ct-tree-status status="{{ treeStatuses['infra'] }}" state="{{ treeStatuses['infra'].status }}"></ct-tree-status>
       <paper-shadow z="1">
         <div class="trooper-bugs">
           <a href="https://code.google.com/p/chromium/issues/list?can=2&q=Infra%3DTroopers">Current Trooper bug list</a>
@@ -57,7 +58,7 @@ found in the LICENSE file.
 
       created: function() {
         this.treeStatuses = {};
-        var projects = ['chromium', 'blink'];
+        var projects = ['chromium', 'blink', 'infra'];
         for (var i = 0; i < projects.length; i++) {
           this.treeStatuses[projects[i]] = new TreeStatus(projects[i]);
         }
