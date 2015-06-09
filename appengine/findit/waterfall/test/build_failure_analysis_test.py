@@ -60,6 +60,8 @@ class BuildFailureAnalysisTest(unittest.TestCase):
         build_failure_analysis._IsRelated('a/x.cc', 'a/b/y.cc'))
     self.assertFalse(
         build_failure_analysis._IsRelated('a/x.cc', 'xdtest.cc'))
+    self.assertFalse(
+        build_failure_analysis._IsRelated('a_tests.cc', 'a_browsertests.cc'))
 
   def testCheckFilesAgainstSuspectedCL(self):
     failure_signal_json = {

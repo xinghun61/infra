@@ -64,9 +64,36 @@ _COMMON_SUFFIXES = [
     'aura', 'x', 'x11',
 ]
 
+_COMMON_TEST_SUFFIXES = [
+    'browser_tests', 'browser_test', 'browsertest', 'browsertests',
+    'unittests', 'unittest', 'tests', 'test',
+]
+
 _COMMON_SUFFIX_PATTERNS = [
     re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_SUFFIXES
 ]
+
+_COMMON_TEST_SUFFIX_PATTERNS = [
+    re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_TEST_SUFFIXES
+]
+
+
+def _AreBothFilesTestRelated(changed_src_file_path, file_in_log_path):
+  """Tests if both file names contain test-related suffixes."""
+  changed_file_name = os.path.splitext(
+      os.path.basename(changed_src_file_path))[0]
+  file_in_log_name = os.path.splitext(os.path.basename(file_in_log_path))[0]
+
+  is_changed_file_test_related = False
+  is_file_in_log_test_related = False
+
+  for test_suffix_patten in _COMMON_TEST_SUFFIX_PATTERNS:
+    if test_suffix_patten.match(changed_file_name):
+      is_changed_file_test_related = True
+    if test_suffix_patten.match(file_in_log_name):
+      is_file_in_log_test_related = True
+
+  return is_changed_file_test_related and is_file_in_log_test_related
 
 
 def _StripExtensionAndCommonSuffix(file_path):
@@ -99,9 +126,15 @@ def _IsRelated(changed_src_file_path, file_path):
     2. file_impl.cc <-> file_unittest.cc
     3. file_win.cc <-> file_mac.cc
     4. x.h <-> x.cc
+
+  Example of not related files:
+    1. a_tests.py <-> a_browsertests.py
   """
   if file_path.endswith('.o') or file_path.endswith('.obj'):
     file_path = _NormalizeObjectFilePath(file_path)
+
+  if _AreBothFilesTestRelated(changed_src_file_path, file_path):
+    return False
 
   if _IsSameFile(_StripExtensionAndCommonSuffix(changed_src_file_path),
                  _StripExtensionAndCommonSuffix(file_path)):
