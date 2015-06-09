@@ -95,9 +95,42 @@
       "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "gsutil upload",
+    "name": "gsutil upload chromium-38.0.2125.122.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "generate_hashes"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "md5  164ebd6889588da166a52ca0d57b9004  bash",
+      "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122.tar.xz.hashes",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes@@@"
     ]
   },
   {

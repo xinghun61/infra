@@ -18,6 +18,10 @@ DEPS = [
 ]
 
 
+def gsutil_upload(api, source, bucket, dest, args):
+  api.gsutil.upload(source, bucket, dest, args, name=('upload ' + dest))
+
+
 def export_tarball(api, args, source, destination):
   try:
     temp_dir = api.path.mkdtemp('export_tarball')
@@ -26,10 +30,24 @@ def export_tarball(api, args, source, destination):
         api.chromium.resource('export_tarball.py'),
         args,
         cwd=temp_dir)
-    api.gsutil.upload(
+    gsutil_upload(
+        api,
         api.path.join(temp_dir, source),
         'chromium-browser-official',
         destination,
+        args=['-a', 'public-read'])
+
+    hashes_result = api.python(
+        'generate_hashes',
+        api.chromium.resource('generate_hashes.py'),
+        [api.path.join(temp_dir, source), api.raw_io.output()],
+        step_test_data=lambda: api.raw_io.test_api.output(
+            'md5  164ebd6889588da166a52ca0d57b9004  bash'))
+    gsutil_upload(
+        api,
+        hashes_result.raw_io.output,
+        'chromium-browser-official',
+        destination + '.hashes',
         args=['-a', 'public-read'])
   finally:
     api.file.rmtree('temp dir', temp_dir)
