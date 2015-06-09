@@ -226,20 +226,9 @@ Per-scheduler configurations
   times every day); the latter indicates that builds will be scheduled when
   there are new commits to the given repo.
 
-  If the type is "cron", the scheduler dict must also have the "cron"
-  field; if the type is "git_poller"; the scheduler dict must also have the
-  "git_repo_url" field.
-
-``cron``
-  This is an *optional* field but must be present if the scheduler type
-  is "cron".
-  
-  It must contain a dict with two fields, ``hour``, and ``minute``.
-  Each field may have a value of either ``"*"``, an integer, or a list
-  of integers. The integer values must be in the range [0, 23) for ``hour``
-  and [0, 60) for ``minute``; the value ``"*"`` is equivalent to specifying
-  a list containing every value in the range. This matches the syntax
-  used for the ``Nightly`` scheduler in buildbot.
+  If the type is "cron", the scheduler dict must also have the "hour"
+  and "minute" fields; if the type is "git_poller"; the scheduler
+  dict must also have the "git_repo_url" field.
 
 ``git_repo_url``
   This is an *optional* field but must be present if the scheduler type
@@ -247,6 +236,32 @@ Per-scheduler configurations
   
   It must contain a string value that is the URL for a repo
   to be cloned and polled for changes.
+
+``hour``
+  This is an *optional* field but must be present if and only if the
+  scheduler type is "cron". If this field is present, ``minute`` must be also.
+
+  This field and the ``minute`` field control when cron jobs are
+  scheduled on the builder.
+
+  The field may have a value of either ``"*"``, an integer, or a list
+  of integers, where integers must be in the range [0, 23). The value
+  ``"*"`` is equivalent to specifying a list containing every value in the
+  range. This matches the syntax used for the ``Nightly`` scheduler in
+  buildbot.
+
+``minute``
+  This is an *optional* field but must be present if and only if the
+  scheduler type is "cron". If this field is present, ``hour`` must be also.
+
+  This field and the ``hour`` field control when cron jobs are
+  scheduled on the builder.
+
+  The field may have a value of either ``"*"``, an integer, or a list
+  of integers, where integers must be in the range [0, 60). The value
+  ``"*"`` is equivalent to specifying a list containing every value in the
+  range. This matches the syntax used for the ``Nightly`` scheduler in
+  buildbot.
 
 Per-pool configurations
 -----------------------
