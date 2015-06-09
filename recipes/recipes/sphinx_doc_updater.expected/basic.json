@@ -56,7 +56,8 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/docgen.py",
+      "[SLAVE_BUILD]/infra/run.py",
+      "infra.tools.docgen",
       "clean"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -66,7 +67,8 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra/docgen.py"
+      "[SLAVE_BUILD]/infra/run.py",
+      "infra.tools.docgen"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "Generate documentation"

@@ -21,10 +21,11 @@ def GenSteps(api):
 
   # Update documentation
   api.python('Clean documentation',
-             api.path['slave_build'].join('infra', 'docgen.py'),
-             ['clean'])
+             api.path['slave_build'].join('infra', 'run.py'),
+             ['infra.tools.docgen', 'clean'])
   api.python('Generate documentation',
-             api.path['slave_build'].join('infra', 'docgen.py'))
+             api.path['slave_build'].join('infra', 'run.py'),
+             ['infra.tools.docgen'])
 
   # Upload generated documentation
   api.gsutil.upload(
