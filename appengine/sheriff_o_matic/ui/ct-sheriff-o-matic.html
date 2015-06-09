@@ -141,19 +141,19 @@ found in the LICENSE file.
       <core-header-panel mode="seamed" id="core_header_panel" navigation flex>
         <core-toolbar id="main_toolbar"></core-toolbar>
         <div valueattr="id" id="main_menu">
-          <core-menu id="menu" valueattr="id" on-core-select="{{ menuSelected }}">
+          <core-menu id="menu" valueattr="id">
             <core-item icon="folder" label="Trees" notap="true"></core-item>
             <template repeat="{{ t in treeList.trees }}">
-              <paper-item id="{{ t.name }}" label="{{ t.displayName }}" horizontal center layout>
+              <paper-item id="{{ t.name }}" label="{{ t.displayName }}" on-tap="{{ itemSelected }}" horizontal center layout>
                 {{ t.displayName }}
               </paper-item>
             </template>
 
             <core-item icon="help" label="Help" notap="true"></core-item>
 
-            <paper-item id="help_links" label="Useful Links" horizontal center layout>Useful Links</paper-item>
-            <paper-item id="help_calendar" label="Rotation Calendar" horizontal center layout>Rotation Calendar</paper-item>
-            <paper-item id="health" label="System Health" horizontal center layout>System Health</paper-item>
+            <paper-item id="help_links" label="Useful Links" on-tap="{{ itemSelected }}" horizontal center layout>Useful Links</paper-item>
+            <paper-item id="help_calendar" label="Rotation Calendar" on-tap="{{ itemSelected }}" horizontal center layout>Rotation Calendar</paper-item>
+            <paper-item id="health" label="System Health" on-tap="{{ itemSelected }}" horizontal center layout>System Health</paper-item>
           </core-menu>
           <div flex vertical layout center>
             <paper-button id="feedback_button" on-click="{{ fileSoMBug }}" raised="" role="button">
@@ -231,21 +231,15 @@ found in the LICENSE file.
       alertsHistoryKey: null,
       _pendingFailureGroupKey: '',
 
-      menuSelected: function(e, detail, sender) {
-        if (!e.detail.isSelected) {
-          return;
-        }
-        var pageId = e.detail.item.id;
+      itemSelected: function(e) {
+        var pageId = e.target.id;
         if (!pageId) {
           return;
         }
 
-        this.tree = pageId;
-        this.page_title = e.detail.item.innerText;
-        this.$.main_scaffold.closeDrawer();
-        history.pushState(null, null, pageId + window.location.search);
-        this.$.router.go();
+        this.$.router.go(pageId + window.location.search);
       },
+
       bindHealth: function(e) {
         e.detail.model.failures = this.failures;
       },
@@ -261,21 +255,32 @@ found in the LICENSE file.
         this.failureGroupKey = e.detail.model.failureGroupKey;
       },
 
-      attached: function() {
+      treeChanged: function(oldTree, newTree) {
+        this.highlightCurrentTree();
+      },
+
+      highlightCurrentTree: function() {
+        this.$.menu.items.forEach(function(item) {
+          if (item.id == this.tree) {
+            this.$.menu.selected = this.tree;
+            this.page_title = item.innerText;
+            document.title = 'Sheriff-o-Matic: ' + this.page_title;
+          }
+        }, this);
+      },
+
+      setTreeFromLocation: function() {
         var pathParts = window.location.pathname.split('/');
         this.tree = pathParts[1];
-        // This can be called before $ exists.
-        // It can also be called for /:tree/examine links, which in
-        // this case would trigger a navigation to /:tree when we
-        // try to highlight the current tree in the submenu, so
-        // we don't highlight anything on the nav menu in that case.
-        if (pathParts.length == 2 && this.$) {
-          this.$.menu.items.forEach(function(item) {
-            if (item.id == this.tree) {
-              this.$.menu.selected = this.tree;
-            }
-          }, this);
-        }
+      },
+
+      attached: function() {
+        this.setTreeFromLocation();
+        window.addEventListener('popstate', this._historyPopState.bind(this))
+      },
+
+      _historyPopState: function(evt) {
+        this.setTreeFromLocation();
       },
 
       created: function() {
@@ -343,6 +348,7 @@ found in the LICENSE file.
 
         this._pendingFailureGroupKey = '';
       },
+
       fileSoMBug: function() {
         var url = 'https://code.google.com/p/chromium/issues/entry' +
             '?template=Build%20Infrastructure&labels=Infra-Monitoring,SheriffOMatic,Pri-2&' +
