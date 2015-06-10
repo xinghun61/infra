@@ -10,6 +10,10 @@ handlers:
   script: alerts.app
   secure: always
 
+- url: /api/v1/alerts
+  script: alerts.app
+  secure: always
+
 - url: /alerts-history
   script: alerts.app
   secure: always

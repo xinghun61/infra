@@ -5,7 +5,6 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -187,9 +186,9 @@ func (c *client) PostAlerts(alerts *messages.Alerts) error {
 			return
 		}
 
-		req, err := http.NewRequest("POST", c.alertsBase, bytes.NewBuffer(b))
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := c.hc.Do(req)
+		v := url.Values{}
+		v.Add("content", string(b))
+		resp, err := c.hc.PostForm(c.alertsBase, v)
 		if err != nil {
 			return
 		}

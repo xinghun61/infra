@@ -286,8 +286,20 @@ class AlertsHistory(webapp2.RequestHandler):
     self.response.out.write(json.dumps(result_json))
 
 
+class NewAlertsHandler(AlertsHandler):
+  ALERTS_TYPE = 'new-alerts'
+
+  def get(self):
+    super(NewAlertsHandler, self).get_alerts(
+        NewAlertsHandler.ALERTS_TYPE)
+
+  def post(self):
+    self.update_alerts(NewAlertsHandler.ALERTS_TYPE)
+
+
 app = webapp2.WSGIApplication([
     ('/alerts', AlertsHandler),
+    ('/api/v1/alerts', NewAlertsHandler),
     ('/alerts-history', AlertsHistory),
     ('/alerts-history/(.*)', AlertsHistory),
 ])
