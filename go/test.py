@@ -35,7 +35,10 @@ EXPECTED_INFO_KEYS = frozenset([
   'expected_coverage_min',
   'expected_coverage_max',
   'build_tags',
+  'skip_checks',
 ])
+
+MAGIC_FILE_EXT = 'infra_testing'
 
 
 # Return value of run_package_tests.
@@ -91,6 +94,69 @@ def get_goos():
     return 'linux'
   raise ValueError('Unrecognized platform: %s' % sys.platform)
 
+def parse_info_file(info_file):
+  """Returns contents of <package>/<name>.infra_testing file or {} if missing.
+
+  *.infra_testing contains a JSON dict with the following keys:
+  {
+    // Do not run tests in this package at all. Default 'false'.
+    "skip_testing": a list of platforms (GOOS) to skip tests on,
+    // Minimum allowed code coverage percentage, see below. Default '100'.
+    "expected_coverage_min": number,
+    // Maximum allowed code coverage percentage, see below. Default '100'.
+    "expected_coverage_max": number
+  }
+
+  expected_coverage_min and expected_coverage_max set a boundary on what the
+  code coverage percentage of the package is expected to be. test.py will fail
+  if code coverage is less than 'expected_coverage_min' (meaning the package
+  code has degraded), or larger than 'expected_coverage_max' (meaning the
+  package code has improved and expected_coverage_min should probably be
+  changed too).
+
+  Setting expected_coverage_min=0 and expected_coverage_max=100 effectively
+  disables code coverage checks for a package (test.py still will generate
+  HTML coverage reports though).
+  """
+  try:
+    with open(info_file, 'r') as f:
+      info = json.load(f)
+    if not isinstance(info, dict):
+      print >> sys.stderr, 'Expecting to find dict in %s' % info_file
+      return {}
+    if not EXPECTED_INFO_KEYS.issuperset(info):
+      print >> sys.stderr, 'Unexpected keys found in %s: %s' % (
+          info_file, set(info) - EXPECTED_INFO_KEYS)
+    return info
+  except IOError:
+    return {}
+  except ValueError:
+    print >> sys.stderr, 'Not a valid JSON file: %s' % info_file
+    return {}
+
+
+class SkipCache(object):
+  """Extremely basic cache for tracking the skipped-ness of files. Used for
+  check_*.py scripts in this folder, but since it deals with the infra_testing
+  magic files, its implementation belongs here."""
+
+  def __init__(self, check_name):
+    """check_name is the name that would show up in the 'skip_checks' field of
+    an infra_testing magic file."""
+    self.cache = {}
+    self.check_name = check_name
+
+  def is_skipped(self, file_or_dirpath):
+    dirname = os.path.abspath(file_or_dirpath)
+    if os.path.isfile(dirname):
+      dirname = os.path.dirname(dirname)
+    if dirname not in self.cache:
+      base = os.path.basename(dirname)
+      fullpath = os.path.join(dirname, base+"."+MAGIC_FILE_EXT)
+      info = parse_info_file(fullpath)
+      self.cache[dirname] = self.check_name in info.get("skip_checks", ())
+    return self.cache[dirname]
+
 
 class PackageBundle(object):
   """Bunch of packages rooted at a single package."""
@@ -116,45 +182,7 @@ class PackageBundle(object):
     return os.path.join(self.packages[package], '%s.%s' % (name, extension))
 
   def get_package_info(self, package):
-    """Returns contents of <package>/<name>.infra_testing file or {} if missing.
-
-    *.infra_testing contains a JSON dict with the following keys:
-    {
-      // Do not run tests in this package at all. Default 'false'.
-      "skip_testing": a list of platforms (GOOS) to skip tests on,
-      // Minimum allowed code coverage percentage, see below. Default '100'.
-      "expected_coverage_min": number,
-      // Maximum allowed code coverage percentage, see below. Default '100'.
-      "expected_coverage_max": number
-    }
-
-    expected_coverage_min and expected_coverage_max set a boundary on what the
-    code coverage percentage of the package is expected to be. test.py will fail
-    if code coverage is less than 'expected_coverage_min' (meaning the package
-    code has degraded), or larger than 'expected_coverage_max' (meaning the
-    package code has improved and expected_coverage_min should probably be
-    changed too).
-
-    Setting expected_coverage_min=0 and expected_coverage_max=100 effectively
-    disables code coverage checks for a package (test.py still will generate
-    HTML coverage reports though).
-    """
-    info_file = self.get_magic_file_path(package, 'infra_testing')
-    try:
-      with open(info_file, 'r') as f:
-        info = json.load(f)
-      if not isinstance(info, dict):
-        print >> sys.stderr, 'Expecting to find dict in %s' % info_file
-        return {}
-      if not EXPECTED_INFO_KEYS.issuperset(info):
-        print >> sys.stderr, 'Unexpected keys found in %s: %s' % (
-            info_file, set(info) - EXPECTED_INFO_KEYS)
-      return info
-    except IOError:
-      return {}
-    except ValueError:
-      print >> sys.stderr, 'Not a valid JSON file: %s' % info_file
-      return {}
+    return parse_info_file(self.get_magic_file_path(package, MAGIC_FILE_EXT))
 
   def should_skip(self, package):
     """True to skip package tests, reads 'skip_testing' from *.infra_testing."""
