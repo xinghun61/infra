@@ -82,7 +82,8 @@
       'base_url': 'https://build.chromium.org/p/client.v8.fyi',
       'builders': [
         'V8-Blink Linux 32',
-        'V8-Blink Linux 64',
+        # FIXME(machenbach): crbug.com/498689
+        # 'V8-Blink Linux 64',
         'Linux Debug Builder',
         'Linux ASAN Builder',
         'Android Builder',
