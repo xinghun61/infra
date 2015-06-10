@@ -16,8 +16,13 @@ DEPS = [
 
 
 def GenSteps(api):
+  project = api.properties.get('patch_project') or api.properties.get('project')
+  if not project:
+    project = None  # Force empty string to be None.
+
   api.gclient.set_config('infradata_config_internal')
-  api.bot_update.ensure_checkout(force=True)
+  api.bot_update.ensure_checkout(
+      force=True, patch_root=project, patch_oauth2=True)
   api.gclient.runhooks()
 
   api.python('master manager configuration test',
@@ -26,7 +31,7 @@ def GenSteps(api):
              '--verify',
              '--json-file',
              api.path['slave_build'].join(
-                 'infradata_config',
+                 'infra-data-config',
                  'configs',
                  'master-manager',
                  'desired_master_state.json')])
@@ -39,4 +44,12 @@ def GenTests(api):
           buildername='infradata_config',
           buildnumber=123,
           mastername='internal.infra',
+          repository='https://chrome-internal.googlesource.com/infradata'))
+  yield (
+      api.test('infradata_config_patch') +
+      api.properties.git_scheduled(
+          buildername='infradata_config',
+          buildnumber=123,
+          mastername='internal.infra.try',
+          patch_project='infra-data-config',
           repository='https://chrome-internal.googlesource.com/infradata'))
