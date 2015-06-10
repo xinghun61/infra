@@ -76,7 +76,7 @@ def parse_args(argv):
 
 
 class MasterMonitor(object):
-  up = ts_mon.BooleanMetric('master/up')
+  up = ts_mon.BooleanMetric('buildbot/master/up')
 
   POLLER_CLASSES = [
     pollers.ClockPoller,
