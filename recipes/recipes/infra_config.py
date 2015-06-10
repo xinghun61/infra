@@ -27,6 +27,7 @@ def GenSteps(api):
              '--json-file',
              api.path['slave_build'].join(
                  'infradata_config',
+                 'configs',
                  'master-manager',
                  'desired_master_state.json')])
 

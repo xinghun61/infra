@@ -60,7 +60,7 @@
       "infra.services.master_manager_launcher",
       "--verify",
       "--json-file",
-      "[SLAVE_BUILD]/infradata_config/master-manager/desired_master_state.json"
+      "[SLAVE_BUILD]/infradata_config/configs/master-manager/desired_master_state.json"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "master manager configuration test"
