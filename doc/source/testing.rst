@@ -118,7 +118,7 @@ A Worked Example
             'Perhaps you wanted to make a PessimisticRequest?')
       response = GreatResponse(data=request.data ** 2)
 
-``test_something.py`` contains our test suite:
+``test/something_test.py`` contains our test suite:
 
 .. code-block:: python
 
