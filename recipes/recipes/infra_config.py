@@ -31,7 +31,7 @@ def GenSteps(api):
              '--verify',
              '--json-file',
              api.path['slave_build'].join(
-                 'infra-data-config',
+                 'infra-data-configs',
                  'configs',
                  'master-manager',
                  'desired_master_state.json')])
@@ -51,5 +51,5 @@ def GenTests(api):
           buildername='infradata_config',
           buildnumber=123,
           mastername='internal.infra.try',
-          patch_project='infra-data-config',
+          patch_project='infra-data-configs',
           repository='https://chrome-internal.googlesource.com/infradata'))
