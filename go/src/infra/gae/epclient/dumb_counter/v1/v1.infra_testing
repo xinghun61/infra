@@ -1,0 +1,4 @@
+{
+  "skip_testing": ["windows", "darwin", "linux"],
+  "skip_checks": ["golint"]
+}
