@@ -19,7 +19,7 @@ DEPS = [
 
 
 def gsutil_upload(api, source, bucket, dest, args):
-  api.gsutil.upload(source, bucket, dest, args, name=('upload ' + dest))
+  api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
 
 
 def export_tarball(api, args, source, destination):
