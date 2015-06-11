@@ -13,11 +13,11 @@ function CTRepositories() {
   this.repositories = {
       blink: new CTRepository(
           'blink',
-          'https://chromium.googlesource.com/chromium/blink/+log?format=json',
+          'https://chromium.googlesource.com/chromium/blink/+log/master?format=json',
           'https://src.chromium.org/viewvc/blink?view=rev&revision={revision}'),
       chromium: new CTRepository(
           'chromium',
-          'https://chromium.googlesource.com/chromium/src/+log?format=json',
+          'https://chromium.googlesource.com/chromium/src/+log/master?format=json',
           'https://crrev.com/{revision}'),
       nacl: new CTRepository(
           'nacl',

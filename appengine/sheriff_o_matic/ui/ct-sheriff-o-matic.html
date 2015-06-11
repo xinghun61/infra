@@ -314,8 +314,7 @@ found in the LICENSE file.
           [this.repositories.update(),
            this.failures.update(),
            this.$.trooperBanner.update()]).then(
-             this._updateCompleted.bind(this),
-             this._updateCompletedWithErrors.bind(this));
+             this._updateCompleted.bind(this));
       },
 
       failureGroupKeyChanged: function() {
