@@ -36,6 +36,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
       'master_name': 'm',
       'builder_name': 'b',
       'build_number': 123,
+      'failed': True,
       'failed_steps': {
           'abc_test': {
               'last_pass': 122,
@@ -161,8 +162,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
 
-
-
   def MockGetGtestJsonResult(self):
     self.mock(buildbot, 'GetGtestResultLog',self._GetGtestResultLog)
 
@@ -200,6 +199,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         'master_name': 'm',
         'builder_name': 'b',
         'build_number': 124,
+        'failed': True,
         'failed_steps': {
             'abc_test': {
                 'last_pass': 123,
@@ -211,7 +211,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
-    pipeline = ExtractSignalPipeline(failure_info)
+    pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
@@ -231,6 +231,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         'master_name': 'm',
         'builder_name': 'b',
         'build_number': 125,
+        'failed': True,
         'failed_steps': {
             'abc_test': {
                 'last_pass': 124,
@@ -243,7 +244,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
 
-    pipeline = ExtractSignalPipeline(failure_info)
+    pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
@@ -255,3 +256,13 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     self.assertIsNotNone(step)
     self.assertIsNotNone(step.log_data)
     self.assertEqual(expected_files, signals['abc_test']['files'])
+
+  def testBailOutIfNotAFailedBuild(self):
+    failure_info = {
+        'failed': False,
+    }
+    expected_signals = {}
+
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(failure_info)
+    self.assertEqual(expected_signals, signals)

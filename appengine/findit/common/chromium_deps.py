@@ -39,7 +39,9 @@ class DEPSDownloader(deps_parser.DEPSLoader):
       content = repo.GetSource(deps_file, revision)
 
     if content is None:
-      raise Exception('Failed to pull %s file.' % deps_file)
+      raise Exception(
+          'Failed to pull %s file from %s, at revision %s.' % (
+              deps_file, repo_url, revision))
 
     return content
 

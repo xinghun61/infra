@@ -124,6 +124,10 @@ class ExtractDEPSInfoPipeline(BasePipeline):
         }
       }
     """
+    if not failure_info['failed']:
+      # Bail out if no failed step is found.
+      return {'deps':{}, 'deps_rolls': {}}
+
     chromium_revision = failure_info['chromium_revision']
     os_platform = _GetOSPlatformName(
         failure_info['master_name'], failure_info['builder_name'])

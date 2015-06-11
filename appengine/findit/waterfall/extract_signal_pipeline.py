@@ -105,6 +105,9 @@ class ExtractSignalPipeline(BasePipeline):
       }
     """
     signals = {}
+    if not failure_info['failed']:
+      # Bail out if no failed step is found.
+      return signals
 
     master_name = failure_info['master_name']
     builder_name = failure_info['builder_name']

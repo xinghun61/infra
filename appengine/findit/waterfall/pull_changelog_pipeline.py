@@ -30,6 +30,9 @@ class PullChangelogPipeline(BasePipeline):
       }
     """
     change_logs = {}
+    if not failure_info['failed']:
+      # Bail out if no failed step is found.
+      return change_logs
 
     for build in failure_info.get('builds', {}).values():
       for revision in build['blame_list']:

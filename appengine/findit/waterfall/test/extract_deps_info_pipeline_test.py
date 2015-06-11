@@ -32,9 +32,11 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
     self.mock(chromium_deps, 'GetChromeDependency', MockGetChromeDependency)
 
     failure_info = {
-        'chromium_revision': 'rev2',
         'master_name': 'chromium.linux',
         'builder_name': 'Linux Tests',
+        'build_number': 123,
+        'chromium_revision': 'rev2',
+        'failed': True,
     }
     change_logs = {
         'rev2': {
@@ -77,6 +79,20 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
                 },
             ]
         }
+    }
+
+    pipeline = ExtractDEPSInfoPipeline()
+    deps_info = pipeline.run(failure_info, change_logs)
+    self.assertEqual(expected_deps_info, deps_info)
+
+  def testBailOutIfNotAFailedBuild(self):
+    failure_info = {
+        'failed': False,
+    }
+    change_logs = {}
+    expected_deps_info = {
+        'deps': {},
+        'deps_rolls': {},
     }
 
     pipeline = ExtractDEPSInfoPipeline()

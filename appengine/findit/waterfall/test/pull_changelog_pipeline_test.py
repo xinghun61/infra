@@ -52,6 +52,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
       urlfetch.register_handler(REV1_COMMIT_LOG_URL, REV1_COMMIT_LOG)
 
     failure_info = {
+      'failed': True,
       'builds': {
         '999': {
           'blame_list': ['rev1']
@@ -83,6 +84,16 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
       }
     }
 
-    pipeline = PullChangelogPipeline(failure_info)
+    pipeline = PullChangelogPipeline()
+    change_logs = pipeline.run(failure_info)
+    self.assertEqual(expected_change_logs, change_logs)
+
+  def testBailOutIfNotAFailedBuild(self):
+    failure_info = {
+        'failed': False,
+    }
+    expected_change_logs = {}
+
+    pipeline = PullChangelogPipeline()
     change_logs = pipeline.run(failure_info)
     self.assertEqual(expected_change_logs, change_logs)
