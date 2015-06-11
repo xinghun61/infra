@@ -4,6 +4,8 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
+<link rel="import" href="ct-user-prefs.html">
+
 <polymer-element name="ct-commit" attributes="data suspected" noscript>
   <template>
     <style>
@@ -36,11 +38,12 @@ found in the LICENSE file.
         color: red;
       }
     </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
     <template if="{{ suspected }}">
       <span class="suspected-commit">*</span><a class="suspected-commit" href="{{ data.url }}">{{ data.revision }}</a>
     </template>
     <template if="{{ !suspected }}">
-      <a href="{{ data.url }}">{{ data.revision }}</a>
+      <a target="{{ $.userPrefs.values.linkTarget }}" href="{{ data.url }}">{{ data.revision }}</a>
     </template>
     <div>{{ data.summary }}<br><em>{{ data.author }}</em></div>
   </template>

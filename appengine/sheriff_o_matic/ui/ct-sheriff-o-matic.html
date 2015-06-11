@@ -23,6 +23,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-banner.html">
 <link rel="import" href="ct-trooper-card.html">
 <link rel="import" href="ct-unexpected-failures.html">
+<link rel="import" href="ct-user-prefs-editor.html">
 
 <link rel="import" href="../bower_components/core-scaffold/core-scaffold.html">
 <link rel="import" href="../bower_components/core-header-panel/core-header-panel.html">
@@ -150,10 +151,10 @@ found in the LICENSE file.
             </template>
 
             <core-item icon="help" label="Help" notap="true"></core-item>
-
             <paper-item id="help_links" label="Useful Links" on-tap="{{ itemSelected }}" horizontal center layout>Useful Links</paper-item>
             <paper-item id="help_calendar" label="Rotation Calendar" on-tap="{{ itemSelected }}" horizontal center layout>Rotation Calendar</paper-item>
             <paper-item id="health" label="System Health" on-tap="{{ itemSelected }}" horizontal center layout>System Health</paper-item>
+           <paper-item id="prefs" label="Preferences" on-tap="{{ itemSelected }}" horizontal center layout>Preferences</paper-item>
           </core-menu>
           <div flex vertical layout center>
             <paper-button id="feedback_button" on-click="{{ fileSoMBug }}" raised="" role="button">
@@ -198,6 +199,12 @@ found in the LICENSE file.
             <app-route path="/health" fit on-before-data-binding="{{ bindHealth }}">
               <template>
                 <ct-health failures="{{ failures }}"></ct-health>
+              </template>
+            </app-route>
+
+            <app-route path="/prefs" fit>
+              <template>
+                <ct-user-prefs-editor></ct-user-prefs-editor>
               </template>
             </app-route>
 
@@ -306,7 +313,9 @@ found in the LICENSE file.
         this._promise = Promise.all(
           [this.repositories.update(),
            this.failures.update(),
-           this.$.trooperBanner.update()]).then(this._updateCompleted.bind(this));
+           this.$.trooperBanner.update()]).then(
+             this._updateCompleted.bind(this),
+             this._updateCompletedWithErrors.bind(this));
       },
 
       failureGroupKeyChanged: function() {

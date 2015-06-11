@@ -4,8 +4,21 @@ Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
 
-<polymer-element name="ct-builder" attributes="builder" noscript>
+<link rel="import" href="ct-user-prefs.html">
+
+<polymer-element name="ct-builder" attributes="builder">
   <template>
-    <a href="{{ builder.buildUrl }}" style="white-space: nowrap">{{ builder.builder }}</a>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
+    <a target="{{ $.userPrefs.values.linkTarget }}" href="{{ {url: builder.buildUrl, useUber: $.userPrefs.values.useUberchromegw} | rewriteUrl }}" style="white-space: nowrap">{{ builder.builder }}</a>
   </template>
+  <script>
+  Polymer({
+    rewriteUrl: function(props) {
+      if (this.$ && this.$.userPrefs) {
+        return this.$.userPrefs.rewriteUrl(props.url);
+      }
+      return props.url;
+    },
+  });
+  </script>
 </polymer-element>

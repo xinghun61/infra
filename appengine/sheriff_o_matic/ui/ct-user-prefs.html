@@ -1,0 +1,61 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../appengine_module/components/net.html">
+<polymer-element name="ct-user-prefs" attributes="user linkTarget values">
+  <script>
+(function() {
+  // Folloing the "MonoState" pattern suggested in
+  // https://www.polymer-project.org/0.5/docs/polymer/polymer.html#global
+  // Instantiate as many ct-user-prefs elements as you'd like, they'll always
+  // bind to the same shared set of values.
+  var values = {};
+
+  Polymer({
+    ready: function() {
+      this.values = values;
+    },
+
+    attached: function() {
+      if (!this.values.loaded && !this.values.loading) {
+        this.values.loading = true;
+        this.load();
+      }
+    },
+
+    load: function() {
+      net.json('/api/v1/prefs').then(function(data) {
+        this.values.user = data.user;
+        this.values.xsrfToken = data.xsrf_token;
+        this.values.loginUrl = data.login_url;
+        this.values.logoutUrl = data.logout_url;
+
+        if (data.prefs) {
+          this.values.useUberchromegw = data.prefs.use_uberchromegw;
+          this.values.useNewWindows = data.prefs.use_new_windows;
+          this.values.linkTarget = data.prefs.use_new_windows ? '_blank' : '_self';
+        }
+        this.values.loaded = true;
+        this.values.loading = false;
+      }.bind(this), function(err) {
+        window.console.log('could not load user prefs: ' + err);
+        this.values.loading = false;
+      }.bind(this));
+    },
+
+    rewriteUrl: function(url) {
+      if (this.values.useUberchromegw) {
+        url = url.replace(
+          '//build.chromium.org/p/',
+          '//uberchromegw.corp.google.com/i/');
+      }
+      return url;
+    },
+  });
+})();
+  </script>
+</polymer-element>
+

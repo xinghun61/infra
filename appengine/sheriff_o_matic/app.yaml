@@ -34,6 +34,10 @@ handlers:
   script: banner_msg.app
   secure: always
 
+- url: /api/v1/prefs
+  script: user_prefs.app
+  secure: always
+
 # Static resources.
 - url: /favicon.ico
   static_files: favicon.ico

@@ -7,6 +7,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-commit.html">
 <link rel="import" href="ct-detailed-commit.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="ct-user-prefs.html">
 
 <polymer-element name="ct-commit-list" attributes="flex commitList detailed suspectedCLsByRepo">
   <template>
@@ -35,17 +36,18 @@ found in the LICENSE file.
         margin-top: 3px;
       }
     </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
     <template if="{{ totalSuspectedCommits_ > 0 }}">
-      <a href="https://findit-for-me.appspot.com/build-failure?url={{ representiveBuildUrl_ }}">Findit found {{ totalSuspectedCommits_ }} suspected CL(s).</a>
+      <a target="{{ $.userPrefs.values.linkTarget }}" href="https://findit-for-me.appspot.com/build-failure?url={{ representiveBuildUrl_ }}">Findit found {{ totalSuspectedCommits_ }} suspected CL(s).</a>
     </template>
     <template repeat="{{ repository in commitList.repositories }}">
       <div class="repository-info">
         <span style="font-weight: bold">{{ repository.name }}</span>
         <template if="{{ repository.name == 'chromium' }}">
-          <a href="http://test-results.appspot.com/revision_range?start={{ repository.firstRevision }}&end={{ repository.lastRevision }}">{{ repository.range }}</a>
+          <a target="{{ $.userPrefs.values.linkTarget }}" href="http://test-results.appspot.com/revision_range?start={{ repository.firstRevision }}&end={{ repository.lastRevision }}">{{ repository.range }}</a>
         </template>
         <template if="{{ repository.name == 'blink' }}">
-          <a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range={{ repository.firstRevision }}:{{ repository.lastRevision }}&mode=html">{{ repository.range }}</a>
+          <a target="{{ $.userPrefs.values.linkTarget }}" href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range={{ repository.firstRevision }}:{{ repository.lastRevision }}&mode=html">{{ repository.range }}</a>
         </template>
         <template if="{{ repository.name != 'blink' && repository.name != 'chromium'}}">{{ repository.range }}</template>
         <paper-icon-button icon="unfold-more"

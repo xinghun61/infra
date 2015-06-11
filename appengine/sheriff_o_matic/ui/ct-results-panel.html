@@ -59,7 +59,7 @@ found in the LICENSE file.
     </template>
 
     <template if="{{ group.data.url }}">
-      <ct-popout-iframe src="{{ group.data.url }}"></ct-popout-iframe>
+      <ct-popout-iframe src="{{ {url: group.data.url, useUber: $.userPrefs.values.useUberchromegw} | rewriteUrl }}"></ct-popout-iframe>
     </template>
 
     <template if="{{ group.data.failures }}">
@@ -87,7 +87,12 @@ found in the LICENSE file.
       group: null,
       selected: 0,
       loading: true,
-
+      rewriteUrl: function(props) {
+        if (this.$ && this.$.userPrefs) {
+          return this.$.userPrefs.rewriteUrl(props.url);
+        }
+        return props.url;
+      },
       groupChanged: function() {
         if (this.group)
           this.loading = false;

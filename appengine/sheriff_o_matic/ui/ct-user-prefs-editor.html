@@ -1,0 +1,91 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../appengine_module/components/net.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../bower_components/core-icon/core-icon.html">
+<link rel="import" href="ct-user-prefs.html">
+<polymer-element name="ct-user-prefs-editor">
+  <template>
+    <style>
+      .container {
+        padding: 1em;
+      }
+      .pref-row {
+        margin: 1em;
+      }
+      paper-toggle-button {
+        margin-right: 1em;
+      }
+      paper-button > core-icon {
+        margin-right: 1em;
+      }
+    </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
+
+    <div class="container">
+      <template if="{{ $.userPrefs.values.user }}">
+      <div class="pref-row" center horizontal layout>
+        <paper-toggle-button checked="{{ $.userPrefs.values.useUberchromegw }}" on-tap="{{ setDirty }}"></paper-toggle-button>
+        <div flex>Use uberchromegw</div>
+      </div>
+      <div class="pref-row" center horizontal layout>
+        <paper-toggle-button checked="{{ $.userPrefs.values.useNewWindows }}" on-tap="{{ setDirty }}"></paper-toggle-button>
+        <div flex>Open external links in a new window</div>
+      </div>
+      <div class="pref-row" right horizontal layout>
+        <paper-button id="saveButton" class="colored" role="button" raised disabled?="{{ !dirty }}" on-tap="{{ save }}">
+          Save
+        </paper-button>
+      </div>
+      <div class="pref-row">
+        Logged in as {{ $.userPrefs.values.user }}. <a href="{{ $.userPrefs.values.logoutUrl }}">Log out</a>.
+      </div>
+      </template>
+      <template if="{{ !$.userPrefs.values.user }}">
+        <a href="{{ $.userPrefs.values.loginUrl }}">Log in</a> first before editing preferences.
+      </template>
+    </div>
+  </template>
+  <script>
+  Polymer({
+    dirty: false,
+
+    setDirty: function() {
+      this.dirty = true;
+    },
+
+    save: function() {
+      var prefs = {
+        use_uberchromegw: this.$.userPrefs.values.useUberchromegw,
+        use_new_windows: this.$.userPrefs.values.useNewWindows
+      };
+      // HACK: there's got to be a better way to automatically set this,
+      // but properyChanged doesn't fire on userPrefs when
+      // userPrefs.values.something changes, just when userPrefs.something
+      // changes.
+      this.$.userPrefs.values.linkTarget =
+        this.$.userPrefs.values.useNewWindows ? '_blank' : '_self';
+      postBody = `xsrf_token=${this.$.userPrefs.values.xsrfToken}&` +
+          `prefs=${encodeURIComponent(JSON.stringify(prefs))}`;
+      net.ajax({
+        url: '/api/v1/prefs',
+        type: 'POST',
+        data: postBody
+      }).then(
+        function(resp) {
+          this.dirty = false;
+        }.bind(this), 
+        function(err) {
+          window.console.log('error saving: ' + err);
+        }.bind(this)
+      );
+    },
+  });
+  </script>
+</polymer-element>
+
