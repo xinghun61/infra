@@ -151,5 +151,94 @@
       "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
       "@@@STEP_LOG_END@python.inline@@@"
     ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "--test-data",
+      "chromium-38.0.2125.122",
+      "--verbose",
+      "--progress",
+      "--src-dir",
+      "[SLAVE_BUILD]/src"
+    ],
+    "cwd": "[TMP_BASE]/export_tarball_tmp_2",
+    "name": "export_tarball (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "generate_hashes (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "md5  164ebd6889588da166a52ca0d57b9004  bash",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz.hashes",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]/export_tarball_tmp_2"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree temp dir (2)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
   }
 ]

@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine import recipe_api
+
 DEPS = [
   'bot_update',
   'chromium',
@@ -14,6 +16,7 @@ DEPS = [
   'properties',
   'python',
   'raw_io',
+  'step',
   'trigger',
 ]
 
@@ -22,6 +25,7 @@ def gsutil_upload(api, source, bucket, dest, args):
   api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
 
 
+@recipe_api.composite_step
 def export_tarball(api, args, source, destination):
   try:
     temp_dir = api.path.mkdtemp('export_tarball')
@@ -77,17 +81,33 @@ def GenSteps(api):
   solution.revision = 'refs/tags/%s' % version
   api.bot_update.ensure_checkout(force=True, with_branch_heads=True)
 
-  export_tarball(
-      api,
-      # Verbose output helps avoid a buildbot timeout when no output
-      # is produced for a long time.
-      ['--remove-nonessential-files',
-       'chromium-%s' % version,
-       '--verbose',
-       '--progress',
-       '--src-dir', api.path['checkout']],
-      'chromium-%s.tar.xz' % version,
-      'chromium-%s.tar.xz' % version)
+  with api.step.defer_results():
+    # Export full tarball.
+    export_tarball(
+        api,
+        # Verbose output helps avoid a buildbot timeout when no output
+        # is produced for a long time.
+        ['--remove-nonessential-files',
+         'chromium-%s' % version,
+         '--verbose',
+         '--progress',
+         '--src-dir', api.path['checkout']],
+        'chromium-%s.tar.xz' % version,
+        'chromium-%s.tar.xz' % version)
+
+    # Export test data.
+    export_tarball(
+        api,
+        # Verbose output helps avoid a buildbot timeout when no output
+        # is produced for a long time.
+        ['--test-data',
+         'chromium-%s' % version,
+         '--verbose',
+         '--progress',
+         '--src-dir', api.path['checkout']],
+        'chromium-%s.tar.xz' % version,
+        'chromium-%s-testdata.tar.xz' % version)
+
 
 def GenTests(api):
   yield (
