@@ -48,7 +48,7 @@ class CompileStepExtractor(Extractor):
 
   FAILURE_START_LINE_PREFIX = 'FAILED: '
   FAILURE_END_LINE_PREFIX = 'ninja: build stopped'
-  NINJA_ERROR_LINE_PREFIX = 'ninja: error' 
+  NINJA_ERROR_LINE_PREFIX = 'ninja: error'
 
   def Extract(self, failure_log, *_):
     signal = FailureSignal()
@@ -61,9 +61,9 @@ class CompileStepExtractor(Extractor):
       elif failure_started and line.startswith(self.FAILURE_END_LINE_PREFIX):
         break
 
-      if failure_started or line.startswith(self.NINJA_ERROR_LINE_PREFIX): 
+      if failure_started or line.startswith(self.NINJA_ERROR_LINE_PREFIX):
         # either within the compile errors or is a ninja error.
-        self.ExtractFiles(line, signal)      
+        self.ExtractFiles(line, signal)
     return signal
 
 

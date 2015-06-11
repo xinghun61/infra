@@ -2,14 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import unittest
+from testing_utils import testing
 
+from common.blame import Blame
+from common.blame import Region
 from common.diff import ChangeType
+from common.git_repository import GitRepository
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 
 
-class BuildFailureAnalysisTest(unittest.TestCase):
+class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testIsSameFile(self):
     self.assertTrue(build_failure_analysis._IsSameFile('a/b/x.cc', 'x.cc'))
@@ -117,7 +120,8 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 15 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
@@ -148,7 +152,8 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        change_log_json, deps_info)
     self.assertIsNone(justification)
 
   def _testCheckFileInDependencyRoll(
@@ -244,7 +249,8 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     }
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json),
+        change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 1 because:
     # +1 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
@@ -401,3 +407,138 @@ class BuildFailureAnalysisTest(unittest.TestCase):
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)
+
+  def _MockGetBlame(self, _, revision):
+    if revision != 'dummy_abcd1234':
+      return None
+    blame = Blame(revision, path='a/b/c.cc')
+    blame.AddRegion(Region(1, 6, 'dummy_1',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           u'2014-02-06 09:02:09'))
+    blame.AddRegion(Region(7, 1, 'dummy_2',
+                           u'test2@chromium.org', u'test2@chromium.org',
+                           u'2013-02-11 20:18:51'))
+    blame.AddRegion(Region(8, 1, 'dummy_1',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           u'2014-02-06 09:02:09'))
+    return blame
+
+  def testGetGitBlame(self):
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1234'
+    }
+    file_path = 'a/b/c.cc'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
+    self.assertIsNotNone(blame)
+
+  def testGetGitBlameEmpty(self):
+    repo_info = {}
+    file_path = 'a/b/c.cc'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
+    self.assertIsNone(blame)
+
+  def testGetChangedLinesTrue(self):
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1234'
+    }
+    touched_file = {
+        'change_type': ChangeType.MODIFY,
+        'old_path': 'a/b/c.cc',
+        'new_path': 'a/b/c.cc'
+    }
+    line_numbers = [2, 7, 8]
+    commit_revision = 'dummy_1'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    changed_line_numbers = (build_failure_analysis._GetChangedLines(
+        repo_info, touched_file, line_numbers, commit_revision))
+
+    self.assertEqual([2, 8], changed_line_numbers)
+
+  def testGetChangedLinesDifferentRevision(self):
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1234'
+    }
+    touched_file = {
+        'change_type': ChangeType.MODIFY,
+        'old_path': 'a/b/c.cc',
+        'new_path': 'a/b/c.cc'
+    }
+    line_numbers = [2, 7, 8]
+    commit_revision = 'dummy_3'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    changed_line_numbers = (build_failure_analysis._GetChangedLines(
+        repo_info, touched_file, line_numbers, commit_revision))
+
+    self.assertEqual([], changed_line_numbers)
+
+  def testGetChangedLinesDifferentLine(self):
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1234'
+    }
+    touched_file = {
+        'change_type': ChangeType.MODIFY,
+        'old_path': 'a/b/c.cc',
+        'new_path': 'a/b/c.cc'
+    }
+    line_numbers = [15]
+    commit_revision = 'dummy_1'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    changed_line_numbers = (build_failure_analysis._GetChangedLines(
+        repo_info, touched_file, line_numbers, commit_revision))
+
+    self.assertEqual([], changed_line_numbers)
+
+  def testGetChangedLinesNoneBlame(self):
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1236'
+    }
+    touched_file = {
+        'change_type': ChangeType.MODIFY,
+        'old_path': 'a/b/c.cc',
+        'new_path': 'a/b/c.cc'
+    }
+    line_numbers = [2, 7 ,8]
+    commit_revision = 'dummy_1'
+    self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    changed_line_numbers = (build_failure_analysis._GetChangedLines(
+        repo_info, touched_file, line_numbers, commit_revision))
+
+    self.assertEqual([], changed_line_numbers)
+
+  def testCheckFileSameLineChanged(self):
+    def MockGetChangedLines(*_):
+      return [1, 3]
+    self.mock(build_failure_analysis, '_GetChangedLines',
+              MockGetChangedLines)
+    touched_file = {
+        'change_type': ChangeType.MODIFY,
+        'old_path': 'a/b/c.cc',
+        'new_path': 'a/b/c.cc'
+    }
+    file_path_in_log = 'a/b/c.cc'
+    justification = build_failure_analysis._Justification()
+    file_name_occurrences = {'c.cc': 1}
+    line_numbers = [1, 3]
+    repo_info = {
+        'repo_url': 'https://chromium.googlesource.com/chromium/src.git',
+        'revision': 'dummy_abcd1234'
+    }
+    commit_revision = 'dummy_1'
+    build_failure_analysis._CheckFile(
+        touched_file, file_path_in_log, justification, file_name_occurrences,
+        line_numbers, repo_info, commit_revision)
+
+    expected_justification = {
+        'score': 4,
+        'hints': {
+            'modified c.cc[1, 3] (and it was in log)': 4
+        }
+    }
+    self.assertEqual(expected_justification, justification.ToDict())

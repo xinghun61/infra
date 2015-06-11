@@ -7,6 +7,8 @@ import os
 import re
 
 from common.diff import ChangeType
+from common.git_repository import GitRepository
+from common.http_client_appengine import HttpClientAppengine as HttpClient
 from waterfall.failure_signal import FailureSignal
 
 
@@ -27,6 +29,47 @@ def _IsSameFile(changed_src_file_path, file_path_in_log):
   if changed_src_file_path == file_path_in_log:
     return True
   return changed_src_file_path.endswith('/%s' % file_path_in_log)
+
+
+def _GetGitBlame(repo_info, touched_file_path):
+  """Gets git blames of touched_file.
+
+  Args:
+    repo_info (dict): The repo_url and revision for the build cycle.
+    touched_file_path (str): Full path of a file in change_log.
+  """
+  if repo_info:
+    repo_url = repo_info['repo_url']
+    git_repo = GitRepository(repo_url, HttpClient())
+    revision = repo_info['revision']
+    return git_repo.GetBlame(touched_file_path, revision)
+
+
+def _GetChangedLines(repo_info, touched_file, line_numbers,
+                     suspected_revision):
+  """Checks if the CL made change close to the failed line in log.
+
+  Args:
+    repo_info (dict): The repo_url and revision for the build cycle.
+    touched_file (dict): The touched file found in the change log.
+    line_numbers (list): List of line_numbers mentioned in the failure log.
+    suspected_revision (str): Git hash revision of the suspected CL.
+
+  Returns:
+    A list of lines which are mentioned in log and changed in cl.
+  """
+  changed_line_numbers = []
+  if line_numbers:
+    blame = _GetGitBlame(repo_info, touched_file['new_path'])
+    if blame:
+      for line_number in line_numbers:
+        for region in blame:
+          if region.revision == suspected_revision:
+            if (line_number >= region.start and
+                line_number <= region.start + region.count - 1):
+              changed_line_numbers.append(line_number)
+
+  return changed_line_numbers
 
 
 def _NormalizeObjectFilePath(file_path):
@@ -167,7 +210,8 @@ class _Justification(object):
     return self._score
 
   def AddFileChange(self, change_action, changed_src_file_path,
-                    file_path_in_log, score, num_file_name_occurrences):
+                    file_path_in_log, score, num_file_name_occurrences,
+                    changed_line_numbers=None):
     """Adds a suspected file change.
 
     Args:
@@ -177,6 +221,8 @@ class _Justification(object):
       score (int): Score number for the file change.
       num_file_name_occurrences (int): Number of occurrences of this file base
           name (not including directory part) in the commit.
+      changed_line_numbers (list): List of lines which are verified in both
+          failure log and git blame.
     """
     if num_file_name_occurrences == 1:
       changed_src_file_path = os.path.basename(changed_src_file_path)
@@ -186,8 +232,13 @@ class _Justification(object):
       hint = '%s %s (%s was in log)' % (
           change_action, changed_src_file_path, file_path_in_log)
     else:
-      hint = '%s %s (and it was in log)' % (
-          change_action, changed_src_file_path)
+      if changed_line_numbers:
+        hint = '%s %s[%s] (and it was in log)' % (
+            change_action, changed_src_file_path,
+            ', '.join(map(str, changed_line_numbers)))
+      else:
+        hint = '%s %s (and it was in log)' % (
+            change_action, changed_src_file_path)
 
     self._hints[hint] += score
     self._score += score
@@ -217,7 +268,10 @@ class _Justification(object):
 def _CheckFile(touched_file,
                file_path_in_log,
                justification,
-               file_name_occurrences):
+               file_name_occurrences,
+               line_numbers,
+               repo_info,
+               suspected_revision):
   """Checks if the given files are related and updates the justification.
 
   Args:
@@ -226,18 +280,26 @@ def _CheckFile(touched_file,
     justification (_Justification): An instance of _Justification.
     file_name_occurrences (dict): A dict mapping file names to
         number of occurrences.
+    line_numbers(list): A list of line numbers of 'file_path_in_log' which
+        appears in failure log.
+    repo_info (dict): The repo_url and revision for the build cycle.
+    suspected_revision (str): Git hash revision of the suspected CL.
   """
   change_type = touched_file['change_type']
 
   if change_type == ChangeType.MODIFY:
-    # TODO(stgao): Use Git Blame if a modified file in the failure message
-    # is with a line number.
     changed_src_file_path = touched_file['new_path']
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
+    changed_line_numbers = None
     if _IsSameFile(changed_src_file_path, file_path_in_log):
-      score = 2
+      changed_line_numbers = _GetChangedLines(
+          repo_info, touched_file, line_numbers, suspected_revision)
+      if changed_line_numbers:
+        score = 4
+      else:
+        score = 2
     elif _IsRelated(changed_src_file_path, file_path_in_log):
       score = 1
 
@@ -246,7 +308,8 @@ def _CheckFile(touched_file,
                                   changed_src_file_path,
                                   file_path_in_log,
                                   score,
-                                  file_name_occurrences.get(file_name))
+                                  file_name_occurrences.get(file_name),
+                                  changed_line_numbers)
 
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
     changed_src_file_path = touched_file['new_path']
@@ -357,12 +420,15 @@ def _CheckFiles(failure_signal, change_log, deps_info):
   justification = _Justification()
 
   rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
-  for file_path_in_log, _ in failure_signal.files.iteritems():
+  repo_info = deps_info.get('deps',{}).get('src/',{})
+  for file_path_in_log, line_numbers in failure_signal.files.iteritems():
     file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 
     for touched_file in change_log['touched_files']:
       _CheckFile(
-          touched_file, file_path_in_log, justification, file_name_occurrences)
+          touched_file, file_path_in_log, justification,
+          file_name_occurrences, line_numbers, repo_info,
+          change_log['revision'])
 
     _CheckFileInDependencyRolls(file_path_in_log, rolls, justification)
 
