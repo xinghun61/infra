@@ -1,0 +1,35 @@
+"""<General description of {Toolname} here.>
+
+[TBD] Example invocation:
+./run.py infra.tools.{toolname} <arguments>
+"""
+# This file is untested, keep as little code as possible in there.
+
+import argparse
+import logging
+import sys
+
+from infra.tools.{toolname} import {toolname}
+import infra_libs.logs
+
+
+# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+LOGGER = logging.getLogger(__name__)
+
+
+def main(argv):
+  parser = argparse.ArgumentParser(
+    prog="{toolname}",
+    description=sys.modules['__main__'].__doc__)
+
+  {toolname}.add_argparse_options(parser)
+  infra_libs.logs.add_argparse_options(parser)
+  _args = parser.parse_args(argv)
+  infra_libs.logs.process_argparse_options(parser)
+
+  # Do more processing here
+  LOGGER.info('{Toolname} starting.')
+
+
+if __name__ == '__main__':
+  sys.exit(main(sys.argv[1:]))

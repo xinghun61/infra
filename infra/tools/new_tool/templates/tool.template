@@ -1,0 +1,12 @@
+"""Testable functions for {Toolname}."""
+
+import logging
+
+
+# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+LOGGER = logging.getLogger(__name__)
+
+
+def add_argparse_options(parser):
+  """Define command-line arguments."""
+  parser.add_argument('--my-argument', '-m', help='')

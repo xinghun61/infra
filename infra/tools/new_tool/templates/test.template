@@ -1,0 +1,25 @@
+"""Tests for ../{tested_file}.py"""
+
+import argparse
+import unittest
+
+from infra.tools.{toolname} import {tested_file}
+
+
+class MyTest(unittest.TestCase):
+  def test_arguments(self):
+    parser = argparse.ArgumentParser()
+    {tested_file}.add_argparse_options(parser)
+    args = parser.parse_args(['--my-argument', 'value'])
+    self.assertEqual(args.my_argument, 'value')
+
+## expect_tests style: the test method returns a value (expectation)
+## that is stored when run in 'train' mode, and compared to in 'test' mode.
+## If the stored and returned values do not match, the test fails.
+## Use sparingly, asserts are usually better.
+##
+##   def test_my_first_test_with_expectation(self):
+##     parser = argparse.ArgumentParser()
+##     {tested_file}.add_argparse_options(parser)
+##     args = parser.parse_args(['--my-argument', 'value'])
+##     return {{'my_argument': args.my_argument}}
