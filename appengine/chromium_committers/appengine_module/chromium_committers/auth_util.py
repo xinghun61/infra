@@ -7,27 +7,88 @@
 __author__ = 'agable@google.com (Aaron Gable)'
 
 
+import collections
+import endpoints
 import functools
 import logging
 
-from google.appengine.api import users
 from google.appengine.ext import ndb
+from google.appengine.api import oauth
+from google.appengine.api import users
 
 
-def CheckUserInList(key_or_emails):
+TRUSTED_APP_IDS = [
+  'chrome-infra-auth',
+  'chrome-infra-auth-dev',
+  'chromiumcodereview-hr',
+]
+
+
+class User(object):
+  """A generalized user, compatible with both AppEngine and Cloud Endpoints."""
+
+  AUTH_COOKIES = 'appengine'
+  AUTH_HMAC = 'hmac'
+  AUTH_OAUTH = 'oauth'
+  AUTH_TRUSTED_APP = 'trusted_app'
+
+  def __init__(self, email, is_admin, auth):
+    self._email = email
+    self._is_admin = is_admin
+    self._auth = frozenset(auth)
+
+  @property
+  def email(self):
+    return self._email
+
+  @property
+  def is_admin(self):
+    if callable(self._is_admin):
+      # Allow lazy evaluation (is expensive for endpoints).
+      self._is_admin = self._is_admin()
+    return self._is_admin
+
+  def is_auth(self, *auth):
+    return bool(self._auth & set(auth))
+
+  @classmethod
+  def from_request(cls, request):
+    u = users.get_current_user()
+    if not u:
+      return None
+
+    auth = [cls.AUTH_COOKIES]
+    app_id = request.headers.get('X-Appengine-Inbound-Appid')
+    if app_id in TRUSTED_APP_IDS:
+      auth.append(cls.AUTH_TRUSTED_APP)
+    if getattr(request, 'authenticated', None) == 'hmac':
+      # Added via hmac_util.CheckHmacAuth decorator.
+      auth.append(cls.AUTH_HMAC)
+    return cls(u.email(), users.is_current_user_admin(), auth)
+
+  @classmethod
+  def from_endpoints(cls):
+    u = endpoints.get_current_user()
+    if not u:
+      return None
+    return cls(u.email(),
+               lambda: oauth.is_current_user_admin(endpoints.EMAIL_SCOPE),
+               cls.AUTH_OAUTH)
+
+
+def CheckUserInList(user, key_or_emails):
   """Return true if the currently logged in user is in the email list.
 
   Args:
     key_or_emails: either a list of string email addresses, or an ndb.Key
                    pointing to a model.EmailList object.
   """
-  user = users.get_current_user()
   if not user:
     logging.warning('No logged in user.')
     return False
-  email = user.email()
+  email = user.email
 
-  if users.is_current_user_admin():
+  if user.is_admin:
     logging.info('User %s is admin.', email)
     return True
 

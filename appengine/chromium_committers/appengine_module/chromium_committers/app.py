@@ -12,15 +12,16 @@ import json
 import logging
 import os
 
+import endpoints
 import jinja2
 import webapp2
 
 from google.appengine.api import users
-from google.appengine.ext import ndb
 
 from appengine_module.chromium_committers import auth_util
+from appengine_module.chromium_committers import committers
+from appengine_module.chromium_committers import ep_api
 from appengine_module.chromium_committers import hmac_util
-from appengine_module.chromium_committers import model
 
 
 TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), 'templates')
@@ -28,11 +29,6 @@ JINJA2_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(TEMPLATES_PATH),
     autoescape=True,
     extensions=['jinja2.ext.autoescape'])
-TRUSTED_APP_IDS = [
-  'chrome-infra-auth',
-  'chrome-infra-auth-dev',
-  'chromiumcodereview-hr',
-]
 
 
 class MainPageHandler(webapp2.RequestHandler):
@@ -42,14 +38,11 @@ class MainPageHandler(webapp2.RequestHandler):
     template = JINJA2_ENVIRONMENT.get_template('index.html')
     template_values = {}
 
-    user = users.get_current_user()
+    user = auth_util.User.from_request(self.request)
     template_values['login_url'] = ''
     if not user:
       template_values['login_url'] = users.create_login_url(dest_url='/')
-
-    lists = model.EmailList.query().fetch(keys_only=True)
-    template_values['lists'] = [l.string_id() for l in lists
-                                if auth_util.CheckUserInList(l)]
+    template_values['lists'] = committers.get_list_names_for_user(user)
 
     page = template.render(template_values)
     self.response.write(page)
@@ -60,30 +53,18 @@ class ListHandler(webapp2.RequestHandler):
   @hmac_util.CheckHmacAuth
   def get(self, list_name):
     """Displays the list of chromium committers in plain text."""
-    if not list_name:
-      logging.warning('Tried to view list with no name.')
+    user = auth_util.User.from_request(self.request)
+    try:
+      l = committers.get_list(user, list_name)
+    except committers.InvalidList as e:
+      logging.warning('User requested invalid list: %s', e.message)
       self.abort(404)
-
-    committer_list = ndb.Key(model.EmailList, list_name).get()
-    emails = committer_list.emails if committer_list else []
-    logging.debug('Fetched emails: %s' % emails)
-    if not emails:
-      logging.warning('Tried to view nonexistent or empty list.')
-      self.abort(404)
-
-    app_id = self.request.headers.get('X-Appengine-Inbound-Appid')
-    valid_request = (
-        self.request.authenticated == 'hmac' or
-        app_id in TRUSTED_APP_IDS or
-        auth_util.CheckUserInList(emails)
-    )
-    if not valid_request:
+    except committers.AuthorizationError as e:
       # Technically should be 403, but use 404 to avoid exposing list names.
+      logging.warning('Request not authorized: %s', e.message)
       self.abort(404)
-      return
-
     self.response.headers['Content-Type'] = 'text/plain'
-    self.response.write('\n'.join(sorted(emails)))
+    self.response.write('\n'.join(sorted(l.emails)))
 
 
 class UpdateHandler(webapp2.RequestHandler):
@@ -92,10 +73,13 @@ class UpdateHandler(webapp2.RequestHandler):
   @auth_util.RequireAuth
   def post(self, list_name):
     """Updates the list of committers from the POST data recieved."""
+    user = auth_util.User.from_request(self.request)
     email_json = base64.b64decode(self.request.get('committers'))
     emails = json.loads(email_json)
-    committer_list = model.EmailList(id=list_name, emails=emails)
-    committer_list.put()
+
+    # Throws committers.AuthorizationError if not HMAC authenticated, but we
+    # require that via the decorator.
+    committers.put_list(user, list_name, emails)
 
 
 app = webapp2.WSGIApplication([
@@ -103,3 +87,5 @@ app = webapp2.WSGIApplication([
     ('/lists/([a-zA-Z0-9_-]+)', ListHandler),
     ('/update/([a-zA-Z0-9_-]+)', UpdateHandler),
     ], debug=True)
+
+ep_server = endpoints.api_server([ep_api.CommittersApi])

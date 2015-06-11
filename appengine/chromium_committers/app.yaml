@@ -9,8 +9,14 @@ libraries:
   version: latest
 - name: jinja2
   version: latest
+- name: endpoints
+  version: 1.0
 
 handlers:
+
+# Endpoints handler.
+- url: /_ah/spi/.*
+  script: appengine_module.chromium_committers.app.ep_server
 
 - url: /favicon.ico
   static_files: static/favicon.ico
