@@ -422,40 +422,6 @@ class SettingsForm(forms.Form):
     return nickname
 
 
-class MigrateEntitiesForm(forms.Form):
-
-  account = forms.CharField(label='Your previous email address')
-  _user = None
-
-  def set_user(self, user):
-    """Sets the _user attribute.
-
-    A user object is needed for validation. This method has to be
-    called before is_valid() is called to allow us to validate if a
-    email address given in account belongs to the same user.
-    """
-    self._user = user
-
-  def clean_account(self):
-    """Verifies that an account with this emails exists and returns it.
-
-    This method is executed by Django when Form.is_valid() is called.
-    """
-    if self._user is None:
-      raise forms.ValidationError('No user given.')
-    account_obj = models.Account.get_account_for_email(
-      self.cleaned_data['account'])
-    if account_obj is None:
-      raise forms.ValidationError('No such email.')
-    if account_obj.user.email() == self._user.email():
-      raise forms.ValidationError(
-        'Nothing to do. This is your current email address.')
-    if account_obj.user.user_id() != self._user.user_id():
-      raise forms.ValidationError(
-        'This email address isn\'t related to your account.')
-    return account_obj
-
-
 ORDER_CHOICES = (
     '__key__',
     'owner',
@@ -4023,78 +3989,6 @@ def account_delete(_request):
   account = models.Account.current_user_account
   account.key.delete()
   return HttpResponseRedirect(users.create_logout_url(reverse(index)))
-
-
-@deco.login_required
-@deco.xsrf_required
-def migrate_entities(request):
-  """Migrates entities from the specified user to the signed in user."""
-  msg = None
-  if request.method == 'POST':
-    form = MigrateEntitiesForm(request.POST)
-    form.set_user(request.user)
-    if form.is_valid():
-      # verify that the account belongs to the user
-      old_account = form.cleaned_data['account']
-      old_account_key = str(old_account.key)
-      new_account_key = str(models.Account.current_user_account.key)
-      for kind in ('Issue', 'Repository', 'Branch'):
-        taskqueue.add(url=reverse(task_migrate_entities),
-                      params={'kind': kind,
-                              'old': old_account_key,
-                              'new': new_account_key},
-                      queue_name='migrate-entities')
-      msg = (u'Migration job started. The issues, repositories and branches'
-             u' created with your old account (%s) will be moved to your'
-             u' current account (%s) in a background task and should'
-             u' be visible for your current account shortly.'
-             % (old_account.user.email(), request.user.email()))
-  else:
-    form = MigrateEntitiesForm()
-  return respond(request, 'migrate_entities.html', {'form': form, 'msg': msg})
-
-
-@deco.task_queue_required('migrate-entities')
-def task_migrate_entities(request):
-  """/restricted/tasks/migrate_entities - Migrates entities from one account to
-  another.
-  """
-  kind = request.POST.get('kind')
-  old = request.POST.get('old')
-  new = request.POST.get('new')
-  batch_size = 20
-  if kind is None or old is None or new is None:
-    logging.warning('Missing parameters')
-    return HttpResponse()
-  if kind not in ('Issue', 'Repository', 'Branch'):
-    logging.warning('Invalid kind: %s' % kind)
-    return HttpResponse()
-  old_account = ndb.Key(models.Account, old).get()
-  new_account = ndb.Key(models.Account, new).get()
-  if old_account is None or new_account is None:
-    logging.warning('Invalid accounts')
-    return HttpResponse()
-  # make sure that accounts match
-  if old_account.user.user_id() != new_account.user.user_id():
-    logging.warning('Accounts don\'t match')
-    return HttpResponse()
-  model = getattr(models, kind)
-  encoded_key = request.POST.get('key')
-  model_cls = model.__class__
-  query = model.query(model_cls.owner == old_account.user).order(model_cls.key)
-  if encoded_key:
-    query = query.filter(model_cls.key > ndb.Key(urlsafe=encoded_key))
-  tbd = []
-  for entity in query.fetch(batch_size):
-    entity.owner = new_account.user
-    tbd.append(entity)
-  if tbd:
-    ndb.put_multi(tbd)
-    taskqueue.add(url=reverse(task_migrate_entities),
-                  params={'kind': kind, 'old': old, 'new': new,
-                          'key': str(tbd[-1].key)},
-                  queue_name='migrate-entities')
-  return HttpResponse()
 
 
 @deco.user_key_required

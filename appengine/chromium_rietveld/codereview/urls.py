@@ -101,7 +101,6 @@ urlpatterns = patterns(
     (r'^tarball/(\d+)/(\d+)$', 'tarball'),
     (r'^inline_draft$', 'inline_draft'),
     (r'^account_delete$', 'account_delete'),
-    (r'^migrate_entities$', 'migrate_entities'),
     (r'^user_popup/(.+)$', 'user_popup'),
     (r'^(\d+)/patchset/(\d+)$', 'patchset'),
     (r'^(\d+)/patchset/(\d+)/delete$', 'delete_patchset'),
@@ -123,7 +122,6 @@ urlpatterns = patterns(
     (r'^restricted/update_stats$', 'update_stats'),
     (r'^restricted/set-client-id-and-secret$', 'set_client_id_and_secret'),
     (r'^restricted/tasks/calculate_delta$', 'task_calculate_delta'),
-    (r'^restricted/tasks/migrate_entities$', 'task_migrate_entities'),
     (r'^restricted/user/([^/]+)/block$', 'block_user'),
     (r'^_ah/mail/(.*)', 'incoming_mail'),
     )
