@@ -18,11 +18,11 @@ infra-dev@chromium.org.
 
 General Information
 -------------------
-* :doc:`installation`
-* :doc:`usage` (start here)
-* :doc:`structure` - describes the general repository layout.
-* :doc:`deployment`
-* :doc:`contributing`
+* :doc:`installation` - getting infra.git on your local workstation
+* :doc:`usage` - running commands and tools
+* :doc:`structure` - overview of the general repository layout
+* :doc:`deployment` - how tools and services are deployed
+* :doc:`contributing` - how to make changes to the repository
 * :doc:`reference/modules` - reference documentation, extracted from docstrings.
 
 Usage Guides

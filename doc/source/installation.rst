@@ -19,8 +19,21 @@ somewhere in your path) to run::
 
 This will check out the base repository (infra.git) and its dependencies.
 
+If you would like to work and make changes in one of the SVN-based dependencies
+of infra.git, you should make sure to set up git-svn metadata for that
+repository::
+
+  cd build
+  git auto-svn
+
+or::
+
+  cd depot_tools
+  git auto-svn
+
+
 Troubleshooting
-~~~~~~~~~~~~~~~
+---------------
 If you're not running a supported distribution, ``fetch infra`` will
 probably fail complaining that it cannot find some packages on Cloud Storage.
 This happens with architecture-dependent packages like numpy, which need to be
@@ -33,3 +46,10 @@ The first command will build the packages are store them locally. The second
 command deploy them into ``infra/ENV``. For more details on this see
 :doc:`bootstrap`.
 
+
+For Googlers
+------------
+
+If you are a Googler, more detailed instructions for working in the other infra
+repositories can be found `here
+<http://sites/chrome-infrastructure/getting-started>`_.
