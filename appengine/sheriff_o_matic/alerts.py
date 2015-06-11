@@ -36,7 +36,7 @@ class LastUpdated(ndb.Model):
 
 
 class AlertsHandler(webapp2.RequestHandler):
-  ALERTS_TYPE = 'alerts'
+  ALERT_TYPE = 'alerts'
   # Max number of bytes that AppEngine allows writing to Memcache
   MAX_JSON_SIZE = 10**6 - 10**5
 
@@ -147,7 +147,7 @@ class AlertsHandler(webapp2.RequestHandler):
         self.send_json_data({})
 
   def get(self):
-    self.get_alerts(AlertsHandler.ALERTS_TYPE)
+    self.get_alerts(self.ALERT_TYPE)
 
   def store_alerts(self, alerts_type, alerts):
     last_entry = self.get_last_datastore(alerts_type)
@@ -221,7 +221,7 @@ class AlertsHandler(webapp2.RequestHandler):
       self.store_alerts(alerts_type, alerts)
 
   def post(self):
-    self.update_alerts(AlertsHandler.ALERTS_TYPE)
+    self.update_alerts(self.ALERT_TYPE)
 
 
 class AlertsHistory(webapp2.RequestHandler):
@@ -273,7 +273,7 @@ class AlertsHistory(webapp2.RequestHandler):
 
     # Return only public alerts for non-internal users.
     if not user or not user.email().endswith('@google.com'):
-      query = query.filter(AlertsJSON.type == AlertsHandler.ALERTS_TYPE)
+      query = query.filter(AlertsJSON.type == AlertsHandler.ALERT_TYPE)
 
     if key:
       result_json.update(self.get_entry(query, key))

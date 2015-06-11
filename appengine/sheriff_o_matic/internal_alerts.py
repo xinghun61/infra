@@ -10,7 +10,7 @@ from google.appengine.api import users
 
 
 class InternalAlertsHandler(alerts.AlertsHandler):
-  INTERNAL_ALERTS_TYPE = 'internal-alerts'
+  ALERT_TYPE = 'internal-alerts'
 
   # Has no 'request' member.
   # Has no 'response' member.
@@ -35,11 +35,7 @@ class InternalAlertsHandler(alerts.AlertsHandler):
       self.response.set_status(403, 'invalid user')
       return
 
-    super(InternalAlertsHandler, self).get_alerts(
-        InternalAlertsHandler.INTERNAL_ALERTS_TYPE)
-
-  def post(self):
-    self.update_alerts(InternalAlertsHandler.INTERNAL_ALERTS_TYPE)
+    super(InternalAlertsHandler, self).get()
 
 
 app = webapp2.WSGIApplication([
