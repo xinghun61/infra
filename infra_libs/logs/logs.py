@@ -39,10 +39,13 @@ import tempfile
 
 import pytz
 
-if sys.platform == 'win32':  # pragma: no cover
-  DEFAULT_LOG_DIRECTORY = 'C:\\chrome-infra-logs'
+if sys.platform.startswith('win'):  # pragma: no cover
+  DEFAULT_LOG_DIRECTORIES = os.pathsep.join([
+      'E:\\chrome-infra-logs',
+      'C:\\chrome-infra-logs',
+  ])
 else:
-  DEFAULT_LOG_DIRECTORY = '/var/log/chrome-infra'
+  DEFAULT_LOG_DIRECTORIES = '/var/log/chrome-infra'
 
 
 class InfraFilter(logging.Filter):  # pragma: no cover
@@ -154,11 +157,14 @@ def add_argparse_options(parser,
   parser.add_argument('--logs-black-list', metavar='REGEX',
                       help='hide log lines emitted by loggers whose name '
                            'matches this regular expression.')
-  parser.add_argument('--logs-directory', default=DEFAULT_LOG_DIRECTORY,
-                      help='directory into which to write logs (default: '
-                           '%%(default)s). The temporary directory (%s) will '
-                           'be used instead if this directory is not '
-                           'writable.' % tempfile.gettempdir())
+  parser.add_argument(
+      '--logs-directory',
+      default=DEFAULT_LOG_DIRECTORIES,
+      help='directory into which to write logs (default: %%(default)s). The '
+           'temporary directory (%s) will be used instead if this directory is '
+           'not writable. May be set to multiple directories separated by the '
+           '"%s" character, in which case the first one that exists and is '
+           'writable is used.' % (tempfile.gettempdir(), os.pathsep))
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -190,14 +196,19 @@ def process_argparse_options(options, logger=None):  # pragma: no cover
               logger_name_blacklist=options.logs_black_list)
 
   # Test whether we can write to the log directory.  If not, write to a
-  # temporary directory instead.  The DEFAULT_LOG_DIRECTORY is created on the
-  # real production machines by puppet, so /tmp should only be used when running
-  # locally on developers' workstations.
-  try:
-    with tempfile.TemporaryFile(dir=options.logs_directory):
+  # temporary directory instead.  One of the DEFAULT_LOG_DIRECTORIES are created
+  # on the real production machines by puppet, so /tmp should only be used when
+  # running locally on developers' workstations.
+  logs_directory = tempfile.gettempdir()
+  for directory in options.logs_directory.split(os.pathsep):
+    try:
+      with tempfile.TemporaryFile(dir=directory):
+        pass
+    except OSError:
       pass
-  except OSError:
-    options.logs_directory = tempfile.gettempdir()
+    else:
+      logs_directory = directory
+      break
 
   # Use argv[0] as the program name, except when it's '__main__.py' which is the
   # case when we were invoked by run.py.  In this case look at the main module's
@@ -222,7 +233,7 @@ def process_argparse_options(options, logger=None):  # pragma: no cover
         logger,
         handler=logging.handlers.RotatingFileHandler(
             filename=os.path.join(
-                options.logs_directory, pattern % logging.getLevelName(level)),
+                logs_directory, pattern % logging.getLevelName(level)),
             maxBytes=10 * 1024 * 1024,
             backupCount=10),
         level=level)
