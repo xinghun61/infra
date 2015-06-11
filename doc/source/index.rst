@@ -21,6 +21,7 @@ General Information
 * :doc:`installation`
 * :doc:`usage` (start here)
 * :doc:`structure` - describes the general repository layout.
+* :doc:`deployment`
 * :doc:`contributing`
 * :doc:`reference/modules` - reference documentation, extracted from docstrings.
 
@@ -69,6 +70,7 @@ Indices and Tables
    installation
    usage
    structure
+   deployment
    contributing
    documenting
    steps
