@@ -160,11 +160,13 @@ def add_argparse_options(parser,
   parser.add_argument(
       '--logs-directory',
       default=DEFAULT_LOG_DIRECTORIES,
-      help='directory into which to write logs (default: %%(default)s). The '
-           'temporary directory (%s) will be used instead if this directory is '
-           'not writable. May be set to multiple directories separated by the '
-           '"%s" character, in which case the first one that exists and is '
-           'writable is used.' % (tempfile.gettempdir(), os.pathsep))
+      help='directory into which to write logs (default: %%(default)s). If '
+           'this directory does not exist or is not writable, the temporary '
+           'directory (%s) will be used instead. If this is explicitly set to '
+           'the empty string, logs will not be written at all. May be set to '
+           'multiple directories separated by the "%s" character, in which '
+           'case the first one that exists and is writable is used.' % (
+                tempfile.gettempdir(), os.pathsep))
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -195,6 +197,11 @@ def process_argparse_options(options, logger=None):  # pragma: no cover
   add_handler(logger, level=options.log_level,
               logger_name_blacklist=options.logs_black_list)
 
+  if options.logs_directory:
+    _add_file_handlers(options, logger)
+
+
+def _add_file_handlers(options, logger):  # pragma: no cover
   # Test whether we can write to the log directory.  If not, write to a
   # temporary directory instead.  One of the DEFAULT_LOG_DIRECTORIES are created
   # on the real production machines by puppet, so /tmp should only be used when
