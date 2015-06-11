@@ -60,19 +60,43 @@ def install_latest_node_js(version, tmp_dir):
         break
       f.write(chunk)
 
+  # When multiple node.py instances run at the same time for the first time,
+  # the check to see whether or not the installation occured already.  But then
+  # they all race to see who's the first to run shutil.move(), which obviously
+  # fails for everyone other than the first instance.  This CL makes
+  # os.rename() not fail, since its assumed that if it fails that means
+  # someone else already created an installation.
+  #
+  # Another approach is to use an flock, but then it starts to get messy when
+  # you have to keep polling filesystem state to see if another instance
+  # finished, or add timeouts to remove an flock if it was left on the system by
+  # a failed attempt, etc, etc.  This just seemed like a less flaky solution,
+  # despite the fact that it means multiple network requests are spawned.
+  write_version = True
   if sys.platform != 'win32':
     # The Windows version comes as a self contained executable, the other
     # versions come as a tar.gz that needs to be extracted.
     with tarfile.open(dest, 'r:gz') as f:
       f.extractall(path=tmp_dir)
-    shutil.move(os.path.join(tmp_dir, target[:-len('.tar.gz')]), target_dir)
+    try:
+      os.mkdir(os.path.join(THIS_DIR, 'runtimes'))
+      os.rename(os.path.join(tmp_dir, target[:-len('.tar.gz')]), target_dir)
+    except OSError:
+      write_version = False
     os.remove(dest)
   else:
-    os.mkdir(target_dir)
-    shutil.move(dest, bin_location)
+    try:
+      # Still potentiall racy, from python docs:
+      # "On Windows...there may be no way to implement an atomic rename when dst
+      # names an existing file."
+      os.mkdir(target_dir)
+      os.rename(dest, bin_location)
+    except OSError:
+      write_version = False
 
-  with open(version_file, 'w') as f:
-    f.write(version)
+  if write_version:
+    with open(version_file, 'w') as f:
+      f.write(version)
 
   return bin_location
 
