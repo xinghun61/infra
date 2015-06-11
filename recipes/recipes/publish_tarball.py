@@ -45,7 +45,7 @@ def export_tarball(api, args, source, destination):
             'md5  164ebd6889588da166a52ca0d57b9004  bash'))
     gsutil_upload(
         api,
-        hashes_result.raw_io.output,
+        api.raw_io.input(hashes_result.raw_io.output),
         'chromium-browser-official',
         destination + '.hashes',
         args=['-a', 'public-read'])
