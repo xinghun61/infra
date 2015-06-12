@@ -32,6 +32,8 @@ Library usage:
 """
 
 import logging
+import json
+import os
 import re
 import socket
 import sys
@@ -79,19 +81,27 @@ def add_argparse_options(parser):
   """
   parser = parser.add_argument_group('Timeseries Monitoring Options')
   parser.add_argument(
+      '--ts-mon-config-file',
+      default='/etc/chrome-infra/ts-mon.json',
+      help='path to a JSON config file that contains suitable values for '
+           '"endpoint" and "credentials" for this machine. This config file is '
+           'intended to be shared by all processes on the machine, as the '
+           'values depend on the machine\'s position in the network, IP '
+           'whitelisting and deployment of credentials. (default: %(default)s)')
+  parser.add_argument(
       '--ts-mon-endpoint',
-      default='https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
-      help='url (including file://) to post monitoring metrics to.'
-           ' (default: %(default)s)')
+      help='url (including file://) to post monitoring metrics to. If set, '
+           'overrides the value in --ts-mon-config-file')
   parser.add_argument(
       '--ts-mon-credentials',
-      help='path to a pkcs8 json credential file')
+      help='path to a pkcs8 json credential file. If set, overrides the value '
+           'in --ts-mon-config-file')
   parser.add_argument(
       '--ts-mon-flush',
       choices=('all', 'manual', 'auto'), default='auto',
       help=('metric push behavior: all (send every metric individually), '
             'manual (only send when flush() is called), or auto (send '
-            'automatically every --ts-mon-flush-interval-secs seconds).'
+            'automatically every --ts-mon-flush-interval-secs seconds). '
             '(default: %(default)s)'))
   parser.add_argument(
       '--ts-mon-flush-interval-secs',
@@ -155,6 +165,19 @@ def add_argparse_options(parser):
            '(default: %(default)s)')
 
 
+def load_machine_config(filename):
+  if not os.path.exists(filename):
+    logging.info('Configuration file does not exist, ignoring: %s', filename)
+    return {}
+
+  try:
+    with open(filename) as fh:
+      return json.load(fh)
+  except Exception:
+    logging.error('Configuration file couldn\'t be read: %s', filename)
+    raise
+
+
 def process_argparse_options(args):
   """Process command line arguments to initialize the global monitor.
 
@@ -169,15 +192,25 @@ def process_argparse_options(args):
   Args:
     args (argparse.Namespace): the result of parsing the command line arguments
   """
-  if args.ts_mon_endpoint.startswith('file://'):
-    _state.global_monitor = monitors.DiskMonitor(
-        args.ts_mon_endpoint[len('file://'):])
-  elif args.ts_mon_credentials:
-    _state.global_monitor = monitors.ApiMonitor(
-        args.ts_mon_credentials, args.ts_mon_endpoint)
+
+  # Parse the config file if it exists.
+  config = load_machine_config(args.ts_mon_config_file)
+  endpoint = config.get('endpoint', '')
+  credentials = config.get('credentials', '')
+
+  # Command-line args override the values in the config file.
+  if args.ts_mon_endpoint:
+    endpoint = args.ts_mon_endpoint
+  if args.ts_mon_credentials:
+    credentials = args.ts_mon_credentials
+
+  if endpoint.startswith('file://'):
+    _state.global_monitor = monitors.DiskMonitor(endpoint[len('file://'):])
+  elif credentials:
+    _state.global_monitor = monitors.ApiMonitor(credentials, endpoint)
   else:
-    logging.warning('Monitoring is disabled because --ts-mon-credentials was '
-                    'not set')
+    logging.error('Monitoring is disabled because --ts-mon-credentials was not '
+                  'set')
     _state.global_monitor = monitors.NullMonitor()
 
   if args.ts_mon_target_type == 'device':
@@ -259,13 +292,13 @@ def unregister(metric):
   _state.metrics.remove(metric)
 
 
-def close():
+def close():  # pragma: no cover
   """Stops any background threads and waits for them to exit."""
   if _state.flush_thread is not None:
     _state.flush_thread.stop()
 
 
-class _FlushThread(threading.Thread):
+class _FlushThread(threading.Thread):  # pragma: no cover
   """Background thread that flushes metrics on an interval."""
 
   def __init__(self, interval_secs, stop_event=None):
