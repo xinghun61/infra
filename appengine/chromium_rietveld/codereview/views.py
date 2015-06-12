@@ -3593,8 +3593,8 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     canonical_host = '%s.appspot.com' % app_id
     host = django_settings.PREFERRED_DOMAIN_NAMES.get(
       django_settings.APP_ID, canonical_host)
-    friendly_sender = ("'%s' via %s <%s>" % (
-        my_nickname, host, django_settings.RIETVELD_INCOMING_MAIL_ADDRESS))
+    friendly_sender = ("%s via %s <%s>" % (
+        my_email, host, django_settings.RIETVELD_INCOMING_MAIL_ADDRESS))
 
     if my_email not in accounts or accounts[my_email].send_from_email_addr:
       sender = my_email
