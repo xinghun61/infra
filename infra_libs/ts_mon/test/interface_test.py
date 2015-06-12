@@ -4,6 +4,8 @@
 
 import argparse
 import functools
+import json
+import tempfile
 import threading
 import time
 import unittest
@@ -23,8 +25,10 @@ class GlobalsTest(auto_stub.TestCase):
   def setUp(self):
     super(GlobalsTest, self).setUp()
     self.mock(interface, '_state', stubs.MockState())
+    self.mock(interface, 'load_machine_config', lambda x: {})
 
   def tearDown(self):
+    super(GlobalsTest, self).tearDown()
     interface.close()
 
   @mock.patch('socket.getfqdn')
@@ -37,7 +41,10 @@ class GlobalsTest(auto_stub.TestCase):
     fake_fqdn.return_value = 'slave1-a1.reg.tld'
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
-    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json'])
+    args = p.parse_args([
+        '--ts-mon-credentials', '/path/to/creds.p8.json',
+        '--ts-mon-endpoint',
+        'https://www.googleapis.com/acquisitions/v1_mon_shared/storage'])
     interface.process_argparse_options(args)
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json',
@@ -58,7 +65,10 @@ class GlobalsTest(auto_stub.TestCase):
     fake_fqdn.return_value = 'foo'
     p = argparse.ArgumentParser()
     interface.add_argparse_options(p)
-    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json'])
+    args = p.parse_args([
+        '--ts-mon-credentials', '/path/to/creds.p8.json',
+        '--ts-mon-endpoint',
+        'https://www.googleapis.com/acquisitions/v1_mon_shared/storage'])
     interface.process_argparse_options(args)
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json',
@@ -244,6 +254,25 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertTrue(interface._state.flush_thread.is_alive())
     interface.close()
     self.assertFalse(interface._state.flush_thread.is_alive())
+
+
+class ConfigTest(unittest.TestCase):
+
+  def test_load_machine_config(self):
+    with tempfile.NamedTemporaryFile() as fh:
+      json.dump({'foo': 'bar'}, fh)
+      fh.flush()
+      self.assertEquals({'foo': 'bar'}, interface.load_machine_config(fh.name))
+
+  def test_load_machine_config_bad(self):
+    with tempfile.NamedTemporaryFile() as fh:
+      fh.write('not a json file')
+      fh.flush()
+      with self.assertRaises(ValueError):
+        interface.load_machine_config(fh.name)
+
+  def test_load_machine_config_not_exists(self):
+    self.assertEquals({}, interface.load_machine_config('does not exist'))
 
 
 class FakeThreadingEvent(object):
