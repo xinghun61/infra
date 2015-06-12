@@ -26,7 +26,9 @@ class AlertsJSON(ndb.Model):
   type = ndb.StringProperty()
   json = ndb.BlobProperty(compressed=True)
   date = ndb.DateTimeProperty(auto_now_add=True)
+  # TODO(remove this property
   use_gcs = ndb.BooleanProperty()
+  gcs_filename = ndb.StringProperty()
 
 
 class LastUpdated(ndb.Model):
@@ -65,11 +67,12 @@ class AlertsHandler(webapp2.RequestHandler):
     last_query = AlertsJSON.query().filter(AlertsJSON.type == alerts_type)
     return last_query.order(-AlertsJSON.date).get()
 
-  def get_from_gcs(self, alerts_type):
+  @staticmethod
+  def get_from_gcs(alerts_type, filename):
     try:
       with contextlib.closing(gcs.open(
           "/" + app_identity.get_default_gcs_bucket_name() +
-          "/" + alerts_type)) as gcs_file:
+          "/history/" + alerts_type + "/" + filename)) as gcs_file:
         return gcs_file.read()
     except gcs.NotFoundError:
       return '{}'
@@ -77,18 +80,21 @@ class AlertsHandler(webapp2.RequestHandler):
 
   def post_to_gcs(self, alerts_type, data):
     # Create a GCS file with GCS client.
+    filename = datetime.datetime.utcnow().strftime("%Y/%M/%d/%H.%M.%S.%f")
     with contextlib.closing(gcs.open(
         "/" + app_identity.get_default_gcs_bucket_name() +
-        "/" + alerts_type, 'w')) as f:
+        "/history/" + alerts_type + "/" + filename, 'w')) as f:
       f.write(data)
+
+    return filename
 
   def get_from_datastore(self, alerts_type):
     last_entry = self.get_last_datastore(alerts_type)
     if last_entry:
       logging.info('Reading alerts from datastore')
       data  = last_entry.json
-      if last_entry.use_gcs:
-        data = self.get_from_gcs(alerts_type)
+      if last_entry.gcs_filename:
+        data = self.get_from_gcs(alerts_type, last_entry.gcs_filename)
       data = json.loads(data)
       data['key'] = last_entry.key.integer_id()
       data['stale_alerts_thresh'] = self.MAX_STALENESS
@@ -153,8 +159,8 @@ class AlertsHandler(webapp2.RequestHandler):
     last_entry = self.get_last_datastore(alerts_type)
     last_alerts = {}
     if last_entry:
-      if last_entry.use_gcs:
-        alerts_json = self.get_from_gcs(alerts_type)
+      if last_entry.gcs_filename:
+        alerts_json = self.get_from_gcs(alerts_type, last_entry.gcs_filename)
         last_alerts = json.loads(alerts_json)
       else:
         last_alerts = json.loads(last_entry.json) if last_entry else {}
@@ -183,9 +189,9 @@ class AlertsHandler(webapp2.RequestHandler):
         new_entry.put()
       else:
         memcache.delete(alerts_type)
-        self.post_to_gcs(alerts_type, json_data)
+        filename = self.post_to_gcs(alerts_type, json_data)
         new_entry = AlertsJSON(
-           use_gcs=True,
+           gcs_filename=filename,
            type=alerts_type)
         new_entry.put()
     updated_key = ndb.Key(LastUpdated, alerts_type)
@@ -193,7 +199,6 @@ class AlertsHandler(webapp2.RequestHandler):
         key=updated_key,
         haddiff=haddiff,
         type=alerts_type).put()
-
 
 
   def parse_alerts(self, alerts_json):
@@ -237,6 +242,9 @@ class AlertsHistory(webapp2.RequestHandler):
     ndb_key = ndb.Key(AlertsJSON, key)
     result = query.filter(AlertsJSON.key == ndb_key).get()
     if result:
+      if result.gcs_filename:
+        result.json = AlertsHandler.get_from_gcs(
+            AlertsHandler.ALERT_TYPE, result.gcs_filename)
       data = json.loads(result.json)
       data['key'] = key
       return data
