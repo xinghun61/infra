@@ -75,16 +75,15 @@ DiffBuilderBase.prototype.createText = function(line, intralineSide)
 {
     var div = document.createElement("div");
     div.className = "text";
-    if (!line.text)
-        return div;
-    var html = this.highlighter.parseText(line.text) || line.text.escapeHTML();
+    var text = line.text || "";
+    var html = this.highlighter.parseText(text) || text.escapeHTML();
     if (intralineSide)
-        html = intralineSide.processLine(div, line.text, html);
+        html = intralineSide.processLine(div, text, html);
 
     // If the html is just the text then it didn't get highlighted so we can
     // use textContent which is faster than innerHTML.
-    if (html == line.text) {
-        div.textContent = line.text;
+    if (html == text) {
+        div.textContent = text;
     } else {
         div.innerHTML = html;
     }
