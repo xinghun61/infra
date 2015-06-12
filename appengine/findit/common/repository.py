@@ -8,17 +8,17 @@ class Repository(object):  # pragma: no cover
   """An interface for source code repository."""
 
   def GetChangeLog(self, revision):
-    """Return the change log of the given revision."""
+    """Returns the change log of the given revision."""
     raise NotImplemented()
 
   def GetChangeDiff(self, revision):
-    """Return the diff of the given revision."""
+    """Returns the diff of the given revision."""
     raise NotImplemented()
 
   def GetBlame(self, path, revision):
-    """Return blame information of the file at |path| of the given revision."""
+    """Returns blame of the file at ``path`` of the given revision."""
     raise NotImplemented()
 
   def GetSource(self, path, revision):
-    """Return the source code of the file at |path| of the given revision."""
+    """Returns source code of the file at ``path`` of the given revision."""
     raise NotImplemented()

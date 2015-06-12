@@ -14,7 +14,7 @@ class PullChangelogPipeline(BasePipeline):
 
   # TODO: for files in dependencies(blink, v8, skia, etc), use blame first.
   GIT_REPO = GitRepository(
-      'https://chromium.googlesource.com/chromium/src', HttpClient())
+      'https://chromium.googlesource.com/chromium/src.git', HttpClient())
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
@@ -40,7 +40,6 @@ class PullChangelogPipeline(BasePipeline):
         if not change_log:  # pragma: no cover
           raise pipeline.Retry('Failed to get change log for %s' % revision)
 
-        # TODO: save in datastore?
         change_logs[revision] = change_log.ToDict()
 
     return change_logs

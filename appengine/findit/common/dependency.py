@@ -39,8 +39,8 @@ class DependencyRoll(collections.namedtuple(
     'DependencyRoll', ('path', 'repo_url', 'old_revision', 'new_revision'))):
   """Represents a dependency roll (revision update) in chromium.
 
-  Note: It is possible that the DEPS roll is a revert so that |new_revision| is
-  actually older than |old_revision| in the dependency.
+  Note: It is possible that the DEPS roll is a revert so that ``new_revision``
+  is actually older than ``old_revision`` in the dependency.
   """
 
   def ToDict(self):

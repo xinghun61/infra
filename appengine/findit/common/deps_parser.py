@@ -79,7 +79,7 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
       deps_os, deps = deps_parser.ParseDEPSContent(
           deps_content, keys=['deps_os', 'deps'])
 
-    Then |deps_os| and |deps| are dicts as below:
+    Then ``deps_os`` and ``deps`` above are dicts as below:
       deps_os = {
           'unix': {'src/c': 'https://c.git@123c'}
       }

@@ -5,7 +5,8 @@
 import base64
 import json
 import re
-import unittest
+
+from testing_utils import testing
 
 from common import git_repository
 from common import retry_http_client
@@ -248,8 +249,9 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
       return 200, response
 
 
-class GitRepositoryTest(unittest.TestCase):
+class GitRepositoryTest(testing.AppengineTestCase):
   def setUp(self):
+    super(GitRepositoryTest, self).setUp()
     self.http_client_for_git = HttpClientForGit()
     self.repo_url = 'https://repo.test'
     self.git_repo = git_repository.GitRepository(self.repo_url,

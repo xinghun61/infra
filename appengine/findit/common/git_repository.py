@@ -8,6 +8,7 @@ import re
 
 from common.blame import Blame
 from common.blame import Region
+from common.cache_decorator import Cached
 from common.change_log import ChangeLog
 from common.change_log import FileChangeInfo
 from common import diff
@@ -72,7 +73,12 @@ class GitRepository(Repository):
       self.repo_url = self.repo_url[:-1]
     self.http_client = http_client
 
-  def _SendJsonRequest(self, url):
+  @property
+  def identifier(self):
+    return self.repo_url
+
+  @Cached(namespace='Gitiles-json-view', expire_time=24*60*60)
+  def _SendRequestForJsonResponse(self, url):
     # Gerrit prepends )]}' to json-formatted response.
     prefix = ')]}\'\n'
 
@@ -84,10 +90,17 @@ class GitRepository(Repository):
 
     return json.loads(content[len(prefix):])
 
+  @Cached(namespace='Gitiles-text-view', expire_time=24*60*60)
+  def _SendRequestForTextResponse(self, url):
+    status_code, content = self.http_client.Get(url, {'format': 'text'})
+    if status_code != 200:
+      return None
+    return base64.b64decode(content)
+
   def GetChangeLog(self, revision):
     url = '%s/+/%s' % (self.repo_url, revision)
 
-    data = self._SendJsonRequest(url)
+    data = self._SendRequestForJsonResponse(url)
     if not data:
       return None
 
@@ -113,17 +126,13 @@ class GitRepository(Repository):
   def GetChangeDiff(self, revision):
     """Returns the raw diff of the given revision."""
     url = '%s/+/%s%%5E%%21/' % (self.repo_url, revision)
-
-    status_code, content = self.http_client.Get(url, {'format': 'text'})
-    if status_code != 200:
-      return None
-    return base64.b64decode(content)
+    return self._SendRequestForTextResponse(url)
 
   def GetBlame(self, path, revision):
-    """Returns blame information of the file at |path| of the given revision."""
+    """Returns blame of the file at ``path`` of the given revision."""
     url = '%s/+blame/%s/%s' % (self.repo_url, revision, path)
 
-    data = self._SendJsonRequest(url)
+    data = self._SendRequestForJsonResponse(url)
     if not data:
       return None
 
@@ -138,10 +147,6 @@ class GitRepository(Repository):
     return blame
 
   def GetSource(self, path, revision):
-    """Returns the source code of the file at |path| of the given revision."""
+    """Returns source code of the file at ``path`` of the given revision."""
     url = '%s/+/%s/%s' % (self.repo_url, revision, path)
-
-    status_code, content = self.http_client.Get(url, {'format': 'text'})
-    if status_code != 200:
-      return None
-    return base64.b64decode(content)
+    return self._SendRequestForTextResponse(url)

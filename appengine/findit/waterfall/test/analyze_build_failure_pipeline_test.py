@@ -20,7 +20,7 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
 
   def _MockChangeLog(
       self, urlfetch, user_name, revision, commit_position, file_path):
-    url = ('https://chromium.googlesource.com/chromium/src/+/%s?format=json'
+    url = ('https://chromium.googlesource.com/chromium/src.git/+/%s?format=json'
            % revision)
 
     COMMIT_LOG_TEMPLATE = """)]}'
@@ -121,7 +121,7 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
                         'revision': 'some_git_hash',
                         'commit_position': 8888,
                         'url': ('https://chromium.googlesource.com/chromium'
-                                '/src/+/some_git_hash'),
+                                '/src.git/+/some_git_hash'),
                         'score': 2,
                         'hints': {
                             'modified x.cc (and it was in log)': 2,

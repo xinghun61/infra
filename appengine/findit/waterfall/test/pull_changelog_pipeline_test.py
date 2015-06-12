@@ -40,8 +40,9 @@ REV1_COMMIT_LOG = """)]}'
 }
 """
 
-REV1_COMMIT_LOG_URL = ('https://chromium.googlesource.com/chromium/src'
-                       '/+/rev1?format=json')
+REV1_COMMIT_LOG_URL = ('https://chromium.googlesource.com/chromium/src.git'
+                       '/+/rev1')
+REV1_COMMIT_JSON_URL = '%s?format=json' % REV1_COMMIT_LOG_URL
 
 
 class PullChangelogPipelineTest(testing.AppengineTestCase):
@@ -49,7 +50,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
 
   def testPullChangelogs(self):
     with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(REV1_COMMIT_LOG_URL, REV1_COMMIT_LOG)
+      urlfetch.register_handler(REV1_COMMIT_JSON_URL, REV1_COMMIT_LOG)
 
     failure_info = {
       'failed': True,
@@ -77,7 +78,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
         ],
         'author_time': 'Wed Jun 11 19:35:32 2014',
         'committer_time': 'Wed Jun 11 19:35:32 2014',
-        'commit_url': 'https://chromium.googlesource.com/chromium/src/+/rev1',
+        'commit_url': REV1_COMMIT_LOG_URL,
         'code_review_url': None,
         'committer_name': 'someone@chromium.org',
         'revision': 'rev1'
