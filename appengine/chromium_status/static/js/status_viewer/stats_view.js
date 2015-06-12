@@ -18,7 +18,7 @@ var CreateStatsView;
 
 CreateStatsView = function(timeRange, entries) {
   return new StatsView(timeRange, entries);
-}
+};
 
 function StatsView(timeRange, entries) {
   DrawStatsView(timeRange, entries);
@@ -26,14 +26,14 @@ function StatsView(timeRange, entries) {
 
 StatsView.prototype.Show = function(visible) {
   gViewerApp.ShowViewContentAndTabArea('stats', visible);
-}
+};
 
 /**
  * Helper that does |map[key] += increment| (lazy-initializing to 0).
  */
 function IncrementProperty(map, key, increment) {
   var prevValue = map[key];
-  if (prevValue == undefined)
+  if (prevValue === undefined)
     prevValue = 0;
   map[key] = prevValue + increment;
 }

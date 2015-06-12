@@ -27,7 +27,7 @@ ClassUtil.ResetClass = function(className, specialId, specialClass) {
     throw "Internal error in ResetClass(" + className + ", " + specialId +
         ", " + specialClass + ")\nEnumerated " + items.length + " items.\n" +
         msg;
-  }
+  };
   var found;
   for (var i in items) {
     var item = items[i];

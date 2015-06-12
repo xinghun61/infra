@@ -39,7 +39,7 @@ TreeStatusViewerApp.prototype.OnPageLoaded = function() {
 
   // Trigger fetch of data from server.
   this.OnTimeRangeChanged();
-}
+};
 
 /**
  * This method is called whenever the window of time has been changed
@@ -58,7 +58,7 @@ TreeStatusViewerApp.prototype.OnTimeRangeChanged = function() {
   this.SetLoadingIndicator("Fetching data...");
   var callback = this.OnDataAvailable.bind(this, timeRange);
   DataFetcher.GetTreeStatusEntries(timeRange, callback);
-}
+};
 
 /**
  * This method is called when new data has been received from the server.
@@ -72,7 +72,7 @@ TreeStatusViewerApp.prototype.OnDataAvailable = function(timeRange, entries) {
 
   // Force the view to redraw itself using the new data.
   this.SwitchToView(this.GetCurrentViewName());
-}
+};
 
 /**
  * Gets the range of time the user is interested in.
@@ -97,7 +97,7 @@ TreeStatusViewerApp.prototype.GetTimeRange = function() {
   var endTime = startTime - DateUtil.MILLIS_PER_DAY * numDays;
 
   return new TimeRange(startTime, endTime);
-}
+};
 
 /**
  * Gets the current window's URL's query parameters, as a
@@ -133,7 +133,7 @@ TreeStatusViewerApp.prototype.ApplyQueryParameters = function() {
       d.value = params[formNames[i]];
     }
   }
-}
+};
 
 /**
  * Updates a part of the UI to show we are waiting for stuff to happen.
@@ -142,8 +142,8 @@ TreeStatusViewerApp.prototype.ApplyQueryParameters = function() {
 TreeStatusViewerApp.prototype.SetLoadingIndicator = function(text) {
   var d = document.getElementById("loading");
   d.innerHTML = text;
-  DomUtil.DisplayNode(d, text != "");
-}
+  DomUtil.DisplayNode(d, text !== "");
+};
 
 /**
  * Gets the name of the currently active view.
@@ -151,7 +151,7 @@ TreeStatusViewerApp.prototype.SetLoadingIndicator = function(text) {
  */
 TreeStatusViewerApp.prototype.GetCurrentViewName = function() {
   return document.getElementById("curView").value;
-}
+};
 
 /**
  * Sets |viewName| as the active view.
@@ -159,7 +159,7 @@ TreeStatusViewerApp.prototype.GetCurrentViewName = function() {
  */
 TreeStatusViewerApp.prototype.SetCurrentViewName = function(viewName) {
   document.getElementById("curView").value = viewName;
-}
+};
 
 /**
  * Switches |viewName| to be the active view.
@@ -182,7 +182,7 @@ TreeStatusViewerApp.prototype.SwitchToView = function(viewName) {
 
   // Show the now active view.
   this.liveViews_[viewName].Show(true);
-}
+};
 
 /**
  * Generic method to change the styling of the view's tab handle to indicate
@@ -199,4 +199,4 @@ TreeStatusViewerApp.prototype.ShowViewContentAndTabArea =
 
   var badgeClass = visible ? "viewBadge_selected" : "viewBadge";
   document.getElementById(viewName + "_badge").className = badgeClass;
-}
+};

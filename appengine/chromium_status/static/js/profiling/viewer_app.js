@@ -75,7 +75,6 @@ ProfilingApp.prototype.CreateViewSelectionTable = function() {
       first = false;
     }
     var a = DomUtil.AddNode(span, "a");
-    a.href = "javascript:void(0)";
     a.onclick = this.SwitchToView.bind(this, i);
     DomUtil.AddText(a, this.viewFactories_[i].display_name);
   }
@@ -86,7 +85,7 @@ ProfilingApp.prototype.CreateViewSelectionTable = function() {
  * fetch new data off the server to update the views.
  */
 ProfilingApp.prototype.OnQueryChanged = function() {
-  if (this.pending_request_ != null) {
+  if (this.pending_request_ !== null) {
     this.pending_request_.abort();
     this.pending_request_ = null;
   }
@@ -180,7 +179,7 @@ ProfilingApp.prototype.ApplyQueryParameters = function() {
 ProfilingApp.prototype.SetLoadingIndicator = function(text) {
   var d = document.getElementById("loading");
   d.innerHTML = text;
-  DomUtil.DisplayNode(d, text != "");
+  DomUtil.DisplayNode(d, text !== "");
 };
 
 /**

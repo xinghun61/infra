@@ -17,7 +17,7 @@ var CreateFragmentationView;
 
 CreateFragmentationView = function(timeRange, entries) {
   return new FragmentationView(timeRange, entries);
-}
+};
 
 function FragmentationView(timeRange, entries) {
   Draw(entries, timeRange);
@@ -25,7 +25,7 @@ function FragmentationView(timeRange, entries) {
 
 FragmentationView.prototype.Show = function(visible) {
   gViewerApp.ShowViewContentAndTabArea('fragmentation', visible);
-}
+};
 
 /**
  * Draws the fragmentation chart for all days in |timeRange|.
@@ -86,7 +86,7 @@ function DrawDayNameColumn(day, td) {
       PadWithZero(d.getDate(), 2);
 
   // Color saturday and sunday differently.
-  if (d.getDay() == 0) {
+  if (d.getDay() === 0) {
     td.className = "sundayName";
   } else if (d.getDay() == 6) {
     td.className = "saturdayName";
@@ -119,8 +119,8 @@ function DrawRunsTable(parent, runs) {
     totalDuration += Math.max(MIN_DURATION, runs[i].duration);
   }
 
-  for (var i = 0; i < runs.length; ++i) {
-    var run = runs[i];
+  for (var j = 0; j < runs.length; ++j) {
+    var run = runs[j];
     var duration = Math.max(MIN_DURATION, run.duration);
     var width = duration / totalDuration;
     AddRunColumn(tr, run, width);

@@ -37,7 +37,7 @@ function Fetch(url, callback) {
       }
       callback(text, error);
     }
-  }
+  };
 
   r.send(null);
 }
@@ -100,7 +100,7 @@ DataFetcher.GetTreeStatusEntries = function(timeRange, callback) {
       endTime + "&limit=1000";
 
   Fetch(url, OnFetchedDataComplete.bind(this, callback));
-}
+};
 
 /**
  * Callback for when the data has been fetched.

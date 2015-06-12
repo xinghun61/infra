@@ -18,7 +18,7 @@ var CreatePeakHoursView;
 
 CreatePeakHoursView = function(timeRange, entries) {
   return new PeakHoursView(timeRange, entries);
-}
+};
 
 function PeakHoursView(timeRange, entries) {
   Draw(entries, timeRange);
@@ -26,7 +26,7 @@ function PeakHoursView(timeRange, entries) {
 
 PeakHoursView.prototype.Show = function(visible) {
  gViewerApp.ShowViewContentAndTabArea("peak", visible);
-}
+};
 
 /**
  * Draws the peak hours chart for all days in |timeRange|.
@@ -57,9 +57,9 @@ function Draw(entries, timeRange) {
   
   // Set the graph csv header: "Date,MTV,NYC,CET,TOK\n".
   graphCSV.push("Date");
-  for (var timezone in utcOffsetsMillis) {
+  for (var timezone2 in utcOffsetsMillis) {
     graphCSV.push(",");
-    graphCSV.push(timezone);
+    graphCSV.push(timezone2);
   }
   graphCSV.push("\n");
 
@@ -126,10 +126,10 @@ function DrawDay(tbody, entries, utcDay, utcOffsetsMillis, graphCSV) {
   table.cellPadding = 0;
   table.width = "100%";
 
-  var tr = DomUtil.AddNode(table, "tr");
+  var tr2 = DomUtil.AddNode(table, "tr");
 
   for (var timezone in utcOffsetsMillis) {
-    AddPeakColumn(tr,
+    AddPeakColumn(tr2,
                   entries,
                   utcDay,
                   utcOffsetsMillis[timezone],
@@ -197,7 +197,7 @@ function AddPeakColumn(tr, entries, utcDay, utcOffsetMillis, graphCSV) {
   var className = "";
 
   var percentOpenNumber = "0.0";
-  if (total == 0) {
+  if (total === 0) {
     // This can happen if the day is in the future (edge day of slow timezone).
     percentOpenText = "N/A";
   } else {
@@ -244,7 +244,7 @@ function DrawUTCDayNameColumn(utcDay, td) {
       PadWithZero(d.getUTCDate(), 2);
 
   // Color saturday and sunday differently.
-  if (d.getUTCDay() == 0) {
+  if (d.getUTCDay() === 0) {
     td.className = "sundayName";
   } else if (d.getUTCDay() == 6) {
     td.className = "saturdayName";

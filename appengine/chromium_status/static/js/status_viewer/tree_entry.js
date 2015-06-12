@@ -26,7 +26,7 @@ function Entry(timestamp, author, message, general_state) {
  */
 Entry.prototype.GetTreeState = function() {
   return this.general_state;
-}
+};
 
 Entry.TREE_STATES = [
   "open",
@@ -43,7 +43,7 @@ Entry.AUTHOR_ORACLE = "The oracle";
 
 Entry.prototype.IsOracle = function() {
   return this.author == Entry.AUTHOR_ORACLE;
-}
+};
 
 /**
  * This class implements a counter for each of the tree status types.
@@ -60,27 +60,27 @@ function StatusTotals() {
 
 StatusTotals.prototype.Increment = function(type, value) {
   this.totals_[type] += value;
-}
+};
 
 StatusTotals.prototype.GetOpen = function(type) {
-  return this.totals_["open"];
-}
+  return this.totals_.open;
+};
 
 StatusTotals.prototype.GetClosed = function(type) {
-  return this.totals_["closed"] + this.totals_["maintenance"];
-}
+  return this.totals_.closed + this.totals_.maintenance;
+};
 
 StatusTotals.prototype.GetClosedForMaintenance = function(type) {
-  return this.totals_["maintenance"];
-}
+  return this.totals_.maintenance;
+};
 
 StatusTotals.prototype.GetThrottled = function(type) {
-  return this.totals_["throttled"];
-}
+  return this.totals_.throttled;
+};
 
 StatusTotals.prototype.GetUnknown = function(type) {
-  return this.totals_["unknown"];
-}
+  return this.totals_.unknown;
+};
 
 StatusTotals.prototype.GetTotal = function(type) {
   var total = 0;
@@ -88,11 +88,11 @@ StatusTotals.prototype.GetTotal = function(type) {
     total += this.totals_[key];
   }
   return total;
-}
+};
 
 StatusTotals.prototype.GetTotalKnown = function(type) {
   return this.GetTotal() - this.GetUnknown();
-}
+};
 
 /**
  * A "run" shows the time range that an entry was active for.
@@ -121,7 +121,7 @@ function Run(entry, startTime, duration) {
  */
 Run.prototype.GetEndTime = function() {
   return this.startTime - this.duration;
-}
+};
 
 /**
  * Builds a list of "runs" that span |timeRange|, pulling data from |entries|.
@@ -134,7 +134,7 @@ function MakeRuns(entries, timeRange) {
   var runs = [];
 
   for (var i = 0; i < entries.length; ++i) {
-    var prevEntry = i == 0 ? null : entries[i-1];
+    var prevEntry = i === 0 ? null : entries[i-1];
     var entry = entries[i];
     var nextEntry = i + 1 == entries.length ? null : entries[i + 1];
 
@@ -144,7 +144,7 @@ function MakeRuns(entries, timeRange) {
     var runStartTime;
     var duration;
 
-    if (runs.length == 0) {
+    if (runs.length === 0) {
       // Connect the startTime to this entry.
       runStartTime = timeRange.startTime;
 
@@ -163,7 +163,7 @@ function MakeRuns(entries, timeRange) {
     var runEndTime = entry.timestamp < timeRange.endTime ?
         timeRange.endTime : entry.timestamp;
 
-    if (runs.length == 0 && runStartTime != timeRange.startTime) {
+    if (runs.length === 0 && runStartTime !== timeRange.startTime) {
       var unknownEntry = new Entry(runStartTime, Entry.AUTHOR_ORACLE,
                                    "Your future is uncertain...", "unknown");
       // Add an unknown filler.
@@ -180,12 +180,12 @@ function MakeRuns(entries, timeRange) {
 
   // The runs are supposed to span the entire time range. If any data was
   // missing add a filler run.
-  var lastEndTime = runs.length == 0 ?
+  var lastEndTime = runs.length === 0 ?
       timeRange.startTime : runs[runs.length - 1].GetEndTime();
   if (lastEndTime != timeRange.endTime) {
-    var unknownEntry = new Entry(timeRange.endTime, Entry.AUTHOR_ORACLE,
+    var unknownEntry2 = new Entry(timeRange.endTime, Entry.AUTHOR_ORACLE,
                                  "Missing data!", "unknown");
-    runs.push(new Run(unknownEntry, lastEndTime,
+    runs.push(new Run(unknownEntry2, lastEndTime,
                       lastEndTime - timeRange.endTime));
   }
 

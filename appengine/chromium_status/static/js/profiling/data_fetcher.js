@@ -39,18 +39,19 @@ function Fetch(url, callback, no_cache) {
       }
       callback(r.responseText, r.status, error);
     }
-  }
+  };
 
   r.send(null);
   return r;
-};
+}
 
 /**
  * Parses response text and returns the parsed entries.
  */
 function ParseDataResponseAndAppend(text) {
+  var content;
   try {
-    var content = JSON.parse(text);
+    content = JSON.parse(text);
   } catch (err) {
     Log("Content is invalid: " + err + "\n" + text);
     return;
@@ -73,7 +74,7 @@ function ParseDataResponseAndAppend(text) {
         item.first_arg));
   }
   return entries;
-};
+}
 
 /**
  * Fetches all of the profiling data relating to |filters|.
@@ -117,7 +118,7 @@ function OnFetchedDataComplete(callback, text, status, error) {
       DomUtil.AddText(log_div, text);
     }
 
-  } else if (status == 0) {
+  } else if (status === 0) {
     // Request was aborted.
     callback(undefined);
 
@@ -126,8 +127,8 @@ function OnFetchedDataComplete(callback, text, status, error) {
     callback(undefined);
     if (!document.getElementById("form_login")) {
       // POST to /login to get a ASCID cookie.
-      var container = document.getElementById("login_container");
-      var form = DomUtil.AddNode(container, "form");
+      var login_container = document.getElementById("login_container");
+      var form = DomUtil.AddNode(login_container, "form");
       form.setAttribute("method", "POST");
       form.setAttribute("action", "/login");
       form.id = "form_login";
@@ -135,15 +136,15 @@ function OnFetchedDataComplete(callback, text, status, error) {
       var input = DomUtil.AddNode(form, "input");
       input.type = "submit";
       input.value = "Please login first with an admin account";
-      DomUtil.DisplayNode(container, true);
+      DomUtil.DisplayNode(login_container, true);
     }
 
   } else if (status == 500 || status == 501 || status == 503) {
     // AppEngine misbehaves. Dump the text so the user can view the GAE error.
     callback(undefined);
-    var container = document.getElementById('error_container');
-    container.innerHTML = text;
-    DomUtil.DisplayNode(container, true);
+    var error_container = document.getElementById('error_container');
+    error_container.innerHTML = text;
+    DomUtil.DisplayNode(error_container, true);
 
   } else {
     // Unknown error. Log it instead of putting it in error_container.
@@ -151,6 +152,6 @@ function OnFetchedDataComplete(callback, text, status, error) {
     Log(error);
     Log(text);
   }
-};
+}
 
 })();  // Private implementation.

@@ -16,7 +16,7 @@ var CreateListView;
 
 CreateListView = function(timeRange, entries) {
   return new ListView(timeRange, entries);
-}
+};
 
 function ListView(timeRange, entries) {
   var parent = document.getElementById("list_tbody");
@@ -25,7 +25,7 @@ function ListView(timeRange, entries) {
 
 ListView.prototype.Show = function(visible) {
  gViewerApp.ShowViewContentAndTabArea('list', visible);
-}
+};
 
 function DrawListView(parent, timeRange, entries) {
   parent.innerHTML = "";

@@ -75,8 +75,8 @@ ListView.prototype.Draw = function(current_sort) {
   if (!this.entries_) {
     return;
   }
-  for (var i = 0; i < this.entries_.length; ++i) {
-    var entry = this.entries_[i];
+  for (var j = 0; j < this.entries_.length; ++j) {
+    var entry = this.entries_[j];
     var tr = DomUtil.AddNode(tbody, "tr");
     var tdTimestamp = DomUtil.AddNode(tr, "td");
     var tdDomain = DomUtil.AddNode(tr, "td");
@@ -95,7 +95,7 @@ ListView.prototype.Draw = function(current_sort) {
 };
 
 ListView.prototype.SortEntries = function (current_sort) {
-  if (this.entries_ != null) {
+  if (this.entries_ !== null) {
     this.entries_.sort(function(a, b) {
         var lhs = a[current_sort];
         var rhs = b[current_sort];
