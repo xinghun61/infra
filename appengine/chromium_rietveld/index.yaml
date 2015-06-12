@@ -285,6 +285,19 @@ indexes:
 - kind: Issue
   properties:
   - name: closed
+  - name: project
+  - name: created
+
+- kind: Issue
+  properties:
+  - name: closed
+  - name: project
+  - name: created
+    direction: desc
+
+- kind: Issue
+  properties:
+  - name: closed
   - name: reviewers
   - name: created
 
@@ -348,6 +361,17 @@ indexes:
   properties:
   - name: private
   - name: modified
+    direction: desc
+
+- kind: Issue
+  properties:
+  - name: project
+  - name: created
+
+- kind: Issue
+  properties:
+  - name: project
+  - name: created
     direction: desc
 
 - kind: Issue
