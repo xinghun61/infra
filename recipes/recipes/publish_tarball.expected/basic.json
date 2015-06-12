@@ -240,5 +240,528 @@
       "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
       "@@@STEP_LOG_END@python.inline@@@"
     ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2])\n",
+      "[SLAVE_BUILD]/src",
+      "[TMP_BASE]/lite_tarball_tmp_3/src"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "copytree"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/native_client",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune native_client"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/native_client_sdk",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune native_client_sdk"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/WebKit/ManualTests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/WebKit/ManualTests"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/WebKit/PerformanceTests",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/WebKit/PerformanceTests"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/android_platform",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/android_platform"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/chromite",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/chromite"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/freetype2",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/freetype2"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/gles2_book",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/gles2_book"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/gold",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/gold"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/icu",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/icu"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/launchpad_translations",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/launchpad_translations"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libc++",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/libc++"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libevent",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/libevent"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libjpeg_turbo",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/libjpeg_turbo"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libmtp",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/libmtp"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libxml/src",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/libxml/src"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/openssl",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/openssl"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/snappy",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/snappy"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/webgl",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/webgl"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/webgl_conformance",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/webgl_conformance"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/yasm",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/yasm"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/tools/win",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune tools/win"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src/v8/third_party/icu",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune v8/third_party/icu"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/lite_tarball_tmp_3/src",
+      "-depth",
+      "-type",
+      "d",
+      "-empty",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune empty directories"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "--remove-nonessential-files",
+      "chromium-38.0.2125.122",
+      "--verbose",
+      "--progress",
+      "--src-dir",
+      "[TMP_BASE]/lite_tarball_tmp_3/src"
+    ],
+    "cwd": "[TMP_BASE]/export_tarball_tmp_4",
+    "name": "export_tarball (3)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "generate_hashes (3)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "md5  164ebd6889588da166a52ca0d57b9004  bash",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz.hashes",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]/export_tarball_tmp_4"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree temp dir (3)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]/lite_tarball_tmp_3"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree temp dir (4)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
   }
 ]
