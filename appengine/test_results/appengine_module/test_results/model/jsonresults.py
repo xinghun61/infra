@@ -258,13 +258,20 @@ class JsonResults(object):
           times, aggregated_test[TIMES_KEY], num_runs)
 
   @classmethod
-  def _insert_item_run_length_encoded(cls, incremental_item, aggregated_item,
+  def _insert_item_run_length_encoded(cls, incremental_items, aggregated_items,
       num_runs):  # pragma: no cover
-    for item in incremental_item:
-      if len(aggregated_item) and item[1] == aggregated_item[0][1]:
-        aggregated_item[0][0] = min(aggregated_item[0][0] + item[0], num_runs)
+    """Prepend incremental items to the aggregates list.
+
+    Args:
+      incremental_items: List to read of 2-item lists, [[count, value], ...]
+      aggregated_items: List to modify of 2-item lists, [[count, value], ...]
+      num_runs: Max number of runs for a single item.
+    """
+    for item in incremental_items:
+      if len(aggregated_items) and item[1] == aggregated_items[0][1]:
+        aggregated_items[0][0] = min(aggregated_items[0][0] + item[0], num_runs)
       else:
-        aggregated_item.insert(0, item)
+        aggregated_items.insert(0, item)
 
   @classmethod
   def _normalize_results(cls, aggregated_json, num_runs,
@@ -387,17 +394,18 @@ class JsonResults(object):
       new_results[TIMES_KEY] = [[1, time]]
 
       actual_failures = full_results[ACTUAL_KEY]
+      encoded_failures = ""
       # Treat unexpected skips like NOTRUNs to avoid exploding the results JSON
       # files when a bot exits early (e.g. due to too many crashes/timeouts).
       if expected != SKIP_STRING and actual_failures == SKIP_STRING:
-        expected = first_actual_failure = NOTRUN_STRING
+        expected = NOTRUN_STRING
+        encoded_failures = FAILURE_TO_CHAR[NOTRUN_STRING]
       elif expected == NOTRUN_STRING:
-        first_actual_failure = expected
+        encoded_failures = FAILURE_TO_CHAR[NOTRUN_STRING]
       else:
-        # FIXME: Include the retry result as well and find a nice way to
-        # display it in the flakiness dashboard.
-        first_actual_failure = actual_failures.split(' ')[0]
-      new_results[RESULTS_KEY] = [[1, FAILURE_TO_CHAR[first_actual_failure]]]
+        encoded_failures = "".join(
+            FAILURE_TO_CHAR[f] for f in actual_failures.split(" "))
+      new_results[RESULTS_KEY] = [[1, encoded_failures]]
 
       if BUG_KEY in full_results:
         new_results[BUG_KEY] = full_results[BUG_KEY]

@@ -444,8 +444,10 @@ function processTestRunsForBuilder(builder)
             }
 
             if (rawResults && rawResults[resultsIndex]) {
-                var result = rawResults[resultsIndex][results.RLE.VALUE];
-                resultsMap[failureMap[result]] = true;
+                var allResults = rawResults[resultsIndex][results.RLE.VALUE];
+                for (var result = 0; result < allResults.length; result++) {
+                  resultsMap[failureMap[allResults[result]]] = true;
+                }
             }
 
             resultsForTest.slowestTime = Math.max(resultsForTest.slowestTime, times[i][results.RLE.VALUE]);
@@ -608,15 +610,28 @@ function htmlForTestResults(test, revisions)
     var indexToReplaceCurrentResult = -1;
     var indexToReplaceCurrentTime = -1;
     for (var i = 0; i < buildNumbers.length; i++) {
-        var currentResultArray, currentTimeArray, currentTime, resultString;
+        var currentResultArray, currentTimeArray, currentTime;
+        var resultString, detailedResultString;
 
         if (i > indexToReplaceCurrentResult) {
             currentResultArray = testResults.shift();
             if (currentResultArray) {
-                resultString = g_resultsByBuilder[builder.key()][results.FAILURE_MAP][currentResultArray[results.RLE.VALUE]];
+                var encodedResults = currentResultArray[results.RLE.VALUE];
+                if (encodedResults.length > 1) {
+                  resultString = 'FLAKY';
+                  var failureMap = g_resultsByBuilder[builder.key()][results.FAILURE_MAP];
+                  detailedResultString = '';
+                  for (var j = 0; j < encodedResults.length; j++) {
+                    detailedResultString += failureMap[encodedResults[j]] + ' ';
+                  }
+                } else {
+                  resultString = g_resultsByBuilder[builder.key()][results.FAILURE_MAP][encodedResults];
+                  detailedResultString = resultString;
+                }
                 indexToReplaceCurrentResult += currentResultArray[results.RLE.LENGTH];
             } else {
                 resultString = results.NO_DATA;
+                detailedResultString = resultString;
                 indexToReplaceCurrentResult += buildNumbers.length;
             }
         }
@@ -659,7 +674,7 @@ function htmlForTestResults(test, revisions)
         cell.hasResult =
             resultString !== results.NO_DATA && resultString !== results.NOTRUN;
         cell.html = '<div'
-            + ' title="' + resultString + '. Click for more info."'
+            + ' title="' + detailedResultString + '. Click for more info."'
             + ' class="results ' + cell.className + '"'
             + '>'
             + (currentTime || (cell.hasResult ? '' : '?')) + '</div>';
@@ -821,7 +836,7 @@ function htmlForTestTable(rowsHTML, opt_excludeHeaders)
             html += htmlForTableColumnHeader(headers[i], i == headers.length - 1);
         html += '</tr></thead>';
     }
-    return html + '<tbody>' + rowsHTML + '</tbody></table>';;
+    return html + '<tbody>' + rowsHTML + '</tbody></table>';
 }
 
 function appendHTML(html)

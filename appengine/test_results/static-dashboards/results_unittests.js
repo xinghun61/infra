@@ -49,15 +49,32 @@ test('results.testCounts', 2, function() {
     });
 });
 
-test('results.determineFlakiness', 10, function() {
+test('results.isFailingResult', 3, function() {
     var failureMap = {
         'C': 'CRASH',
         'P': 'PASS',
         'I': 'IMAGE',
         'T': 'TIMEOUT',
-        'N':'NO DATA',
-        'Y':'NOTRUN',
-        'X':'SKIP'
+        'N': 'NO DATA',
+        'Y': 'NOTRUN',
+        'X': 'SKIP'
+    };
+
+    var inputResults = [[1, 'P']];
+    equal(results.isFailingResult(failureMap, 'P'), false);
+    equal(results.isFailingResult(failureMap, 'I'), true);
+    equal(results.isFailingResult(failureMap, 'IP'), true);
+});
+
+test('results.determineFlakiness', 12, function() {
+    var failureMap = {
+        'C': 'CRASH',
+        'P': 'PASS',
+        'I': 'IMAGE',
+        'T': 'TIMEOUT',
+        'N': 'NO DATA',
+        'Y': 'NOTRUN',
+        'X': 'SKIP'
     };
     var out = {};
 
@@ -85,4 +102,11 @@ test('results.determineFlakiness', 10, function() {
     results.determineFlakiness(failureMap, inputResults, out);
     equal(out.isFlaky, false);
     equal(out.flipCount, 1);
+
+    // Test unconditional flakiness is always counted as a flip.
+    inputResults = [[1, 'P'], [1, 'IP'], [1, 'IP'], [1, 'IP']];
+    results.determineFlakiness(failureMap, inputResults, out);
+    equal(out.isFlaky, true);
+    equal(out.flipCount, 3);
+
 });

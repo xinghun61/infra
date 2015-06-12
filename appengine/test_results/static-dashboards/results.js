@@ -60,6 +60,10 @@ var NON_FAILURE_TYPES = [results.PASS, results.NO_DATA, results.SKIP, results.NO
 
 results.isFailingResult = function(failureMap, failureType)
 {
+    // Multiple results means at least one was a failure.
+    if (failureType.length > 1) {
+      return true;
+    }
     return NON_FAILURE_TYPES.indexOf(failureMap[failureType]) == -1;
 }
 
@@ -101,6 +105,18 @@ results.determineFlakiness = function(failureMap, testResults, out)
 
     for (var i = 0; i < testResults.length; i++) {
         var result = testResults[i][results.RLE.VALUE];
+        // result can be a single character or a string with multiple results.
+        // In the case of multiple results we already know the test is flaky so
+        // we increment flipCount and just move on.
+        //
+        // This code optimizes for scenario #1 below:
+        // 1. I want to reduce flakiness as a whole, so find the flakiest tests.
+        // 2. I want to find the actual tests that caused the bot to turn red,
+        // so ignore ones that eventually passed.
+        if (result.length > 1) {
+          flipCount++;
+          continue;
+        }
         var failureType = failureMap[result];
         if (failureType != mostRecentNonIgnorableFailureType && FAILURE_TYPES_TO_IGNORE.indexOf(failureType) == -1) {
             if (mostRecentNonIgnorableFailureType)

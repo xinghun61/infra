@@ -224,6 +224,28 @@ test('htmlForSingleTestRow', 1, function() {
     equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
 });
 
+test('htmlForSingleTestRowWithFlakyResult', 1, function() {
+    var historyInstance = resetGlobals();
+    var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
+    var test = createResultsObjectForTest('foo/exists.html', builder);
+    historyInstance.dashboardSpecificState.showNonFlaky = true;
+    var blinkRevisions = [1234, 1233];
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
+    test.rawResults = [[1, 'F'], [2, 'IP']];
+    test.rawTimes = [[1, 0], [2, 5]];
+    var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
+        '<td class="test-link"><span class="link" onclick="g_history.setQueryParameter(\'tests\',\'foo/exists.html\');">foo/exists.html</span>' +
+        '<td class=options-container><a class="file-new-bug" href="https://code.google.com/p/chromium/issues/entry?template=Layout%20Test%20Failure&summary=Layout%20Test%20foo%2Fexists.html%20is%20failing&comment=The%20following%20layout%20test%20is%20failing%20on%20%5Binsert%20platform%5D%0A%0Afoo%2Fexists.html%0A%0AProbable%20cause%3A%0A%0A%5Binsert%20probable%20cause%5D">File new bug</a>' +
+        '<td class=options-container>' +
+        '<td>' +
+        '<td class="results-container">' +
+            '<div title="TEXT. Click for more info." class="results TEXT"></div>' +
+            '<div title="IMAGE PASS . Click for more info." class="results FLAKY">5</div>' +
+        '</td>';
+
+    equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
+});
+
 test('lookupVirtualTestSuite', 2, function() {
     equal(lookupVirtualTestSuite('fast/canvas/foo.html'), '');
     equal(lookupVirtualTestSuite('virtual/gpu/fast/canvas/foo.html'), 'virtual/gpu/fast/canvas');

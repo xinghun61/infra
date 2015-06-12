@@ -118,6 +118,10 @@ FULL_RESULT_EXAMPLE = """ADD_RESULTS({
             "unexpected-leak.html": {
                 "expected": "PASS",
                 "actual": "LEAK"
+            },
+            "unexpected-flake.html": {
+                "expected": "PASS",
+                "actual": "FAIL PASS"
             }
         }
     },
@@ -505,6 +509,10 @@ class JsonResultsTest(unittest.TestCase):
                     },
                     "unexpected-leak.html": {
                         "results": [[1, LEAK]],
+                        "times": [[1, 0]],
+                    },
+                    "unexpected-flake.html": {
+                        "results": [[1, FAIL + PASS]],
                         "times": [[1, 0]],
                     },
                 }
@@ -1089,6 +1097,36 @@ class JsonResultsTest(unittest.TestCase):
                            "results": [[101, IMAGE]],
                            "times": [[101, 0]]}}},
          "version": 4})
+
+  def test_merge_treats_multiple_results_as_a_unique_type(self):
+    self._test_merge(
+        # Aggregated results
+        {"builds": ["3", "1"],
+         "tests": {
+             "001.html": {
+                 "results": [[5, TEXT]],
+                 "times": [[5, 0]]},
+             "002.html": {
+                 "results": [[3, TEXT + FAIL]],
+                 "times": [[3, 0]]}}},
+        # Incremental results
+        {"builds": ["2"],
+         "tests": {
+             "001.html": {
+                 "results": [[1, TEXT + IMAGE + FAIL]],
+                 "times": [[1, 0]]},
+             "002.html": {
+                 "results": [[1, TEXT + FAIL]],
+                 "times": [[1, 0]]}}},
+        # Expected no merge for 001, full merge for 002.
+        {"builds": ["2", "3", "1"],
+         "tests": {
+             "001.html": {
+                 "results": [[1, TEXT + IMAGE + FAIL], [5, TEXT]],
+                 "times": [[6, 0]]},
+             "002.html": {
+                 "results": [[4, TEXT + FAIL]],
+                 "times": [[4, 0]]}}});
 
   # FIXME(aboxhall): Add some tests for xhtml/svg test results.
 
