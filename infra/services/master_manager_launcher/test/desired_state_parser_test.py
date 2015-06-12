@@ -27,6 +27,15 @@ class TestDesiredStateValidation(auto_stub.TestCase):
         {'desired_state': 'offline', 'transition_time_utc': 6000},
     ]}))
 
+  def testValidStateZulu(self):
+    self.assertTrue(desired_state_parser.desired_master_state_is_valid({
+      'master.chromium.fyi': [
+        {'desired_state': 'running',
+         'transition_time_utc': 4000},
+        {'desired_state': 'offline',
+         'transition_time_utc': '1970-01-01T01:40:00Z'},  # Unix timestamp 6000
+    ]}))
+
   def testNoDesiredState(self):
     self.assertFalse(desired_state_parser.desired_master_state_is_valid({
       'master.chromium.fyi': [
@@ -53,6 +62,15 @@ class TestDesiredStateValidation(auto_stub.TestCase):
       'master.chromium.fyi': [
         {'desired_state': 'offline', 'transition_time_utc': 6000},
         {'desired_state': 'running', 'transition_time_utc': 4000},
+    ]}))
+
+  def testNotSortedZulu(self):
+    self.assertFalse(desired_state_parser.desired_master_state_is_valid({
+      'master.chromium.fyi': [
+        {'desired_state': 'offline',
+         'transition_time_utc': '1970-01-01T01:40:00Z'},  # Unix timestamp 6000
+        {'desired_state': 'running',
+         'transition_time_utc': 4000},
     ]}))
 
   def testInvalidState(self):

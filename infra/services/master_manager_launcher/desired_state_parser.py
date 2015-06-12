@@ -5,6 +5,7 @@
 """Parse, validate and query the desired master state json."""
 
 import bisect
+import datetime
 import json
 import logging
 import operator
@@ -12,6 +13,7 @@ import os
 
 from infra.libs.buildbot import master
 from infra.libs.time_functions import timestamp
+from infra.libs.time_functions import zulu
 from infra.services.master_lifecycle import buildbot_state
 
 
@@ -35,6 +37,13 @@ def parse_desired_state(data):
   if not desired_master_state_is_valid(desired_state):
     raise InvalidDesiredMasterState()
   return desired_state
+
+
+def parse_transition_time(transition_time):
+  """Parses an int, float, or Zulu time. Returns a float timestamp or None."""
+  if isinstance(transition_time, (int, float)):
+    return float(transition_time)
+  return zulu.parse_zulu_ts(transition_time)
 
 
 def desired_master_state_is_valid(desired_state):
@@ -61,10 +70,10 @@ def desired_master_state_is_valid(desired_state):
             buildbot_state.STATES['desired_buildbot_state'])
         return False
 
-      # Verify the timestamp is a number.
-      if not isinstance(state['transition_time_utc'], (int, float)):
+      # Verify the timestamp is a number or Zulu time.
+      if parse_transition_time(state['transition_time_utc']) is None:
         LOGGER.error(
-            'transition_time_utc \'%s\' is not an int or float',
+            'transition_time_utc \'%s\' is not an int, float, or Zulu time',
             state['transition_time_utc'])
         return False
 
@@ -96,7 +105,7 @@ def get_master_state(states, now=None):
   """
   now = now or timestamp.utcnow_ts()
 
-  times = [x['transition_time_utc'] for x in states]
+  times = [parse_transition_time(x['transition_time_utc']) for x in states]
   index = bisect.bisect_left(times, now)
   if index > 0:  # An index of 0 means all timestamps are in the future.
     return states[index - 1]
