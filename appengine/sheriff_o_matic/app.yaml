@@ -26,6 +26,14 @@ handlers:
   script: internal_alerts.app
   secure: always
 
+- url: /ts-alerts
+  script: ts_alerts.app
+  secure: always
+
+- url: /ts-internal-alerts
+  script: ts_alerts.app
+  secure: always
+
 - url: /banner-msg
   script: banner_msg.app
   secure: always
