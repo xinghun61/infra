@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import re
 import requests
 import sys
@@ -12,7 +11,7 @@ def extract_json_data(issue_num): # pragma: no cover
   json_data_url = "https://codereview.chromium.org/api/%s?messages=true" \
                                                     %str(issue_num)
   raw_data = requests.get(json_data_url)
-  json_data = json.loads(raw_data.read())
+  json_data = raw_data.json()
   return json_data
 
 
