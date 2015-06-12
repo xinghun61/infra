@@ -325,6 +325,17 @@ class CounterMetricTest(MetricTestBase):
     self.assertEquals(1, m.get({'foo': 'bar'}))
     self.assertEquals(1, m.get({'foo': 'baz'}))
 
+  @mock.patch('time.time')
+  def test_start_timestamp(self, mock_time):
+    mock_time.return_value = 1234
+
+    t = targets.DeviceTarget('reg', 'net', 'host')
+    m = metrics.CounterMetric('test', target=t, fields={'foo': 'bar'})
+    m.increment()
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p)
+    self.assertEquals(1234000000, p.data[0].start_timestamp_us)
+
 
 class GaugeMetricTest(MetricTestBase):
 

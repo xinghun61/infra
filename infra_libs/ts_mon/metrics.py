@@ -15,6 +15,9 @@ from infra_libs.ts_mon import errors
 from infra_libs.ts_mon import interface
 
 
+MICROSECONDS_PER_SECOND = 1000000
+
+
 class Metric(object):
   """Abstract base class for a metric.
 
@@ -231,7 +234,7 @@ class CounterMetric(NumericMetric):
 
   def __init__(self, name, target=None, fields=None, start_time=None):
     super(CounterMetric, self).__init__(name, target=target, fields=fields)
-    self._start_time = start_time or int(time.time() * 1000)
+    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
     metric.counter = value
@@ -265,7 +268,7 @@ class CumulativeMetric(NumericMetric):
 
   def __init__(self, name, target=None, fields=None, start_time=None):
     super(CumulativeMetric, self).__init__(name, target=target, fields=fields)
-    self._start_time = start_time or int(time.time() * 1000)
+    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
     metric.cumulative_double_value = value
