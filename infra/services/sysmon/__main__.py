@@ -6,6 +6,7 @@
 """Send system monitoring data to the timeseries monitoring API."""
 
 import argparse
+import os
 import sys
 
 import psutil
@@ -23,6 +24,11 @@ cpu_total_percent = ts_mon.FloatMetric('dev/cpu/total')
 
 disk_free = ts_mon.GaugeMetric('dev/disk/free')
 disk_total = ts_mon.GaugeMetric('dev/disk/total')
+
+# inode counts are only available on Unix.
+if os.name == 'posix':
+  inodes_free = ts_mon.GaugeMetric('dev/inodes/free')
+  inodes_total = ts_mon.GaugeMetric('dev/inodes/total')
 
 mem_free = ts_mon.GaugeMetric('dev/mem/free')
 mem_total = ts_mon.GaugeMetric('dev/mem/total')
@@ -53,9 +59,17 @@ def get_cpu_info():
 def get_disk_info():
   disks = psutil.disk_partitions()
   for disk in disks:
+    labels = {'path': disk.mountpoint}
+
     usage = psutil.disk_usage(disk.mountpoint)
-    disk_free.set(usage.free, {'path': disk.mountpoint})
-    disk_total.set(usage.total, {'path': disk.mountpoint})
+    disk_free.set(usage.free, labels)
+    disk_total.set(usage.total, labels)
+
+    # inode counts are only available on Unix.
+    if os.name == 'posix':
+      stats = os.statvfs(disk.mountpoint)
+      inodes_free.set(stats.f_favail, labels)
+      inodes_total.set(stats.f_files, labels)
 
 
 def get_mem_info():
