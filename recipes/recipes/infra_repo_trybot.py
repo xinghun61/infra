@@ -19,13 +19,9 @@ def GenSteps(api):
   internal = (project == 'infra_internal')
 
   api.gclient.set_config(project)
-  res = api.bot_update.ensure_checkout(force=True, patch_root=project,
-                                       patch_oauth2=internal)
-  upstream = res.json.output['properties'].get('got_revision')
+  api.bot_update.ensure_checkout(force=True, patch_root=project,
+                                 patch_oauth2=internal)
 
-  # TODO(sergiyb): This call is copied from run_presubmit.py recipe. We should
-  # instead remove this code from here and create a presubmit builder using
-  # run_presubmit.py recipe for infra CLs. See http://crbug.com/478651.
   api.git('-c', 'user.email=commit-bot@chromium.org',
           '-c', 'user.name=The Commit Bot',
           'commit', '-a', '-m', 'Committed patch',
@@ -50,37 +46,6 @@ def GenSteps(api):
       api.python(
           'go test.py', api.path['checkout'].join('go', 'env.py'),
           ['python', api.path['checkout'].join('go', 'test.py')])
-
-  # TODO(sergiyb): The code below is copied from run_presubmit recipe. We should
-  # instead remove this code from here and create a presubmit builder using
-  # run_presubmit.py recipe for infra CLs. See http://crbug.com/478651.
-  presubmit_args = [
-    '--root', api.path['checkout'],
-    '--commit',
-    '--verbose', '--verbose',
-    '--issue', api.properties['issue'],
-    '--patchset', api.properties['patchset'],
-    '--skip_canned', 'CheckRietveldTryJobExecution',
-    '--skip_canned', 'CheckTreeIsOpen',
-    '--skip_canned', 'CheckBuildbotPendingBuilds',
-    '--rietveld_url', api.properties['rietveld'],
-    '--rietveld_fetch',
-    '--upstream', upstream,  # '' if not in bot_update mode.
-  ]
-
-  if internal:
-    presubmit_args.extend([
-        '--rietveld_email_file',
-        api.path['build'].join('site_config', '.rietveld_client_email')])
-    presubmit_args.extend([
-        '--rietveld_private_key_file',
-        api.path['build'].join('site_config', '.rietveld_secret_key')])
-  else:
-    presubmit_args.extend(['--rietveld_email', ''])  # activate anonymous mode
-
-  api.python(
-      'presubmit', api.path['depot_tools'].join('presubmit_support.py'),
-      presubmit_args)
 
 
 def GenTests(api):

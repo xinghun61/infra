@@ -109,38 +109,5 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "go test.py"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[DEPOT_TOOLS]/presubmit_support.py",
-      "--root",
-      "[SLAVE_BUILD]/infra_internal",
-      "--commit",
-      "--verbose",
-      "--verbose",
-      "--issue",
-      "12853011",
-      "--patchset",
-      "1",
-      "--skip_canned",
-      "CheckRietveldTryJobExecution",
-      "--skip_canned",
-      "CheckTreeIsOpen",
-      "--skip_canned",
-      "CheckBuildbotPendingBuilds",
-      "--rietveld_url",
-      "https://codereview.chromium.org",
-      "--rietveld_fetch",
-      "--upstream",
-      "0a18b32e3a93913e1090d1ee6b8965c6dc3116d6",
-      "--rietveld_email_file",
-      "[BUILD]/site_config/.rietveld_client_email",
-      "--rietveld_private_key_file",
-      "[BUILD]/site_config/.rietveld_secret_key"
-    ],
-    "cwd": "[SLAVE_BUILD]",
-    "name": "presubmit"
   }
 ]
