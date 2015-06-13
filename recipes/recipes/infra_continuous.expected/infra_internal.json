@@ -88,7 +88,28 @@
     "cmd": [
       "python",
       "-u",
+      "[SLAVE_BUILD]/infra_internal/build/build.py"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra_internal/build/test_packages.py",
+      "--work-dir",
+      "[SLAVE_BUILD]/cipd_staging_dir"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/infra_internal/build/build.py",
+      "--no-rebuild",
       "--upload",
       "--service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
@@ -100,7 +121,7 @@
       "git_revision:0a18b32e3a93913e1090d1ee6b8965c6dc3116d6"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "build cipd packages",
+    "name": "cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",

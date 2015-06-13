@@ -21,6 +21,22 @@ CIPD_BUILDER_CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
 
 
 def build_cipd_packages(api, repo, rev):
+  # Build packages locally.
+  api.python(
+      'cipd - build packages',
+      api.path['checkout'].join('build', 'build.py'))
+
+  # Verify they are good.
+  api.python(
+      'cipd - test packages integrity',
+      api.path['checkout'].join('build', 'test_packages.py'),
+      [
+        # Use non temp directory to make sure CIPD package works after in-place
+        # update. That's what happens most of the time on real machines.
+        '--work-dir', api.path['slave_build'].join('cipd_staging_dir'),
+      ])
+
+  # Upload them, attach tags.
   tags = [
     'buildbot_build:%s/%s/%s' % (
         api.properties['mastername'],
@@ -31,9 +47,10 @@ def build_cipd_packages(api, repo, rev):
   ]
   try:
     return api.python(
-        'build cipd packages',
+        'cipd - upload packages',
         api.path['checkout'].join('build', 'build.py'),
         [
+          '--no-rebuild',
           '--upload',
           '--service-account-json', CIPD_BUILDER_CREDS,
           '--json-output', api.json.output(),
@@ -143,7 +160,7 @@ def GenTests(api):
         repository='https://chromium.googlesource.com/infra/infra',
     ) +
     api.override_step_data(
-        'build cipd packages', api.json.output(cipd_json_output))
+        'cipd - upload packages', api.json.output(cipd_json_output))
   )
   yield (
     api.test('infra_win') +
@@ -165,7 +182,7 @@ def GenTests(api):
             'https://chrome-internal.googlesource.com/infra/infra_internal',
     ) +
     api.override_step_data(
-        'build cipd packages', api.json.output(cipd_json_output))
+        'cipd - upload packages', api.json.output(cipd_json_output))
   )
   yield (
     api.test('infra-64') +
