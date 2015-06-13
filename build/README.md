@@ -97,7 +97,7 @@ You can also pass one or more *.yaml file names to build only specific packages:
 
 
 Verifying a package
--------------------------
+-------------------
 
 To install a built package locally use cipd client binary (it is built by
 build.py as well). For example, to rebuild and install infra_python.cipd into
@@ -108,3 +108,28 @@ build.py as well). For example, to rebuild and install infra_python.cipd into
     ./build/build.py infra_python.yaml
     ./go/bin/cipd pkg-deploy -root=install_dir build/out/infra_python.cipd
     cd install_dir
+
+
+Package tests
+-------------
+
+test_package.py script can be used to run simple package integrity tests to
+verify a built package looks good after deploy.
+
+For each *.yaml in packages/* there can be corresponding *.py file in tests/*
+that is invoked by test_package.py to check that deployed package looks good.
+
+Basically test_package.py does the following:
+
+* Installs a CIPD file to a local directory or update currently installed
+  version there (if `--work-dir` is used).
+* Runs `python test/<name>.py` with cwd == installation directory.
+* If test returns 0, considers it success, otherwise - failure.
+
+Thus to test that infra_python.cipd package works, one can do the following:
+
+    ./build/build.py infra_python.yaml
+    ./build/test_packages.py infra_python.cipd
+
+test_packages.py is used on CI builders to verify packages look good before
+uploading them.
