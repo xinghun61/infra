@@ -17,7 +17,7 @@ master.::
   $ cd master.foo.bar
 
 Create a ``builders.pyl`` file describing the builders on this master.  The
-format is documented in :doc:`the builders.pyl file format <builders_pyl>`_.
+format is documented in :doc:`builders_pyl`.
 Set the port numbers and master_base_class to the values you got from Labs,
 above.
 
