@@ -36,9 +36,9 @@ the repository. Namely:
 - tests must be methods of subclasses of unittest.TestCase. test.py will *not*
   look for standalone functions. In addition, the method name must start with
   'test'.
-- tests classes must be contained in files named like ``*\_test.py``.
+- tests classes must be contained in files named like ``*_test.py``.
 - the coverage information for file ``foo.py`` is only collected from tests
-  located in ``tests/foo\_test.py``.
+  located in ``test/foo_test.py``.
 
 A test fails when an exception is raised, or if expectations don't match (read
 on). Test methods can return a value. When run in train mode, ``test.py``
