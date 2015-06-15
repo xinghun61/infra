@@ -1,17 +1,35 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 // Variables for console Javascript access to the currently visible/selected records.
 var records = [];
 var selectedRecords = [];
 
-(function(){
+var recentModule = (function(){
 'use strict';
 
 var indexSelected = {};
 var logServer = '//chromium-cq-status.appspot.com';
 var reviewServer = '//codereview.chromium.org';
 var tags = [];
-var cursor = null;
+var cursor;
+var table;
+var loadMore;
+var loading;
+// Provide access to imported DOM in tests.
+// In production, currentDocument == document.
+var currentScript = document._currentScript || document.currentScript;
+var currentDocument = currentScript.ownerDocument;
+
+function init() {
+  table = currentDocument.querySelector('#table');
+  loading = currentDocument.querySelector('#loading');
+  loadMore = currentDocument.querySelector('#loadMore');
+}
 
 function main() {
+  init();
   loadTags();
   loadMore.addEventListener('click', loadNextQuery);
   window.addEventListener('hashchange', loadTags);
@@ -35,15 +53,17 @@ function clearTable() {
   });
 }
 
-function loadNextQuery() {
-  loading.classList.remove('hide');
-  loadMore.disabled = true;
-  loadJSON(nextURL(), function(json) {
+function processJSON(json)  {
     loading.classList.add('hide');
     cursor = json.more ? json.cursor : null;
     loadMore.disabled = !cursor;
     json.results.forEach(addRow);
-  });
+}
+
+function loadNextQuery() {
+  loading.classList.remove('hide');
+  loadMore.disabled = true;
+  loadJSON(nextURL(), processJSON);
 }
 
 function nextURL() {
@@ -141,7 +161,7 @@ function newJsonDialogLink(record) {
     dialog.addEventListener('click', function() {
       dialog.remove();
     });
-    document.body.appendChild(dialog);
+    currentDocument.body.appendChild(dialog);
     dialog.showModal();
   });
   return a;
@@ -189,7 +209,7 @@ function newLink(text, url) {
 }
 
 function newElement(tag, text) {
-  var element = document.createElement(tag);
+  var element = currentDocument.createElement(tag);
   if (text) {
     element.textContent = text;
   }
@@ -207,4 +227,13 @@ function updateSelectedRecords() {
 
 window.addEventListener('load', main);
 
+return {
+  'main': main,
+  // Export methods for tests.
+  'init': init,
+  'processJSON': processJSON,
+  'document': currentDocument,
+};
+
 })();
+

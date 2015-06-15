@@ -1,10 +1,39 @@
-(function(){
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+var statsViewerModule = (function(){
+
+var container = null;
+var indexDiv = null;
+// Provide access to imported DOM in tests.
+// In production, currentDocument == document.
+var currentScript = document._currentScript || document.currentScript;
+var currentDocument = currentScript.ownerDocument;
+
+var project;
+var intervalMinutes;
+var windowLength;
+var dataPoints;
+
+
+function init(project_arg, intervalMinutes_arg,
+              windowLength_arg, dataPoints_arg) {
+  container = currentDocument.querySelector('#container');
+  indexDiv = currentDocument.querySelector('#indexDiv');
+  project = project_arg;
+  intervalMinutes = intervalMinutes_arg;
+  windowLength = windowLength_arg;
+  dataPoints = dataPoints_arg;
+}
 
 function main() {
-  loadCQStatsList(function(cqStatsList) {
+  loadCQStatsList(displayStats);
+}
+
+function displayStats(cqStatsList) {
     container.textContent = '';
     drawGraphs(buildGraphs(cqStatsList));
-  });
 }
 
 function loadCQStatsList(callback) {
@@ -113,7 +142,7 @@ function drawGraphs(graphs) {
     indexLink.textContent = title;
     indexLink.href = '#' + name;
     createElement('', indexDiv, 'br');
-    var graphDiv = createElement('graph', document.body);
+    var graphDiv = createElement('graph', currentDocument.body);
     var anchor = createElement('', graphDiv, 'a');
     anchor.name = name;
     var chartDiv = createElement('chart', graphDiv);
@@ -173,7 +202,7 @@ function titleFromName(name) {
 
 function createElement(className, parent, tagName) {
   tagName = tagName || 'div';
-  var div = document.createElement(tagName);
+  var div = currentDocument.createElement(tagName);
   if (className) {
     div.classList.add(className);
   }
@@ -181,5 +210,11 @@ function createElement(className, parent, tagName) {
   return div;
 }
 
-window.addEventListener('load', main);
+return {
+  'main': main,
+  'init': init,
+  'displayStats': displayStats,
+  'document': currentDocument,
+};
+
 })();

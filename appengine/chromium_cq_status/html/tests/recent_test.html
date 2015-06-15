@@ -1,0 +1,35 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../recent.html">
+
+<!-- Defines var query_test_data. -->
+<script src="../../js/tests/query_test_data.js"></script>
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+describe("loads some data", function() {
+  it("should run without fail", function() {
+    assert(true, 'This is expected to pass');
+  });
+});
+
+describe("Display data in /recent page", function () {
+  it("should add a row for each event", function () {
+    recentModule.init();
+    recentModule.processJSON(query_test_data);
+    assert.equal(
+      recentModule.document.querySelector('#table').rows.length,
+      query_test_data.results.length + 1, // +1 for the header row.
+      "Every event should render as a table row");
+  });
+});
+})();
+
+</script>

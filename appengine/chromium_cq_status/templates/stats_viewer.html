@@ -1,9 +1,9 @@
-<script>
-var project = "%(project)s";
-var intervalMinutes = %(interval_minutes)s;
-var windowLength = %(window_length)s;
-var dataPoints = %(data_points)s;
-</script>
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
 <script src="/js/stats_viewer.js"></script>
 <script src="/js/third_party/dygraph/dygraph-combined.js"></script>
 <style>
@@ -36,6 +36,13 @@ var dataPoints = %(data_points)s;
 <h1>%(project)s %(period)s CQ Stats</h1>
 <div id="indexDiv"></div>
 <div id="container">Loading stats...</div>
+
+<script>
+statsViewerModule.init("%(project)s", %(interval_minutes)s,
+                       %(window_length)s, %(data_points)s);
+window.addEventListener('load', statsViewerModule.main);
+</script>
+
 <script>
 // Add Google Analytics integration
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

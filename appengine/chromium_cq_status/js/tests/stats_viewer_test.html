@@ -1,0 +1,32 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<script src="../stats_viewer.js"></script>
+<script src="../third_party/dygraph/dygraph-combined.js"></script>
+<!-- Set var test_data --> 
+<script src="stats_test_data.js"></script>
+
+<div id="indexDiv"></div>
+<div id="container"></div>
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+describe("displays graphs on stats_viewer page", function() {
+  it("should draw graphs", function() {
+    statsViewerModule.init('infra', 60, 48, 6);
+    var data = stats_test_data.results;
+    statsViewerModule.displayStats(data);
+    graphs = statsViewerModule.document.querySelectorAll('.graph');
+    assert.equal(graphs.length, data[0].stats.length,
+                 'number of graphs should match the data');
+  });
+});
+
+})();
+</script>

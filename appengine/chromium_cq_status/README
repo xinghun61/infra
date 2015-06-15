@@ -1,0 +1,96 @@
+# INSTALLING NODE/NPM/BOWER
+
+The version of npm in apt-get is too old for bower.
+    # Ensure ~/local/bin is on $PATH
+    $ mkdir ~/local
+    $ export PATH="$HOME/local/bin:$PATH"
+    # Install Node
+    $ mkdir -p /tmp/node-install && cd /tmp/node-install
+    $ curl http://nodejs.org/dist/node-latest.tar.gz | tar xz --strip-components=1
+    $ ./configure --prefix=$(HOME)/local
+    $ make install
+
+Eventually, we will ship hermetic copies of these binaries along with this repo.
+
+# SYNCING DEPENDENCIES
+
+NPM modules are sourced from
+
+    https://chromium.googlesource.com/infra/third_party/npm_modules
+
+and have the appropriate subdirectory of that repo symlinked here, e.g. as
+
+  node_modules -> ../third_party/npm_modules/node_modules
+  bower_components -> ../third_party/npm_modules/polymer_0.5.4/bower_components
+
+Note: node_modules provide karma executable, and bower_components are needed
+for chai assertions.
+
+# RUNNING
+
+chromium-cq-status must be run from the Google App Engine server, available
+here: https://cloud.google.com/appengine/downloads
+
+    $ cd appengine_apps/chromium_cq_status
+    $ dev_appserver.py app.yaml highend.yaml
+
+Then load: http://localhost:8080/.  Note, that /query endpoint is
+served by highend module, and will be served at localhost:8081, which
+is not where the app's UI expects it.
+
+# TESTING
+
+From the command line:
+
+    $ cd appengine_apps/chromium_cq_status
+    $ make test
+
+This will launch karma, run the tests and watch the source files for changes. To
+run once and exit, use:
+
+    $ make single-test
+
+Or, you can start karma manually:
+
+    $ cd appengine_apps/chromium_cq_status
+    $ ./node_modules/karma/bin/karma start
+
+You can shorten this command to 'karma start' if you run
+'npm install -g karma-cli'.
+
+To run a single test or test suite, change the test code to use describe.only
+or it.only as appropriate. You can use the chromium dev tools inside the
+Chrome instance that karma starts up in order to set breakpoints and otherwise
+debug.
+
+# PUSHING
+
+0. cd appengine/chromium_cq_status:
+1. make deploy
+2. Test the newly deployed version: visit
+   http://<version>-dot-chromium-cq-status.appspot.com, make sure the
+   relevant pages and endpoints load correctly. Check the logs for any errors.
+3. Go to appengine.google.com and select the chromium-cq-status app.
+4. Click on the version tab
+5. Make the new version of both modules the default.
+6. Check again that the new default version continues to serve the traffic,
+   and the logs look good.
+
+The versioning is so that we can easily roll back if there's something
+wrong with the push and so we can know what we've pushed.
+
+# LIBRARIES
+
+sugar: Provides generic syntactic sugar for JavaScript, mostly by extending
+       native object prototypes.
+
+karma: test runner. Runs the unit tests in an instance of Chrome and pipes the
+        results to the command line. By default, it watches for changes to files
+        and will automatically re-run the tests. To run once and exit, use
+        'karma start --single-run' or 'make single-test'.
+
+mocha: testing framework. Provides good asynchronous and synchronous test
+       support. Tests run serially, so exceptions are reported for the right
+       test case.
+
+chai:  assertion library.

@@ -1,0 +1,34 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<script src="../patch_status.js"></script>
+<!-- Set var query_test_data -->
+<script src="query_test_data.js"></script>
+
+<div id="container"></div>
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+describe("", function() {
+  it("Status page should render 9 out of 12 events", function() {
+    patchStatusModule.init();
+    records = query_test_data.results.slice(); // Copy the array.
+    records.reverse();
+    patchStatusModule.displayAttempts(records);
+    rows = patchStatusModule.document.querySelector('#container').childNodes
+    // 1 header and 9 rows. Ignored events:
+    //  - verifier_start
+    //  - verifier_trigger
+    //  - last patch_ready_to_commit, because it's after patch_stop.
+    assert.equal(rows.length, 10)
+  });
+});
+
+})();
+</script>

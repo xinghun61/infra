@@ -1,5 +1,18 @@
+// Copyright 2015 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+var patchStatusModule = (function() {
+
 var attemptStart = 'patch_start';
 var attemptEnd = 'patch_stop';
+
+var container = null;
+
+// Provide access to imported DOM in tests.
+// In production, currentDocument == document.
+var currentScript = document._currentScript || document.currentScript;
+var currentDocument = currentScript.ownerDocument;
 
 var actionInfo = {
   patch_start: {
@@ -106,7 +119,12 @@ function jobStatePrint(jobState) {
   }
 }
 
+function init() {
+  container = currentDocument.querySelector('#container');
+}
+
 function main() {
+  init();
   container.textContent = 'Loading patch data...';
   loadPatchsetRecords(function(records) {
     displayAttempts(records);
@@ -272,7 +290,7 @@ function newHeader(attempt) {
 }
 
 function newElement(tag, text, cls) {
-  var element = document.createElement(tag);
+  var element = currentDocument.createElement(tag);
   if (text) {
     element.textContent = text;
   }
@@ -398,13 +416,13 @@ function newTryjobBubble(builder, status, url) {
 }
 
 function bubbleHighlight(event) {
-  [].forEach.call(document.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
+  [].forEach.call(currentDocument.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
     bubble.classList.add('highlight');
   });
 }
 
 function bubbleUnhighlight(event) {
-  [].forEach.call(document.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
+  [].forEach.call(currentDocument.querySelectorAll('a.tryjob[href="' + event.target.href + '"]'), function(bubble) {
     bubble.classList.remove('highlight');
   });
 }
@@ -413,7 +431,7 @@ function scrollToHash() {
   if (!location.hash) {
     return;
   }
-  var node = document.querySelector('a[name="' + location.hash.slice(1) + '"]');
+  var node = currentDocument.querySelector('a[name="' + location.hash.slice(1) + '"]');
   var scrollY = 0;
   while (node) {
     scrollY += node.offsetTop;
@@ -422,4 +440,11 @@ function scrollToHash() {
   window.scrollTo(0, scrollY);
 }
 
-window.addEventListener('load', main);
+return {
+  'main': main,
+  'init': init,
+  'displayAttempts': displayAttempts,
+  'document': currentDocument,
+};
+
+})();
