@@ -1119,8 +1119,8 @@ def print_stats(args, stats):
 
   output()
   output('Patches which eventually land percentiles:')
-  for p in ['10', '25', '50', '75', '90', '95', '99']:
-    output('%s: %4.1f hrs, %2d attempts, %2d tryjob retries',
+  for p in ['10', '25', '50', '75', '90', '95', '99', 'max']:
+    output('%3s: %4.1f hrs, %2d attempts, %2d tryjob retries',
            p, stats['patchset-committed-durations'][p] / 3600.0,
            stats['patchset-committed-attempts'][p],
            stats['patchset-committed-tryjob-retries'][p])
