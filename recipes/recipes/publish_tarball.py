@@ -64,7 +64,7 @@ def export_lite_tarball(api, version):
     dest_dir = api.path.join(temp_dir, 'src')
 
     # Make destructive file operations on the copy of the checkout.
-    api.file.copytree('copytree', api.path['checkout'], dest_dir)
+    api.file.copytree('copytree', api.path['checkout'], dest_dir, symlinks=True)
 
     directories = [
       'native_client',

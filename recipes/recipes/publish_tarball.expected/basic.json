@@ -245,9 +245,10 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2])\n",
+      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
       "[SLAVE_BUILD]/src",
-      "[TMP_BASE]/lite_tarball_tmp_3/src"
+      "[TMP_BASE]/lite_tarball_tmp_3/src",
+      "1"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "copytree"
