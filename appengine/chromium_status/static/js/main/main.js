@@ -10,7 +10,7 @@ window.onload = function() {
   document.add_new_message.message.focus();
   help_init();
   localize_times();
-}
+};
 
 /*
  * Code for dealing with localization of timestamps.
@@ -62,8 +62,8 @@ function localize_times() {
     // slightly off during the ~1st week of January.
     elements = document.getElementsByName('date.date');
     for (i = 0; i < elements.length; ++i)
-      elements[i].innerText = short_date(elements[i].innerText + ' ' + curr_year
-                                         + ' UTC');
+      elements[i].innerText = short_date(elements[i].innerText + ' ' +
+        curr_year + ' UTC');
 
     // Convert all the fields that are just a timezone.
     elements = document.getElementsByName('date.tz');
@@ -111,7 +111,7 @@ function auto_submit(e) {
   if (!e.shiftKey && e.keyCode == 13) {
     // Catch the enter key in the textarea.  Allow shift+enter to work
     // so people editing a lot of text can play around with things.
-    var form = document.getElementsByName('add_new_message')[0]
+    var form = document.getElementsByName('add_new_message')[0];
     form.submit();
     return false;
   }

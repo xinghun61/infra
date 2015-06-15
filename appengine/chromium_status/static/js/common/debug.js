@@ -34,7 +34,7 @@ function DumpObj(obj, opt_name) {
   }
 
   if (typeof obj != "object") {
-    return "" + obj
+    return "" + obj;
   }
 
   var str = "";
@@ -48,15 +48,15 @@ function DumpObj(obj, opt_name) {
     return "[" + str + "]";
   }
 
-  var i = 0;
+  var j = 0;
   for (var key in obj) {
     if (typeof obj[key] == "function") {
       continue;
     }
-    if (i > 0)
+    if (j > 0)
       str += ", ";
     str += key + ": " + DumpObj(obj[key]);
-    i++;
+    j++;
   }
 
   return "{" + str + "}";

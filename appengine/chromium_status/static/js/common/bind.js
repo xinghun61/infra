@@ -50,7 +50,7 @@ function bind(fn, self, var_args) {
     // Combine the static args and the new args into one big array
     var args = boundargs.concat(Array.prototype.slice.call(arguments));
     return fn.apply(self, args);
-  }
+  };
 
   newfn.boundArgs_ = boundargs;
   newfn.boundSelf_ = self;
@@ -69,4 +69,4 @@ function bind(fn, self, var_args) {
 Function.prototype.bind = function(self, var_args) {
   return bind.apply(
     null, [this, self].concat(Array.prototype.slice.call(arguments, 1)));
-}
+};
