@@ -28,8 +28,11 @@ class GlobalsTest(auto_stub.TestCase):
     self.mock(interface, 'load_machine_config', lambda x: {})
 
   def tearDown(self):
-    super(GlobalsTest, self).tearDown()
+    # It's important to call close() before un-setting the mock _state object,
+    # because any FlushThread started by the test is stored in that mock _state
+    # and needs to be stopped before running any other tests.
     interface.close()
+    super(GlobalsTest, self).tearDown()
 
   @mock.patch('socket.getfqdn')
   @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
@@ -247,7 +250,7 @@ class GlobalsTest(auto_stub.TestCase):
     with self.assertRaises(KeyError):
       interface.unregister(fake_metric)
 
-  def DISABLED_test_close_stops_flush_thread(self):  # pragma: no cover
+  def test_close_stops_flush_thread(self):  # pragma: no cover
     interface._state.flush_thread = interface._FlushThread(10)
     interface._state.flush_thread.start()
 
@@ -352,7 +355,7 @@ class FlushThreadTest(unittest.TestCase):  # pragma: no cover
 
     mock.patch.stopall()
 
-  def DISABLED_test_run_calls_flush(self):
+  def test_run_calls_flush(self):
     self.t.start()
 
     self.assertEqual(0, interface.flush.call_count)
@@ -365,7 +368,7 @@ class FlushThreadTest(unittest.TestCase):  # pragma: no cover
     self.t.join()
     self.assertEqual(2, interface.flush.call_count)
 
-  def DISABLED_test_run_catches_exceptions(self):
+  def test_run_catches_exceptions(self):
     interface.flush.side_effect = Exception()
     self.t.start()
 
@@ -381,7 +384,7 @@ class FlushThreadTest(unittest.TestCase):  # pragma: no cover
     self.t.join()
     self.assertEqual(3, interface.flush.call_count)
 
-  def DISABLED_test_stop_stops(self):
+  def test_stop_stops(self):
     self.t.start()
 
     self.assertTrue(self.t.is_alive())
@@ -390,7 +393,7 @@ class FlushThreadTest(unittest.TestCase):  # pragma: no cover
     self.assertFalse(self.t.is_alive())
     self.assertEqual(1, interface.flush.call_count)
 
-  def DISABLED_test_sleeps_for_exact_interval(self):
+  def test_sleeps_for_exact_interval(self):
     self.t.start()
 
     # Flush takes 5 seconds.
@@ -400,7 +403,7 @@ class FlushThreadTest(unittest.TestCase):  # pragma: no cover
     self.assertEqual(55, self.stop_event.timeout_wait())
     self.assertEqual(55, self.stop_event.timeout_wait())
 
-  def DISABLED_test_sleeps_for_minimum_zero_secs(self):
+  def test_sleeps_for_minimum_zero_secs(self):
     self.t.start()
 
     # Flush takes 65 seconds.
