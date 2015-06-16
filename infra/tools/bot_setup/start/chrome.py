@@ -12,8 +12,16 @@ import shutil
 import subprocess
 import sys
 
+import infra_libs
+
 from oauth2client import gce
 
+
+IS_WINDOWS = sys.platform.startswith('win')
+
+
+DEPOT_TOOLS_URL = (
+    'https://chromium.googlesource.com/chromium/tools/depot_tools.git')
 SLAVE_DEPS_URL = (
     'https://chrome-internal.googlesource.com/chrome/tools/build/slave.DEPS')
 INTERNAL_DEPS_URL = (
@@ -40,12 +48,17 @@ SVN_URLS = [
 # TODO(hinoka): Make this an infra virtualenv.  crbug.com/426099.
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
-if sys.platform == 'win32':
-  PYTHON = r'c:\Python27\python-2.7.5\python'
+if IS_WINDOWS:
+  PYTHON = 'C:\\Python27\\python-2.7.5\\python'
+  GIT = 'C:\\git\\bin\\git.exe'
   GCLIENT_BIN = 'gclient.bat'
+  TEMP_DEPOT_TOOLS = 'C:\\tmp\\depot_tools'
 else:
   PYTHON = '/usr/bin/python'
+  GIT = '/usr/bin/git'
   GCLIENT_BIN = 'gclient'
+  TEMP_DEPOT_TOOLS = '/tmp/depot_tools'
+
 
 def call(args, **kwargs):
   print 'Running %s' % ' '.join(args)
@@ -60,6 +73,19 @@ def call(args, **kwargs):
       break
     sys.stdout.write(buf)
   return proc.wait()
+
+
+def ensure_depot_tools():
+  """Fetches depot_tools to temp dir to use it to fetch the gclient solution."""
+  # We don't really want to trust that the existing version of depot_tools
+  # is pristine and uncorrupted.  So delete it and re-clone.
+  print 'Setting up depot_tools in %s' % TEMP_DEPOT_TOOLS
+  infra_libs.rmtree(TEMP_DEPOT_TOOLS)
+  parent = os.path.dirname(TEMP_DEPOT_TOOLS)
+  if not os.path.exists(parent):
+    os.makedirs(parent)
+  call([GIT, 'clone', DEPOT_TOOLS_URL], cwd=parent)
+  return TEMP_DEPOT_TOOLS
 
 
 def write_gclient_file(root_dir, internal):
@@ -95,7 +121,7 @@ def seed_passwords(root_dir, password_file):
   for var in ['svn_user', 'svn_password', 'bot_password']:
     assert var in passwords
 
-  if not sys.platform.startswith('win'):
+  if not IS_WINDOWS:
     # Seed SVN passwords, except on Windows, where we don't bother installing.
     svn_user = passwords['svn_user']
     svn_password = passwords['svn_password']
@@ -129,7 +155,7 @@ def run_slave(root_dir):
     print 'Removed stale pid file %s' % twistd_pid_path
 
   # HACK(hinoka): This is dumb. Buildbot on Windows requires pywin32.
-  if sys.platform == 'win32':
+  if IS_WINDOWS:
     call(['pip', 'install', 'pypiwin32'], cwd=slave_dir, env=env)
 
   # Observant infra members will notice that we are not using "make start" to
@@ -171,7 +197,9 @@ def get_botmap_entry(slave_name):
 
 
 def start(root_dir, depot_tools, password_file, slave_name):
-  if sys.platform.startswith('win'):
+  if not depot_tools:
+    depot_tools = ensure_depot_tools()
+  if IS_WINDOWS:
     # depot_tools msysgit can't find ~/.gitconfig unless we explicitly set HOME
     os.environ['HOME'] = '%s%s' % (
         os.environ.get('HOMEDRIVE'), os.environ.get('HOMEPATH'))
