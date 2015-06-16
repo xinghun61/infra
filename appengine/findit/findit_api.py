@@ -37,6 +37,7 @@ class BuildFailure(messages.Message):
   builder_name = messages.StringField(2, required=True)
   build_number = messages.IntegerField(3, variant=messages.Variant.INT32,
                                        required=True)
+  failed_steps = messages.StringField(4, repeated=True, required=False)
 
 
 class BuildFailureCollection(messages.Message):
@@ -102,8 +103,13 @@ class FindItApi(remote.Service):
       if not masters.MasterIsSupported(master_name):
         continue
 
+      logging.info('Failed steps for build %s/%s/%d: %s',
+                   master_name, build.builder_name, build.build_number,
+                   ', '.join(build.failed_steps))
+
+      force = False  #TODO: use the failed step to trigger incremental analysis.
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-          master_name, build.builder_name, build.build_number, False,
+          master_name, build.builder_name, build.build_number, force,
           _BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
       if not analysis.completed or analysis.failed:
