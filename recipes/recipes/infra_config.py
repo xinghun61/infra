@@ -15,7 +15,7 @@ DEPS = [
 ]
 
 
-def GenSteps(api):
+def RunSteps(api):
   project = api.properties.get('patch_project') or api.properties.get('project')
   if not project:
     project = None  # Force empty string to be None.

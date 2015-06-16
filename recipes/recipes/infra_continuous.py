@@ -87,7 +87,7 @@ def build_luci(api):
     api.step.active_result.presentation.step_text = sha1
 
 
-def GenSteps(api):
+def RunSteps(api):
   builder_name = api.properties.get('buildername')
   if builder_name.startswith('infra-internal-continuous'):
     project_name = 'infra_internal'

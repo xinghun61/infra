@@ -14,7 +14,7 @@ DEPS = [
 ]
 
 
-def GenSteps(api):
+def RunSteps(api):
   project = api.properties['patch_project'] or api.properties['project']
   internal = (project == 'infra_internal')
 

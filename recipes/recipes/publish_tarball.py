@@ -123,7 +123,7 @@ def export_lite_tarball(api, version):
     api.file.rmtree('temp dir', temp_dir)
 
 
-def GenSteps(api):
+def RunSteps(api):
   if 'version' not in api.properties:
     ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
                            stdout=api.raw_io.output()).stdout

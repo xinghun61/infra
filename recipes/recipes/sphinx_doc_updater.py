@@ -14,7 +14,7 @@ DEPS = [
 ]
 
 
-def GenSteps(api):
+def RunSteps(api):
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
