@@ -23,8 +23,21 @@ const (
 
 // Manifest defines structure of manifest.json file.
 type Manifest struct {
-	FormatVersion string `json:"format_version"`
-	PackageName   string `json:"package_name"`
+	FormatVersion string     `json:"format_version"`
+	PackageName   string     `json:"package_name"`
+	Files         []FileInfo `json:"files,omitempty"` // present only in deployed manifest
+}
+
+// FileInfo is JSON-ish struct with info extracted from File interface.
+type FileInfo struct {
+	// Name is slash separated file path relative to a package root, e.g. "dir/dir/file".
+	Name string `json:"name"`
+	// Size is a size of the file. 0 for symlinks.
+	Size uint64 `json:"size"`
+	// Executable is true if the file is executable. Only used for Linux\Mac archives. False for symlinks.
+	Executable bool `json:"executable,omitempty"`
+	// Symlink is a path the symlink points to or "" if this file is not a symlink.
+	Symlink string `json:"symlink,omitempty"`
 }
 
 // readManifest reads and decodes manifest JSON from io.Reader.

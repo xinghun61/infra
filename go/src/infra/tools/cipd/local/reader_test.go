@@ -6,6 +6,7 @@ package local
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,12 +17,35 @@ import (
 	. "infra/tools/cipd/common"
 )
 
-func TestPackageReading(t *testing.T) {
-	goodManifest := `{
-  "format_version": "1",
-  "package_name": "testing"
-}`
+func normalizeJSON(s string) (string, error) {
+	// Round trip through default json marshaller to normalize indentation.
+	var x map[string]interface{}
+	if err := json.Unmarshal([]byte(s), &x); err != nil {
+		return "", err
+	}
+	blob, err := json.Marshal(x)
+	if err != nil {
+		return "", err
+	}
+	return string(blob), nil
+}
 
+func shouldBeSameJSONDict(actual interface{}, expected ...interface{}) string {
+	if len(expected) != 1 {
+		return "Too many argument for shouldBeSameJSONDict"
+	}
+	actualNorm, err := normalizeJSON(actual.(string))
+	if err != nil {
+		return err.Error()
+	}
+	expectedNorm, err := normalizeJSON(expected[0].(string))
+	if err != nil {
+		return err.Error()
+	}
+	return ShouldEqual(actualNorm, expectedNorm)
+}
+
+func TestPackageReading(t *testing.T) {
 	Convey("Open empty package works", t, func() {
 		// Build an empty package.
 		out := bytes.Buffer{}
@@ -44,7 +68,6 @@ func TestPackageReading(t *testing.T) {
 		// Contains single manifest file.
 		f := inst.Files()[0]
 		So(f.Name(), ShouldEqual, ".cipdpkg/manifest.json")
-		So(f.Size(), ShouldEqual, uint64(len(goodManifest)))
 		So(f.Executable(), ShouldBeFalse)
 		r, err := f.Open()
 		if r != nil {
@@ -53,7 +76,12 @@ func TestPackageReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		manifest, err := ioutil.ReadAll(r)
 		So(err, ShouldBeNil)
-		So(string(manifest), ShouldEqual, goodManifest)
+
+		goodManifest := `{
+			"format_version": "1",
+			"package_name": "testing"
+		}`
+		So(string(manifest), shouldBeSameJSONDict, goodManifest)
 	})
 
 	Convey("Open empty package with unexpected instance ID", t, func() {
@@ -145,6 +173,35 @@ func TestPackageReading(t *testing.T) {
 		So(dest.files[1].executable, ShouldBeTrue)
 		So(dest.files[2].symlinkTarget, ShouldEqual, "abc")
 		So(dest.files[3].symlinkTarget, ShouldEqual, "/abc/def")
+
+		// Verify manifest file is correct.
+		goodManifest := `{
+			"format_version": "1",
+			"package_name": "testing",
+			"files": [
+				{
+					"name": "testing/qwerty",
+					"size": 5
+				},
+				{
+					"name": "abc",
+					"size": 3,
+					"executable": true
+				},
+				{
+					"name": "rel_symlink",
+					"size": 0,
+					"symlink": "abc"
+				},
+				{
+					"name": "abs_symlink",
+					"size": 0,
+					"symlink": "/abc/def"
+				}
+			]
+		}`
+		So(dest.files[4].name, ShouldEqual, ".cipdpkg/manifest.json")
+		So(string(dest.files[4].Bytes()), shouldBeSameJSONDict, goodManifest)
 	})
 }
 

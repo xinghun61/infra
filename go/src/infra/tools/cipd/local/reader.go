@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"infra/tools/cipd/common"
 )
@@ -71,7 +72,51 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 		}
 	}()
 
-	// Use a nested function in a loop for defers.
+	files := inst.Files()
+
+	extractManifestFile := func(f File) error {
+		manifest, err := readManifestFile(f)
+		if err != nil {
+			return err
+		}
+		manifest.Files = make([]FileInfo, 0, len(files))
+		for _, file := range files {
+			// Do not put info about service .cipdpkg files into the manifest,
+			// otherwise it becomes recursive and "size" property of manifest file
+			// itself is not correct.
+			if strings.HasPrefix(file.Name(), packageServiceDir+"/") {
+				continue
+			}
+			fi := FileInfo{
+				Name:       file.Name(),
+				Size:       file.Size(),
+				Executable: file.Executable(),
+			}
+			if file.Symlink() {
+				target, err := file.SymlinkTarget()
+				if err != nil {
+					return err
+				}
+				fi.Symlink = target
+			}
+			manifest.Files = append(manifest.Files, fi)
+		}
+		out, err := dest.CreateFile(f.Name(), false)
+		if err != nil {
+			return err
+		}
+		defer out.Close()
+		return writeManifest(&manifest, out)
+	}
+
+	extractSymlinkFile := func(f File) error {
+		target, err := f.SymlinkTarget()
+		if err != nil {
+			return err
+		}
+		return dest.CreateSymlink(f.Name(), target)
+	}
+
 	extractRegularFile := func(f File) error {
 		out, err := dest.CreateFile(f.Name(), f.Executable())
 		if err != nil {
@@ -87,17 +132,11 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 		return err
 	}
 
-	extractSymlinkFile := func(f File) error {
-		target, err := f.SymlinkTarget()
-		if err != nil {
-			return err
-		}
-		return dest.CreateSymlink(f.Name(), target)
-	}
-
-	files := inst.Files()
+	// Use nested functions in a loop to be able to utilize defers.
 	for _, f := range files {
-		if f.Symlink() {
+		if f.Name() == manifestName {
+			err = extractManifestFile(f)
+		} else if f.Symlink() {
 			err = extractSymlinkFile(f)
 		} else {
 			err = extractRegularFile(f)
