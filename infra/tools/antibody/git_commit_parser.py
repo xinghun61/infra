@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import re
 import sqlite3
 import subprocess
 
@@ -41,47 +42,67 @@ def write_to_table(sql_c, data, tn):
     sql_c.executemany('INSERT INTO {} VALUES (?,?,?,?)'.format(tn), data)
 
 
-def read_commit_info(git_commit_fields=('id', 'body'),
-                     git_log_format=('%H', '%b')):
+def read_commit_info(git_log_format=('%H', '%b'), year=2011):
     git_log_format = '%x1f'.join(git_log_format) + '%x1e'
-    log = subprocess.check_output('git log --format="%s" --after="2011"' %
-                                  git_log_format, shell=True)
-    log = log.strip('\n\x1e').split("\x1e")
-    log = [row.strip().split("\x1f") for row in log]
-    log = [dict(zip(git_commit_fields, row)) for row in log]
+    log = subprocess.check_output(['git', 'log', '--format=%s' %
+                                   git_log_format, '--after=%s' % year])
     return log
 
 
+def parse_commit_info(git_log, git_commit_fields=('id', 'body')):
+    """Git log as --format='%H%x1f%b%x1e' and returns a list of dictionaries"""
+    git_log_cmds = git_log.strip('\n\x1e').split("\x1e")
+    git_log_rows = [row.strip().split("\x1f") for row in git_log_cmds]
+    git_log_dict = [dict(zip(git_commit_fields, row)) for row in git_log_rows]
+    return git_log_dict
+
+
 def is_commit_suspicious(git_commit):
-    if 'Review' and 'URL:' not in git_commit['body']:
-        return True
     for line in git_commit['body'].split('\n'):
         if line.startswith('TBR=') and len(line) > 4:
             return True
-    return False
+        if get_review_url(line):
+            return False
+    return True
+
+
+def get_bug_num(git_line):
+    bug_number = None
+    bug_match = (re.match(r'^BUG=https?://code.google.com/p/(?:chromium'
+                          '|rietveld)/issues/detail?id=(\d+)', git_line)
+                 or re.match(r'^BUG=https?://crbug.com/(\d+)', git_line)
+                 or re.match(r'^BUG=chromium:(\d+)', git_line)
+                 or re.match(r'^BUG=(\d+)', git_line))
+    if bug_match:
+        bug_number = bug_match.group(1)
+    return bug_number
+
+
+def get_tbr(git_line):
+    tbr = None
+    if git_line.startswith('TBR=') and len(git_line) > 4:
+        tbr = git_line[4:]
+    return tbr
+
+
+def get_review_url(git_line):
+    review_url = None
+    if re.match(r'^Review:.+$', git_line):
+        review_url = git_line[8:]
+    elif re.match(r'^Review URL:.+$', git_line):
+        review_url = git_line[12:]
+    elif re.match(r'^Code review URL:.+$', git_line):
+        review_url = git_line[17:]
+    return review_url
 
 
 def get_features_from_commit(git_commit):
     git_hash = git_commit['id']
     bug_num, TBR, review_URL = None, None, None
     for line in git_commit['body'].split('\n'):
-        if line.startswith('BUG=') and len(line) > 4:
-            if line[4:56] == 'https://code.google.com/p/chromium/issues/' \
-                             'detail?id=':
-                bug_num = line[56:]
-            elif line[4:55] == 'http://code.google.com/p/chromium/issues/' \
-                               'detail?id=':
-                bug_num = line[55:]
-            elif line[4:21] == 'http://crbug.com/':
-                bug_num = line[21:]
-            elif line[4:13] == 'chromium:':
-                bug_num = line[13:]
-            else:
-                bug_num = line[4:]
-        if line.startswith('TBR=') and len(line) > 4:
-            TBR = line[4:]
-        if line.startswith('Review URL:') and len(line) > 11:
-            review_URL = line[12:]
+        bug_num = get_bug_num(line) or bug_num
+        TBR = get_tbr(line) or TBR
+        review_URL = get_review_url(line) or review_URL
     return (git_hash, bug_num, TBR, review_URL)
 
 
@@ -101,7 +122,8 @@ if __name__ == '__main__':
     conn, c = connect(sqlite_file)
  
     create_table(c, DEFAULT_TABLE_NAME)
-    log_dict = read_commit_info()
+    log_output = read_commit_info()
+    log_dict = parse_commit_info(log_output)
     output = parse_commit_message(log_dict)
     write_to_table(c, output, DEFAULT_TABLE_NAME)
 
