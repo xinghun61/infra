@@ -45,17 +45,27 @@ Note: symbolic links do not work on managed VMs
   pushd /tmp/deploy_myapp/myapp
   <deploy your app here>
 
+AppEngine Modules
+~~~~~~~~~~~~~~~~~
+
+The default module is configured in ``app.yaml``. Any non-default module must be
+configured in ``module-<module_name>.yaml``.  This is how the ``gae.py`` script
+will know you what modules you have.
+
 
 Testing of AppEngine applications
 ---------------------------------
+
 Tests included in AppEngine applications (classes deriving from
 ``unittest.TestCase``) are run by ``test.py``. Some convenience functions to
 help using the testbed server are included in
 ``appengine_modules/testing_utils``. Some examples can be found in existing
-applications.
+applications, and a simple test setup is also provided by the
+``infra.tools.new_app`` script.
 
-See :doc:`testing` for more details.  In particular, it's important to have
-a test file ``tests/foo\_test.py`` for every source file ``foo.py``.
+See :doc:`testing` for more details, especially on testing Cloud Endpoints.  In
+particular, it's important to have a test file ``test/foo_test.py`` for every
+source file ``foo.py``.
 
 Note that for test code to be able to import modules from the AE SDK (e.g.
 ``endpoints``), some manipulation of ``sys.path`` has to be done by ``test.py``.
@@ -67,9 +77,30 @@ should be enough for 99.99% of cases.** (and yes, it's very hacky, we know).
 
 Managing AppEngine apps
 -----------------------
+
 A convenience script wrapping ``appcfg.py`` called ``gae.py`` can be used to
 simplify and normalize the deployment process in ``infra.git``. Just add a
 symlink to it in your application. It is located in
-``appengine/swarming/appengine/components/tools/gae.py``, but this location is
-bound to change soon(c) (2014-12-05).
+``luci/appengine/components/tools/gae.py``.
 
+``./gae.py devserver``
+  Run all modules in the local dev_appserver.
+
+``./gae.py login``
+  Authenticates with Google Cloud using OAuth2.
+
+``./gae.py upload -A my-project-id``
+  Deploys your app to the Cloud Project ``my-project-id``. If ``-A`` is omitted,
+  uses the application ID from ``app.yaml``. It is advised to use the staging
+  instance project ID in ``app.yaml`` (e.g. ``my-project-id-dev``), to avoid
+  accidental deployments to production version.
+
+``./gae.py switch``
+  Set the default version for all modules. The command will list all deployed
+  versions and suggest the latest one interactively.
+
+``./gae.py help``
+  Prints a help message.
+
+``./gae.py [command] --help``
+  Prints a help message for a specific command.
