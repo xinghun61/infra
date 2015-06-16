@@ -250,7 +250,7 @@ class GlobalsTest(auto_stub.TestCase):
     with self.assertRaises(KeyError):
       interface.unregister(fake_metric)
 
-  def test_close_stops_flush_thread(self):  # pragma: no cover
+  def test_close_stops_flush_thread(self):
     interface._state.flush_thread = interface._FlushThread(10)
     interface._state.flush_thread.start()
 
@@ -278,7 +278,7 @@ class ConfigTest(unittest.TestCase):
     self.assertEquals({}, interface.load_machine_config('does not exist'))
 
 
-class FakeThreadingEvent(object):  # pragma: no cover
+class FakeThreadingEvent(object):
   """A fake threading.Event that doesn't use the clock for timeouts."""
 
   def __init__(self):
@@ -330,8 +330,7 @@ class FakeThreadingEvent(object):  # pragma: no cover
     return ret
 
 
-# TODO(pgervais,500046): re-enable these tests when the issue is understood.
-class FlushThreadTest(unittest.TestCase):  # pragma: no cover
+class FlushThreadTest(unittest.TestCase):
 
   def setUp(self):
     mock.patch('infra_libs.ts_mon.interface.flush').start()

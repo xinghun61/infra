@@ -292,13 +292,13 @@ def unregister(metric):
   _state.metrics.remove(metric)
 
 
-def close():  # pragma: no cover
+def close():
   """Stops any background threads and waits for them to exit."""
   if _state.flush_thread is not None:
     _state.flush_thread.stop()
 
 
-class _FlushThread(threading.Thread):  # pragma: no cover
+class _FlushThread(threading.Thread):
   """Background thread that flushes metrics on an interval."""
 
   def __init__(self, interval_secs, stop_event=None):
