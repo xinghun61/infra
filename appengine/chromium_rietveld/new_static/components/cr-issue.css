@@ -31,7 +31,7 @@ h2 {
     display: flex;
 }
 
-.issue-toolbar {
+.issue-toolbar-container {
     border-bottom: 1px #e5e5e5 solid;
 }
 
@@ -74,6 +74,10 @@ header h2 {
     -webkit-justify-content: flex-end;
     align-items: center;
     -webkit-align-items: center;
+}
+
+.notice {
+    padding: 0 0 8px 16px;
 }
 
 @media (max-width: 600px) {

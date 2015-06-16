@@ -35,6 +35,7 @@ found in the LICENSE file. -->
             <cr-issue-meta issue="{{ issue }}"></cr-issue-meta>
 
             <div class="issue-content">
+                <div class="issue-toolbar-container">
                 <cr-toolbar class="issue-toolbar">
                     <button is="cr-button" on-tap="{{ showPublishDialog }}" create>Publish</button>
                     <template if="{{ !issue.owner.isCurrentUser }}">
@@ -57,6 +58,12 @@ found in the LICENSE file. -->
                         <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
                     </div>
                 </cr-toolbar>
+                <template if="{{ !hasBeenSent(issue) }}">
+                    <div class="notice">
+                        This issue has not been sent to reviewers yet.  Press "Publish" to notify them.
+                    </div>
+                </template>
+                </div>
 
                 <template if="{{ issue.commit }}">
                     <h2>
@@ -284,6 +291,9 @@ found in the LICENSE file. -->
             },
             handlePreviousPatchKey: function(event) {
                 this.$.cursorManager.previous(event);
+            },
+            hasBeenSent: function(issue) {
+                return issue.hasBeenSent();
             },
         });
     </script>

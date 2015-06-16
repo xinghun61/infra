@@ -323,3 +323,10 @@ Issue.prototype.updateDraftFiles = function()
         this.draftPatchsets.push(draftPatchset);
     }, this);
 };
+
+Issue.prototype.hasBeenSent = function()
+{
+    return this.messages.any(function (message) {
+        return !message.generated;
+    });
+};
