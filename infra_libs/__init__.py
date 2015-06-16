@@ -2,4 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from infra_libs.utils import read_json_as_utf8, temporary_directory
+from infra_libs.utils import read_json_as_utf8
+from infra_libs.utils import rmtree
+from infra_libs.utils import temporary_directory
