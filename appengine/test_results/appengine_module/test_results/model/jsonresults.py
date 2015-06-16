@@ -71,6 +71,7 @@ NO_DATA = "N"
 NOTRUN = "Y"
 PASS = "P"
 SKIP = "X"
+SLOW = "S"
 TEXT = "F"
 TIMEOUT = "T"
 LEAK = "K"
@@ -86,6 +87,7 @@ NO_DATA_STRING = "NO DATA"
 NOTRUN_STRING = "NOTRUN"
 PASS_STRING = "PASS"
 SKIP_STRING = "SKIP"
+SLOW_STRING = "SLOW"
 TEXT_STRING = "TEXT"
 TIMEOUT_STRING = "TIMEOUT"
 LEAK_STRING = "LEAK"
@@ -102,13 +104,13 @@ FAILURE_TO_CHAR = {
     NOTRUN_STRING: NOTRUN,
     PASS_STRING: PASS,
     SKIP_STRING: SKIP,
+    SLOW_STRING: SLOW,
     TEXT_STRING: TEXT,
     TIMEOUT_STRING: TIMEOUT,
     LEAK_STRING: LEAK,
 }
 
-# FIXME: Use dict comprehensions once we update the server to python 2.7.
-CHAR_TO_FAILURE = dict((value, key) for key, value in FAILURE_TO_CHAR.items())
+CHAR_TO_FAILURE = {value: key for key, value in FAILURE_TO_CHAR.iteritems()}
 
 
 def _is_directory(subtree):  # pragma: no cover
@@ -424,9 +426,7 @@ class JsonResults(object):
     tests = {}
     cls._populate_tests_from_full_results(full_results_format[TESTS_KEY], tests)
 
-    # FIXME: Use dict comprehensions once we update the server to
-    # python 2.7.
-    failures_by_type_key = dict((k, [v]) for k, v in failures_by_type.items())
+    failures_by_type_key = {k: [v] for k, v in failures_by_type.iteritems()}
     aggregate_results_format = {
         VERSIONS_KEY: JSON_RESULTS_HIERARCHICAL_VERSION,
         full_results_format[BUILDER_NAME_KEY]: {
