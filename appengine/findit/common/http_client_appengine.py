@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 
 from google.appengine.api import urlfetch
@@ -17,6 +18,7 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     result = urlfetch.fetch(url, deadline=timeout, validate_certificate=True)
 
     if result.status_code != 200:
-      logging.error('Request to %s resulted in %d', url, result.status_code)
+      logging.error('Request to %s resulted in %d, headers:%s', url,
+                    result.status_code, json.dumps(result.headers.items()))
 
     return result.status_code, result.content
