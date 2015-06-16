@@ -56,6 +56,23 @@ def CommonChecks(input_api, output_api):  # pragma: no cover
   tests.extend(Checker("gofmt", input_api, output_api))
   tests.extend(Checker("govet", input_api, output_api))
   tests.extend(Checker("golint", input_api, output_api))
+
+  # depot_tools runs tests in parallel. If go env is not setup, each test will
+  # attempt to setup it, and concurrent go env bootstrap currently doesn't work.
+  if tests:
+    out = input_api.RunTests([
+      input_api.Command(
+        name='bootstrap go env',
+        cmd=[
+          input_api.python_executable,
+          input_api.os_path.join(input_api.PresubmitLocalPath(), 'bootstrap.py')
+        ],
+        kwargs={},
+        message=output_api.PresubmitError)
+    ])
+    if out:
+      return out
+
   return input_api.RunTests(tests)
 
 
