@@ -133,7 +133,7 @@ def GenSteps(api):
     # to avoid running into errors with older releases.
     # Exclude ios - it often uses internal buildspecs so public ones don't work.
     for release in api.omahaproxy.history(
-        min_major_version=42, exclude_platforms=['ios']):
+        min_major_version=43, exclude_platforms=['ios']):
       if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
         missing_releases.add(release['version'])
     for version in missing_releases:
