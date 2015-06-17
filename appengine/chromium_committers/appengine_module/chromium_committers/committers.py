@@ -30,6 +30,7 @@ def get_list_names_for_user(user):
 
 
 def get_list(user, list_name):
+  logging.debug('"get_list" request for "%s" by %s', list_name, user)
   if not user:
     raise AuthorizationError('Authentication required.')
   if not list_name:
@@ -51,6 +52,7 @@ def get_list(user, list_name):
 
 
 def put_list(user, list_name, emails):
+  logging.debug('"put_list" request for "%s" by %s', list_name, user)
   if not (user and (user.is_admin or user.is_auth(auth_util.User.AUTH_HMAC))):
     raise AuthorizationError('User does not have permission to mutate lists.')
   committer_list = model.EmailList(id=list_name, emails=emails)

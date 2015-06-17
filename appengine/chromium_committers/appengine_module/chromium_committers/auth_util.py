@@ -37,6 +37,10 @@ class User(object):
     self._is_admin = is_admin
     self._auth = frozenset(auth)
 
+  def __str__(self):
+    return 'User(email=%s, admin=%s, auth=%s)' % (self._email, self._is_admin,
+                                                  self._auth)
+
   @property
   def email(self):
     return self._email
@@ -53,18 +57,25 @@ class User(object):
 
   @classmethod
   def from_request(cls, request):
-    u = users.get_current_user()
-    if not u:
-      return None
+    email = None
+    admin = False
+    auth = []
 
-    auth = [cls.AUTH_COOKIES]
     app_id = request.headers.get('X-Appengine-Inbound-Appid')
     if app_id in TRUSTED_APP_IDS:
       auth.append(cls.AUTH_TRUSTED_APP)
+
     if getattr(request, 'authenticated', None) == 'hmac':
       # Added via hmac_util.CheckHmacAuth decorator.
       auth.append(cls.AUTH_HMAC)
-    return cls(u.email(), users.is_current_user_admin(), auth)
+
+    u = users.get_current_user()
+    if u:
+      email = u.email()
+      admin = users.is_current_user_admin()
+      auth.append(cls.AUTH_COOKIES)
+    return cls(email, admin, auth)
+
 
   @classmethod
   def from_endpoints(cls):
@@ -86,11 +97,15 @@ def CheckUserInList(user, key_or_emails):
   if not user:
     logging.warning('No logged in user.')
     return False
-  email = user.email
 
   if user.is_admin:
-    logging.info('User %s is admin.', email)
+    logging.info('User %s is admin.', user)
     return True
+
+  email = user.email
+  if not email:
+    logging.warning('User has no associated e-mail.')
+    return False
 
   if isinstance(key_or_emails, ndb.Key):
     email_list = key_or_emails.get()
