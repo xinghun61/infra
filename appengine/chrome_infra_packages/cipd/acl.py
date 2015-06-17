@@ -59,6 +59,8 @@ can_register_package = is_owner
 can_fetch_instance = is_reader
 # Uploading a new instance to existing package.
 can_register_instance = is_writer
+# Creating or moving a ref. TODO(vadimsh): Make it per-ref.
+can_move_ref = lambda package_path, ref, ident: is_writer(package_path, ident)
 # Adding tags. TODO(vadimsh): Make it per-tag.
 can_attach_tag = lambda package_path, tag, ident: is_writer(package_path, ident)
 # Removing tags. TODO(vadimsh): Make it per-tag.

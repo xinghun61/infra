@@ -52,6 +52,18 @@ class TestValidators(unittest.TestCase):
     self.assertFalse(impl.is_valid_instance_id(''))
     self.assertFalse(impl.is_valid_instance_id('A'*40))
 
+  def test_is_valid_package_ref(self):
+    self.assertTrue(impl.is_valid_package_ref('ref'))
+    self.assertTrue(impl.is_valid_package_ref('abc-_0123'))
+    self.assertFalse(impl.is_valid_package_ref(''))
+    self.assertFalse(impl.is_valid_package_ref('no-CAPS'))
+    self.assertFalse(impl.is_valid_package_ref('a'*500))
+    # Tags are not refs.
+    self.assertFalse(impl.is_valid_package_ref('key:value'))
+    self.assertFalse(impl.is_valid_package_ref('key:'))
+    # Instance IDs are not refs.
+    self.assertFalse(impl.is_valid_package_ref('a'*40))
+
   def test_is_valid_instance_tag(self):
     self.assertTrue(impl.is_valid_instance_tag('k:v'))
     self.assertTrue(impl.is_valid_instance_tag('key:'))
@@ -363,6 +375,50 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertEqual(
         'Failed to extract the binary: File is not a zip file', error_msg)
 
+  def test_set_package_ref(self):
+    ident1 = auth.Identity.from_bytes('user:abc@example.com')
+    now1 = datetime.datetime(2015, 1, 1, 0, 0)
+
+    ident2 = auth.Identity.from_bytes('user:def@example.com')
+    now2 = datetime.datetime(2016, 1, 1, 0, 0)
+
+    self.service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=ident1,
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.register_instance(
+        package_name='a/b',
+        instance_id='b'*40,
+        caller=ident1,
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+
+    ref = self.service.set_package_ref('a/b', 'ref', 'a'*40, ident1, now1)
+    self.assertEqual({
+      'instance_id': 'a'*40,
+      'modified_by': ident1,
+      'modified_ts': now1,
+    }, ref.to_dict())
+
+    # Move to the same value -> modified_ts do not change.
+    ref = self.service.set_package_ref('a/b', 'ref', 'a'*40, ident2, now2)
+    self.assertEqual({
+      'instance_id': 'a'*40,
+      'modified_by': ident1,
+      'modified_ts': now1,
+    }, ref.to_dict())
+
+    # Move to another value.
+    ref = self.service.set_package_ref('a/b', 'ref', 'b'*40, ident2, now2)
+    self.assertEqual({
+      'instance_id': 'b'*40,
+      'modified_by': ident2,
+      'modified_ts': now2,
+    }, ref.to_dict())
+
+    # Code coverage for package_name.
+    self.assertEqual('a/b', ref.package_name)
+
   def test_attach_detach_tags(self):
     _, registered = self.service.register_instance(
         package_name='a/b',
@@ -464,10 +520,14 @@ class TestRepoService(testing.AppengineTestCase):
     self.add_tagged_instance('a/b', 'a'*40, ['tag1:value1', 'tag2:value2'])
     self.add_tagged_instance('a/b', 'b'*40, ['tag1:value1'])
     self.add_tagged_instance('a/b', 'c'*40, ['tag1:value1'])
+    self.service.set_package_ref(
+        'a/b', 'ref', 'a'*40, auth.Identity.from_bytes('user:abc@example.com'))
 
     self.assertEqual([], self.service.resolve_version('a/b', 'd'*40, 2))
     self.assertEqual([], self.service.resolve_version('a/b', 'tag3:', 2))
     self.assertEqual([], self.service.resolve_version('a/b/c/d', 'a'*40, 2))
+    self.assertEqual([], self.service.resolve_version('a/b', 'not-such-ref', 2))
+    self.assertEqual(['a'*40], self.service.resolve_version('a/b', 'ref', 2))
     self.assertEqual(['a'*40], self.service.resolve_version('a/b', 'a'*40, 2))
     self.assertEqual(
         ['a'*40], self.service.resolve_version('a/b', 'tag2:value2', 2))

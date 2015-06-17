@@ -36,6 +36,15 @@ and grab a list of package files to display in UI. Processing can finish with
 any of two final states: success or failure. Transient errors are retried until
 some definite result is known.
 
+Refs
+----
+A package can have any number of 'refs'. A ref is a named pointer to some
+existing PackageInstance. For example package "infra/tools/cipd" may have a
+ref called "stable" that points to currently stable version of the tool.
+
+A ref can point only to fully processed package instance (ones that pass all
+processors with success).
+
 Tags
 ----
 
@@ -53,12 +62,14 @@ would have two git_revision: tags (git_revision:<rev1>, git_revision:<rev2>).
 Tags are used in search queries, e.g. "give me package instance that corresponds
 to a given git revision".
 
-Only fully processed package (ones that pass all processors with success) can be
-tagged, since tagging a package makes it discoverable in the search.
+Only fully processed package instance (ones that pass all processors with
+success) can be tagged, since tagging a package makes it discoverable in
+the search.
 
 TODO(vadimsh): Support unique tags (i.e. only one package instance can be
 tagged with such tag)? For example, tags with keys that start with '@' can be
-unique: "@release:0.1".
+unique: "@release:0.1". The difference from ref is mostly in semantics: unique
+tags aren't supposed to be moved (i.e. detached and attached again).
 
 Access Control
 --------------
@@ -77,8 +88,8 @@ ACL changes are applied atomically (e.g. multiple ACLs can be changed all at
 once or none at all), but checks are still only eventually consistent (for
 performance and code simplicity).
 
-TODO(vadimsh): Add fine grain ACL for tags. Tags that are set by Buildbot
-builders should not be allowed to set by other WRITERs.
+TODO(vadimsh): Add fine grained ACL for tags and refs. Tags that are set by
+Buildbot builders should not be allowed to set by other WRITERs.
 """
 
 import collections
@@ -109,6 +120,9 @@ PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
 
 # Regular expression for a package path (path inside package namespace).
 PACKAGE_PATH_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
+
+# Regular expression for a package reference name.
+REF_RE = re.compile(r'^[a-z0-9_\-]{1,100}$')
 
 # Maximum length of the tag (key + value).
 TAG_MAX_LEN = 400
@@ -330,6 +344,37 @@ class RepoService(object):
         DIGEST_ALGO, instance_id, caller)
     return upload_session.upload_url, upload_session_id
 
+  @ndb.transactional
+  def set_package_ref(self, package_name, ref, instance_id, caller, now=None):
+    """Creates or moves a package reference to point to an existing instance.
+
+    Idempotent. Package instance must exist and must have all processors
+    successfully finished.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      ref: name of the reference, e.g. 'stable'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+      caller: auth.Identity that issued the request.
+      now: datetime when the request was made (or None for current time).
+
+    Returns:
+      PackageRef instance.
+    """
+    # TODO(vadimsh): Write performed actions into some audit log.
+    assert is_valid_package_ref(ref), ref
+    self._assert_instance_is_ready(package_name, instance_id)
+
+    # Do not overwrite existing timestamp if ref is already set as needed.
+    key = package_ref_key(package_name, ref)
+    ref = key.get() or PackageRef(key=key)
+    if ref.instance_id != instance_id:
+      ref.instance_id = instance_id
+      ref.modified_by = caller
+      ref.modified_ts = now or utils.utcnow()
+      ref.put()
+    return ref
+
   def query_tags(self, package_name, instance_id):
     """Lists all tags attached to a package instance sorted by creation time.
 
@@ -369,7 +414,8 @@ class RepoService(object):
   def attach_tags(self, package_name, instance_id, tags, caller, now=None):
     """Adds a bunch of tags to an existing package instance.
 
-    Idempotent. Skips existing tags.
+    Idempotent. Skips existing tags. Package instance must exist and must have
+    all processors successfully finished.
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
@@ -382,12 +428,10 @@ class RepoService(object):
       {tag: corresponding InstanceTag (just created or existing one)}.
     """
     assert tags and all(is_valid_instance_tag(tag) for tag in tags), tags
-    now = now or utils.utcnow()
-
-    # Caller should generally check instance presence before making the call.
-    assert package_instance_key(package_name, instance_id).get()
+    self._assert_instance_is_ready(package_name, instance_id)
 
     # Grab info about existing tags, register new ones.
+    now = now or utils.utcnow()
     existing = ndb.get_multi(
         instance_tag_key(package_name, instance_id, tag)
         for tag in tags)
@@ -459,7 +503,7 @@ class RepoService(object):
     return found
 
   def resolve_version(self, package_name, version, limit):
-    """Given an instance ID or a tag returns instance IDs that match it.
+    """Given an instance ID, a ref or a tag returns instance IDs that match it.
 
     Args:
       package_name: name of the package, e.g. 'infra/tools/cipd'.
@@ -475,6 +519,11 @@ class RepoService(object):
     if is_valid_instance_id(version):
       inst = self.get_instance(package_name, version)
       return [inst.instance_id] if inst else []
+
+    # A ref? set_package_ref ensures the instance exists, no need to recheck it.
+    if is_valid_package_ref(version):
+      ref = package_ref_key(package_name, version).get()
+      return [ref.instance_id] if ref else []
 
     # If looks like a tag, resolve it to a list of instance IDs.
     if is_valid_instance_tag(version):
@@ -571,6 +620,26 @@ class RepoService(object):
     pkg.put()
     return pkg, True
 
+  def _assert_instance_is_ready(self, package_name, instance_id):
+    """Asserts that instance can be used to attach tags or point a ref to it.
+
+    Instance must exist and all its processors must finish successfully.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+    """
+    inst = package_instance_key(package_name, instance_id).get()
+    assert inst, 'Instance doesn\'t exist: %s' % instance_id
+    if inst.processors_failure:
+      raise AssertionError(
+          'Some processors failed for instance %s: %s' %
+          (instance_id, ' '.join(inst.processors_failure)))
+    if inst.processors_pending:
+      raise AssertionError(
+          'Some processors are not finished yet for instance %s: %s' %
+          (instance_id, ' '.join(inst.processors_pending)))
+
 
 def is_valid_package_name(package_name):
   """True if string looks like a valid package name."""
@@ -580,6 +649,11 @@ def is_valid_package_name(package_name):
 def is_valid_package_path(package_path):
   """True if string looks like a valid package path."""
   return package_path and bool(PACKAGE_PATH_RE.match(package_path))
+
+
+def is_valid_package_ref(ref):
+  """True if string looks like a valid ref name."""
+  return ref and not is_valid_instance_id(ref) and bool(REF_RE.match(ref))
 
 
 def is_valid_instance_id(instance_id):
@@ -596,8 +670,11 @@ def is_valid_instance_tag(tag):
 
 
 def is_valid_instance_version(version):
-  """True if string looks like an instance ID or a tag."""
-  return is_valid_instance_id(version) or is_valid_instance_tag(version)
+  """True if string looks like an instance ID or a ref, or a tag."""
+  return (
+      is_valid_instance_id(version) or
+      is_valid_package_ref(version) or
+      is_valid_instance_tag(version))
 
 
 def get_repo_service():
@@ -673,6 +750,34 @@ def package_instance_key(package_name, instance_id):
   """Returns ndb.Key corresponding to particular PackageInstance."""
   assert is_valid_instance_id(instance_id), instance_id
   return ndb.Key(PackageInstance, instance_id, parent=package_key(package_name))
+
+
+################################################################################
+## Refs support.
+
+
+class PackageRef(ndb.Model):
+  """A named reference to some instance ID.
+
+  ID is a reference name, parent entity is corresponding Package.
+  """
+  # PackageInstance the ref points to.
+  instance_id = ndb.StringProperty()
+  # Who added or moved this reference.
+  modified_by = auth.IdentityProperty()
+  # When the reference was created or moved.
+  modified_ts = ndb.DateTimeProperty()
+
+  @property
+  def package_name(self):
+    """Name of the package this ref belongs to."""
+    return self.key.parent().string_id()
+
+
+def package_ref_key(package_name, ref):
+  """Returns ndb.Key corresponding to particular PackageRef."""
+  assert is_valid_package_ref(ref), ref
+  return ndb.Key(PackageRef, ref, parent=package_key(package_name))
 
 
 ################################################################################

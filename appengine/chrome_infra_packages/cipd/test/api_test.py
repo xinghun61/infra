@@ -624,6 +624,82 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'error_message': 'Invalid package instance ID',
     }, resp.json_body)
 
+  def register_mock_instance(self):
+    return self.repo_service.register_instance(
+        package_name='a/b',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))[0]
+
+  def test_set_ref_ok(self):
+    self.register_mock_instance()
+    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
+    resp = self.call_api('set_ref', {
+      'package_name': 'a/b',
+      'ref': 'ref',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'ref': {
+        'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'modified_by': 'user:mocked@example.com',
+        'modified_ts': '1388534400000000',
+      },
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_set_ref_bad_ref(self):
+    self.register_mock_instance()
+    resp = self.call_api('set_ref', {
+      'package_name': 'a/b',
+      'ref': 'BAD REF NAME',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'error_message': 'Invalid package ref name',
+      'status': 'ERROR',
+    }, resp.json_body)
+
+  def test_set_ref_no_access(self):
+    self.register_mock_instance()
+    self.mock(api.acl, 'can_move_ref', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('set_ref', {
+        'package_name': 'a/b',
+        'ref': 'ref',
+        'instance_id': 'a'*40,
+      })
+
+  def test_set_ref_no_package(self):
+    resp = self.call_api('set_ref', {
+      'package_name': 'a/b',
+      'ref': 'ref',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_set_ref_no_instance(self):
+    self.register_mock_instance()
+    resp = self.call_api('set_ref', {
+      'package_name': 'a/b',
+      'ref': 'ref',
+      'instance_id': 'b'*40,
+    })
+    self.assertEqual({'status': 'INSTANCE_NOT_FOUND'}, resp.json_body)
+
+  def test_set_ref_not_ready(self):
+    inst = self.register_mock_instance()
+    inst.processors_pending = ['proc']
+    inst.put()
+    resp = self.call_api('set_ref', {
+      'package_name': 'a/b',
+      'ref': 'ref',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'error_message': 'Pending processors: proc',
+      'status': 'PROCESSING_NOT_FINISHED_YET',
+    }, resp.json_body)
 
   def set_tag(self, pkg, tag, ts, instance_id='a'*40):
     self.repo_service.register_instance(
@@ -921,6 +997,19 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     })
     self.assertEqual({
       'instance_id': 'a'*40,
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_resolve_version_works_ref(self):
+    self.register_mock_instance()
+    self.repo_service.set_package_ref(
+        'a/b', 'ref', 'a'*40, auth.Identity.from_bytes('user:abc@example.com'))
+    resp = self.call_api('resolve_version', {
+      'package_name': 'a/b',
+      'version': 'ref',
+    })
+    self.assertEqual({
+      'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       'status': 'SUCCESS',
     }, resp.json_body)
 

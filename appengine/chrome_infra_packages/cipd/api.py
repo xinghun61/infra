@@ -5,6 +5,7 @@
 """Cloud Endpoints API for Package Repository service."""
 
 import functools
+import logging
 
 import endpoints
 
@@ -99,6 +100,21 @@ def tag_to_proto(entity):
       tag=entity.tag,
       registered_by=entity.registered_by.to_bytes(),
       registered_ts=utils.datetime_to_timestamp(entity.registered_ts))
+
+
+class PackageRef(messages.Message):
+  """Information about some ref belonging to a package."""
+  instance_id = messages.StringField(1, required=True)
+  modified_by = messages.StringField(2, required=True)
+  modified_ts = messages.IntegerField(3, required=True)
+
+
+def package_ref_to_proto(entity):
+  """PackageRef entity -> PackageRef proto message."""
+  return PackageRef(
+      instance_id=entity.instance_id,
+      modified_by=entity.modified_by.to_bytes(),
+      modified_ts=utils.datetime_to_timestamp(entity.modified_ts))
 
 
 class PackageACL(messages.Message):
@@ -275,6 +291,24 @@ class RegisterInstanceResponse(messages.Message):
 ################################################################################
 
 
+class SetRefRequest(messages.Message):
+  """Body of setRef call."""
+  # ID of the package instance to point the ref too.
+  instance_id = messages.StringField(1, required=True)
+
+
+class SetRefResponse(messages.Message):
+  """Results of setRef call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, details about the ref.
+  ref = messages.MessageField(PackageRef, 3, required=False)
+
+
+################################################################################
+
+
 class FetchTagsResponse(messages.Message):
   """Results of fetchTags call."""
   status = messages.EnumField(Status, 1, required=True)
@@ -388,6 +422,14 @@ class InstanceNotFoundError(Error):
   status = Status.INSTANCE_NOT_FOUND
 
 
+class ProcessingFailedError(Error):
+  status = Status.PROCESSING_FAILED
+
+
+class ProcessingNotFinishedYetError(Error):
+  status = Status.PROCESSING_NOT_FINISHED_YET
+
+
 class ValidationError(Error):
   # TODO(vadimsh): Use VALIDATION_ERROR. It changes JSON protocol.
   status = Status.ERROR
@@ -403,6 +445,12 @@ def validate_package_path(package_path):
   if not impl.is_valid_package_path(package_path):
     raise ValidationError('Invalid package path')
   return package_path
+
+
+def validate_package_ref(ref):
+  if not impl.is_valid_package_ref(ref):
+    raise ValidationError('Invalid package ref name')
+  return ref
 
 
 def validate_instance_id(instance_id):
@@ -450,6 +498,10 @@ def endpoints_method(request_message, response_message, **kwargs):
         return response_message(
             status=e.status,
             error_message=e.message if e.message else None)
+      except auth.Error as e:
+        caller = auth.get_current_identity().to_bytes()
+        logging.warning('%s (%s): %s', e.__class__.__name__, caller, e)
+        raise
     return wrapper
   return decorator
 
@@ -490,6 +542,19 @@ class PackageRepositoryApi(remote.Service):
   def verify_instance_exists(self, package_name, instance_id):
     """Raises appropriate *NotFoundError if instance is missing."""
     self.get_instance(package_name, instance_id)
+
+  def verify_instance_is_ready(self, package_name, instance_id):
+    """Raises appropriate error if instance doesn't exist or not ready yet.
+
+    Instance is ready when all processors successfully finished.
+    """
+    instance = self.get_instance(package_name, instance_id)
+    if instance.processors_failure:
+      raise ProcessingFailedError(
+          'Failed processors: %s' % ', '.join(instance.processors_failure))
+    if instance.processors_pending:
+      raise ProcessingNotFinishedYetError(
+          'Pending processors: %s' % ', '.join(instance.processors_pending))
 
 
   ### Package methods.
@@ -615,6 +680,38 @@ class PackageRepositoryApi(remote.Service):
         instance=instance_to_proto(instance))
 
 
+  ### Refs methods.
+
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          SetRefRequest,
+          package_name=messages.StringField(1, required=True),
+          ref=messages.StringField(2, required=True)),
+      SetRefResponse,
+      path='ref',
+      http_method='POST',
+      name='setRef')
+  def set_ref(self, request):
+    """Creates a ref or moves an existing one."""
+    package_name = validate_package_name(request.package_name)
+    ref = validate_package_ref(request.ref)
+    instance_id = validate_instance_id(request.instance_id)
+
+    caller = auth.get_current_identity()
+    if not acl.can_move_ref(package_name, ref, caller):
+      raise auth.AuthorizationError('Not authorized to move "%s"' % ref)
+    self.verify_instance_is_ready(package_name, instance_id)
+
+    ref_entity = self.service.set_package_ref(
+        package_name=package_name,
+        ref=ref,
+        instance_id=instance_id,
+        caller=caller,
+        now=utils.utcnow())
+    return SetRefResponse(ref=package_ref_to_proto(ref_entity))
+
+
   ### Tags methods.
 
 
@@ -668,18 +765,7 @@ class PackageRepositoryApi(remote.Service):
     for tag in tags:
       if not acl.can_attach_tag(package_name, tag, caller):
         raise auth.AuthorizationError('Not authorized to attach "%s"' % tag)
-
-    instance = self.get_instance(package_name, instance_id)
-    if instance.processors_failure:
-      return AttachTagsResponse(
-          status=Status.PROCESSING_FAILED,
-          error_message=
-              'Failed processors: %s' % ', '.join(instance.processors_failure))
-    if instance.processors_pending:
-      return AttachTagsResponse(
-          status=Status.PROCESSING_NOT_FINISHED_YET,
-          error_message=
-              'Pending processors: %s' % ', '.join(instance.processors_pending))
+    self.verify_instance_is_ready(package_name, instance_id)
 
     attached = self.service.attach_tags(
         package_name=package_name,
@@ -767,7 +853,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       name='resolveVersion')
   def resolve_version(self, request):
-    """Returns instance ID of an existing instance given a tag or a ref."""
+    """Returns instance ID of an existing instance given a ref or a tag."""
     package_name = validate_package_name(request.package_name)
     version = validate_instance_version(request.version)
 
