@@ -28,13 +28,14 @@ def main(argv):
     description=sys.modules['__main__'].__doc__)
   antibody.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
-  _args = parser.parse_args(argv)
+  args = parser.parse_args(argv)
 
-  infra_libs.logs.process_argparse_options(parser)
+  infra_libs.logs.process_argparse_options(args)
 
   # Do more processing here
   LOGGER.info('Antibody starting')
-
+  
+  antibody.setup_rietveld_db(args.rietveld_url, args.filename)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))
