@@ -5,9 +5,6 @@
 // Dispatcher usage:
 // go run infra/monitoring/dispatcher
 // Expects gatekeeper.json to be in the current directory.
-// Runs a single check, prints out diagnosis and exits.
-// TODO(seanmccullough): Run continuously.  Also, consider renaming to 'patrol'
-// or 'scanner' because that's really what this thing does.
 
 package main
 
@@ -22,6 +19,7 @@ import (
 
 	"github.com/luci/luci-go/common/logging/gologger"
 
+	"infra/libs/clock"
 	"infra/monitoring/analyzer"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
@@ -37,8 +35,12 @@ var (
 	treeOnly            = flag.String("tree", "", "Only check this tree")
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
+	maxErrs             = flag.Int("max-errs", 1, "Max consecutive errors per loop attempt")
+	durationStr         = flag.String("duration", "10s", "Max duration to loop for")
+	cycleStr            = flag.String("cycle", "1s", "Cycle time for loop")
 
-	log = gologger.Get()
+	log             = gologger.Get()
+	duration, cycle time.Duration
 
 	// gk is the gatekeeper config.
 	gk = &struct {
@@ -54,6 +56,91 @@ func init() {
 	flag.Usage = func() {
 		fmt.Printf("Runs a single check, prints out diagnosis and exits.\n")
 		flag.PrintDefaults()
+	}
+}
+
+type loopResults struct {
+	// success is true if no errors, or all failed attempts succeeded on within maxErrs
+	// subsequent attempts.
+	success bool
+	// overruns counts the total number of overruns.
+	overruns int
+	// errs counts total number of errors, some may have been retried.
+	errs int
+}
+
+/*
+This is slightly different from what outer_loop.py does.
+
+outer_loop.py (very roughly) runs this loop:
+  run task
+  sleep for sleep_timeout
+  if now - start_time > duration:
+    return
+  back to top of loop
+
+Because sleep_timeout always happens on every iteration, a persistent
+one-time increase in runtime for the task will lead to less frequent
+runs of the task.
+
+This implementation OTOH tries to make task runtime and frequency of
+task runs independent. If the task runtime increases by a constant factor,
+the subsequent task completion times will simply all shift forward by that
+amount. The frequency of starts and completions will be the same, just
+phase-shifted.
+
+However, if runtime *exceeds* the requested cycle time, the overall
+frequency will again decrease. This is mitigated somewhat by logging
+errors on task overruns, and is something we should probably consider an
+alertable condition.
+
+TODO: A more robust mechanism would specify overrun policies
+
+Inspired by
+https://chromium.googlesource.com/infra/infra/+/master/infra/libs/service_utils/outer_loop.py
+*/
+func loop(f func() error, cycle, duration time.Duration, maxErrs int, c clock.Clock) *loopResults {
+	// TODO: ts_mon stuff.
+	ret := &loopResults{success: true}
+
+	startTime := c.Now()
+
+	tmr := c.NewTimer()
+	tmr.Reset(0 * time.Second) // Run the first one right away.
+	defer tmr.Stop()
+
+	nextCycle := cycle
+	consecErrs := 0
+	for {
+		<-tmr.GetC()
+		t0 := c.Now()
+		err := f()
+		dur := c.Now().Sub(t0)
+		if dur > cycle {
+			log.Errorf("Task overran by %v (%v - %v)", (dur - cycle), dur, cycle)
+			ret.overruns++
+		}
+
+		if err != nil {
+			log.Errorf("Got an error: %v", err)
+			ret.errs++
+			if consecErrs++; consecErrs >= maxErrs {
+				ret.success = false
+				return ret
+			}
+		} else {
+			consecErrs = 0
+		}
+
+		if c.Now().Sub(startTime) > duration {
+			tmr.Stop()
+			return ret
+		}
+
+		nextCycle = cycle - dur
+		if tmr.Reset(nextCycle) {
+			log.Errorf("Timer was still active")
+		}
 	}
 }
 
@@ -88,12 +175,24 @@ func main() {
 	start := time.Now()
 	flag.Parse()
 
+	duration, err := time.ParseDuration(*durationStr)
+	if err != nil {
+		log.Errorf("Error parsing duration: %v", err)
+		os.Exit(1)
+	}
+
+	cycle, err := time.ParseDuration(*cycleStr)
+	if err != nil {
+		log.Errorf("Error parsing cycle: %v", err)
+		os.Exit(1)
+	}
+
 	masterNames := []string{}
 	if *masterOnly != "" {
 		masterNames = append(masterNames, *masterOnly)
 	}
 
-	err := readJSONFile(*gatekeeperJSON, &gk)
+	err = readJSONFile(*gatekeeperJSON, &gk)
 	if err != nil {
 		log.Errorf("Error reading gatekeeper json: %v", err)
 		os.Exit(1)
@@ -139,39 +238,48 @@ func main() {
 		log.Errorf("Error reading build extract from %s : %s", url, err)
 	}
 
-	alerts := &messages.Alerts{}
+	// This is the polling/analysis/alert posting function, which will run in a loop until
+	// a timeout or max errors is reached.
+	f := func() error {
+		alerts := &messages.Alerts{}
+		for masterName, be := range bes {
+			alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+		}
+		alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
-	for masterName, be := range bes {
-		alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+		if *dataURL == "" {
+			log.Infof("No data_url provided. Writing to alerts.json")
+
+			abytes, err := json.MarshalIndent(alerts, "", "\t")
+			if err != nil {
+				log.Errorf("Couldn't marshal alerts json: %v", err)
+				return err
+			}
+
+			if err := ioutil.WriteFile("alerts.json", abytes, 0644); err != nil {
+				log.Errorf("Couldn't write to alerts.json: %v", err)
+				return err
+			}
+		} else {
+			log.Infof("Posting alerts to %s", *dataURL)
+			err := a.Client.PostAlerts(alerts)
+			if err != nil {
+				log.Errorf("Couldn't post alerts: %v", err)
+				return err
+			}
+		}
+
+		log.Infof("Filtered failures: %v", filteredFailures)
+		a.Client.DumpStats()
+		log.Infof("Elapsed time: %v", time.Since(start))
+
+		return nil
 	}
-	alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
-	if *dataURL == "" {
-		log.Infof("No data_url provided. Writing to alerts.json")
+	loopResults := loop(f, cycle, duration, *maxErrs, clock.GetSystemClock())
 
-		abytes, err := json.MarshalIndent(alerts, "", "\t")
-		if err != nil {
-			log.Errorf("Couldn't marshal alerts json: %v", err)
-			os.Exit(1)
-		}
-
-		if err := ioutil.WriteFile("alerts.json", abytes, 0644); err != nil {
-			log.Errorf("Couldn't write to alerts.json: %v", err)
-			os.Exit(1)
-		}
-	} else {
-		log.Infof("Posting alerts to %s", *dataURL)
-		err := a.Client.PostAlerts(alerts)
-		if err != nil {
-			log.Errorf("Couldn't post alerts: %v", err)
-			os.Exit(1)
-		}
-	}
-
-	log.Infof("Filtered failures: %v", filteredFailures)
-	a.Client.DumpStats()
-	log.Infof("Elapsed time: %v", time.Since(start))
-	if len(errs) > 0 {
+	if !loopResults.success {
+		log.Errorf("Failed to run loop, %v errors", loopResults.errs)
 		os.Exit(1)
 	}
 }
