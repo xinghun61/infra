@@ -130,11 +130,15 @@ def query_findit(findit_api_url, alerts):
     builder_name = alert['builder_name']
     build_number = alert['last_failing_build']
     key = '%s-%s-%d' % (master_url, builder_name, build_number)
-    builds[key] = {
-        'master_url': master_url,
-        'builder_name': builder_name,
-        'build_number': build_number
-    }
+    if key not in builds:
+      builds[key] = {
+          'master_url': master_url,
+          'builder_name': builder_name,
+          'build_number': build_number,
+          'failed_steps': [alert['step_name']],
+      }
+    elif alert['step_name'] not in builds[key]['failed_steps']:
+      builds[key]['failed_steps'].append(alert['step_name'])
 
   try:
     headers = {'Content-type': 'application/json'}
