@@ -28,6 +28,7 @@ from google.appengine.ext import ndb
 from utils import TestCase
 
 from codereview import buildbucket
+from codereview import common
 from codereview import models
 from codereview import net
 
@@ -170,8 +171,8 @@ class BuildbucketFunctionsTest(TestCase):
       return future
 
     self.mock(net, 'json_request_async', json_request_async)
-    self.mock(
-        buildbucket, 'get_self_hostname', lambda: 'codereview.chromium.org')
+    self.mock(common, 'get_preferred_domain',
+              lambda *_, **__: 'codereview.chromium.org')
 
   def test_get_try_job_results_for_patchset(self):
     response_data = {
@@ -181,7 +182,8 @@ class BuildbucketFunctionsTest(TestCase):
       ]
     }
     self.fake_responses = [response_data]
-    actual_builds = buildbucket.get_builds_for_patchset_async(1, 2).get_result()
+    actual_builds = buildbucket.get_builds_for_patchset_async(
+        'project', 1, 2).get_result()
     self.assertEqual(actual_builds, response_data['builds'])
 
 

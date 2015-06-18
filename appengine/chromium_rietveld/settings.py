@@ -104,13 +104,21 @@ except Exception:
 # When sending an email in response to an email, we don't know which domain
 # name is the preferred one for accessing the site, so we use this dict to build
 # URLs to put in the email message.  If the app_id is not found listed below,
-# then the canonical app_id.appspot.com domain is used.  A dict is used rather
-# than a simple string constant to make it safer to deploy and use staging
-# instances and other instances of the app.
+# then the canonical app_id.appspot.com domain is used. If the project is not
+# known, a default None is used. A dict is used rather than a simple string
+# constant to make it safer to deploy and use staging instances and other
+# instances of the app.
+# See also codereview/common.py get_preferred_domain function.
 PREFERRED_DOMAIN_NAMES = {
-  'chromiumcodereview-hr': 'codereview.chromium.org',
-  'chromiumcodereview-hr-staging': 'codereview.chromium.org',
-  }
+  'chromiumcodereview-hr': {
+    None: 'codereview.chromium.org',
+    'webrtc': 'codereview.webrtc.org',
+  },
+  'chromiumcodereview-hr-staging': {
+    None: 'codereview.chromium.org',
+    'webrtc': 'codereview.webrtc.org',
+  },
+}
 
 UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
 

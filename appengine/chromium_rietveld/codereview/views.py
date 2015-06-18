@@ -86,7 +86,7 @@ from codereview import net
 from codereview import notify_xmpp
 from codereview import patching
 from codereview import utils
-from codereview.common import IS_DEV
+from codereview import common
 from codereview.exceptions import FetchError
 from codereview.responses import HttpTextResponse, HttpHtmlResponse, respond
 import codereview.decorators as deco
@@ -1088,7 +1088,7 @@ def upload(request):
   This generates a text/plain response.
   """
   if request.user is None:
-    if IS_DEV:
+    if common.IS_DEV:
       request.user = users.User(request.POST.get('user', 'test@example.com'))
     else:
       return HttpTextResponse('Login required', status=401)
@@ -1216,7 +1216,7 @@ def upload_content(request):
     return HttpTextResponse(
         'ERROR: Upload content errors:\n%s' % repr(form.errors))
   if request.user is None:
-    if IS_DEV:
+    if common.IS_DEV:
       request.user = users.User(request.POST.get('user', 'test@example.com'))
     else:
       return HttpTextResponse('Error: Login required', status=401)
@@ -1273,7 +1273,7 @@ def upload_patch(request):
   together.
   """
   if request.user is None:
-    if IS_DEV:
+    if common.IS_DEV:
       request.user = users.User(request.POST.get('user', 'test@example.com'))
     else:
       return HttpTextResponse('Error: Login required', status=401)
@@ -1805,10 +1805,11 @@ def get_patchset_try_job_results(patchset):
   Combines try job results stored in datastore and in buildbucket. Deduplicates
   builds that have same buildbucket build id.
   """
+  issue = patchset.issue_key.get()
   # Fetch try job results from NDB and Buildbucket in parallel.
   buildbucket_results_future = (
       buildbucket.get_try_job_results_for_patchset_async(
-          patchset.issue_key.id(), patchset.key.id()))
+          issue.project, patchset.issue_key.id(), patchset.key.id()))
   local_try_job_results = patchset.try_job_results
 
   try_job_results = []
@@ -2113,7 +2114,7 @@ def mailissue(request):
   older versions of upload.py or wrapper scripts still may use it.
   """
   if not request.issue.edit_allowed:
-    if not IS_DEV:
+    if not common.IS_DEV:
       return HttpTextResponse('Login required', status=401)
   issue = request.issue
   msg = make_message(request, issue, '', '', True)
@@ -2208,7 +2209,7 @@ def description(request):
     description = request.issue.description or ""
     return HttpTextResponse(description)
   if not request.issue.edit_allowed:
-    if not IS_DEV:
+    if not common.IS_DEV:
       return HttpTextResponse('Login required', status=401)
   issue = request.issue
   issue.description = request.POST.get('description')
@@ -2238,7 +2239,7 @@ def fields(request):
     return response
 
   if not request.issue.edit_allowed:
-    if not IS_DEV:
+    if not common.IS_DEV:
       return HttpTextResponse('Login required', status=401)
   fields = json.loads(request.POST.get('fields'))
   issue = request.issue
@@ -3589,10 +3590,7 @@ def make_message(request, issue, message, comments=None, send_mail=False,
     cc = [_add_plus_addr(addr, accounts, issue) for addr in cc]
     reply_to = [_add_plus_addr(addr, accounts, issue) for addr in reply_to]
     reply_to = ', '.join(reply_to)
-    app_id = app_identity.get_application_id()
-    canonical_host = '%s.appspot.com' % app_id
-    host = django_settings.PREFERRED_DOMAIN_NAMES.get(
-      django_settings.APP_ID, canonical_host)
+    host = common.get_preferred_domain(issue.project)
     friendly_sender = ("%s via %s <%s>" % (
         my_email, host, django_settings.RIETVELD_INCOMING_MAIL_ADDRESS))
 
@@ -4108,7 +4106,7 @@ def _process_incoming_mail(raw_message, recipients):
                        issue_was_closed=issue.closed)
   if msg.approval:
     publish_url = _absolute_url_in_preferred_domain(
-        publish, args=[issue.key.id()])
+        issue.project, publish, args=[issue.key.id()])
     _send_lgtm_reminder(sender, subject, publish_url)
   msg.was_inbound_email = True
 
@@ -4132,13 +4130,10 @@ def _process_incoming_mail(raw_message, recipients):
   msg.put()
 
 
-def _absolute_url_in_preferred_domain(handler, args=None):
+def _absolute_url_in_preferred_domain(project, handler, args=None):
   """Return a URL for handler via our preferred domain name, if possible."""
   handler_url_path = reverse(handler, args=args)
-  app_id = app_identity.get_application_id()
-  canonical_host = '%s.appspot.com' % app_id
-  host = django_settings.PREFERRED_DOMAIN_NAMES.get(
-    django_settings.APP_ID, canonical_host)
+  host = common.get_preferred_domain(project)
   return 'https://%s%s' % (host, handler_url_path)
 
 
@@ -4400,7 +4395,7 @@ def update_stats(request):
   """Endpoint that will trigger a taskqueue to update the score of all
   AccountStatsBase derived entities.
   """
-  if IS_DEV:
+  if common.IS_DEV:
     # Sadly, there is no way to know the admin port.
     dashboard = 'http://%s:8000/taskqueue' % os.environ['SERVER_NAME']
   else:
