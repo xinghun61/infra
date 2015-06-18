@@ -82,7 +82,7 @@ class TestCase(utils.TestCase):
     # Kill auto_now and auto_now_add support.
     models.Issue.created._auto_now_add = False
     models.Issue.modified._auto_now = False
-    
+
   def tearDown(self):
     # Restore auto_now and auto_now_add support.
     models.Issue.created._auto_now_add = True
@@ -161,7 +161,8 @@ class TestDailyStats(TestCase):
     # Check the HTTP request reply at the end, because it's more cosmetic than
     # the actual entities.
     self.assertTrue(
-        re.match('^' + re.escape(date + '\n' + text) + 'In \\d+\\.\\ds\n$', actual[0]),
+        re.match('^' + re.escape(date + '\n' + text) + 'In \\d+\\.\\ds\n$',
+                 actual[0]),
         actual[0])
 
   def test_normal_lgtm(self):

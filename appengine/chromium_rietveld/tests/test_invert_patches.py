@@ -52,12 +52,12 @@ class TestInvertGitPatches(unittest.TestCase):
          (self.COPY_AND_MODIFY_BINARY_PATCH_TEXT_WITH_NEW_MODE, 'A +'),
          (self.RENAME_AND_MODIFY_BINARY_PATCH_TEXT_WITH_EXISTING_MODE, 'A +'),
          (self.RENAME_AND_MODIFY_BINARY_PATCH_TEXT_WITH_NEW_MODE, 'A +')):
-      invert_git_patches = invert_patches.InvertGitPatches(                     
+      invert_git_patches = invert_patches.InvertGitPatches(
           patch_text, 'dummy_filename')
       self.assertEquals(expected_status, invert_git_patches.status)
 
   def test_inverted_patch_status(self):
-    invert_git_patches = invert_patches.InvertGitPatches(                     
+    invert_git_patches = invert_patches.InvertGitPatches(
         self.ADD_PATCH_TEXT, 'dummy_filename')
     for original_status, expected_inverted_status in (
         ('M', 'M'), ('dummy_status', 'M'), ('D', 'A'), ('A', 'D'),
@@ -66,7 +66,7 @@ class TestInvertGitPatches(unittest.TestCase):
       self.assertEquals(expected_inverted_status,
                         invert_git_patches.inverted_patch_status)
 
-  def test_left_and_right_for_inverted_patch(self): 
+  def test_left_and_right_for_inverted_patch(self):
     headers = 'Index: testfile\ndiff --git a/testfile b/testfile\n'
     for original_status, (expected_left_filename, expected_right_filename) in (
         ('M', ('a/testfile', 'b/testfile')),
@@ -303,7 +303,7 @@ class TestInvertGitPatches(unittest.TestCase):
 
   def test_get_inverted_patch_for_svn_failure(self):
     try:
-      invert_git_patches = invert_patches.InvertGitPatches(
+      _ = invert_patches.InvertGitPatches(
           patch_text=self.SVN_PATCH_TEXT,
           filename='file100')
       self.fail('Expected failure due to unsupported SVN patch.')

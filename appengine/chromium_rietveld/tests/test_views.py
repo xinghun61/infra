@@ -97,7 +97,7 @@ class TestPublish(TestCase):
       raise models.FetchError()
     cmt1.patch_key.get().get_content = raise_err
     cmt2.patch_key.get().get_patched_content = lambda: content2
-    tbd, comments = views._get_draft_comments(request, self.issue)
+    _, comments = views._get_draft_comments(request, self.issue)
     self.assertEqual(len(comments), 2)
     # Try to render draft details using the patched Comment
     # instances from here.
@@ -168,9 +168,9 @@ class TestModifierCount(TestCase):
       " void Layer::PushPropertiesTo(LayerImpl* layer) {\n") % (
       (self.line_count(add_lines),
        self.line_count(remove_lines)))
-    for i in range(0, remove_lines):
+    for _ in xrange(remove_lines):
       patch += "-base::Passed(&original_request)));\n"
-    for i in range(0, add_lines):
+    for _ in xrange(add_lines):
       patch += "+base::Passed(&new_request)));\n"
 
     return patch

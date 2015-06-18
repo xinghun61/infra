@@ -35,7 +35,7 @@ class TestCase(_TestCase):
   _saved = None
 
   def _fixture_setup(self):  # defined in django.test.TestCase
-    self.testbed = testbed.Testbed()
+    self.testbed = testbed.Testbed()  # pylint: disable=W0201
     self.testbed.activate()
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
