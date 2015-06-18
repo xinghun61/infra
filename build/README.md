@@ -21,6 +21,12 @@ A package is defined in a *.yaml file with the following structure:
 package: infra/example/package
 # Human readable description of the package.
 description: Example package
+# Optional list of Buildbot CI builders to build this package on. If not
+# specified the package will be build on all CI builders. When build.py script
+# is invoked manually (without --builder flag), this property is ignored.
+builders:
+  - infra-continuous-precise-64
+  - ...
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml
 # file itself.
@@ -93,7 +99,7 @@ artifacts are installed in `GOBIN` (which is go/bin).
 
 You can also pass one or more *.yaml file names to build only specific packages:
 
-    build.py infra_python.yaml cipd_client.yaml
+    build.py infra_python cipd_client
 
 
 Verifying a package
@@ -105,7 +111,7 @@ build.py as well). For example, to rebuild and install infra_python.cipd into
 
     cd infra.git/
     rm -rf install_dir
-    ./build/build.py infra_python.yaml
+    ./build/build.py infra_python
     ./go/bin/cipd pkg-deploy -root=install_dir build/out/infra_python.cipd
     cd install_dir
 
@@ -128,8 +134,8 @@ Basically test_package.py does the following:
 
 Thus to test that infra_python.cipd package works, one can do the following:
 
-    ./build/build.py infra_python.yaml
-    ./build/test_packages.py infra_python.cipd
+    ./build/build.py infra_python
+    ./build/test_packages.py infra_python
 
 test_packages.py is used on CI builders to verify packages look good before
 uploading them.

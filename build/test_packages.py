@@ -108,6 +108,9 @@ def run(
         raise TestException('No such package file: %s' % name)
       paths.append(abs_path)
   paths = sorted(paths)
+  if not paths:
+    print 'Nothing to test.'
+    return 0
 
   # Run all tests sequentially. There're like 2 of them tops.
   nuke_temp = False
@@ -163,7 +166,7 @@ def main(
       package_out_dir,
       package_tests_dir,
       args.work_dir,
-      args.packages)
+      [n + '.cipd' if not n.endswith('.cipd') else n for n in args.packages])
 
 
 if __name__ == '__main__':

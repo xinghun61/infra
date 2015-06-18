@@ -167,6 +167,36 @@ def enumerate_packages_to_build(package_def_dir, package_def_files=None):
   return sorted(paths)
 
 
+def read_yaml(py_venv, path):
+  """Returns content of YAML file as python dict."""
+  # YAML lib is in venv, not activated here. Go through hoops.
+  oneliner = (
+      'import json, sys, yaml; '
+      'json.dump(yaml.safe_load(sys.stdin), sys.stdout)')
+  if sys.platform == 'win32':
+    python_venv_path = ('Scripts', 'python.exe')
+  else:
+    python_venv_path = ('bin', 'python')
+  proc = subprocess.Popen(
+      ['python', '-c', oneliner],
+      executable=os.path.join(py_venv, *python_venv_path),
+      stdin=subprocess.PIPE,
+      stdout=subprocess.PIPE)
+  with open(path, 'r') as f:
+    out, _ = proc.communicate(f.read())
+  if proc.returncode:
+    raise BuildException('Failed to parse YAML at %s' % path)
+  return json.loads(out)
+
+
+def should_process_on_builder(pkg_def_file, py_venv, builder):
+  """Returns True if package should be processed by current CI builder."""
+  if not builder:
+    return True
+  builders = read_yaml(py_venv, pkg_def_file).get('builders')
+  return not builders or builder in builders
+
+
 def get_package_vars():
   """Returns a dict with variables that describe the current environment.
 
@@ -295,8 +325,10 @@ def upload_pkg(go_workspace, pkg_file, service_url, tags, service_account):
 
 
 def run(
+    py_venv,
     go_workspace,
     build_callback,
+    builder,
     package_def_dir,
     package_out_dir,
     package_def_files,
@@ -309,8 +341,10 @@ def run(
   """Rebuild python and Go universes and CIPD packages.
 
   Args:
+    py_venv: path to 'infra/ENV' or 'infra_internal/ENV'.
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
     build_callback: called to build binaries, virtual environment, etc.
+    builder: name of CI buildbot builder that invoked the script.
     package_def_dir: path to build/packages dir to search for *.yaml.
     package_out_dir: where to put built packages.
     package_def_files: names of *.yaml files in package_def_dir or [] for all.
@@ -326,18 +360,31 @@ def run(
   """
   assert build or upload, 'Both build and upload are False, nothing to do'
 
-  packages_to_build = enumerate_packages_to_build(
-      package_def_dir, package_def_files)
-  package_vars = get_package_vars()
+  # Remove stale output so that test_packages.py do not test old files when
+  # invoked without arguments.
+  if build:
+    for path in glob.glob(os.path.join(package_out_dir, '*.cipd')):
+      os.remove(path)
+
+  packages_to_build = [
+    p for p in enumerate_packages_to_build(package_def_dir, package_def_files)
+    if should_process_on_builder(p, py_venv, builder)
+  ]
 
   print_title('Overview')
   print 'Service URL: %s' % service_url
   print
-  print 'Package definition files to process:'
+  if builder:
+    print 'Package definition files to process on %s:' % builder
+  else:
+    print 'Package definition files to process:'
   for pkg_def_file in packages_to_build:
-    print ' %s' % os.path.basename(pkg_def_file)
+    print '  %s' % os.path.basename(pkg_def_file)
+  if not packages_to_build:
+    print '  <none>'
   print
   print 'Variables to pass to CIPD:'
+  package_vars = get_package_vars()
   for k, v in sorted(package_vars.items()):
     print '  %s = %s' % (k, v)
   if tags:
@@ -345,12 +392,16 @@ def run(
     print 'Tags to attach to uploaded packages:'
     for tag in sorted(tags):
       print '  %s' % tag
+  if not packages_to_build:
+    print
+    print 'Nothing to do.'
+    return 0
 
   # Build the world.
   if build:
     build_callback()
 
-  # Package  it.
+  # Package it.
   failed = []
   succeeded = []
   for pkg_def_file in packages_to_build:
@@ -410,6 +461,7 @@ def build_infra():
 def main(
     args,
     build_callback=build_infra,
+    py_venv=os.path.join(ROOT, 'ENV'),
     go_workspace=os.path.join(ROOT, 'go'),
     package_def_dir=os.path.join(ROOT, 'build', 'packages'),
     package_out_dir=os.path.join(ROOT, 'build', 'out')):
@@ -423,6 +475,9 @@ def main(
   parser.add_argument(
       '--no-rebuild',  action='store_false', dest='build', default=True,
       help='when used with --upload means upload existing *.cipd files')
+  parser.add_argument(
+      '--builder', metavar='NAME', type=str,
+      help='Name of the CI buildbot builder that invokes this script.')
   parser.add_argument(
       '--service-url', metavar='URL', dest='service_url',
       default=PACKAGE_REPO_SERVICE,
@@ -440,11 +495,13 @@ def main(
   if not args.build and not args.upload:
     parser.error('--no-rebuild doesn\'t make sense without --upload')
   return run(
+      py_venv,
       go_workspace,
       build_callback,
+      args.builder,
       package_def_dir,
       package_out_dir,
-      args.yamls,
+      [n + '.yaml' if not n.endswith('.yaml') else n for n in args.yamls],
       args.build,
       args.upload,
       args.service_url,

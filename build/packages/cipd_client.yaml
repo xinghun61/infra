@@ -1,5 +1,9 @@
 package: infra/tools/cipd/${platform}
 description: CIPD client binary.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
 root: ../../go/bin
 data:
   - file: cipd${exe_suffix}
