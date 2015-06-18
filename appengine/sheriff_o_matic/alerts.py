@@ -215,11 +215,7 @@ class AlertsHandler(webapp2.RequestHandler):
     return alerts
 
   def update_alerts(self, alerts_type):
-    if self.request.headers.get('Content-Encoding') == 'gzip':
-      LOGGER.info('Data was received gzipped.')
-      content = json.loads(self.request.body).get('content')
-    else:
-      content = self.request.get('content')
+    content = json.loads(self.request.body).get('content')
     alerts = self.parse_alerts(content)
 
     if alerts:
