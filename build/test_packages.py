@@ -129,7 +129,11 @@ def run(
             package=path,
             work_dir=os.path.join(work_dir, name),
             test_script=test_script)
+        print ''
+        print 'PASS'
       except TestException as exc:
+        print >> sys.stderr, ''
+        print >> sys.stderr, 'FAILED! ' * 10
         print >> sys.stderr, 'Tests for %s failed: %s' % (name, exc)
         fail = True
     return 1 if fail else 0

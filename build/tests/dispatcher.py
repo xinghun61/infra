@@ -15,7 +15,8 @@ EXE_SUFFIX = '.exe' if sys.platform == 'win32' else ''
 
 def main():
   dispatcher = os.path.join(os.getcwd(), 'dispatcher' + EXE_SUFFIX)
-  return subprocess.call([dispatcher, '-h'], executable=dispatcher)
+  ok = subprocess.call([dispatcher, '-h'], executable=dispatcher) == 2
+  return 0 if ok else 1
 
 
 if __name__ == '__main__':
