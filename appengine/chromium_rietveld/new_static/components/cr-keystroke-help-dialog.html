@@ -1,0 +1,185 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../common/cr-dialog.html">
+<link rel="import" href="../common/cr-toolbar.html">
+
+<polymer-element name="cr-keystroke-help-dialog">
+    <template>
+        <link rel="stylesheet" href="../common/common.css">
+        <style>
+            dialog {
+                background-color: rgba(0, 0, 0, .85);
+                border-radius: 10px;
+                color: white;
+                padding: 1em;
+                font-size: 1.1em;
+            }
+
+            h1 {
+                color: white;
+                text-align: center;
+                padding-bottom: 4px;
+                border-bottom: 1px solid white;
+                margin-bottom: 1em;
+            }
+
+            .column {
+                display: inline-block;
+                width: 24em;
+                padding: 0 1em;
+                vertical-align: top;
+            }
+
+            table {
+                margin-bottom: 1em;
+            }
+
+            .keys {
+                width: 6em;
+                text-align: right;
+                white-space: nowrap;
+                vertical-align: top;
+            }
+
+            .colon {
+                margin: 0 .3em;
+                text-align: center;
+                vertical-align: top;
+            }
+
+            .description {
+                white-space: nowrap;
+            }
+
+            .view {
+                white-space: nowrap;
+                color: #dd0;
+                font-size: 1.2em;
+                font-weight: bold;
+            }
+
+            .key {
+                font-weight: bold;
+                font-family: monospace;
+                color: #dd0;
+                margin: 0 .2em;
+            }
+
+        </style>
+
+        <dialog is="cr-dialog" id="dialog" on-cancel="{{ cancel }}">
+            <h1>Keyboard shortcuts</h1>
+
+            <div class="column">
+                <table>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td class="view">Diffs</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">n</span> / <span class="key">p</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Go to next / previous diff chunk</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">N</span> / <span class="key">P</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Go to next / previous comment</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">Down</span> / <span class="key">Up</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Go to next / previous line<br>Shift to go to lines with comments</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">Enter</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Respond to / edit current comment</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">m</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Open publish dialog</td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="keys"></td>
+                        <td class="colon"></td>
+                        <td class="view">Issue lists</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">j</span> / <span class="key">k</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Select next / previous issue</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">o</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Open selected issue</td>
+                     </tr>
+                </table>
+
+            </div>
+
+            <div class="column">
+                <table>
+                    <tr>
+                        <td class="keys"></td>
+                        <td class="colon"></td>
+                        <td class="view">Issue</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">e</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Expand all in-line diffs</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">j</span> / <span class="key">k</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Select next / previous file</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">o</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Open single-file diff view</td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="keys"></td>
+                        <td class="colon"></td>
+                        <td class="view">Single-file diff view</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">j</span> / <span class="key">k</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Go to next / previous file</td>
+                    </tr>
+                    <tr>
+                        <td class="keys"><span class="key">u</span></td>
+                        <td class="colon">:</td>
+                        <td class="description">Go up to issue</td>
+                    </tr>
+                </table>
+            </div>
+
+
+        </dialog>
+    </template>
+    <script>
+        Polymer({
+            showModal: function() {
+                this.$.dialog.showModal();
+            },
+            close: function() {
+                this.$.dialog.close();
+            },
+        });
+    </script>
+</polymer-element>

@@ -43,10 +43,13 @@ found in the LICENSE file. -->
 <script src="../model/user_settings.js"></script>
 
 <link rel="import" href="../common/cr-action.html">
+<link rel="import" href="../common/cr-keyboard.html">
 <link rel="import" href="../common/cr-title-handler.html">
 <link rel="import" href="../common/cr-view-handler.html">
 
 <link rel="import" href="../views/cr-file-view.html">
+<link rel="import" href="../components/cr-keystroke-help-dialog.html">
+
 <link rel="import" href="../views/cr-inbox-view.html">
 <link rel="import" href="../views/cr-issue-view.html">
 <link rel="import" href="../views/cr-search-view.html">
@@ -156,7 +159,12 @@ found in the LICENSE file. -->
             <app-route path="/:issueId/revert" element="cr-issue-view"></app-route>
             <app-route path="/\d+\/diff\/\d+\/.*/" regex element="cr-file-view"></app-route>
             <app-route path="/\d+\/patch\/\d+\/\d+/" regex element="cr-file-view"></app-route>
-        </cr-view>
+        </app-router>
+
+        <div id="dialogs"></div>
+
+        <cr-keyboard on-key-question-mark="{{ handleKeystrokeHelpKey }}"
+                     global></cr-keyboard>
     </template>
     <script>
         Polymer({
@@ -184,6 +192,21 @@ found in the LICENSE file. -->
             },
             handleLogin: function() {
                 location.href = User.getLoginUrl();
+            },
+            showDialog: function(dialog) {
+                this.$.dialogs.appendChild(dialog);
+                dialog.addEventListener("close", function() {
+                    dialog.remove();
+                });
+                dialog.showModal();
+            },
+            showKeystrokeHelpDialog: function() {
+                var dialog = document.createElement("cr-keystroke-help-dialog");
+                this.showDialog(dialog);
+            },
+            handleKeystrokeHelpKey: function(event) {
+                event.preventDefault();
+                this.showKeystrokeHelpDialog();
             },
         });
     </script>
