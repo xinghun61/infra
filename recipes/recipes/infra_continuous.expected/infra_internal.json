@@ -88,7 +88,9 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/build/build.py"
+      "[SLAVE_BUILD]/infra_internal/build/build.py",
+      "--builder",
+      "infra-internal-continuous"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "cipd - build packages"
@@ -115,6 +117,8 @@
       "/creds/service_accounts/service-account-cipd-builder.json",
       "--json-output",
       "/path/to/tmp/json",
+      "--builder",
+      "infra-internal-continuous",
       "--tags",
       "buildbot_build:internal.infra/infra-internal-continuous/123",
       "git_repository:https://chrome-internal.googlesource.com/infra/infra_internal",

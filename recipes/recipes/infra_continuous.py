@@ -24,7 +24,8 @@ def build_cipd_packages(api, repo, rev):
   # Build packages locally.
   api.python(
       'cipd - build packages',
-      api.path['checkout'].join('build', 'build.py'))
+      api.path['checkout'].join('build', 'build.py'),
+      ['--builder', api.properties.get('buildername')])
 
   # Verify they are good.
   api.python(
@@ -54,6 +55,7 @@ def build_cipd_packages(api, repo, rev):
           '--upload',
           '--service-account-json', CIPD_BUILDER_CREDS,
           '--json-output', api.json.output(),
+          '--builder', api.properties.get('buildername'),
         ] + ['--tags'] + tags)
   finally:
     step_result = api.step.active_result
