@@ -150,7 +150,7 @@ def get_self_hostname():
 
 
 @ndb.tasklet
-def get_builds_for_patchset_async(project, issue_id, patchset_id):
+def get_builds_for_patchset_async(issue_id, patchset_id):
   """Queries BuildBucket for builds associated with the patchset.
 
   Requests for max 500 builds and does not check "next_cursor". Currently if
@@ -166,9 +166,6 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
         'Preferred domain name for this app is not set. '
         'See PREFERRED_DOMAIN_NAMES in settings.py: %r', hostname)
     raise ndb.Return([])
-  # Hack for webrtc (see also http://crbug.com/501332#c25).
-  if project == 'webrtc':
-    hostname = 'codereview.webrtc.org'
 
   buildset_tag = BUILDSET_TAG_FORMAT.format(
       hostname=hostname,
@@ -197,9 +194,9 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
 
 
 @ndb.tasklet
-def get_try_job_results_for_patchset_async(project, issue_id, patchset_id):
+def get_try_job_results_for_patchset_async(issue_id, patchset_id):
   """Returns try job results stored on buildbucket."""
-  builds = yield get_builds_for_patchset_async(project, issue_id, patchset_id)
+  builds = yield get_builds_for_patchset_async(issue_id, patchset_id)
   results = []
   for build in builds:
     try_job_result = BuildbucketTryJobResult.from_build(build)

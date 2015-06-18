@@ -181,8 +181,7 @@ class BuildbucketFunctionsTest(TestCase):
       ]
     }
     self.fake_responses = [response_data]
-    actual_builds = buildbucket.get_builds_for_patchset_async(
-        'project', 1, 2).get_result()
+    actual_builds = buildbucket.get_builds_for_patchset_async(1, 2).get_result()
     self.assertEqual(actual_builds, response_data['builds'])
 
 

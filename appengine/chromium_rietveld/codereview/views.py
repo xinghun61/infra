@@ -1806,10 +1806,9 @@ def get_patchset_try_job_results(patchset):
   builds that have same buildbucket build id.
   """
   # Fetch try job results from NDB and Buildbucket in parallel.
-  issue = patchset.issue_key.get()
   buildbucket_results_future = (
       buildbucket.get_try_job_results_for_patchset_async(
-          issue.project, patchset.issue_key.id(), patchset.key.id()))
+          patchset.issue_key.id(), patchset.key.id()))
   local_try_job_results = patchset.try_job_results
 
   try_job_results = []
