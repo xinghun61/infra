@@ -1,0 +1,6 @@
+package: infra/monitoring/dispatcher/${platform}
+description: dispatcher binary.
+root: ../../go/bin
+data:
+  - file: dispatcher${exe_suffix}
+# TODO: also gatekeeper config etc
