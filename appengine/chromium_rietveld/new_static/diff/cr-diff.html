@@ -44,33 +44,40 @@ found in the LICENSE file. -->
                 this.hideDiff();
                 this.showDiff();
             },
+            addDraft: function(row) {
+                var messages = row.nextSibling;
+                if (!messages || messages.localName != "cr-diff-messages") {
+                    messages = document.createElement("cr-diff-messages");
+                    messages.file = this.file;
+                    row.parentNode.insertBefore(messages, row.nextSibling);
+                }
+                var numbers = row.querySelectorAll(".line-number").array();
+                var lineNumber;
+                var side;
+                // TODO(esprehn): Need a better way to do this. For now we
+                // pretend there's two numbers in side-by-side mode.
+                if (this.mode == "side-by-side")
+                    numbers.push(numbers[0]);
+                if (row.classList.contains("remove")) {
+                    lineNumber = numbers[0].getAttribute("value").toNumber();
+                    side = "before";
+                } else {
+                    lineNumber = numbers[1].getAttribute("value").toNumber();
+                    side = "after";
+                }
+                messages.addDraft(side, lineNumber);
+            },
             handleTap: function(event) {
                 var element = event.target;
-                if (User.current && element.classList.contains("line-number")) {
-                    var row = element.parentNode;
-                    var messages = row.nextSibling;
-                    if (!messages || messages.localName != "cr-diff-messages") {
-                        messages = document.createElement("cr-diff-messages");
-                        messages.file = this.file;
-                        row.parentNode.insertBefore(messages, row.nextSibling);
-                    }
-                    var numbers = row.querySelectorAll(".line-number").array();
-                    var lineNumber;
-                    var side;
-                    // TODO(esprehn): Need a better way to do this. For now we
-                    // pretend there's two numbers in side-by-side mode.
-                    if (this.mode == "side-by-side")
-                        numbers.push(numbers[0]);
-                    if (row.classList.contains("remove")) {
-                        lineNumber = numbers[0].getAttribute("value").toNumber();
-                        side = "before";
-                    } else {
-                        lineNumber = numbers[1].getAttribute("value").toNumber();
-                        side = "after";
-                    }
-                    messages.addDraft(side, lineNumber);
-                } else if (element.classList.contains("show-context")) {
+                if (element.classList.contains("show-context")) {
                     this.showContext(element.line, element.section);
+                } else {
+                    if (element.tagName == "A")
+                        element = element.parentNode;
+                    if (User.current && element.classList.contains("line-number")) {
+                        var row = element.parentNode;
+                        this.addDraft(row);
+                    }
                 }
             },
             showDiff: function() {
@@ -86,6 +93,7 @@ found in the LICENSE file. -->
                         return;
                     var builder = self.createDiffBuilder();
                     builder.emitDiff(diff);
+                    self.asyncFire("diff-shown");
                 }).catch(function(e) {
                     self.loading = false;
                     self.active = false;
@@ -97,6 +105,7 @@ found in the LICENSE file. -->
                     return Promise.resolve(this);
                 this.active = false;
                 this.$.output.innerHTML = "";
+                this.asyncFire("diff-hidden");
                 return Promise.resolve(this);
             },
             showContext: function(line, section) {
@@ -107,6 +116,7 @@ found in the LICENSE file. -->
                     var builder = self.createDiffBuilder();
                     builder.emitGroup(group, section);
                     section.remove();
+                    self.asyncFire("context-shown");
                 }).catch(function(e) {
                     console.log(e);
                 });

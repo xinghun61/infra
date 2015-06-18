@@ -6,6 +6,7 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-view-handler.html">
 <link rel="import" href="../diff/cr-diff.html">
 <link rel="import" href="../diff/cr-diff-controls.html">
+<link rel="import" href="../diff/cr-diff-cursor.html">
 
 <polymer-element name="cr-file-view">
     <template>
@@ -136,10 +137,14 @@ found in the LICENSE file. -->
             <p>Failed to load. :(</p>
         </template>
 
-        <cr-diff id="diff" file="{{ file }}" mode="{{ mode }}"></cr-diff>
+        <cr-diff id="diff" file="{{ file }}" mode="{{ mode }}"
+                 on-diff-shown="{{ handleDiffViewAltered }}"
+                 on-context-shown="{{ handleDiffViewAltered }}"
+                 ></cr-diff>
 
         <div id="dialogs"></div>
 
+        <cr-diff-cursor id="diffCursor"></cr-cursor-manager>
         <cr-keyboard on-key-m="{{ handlePublish }}"
                      on-key-j="{{ handleNext }}"
                      on-key-k="{{ handlePrevious }}"
@@ -246,6 +251,9 @@ found in the LICENSE file. -->
                 this.asyncFire("navigate", {
                     url: "/" + this.issueId,
                 });
+            },
+            handleDiffViewAltered: function(event) {
+                this.$.diffCursor.resetStops();
             },
         });
     </script>

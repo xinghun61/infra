@@ -105,7 +105,12 @@ found in the LICENSE file. -->
             .issue.cursor-target > .issue-data {
                 background-color: rgba(0, 0, 200, .1);
             }
+
+            .cursor-focus:focus {
+                outline: none;
+            }
         </style>
+
         <div class="issues">
             <template repeat="{{ issue in issues }}">
                 <a href="/{{ issue.id }}" class="issue {{ {updated: issue.recentActivity && showRecentActivity} | tokenList }}">

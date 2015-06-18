@@ -112,6 +112,10 @@ textarea.invalid {
     border: 1px solid #DD4B39;
 }
 
+.cursor-focus:focus {
+    outline: none;
+}
+
 cr-toolbar > [is=cr-button] {
     margin-right: 16px;
 }

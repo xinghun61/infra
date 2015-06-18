@@ -35,7 +35,8 @@ found in the LICENSE file. -->
      used to find cursor stops and the CSS class to add to the target element.
 -->
 
-<polymer-element name="cr-cursor-manager" attributes="target stopSelector targetClassName">
+<polymer-element name="cr-cursor-manager"
+                 attributes="target stopSelector focusSelector targetClassName">
     <template>
       <style>
           :host { display: none; }
@@ -46,8 +47,10 @@ found in the LICENSE file. -->
         Polymer({
             created: function() {
                 this.target = null;
+                this.focusable = null;  // Usually an <a> element inside target.
                 this.targetIndex = -1;
                 this.stopSelector = "* /deep/ .cursor-stop";
+                this.focusSelector = "* /deep/ a";
                 this.targetClassName = "cursor-target";
                 this.stops = null;
             },
@@ -70,11 +73,37 @@ found in the LICENSE file. -->
                 if (newEl)
                     newEl.classList.add(this.targetClassName);
                 newEl.scrollIntoViewIfNeeded();
+                if (this.focusable) {
+                    this.focusable.classList.remove('cursor-focus');
+                }
+                if (this.focusSelector.length)
+                    this.focusable = newEl.querySelector(this.focusSelector);
+                else
+                    this.focusable = this.target;
+                if (this.focusable) {
+                    this.focusable.focus();
+                    this.focusable.classList.add('cursor-focus');
+                }
             },
-            moveTargetIndex: function(delta) {
+            findNewIndex: function(delta, condition) {
+                var newIndex = this.targetIndex + delta;
+                if (typeof(condition) == "string") {
+                   while (this.stops[newIndex] &&
+                          !(this.stops[newIndex].classList.contains(condition) ||
+                            this.stops[newIndex].localName == condition))
+                       newIndex += delta;
+                } else if (condition instanceof Function) {
+                   while (this.stops[newIndex] &&
+                          !condition.call(this, this.stops[newIndex], this.target))
+                       newIndex += delta;
+                }
+                return newIndex;
+            },
+            moveTargetIndex: function(event, delta, condition) {
+                var oldTarget = this.target;
                 if (this.stops === null)
                     this.findStops();
-                var newIndex = this.targetIndex + delta;
+                var newIndex = this.findNewIndex(delta, condition);
                 if (newIndex < 0)
                     this.fire("before-first-stop");
                 else if (newIndex >= this.stops.length)
@@ -83,22 +112,21 @@ found in the LICENSE file. -->
                     this.targetIndex = newIndex;
                     this.target = this.stops[newIndex];
                 }
-            },
-            next: function(event) {
-                if (event)
+                if (oldTarget !== this.target)
                     event.preventDefault();
-                this.moveTargetIndex(1);
             },
-            previous: function(event) {
-                if (event)
+            next: function(event, condition) {
+                this.moveTargetIndex(event, 1, condition);
+            },
+            previous: function(event, condition) {
+                this.moveTargetIndex(event, -1, condition);
+            },
+            open: function(event, href) {
+                href = href || this.target.href;
+                if (this.target && href) {
                     event.preventDefault();
-                this.moveTargetIndex(-1);
-            },
-            open: function(event) {
-                event.preventDefault();
-                if (this.target && this.target.href) {
                     this.asyncFire("navigate", {
-                        url: this.target.href
+                        url: href
                     });
                 }
             },

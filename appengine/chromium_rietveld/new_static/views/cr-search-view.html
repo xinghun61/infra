@@ -139,6 +139,8 @@ found in the LICENSE file. -->
                            ></cr-cursor-manager>
         <cr-keyboard on-key-j="{{ handleNextIssueKey }}"
                      on-key-k="{{ handlePreviousIssueKey }}"
+                     on-key-down="{{ handleNextIssueKey }}"
+                     on-key-up="{{ handlePreviousIssueKey }}"
                      on-key-o="{{ handleOpenTargetIssueKey }}"
                      global></cr-keyboard>
         <cr-keyboard on-key-enter="{{ handleEnterKey }}"></cr-keyboard>

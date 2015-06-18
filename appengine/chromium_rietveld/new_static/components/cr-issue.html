@@ -5,10 +5,10 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-butterbar.html">
 <link rel="import" href="../common/cr-button.html">
-<link rel="import" href="../common/cr-cursor-manager.html">
 <link rel="import" href="../common/cr-keyboard.html">
 <link rel="import" href="../common/cr-toolbar.html">
 <link rel="import" href="../common/cr-view-handler.html">
+<link rel="import" href="../diff/cr-diff-cursor.html">
 <link rel="import" href="../linkify/cr-linkified-text.html">
 <link rel="import" href="cr-issue-discard-drafts-dialog.html">
 <link rel="import" href="cr-issue-edit-dialog.html">
@@ -103,6 +103,9 @@ found in the LICENSE file. -->
         <cr-issue-patchsets id="patchsets" patchsets="{{ issue.patchsets }}"
                             on-expanded="{{ handlePatchsetToggled }}"
                             on-collapsed="{{ handlePatchsetToggled }}"
+                            on-diff-shown="{{ handleDiffViewAltered }}"
+                            on-diff-hidden="{{ handleDiffViewAltered }}"
+                            on-context-shown="{{ handleDiffViewAltered }}"
                             ></cr-issue-patchsets>
 
         <template if="{{ issue.messages.length }}">
@@ -119,12 +122,13 @@ found in the LICENSE file. -->
 
         <div id="dialogs"></div>
 
-        <cr-cursor-manager id="cursorManager"
-                           stopSelector="* /deep/ cr-issue-patchfile"
-                           ></cr-cursor-manager>
+        <cr-diff-cursor id="diffCursor"></cr-cursor-manager>
         <cr-keyboard on-key-m="{{ handlePublishKey }}"
                      on-key-j="{{ handleNextPatchKey }}"
                      on-key-k="{{ handlePreviousPatchKey }}"
+                     on-key-o="{{ handleOpenTargetPatchKey }}"
+                     on-key-right="{{ handleShowTargetPatchKey }}"
+                     on-key-left="{{ handleHideTargetPatchKey }}"
                      global></cr-keyboard>
     </template>
     <script>
@@ -284,13 +288,35 @@ found in the LICENSE file. -->
                 });
             },
             handlePatchsetToggled: function(event) {
-                this.$.cursorManager.resetStops();
+                this.$.diffCursor.resetStops();
             },
             handleNextPatchKey: function(event) {
-                this.$.cursorManager.next(event);
+                this.$.diffCursor.next(event, "cr-issue-patchfile");
             },
             handlePreviousPatchKey: function(event) {
-                this.$.cursorManager.previous(event);
+                this.$.diffCursor.previous(event, "cr-issue-patchfile");
+            },
+            handleOpenTargetPatchKey: function(event) {
+                var target = this.$.diffCursor.target;
+                if (target && target.file)
+                    this.$.diffCursor.open(event, target.file.getSingleViewUrl());
+            },
+            handleShowTargetPatchKey: function(event) {
+                if (this.$.diffCursor.target && this.$.diffCursor.target.showDiff) {
+                    this.$.diffCursor.target.showDiff();
+                } else {
+                    this.$.diffCursor.handleMoveToRightColumn(event);
+                }
+            },
+            handleHideTargetPatchKey: function(event) {
+                if (this.$.diffCursor.target && this.$.diffCursor.target.hideDiff) {
+                    this.$.diffCursor.target.hideDiff();
+                } else {
+                    this.$.diffCursor.handleMoveToLeftColumn(event);
+                }
+            },
+            handleDiffViewAltered: function(event) {
+                this.$.diffCursor.resetStops();
             },
             hasBeenSent: function(issue) {
                 return issue.hasBeenSent();

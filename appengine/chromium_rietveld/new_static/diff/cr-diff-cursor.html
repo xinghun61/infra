@@ -1,0 +1,128 @@
+<!-- Copyright (c) 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../common/cr-cursor-manager.html">
+<link rel="import" href="../common/cr-keyboard.html">
+
+<polymer-element name="cr-diff-cursor" attributes="target">
+    <template>
+        <cr-cursor-manager id="cursorManager"
+                           stopSelector="* /deep/ cr-issue-patchfile, * /deep/ #output .row"
+                           target="{{ target }}"
+                           ></cr-cursor-manager>
+        <cr-keyboard on-key-n="{{ handleNextDeltaKey }}"
+                     on-key-p="{{ handlePreviousDeltaKey }}"
+                     on-key-down="{{ handleNextLineKey }}"
+                     on-key-up="{{ handlePreviousLineKey }}"
+                     on-key-right="{{ handleMoveToRightColumn }}"
+                     on-key-left="{{ handleMoveToLeftColumn }}"
+                     global></cr-keyboard>
+    </template>
+    <script>
+        Polymer({
+            publish: {
+                target: {
+                    type: Element,
+                },
+            },
+            created: function() {
+                this.patchsetSelector = "";
+                this.target = null;
+                this.wrongSide = "left";
+            },
+            resetStops: function() {
+                this.$.cursorManager.resetStops();
+            },
+            next: function(event, condition) {
+                this.$.cursorManager.next(event, condition);
+            },
+            previous: function(event, condition) {
+                this.$.cursorManager.previous(event, condition);
+            },
+            open: function(event, href) {
+                this.$.cursorManager.open(event, href);
+            },
+            isWrongSide: function(side) {
+                if (side && side.classList.contains(this.wrongSide)) {
+                    var otherSide = side.nextElementSibling || side.previousElementSibling;
+                    var otherLine = otherSide && otherSide.firstElementChild;
+                    if (!otherLine || !otherLine.classList.contains("blank"))
+                       return true;
+                }
+                return false;
+            },
+            isFirstLineOfDelta: function(possibleTarget, currentTarget) {
+                var section = possibleTarget.parentElement;
+                while (section && !section.classList.contains("section")) {
+                    if (this.isWrongSide(section))
+                        return false;
+                    section = section.parentElement;
+                }
+                return (section && section.classList.contains("delta") &&
+                        section.firstElementChild.contains(possibleTarget));
+            },
+            isLineWithComments: function(possibleTarget, currentTarget) {
+                // Note: we do not check side when jumping to a comment line
+                var nextEl = possibleTarget.nextElementSibling;
+                return (nextEl && nextEl.localName == "cr-diff-messages");
+            },
+            handleNextDeltaKey: function(event) {
+                if (event.detail.shiftKey)
+                    this.next(event, this.isLineWithComments.bind(this));
+                else
+                    this.next(event, this.isFirstLineOfDelta.bind(this));
+            },
+            handlePreviousDeltaKey: function(event) {
+                if (event.detail.shiftKey)
+                    this.previous(event, this.isLineWithComments.bind(this));
+                else
+                    this.previous(event, this.isFirstLineOfDelta.bind(this));
+            },
+            isNotHeader: function(possibleTarget, currentTarget) {
+                if (this.isWrongSide(possibleTarget.parentElement))
+                   return false;
+                return !possibleTarget.classList.contains("header");
+            },
+            handleNextLineKey: function(event) {
+                if (event.detail.shiftKey)
+                    handled = this.next(event, this.isLineWithComments.bind(this));
+                else
+                    handled = this.next(event, this.isNotHeader.bind(this));
+            },
+            handlePreviousLineKey: function(event) {
+                if (event.detail.shiftKey)
+                    this.previous(event, this.isLineWithComments.bind(this));
+                else
+                    this.previous(event, this.isNotHeader.bind(this));
+            },
+            findCrDiff: function() {
+                var node = this.target.parentNode;
+                while (node.parentNode)
+                    node = node.parentNode;
+                return node.host;
+            },
+            handleCommentKey: function(event) {
+                if (!this.target || !this.target.classList.contains("row"))
+                    return;
+                if (!User.current)
+                    return;  // TODO(jrobbins): prompt user to sign in.
+                this.findCrDiff().addDraft(this.target);
+            },
+            handleMoveToLeftColumn: function(event) {
+                var crDiff = this.findCrDiff();
+                if (!crDiff || crDiff.mode != "side-by-side" || this.wrongSide == "right")
+                    return;
+                this.wrongSide = "right";
+                this.previous(event, this.isNotHeader.bind(this));
+            },
+            handleMoveToRightColumn: function(event) {
+                var crDiff = this.findCrDiff();
+                if (!crDiff || crDiff.mode != "side-by-side" || this.wrongSide == "left")
+                    return;
+                this.wrongSide = "left";
+                this.next(event, this.isNotHeader.bind(this));
+            },
+        });
+    </script>
+</polymer-element>

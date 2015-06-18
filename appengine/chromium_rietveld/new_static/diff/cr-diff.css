@@ -10,13 +10,10 @@
 }
 
 .header,
-.header .line-number {
+.header .line-number,
+.header .line-number a {
     color: #849;
     background-color: #fef;
-}
-
-.line-number::before {
-    content: attr(value);
 }
 
 .remove .text {
@@ -70,19 +67,23 @@
     font-family: Menlo, Monaco, monospace;
     flex-shrink: 0;
     -webkit-flex-shrink: 0;
+    box-shadow: inherit;
 }
 
 .line-number {
     min-width: 3em;
     text-align: right;
-    color: #444;
     padding-right: 16px;
     cursor: default;
 }
 
-.add .line-number:hover,
-.remove .line-number:hover,
-.both .line-number:hover {
+.line-number a {
+    color: #444;
+}
+
+.add .line-number a:hover,
+.remove .line-number a:hover,
+.both .line-number a:hover {
     text-decoration: underline;
     color: #1155CC;
     background-color: #F1F4F8;
@@ -129,6 +130,14 @@ cr-diff-messages {
 
 .side-by-side .text {
     border: none;
+}
+
+.cursor-target {
+    box-shadow: 0 -2px #00d;
+}
+
+.cursor-focus:focus {
+    outline: none;
 }
 
 @media (max-width: 600px) {
