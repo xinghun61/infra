@@ -93,5 +93,3 @@ def unify_linebreaks(text):
     A string with all line breaks converted to LF.
   """
   return text.replace('\r\n', '\n').replace('\r', '\n')
-
-

@@ -35,6 +35,7 @@ from django.conf import settings
 
 from codereview import auth_utils
 from codereview import committer_list
+from codereview import engine_utils
 from codereview import invert_patches
 from codereview import patching
 from codereview import utils
@@ -483,16 +484,14 @@ def _calculate_delta(patch, patchset_id, patchsets):
       # just parse the patchset's data.  Note we can only do this if the
       # patchset was small enough to fit in the data property.
       if other.parsed_patches is None:
-        # Late-import engine because engine imports modules.
-        from codereview import engine
-
         # PatchSet.data is stored as ndb.Blob (str). Try to convert it
         # to unicode so that Python doesn't need to do this conversion
         # when comparing text and patch.text, which is unicode.
         try:
-          other.parsed_patches = engine.SplitPatch(other.data.decode('utf-8'))
+          other.parsed_patches = engine_utils.SplitPatch(
+              other.data.decode('utf-8'))
         except UnicodeDecodeError:  # Fallback to str - unicode comparison.
-          other.parsed_patches = engine.SplitPatch(other.data)
+          other.parsed_patches = engine_utils.SplitPatch(other.data)
         other.data = None  # Reduce memory usage.
       for filename, text in other.parsed_patches:
         if filename == patch.filename:

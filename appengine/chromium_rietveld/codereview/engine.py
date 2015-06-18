@@ -24,51 +24,11 @@ from django.conf import settings
 from django.template import loader, RequestContext
 
 from codereview import auth_utils
+from codereview import engine_utils
 from codereview import intra_region_diff
 from codereview import models
 from codereview import patching
 from codereview import utils
-
-
-# NOTE: The SplitPatch function is duplicated in upload.py, keep them in sync.
-def SplitPatch(data):
-  """Splits a patch into separate pieces for each file.
-
-  Args:
-    data: A string containing the output of svn diff.
-
-  Returns:
-    A list of 2-tuple (filename, text) where text is the svn diff output
-      pertaining to filename.
-  """
-  patches = []
-  filename = None
-  diff = []
-  for line in data.splitlines(True):
-    new_filename = None
-    if line.startswith('Index:'):
-      _, new_filename = line.split(':', 1)
-      new_filename = new_filename.strip()
-    elif line.startswith('Property changes on:'):
-      _, temp_filename = line.split(':', 1)
-      # When a file is modified, paths use '/' between directories, however
-      # when a property is modified '\' is used on Windows.  Make them the same
-      # otherwise the file shows up twice.
-      temp_filename = temp_filename.strip().replace('\\', '/')
-      if temp_filename != filename:
-        # File has property changes but no modifications, create a new diff.
-        new_filename = temp_filename
-    if new_filename:
-      if filename and diff:
-        patches.append((filename, ''.join(diff)))
-      filename = new_filename
-      diff = [line]
-      continue
-    if diff is not None:
-      diff.append(line)
-  if filename and diff:
-    patches.append((filename, ''.join(diff)))
-  return patches
 
 
 def ParsePatchSet(patchset):
@@ -82,7 +42,7 @@ def ParsePatchSet(patchset):
   """
   patches = []
   ps_key = patchset.key
-  splitted = SplitPatch(patchset.data)
+  splitted = engine_utils.SplitPatch(patchset.data)
   if not splitted:
     return []
   first_id, last_id = models.Patch.allocate_ids(len(splitted), parent=ps_key)

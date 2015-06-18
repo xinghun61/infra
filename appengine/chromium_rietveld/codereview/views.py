@@ -1446,8 +1446,8 @@ def _make_new(request, form):
       patches = engine.ParsePatchSet(patchset)
     except Exception:
       # catch all exceptions happening in engine.ParsePatchSet,
-      # engine.SplitPatch. With malformed diffs a variety of exceptions could
-      # happen there.
+      # engine_utils.SplitPatch. With malformed diffs a variety of exceptions
+      # could happen there.
       logging.exception('Exception during patch parsing')
       patches = []
     if not patches:
