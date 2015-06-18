@@ -27,7 +27,7 @@ class MetricTestBase(unittest.TestCase):
   def setUp(self):
     self.fake_state = FakeState()
     self.state_patcher = mock.patch(
-        'infra_libs.ts_mon.interface._state', new=self.fake_state)
+        'infra_libs.ts_mon.interface.state', new=self.fake_state)
     self.send_patcher = mock.patch('infra_libs.ts_mon.interface.send')
 
     self.state_patcher.start()

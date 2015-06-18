@@ -31,7 +31,7 @@ class TestOuterLoop(auto_stub.TestCase):
 
   def tearDown(self):
     super(TestOuterLoop, self).tearDown()
-    interface._state.metrics = set()
+    interface.state.metrics = set()
 
   def testLongUnsuccessfulJobStillFails(self):
     ret = outer_loop.loop(lambda: self.time_mod.sleep(100),
