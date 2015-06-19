@@ -4,47 +4,79 @@
 
 import json
 import logging
-import zlib
-
-from google.appengine.api import memcache
 
 from base_handler import BaseHandler
 from base_handler import Permission
 from common.http_client_appengine import HttpClientAppengine
-from waterfall import alerts
+from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
+from waterfall import masters
 
 
+_ALERTS_SOURCE_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 _BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
 
-_MEMCACHE_ALERTS_KEY = 'FAILURE_ALERTS'
-_MEMCACHE_ALERTS_EXPIRATION_SECONDS = 60 * 60
 
+def _GetLatestBuildFailures(http_client):
+  """Returns latest build failures from alerts in Sheriff-o-Matic.
 
-def _CacheAlerts(latest_alerts):
-  compress_level = 9
-  alert_data = zlib.compress(json.dumps(latest_alerts), compress_level)
-  memcache.set(_MEMCACHE_ALERTS_KEY, alert_data,
-               _MEMCACHE_ALERTS_EXPIRATION_SECONDS)
+  Returns:
+    A list of following form:
+    [
+      {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 123,
+        'failed_steps': ['a', 'b']
+      },
+      ...
+    ]
+  """
+  status_code, content = http_client.Get(_ALERTS_SOURCE_URL, timeout_seconds=30)
+  if status_code != 200:
+    logging.error('Failed to pull alerts from Sheriff-o-Matic.')
+    return []
 
+  data = json.loads(content)
+  alerts = data.get('alerts', [])
 
-def _GetCachedAlerts():
-  alert_data = memcache.get(_MEMCACHE_ALERTS_KEY)
-  if not alert_data:  # pragma: no cover.
-    return {
-        'date': 0,
-        'build_failures': {},
-    }
+  # Explicit delete: sometimes the content pulled from SoM could be as big as
+  # ~30MB and the parsed json result as big as 150+MB.
+  del content
+  del data
 
-  return json.loads(zlib.decompress(alert_data))
+  # Alerts from Sheriff-o-Matic (indirectly from builder_alerts) are per-step,
+  # or per-test etc. But analysis of build failures by Findit is per-build.
+  # Thus use a dict to de-duplicate.
+  build_failures = {}
+  for alert in alerts:
+    master_name = buildbot.GetMasterNameFromUrl(alert['master_url'])
+    if not (master_name and masters.MasterIsSupported(master_name)):
+      continue
+
+    builder_name = alert['builder_name']
+    build_number = alert['last_failing_build']
+    key = '%s-%s-%d' % (master_name, builder_name, build_number)
+    if key not in build_failures:
+      build_failures[key] = {
+          'master_name': master_name,
+          'builder_name': builder_name,
+          'build_number': build_number,
+          'failed_steps': [alert['step_name']],
+      }
+    elif alert['step_name'] not in build_failures[key]['failed_steps']:
+      build_failures[key]['failed_steps'].append(alert['step_name'])
+
+  del alerts
+
+  return build_failures.values()
 
 
 class MonitorAlerts(BaseHandler):
   """Monitors alerts in Sheriff-O-Matic and triggers analysis automatically.
 
-  This handler is to pull the latest alerts from Sheriff-O-Matic, compare to
-  the cached alerts from last run, and then trigger analysis of new build
-  failures.
+  This handler is to pull the latest alerts from Sheriff-O-Matic, and then
+  schedule incremental analysis of new build failures if needed.
 
   It is mainly to be called by a Cron job. A logged-in admin could also trigger
   a run by navigating to the url directly.
@@ -55,30 +87,13 @@ class MonitorAlerts(BaseHandler):
   HTTP_CLIENT = HttpClientAppengine()
 
   def HandleGet(self):
-    latest_alerts = alerts.GetLatestAlerts(self.HTTP_CLIENT)
-    if not latest_alerts:  # pragma: no cover.
-      logging.warn('Failed to pull latest alerts.')
-      return
+    build_failures = _GetLatestBuildFailures(self.HTTP_CLIENT)
 
-    cached_alerts = _GetCachedAlerts()
-
-    latest_alert_date = latest_alerts['date']
-    if cached_alerts['date'] >= latest_alert_date:  # pragma: no cover.
-      logging.info('Cached alerts is up-to-date.')
-      return
-
-    latest_build_failures = alerts.GetBuildFailureAlerts(latest_alerts)
-
-    new_build_failures = alerts.GetNewFailures(
-        latest_build_failures, cached_alerts['build_failures'])
-
-    for master_name, builders in new_build_failures.iteritems():
-      for builder_name, build_number in builders.iteritems():
-        build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-            master_name, builder_name, build_number,
-            force=True, queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
-
-    _CacheAlerts({
-        'date': latest_alert_date,
-        'build_failures': latest_build_failures,
-    })
+    for build_failure in build_failures:
+      build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
+          build_failure['master_name'],
+          build_failure['builder_name'],
+          build_failure['build_number'],
+          failed_steps=build_failure['failed_steps'],
+          force=False,
+          queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
