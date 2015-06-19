@@ -20,6 +20,9 @@ var packageNameRe = regexp.MustCompile(`^([a-z0-9_\-]+/)*[a-z0-9_\-]+$`)
 // instanceTagKeyRe is a regular expression for a tag key.
 var instanceTagKeyRe = regexp.MustCompile(`^[a-z0-9_\-]+$`)
 
+// packageRefRe is a regular expression for a ref.
+var packageRefRe = regexp.MustCompile(`^[a-z0-9_\-]{1,100}$`)
+
 // Pin uniquely identifies an instance of some package.
 type Pin struct {
 	PackageName string `json:"package"`
@@ -64,6 +67,17 @@ func ValidatePin(pin Pin) error {
 	return nil
 }
 
+// ValidatePackageRef returns error if a string doesn't look like a valid ref.
+func ValidatePackageRef(r string) error {
+	if ValidateInstanceID(r) == nil {
+		return fmt.Errorf("Invalid ref name (looks like an instance ID): %q", r)
+	}
+	if !packageRefRe.MatchString(r) {
+		return fmt.Errorf("Invalid ref name: %q", r)
+	}
+	return nil
+}
+
 // ValidateInstanceTag returns error if a string doesn't look like a valid tag.
 func ValidateInstanceTag(t string) error {
 	chunks := strings.SplitN(t, ":", 2)
@@ -80,10 +94,10 @@ func ValidateInstanceTag(t string) error {
 }
 
 // ValidateInstanceVersion return error if a string doesn't look like
-// an instance ID or an instance tag.
+// an instance ID or a package ref or an instance tag.
 func ValidateInstanceVersion(v string) error {
-	if ValidateInstanceID(v) == nil || ValidateInstanceTag(v) == nil {
+	if ValidateInstanceID(v) == nil || ValidatePackageRef(v) == nil || ValidateInstanceTag(v) == nil {
 		return nil
 	}
-	return fmt.Errorf("Bad version (not an instance ID or a tag): %q", v)
+	return fmt.Errorf("Bad version (not an instance ID, a ref or a tag): %q", v)
 }

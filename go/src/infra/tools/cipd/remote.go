@@ -381,6 +381,38 @@ func (r *remoteImpl) modifyACL(packagePath string, changes []PackageACLChange) e
 	return fmt.Errorf("Unexpected reply status: %s", reply.Status)
 }
 
+func (r *remoteImpl) setRef(ref string, pin common.Pin) error {
+	if err := common.ValidatePin(pin); err != nil {
+		return err
+	}
+	endpoint, err := refEndpoint(pin.PackageName, ref)
+	if err != nil {
+		return err
+	}
+
+	var request struct {
+		InstanceID string `json:"instance_id"`
+	}
+	request.InstanceID = pin.InstanceID
+
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+	}
+	if err = r.makeRequest(endpoint, "POST", &request, &reply); err != nil {
+		return err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		return nil
+	case "PROCESSING_NOT_FINISHED_YET":
+		return &pendingProcessingError{reply.ErrorMessage}
+	case "ERROR", "PROCESSING_FAILED":
+		return errors.New(reply.ErrorMessage)
+	}
+	return fmt.Errorf("Unexpected status when moving ref: %s", reply.Status)
+}
+
 func (r *remoteImpl) attachTags(pin common.Pin, tags []string) error {
 	// Tags will be passed in the request body, not via URL.
 	endpoint, err := tagsEndpoint(pin, nil)
@@ -421,8 +453,7 @@ func (r *remoteImpl) attachTags(pin common.Pin, tags []string) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func instanceEndpoint(pin common.Pin) (string, error) {
-	err := common.ValidatePin(pin)
-	if err != nil {
+	if err := common.ValidatePin(pin); err != nil {
 		return "", err
 	}
 	params := url.Values{}
@@ -432,8 +463,7 @@ func instanceEndpoint(pin common.Pin) (string, error) {
 }
 
 func aclEndpoint(packagePath string) (string, error) {
-	err := common.ValidatePackageName(packagePath)
-	if err != nil {
+	if err := common.ValidatePackageName(packagePath); err != nil {
 		return "", err
 	}
 	params := url.Values{}
@@ -441,14 +471,25 @@ func aclEndpoint(packagePath string) (string, error) {
 	return "repo/v1/acl?" + params.Encode(), nil
 }
 
+func refEndpoint(packageName string, ref string) (string, error) {
+	if err := common.ValidatePackageName(packageName); err != nil {
+		return "", err
+	}
+	if err := common.ValidatePackageRef(ref); err != nil {
+		return "", err
+	}
+	params := url.Values{}
+	params.Add("package_name", packageName)
+	params.Add("ref", ref)
+	return "repo/v1/ref?" + params.Encode(), nil
+}
+
 func tagsEndpoint(pin common.Pin, tags []string) (string, error) {
-	err := common.ValidatePin(pin)
-	if err != nil {
+	if err := common.ValidatePin(pin); err != nil {
 		return "", err
 	}
 	for _, tag := range tags {
-		err = common.ValidateInstanceTag(tag)
-		if err != nil {
+		if err := common.ValidateInstanceTag(tag); err != nil {
 			return "", err
 		}
 	}

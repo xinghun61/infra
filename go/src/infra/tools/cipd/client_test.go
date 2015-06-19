@@ -200,6 +200,62 @@ func TestRegisterInstance(t *testing.T) {
 	})
 }
 
+func TestSetRefWhenReady(t *testing.T) {
+	Convey("SetRefWhenReady works", t, func(c C) {
+		client := mockClient(c, "", []expectedHTTPCall{
+			{
+				Method: "POST",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"ref":          []string{"some-ref"},
+				},
+				Body:  `{"instance_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`,
+				Reply: `{"status": "PROCESSING_NOT_FINISHED_YET"}`,
+			},
+			{
+				Method: "POST",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"ref":          []string{"some-ref"},
+				},
+				Body:  `{"instance_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`,
+				Reply: `{"status": "SUCCESS"}`,
+			},
+		})
+		pin := common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		err := client.SetRefWhenReady("some-ref", pin)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("SetRefWhenReady timeout", t, func(c C) {
+		calls := []expectedHTTPCall{}
+		for i := 0; i < 12; i++ {
+			calls = append(calls, expectedHTTPCall{
+				Method: "POST",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"ref":          []string{"some-ref"},
+				},
+				Body:  `{"instance_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`,
+				Reply: `{"status": "PROCESSING_NOT_FINISHED_YET"}`,
+			})
+		}
+		client := mockClient(c, "", calls)
+		pin := common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		err := client.SetRefWhenReady("some-ref", pin)
+		So(err, ShouldEqual, ErrSetRefTimeout)
+	})
+}
+
 func TestAttachTagsWhenReady(t *testing.T) {
 	Convey("AttachTagsWhenReady works", t, func(c C) {
 		client := mockClient(c, "", []expectedHTTPCall{
@@ -356,8 +412,8 @@ func TestProcessEnsureFile(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("ProcessEnsureFile bad instance ID", t, func(c C) {
-		_, err := call(c, "pkg/a 0000", nil)
+	Convey("ProcessEnsureFile bad version", t, func(c C) {
+		_, err := call(c, "pkg/a NO-A-REF", nil)
 		So(err, ShouldNotBeNil)
 	})
 

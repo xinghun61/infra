@@ -227,9 +227,44 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// RefsOptions mixin.
+
+// Refs holds an array of '-ref' command line options.
+type Refs []string
+
+func (refs *Refs) String() string {
+	// String() for empty vars used in -help output.
+	if len(*refs) == 0 {
+		return "ref"
+	}
+	return strings.Join(*refs, " ")
+}
+
+// Set is called by 'flag' package when parsing command line options.
+func (refs *Refs) Set(value string) error {
+	err := common.ValidatePackageRef(value)
+	if err != nil {
+		return err
+	}
+	*refs = append(*refs, value)
+	return nil
+}
+
+// RefsOptions defines command line arguments for commands that accept a set
+// of refs.
+type RefsOptions struct {
+	refs Refs
+}
+
+func (opts *RefsOptions) registerFlags(f *flag.FlagSet) {
+	opts.refs = []string{}
+	f.Var(&opts.refs, "ref", "a ref to point to the package instance (can be used multiple times)")
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // TagsOptions mixin.
 
-// Tags holds array of '-tag' command line options.
+// Tags holds an array of '-tag' command line options.
 type Tags []string
 
 func (tags *Tags) String() string {
@@ -253,13 +288,12 @@ func (tags *Tags) Set(value string) error {
 // TagsOptions defines command line arguments for commands that accept a set
 // of tags.
 type TagsOptions struct {
-	// Set of tags to attach to the package instance.
 	tags Tags
 }
 
 func (opts *TagsOptions) registerFlags(f *flag.FlagSet) {
 	opts.tags = []string{}
-	f.Var(&opts.tags, "tag", "tag to attach to the package instance")
+	f.Var(&opts.tags, "tag", "a tag to attach to the package instance (can be used multiple times)")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -323,6 +357,7 @@ var cmdCreate = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &createRun{}
 		c.InputOptions.registerFlags(&c.Flags)
+		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.JSONOutputOptions.registerFlags(&c.Flags)
@@ -333,6 +368,7 @@ var cmdCreate = &subcommands.Command{
 type createRun struct {
 	subcommands.CommandRunBase
 	InputOptions
+	RefsOptions
 	TagsOptions
 	ServiceOptions
 	JSONOutputOptions
@@ -342,7 +378,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 0) {
 		return 1
 	}
-	pin, err := buildAndUploadInstance(c.InputOptions, c.TagsOptions, c.ServiceOptions)
+	pin, err := buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		log.Errorf("Error while uploading the package: %s", err)
@@ -351,7 +387,7 @@ func (c *createRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
 	f, err := ioutil.TempFile("", "cipd_pkg")
 	if err != nil {
 		return common.Pin{}, err
@@ -364,7 +400,7 @@ func buildAndUploadInstance(inputOpts InputOptions, tagsOpts TagsOptions, servic
 	if err != nil {
 		return common.Pin{}, err
 	}
-	return registerInstanceFile(f.Name(), tagsOpts, serviceOpts)
+	return registerInstanceFile(f.Name(), refsOpts, tagsOpts, serviceOpts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -424,12 +460,11 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 // 'resolve' subcommand.
 
 var cmdResolve = &subcommands.Command{
-	UsageLine: "resolve [options]",
+	UsageLine: "resolve <package> [options]",
 	ShortDesc: "returns concrete package instance ID given a version",
 	LongDesc:  "Returns concrete package instance ID given a version.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &resolveRun{}
-		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
 		c.Flags.StringVar(&c.version, "version", "<version>", "package version to resolve")
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.JSONOutputOptions.registerFlags(&c.Flags)
@@ -442,15 +477,14 @@ type resolveRun struct {
 	ServiceOptions
 	JSONOutputOptions
 
-	packageName string
-	version     string
+	version string
 }
 
 func (c *resolveRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0) {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	pin, err := resolveVersion(c.packageName, c.version, c.ServiceOptions)
+	pin, err := resolveVersion(args[0], c.version, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		log.Errorf("%s", err)
@@ -466,6 +500,67 @@ func resolveVersion(packageName, version string, serviceOpts ServiceOptions) (co
 		return common.Pin{}, err
 	}
 	return client.ResolveVersion(packageName, version)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'set-ref' subcommand.
+
+var cmdSetRef = &subcommands.Command{
+	UsageLine: "set-ref <package> [options]",
+	ShortDesc: "moves a ref to point to a given version",
+	LongDesc:  "Moves a ref to point to a given version.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &setRefRun{}
+		c.Flags.StringVar(&c.version, "version", "<version>", "package version to point the ref to")
+		c.RefsOptions.registerFlags(&c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.JSONOutputOptions.registerFlags(&c.Flags)
+		return c
+	},
+}
+
+type setRefRun struct {
+	subcommands.CommandRunBase
+	RefsOptions
+	ServiceOptions
+	JSONOutputOptions
+
+	version string
+}
+
+func (c *setRefRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
+		return 1
+	}
+	if len(c.refs) == 0 {
+		log.Errorf("At least one -ref must be provided")
+		return 1
+	}
+	pin, err := setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions)
+	err = c.writeJSONOutput(&pin, err)
+	if err != nil {
+		log.Errorf("%s", err)
+		return 1
+	}
+	log.Infof("Instance: %s", pin)
+	return 0
+}
+
+func setRef(packageName, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+	client, err := serviceOpts.makeCipdClient("")
+	if err != nil {
+		return common.Pin{}, err
+	}
+	pin, err := client.ResolveVersion(packageName, version)
+	if err != nil {
+		return common.Pin{}, err
+	}
+	for _, ref := range refsOpts.refs {
+		if err = client.SetRefWhenReady(ref, pin); err != nil {
+			return common.Pin{}, err
+		}
+	}
+	return pin, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -559,7 +654,7 @@ func (l *principalsList) Set(value string) error {
 }
 
 var cmdEditACL = &subcommands.Command{
-	UsageLine: "acl-edit [options] <package subpath>",
+	UsageLine: "acl-edit <package subpath> [options]",
 	ShortDesc: "modifies package path Access Control List",
 	LongDesc:  "Modifies package path Access Control List",
 	CommandRun: func() subcommands.CommandRun {
@@ -703,7 +798,7 @@ func buildInstanceFile(instanceFile string, inputOpts InputOptions) error {
 // 'pkg-deploy' subcommand.
 
 var cmdDeploy = &subcommands.Command{
-	UsageLine: "pkg-deploy [options] <package instance file>",
+	UsageLine: "pkg-deploy <package instance file> [options]",
 	ShortDesc: "deploys a package instance file",
 	LongDesc:  "Deploys a *.cipd package instance into a site root.",
 	CommandRun: func() subcommands.CommandRun {
@@ -746,12 +841,11 @@ func deployInstanceFile(root string, instanceFile string) error {
 // 'pkg-fetch' subcommand.
 
 var cmdFetch = &subcommands.Command{
-	UsageLine: "pkg-fetch [options]",
+	UsageLine: "pkg-fetch <package> [options]",
 	ShortDesc: "fetches a package instance file from the repository",
 	LongDesc:  "Fetches a package instance file from the repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &fetchRun{}
-		c.Flags.StringVar(&c.packageName, "name", "<name>", "package name")
 		c.Flags.StringVar(&c.version, "version", "<version>", "package version to fetch")
 		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
 		c.ServiceOptions.registerFlags(&c.Flags)
@@ -763,16 +857,15 @@ type fetchRun struct {
 	subcommands.CommandRunBase
 	ServiceOptions
 
-	packageName string
-	version     string
-	outputPath  string
+	version    string
+	outputPath string
 }
 
 func (c *fetchRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0) {
+	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	err := fetchInstanceFile(c.packageName, c.version, c.outputPath, c.ServiceOptions)
+	err := fetchInstanceFile(args[0], c.version, c.outputPath, c.ServiceOptions)
 	if err != nil {
 		log.Errorf("Error while fetching the package: %s", err)
 		return 1
@@ -890,6 +983,7 @@ var cmdRegister = &subcommands.Command{
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &registerRun{}
+		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.JSONOutputOptions.registerFlags(&c.Flags)
@@ -899,6 +993,7 @@ var cmdRegister = &subcommands.Command{
 
 type registerRun struct {
 	subcommands.CommandRunBase
+	RefsOptions
 	TagsOptions
 	ServiceOptions
 	JSONOutputOptions
@@ -908,7 +1003,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1) {
 		return 1
 	}
-	pin, err := registerInstanceFile(args[0], c.TagsOptions, c.ServiceOptions)
+	pin, err := registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions)
 	err = c.writeJSONOutput(&pin, err)
 	if err != nil {
 		log.Errorf("Error while registering the package: %s", err)
@@ -917,7 +1012,7 @@ func (c *registerRun) Run(a subcommands.Application, args []string) int {
 	return 0
 }
 
-func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
 	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
 		return common.Pin{}, err
@@ -936,6 +1031,12 @@ func registerInstanceFile(instanceFile string, tagsOpts TagsOptions, serviceOpts
 	if err != nil {
 		return common.Pin{}, err
 	}
+	for _, ref := range refsOpts.refs {
+		err = client.SetRefWhenReady(ref, inst.Pin())
+		if err != nil {
+			return common.Pin{}, err
+		}
+	}
 	return inst.Pin(), nil
 }
 
@@ -948,15 +1049,16 @@ var application = &subcommands.DefaultApplication{
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 
-		// High level commands.
-		cmdCreate,
-		cmdEnsure,
-		cmdResolve,
-
 		// Authentication related commands.
 		auth.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),
 		auth.SubcommandLogin(auth.Options{Logger: log}, "auth-login"),
 		auth.SubcommandLogout(auth.Options{Logger: log}, "auth-logout"),
+
+		// High level commands.
+		cmdCreate,
+		cmdEnsure,
+		cmdResolve,
+		cmdSetRef,
 
 		// ACLs.
 		cmdListACL,
@@ -971,6 +1073,43 @@ var application = &subcommands.DefaultApplication{
 	},
 }
 
+func splitCmdLine(args []string) (cmd string, flags []string, pos []string) {
+	// No subcomand, just flags.
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		return "", args, nil
+	}
+	// Pick subcommand, than collect all positional args up to a first flag.
+	cmd = args[0]
+	firstFlagIdx := -1
+	for i := 1; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "-") {
+			firstFlagIdx = i
+			break
+		}
+	}
+	// No flags at all.
+	if firstFlagIdx == -1 {
+		return cmd, nil, args[1:]
+	}
+	return cmd, args[firstFlagIdx:], args[1:firstFlagIdx]
+}
+
+func fixFlagsPosition(args []string) []string {
+	// 'flags' package requires positional arguments to be after flags. This is
+	// very inconvenient choice, it makes commands like "set-ref" look awkward:
+	// Compare "set-ref -ref=abc -version=def package/name" to more natural
+	// "set-ref package/name -ref=abc -version=def". Reshuffle arguments to put
+	// all positional args at the end of the command line.
+	cmd, flags, positional := splitCmdLine(args)
+	newArgs := []string{}
+	if cmd != "" {
+		newArgs = append(newArgs, cmd)
+	}
+	newArgs = append(newArgs, flags...)
+	newArgs = append(newArgs, positional...)
+	return newArgs
+}
+
 func main() {
-	os.Exit(subcommands.Run(application, nil))
+	os.Exit(subcommands.Run(application, fixFlagsPosition(os.Args[1:])))
 }

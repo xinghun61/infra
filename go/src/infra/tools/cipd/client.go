@@ -61,7 +61,9 @@ const (
 
 	// CASFinalizationTimeout is how long to wait for CAS service to finalize the upload.
 	CASFinalizationTimeout = 1 * time.Minute
-	// TagAttachTimeout is how long to wait for instance to be processed when attaching tags.
+	// SetRefTimeout is how long to wait for an instance to be processed when setting a ref.
+	SetRefTimeout = 1 * time.Minute
+	// TagAttachTimeout is how long to wait for an instance to be processed when attaching tags.
 	TagAttachTimeout = 1 * time.Minute
 
 	// UserAgent is HTTP user agent string for CIPD client.
@@ -82,6 +84,8 @@ var (
 	ErrUploadSessionDied = errors.New("Upload session is unexpectedly missing")
 	// ErrNoUploadSessionID is returned by UploadToCAS if server didn't provide upload session ID.
 	ErrNoUploadSessionID = errors.New("Server didn't provide upload session ID")
+	// ErrSetRefTimeout is returned when service refuses to move a ref for a long time.
+	ErrSetRefTimeout = errors.New("Timeout while moving a ref")
 	// ErrAttachTagsTimeout is returned when service refuses to accept tags for a long time.
 	ErrAttachTagsTimeout = errors.New("Timeout while attaching tags")
 	// ErrDownloadError is returned by FetchInstance on download errors.
@@ -156,7 +160,11 @@ type Client interface {
 	// 'instance' is a package instance to register.
 	RegisterInstance(instance local.PackageInstance) error
 
-	// AttachTagsWhenReady attaches tags to an instance retrying on "not yet
+	// SetRefWhenReady moves a ref to point to a package instance, retrying on
+	// "not yet processed" responses.
+	SetRefWhenReady(ref string, pin common.Pin) error
+
+	// AttachTagsWhenReady attaches tags to an instance, retrying on "not yet
 	// processed" responses.
 	AttachTagsWhenReady(pin common.Pin, tags []string) error
 
@@ -380,6 +388,32 @@ func (client *clientImpl) RegisterInstance(instance local.PackageInstance) error
 	return nil
 }
 
+func (client *clientImpl) SetRefWhenReady(ref string, pin common.Pin) error {
+	if err := common.ValidatePackageRef(ref); err != nil {
+		return err
+	}
+	if err := common.ValidatePin(pin); err != nil {
+		return err
+	}
+	client.Logger.Infof("cipd: setting ref of %q: %q => %q", pin.PackageName, ref, pin.InstanceID)
+	deadline := client.clock.now().Add(SetRefTimeout)
+	for client.clock.now().Before(deadline) {
+		err := client.remote.setRef(ref, pin)
+		if err == nil {
+			return nil
+		}
+		if _, ok := err.(*pendingProcessingError); ok {
+			client.Logger.Warningf("cipd: package instance is not ready yet - %s", err)
+			client.clock.sleep(5 * time.Second)
+		} else {
+			client.Logger.Errorf("cipd: failed to set ref - %s", err)
+			return err
+		}
+	}
+	client.Logger.Errorf("cipd: failed set ref - deadline exceeded")
+	return ErrSetRefTimeout
+}
+
 func (client *clientImpl) AttachTagsWhenReady(pin common.Pin, tags []string) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
@@ -594,6 +628,7 @@ type remote interface {
 	finalizeUpload(sessionID string) (bool, error)
 	registerInstance(pin common.Pin) (*registerInstanceResponse, error)
 
+	setRef(ref string, pin common.Pin) error
 	attachTags(pin common.Pin, tags []string) error
 	fetchInstance(pin common.Pin) (*fetchInstanceResponse, error)
 }

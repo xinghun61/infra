@@ -62,10 +62,20 @@ func TestValidatePin(t *testing.T) {
 	})
 }
 
+func TestValidatePackageRef(t *testing.T) {
+	Convey("ValidatePackageRef works", t, func() {
+		So(ValidatePackageRef("some-ref"), ShouldBeNil)
+		So(ValidatePackageRef(""), ShouldNotBeNil)
+		So(ValidatePackageRef("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldNotBeNil)
+		So(ValidatePackageRef("good:tag"), ShouldNotBeNil)
+	})
+}
+
 func TestValidateInstanceVersion(t *testing.T) {
 	Convey("ValidateInstanceVersion works", t, func() {
 		So(ValidateInstanceVersion("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ShouldBeNil)
 		So(ValidateInstanceVersion("good:tag"), ShouldBeNil)
+		So(ValidatePackageRef("some-read"), ShouldBeNil)
 		So(ValidateInstanceVersion("BADTAG:"), ShouldNotBeNil)
 	})
 }

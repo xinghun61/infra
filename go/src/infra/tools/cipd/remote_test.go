@@ -93,6 +93,22 @@ func TestRemoteImpl(t *testing.T) {
 		return remote.modifyACL("pkgname", changes)
 	}
 
+	mockSetRef := func(c C, reply string) error {
+		remote := mockRemoteImpl(c, []expectedHTTPCall{
+			{
+				Method: "POST",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query: url.Values{
+					"package_name": []string{"pkgname"},
+					"ref":          []string{"some-ref"},
+				},
+				Body:  `{"instance_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`,
+				Reply: reply,
+			},
+		})
+		return remote.setRef("some-ref", Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+	}
+
 	mockAttachTags := func(c C, tags []string, body, reply string) error {
 		remote := mockRemoteImpl(c, []expectedHTTPCall{
 			{
@@ -475,6 +491,26 @@ func TestRemoteImpl(t *testing.T) {
 				"error_message": "Error message"
 			}`)
 		So(err, ShouldNotBeNil)
+	})
+
+	Convey("setRef SUCCESS", t, func(c C) {
+		So(mockSetRef(c, `{"status":"SUCCESS"}`), ShouldBeNil)
+	})
+
+	Convey("setRef bad ref", t, func(c C) {
+		err := mockRemoteImpl(c, nil).setRef(
+			"BAD REF",
+			Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("setRef PROCESSING_NOT_FINISHED_YET", t, func(c C) {
+		err := mockSetRef(c, `{"status":"PROCESSING_NOT_FINISHED_YET", "error_message":"Blah"}`)
+		So(err, ShouldResemble, &pendingProcessingError{message: "Blah"})
+	})
+
+	Convey("setRef ERROR", t, func(c C) {
+		So(mockSetRef(c, `{"status":"ERROR", "error_message":"Blah"}`), ShouldNotBeNil)
 	})
 
 	Convey("attachTags SUCCESS", t, func(c C) {
