@@ -58,6 +58,26 @@ header .ui-actions {
     margin: 0.5em 16px 0.5em 16px;
 }
 
+.view-depends-on-patchset {
+    margin: 0 5px 0.5em 16px;
+}
+
+#depends-on-patchset h2 {
+    margin: 0.5em 16px 0.5em 16px;
+}
+
+.view-dependent-patchsets {
+    margin: 0 5px 0.5em 16px;
+}
+
+#dependent-patchsets h2 {
+    margin: 0.5em 16px 0.5em 16px;
+}
+
+.linethrough {
+    text-decoration: line-through;
+}
+
 .spinner {
     vertical-align: middle;
     margin: 0 8px 0 8px;

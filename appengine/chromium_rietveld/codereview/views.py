@@ -78,6 +78,7 @@ from oauth2client import xsrfutil
 
 from codereview import auth_utils
 from codereview import buildbucket
+from codereview import dependency_utils
 from codereview import engine
 from codereview import library
 from codereview import models
@@ -181,6 +182,7 @@ class UploadForm(forms.Form):
   base = forms.CharField(max_length=MAX_URL, required=False)
   target_ref = forms.CharField(max_length=MAX_URL, required=False)
   cq_dry_run = forms.BooleanField(required=False)
+  depends_on_patchset = forms.CharField(required=False)
   data = forms.FileField(required=False)
   issue = forms.IntegerField(required=False)
   reviewers = forms.CharField(max_length=MAX_REVIEWERS, required=False)
@@ -1024,6 +1026,26 @@ def edit_patchset_title(request):
   return HttpResponse('OK', content_type='text/plain')
 
 
+@deco.access_control_allow_origin_star
+@deco.require_methods('POST')
+@deco.patchset_required
+@deco.json_response
+def get_depends_on_patchset(request):
+  """/<issue>/get_depends_on_patchset- The patchset this patchset depends on."""
+  response = {}
+  if request.patchset.depends_on_patchset:
+    # Verify that the depended upon issue is not closed.
+    tokens = dependency_utils.get_dependency_tokens(
+        request.patchset.depends_on_patchset)
+    depends_on_issue = models.Issue.get_by_id(int(tokens[0]))
+    if depends_on_issue and not depends_on_issue.closed:
+      response = {
+          'issue': tokens[0],
+          'patchset': tokens[1],
+      }
+  return response
+
+
 @deco.admin_required
 @deco.user_key_required
 @deco.xsrf_required
@@ -1437,8 +1459,13 @@ def _make_new(request, form):
 
   first_ps_id, _ = models.PatchSet.allocate_ids(1, parent=issue.key)
   ps_key = ndb.Key(models.PatchSet, first_ps_id, parent=issue.key)
+  depends_on_patchset = (
+      dependency_utils.mark_as_dependent_and_get_dependency_str(
+          form.cleaned_data.get('depends_on_patchset'), issue.key.id(),
+          ps_key.id()))
   patchset = models.PatchSet(
-    issue_key=issue.key, data=data, url=url, key=ps_key)
+    issue_key=issue.key, data=data, url=url, key=ps_key,
+    depends_on_patchset=depends_on_patchset)
   patchset.put()
 
   if not separate_patches:
@@ -1532,8 +1559,14 @@ def _add_patchset_from_form(request, issue, form, message_key='message',
   message = form.cleaned_data[message_key]
   first_id, _ = models.PatchSet.allocate_ids(1, parent=issue.key)
   ps_key = ndb.Key(models.PatchSet, first_id, parent=issue.key)
+
+  depends_on_patchset = (
+      dependency_utils.mark_as_dependent_and_get_dependency_str(
+          form.cleaned_data.get('depends_on_patchset'), issue.key.id(),
+          ps_key.id()))
   patchset = models.PatchSet(
-    issue_key=issue.key, message=message, data=data, url=url, key=ps_key)
+    issue_key=issue.key, message=message, data=data, url=url, key=ps_key,
+    depends_on_patchset=depends_on_patchset)
   patchset.put()
 
   if not separate_patches:
@@ -2057,6 +2090,11 @@ def _delete_cached_contents(patch_list):
 def delete(request):
   """/<issue>/delete - Delete an issue.  There is no way back."""
   issue = request.issue
+  # Update the dependents to remove dependency on this issue.
+  dependency_utils.remove_dependencies_from_all_patchsets(issue)
+  # Remove this issue as a dependent.
+  dependency_utils.remove_all_patchsets_as_dependents(issue)
+
   tbd = [issue]
   for cls in [models.PatchSet, models.Patch, models.Comment,
               models.Message, models.Content, models.TryJobResult]:
@@ -2083,6 +2121,10 @@ def delete_patchset(request):
       patchset_num, request.patchset.key.id())
   make_message(request, request.issue, delete_msg, send_mail=False,
                auto_generated=True).put()
+  # Update all dependents of this patchset.
+  dependency_utils.remove_dependencies(request.patchset)
+  # Remove this patchset as a dependent.
+  dependency_utils.remove_as_dependent(request.patchset)
   # Delete the patchset.
   request.patchset.nuke()
   return HttpResponseRedirect(reverse(show, args=[request.issue.key.id()]))
@@ -2370,6 +2412,8 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
     'created': str(patchset.created),
     'modified': str(patchset.modified),
     'num_comments': patchset.num_comments,
+    'depends_on_patchset': patchset.depends_on_patchset,
+    'dependent_patchsets': patchset.dependent_patchsets,
     'files': {},
   }
   if (try_jobs):

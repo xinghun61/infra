@@ -23,6 +23,8 @@ function PatchSet(issue, id, sequence)
     this.cqDryRun = false;
     this.mostRecent = false;
     this.active = false;
+    this.dependsOnPatchset = null;
+    this.dependentPatchsets = null; // Array<PatchSet>
     Object.preventExtensions(this);
 }
 
@@ -30,6 +32,14 @@ PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true&try_jobs=false";
 PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
 PatchSet.DELETE_URL = "/{1}/patchset/{2}/delete";
 PatchSet.TITLE_URL = "/{1}/patchset/{2}/edit_patchset_title";
+PatchSet.PATCHSET_URL = "/{1}/#ps{2}";
+
+PatchSet.prototype.getPatchsetUrl = function()
+{
+    return PatchSet.PATCHSET_URL.assign(
+        encodeURIComponent(this.issue.id),
+        encodeURIComponent(this.id));
+};
 
 PatchSet.prototype.getDetailUrl = function()
 {
@@ -123,6 +133,22 @@ PatchSet.prototype.parseData = function(data)
     this.title = data.message || "";
     this.lastModified = Date.utc.create(data.modified);
     this.created = Date.utc.create(data.created);
+    if (data.depends_on_patchset) {
+      var tokens = data.depends_on_patchset.split(":");
+      var dependsOnIssue = new Issue(parseInt(tokens[0]));
+      dependsOnIssue.loadDetails();
+      this.dependsOnPatchset = new PatchSet(dependsOnIssue, parseInt(tokens[1]), 0);
+    }
+    if (data.dependent_patchsets && data.dependent_patchsets.length != 0) {
+      this.dependentPatchsets = [];
+      data.dependent_patchsets.forEach(function(dependent_patchset, i) {
+          var tokens = dependent_patchset.split(":");
+          var dependentIssue = new Issue(parseInt(tokens[0]));
+          dependentIssue.loadDetails();
+          var dependentPatchset = new PatchSet(dependentIssue, parseInt(tokens[1]), i + 1);
+          this.dependentPatchsets.push(dependentPatchset);
+      }, this);
+    }
 
     Object.keys(data.files || {}, function(name, value) {
         var file = new PatchFile(patchset, name);

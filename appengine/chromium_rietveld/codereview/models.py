@@ -613,6 +613,8 @@ class PatchSet(ndb.Model):
   # TODO(maruel): Deprecated, remove once the live instance has all its data
   # converted to TryJobResult instances.
   build_results = ndb.StringProperty(repeated=True)
+  depends_on_patchset = ndb.StringProperty()
+  dependent_patchsets = ndb.StringProperty(repeated=True)
 
   @property
   def num_patches(self):
