@@ -55,6 +55,11 @@ def get_docstring(test_script):
 def run_test(cipd_client, package, work_dir, test_script):
   """Extracts a package to a dir and runs test_script with cwd == work_dir."""
   print_title('Deploying %s' % os.path.basename(package))
+  if not os.access(cipd_client, os.X_OK):
+    print >> sys.stderr, (
+        'CIPD client at %s doesn\'t exist or not runnable. Run build.py to '
+        'build it.' % cipd_client)
+    return 1
   cmd_line = ['cipd', 'pkg-deploy', '-root', work_dir, package]
   print ' '.join(cmd_line)
   if subprocess.call(args=cmd_line, executable=cipd_client):
@@ -91,12 +96,6 @@ def run(
   Returns:
     0 on success, 1 or error.
   """
-  if not os.access(cipd_client, os.X_OK):
-    print >> sys.stderr, (
-        'CIPD client at %s doesn\'t exist or not runnable. Run build.py to '
-        'build it.' % cipd_client)
-    return 1
-
   # Discover what to test.
   paths = []
   if not packages:
