@@ -18,9 +18,30 @@ from infra.services.service_manager import service
 from infra.services.service_manager import version_finder
 
 
-class ServiceTest(unittest.TestCase):
+class TestBase(unittest.TestCase):
   def setUp(self):
     self.state_directory = tempfile.mkdtemp()
+
+    self.mock_getpid = mock.patch('os.getpid').start()
+    self.mock_find_version = mock.patch(
+        'infra.services.service_manager.version_finder.find_version').start()
+
+  def tearDown(self):
+    mock.patch.stopall()
+
+    shutil.rmtree(self.state_directory)
+
+  def _write_state(self, name, contents):
+    with open(os.path.join(self.state_directory, name), 'w') as fh:
+      fh.write(contents)
+
+  def _all_writes(self, mock_file):
+    return ''.join(call[0][0] for call in mock_file.write.call_args_list)
+
+
+class ServiceTest(TestBase):
+  def setUp(self):
+    super(ServiceTest, self).setUp()
 
     self.mock_sleep = mock.Mock(time.sleep)
     self.mock_time = mock.Mock(time.time)
@@ -46,25 +67,10 @@ class ServiceTest(unittest.TestCase):
     self.mock_exit = mock.patch('os._exit').start()
     self.mock_fdopen = mock.patch('os.fdopen').start()
     self.mock_waitpid = mock.patch('os.waitpid').start()
-    self.mock_getpid = mock.patch('os.getpid').start()
     self.mock_execv = mock.patch('os.execv').start()
     self.mock_kill = mock.patch('os.kill').start()
     self.mock_become_daemon = mock.patch(
         'infra.libs.service_utils.daemon.become_daemon').start()
-    self.mock_find_version = mock.patch(
-        'infra.services.service_manager.version_finder.find_version').start()
-
-  def tearDown(self):
-    mock.patch.stopall()
-
-    shutil.rmtree(self.state_directory)
-
-  def _write_state(self, name, contents):
-    with open(os.path.join(self.state_directory, name), 'w') as fh:
-      fh.write(contents)
-
-  def _all_writes(self, mock_file):
-    return ''.join(call[0][0] for call in mock_file.write.call_args_list)
 
   def test_get_running_process_state(self):
     # No state file present.
@@ -287,3 +293,57 @@ class ServiceTest(unittest.TestCase):
     self.mock_find_version.return_value = 2
     self.assertTrue(self.s.has_version_changed())
     self.assertTrue(self.mock_find_version.called)
+
+
+class OwnServiceTest(TestBase):
+  def setUp(self):
+    super(OwnServiceTest, self).setUp()
+
+    self.root_directory = tempfile.mkdtemp()
+
+    self.s = service.OwnService(
+        self.state_directory,
+        self.root_directory)
+    self.s._read_starttime = self.mock_read_starttime = mock.Mock()
+    self.mock_read_starttime.return_value = None
+
+    self.mock_flock = mock.patch(
+        'infra.libs.service_utils.daemon.flock').start()
+
+  def tearDown(self):
+    super(OwnServiceTest, self).tearDown()
+    shutil.rmtree(self.root_directory)
+
+  def test_start_locked(self):
+    self.mock_flock.side_effect = daemon.LockAlreadyLocked
+
+    self.assertFalse(self.s.start())
+    self.assertFalse(self.s.is_running())
+
+  def test_start_running(self):
+    self.mock_getpid.return_value = 1234
+    self._write_state('service_manager', '{"pid": 1234, "starttime": 5678}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.assertTrue(self.s.is_running())
+    self.assertFalse(self.s.start())
+    self.assertTrue(self.s.is_running())
+
+  def test_start(self):
+    self.mock_getpid.return_value = 1234
+    self.mock_find_version.return_value = 42
+    self.mock_read_starttime.return_value = 5678
+
+    self.assertFalse(self.s.is_running())
+    self.assertTrue(self.s.start())
+    self.assertTrue(self.s.is_running())
+
+    self.assertEqual({
+        'pid': 1234,
+        'starttime': 5678,
+        'version': 42,
+    }, self.s.get_running_process_state())
+
+  def test_stop(self):
+    with self.assertRaises(SystemExit):
+      self.s.stop()

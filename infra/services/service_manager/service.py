@@ -7,6 +7,7 @@ import json
 import logging
 import os.path
 import signal
+import sys
 import time
 
 import psutil
@@ -202,7 +203,11 @@ class Service(object):
           'Failed to start %s: daemon process didn\'t send a valid PID' %
           self.name)
 
-    starttime = self._read_starttime(data['pid'])
+    self._write_state_file(data['pid'])
+    LOGGER.info("Service %s started with PID %d", self.name, data['pid'])
+
+  def _write_state_file(self, pid):
+    starttime = self._read_starttime(pid)
     if starttime is None:
       raise ServiceException(
           'Failed to start %s: daemon process exited' % self.name)
@@ -210,12 +215,10 @@ class Service(object):
     # Write the daemon's PID and its starttime to the state file.
     with open(self._state_file, 'w') as fh:
       json.dump({
-          'pid': data['pid'],
+          'pid': pid,
           'starttime': starttime,
           'version': version_finder.find_version(self.config),
       }, fh)
-
-    LOGGER.info("Service %s started with PID %d", self.name, data['pid'])
 
   def _signal_and_wait(self, pid, starttime, sig, wait_timeout):
     """Sends a signal to the given process, and optionally waits for it to exit.
@@ -263,3 +266,37 @@ class Service(object):
 
       self._sleep_fn(0.1)
     return False
+
+
+class OwnService(Service):
+  """A special service that represents the service_manager itself.
+
+  Makes the is_running() and has_version_changed() functionality available for
+  the service_manager process.
+  """
+
+  def __init__(self, state_directory, root_directory, **kwargs):
+    super(OwnService, self).__init__(state_directory, {
+        'name': 'service_manager',
+        'tool': '',
+        'root_directory': root_directory,
+    }, **kwargs)
+    self._state_directory = state_directory
+
+  def start(self):
+    """Writes a state file, returns False if we're already running."""
+
+    # Use a flock here to avoid a race condition where two service_managers
+    # start at the same time and both write their own state file.
+    try:
+      with daemon.flock('service_manager.flock', self._state_directory):
+        if self.is_running():
+          return False
+
+        self._write_state_file(os.getpid())
+        return True
+    except daemon.LockAlreadyLocked:
+      return False
+
+  def stop(self):
+    sys.exit()

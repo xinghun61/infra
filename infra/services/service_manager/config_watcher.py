@@ -9,6 +9,7 @@ import logging
 import os.path
 import time
 
+from infra.services.service_manager import service
 from infra.services.service_manager import service_thread
 
 LOGGER = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ class ConfigWatcher(object):
   """
 
   def __init__(self, config_directory, config_poll_interval,
-               service_poll_interval, state_directory, sleep_fn=time.sleep):
+               service_poll_interval, state_directory, root_directory,
+               sleep_fn=time.sleep):
     """
     Args:
       config_directory: Directory containing .json config files to monitor.
@@ -54,8 +56,14 @@ class ConfigWatcher(object):
 
     self._sleep_fn = sleep_fn
 
+    self._own_service = service.OwnService(state_directory, root_directory)
+
   def run(self):
     """Runs continuously in this thread until stop() is called."""
+
+    if not self._own_service.start():
+      # Another instance is already running.
+      return
 
     while not self._stop:
       self._iteration()
@@ -63,6 +71,11 @@ class ConfigWatcher(object):
 
   def _iteration(self):
     """Runs one iteration of the loop.  Useful for testing."""
+
+    if self._own_service.has_version_changed():
+      logging.info("The service_manager's version has changed, exiting")
+      self._own_service.stop()
+      return
 
     files = set(glob.glob(self._config_glob))
     for filename in files:

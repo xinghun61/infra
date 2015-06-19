@@ -11,6 +11,7 @@ import unittest
 import mock
 
 from infra.services.service_manager import config_watcher
+from infra.services.service_manager import service
 from infra.services.service_manager import service_thread
 
 
@@ -20,15 +21,21 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self.mock_sleep = mock.Mock()
 
+    self.mock_ownservice_ctor = mock.patch(
+        'infra.services.service_manager.service.OwnService').start()
     self.mock_thread_ctor = mock.patch(
         'infra.services.service_manager.service_thread.ServiceThread').start()
     self.mock_thread = self.mock_thread_ctor.return_value
+    self.mock_ownservice = self.mock_ownservice_ctor.return_value
+    self.mock_ownservice.start.return_value = True
+    self.mock_ownservice.has_version_changed.return_value = False
 
     self.cw = config_watcher.ConfigWatcher(
         self.config_directory,
         42,
         43,
         '/state',
+        '/rootdir',
         sleep_fn=self.mock_sleep)
 
   def tearDown(self):
@@ -45,6 +52,18 @@ class ConfigWatcherTest(unittest.TestCase):
 
   def _remove_config(self, name):
     os.unlink(os.path.join(self.config_directory, name))
+
+  def test_already_running(self):
+    self.mock_ownservice.start.return_value = False
+
+    self.cw.run()
+    self.assertFalse(self.mock_sleep.called)
+
+  def test_version_changed(self):
+    self.mock_ownservice.has_version_changed.return_value = True
+
+    self.cw._iteration()
+    self.mock_ownservice.stop.assert_called_once_with()
 
   def test_add(self):
     self._set_config('foo.json', '{"name": "foo"}')

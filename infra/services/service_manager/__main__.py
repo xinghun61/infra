@@ -10,7 +10,6 @@ import socket
 import sys
 import time
 
-from infra.libs.service_utils import daemon
 from infra.services.service_manager import config_watcher
 from infra_libs import logs
 from infra_libs import ts_mon
@@ -29,6 +28,11 @@ def parse_args(argv):
       '--config-directory',
       default='/etc/infra-services',
       help='directory to read JSON config files (default %(default)s)')
+  p.add_argument(
+      '--root-directory',
+      default='/opt/infra-python',
+      help='directory where the service_manager package is deployed. If this '
+           'package is updated the process will exit')
 
   p.add_argument(
       '--config-poll-interval',
@@ -63,20 +67,17 @@ def main(argv):
       opts.config_directory,
       opts.config_poll_interval,
       opts.service_poll_interval,
-      opts.state_directory)
+      opts.state_directory,
+      opts.root_directory)
 
   def sigint_handler(_signal, _frame):
     watcher.stop()
 
   try:
-    with daemon.flock('service_manager.flock', opts.state_directory):
-      previous_sigint_handler = signal.signal(signal.SIGINT, sigint_handler)
-      watcher.run()
-      signal.signal(signal.SIGINT, previous_sigint_handler)
-  except daemon.LockAlreadyLocked:
-    # Another instance is already running.
-    return 1
-  else:
+    previous_sigint_handler = signal.signal(signal.SIGINT, sigint_handler)
+    watcher.run()
+    signal.signal(signal.SIGINT, previous_sigint_handler)
+  finally:
     ts_mon.close()
 
   return 0
