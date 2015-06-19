@@ -1,0 +1,1952 @@
+  [
+    {
+      "timestamp": 1434405483.23588,
+      "fields": {
+        "status": "ready_to_commit",
+        "dry_run": false,
+        "timestamp": 1434405483.142507,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_ready_to_commit",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "action=patch_ready_to_commit",
+        "patchset=1",
+        "issue=123456789",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405448.64083,
+      "fields": {
+        "status": "stop",
+        "dry_run": false,
+        "timestamp": 1434405448.541737,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_stop",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Patch successfully committed."
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_stop",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405448.58087,
+      "fields": {
+        "status": "committed",
+        "dry_run": false,
+        "timestamp": 1434405448.541641,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_committed",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_committed",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405440.00109,
+      "fields": {
+        "status": "ready_to_commit",
+        "dry_run": false,
+        "timestamp": 1434405439.873897,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_ready_to_commit",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "action=patch_ready_to_commit",
+        "patchset=1",
+        "issue=123456789",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405387.52403,
+      "fields": {
+        "status": "committing",
+        "dry_run": false,
+        "timestamp": 1434405387.486724,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_committing",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_committing",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405385.89082,
+      "fields": {
+        "status": "ready_to_commit",
+        "dry_run": false,
+        "timestamp": 1434405385.655849,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_ready_to_commit",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "action=patch_ready_to_commit",
+        "patchset=1",
+        "issue=123456789",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405385.78409,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405385.591521,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434405203552430,
+        "done": true,
+        "action": "verifier_pass",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_pass",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405385.72856,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_SUCCEEDED": [
+            {
+              "build_id": "9042910820670988896",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave607-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35419",
+              "timestamp": "2015-06-15 21:56:12.276340",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 0,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTA4MjA2NzA5ODg4OTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35419,
+              "category": "cq",
+              "build_properties": {
+                "got_nacl_revision": "22fcd7c6a995b92434432aafe8ba49858bd7f5d3",
+                "got_swarming_client_revision": "b39a448d8522392389b28f6997126a6ab04bfe87",
+                "got_revision": "585b1bc5f9a8ebec84e6e74b917f58a0a9a28ecd",
+                "recipe": "run_presubmit",
+                "got_webrtc_revision_cp": "refs/heads/master@{#9432}",
+                "got_webkit_revision_git": "cbd8ebba3b16407166ad54208a89d8690ca59831",
+                "patch_project": "blink",
+                "category": "cq",
+                "buildnumber": 35419,
+                "got_webkit_revision": 197140,
+                "slavename": "slave607-c4",
+                "attempt_start_ts": 1434405203552430,
+                "got_revision_cp": "refs/heads/master@{#334467}",
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "repo_name": "blink",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "got_webrtc_revision": "407258cf782b0a8c24819835561a0a709ec70873",
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "got_v8_revision": "fffc68e8cae31678d198db13d72f92632b825bf5",
+                "got_v8_revision_cp": "refs/heads/4.5.55@{#1}",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "reason": "CQ",
+                "got_webkit_revision_cp": "refs/heads/master@{#197140}",
+                "project": "",
+                "requestedAt": 1434405228,
+                "revision": ""
+              },
+              "job_state": "JOB_SUCCEEDED",
+              "revision": ""
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405385.591364,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_SUCCEEDED)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434405203552430,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_RUNNING": "KEY_MISSING",
+          "JOB_SUCCEEDED": [
+            {
+              "build_id": "9042910820670988896",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave607-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35419",
+              "timestamp": "2015-06-15 21:56:12.276340",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 0,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTA4MjA2NzA5ODg4OTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35419,
+              "category": "cq",
+              "build_properties": {
+                "got_nacl_revision": "22fcd7c6a995b92434432aafe8ba49858bd7f5d3",
+                "got_swarming_client_revision": "b39a448d8522392389b28f6997126a6ab04bfe87",
+                "got_revision": "585b1bc5f9a8ebec84e6e74b917f58a0a9a28ecd",
+                "recipe": "run_presubmit",
+                "got_webrtc_revision_cp": "refs/heads/master@{#9432}",
+                "got_webkit_revision_git": "cbd8ebba3b16407166ad54208a89d8690ca59831",
+                "patch_project": "blink",
+                "category": "cq",
+                "buildnumber": 35419,
+                "got_webkit_revision": 197140,
+                "slavename": "slave607-c4",
+                "attempt_start_ts": 1434405203552430,
+                "got_revision_cp": "refs/heads/master@{#334467}",
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "repo_name": "blink",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "got_webrtc_revision": "407258cf782b0a8c24819835561a0a709ec70873",
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "got_v8_revision": "fffc68e8cae31678d198db13d72f92632b825bf5",
+                "got_v8_revision_cp": "refs/heads/4.5.55@{#1}",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "reason": "CQ",
+                "got_webkit_revision_cp": "refs/heads/master@{#197140}",
+                "project": "",
+                "requestedAt": 1434405228,
+                "revision": ""
+              },
+              "job_state": "JOB_SUCCEEDED",
+              "revision": ""
+            }
+          ]
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405253.90819,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_RUNNING": [
+            {
+              "build_id": "9042910820670988896",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": null,
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35419",
+              "timestamp": "2015-06-15 21:53:48.462540",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": null,
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": -1,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTA4MjA2NzA5ODg4OTYM",
+              "requester": null,
+              "buildnumber": null,
+              "category": "cq",
+              "build_properties": {
+                "category": "cq",
+                "rietveld": "https://codereview.chromium.org",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "patch_storage": "rietveld",
+                "attempt_start_ts": 1434405203552430,
+                "master": "tryserver.blink",
+                "reason": "CQ",
+                "patchset": 1,
+                "issue": 123456789,
+                "patch_project": "blink",
+                "revision": "HEAD"
+              },
+              "job_state": "JOB_RUNNING",
+              "revision": "HEAD"
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405253.874364,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_RUNNING)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434405203552430,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_RUNNING": [
+            {
+              "build_id": "9042910820670988896",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": null,
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35419",
+              "timestamp": "2015-06-15 21:53:48.462540",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": null,
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": -1,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTA4MjA2NzA5ODg4OTYM",
+              "requester": null,
+              "buildnumber": null,
+              "category": "cq",
+              "build_properties": {
+                "category": "cq",
+                "rietveld": "https://codereview.chromium.org",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "patch_storage": "rietveld",
+                "attempt_start_ts": 1434405203552430,
+                "master": "tryserver.blink",
+                "reason": "CQ",
+                "patchset": 1,
+                "issue": 123456789,
+                "patch_project": "blink",
+                "revision": "HEAD"
+              },
+              "job_state": "JOB_RUNNING",
+              "revision": "HEAD"
+            }
+          ],
+          "JOB_NOT_TRIGGERED": "KEY_MISSING"
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405227.33589,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405227.303217,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434405203552430,
+        "done": false,
+        "action": "verifier_trigger",
+        "patchset": 1,
+        "issue": 123456789,
+        "trybots": {
+          "tryserver.blink": {
+            "test_presubmit": [
+              "defaulttests"
+            ]
+          }
+        }
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "project=blink",
+        "owner=test@chromium.org",
+        "action=verifier_trigger"
+      ]
+    },
+    {
+      "timestamp": 1434405206.96328,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405206.928349,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434405203552430,
+        "done": true,
+        "action": "verifier_start",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405206.23369,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434405206.199833,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 0,
+        "done": true,
+        "action": "verifier_custom_trybots",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_custom_trybots",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434405202.84151,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "timestamp": 1434405202.803248,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": false,
+        "action": "patch_start",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404562.21672,
+      "fields": {
+        "status": "stop",
+        "dry_run": false,
+        "timestamp": 1434404562.180566,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_stop",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Try jobs failed on following builders:\n  test_presubmit on tryserver.blink (JOB_FAILED, http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/35415)"
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_stop",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404560.63075,
+      "fields": {
+        "status": "failed",
+        "dry_run": false,
+        "timestamp": 1434404560.101385,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": {
+          "verifier": "try job",
+          "fail_type": "failed_presubmit_bot",
+          "fail_details": [
+            {
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35417",
+              "builder": "test_presubmit",
+              "master": "tryserver.blink"
+            },
+            {
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35415",
+              "builder": "test_presubmit",
+              "master": "tryserver.blink"
+            }
+          ]
+        },
+        "done": true,
+        "action": "patch_failed",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Try jobs failed on following builders:\n  test_presubmit on tryserver.blink (JOB_FAILED, http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/35415)"
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_failed",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404558.39592,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404558.201969,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": true,
+        "action": "verifier_fail",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_fail",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404558.24391,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911558976078416",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave502-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35417",
+              "timestamp": "2015-06-15 21:42:17.674930",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1NTg5NzYwNzg0MTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35417,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave502-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35417,
+                "requestedAt": 1434404527,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            },
+            {
+              "build_id": "9042911597017018688",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave822-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35415",
+              "timestamp": "2015-06-15 21:41:37.780380",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1OTcwMTcwMTg2ODgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35415,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave822-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35415,
+                "requestedAt": 1434404488,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404558.201449,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_FAILED, quota=2)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911558976078416",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave502-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35417",
+              "timestamp": "2015-06-15 21:42:17.674930",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1NTg5NzYwNzg0MTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35417,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave502-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35417,
+                "requestedAt": 1434404527,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            },
+            {
+              "build_id": "9042911597017018688",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave822-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35415",
+              "timestamp": "2015-06-15 21:41:37.780380",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1OTcwMTcwMTg2ODgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35415,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave822-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35415,
+                "requestedAt": 1434404488,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404523.92637,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404523.09219,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": false,
+        "action": "verifier_trigger",
+        "patchset": 1,
+        "issue": 123456789,
+        "trybots": {
+          "tryserver.blink": {
+            "test_presubmit": [
+              "defaulttests"
+            ]
+          }
+        }
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "project=blink",
+        "owner=test@chromium.org",
+        "action=verifier_trigger"
+      ]
+    },
+    {
+      "timestamp": 1434404523.82375,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404522.729626,
+        "builder": "test_presubmit",
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": false,
+        "action": "verifier_retry",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "action=verifier_retry",
+        "issue=123456789",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404523.76825,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911597017018688",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave822-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35415",
+              "timestamp": "2015-06-15 21:41:37.780380",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1OTcwMTcwMTg2ODgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35415,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave822-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35415,
+                "requestedAt": 1434404488,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404522.729492,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_FAILED, quota=1)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911597017018688",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave822-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35415",
+              "timestamp": "2015-06-15 21:41:37.780380",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE1OTcwMTcwMTg2ODgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35415,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave822-c4",
+                "attempt_start_ts": 1434404451503610,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35415,
+                "requestedAt": 1434404488,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ],
+          "JOB_NOT_TRIGGERED": "KEY_MISSING"
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404486.73295,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404486.697993,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": false,
+        "action": "verifier_trigger",
+        "patchset": 1,
+        "issue": 123456789,
+        "trybots": {
+          "tryserver.blink": {
+            "test_presubmit": [
+              "defaulttests"
+            ]
+          }
+        }
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "project=blink",
+        "owner=test@chromium.org",
+        "action=verifier_trigger"
+      ]
+    },
+    {
+      "timestamp": 1434404454.21214,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404454.175796,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404451503610,
+        "done": true,
+        "action": "verifier_start",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404453.32164,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404453.287232,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 0,
+        "done": true,
+        "action": "verifier_custom_trybots",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_custom_trybots",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404451.22495,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "timestamp": 1434404451.081042,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": false,
+        "action": "patch_start",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404325.40042,
+      "fields": {
+        "status": "stop",
+        "dry_run": false,
+        "timestamp": 1434404325.36501,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_stop",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Try jobs failed on following builders:\n  test_presubmit on tryserver.blink (JOB_FAILED, http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/35411)"
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_stop",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404323.53384,
+      "fields": {
+        "status": "failed",
+        "dry_run": false,
+        "timestamp": 1434404323.074947,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": {
+          "verifier": "try job",
+          "fail_type": "failed_presubmit_bot",
+          "fail_details": [
+            {
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35412",
+              "builder": "test_presubmit",
+              "master": "tryserver.blink"
+            },
+            {
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35411",
+              "builder": "test_presubmit",
+              "master": "tryserver.blink"
+            }
+          ]
+        },
+        "done": true,
+        "action": "patch_failed",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Try jobs failed on following builders:\n  test_presubmit on tryserver.blink (JOB_FAILED, http://build.chromium.org/p/tryserver.blink/builders/blink_presubmit/builds/35411)"
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_failed",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404323.47552,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404323.074159,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": true,
+        "action": "verifier_fail",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_fail",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404323.11209,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911812291890496",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave808-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35412",
+              "timestamp": "2015-06-15 21:38:19.684340",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4MTIyOTE4OTA0OTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35412,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave808-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35412,
+                "requestedAt": 1434404290,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            },
+            {
+              "build_id": "9042911846484820928",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave617-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35411",
+              "timestamp": "2015-06-15 21:37:49.092360",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4NDY0ODQ4MjA5MjgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35411,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave617-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35411,
+                "requestedAt": 1434404258,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404323.072251,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_FAILED, quota=2)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911812291890496",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave808-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35412",
+              "timestamp": "2015-06-15 21:38:19.684340",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4MTIyOTE4OTA0OTYM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35412,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave808-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35412,
+                "requestedAt": 1434404290,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            },
+            {
+              "build_id": "9042911846484820928",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave617-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35411",
+              "timestamp": "2015-06-15 21:37:49.092360",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4NDY0ODQ4MjA5MjgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35411,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave617-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35411,
+                "requestedAt": 1434404258,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404281.5691,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404281.409505,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": false,
+        "action": "verifier_trigger",
+        "patchset": 1,
+        "issue": 123456789,
+        "trybots": {
+          "tryserver.blink": {
+            "test_presubmit": [
+              "defaulttests"
+            ]
+          }
+        }
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "project=blink",
+        "owner=test@chromium.org",
+        "action=verifier_trigger"
+      ]
+    },
+    {
+      "timestamp": 1434404281.2224,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404281.120905,
+        "builder": "test_presubmit",
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": false,
+        "action": "verifier_retry",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "action=verifier_retry",
+        "issue=123456789",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404281.16058,
+      "fields": {
+        "status": "start",
+        "project": "blink",
+        "jobs": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911846484820928",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave617-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35411",
+              "timestamp": "2015-06-15 21:37:49.092360",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4NDY0ODQ4MjA5MjgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35411,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave617-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35411,
+                "requestedAt": 1434404258,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404281.120786,
+        "verifier": "try job",
+        "job_states": {
+          "tryserver.blink:test_presubmit": "JobState(state=JOB_FAILED, quota=1)"
+        },
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": false,
+        "action": "verifier_jobs_update",
+        "diff": {
+          "JOB_FAILED": [
+            {
+              "build_id": "9042911846484820928",
+              "parent_name": null,
+              "tests": [
+                "defaulttests"
+              ],
+              "slave": "slave617-c4",
+              "url": "http://build.chromium.org/p/tryserver.blink/builders/test_presubmit/builds/35411",
+              "timestamp": "2015-06-15 21:37:49.092360",
+              "builder": "test_presubmit",
+              "clobber": null,
+              "project": "",
+              "reason": "CQ",
+              "master": "tryserver.blink",
+              "result": 2,
+              "key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MTE4NDY0ODQ4MjA5MjgM",
+              "requester": "commit-bot@chromium.org",
+              "buildnumber": 35411,
+              "category": "cq",
+              "build_properties": {
+                "recipe": "run_presubmit",
+                "patch_project": "blink",
+                "category": "cq",
+                "project": "",
+                "slavename": "slave617-c4",
+                "attempt_start_ts": 1434404228060430,
+                "blamelist": [
+                  "test@chromium.org"
+                ],
+                "branch": null,
+                "master": "tryserver.blink",
+                "patchset": 1,
+                "issue": 123456789,
+                "revision": "",
+                "workdir": "/b/build/slave/presubmit_blink",
+                "repository": "",
+                "buildername": "test_presubmit",
+                "testfilter": [
+                  "defaulttests"
+                ],
+                "mastername": "tryserver.blink",
+                "patch_storage": "rietveld",
+                "reason": "CQ",
+                "requester": "commit-bot@chromium.org",
+                "buildbotURL": "http://build.chromium.org/p/tryserver.blink/",
+                "rietveld": "https://codereview.chromium.org",
+                "buildnumber": 35411,
+                "requestedAt": 1434404258,
+                "repo_name": "blink"
+              },
+              "job_state": "JOB_FAILED",
+              "revision": ""
+            }
+          ]
+        },
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_jobs_update",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404248.83347,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404248.798412,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": false,
+        "action": "verifier_trigger",
+        "patchset": 1,
+        "issue": 123456789,
+        "trybots": {
+          "tryserver.blink": {
+            "test_presubmit": [
+              "defaulttests"
+            ]
+          }
+        }
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "project=blink",
+        "owner=test@chromium.org",
+        "action=verifier_trigger"
+      ]
+    },
+    {
+      "timestamp": 1434404231.33515,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404231.288938,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 1434404228060430,
+        "done": true,
+        "action": "verifier_start",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "patchset=1",
+        "action=verifier_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404230.24075,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "state": "",
+        "timestamp": 1434404230.204705,
+        "verifier": "try job",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "attempt_start_ts": 0,
+        "done": true,
+        "action": "verifier_custom_trybots",
+        "patchset": 1,
+        "issue": 123456789
+      },
+      "key": null,
+      "tags": [
+        "verifier=try job",
+        "issue=123456789",
+        "action=verifier_custom_trybots",
+        "patchset=1",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434404227.51088,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "timestamp": 1434404227.312599,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": false,
+        "action": "patch_start",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434403955.1155,
+      "fields": {
+        "status": "stop",
+        "dry_run": false,
+        "timestamp": 1434403955.080494,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": true,
+        "action": "patch_stop",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "No LGTM from a valid reviewer yet. Only full committers are accepted.\nEven if an LGTM may have been provided, it was from a non-committer,\n_not_ a full super star committer.\nSee http://www.chromium.org/getting-involved/become-a-committer\nNote that this has nothing to do with OWNERS files."
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_stop",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434403953.62348,
+      "fields": {
+        "status": "failed",
+        "dry_run": false,
+        "timestamp": 1434403953.426199,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": {
+          "verifier": "reviewer_lgtm",
+          "fail_type": "missing_lgtm",
+          "fail_details": null
+        },
+        "done": true,
+        "action": "patch_failed",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": "Verification failed: No LGTM from a valid reviewer yet. Only full committers are accepted.\nEven if an LGTM may have been provided, it was from a non-committer,\n_not_ a full super star committer.\nSee http://www.chromium.org/getting-involved/become-a-committer\nNote that this has nothing to do with OWNERS files.."
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_failed",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    },
+    {
+      "timestamp": 1434403938.03197,
+      "fields": {
+        "status": "start",
+        "dry_run": false,
+        "timestamp": 1434403936.273921,
+        "state": "",
+        "project": "blink",
+        "owner": "test@chromium.org",
+        "reason": null,
+        "done": false,
+        "action": "patch_start",
+        "patchset": 1,
+        "issue": 123456789,
+        "message": ""
+      },
+      "key": null,
+      "tags": [
+        "patchset=1",
+        "issue=123456789",
+        "action=patch_start",
+        "owner=test@chromium.org",
+        "project=blink"
+      ]
+    }
+  ]
