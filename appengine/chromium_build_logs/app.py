@@ -17,7 +17,6 @@ sys.path.append(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), 'third_party'))
 
 from django.utils.html import strip_tags
-from google.appengine.api import files
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import blobstore
@@ -423,17 +422,6 @@ def update_suppression_summaries(result_keys):
   for result in results:
     if result:
       update_suppression_summary(result)
-
-
-def write_blob(data, mime_type):
-  """Creates a new blob and writes data to it.
-  Returns the key of the created blob."""
-  file_name = files.blobstore.create(mime_type=mime_type)
-  for chunk in chunks(data, 512*1024):
-    with files.open(file_name, 'a') as blob_file:
-      blob_file.write(chunk)
-  files.finalize(file_name)
-  return files.blobstore.get_blob_key(file_name)
 
 
 def fetch_step(step_key, stdio_url, parse_gtest, parse_suppression):
