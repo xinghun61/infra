@@ -4,9 +4,8 @@ threadsafe: true
 
 # Edit this to match your implementation.
 handlers:
-- url: /.*
-  secure: always
-  script: main.app
+- url: /_ah/spi/.*
+  script: main.APPLICATION
 
 libraries:
 - name: endpoints
