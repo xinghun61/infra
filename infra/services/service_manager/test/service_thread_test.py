@@ -47,6 +47,7 @@ class ServiceThreadTest(unittest.TestCase):
   def setUp(self):
     service_thread.ServiceThread.failures.reset()
     service_thread.ServiceThread.reconfigs.reset()
+    service_thread.ServiceThread.upgrades.reset()
 
     self.mock_service_ctor = mock.patch(
         'infra.services.service_manager.service.Service').start()
@@ -131,6 +132,37 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.condition.next()
     self.assertEqual(2, self.t.failures.get({'service': 'foo'}))
+
+  def test_restart_after_upgrade(self):
+    self.t.start()
+    self.condition.start()
+
+    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+
+    self.mock_service.is_running.return_value = False
+    self.mock_service.has_version_changed.return_value = False
+
+    self.t.start_service()
+    self.assertTrue(self.condition.notify_called)
+    self.condition.next()
+
+    self.assertEqual(0, self.mock_service.stop.call_count)
+    self.assertEqual(1, self.mock_service.start.call_count)
+    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+
+    self.mock_service.is_running.return_value = True
+
+    self.condition.next()
+    self.assertEqual(0, self.mock_service.stop.call_count)
+    self.assertEqual(2, self.mock_service.start.call_count)
+    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+
+    self.mock_service.has_version_changed.return_value = True
+
+    self.condition.next()
+    self.assertEqual(1, self.mock_service.stop.call_count)
+    self.assertEqual(3, self.mock_service.start.call_count)
+    self.assertEqual(1, self.t.upgrades.get({'service': 'foo'}))
 
   def test_stop(self):
     self.t.start()

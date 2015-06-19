@@ -38,6 +38,7 @@ class ServiceThread(threading.Thread):
 
   failures = ts_mon.CounterMetric('service_manager/failures')
   reconfigs = ts_mon.CounterMetric('service_manager/reconfigs')
+  upgrades = ts_mon.CounterMetric('service_manager/upgrades')
 
   def __init__(self, poll_interval, state_directory, service_config,
                wait_condition=None):
@@ -110,6 +111,11 @@ class ServiceThread(threading.Thread):
             # We started it last time but it's not running any more.
             self.failures.increment(fields={'service': self._service.name})
             LOGGER.warning('Service %s failed, restarting', self._service.name)
+          elif self._service.has_version_changed():
+            self.upgrades.increment(fields={'service': self._service.name})
+            LOGGER.info('Service %s has a new package version, restarting',
+                        self._service.name)
+            self._service.stop()
 
           # Ensure the service is running.
           self._service.start()

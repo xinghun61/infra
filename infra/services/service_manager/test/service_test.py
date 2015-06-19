@@ -15,12 +15,12 @@ import mock
 
 from infra.libs.service_utils import daemon
 from infra.services.service_manager import service
+from infra.services.service_manager import version_finder
 
 
 class ServiceTest(unittest.TestCase):
   def setUp(self):
     self.state_directory = tempfile.mkdtemp()
-    self.proc_directory = tempfile.mkdtemp()
 
     self.mock_sleep = mock.Mock(time.sleep)
     self.mock_time = mock.Mock(time.time)
@@ -36,8 +36,9 @@ class ServiceTest(unittest.TestCase):
             'stop_time': 86,
         },
         time_fn=self.mock_time,
-        sleep_fn=self.mock_sleep,
-        proc_directory=self.proc_directory)
+        sleep_fn=self.mock_sleep)
+    self.s._read_starttime = self.mock_read_starttime = mock.Mock()
+    self.mock_read_starttime.return_value = None
 
     self.mock_pipe = mock.patch('os.pipe').start()
     self.mock_fork = mock.patch('os.fork').start()
@@ -50,22 +51,13 @@ class ServiceTest(unittest.TestCase):
     self.mock_kill = mock.patch('os.kill').start()
     self.mock_become_daemon = mock.patch(
         'infra.libs.service_utils.daemon.become_daemon').start()
+    self.mock_find_version = mock.patch(
+        'infra.services.service_manager.version_finder.find_version').start()
 
   def tearDown(self):
     mock.patch.stopall()
 
     shutil.rmtree(self.state_directory)
-    shutil.rmtree(self.proc_directory)
-
-  def _write_starttime(self, pid, starttime):
-    try:
-      os.mkdir(os.path.join(self.proc_directory, str(pid)))
-    except OSError:
-      pass
-
-    with open(os.path.join(self.proc_directory, str(pid), "stat"), 'w') as fh:
-      fh.write(' '.join(
-          [str(x) for x in range(21) + [starttime] + range(22, 30)]))
 
   def _write_state(self, name, contents):
     with open(os.path.join(self.state_directory, name), 'w') as fh:
@@ -85,25 +77,26 @@ class ServiceTest(unittest.TestCase):
     self.assertFalse(self.s.is_running())
 
     # State file and /proc file present.
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
     self.assertEqual({'pid': 1234, 'starttime': 5678},
                      self.s.get_running_process_state())
+    self.mock_read_starttime.assert_called_with(1234)
     self.assertTrue(self.s.is_running())
 
     # State file and /proc file present but different starttime.
-    self._write_starttime(1234, 4242)
+    self.mock_read_starttime.return_value = 4242
     self.assertIs(None, self.s.get_running_process_state())
     self.assertFalse(self.s.is_running())
 
     # Invalid state file.
     self._write_state('foo', 'not valid json')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
     self.assertIs(None, self.s.get_running_process_state())
     self.assertFalse(self.s.is_running())
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     self.s.start()
 
@@ -118,7 +111,9 @@ class ServiceTest(unittest.TestCase):
     mock_pipe_object.read.return_value = '{"pid": 777}'
 
     self.mock_waitpid.return_value = (None, 0)
-    self._write_starttime(777, 888)
+    self.mock_read_starttime.return_value = 888
+
+    self.mock_find_version.return_value = {'foo': 'bar'}
 
     self.s.start()
 
@@ -127,11 +122,13 @@ class ServiceTest(unittest.TestCase):
     self.mock_close.assert_called_once_with(43)
     self.mock_fdopen.assert_called_once_with(42, 'r')
     self.mock_waitpid.assert_called_once_with(123, 0)
+    self.mock_find_version.assert_called_once_with(self.s.config)
 
     with open(os.path.join(self.state_directory, 'foo')) as fh:
       self.assertEqual({
           'pid': 777,
           'starttime': 888,
+          'version': {'foo': 'bar'}
       }, json.load(fh))
 
   def test_start_parent_child_exited(self):
@@ -143,7 +140,7 @@ class ServiceTest(unittest.TestCase):
     mock_pipe_object.read.return_value = ''
 
     self.mock_waitpid.return_value = (None, 1)
-    self._write_starttime(777, 888)
+    self.mock_read_starttime.return_value = 888
 
     with self.assertRaises(service.ServiceException):
       self.s.start()
@@ -157,7 +154,7 @@ class ServiceTest(unittest.TestCase):
     mock_pipe_object.read.return_value = 'not valid json'
 
     self.mock_waitpid.return_value = (None, 0)
-    self._write_starttime(777, 888)
+    self.mock_read_starttime.return_value = 888
 
     with self.assertRaises(service.ServiceException):
       self.s.start()
@@ -207,10 +204,10 @@ class ServiceTest(unittest.TestCase):
 
   def test_stop_sends_sig_term(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     def delete_proc_entry(_duration):
-      os.unlink(os.path.join(self.proc_directory, '1234', 'stat'))
+      self.mock_read_starttime.return_value = None
     self.mock_sleep.side_effect = delete_proc_entry
 
     self.s.stop()
@@ -220,7 +217,7 @@ class ServiceTest(unittest.TestCase):
 
   def test_stop_sends_sig_kill(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     current_time = [0]
     def sleep_impl(duration):
@@ -240,7 +237,7 @@ class ServiceTest(unittest.TestCase):
 
   def test_stop_but_its_already_dead(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     self.mock_kill.side_effect = OSError(errno.ESRCH, '')
 
@@ -251,7 +248,7 @@ class ServiceTest(unittest.TestCase):
 
   def test_stop_with_another_kill_exception(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     self.mock_kill.side_effect = OSError(errno.EPERM, '')
 
@@ -260,13 +257,33 @@ class ServiceTest(unittest.TestCase):
 
   def test_stop_but_another_process_recycled_the_pid(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    self._write_starttime(1234, 5678)
+    self.mock_read_starttime.return_value = 5678
 
     def delete_proc_entry(_duration):
-      self._write_starttime(1234, 9999)
+      self.mock_read_starttime.return_value = 9999
     self.mock_sleep.side_effect = delete_proc_entry
 
     self.s.stop()
 
     self.mock_kill.assert_called_once_with(1234, signal.SIGTERM)
     self.assertFalse(os.path.exists(os.path.join(self.state_directory, 'foo')))
+
+  def test_has_version_changed_not_running(self):
+    self.assertFalse(self.s.has_version_changed())
+    self.assertFalse(self.mock_find_version.called)
+
+  def test_has_version_changed_no(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678, "version": 1}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.mock_find_version.return_value = 1
+    self.assertFalse(self.s.has_version_changed())
+    self.assertTrue(self.mock_find_version.called)
+
+  def test_has_version_changed_yes(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678, "version": 1}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.mock_find_version.return_value = 2
+    self.assertTrue(self.s.has_version_changed())
+    self.assertTrue(self.mock_find_version.called)

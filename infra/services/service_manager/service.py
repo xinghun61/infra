@@ -9,7 +9,10 @@ import os.path
 import signal
 import time
 
+import psutil
+
 from infra.libs.service_utils import daemon
+from infra.services.service_manager import version_finder
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ class Service(object):
   """
 
   def __init__(self, state_directory, service_config, time_fn=time.time,
-               sleep_fn=time.sleep, proc_directory='/proc'):
+               sleep_fn=time.sleep):
     """
     Args:
       state_directory: A file will be created in this directory (with the same
@@ -40,6 +43,7 @@ class Service(object):
           for a description of the fields.
     """
 
+    self.config = service_config
     self.name = service_config['name']
     self.root_directory = service_config['root_directory']
     self.tool = service_config['tool']
@@ -50,7 +54,6 @@ class Service(object):
     self._state_file = os.path.join(state_directory, self.name)
     self._time_fn = time_fn
     self._sleep_fn = sleep_fn
-    self._proc_directory = proc_directory
 
   def get_running_process_state(self):
     """Returns an information dict about the process if it's currently running.
@@ -61,6 +64,8 @@ class Service(object):
           The value can be compared to the starttime of a process that claims
           the same PID in the future to check whether it's the same process, or
           a different process that has recycled the same PID.
+      version: The version of the service's package at the time the service was
+          started.
 
     Returns None if the service is not running.
     """
@@ -89,6 +94,15 @@ class Service(object):
   def is_running(self):
     """Returns True if the service is running."""
     return self.get_running_process_state() is not None
+
+  def has_version_changed(self):
+    """Returns True if the version has changed since the process started."""
+
+    state = self.get_running_process_state()
+    if state is None:
+      return False
+
+    return state['version'] != version_finder.find_version(self.config)
 
   def start(self):
     """Starts the service if it's not running already.
@@ -134,16 +148,15 @@ class Service(object):
     # Remove the state file.
     os.unlink(self._state_file)
 
-  def _read_starttime(self, pid):
+  def _read_starttime(self, pid):  # pragma: no cover
     """Reads the starttime value of the process with the given PID.
 
     Returns None if that PID does not exist.
     """
 
     try:
-      with open(os.path.join(self._proc_directory, str(pid), 'stat')) as fh:
-        return int(fh.readline().split(' ')[21])
-    except (IOError, ValueError, IndexError):
+      return psutil.Process(pid).create_time()
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
       return None
 
   def _start_child(self, pipe):
@@ -199,6 +212,7 @@ class Service(object):
       json.dump({
           'pid': data['pid'],
           'starttime': starttime,
+          'version': version_finder.find_version(self.config),
       }, fh)
 
     LOGGER.info("Service %s started with PID %d", self.name, data['pid'])
