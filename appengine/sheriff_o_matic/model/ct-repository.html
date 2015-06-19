@@ -54,25 +54,35 @@ CTRepository.prototype._handleResponse = function(json) {
       this.commits[commit.revision] = commit;
     }
   }.bind(this));
-
   this._updateRevisionRange();
 }
 
 CTRepository.prototype._updateRevisionRange = function() {
-  var sortedCommits = Object.keys(this.commits).sort();
+  // This Number cast is done because Object.keys coerces every key into a string,
+  // which isn't a problem for sorting unless you have a change in the
+  // number of decimal places somwehere in this.commits.
+  var sortedCommits = Object.keys(this.commits).map(Number).sort();
+
   this.lastRevision = sortedCommits.last();
   this.earliestRevision = sortedCommits.first();
 }
 
 CTRepository.prototype.range = function(revisions) {
   var commits = [];
-  if (this.earliestRevision > revisions.first()) {
+  if (revisions.length > 500) {
+    console.log('Too many ' + this.name + ' revisions: ' + revisions.length);
+  }
+  if (this.earliestRevision > revisions.last()) {
     // The revision is out of the range of previously fetched revisions.
     // Fetch more revisions from the repository.
     var delta = this.earliestRevision - revisions.first();
     var remainderUrl = this._getDataUrl(this.nextToken, delta);
-    var responseHandler = this._handleResponse.bind(this);
-    net.ajax({url: remainderUrl}).then(responseHandler);
+    if (delta > 500) {
+      console.log(this.name + ' excessive revision delta requested, skipping: ' + delta);
+    } else {
+      var responseHandler = this._handleResponse.bind(this);
+      net.ajax({url: remainderUrl}).then(responseHandler);
+    }
   }
 
   revisions.forEach(function(revision) {
