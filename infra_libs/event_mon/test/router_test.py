@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import random
 import unittest
 
 from infra_libs.event_mon import router
@@ -39,3 +40,14 @@ class RouterTests(unittest.TestCase):
     r = router._Router({}, endpoint=None)
     r.push_event(None)
     self.assertTrue(r.close())
+
+
+class BackoffTest(unittest.TestCase):
+  def test_backoff_time_first_value(self):
+    t = router.backoff_time(attempt=0, retry_backoff=2.)
+    random.seed(0)
+    self.assertTrue(1.5 <= t <= 2.5)
+
+  def test_backoff_time_max_value(self):
+    t = router.backoff_time(attempt=10, retry_backoff=2., max_delay=5)
+    self.assertTrue(abs(t - 5.) < 0.0001)

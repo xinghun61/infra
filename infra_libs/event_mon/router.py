@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import Queue
 import logging
+import random
 import threading
 import time
 
@@ -18,6 +18,22 @@ def time_ms():
   return int(1000 * time.time())
 
 
+def backoff_time(attempt, retry_backoff=2., max_delay=30.):
+  """Compute randomized exponential backoff time.
+
+  Args:
+    attempt (int): attempt number, starting at zero.
+
+  Keyword Args:
+    retry_backoff(float): backoff time on the first attempt.
+    max_delay(float): maximum returned value.
+  """
+  delay = retry_backoff * (2 ** attempt)
+  # Add +-25% of variation.
+  delay += delay * ((random.random() - 0.5) / 2.)
+  return min(delay, max_delay)
+
+
 class _Router(object):
   """Route events to the right destination.
 
@@ -29,13 +45,13 @@ class _Router(object):
   ... fill in event ...
   router.push_event(event)
   """
-  def __init__(self, cache, endpoint=None):
+  def __init__(self, cache, endpoint=None, timeout=10):
     # cache is defined in config.py. Passed as a parameter to avoid
     # a circular import.
 
     # endpoint == None means 'dry run'. No data is sent.
     self.endpoint = endpoint
-    self.http = httplib2.Http()
+    self.http = httplib2.Http(timeout=timeout)
     self.cache = cache
 
     if self.endpoint and self.cache['service_account_creds']:
@@ -46,22 +62,27 @@ class _Router(object):
         scope='https://www.googleapis.com/auth/cclog'
       )
 
-    self.event_queue = Queue.Queue()
-    self._thread = threading.Thread(target=self._router)
-    self._thread.daemon = True
-    logging.debug('event_mon: starting router thread')
-    self._thread.start()
+  def _post_to_endpoint(self, events, try_num=3, retry_backoff=2.):
+    """Post protobuf to endpoint.
 
-  def _router(self):
-    while(True):  # pragma: no branch
-      events = self.event_queue.get()
-      if events is None:
-        break
+    Args:
+      events(LogRequestLite): the protobuf to post.
 
-      # Set this time at the very last moment
-      events.request_time_ms = time_ms()
-      if self.endpoint:  # pragma: no cover
-        logging.info('event_mon: POSTing events to %s', self.endpoint)
+    Keyword Args:
+      try_num(int): max number of http requests send to the endpoint.
+      retry_backoff(float): time in seconds before retrying posting to the
+         endpoint. Randomized exponential backoff is applied on subsequent
+         retries.
+
+    Returns:
+      success(bool): whether pushing to the endpoint succeeded or not.
+    """
+    # Set this time at the very last moment
+    events.request_time_ms = time_ms()
+    if self.endpoint:  # pragma: no cover
+      logging.info('event_mon: POSTing events to %s', self.endpoint)
+
+      for attempt in xrange(try_num - 1):
         response, _ = self.http.request(
           uri=self.endpoint,
           method='POST',
@@ -69,37 +90,33 @@ class _Router(object):
           body=events.SerializeToString()
         )
 
-        if response.status != 200:
-          # TODO(pgervais): implement retry / local storage when this
-          # happens.
-          logging.error('failed to POST data to %s', self.endpoint)
-          logging.error('data: %s', str(events)[:1000])
-          logging.error(response)
-      else:
-        infra_events = [str(ChromeInfraEvent.FromString(
-          ev.source_extension)) for ev in events.log_event]
-        logging.info('Fake post request. Sending:\n%s',
-                     '\n'.join(infra_events))
+        if response.status == 200:
+          return True
 
-  def close(self, timeout=None):
+        logging.error('failed to POST data to %s (attempt %d)',
+                      self.endpoint, attempt)
+        logging.error('data: %s', str(events)[:200])
+
+        time.sleep(backoff_time(attempt, retry_backoff=retry_backoff))
+      return False
+
+    else:
+      infra_events = [str(ChromeInfraEvent.FromString(
+        ev.source_extension)) for ev in events.log_event]
+      logging.info('Fake post request. Sending:\n%s',
+                   '\n'.join(infra_events))
+      return True
+
+  def close(self, timeout=None): # pylint: disable=unused-argument
     """
     Returns:
       success (bool): True if everything went well. Otherwise, there is no
         guarantee that all events have been properly sent to the remote.
     """
-    timeout = timeout or 5
-    logging.debug('event_mon: trying to close')
-    self.event_queue.put(None)
-    self._thread.join(timeout)
-    # If the thread is still alive at this point, we can't but wait for a call
-    # to sys.exit. Since we expect this function to be called at the end of the
-    # program, it should come soon.
-    success = not self._thread.is_alive()
-    if success:
-      logging.debug('event_mon: successfully closed.')
-    else:  # pragma: no cover
-      logging.debug('event_mon: timeout waiting for thread to finish.')
-    return success
+    # This is a stub now, for backward compatibility. Maybe we'll use that
+    # again if a thread is re-added to the lib.
+    logging.debug('event_mon: closing.')
+    return True
 
   def push_event(self, event):
     """Enqueue event to push to the collection service.
@@ -122,5 +139,4 @@ class _Router(object):
     request_p = LogRequestLite()
     request_p.log_source_name = 'CHROME_INFRA'
     request_p.log_event.extend((event,))  # copies the protobuf
-    self.event_queue.put(request_p)
-    return True
+    return self._post_to_endpoint(request_p)
