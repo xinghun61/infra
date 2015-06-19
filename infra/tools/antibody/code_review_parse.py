@@ -7,6 +7,14 @@ import requests
 import sqlite3
 import time
 
+DEFAULT_TABLE_NAME = 'rietveld'
+
+
+def create_table(cur):
+  cur.execute('CREATE TABLE IF NOT EXISTS %s (issue_num, lgtm, tbr, '   
+              'request_timestamp, rietveld_url PRIMARY KEY)'
+              % DEFAULT_TABLE_NAME)
+
 
 def extract_json_data(rietveld_url):  # pragma: no cover
   url_components = re.split('(https?:\/\/)([\da-z\.-]+)', rietveld_url)
@@ -49,10 +57,23 @@ def add_rietveld_data_to_db(rietveld_url, file_name):  # pragma: no cover
 
 
 def write_data_to_db(rietveld_url, json_data, file_name):
-  con = sqlite3.connect(file_name)
-  with con:
+  with sqlite3.connect(file_name) as con:
     cur = con.cursor()
     db_data = (json_data['issue'], contains_lgtm(json_data), 
                contains_tbr(json_data), time.time(), rietveld_url)
-    cur.execute('INSERT OR REPLACE INTO rietveld VALUES (?, ?, ?, ?, ?)', 
-                db_data)
+    cur.execute('INSERT OR REPLACE INTO %s VALUES (?, ?, ?, ?, ?)' 
+                %DEFAULT_TABLE_NAME, db_data)
+
+
+def get_tbr_no_lgtm(antibody_db):
+  with sqlite3.connect(antibody_db) as con:
+    cur = con.cursor()
+    cur.execute('SELECT * FROM %s;' % DEFAULT_TABLE_NAME)
+    db_data = cur.fetchall()
+    suspicious_commits = []
+    # db_data: (issue_num, lgtm, tbr, request_timestamp, rietveld_url)
+    for line in db_data:
+      lgtm, tbr = line[1:3]
+      if not lgtm and tbr:
+        suspicious_commits.append(line)
+    return suspicious_commits

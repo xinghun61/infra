@@ -15,6 +15,8 @@ import logging
 import sys
 
 from infra.tools.antibody import antibody
+from infra.tools.antibody import code_review_parse
+from infra.tools.antibody import git_commit_parser
 import infra_libs.logs
 
 
@@ -35,7 +37,16 @@ def main(argv):
   # Do more processing here
   LOGGER.info('Antibody starting')
   
-  antibody.setup_rietveld_db(args.rietveld_url, args.filename)
+  antibody.setup_antibody_db(args.filename)
+  if args.rietveld_url:
+    code_review_parse.add_rietveld_data_to_db(args.rietveld_url, args.filename)
+  else:
+    git_commit_parser.parse_git_to_db(args.filename)
+    rietveld_urls = git_commit_parser.get_urls_from_git_db(args.filename)
+    for url in rietveld_urls:
+      code_review_parse.add_rietveld_data_to_db(url, args.filename)
+    print code_review_parse.get_tbr_no_lgtm(args.filename)
+
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

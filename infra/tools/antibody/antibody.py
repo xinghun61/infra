@@ -7,11 +7,13 @@
 import logging
 import os
 import sqlite3
+import sys
 
 from infra.tools.antibody import code_review_parse
+from infra.tools.antibody import git_commit_parser
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-RIETVELD_PARSE_DB = os.path.join(THIS_DIR, 'rietveld_parse.db')
+ANTIBODY_DB = os.path.join(THIS_DIR, 'antibody.db')
 
 # https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
@@ -19,17 +21,15 @@ LOGGER = logging.getLogger(__name__)
 
 def add_argparse_options(parser):
   """Define command-line arguments."""
-  parser.add_argument('--rietveld-url', '-ru', required=True,
+  parser.add_argument('--rietveld-url', '-r', 
                       help="url of rietveld code review to determine whether"
                            "the issue has been lgtm'ed or tbr'ed")
-  parser.add_argument('--filename', '-f', default=RIETVELD_PARSE_DB,
+  parser.add_argument('--filename', '-f', default=ANTIBODY_DB,
                       help='file in which rietveld information will be kept')
                       
 
-def setup_rietveld_db(rietveld_url, db_file):
-  con = sqlite3.connect(db_file)
-  with con:
+def setup_antibody_db(db_file=ANTIBODY_DB):  # pragma: no cover
+  with sqlite3.connect(db_file) as con:
     cur = con.cursor()
-    cur.execute('CREATE TABLE IF NOT EXISTS rietveld (issue_num, ' + 
-                'lgtm, tbr, request_timestamp, rietveld_url PRIMARY KEY)')
-    code_review_parse.add_rietveld_data_to_db(rietveld_url, db_file)
+    git_commit_parser.create_table(cur)
+    code_review_parse.create_table(cur)
