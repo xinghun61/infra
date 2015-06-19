@@ -231,6 +231,10 @@ class DetectFirstFailurePipeline(BasePipeline):
     if not build_info:  # pragma: no cover
       raise pipeline.Retry('Failed to extract build info.')
 
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    analysis.not_passed_steps = build_info.not_passed_steps
+    analysis.put()
+
     failure_info = {
         'failed': True,
         'master_name': master_name,

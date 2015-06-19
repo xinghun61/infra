@@ -86,8 +86,8 @@ class BuildBotTest(unittest.TestCase):
 
     self.assertEqual(
         expected_url,
-        buildbot.CreateArchivedBuildUrl(master_name, 
-                                        builder_name, 
+        buildbot.CreateArchivedBuildUrl(master_name,
+                                        builder_name,
                                         build_number))
 
   def testCreateBuildUrl(self):
@@ -159,7 +159,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertIsNone(data)
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
-    
+
   def testGetBuildDataFromBuildMasterSuccess(self):
     master_name = 'a'
     builder_name = 'b c'
@@ -336,6 +336,10 @@ class BuildBotTest(unittest.TestCase):
         'content_browsertests on Windows-XP-SP3',
         'content_unittests on Windows-XP-SP3',
     ]
+    expected_not_passed_steps = [
+        'interactive_ui_tests on Windows-XP-SP3',
+        'net_unittests on Windows-XP-SP3',
+    ]
 
     build_info = buildbot.ExtractBuildInfo(
         master_name, builder_name, build_number, build_data)
@@ -350,3 +354,4 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(expected_blame_list, build_info.blame_list)
     self.assertEqual(expected_failed_steps, build_info.failed_steps)
     self.assertEqual(expected_passed_steps, build_info.passed_steps)
+    self.assertEqual(expected_not_passed_steps, build_info.not_passed_steps)

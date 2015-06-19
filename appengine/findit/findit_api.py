@@ -32,26 +32,27 @@ package = 'FindIt'
 
 # These subclasses of Message are basically definitions of Protocol RPC
 # messages. https://cloud.google.com/appengine/docs/python/tools/protorpc/
-class BuildFailure(messages.Message):
+class _BuildFailure(messages.Message):
   master_url = messages.StringField(1, required=True)
   builder_name = messages.StringField(2, required=True)
   build_number = messages.IntegerField(3, variant=messages.Variant.INT32,
                                        required=True)
+  # All failed steps of the build reported by the client.
   failed_steps = messages.StringField(4, repeated=True, required=False)
 
 
-class BuildFailureCollection(messages.Message):
+class _BuildFailureCollection(messages.Message):
   """Represents a request from a client, eg. builder_alerts."""
-  builds = messages.MessageField(BuildFailure, 1, repeated=True)
+  builds = messages.MessageField(_BuildFailure, 1, repeated=True)
 
 
-class SuspectedCL(messages.Message):
+class _SuspectedCL(messages.Message):
   repo_name = messages.StringField(1, required=True)
   revision = messages.StringField(2, required=True)
   commit_position = messages.IntegerField(3, variant=messages.Variant.INT32)
 
 
-class BuildFailureAnalysisResult(messages.Message):
+class _BuildFailureAnalysisResult(messages.Message):
   master_url = messages.StringField(1, required=True)
   builder_name = messages.StringField(2, required=True)
   build_number = messages.IntegerField(3, variant=messages.Variant.INT32,
@@ -62,12 +63,12 @@ class BuildFailureAnalysisResult(messages.Message):
   test_name = messages.StringField(6)
   first_known_failed_build_number=messages.IntegerField(
       7, variant=messages.Variant.INT32)
-  suspected_cls = messages.MessageField(SuspectedCL, 8, repeated=True)
+  suspected_cls = messages.MessageField(_SuspectedCL, 8, repeated=True)
 
 
-class BuildFailureAnalysisResultCollection(messages.Message):
+class _BuildFailureAnalysisResultCollection(messages.Message):
   """Represents a response to the client, eg. builder_alerts."""
-  results = messages.MessageField(BuildFailureAnalysisResult, 1, repeated=True)
+  results = messages.MessageField(_BuildFailureAnalysisResult, 1, repeated=True)
 
 
 # Create a Cloud Endpoints API.
@@ -77,7 +78,7 @@ class FindItApi(remote.Service):
   """FindIt API v1."""
 
   @endpoints.method(
-      BuildFailureCollection, BuildFailureAnalysisResultCollection,
+      _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
       path='buildfailure', name='buildfailure')
   def AnalyzeBuildFailures(self, request):
     """Returns analysis results for the given build failures in the request.
@@ -85,10 +86,10 @@ class FindItApi(remote.Service):
     Analysis of build failures will be triggered automatically on demand.
 
     Args:
-      request (BuildFailureCollection): A list of build failures.
+      request (_BuildFailureCollection): A list of build failures.
 
     Returns:
-      BuildFailureAnalysisResultCollection
+      _BuildFailureAnalysisResultCollection
       A list of analysis results for the given build failures.
     """
     results = []
@@ -97,22 +98,20 @@ class FindItApi(remote.Service):
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
-      if not master_name:
+      if not (master_name and masters.MasterIsSupported(master_name)):
         continue
 
-      if not masters.MasterIsSupported(master_name):
-        continue
-
-      logging.info('Failed steps for build %s/%s/%d: %s',
-                   master_name, build.builder_name, build.build_number,
-                   ', '.join(build.failed_steps))
-
-      force = False  #TODO: use the failed step to trigger incremental analysis.
+      # If the build failure was already analyzed and a new analysis is
+      # scheduled to analyze new failed steps, the returned WfAnalysis will
+      # still have the result from last completed analysis.
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-          master_name, build.builder_name, build.build_number, force,
-          _BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+          master_name, build.builder_name, build.build_number,
+          failed_steps=build.failed_steps,
+          force=False,
+          queue_name=_BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
-      if not analysis.completed or analysis.failed:
+      if analysis.failed or not analysis.result:
+        # Bail out if the analysis failed or there is no result yet.
         continue
 
       for failure in analysis.result['failures']:
@@ -121,12 +120,12 @@ class FindItApi(remote.Service):
 
         suspected_cls = []
         for suspected_cl in failure['suspected_cls']:
-          suspected_cls.append(SuspectedCL(
+          suspected_cls.append(_SuspectedCL(
               repo_name=suspected_cl['repo_name'],
               revision=suspected_cl['revision'],
               commit_position=suspected_cl['commit_position']))
 
-        results.append(BuildFailureAnalysisResult(
+        results.append(_BuildFailureAnalysisResult(
             master_url=build.master_url,
             builder_name=build.builder_name,
             build_number=build.build_number,
@@ -136,4 +135,4 @@ class FindItApi(remote.Service):
             first_known_failed_build_number=failure['first_failure'],
             suspected_cls=suspected_cls))
 
-    return BuildFailureAnalysisResultCollection(results=results)
+    return _BuildFailureAnalysisResultCollection(results=results)

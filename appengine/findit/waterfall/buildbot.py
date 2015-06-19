@@ -202,6 +202,12 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   for change in changes:
     build_info.blame_list.append(change['revision'])
 
+  # Step categories:
+  # 1. A step is passed if it is in SUCCESS or WARNINGS status.
+  # 2. A step is failed if it is in FAILED status.
+  # 3. A step is not passed if it is not in SUCCESS or WARNINGS status. This
+  #    category includes steps in statuses: FAILED, SKIPPED, EXCEPTION, RETRY,
+  #    CANCELLED, etc.
   steps = data_json.get('steps', [])
   for step_data in steps:
     step_name = step_data['name']
@@ -219,6 +225,9 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
       continue
 
     step_result = GetStepResult(step_data)
+    if step_result not in (SUCCESS, WARNINGS):
+      build_info.not_passed_steps.append(step_name)
+
     if step_result in (SUCCESS, WARNINGS):
       build_info.passed_steps.append(step_name)
     elif step_result == FAILURE:

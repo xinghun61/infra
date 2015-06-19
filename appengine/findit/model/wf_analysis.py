@@ -45,7 +45,7 @@ class WfAnalysis(BaseBuildModel):
   @property
   def result_status_description(self):
     return wf_analysis_result_status.RESULT_STATUS_TO_DESCRIPTION.get(
-        self.result_status,'')
+        self.result_status, '')
 
   @property
   def correct(self):
@@ -91,6 +91,7 @@ class WfAnalysis(BaseBuildModel):
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
 
   # Analysis result for the build failure.
+  not_passed_steps = ndb.StringProperty(indexed=False, repeated=True)
   result = ndb.JsonProperty(indexed=False, compressed=True)
   # Suspected CLs we found.
   suspected_cls = ndb.JsonProperty(indexed=False, compressed=True)

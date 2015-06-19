@@ -16,6 +16,7 @@ class BuildInfo(object):  # pragma: no cover
     self.blame_list = []
     self.failed_steps = []
     self.passed_steps = []
+    self.not_passed_steps = []
 
   def PrettyPrint(self):
     print 'master: %s' % self.master_name
@@ -28,3 +29,4 @@ class BuildInfo(object):  # pragma: no cover
     print 'CLs: %s' % ', '.join(self.blame_list)
     print 'Failed steps: %s' % ', '.join(self.failed_steps)
     print 'Passed steps: %s' % ', '.join(self.passed_steps)
+    print 'Not-passed steps: %s' % ', '.join(self.not_passed_steps)

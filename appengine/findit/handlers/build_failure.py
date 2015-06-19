@@ -49,8 +49,8 @@ class BuildFailure(BaseHandler):
 
     force = self.request.get('force') == '1'
     analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number, force,
-        BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+        master_name, builder_name, build_number,
+        force=force, queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
     def FormatDatetime(datetime):
       if not datetime:

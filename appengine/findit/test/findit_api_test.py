@@ -30,13 +30,13 @@ class FinditApiTest(testing.EndpointsTestCase):
             }
         ]
     }
-    expected_result = {}
+    expected_results = []
 
     self._MockMasterIsSupported(supported=True)
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_result, response.json_body)
+    self.assertEqual(expected_results, response.json_body.get('results', []))
 
   def testMasterIsNotSupported(self):
     builds = {
@@ -48,18 +48,18 @@ class FinditApiTest(testing.EndpointsTestCase):
             }
         ]
     }
-    expected_result = {}
+    expected_results = []
 
     self._MockMasterIsSupported(supported=False)
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_result, response.json_body)
+    self.assertEqual(expected_results, response.json_body.get('results', []))
 
-  def testIncompletedAndFailedAnalysisIsNotReturned(self):
+  def testFailedAnalysisIsNotReturnedEvenWhenItHasResults(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 1
+    build_number = 5
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -72,19 +72,124 @@ class FinditApiTest(testing.EndpointsTestCase):
         ]
     }
 
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.ERROR
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'test',
+                'first_failure': 3,
+                'last_pass': 1,
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'git_hash',
+                        'commit_position': 123,
+                    }
+                ]
+            }
+        ]
+    }
+    analysis.put()
+
+    expected_result = []
+
     self._MockMasterIsSupported(supported=True)
 
-    for status in (wf_analysis_status.PENDING, wf_analysis_status.ANALYZING,
-                   wf_analysis_status.ERROR):
-      analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-      analysis.status = status
-      analysis.put()
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
 
-      expected_result = {}
+  def testNoResultIsReturnedWhenNoAnalysisIsCompleted(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
 
-      response = self.call_api('AnalyzeBuildFailures', body=builds)
-      self.assertEqual(200, response.status_int)
-      self.assertEqual(expected_result, response.json_body)
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.ANALYZING
+    analysis.result = None
+    analysis.put()
+
+    expected_result = []
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
+
+  def testPreviousAnalysisResultIsReturnedWhileANewAnalysisIsRunning(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number,
+                'failed_steps': ['a', 'b']
+            }
+        ]
+    }
+
+    self._MockMasterIsSupported(supported=True)
+
+    analysis_result = {
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 23,
+                'last_pass': 22,
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'git_hash',
+                        'commit_position': 123,
+                    }
+                ]
+            }
+        ]
+    }
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'a',
+            'is_sub_test': False,
+            'first_known_failed_build_number': 23,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'git_hash',
+                    'commit_position': 123,
+                }
+            ]
+        },
+    ]
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.ANALYZING
+    analysis.result = analysis_result
+    analysis.put()
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_results, response.json_body['results'])
 
   def testAnalysisFindingNoSuspectedCLsIsNotReturned(self):
     master_name = 'm'
@@ -116,13 +221,13 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     analysis.put()
 
-    expected_result = {}
+    expected_result = []
 
     self._MockMasterIsSupported(supported=True)
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_result, response.json_body)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testAnalysisFindingSuspectedCLsIsReturned(self):
     master_name = 'm'
@@ -177,33 +282,31 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     analysis.put()
 
-    expected_result = {
-        'results': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'step_name': 'test',
-                'is_sub_test': False,
-                'first_known_failed_build_number': 3,
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash1',
-                        'commit_position': 234,
-                    },
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash2',
-                        'commit_position': 288,
-                    }
-                ]
-            }
-        ]
-    }
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'test',
+            'is_sub_test': False,
+            'first_known_failed_build_number': 3,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'git_hash1',
+                    'commit_position': 234,
+                },
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'git_hash2',
+                    'commit_position': 288,
+                }
+            ]
+        }
+    ]
 
     self._MockMasterIsSupported(supported=True)
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_result, response.json_body)
+    self.assertEqual(expected_results, response.json_body.get('results'))
