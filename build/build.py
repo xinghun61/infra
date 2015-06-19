@@ -177,9 +177,10 @@ def read_yaml(py_venv, path):
     python_venv_path = ('Scripts', 'python.exe')
   else:
     python_venv_path = ('bin', 'python')
+  executable = os.path.join(py_venv, *python_venv_path)
   proc = subprocess.Popen(
-      ['python', '-c', oneliner],
-      executable=os.path.join(py_venv, *python_venv_path),
+      [executable, '-c', oneliner],
+      executable=executable,
       stdin=subprocess.PIPE,
       stdout=subprocess.PIPE)
   with open(path, 'r') as f:
