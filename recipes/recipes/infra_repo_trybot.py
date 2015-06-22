@@ -38,6 +38,12 @@ def RunSteps(api):
   files = result.stdout.splitlines()
 
   with api.step.defer_results():
+    # Rietveld tests.
+    if any(f.startswith('appengine/chromium_rietveld') for f in files):
+      api.step('rietveld tests',
+               ['make', '-C', 'appengine/chromium_rietveld', 'test'],
+               cwd=api.path['checkout'])
+
     if not all(f.startswith('go/') for f in files):
       api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
 
@@ -87,4 +93,13 @@ def GenTests(api):
         buildername='infra-internal-tester',
         patch_project='infra_internal') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('rietveld_tests') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('appengine/chromium_rietveld/codereview/views.py')
   )
