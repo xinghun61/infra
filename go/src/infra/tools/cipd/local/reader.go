@@ -6,8 +6,10 @@ package local
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,7 +25,7 @@ type PackageInstance interface {
 	Close() error
 	// Pin identifies package name and concreted package instance ID of this package file.
 	Pin() common.Pin
-	// Files returns a list of files inside the package.
+	// Files returns a list of files to deploy with the package.
 	Files() []File
 	// DataReader returns reader that reads raw package data.
 	DataReader() io.ReadSeeker
@@ -191,7 +193,7 @@ func (inst *packageInstance) open(instanceID string) error {
 	}
 	inst.instanceID = calculatedSHA1
 
-	// List files inside and package manifest.
+	// List files and package manifest.
 	inst.zip, err = zip.NewReader(&readerAt{r: inst.data}, inst.dataSize)
 	if err != nil {
 		return err
@@ -206,6 +208,19 @@ func (inst *packageInstance) open(instanceID string) error {
 			}
 		}
 	}
+
+	// Generate version_file if needed.
+	if inst.manifest.VersionFile != "" {
+		vf, err := makeVersionFile(inst.manifest.VersionFile, VersionFile{
+			PackageName: inst.manifest.PackageName,
+			InstanceID:  inst.instanceID,
+		})
+		if err != nil {
+			return err
+		}
+		inst.files = append(inst.files, vf)
+	}
+
 	return nil
 }
 
@@ -245,6 +260,39 @@ func readManifestFile(f File) (Manifest, error) {
 	}
 	defer r.Close()
 	return readManifest(r)
+}
+
+// makeVersionFile returns File representing a JSON blob with info about package
+// version. It's what's deployed at path specified in 'version_file' stanza in
+// package definition YAML.
+func makeVersionFile(relPath string, versionFile VersionFile) (File, error) {
+	if !isCleanSlashPath(relPath) {
+		return nil, fmt.Errorf("Invalid version_file: %s", relPath)
+	}
+	blob, err := json.MarshalIndent(versionFile, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return &blobFile{
+		name: relPath,
+		blob: blob,
+	}, nil
+}
+
+// blobFile implements File on top of byte array with file data.
+type blobFile struct {
+	name string
+	blob []byte
+}
+
+func (b *blobFile) Name() string                   { return b.name }
+func (b *blobFile) Size() uint64                   { return uint64(len(b.blob)) }
+func (b *blobFile) Executable() bool               { return false }
+func (b *blobFile) Symlink() bool                  { return false }
+func (b *blobFile) SymlinkTarget() (string, error) { return "", nil }
+
+func (b *blobFile) Open() (io.ReadCloser, error) {
+	return ioutil.NopCloser(bytes.NewReader(b.blob)), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

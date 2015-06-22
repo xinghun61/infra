@@ -33,3 +33,6 @@ data:
   - file: test.py
   - file: bootstrap/run_helper.py
   - file: bootstrap/remove_orphaned_pycs.py
+
+  # Where to put info about installed package version.
+  - version_file: CIPD_VERSION.json

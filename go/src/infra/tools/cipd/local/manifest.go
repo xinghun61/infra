@@ -25,7 +25,8 @@ const (
 type Manifest struct {
 	FormatVersion string     `json:"format_version"`
 	PackageName   string     `json:"package_name"`
-	Files         []FileInfo `json:"files,omitempty"` // present only in deployed manifest
+	VersionFile   string     `json:"version_file,omitempty"` // where to put JSON with info about deployed package
+	Files         []FileInfo `json:"files,omitempty"`        // present only in deployed manifest
 }
 
 // FileInfo is JSON-ish struct with info extracted from File interface.
@@ -38,6 +39,13 @@ type FileInfo struct {
 	Executable bool `json:"executable,omitempty"`
 	// Symlink is a path the symlink points to or "" if this file is not a symlink.
 	Symlink string `json:"symlink,omitempty"`
+}
+
+// VersionFile describes JSON file with package version information that's
+// deployed to a path specified in 'version_file' attribute of the manifest.
+type VersionFile struct {
+	PackageName string `json:"package_name"`
+	InstanceID  string `json:"instance_id"`
 }
 
 // readManifest reads and decodes manifest JSON from io.Reader.

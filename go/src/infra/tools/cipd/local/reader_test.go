@@ -142,6 +142,7 @@ func TestPackageReading(t *testing.T) {
 			},
 			Output:      &out,
 			PackageName: "testing",
+			VersionFile: "subpath/version.json",
 		})
 		So(err, ShouldBeNil)
 
@@ -168,6 +169,7 @@ func TestPackageReading(t *testing.T) {
 			"rel_symlink",
 			"abs_symlink",
 			".cipdpkg/manifest.json",
+			"subpath/version.json",
 		})
 		So(string(dest.files[0].Bytes()), ShouldEqual, "12345")
 		So(dest.files[1].executable, ShouldBeTrue)
@@ -178,6 +180,7 @@ func TestPackageReading(t *testing.T) {
 		goodManifest := `{
 			"format_version": "1",
 			"package_name": "testing",
+			"version_file": "subpath/version.json",
 			"files": [
 				{
 					"name": "testing/qwerty",
@@ -197,11 +200,23 @@ func TestPackageReading(t *testing.T) {
 					"name": "abs_symlink",
 					"size": 0,
 					"symlink": "/abc/def"
+				},
+				{
+					"name": "subpath/version.json",
+					"size": 92
 				}
 			]
 		}`
 		So(dest.files[4].name, ShouldEqual, ".cipdpkg/manifest.json")
 		So(string(dest.files[4].Bytes()), shouldBeSameJSONDict, goodManifest)
+
+		// Verify version file is correct.
+		goodVersionFile := `{
+			"instance_id": "e01c6837705d21418a61bc17c794746daa32379f",
+			"package_name": "testing"
+		}`
+		So(dest.files[5].name, ShouldEqual, "subpath/version.json")
+		So(string(dest.files[5].Bytes()), shouldBeSameJSONDict, goodVersionFile)
 	})
 }
 

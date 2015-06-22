@@ -25,7 +25,7 @@ type PackageDef struct {
 	Package string
 	// Root defines where to search for files, relative to package file itself.
 	Root string
-	// Data describe what to add to the package.
+	// Data describes what is deployed with the package.
 	Data []PackageChunkDef
 }
 
@@ -37,6 +37,8 @@ type PackageChunkDef struct {
 	Dir string
 	// File is a single file to add to the package.
 	File string
+	// VersionFile defines where to drop JSON file with package version.
+	VersionFile string `yaml:"version_file"`
 	// Exclude is a list of glob patterns to exclude when scanning a directory.
 	Exclude []string
 }
@@ -68,13 +70,34 @@ func LoadPackageDef(r io.Reader, vars map[string]string) (out PackageDef, err er
 		return
 	}
 
-	// Make sure "file" or "dir" are used, but not both.
+	versionFile := ""
 	for i, chunk := range out.Data {
-		if chunk.File == "" && chunk.Dir == "" {
-			return out, fmt.Errorf("files entry #%d needs 'file' or 'dir' key", i)
+		// Make sure 'dir' and 'file' etc. aren't used together.
+		has := []string{}
+		if chunk.File != "" {
+			has = append(has, "file")
 		}
-		if chunk.File != "" && chunk.Dir != "" {
-			return out, fmt.Errorf("files entry #%d can't have both 'files' and 'dir' keys", i)
+		if chunk.VersionFile != "" {
+			has = append(has, "version_file")
+		}
+		if chunk.Dir != "" {
+			has = append(has, "dir")
+		}
+		if len(has) == 0 {
+			return out, fmt.Errorf("files entry #%d needs 'file', 'dir' or 'version_file' key", i)
+		}
+		if len(has) != 1 {
+			return out, fmt.Errorf("files entry #%d should have only one key, got %q", i, has)
+		}
+		//'version_file' can appear only once, it must be a clean relative path.
+		if chunk.VersionFile != "" {
+			if versionFile != "" {
+				return out, fmt.Errorf("'version_file' entry can be used only once")
+			}
+			versionFile = chunk.VersionFile
+			if !isCleanSlashPath(versionFile) {
+				return out, fmt.Errorf("'version_file' must be a path relative to the package root: %s", versionFile)
+			}
 		}
 	}
 
@@ -111,6 +134,11 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 	}
 
 	for _, chunk := range def.Data {
+		// Handled elsewhere.
+		if chunk.VersionFile != "" {
+			continue
+		}
+
 		// Individual file.
 		if chunk.File != "" {
 			file, err := WrapFile(makeAbs(chunk.File), root, nil)
@@ -158,6 +186,17 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 		out = append(out, seen[n])
 	}
 	return out, nil
+}
+
+// VersionFile defines where to drop JSON file with package version.
+func (def *PackageDef) VersionFile() string {
+	// It is already validated by LoadPackageDef, so just return it.
+	for _, chunk := range def.Data {
+		if chunk.VersionFile != "" {
+			return chunk.VersionFile
+		}
+	}
+	return ""
 }
 
 // makeExclusionFilter produces a predicate that checks an absolute file path

@@ -216,6 +216,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: pkgDef.Package,
+			VersionFile: pkgDef.VersionFile(),
 			Logger:      log,
 		}
 		return out, nil

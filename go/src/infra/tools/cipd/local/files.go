@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -226,6 +227,24 @@ func isSubpath(path, root string) bool {
 		root += string(filepath.Separator)
 	}
 	return strings.HasPrefix(path, root)
+}
+
+// isCleanSlashPath returns true if path is a relative slash-separated path with
+// no '..' or '.' entries and no '\\'. Basically "a/b/c/d".
+func isCleanSlashPath(p string) bool {
+	if p == "" {
+		return false
+	}
+	if strings.ContainsRune(p, '\\') {
+		return false
+	}
+	if p != path.Clean(p) {
+		return false
+	}
+	if p[0] == '/' || p == ".." || strings.HasPrefix(p, "../") {
+		return false
+	}
+	return true
 }
 
 ////////////////////////////////////////////////////////////////////////////////

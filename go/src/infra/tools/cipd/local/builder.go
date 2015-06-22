@@ -27,6 +27,8 @@ type BuildInstanceOptions struct {
 	Output io.Writer
 	// Package name, e.g. 'infra/tools/cipd'.
 	PackageName string
+	// VersionFile is slash separated path where to drop JSON with version info.
+	VersionFile string
 	// Log defines logger to use.
 	Logger logging.Logger
 }
@@ -170,10 +172,14 @@ func (m *manifestFile) Open() (io.ReadCloser, error) {
 // makeManifestFile generates a package manifest file and returns it as
 // File interface.
 func makeManifestFile(opts BuildInstanceOptions) (File, error) {
+	if opts.VersionFile != "" && !isCleanSlashPath(opts.VersionFile) {
+		return nil, fmt.Errorf("version file path should be a clean path relative to a package root: %s", opts.VersionFile)
+	}
 	buf := &bytes.Buffer{}
 	err := writeManifest(&Manifest{
 		FormatVersion: manifestFormatVersion,
 		PackageName:   opts.PackageName,
+		VersionFile:   opts.VersionFile,
 	}, buf)
 	if err != nil {
 		return nil, err

@@ -40,6 +40,9 @@ func TestLoadPackageDef(t *testing.T) {
 					"dir": "some/directory"
 				},
 				{
+					"version_file": "some/path/version.json"
+				},
+				{
 					"dir": "another/${var2}",
 					"exclude": [
 						".*\\.pyc",
@@ -67,6 +70,9 @@ func TestLoadPackageDef(t *testing.T) {
 					Dir: "some/directory",
 				},
 				PackageChunkDef{
+					VersionFile: "some/path/version.json",
+				},
+				PackageChunkDef{
 					Dir: "another/value2",
 					Exclude: []string{
 						".*\\.pyc",
@@ -75,6 +81,7 @@ func TestLoadPackageDef(t *testing.T) {
 				},
 			},
 		})
+		So(def.VersionFile(), ShouldEqual, "some/path/version.json")
 	})
 
 	Convey("LoadPackageDef not yaml", t, func() {
@@ -129,6 +136,29 @@ func TestLoadPackageDef(t *testing.T) {
 			"package": "package/name",
 			"data": [
 				{"file": "abc", "dir": "def"}
+			]
+		}`)
+		_, err := LoadPackageDef(body, nil)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("LoadPackageDef bad version_file", t, func() {
+		body := strings.NewReader(`{
+			"package": "package/name",
+			"data": [
+				{"version_file": "../some/path.json"}
+			]
+		}`)
+		_, err := LoadPackageDef(body, nil)
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("LoadPackageDef two version_file entries", t, func() {
+		body := strings.NewReader(`{
+			"package": "package/name",
+			"data": [
+				{"version_file": "some/path.json"},
+				{"version_file": "some/path.json"}
 			]
 		}`)
 		_, err := LoadPackageDef(body, nil)

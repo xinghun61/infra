@@ -26,11 +26,6 @@ func TestGoVersion(t *testing.T) {
 }
 
 func TestBuildInstance(t *testing.T) {
-	const goodManifest = `{
-  "format_version": "1",
-  "package_name": "testing"
-}`
-
 	Convey("Building empty package", t, func() {
 		out := bytes.Buffer{}
 		err := BuildInstance(BuildInstanceOptions{
@@ -45,6 +40,10 @@ func TestBuildInstance(t *testing.T) {
 		So(getSHA1(&out), ShouldEqual, "23f2c4900785ac8faa2f38e473925b840e574ccc")
 
 		// There should be a single file: the manifest.
+		goodManifest := `{
+  "format_version": "1",
+  "package_name": "testing"
+}`
 		files := readZip(out.Bytes())
 		So(files, ShouldResemble, []zippedFile{
 			zippedFile{
@@ -68,8 +67,15 @@ func TestBuildInstance(t *testing.T) {
 			},
 			Output:      &out,
 			PackageName: "testing",
+			VersionFile: "version.json",
 		})
 		So(err, ShouldBeNil)
+
+		goodManifest := `{
+  "format_version": "1",
+  "package_name": "testing",
+  "version_file": "version.json"
+}`
 
 		// The manifest and all added files.
 		files := readZip(out.Bytes())
@@ -139,6 +145,14 @@ func TestBuildInstance(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
+	Convey("Bad version file fails", t, func() {
+		err := BuildInstance(BuildInstanceOptions{
+			Output:      &bytes.Buffer{},
+			PackageName: "abc",
+			VersionFile: "../bad/path",
+		})
+		So(err, ShouldNotBeNil)
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
