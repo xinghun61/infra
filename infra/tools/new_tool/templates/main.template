@@ -20,7 +20,8 @@ LOGGER = logging.getLogger(__name__)
 def main(argv):
   parser = argparse.ArgumentParser(
     prog="{toolname}",
-    description=sys.modules['__main__'].__doc__)
+    description=sys.modules['__main__'].__doc__,
+    formatter_class=argparse.RawTextHelpFormatter)
 
   {toolname}.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
