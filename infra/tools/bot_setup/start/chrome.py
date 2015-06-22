@@ -88,6 +88,15 @@ def ensure_depot_tools():
   return TEMP_DEPOT_TOOLS
 
 
+def inject_path_in_environ(env, path):
+  """Appends a directory to PATH env var if it's not there."""
+  paths = env.get('PATH', '').split(os.pathsep)
+  if path not in paths:
+    paths.insert(0, path)
+  env['PATH'] = os.pathsep.join(paths)
+  return env
+
+
 def write_gclient_file(root_dir, internal):
   gclient_file = os.path.join(root_dir, '.gclient')
   with open(gclient_file, 'wb') as f:
@@ -96,10 +105,12 @@ def write_gclient_file(root_dir, internal):
                       else ('slave', SLAVE_DEPS_URL)))
 
 
-def ensure_checkout(root_dir, gclient, internal):
+def ensure_checkout(root_dir, depot_tools, internal):
   """Ensure that /b/.gclient is correct and the build checkout is there."""
+  gclient_bin = os.path.join(depot_tools, GCLIENT_BIN)
+  env = inject_path_in_environ(os.environ.copy(), depot_tools)
   write_gclient_file(root_dir, internal)
-  rc = call([gclient, 'sync'], cwd=root_dir)
+  rc = call([gclient_bin, 'sync'], cwd=root_dir, env=env)
   if rc:
     print 'Gclient sync failed, cleaning and trying again'
     for filename in os.listdir(root_dir):
@@ -110,7 +121,7 @@ def ensure_checkout(root_dir, gclient, internal):
       else:
         os.remove(full_path)
     write_gclient_file(root_dir, internal)
-    rc = call([gclient, 'sync'], cwd=root_dir)
+    rc = call([gclient_bin, 'sync'], cwd=root_dir, env=env)
     if rc:
       raise Exception('Could not ensure gclient file is correct.')
 
@@ -142,7 +153,8 @@ def run_slave(root_dir):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
   run_slave_path = os.path.join(slave_dir, 'run_slave.py')
   twistd_pid_path = os.path.join(slave_dir, 'twistd.pid')
-  env = os.environ.copy()
+  env = inject_path_in_environ(
+      os.environ.copy(), os.path.join(root_dir, 'depot_tools'))
   env['DISPLAY'] = ':0.0'
   env['LANG'] = 'en_US.UTF-8'
 
@@ -203,10 +215,9 @@ def start(root_dir, depot_tools, password_file, slave_name):
     # depot_tools msysgit can't find ~/.gitconfig unless we explicitly set HOME
     os.environ['HOME'] = '%s%s' % (
         os.environ.get('HOMEDRIVE'), os.environ.get('HOMEPATH'))
-  gclient = os.path.join(depot_tools, GCLIENT_BIN)
   bot_entry = get_botmap_entry(slave_name)
   is_internal = bot_entry.get('internal', False)
-  ensure_checkout(root_dir, gclient, is_internal)
+  ensure_checkout(root_dir, depot_tools, is_internal)
   if password_file:
     seed_passwords(root_dir, password_file)
   run_slave(root_dir)
