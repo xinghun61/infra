@@ -15,7 +15,7 @@
 }
 
 :host(.cursor-target) .file {
-  background-color: rgba(0, 0, 200, .1);
+    background-color: rgba(0, 0, 200, .1);
 }
 
 .file-name {

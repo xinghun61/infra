@@ -136,6 +136,10 @@ cr-diff-messages {
     box-shadow: 0 -2px #00d;
 }
 
+.cursor-target div.line-number {
+    background-color: rgba(0, 0, 200, .1);
+}
+
 .cursor-focus:focus {
     outline: none;
 }
