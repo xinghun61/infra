@@ -8,6 +8,7 @@ import datetime
 import datetime_encoder
 import json
 import logging
+import urllib
 import webapp2
 import zlib
 
@@ -200,25 +201,16 @@ class AlertsHandler(webapp2.RequestHandler):
         haddiff=haddiff,
         type=alerts_type).put()
 
-
-  def parse_alerts(self, alerts_json):
+  def update_alerts(self, alerts_type):
     try:
-      alerts = json.loads(alerts_json)
+      alerts = json.loads(self.request.body)
     except ValueError:
-      warning = 'content field was not JSON'
+      warning = 'Content field was not valid JSON string.'
       self.response.set_status(400, warning)
       LOGGER.warn(warning)
       return
-
-    alerts.update({'date': datetime.datetime.utcnow()})
-
-    return alerts
-
-  def update_alerts(self, alerts_type):
-    content = json.loads(self.request.body).get('content')
-    alerts = self.parse_alerts(content)
-
     if alerts:
+      alerts.update({'date': datetime.datetime.utcnow()})
       self.store_alerts(alerts_type, alerts)
 
   def post(self):

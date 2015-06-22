@@ -258,7 +258,7 @@ def inner_loop(args):
   if args.findit_api_url and alerts:
     suspected_cls = query_findit(args.findit_api_url, alerts)
 
-  data = {'content': json.dumps({
+  data = {
       'alerts': alerts,
       'suspected_cls': suspected_cls,
       'reason_groups': reason_groups,
@@ -266,7 +266,7 @@ def inner_loop(args):
       'latest_builder_info': latest_builder_info,
       'stale_builder_alerts': stale_builder_alerts,
       'missing_masters': missing_masters,
-  })}
+  }
 
   if not args.data_url:
     with open('builder_alerts.json', 'w') as f:
