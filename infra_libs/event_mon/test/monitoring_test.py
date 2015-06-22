@@ -230,7 +230,7 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_default(self):
     hostname = 'bot.host.name'
     build_name = 'build_name'
-    log_event = monitoring._get_build_event('BUILD', hostname, build_name)
+    log_event = monitoring.get_build_event('BUILD', hostname, build_name)
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
@@ -245,7 +245,7 @@ class GetBuildEventTest(unittest.TestCase):
 
   def test_get_build_event_invalid_type(self):
     # An invalid type is a critical error.
-    log_event = monitoring._get_build_event('INVALID_TYPE',
+    log_event = monitoring.get_build_event('INVALID_TYPE',
                                             'bot.host.name',
                                             'build_name')
     self.assertIsNone(log_event)
@@ -253,7 +253,7 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_invalid_build_name(self):
     # an invalid builder name is not a critical error.
     hostname = 'bot.host.name'
-    log_event = monitoring._get_build_event('BUILD', hostname, '')
+    log_event = monitoring.get_build_event('BUILD', hostname, '')
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
     # Check that source_extension deserializes to the right thing.
@@ -267,7 +267,7 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_invalid_hostname(self):
     # an invalid hostname is not a critical error.
     builder_name = 'builder_name'
-    log_event = monitoring._get_build_event('BUILD', None, builder_name)
+    log_event = monitoring.get_build_event('BUILD', None, builder_name)
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
     # Check that source_extension deserializes to the right thing.
@@ -284,7 +284,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     build_number = 0
     build_scheduling_time = 123456789
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -308,7 +308,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     build_number = 314159265  # int32
     build_scheduling_time = 123456789
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -332,7 +332,7 @@ class GetBuildEventTest(unittest.TestCase):
     hostname = 'bot.host.name'
     build_name = 'build_name'
     build_number = 314159265  # int32
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'SCHEDULER',
       hostname,
       build_name,
@@ -355,7 +355,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     build_number = 314159265  # int32
     build_scheduling_time = 123456789
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -378,7 +378,7 @@ class GetBuildEventTest(unittest.TestCase):
     hostname = 'bot.host.name'
     build_name = 'build_name'
     build_scheduling_time = 123456789
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -406,7 +406,7 @@ class GetBuildEventTest(unittest.TestCase):
     step_name = 'step_name'
     step_number = 0  # valid step number
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -437,7 +437,7 @@ class GetBuildEventTest(unittest.TestCase):
     step_name = 'step_name'
     step_number = 0  # valid step number
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'STEP',
       hostname,
       build_name,
@@ -467,7 +467,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_scheduling_time = 123456789
     step_number = 0  # valid step number
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'STEP',
       hostname,
       build_name,
@@ -497,7 +497,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_scheduling_time = 123456789
     step_name = 'step_name'
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'STEP',
       hostname,
       build_name,
@@ -526,7 +526,7 @@ class GetBuildEventTest(unittest.TestCase):
     step_name = 'step_name'
     step_number = 0  # valid step number
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'STEP',
       hostname,
       build_name,
@@ -554,7 +554,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_scheduling_time = 123456789
     result = '---INVALID---'
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -583,7 +583,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_scheduling_time = 123456789
     result = 'SUCCESS'
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'BUILD',
       hostname,
       build_name,
@@ -612,7 +612,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_scheduling_time = 123456789
     result = 'SUCCESS'
 
-    log_event = monitoring._get_build_event(
+    log_event = monitoring.get_build_event(
       'SCHEDULER',
       hostname,
       build_name,
@@ -654,8 +654,40 @@ class SendBuildEventTest(unittest.TestCase):
       'build_name',
       build_number=1,
       build_scheduling_time=123456789,
-      step_name='step_name',
-      step_number=2,
       result='FAILURE',
       timestamp_kind='POINT',
       event_timestamp=None))
+
+
+class SendEventsTest(unittest.TestCase):
+  def setUp(self):
+    event_mon.setup_monitoring(run_type='dry')
+
+  def tearDown(self):
+    event_mon.close()
+
+  def test_send_events_smoke(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    log_events = [
+      event_mon.get_build_event(
+        'BUILD',
+        'bot.host.name',
+        'build_name',
+        build_number=1,
+        build_scheduling_time=123456789,
+        result='FAILURE',
+        timestamp_kind='POINT',
+        event_timestamp=None),
+      event_mon.get_build_event(
+        'BUILD',
+        'bot2.host.name',
+        'build_name2',
+        build_number=1,
+        build_scheduling_time=123456789,
+        result='FAILURE',
+        timestamp_kind='POINT',
+        event_timestamp=None),
+    ]
+    self.assertTrue(monitoring.send_events(log_events))

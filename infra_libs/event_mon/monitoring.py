@@ -50,8 +50,8 @@ def _get_chrome_infra_event(timestamp_kind):
   return event
 
 
-def _get_log_request_lite(chrome_infra_event, event_timestamp=None):
-  """Wraps a ChromeInfraEvent into a LogRequestLite.
+def _get_log_event_lite(chrome_infra_event, event_timestamp=None):
+  """Wraps a ChromeInfraEvent into a LogEventLite.
 
   Args:
     event_timestamp (int or float): timestamp of when the event happened
@@ -140,7 +140,7 @@ def _get_service_event(event_type,
       logging.error('stack_trace should be a string, got %s',
                     stack_trace.__class__.__name__)
 
-  return _get_log_request_lite(event, event_timestamp=event_timestamp)
+  return _get_log_event_lite(event, event_timestamp=event_timestamp)
 
 
 def send_service_event(event_type,
@@ -186,16 +186,16 @@ def send_service_event(event_type,
   return config._router.push_event(log_event)
 
 
-def _get_build_event(event_type,
-                     hostname,
-                     build_name,
-                     build_number=None,
-                     build_scheduling_time=None,
-                     step_name=None,
-                     step_number=None,
-                     result=None,
-                     timestamp_kind='POINT',
-                     event_timestamp=None):
+def get_build_event(event_type,
+                    hostname,
+                    build_name,
+                    build_number=None,
+                    build_scheduling_time=None,
+                    step_name=None,
+                    step_number=None,
+                    result=None,
+                    timestamp_kind='POINT',
+                    event_timestamp=None):
   """Compute a ChromeInfraEvent filled with a BuildEvent.
 
   Arguments are identical to those in send_build_event(), please refer
@@ -279,7 +279,7 @@ def _get_build_event(event_type,
                       '(%s). This is only accepted for BUILD and TEST types.',
                       result)
 
-  return _get_log_request_lite(event, event_timestamp=event_timestamp)
+  return _get_log_event_lite(event, event_timestamp=event_timestamp)
 
 
 def send_build_event(event_type,
@@ -316,15 +316,27 @@ def send_build_event(event_type,
   Returns:
     success (bool): False if some error happened.
   """
-  log_event = _get_build_event(event_type,
-                               hostname,
-                               build_name,
-                               build_number=build_number,
-                               build_scheduling_time=build_scheduling_time,
-                               step_name=step_name,
-                               step_number=step_number,
-                               result=result,
-                               timestamp_kind=timestamp_kind,
-                               event_timestamp=event_timestamp)
+  log_event = get_build_event(event_type,
+                              hostname,
+                              build_name,
+                              build_number=build_number,
+                              build_scheduling_time=build_scheduling_time,
+                              step_name=step_name,
+                              step_number=step_number,
+                              result=result,
+                              timestamp_kind=timestamp_kind,
+                              event_timestamp=event_timestamp)
 
   return config._router.push_event(log_event)
+
+
+def send_events(log_events):
+  """Send several events at once to the endpoint.
+
+  Args:
+    log_events (iterable of LogRequestLite.LogEventLite): events to send
+
+  Return:
+    success (bool): True if data was successfully received by the endpoint.
+  """
+  return config._router.push_event(log_events)

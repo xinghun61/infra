@@ -60,3 +60,47 @@ class TestBuildEvent(unittest.TestCase):
        '--build-event-hostname', 'foo.bar.dns',
        '--build-event-build-name', 'whatever'])
     send_event.send_build_event(args)
+
+
+class TestReadEventsFromFile(unittest.TestCase):
+  def setUp(self):
+    event_mon.setup_monitoring(run_type='dry')
+
+  def tearDown(self):
+    event_mon.close()
+
+  def test_read_valid_file(self):
+    events = send_event.read_events_from_file(
+      os.path.join(DATA_DIR, 'events_valid.log'))
+    for event in events:
+      # use the class name to avoid importing the pb2 file from event_mon
+      self.assertEqual(event.__class__.__name__, "LogEventLite")
+    self.assertEqual(len(events), 5)
+
+  def test_read_invalid_file(self):
+    events = send_event.read_events_from_file(
+      os.path.join(DATA_DIR, 'events_invalid.log'))
+    for event in events:
+      # use the class name to avoid importing the pb2 file from event_mon
+      self.assertEqual(event.__class__.__name__, "LogEventLite")
+
+    self.assertEqual(len(events), 4)
+
+  def test_read_file_with_blank_lines(self):
+    events = send_event.read_events_from_file(
+      os.path.join(DATA_DIR, 'events_blank_lines.log'))
+    for event in events:
+      # use the class name to avoid importing the pb2 file from event_mon
+      self.assertEqual(event.__class__.__name__, "LogEventLite")
+
+    self.assertEqual(len(events), 5)
+
+  def test_read_file_with_service_event(self):
+    # service_event is not supported (yet).
+    events = send_event.read_events_from_file(
+      os.path.join(DATA_DIR, 'events_one_service_event.log'))
+    for event in events:
+      # use the class name to avoid importing the pb2 file from event_mon
+      self.assertEqual(event.__class__.__name__, "LogEventLite")
+
+    self.assertEqual(len(events), 4)

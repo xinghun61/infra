@@ -4,7 +4,6 @@
 
 import logging
 import random
-import threading
 import time
 
 import httplib2
@@ -118,25 +117,27 @@ class _Router(object):
     logging.debug('event_mon: closing.')
     return True
 
-  def push_event(self, event):
+  def push_event(self, log_events):
     """Enqueue event to push to the collection service.
 
     This method offers no guarantee on return that the event have been pushed
     externally, as some buffering can take place.
 
     Args:
-      event (LogRequestLite.LogEventLite): one single event.
+      log_events (LogRequestLite.LogEventLite or list/tuple of): events.
     Returns:
       success (bool): False if an error happened. True means 'event accepted',
         but NOT 'event successfully pushed to the remote'.
     """
-    if not isinstance(event, LogRequestLite.LogEventLite):
-      logging.error('Invalid type for "event": %s (should be LogEventLite)'
-                    % str(type(event)))
+    if isinstance(log_events, LogRequestLite.LogEventLite):
+      log_events = (log_events,)
+
+    if not isinstance(log_events, (list, tuple)):
+      logging.error('Invalid type for "event", should be LogEventLite or '
+                    'list of. Got %s' % str(type(log_events)))
       return False
 
-    # TODO(pgervais): implement batching.
     request_p = LogRequestLite()
     request_p.log_source_name = 'CHROME_INFRA'
-    request_p.log_event.extend((event,))  # copies the protobuf
+    request_p.log_event.extend(log_events)  # copies the protobuf
     return self._post_to_endpoint(request_p)

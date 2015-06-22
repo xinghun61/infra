@@ -3,10 +3,15 @@
 # found in the LICENSE file.
 
 import argparse
+import logging
+import json
 import sys
 
 from infra_libs import event_mon
 import infra_libs.logs
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def get_arguments(argv):
@@ -155,3 +160,51 @@ def send_build_event(args):
     step_number=args.build_event_step_number,
     result=args.build_event_result,
     timestamp_kind=args.event_mon_timestamp_kind)
+
+
+def read_events_from_file(filename):
+  """Read a list of ChromeInfraEvent from a file.
+
+  Each line of the file is expected to contain options in the shape of a dict:
+
+  Example:
+  {"build-event-type": "BUILD", "build-event-hostname": "hostname",
+   "build-event-build-name": "fake builder"}
+
+  There may be several lines, but each dict should be one its own line.
+
+  Caveat: only build events options are supported so far.
+  See send_monitoring_event --help for the full list of flags.
+
+  Args:
+    filename(str): path to the file to read.
+
+  Return:
+    log_events (iterable of LogRequestLite): events read from the file.
+  """
+  log_events = []
+  with open(filename, 'r') as f:
+    for line in f:
+      if not line.strip():
+        continue
+      try:
+        args = json.loads(line)
+      except ValueError:
+        LOGGER.error("Unparseable line in %s: %s", filename, line)
+        continue
+
+      if 'build-event-type' in args:
+        log_events.append(
+          event_mon.get_build_event(
+            args.get('build-event-type'),
+            args.get('build-event-hostname'),
+            args.get('build-event-build-name'),
+            build_number=args.get('build-event-build-number'),
+            build_scheduling_time=args.get('build-event-build-scheduling-time'),
+            step_name=args.get('build-event-step-name'),
+            step_number=args.get('build-event-step-number'),
+            result=args.get('build-event-result'),
+            timestamp_kind=args.get('event-mon-timestamp-kind'),
+            event_timestamp=args.get('event-mon-event-timestamp')))
+
+  return log_events
