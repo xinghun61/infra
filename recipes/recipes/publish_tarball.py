@@ -4,6 +4,8 @@
 
 from recipe_engine import recipe_api
 
+import contextlib
+
 DEPS = [
   'bot_update',
   'chromium',
@@ -57,15 +59,21 @@ def export_tarball(api, args, source, destination):
     api.file.rmtree('temp dir', temp_dir)
 
 
+@contextlib.contextmanager
+def copytree_checkout(api):
+  try:
+    temp_dir = api.path.mkdtemp('tmp')
+    dest_dir = api.path.join(temp_dir, 'src')
+    api.file.copytree('copytree', api.path['checkout'], dest_dir, symlinks=True)
+    yield dest_dir
+  finally:
+    api.file.rmtree('temp dir', temp_dir)
+
+
 @recipe_api.composite_step
 def export_lite_tarball(api, version):
-  try:
-    temp_dir = api.path.mkdtemp('lite_tarball')
-    dest_dir = api.path.join(temp_dir, 'src')
-
-    # Make destructive file operations on the copy of the checkout.
-    api.file.copytree('copytree', api.path['checkout'], dest_dir, symlinks=True)
-
+  # Make destructive file operations on the copy of the checkout.
+  with copytree_checkout(api) as dest_dir:
     directories = [
       'native_client',
       'native_client_sdk',
@@ -119,8 +127,30 @@ def export_lite_tarball(api, version):
          '--src-dir', dest_dir],
         'chromium-%s.tar.xz' % version,
         'chromium-%s-lite.tar.xz' % version)
-  finally:
-    api.file.rmtree('temp dir', temp_dir)
+
+
+@recipe_api.composite_step
+def export_nacl_tarball(api, version):
+  # Make destructive file operations on the copy of the checkout.
+  with copytree_checkout(api) as dest_dir:
+    # Based on instructions from https://sites.google.com/a/chromium.org/dev/nativeclient/pnacl/building-pnacl-components-for-distribution-packagers
+    api.python(
+        'download nacl toolchain dependencies',
+        api.path.join(dest_dir, 'native_client', 'toolchain_build',
+                      'toolchain_build_pnacl.py'),
+        ['--verbose', '--sync', '--sync-only', '--disable-git-cache'])
+
+    export_tarball(
+        api,
+        # Verbose output helps avoid a buildbot timeout when no output
+        # is produced for a long time.
+        ['--remove-nonessential-files',
+         'chromium-%s' % version,
+         '--verbose',
+         '--progress',
+         '--src-dir', dest_dir],
+        'chromium-%s.tar.xz' % version,
+        'chromium-%s-nacl.tar.xz' % version)
 
 
 def RunSteps(api):
@@ -175,6 +205,7 @@ def RunSteps(api):
         'chromium-%s-testdata.tar.xz' % version)
 
     export_lite_tarball(api, version)
+    export_nacl_tarball(api, version)
 
 
 def GenTests(api):

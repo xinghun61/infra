@@ -247,7 +247,7 @@
       "-u",
       "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
       "[SLAVE_BUILD]/src",
-      "[TMP_BASE]/lite_tarball_tmp_3/src",
+      "[TMP_BASE]/tmp_tmp_3/src",
       "1"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -256,7 +256,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/native_client",
+      "[TMP_BASE]/tmp_tmp_3/src/native_client",
       "-type",
       "f",
       "!",
@@ -273,7 +273,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/native_client_sdk",
+      "[TMP_BASE]/tmp_tmp_3/src/native_client_sdk",
       "-type",
       "f",
       "!",
@@ -290,7 +290,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/WebKit/ManualTests",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/ManualTests",
       "-type",
       "f",
       "!",
@@ -307,7 +307,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/WebKit/PerformanceTests",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/WebKit/PerformanceTests",
       "-type",
       "f",
       "!",
@@ -324,7 +324,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/android_platform",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/android_platform",
       "-type",
       "f",
       "!",
@@ -341,7 +341,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/chromite",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/chromite",
       "-type",
       "f",
       "!",
@@ -358,7 +358,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/freetype2",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/freetype2",
       "-type",
       "f",
       "!",
@@ -375,7 +375,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/gles2_book",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/gles2_book",
       "-type",
       "f",
       "!",
@@ -392,7 +392,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/gold",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/gold",
       "-type",
       "f",
       "!",
@@ -409,7 +409,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/icu",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/icu",
       "-type",
       "f",
       "!",
@@ -426,7 +426,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/launchpad_translations",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/launchpad_translations",
       "-type",
       "f",
       "!",
@@ -443,7 +443,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libc++",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libc++",
       "-type",
       "f",
       "!",
@@ -460,7 +460,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libevent",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libevent",
       "-type",
       "f",
       "!",
@@ -477,7 +477,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libjpeg_turbo",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libjpeg_turbo",
       "-type",
       "f",
       "!",
@@ -494,7 +494,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libmtp",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libmtp",
       "-type",
       "f",
       "!",
@@ -511,7 +511,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/libxml/src",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/libxml/src",
       "-type",
       "f",
       "!",
@@ -528,7 +528,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/openssl",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/openssl",
       "-type",
       "f",
       "!",
@@ -545,7 +545,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/snappy",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/snappy",
       "-type",
       "f",
       "!",
@@ -562,7 +562,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/webgl",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl",
       "-type",
       "f",
       "!",
@@ -579,7 +579,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/webgl_conformance",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/webgl_conformance",
       "-type",
       "f",
       "!",
@@ -596,7 +596,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/third_party/yasm",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/yasm",
       "-type",
       "f",
       "!",
@@ -613,7 +613,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/tools/win",
+      "[TMP_BASE]/tmp_tmp_3/src/tools/win",
       "-type",
       "f",
       "!",
@@ -630,7 +630,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src/v8/third_party/icu",
+      "[TMP_BASE]/tmp_tmp_3/src/v8/third_party/icu",
       "-type",
       "f",
       "!",
@@ -647,7 +647,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/lite_tarball_tmp_3/src",
+      "[TMP_BASE]/tmp_tmp_3/src",
       "-depth",
       "-type",
       "d",
@@ -667,7 +667,7 @@
       "--verbose",
       "--progress",
       "--src-dir",
-      "[TMP_BASE]/lite_tarball_tmp_3/src"
+      "[TMP_BASE]/tmp_tmp_3/src"
     ],
     "cwd": "[TMP_BASE]/export_tarball_tmp_4",
     "name": "export_tarball (3)"
@@ -751,10 +751,143 @@
       "python",
       "-u",
       "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
-      "[TMP_BASE]/lite_tarball_tmp_3"
+      "[TMP_BASE]/tmp_tmp_3"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "rmtree temp dir (4)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
+      "[SLAVE_BUILD]/src",
+      "[TMP_BASE]/tmp_tmp_5/src",
+      "1"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "copytree (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[TMP_BASE]/tmp_tmp_5/src/native_client/toolchain_build/toolchain_build_pnacl.py",
+      "--verbose",
+      "--sync",
+      "--sync-only",
+      "--disable-git-cache"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "download nacl toolchain dependencies"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/export_tarball.py",
+      "--remove-nonessential-files",
+      "chromium-38.0.2125.122",
+      "--verbose",
+      "--progress",
+      "--src-dir",
+      "[TMP_BASE]/tmp_tmp_5/src"
+    ],
+    "cwd": "[TMP_BASE]/export_tarball_tmp_6",
+    "name": "export_tarball (4)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[chromium]/resources/generate_hashes.py",
+      "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
+      "/path/to/tmp/"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "generate_hashes (4)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[gsutil]/resources/gsutil_wrapper.py",
+      "--",
+      "[DEPOT_TOOLS]/gsutil.py",
+      "--force-version",
+      "3.25",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "md5  164ebd6889588da166a52ca0d57b9004  bash",
+      "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz.hashes",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]/export_tarball_tmp_6"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree temp dir (5)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@from common import chromium_utils@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  chromium_utils.RemoveDirectory(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os, sys\nfrom common import chromium_utils\n\nif os.path.exists(sys.argv[1]):\n  chromium_utils.RemoveDirectory(sys.argv[1])\n",
+      "[TMP_BASE]/tmp_tmp_5"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "rmtree temp dir (6)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import os, sys@@@",
