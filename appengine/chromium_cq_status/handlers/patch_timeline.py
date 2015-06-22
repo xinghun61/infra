@@ -45,11 +45,14 @@ def get_attempts(issue, patch): # pragma: no cover
   attempts = []
   attempt = None
   for record in query:
-    if attempt is None and record.fields.get('action') == 'patch_start':
-      attempt = []
-    if attempt != None:
+    action = record.fields.get('action')
+    if attempt is None and action == 'patch_start':
+      attempt = [record]
+    # Sometimes CQ sends multiple patch_start in a single attempt. These
+    # are ignored (only the first patch_start is kept).
+    if attempt is not None and action != 'patch_start':
       attempt.append(record)
-      if record.fields.get('action') == 'patch_stop':
+      if action == 'patch_stop':
         attempts.append(attempt)
         attempt = None
   if attempt != None:
