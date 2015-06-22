@@ -214,7 +214,7 @@
     'build': '0',
     'repo': 'external/bitbucket.org/gutworth/six',
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
-    'implicit': True,  # Required by python_dateutil and webtest
+    'implicit': True,  # Required by python_dateutil, webtest, uritemplate.
   },
   'Sphinx': {
     'version': '1.2.3dev_20140923',
