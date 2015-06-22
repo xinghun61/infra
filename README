@@ -1,9 +1,0 @@
-Welcome to the Chrome Infra repository!
-
-Wondering where to start?
-
-Documentation is in doc/source, and can be compiled with docgen.py. This will
-not work out-of-the-box so you can either read it uncompiled
-(look at doc/source/installation.rst) or go to:
-
-https://storage.googleapis.com/chromium-infra-docs/infra/html/index.html

@@ -3,6 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# See README.md, there is a section about this file.
+
 import argparse
 import hashlib
 import os
