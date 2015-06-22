@@ -165,7 +165,7 @@ class TraceViewerEvent(): # pragma: no cover
       'name': self.name,
       'cat': self.cat,
       'ph': self.ph,
-      'ts': self.ts,
+      'ts': int(self.ts * 1000000),
       'pid': self.pid,
       'tid': self.tid,
       'args': self.args
