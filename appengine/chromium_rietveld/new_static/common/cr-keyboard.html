@@ -70,6 +70,11 @@ found in the LICENSE file. -->
             9: "tab",
             20: "space",
             27: "escape",
+            191: "forward-slash",
+        };
+
+        var SHIFT_KEY_CODES = {
+            191: "question-mark",
         };
 
         var KEY_NAMES = {
@@ -111,6 +116,8 @@ found in the LICENSE file. -->
             if (key.indexOf("U+") != -1) {
                 var code = parseInt(key.replace("U+", "0x"), 16);
                 var chr = String.fromCharCode(code).toLowerCase()
+                if (event.shiftKey && SHIFT_KEY_CODES[code])
+                    return SHIFT_KEY_CODES[code];
                 if (KEY_CODES[code])
                     return KEY_CODES[code];
                 if (KEY_NAMES[chr])
