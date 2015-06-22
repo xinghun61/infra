@@ -40,15 +40,18 @@ class AclTest(testing.AppengineTestCase):
           Acl(role=Acl.WRITER, group='b-writers'),
           Acl(role=Acl.READER, group='b-readers'),
       ])
-    config.get_buckets.return_value = [bucket_a, bucket_b]
+    bucket_c = Bucket(
+      name='c',
+      acls=[
+          Acl(role=Acl.READER, group='c-readers'),
+          Acl(role=Acl.READER, identity='user:a@example.com'),
+          Acl(role=Acl.WRITER, group='c-writers'),
+      ])
+    all_buckets = [bucket_a, bucket_b, bucket_c]
+    config.get_buckets.return_value = all_buckets
+    bucket_map = {b.name:b for b in all_buckets}
 
-    def get_bucket(bucket):  # pragma: no cover
-      if bucket == 'a':
-        return bucket_a
-      elif bucket == 'b':
-        return bucket_b
-      return None
-    self.mock(config, 'get_bucket', get_bucket)
+    self.mock(config, 'get_bucket', bucket_map.get)
 
   def mock_is_group_member(self, groups):
     # pylint: disable=unused-argument
@@ -64,6 +67,8 @@ class AclTest(testing.AppengineTestCase):
     self.assertFalse(acl.has_any_of_roles('a', [Acl.WRITER]))
     self.assertFalse(acl.has_any_of_roles('a', [Acl.WRITER, Acl.SCHEDULER]))
     self.assertFalse(acl.has_any_of_roles('b', [Acl.READER]))
+    self.assertTrue(acl.has_any_of_roles('c', [Acl.READER]))
+    self.assertFalse(acl.has_any_of_roles('c', [Acl.WRITER]))
     self.assertFalse(acl.has_any_of_roles('non.existing', [Acl.READER]))
 
     self.mock_is_group_member([])
@@ -91,6 +96,12 @@ class AclTest(testing.AppengineTestCase):
           ],
       ),
       Bucket(
+          name='available_bucket3',
+          acls=[
+              Acl(role=Acl.READER, identity='user:a@example.com'),
+          ],
+      ),
+      Bucket(
           name='not_available_bucket',
           acls=[
             Acl(role=Acl.WRITER, group='zzz')],
@@ -100,7 +111,8 @@ class AclTest(testing.AppengineTestCase):
     availble_buckets = acl.get_available_buckets()
     availble_buckets = acl.get_available_buckets()  # memcache coverage.
     self.assertEqual(
-        availble_buckets, {'available_bucket1', 'available_bucket2'})
+        availble_buckets,
+        {'available_bucket1', 'available_bucket2', 'available_bucket3'})
 
     self.mock(auth, 'is_admin', lambda *_: True)
     self.assertIsNone(acl.get_available_buckets())

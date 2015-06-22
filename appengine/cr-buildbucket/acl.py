@@ -108,9 +108,14 @@ def has_any_of_roles(bucket, roles):
     return True
 
   bucket_cfg = config.get_bucket(bucket)
+  identity_str = auth.get_current_identity().to_bytes()
   if bucket_cfg:
     for rule in bucket_cfg.acls:
-      if rule.role in roles and auth.is_group_member(rule.group):
+      if rule.role not in roles:
+        continue
+      if rule.identity == identity_str:
+        return True
+      if rule.group and auth.is_group_member(rule.group):
         return True
   return False
 
@@ -149,10 +154,13 @@ def get_available_buckets():
   logging.info(
       'Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
+  available_buckets = set()
   for bucket in config.get_buckets():
     for rule in bucket.acls:
-      group_buckets_map[rule.group].add(bucket.name)
-  available_buckets = set()
+      if rule.identity == identity:
+        available_buckets.add(bucket.name)
+      if rule.group:
+        group_buckets_map[rule.group].add(bucket.name)
   for group, buckets in group_buckets_map.iteritems():
     if available_buckets.issuperset(buckets):
       continue

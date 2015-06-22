@@ -58,6 +58,15 @@ acls {
 }
 ''')
 
+MASTER_TRYSERVER_TEST_CONFIG_TEXT=(
+'''name: "master.tryserver.test"
+acls {
+  role: WRITER
+  identity: "user:root@google.com"
+}
+''')
+
+
 
 class ConfigTest(testing.AppengineTestCase):
   def test_get_bucket(self):
@@ -148,10 +157,24 @@ class ConfigTest(testing.AppengineTestCase):
       ]
     )
 
+    test_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
+      buckets=[
+        project_config_pb2.Bucket(
+          name='master.tryserver.test',
+          acls=[
+            project_config_pb2.Acl(
+                role=project_config_pb2.Acl.WRITER, identity='root@google.com')
+          ],
+       ),
+      ]
+    )
+
+
     self.mock(config_component, 'get_project_configs', mock.Mock())
     config_component.get_project_configs.return_value = {
       'chromium': ('deadbeef', chromium_buildbucket_cfg),
       'v8': (None, v8_buildbucket_cfg),
+      'test': ('babe', test_buildbucket_cfg),
     }
 
     config.cron_update_buckets()
@@ -170,6 +193,12 @@ class ConfigTest(testing.AppengineTestCase):
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+      ),
+      config.Bucket(
+        id='master.tryserver.test',
+        project_id='test',
+        revision='babe',
+        config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT
       ),
       config.Bucket(
         id='master.tryserver.v8',

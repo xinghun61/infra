@@ -23,6 +23,9 @@ from proto import project_config_pb2
 import errors
 
 
+# TODO(nodir): prohibit both group and identity in bucket ACL.
+
+
 class Bucket(ndb.Model):
   """Stores project a bucket belongs to, and its ACLs.
 
@@ -94,6 +97,10 @@ def cron_update_buckets():
           bucket.project_id == project_id and
           bucket.revision == revision):
         continue
+
+      for acl in bucket_cfg.acls:
+        if acl.identity and ':' not in acl.identity:
+          acl.identity = 'user:%s' % acl.identity
 
       @ndb.transactional
       def update_bucket():

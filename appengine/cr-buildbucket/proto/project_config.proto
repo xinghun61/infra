@@ -22,6 +22,10 @@ message Acl {
   optional Role role = 1;
   // Name of the group defined in the auth service.
   optional string group = 2;
+  // An email address or a full identity string "kind:name". See auth service
+  // on kinds of identities. Anonymous users are "anonymous:anonymous".
+  // Either identity or group must be present, not both.
+  optional string identity = 3;
 }
 
 
