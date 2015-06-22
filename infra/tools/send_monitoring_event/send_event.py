@@ -50,6 +50,10 @@ def get_arguments(argv):
                             help='General kind of event. This value is used '
                             'e.g. to automatically compute durations between '
                             'START and STOP events. Default: %(default)s')
+  common_group.add_argument('--event-mon-event-timestamp', type=int,
+                            help='Timestamp when the event was generated, as '
+                            'number of milliseconds since the Unix EPOCH. '
+                            'Defaults to current time.')
 
   # Service event
   service_group = parser.add_argument_group('Service event options')
@@ -146,7 +150,8 @@ def send_service_event(args):
     args.service_event_type,
     code_version=revinfo.values(),
     stack_trace=args.service_event_stack_trace,
-    timestamp_kind=args.event_mon_timestamp_kind)
+    timestamp_kind=args.event_mon_timestamp_kind,
+    event_timestamp=args.event_mon_event_timestamp)
 
 
 def send_build_event(args):
@@ -159,7 +164,8 @@ def send_build_event(args):
     step_name=args.build_event_step_name,
     step_number=args.build_event_step_number,
     result=args.build_event_result,
-    timestamp_kind=args.event_mon_timestamp_kind)
+    timestamp_kind=args.event_mon_timestamp_kind,
+    event_timestamp=args.event_mon_event_timestamp)
 
 
 def read_events_from_file(filename):
