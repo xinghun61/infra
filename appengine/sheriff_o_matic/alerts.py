@@ -176,7 +176,7 @@ class AlertsHandler(webapp2.RequestHandler):
       return filtered_json
 
     haddiff = alert_fields(last_alerts) != alert_fields(alerts)
-    if haddiff:
+    if haddiff or not last_entry:
       json_data = self.generate_json_dump(alerts)
 
       compression_level = 9
