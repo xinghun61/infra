@@ -9,6 +9,7 @@ import sqlite3
 import unittest
 
 import infra_libs
+import infra.tools.antibody.cloudsql_connect as csql
 from infra.tools.antibody import code_review_parse
 
 
@@ -32,21 +33,6 @@ class TestCodeReviewParse(unittest.TestCase):
   no_lgtm_tbr_num = 1004453003
   no_lgtm_mult_tbr_num = 1171763002
   lgtm_tbr_num = 1175623002
-
-
-  def test_create_table(self):
-    with infra_libs.temporary_directory(prefix='rietveld-test') as dirname:
-      file_name = os.path.join(dirname, 'rietveld_data.sqlite3')
-      expected_table_headers = ('issue_num', 'lgtm', 'tbr', 'request_timestamp',
-                                'rietveld_url')
-      with sqlite3.connect(file_name) as con:
-        cur = con.cursor()
-        code_review_parse.create_table(cur)
-        cur.execute('PRAGMA TABLE_INFO(%s);' 
-                    % code_review_parse.DEFAULT_TABLE_NAME)
-        table_headers = cur.fetchall()
-        for i in xrange(len(table_headers)):
-          self.assertTrue(expected_table_headers[i] == table_headers[i][1])
 
 
   def test_contains_lgtm(self):
@@ -97,60 +83,30 @@ class TestCodeReviewParse(unittest.TestCase):
            code_review_parse.to_canonical_rietveld_url(codereview_chromium_url))
 
 
-  def test_write_data_to_db(self):
-    with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
-      file_name = os.path.join(dirname, 'rietveld_data.sqlite3')
-      with sqlite3.connect(file_name) as con:
-        cur = con.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS %s (issue_num, lgtm, tbr, ' 
-                    'request_timestamp, rietveld_url PRIMARY KEY)'
-                    % code_review_parse.DEFAULT_TABLE_NAME)
-        issues = (self.lgtm_no_tbr, self.not_lgtm_no_tbr, self.mult_lgtm_no_tbr,
-                  self.no_lgtm_tbr, self.no_lgtm_mult_tbr, self.lgtm_tbr)
-        for issue in issues:
-          code_review_parse.write_data_to_db(issue, 
-                                       fake_extract_json_data(issue), file_name)
-    
-        # format: issue_num, lgtm, tbr, time (not tested)
-        expected_out = (
-            (self.lgtm_no_tbr_num, 1, 0, self.lgtm_no_tbr),
-            (self.not_lgtm_no_tbr_num, 0, 0, self.not_lgtm_no_tbr),
-            (self.mult_lgtm_no_tbr_num, 1, 0, self.mult_lgtm_no_tbr),
-            (self.no_lgtm_tbr_num, 0, 1, self.no_lgtm_tbr),
-            (self.no_lgtm_mult_tbr_num, 0, 1, self.no_lgtm_mult_tbr),
-            (self.lgtm_tbr_num, 1, 1, self.lgtm_tbr),
-        )
-        cur.execute('SELECT * FROM %s;' %code_review_parse.DEFAULT_TABLE_NAME)
-        db_data = cur.fetchall()
-        for i in xrange(len(db_data)):
-          self.assertEqual(db_data[i][:3], expected_out[i][:3])
-          self.assertEqual(db_data[i][-1], expected_out[i][-1])
-
-
   def test_get_tbr_no_lgtm(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
       # set up fake db to read from
       file_name = os.path.join(dirname, 'rietveld_parse.db')
       with sqlite3.connect(file_name) as con:
         cur = con.cursor()
-        cur.execute('CREATE TABLE %s (issue_num, lgtm, tbr, '
-                    'request_timestamp, rietveld_url)'
-                    % code_review_parse.DEFAULT_TABLE_NAME)
+        cur.execute('CREATE TABLE %s (git_hash, lgtm, tbr, '
+                    'rietveld_url, request_timestamp)'
+                    % csql.DEFAULT_RIETVELD_TABLE)
         fake_data = ( 
-            (1, 1, 0, 1, 'https://codereview.chromium.org/1158153006'),
-            (2, 0, 0, 1, 'https://codereview.chromium.org/1175993003'),
-            (3, 1, 0, 1, 'https://codereview.chromium.org/1146053009'),
-            (4, 0, 1, 1, 'https://codereview.chromium.org/1004453003'),
-            (5, 0, 1, 1, 'https://codereview.chromium.org/1171763002'),
-            (6, 1, 1, 1, 'https://codereview.chromium.org/1175623002'),
+            (1, '1', '0', 'https://codereview.chromium.org/1158153006', 1),
+            (2, '0', '0', 'https://codereview.chromium.org/1175993003', 1),
+            (3, '1', '0', 'https://codereview.chromium.org/1146053009', 1),
+            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1),
+            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1),
+            (6, '1', '1', 'https://codereview.chromium.org/1175623002', 1),
         )
         cur.executemany('INSERT INTO %s VALUES(?, ?, ?, ?, ?)'
-                        % code_review_parse.DEFAULT_TABLE_NAME, fake_data)
+                        % csql.DEFAULT_RIETVELD_TABLE, fake_data)
 
-      expected_out = ( 
-            (4, 0, 1, 1, 'https://codereview.chromium.org/1004453003'),
-            (5, 0, 1, 1, 'https://codereview.chromium.org/1171763002'),
-      )   
-      out = code_review_parse.get_tbr_no_lgtm(file_name)
-      for i in xrange(len(out)):
-        self.assertEqual(expected_out[i], out[i])
+        expected_out = ( 
+            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1),
+            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1),
+        )   
+        out = code_review_parse.get_tbr_no_lgtm(cur)
+        for i in xrange(len(out)):
+          self.assertEqual(expected_out[i], out[i])

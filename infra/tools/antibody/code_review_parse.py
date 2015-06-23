@@ -7,13 +7,7 @@ import requests
 import sqlite3
 import time
 
-DEFAULT_TABLE_NAME = 'rietveld'
-
-
-def create_table(cur):
-  cur.execute('CREATE TABLE IF NOT EXISTS %s (issue_num, lgtm, tbr, '   
-              'request_timestamp, rietveld_url PRIMARY KEY)'
-              % DEFAULT_TABLE_NAME)
+import infra.tools.antibody.cloudsql_connect as csql
 
 
 def extract_json_data(rietveld_url):  # pragma: no cover
@@ -51,29 +45,21 @@ def to_canonical_rietveld_url(rietveld_url):
   return rietveld_url
 
 
-def add_rietveld_data_to_db(rietveld_url, file_name):  # pragma: no cover
+def add_rietveld_data_to_db(git_hash, rietveld_url, cc):  # pragma: no cover
   rietveld_url = to_canonical_rietveld_url(rietveld_url)
-  write_data_to_db(rietveld_url, extract_json_data(rietveld_url), file_name)
+  json_data = extract_json_data(rietveld_url)
+  db_data = (git_hash, contains_lgtm(json_data), 
+             contains_tbr(json_data), rietveld_url, time.time())
+  csql.write_to_rietveld_table(cc, db_data)
 
 
-def write_data_to_db(rietveld_url, json_data, file_name):
-  with sqlite3.connect(file_name) as con:
-    cur = con.cursor()
-    db_data = (json_data['issue'], contains_lgtm(json_data), 
-               contains_tbr(json_data), time.time(), rietveld_url)
-    cur.execute('INSERT OR REPLACE INTO %s VALUES (?, ?, ?, ?, ?)' 
-                %DEFAULT_TABLE_NAME, db_data)
-
-
-def get_tbr_no_lgtm(antibody_db):
-  with sqlite3.connect(antibody_db) as con:
-    cur = con.cursor()
-    cur.execute('SELECT * FROM %s;' % DEFAULT_TABLE_NAME)
-    db_data = cur.fetchall()
-    suspicious_commits = []
-    # db_data: (issue_num, lgtm, tbr, request_timestamp, rietveld_url)
-    for line in db_data:
-      lgtm, tbr = line[1:3]
-      if not lgtm and tbr:
-        suspicious_commits.append(line)
-    return suspicious_commits
+def get_tbr_no_lgtm(cc):
+  cc.execute('SELECT * FROM rietveld')
+  db_data = cc.fetchall()
+  suspicious_commits = []
+  # db_data: (git_hash, lgtm, tbr, rietveld_url, request_timestamp)
+  for line in db_data:
+    lgtm, tbr = line[1:3]
+    if lgtm == '0' and tbr == '1':
+      suspicious_commits.append(line)
+  return suspicious_commits

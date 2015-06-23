@@ -6,14 +6,20 @@
 
 import logging
 import os
-import sqlite3
 import sys
 
+try:
+ sys.path.append('/usr/lib/python2.7/dist-packages/')
+ import MySQLdb
+except ImportError:
+ pass
+finally:
+ sys.path.remove('/usr/lib/python2.7/dist-packages/')
+
+import infra.tools.antibody.cloudsql_connect as csql
 from infra.tools.antibody import code_review_parse
 from infra.tools.antibody import git_commit_parser
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ANTIBODY_DB = os.path.join(THIS_DIR, 'antibody.db')
 
 # https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
@@ -24,12 +30,9 @@ def add_argparse_options(parser):
   parser.add_argument('--rietveld-url', '-r', 
                       help="url of rietveld code review to determine whether"
                            "the issue has been lgtm'ed or tbr'ed")
-  parser.add_argument('--filename', '-f', default=ANTIBODY_DB,
-                      help='file in which rietveld information will be kept')
-                      
+  parser.add_argument('--sql-password-file', '-p', required=True,
+                      help="password for cloud sql instance")
 
-def setup_antibody_db(db_file=ANTIBODY_DB):  # pragma: no cover
-  with sqlite3.connect(db_file) as con:
-    cur = con.cursor()
-    git_commit_parser.create_table(cur)
-    code_review_parse.create_table(cur)
+
+def setup_antibody_db(cc):  # pragma: no cover
+    csql.create_tables(cc)

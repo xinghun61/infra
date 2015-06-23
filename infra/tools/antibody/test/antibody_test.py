@@ -20,11 +20,10 @@ class MyTest(auto_stub.TestCase):
   def test_arguments(self):
     parser = argparse.ArgumentParser()
     antibody.add_argparse_options(parser)
-    args = parser.parse_args(['--rietveld-url', '1234'])
+    args = parser.parse_args(['--rietveld-url', '1234', '-p', '3'])
     self.assertEqual(args.rietveld_url, '1234')
+    self.assertEqual(args.sql_password_file, '3')
 
-    args = parser.parse_args(['-r', '5678'])
+    args = parser.parse_args(['-r', '5678', '-p', '4'])
     self.assertEqual(args.rietveld_url, '5678')
-
-    args = parser.parse_args(['-f', 'abc'])
-    self.assertEqual(args.filename, 'abc')
+    self.assertEqual(args.sql_password_file, '4')

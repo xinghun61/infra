@@ -15,6 +15,7 @@ import logging
 import sys
 
 from infra.tools.antibody import antibody
+import infra.tools.antibody.cloudsql_connect as csql
 from infra.tools.antibody import code_review_parse
 from infra.tools.antibody import git_commit_parser
 import infra_libs.logs
@@ -36,16 +37,22 @@ def main(argv):
 
   # Do more processing here
   LOGGER.info('Antibody starting')
-  
-  antibody.setup_antibody_db(args.filename)
+  with open(args.sql_password_file, 'r') as f:
+    password = f.read()
+  connection, cc = csql.connect(password)
+  antibody.setup_antibody_db(cc)
   if args.rietveld_url:
-    code_review_parse.add_rietveld_data_to_db(args.rietveld_url, args.filename)
+    # TODO: get git hash from rietveld url
+    code_review_parse.add_rietveld_data_to_db(None, args.rietveld_url, cc)
   else:
-    git_commit_parser.parse_git_to_db(args.filename)
-    rietveld_urls = git_commit_parser.get_urls_from_git_db(args.filename)
-    for url in rietveld_urls:
-      code_review_parse.add_rietveld_data_to_db(url, args.filename)
-    print code_review_parse.get_tbr_no_lgtm(args.filename)
+    git_commit_parser.upload_git_to_sql(cc)
+    git_commits_with_review_urls = git_commit_parser.get_urls_from_git_db(cc)
+    for git_hash, review_url in git_commits_with_review_urls:
+      # cannot get access into chromereview.googleplex.com
+      if 'chromereviews.googleplex' not in review_url:
+        code_review_parse.add_rietveld_data_to_db(git_hash, review_url, cc)
+  print code_review_parse.get_tbr_no_lgtm(cc)
+  csql.close(connection, cc)
 
 
 if __name__ == '__main__':
