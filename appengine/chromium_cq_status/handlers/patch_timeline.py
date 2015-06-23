@@ -126,7 +126,10 @@ def record_to_events(record, attempt_number): # pragma: no cover
         master = job_info['master']
         builder = job_info['builder']
         timestamp = rietveld_timestamp(job_info['timestamp'])
-        args = {'build_url': job_info.get('url')}
+        args = {
+          'build_url': job_info.get('url'),
+          'job_state': job_state,
+        }
         yield TraceViewerEvent(builder, master, 'E', timestamp, attempt_string,
                                builder, args).to_dict()
   elif action == 'patch_start':

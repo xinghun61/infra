@@ -43,6 +43,7 @@ class PatchTimelineTest(testing.AppengineTestCase):
       'args': {
         'build_url': ('http://build.chromium.org/p/client.skia.fyi/builders/'
                       'Test-Trybot/builds/794'),
+        'job_state': 'passed',
       },
     }, {
       'name': 'Attempt 1',
