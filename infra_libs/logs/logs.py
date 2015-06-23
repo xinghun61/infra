@@ -242,5 +242,6 @@ def _add_file_handlers(options, logger):  # pragma: no cover
             filename=os.path.join(
                 logs_directory, pattern % logging.getLevelName(level)),
             maxBytes=10 * 1024 * 1024,
-            backupCount=10),
+            backupCount=10,
+            delay=True),
         level=level)
