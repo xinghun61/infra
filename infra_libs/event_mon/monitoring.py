@@ -67,7 +67,7 @@ def _get_log_event_lite(chrome_infra_event, event_timestamp=None):
     return None
 
   log_event = LogRequestLite.LogEventLite()
-  log_event.event_time_ms = event_timestamp or router.time_ms()
+  log_event.event_time_ms = int(event_timestamp or router.time_ms())
   log_event.source_extension = chrome_infra_event.SerializeToString()
   return log_event
 
