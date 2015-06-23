@@ -10,6 +10,7 @@
 - Fetches code dependencies via goop.
 """
 
+import argparse
 import contextlib
 import json
 import logging
@@ -49,18 +50,32 @@ GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 # Pinned version of Go toolset to download. See http://golang.org/dl/.
 TOOLSET_VERSION = 'go1.4.2'
 
-# Platform dependent portion of a download URL. See http://golang.org/dl/.
+# Platform and toolset dependent portion of a download URL.
+# See NATIVE_DOWNLOAD_URL_PREFIX and CROSS_DOWNLOAD_URL_PREFIX.
 TOOLSET_VARIANTS = {
-  ('darwin', 'x86-32'): 'darwin-386-osx10.8.tar.gz',
-  ('darwin', 'x86-64'): 'darwin-amd64-osx10.8.tar.gz',
-  ('linux2', 'x86-32'): 'linux-386.tar.gz',
-  ('linux2', 'x86-64'): 'linux-amd64.tar.gz',
-  ('win32', 'x86-32'): 'windows-386.zip',
-  ('win32', 'x86-64'): 'windows-amd64.zip',
+  'darwin-386': 'darwin-386-osx10.8.tar.gz',
+  'darwin-amd64': 'darwin-amd64-osx10.8.tar.gz',
+  'linux2-386': 'linux-386.tar.gz',
+  'linux2-amd64': 'linux-amd64.tar.gz',
+  'win32-386': 'windows-386.zip',
+  'win32-amd64': 'windows-amd64.zip',
+  # Cross-compilation toolsets must support all native ones above.
+  'linux2-amd64-cross': 'linux2-amd64-cross.tar.gz',
 }
 
-# Download URL root.
-DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
+
+# Google Storage utility wrapper in depot_tools.
+GSUTIL = os.path.join(os.path.dirname(ROOT), 'depot_tools', 'gsutil.py')
+# Google Storage bucket for go cross-compilation toolsets .
+BUCKET = 'chrome-infra-public'
+# A path inside bucket where toolset archives are stored.
+BUCKET_PATH = 'go/toolset'
+
+# Download URL root for official native toolsets.
+NATIVE_DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
+# Download URL for cross-compiled toolsets.
+CROSS_DOWNLOAD_URL_PREFIX = (
+    'https://storage-download.googleapis.com/%s/%s' % (BUCKET, BUCKET_PATH))
 
 # Describes how to fetch 'goop' and 'golint' tools, with dependencies. In theory
 # it is possible to fetch golint via goop, but in practice it's not worth it:
@@ -108,21 +123,38 @@ class Failure(Exception):
   """Bootstrap failed."""
 
 
-def get_toolset_url():
-  """URL of a platform specific Go toolset archive."""
-  # TODO(vadimsh): Support toolset for cross-compilation.
+def get_default_toolset():
+  """Name of a toolset native for this platform."""
+  # Name arch the same way Go does it.
   arch = {
-    'amd64': 'x86-64',
-    'x86_64': 'x86-64',
-    'i386': 'x86-32',
-    'i686': 'x86-32',
-    'x86': 'x86-32',
+    'amd64': 'amd64',
+    'x86_64': 'amd64',
+    'i386': '386',
+    'i686': '386',
+    'x86': '386',
   }.get(platform.machine().lower())
-  variant = TOOLSET_VARIANTS.get((sys.platform, arch))
+  return '%s-%s' % (sys.platform, arch)
+
+
+def is_cross_compile(toolset):
+  return toolset.endswith('-cross')
+
+
+def is_compatible_toolset(installed_toolset, toolset):
+  return (installed_toolset == toolset or
+      toolset + '-cross' == installed_toolset)
+
+
+def get_toolset_url(toolset):
+  """URL of a specific Go toolset archive."""
+  variant = TOOLSET_VARIANTS.get(toolset)
   if not variant:
     # TODO(vadimsh): Compile go lang from source.
-    raise Failure('Unrecognized platform')
-  return '%s/%s.%s' % (DOWNLOAD_URL_PREFIX, TOOLSET_VERSION, variant)
+    raise Failure('Unrecognized toolset')
+  if is_cross_compile(toolset):
+    return '%s/%s.%s' % (CROSS_DOWNLOAD_URL_PREFIX, TOOLSET_VERSION, variant)
+  else:
+    return '%s/%s.%s' % (NATIVE_DOWNLOAD_URL_PREFIX, TOOLSET_VERSION, variant)
 
 
 def read_file(path):
@@ -159,13 +191,14 @@ def remove_directory(path):
   shutil.rmtree(p, onerror=onerror if sys.platform == 'win32' else None)
 
 
-def install_toolset(toolset_root, url):
+def install_toolset(toolset_root, toolset):
   """Downloads and installs Go toolset.
 
   GOROOT would be <toolset_root>/go/.
   """
   if not os.path.exists(toolset_root):
     os.makedirs(toolset_root)
+  url = get_toolset_url(toolset)
   pkg_path = os.path.join(toolset_root, url[url.rfind('/')+1:])
 
   LOGGER.info('Downloading %s...', url)
@@ -295,26 +328,40 @@ def discover_targets(src_dir, pkg):
   return ret
 
 
-def ensure_toolset_installed(toolset_root, go_appengine):
+def is_suitable_toolset_installed(installed, toolset):
+  if not installed:
+    return False
+  try:
+    installed_toolset, installed_version = installed.strip().split(' ')
+    return (TOOLSET_VERSION == installed_version and
+        is_compatible_toolset(installed_toolset, toolset))
+  except ValueError:
+    return False
+
+
+def ensure_toolset_installed(toolset_root, go_appengine, toolset=None):
   """Installs or updates Go toolset if necessary.
 
   Returns True if new toolset was installed.
   """
+  if toolset is None:
+    toolset = get_default_toolset()
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
-  available = get_toolset_url()
-  if installed == available:
+
+  if is_suitable_toolset_installed(installed, toolset):
     if maybe_patch_appengine_sdk(toolset_root, go_appengine):
       return True
-    LOGGER.debug('Go toolset is up-to-date: %s', TOOLSET_VERSION)
+    LOGGER.debug('Go toolset is up-to-date: %s', installed)
     return False
 
+  available = '%s %s' % (toolset,  TOOLSET_VERSION)
   LOGGER.info('Installing Go toolset.')
   LOGGER.info('  Old toolset is %s', installed)
   LOGGER.info('  New toolset is %s', available)
   remove_directory([toolset_root])
-  install_toolset(toolset_root, available)
+  install_toolset(toolset_root, toolset)
   maybe_patch_appengine_sdk(toolset_root, go_appengine)
-  LOGGER.info('Go toolset installed: %s', TOOLSET_VERSION)
+  LOGGER.info('Go toolset installed: %s', available)
   write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
   return True
 
@@ -473,7 +520,7 @@ def call_go_tool(
       **kwargs)
 
 
-def bootstrap(go_paths, logging_level):
+def bootstrap(go_paths, logging_level, toolset=None):
   """Installs all dependencies in default locations.
 
   Supposed to be called at the beginning of some script (it modifies logger).
@@ -482,10 +529,11 @@ def bootstrap(go_paths, logging_level):
     go_paths: list of paths to search for Goopfile.lock, for each path goop
         will install all dependencies in <path>/.vendor.
     logging_level: logging level of bootstrap process.
+    toolset: custom toolset if given, otherwise native.
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
-  updated = ensure_toolset_installed(TOOLSET_ROOT, GO_APPENGINE)
+  updated = ensure_toolset_installed(TOOLSET_ROOT, GO_APPENGINE, toolset)
   ensure_tools_installed(TOOLSET_ROOT)
   for p in go_paths:
     update_vendor_packages(TOOLSET_ROOT, p, force=updated)
@@ -497,13 +545,13 @@ def bootstrap(go_paths, logging_level):
       remove_directory([p, 'pkg'])
 
 
-def prepare_go_environ(skip_goop_update=False):
+def prepare_go_environ(skip_goop_update=False, toolset=None):
   """Returns dict with environment variables to set to use Go toolset.
 
   Installs or updates the toolset if necessary.
   """
   vendor_paths = [] if skip_goop_update else [WORKSPACE]
-  bootstrap(vendor_paths, logging.INFO)
+  bootstrap(vendor_paths, logging.INFO, toolset)
   return get_go_environ(TOOLSET_ROOT, WORKSPACE, [], vendor_paths, GO_APPENGINE)
 
 
@@ -525,11 +573,83 @@ def find_executable(name, workspaces):
   return name
 
 
+def build_cross_toolset(toolset):
+  env = prepare_go_environ(skip_goop_update=True, toolset=toolset)
+
+  LOGGER.info('Building toolset for cross-compilation. Grab a coffee or tea...')
+  tmp_env = env.copy()
+  goroot = env['GOROOT']
+  gosrc = os.path.join(goroot, 'src')
+  for GOOS in ['darwin', 'windows', 'linux']:
+    for GOARCH in ['amd64', '386']:
+      tmp_env['GOOS'] = GOOS
+      tmp_env['GOARCH'] = GOARCH
+      LOGGER.info('adding %s %s support...', GOOS, GOARCH)
+      with open(os.devnull, 'wb') as devnull:
+        subprocess.check_call(
+            ['./make.bash'], shell=True, cwd=gosrc, env=tmp_env,
+            stdout=devnull, stderr=subprocess.STDOUT)
+
+  target_name = '%s.%s-cross.tar.gz' % (TOOLSET_VERSION, toolset)
+
+  # Use temp directory to clean up the garbage in case of failures.
+  with temp_dir(TOOLSET_ROOT) as tmp:
+    tmp_tgz = os.path.join(tmp, target_name)
+
+    def save_target_file():
+      local_file = os.path.join(TOOLSET_ROOT, target_name)
+      os.rename(tmp_tgz, local_file)
+      LOGGER.info('resulting target file saved in %s', local_file)
+
+    LOGGER.info('archiving into %s...', tmp_tgz)
+    with tarfile.open(tmp_tgz, 'w:gz') as f:
+      f.add(goroot, 'go')
+
+    action = raw_input('Upload to Google Storage? (y)es / (n)o ')
+    if not action[0] in 'yY':
+      LOGGER.warn('skipping upload to Google Storage.')
+      save_target_file()
+      return
+
+    gstorage_url = 'gs://%s/%s/' % (BUCKET, BUCKET_PATH)
+    LOGGER.info('Uploading to Google Storage %s', gstorage_url)
+    status = subprocess.call([
+        sys.executable, GSUTIL, '--force-version', '4.7', 'cp',
+        tmp_tgz, gstorage_url])
+    if status:
+      LOGGER.error('Failed to upload to Google Storage: %s', status)
+      save_target_file()
+      return
+    LOGGER.info('Uploaded to Google Storage %s%s', gstorage_url, target_name)
+  print 'Ensure that following item is TOOLSET_VARIANTS dict of go/boostrap.py'
+  print '\'%s-cross\': \'%s-cross.tar.gz\'' % (toolset, toolset)
+
+
 def main(args):
-  if args:
-    print >> sys.stderr, sys.modules[__name__].__doc__,
-    return 2
-  bootstrap([WORKSPACE], logging.DEBUG)
+  parser = argparse.ArgumentParser(
+      description=sys.modules[__name__].__doc__,
+      formatter_class=argparse.RawDescriptionHelpFormatter)
+  parser.add_argument(
+      '--toolset', action='store', default=get_default_toolset(),
+      help='Specific toolset to install, native by default')
+  parser.add_argument(
+      '--build-cross', dest='build_cross', action='store_true', default=False,
+      help='Create cross-compiling toolset based on platform native toolset.')
+
+  opts = parser.parse_args(args)
+  if opts.build_cross and opts.toolset != get_default_toolset():
+    parser.error(
+        'building toolset for cross compilation is supported only based on '
+        'native toolset "%s", but "%s" toolset was selected' % (
+        get_default_toolset(), opts.toolset))
+  if opts.build_cross and sys.platform != 'linux2':
+    parser.error(
+        'building toolset for cross compilation is currently supported only on '
+        'Linux')
+
+  bootstrap([WORKSPACE], logging.DEBUG, toolset=opts.toolset)
+  if opts.build_cross:
+    build_cross_toolset(opts.toolset)
   return 0
 
 
