@@ -3,7 +3,9 @@
 # found in the LICENSE file.
 
 import argparse
+import glob
 import logging
+import os
 import json
 import sys
 
@@ -48,12 +50,12 @@ def get_arguments(argv):
                                      if kind],
                             default='POINT',
                             help='General kind of event. This value is used '
-                            'e.g. to automatically compute durations between '
-                            'START and STOP events. Default: %(default)s')
+                            'e.g. to\nautomatically compute durations between '
+                            'START and STOP\nevents. Default: %(default)s')
   common_group.add_argument('--event-mon-event-timestamp', type=int,
                             help='Timestamp when the event was generated, as '
-                            'number of milliseconds since the Unix EPOCH. '
-                            'Defaults to current time.')
+                            'number of\nmilliseconds since the Unix EPOCH.'
+                            '\nDefaults to current time.')
 
   # Service event
   service_group = parser.add_argument_group('Service event options')
@@ -113,6 +115,23 @@ def get_arguments(argv):
                            'whether any \n--build-event-step-* options have '
                            'been provided or not.')
 
+  # Read events from file
+  file_group = parser.add_argument_group('Read events from file')
+  file_group.add_argument('--events-from-file',
+                          metavar='FILENAME', nargs='*',
+                          help='File containing events as json dict. This '
+                          'option\nis incompatible with --build-event-type and'
+                          '\n--service-event-type.\nSee '
+                          'send_event.read_events_from_file for details\n'
+                          'on the format. This options can be passed multiple\n'
+                          'times, and wildcards can be used.')
+  file_group.add_argument('--delete-file-when-sent',
+                          action='store_true', default=False,
+                          help='If all events read from a file have been '
+                          'successfully\nsent to the endpoint, delete the '
+                          'file. By default\nfiles are kept.')
+
+
   event_mon.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
 
@@ -128,11 +147,15 @@ def get_arguments(argv):
   if args.build_event_type and args.service_event_type:
     parser.error('Only one type of event can be sent at once. '
                  'Got both --build-event-type and --service-event-type.')
-
+  if ((args.build_event_type and args.events_from_file)
+      or (args.service_event_type and args.events_from_file)):
+    parser.error('--events-from-file is not compatible with either'
+                 '--service-event-type or --build-event-type.')
   return args
 
 
 def send_service_event(args):
+  """Entry point when --service-event-type is passed."""
   revinfo = {}
   if args.service_event_revinfo:
     if args.service_event_revinfo == '-':  # pragma: no cover
@@ -155,6 +178,7 @@ def send_service_event(args):
 
 
 def send_build_event(args):
+  """Entry point when --build-event-type is passed."""
   event_mon.send_build_event(
     args.build_event_type,
     args.build_event_hostname,
@@ -166,6 +190,32 @@ def send_build_event(args):
     result=args.build_event_result,
     timestamp_kind=args.event_mon_timestamp_kind,
     event_timestamp=args.event_mon_event_timestamp)
+
+
+def send_events_from_file(args):
+  """Entry point when --events-from-file is passed."""
+  file_list = get_event_file_list(args.events_from_file)
+
+  for filename in file_list:
+    LOGGER.info('Processing %s', filename)
+    events = read_events_from_file(filename)
+    success = event_mon.send_events(events)
+    if success:
+      if args.delete_file_when_sent:
+        LOGGER.info('Events successfully sent. Deleting file %s.', filename)
+        try:
+          os.remove(filename)
+        except OSError: # pragma: no cover
+          LOGGER.exception('Failed to delete %s.', filename)
+    else: # pragma: no cover
+      LOGGER.error('Failed to send events. Keeping file around: %s', filename)
+
+
+def get_event_file_list(filename_globs):
+  file_list = []
+  for filename_glob in filename_globs:
+    file_list.extend(glob.glob(filename_glob))
+  return [os.path.abspath(filename) for filename in file_list]
 
 
 def read_events_from_file(filename):

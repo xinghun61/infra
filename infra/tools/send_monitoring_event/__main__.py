@@ -29,9 +29,13 @@ def main(argv):  # pragma: no cover
   elif args.service_event_type:
     send_event.send_service_event(args)
 
+  elif args.events_from_file:
+    send_event.send_events_from_file(args)
+
   else:
-    print >> sys.stderr, ('At least one of the --*-event-type options should '
-                          'be provided. Nothing was sent.')
+    print >> sys.stderr, ('At least one of the --*-event-type options or '
+                          '--events-from-file should be provided. Nothing '
+                          'was sent.')
     status = 2
   event_mon.close()
   return status
