@@ -41,6 +41,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -175,6 +176,9 @@ type Client interface {
 	// the site root. It doesn't check whether the instance is already deployed.
 	FetchAndDeployInstance(pin common.Pin) error
 
+	// ListPackages returns a list of strings of package names.
+	ListPackages(path string, recursive bool) ([]string, error)
+
 	// ProcessEnsureFile parses text file that describes what should be installed
 	// by EnsurePackages function. It is a text file where each line has a form:
 	// <package name> <desired version>. Whitespaces are ignored. Lines that start
@@ -284,6 +288,22 @@ func (client *clientImpl) FetchACL(packagePath string) ([]PackageACL, error) {
 
 func (client *clientImpl) ModifyACL(packagePath string, changes []PackageACLChange) error {
 	return client.remote.modifyACL(packagePath, changes)
+}
+
+func (client *clientImpl) ListPackages(path string, recursive bool) ([]string, error) {
+	pkgs, dirs, err := client.remote.listPackages(path, recursive)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add trailing slash to directories.
+	for k, d := range dirs {
+		dirs[k] = d + "/"
+	}
+	// Merge and sort packages and directories.
+	allPkgs := append(pkgs, dirs...)
+	sort.Strings(allPkgs)
+	return allPkgs, nil
 }
 
 func (client *clientImpl) UploadToCAS(sha1 string, data io.ReadSeeker, session *UploadSession) error {
@@ -631,6 +651,8 @@ type remote interface {
 	setRef(ref string, pin common.Pin) error
 	attachTags(pin common.Pin, tags []string) error
 	fetchInstance(pin common.Pin) (*fetchInstanceResponse, error)
+
+	listPackages(path string, recursive bool) ([]string, []string, error)
 }
 
 type storage interface {

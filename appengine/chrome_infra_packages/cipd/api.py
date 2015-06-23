@@ -236,6 +236,20 @@ class FetchPackageResponse(messages.Message):
 ################################################################################
 
 
+class ListPackagesResponse(messages.Message):
+  """Results of listPackage call."""
+
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, names of the packages and names of directories.
+  packages = messages.StringField(3, repeated=True)
+  directories = messages.StringField(4, repeated=True)
+
+
+################################################################################
+
+
 class RegisterPackageResponse(messages.Message):
   """Results of registerPackage call."""
   status = messages.EnumField(Status, 1, required=True)
@@ -601,6 +615,27 @@ class PackageRepositoryApi(remote.Service):
     return RegisterPackageResponse(
         status=Status.REGISTERED if registered else Status.ALREADY_REGISTERED,
         package=package_to_proto(pkg))
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          path=messages.StringField(1, required=False),
+          recursive=messages.BooleanField(2, required=False)),
+      ListPackagesResponse,
+      http_method='GET',
+      path='package/search',
+      name='listPackages')
+  def list_packages(self, request):
+    """Returns packages in the given directory and possibly subdirectories."""
+    path = request.path or ''
+    recursive = request.recursive or False
+
+    pkgs, dirs = self.service.list_packages(path, recursive)
+    caller = auth.get_current_identity()
+    visible_pkgs = [p for p in pkgs if acl.can_fetch_package(p, caller)]
+    visible_dirs = [d for d in dirs if acl.can_fetch_package(d, caller)]
+
+    return ListPackagesResponse(packages=visible_pkgs, directories=visible_dirs)
 
 
   ### PackageInstance methods.

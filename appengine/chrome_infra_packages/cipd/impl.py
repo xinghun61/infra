@@ -179,6 +179,81 @@ class RepoService(object):
     """
     return package_key(package_name).get()
 
+  @staticmethod
+  def _is_in_directory(directory, path, recursive):
+    """Tests if the path is under the given directory.
+
+    This assumes directory is a prefix of path.
+
+    Args:
+      directory: string, directory the path should fall under.
+      path: string, full path to test.
+      recursive: whether the path can be in a subdirectory.
+
+    Returns:
+      True if the path is under the directory.
+    """
+    start = len(directory)
+
+    # The directory itself or anything shorter is not a match.
+    if len(path) <= start:
+      return False
+
+    # The root doesn't begin with slash so only check non-root searches.
+    if start:
+      if path[start] != '/':
+        return False
+      start += 1
+
+    # A subdirectory was found and we're not looking for recursive matches.
+    if not recursive and '/' in path[start:]:
+      return False
+    return True
+
+  def list_packages(self, dir_path, recursive):
+    """Returns lists of package names and directory names with the given prefix.
+
+    Args:
+      dir_path: string directory from which to list packages.
+      recursive: boolean whether to list contents of subdirectories.
+
+    Returns:
+      [package name, ...], [directory name, ...]
+    """
+    query = Package.query()
+
+    # Normalize directory to simplify matching logic later.
+    dir_path = dir_path.rstrip('/')
+
+    # Only apply the filtering if a prefix was given. The empty string isn't a
+    # valid key and will result in an exception.
+    if dir_path:
+      query = query.filter(
+          # Prefix match using the operators available to us. Packages can only
+          # contain lowercase ascii, numbers, and '/' so '\uffff' will always
+          # be larger.
+          ndb.AND(Package.key >= ndb.Key(Package, dir_path),
+                  Package.key <= ndb.Key(Package, dir_path + u'\uffff')))
+    pkgs = []
+    dirs = set()
+    for key in query.iter(keys_only=True):
+      pkg = key.string_id()
+
+      # In case the index is stale since this is an eventual consistent query.
+      if not pkg.startswith(dir_path):  # pragma: no cover
+        continue
+      pkgs.append(pkg)
+
+      # Add in directories derived from full package path.
+      if '/' in pkg:
+        parts = pkg.split('/')
+        dirs.update('/'.join(parts[:n]) for n in xrange(1, len(parts)))
+
+    dirs = [d for d in dirs if self._is_in_directory(dir_path, d, recursive)]
+    pkgs = [p for p in pkgs if self._is_in_directory(dir_path, p, recursive)
+            or len(dir_path) == len(p)]
+    return pkgs, dirs
+
   def get_processing_result(self, package_name, instance_id, processor_name):
     """Returns results of some asynchronous processor or None if not ready.
 

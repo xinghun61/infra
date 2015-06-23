@@ -423,6 +423,29 @@ func TestProcessEnsureFile(t *testing.T) {
 	})
 }
 
+func TestListPackages(t *testing.T) {
+	call := func(c C, dirPath string, recursive bool, calls []expectedHTTPCall) ([]string, error) {
+		client := mockClient(c, "", calls)
+		return client.ListPackages(dirPath, recursive)
+	}
+
+	Convey("ListPackages merges directories", t, func(c C) {
+		out, err := call(c, "", true, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/package/search",
+				Query: url.Values{
+					"path":      []string{""},
+					"recursive": []string{"true"},
+				},
+				Reply: `{"status":"SUCCESS","packages":["dir/pkg"],"directories":["dir"]}`,
+			},
+		})
+		So(err, ShouldBeNil)
+		So(out, ShouldResemble, []string{"dir/", "dir/pkg"})
+	})
+}
+
 func TestEnsurePackages(t *testing.T) {
 	Convey("Mocking temp dir", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")

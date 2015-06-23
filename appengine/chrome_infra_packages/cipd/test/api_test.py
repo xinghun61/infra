@@ -67,6 +67,77 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'error_message': 'Invalid package name',
     }, resp.json_body)
 
+  def test_list_packages_no_results(self):
+    resp = self.call_api('list_packages', {})
+    self.assertEqual({
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_list_packages_all_packages(self):
+    resp = self.call_api('register_package', {'package_name': 'good/name'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+
+    resp = self.call_api('list_packages', {'recursive': True})
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'packages': ['good/name'],
+      'directories': ['good'],
+    }, resp.json_body)
+
+  def test_list_packages_filter_no_access(self):
+    resp = self.call_api('register_package', {'package_name': 'good/name'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+
+    self.mock(api.acl, 'can_fetch_package', lambda *_: False)
+
+    resp = self.call_api('list_packages', {})
+    self.assertEqual({
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_list_packages_in_path(self):
+    resp = self.call_api('register_package', {'package_name': 'p/a'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+    resp = self.call_api('register_package', {'package_name': 'p/y'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+    resp = self.call_api('register_package', {'package_name': 'p/z/z'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+    resp = self.call_api('register_package', {'package_name': 'pp'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+    resp = self.call_api('register_package', {'package_name': 'q'})
+    self.assertEqual('REGISTERED', resp.json_body['status'])
+
+    resp = self.call_api('list_packages', {
+      'path': 'p',
+      'recursive': False,
+    })
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'packages': [
+        'p/a',
+        'p/y',
+      ],
+      'directories': [
+        'p/z',
+      ],
+    }, resp.json_body)
+
+    resp = self.call_api('list_packages', {
+      'path': 'p',
+      'recursive': True,
+    })
+    self.assertEqual({
+      'status': 'SUCCESS',
+      'packages': [
+        'p/a',
+        'p/y',
+        'p/z/z',
+      ],
+      'directories': [
+        'p/z',
+      ],
+    }, resp.json_body)
+
   def test_register_package(self):
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
 

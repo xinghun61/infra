@@ -41,14 +41,15 @@ var (
 
 // checkCommandLine ensures all required positional and flag-like parameters
 // are set. Returns true if they are, or false (and prints to stderr) if not.
-func checkCommandLine(args []string, flags *flag.FlagSet, positionalCount int) bool {
+func checkCommandLine(args []string, flags *flag.FlagSet, minPosCount, maxPosCount int) bool {
 	// Check number of expected positional arguments.
-	if positionalCount == 0 && len(args) != 0 {
+	if maxPosCount == 0 && len(args) != 0 {
 		log.Errorf("Unexpected arguments: %v", args)
 		return false
 	}
-	if len(args) != positionalCount {
-		log.Errorf("Expecting %d arguments, got %d", positionalCount, len(args))
+	if len(args) < minPosCount || len(args) > maxPosCount {
+		log.Errorf("Expecting [%d, %d] arguments, got %d", minPosCount,
+			maxPosCount, len(args))
 		return false
 	}
 	// Check required unset flags.
@@ -376,7 +377,7 @@ type createRun struct {
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0) {
+	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
 		return 1
 	}
 	pin, err := buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions)
@@ -429,7 +430,7 @@ type ensureRun struct {
 }
 
 func (c *ensureRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0) {
+	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
 		return 1
 	}
 	err := ensurePackages(c.rootDir, c.listFile, c.ServiceOptions)
@@ -482,7 +483,7 @@ type resolveRun struct {
 }
 
 func (c *resolveRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	pin, err := resolveVersion(args[0], c.version, c.ServiceOptions)
@@ -530,7 +531,7 @@ type setRefRun struct {
 }
 
 func (c *setRefRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	if len(c.refs) == 0 {
@@ -565,6 +566,62 @@ func setRef(packageName, version string, refsOpts RefsOptions, serviceOpts Servi
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'ls' subcommand.
+
+var cmdListPackages = &subcommands.Command{
+	UsageLine: "ls [-r] [<prefix string>]",
+	ShortDesc: "List matching packages.",
+	LongDesc:  "List packages in the given path to which the user has access, optionally recursively",
+	CommandRun: func() subcommands.CommandRun {
+		c := &listPackagesRun{}
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.BoolVar(&c.recursive, "r", false, "Whether to list packages in subdirectories.")
+		return c
+	},
+}
+
+type listPackagesRun struct {
+	subcommands.CommandRunBase
+	ServiceOptions
+	recursive bool
+}
+
+func (c *listPackagesRun) Run(a subcommands.Application, args []string) int {
+	if !checkCommandLine(args, c.GetFlags(), 0, 1) {
+		return 1
+	}
+	path := ""
+	if len(args) == 1 {
+		path = args[0]
+	}
+	err := listPackages(path, c.recursive, c.ServiceOptions)
+	if err != nil {
+		log.Errorf("Error while listing packages: %s", err)
+		return 1
+	}
+	return 0
+}
+
+func listPackages(path string, recursive bool, serviceOpts ServiceOptions) error {
+	client, err := serviceOpts.makeCipdClient("")
+	if err != nil {
+		return err
+	}
+	packages, err := client.ListPackages(path, recursive)
+	if err != nil {
+		return err
+	}
+	if len(packages) == 0 {
+		log.Infof("No matching packages.")
+	} else {
+		for _, p := range packages {
+			log.Infof("%s", p)
+		}
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'acl-list' subcommand.
 
 var cmdListACL = &subcommands.Command{
@@ -584,7 +641,7 @@ type listACLRun struct {
 }
 
 func (c *listACLRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	err := listACL(args[0], c.ServiceOptions)
@@ -680,7 +737,7 @@ type editACLRun struct {
 }
 
 func (c *editACLRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.ServiceOptions)
@@ -753,7 +810,7 @@ type buildRun struct {
 }
 
 func (c *buildRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0) {
+	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
 		return 1
 	}
 	err := buildInstanceFile(c.outputFile, c.InputOptions)
@@ -816,7 +873,7 @@ type deployRun struct {
 }
 
 func (c *deployRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	err := deployInstanceFile(c.rootDir, args[0])
@@ -863,7 +920,7 @@ type fetchRun struct {
 }
 
 func (c *fetchRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	err := fetchInstanceFile(args[0], c.version, c.outputPath, c.ServiceOptions)
@@ -934,7 +991,7 @@ type inspectRun struct {
 }
 
 func (c *inspectRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	pin, err := inspectInstanceFile(args[0], true)
@@ -1001,7 +1058,7 @@ type registerRun struct {
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1) {
+	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
 	pin, err := registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions)
@@ -1056,6 +1113,7 @@ var application = &subcommands.DefaultApplication{
 		auth.SubcommandLogout(auth.Options{Logger: log}, "auth-logout"),
 
 		// High level commands.
+		cmdListPackages,
 		cmdCreate,
 		cmdEnsure,
 		cmdResolve,

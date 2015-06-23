@@ -109,6 +109,21 @@ func TestRemoteImpl(t *testing.T) {
 		return remote.setRef("some-ref", Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
 	}
 
+	mockListPackages := func(c C, reply string) ([]string, []string, error) {
+		remote := mockRemoteImpl(c, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/package/search",
+				Query: url.Values{
+					"path":      []string{"pkgpath"},
+					"recursive": []string{"false"},
+				},
+				Reply: reply,
+			},
+		})
+		return remote.listPackages("pkgpath", false)
+	}
+
 	mockAttachTags := func(c C, tags []string, body, reply string) error {
 		remote := mockRemoteImpl(c, []expectedHTTPCall{
 			{
@@ -511,6 +526,33 @@ func TestRemoteImpl(t *testing.T) {
 
 	Convey("setRef ERROR", t, func(c C) {
 		So(mockSetRef(c, `{"status":"ERROR", "error_message":"Blah"}`), ShouldNotBeNil)
+	})
+
+	Convey("listPackages SUCCESS", t, func(c C) {
+		pkgs, dirs, err := mockListPackages(c, `{
+				"status": "SUCCESS",
+				"packages": [
+					"pkgpath/fake1",
+					"pkgpath/fake2"
+				],
+				"directories": []
+			}`)
+		So(err, ShouldBeNil)
+		So(pkgs, ShouldResemble, []string{
+			"pkgpath/fake1",
+			"pkgpath/fake2",
+		})
+		So(dirs, ShouldResemble, []string{})
+	})
+
+	Convey("listPackages ERROR", t, func(c C) {
+		pkgs, dirs, err := mockListPackages(c, `{
+				"status": "ERROR",
+				"error_message": "Some error message"
+			}`)
+		So(err, ShouldNotBeNil)
+		So(pkgs, ShouldBeNil)
+		So(dirs, ShouldBeNil)
 	})
 
 	Convey("attachTags SUCCESS", t, func(c C) {

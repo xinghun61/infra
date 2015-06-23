@@ -83,6 +83,92 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(impl.cas, 'get_cas_service', lambda: self.mocked_cas_service)
     self.service = impl.get_repo_service()
 
+  def test_list_packages_no_path(self):
+    self.assertIsNone(self.service.get_package('a/b'))
+    self.assertIsNone(self.service.get_package('y/z'))
+    self.service.register_package(
+        package_name='y/z',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.register_package(
+        package_name='a/b',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual(([], ['a', 'y']),
+                     self.service.list_packages('', False))
+    self.assertEqual((['a/b', 'y/z'], ['a', 'y']),
+                     self.service.list_packages('', True))
+
+  def test_list_packages_with_path(self):
+    self.assertIsNone(self.service.get_package('a/b'))
+    self.assertIsNone(self.service.get_package('y/x'))
+    self.assertIsNone(self.service.get_package('y/z/z'))
+    self.service.register_package(
+        package_name='y/x',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.register_package(
+        package_name='y/z/z',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.register_package(
+        package_name='a/b',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual((['y/x'], ['y/z']), self.service.list_packages('y', False))
+    self.assertEqual((['y/z/z'], []),
+                     self.service.list_packages('y/z/z', False))
+    self.assertEqual((['y/x'], ['y/z']),
+                     self.service.list_packages('y/', False))
+    self.assertEqual((['y/x', 'y/z/z'], ['y/z']),
+                     self.service.list_packages('y', True))
+
+  def test_list_packages_ignore_substrings(self):
+    self.assertIsNone(self.service.get_package('good/path'))
+    self.service.register_package(
+        package_name='good/path',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual((['good/path'], []),
+                     self.service.list_packages('good', False))
+    self.assertEqual((['good/path'], []),
+                     self.service.list_packages('good/', False))
+    self.assertEqual(([], []),
+                     self.service.list_packages('goo', False))
+
+  def test_list_packages_where_a_package_is_also_a_directory(self):
+    self.assertIsNone(self.service.get_package('good'))
+    self.assertIsNone(self.service.get_package('good/path'))
+    self.service.register_package(
+        package_name='good',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.service.register_package(
+        package_name='good/path',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual((['good'], ['good']),
+                     self.service.list_packages('', False))
+    self.assertEqual((['good', 'good/path'], ['good']),
+                     self.service.list_packages('', True))
+    # To keep things simple we match packages with names matching the search
+    # with the trailing slash stripped.
+    self.assertEqual((['good', 'good/path'], []),
+                     self.service.list_packages('good/', False))
+
+  def test_list_packages_with_an_empty_directory(self):
+    self.assertIsNone(self.service.get_package('good/sub/path'))
+    self.service.register_package(
+        package_name='good/sub/path',
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertEqual(([], ['good/sub']),
+                     self.service.list_packages('good', False))
+    self.assertEqual((['good/sub/path'], ['good/sub']),
+                     self.service.list_packages('good', True))
+    self.assertEqual((['good/sub/path'], ['good', 'good/sub']),
+                     self.service.list_packages('', True))
+
   def test_register_package_new(self):
     self.assertIsNone(self.service.get_package('a/b'))
     inst, registered = self.service.register_package(

@@ -126,7 +126,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 		if resp.StatusCode == 403 || resp.StatusCode == 401 {
 			return ErrAccessDenined
 		}
-		return fmt.Errorf("Unexpected reply (HTTP %d):\n%s", resp.StatusCode, string(body))
+		return fmt.Errorf("Unexpected reply (HTTP %d):\n%s", resp.StatusCode, string(responseBody))
 	}
 
 	return ErrBackendInaccessible
@@ -450,6 +450,32 @@ func (r *remoteImpl) attachTags(pin common.Pin, tags []string) error {
 	return fmt.Errorf("Unexpected status when attaching tags: %s", reply.Status)
 }
 
+func (r *remoteImpl) listPackages(path string, recursive bool) ([]string, []string, error) {
+	endpoint, err := packageSearchEndpoint(path, recursive)
+	if err != nil {
+		return nil, nil, err
+	}
+	var reply struct {
+		Status       string   `json:"status"`
+		ErrorMessage string   `json:"error_message"`
+		Packages     []string `json:"packages"`
+		Directories  []string `json:"directories"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		packages := reply.Packages
+		directories := reply.Directories
+		return packages, directories, nil
+	case "ERROR":
+		return nil, nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, nil, fmt.Errorf("Unexpected list packages status: %s", reply.Status)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func instanceEndpoint(pin common.Pin) (string, error) {
@@ -482,6 +508,17 @@ func refEndpoint(packageName string, ref string) (string, error) {
 	params.Add("package_name", packageName)
 	params.Add("ref", ref)
 	return "repo/v1/ref?" + params.Encode(), nil
+}
+
+func packageSearchEndpoint(path string, recursive bool) (string, error) {
+	params := url.Values{}
+	params.Add("path", path)
+	recursiveString := "false"
+	if recursive {
+		recursiveString = "true"
+	}
+	params.Add("recursive", recursiveString)
+	return "repo/v1/package/search?" + params.Encode(), nil
 }
 
 func tagsEndpoint(pin common.Pin, tags []string) (string, error) {
