@@ -193,7 +193,7 @@ class AlertsHandler(webapp2.RequestHandler):
 
 
 class NewAlertsHandler(AlertsHandler):
-  ALERTS_TYPE = 'new-alerts'
+  ALERT_TYPE = 'new-alerts'
 
 
 app = webapp2.WSGIApplication([
