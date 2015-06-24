@@ -28,13 +28,16 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     self.repo_service = MockedRepoService()
     self.mock(impl, 'get_repo_service', lambda: self.repo_service)
 
-  def test_fetch_package_ok(self):
-    _, registered = self.repo_service.register_package(
-        package_name='good/name',
+  def register_fake_instance(self, pkg_name):
+    _, registered = self.repo_service.register_instance(
+        package_name=pkg_name,
+        instance_id='a'*40,
         caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1))
+        now=datetime.datetime(2014, 1, 1, 0, 0))
     self.assertTrue(registered)
 
+  def test_fetch_package_ok(self):
+    self.register_fake_instance('good/name')
     resp = self.call_api('fetch_package', {'package_name': 'good/name'})
     self.assertEqual({
       'package': {
@@ -46,12 +49,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     }, resp.json_body)
 
   def test_fetch_package_no_access(self):
-    _, registered = self.repo_service.register_package(
-        package_name='good/name',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1))
-    self.assertTrue(registered)
-
+    self.register_fake_instance('good/name')
     self.mock(api.acl, 'can_fetch_package', lambda *_: False)
     with self.call_should_fail(403):
       self.call_api('fetch_package', {'package_name': 'good/name'})
@@ -74,9 +72,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     }, resp.json_body)
 
   def test_list_packages_all_packages(self):
-    resp = self.call_api('register_package', {'package_name': 'good/name'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-
+    self.register_fake_instance('good/name')
     resp = self.call_api('list_packages', {'recursive': True})
     self.assertEqual({
       'status': 'SUCCESS',
@@ -85,9 +81,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     }, resp.json_body)
 
   def test_list_packages_filter_no_access(self):
-    resp = self.call_api('register_package', {'package_name': 'good/name'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-
+    self.register_fake_instance('good/name')
     self.mock(api.acl, 'can_fetch_package', lambda *_: False)
 
     resp = self.call_api('list_packages', {})
@@ -96,16 +90,11 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     }, resp.json_body)
 
   def test_list_packages_in_path(self):
-    resp = self.call_api('register_package', {'package_name': 'p/a'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-    resp = self.call_api('register_package', {'package_name': 'p/y'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-    resp = self.call_api('register_package', {'package_name': 'p/z/z'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-    resp = self.call_api('register_package', {'package_name': 'pp'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
-    resp = self.call_api('register_package', {'package_name': 'q'})
-    self.assertEqual('REGISTERED', resp.json_body['status'])
+    self.register_fake_instance('p/a')
+    self.register_fake_instance('p/y')
+    self.register_fake_instance('p/z/z')
+    self.register_fake_instance('pp')
+    self.register_fake_instance('q')
 
     resp = self.call_api('list_packages', {
       'path': 'p',
@@ -137,54 +126,6 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'p/z',
       ],
     }, resp.json_body)
-
-  def test_register_package(self):
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2014, 1, 1))
-
-    # Not yet registered.
-    resp = self.call_api('register_package', {'package_name': 'good/name'})
-    self.assertEqual(200, resp.status_code)
-    self.assertEqual({
-      'status': 'REGISTERED',
-      'package': {
-        'package_name': 'good/name',
-        'registered_by': 'user:mocked@example.com',
-        'registered_ts': '1388534400000000',
-      },
-    }, resp.json_body)
-
-    # Check that it is indeed there.
-    pkg = self.repo_service.get_package('good/name')
-    self.assertTrue(pkg)
-    expected = {
-      'registered_by': auth.Identity(kind='user', name='mocked@example.com'),
-      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0),
-    }
-    self.assertEqual(expected, pkg.to_dict())
-
-    # Attempt to register it again.
-    resp = self.call_api('register_package', {'package_name': 'good/name'})
-    self.assertEqual(200, resp.status_code)
-    self.assertEqual({
-      'status': 'ALREADY_REGISTERED',
-      'package': {
-        'package_name': 'good/name',
-        'registered_by': 'user:mocked@example.com',
-        'registered_ts': '1388534400000000',
-      },
-    }, resp.json_body)
-
-  def test_register_package_bad_name(self):
-    resp = self.call_api('register_package', {'package_name': 'bad name'})
-    self.assertEqual({
-      'status': 'ERROR',
-      'error_message': 'Invalid package name',
-    }, resp.json_body)
-
-  def test_register_package_no_access(self):
-    self.mock(api.acl, 'can_register_package', lambda *_: False)
-    with self.call_should_fail(403):
-      self.call_api('register_package', {'package_name': 'good/name'})
 
   def test_fetch_instance_ok(self):
     inst, registered = self.repo_service.register_instance(
@@ -380,14 +321,6 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
 
   def test_register_instance_no_access(self):
     self.mock(api.acl, 'can_register_instance', lambda *_: False)
-    with self.call_should_fail(403):
-      self.call_api('register_instance', {
-        'package_name': 'good/name',
-        'instance_id': 'a'*40,
-      })
-
-  def test_register_instance_no_access_to_register_package(self):
-    self.mock(api.acl, 'can_register_package', lambda *_: False)
     with self.call_should_fail(403):
       self.call_api('register_instance', {
         'package_name': 'good/name',

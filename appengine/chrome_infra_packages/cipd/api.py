@@ -33,9 +33,9 @@ class Status(messages.Enum):
   """Response status code, shared by all responses."""
   # Operation finished successfully (generic "success" response).
   SUCCESS = 1
-  # The package was successfully registered.
+  # The package instance was successfully registered.
   REGISTERED = 2
-  # The package was already registered (not a error).
+  # The package instance was already registered (not a error).
   ALREADY_REGISTERED = 3
   # Some uncategorized non-transient error happened.
   ERROR = 4
@@ -245,18 +245,6 @@ class ListPackagesResponse(messages.Message):
   # For SUCCESS, names of the packages and names of directories.
   packages = messages.StringField(3, repeated=True)
   directories = messages.StringField(4, repeated=True)
-
-
-################################################################################
-
-
-class RegisterPackageResponse(messages.Message):
-  """Results of registerPackage call."""
-  status = messages.EnumField(Status, 1, required=True)
-  error_message = messages.StringField(2, required=False)
-
-  # For REGISTERED or ALREADY_REGISTERED, information about the package.
-  package = messages.MessageField(Package, 3, required=False)
 
 
 ################################################################################
@@ -598,27 +586,6 @@ class PackageRepositoryApi(remote.Service):
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
-          package_name=messages.StringField(1, required=True)),
-      RegisterPackageResponse,
-      path='package',
-      http_method='POST',
-      name='registerPackage')
-  def register_package(self, request):
-    """Registers a new package in the repository."""
-    package_name = validate_package_name(request.package_name)
-
-    caller = auth.get_current_identity()
-    if not acl.can_register_package(package_name, caller):
-      raise auth.AuthorizationError()
-
-    pkg, registered = self.service.register_package(package_name, caller)
-    return RegisterPackageResponse(
-        status=Status.REGISTERED if registered else Status.ALREADY_REGISTERED,
-        package=package_to_proto(pkg))
-
-  @endpoints_method(
-      endpoints.ResourceContainer(
-          message_types.VoidMessage,
           path=messages.StringField(1, required=False),
           recursive=messages.BooleanField(2, required=False)),
       ListPackagesResponse,
@@ -688,11 +655,6 @@ class PackageRepositoryApi(remote.Service):
       return RegisterInstanceResponse(
           status=Status.ALREADY_REGISTERED,
           instance=instance_to_proto(instance))
-
-    # If the package is missing, check that user is actually allowed to make it.
-    pkg = self.service.get_package(package_name)
-    if pkg is None and not acl.can_register_package(package_name, caller):
-      raise auth.AuthorizationError()
 
     # Need to upload to CAS first? Open an upload session. Caller must use
     # CASServiceApi to finish the upload and then call registerInstance again.
@@ -958,20 +920,11 @@ class PackageRepositoryApi(remote.Service):
     caller = auth.get_current_identity()
     if not acl.can_modify_acl(package_path, caller):
       raise auth.AuthorizationError()
-    # Modifying ACLs for a package subpath implicitly creates an empty package.
-    # That way acl.PackageACL entities always correspond to some existing
-    # packages (impl.Package entities). It also simplifies registering new
-    # packages: setting custom ACL on a package path is enough to register
-    # a package. If custom ACL is not required, registerPackage method can be
-    # used instead.
-    now = utils.utcnow()
-    assert acl.can_register_package(package_path, caller)
-    self.service.register_package(package_path, caller, now)
 
     # Apply changes. Do not catch ValueError. Validation above should be
     # sufficient. If it is not, HTTP 500 and an uncaught exception in logs is
     # exactly what is needed.
-    acl.modify_roles(changes, caller, now)
+    acl.modify_roles(changes, caller, utils.utcnow())
     return ModifyACLResponse()
 
 

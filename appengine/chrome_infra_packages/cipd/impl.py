@@ -78,8 +78,8 @@ Package namespace is a file-system like hierarchical structure where each node
 has an access control list inherited by all subnodes. ACL for some subpath
 contains a list of pairs (group | user, role) where possible roles are:
   * READER - can fetch package instances.
-  * WRITER - same as READER + can register new instances in existing packages.
-  * OWNER - same as WRITER + can change ACLs and can create new subpackages.
+  * WRITER - same as READER + can register new packages and instances.
+  * OWNER - same as WRITER + can view and change ACLs for subpaths.
 
 ACLs of a leaf package is a union of ACLs of all parent nodes. Exclusions or
 overrides are not supported.
@@ -269,24 +269,6 @@ class RepoService(object):
         package_name, instance_id, processor_name).get()
 
   @ndb.transactional
-  def register_package(self, package_name, caller, now=None):
-    """Ensures a given package is registered.
-
-    Can be used by callers with OWNER role to create a package, without
-    uploading any concrete instances. Such empty packages later are populated
-    with instances by callers with WRITER role.
-
-    Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
-      caller: auth.Identity that issued the request.
-      now: datetime when the request was made (or None for current time).
-
-    Returns:
-      Tuple (Package entity, True if registered or False if existed).
-    """
-    return self._register_package(package_name, caller, now)
-
-  @ndb.transactional
   def register_instance(self, package_name, instance_id, caller, now=None):
     """Makes new PackageInstance entity if it is not yet there.
 
@@ -302,13 +284,18 @@ class RepoService(object):
     Returns:
       Tuple (PackageInstance entity, True if registered or False if existed).
     """
-    # Register the package and the instance if not already registered.
+    # Is PackageInstance already registered?
     key = package_instance_key(package_name, instance_id)
     inst = key.get()
     if inst is not None:
       return inst, False
+
+    # Register Package entity if missing.
     now = now or utils.utcnow()
-    self._register_package(package_name, caller, now)
+    pkg_key = package_key(package_name)
+    if not pkg_key.get():
+      Package(key=pkg_key, registered_by=caller, registered_ts=now).put()
+
     inst = PackageInstance(
         key=key,
         registered_by=caller,
@@ -677,23 +664,6 @@ class RepoService(object):
           store_result(proc.name, None, str(exc))
     finally:
       data.close()
-
-  def _register_package(self, package_name, caller, now=None):
-    """Implementation of register_package, see its docstring.
-
-    Expected to be called in a transaction. Reused from register_instance.
-    """
-    assert ndb.in_transaction()
-    key = package_key(package_name)
-    pkg = key.get()
-    if pkg:
-      return pkg, False
-    pkg = Package(
-        key=key,
-        registered_by=caller,
-        registered_ts=now or utils.utcnow())
-    pkg.put()
-    return pkg, True
 
   def _assert_instance_is_ready(self, package_name, instance_id):
     """Asserts that instance can be used to attach tags or point a ref to it.

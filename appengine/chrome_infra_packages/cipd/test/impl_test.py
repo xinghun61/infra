@@ -83,17 +83,19 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(impl.cas, 'get_cas_service', lambda: self.mocked_cas_service)
     self.service = impl.get_repo_service()
 
+  def register_fake_instance(self, pkg_name):
+    _, registered = self.service.register_instance(
+        package_name=pkg_name,
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.assertTrue(registered)
+
   def test_list_packages_no_path(self):
     self.assertIsNone(self.service.get_package('a/b'))
     self.assertIsNone(self.service.get_package('y/z'))
-    self.service.register_package(
-        package_name='y/z',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.service.register_package(
-        package_name='a/b',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.register_fake_instance('y/z')
+    self.register_fake_instance('a/b')
     self.assertEqual(([], ['a', 'y']),
                      self.service.list_packages('', False))
     self.assertEqual((['a/b', 'y/z'], ['a', 'y']),
@@ -103,18 +105,9 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertIsNone(self.service.get_package('a/b'))
     self.assertIsNone(self.service.get_package('y/x'))
     self.assertIsNone(self.service.get_package('y/z/z'))
-    self.service.register_package(
-        package_name='y/x',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.service.register_package(
-        package_name='y/z/z',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.service.register_package(
-        package_name='a/b',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.register_fake_instance('y/x')
+    self.register_fake_instance('y/z/z')
+    self.register_fake_instance('a/b')
     self.assertEqual((['y/x'], ['y/z']), self.service.list_packages('y', False))
     self.assertEqual((['y/z/z'], []),
                      self.service.list_packages('y/z/z', False))
@@ -125,10 +118,7 @@ class TestRepoService(testing.AppengineTestCase):
 
   def test_list_packages_ignore_substrings(self):
     self.assertIsNone(self.service.get_package('good/path'))
-    self.service.register_package(
-        package_name='good/path',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.register_fake_instance('good/path')
     self.assertEqual((['good/path'], []),
                      self.service.list_packages('good', False))
     self.assertEqual((['good/path'], []),
@@ -139,14 +129,8 @@ class TestRepoService(testing.AppengineTestCase):
   def test_list_packages_where_a_package_is_also_a_directory(self):
     self.assertIsNone(self.service.get_package('good'))
     self.assertIsNone(self.service.get_package('good/path'))
-    self.service.register_package(
-        package_name='good',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.service.register_package(
-        package_name='good/path',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.register_fake_instance('good')
+    self.register_fake_instance('good/path')
     self.assertEqual((['good'], ['good']),
                      self.service.list_packages('', False))
     self.assertEqual((['good', 'good/path'], ['good']),
@@ -158,45 +142,13 @@ class TestRepoService(testing.AppengineTestCase):
 
   def test_list_packages_with_an_empty_directory(self):
     self.assertIsNone(self.service.get_package('good/sub/path'))
-    self.service.register_package(
-        package_name='good/sub/path',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.register_fake_instance('good/sub/path')
     self.assertEqual(([], ['good/sub']),
                      self.service.list_packages('good', False))
     self.assertEqual((['good/sub/path'], ['good/sub']),
                      self.service.list_packages('good', True))
     self.assertEqual((['good/sub/path'], ['good', 'good/sub']),
                      self.service.list_packages('', True))
-
-  def test_register_package_new(self):
-    self.assertIsNone(self.service.get_package('a/b'))
-    inst, registered = self.service.register_package(
-        package_name='a/b',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.assertTrue(registered)
-    self.assertEqual('a/b', inst.package_name)
-    self.assertEqual({
-      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
-      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0)
-    }, inst.to_dict())
-
-  def test_register_package_existing(self):
-    inst, registered = self.service.register_package(
-        package_name='a/b',
-        caller=auth.Identity.from_bytes('user:abc@example.com'),
-        now=datetime.datetime(2014, 1, 1, 0, 0))
-    self.assertTrue(registered)
-    inst, registered = self.service.register_package(
-        package_name='a/b',
-        caller=auth.Identity.from_bytes('user:def@example.com'),
-        now=datetime.datetime(2015, 1, 1, 0, 0))
-    self.assertFalse(registered)
-    self.assertEqual({
-      'registered_by': auth.Identity(kind='user', name='abc@example.com'),
-      'registered_ts': datetime.datetime(2014, 1, 1, 0, 0)
-    }, inst.to_dict())
 
   def test_register_instance_new(self):
     self.assertIsNone(self.service.get_instance('a/b', 'a'*40))
@@ -221,7 +173,9 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertEqual(expected, inst.to_dict())
     self.assertEqual(
         expected, self.service.get_instance('a/b', 'a'*40).to_dict())
-    self.assertTrue(self.service.get_package('a/b'))
+    pkg = self.service.get_package('a/b')
+    self.assertTrue(pkg)
+    self.assertEqual('a/b', pkg.package_name)
 
   def test_register_instance_existing(self):
     # First register a package.

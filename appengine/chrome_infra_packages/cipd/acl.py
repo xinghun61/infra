@@ -53,11 +53,9 @@ def is_reader(package_path, identity):
 
 # Getting information about a package.
 can_fetch_package = is_reader
-# Creating a new package.
-can_register_package = is_owner
 # Fetching a package instance.
 can_fetch_instance = is_reader
-# Uploading a new instance to existing package.
+# Uploading a new instance to a package, registering new package.
 can_register_instance = is_writer
 # Creating or moving a ref. TODO(vadimsh): Make it per-ref.
 can_move_ref = lambda package_path, ref, ident: is_writer(package_path, ident)
