@@ -16,6 +16,9 @@ from components import ereporter2
 from components import utils
 from components import auth
 
+import buildbot
+# import milotic  # LUCI Endpoints
+
 
 main_file = (
     'html/main.html' if utils.is_local_dev_server()
@@ -47,7 +50,7 @@ def create_html_app():
 
 def create_endpoints_app():
   """Returns WSGI app that serves cloud endpoints requests."""
-  apis = []
+  apis = [buildbot.BuildbotApi]
   return endpoints.api_server(apis, restricted=not utils.is_local_dev_server())
 
 
