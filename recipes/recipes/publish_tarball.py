@@ -133,9 +133,15 @@ def export_lite_tarball(api, version):
 def export_nacl_tarball(api, version):
   # Make destructive file operations on the copy of the checkout.
   with copytree_checkout(api) as dest_dir:
+    api.step(
+        'download nacl toolchain dependencies',
+        ['make',
+         '-C', api.path.join(dest_dir, 'native_client', 'tools'),
+         'sync-pinned'])
+
     # Based on instructions from https://sites.google.com/a/chromium.org/dev/nativeclient/pnacl/building-pnacl-components-for-distribution-packagers
     api.python(
-        'download nacl toolchain dependencies',
+        'download pnacl toolchain dependencies',
         api.path.join(dest_dir, 'native_client', 'toolchain_build',
                       'toolchain_build_pnacl.py'),
         ['--verbose', '--sync', '--sync-only', '--disable-git-cache'])

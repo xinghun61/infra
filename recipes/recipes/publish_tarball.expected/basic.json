@@ -779,6 +779,16 @@
   },
   {
     "cmd": [
+      "make",
+      "-C",
+      "[TMP_BASE]/tmp_tmp_5/src/native_client/tools",
+      "sync-pinned"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "download nacl toolchain dependencies"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[TMP_BASE]/tmp_tmp_5/src/native_client/toolchain_build/toolchain_build_pnacl.py",
@@ -788,7 +798,7 @@
       "--disable-git-cache"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "download nacl toolchain dependencies"
+    "name": "download pnacl toolchain dependencies"
   },
   {
     "cmd": [
