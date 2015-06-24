@@ -7,6 +7,7 @@ import logging
 import os
 import socket
 import sys
+import urlparse
 import re
 
 from infra_libs.ts_mon import interface
@@ -45,8 +46,8 @@ def add_argparse_options(parser):
            'whitelisting and deployment of credentials. (default: %(default)s)')
   parser.add_argument(
       '--ts-mon-endpoint',
-      help='url (including file://) to post monitoring metrics to. If set, '
-           'overrides the value in --ts-mon-config-file')
+      help='url (including file://, pubsub://project/topic) to post monitoring '
+           'metrics to. If set, overrides the value in --ts-mon-config-file')
   parser.add_argument(
       '--ts-mon-credentials',
       help='path to a pkcs8 json credential file. If set, overrides the value '
@@ -150,7 +151,15 @@ def process_argparse_options(args):
     interface.state.global_monitor = monitors.DiskMonitor(
         endpoint[len('file://'):])
   elif credentials:
-    interface.state.global_monitor = monitors.ApiMonitor(credentials, endpoint)
+    if endpoint.startswith('pubsub://'):
+      url = urlparse.urlparse(endpoint)
+      project = url.netloc
+      topic = url.path.strip('/')
+      interface.state.global_monitor = monitors.PubSubMonitor(
+          credentials, project, topic)
+    else:
+      interface.state.global_monitor = monitors.ApiMonitor(
+          credentials, endpoint)
   else:
     logging.error('Monitoring is disabled because --ts-mon-credentials was not '
                   'set')

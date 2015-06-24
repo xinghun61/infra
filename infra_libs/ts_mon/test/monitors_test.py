@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import tempfile
 import unittest
 
@@ -42,6 +43,74 @@ class ApiMonitorTest(unittest.TestCase):
     collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
     m.send(collection)
     self.assertEquals(m._api.Send.call_count, 3)
+
+
+class PubSubMonitorTest(unittest.TestCase):
+
+  @mock.patch('infra_libs.ts_mon.monitors.httplib2')
+  @mock.patch('infra_libs.ts_mon.monitors.discovery')
+  @mock.patch('infra_libs.ts_mon.monitors.GoogleCredentials')
+  def test_init_service_account(self, gc, discovery, httplib2):
+    m_open = mock.mock_open(read_data='{"type": "service_account"}')
+    creds = gc.from_stream.return_value
+    scoped_creds = creds.create_scoped.return_value
+    http_mock = httplib2.Http.return_value
+    with mock.patch('infra_libs.ts_mon.monitors.open', m_open, create=True):
+      mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
+                                   'mytopic')
+
+    m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
+    creds.create_scoped.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
+    scoped_creds.authorize.assert_called_once_with(http_mock)
+    discovery.build.assert_called_once_with('pubsub', 'v1beta2', http=http_mock)
+    self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
+
+  @mock.patch('infra_libs.ts_mon.monitors.httplib2')
+  @mock.patch('infra_libs.ts_mon.monitors.discovery')
+  @mock.patch('infra_libs.ts_mon.monitors.Storage')
+  def test_init_storage(self, storage, discovery, httplib2):
+    storage_inst = mock.Mock()
+    storage.return_value = storage_inst
+    creds = storage_inst.get.return_value
+
+    m_open = mock.mock_open(read_data='{}')
+    http_mock = httplib2.Http.return_value
+    with mock.patch('infra_libs.ts_mon.monitors.open', m_open, create=True):
+      mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
+                                   'mytopic')
+
+    m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
+    storage_inst.get.assert_called_once_with()
+    creds.authorize.assert_called_once_with(http_mock)
+    discovery.build.assert_called_once_with('pubsub', 'v1beta2', http=http_mock)
+    self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
+
+  @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor._initialize')
+  def test_send(self, _psmonitor):
+    mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
+                                 'mytopic')
+    mon._api = mock.MagicMock()
+    mon._topic = 'mytopic'
+
+    metric1 = metrics_pb2.MetricsData(name='m1')
+    mon.send(metric1)
+    metric2 = metrics_pb2.MetricsData(name='m2')
+    mon.send([metric1, metric2])
+    collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
+    mon.send(collection)
+
+    def message(pb):
+      pb = monitors.Monitor._wrap_proto(pb)
+      return {'messages': [{'data': base64.b64encode(pb.SerializeToString())}]}
+    publish = mon._api.projects.return_value.topics.return_value.publish
+    publish.assert_has_calls([
+        mock.call(topic='mytopic', body=message(metric1)),
+        mock.call().execute(num_retries=5),
+        mock.call(topic='mytopic', body=message([metric1, metric2])),
+        mock.call().execute(num_retries=5),
+        mock.call(topic='mytopic', body=message(collection)),
+        mock.call().execute(num_retries=5),
+        ])
 
 
 class DiskMonitorTest(unittest.TestCase):

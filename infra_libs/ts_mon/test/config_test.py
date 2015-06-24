@@ -105,6 +105,19 @@ class GlobalsTest(auto_stub.TestCase):
         '/path/to/creds.p8.json', 'https://foo.tld/api')
     self.assertIs(interface.state.global_monitor, singleton)
 
+  @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor')
+  def test_pubsub_args(self, fake_monitor):
+    singleton = mock.Mock()
+    fake_monitor.return_value = singleton
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
+                         '--ts-mon-endpoint', 'pubsub://mytopic/myproject'])
+    config.process_argparse_options(args)
+    fake_monitor.assert_called_once_with(
+        '/path/to/creds.p8.json', 'mytopic', 'myproject')
+    self.assertIs(interface.state.global_monitor, singleton)
+
   @mock.patch('infra_libs.ts_mon.monitors.DiskMonitor')
   def test_dryrun_args(self, fake_monitor):
     singleton = mock.Mock()

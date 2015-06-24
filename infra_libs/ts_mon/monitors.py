@@ -32,6 +32,8 @@ Library usage:
 """
 
 
+import base64
+import json
 import logging
 import os
 
@@ -39,6 +41,11 @@ from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
 from infra_libs import logs
+
+import httplib2
+from apiclient import discovery
+from oauth2client.client import GoogleCredentials
+from oauth2client.file import Storage
 
 
 def _logging_callback(resp, content):  # pragma: no cover
@@ -99,6 +106,58 @@ class ApiMonitor(Monitor):
       metric_pb (MetricsData or MetricsCollection): the metric protobuf to send
     """
     self._api.Send(self._wrap_proto(metric_pb))
+
+
+class PubSubMonitor(Monitor):
+  """Class which publishes metrics to a Cloud Pub/Sub topic."""
+
+  _SCOPES = [
+      'https://www.googleapis.com/auth/pubsub',
+  ]
+
+  @classmethod
+  def _load_credentials(cls, credentials_file_path):
+    with open(credentials_file_path, 'r') as credentials_file:
+      credentials_json = json.load(credentials_file)
+    if credentials_json.get('type', None):
+      credentials = GoogleCredentials.from_stream(credentials_file_path)
+      credentials = credentials.create_scoped(cls._SCOPES)
+      return credentials
+    return Storage(credentials_file_path).get()
+
+  def _initialize(self, credsfile, project, topic):
+    # Copied from acquisition_api.AcquisitionCredential.Load.
+    creds = self._load_credentials(credsfile)
+    self._http = httplib2.Http()
+    creds.authorize(self._http)
+    self._api = discovery.build('pubsub', 'v1beta2', http=self._http)
+    self._topic = 'projects/%s/topics/%s' % (project, topic)
+
+  def __init__(self, credsfile, project, topic):
+    """Process monitoring related command line flags and initialize api.
+
+    Args:
+      credsfile (str): path to the credentials json file
+      project (str): the name of the Pub/Sub project to publish to.
+      topic (str): the name of the Pub/Sub topic to publish to.
+    """
+    self._initialize(credsfile, project, topic)
+
+  def send(self, metric_pb):
+    """Send a metric proto to the monitoring api.
+
+    Args:
+      metric_pb (MetricsData or MetricsCollection): the metric protobuf to send
+    """
+    proto = self._wrap_proto(metric_pb)
+    body = {
+        'messages': [
+          {'data': base64.b64encode(proto.SerializeToString())},
+        ],
+    }
+    self._api.projects().topics().publish(
+        topic=self._topic,
+        body=body).execute(num_retries=5)
 
 
 class DiskMonitor(Monitor):
