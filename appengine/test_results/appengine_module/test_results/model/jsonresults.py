@@ -75,6 +75,7 @@ SLOW = "S"
 TEXT = "F"
 TIMEOUT = "T"
 LEAK = "K"
+UNKNOWN = "U"
 
 AUDIO_STRING = "AUDIO"
 CRASH_STRING = "CRASH"
@@ -91,6 +92,7 @@ SLOW_STRING = "SLOW"
 TEXT_STRING = "TEXT"
 TIMEOUT_STRING = "TIMEOUT"
 LEAK_STRING = "LEAK"
+UNKNOWN_STRING = "UNKNOWN"
 
 FAILURE_TO_CHAR = {
     AUDIO_STRING: AUDIO,
@@ -108,10 +110,16 @@ FAILURE_TO_CHAR = {
     TEXT_STRING: TEXT,
     TIMEOUT_STRING: TIMEOUT,
     LEAK_STRING: LEAK,
+    UNKNOWN_STRING: UNKNOWN,
 }
 
 CHAR_TO_FAILURE = {value: key for key, value in FAILURE_TO_CHAR.iteritems()}
 
+def failure_to_char(failure):
+  return FAILURE_TO_CHAR.get(failure, UNKNOWN)
+
+def char_to_failure(character):
+  return CHAR_TO_FAILURE.get(character, UNKNOWN_STRING)
 
 def _is_directory(subtree):  # pragma: no cover
   return (RESULTS_KEY not in subtree
@@ -346,7 +354,7 @@ class JsonResults(object):
     failures_by_type = {}
     for fixableCount in json_dict[FIXABLE_COUNTS_KEY]:
       for failure_type, count in fixableCount.items():
-        failure_string = CHAR_TO_FAILURE[failure_type]
+        failure_string = char_to_failure(failure_type)
         if failure_string not in failures_by_type:
           failures_by_type[failure_string] = []
         failures_by_type[failure_string].append(count)
@@ -401,12 +409,12 @@ class JsonResults(object):
       # files when a bot exits early (e.g. due to too many crashes/timeouts).
       if expected != SKIP_STRING and actual_failures == SKIP_STRING:
         expected = NOTRUN_STRING
-        encoded_failures = FAILURE_TO_CHAR[NOTRUN_STRING]
+        encoded_failures = failure_to_char(NOTRUN_STRING)
       elif expected == NOTRUN_STRING:
-        encoded_failures = FAILURE_TO_CHAR[NOTRUN_STRING]
+        encoded_failures = failure_to_char(NOTRUN_STRING)
       else:
         encoded_failures = "".join(
-            FAILURE_TO_CHAR[f] for f in actual_failures.split(" "))
+            failure_to_char(f) for f in actual_failures.split(" "))
       new_results[RESULTS_KEY] = [[1, encoded_failures]]
 
       if BUG_KEY in full_results:

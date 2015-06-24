@@ -46,6 +46,7 @@ from appengine_module.test_results.model.jsonresults import (
     IMAGE_PLUS_TEXT,
     CRASH,
     NOTRUN,
+    UNKNOWN,
     TestFile,
   )
 from appengine_module.test_results.handlers import master_config
@@ -122,6 +123,10 @@ FULL_RESULT_EXAMPLE = """ADD_RESULTS({
             "unexpected-flake.html": {
                 "expected": "PASS",
                 "actual": "FAIL PASS"
+            },
+            "unexpected-unexpected.html": {
+                "expected": "PASS",
+                "actual": "NOT_A_REAL_RESULT_TYPE"
             }
         }
     },
@@ -513,6 +518,10 @@ class JsonResultsTest(unittest.TestCase):
                     },
                     "unexpected-flake.html": {
                         "results": [[1, FAIL + PASS]],
+                        "times": [[1, 0]],
+                    },
+                    "unexpected-unexpected.html": {
+                        "results": [[1, UNKNOWN]],
                         "times": [[1, 0]],
                     },
                 }
