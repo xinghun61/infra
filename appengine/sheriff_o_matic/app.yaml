@@ -15,11 +15,11 @@ handlers:
   secure: always
 
 - url: /alerts-history
-  script: alerts.app
+  script: alerts_history.app
   secure: always
 
 - url: /alerts-history/.*
-  script: alerts.app
+  script: alerts_history.app
   secure: always
 
 - url: /internal-alerts
@@ -31,6 +31,14 @@ handlers:
   secure: always
 
 - url: /ts-internal-alerts
+  script: ts_alerts.app
+  secure: always
+
+- url: /ts-alerts-history
+  script: ts_alerts.app
+  secure: always
+
+- url: /ts-alerts-history/.*
   script: ts_alerts.app
   secure: always
 

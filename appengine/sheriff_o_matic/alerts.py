@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import calendar
 import contextlib
 import datetime
 import datetime_encoder
@@ -27,7 +26,7 @@ class AlertsJSON(ndb.Model):
   type = ndb.StringProperty()
   json = ndb.BlobProperty(compressed=True)
   date = ndb.DateTimeProperty(auto_now_add=True)
-  # TODO(remove this property
+  # TODO(remove this property)
   use_gcs = ndb.BooleanProperty()
   gcs_filename = ndb.StringProperty()
 
@@ -55,8 +54,24 @@ class AlertsHandler(webapp2.RequestHandler):
   # Has no 'response' member.
   # pylint: disable=E1101
   def send_json_data(self, data):
-    self.send_json_headers()
+    data['last_posted'] = None
+    last_updated = ndb.Key(LastUpdated, self.ALERT_TYPE).get()
+    if last_updated:
+      data['last_posted'] = (last_updated.date -
+          datetime.datetime.utcfromtimestamp(0)).total_seconds()
+
+    utcnow = (datetime.datetime.utcnow() -
+        datetime.datetime.utcfromtimestamp(0))
+    posted_date = data['date']
+    if data['last_posted']:
+      posted_date = data['last_posted']
+    if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
+      data['stale_alerts_json'] = True
+    data['stale_alerts_thresh'] = self.MAX_STALENESS
+
+    data = self.generate_json_dump(data)
     self.response.write(data)
+    return True
 
   @staticmethod
   def generate_json_dump(alerts):
@@ -70,98 +85,58 @@ class AlertsHandler(webapp2.RequestHandler):
 
   @staticmethod
   def get_from_gcs(alerts_type, filename):
-    try:
-      with contextlib.closing(gcs.open(
-          "/" + app_identity.get_default_gcs_bucket_name() +
-          "/history/" + alerts_type + "/" + filename)) as gcs_file:
-        return gcs_file.read()
-    except gcs.NotFoundError:
-      return '{}'
+    with contextlib.closing(gcs.open(
+        "/" + app_identity.get_default_gcs_bucket_name() +
+        "/history/" + alerts_type + "/" + filename)) as gcs_file:
+      return gcs_file.read()
     logging.info('Reading alerts from GCS')
 
-  def post_to_gcs(self, alerts_type, data):
+  def post_to_gcs(self, data):
     # Create a GCS file with GCS client.
     filename = datetime.datetime.utcnow().strftime("%Y/%M/%d/%H.%M.%S.%f")
     with contextlib.closing(gcs.open(
         "/" + app_identity.get_default_gcs_bucket_name() +
-        "/history/" + alerts_type + "/" + filename, 'w')) as f:
+        "/history/" + self.ALERT_TYPE + "/" + filename, 'w')) as f:
       f.write(data)
 
     return filename
 
-  def get_from_datastore(self, alerts_type):
-    last_entry = self.get_last_datastore(alerts_type)
+  def get_from_datastore(self):
+    last_entry = self.get_last_datastore(self.ALERT_TYPE)
     if last_entry:
       logging.info('Reading alerts from datastore')
       data  = last_entry.json
       if last_entry.gcs_filename:
-        data = self.get_from_gcs(alerts_type, last_entry.gcs_filename)
+        data = self.get_from_gcs(self.ALERT_TYPE, last_entry.gcs_filename)
       data = json.loads(data)
       data['key'] = last_entry.key.integer_id()
-      data['stale_alerts_thresh'] = self.MAX_STALENESS
 
-      data['last_posted'] = None
-      last_updated = ndb.Key(LastUpdated, alerts_type).get()
-      if last_updated:
-        data['last_posted'] = (last_updated.date -
-            datetime.datetime.utcfromtimestamp(0)).total_seconds()
-
-      utcnow = (datetime.datetime.utcnow() -
-          datetime.datetime.utcfromtimestamp(0))
-      posted_date = data['date']
-      if data['last_posted']:
-        posted_date = data['last_posted']
-      if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
-        data['stale_alerts_json'] = True
-
-      data = self.generate_json_dump(data)
-
-      self.send_json_data(data)
-      return True
+      return self.send_json_data(data)
     return False
 
-  def get_from_memcache(self, memcache_key):
-    compressed = memcache.get(memcache_key)
+  def get_from_memcache(self):
+    compressed = memcache.get(self.ALERT_TYPE)
     if compressed:
       logging.info('Reading alerts from memcache')
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
 
-      data['last_posted'] = None
-      last_updated = ndb.Key(LastUpdated, memcache_key).get()
-      if last_updated:
-        data['last_posted'] = (last_updated.date -
-            datetime.datetime.utcfromtimestamp(0)).total_seconds()
-
-      utcnow = (datetime.datetime.utcnow() -
-          datetime.datetime.utcfromtimestamp(0))
-      posted_date = data['date']
-      if data['last_posted']:
-        posted_date = data['last_posted']
-      if utcnow.total_seconds() - posted_date > self.MAX_STALENESS:
-        data['stale_alerts_json'] = True
-      data['stale_alerts_thresh'] = self.MAX_STALENESS
-
-      data = self.generate_json_dump(data)
-      self.send_json_data(data)
-      return True
+      return self.send_json_data(data)
     return False
 
-  def get_alerts(self, alerts_type):
-    self.send_json_headers()
-    if not self.get_from_memcache(alerts_type):
-      if not self.get_from_datastore(alerts_type):
-        self.send_json_data({})
-
   def get(self):
-    self.get_alerts(self.ALERT_TYPE)
+    self.send_json_headers()
+    if not self.get_from_memcache():
+      if not self.get_from_datastore():
+        self.response.write({})
 
-  def store_alerts(self, alerts_type, alerts):
-    last_entry = self.get_last_datastore(alerts_type)
+  def store_alerts(self, alerts):
+    last_entry = self.get_last_datastore(self.ALERT_TYPE)
     last_alerts = {}
     if last_entry:
       if last_entry.gcs_filename:
-        alerts_json = self.get_from_gcs(alerts_type, last_entry.gcs_filename)
+        alerts_json = self.get_from_gcs(self.ALERT_TYPE,
+                                        last_entry.gcs_filename)
         last_alerts = json.loads(alerts_json)
       else:
         last_alerts = json.loads(last_entry.json) if last_entry else {}
@@ -183,25 +158,25 @@ class AlertsHandler(webapp2.RequestHandler):
       compressed = zlib.compress(json_data, compression_level)
 
       if len(compressed) < self.MAX_JSON_SIZE:
-        memcache.set(alerts_type, compressed)
+        memcache.set(self.ALERT_TYPE, compressed)
         new_entry = AlertsJSON(
             json=json_data,
-            type=alerts_type)
+            type=self.ALERT_TYPE)
         new_entry.put()
       else:
-        memcache.delete(alerts_type)
-        filename = self.post_to_gcs(alerts_type, json_data)
+        memcache.delete(self.ALERT_TYPE)
+        filename = self.post_to_gcs(json_data)
         new_entry = AlertsJSON(
            gcs_filename=filename,
-           type=alerts_type)
+           type=self.ALERT_TYPE)
         new_entry.put()
-    updated_key = ndb.Key(LastUpdated, alerts_type)
+    updated_key = ndb.Key(LastUpdated, self.ALERT_TYPE)
     LastUpdated(
         key=updated_key,
         haddiff=haddiff,
-        type=alerts_type).put()
+        type=self.ALERT_TYPE).put()
 
-  def update_alerts(self, alerts_type):
+  def update_alerts(self):
     try:
       alerts = json.loads(self.request.body)
     except ValueError:
@@ -211,91 +186,17 @@ class AlertsHandler(webapp2.RequestHandler):
       return
     if alerts:
       alerts.update({'date': datetime.datetime.utcnow()})
-      self.store_alerts(alerts_type, alerts)
+      self.store_alerts(alerts)
 
   def post(self):
-    self.update_alerts(self.ALERT_TYPE)
-
-
-class AlertsHistory(webapp2.RequestHandler):
-  MAX_LIMIT_PER_PAGE = 100
-
-  def get_entry(self, query, key):
-    try:
-      key = int(key)
-    except ValueError:
-      self.response.set_status(400, 'Invalid key format')
-      self.abort(400)
-
-    ndb_key = ndb.Key(AlertsJSON, key)
-    result = query.filter(AlertsJSON.key == ndb_key).get()
-    if result:
-      if result.gcs_filename:
-        result.json = AlertsHandler.get_from_gcs(
-            AlertsHandler.ALERT_TYPE, result.gcs_filename)
-      data = json.loads(result.json)
-      data['key'] = key
-      return data
-    else:
-      self.response.set_status(404, 'Failed to find key %s' % key)
-      self.abort(404)
-
-  def get_list(self, query):
-    cursor = self.request.get('cursor')
-    if cursor:
-      cursor = datastore_query.Cursor(urlsafe=cursor)
-
-    limit = int(self.request.get('limit', self.MAX_LIMIT_PER_PAGE))
-    limit = min(self.MAX_LIMIT_PER_PAGE, limit)
-
-    if cursor:
-      alerts, next_cursor, has_more = query.fetch_page(limit,
-                                                       start_cursor=cursor)
-    else:
-      alerts, next_cursor, has_more = query.fetch_page(limit)
-
-    return {
-        'has_more': has_more,
-        'cursor': next_cursor.urlsafe() if next_cursor else '',
-        'history': [alert.key.integer_id() for alert in alerts]
-    }
-
-  def get(self, key=None):
-    query = AlertsJSON.query().order(-AlertsJSON.date)
-    result_json = {}
-
-    user = users.get_current_user()
-    result_json['login-url'] = users.create_login_url(self.request.uri)
-
-    # Return only public alerts for non-internal users.
-    if not user or not user.email().endswith('@google.com'):
-      query = query.filter(AlertsJSON.type == AlertsHandler.ALERT_TYPE)
-
-    if key:
-      result_json.update(self.get_entry(query, key))
-    else:
-      result_json.update(self.get_list(query))
-
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.headers['Access-Control-Allow-Origin'] = '*'
-
-    self.response.out.write(json.dumps(result_json))
+    self.update_alerts()
 
 
 class NewAlertsHandler(AlertsHandler):
   ALERTS_TYPE = 'new-alerts'
 
-  def get(self):
-    super(NewAlertsHandler, self).get_alerts(
-        NewAlertsHandler.ALERTS_TYPE)
-
-  def post(self):
-    self.update_alerts(NewAlertsHandler.ALERTS_TYPE)
-
 
 app = webapp2.WSGIApplication([
     ('/alerts', AlertsHandler),
-    ('/api/v1/alerts', NewAlertsHandler),
-    ('/alerts-history', AlertsHistory),
-    ('/alerts-history/(.*)', AlertsHistory),
+    ('/api/v1/alerts', NewAlertsHandler)
 ])
