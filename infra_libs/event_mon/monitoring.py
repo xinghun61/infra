@@ -21,7 +21,7 @@ TIMESTAMP_KINDS = (None, 'UNKNOWN', 'POINT', 'BEGIN', 'END')
 STACK_TRACE_MAX_SIZE = 1000
 
 
-def _get_chrome_infra_event(timestamp_kind):
+def _get_chrome_infra_event(timestamp_kind, service_name=None):
   """Compute a basic event.
 
   Validates the inputs and returns a pre-filled ChromeInfraEvent or
@@ -41,11 +41,18 @@ def _get_chrome_infra_event(timestamp_kind):
                  str(timestamp_kind))
     return None
 
+  # We must accept unicode here.
+  if service_name is not None and not isinstance(service_name, basestring):
+    logging.error('Invalid type for service_name: %s' % type(service_name))
+    return None
+
   event = ChromeInfraEvent()
   event.CopyFrom(config.cache['default_event'])
 
   if timestamp_kind:
     event.timestamp_kind = getattr(ChromeInfraEvent, timestamp_kind)
+  if service_name:
+    event.event_source.service_name = service_name
 
   return event
 
@@ -76,7 +83,8 @@ def _get_service_event(event_type,
                        timestamp_kind='POINT',
                        event_timestamp=None,
                        code_version=None,
-                       stack_trace=None):
+                       stack_trace=None,
+                       service_name=None):
   """Compute a ChromeInfraEvent filled with a ServiceEvent.
   Arguments are identical to those in send_service_event(), please refer
   to this docstring.
@@ -85,7 +93,7 @@ def _get_service_event(event_type,
     event (log_request_lite_pb2.LogRequestLite.LogEventLite): can be None
       if there is a major processing issue.
   """
-  event = _get_chrome_infra_event(timestamp_kind)
+  event = _get_chrome_infra_event(timestamp_kind, service_name=service_name)
   if not event:
     return None
 
@@ -114,7 +122,7 @@ def _get_service_event(event_type,
       version.source_url = version_d['source_url']
       if 'revision' in version_d:
         # Rely on the url to switch between svn and git because an
-        # abbreviated sha1 can sometime be confused with an int.
+        # abbreviated sha1 can sometimes be confused with an int.
         if version.source_url.startswith('svn://'):
           version.svn_revision = int(version_d['revision'])
         else:
@@ -195,7 +203,8 @@ def get_build_event(event_type,
                     step_number=None,
                     result=None,
                     timestamp_kind='POINT',
-                    event_timestamp=None):
+                    event_timestamp=None,
+                    service_name=None):
   """Compute a ChromeInfraEvent filled with a BuildEvent.
 
   Arguments are identical to those in send_build_event(), please refer
@@ -205,7 +214,10 @@ def get_build_event(event_type,
     event (log_request_lite_pb2.LogRequestLite.LogEventLite): can be None
       if there is a major processing issue.
   """
-  event = _get_chrome_infra_event(timestamp_kind)
+  event = _get_chrome_infra_event(timestamp_kind, service_name=service_name)
+
+  if not event:
+    return None
 
   if event_type not in BUILD_EVENT_TYPES:
     logging.error('Invalid value for event_type: %s' % str(event_type))

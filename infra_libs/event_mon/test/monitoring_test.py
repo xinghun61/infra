@@ -161,6 +161,40 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertEqual(event.service_event.type, ServiceEvent.START)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
 
+  def test_get_service_event_with_non_default_service_name(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+
+    log_event = monitoring._get_service_event(
+      'START', service_name='my.nice.service.name')
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('service_event'))
+    self.assertTrue(event.service_event.HasField('type'))
+    self.assertEquals(event.service_event.type, ServiceEvent.START)
+    self.assertEquals(event.event_source.service_name, 'my.nice.service.name')
+
+  def test_get_service_event_with_unicode_service_name(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    service_name = u'à_la_française_hé_oui'
+    log_event = monitoring._get_service_event(
+      'START', service_name=service_name)
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('service_event'))
+    self.assertTrue(event.service_event.HasField('type'))
+    self.assertEquals(event.service_event.type, ServiceEvent.START)
+    self.assertEquals(event.event_source.service_name, service_name)
+
 
 class SendServiceEventTest(unittest.TestCase):
   def setUp(self):
@@ -632,6 +666,53 @@ class GetBuildEventTest(unittest.TestCase):
     self.assertEquals(event.build_event.build_scheduling_time_ms,
                       build_scheduling_time)
     self.assertEquals(event.build_event.result, BuildEvent.SUCCESS)
+
+  def test_get_build_event_with_non_default_service_name(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my.other.nice.service'
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name)
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+
+  def test_get_build_event_with_unicode_service_name(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = u'à_la_française'
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name)
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+
+  def test_get_build_event_with_invalid_service_name(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 1234  # invalid
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name)
+
+    self.assertIsNone(log_event)
 
 
 class SendBuildEventTest(unittest.TestCase):
