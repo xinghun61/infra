@@ -6,11 +6,25 @@ import logging
 
 import endpoints
 import webapp2
-
-from components import auth
+from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
+
+from components import auth
+
+CONFIG_DATASTORE_KEY = "CONFIG_DATASTORE_KEY"
+
+
+class FieldParamsModel(ndb.Model):
+  field_key = ndb.StringProperty()
+  values = ndb.StringProperty(repeated=True)
+
+
+class ParamsModel(ndb.Model):
+  time = ndb.FloatProperty(default=10)
+  freq = ndb.FloatProperty(default=1)
+  params = ndb.LocalStructuredProperty(FieldParamsModel, repeated=True)
 
 
 class Field(messages.Message):
@@ -63,15 +77,22 @@ class UIApi(remote.Service):
                          name='UI.get')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def UI_get(self, _request):
-    param_response = Params(time=0.0, freq=10.0, params=[
-        FieldParams(key='project_id', values=['chromium', 'blink'])])
-    return param_response
+    data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
+    params = [FieldParams(key=field.field_key, values=field.values)
+              for field in data.params]
+    return Params(time=data.time, freq=data.freq, params=params)
 
   @auth.endpoints_method(Params, message_types.VoidMessage,
                          name='UI.set')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def UI_set(self, request):
     logging.debug('Got %s', request)
+    data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
+    data.time = request.time
+    data.freq = request.freq
+    data.params = [FieldParamsModel(field_key=field.key, values=field.values)
+                   for field in request.params]
+    data.put()
     return message_types.VoidMessage()
 
 

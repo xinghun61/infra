@@ -5,6 +5,7 @@ threadsafe: true
 # Edit this to match your implementation.
 handlers:
 - url: /_ah/spi/.*
+  secure: always
   script: main.APPLICATION
 
 libraries:

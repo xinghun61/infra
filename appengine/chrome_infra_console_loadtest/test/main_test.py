@@ -32,18 +32,13 @@ class UIApiTest(testing.EndpointsTestCase):
 
   api_service_cls = UIApi
 
-  def testUIGet(self):
-    request = {}
-    self.mock(auth, 'is_group_member', lambda _: True)
-    response = self.call_api('UI_get', request).json_body
-    self.assertEquals(response['time'], 0.0)
-
-  def testUISet(self):
+  def testUIStoreAndRetrieve(self):
     field = {'key': 'project_id',
              'values': ['chromium', 'blink', 'v8']}
-    request = {'time': 5.0,
-               'freq': 3.0,
+    request = {'time': 10,
+               'freq': 1,
                'params': [field]}
     self.mock(auth, 'is_group_member', lambda _: True)
-    response = self.call_api('UI_set', request).json_body
-    self.assertEquals(response, {})
+    self.call_api('UI_set', request)
+    response = self.call_api('UI_get', {}).json_body
+    self.assertEquals(response, request)
