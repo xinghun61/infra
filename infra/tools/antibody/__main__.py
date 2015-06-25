@@ -12,6 +12,7 @@ Example invocation: [TBD]
 
 import argparse
 import logging
+import os
 import sys
 
 from infra.tools.antibody import antibody
@@ -38,20 +39,27 @@ def main(argv):
   # Do more processing here
   LOGGER.info('Antibody starting')
   with open(args.sql_password_file, 'r') as f:
-    password = f.read()
+    password = f.read().strip()
   connection, cc = csql.connect(password)
   antibody.setup_antibody_db(cc)
   if args.rietveld_url:
     # TODO: get git hash from rietveld url
     code_review_parse.add_rietveld_data_to_db(None, args.rietveld_url, cc)
-  else:
+  if args.parse_git_rietveld or args.run_antibody:
     git_commit_parser.upload_git_to_sql(cc)
     git_commits_with_review_urls = git_commit_parser.get_urls_from_git_db(cc)
     for git_hash, review_url in git_commits_with_review_urls:
       # cannot get access into chromereview.googleplex.com
       if 'chromereviews.googleplex' not in review_url:
         code_review_parse.add_rietveld_data_to_db(git_hash, review_url, cc)
-  print code_review_parse.get_tbr_no_lgtm(cc)
+  if args.write_html or args.run_antibody:
+    suspicious_commits = code_review_parse.get_tbr_no_lgtm(cc)
+    # TODO(ksho): un-hardcode the gitiles prefix once git checkout path command
+    # line functionality comes in from Keeley's cl, read in from 
+    # codereview.settings instead
+    gitiles_prefix = "https://chromium.googlesource.com/infra/infra/+/"
+    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix)
+
   csql.close(connection, cc)
 
 
