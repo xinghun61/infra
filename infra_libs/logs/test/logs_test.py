@@ -15,3 +15,20 @@ class InfraFilterTest(unittest.TestCase):
     infrafilter.filter(record)
     self.assertTrue(hasattr(record, "severity"))
     self.assertTrue(hasattr(record, "iso8601"))
+
+  def test_infraformatter_adds_full_module_name(self):
+    record = logging.makeLogRecord({})
+    infrafilter = logs.InfraFilter('US/Pacific')
+    infrafilter.filter(record)
+    self.assertEqual('infra_libs.logs.test.logs_test', record.fullModuleName)
+
+  def test_filters_by_module_name(self):
+    record = logging.makeLogRecord({})
+    infrafilter = logs.InfraFilter(
+        'US/Pacific', module_name_blacklist=r'^other\.module')
+    self.assertTrue(infrafilter.filter(record))
+
+    infrafilter = logs.InfraFilter(
+        'US/Pacific',
+        module_name_blacklist=r'^infra_libs\.logs\.test\.logs_test$')
+    self.assertFalse(infrafilter.filter(record))
