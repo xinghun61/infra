@@ -443,6 +443,7 @@ def default_stats():
       'patchset-attempts': derive_list_stats([0]),
       'patchset-committed-attempts': derive_list_stats([0]),
       'patchset-committed-tryjob-retries': derive_list_stats([0]),
+      'patchset-committed-global-retry-quota': derive_list_stats([0]),
       'jobs': {},
       'tree': {'open': 0.0, 'total': 0.0},
       'usage': {},
@@ -591,6 +592,9 @@ def _derive_stats_from_patch_stats(stats):
   stats['patchset-committed-tryjob-retries'] = derive_list_stats([
       patch_stats[p]['tryjob-retries'] for p in patch_stats
       if patch_stats[p]['committed']])
+  stats['patchset-committed-global-retry-quota'] = derive_list_stats([
+      patch_stats[p]['global-retry-quota'] for p in patch_stats
+      if patch_stats[p]['committed']])
 
 
 def derive_stats(args, begin_date, init_stats=None):
@@ -693,6 +697,7 @@ def derive_patch_stats(begin_date, end_date, patch_id):
         'committed': False,
         'reason': {},
         'tryjob-retries': 0,
+        'global-retry-quota': 0,
         'supported': True,
     }
     for reason in REASONS:
@@ -721,6 +726,7 @@ def derive_patch_stats(begin_date, end_date, patch_id):
   attempt_counter = 0
   for result in reversed(results):
     action = result['fields'].get('action')
+    verifier = result['fields'].get('verifier')
     dry_run = result['fields'].get('dry_run')
     if state == 'stop':
       if action == 'patch_start' and not dry_run:
@@ -786,6 +792,12 @@ def derive_patch_stats(begin_date, end_date, patch_id):
       attempt['supported'] = False
     if action == 'verifier_retry':
       attempt['tryjob-retries'] += 1
+    if verifier == 'try job' and action in ('verifier_pass', 'verifier_fail'):
+      # There should be only one pass or fail per attempt. In case there are
+      # more (e.g. due to CQ being stateless), just take the maximum seen value.
+      attempt['global-retry-quota'] = max(
+          attempt['global-retry-quota'],
+          result['fields'].get('global_retry_quota', 0))
 
   stats = {}
   committed_set = set(a['id'] for a in attempts if a['committed'])
@@ -820,6 +832,7 @@ def derive_patch_stats(begin_date, end_date, patch_id):
   else:
     stats['patchset-duration-wallclock'] = 0.0
   stats['tryjob-retries'] = sum(a['tryjob-retries'] for a in attempts)
+  stats['global-retry-quota'] = sum(a['global-retry-quota'] for a in attempts)
   return patch_id, stats
 
 
@@ -1120,10 +1133,12 @@ def print_stats(args, stats):
   output()
   output('Patches which eventually land percentiles:')
   for p in ['10', '25', '50', '75', '90', '95', '99', 'max']:
-    output('%3s: %4.1f hrs, %2d attempts, %2d tryjob retries',
+    output('%3s: %4.1f hrs, %2d attempts, %2d tryjob retries, '
+           '%2d global retry quota',
            p, stats['patchset-committed-durations'][p] / 3600.0,
            stats['patchset-committed-attempts'][p],
-           stats['patchset-committed-tryjob-retries'][p])
+           stats['patchset-committed-tryjob-retries'][p],
+           stats['patchset-committed-global-retry-quota'][p])
 
   output()
   output('Slowest CLs:')

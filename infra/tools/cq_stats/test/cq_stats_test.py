@@ -385,6 +385,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
           'patchset-duration': 999.99,
           'failed-jobs-details': {'tester': 2},
           'tryjob-retries': 0,
+          'global-retry-quota': 0,
           'supported': supported,
       }
       return patch_id, stats
@@ -446,7 +447,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
   def test_derive_patch_stats(self):
     time_obj = {'time': 1415150492.4}
-    def attempt(message, commit=False, supported=True, reason='', retry=False):
+    def attempt(message, commit=False, supported=True, reason='', retry=False,
+                verifier_pass=True):
       time_obj['time'] += 1.37  # Trick python to use global var.
       entries = []
       entries.append({'fields': {'action': 'patch_start'},
@@ -459,6 +461,12 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       if retry:
         entries.append({'fields': {'action': 'verifier_retry'},
                         'timestamp': time_obj['time']})
+      time_obj['time'] += 1.37
+      entries.append({'fields': {
+              'action': 'verifier_pass' if verifier_pass else 'verifier_fail',
+              'verifier': 'try job',
+          },
+          'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       if commit:
         entries.append({'fields': {'action': 'patch_committed'},
@@ -483,8 +491,10 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         attempt('Custom trybots', supported=False),
         attempt('Retrying', retry=True),
         attempt('CLs for remote refs other than refs/heads/master'),
-        attempt('Try jobs failed:\n test_dbg', reason='simple try job'),
-        attempt('Try jobs failed:\n chromium_presubmit'),
+        attempt('Try jobs failed:\n test_dbg', reason='simple try job',
+                verifier_pass=False),
+        attempt('Try jobs failed:\n chromium_presubmit',
+                verifier_pass=False),
         attempt('Exceeded time limit waiting for builds to trigger'),
         attempt('Some totally random unknown reason') + [
             {'fields': {'action': 'random garbage'},
