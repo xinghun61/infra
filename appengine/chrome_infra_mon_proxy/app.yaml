@@ -1,6 +1,5 @@
 runtime: python27
 api_version: 1
-vm: true
 threadsafe: true
 
 handlers:
@@ -21,20 +20,10 @@ handlers:
   secure: always
   script: app.main_app
 
-resources:
-  cpu: 1
-  memory_gb: 2
-  disk_size_gb: 10
-
 automatic_scaling:
-  min_num_instances: 1
-  max_num_instances: 20
-  cool_down_period_sec: 60
-  cpu_utilization:
-    target_utilization: 0.8
-#  min_pending_latency: 100ms
-#  max_pending_latency: 500ms
-#  max_concurrent_requests: 20
+  min_pending_latency: 100ms
+  max_pending_latency: 500ms
+  max_concurrent_requests: 20
 
 libraries:
 - name: endpoints
