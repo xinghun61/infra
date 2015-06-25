@@ -16,7 +16,7 @@ DEPS = [
 
 def RunSteps(api):
   api.gclient.set_config('infra')
-  api.bot_update.ensure_checkout(force=True)
+  api.bot_update.ensure_checkout()
   api.gclient.runhooks()
 
   # Update documentation

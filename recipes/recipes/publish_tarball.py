@@ -181,7 +181,7 @@ def RunSteps(api):
   api.gclient.set_config('chromium')
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
-  api.bot_update.ensure_checkout(force=True, with_branch_heads=True)
+  api.bot_update.ensure_checkout(with_branch_heads=True)
 
   with api.step.defer_results():
     # Export full tarball.

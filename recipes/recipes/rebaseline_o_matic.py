@@ -24,7 +24,7 @@ DEPS = [
 
 def RunSteps(api):
   api.gclient.set_config('blink')
-  api.bot_update.ensure_checkout(force=True)
+  api.bot_update.ensure_checkout()
 
   cwd = api.path['checkout'].join('third_party', 'WebKit')
 

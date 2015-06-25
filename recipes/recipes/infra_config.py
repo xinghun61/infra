@@ -21,8 +21,7 @@ def RunSteps(api):
     project = None  # Force empty string to be None.
 
   api.gclient.set_config('infradata_config_internal')
-  api.bot_update.ensure_checkout(
-      force=True, patch_root=project, patch_oauth2=True)
+  api.bot_update.ensure_checkout(patch_root=project, patch_oauth2=True)
   api.gclient.runhooks()
 
   api.python('master manager configuration test',
