@@ -8,9 +8,9 @@ import time
 
 import httplib2
 
-from infra_libs.authentication import get_authenticated_http
 from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
+import infra_libs
 
 def time_ms():
   """Return current timestamp in milliseconds."""
@@ -55,7 +55,7 @@ class _Router(object):
 
     if self.endpoint and self.cache['service_account_creds']:
       logging.debug('Activating OAuth2 authentication.')
-      self.http = get_authenticated_http(
+      self.http = infra_libs.get_authenticated_http(
         self.cache['service_account_creds'],
         service_accounts_creds_root=self.cache['service_accounts_creds_root'],
         scope='https://www.googleapis.com/auth/cclog'

@@ -40,8 +40,6 @@ import time
 from monacq.proto import metrics_pb2
 
 from infra_libs.ts_mon import errors
-from infra_libs.ts_mon import monitors
-from infra_libs.ts_mon import targets
 
 
 class State(object):

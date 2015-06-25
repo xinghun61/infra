@@ -41,6 +41,7 @@ from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
 from infra_libs import logs
+import infra_libs
 
 import httplib2
 from apiclient import discovery
@@ -86,17 +87,22 @@ class Monitor(object):
 
 class ApiMonitor(Monitor):
   """Class which sends metrics to the monitoring api, the default behavior."""
-  def __init__(self, credsfile, endpoint):
+  def __init__(self, credsfile, endpoint, use_instrumented_http=True):
     """Process monitoring related command line flags and initialize api.
 
     Args:
       credsfile (str): path to the credentials json file
       endpoint (str): url of the monitoring endpoint to hit
     """
+
     creds = acquisition_api.AcquisitionCredential.Load(
         os.path.abspath(credsfile))
     api = acquisition_api.AcquisitionApi(creds, endpoint)
     api.SetResponseCallback(_logging_callback)
+
+    if use_instrumented_http:
+      api.SetHttp(infra_libs.InstrumentedHttp('acq-mon-api'))
+
     self._api = api
 
   def send(self, metric_pb):

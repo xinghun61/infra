@@ -11,6 +11,7 @@ import mock
 from monacq.proto import metrics_pb2
 
 from infra_libs.ts_mon import monitors
+import infra_libs
 
 
 class MonitorTest(unittest.TestCase):
@@ -43,6 +44,24 @@ class ApiMonitorTest(unittest.TestCase):
     collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
     m.send(collection)
     self.assertEquals(m._api.Send.call_count, 3)
+
+  @mock.patch('infra_libs.ts_mon.monitors.acquisition_api')
+  def test_instrumented(self, fake_api):
+    m = monitors.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api')
+    m.send(metrics_pb2.MetricsData(name='m1'))
+
+    api = fake_api.AcquisitionApi.return_value
+    api.SetHttp.assert_called_once()
+    self.assertIsInstance(api.SetHttp.call_args[0][0],
+                          infra_libs.InstrumentedHttp)
+
+  @mock.patch('infra_libs.ts_mon.monitors.acquisition_api')
+  def test_not_instrumented(self, fake_api):
+    m = monitors.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api',
+                            use_instrumented_http=False)
+    m.send(metrics_pb2.MetricsData(name='m1'))
+
+    self.assertFalse(fake_api.SetHttp.called)
 
 
 class PubSubMonitorTest(unittest.TestCase):

@@ -8,7 +8,7 @@ import socket
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra_libs.event_mon.router import _Router
-from infra_libs import authentication
+import infra_libs
 
 DEFAULT_SERVICE_ACCOUNT_CREDS = 'service-account-event-mon.json'
 
@@ -50,7 +50,7 @@ def add_argparse_options(parser):  # pragma: no cover
                      "Defaults to '%(default)s'")
   group.add_argument('--event-mon-service-accounts-creds-root',
                      metavar='DIR',
-                     default=authentication.SERVICE_ACCOUNTS_CREDS_ROOT,
+                     default=infra_libs.SERVICE_ACCOUNTS_CREDS_ROOT,
                      help="Directory containing service accounts credentials.\n"
                      "Defaults to %(default)s"
                      )
