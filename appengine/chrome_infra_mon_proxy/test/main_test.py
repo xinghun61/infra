@@ -9,7 +9,10 @@ import random
 import urllib2
 import webtest
 
-from google.appengine.api import taskqueue, users
+import mock
+
+from google.appengine.ext import ndb
+from google.appengine.api import users
 from testing_utils import testing
 
 import common
@@ -32,6 +35,9 @@ class MonacqHandlerTest(testing.AppengineTestCase):
     self.mock(main.MonacqHandler, 'xsrf_token_enforce_on', [])
     self.mock(auth, 'is_group_member', lambda _: True) # pragma: no branch
     self.mock(auth, 'bootstrap_group', lambda *_: None)
+    # Need this to prevent payload from being mangled.
+    self.headers = {'Content-Type': 'application/x-protobuf'}
+
 
   def test_biased_choice(self):
     items = collections.OrderedDict([('a', 100), ('b', 25), ('c', 75)])
@@ -56,14 +62,82 @@ class MonacqHandlerTest(testing.AppengineTestCase):
     logging.info('exception = %s', cm.exception)
     self.assertIn('405', str(cm.exception))
 
-  def test_post(self):
-    self.mock(urllib2, 'urlopen', lambda _: None)
-    # Dev appserver.
+  @classmethod
+  def populate_config(cls):
+    creds = common.Credentials(
+        client_email='we@you.me',
+        client_id='agent007',
+        private_key='deadbeafyoudneverguess',
+        private_key_id='!@#$%')
+
+    data = common.ConfigData(
+        primary_endpoint=common.Endpoint(url='foo://', scopes=['this', 'that']),
+        secondary_endpoint=common.Endpoint(url='bar://', credentials=creds),
+        secondary_endpoint_load=20,
+        id=common.CONFIG_DATA_KEY)
+    data.put()
+
+  @classmethod
+  def erase_config(cls):
+    ndb.Key('ConfigData', common.CONFIG_DATA_KEY).delete()
+
+  @classmethod
+  def get_config(cls):
+    return ndb.Key('ConfigData', common.CONFIG_DATA_KEY).get()
+
+  @mock.patch('components.net.request', spec=True)
+  def test_no_config_fail(self, _request_mock):
+    self.erase_config()
+    with self.assertRaises(webtest.AppError) as cm:
+      self.test_app.post('/monacq')
+    logging.info('exception = %s', cm.exception)
+    self.assertIn('500', str(cm.exception))
+
+  @mock.patch('components.net.request', spec=True)
+  def test_secondary_endpoint_dev_appserver(self, _request_mock):
+    self.populate_config()
+    # Secondary url is at 20%, make it selected.
+    self.mock(random, 'uniform', lambda _a, _b: 10.0)
     self.mock(utils, 'is_local_dev_server', lambda: True)
-    self.test_app.post('/monacq', 'deadbeafdata')
-    # Production server.
+    payload = 'dev-2-deadbeafdata'
+
+    self.test_app.post('/monacq', payload, headers=self.headers)
+    self.assertEqual(_request_mock.call_args[1]['payload'], payload)
+    self.assertEqual(
+        _request_mock.call_args[1]['headers'].get(common.ENDPOINT_URL_HEADER),
+        self.get_config().secondary_endpoint.url)
+    self.assertEqual(
+        _request_mock.call_args[1]['headers'].get('Content-Type'),
+        'application/x-protobuf')
+
+  @mock.patch('components.net.request', spec=True)
+  def test_secondary_endpoint_prod(self, _request_mock):
+    self.populate_config()
+    self.mock(random, 'uniform', lambda _a, _b: 10.0)
     self.mock(utils, 'is_local_dev_server', lambda: False)
-    self.test_app.post('/monacq', 'deadbeafdata')
+
+    payload = 'prod-2-deadbeafdata'
+    self.test_app.post('/monacq', payload, headers=self.headers)
+    self.assertEqual(_request_mock.call_args[1]['payload'], payload)
+    self.assertEqual(
+        _request_mock.call_args[1]['headers'].get(common.ENDPOINT_URL_HEADER),
+        self.get_config().secondary_endpoint.url)
+    self.assertEqual(
+        _request_mock.call_args[1]['headers'].get('Content-Type'),
+        'application/x-protobuf')
+
+  @mock.patch('components.net.request', spec=True)
+  def test_primary_endpoint_prod(self, _request_mock):
+    self.populate_config()
+    self.mock(utils, 'is_local_dev_server', lambda: False)
+    self.mock(random, 'uniform', lambda _a, _b: 21.0)
+
+    payload = 'prod-1-deadbeafdata'
+    self.test_app.post('/monacq', payload, headers=self.headers)
+    self.assertEqual(_request_mock.call_args[1]['payload'], payload)
+    self.assertEqual(
+        _request_mock.call_args[1]['headers'].get(common.ENDPOINT_URL_HEADER),
+        self.get_config().primary_endpoint.url)
 
 
 class MainHandlerTest(testing.AppengineTestCase):
