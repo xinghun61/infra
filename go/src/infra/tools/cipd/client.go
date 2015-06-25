@@ -291,6 +291,7 @@ func (client *clientImpl) ModifyACL(packagePath string, changes []PackageACLChan
 }
 
 func (client *clientImpl) ListPackages(path string, recursive bool) ([]string, error) {
+	client.Logger.Debugf("cipd: listing %s...", path)
 	pkgs, dirs, err := client.remote.listPackages(path, recursive)
 	if err != nil {
 		return nil, err
@@ -368,7 +369,7 @@ func (client *clientImpl) ResolveVersion(packageName, version string) (common.Pi
 	if err := common.ValidateInstanceVersion(version); err != nil {
 		return common.Pin{}, err
 	}
-	client.Logger.Infof("cipd: resolving version %q of %q...", version, packageName)
+	client.Logger.Debugf("cipd: resolving version %q of %q...", version, packageName)
 	return client.remote.resolveVersion(packageName, version)
 }
 

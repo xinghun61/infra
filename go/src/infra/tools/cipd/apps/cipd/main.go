@@ -351,6 +351,109 @@ func (opts *JSONOutputOptions) writeJSONOutput(result interface{}, err error) er
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Support for running operations concurrently.
+
+// batchOperation defines what to do with a packages matching a prefix.
+type batchOperation struct {
+	client        cipd.Client
+	packagePrefix string   // a package name or a prefix
+	packages      []string // packages to operate on, overrides packagePrefix
+	callback      func(pkg string) (common.Pin, error)
+}
+
+// pinOrError is passed through channels and also dumped to JSON results file.
+type pinOrError struct {
+	Pkg string      `json:"package"`
+	Pin *common.Pin `json:"pin,omitempty"`
+	Err string      `json:"error,omitempty"`
+}
+
+// expandPkgDir takes a package name or '<prefix>/' and returns a list
+// of matching packages (asking backend if necessary). Doesn't recurse, returns
+// only direct children.
+func expandPkgDir(c cipd.Client, packagePrefix string) ([]string, error) {
+	if !strings.HasSuffix(packagePrefix, "/") {
+		return []string{packagePrefix}, nil
+	}
+	pkgs, err := c.ListPackages(packagePrefix, false)
+	if err != nil {
+		return nil, err
+	}
+	// Skip directories.
+	out := []string{}
+	for _, p := range pkgs {
+		if !strings.HasSuffix(p, "/") {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("No packages under %s", packagePrefix)
+	}
+	return out, nil
+}
+
+// performBatchOperation expands a package prefix into a list of packages and
+// calls callback for each of them (concurrently) gathering the results.
+func performBatchOperation(op batchOperation) ([]pinOrError, error) {
+	pkgs := op.packages
+	if len(pkgs) == 0 {
+		var err error
+		pkgs, err = expandPkgDir(op.client, op.packagePrefix)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return callConcurrently(pkgs, func(pkg string) pinOrError {
+		pin, err := op.callback(pkg)
+		if err != nil {
+			return pinOrError{pkg, nil, err.Error()}
+		}
+		return pinOrError{pkg, &pin, ""}
+	}), nil
+}
+
+func callConcurrently(pkgs []string, callback func(pkg string) pinOrError) []pinOrError {
+	// Push index through channel to make results ordered as 'pkgs'.
+	ch := make(chan struct {
+		int
+		pinOrError
+	})
+	for idx, pkg := range pkgs {
+		go func(idx int, pkg string) {
+			ch <- struct {
+				int
+				pinOrError
+			}{idx, callback(pkg)}
+		}(idx, pkg)
+	}
+	pins := make([]pinOrError, len(pkgs))
+	for i := 0; i < len(pkgs); i++ {
+		res := <-ch
+		pins[res.int] = res.pinOrError
+	}
+	return pins
+}
+
+func printPinsAndError(pins []pinOrError) {
+	for _, p := range pins {
+		if p.Err != "" {
+			log.Warningf("%s", p.Err)
+		} else {
+			log.Infof("%s", p.Pin)
+		}
+	}
+}
+
+func hasErrors(pins []pinOrError) bool {
+	for _, p := range pins {
+		if p.Err != "" {
+			return true
+		}
+	}
+	return false
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'create' subcommand.
 
 var cmdCreate = &subcommands.Command{
@@ -463,7 +566,7 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 // 'resolve' subcommand.
 
 var cmdResolve = &subcommands.Command{
-	UsageLine: "resolve <package> [options]",
+	UsageLine: "resolve <package or package prefix> [options]",
 	ShortDesc: "returns concrete package instance ID given a version",
 	LongDesc:  "Returns concrete package instance ID given a version.",
 	CommandRun: func() subcommands.CommandRun {
@@ -487,29 +590,38 @@ func (c *resolveRun) Run(a subcommands.Application, args []string) int {
 	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
 		return 1
 	}
-	pin, err := resolveVersion(args[0], c.version, c.ServiceOptions)
-	err = c.writeJSONOutput(&pin, err)
+	pins, err := resolveVersion(args[0], c.version, c.ServiceOptions)
+	err = c.writeJSONOutput(pins, err)
 	if err != nil {
 		log.Errorf("%s", err)
 		return 1
 	}
-	log.Infof("Instance: %s", pin)
+	printPinsAndError(pins)
+	if hasErrors(pins) {
+		return 1
+	}
 	return 0
 }
 
-func resolveVersion(packageName, version string, serviceOpts ServiceOptions) (common.Pin, error) {
+func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) ([]pinOrError, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
-		return common.Pin{}, err
+		return nil, err
 	}
-	return client.ResolveVersion(packageName, version)
+	return performBatchOperation(batchOperation{
+		client:        client,
+		packagePrefix: packagePrefix,
+		callback: func(pkg string) (common.Pin, error) {
+			return client.ResolveVersion(pkg, version)
+		},
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // 'set-ref' subcommand.
 
 var cmdSetRef = &subcommands.Command{
-	UsageLine: "set-ref <package> [options]",
+	UsageLine: "set-ref <package or package prefix> [options]",
 	ShortDesc: "moves a ref to point to a given version",
 	LongDesc:  "Moves a ref to point to a given version.",
 	CommandRun: func() subcommands.CommandRun {
@@ -539,31 +651,64 @@ func (c *setRefRun) Run(a subcommands.Application, args []string) int {
 		log.Errorf("At least one -ref must be provided")
 		return 1
 	}
-	pin, err := setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(&pin, err)
+	pins, err := setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions)
+	err = c.writeJSONOutput(pins, err)
 	if err != nil {
 		log.Errorf("%s", err)
 		return 1
 	}
-	log.Infof("Instance: %s", pin)
+	printPinsAndError(pins)
+	if hasErrors(pins) {
+		return 1
+	}
 	return 0
 }
 
-func setRef(packageName, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) ([]pinOrError, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
-		return common.Pin{}, err
+		return nil, err
 	}
-	pin, err := client.ResolveVersion(packageName, version)
+
+	// Do not touch anything if some packages do not have requested version. So
+	// resolve versions first and only then move refs.
+	pins, err := performBatchOperation(batchOperation{
+		client:        client,
+		packagePrefix: packagePrefix,
+		callback: func(pkg string) (common.Pin, error) {
+			return client.ResolveVersion(pkg, version)
+		},
+	})
 	if err != nil {
-		return common.Pin{}, err
+		return nil, err
 	}
-	for _, ref := range refsOpts.refs {
-		if err = client.SetRefWhenReady(ref, pin); err != nil {
-			return common.Pin{}, err
-		}
+	if hasErrors(pins) {
+		printPinsAndError(pins)
+		return nil, fmt.Errorf("Can't find %q version in all packages, aborting.", version)
 	}
-	return pin, nil
+
+	// Prepare for the next batch call.
+	packages := []string{}
+	pinsToUse := map[string]common.Pin{}
+	for _, p := range pins {
+		packages = append(packages, p.Pkg)
+		pinsToUse[p.Pkg] = *p.Pin
+	}
+
+	// Update all refs.
+	return performBatchOperation(batchOperation{
+		client:   client,
+		packages: packages,
+		callback: func(pkg string) (common.Pin, error) {
+			pin := pinsToUse[pkg]
+			for _, ref := range refsOpts.refs {
+				if err := client.SetRefWhenReady(ref, pin); err != nil {
+					return common.Pin{}, err
+				}
+			}
+			return pin, nil
+		},
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
