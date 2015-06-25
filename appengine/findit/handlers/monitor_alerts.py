@@ -78,8 +78,7 @@ class MonitorAlerts(BaseHandler):
   This handler is to pull the latest alerts from Sheriff-O-Matic, and then
   schedule incremental analysis of new build failures if needed.
 
-  It is mainly to be called by a Cron job. A logged-in admin could also trigger
-  a run by navigating to the url directly.
+  A logged-in admin could trigger a run by navigating to the url directly.
   """
 
   PERMISSION_LEVEL = Permission.ADMIN
