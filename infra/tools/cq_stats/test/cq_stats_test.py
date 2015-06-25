@@ -632,6 +632,53 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     return self.expectations
 
+  def test_print_flakiness_stats(self):
+    self.mock(cq_stats, 'output', self.print_mock)
+    args = Args()
+    stats_set = cq_stats.default_stats()
+    stats_set['begin'] = args.date
+    stats_set['end'] = args.date + datetime.timedelta(days=7)
+
+    stats_set['patch_stats'].update({
+        (123, 1): {
+            'attempts': 1,
+            'false-rejections': 0,
+            'rejections': 1,
+            'committed': False,
+            'patchset-duration': 3600,
+            'patchset-duration-wallclock': 3600,
+            'failed-jobs-details': {
+                'builder_a': 1,
+            },
+        },
+    })
+
+    self.mock(cq_stats, 'fetch_json', lambda _: [{
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 0,
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': -1,
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 2,
+    }])
+
+    cq_stats.print_flakiness_stats(args, stats_set)
+
+    args.seq = False
+    self.mock(cq_stats, 'fetch_json', lambda _: [{
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 2,
+    }])
+    cq_stats.print_flakiness_stats(args, stats_set)
+
+    return self.expectations
+
   # Expectation: must print stats in a certain format.
   # Assumption: input stats at minimum have the keys from
   # default_stats(). This is verified in test_organize_stats().
@@ -642,12 +689,6 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     stats_set['begin'] = args.date
     stats_set['end'] = args.date + datetime.timedelta(days=7)
 
-    stats_set['jobs'].update({
-      'foo_builder': {
-        'pass-count': 100,
-        'false-reject-count': 1,
-      },
-    })
     stats_set['patch_stats'].update({
         (123, 1): {
             'attempts': 1,

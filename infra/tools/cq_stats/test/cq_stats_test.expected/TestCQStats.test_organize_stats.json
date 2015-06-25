@@ -28,12 +28,6 @@
   "false-rejections": [],
   "invalid-delimiter": [],
   "issue-count": 0,
-  "jobs": {
-    "bot": {
-      "false-reject-count": 4,
-      "pass-count": 2
-    }
-  },
   "manual-cancel": [],
   "missing-lgtm": [],
   "not-lgtm": [],

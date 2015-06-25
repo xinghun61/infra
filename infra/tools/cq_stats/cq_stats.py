@@ -18,6 +18,7 @@ from multiprocessing.pool import ThreadPool
 import numbers
 import numpy
 import re
+import simplejson
 import subprocess
 import sys
 import time
@@ -115,6 +116,11 @@ REASONS['failed-unknown'] = {
     'item': 'failures',
     'message': 'failed for any other reason',
 }
+
+
+# These values are buildbot constants used for Build and BuildStep.
+# This line was copied from master/buildbot/status/builder.py.
+SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, TRY_PENDING = range(7)
 
 
 def parse_args():
@@ -444,7 +450,6 @@ def default_stats():
       'patchset-committed-attempts': derive_list_stats([0]),
       'patchset-committed-tryjob-retries': derive_list_stats([0]),
       'patchset-committed-global-retry-quota': derive_list_stats([0]),
-      'jobs': {},
       'tree': {'open': 0.0, 'total': 0.0},
       'usage': {},
   }
@@ -471,33 +476,9 @@ def organize_stats(stats, init=None):
         date_from_timestamp(dataset['begin']),
         result.get('begin', datetime.datetime.now()))
     result['end'] = max(date_from_timestamp(dataset['end']), result['end'])
-    re_trybot_pass_count = re.compile('^trybot-(.+)-pass-count$')
-    re_trybot_false_reject_count = re.compile(
-        '^trybot-(.+)-false-reject-count$')
-    assert 'jobs' in result and isinstance(result['jobs'], dict)
     for data in dataset['stats']:
       if data['type'] == 'count':
         result[data['name']] = data['count']
-        match_pass = re_trybot_pass_count.match(data['name'])
-        match_false_reject = re_trybot_false_reject_count.match(data['name'])
-        if match_pass:
-          job_name = match_pass.group(1)
-          result['jobs'].setdefault(job_name, {
-              'pass-count': 0,
-              'false-reject-count': 0,
-          })
-          result['jobs'][job_name]['pass-count'] += data['count']
-          logging.debug('Job %s passed %d times. Jobs: %r',
-                        job_name, data['count'], result['jobs'])
-        if match_false_reject:
-          job_name = match_false_reject.group(1)
-          result['jobs'].setdefault(job_name, {
-              'pass-count': 0,
-              'false-reject-count': 0,
-          })
-          result['jobs'][job_name]['false-reject-count'] += data['count']
-          logging.debug('Job %s flakily failed %d times',
-                        job_name, data['count'])
       else:
         assert data['type'] == 'list'
         result[data['name']] = {
@@ -1060,6 +1041,86 @@ def print_tree_status(stats):
       percentage(stats['tree']['open'], stats['tree']['total']))
 
 
+def print_flakiness_stats(args, stats):
+  def get_flakiness_stats(issue_patchset):
+    issue, patchset = issue_patchset
+    try:
+      try_job_results = fetch_json(
+          'https://codereview.chromium.org/api/%d/%d/try_job_results' % (
+              issue, patchset))
+    except simplejson.JSONDecodeError as e:
+      # This can happen e.g. for private issues where we can't fetch the JSON
+      # without authentication.
+      logging.warn('%r (issue:%d, patchset:%d)', e, issue, patchset)
+      return {}
+
+    result_counts = {}
+    for result in try_job_results:
+      master, builder = result['master'], result['builder']
+      result_counts.setdefault((master, builder), {
+        'successes': 0,
+        'failures': 0,
+      })
+      if result['result'] in (SUCCESS, WARNINGS):
+        result_counts[(master, builder)]['successes'] += 1
+      elif result['result'] in (FAILURE, EXCEPTION):
+        result_counts[(master, builder)]['failures'] += 1
+
+    try_job_stats = {}
+    for master, builder in result_counts.iterkeys():
+      total = (result_counts[(master, builder)]['successes'] +
+               result_counts[(master, builder)]['failures'])
+
+      flakes = 0
+      if result_counts[(master, builder)]['successes'] > 0:
+        flakes = result_counts[(master, builder)]['failures']
+
+      try_job_stats[(master, builder)] = {
+        'total': total,
+        'flakes': flakes,
+      }
+
+    return try_job_stats
+
+  if args.seq or not args.thread_pool:
+    iterable = map(get_flakiness_stats, stats['patch_stats'].keys())
+  else:
+    pool = ThreadPool(min(args.thread_pool, len(stats['patch_stats'].keys())))
+    iterable = pool.imap_unordered(
+        get_flakiness_stats, stats['patch_stats'].keys())
+
+  try_job_stats = {}
+  for result in iterable:
+    for master, builder in result.iterkeys():
+      try_job_stats.setdefault((master, builder), {
+        'total': 0,
+        'flakes': 0,
+      })
+      try_job_stats[(master, builder)]['total'] += result[
+          (master, builder)]['total']
+      try_job_stats[(master, builder)]['flakes'] += result[
+          (master, builder)]['flakes']
+
+  output()
+  output('Top flaky builders (which fail and succeed in the same patch):')
+
+  def flakiness(master_builder):
+    return percentage(try_job_stats[master_builder]['flakes'],
+                      try_job_stats[master_builder]['total'])
+
+  builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
+  output('%-25s %-55s %-15s %-15s %-15s',
+         'Master Name', 'Builder Name', 'Total Builds', 'Flaky Failures',
+         'Flakiness (%)')
+  for master_builder in builders:
+    master, builder = master_builder
+    output('%-25s %-55s %-15s %-15s %-15s',
+           master, builder,
+           '%5d' % try_job_stats[master_builder]['total'],
+           '%5d' % try_job_stats[master_builder]['flakes'],
+           '%6.2f%%' % flakiness(master_builder))
+
+
 def print_stats(args, stats):
   if not stats:
     output('No stats to display.')
@@ -1151,29 +1212,7 @@ def print_stats(args, stats):
         patch_url(p),
         round(stats['patch_stats'][p]['patchset-duration'] / 3600.0, 1)))
 
-  # TODO(sergeyberezin): add total try jobs / by CQ / unknown. Get it from CBE.
-  # TODO(sergeyberezin): recompute bot flakiness from CBE. CQ does not
-  # have enough info.
-  output()
-  output('Top flaky builders (which fail and succeed in the same patch):')
-
-  logging.debug('Found %d jobs', len(stats['jobs'].keys()))
-
-  def flakiness(job):
-    passes = stats['jobs'][job]['pass-count']
-    failures = stats['jobs'][job]['false-reject-count']
-    return percentage(failures, passes + failures)
-
-  jobs = sorted(stats['jobs'].iterkeys(), key=flakiness, reverse=True)
-  job_spaces = reduce(max, map(len, jobs)) if jobs else 0
-  output('%-' + str(job_spaces)  + 's %-15s %-15s %-15s',
-         'Builder Name', 'Succeeded', 'Flaky Failures', 'Flakiness (%)')
-  for job in jobs:
-    passes = stats['jobs'][job]['pass-count']
-    failures = stats['jobs'][job]['false-reject-count']
-    output('%-' + str(job_spaces) + 's %-15s %-15s %-15s',
-           job, '%5d' % passes, '%5d' % failures,
-           '%6.2f%%' % flakiness(job))
+  print_flakiness_stats(args, stats)
 
 
 def acquire_stats(args):
