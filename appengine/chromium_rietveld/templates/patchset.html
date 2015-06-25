@@ -190,4 +190,26 @@
       </span>
     {%endif%}
   {%endifequal%}
+  {%if patchset.depends_on_patchset %}
+    <p>
+      <i>Depends on Patchset:</i>
+        <div {%if patchset.depends_on_tokens.0.closed%}class="linethrough"{%endif%}>
+          <a href="/{{patchset.depends_on_tokens.0.key.id}}#ps{{patchset.depends_on_tokens.1.key.id}}">
+            Issue {{patchset.depends_on_tokens.0.key.id}} Patch {{patchset.depends_on_tokens.1.key.id}}
+          </a>
+      </div>
+    </p>
+  {%endif%}
+  {%if patchset.dependent_patchsets %}
+    <p>
+      <i>Dependent Patchsets:</i>
+      {%for dependent_tokens in patchset.dependent_tokens%}
+        <div {%if dependent_tokens.0.closed%}class="linethrough"{%endif%}>
+          <a href="/{{dependent_tokens.0.key.id}}#ps{{dependent_tokens.1.key.id}}">
+            Issue {{dependent_tokens.0.key.id}} Patch {{dependent_tokens.1.key.id}}
+          </a>
+        </div>
+      {%endfor%}
+    </p>
+  {%endif%}
 </div>

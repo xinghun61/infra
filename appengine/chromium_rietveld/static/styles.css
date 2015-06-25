@@ -980,6 +980,10 @@ ul.errorlist li {
   display: none;
 }
 
+.linethrough {
+  text-decoration: line-through;
+}
+
 input:checked ~ span .if_checked {
   display: block;
   font-weight: bold;

@@ -617,6 +617,27 @@ class PatchSet(ndb.Model):
   dependent_patchsets = ndb.StringProperty(repeated=True)
 
   @property
+  def depends_on_tokens(self):
+    tokens = None
+    if self.depends_on_patchset:
+      issue_id, patchset_id = self.depends_on_patchset.split(':')
+      issue = Issue.get_by_id(int(issue_id))
+      patchset = PatchSet.get_by_id(int(patchset_id), parent=issue.key)
+      tokens = (issue, patchset)
+    return tokens
+
+  @property
+  def dependent_tokens(self):
+    tokens = []
+    if self.dependent_patchsets:
+      for dependent_patchset in self.dependent_patchsets:
+        issue_id, patchset_id = dependent_patchset.split(':')
+        issue = Issue.get_by_id(int(issue_id))
+        patchset = PatchSet.get_by_id(int(patchset_id), parent=issue.key)
+        tokens.append((issue, patchset))
+    return tokens
+
+  @property
   def num_patches(self):
     """Return the number of patches in this patchset."""
     return Patch.query(ancestor=self.key).count(
