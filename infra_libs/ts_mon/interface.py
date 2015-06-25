@@ -33,6 +33,7 @@ Library usage:
 
 import logging
 import os
+import random
 import threading
 import time
 
@@ -145,7 +146,10 @@ class _FlushThread(threading.Thread):
       logging.exception('Automatic monitoring flush failed.')
 
   def run(self):
-    next_timeout = self.interval_secs
+    # Jitter the first interval so tasks started at the same time (say, by cron)
+    # on different machines don't all send metrics simultaneously.
+    next_timeout = random.uniform(self.interval_secs / 2.0, self.interval_secs)
+
     while True:
       if self.stop_event.wait(next_timeout):
         self._flush_and_log_exceptions()

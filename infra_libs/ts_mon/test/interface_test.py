@@ -194,6 +194,10 @@ class FlushThreadTest(unittest.TestCase):
   def increment_time(self, delta):
     self.fake_time += delta
 
+  def assertInRange(self, lower, upper, value):
+    self.assertGreaterEqual(value, lower)
+    self.assertLessEqual(value, upper)
+
   def tearDown(self):
     # Ensure the thread exits.
     self.stop_event.set(blocking=False)
@@ -206,8 +210,8 @@ class FlushThreadTest(unittest.TestCase):
 
     self.assertEqual(0, interface.flush.call_count)
 
-    # The wait is for the whole interval.
-    self.assertEqual(60, self.stop_event.timeout_wait())
+    # The wait is for the whole interval (with jitter).
+    self.assertInRange(30, 60, self.stop_event.timeout_wait())
 
     # Return from the second wait, which exits the thread.
     self.stop_event.set()
@@ -245,7 +249,7 @@ class FlushThreadTest(unittest.TestCase):
     # Flush takes 5 seconds.
     interface.flush.side_effect = functools.partial(self.increment_time, 5)
 
-    self.assertEqual(60, self.stop_event.timeout_wait())
+    self.assertInRange(30, 60, self.stop_event.timeout_wait())
     self.assertEqual(55, self.stop_event.timeout_wait())
     self.assertEqual(55, self.stop_event.timeout_wait())
 
@@ -255,6 +259,6 @@ class FlushThreadTest(unittest.TestCase):
     # Flush takes 65 seconds.
     interface.flush.side_effect = functools.partial(self.increment_time, 65)
 
-    self.assertEqual(60, self.stop_event.timeout_wait())
+    self.assertInRange(30, 60, self.stop_event.timeout_wait())
     self.assertEqual(0, self.stop_event.timeout_wait())
     self.assertEqual(0, self.stop_event.timeout_wait())
