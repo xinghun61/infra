@@ -11,6 +11,7 @@ package main
 import (
 	"os"
 
+	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging/gologger"
 
@@ -24,9 +25,9 @@ func main() {
 		Title: "Chrome Infra Authentication tool",
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
-			auth.SubcommandInfo(opts, "info"),
-			auth.SubcommandLogin(opts, "login"),
-			auth.SubcommandLogout(opts, "logout"),
+			authcli.SubcommandInfo(opts, "info"),
+			authcli.SubcommandLogin(opts, "login"),
+			authcli.SubcommandLogout(opts, "logout"),
 		},
 	}
 	os.Exit(subcommands.Run(application, nil))

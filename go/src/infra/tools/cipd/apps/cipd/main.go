@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging/gologger"
 
@@ -76,13 +77,13 @@ func checkCommandLine(args []string, flags *flag.FlagSet, minPosCount, maxPosCou
 // ServiceOptions defines command line arguments related to communication
 // with the remote service. Subcommands that interact with the network embed it.
 type ServiceOptions struct {
-	authFlags  auth.Flags
+	authFlags  authcli.Flags
 	serviceURL string
 }
 
 func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
 	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one")
-	opts.authFlags.Register(f)
+	opts.authFlags.Register(f, auth.Options{})
 }
 
 func (opts *ServiceOptions) makeCipdClient(root string) (cipd.Client, error) {
@@ -1108,9 +1109,9 @@ var application = &subcommands.DefaultApplication{
 		subcommands.CmdHelp,
 
 		// Authentication related commands.
-		auth.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),
-		auth.SubcommandLogin(auth.Options{Logger: log}, "auth-login"),
-		auth.SubcommandLogout(auth.Options{Logger: log}, "auth-logout"),
+		authcli.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),
+		authcli.SubcommandLogin(auth.Options{Logger: log}, "auth-login"),
+		authcli.SubcommandLogout(auth.Options{Logger: log}, "auth-logout"),
 
 		// High level commands.
 		cmdListPackages,
