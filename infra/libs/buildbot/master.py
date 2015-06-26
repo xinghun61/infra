@@ -24,7 +24,7 @@ from infra.libs.time_functions import timestamp
 # Derived from http://stackoverflow.com/a/6940314.
 def _pid_is_alive(pid):  # pragma: no cover
   """Determine if the given pid is still running.
-  
+
   Sending a signal of 0 (the 'null signal') does all the checks to send a signal
   without actually sending a signal. Thus it works as a check to see if the pid
   is valid. See http://goo.gl/6M1BoF for details.
@@ -80,7 +80,7 @@ def get_last_boot(directory):
 
 def get_last_no_new_builds(directory):
   """Determine the last time a *current* make no-new-builds was called.
-  
+
   If a 'make start' or 'make restart' was issued after the no-new-builds, it is
   not valid (since the make start or make restart nullified the no-new-builds).
   """
@@ -144,7 +144,7 @@ def _get_master_web_port(directory):
 
 def get_accepting_builds(directory, timeout=30):
   """Determine whether the master is accepting new builds or not.
-  
+
   *** This only works for masters running on localhost.***
   """
   port = _get_master_web_port(directory)
@@ -169,7 +169,7 @@ def get_accepting_builds(directory, timeout=30):
 GclientSync, MakeStop, MakeWait, MakeStart, MakeNoNewBuilds = range(5)
 
 
-def _get_gclient_root(directory):
+def _get_gclient_root(directory): # pragma: no cover
   """Get root directory of a gclient solution."""
   # If performance becomes an issue, consider memoizing this function.
   return subprocess.check_output(
@@ -177,7 +177,7 @@ def _get_gclient_root(directory):
 
 
 def convert_action_items_to_cli(
-    action_items, directory, enable_gclient=False):
+    action_items, directory, enable_gclient=False): # pragma: no cover
 
   def cmd_dict(cmd, lockfile_prefix, directory_lock_override=None):
     # Using the same lockfile prefix for two actions will make them mutually

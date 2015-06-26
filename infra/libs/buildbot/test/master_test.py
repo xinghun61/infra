@@ -172,7 +172,7 @@ class TestMasterManipulation(auto_stub.TestCase):
     super(TestMasterManipulation, self).setUp()
     self.chromium_fyi = os.path.join(DATA_DIR, 'master.chromium.fyi')
 
-  def testWithGclientSyncEnabled(self):
+  def DISABLED_testWithGclientSyncEnabled(self):  # pragma: no cover
     actions = list(master.convert_action_items_to_cli((
       master.GclientSync,
       master.MakeStop,
