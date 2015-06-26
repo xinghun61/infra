@@ -13,7 +13,7 @@ DEPS = [
 
 def RunSteps(api):
   api.gclient.set_config('luci_go')
-  api.bot_update.ensure_checkout()
+  api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
 
   # This downloads the third parties, so that the next step doesn't have junk

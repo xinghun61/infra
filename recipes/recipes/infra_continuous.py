@@ -102,7 +102,7 @@ def RunSteps(api):
         'This recipe is not intended for builder %s. ' % builder_name)
 
   api.gclient.set_config(project_name)
-  bot_update_step = api.bot_update.ensure_checkout()
+  bot_update_step = api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
 
   # Whatever is checked out by bot_update. It is usually equal to
