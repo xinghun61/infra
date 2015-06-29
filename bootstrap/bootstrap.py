@@ -21,6 +21,8 @@ LOGGER = logging.getLogger(__name__)
 # /path/to/infra
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+PYTHON_BAT_WIN = '@%~dp0\\..\\Scripts\\python.exe %*'
+
 
 class NoWheelException(Exception):
   def __init__(self, name, version, build, source_sha):
@@ -152,32 +154,36 @@ def install(deps):
          os.path.join(ROOT, '.wheelcache'), '-f', ipath] + requirements)
 
 
-def activate_env(env, deps):
+def activate_env(env, deps, quiet=False):
   if hasattr(sys, 'real_prefix'):
     LOGGER.error('Already activated environment!')
     return
 
-  print 'Activating environment: %r' % env
+  if not quiet:
+    print 'Activating environment: %r' % env
   assert isinstance(deps, dict)
 
   manifest_path = os.path.join(env, 'manifest.pyl')
   cur_deps = read_deps(manifest_path)
   if cur_deps != deps:
-    print '  Removing old environment: %r' % cur_deps
+    if not quiet:
+      print '  Removing old environment: %r' % cur_deps
     shutil.rmtree(env, ignore_errors=True)
     cur_deps = None
 
   if cur_deps is None:
     check_pydistutils()
 
-    print '  Building new environment'
+    if not quiet:
+      print '  Building new environment'
     # Add in bundled virtualenv lib
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'virtualenv'))
     import virtualenv  # pylint: disable=F0401
     virtualenv.create_environment(
         env, search_dirs=virtualenv.file_search_dirs())
 
-  print '  Activating environment'
+  if not quiet:
+    print '  Activating environment'
   # Ensure hermeticity during activation.
   os.environ.pop('PYTHONPATH', None)
   bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
@@ -185,27 +191,41 @@ def activate_env(env, deps):
   execfile(activate_this, dict(__file__=activate_this))
 
   if cur_deps is None:
-    print '  Installing deps'
-    print_deps(deps, indent=2, with_implicit=False)
+    if not quiet:
+      print '  Installing deps'
+      print_deps(deps, indent=2, with_implicit=False)
     install(deps)
     virtualenv.make_environment_relocatable(env)
     with open(manifest_path, 'wb') as f:
       f.write(repr(deps) + '\n')
 
-  print 'Done creating environment'
+  # Create bin\python.bat on Windows to unify path where Python is found.
+  if sys.platform.startswith('win'):
+    bin_path = os.path.join(env, 'bin')
+    if not os.path.isdir(bin_path):
+      os.makedirs(bin_path)
+    python_bat_path = os.path.join(bin_path, 'python.bat')
+    if not os.path.isfile(python_bat_path):
+      with open(python_bat_path, 'w') as python_bat_file:
+        python_bat_file.write(PYTHON_BAT_WIN)
+
+  if not quiet:
+    print 'Done creating environment'
 
 
 def main(args):
   parser = argparse.ArgumentParser()
   parser.add_argument('--deps-file', '--deps_file', action='append',
                       help='Path to deps.pyl file (may be used multiple times)')
+  parser.add_argument('-q', '--quiet', action='store_true', default=False,
+                      help='Supress all output')
   parser.add_argument('env_path',
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
   opts = parser.parse_args(args)
 
   deps = merge_deps(opts.deps_file)
-  activate_env(opts.env_path, deps)
+  activate_env(opts.env_path, deps, opts.quiet)
 
 
 if __name__ == '__main__':
