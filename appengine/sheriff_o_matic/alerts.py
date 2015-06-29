@@ -70,6 +70,7 @@ class AlertsHandler(webapp2.RequestHandler):
     data['stale_alerts_thresh'] = self.MAX_STALENESS
 
     data = self.generate_json_dump(data)
+    self.send_json_headers()
     self.response.write(data)
     return True
 
@@ -110,7 +111,6 @@ class AlertsHandler(webapp2.RequestHandler):
         data = self.get_from_gcs(self.ALERT_TYPE, last_entry.gcs_filename)
       data = json.loads(data)
       data['key'] = last_entry.key.integer_id()
-
       return self.send_json_data(data)
     return False
 
@@ -120,7 +120,6 @@ class AlertsHandler(webapp2.RequestHandler):
       logging.info('Reading alerts from memcache')
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
-
       return self.send_json_data(data)
     return False
 
@@ -139,7 +138,7 @@ class AlertsHandler(webapp2.RequestHandler):
                                         last_entry.gcs_filename)
         last_alerts = json.loads(alerts_json)
       else:
-        last_alerts = json.loads(last_entry.json) if last_entry else {}
+        last_alerts = json.loads(last_entry.json)
 
     # Only changes to the fields with 'alerts' in the name should cause a
     # new history entry to be saved.

@@ -24,15 +24,16 @@ class InternalAlertsHandler(alerts.AlertsHandler):
       ret = {}
       ret.update({
           'date': datetime.datetime.utcnow(),
-          'redirect-url': users.create_login_url(self.request.uri)})
-      uncompressed = super(InternalAlertsHandler,
-                           self).generate_json_dump(ret)
-      super(InternalAlertsHandler, self).send_json_data(uncompressed)
+          'redirect-url': users.create_login_url(self.request.uri)
+      })
+      data = self.generate_json_dump(ret)
+      self.send_json_headers()
+      self.response.write(data)
       return
 
     email = user.email()
     if not email.endswith('@google.com'):
-      self.response.set_status(403, 'invalid user')
+      self.response.set_status(403, 'Permission Denied')
       return
 
     super(InternalAlertsHandler, self).get()

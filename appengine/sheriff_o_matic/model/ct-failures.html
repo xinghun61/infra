@@ -191,7 +191,7 @@ CTFailures.prototype._processTrooperFailures = function(all_failures,
       failure_array = trooper_failures;
     }
     failuresByTree.forEach(function(failure) {
-      if (failure.category == 'builder' || failure.category == 'master' || failure.category=='snoozed') {
+      if (failure.category == 'builder' || failure.category == 'master' || failure.category =='snoozed') {
         failure_array.push(failure);
       }
     });
