@@ -7,7 +7,7 @@ import sys
 try:
   sys.path.append('/usr/lib/python2.7/dist-packages/')
   import MySQLdb
-except ImportError:
+except ImportError:  # pragma: no cover
   pass
 finally:
   sys.path.remove('/usr/lib/python2.7/dist-packages/')

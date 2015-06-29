@@ -13,6 +13,7 @@ Example invocation: [TBD]
 import argparse
 import logging
 import os
+import requests_cache
 import sys
 
 from infra.tools.antibody import antibody
@@ -21,6 +22,7 @@ from infra.tools.antibody import code_review_parse
 from infra.tools.antibody import git_commit_parser
 import infra_libs.logs
 
+DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
@@ -36,6 +38,11 @@ def main(argv):
 
   infra_libs.logs.process_argparse_options(args)
 
+  if args.cache_path:
+    requests_cache.install_cache(args.cache_path)
+  else:
+    requests_cache.install_cache(os.path.join(DATA_DIR, 'rietveld_cache'))
+
   # Do more processing here
   LOGGER.info('Antibody starting')
   with open(args.sql_password_file, 'r') as f:
@@ -46,7 +53,10 @@ def main(argv):
     # TODO: get git hash from rietveld url
     code_review_parse.add_rietveld_data_to_db(None, args.rietveld_url, cc)
   if args.parse_git_rietveld or args.run_antibody:
-    git_commit_parser.upload_git_to_sql(cc)
+    git_commit_parser.upload_git_to_sql(args.git_checkout_path, cc)
+  else:
+    checkout = args.git_checkout_path
+    git_commit_parser.upload_git_to_sql(cc, checkout)
     git_commits_with_review_urls = git_commit_parser.get_urls_from_git_db(cc)
     for git_hash, review_url in git_commits_with_review_urls:
       # cannot get access into chromereview.googleplex.com

@@ -5,14 +5,10 @@
 """Tool-specific testable functions for antibody."""
 
 import argparse
-import json
 import os
-import re
-import sqlite3
 
 import infra_libs
 from testing_support import auto_stub
-from infra.tools.antibody import code_review_parse
 from infra.tools.antibody import antibody
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -22,14 +18,25 @@ class MyTest(auto_stub.TestCase):
   def test_arguments(self):
     parser = argparse.ArgumentParser()
     antibody.add_argparse_options(parser)
-    args = parser.parse_args(['--rietveld-url', '1234', '-p', '3'])
-    self.assertEqual(args.rietveld_url, '1234')
-    self.assertEqual(args.sql_password_file, '3')
+    args = parser.parse_args(['--cache-path', '/ab', '--git-checkout-path',
+                              '/bcd', '--sql-password-file', 'abd.txt',
+                              '--write-html', '--run-antibody',
+                              '--parse-git-rietveld'])
+    self.assertEqual(args.cache_path, '/ab')
+    self.assertEqual(args.git_checkout_path, '/bcd')
+    self.assertEqual(args.sql_password_file, 'abd.txt')
+    self.assertTrue(args.write_html)
+    self.assertTrue(args.run_antibody)
+    self.assertTrue(args.parse_git_rietveld)
 
-    args = parser.parse_args(['-r', '5678', '-p', '4'])
-    self.assertEqual(args.rietveld_url, '5678')
-    self.assertEqual(args.sql_password_file, '4')
-  
+    args = parser.parse_args(['-c', '/ab', '-g', '/bcd', '-p', 'abd.txt', '-w',
+                              '-a', '-r'])
+    self.assertEqual(args.cache_path, '/ab')
+    self.assertEqual(args.git_checkout_path, '/bcd')
+    self.assertEqual(args.sql_password_file, 'abd.txt')
+    self.assertTrue(args.write_html)
+    self.assertTrue(args.run_antibody)
+    self.assertTrue(args.parse_git_rietveld)
 
   def test_generate_antibody_ui(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:

@@ -2,12 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import re
 import requests
-import sqlite3
+from simplejson.scanner import JSONDecodeError
 import time
 
 import infra.tools.antibody.cloudsql_connect as csql
+
+# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+LOGGER = logging.getLogger(__name__)
 
 
 def extract_json_data(rietveld_url):  # pragma: no cover
@@ -16,7 +20,11 @@ def extract_json_data(rietveld_url):  # pragma: no cover
                   url_components[2], url_components[3])
   response = requests.get(json_data_url)
   if (response.status_code == requests.codes.ok):
-    return response.json()
+    try:
+      return response.json()
+    except JSONDecodeError:
+      LOGGER.error('json parse failed for url: %s' % rietveld_url)
+      raise
   else:
     response.raise_for_status()
 
@@ -47,10 +55,13 @@ def to_canonical_rietveld_url(rietveld_url):
 
 def add_rietveld_data_to_db(git_hash, rietveld_url, cc):  # pragma: no cover
   rietveld_url = to_canonical_rietveld_url(rietveld_url)
-  json_data = extract_json_data(rietveld_url)
-  db_data = (git_hash, contains_lgtm(json_data), 
+  try:
+    json_data = extract_json_data(rietveld_url)
+    db_data = (git_hash, contains_lgtm(json_data), 
              contains_tbr(json_data), rietveld_url, time.time())
-  csql.write_to_rietveld_table(cc, db_data)
+    csql.write_to_rietveld_table(cc, db_data)
+  except JSONDecodeError:
+    pass
 
 
 def get_tbr_no_lgtm(cc):

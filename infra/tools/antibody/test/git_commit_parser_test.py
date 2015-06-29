@@ -56,7 +56,7 @@ class TestGitCommitParser(unittest.TestCase):
         cur = con.cursor()
         cur.execute('CREATE TABLE %s (git_hash, bug_num, tbr, review_url)'
                     % csql.DEFAULT_GIT_TABLE)
-        fake_data = ( 
+        fake_data = (
             ('a', 1, 'b', 'https://codereview.chromium.org/1158153006'),
             ('c', 2, 'd', ''),
             ('e', 3, 'f', 'https://codereview.chromium.org/1146053009'),

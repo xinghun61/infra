@@ -12,7 +12,7 @@ import sys
 try:
  sys.path.append('/usr/lib/python2.7/dist-packages/')
  import MySQLdb
-except ImportError:
+except ImportError:  # pragma: no cover
  pass
 finally:
  sys.path.remove('/usr/lib/python2.7/dist-packages/')
@@ -29,9 +29,9 @@ LOGGER = logging.getLogger(__name__)
 
 def add_argparse_options(parser):
   """Define command-line arguments."""
-  parser.add_argument('--rietveld-url', '-r', 
-                      help="url of rietveld code review to determine whether"
-                           "the issue has been lgtm'ed or tbr'ed")
+  parser.add_argument('--cache-path', '-c', help="path to the rietveld cache")
+  parser.add_argument('--git-checkout-path', '-g', required=True,
+                      help="path to the git checkout")
   parser.add_argument('--sql-password-file', '-p', required=True,
                       help="password for cloud sql instance")
   parser.add_argument('--write-html', '-w', action='store_true',
@@ -39,7 +39,7 @@ def add_argparse_options(parser):
   parser.add_argument('--run-antibody', '-a', action='store_true',
                       help="runs the pipeline from git checkout"
                            "to generation of ui")
-  parser.add_argument('--parse-git-rietveld', '-g', action='store_true',
+  parser.add_argument('--parse-git-rietveld', '-r', action='store_true',
                       help="runs the pipeline from git checkout"
                            "to parsing of rietveld")
 
@@ -64,4 +64,4 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix,
                  }
   
   with open(ui_filename, 'wb') as f:
-    f.write(template.render(templateVars))  
+    f.write(template.render(templateVars)) 
