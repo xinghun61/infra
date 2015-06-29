@@ -14,7 +14,8 @@ from infra_libs.event_mon import config, router
 # These constants are part of the API.
 EVENT_TYPES = ('START', 'STOP', 'UPDATE', 'CURRENT_VERSION', 'CRASH')
 BUILD_EVENT_TYPES = ('SCHEDULER', 'BUILD', 'STEP')
-BUILD_RESULTS = (None, 'UNKNOWN', 'SUCCESS', 'FAILURE', 'INFRA_FAILURE')
+BUILD_RESULTS = (None, 'UNKNOWN', 'SUCCESS', 'FAILURE', 'INFRA_FAILURE',
+                 'WARNING', 'SKIPPED', 'RETRY')
 TIMESTAMP_KINDS = (None, 'UNKNOWN', 'POINT', 'BEGIN', 'END')
 
 # Maximum size of stack trace sent in an event, in characters.
