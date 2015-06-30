@@ -7,19 +7,8 @@
 import jinja2
 import logging
 import os
-import sys
-
-try:
- sys.path.append('/usr/lib/python2.7/dist-packages/')
- import MySQLdb
-except ImportError:  # pragma: no cover
- pass
-finally:
- sys.path.remove('/usr/lib/python2.7/dist-packages/')
 
 import infra.tools.antibody.cloudsql_connect as csql
-from infra.tools.antibody import code_review_parse
-from infra.tools.antibody import git_commit_parser
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 ANTIBODY_UI = os.path.join(THIS_DIR, 'antibody_ui.html')
@@ -48,20 +37,20 @@ def setup_antibody_db(cc):  # pragma: no cover
   csql.create_tables(cc)
 
 
-def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, 
+def generate_antibody_ui(suspicious_commits_data, gitiles_prefix,
                          ui_filename=ANTIBODY_UI):
   templateLoader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   templateEnv = jinja2.Environment(loader=templateLoader)
   template = templateEnv.get_template('antibody_ui.jinja')
-  
+
   templateVars = {'title' : 'Potentially Suspicious Commits to Chromium',
                   'description' : 'List of commits with a TBR but no lgtm',
                   'page_header_text' : "Potentially Suspicious Commits",
-                  'table_headers' : ['git_hash', 'rietveld_url', 
+                  'table_headers' : ['git_hash', 'rietveld_url',
                                      'request_timestamp'],
                   'suspicious_commits' : suspicious_commits_data,
                   'gitiles_prefix' : gitiles_prefix,
                  }
-  
+
   with open(ui_filename, 'wb') as f:
-    f.write(template.render(templateVars)) 
+    f.write(template.render(templateVars))
