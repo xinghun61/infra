@@ -10,8 +10,8 @@ deps = {
     "https://chromium.googlesource.com/chromium/tools/build.git",
 
   "infra/luci":
-    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
-     "@dab094e46e6a48e81ed1cfb951e7285a4f6f8846"),
+   ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
+     "@09a3eed1401477e2618e223c62390f02b8db0a52"),
 
   "infra/go/src/github.com/luci/luci-go":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
