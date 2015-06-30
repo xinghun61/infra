@@ -68,8 +68,11 @@ class WfAnalysisTest(unittest.TestCase):
       self.assertIsNone(analysis.correct)
 
   def testWfAnalysisHasCorrectResult(self):
-    for result_status in (wf_analysis_result_status.FOUND_CORRECT,
-                          wf_analysis_result_status.NOT_FOUND_CORRECT):
+    for result_status in (
+        wf_analysis_result_status.FOUND_CORRECT,
+        wf_analysis_result_status.NOT_FOUND_CORRECT,
+        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
+        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = wf_analysis_status.ANALYZED
       analysis.result_status = result_status

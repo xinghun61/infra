@@ -16,7 +16,7 @@ _DEFAULT_DISPLAY_COUNT = 500
 
 class ListAnalyses(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
-  
+
   def HandleGet(self):
     """Shows a list of Findit analysis results in HTML page.
 
@@ -33,17 +33,16 @@ class ListAnalyses(BaseHandler):
         days. This parameter will turn off triage parameter and display all the
         results regardless of result_status.
     """
-    # TODO: Add a dropdown for users to select single result_status.
     status_code = int(self.request.get('result_status','-1'))
     if status_code >= 0:
       analysis_query = WfAnalysis.query(WfAnalysis.result_status==status_code)
     elif self.request.get('triage') == '1':
       analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status>wf_analysis_result_status.FOUND_CORRECT, 
+          WfAnalysis.result_status>wf_analysis_result_status.FOUND_CORRECT,
           WfAnalysis.result_status<wf_analysis_result_status.NOT_FOUND_CORRECT))
     else:
       analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status>=wf_analysis_result_status.FOUND_CORRECT, 
+          WfAnalysis.result_status>=wf_analysis_result_status.FOUND_CORRECT,
           WfAnalysis.result_status<wf_analysis_result_status.FOUND_UNTRIAGED))
 
     if self.request.get('count'):
