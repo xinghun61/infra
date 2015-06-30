@@ -57,8 +57,8 @@ def add_rietveld_data_to_db(git_hash, rietveld_url, cc):  # pragma: no cover
   rietveld_url = to_canonical_rietveld_url(rietveld_url)
   try:
     json_data = extract_json_data(rietveld_url)
-    db_data = (git_hash, contains_lgtm(json_data), 
-             contains_tbr(json_data), rietveld_url, time.time())
+    db_data = (git_hash, contains_lgtm(json_data), contains_tbr(json_data),
+               rietveld_url, time.time(), len(json_data['cc']))
     csql.write_to_rietveld_table(cc, db_data)
   except JSONDecodeError:
     pass
@@ -68,7 +68,7 @@ def get_tbr_no_lgtm(cc):
   cc.execute('SELECT * FROM rietveld')
   db_data = cc.fetchall()
   suspicious_commits = []
-  # db_data: (git_hash, lgtm, tbr, rietveld_url, request_timestamp)
+  # db_data: (git_hash, lgtm, tbr, rietveld_url, request_timestamp, num_cced)
   for line in db_data:
     lgtm, tbr = line[1:3]
     if lgtm == '0' and tbr == '1':

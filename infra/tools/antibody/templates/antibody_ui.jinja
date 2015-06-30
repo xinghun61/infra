@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" /> 
 
+  
+  <link rel="stylesheet" href="static/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="static/suspicious_commits.css">
   <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans' rel='stylesheet' type='text/css'>
 
@@ -14,7 +16,7 @@
 
 <body>
 
-<div id="page_header">{{ page_header_text }}</div>
+<div id="page_header" class="pull-right">{{ page_header_text }}</div>
 
 <div id="content">
   <div class="table_header" id="table_header">
@@ -29,7 +31,7 @@
 
   <div class="table_data" id="table_data">
     <table>
-      {% for git_hash, _, _, rietveld_url, request_timestamp in suspicious_commits %}
+      {% for git_hash, _, _, rietveld_url, request_timestamp, _ in suspicious_commits %}
         <tr class="data_item">
           <td class="git_hash hyperlink">
             <a href="{{ gitiles_prefix }}{{ git_hash }}"> {{ git_hash }} </a></td>

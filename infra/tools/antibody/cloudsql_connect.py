@@ -35,7 +35,8 @@ def create_tables(cursor):  # pragma: no cover
                  % DEFAULT_GIT_TABLE)
   cursor.execute('CREATE TABLE IF NOT EXISTS %s (git_hash varchar(255) '
                  'PRIMARY KEY, lgtm text, tbr text, review_url text, '
-                 'request_timestamp int)' % DEFAULT_RIETVELD_TABLE)
+                 'request_timestamp int, num_cced int)' 
+                 % DEFAULT_RIETVELD_TABLE)
 
 
 def write_to_git_table(cursor, rows):  # pragma: no cover
@@ -43,7 +44,7 @@ def write_to_git_table(cursor, rows):  # pragma: no cover
 
 
 def write_to_rietveld_table(cursor, rows):  # pragma: no cover
-  cursor.execute("""REPLACE INTO rietveld VALUES (%s,%s,%s,%s,%s)""", rows)
+  cursor.execute("""REPLACE INTO rietveld VALUES (%s,%s,%s,%s,%s,%s)""", rows)
 
 
 def close(conn, cursor):  # pragma: no cover

@@ -49,12 +49,7 @@ def main(argv):
     password = f.read().strip()
   connection, cc = csql.connect(password)
   antibody.setup_antibody_db(cc)
-  if args.rietveld_url:
-    # TODO: get git hash from rietveld url
-    code_review_parse.add_rietveld_data_to_db(None, args.rietveld_url, cc)
   if args.parse_git_rietveld or args.run_antibody:
-    git_commit_parser.upload_git_to_sql(args.git_checkout_path, cc)
-  else:
     checkout = args.git_checkout_path
     git_commit_parser.upload_git_to_sql(cc, checkout)
     git_commits_with_review_urls = git_commit_parser.get_urls_from_git_db(cc)

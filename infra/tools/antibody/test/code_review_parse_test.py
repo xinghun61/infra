@@ -90,22 +90,22 @@ class TestCodeReviewParse(unittest.TestCase):
       with sqlite3.connect(file_name) as con:
         cur = con.cursor()
         cur.execute('CREATE TABLE %s (git_hash, lgtm, tbr, '
-                    'rietveld_url, request_timestamp)'
+                    'rietveld_url, request_timestamp, num_cced)'
                     % csql.DEFAULT_RIETVELD_TABLE)
         fake_data = ( 
-            (1, '1', '0', 'https://codereview.chromium.org/1158153006', 1),
-            (2, '0', '0', 'https://codereview.chromium.org/1175993003', 1),
-            (3, '1', '0', 'https://codereview.chromium.org/1146053009', 1),
-            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1),
-            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1),
-            (6, '1', '1', 'https://codereview.chromium.org/1175623002', 1),
+            (1, '1', '0', 'https://codereview.chromium.org/1158153006', 1, 1),
+            (2, '0', '0', 'https://codereview.chromium.org/1175993003', 1, 1),
+            (3, '1', '0', 'https://codereview.chromium.org/1146053009', 1, 1),
+            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1, 1),
+            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1, 1),
+            (6, '1', '1', 'https://codereview.chromium.org/1175623002', 1, 1),
         )
-        cur.executemany('INSERT INTO %s VALUES(?, ?, ?, ?, ?)'
+        cur.executemany('INSERT INTO %s VALUES(?, ?, ?, ?, ?, ?)'
                         % csql.DEFAULT_RIETVELD_TABLE, fake_data)
 
         expected_out = ( 
-            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1),
-            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1),
+            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1, 1),
+            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1, 1),
         )   
         out = code_review_parse.get_tbr_no_lgtm(cur)
         for i in xrange(len(out)):
