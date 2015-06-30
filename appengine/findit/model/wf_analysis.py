@@ -62,12 +62,13 @@ class WfAnalysis(BaseBuildModel):
     if self.result_status in (
         wf_analysis_result_status.FOUND_CORRECT,
         wf_analysis_result_status.NOT_FOUND_CORRECT,
-        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
-        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
+        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE):
       return True
 
-    if self.result_status in (wf_analysis_result_status.FOUND_INCORRECT,
-                              wf_analysis_result_status.NOT_FOUND_INCORRECT):
+    if self.result_status in (
+        wf_analysis_result_status.FOUND_INCORRECT,
+        wf_analysis_result_status.NOT_FOUND_INCORRECT,
+        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
       return False
 
     return None

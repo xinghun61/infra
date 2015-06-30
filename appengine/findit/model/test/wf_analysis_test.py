@@ -71,16 +71,17 @@ class WfAnalysisTest(unittest.TestCase):
     for result_status in (
         wf_analysis_result_status.FOUND_CORRECT,
         wf_analysis_result_status.NOT_FOUND_CORRECT,
-        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE,
-        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
+        wf_analysis_result_status.FOUND_CORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = wf_analysis_status.ANALYZED
       analysis.result_status = result_status
       self.assertTrue(analysis.correct)
 
   def testWfAnalysisHasIncorrectResult(self):
-    for result_status in (wf_analysis_result_status.FOUND_INCORRECT,
-                          wf_analysis_result_status.NOT_FOUND_INCORRECT):
+    for result_status in (
+        wf_analysis_result_status.FOUND_INCORRECT,
+        wf_analysis_result_status.NOT_FOUND_INCORRECT,
+        wf_analysis_result_status.FOUND_INCORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = wf_analysis_status.ANALYZED
       analysis.result_status = result_status
