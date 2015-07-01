@@ -638,6 +638,57 @@ class GetBuildEventTest(unittest.TestCase):
                       build_scheduling_time)
     self.assertEquals(event.build_event.result, BuildEvent.SUCCESS)
 
+  def test_get_build_event_test_result_mapping(self):
+    # Tests the hacky mapping between buildbot results and the proto values.
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    build_number = 314159265
+    build_scheduling_time = 123456789
+
+    # WARNINGS -> WARNING
+    log_event = monitoring.get_build_event(
+      'BUILD',
+      hostname,
+      build_name,
+      build_number=build_number,
+      build_scheduling_time=build_scheduling_time,
+      result='WARNINGS')  # with an S
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.build_event.build_number, build_number)
+    self.assertEquals(event.build_event.build_scheduling_time_ms,
+                      build_scheduling_time)
+    self.assertEquals(event.build_event.result, BuildEvent.WARNING) # no S
+
+    # EXCEPTION -> INFRA_FAILURE
+    log_event = monitoring.get_build_event(
+      'BUILD',
+      hostname,
+      build_name,
+      build_number=build_number,
+      build_scheduling_time=build_scheduling_time,
+      result='EXCEPTION')
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.build_event.build_number, build_number)
+    self.assertEquals(event.build_event.build_scheduling_time_ms,
+                      build_scheduling_time)
+    self.assertEquals(event.build_event.result, BuildEvent.INFRA_FAILURE)
+
   def test_get_build_event_valid_result_wrong_type(self):
     # SCHEDULER can't have a result
     hostname = 'bot.host.name'

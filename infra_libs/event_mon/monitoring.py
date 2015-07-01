@@ -280,6 +280,11 @@ def get_build_event(event_type,
   if step_number is not None:
     event.build_event.step_number = step_number
 
+  # TODO(pgervais) remove this.
+  # Hack to work around errors in the proto
+  mapping = {'WARNINGS': 'WARNING', 'EXCEPTION': 'INFRA_FAILURE'}
+  result = mapping.get(result, result)
+
   if result not in BUILD_RESULTS:
     logging.error('Invalid value for result: %s' % str(result))
 
