@@ -35,13 +35,18 @@ Tags to filter by are specified as a comma separated list after the #.
 
 
 <span class="item">/patch-status/&lt;issue&gt;/&lt;patchset&gt;</span>
-Example: <a href="/patch-status/909033002/1">/patch-status/909033002/1</a>
-Shows a timeline of CQ activity on a given patch.
+Example: <a href="/patch-status/1067633003/1">/patch-status/1067633003/1</a>
+Shows a log of CQ activity on a given patch.
 Only accepts GET requests.
 
 
+<span class="item">/patch-timeline/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/patch-timeline/1067633003/1">/patch-timeline/1067633003/1</a>
+Shows a timeline of CQ activity on a given patch.
+
+
 <span class="item">/patch-summary/&lt;issue&gt;/&lt;patchset&gt;</span>
-Example: <a href="/patch-summary/909033002/1">/patch-summary/909033002/1</a>
+Example: <a href="/patch-summary/1067633003/1">/patch-summary/1067633003/1</a>
 API for getting a summary of the activity on a patch.
 Only accepts GET requests.
 Patch summary format (all duration values are in seconds):
@@ -94,6 +99,13 @@ Job summary format:
   "buildnumber": int,
   "url": string
 }
+
+
+<span class="item">/patch-timeline-data/&lt;issue&gt;/&lt;patchset&gt;</span>
+Example: <a href="/patch-timeline-data/1067633003/1">/patch-timeline-data/1067633003/1</a>
+API for getting Trace Viewer data on a patch.
+Only accepts GET requests.
+The Trace Event Format is documented <a href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview">here</a>.
 
 
 <span class="item">/stats/&lt;project&gt;/(15-minutely|hourly|daily|weekly)</span>

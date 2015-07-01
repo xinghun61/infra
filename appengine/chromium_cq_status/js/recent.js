@@ -138,6 +138,11 @@ function newDetailLinks(record) {
     span.appendChild(newElement('span', ' '));
     span.appendChild(statusLink);
   }
+  var timelineLink = newTimelineLink(record.fields);
+  if (timelineLink) {
+    span.appendChild(newElement('span', ' '));
+    span.appendChild(timelineLink);
+  }
   var reviewLink = newReviewLink(record.fields);
   if (reviewLink) {
     span.appendChild(newElement('span', ' '));
@@ -172,6 +177,13 @@ function newStatusLink(fields) {
     return null;
   }
   return newLink('[status]', logServer + '/patch-status/' + fields.issue + '/' + fields.patchset);
+}
+
+function newTimelineLink(fields) {
+  if (!fields.issue || !fields.patchset) {
+    return null;
+  }
+  return newLink('[timeline]', logServer + '/patch-timeline/' + fields.issue + '/' + fields.patchset);
 }
 
 function newReviewLink(fields) {

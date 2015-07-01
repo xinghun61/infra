@@ -3,10 +3,11 @@
 # found in the LICENSE file.
 
 import webapp2
+import cgi
 
 class PatchStatus(webapp2.RequestHandler): # pragma: no cover
   def get(self, issue, patchset): # pylint: disable=W0221
     self.response.write(open('templates/patch_status.html').read() % {
-      'issue': issue,
-      'patchset': patchset,
+      'issue': cgi.escape(issue, quote=True),
+      'patchset': cgi.escape(patchset, quote=True),
     })

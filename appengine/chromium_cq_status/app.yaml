@@ -13,6 +13,34 @@ handlers:
 - url: /recent
   static_files: html/recent.html
   upload: html/recent.html
+- url: /trace_viewer.html
+  static_files: third_party/trace_viewer/tracing/tracing/trace_viewer.html
+  upload: third_party/trace_viewer/tracing/tracing/trace_viewer.html
+- url: /ui
+  static_dir: third_party/trace_viewer/tracing/tracing/ui
+- url: /base
+  static_dir: third_party/trace_viewer/tracing/tracing/base
+- url: /build
+  static_dir: third_party/trace_viewer/tracing/tracing/build
+- url: /core
+  static_dir: third_party/trace_viewer/tracing/tracing/core
+- url: /extras
+  static_dir: third_party/trace_viewer/tracing/tracing/extras
+- url: /importer
+  static_dir: third_party/trace_viewer/tracing/tracing/importer
+- url: /model
+  static_dir: third_party/trace_viewer/tracing/tracing/model
+- url: /components
+  static_dir: third_party/trace_viewer/tracing/third_party/components
+- url: /d3.min.js
+  static_files: third_party/trace_viewer/tracing/third_party/d3/d3.min.js
+  upload: third_party/trace_viewer/tracing/third_party/d3/d3.min.js
+- url: /jszip.min.js
+  static_files: third_party/trace_viewer/tracing/third_party/jszip/jszip.min.js
+  upload: third_party/trace_viewer/tracing/third_party/jszip/jszip.min.js
+- url: /gl-matrix-min.js
+  static_files: third_party/trace_viewer/tracing/third_party/gl-matrix/dist/gl-matrix-min.js
+  upload: third_party/trace_viewer/tracing/third_party/gl-matrix/dist/gl-matrix-min.js
 - url: /.*
   script: main.app
 
