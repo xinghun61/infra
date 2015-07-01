@@ -2,7 +2,7 @@ vars = {
   # npm_modules.git is special: we can't check it out on Windows because paths
   # there are too long for Windows. Instead we use 'deps_os' gclient feature to
   # checkout it out only on Linux and Mac.
-  "npm_modules_revision": "e9f6a2b70c8aaff132dfb35e92fce4ba288aad3d",
+  "npm_modules_revision": "c04524294e091a0ece892c5b65bb64aa5c7b9133",
 }
 
 deps = {
