@@ -1,0 +1,442 @@
+[
+	{
+		"timestamp": 1434395516.03995,
+		"fields": {
+			"status": "start",
+			"dry_run": false,
+			"timestamp": 1434395516.000184,
+			"state": "",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"reason": null,
+			"done": false,
+			"action": "patch_start",
+			"patchset": 1,
+			"issue": 123456789,
+			"message": ""
+		},
+		"key": null,
+		"tags": [
+			"owner=test@chromium.org",
+			"action=patch_start",
+			"patchset=1",
+			"issue=123456789",
+			"project=skiabuildbot"
+		]
+	},
+
+	{
+		"timestamp": 1434395518.89036,
+		"fields": {
+			"status": "start",
+			"dry_run": false,
+			"state": "",
+			"timestamp": 1434395518.856699,
+			"verifier": "try job",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"attempt_start_ts": 1434395516693630,
+			"done": true,
+			"action": "verifier_start",
+			"patchset": 1,
+			"issue": 123456789
+		},
+		"key": null,
+		"tags": [
+			"verifier=try job",
+			"issue=123456789",
+			"patchset=1",
+			"project=skiabuildbot",
+			"owner=test@chromium.org",
+			"action=verifier_start"
+		]
+	},
+
+	{
+		"timestamp": 1434395529.28009,
+		"fields": {
+			"status": "start",
+			"project": "skiabuildbot",
+			"jobs": {
+				"JOB_RUNNING": [
+					{
+						"build_id": "9042920998742054880",
+						"parent_name": null,
+						"tests": [
+							"defaulttests"
+						],
+						"slave": null,
+						"url": "http://build.chromium.org/p/client.skia.fyi/builders/Test-Trybot/builds/794",
+						"timestamp": "2015-06-15 19:12:01.601220",
+						"builder": "Test-Trybot",
+						"clobber": null,
+						"project": null,
+						"reason": "CQ",
+						"master": "client.skia.fyi",
+						"result": -1,
+						"key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MjA5OTg3NDIwNTQ4ODAM",
+						"requester": null,
+						"buildnumber": null,
+						"category": "cq",
+						"build_properties": {
+							"category": "cq",
+							"rietveld": "https://codereview.chromium.org",
+							"testfilter": [
+								"defaulttests"
+							],
+							"patch_storage": "rietveld",
+							"attempt_start_ts": 1434395516693630,
+							"master": "client.skia.fyi",
+							"reason": "CQ",
+							"patchset": 1,
+							"issue": 123456789,
+							"patch_project": "skiabuildbot",
+							"revision": "HEAD"
+						},
+						"job_state": "JOB_RUNNING",
+						"revision": "HEAD"
+					}
+				]
+			},
+			"dry_run": false,
+			"state": "",
+			"timestamp": 1434395529.243402,
+			"verifier": "try job",
+			"job_states": {
+				"client.skia.fyi:Test-Trybot": "JobState(state=JOB_RUNNING)"
+			},
+			"owner": "test@chromium.org",
+			"attempt_start_ts": 1434395516693630,
+			"done": false,
+			"action": "verifier_jobs_update",
+			"diff": {
+				"JOB_RUNNING": [
+					{
+						"build_id": "9042920998742054880",
+						"parent_name": null,
+						"tests": [
+							"defaulttests"
+						],
+						"slave": null,
+						"url": "http://build.chromium.org/p/client.skia.fyi/builders/Test-Trybot/builds/794",
+						"timestamp": "2015-06-15 19:12:01.601220",
+						"builder": "Test-Trybot",
+						"clobber": null,
+						"project": null,
+						"reason": "CQ",
+						"master": "client.skia.fyi",
+						"result": -1,
+						"key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MjA5OTg3NDIwNTQ4ODAM",
+						"requester": null,
+						"buildnumber": null,
+						"category": "cq",
+						"build_properties": {
+							"category": "cq",
+							"rietveld": "https://codereview.chromium.org",
+							"testfilter": [
+								"defaulttests"
+							],
+							"patch_storage": "rietveld",
+							"attempt_start_ts": 1434395516693630,
+							"master": "client.skia.fyi",
+							"reason": "CQ",
+							"patchset": 1,
+							"issue": 123456789,
+							"patch_project": "skiabuildbot",
+							"revision": "HEAD"
+						},
+						"job_state": "JOB_RUNNING",
+						"revision": "HEAD"
+					}
+				]
+			},
+			"patchset": 1,
+			"issue": 123456789
+		},
+		"key": null,
+		"tags": [
+			"verifier=try job",
+			"issue=123456789",
+			"project=skiabuildbot",
+			"action=verifier_jobs_update",
+			"owner=test@chromium.org",
+			"patchset=1"
+		]
+	},
+
+	{
+		"timestamp": 1434395579.84349,
+		"fields": {
+			"status": "start",
+			"project": "skiabuildbot",
+			"jobs": {
+				"JOB_SUCCEEDED": [
+					{
+						"build_id": "9042920998742054880",
+						"parent_name": null,
+						"tests": [
+							"defaulttests"
+						],
+						"slave": "skiabot-linux-housekeeper-002",
+						"url": "http://build.chromium.org/p/client.skia.fyi/builders/Test-Trybot/builds/794",
+						"timestamp": "2015-06-15 19:12:57.891760",
+						"builder": "Test-Trybot",
+						"clobber": null,
+						"project": "",
+						"reason": "CQ",
+						"master": "client.skia.fyi",
+						"result": 0,
+						"key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MjA5OTg3NDIwNTQ4ODAM",
+						"requester": "commit-bot@chromium.org",
+						"buildnumber": 794,
+						"category": "cq",
+						"build_properties": {
+							"got_revision": "2d42f8bc4d5208b5f19e2e8e29fa32ed531ec4f3",
+							"recipe": "skia/infra",
+							"patch_project": "skiabuildbot",
+							"category": "cq",
+							"project": "",
+							"slavename": "skiabot-linux-housekeeper-002",
+							"attempt_start_ts": 1434395516693630,
+							"blamelist": [
+								"test@chromium.org"
+							],
+							"branch": null,
+							"master": "client.skia.fyi",
+							"patchset": 1,
+							"issue": 123456789,
+							"revision": "",
+							"workdir": "/home/default/storage/skia-repo/buildbot/skiabot-linux-housekeeper-002/build/slave/workdir",
+							"repository": "",
+							"buildername": "Test-Trybot",
+							"testfilter": [
+								"defaulttests"
+							],
+							"mastername": "client.skia.fyi",
+							"patch_storage": "rietveld",
+							"reason": "CQ",
+							"requester": "commit-bot@chromium.org",
+							"buildbotURL": "http://build.chromium.org/p/client.skia.fyi/",
+							"rietveld": "https://codereview.chromium.org",
+							"buildnumber": 794,
+							"requestedAt": 1434395521
+						},
+						"job_state": "JOB_SUCCEEDED",
+						"revision": ""
+					}
+				]
+			},
+			"dry_run": false,
+			"state": "",
+			"timestamp": 1434395579.637546,
+			"verifier": "try job",
+			"job_states": {
+				"client.skia.fyi:Test-Trybot": "JobState(state=JOB_SUCCEEDED)"
+			},
+			"owner": "test@chromium.org",
+			"attempt_start_ts": 1434395516693630,
+			"done": false,
+			"action": "verifier_jobs_update",
+			"diff": {
+				"JOB_RUNNING": "KEY_MISSING",
+				"JOB_SUCCEEDED": [
+					{
+						"build_id": "9042920998742054880",
+						"parent_name": null,
+						"tests": [
+							"defaulttests"
+						],
+						"slave": "skiabot-linux-housekeeper-002",
+						"url": "http://build.chromium.org/p/client.skia.fyi/builders/Test-Trybot/builds/794",
+						"timestamp": "2015-06-15 19:12:57.891760",
+						"builder": "Test-Trybot",
+						"clobber": null,
+						"project": "",
+						"reason": "CQ",
+						"master": "client.skia.fyi",
+						"result": 0,
+						"key": "ahdzfmNocm9taXVtY29kZXJldmlldy1ocnIwCxIXQnVpbGRidWNrZXRUcnlKb2JSZXN1bHQiEzkwNDI5MjA5OTg3NDIwNTQ4ODAM",
+						"requester": "commit-bot@chromium.org",
+						"buildnumber": 794,
+						"category": "cq",
+						"build_properties": {
+							"got_revision": "2d42f8bc4d5208b5f19e2e8e29fa32ed531ec4f3",
+							"recipe": "skia/infra",
+							"patch_project": "skiabuildbot",
+							"category": "cq",
+							"project": "",
+							"slavename": "skiabot-linux-housekeeper-002",
+							"attempt_start_ts": 1434395516693630,
+							"blamelist": [
+								"test@chromium.org"
+							],
+							"branch": null,
+							"master": "client.skia.fyi",
+							"patchset": 1,
+							"issue": 123456789,
+							"revision": "",
+							"workdir": "/home/default/storage/skia-repo/buildbot/skiabot-linux-housekeeper-002/build/slave/workdir",
+							"repository": "",
+							"buildername": "Test-Trybot",
+							"testfilter": [
+								"defaulttests"
+							],
+							"mastername": "client.skia.fyi",
+							"patch_storage": "rietveld",
+							"reason": "CQ",
+							"requester": "commit-bot@chromium.org",
+							"buildbotURL": "http://build.chromium.org/p/client.skia.fyi/",
+							"rietveld": "https://codereview.chromium.org",
+							"buildnumber": 794,
+							"requestedAt": 1434395521
+						},
+						"job_state": "JOB_SUCCEEDED",
+						"revision": ""
+					}
+				]
+			},
+			"patchset": 1,
+			"issue": 123456789
+		},
+		"key": null,
+		"tags": [
+			"verifier=try job",
+			"issue=123456789",
+			"project=skiabuildbot",
+			"action=verifier_jobs_update",
+			"owner=test@chromium.org",
+			"patchset=1"
+		]
+	},
+
+	{
+		"timestamp": 1434395579.9185,
+		"fields": {
+			"status": "start",
+			"dry_run": false,
+			"state": "",
+			"timestamp": 1434395579.63763,
+			"verifier": "try job",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"attempt_start_ts": 1434395516693630,
+			"done": true,
+			"action": "verifier_pass",
+			"patchset": 1,
+			"issue": 123456789
+		},
+		"key": null,
+		"tags": [
+			"verifier=try job",
+			"issue=123456789",
+			"project=skiabuildbot",
+			"owner=test@chromium.org",
+			"action=verifier_pass",
+			"patchset=1"
+		]
+	},
+
+	{
+		"timestamp": 1434395580.02433,
+		"fields": {
+			"status": "ready_to_commit",
+			"dry_run": false,
+			"timestamp": 1434395579.639639,
+			"state": "",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"reason": null,
+			"done": true,
+			"action": "patch_ready_to_commit",
+			"patchset": 1,
+			"issue": 123456789,
+			"message": ""
+		},
+		"key": null,
+		"tags": [
+			"owner=test@chromium.org",
+			"action=patch_ready_to_commit",
+			"patchset=1",
+			"issue=123456789",
+			"project=skiabuildbot"
+		]
+	},
+
+	{
+		"timestamp": 1434395580.47592,
+		"fields": {
+			"status": "committing",
+			"dry_run": false,
+			"timestamp": 1434395580.443375,
+			"state": "",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"reason": null,
+			"done": true,
+			"action": "patch_committing",
+			"patchset": 1,
+			"issue": 123456789,
+			"message": ""
+		},
+		"key": null,
+		"tags": [
+			"action=patch_committing",
+			"owner=test@chromium.org",
+			"patchset=1",
+			"issue=123456789",
+			"project=skiabuildbot"
+		]
+	},
+
+	{
+		"timestamp": 1434395584.59746,
+		"fields": {
+			"status": "committed",
+			"dry_run": false,
+			"timestamp": 1434395584.564138,
+			"state": "",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"reason": null,
+			"done": true,
+			"action": "patch_committed",
+			"patchset": 1,
+			"issue": 123456789,
+			"message": ""
+		},
+		"key": null,
+		"tags": [
+			"action=patch_committed",
+			"owner=test@chromium.org",
+			"patchset=1",
+			"issue=123456789",
+			"project=skiabuildbot"
+		]
+	},
+
+	{
+		"timestamp": 1434395584.65285,
+		"fields": {
+			"status": "stop",
+			"dry_run": false,
+			"timestamp": 1434395584.564362,
+			"state": "",
+			"project": "skiabuildbot",
+			"owner": "test@chromium.org",
+			"reason": null,
+			"done": true,
+			"action": "patch_stop",
+			"patchset": 1,
+			"issue": 123456789,
+			"message": "Patch successfully committed."
+		},
+		"key": null,
+		"tags": [
+			"owner=test@chromium.org",
+			"action=patch_stop",
+			"patchset=1",
+			"issue=123456789",
+			"project=skiabuildbot"
+		]
+	}
+]

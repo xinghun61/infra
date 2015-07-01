@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Provides a JSON endpoint for CQ data as a series of Trace Viewer events
+"""Provides a JSON endpoint for CQ data as a series of Trace Viewer events.
 
 From the CQ data posted to the datastore, patch_timeline will construct a JSON
 object that can be parsed by Trace Viewer to create a timeline view.
@@ -65,7 +65,11 @@ def attempts_to_events(attempts): # pragma: no cover
 
   Attempts are a list of CQ records which fall between patch_start and
   patch_stop actions. Each record is converted to a Trace Viewer event
-  of type 'B' or 'E', representing begin and end respectively.
+  of type 'B' or 'E', representing begin and end respectively. 
+
+  Occasinally CQ runs jobs without first a record representing a trigger
+  for the builder. In this case, the 'E' event is converted to an 'I' event
+  representing an instant in time (since the start time is unknown)
 
   Because CQ records for verifier_jobs_update actions will return all
   completed builds, the build_url is used to keep track of which builds
@@ -73,26 +77,36 @@ def attempts_to_events(attempts): # pragma: no cover
   """
   events = []
   completed_build_urls = set()
+  open_builds = {}
   for attempt_number, attempt in enumerate(attempts, start=1):
     for record in attempt:
       events_in_attempt = record_to_events(record, attempt_number)
       for event in events_in_attempt:
-        if event['ph'] == 'B':
-          events.append(event)
+        event_dict = event.to_dict()
+        if event.ph == 'B':
+          events.append(event_dict)
+          open_builds[event.builder_key()] = event_dict
         else:
+          # First check whether there exists a 'B' event for the 'E' event
+          # The 'E' event closes the build if it exists, convert the event to
+          # an instant event if it doesn't exist.
+          build_begin = open_builds.pop(event.builder_key(), None)
+          if not build_begin:
+            event.ph = 'I'
+            event_dict = event.to_dict()
           # Verifier repeatedly sends updates, only keep the first 'completed'
           # event and use build_url as unique identifier for events.
-          build_url = event['args'].get('build_url')
+          build_url = event.args.get('build_url')
           if not build_url:
-            events.append(event)
+            events.append(event_dict)
           elif build_url not in completed_build_urls:
-            events.append(event)
+            events.append(event_dict)
             completed_build_urls.add(build_url)
   return events
 
 
 def record_to_events(record, attempt_number): # pragma: no cover
-  """Given a single CQ record, returns a list of Trace Viewer events.
+  """Given a single CQ record, creates a generator for Trace Viewer events.
 
   A single record in CQ can correspond to any number of events, depending on
   the action performed in the record. The conversion from each action to
@@ -112,7 +126,7 @@ def record_to_events(record, attempt_number): # pragma: no cover
     for master in masters:
       for builder in masters[master]:
         yield TraceViewerEvent(builder, master, 'B', timestamp, attempt_string,
-                               builder).to_dict()
+                               builder)
   elif action == 'verifier_jobs_update':
     job_states = record.fields.get('jobs', {})
     # CQ splits jobs into lists based on their state.
@@ -131,15 +145,15 @@ def record_to_events(record, attempt_number): # pragma: no cover
           'job_state': job_state,
         }
         yield TraceViewerEvent(builder, master, 'E', timestamp, attempt_string,
-                               builder, args).to_dict()
+                               builder, args)
   elif action == 'patch_start':
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'B',
                            record.fields['timestamp'], attempt_string,
-                           'Patch Progress').to_dict()
+                           'Patch Progress')
   elif action == 'patch_stop':
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'E',
                            record.fields['timestamp'], attempt_string,
-                           'Patch Progress').to_dict()
+                           'Patch Progress')
 
 
 class TraceViewerEvent(): # pragma: no cover
@@ -173,10 +187,14 @@ class TraceViewerEvent(): # pragma: no cover
       'tid': self.tid,
       'args': self.args
     }
+  
+  def builder_key(self):
+    """Returns an identifier for the build of the form master/builder."""
+    return self.cat + '/' + self.tid
 
 
 def rietveld_timestamp(timestamp_string): # pragma: no cover
-  """Converts a Rietveld timestamp into a unix timetstamp"""
+  """Converts a Rietveld timestamp into a unix timestamp."""
   try:
     return to_unix_timestamp(
         datetime.strptime(timestamp_string, RIETVELD_TIMESTAMP_FORMAT))

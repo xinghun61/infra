@@ -77,6 +77,23 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
         eCount += 1
     self.assertEquals(bCount, eCount)
 
+  def test_patch_timeline_data_cq_buggy(self):
+    events = self._test_patch('patch_cq_buggy')
+    self.assertNotEqual(0, len(events))
+    for event in events:
+      # check if it's a patch progress bar
+      if re.match('Attempt \d+', event.get('name')):
+        self.assertEqual(event.get('name'), event.get('pid'))
+        self.assertEqual('Patch Progress', event.get('tid'))
+        self.assertNotEqual(None, event.get('ts'))
+      else:
+        self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+        self.assertEqual('Test-Trybot', event.get('tid'))
+        self.assertEqual('Test-Trybot', event.get('name'))
+        self.assertNotEqual(None, event.get('ts'))
+        self.assertEqual('I', event.get('ph'))
+
+
   def _load_records(self, filename):
     assert Record.query().count() == 0
     records = _load_json(filename)
