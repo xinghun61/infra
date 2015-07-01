@@ -49,43 +49,45 @@ func TimeToEpochTime(t time.Time) EpochTime {
 
 // Alerts is the top-level entity in alerts.json.
 type Alerts struct {
-	Alerts    []Alert
-	Timestamp EpochTime
+	Alerts    []Alert   `json:"alerts"`
+	Timestamp EpochTime `json:"timestamp"`
 }
 
 // Alert represents a condition that should be examined by a human.
 type Alert struct {
-	Key, Title, Body string
-	Severity         int // TODO: consider using an enum.
-	Time             EpochTime
-	StartTime        EpochTime `json:"start_time"`
-	Links            []Link
-	Tags             []string
+	Key       string    `json:"key"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Severity  int       `json:"severity"` // TODO: consider using an enum.
+	Time      EpochTime `json:"time"`
+	StartTime EpochTime `json:"start_time"`
+	Links     []Link    `json:"links"`
+	Tags      []string  `json:"tags"`
 	// Type determines what kind of extension has been set on the Alert.
-	Type string
+	Type string `json:"type"`
 	// Extension may take on different concrete types depending on the
 	// code that generates the Alert.
-	Extension interface{}
+	Extension interface{} `json:"extension"`
 }
 
 // Link can be attached to an alert to provide more context to the sheriff.
 type Link struct {
-	Title string
-	Href  string
+	Title string `json:"title"`
+	Href  string `json:"href"`
 }
 
 // BuildFailure is an Extension.
 type BuildFailure struct {
-	TreeCloser       bool
-	Builders         []AlertedBuilder
-	Reasons          []Reason
+	TreeCloser       bool              `json:"tree_closer"`
+	Builders         []AlertedBuilder  `json:"builders"`
+	Reasons          []Reason          `json:"reasons"`
 	RegressionRanges []RegressionRange `json:"regression_ranges"`
 }
 
 // AlertedBuilder represents an individual builder.
 type AlertedBuilder struct {
-	Name string
-	URL  string
+	Name string `json:"name"`
+	URL  string `json:"url"`
 	// FirstFailure is the build number of first failure.
 	FirstFailure int64 `json:"first_failure"`
 	// LatestFailure is the build number of latest failure.
@@ -94,14 +96,14 @@ type AlertedBuilder struct {
 
 // Reason contains information about why the Alert was triggered.
 type Reason struct {
-	TestName string
-	Step     string
-	URL      string
+	TestName string `json:"test_name"`
+	Step     string `json:"step"`
+	URL      string `json:"url"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.
 type RegressionRange struct {
-	Repo      string
-	URL       string
-	Revisions []string
+	Repo      string   `json:"repo"`
+	URL       string   `json:"url"`
+	Revisions []string `json:"revisions"`
 }
