@@ -107,6 +107,30 @@ class ExtractorsTest(testing.AppengineTestCase):
     self._RunTest(
         failure_log, extractors.GeneralExtractor, expected_signal_json)
 
+  def testGmockWarningStatementsAreIgnored(self):
+    failure_log = """
+GMOCK WARNING:
+Uninteresting mock function call - taking default action specified at:
+x/y/a.cc:45:
+Function call: IsManaged()
+Returns: false
+Note:You can safely ignore the above warning unless this call should not happen.
+...
+#0 0x113bb76d0 in function0 a.cc:1
+#1 0x113bb76d1 in function1 b.cc:2"""
+
+    expected_signal_json = {
+        'files': {
+            'a.cc': [1],
+            'b.cc': [2],
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.GeneralExtractor, expected_signal_json)
+
   def testCompileStepExtractor(self):
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o

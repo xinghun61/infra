@@ -17,6 +17,7 @@ class GeneralExtractor(Extractor):
     signal = FailureSignal()
 
     in_expected_crash = False
+    is_gmock_warning = False
     # Extract files and line numbers.
     for line in failure_log.splitlines():
       match = extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(line)
@@ -36,6 +37,19 @@ class GeneralExtractor(Extractor):
         # frames. CLs touching other frames deep in the stacks usually are not
         # culprits. Here, we set the threshold as 4 frames.
         continue
+
+      if 'GMOCK WARNING:' in line:
+        # Ignore GMOCK WARNING statements.
+        is_gmock_warning = True
+        continue
+
+      if is_gmock_warning:
+        if ('You can safely ignore the above warning unless this call '
+            'should not happen.') in line:
+          # The end line in GMOCK WARNING statements.
+          is_gmock_warning = False
+        continue  # pragma: no cover
+
 
       if line and not extractor_util.ShouldIgnoreLine(line):
         self.ExtractFiles(line, signal)
