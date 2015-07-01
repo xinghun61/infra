@@ -12,10 +12,10 @@ import main
 from model.record import Record
 from tests.testing_utils import testing
 
-class PatchTimelineDataTest(testing.AppengineTestCase):
+class PatchTimelineTest(testing.AppengineTestCase):
   app_module = main.app
 
-  def test_patch_timeline_data_simple(self):
+  def test_patch_timeline_simple(self):
     events = self._test_patch('real_patch_simple')
     self.assertEqual(events, [{
       'name': 'Attempt 1',
@@ -55,7 +55,7 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'args': {},
     }])
 
-  def test_patch_timeline_data_multiple_attempts(self):
+  def test_patch_timeline_multiple_attempts(self):
     events = self._test_patch('real_patch_multiple_attempts')
     self.assertNotEqual(0, len(events))
     bCount = 0
@@ -90,8 +90,7 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
 
   def _test_patch(self, name, issue=123456789, patchset=1):
     self._load_records('%s.json' % name)
-    response = self.test_app.get(
-        '/patch-timeline-data/%s/%s' % (issue, patchset))
+    response = self.test_app.get('/patch-timeline/%s/%s' % (issue, patchset))
     summary = json.loads(response.body)
     logging.debug(json.dumps(summary, indent=2))
     return summary
