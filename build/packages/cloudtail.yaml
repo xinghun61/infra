@@ -1,0 +1,9 @@
+package: infra/tools/cloudtail/${platform}
+description: cloudtail sends logs to Cloud Logging.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+root: ../../go/bin
+data:
+  - file: cloudtail${exe_suffix}
