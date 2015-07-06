@@ -20,7 +20,7 @@ def RunSteps(api):
   if not project:
     project = None  # Force empty string to be None.
 
-  api.gclient.set_config('infradata_config_internal')
+  api.gclient.set_config('infradata_master_manager')
   api.bot_update.ensure_checkout(
       force=True, patch_root=project, patch_oauth2=True)
   api.gclient.runhooks()
@@ -31,22 +31,20 @@ def RunSteps(api):
              '--verify',
              '--json-file',
              api.path['slave_build'].join(
-                 'infra-data-configs',
-                 'configs',
-                 'master-manager',
+                 'infra-data-master-manager',
                  'desired_master_state.json')])
 
 
 def GenTests(api):
   yield (
-      api.test('infradata_config') +
+      api.test('master_manager_config') +
       api.properties.git_scheduled(
           buildername='infradata_config',
           buildnumber=123,
           mastername='internal.infra',
           repository='https://chrome-internal.googlesource.com/infradata'))
   yield (
-      api.test('infradata_config_patch') +
+      api.test('master_manager_config_patch') +
       api.properties.git_scheduled(
           buildername='infradata_config',
           buildnumber=123,
