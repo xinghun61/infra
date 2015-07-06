@@ -24,7 +24,9 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395516000184,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
-      'args': {},
+      'args': {
+        'job_state': 'attempt_running',
+      },
     }, {
       'name': 'Test-Trybot',
       'cat': 'client.skia.fyi',
@@ -52,7 +54,9 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395584564362,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
-      'args': {},
+      'args': {
+        'job_state': 'attempt_passed',
+      },
     }])
 
   def test_patch_timeline_data_multiple_attempts(self):
@@ -93,6 +97,24 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
         self.assertNotEqual(None, event.get('ts'))
         self.assertEqual('I', event.get('ph'))
 
+  def test_patch_timeline_data_failed(self):
+    events = self._test_patch('patch_failed')
+    self.assertNotEqual(0, len(events))
+    bCount = 0
+    eCount = 0
+    for event in events:
+      if re.match('Attempt \d+', event.get('name')):
+        self.assertEqual(event.get('name'), event.get('pid'))
+        self.assertEqual('Patch Progress', event.get('tid'))
+        self.assertNotEqual(None, event.get('ts'))
+      else:
+        self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+        self.assertNotEqual(None, event.get('ts'))
+      if event.get('ph') == 'B':
+        bCount += 1
+      if event.get('ph') == 'E':
+        eCount += 1
+    self.assertEquals(bCount, eCount)
 
   def _load_records(self, filename):
     assert Record.query().count() == 0

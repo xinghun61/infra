@@ -77,8 +77,8 @@ def attempts_to_events(attempts): # pragma: no cover
   """
   events = []
   completed_build_urls = set()
-  open_builds = {}
   for attempt_number, attempt in enumerate(attempts, start=1):
+    open_builds = {}
     for record in attempt:
       events_in_attempt = record_to_events(record, attempt_number)
       for event in events_in_attempt:
@@ -95,10 +95,19 @@ def attempts_to_events(attempts): # pragma: no cover
             event.ph = 'I'
             event_dict = event.to_dict()
           # Verifier repeatedly sends updates, only keep the first 'completed'
-          # event and use build_url as unique identifier for events.
+          # event and use build_url as unique identifier for events. 
           build_url = event.args.get('build_url')
           if not build_url:
             events.append(event_dict)
+            # Only patch_start/stop don't have build urls, cleanup open builds
+            # if the patch_stops before they finish.
+            for builder_key in open_builds:
+              open_event = open_builds[builder_key]
+              close_event = open_event.copy()
+              close_event['ph'] = 'E'
+              close_event['ts'] = event_dict['ts']
+              close_event['args']['job_state'] = 'abandoned'
+              events.append(close_event)
           elif build_url not in completed_build_urls:
             events.append(event_dict)
             completed_build_urls.add(build_url)
@@ -149,11 +158,16 @@ def record_to_events(record, attempt_number): # pragma: no cover
   elif action == 'patch_start':
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'B',
                            record.fields['timestamp'], attempt_string,
-                           'Patch Progress')
+                           'Patch Progress', {'job_state': 'attempt_running'})
   elif action == 'patch_stop':
+    state = 'attempt_'
+    if 'successfully committed' in record.fields['message']:
+      state += 'passed'
+    else:
+      state += 'failed'
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'E',
                            record.fields['timestamp'], attempt_string,
-                           'Patch Progress')
+                           'Patch Progress', {'job_state': state})
 
 
 class TraceViewerEvent(): # pragma: no cover
