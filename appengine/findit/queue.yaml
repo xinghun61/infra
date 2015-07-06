@@ -4,3 +4,6 @@ queue:
   rate: 10/s
   bucket_size: 100
   max_concurrent_requests: 20
+  retry_parameters:
+    min_backoff_seconds: 15
+    task_retry_limit: 3
