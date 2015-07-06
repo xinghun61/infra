@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+from datetime import datetime
 import os
 import re
 
@@ -45,8 +46,8 @@ def _GetGitBlame(repo_info, touched_file_path):
     return git_repo.GetBlame(touched_file_path, revision)
 
 
-def _GetChangedLines(repo_info, touched_file, line_numbers,
-                     suspected_revision):
+def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
+                                    suspected_revision):
   """Checks if the CL made change close to the failed line in log.
 
   Args:
@@ -244,7 +245,8 @@ class _Justification(object):
     self._score += score
 
   def AddDEPSRoll(self, change_action, dep_path, dep_repo_url, dep_new_revision,
-                  dep_old_revision, file_path_in_log, score):
+                  dep_old_revision, file_path_in_log, score,
+                  changed_line_numbers, roll_file_change_type):
     if dep_old_revision is not None and dep_new_revision is not None:
       url_to_changes_in_roll = '%s/+log/%s..%s?pretty=fuller' % (
           dep_repo_url, dep_old_revision[:12], dep_new_revision[:12])
@@ -253,8 +255,17 @@ class _Justification(object):
     else:  # New revision is None. (Old revision should not be None.)
       url_to_changes_in_roll = '%s/+log/%s' % (dep_repo_url, dep_old_revision)
 
-    hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
-        change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
+    if roll_file_change_type == ChangeType.ADD:
+      hint = ('%s dependency %s with changes in %s '
+              '(and %s(new file) was in log)' % (
+          change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
+    elif changed_line_numbers:
+      hint = ('%s dependency %s with changes in %s (and %s[%s] was in log)' % (
+          change_action, dep_path, url_to_changes_in_roll, file_path_in_log,
+          ', '.join(map(str, changed_line_numbers))))
+    else:
+      hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
+          change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
     self._hints[hint] = score
     self._score += score
 
@@ -294,7 +305,7 @@ def _CheckFile(touched_file,
     score = 0
     changed_line_numbers = None
     if _IsSameFile(changed_src_file_path, file_path_in_log):
-      changed_line_numbers = _GetChangedLines(
+      changed_line_numbers = _GetChangedLinesForChromiumRepo(
           repo_info, touched_file, line_numbers, suspected_revision)
       if changed_line_numbers:
         score = 4
@@ -354,7 +365,58 @@ def _StripChromiumRootDirectory(file_path):
   return file_path
 
 
-def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification):
+def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
+  """Gets changed line numbers for file in failure log.
+
+    Tests if the same lines mentioned in failure log are changed within
+    the DEPS roll, if so, return those line numbers.
+  """
+  roll_repo = GitRepository(roll['repo_url'],  HttpClient())
+
+  old_change_log = roll_repo.GetChangeLog(roll['old_revision'])
+  old_rev_author_time = old_change_log.author_time
+  new_change_log = roll_repo.GetChangeLog(roll['new_revision'])
+  new_rev_author_time = new_change_log.author_time
+
+  file_change_type = None
+  changed_line_numbers = []
+
+  if old_rev_author_time >= new_rev_author_time:
+    # If the DEPS roll is downgrade, bail out.
+    return file_change_type, changed_line_numbers
+
+  blame = roll_repo.GetBlame(file_path_in_log, roll['new_revision'])
+
+  if not blame:
+    return file_change_type, changed_line_numbers
+
+  if len(blame) == 1:
+    # There is only one region, so the file is added as whole.
+    change_author_time = datetime.strptime(blame[0].author_time,
+                                           '%Y-%m-%d %H:%M:%S')
+    if (change_author_time > old_rev_author_time and
+        change_author_time <= new_rev_author_time):
+      file_change_type = ChangeType.ADD
+    return file_change_type, changed_line_numbers
+
+  for region in blame:
+    change_author_time = datetime.strptime(region.author_time,
+                                           '%Y-%m-%d %H:%M:%S')
+    if (change_author_time > old_rev_author_time and
+        change_author_time <= new_rev_author_time):
+      file_change_type = ChangeType.MODIFY
+      if line_numbers:
+        for line_number in line_numbers:
+          if (line_number >= region.start and
+              line_number <= region.start + region.count - 1):
+            # One line which appears in the failure log is changed within
+            # the DEPS roll.
+            changed_line_numbers.append(line_number)
+
+  return file_change_type, changed_line_numbers
+
+def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
+                                line_numbers=None):
   """Checks if the file is in a dependency roll and updates the justification.
 
   Args:
@@ -368,18 +430,39 @@ def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification):
           'new_revision': 'git_hash2'
         }
     justification (_Justification): An instance of _Justification.
+    line_numbers (list): List of line_numbers mentioned in the failure log.
   """
   for roll in rolls:
+    if roll['path'] == 'src/v8/':
+      # Cannot compare author time for v8 roll, author time for CLs during the
+      # roll may be earlier than the author time of old revision.
+      # TODO: Figure out the rolling mechanism of v8 to add logic for checking
+      # this repo.
+      continue
+
+    change_action = None
     dep_path = _StripChromiumRootDirectory(roll['path'])
     if not file_path_in_log.startswith(dep_path):
       continue
 
-    if roll['old_revision'] is not None and roll['new_revision'] is not None:
+    changed_lines = []
+    roll_file_change_type = None
+    if roll['old_revision'] and roll['new_revision']:
+      roll_file_change_type, changed_lines = _GetChangedLinesForDependencyRepo(
+          roll, file_path_in_log, line_numbers)
+      if not roll_file_change_type:
+        continue
+
       change_action = 'rolled'
-      score = 1
-      # TODO: use Git blame to check whether the file is changed during the
-      # dependency roll, and give higher score if so.
-    elif roll['new_revision'] is not None:
+      if roll_file_change_type == ChangeType.ADD:  # File is newly added.
+        score = 5
+      elif not changed_lines:
+        # File is changed, but not the same line.
+        score = 1
+      else:  # The lines which appear in the failure log are changed.
+        score = 4
+
+    elif roll['new_revision']:
       change_action = 'added'
       score = 5
     else:  # New revision is None. (Old revision should not be None.)
@@ -388,11 +471,12 @@ def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification):
 
     justification.AddDEPSRoll(
         change_action, dep_path, roll['repo_url'], roll['new_revision'],
-        roll['old_revision'], file_path_in_log[len(dep_path):], score)
+        roll['old_revision'], file_path_in_log[len(dep_path):], score,
+        changed_lines, roll_file_change_type)
 
 
 def _CheckFiles(failure_signal, change_log, deps_info):
-  """Check files in the given change log of a CL against the failure signal.
+  """Checks files in the given change log of a CL against the failure signal.
 
   Args:
     failure_signal (FailureSignal): The failure signal of a failed step or test.
@@ -430,7 +514,8 @@ def _CheckFiles(failure_signal, change_log, deps_info):
           file_name_occurrences, line_numbers, repo_info,
           change_log['revision'])
 
-    _CheckFileInDependencyRolls(file_path_in_log, rolls, justification)
+    _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
+                                line_numbers)
 
   if not justification.score:
     return None

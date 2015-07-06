@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
 from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
 from testing_utils import testing
 
@@ -76,8 +78,10 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
             'old_path': '/dev/null'
           }
         ],
-        'author_time': 'Wed Jun 11 19:35:32 2014',
-        'committer_time': 'Wed Jun 11 19:35:32 2014',
+        'author_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+            '%a %b %d %H:%M:%S %Y'),
+        'committer_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+            '%a %b %d %H:%M:%S %Y'),
         'commit_url': REV1_COMMIT_LOG_URL,
         'code_review_url': None,
         'committer_name': 'someone@chromium.org',

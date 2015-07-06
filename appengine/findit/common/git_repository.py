@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+from datetime import datetime
 import json
 import re
 
@@ -116,11 +117,15 @@ class GitRepository(Repository):
           FileChangeInfo(
               change_type, file_diff['old_path'], file_diff['new_path']))
 
+    author_time = datetime.strptime(
+        data['author']['time'], '%a %b %d %H:%M:%S %Y')
+    committer_time = datetime.strptime(
+        data['committer']['time'], '%a %b %d %H:%M:%S %Y')
     return ChangeLog(
         data['author']['name'], NormalizeEmail(data['author']['email']),
-        data['author']['time'],
+        author_time,
         data['committer']['name'], NormalizeEmail(data['committer']['email']),
-        data['committer']['time'], data['commit'], commit_position,
+        committer_time, data['commit'], commit_position,
         data['message'], touched_files, url, code_review_url)
 
   def GetChangeDiff(self, revision):

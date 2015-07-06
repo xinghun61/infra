@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+from datetime import datetime
 import json
 import re
 
@@ -118,8 +119,10 @@ EXPECTED_CHANGE_LOG_JSON = {
         'old_path': 'Source/devtools/front_end/layers/file.js'
       }
     ],
-    'author_time': 'Wed Jun 11 19:35:32 2014',
-    'committer_time': 'Wed Jun 11 19:35:32 2014',
+    'author_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+        '%a %b %d %H:%M:%S %Y'),
+    'committer_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+        '%a %b %d %H:%M:%S %Y'),
     'commit_url':
         'https://repo.test/+/bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'code_review_url': 'https://codereview.chromium.org/328113005',
@@ -342,7 +345,6 @@ class GitRepositoryTest(testing.AppengineTestCase):
 
     change_log = self.git_repo.GetChangeLog(
         'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb')
-
     self.assertEqual(EXPECTED_CHANGE_LOG_JSON, change_log.ToDict())
 
   def testUnknownChangeType(self):
