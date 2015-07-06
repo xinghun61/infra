@@ -100,6 +100,8 @@ found in the LICENSE file. -->
                 return newIndex;
             },
             moveTargetIndex: function(event, delta, condition) {
+                if (event.detail.ctrlKey || event.detail.altKey || event.detail.metaKey)
+                    return;
                 var oldTarget = this.target;
                 if (this.stops === null)
                     this.findStops();
