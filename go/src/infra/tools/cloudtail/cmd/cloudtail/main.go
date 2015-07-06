@@ -5,10 +5,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/luci/luci-go/client/authcli"
@@ -23,12 +26,19 @@ import (
 var logger = gologger.New(os.Stderr, gol.INFO)
 
 var authOptions = auth.Options{
-	Logger: logger,
+	Logger:                 logger,
+	ServiceAccountJSONPath: defaultServiceAccountJSONPath(),
 	Scopes: []string{
 		auth.OAuthScopeEmail,
 		"https://www.googleapis.com/auth/logging.write",
 	},
 }
+
+// Where to look for service account JSON creds if not provided via CLI.
+const (
+	defaultServiceAccountPosix = "/creds/service_accounts/service-account-cloudtail.json"
+	defaultServiceAccountWin   = "C:\\creds\\service_accounts\\service-account-cloudtail.json"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Common functions and structs.
@@ -51,12 +61,17 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet) {
 }
 
 func (opts *commonOptions) makeClient() (cloudtail.Client, error) {
-	if opts.projectID == "" {
-		return nil, fmt.Errorf("-project-id is required")
-	}
 	authOpts, err := opts.authFlags.Options()
 	if err != nil {
 		return nil, err
+	}
+	if opts.projectID == "" {
+		if authOpts.ServiceAccountJSONPath != "" {
+			opts.projectID = projectIDFromServiceAccountJSON(authOpts.ServiceAccountJSONPath)
+		}
+		if opts.projectID == "" {
+			return nil, fmt.Errorf("-project-id is required")
+		}
 	}
 	client, err := auth.AuthenticatedClient(auth.SilentLogin, auth.NewAuthenticator(authOpts))
 	if err != nil {
@@ -81,6 +96,50 @@ func (opts *commonOptions) makePushBuffer() (cloudtail.PushBuffer, error) {
 		Client: client,
 		Logger: logger,
 	}), nil
+}
+
+// defaultServiceAccountJSON returns path to a default service account
+// credentials file if it exists.
+func defaultServiceAccountJSONPath() string {
+	path := ""
+	if runtime.GOOS == "windows" {
+		path = defaultServiceAccountWin
+	} else {
+		path = defaultServiceAccountPosix
+	}
+	// Ensure its readable by opening it.
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	f.Close()
+	return path
+}
+
+// projectIDFromServiceAccountJSON extracts Cloud Project ID from the email
+// part of the service account JSON. Returns empty string if can't do it.
+func projectIDFromServiceAccountJSON(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	var sa struct {
+		ClientEmail string `json:"client_email"`
+	}
+	if err := json.NewDecoder(f).Decode(&sa); err != nil {
+		return ""
+	}
+	// Expected form: <projectid>-stuff@developer.gserviceaccount.com.
+	chunks := strings.Split(sa.ClientEmail, "@")
+	if len(chunks) != 2 || chunks[1] != "developer.gserviceaccount.com" {
+		return ""
+	}
+	chunks = strings.Split(chunks[0], "-")
+	if len(chunks) != 2 {
+		return ""
+	}
+	return chunks[0]
 }
 
 ////////////////////////////////////////////////////////////////////////////////
