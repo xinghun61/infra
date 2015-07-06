@@ -67,9 +67,8 @@ DiffBuilderBase.prototype.createLineNumber = function(line, number, type)
     var a = document.createElement("a", "cr-action");
     a.tabIndex = -1;
     if (line.type == "header")
-        a.textContent = "@@";
+        div.setAttribute("value", "@@");
     else if (line.type == "both" || line.type == type) {
-        a.textContent = number;
         div.setAttribute("value", number);
     }
     div.appendChild(a);

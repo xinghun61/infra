@@ -16,6 +16,10 @@
     background-color: #fef;
 }
 
+.line-number::before {
+    content: attr(value);
+}
+
 .remove .text {
     background-color: #fee;
 }
@@ -73,17 +77,14 @@
 .line-number {
     min-width: 3em;
     text-align: right;
+    color: #444;
     padding-right: 16px;
     cursor: default;
 }
 
-.line-number a {
-    color: #444;
-}
-
-.add .line-number a:hover,
-.remove .line-number a:hover,
-.both .line-number a:hover {
+.add .line-number:hover,
+.remove .line-number:hover,
+.both .line-number:hover {
     text-decoration: underline;
     color: #1155CC;
     background-color: #F1F4F8;
