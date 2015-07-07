@@ -256,6 +256,91 @@
   {
     "cmd": [
       "find",
+      "[TMP_BASE]/tmp_tmp_3/src/android_webview",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune android_webview"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/buildtools/third_party/libc++",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune buildtools/third_party/libc++"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/chrome/android",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune chrome/android"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/chromecast",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune chromecast"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/ios",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune ios"
+  },
+  {
+    "cmd": [
+      "find",
       "[TMP_BASE]/tmp_tmp_3/src/native_client",
       "-type",
       "f",
@@ -354,6 +439,23 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/chromite"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/closure_compiler",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/closure_compiler"
   },
   {
     "cmd": [
@@ -558,6 +660,40 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "prune third_party/snappy"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/stp",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/stp"
+  },
+  {
+    "cmd": [
+      "find",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/trace-viewer/third_party/v8",
+      "-type",
+      "f",
+      "!",
+      "-iname",
+      "*.gyp*",
+      "!",
+      "-iname",
+      "*.isolate*",
+      "-delete"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "prune third_party/trace-viewer/third_party/v8"
   },
   {
     "cmd": [

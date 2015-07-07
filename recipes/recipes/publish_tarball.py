@@ -75,12 +75,18 @@ def export_lite_tarball(api, version):
   # Make destructive file operations on the copy of the checkout.
   with copytree_checkout(api) as dest_dir:
     directories = [
+      'android_webview',
+      'buildtools/third_party/libc++',
+      'chrome/android',
+      'chromecast',
+      'ios',
       'native_client',
       'native_client_sdk',
       'third_party/WebKit/ManualTests',
       'third_party/WebKit/PerformanceTests',
       'third_party/android_platform',
       'third_party/chromite',
+      'third_party/closure_compiler',
       'third_party/freetype2',
       'third_party/gles2_book',
       'third_party/gold',
@@ -93,6 +99,8 @@ def export_lite_tarball(api, version):
       'third_party/libxml/src',
       'third_party/openssl',
       'third_party/snappy',
+      'third_party/stp',
+      'third_party/trace-viewer/third_party/v8',
       'third_party/webgl',
       'third_party/webgl_conformance',
       'third_party/yasm',
