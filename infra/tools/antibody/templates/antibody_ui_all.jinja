@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /> 
+
+  
+  <script 
+      src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+  </script>
+  <script src="static/bootstrap.min.js"></script>
+  <script src="static/bootstrap-table.js"></script>
+  <link rel="stylesheet" href="static/bootstrap.min.css">
+  <link rel="stylesheet" href="static/bootstrap-table.css">
+  <link rel="stylesheet" type="text/css" href="static/antibody_ui_all.css">
+
+
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}" /> 
+</head>
+
+
+
+<body>
+
+  <div class="nav navbar-fixed-top">
+    <div class="container">
+      <ul class="pull-left">
+        <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
+        <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bootstrap-table data_table">
+    <div class="container">
+      <table data-toggle="table" data-cache="false">
+        <thead>
+            <tr>
+            {% for item in table_headers %}
+              <th data-field="{{ item }} label">{{ item }}</th>
+            {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+          {% for git_hash, _, _, rietveld_url, request_timestamp, _ 
+           in suspicious_commits %}
+            <tr class="data_item">
+              <td class="git_hash hyperlink">
+                <a href="{{ gitiles_prefix }}{{ git_hash }}">
+                  {{ git_hash }} 
+                </a></td>
+              <td class="rietveld_url hyperlink">
+                <a href="{{ rietveld_url }}">
+                  {{ rietveld_url.strip('/') }} 
+                </a></td>
+              <td class="request_timestamp"> {{ request_timestamp }} </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+</body>
+</html>

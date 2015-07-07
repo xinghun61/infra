@@ -59,11 +59,13 @@ def main(argv):
         code_review_parse.add_rietveld_data_to_db(git_hash, review_url, cc)
   if args.write_html or args.run_antibody:
     suspicious_commits = code_review_parse.get_tbr_no_lgtm(cc)
+    antibody.get_tbr_by_user(cc)
     # TODO(ksho): un-hardcode the gitiles prefix once git checkout path command
     # line functionality comes in from Keeley's cl, read in from 
     # codereview.settings instead
     gitiles_prefix = "https://chromium.googlesource.com/infra/infra/+/"
-    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix)
+    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix,
+                                  args.output_dir_path)
 
   csql.close(connection, cc)
 
