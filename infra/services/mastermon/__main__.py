@@ -116,10 +116,11 @@ def main(argv):
         in master.get_mastermap_for_host(opts.build_dir, opts.hostname)]
 
   def single_iteration():
-    for monitor in monitors:
-      monitor.poll()
-
-    ts_mon.flush()
+    try:
+      for monitor in monitors:
+        monitor.poll()
+    finally:
+      ts_mon.flush()
     return True
 
   loop_results = outer_loop.loop(

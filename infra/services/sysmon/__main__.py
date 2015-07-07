@@ -125,12 +125,14 @@ def main(argv):
   opts, loop_opts = parse_args(argv)
 
   def single_iteration():
-    get_cpu_info()
-    get_disk_info()
-    get_mem_info()
-    get_net_info()
-    get_proc_info()
-    ts_mon.flush()
+    try:
+      get_cpu_info()
+      get_disk_info()
+      get_mem_info()
+      get_net_info()
+      get_proc_info()
+    finally:
+      ts_mon.flush()
     return True
 
   loop_results = outer_loop.loop(
