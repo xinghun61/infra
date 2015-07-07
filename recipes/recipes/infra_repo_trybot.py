@@ -36,18 +36,22 @@ def RunSteps(api):
       cwd=api.path['checkout'],
       stdout=api.raw_io.output())
   files = result.stdout.splitlines()
+  result.presentation.logs['change list'] = files
 
   with api.step.defer_results():
     # Rietveld tests.
-    if any(f.startswith('appengine/chromium_rietveld') for f in files):
+    deps_mod = 'DEPS' in files
+
+    if (deps_mod or
+        any(f.startswith('appengine/chromium_rietveld') for f in files)):
       api.step('rietveld tests',
                ['make', '-C', 'appengine/chromium_rietveld', 'test'],
                cwd=api.path['checkout'])
 
-    if not all(f.startswith('go/') for f in files):
+    if deps_mod or not all(f.startswith('go/') for f in files):
       api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
 
-    if any(f.startswith('go/') for f in files):
+    if deps_mod or any(f.startswith('go/') for f in files):
       # Note: env.py knows how to expand 'python' into sys.executable.
       api.python(
           'go test.py', api.path['checkout'].join('go', 'env.py'),
@@ -102,4 +106,13 @@ def GenTests(api):
         buildername='infra_tester',
         patch_project='infra') +
     diff('appengine/chromium_rietveld/codereview/views.py')
+  )
+
+  yield (
+    api.test('only_DEPS') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('DEPS')
   )

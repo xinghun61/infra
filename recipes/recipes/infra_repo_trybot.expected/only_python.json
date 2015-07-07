@@ -83,7 +83,11 @@
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "get change list",
-    "stdout": "/path/to/tmp/"
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@change list@infra/stuff.py@@@",
+      "@@@STEP_LOG_END@change list@@@"
+    ]
   },
   {
     "cmd": [
