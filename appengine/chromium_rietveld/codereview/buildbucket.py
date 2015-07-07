@@ -174,9 +174,15 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
   logging.info(
       'Fetching builds for patchset %s/%s. Buildset: %s',
       issue_id, patchset_id, buildset_tag)
-  resp = yield net.json_request_async(
-      url, params=params,
-      scopes='https://www.googleapis.com/auth/userinfo.email')
+  try:
+    # Try an anonymous request first. Useful in case of Cloud Endpoints outage.
+    resp = yield net.json_request_async(
+        url, params=params)
+  except net.AuthError:
+    resp = yield net.json_request_async(
+        url, params=params,
+        scopes='https://www.googleapis.com/auth/userinfo.email')
+
   if 'error' in resp:
     bb_error = resp.get('error', {})
     raise BuildBucketError(
