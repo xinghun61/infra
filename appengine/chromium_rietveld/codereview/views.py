@@ -1832,7 +1832,7 @@ def show(request):
   })
 
 
-def get_patchset_try_job_results(patchset):
+def get_patchset_try_job_results(patchset, swallow_exceptions=True):
   """Returns a list of try job results for the |patchset|.
 
   Combines try job results stored in datastore and in buildbucket. Deduplicates
@@ -1853,6 +1853,8 @@ def get_patchset_try_job_results(patchset):
       buildbucket_build_ids.add(result.build_id)
   except net.AuthError:
     logging.exception('Could not load buildbucket builds')
+    if not swallow_exceptions:
+      raise
 
   def try_get_build_id(try_job_result):
     if not try_job_result.build_properties:
@@ -2518,7 +2520,8 @@ def api_patchset_try_job_results(request):
   """/api/<issue>/<patchset>/try_job_results - Gets a patchset's try job
   results as a JSON-encoded list of dictionaries.
   """
-  try_job_results = get_patchset_try_job_results(request.patchset)
+  try_job_results = get_patchset_try_job_results(
+      request.patchset, swallow_exceptions=False)
   return [r.to_dict() for r in try_job_results]
 
 
