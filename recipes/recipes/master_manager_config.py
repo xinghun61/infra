@@ -16,13 +16,9 @@ DEPS = [
 
 
 def RunSteps(api):
-  project = api.properties.get('patch_project') or api.properties.get('project')
-  if not project:
-    project = None  # Force empty string to be None.
-
   api.gclient.set_config('infradata_master_manager')
   api.bot_update.ensure_checkout(
-      force=True, patch_root=project, patch_oauth2=True)
+      force=True, patch_root='infra-data-master-manager', patch_oauth2=True)
   api.gclient.runhooks()
 
   api.python('master manager configuration test',
