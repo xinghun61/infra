@@ -111,7 +111,7 @@ def main(argv):
   else:
     # Query the mastermap and monitor all the masters on a host.
     monitors = [
-        MasterMonitor(entry['buildbot_url'], entry['dirname'])
+        MasterMonitor('http://localhost:%d' % (entry['port']), entry['dirname'])
         for entry
         in master.get_mastermap_for_host(opts.build_dir, opts.hostname)]
 

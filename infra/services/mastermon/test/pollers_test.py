@@ -58,6 +58,15 @@ class PollerTest(unittest.TestCase):
     self.assertTrue(p.poll())
     self.assertEqual({'foo': 'bar'}, p.called_with_data)
 
+  def test_handles_invalid_json(self, mock_get):
+    response = mock_get.return_value
+    response.json.side_effect = ValueError
+    response.status_code = 200
+
+    p = FakePoller('http://foobar')
+    self.assertFalse(p.poll())
+    self.assertIsNone(p.called_with_data)
+
 
 class ClockPollerTest(unittest.TestCase):
   def test_response(self):

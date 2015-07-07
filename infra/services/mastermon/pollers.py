@@ -26,7 +26,14 @@ class Poller(object):
     if response.status_code != requests.codes.ok:
       return False
 
-    self.handle_response(response.json())
+    try:
+      json = response.json()
+    except Exception:
+      LOGGER.exception('Failed to parse response from %s as JSON: %s',
+                       self._url, response.text)
+      return False
+
+    self.handle_response(json)
     return True
 
   def handle_response(self, data):
