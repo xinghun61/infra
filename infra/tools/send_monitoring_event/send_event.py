@@ -135,10 +135,6 @@ def get_arguments(argv):
   event_mon.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
 
-  parser.set_defaults(
-      logs_directory='',
-  )
-
   args = parser.parse_args(argv)
 
   if args.service_event_stack_trace:
