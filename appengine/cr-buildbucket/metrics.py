@@ -41,7 +41,7 @@ def send_build_status_metric(buf, bucket, metric, status):
 def send_all_metrics():
   buf = metrics.Buffer()
   futures = []
-  for b in config.get_buckets():
+  for b in config.get_buckets_async().get_result():
     futures.extend([
         send_build_status_metric(
             buf, b.name, METRIC_PENDING_BUILDS, model.BuildStatus.SCHEDULED),

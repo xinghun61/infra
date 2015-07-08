@@ -71,13 +71,14 @@ acls {
 
 
 class ConfigTest(testing.AppengineTestCase):
-  def test_get_bucket(self):
+  def test_get_bucket_async(self):
     config.Bucket(
         id='master.tryserver.chromium.linux',
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT).put()
-    cfg = config.get_bucket('master.tryserver.chromium.linux')
+    cfg = config.get_bucket_async(
+        'master.tryserver.chromium.linux').get_result()
     self.assertEqual(
         cfg,
         project_config_pb2.Bucket(
@@ -90,9 +91,9 @@ class ConfigTest(testing.AppengineTestCase):
             ]),
     )
 
-    self.assertIsNone(config.get_bucket('non.existing'))
+    self.assertIsNone(config.get_bucket_async('non.existing').get_result())
 
-  def test_get_buckets(self):
+  def test_get_buckets_async(self):
     config.Bucket(
         id='master.tryserver.chromium.linux',
         project_id='chromium',
@@ -103,7 +104,7 @@ class ConfigTest(testing.AppengineTestCase):
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT).put()
-    actual = config.get_buckets()
+    actual = config.get_buckets_async().get_result()
     expected = [
       project_config_pb2.Bucket(
           name='master.tryserver.chromium.linux',

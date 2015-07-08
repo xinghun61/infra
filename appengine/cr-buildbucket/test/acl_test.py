@@ -10,6 +10,7 @@ from testing_utils import testing
 import mock
 
 from proto import project_config_pb2
+from test import future
 import acl
 import config
 import errors
@@ -27,7 +28,7 @@ class AclTest(testing.AppengineTestCase):
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
     self.mock(auth, 'is_admin', lambda: False)
 
-    self.mock(config, 'get_buckets', mock.Mock())
+    self.mock(config, 'get_buckets_async', mock.Mock())
     bucket_a = Bucket(
       name='a',
       acls=[
@@ -48,10 +49,11 @@ class AclTest(testing.AppengineTestCase):
           Acl(role=Acl.WRITER, group='c-writers'),
       ])
     all_buckets = [bucket_a, bucket_b, bucket_c]
-    config.get_buckets.return_value = all_buckets
+    config.get_buckets_async.return_value = future(all_buckets)
     bucket_map = {b.name:b for b in all_buckets}
 
-    self.mock(config, 'get_bucket', bucket_map.get)
+    self.mock(
+        config, 'get_bucket_async', lambda name: future(bucket_map.get(name)))
 
   def mock_is_group_member(self, groups):
     # pylint: disable=unused-argument
@@ -62,25 +64,28 @@ class AclTest(testing.AppengineTestCase):
   def test_has_any_of_roles(self):
     self.mock_is_group_member(['a-readers'])
 
-    self.assertTrue(acl.has_any_of_roles('a', [Acl.READER]))
-    self.assertTrue(acl.has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
-    self.assertFalse(acl.has_any_of_roles('a', [Acl.WRITER]))
-    self.assertFalse(acl.has_any_of_roles('a', [Acl.WRITER, Acl.SCHEDULER]))
-    self.assertFalse(acl.has_any_of_roles('b', [Acl.READER]))
-    self.assertTrue(acl.has_any_of_roles('c', [Acl.READER]))
-    self.assertFalse(acl.has_any_of_roles('c', [Acl.WRITER]))
-    self.assertFalse(acl.has_any_of_roles('non.existing', [Acl.READER]))
+    has_any_of_roles = (
+        lambda *args: acl.has_any_of_roles_async(*args).get_result())
+
+    self.assertTrue(has_any_of_roles('a', [Acl.READER]))
+    self.assertTrue(has_any_of_roles('a', [Acl.READER, Acl.WRITER]))
+    self.assertFalse(has_any_of_roles('a', [Acl.WRITER]))
+    self.assertFalse(has_any_of_roles('a', [Acl.WRITER, Acl.SCHEDULER]))
+    self.assertFalse(has_any_of_roles('b', [Acl.READER]))
+    self.assertTrue(has_any_of_roles('c', [Acl.READER]))
+    self.assertFalse(has_any_of_roles('c', [Acl.WRITER]))
+    self.assertFalse(has_any_of_roles('non.existing', [Acl.READER]))
 
     self.mock_is_group_member([])
-    self.assertFalse(acl.has_any_of_roles('a', Acl.Role.values()))
+    self.assertFalse(has_any_of_roles('a', Acl.Role.values()))
 
     self.mock(auth, 'is_admin', lambda *_: True)
-    self.assertTrue(acl.has_any_of_roles('a', [Acl.WRITER]))
+    self.assertTrue(has_any_of_roles('a', [Acl.WRITER]))
 
   def test_get_available_buckets(self):
     self.mock_is_group_member(['xxx', 'yyy'])
 
-    config.get_buckets.return_value = [
+    config.get_buckets_async.return_value = future([
       Bucket(
           name='available_bucket1',
           acls=[
@@ -106,7 +111,7 @@ class AclTest(testing.AppengineTestCase):
           acls=[
             Acl(role=Acl.WRITER, group='zzz')],
       ),
-    ]
+    ])
 
     availble_buckets = acl.get_available_buckets()
     availble_buckets = acl.get_available_buckets()  # memcache coverage.
@@ -119,9 +124,9 @@ class AclTest(testing.AppengineTestCase):
 
   def mock_has_any_of_roles(self, current_identity_roles):
     current_identity_roles = set(current_identity_roles)
-    def has_any_of_roles(_bucket, roles):
-      return current_identity_roles.intersection(roles)
-    self.mock(acl, 'has_any_of_roles', has_any_of_roles)
+    def has_any_of_roles_async(_bucket, roles):
+      return future(current_identity_roles.intersection(roles))
+    self.mock(acl, 'has_any_of_roles_async', has_any_of_roles_async)
 
   def test_can(self):
     self.mock_has_any_of_roles([Acl.READER])
@@ -131,6 +136,7 @@ class AclTest(testing.AppengineTestCase):
 
     # Memcache coverage
     self.assertFalse(acl.can('bucket', acl.Action.WRITE_ACL))
+    self.assertFalse(acl.can_add_build_async('bucket').get_result())
 
   def test_can_no_roles(self):
     self.mock_has_any_of_roles([])

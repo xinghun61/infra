@@ -12,6 +12,7 @@ from google.appengine.ext import testbed
 from testing_utils import testing
 import mock
 
+from test import future
 import acl
 import errors
 import model
@@ -24,9 +25,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build = None
 
   def mock_cannot(self, action):
-    def can(_bucket, requested_action, _identity=None):
-      return action != requested_action
-    self.mock(acl, 'can', can)
+    def can_async(_bucket, requested_action, _identity=None):
+      return future(action != requested_action)
+    self.mock(acl, 'can_async', can_async)
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
@@ -44,7 +45,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.current_identity = auth.Identity('service', 'unittest')
     self.mock(auth, 'get_current_identity', lambda: self.current_identity)
-    self.mock(acl, 'can', lambda *_: True)
+    self.mock(acl, 'can_async', lambda *_: future(True))
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 1, 1))
 
   def put_many_builds(self):

@@ -11,6 +11,7 @@ import collections
 import logging
 
 from google.appengine.api import memcache
+from google.appengine.ext import ndb
 from components import auth
 from protorpc import messages
 
@@ -85,6 +86,7 @@ def can_fn_for_build(action):
 can_view_build = can_fn_for_build(Action.VIEW_BUILD)
 can_search_builds = can_fn(Action.SEARCH_BUILDS)
 can_add_build = can_fn(Action.ADD_BUILD)
+can_add_build_async = lambda bucket: can_async(bucket, Action.ADD_BUILD)
 can_lease_build = can_fn_for_build(Action.LEASE_BUILD)
 can_cancel_build = can_fn_for_build(Action.CANCEL_BUILD)
 can_reset_build = can_fn_for_build(Action.RESET_BUILD)
@@ -96,7 +98,8 @@ can_write_acl = can_fn(Action.WRITE_ACL)
 ## Implementation.
 
 
-def has_any_of_roles(bucket, roles):
+@ndb.tasklet
+def has_any_of_roles_async(bucket, roles):
   """True if current identity has any of |roles| in |bucket|."""
   assert bucket
   assert roles
@@ -105,34 +108,40 @@ def has_any_of_roles(bucket, roles):
   assert roles.issubset(project_config_pb2.Acl.Role.values())
 
   if auth.is_admin():
-    return True
+    raise ndb.Return(True)
 
-  bucket_cfg = config.get_bucket(bucket)
+  bucket_cfg = yield config.get_bucket_async(bucket)
   identity_str = auth.get_current_identity().to_bytes()
   if bucket_cfg:
     for rule in bucket_cfg.acls:
       if rule.role not in roles:
         continue
       if rule.identity == identity_str:
-        return True
+        raise ndb.Return(True)
       if rule.group and auth.is_group_member(rule.group):
-        return True
-  return False
+        raise ndb.Return(True)
+  raise ndb.Return(False)
 
 
-def can(bucket, action):
+@ndb.tasklet
+def can_async(bucket, action):
   errors.validate_bucket_name(bucket)
   assert isinstance(action, Action)
 
   identity = auth.get_current_identity()
   cache_key = 'acl_can/%s/%s/%s' % (bucket, identity.to_bytes(), action.name)
-  result = memcache.get(cache_key)
+  ctx = ndb.get_context()
+  result = yield ctx.memcache_get(cache_key)
   if result is not None:
-    return result
+    raise ndb.Return(result)
 
-  result = has_any_of_roles(bucket, ROLES_FOR_ACTION[action])
-  memcache.set(cache_key, result, time=60)
-  return result
+  result = yield has_any_of_roles_async(bucket, ROLES_FOR_ACTION[action])
+  yield ctx.memcache_set(cache_key, result, time=60)
+  raise ndb.Return(result)
+
+
+def can(bucket, action):
+  return can_async(bucket, action).get_result()
 
 
 def get_available_buckets():
@@ -155,7 +164,8 @@ def get_available_buckets():
       'Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
   available_buckets = set()
-  for bucket in config.get_buckets():
+  all_buckets = config.get_buckets_async().get_result()
+  for bucket in all_buckets:
     for rule in bucket.acls:
       if rule.identity == identity:
         available_buckets.add(bucket.name)

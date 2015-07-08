@@ -127,7 +127,7 @@ class BuildBucketService(object):
 
     ctx = ndb.get_context()
     identity = auth.get_current_identity()
-    if not acl.can_add_build(bucket):
+    if not (yield acl.can_add_build_async(bucket)):  # pragma: no branch
       raise current_identity_cannot('add builds to bucket %s', bucket)
 
     if client_operation_id is not None:

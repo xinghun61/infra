@@ -18,6 +18,7 @@ from testing_utils import testing
 
 
 from proto import project_config_pb2
+from test import future
 import config
 import metrics
 import model
@@ -33,10 +34,10 @@ class MerticsTest(testing.AppengineTestCase):
         model.Build(bucket='v8', status=model.BuildStatus.SCHEDULED),
         model.Build(bucket='chromium', status=model.BuildStatus.STARTED),
     ])
-    future = metrics.send_build_status_metric(
+    send_future = metrics.send_build_status_metric(
         buf, 'chromium', metrics.METRIC_PENDING_BUILDS,
         model.BuildStatus.SCHEDULED)
-    future.get_result()
+    send_future.get_result()
     buf.set_gauge.assert_called_once_with(
         metrics.METRIC_PENDING_BUILDS, 2,
         {metrics.LABEL_BUCKET: 'chromium'})
@@ -45,10 +46,10 @@ class MerticsTest(testing.AppengineTestCase):
     buf = mock.Mock()
     self.mock(metrics_component, 'Buffer', lambda: buf)
 
-    self.mock(config, 'get_buckets', mock.Mock())
-    config.get_buckets.return_value = [
+    self.mock(config, 'get_buckets_async', mock.Mock())
+    config.get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
-    ]
+    ])
     self.mock(metrics, 'send_build_status_metric', mock.Mock())
 
     metrics.send_all_metrics()
