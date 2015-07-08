@@ -2,12 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 
 from google.appengine.ext import ndb
 
 import mock
 
 from components import config as config_component
+from components.config import validation_context
 from testing_utils import testing
 
 from proto import project_config_pb2
@@ -337,3 +339,109 @@ class ConfigTest(testing.AppengineTestCase):
       )
     ]
     self.assertEqual(actual, expected)
+
+  def cfg_validation_test(self, cfg, expected_messages):
+    ctx = config_component.validation.Context()
+    ctx.config_set = 'projects/chromium'
+    config.validate_buildbucket_cfg(cfg, ctx)
+    self.assertEqual(expected_messages, ctx.result().messages)
+
+  def test_validate_buildbucket_cfg_success(self):
+    self.cfg_validation_test(
+        project_config_pb2.BuildbucketCfg(
+          buckets=[
+            project_config_pb2.Bucket(
+              name='good.name',
+              acls=[
+                project_config_pb2.Acl(
+                  group='writers', role=project_config_pb2.Acl.WRITER)
+              ],
+            ),
+            project_config_pb2.Bucket(
+              name='good.name2',
+              acls=[
+                project_config_pb2.Acl(
+                  identity='a@a.com', role=project_config_pb2.Acl.READER),
+                project_config_pb2.Acl(
+                  identity='user:b@a.com', role=project_config_pb2.Acl.READER),
+              ],
+            )
+          ]),
+        []
+    )
+
+  def test_validate_buildbucket_cfg_fail(self):
+    self.cfg_validation_test(
+        project_config_pb2.BuildbucketCfg(
+          buckets=[
+            project_config_pb2.Bucket(
+              name='a',
+              acls=[
+                project_config_pb2.Acl(
+                  group='writers', identity='a@a.com',
+                  role=project_config_pb2.Acl.READER),
+                project_config_pb2.Acl(role=project_config_pb2.Acl.READER),
+              ]
+            ),
+            project_config_pb2.Bucket(
+              name='b',
+              acls=[
+                project_config_pb2.Acl(
+                    identity='ldap', role=project_config_pb2.Acl.READER),
+                project_config_pb2.Acl(
+                    group='a@a.com', role=project_config_pb2.Acl.READER),
+              ]
+            ),
+            project_config_pb2.Bucket(),
+          ]),
+        [
+          errmsg(
+              'Bucket a: acl #1: either group or identity must be set, '
+              'not both'),
+          errmsg('Bucket a: acl #2: group or identity must be set'),
+          errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
+          errmsg('Bucket b: acl #2: invalid group: a@a.com'),
+          errmsg('Bucket #3: invalid name: Bucket not specified'),
+        ]
+    )
+
+  def test_validate_buildbucket_cfg_unsorted(self):
+    self.cfg_validation_test(
+        project_config_pb2.BuildbucketCfg(
+          buckets=[
+            project_config_pb2.Bucket(name='b'),
+            project_config_pb2.Bucket(name='a')
+          ]),
+        [
+          validation_context.Message(
+              severity=logging.WARNING,
+              text='Buckets are not sorted by name'),
+        ]
+    )
+
+  def test_validate_buildbucket_cfg_duplicate_names(self):
+    config.Bucket(
+        id='master.tryserver.v8',
+        project_id='v8',
+        revision='deadbeef',
+        config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT).put()
+
+    self.cfg_validation_test(
+        project_config_pb2.BuildbucketCfg(
+          buckets=[
+            project_config_pb2.Bucket(name='a'),
+            project_config_pb2.Bucket(name='a'),
+            project_config_pb2.Bucket(name='master.tryserver.chromium.linux'),
+            project_config_pb2.Bucket(name='master.tryserver.v8'),
+          ]),
+        [
+          errmsg('Bucket a: duplicate bucket name'),
+          errmsg(
+              'Bucket master.tryserver.v8: '
+              'this name is already reserved by another project'),
+        ]
+    )
+
+
+def errmsg(text):
+  return validation_context.Message(severity=logging.ERROR, text=text)

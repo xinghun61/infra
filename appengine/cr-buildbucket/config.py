@@ -18,12 +18,73 @@ from google.appengine.ext import ndb
 from components import auth
 from components import config
 from components import utils
+from components.config import validation
 
 from proto import project_config_pb2
 import errors
 
 
-# TODO(nodir): prohibit both group and identity in bucket ACL.
+@utils.cache
+def cfg_path():
+  try:
+    appid = app_identity.get_application_id()
+  except AttributeError:
+    # Raised in testbed environment because cfg_path is called
+    # during decoration.
+    appid = 'buildbucket'
+  return '%s.cfg' % appid
+
+
+def validate_identity(identity, ctx):
+  if ':' in identity:
+    kind, name = identity.split(':', 2)
+  else:
+    kind = 'user'
+    name = identity
+  try:
+    auth.Identity(kind, name)
+  except ValueError as ex:
+    ctx.error(ex)
+
+
+@validation.project_config_rule(cfg_path(), project_config_pb2.BuildbucketCfg)
+def validate_buildbucket_cfg(cfg, ctx):
+  is_sorted = True
+  bucket_names = set()
+
+  for i, bucket in enumerate(cfg.buckets):
+    with ctx.prefix('Bucket %s: ', bucket.name or ('#%d' % (i + 1))):
+      try:
+        errors.validate_bucket_name(bucket.name)
+      except errors.InvalidInputError as ex:
+        ctx.error('invalid name: %s', ex.message)
+      else:
+        if bucket.name in bucket_names:
+          ctx.error('duplicate bucket name')
+        else:
+          bucket_names.add(bucket.name)
+          if ctx.project_id:  # pragma: no branch
+            bucket_entity = Bucket.get_by_id(bucket.name)
+            if bucket_entity and bucket_entity.project_id != ctx.project_id:
+              ctx.error('this name is already reserved by another project')
+
+        if is_sorted and i > 0 and cfg.buckets[i - 1].name:
+          if bucket.name < cfg.buckets[i - 1].name:
+            is_sorted = False
+
+      for i, acl in enumerate(bucket.acls):
+        with ctx.prefix('acl #%d: ', i + 1):
+          if acl.group and acl.identity:
+            ctx.error('either group or identity must be set, not both')
+          elif acl.group:
+            if not auth.is_valid_group_name(acl.group):
+              ctx.error('invalid group: %s', acl.group)
+          elif acl.identity:
+            validate_identity(acl.identity, ctx)
+          else:
+            ctx.error('group or identity must be set')
+  if not is_sorted:
+    ctx.warning('Buckets are not sorted by name')
 
 
 class Bucket(ndb.Model):
@@ -78,9 +139,8 @@ def get_bucket(name):
 
 def cron_update_buckets():
   """Synchronizes Bucket entities with configs fetched from luci-config."""
-  config_name = '%s.cfg' % app_identity.get_application_id()
   config_map = config.get_project_configs(
-      config_name, project_config_pb2.BuildbucketCfg)
+      cfg_path(), project_config_pb2.BuildbucketCfg)
 
   buckets_of_project = {
     pid: set(b.name for b in pcfg.buckets)
