@@ -109,14 +109,7 @@ def parse_args(argv):
 
   logs.process_argparse_options(opts)
   ts_mon.process_argparse_options(opts)
-
-  # Set our own defaults (rather than outer_loop's "forever" and "infinity").
-  # Our defaults are such that it will run only once and then exit.
   loop_opts = outer_loop.process_argparse_options(opts)
-  if not loop_opts.get('duration'):
-    loop_opts['duration'] = 0
-  if not loop_opts.get('max_errors'):
-    loop_opts['max_errors'] = 0
 
   return opts, loop_opts
 
