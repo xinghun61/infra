@@ -3,7 +3,9 @@ version: 1
 runtime: python27
 api_version: 1
 threadsafe: true
-instance_class: F4
+instance_class: F1
+automatic_scaling:
+  min_idle_instances: 1
 
 builtins:
   - remote_api: on
@@ -17,10 +19,9 @@ handlers:
   static_files: templates/home.html
   upload: templates/home.html
 
-# Pipeline handler.
+# Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
-  script: "pipeline_utils.appengine_third_party_pipeline_src_pipeline.\
-           handlers._APP"
+  script: main.pipeline_status_application
   secure: always
 
 # Endpoints handler.
@@ -42,6 +43,7 @@ skip_files:
 - ^(.*/)?.*\.md$
 - ^(.*/)?README$
 - ^(.*/)?Makefile$
+- ^(.*/)?util_scripts/.*$
 
 libraries:
 - name: webapp2

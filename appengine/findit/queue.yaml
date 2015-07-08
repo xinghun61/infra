@@ -7,3 +7,4 @@ queue:
   retry_parameters:
     min_backoff_seconds: 15
     task_retry_limit: 3
+  target: build-failure-analysis

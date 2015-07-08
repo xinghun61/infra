@@ -92,6 +92,14 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
       master_name, builder_name, build_number, failed_steps, force):
     pipeline_job = analyze_build_failure_pipeline.AnalyzeBuildFailurePipeline(
                        master_name, builder_name, build_number)
+    # Explicitly run analysis in the backend module "build-failure-analysis".
+    # Note: Just setting the target in queue.yaml does NOT work for pipeline
+    # when deployed to App Engine, but it does work in dev-server locally.
+    # A possible reason is that pipeline will pick a default target if none is
+    # specified explicitly, and the default target is used rather than the one
+    # in the queue.yaml file, but this contradicts the documentation in
+    # https://cloud.google.com/appengine/docs/python/taskqueue/tasks#Task.
+    pipeline_job.target = 'build-failure-analysis'
     pipeline_job.start(queue_name=queue_name)
 
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',

@@ -1,35 +1,39 @@
-# Assumption
+# Assumptions
 
-Infra repo is checked out into SRC_ROOT (eg., /b/chromium).
-Google Appengine SDK is checked out to $SRC_ROOT/google_appengine automatically.
+Infra repo is checked out into directory SRC_ROOT (eg., /b/chromium) on Linux or
+Mac. Note:
+1. For Mac, if shoulGoogleAppEngineLauncher is used to run Findit locally, you
+    may have to set the field "Extra Flags" under "Launch Settings" with value
+   "$SRC_ROOT/infra/appengine/findit/build-failure-analysis.yaml".
+2. For Windows, you may have to read script util_scripts/run.sh to learn how
+   to run all of the commands manually.
 
 # How to run Findit locally?
 
 From command line, run:
-  cd $SRC_ROOT/infra/appengine/findit
-  $SRC_ROOT/google_appengine/dev_appserver.py .
+  $SRC_ROOT/infra/appengine/findit/util_scripts/run.sh run
 
 Then open http://localhost:8080 for the home page.
 
 # How to run test for Findit?
 
 From command line, run:
-  cd $SRC_ROOT/infra
-  python test.py test --html-report /tmp/coverage appengine/findit
+  $SRC_ROOT/infra/appengine/findit/util_scripts/run.sh test
 
 If a code path branch is not tested and no line number is shown in the command
-line output, you could open file:///tmp/coverage/index.html to check.
+line output, you could open code coverage report shown in the output to check.
 
 # How to deploy to appengine?
 
 For testing, deploy to findit-for-waterfall.appspot.com:
-  $SRC_ROOT/google_appengine/appcfg.py --oauth2 update -A findit-for-waterfall . --version `git rev-parse  --short HEAD`
+  $SRC_ROOT/infra/appengine/findit/util_scripts/run.sh deploy-test
 
 For release, make sure you are in a clean branch and deploy to findit-for-me.appspot.com:
+  cd $SRC_ROOT/infra/appengine/findit
   git diff origin/master && git status
-  $SRC_ROOT/google_appengine/appcfg.py --oauth2 update -A findit-for-me . --version `git rev-parse  --short HEAD`
+  util_scripts/run.sh deploy-prod
 
 To make the new version the default:
-1. Go to https://appengine.google.com and select the findit-for-me app.
+1. Go to https://appengine.google.com and select the findit-for-me or findit-for-waterfall app.
 2. Click on the 'Versions' link on the left navigation menu.
-3. Make the new version as default.
+3. Make the new version in all modules as default.
