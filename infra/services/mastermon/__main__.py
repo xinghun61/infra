@@ -10,8 +10,6 @@ import socket
 import sys
 import urlparse
 
-import requests
-
 from infra.libs.buildbot import master
 from infra.libs.service_utils import outer_loop
 from infra.services.mastermon import pollers

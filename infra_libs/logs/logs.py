@@ -37,6 +37,7 @@ import re
 import socket
 import sys
 import tempfile
+import textwrap
 
 import pytz
 
@@ -176,17 +177,18 @@ def add_argparse_options(parser,
                  dest='log_level', help='Make the output really loud (DEBUG).')
   parser.add_argument('--logs-black-list', metavar='REGEX',
                       help='hide log lines emitted by modules whose name '
-                           'matches this regular expression.')
+                           'matches\nthis regular expression.')
   parser.add_argument(
       '--logs-directory',
       default=DEFAULT_LOG_DIRECTORIES,
-      help='directory into which to write logs (default: %%(default)s). If '
+      help=textwrap.fill('directory into which to write logs (default: '
+                         '%%(default)s). If '
            'this directory does not exist or is not writable, the temporary '
-           'directory (%s) will be used instead. If this is explicitly set to '
-           'the empty string, logs will not be written at all. May be set to '
-           'multiple directories separated by the "%s" character, in which '
-           'case the first one that exists and is writable is used.' % (
-                tempfile.gettempdir(), os.pathsep))
+           'directory (%s) will be used instead. If this is explicitly set '
+           'to the empty string, logs will not be written at all. May be set'
+           ' to multiple directories separated by the "%s" character, in '
+           'which case the first one that exists and is writable is used.' % (
+                tempfile.gettempdir(), os.pathsep), width=56))
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
