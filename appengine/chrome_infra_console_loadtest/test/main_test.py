@@ -18,13 +18,14 @@ class LoadTestApiTest(testing.EndpointsTestCase):
   def testLoadTestSet(self):
     point = {'time': 0.0, 
              'value': 10.0}
-    fields = {'key': 'project_id',
-              'values': ['chromium', 'blink', 'v8']}
-    request = {'points': [point], 'fields': [fields],
-               'metric_name': 'disk_used'}
+    field = {'key': 'project_id',
+             'value': 'chromium'}
+    request = {'timeseries': [{'points': [point],
+               'fields': [field],
+               'metric': 'disk_used'}]}
     self.mock(auth, 'is_group_member', lambda _: True)
-    response = self.call_api('loadtest_timeseries', {}).json_body
-    self.assertEquals(response, request)
+    response = self.call_api('loadtest_timeseries', request).json_body
+    self.assertEquals(response, {})
 
 
 class UIApiTest(testing.EndpointsTestCase):
