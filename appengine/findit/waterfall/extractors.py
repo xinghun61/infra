@@ -72,6 +72,7 @@ class CompileStepExtractor(Extractor):
       if (not failure_started and
           line.startswith(self.FAILURE_START_LINE_PREFIX)):  # pragma: no cover
         failure_started = True
+        continue
       elif failure_started and line.startswith(self.FAILURE_END_LINE_PREFIX):
         break
 

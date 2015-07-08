@@ -145,8 +145,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         blabla...""")
     expected_signal_json = {
         'files': {
-            'a/b/c.cc': [307],
-            'obj/a/b/test.c.o': []
+            'a/b/c.cc': [307]
         },
         'tests': [],
         'keywords': {}
