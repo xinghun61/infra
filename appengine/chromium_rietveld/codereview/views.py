@@ -3350,7 +3350,7 @@ def publish(request):
   for obj in tbd:
     obj.put()
 
-  if form.cleaned_data['commit'] and not issue.closed:
+  if form.cleaned_data['commit'] and not issue.cq_dry_run and not issue.closed:
     notify_approvers_of_new_patchsets(request, issue)
 
   notify_xmpp.notify_issue(request, issue, 'Comments published')

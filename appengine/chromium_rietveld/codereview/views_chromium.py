@@ -393,7 +393,7 @@ def edit_flags(request):
                        send_mail=unchecked_by_non_owner, auto_generated=True,
                        email_to=[request.issue.owner.email()]).put()
     request.issue.put()
-    if request.issue.commit:
+    if request.issue.commit and not request.issue.cq_dry_run:
       views.notify_approvers_of_new_patchsets(request, request.issue)
 
   if 'builders' in request.POST:
