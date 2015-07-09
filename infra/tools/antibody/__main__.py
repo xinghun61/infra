@@ -49,22 +49,23 @@ def main(argv):
     password = f.read().strip()
   connection, cc = csql.connect(password)
   antibody.setup_antibody_db(cc)
+  checkout = args.git_checkout_path
   if args.parse_git_rietveld or args.run_antibody:
-    checkout = args.git_checkout_path
-    git_commit_parser.upload_git_to_sql(cc, checkout)
+    git_commit_parser.upload_git_to_sql(cc, checkout, args.since)
     git_commits_with_review_urls = git_commit_parser.get_urls_from_git_db(cc)
     for git_hash, review_url in git_commits_with_review_urls:
       # cannot get access into chromereview.googleplex.com
       if 'chromereviews.googleplex' not in review_url:
         code_review_parse.add_rietveld_data_to_db(git_hash, review_url, cc)
   if args.write_html or args.run_antibody:
+    if not os.path.exists(args.output_dir_path):
+      os.makedirs(args.output_dir_path)
     suspicious_commits = code_review_parse.get_tbr_no_lgtm(cc)
-    antibody.get_tbr_by_user(cc)
-    # TODO(ksho): un-hardcode the gitiles prefix once git checkout path command
-    # line functionality comes in from Keeley's cl, read in from 
-    # codereview.settings instead
-    gitiles_prefix = "https://chromium.googlesource.com/infra/infra/+/"
-    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix,
+    gitiles_prefix = antibody.get_gitiles_prefix(checkout)
+    if not gitiles_prefix:
+      gitiles_prefix = ''
+    antibody.get_tbr_by_user(cc, gitiles_prefix, args.output_dir_path)
+    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix, 
                                   args.output_dir_path)
 
   csql.close(connection, cc)

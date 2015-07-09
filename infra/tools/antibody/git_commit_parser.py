@@ -8,8 +8,8 @@ import subprocess
 import infra.tools.antibody.cloudsql_connect as csql
 
 
-def read_commit_info(git_checkout_path, git_log_format=('%H', '%b'),
-                     year=2014):  # pragma: no cover
+def read_commit_info(git_checkout_path, commits_after_date, 
+                     git_log_format=('%H', '%b')):  # pragma: no cover
   """Read commit messages and other information
 
   Args:
@@ -20,8 +20,8 @@ def read_commit_info(git_checkout_path, git_log_format=('%H', '%b'),
   """
   git_log_format = '%x1f'.join(git_log_format) + '%x1e'
   log = subprocess.check_output(['git', 'log',
-                                 '--format=%s' % git_log_format,
-                                 '--after=%s' % year], cwd=git_checkout_path)
+      '--format=%s' % git_log_format, '--after=%s' % commits_after_date],
+      cwd=git_checkout_path)
   return log
 
 
@@ -126,14 +126,15 @@ def parse_commit_message(git_log):
   return commits
 
 
-def upload_git_to_sql(cc, git_checkout_path):  # pragma: no cover
+def upload_git_to_sql(cc, git_checkout_path, 
+                      commits_after_date):  # pragma: no cover
   """Writes suspicious git commits to a Cloud SQL database
 
   Args:
     cc: a cursor for the Cloud SQL connection
     git_checkout_path(str): path to a local git checkout
   """
-  log_output = read_commit_info(git_checkout_path)
+  log_output = read_commit_info(git_checkout_path, commits_after_date)
   log_dict = parse_commit_info(log_output)
   output = parse_commit_message(log_dict)
   csql.write_to_git_table(cc, output)

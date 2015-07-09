@@ -22,24 +22,28 @@ class MyTest(auto_stub.TestCase):
     parser = argparse.ArgumentParser()
     antibody.add_argparse_options(parser)
     args = parser.parse_args(['--cache-path', '/ab', '--git-checkout-path',
-                              '/bcd', '--sql-password-file', 'abd.txt',
-                              '--write-html', '--run-antibody',
-                              '--parse-git-rietveld'])
+        '/bcd', '--sql-password-file', 'abd.txt','--write-html', 
+        '--run-antibody', '--parse-git-rietveld', '--output-dir-path',
+        '/efg', '--since', '2000'])
     self.assertEqual(args.cache_path, '/ab')
     self.assertEqual(args.git_checkout_path, '/bcd')
     self.assertEqual(args.sql_password_file, 'abd.txt')
     self.assertTrue(args.write_html)
     self.assertTrue(args.run_antibody)
     self.assertTrue(args.parse_git_rietveld)
+    self.assertEqual(args.output_dir_path, '/efg')
+    self.assertEqual(args.since, '2000')
 
     args = parser.parse_args(['-c', '/ab', '-g', '/bcd', '-p', 'abd.txt', '-w',
-                              '-a', '-r'])
+                              '-a', '-r', '-d', '/efg', '-s', '2000'])
     self.assertEqual(args.cache_path, '/ab')
     self.assertEqual(args.git_checkout_path, '/bcd')
     self.assertEqual(args.sql_password_file, 'abd.txt')
     self.assertTrue(args.write_html)
     self.assertTrue(args.run_antibody)
     self.assertTrue(args.parse_git_rietveld)
+    self.assertEqual(args.output_dir_path, '/efg')
+    self.assertEqual(args.since, '2000')
 
   def test_generate_antibody_ui(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
@@ -61,6 +65,8 @@ class MyTest(auto_stub.TestCase):
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
+
+      self.assertTrue(os.path.exists(os.path.join(dirname, 'static')))
 
   def test_get_tbr_by_user(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
@@ -95,7 +101,8 @@ class MyTest(auto_stub.TestCase):
         cur.executemany('INSERT INTO %s VALUES(?, ?, ?, ?)'
                         % csql.DEFAULT_GIT_TABLE, fake_git_data)
 
-        antibody.get_tbr_by_user(cur, dirname)
+        antibody.get_tbr_by_user(cur, 
+            'https://chromium.googlesource.com/infra/infra/+/', dirname)
         expected_out = {
           "by_user" : {
             "pgervais" : [[2, 'https://codereview.chromium.org/1175993003', 1]],
@@ -108,3 +115,24 @@ class MyTest(auto_stub.TestCase):
         with open(os.path.join(dirname, 'tbr_by_user.json'), 'r') as f:
           output = json.load(f)
           self.assertItemsEqual(output, expected_out)
+
+
+  def test_get_gitiles_prefix(self):
+    with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
+      with open(os.path.join(dirname, 'codereview.settings'), 'w') as f:
+        f.writelines([
+          'This file is used by gcl to get repository specific information.\n',
+          'CODE_REVIEW_SERVER: https://codereview.chromium.org\n',
+          'VIEW_VC: https://chromium.googlesource.com/infra/infra/+/\n',
+          'CC_LIST: chromium-reviews@chromium.org\n',
+          'PROJECT: infra\n',
+        ])
+      self.assertEqual(antibody.get_gitiles_prefix(dirname),
+                       'https://chromium.googlesource.com/infra/infra/+/')
+
+      with open(os.path.join(dirname, 'codereview.settings'), 'w') as f:
+        f.writelines([
+          'CC_LIST: chromium-reviews@chromium.org\n',
+          'PROJECT: infra\n',
+        ])
+      self.assertEqual(antibody.get_gitiles_prefix(dirname), None)

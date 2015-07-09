@@ -8,6 +8,7 @@ import jinja2
 import json
 import logging
 import os
+import shutil
 
 import infra.tools.antibody.cloudsql_connect as csql
 
@@ -37,7 +38,9 @@ def add_argparse_options(parser):
   parser.add_argument('--output-dir-path', '-d', default=THIS_DIR,
                       help="path to directory in which the ui will be"
                            "generated")
-  
+  parser.add_argument('--since', '-s', default='2014',
+                      help="parse all git commits after this date"
+                           "format as YYYY or YYYY-MM-DD")
 
 
 def setup_antibody_db(cc):  # pragma: no cover
@@ -45,12 +48,12 @@ def setup_antibody_db(cc):  # pragma: no cover
 
 
 def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
-  templateLoader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
-  templateEnv = jinja2.Environment(loader=templateLoader)
-  index_template = templateEnv.get_template('antibody_ui_all.jinja')
-  tbr_by_user_template = templateEnv.get_template('tbr_by_user.jinja')
+  template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
+  template_env = jinja2.Environment(loader=template_loader)
+  index_template = template_env.get_template('antibody_ui_all.jinja')
+  tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
 
-  templateVars = {'title' : 'Potentially Suspicious Commits to Chromium',
+  template_vars = {'title' : 'Potentially Suspicious Commits',
                   'description' : 'List of commits with a TBR but no lgtm',
                   'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
                   'tbr_by_user_link' : TBR_BY_USER_NAME,
@@ -62,13 +65,25 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
                   'gitiles_prefix' : gitiles_prefix,
                  }
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
-    f.write(index_template.render(templateVars)) 
+    f.write(index_template.render(template_vars)) 
 
   with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
-    f.write(tbr_by_user_template.render(templateVars)) 
+    f.write(tbr_by_user_template.render(template_vars)) 
+
+  try:
+    if (ui_dirpath != THIS_DIR):  # pragma: no cover
+      shutil.rmtree(os.path.join(ui_dirpath, 'static'))
+  except OSError, e:
+    if e.errno == 2:  # [Errno 2] No such file or directory
+      pass
+    else:  # pragma: no cover
+      raise
+  if (ui_dirpath != THIS_DIR):  # pragma: no cover
+    shutil.copytree(os.path.join(THIS_DIR, 'static'), 
+                    os.path.join(ui_dirpath, 'static'))
 
 
-def get_tbr_by_user(cc, dirpath=THIS_DIR):
+def get_tbr_by_user(cc, gitiles_prefix, output_dirpath):
   cc.execute('SELECT g.git_hash, g.tbr, r.review_url, r.request_timestamp '
              'FROM git g, rietveld r WHERE g.git_hash = r.git_hash '
              'AND r.lgtm <> "1"')
@@ -80,9 +95,20 @@ def get_tbr_by_user(cc, dirpath=THIS_DIR):
     for reviewer in reviewers:
       reviewer = reviewer.strip().split('@')
       tbr_blame_dict.setdefault(reviewer[0], []).append([git_hash, url, time])
-  # TODO (ksho): read gitiles_prefix from git table once schema changes
   tbr_data = {
       "by_user" : tbr_blame_dict,
-      "gitiles_prefix" : "https://chromium.googlesource.com/infra/infra/+/"} 
-  with open(os.path.join(dirpath, 'tbr_by_user.json'), 'wb') as f:
+      "gitiles_prefix" : gitiles_prefix,
+  } 
+  with open(os.path.join(output_dirpath, 'tbr_by_user.json'), 'wb') as f:
     f.write(json.dumps(tbr_data))
+
+
+def get_gitiles_prefix(git_checkout_path):
+  with open(os.path.join(git_checkout_path, 'codereview.settings'), 'r') as f:
+    lines = f.readlines()
+  for line in lines:  
+    if line.startswith('VIEW_VC:'):
+      return line[len('VIEW_VC:'):].strip()
+  # TODO (ksho): implement more sophisticated solution if codereview.settings
+  # does not contain VIEW_VC
+  return None
