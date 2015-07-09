@@ -18,11 +18,7 @@ from infra_libs import ts_mon
 from infra_libs import logs
 
 
-cpu_count = ts_mon.GaugeMetric('dev/cpu/count')
-cpu_user_percent = ts_mon.FloatMetric('dev/cpu/user')
-cpu_system_percent = ts_mon.FloatMetric('dev/cpu/system')
-cpu_idle_percent = ts_mon.FloatMetric('dev/cpu/idle')
-cpu_total_percent = ts_mon.FloatMetric('dev/cpu/total')
+cpu_time = ts_mon.FloatMetric('dev/cpu/time')
 
 disk_free = ts_mon.GaugeMetric('dev/disk/free')
 disk_total = ts_mon.GaugeMetric('dev/disk/total')
@@ -42,20 +38,9 @@ proc_count = ts_mon.GaugeMetric('dev/proc/count')
 
 
 def get_cpu_info():
-  num_cores = psutil.cpu_count()
-  cpu_count.set(num_cores)
-  # Warning: blocking call for the duration of 'interval'.
-  times_percents = psutil.cpu_times_percent(interval=1.0, percpu=True)
-  total_percents = psutil.cpu_percent(percpu=True)  # uses same interval.
-  # psutil guarantees that the return values when percpu=True always have
-  # the same deterministic ordering, so we can rely on that here.
-  for cpu in xrange(num_cores):
-    # We only report user, system, and idle because others (such as nice) aren't
-    # available on all platforms.
-    cpu_user_percent.set(times_percents[cpu].user, {'core': cpu})
-    cpu_system_percent.set(times_percents[cpu].system, {'core': cpu})
-    cpu_idle_percent.set(times_percents[cpu].idle, {'core': cpu})
-    cpu_total_percent.set(total_percents[cpu], {'core': cpu})
+  times = psutil.cpu_times_percent()
+  for mode in ('user', 'system', 'idle'):
+    cpu_time.set(getattr(times, mode), {'mode': mode})
 
 
 def get_disk_info():
@@ -129,6 +114,10 @@ def main(argv):
     finally:
       ts_mon.flush()
     return True
+
+  # This returns a 0 value the first time it's called.  Call it now and discard
+  # the return value.
+  psutil.cpu_times_percent()
 
   # Wait a random amount of time before starting the loop in case sysmon is
   # started at exactly the same time on all machines.
