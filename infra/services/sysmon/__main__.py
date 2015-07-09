@@ -7,7 +7,9 @@
 
 import argparse
 import os
+import random
 import sys
+import time
 
 import psutil
 
@@ -127,6 +129,10 @@ def main(argv):
     finally:
       ts_mon.flush()
     return True
+
+  # Wait a random amount of time before starting the loop in case sysmon is
+  # started at exactly the same time on all machines.
+  time.sleep(random.uniform(0, opts.interval))
 
   loop_results = outer_loop.loop(
       task=single_iteration,
