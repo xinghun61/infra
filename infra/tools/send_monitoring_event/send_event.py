@@ -11,6 +11,7 @@ import sys
 
 from infra_libs import event_mon
 import infra_libs.logs
+from infra_libs import ts_mon
 
 
 LOGGER = logging.getLogger(__name__)
@@ -131,9 +132,16 @@ def get_arguments(argv):
                           'successfully\nsent to the endpoint, delete the '
                           'file. By default\nfiles are kept.')
 
-
+  ts_mon.add_argparse_options(parser)
   event_mon.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
+
+  parser.set_defaults(
+      ts_mon_flush='manual',
+      ts_mon_target_type='task',
+      ts_mon_task_service_name='send_monitoring_event',
+      ts_mon_task_job_name='manual',
+  )
 
   args = parser.parse_args(argv)
 
@@ -148,6 +156,12 @@ def get_arguments(argv):
     parser.error('--events-from-file is not compatible with either'
                  '--service-event-type or --build-event-type.')
   return args
+
+
+def process_argparse_options(args):  # pragma: no cover
+  infra_libs.logs.process_argparse_options(args)
+  event_mon.process_argparse_options(args)
+  ts_mon.process_argparse_options(args)
 
 
 def send_service_event(args):
@@ -165,17 +179,17 @@ def send_service_event(args):
   if args.service_event_stack_trace:
     args.service_event_type = 'CRASH'
 
-  event_mon.send_service_event(
+  return bool(event_mon.send_service_event(
     args.service_event_type,
     code_version=revinfo.values(),
     stack_trace=args.service_event_stack_trace,
     timestamp_kind=args.event_mon_timestamp_kind,
-    event_timestamp=args.event_mon_event_timestamp)
+    event_timestamp=args.event_mon_event_timestamp))
 
 
 def send_build_event(args):
   """Entry point when --build-event-type is passed."""
-  event_mon.send_build_event(
+  return bool(event_mon.send_build_event(
     args.build_event_type,
     args.build_event_hostname,
     args.build_event_build_name,
@@ -185,12 +199,13 @@ def send_build_event(args):
     step_number=args.build_event_step_number,
     result=args.build_event_result,
     timestamp_kind=args.event_mon_timestamp_kind,
-    event_timestamp=args.event_mon_event_timestamp)
+    event_timestamp=args.event_mon_event_timestamp))
 
 
 def send_events_from_file(args):
   """Entry point when --events-from-file is passed."""
   file_list = get_event_file_list(args.events_from_file)
+  status = True
 
   for filename in file_list:
     LOGGER.info('Processing %s', filename)
@@ -205,6 +220,9 @@ def send_events_from_file(args):
           LOGGER.exception('Failed to delete %s.', filename)
     else: # pragma: no cover
       LOGGER.error('Failed to send events. Keeping file around: %s', filename)
+      status = False
+
+  return status
 
 
 def get_event_file_list(filename_globs):

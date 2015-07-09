@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import socket
 import sys
 
-import infra_libs.event_mon as event_mon
 import infra_libs.logs
+import infra_libs.event_mon as event_mon
+import infra_libs.ts_mon as ts_mon
 
 from infra.tools.send_monitoring_event import send_event
 
@@ -18,26 +20,36 @@ def main(argv):  # pragma: no cover
   if len(argv) == 0:
     return status
 
-  args = send_event.get_arguments(argv)
+  success_metric = ts_mon.BooleanMetric('send_monitoring_event/success')
 
-  event_mon.process_argparse_options(args)
-  infra_libs.logs.process_argparse_options(args)
+  try:
+    args = send_event.get_arguments(argv)
 
-  if args.build_event_type:
-    send_event.send_build_event(args)
+    send_event.process_argparse_options(args)
 
-  elif args.service_event_type:
-    send_event.send_service_event(args)
+    if args.build_event_type:
+      success_metric.set(send_event.send_build_event(args))
 
-  elif args.events_from_file:
-    send_event.send_events_from_file(args)
+    elif args.service_event_type:
+      success_metric.set(send_event.send_service_event(args))
 
-  else:
-    print >> sys.stderr, ('At least one of the --*-event-type options or '
-                          '--events-from-file should be provided. Nothing '
-                          'was sent.')
-    status = 2
-  event_mon.close()
+    elif args.events_from_file:
+      success_metric.set(send_event.send_events_from_file(args))
+
+    else:
+      print >> sys.stderr, ('At least one of the --*-event-type options or '
+                            '--events-from-file should be provided. Nothing '
+                            'was sent.')
+      status = 2
+      success_metric.set(False)
+  except Exception:
+    success_metric.set(False)
+  finally:
+    event_mon.close()
+    try:
+      ts_mon.flush()
+    except ts_mon.MonitoringNoConfiguredMonitorError:
+      pass
   return status
 
 
