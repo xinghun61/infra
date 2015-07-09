@@ -364,7 +364,6 @@ def _StripChromiumRootDirectory(file_path):
     file_path = file_path[4:]
   return file_path
 
-
 def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   """Gets changed line numbers for file in failure log.
 
@@ -449,7 +448,7 @@ def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
     roll_file_change_type = None
     if roll['old_revision'] and roll['new_revision']:
       roll_file_change_type, changed_lines = _GetChangedLinesForDependencyRepo(
-          roll, file_path_in_log, line_numbers)
+          roll, file_path_in_log[len(dep_path):], line_numbers)
       if not roll_file_change_type:
         continue
 

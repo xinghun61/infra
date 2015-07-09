@@ -159,7 +159,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     self.assertIsNone(justification)
 
   def _MockGetBlame(self, path, revision):
-    if revision == '10' or path == 'third_party/dep/f_not_exist.cc':
+    if revision == '10' or path == 'f_not_exist.cc':
       return None
     blame = Blame(revision, path)
     if revision <= '3':
