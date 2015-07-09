@@ -1,0 +1,50 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../add-field.html">
+  </head>
+  <body>
+
+    <add-field></add-field>
+
+    <script>
+      var a = document.querySelector('add-field');
+
+      suite('<add-field>', function() {
+
+        test('add-field add button works.', function() {
+          assert.equal(a.fieldsPresent.length, 1);
+          var button = a.querySelector('.fieldNameAdd');
+          button.click();
+          assert.equal(a.fieldsPresent.length, 2);      
+        });
+
+        test('add-field remove button works.', function() {
+          a.fieldsPresent = ["a","b","c"];
+          var button = a.querySelector('.fieldRemove');
+          button.click();
+          assert.equal(a.fieldsPresent.length, 2);
+          assert.equal(a.fieldsPresent[1], "c");     
+        });
+
+        test('add-field repeated Template works.', function() {
+          a.fieldsPresent = [{key:"a", values:["a"]}, {key:"b", values:["b"]}, {key:"c", values:["c"]}];
+          assert.equal(a.fieldsPresent.length, 3);   
+          var temp = a.querySelector('#repeatTempAdd');
+          assert.equal(temp.items.length, 3);       
+        });
+      });
+    </script>
+
+  </body> 
+</html>

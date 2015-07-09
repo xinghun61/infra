@@ -74,7 +74,7 @@ class UIApi(remote.Service):
   """API for the loadtest configuration UI."""
 
   @auth.endpoints_method(message_types.VoidMessage, Params,
-                         name='UI.get')
+                         name='ui.get')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def UI_get(self, _request):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
@@ -83,7 +83,7 @@ class UIApi(remote.Service):
     return Params(time=data.time, freq=data.freq, params=params)
 
   @auth.endpoints_method(Params, message_types.VoidMessage,
-                         name='UI.set')
+                         name='ui.set')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def UI_set(self, request):
     logging.debug('Got %s', request)

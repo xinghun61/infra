@@ -8,6 +8,19 @@ handlers:
   secure: always
   script: main.APPLICATION
 
+- url: /bower_components
+  static_dir: bower_components
+
+- url: /elements
+  static_dir: elements
+
+- url: /js
+  static_dir: js
+
+- url: /
+  static_files: html/index.html
+  upload: html/index\.html
+
 libraries:
 - name: endpoints
   version: 1.0
@@ -22,3 +35,6 @@ libraries:
 
 includes:
 - components/auth
+
+skip_files:
+- ^(.*/)?.*~

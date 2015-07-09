@@ -1,0 +1,63 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">  
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">  
+<link rel="import" href="../../bower_components/paper-button/paper-button.html"> 
+<link rel="import" href="../field-button/field-button.html">
+
+
+<dom-module id="add-field" >
+  <link rel="import" type="css" href="add-field.css">
+
+  <template>
+    <div id ="wholeBlock">
+      <div id="title">3. Fields</div>
+      <div class="eachBlock">
+      	<template is="dom-repeat" id="repeatTempAdd" items="{{fieldsPresent}}"> 
+        	<paper-input class="fieldNameInput"
+        	  label="Enter field name" value="{{item.key}}"></paper-input>
+        	<paper-icon-button class="fieldRemove" icon="remove-circle-outline" 
+        	  on-click="removeNamesHandle"></paper-icon-button>
+        	<field-button class="fieldValueGet" field-input="{{item.values}}">
+        	</field-button>        
+      	</template>
+      </div>
+      <paper-button id="clear" raised on-click="_clear">Clear Fields</paper-button>
+      <paper-icon-button class="fieldNameAdd" icon="add-circle-outline" 
+        on-click="addNamesHandle"></paper-icon-button>
+    </div>
+  </template>
+  <script>
+
+    Polymer({
+      properties: {
+        fieldNames: {
+          type: Array,
+          notify:true
+        },
+        fieldsAdd:{
+          type: Boolean,
+          notify: true
+        },
+        fieldsPresent: {
+          type: Array,
+          notify: true,
+          value: [{key:"", values:[" "]}],
+        }
+      },
+      addNamesHandle: function(){
+        this.push('fieldsPresent', {key:"", values:[" "]});
+      },
+      removeNamesHandle: function(e){
+        this.splice('fieldsPresent', e.model.index, 1);
+      },
+      _clear: function(){
+        this.fieldsPresent = [{key:"", values:[" "]}];
+      },   
+    });
+
+  </script>
+</dom-module>

@@ -1,0 +1,50 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../field-button.html">
+  </head>
+  <body>
+
+    <field-button></field-button>
+
+    <script>
+      var myEl = document.querySelector('field-button');
+
+      suite('<field-button>', function() {
+
+        test('Test add button works.', function() {
+          assert.equal(myEl.fieldInput.length, 1);
+          var button = myEl.querySelector('.fieldValueAdd');
+          button.click();
+          assert.equal(myEl.fieldInput.length, 2);
+        });
+
+        test('Test remove button works.', function() {
+          myEl.fieldInput = ["a", "b" ,"c"];
+          assert.equal(myEl.fieldInput.length, 3);
+          var buttonRemove = myEl.querySelector('.fieldValueRemove');
+          buttonRemove.click();
+          assert.equal(myEl.fieldInput.length, 2);
+        });
+
+        test('Test dom-repeat works.', function() {
+          var temp = myEl.querySelector('#repeatTemp');
+          myEl.fieldInput = ["a", "b" ,"c"];
+          assert.equal(temp.items.length, 3);
+        });
+
+      });
+    </script>
+
+  </body>
+</html>

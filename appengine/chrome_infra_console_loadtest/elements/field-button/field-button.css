@@ -1,0 +1,19 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file */
+
+#fieldValueBlock {
+  display: inline-block;
+}
+
+.fieldValueAdd {
+  display: inline-block;
+  color: #03C; 
+}
+
+.fieldValueRemove {
+  display: inline-block;
+  color: red;
+  margin-left: 0px; 
+  padding-left: 0px;
+}

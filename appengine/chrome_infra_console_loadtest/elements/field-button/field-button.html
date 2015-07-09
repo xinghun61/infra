@@ -1,0 +1,58 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">  
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html"> 
+<link rel="import" href="../../bower_components/paper-button/paper-button.html"> 
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<dom-module id="field-button">
+  <link rel="import" type="css" href="field-button.css">
+
+  <template>
+    <div id="fieldValueBlock">
+      <template id="repeatTemp" is="dom-repeat" items="{{fieldInput}}">
+        <paper-input class="fieldValueInput" label="Enter field value"   
+          value="{{item}}" on-input='changed'></paper-input>
+      </template>
+    </div>
+    <paper-icon-button class="fieldValueAdd" icon="add-circle" 
+      on-click="_addValuesHandle"></paper-icon-button>
+    <paper-icon-button class="fieldValueRemove" icon="remove-circle" 
+      on-click="_removeValuesHandle"></paper-icon-button>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'field-button',
+      properties: {
+        fieldInput: {
+          type: Array,
+          notify: true,
+          value: [" "]
+        }
+      },
+      _addValuesHandle: function(){
+        this.push('fieldInput'," ");
+      },
+      _removeValuesHandle: function(){
+        this.pop('fieldInput');
+      },      
+      changed: function(e){
+        var model = e.model;
+        model.set('item', e.model.item);
+        this.fieldInput[e.model.index] = e.model.item;
+        var num = Number(e.model.index);
+        var copy = [];
+        for(var i=0; i< this.fieldInput.length; i++){
+          var each = String(this.fieldInput[i]);
+          copy.push(each);
+        };
+        this.set('fieldInput', copy);
+      }
+    });
+  </script>
+</dom-module>
+
+

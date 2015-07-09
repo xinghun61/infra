@@ -1,0 +1,51 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+
+<link rel="import" href="../../bower_components/paper-slider/paper-slider.html">  
+
+
+<dom-module id="field-slider" extends="paper-slider" >
+  <link rel="import" type="css" href="field-slider.css">
+  <template>
+     <div class='sliderBlock'>
+       <div class="title">1. Sampling Frequency : every 
+         <span id="timeFreqLabel">[[currentFreq]]</span> second(s)</div>
+       <paper-slider id='timeFreq' pin snaps step="1" min="0" max="300" 
+         value="{{currentFreq}}" editable></paper-slider>
+     </div>
+     
+     <div class='sliderBlock'>
+       <div class="title">2. Time Range : </div>
+       <div class='timeblock1'>
+         <paper-input id='dayRange' value="{{currentRange}}" floatingLabel></paper-input>
+       </div>
+       <div class='timeblock2'><p>day(s)</p></div>
+     </div>
+
+
+  </template>
+  <script>
+    Polymer({
+      properties: {
+        currentFreq: {
+          type: Number,
+          notify: true
+        },  
+        dayValue: {
+          type: Number,
+          value: 0,
+          notify: true
+        }, 
+        currentRange:{
+          type:Number,
+          notify: true,
+          value:0
+        }
+      },   
+    });
+
+  </script>
+</dom-module>
+  

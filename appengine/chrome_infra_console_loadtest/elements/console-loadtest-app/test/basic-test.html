@@ -1,0 +1,39 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <!-- Step 1: import the element to test -->
+    <link rel="import" href="../console-loadtest-app.html">
+  </head>
+  <body>
+
+    <!-- You can use the document as a place to set up your fixtures. -->
+    <console-loadtest-app></console-loadtest-app>
+
+    <script>
+      var x = document.querySelector('console-loadtest-app');
+
+      suite('<console-loadtest-app>',function(){
+        test('check the data binding of console-loadtest-app', function() {
+          var twoPara =x.querySelector('#allPara');
+          twoPara.currentFreq = 10;
+          twoPara.currentRange = 100;
+          assert.equal(x.frequency, 10);
+          assert.equal(x.timeRange, 100);
+          var fieldPara =x.querySelector('#fieldPara');
+          fieldPara.fieldsPresent = [{key:"host", values:["chromium", "v8"]}];
+          assert.equal(x.fields[0].values[1], "v8");
+        });
+      }); 
+    </script>
+
+  </body>
+</html>

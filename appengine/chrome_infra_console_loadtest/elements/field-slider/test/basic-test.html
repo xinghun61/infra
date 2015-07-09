@@ -1,0 +1,47 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <!-- Step 1: import the element to test -->
+    <link rel="import" href="../field-slider.html">
+  </head>
+  <body>
+
+    <!-- You can use the document as a place to set up your fixtures. -->
+    <field-slider></field-slider>
+
+    <script>
+      var s = document.querySelector('field-slider');
+
+      suite('<field-slider>', function() {
+
+        test('test silder get', function() {
+          s.querySelector('paper-slider').value = 30;         
+          assert.equal(s.currentFreq, 30);
+        });
+
+        test('test silder set', function() {
+          s.currentFreq = 50;
+          assert.equal(s.querySelector('paper-slider').value, 50);
+          assert.equal(s.querySelector('#timeFreqLabel').textContent, "50");         
+        });
+
+        test('test time range input field', function() {
+          s.currentRange = 100;
+          assert.equal(s.querySelector('#dayRange').value, 100);
+          s.querySelector('#dayRange').value = 49;
+          assert.equal(s.currentRange, 49);    
+        });
+      });
+    </script>
+
+  </body>
+</html>
