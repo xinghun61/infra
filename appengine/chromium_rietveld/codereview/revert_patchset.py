@@ -45,9 +45,9 @@ def _get_revert_description(request, revert_reason, reviewers, original_issue,
   # Contain link to original CL.
   original_issue_link = request.build_absolute_uri(
       reverse('codereview.views.show', args=[original_issue.key.id()]))
-  revert_description.append('Revert of %s (patchset #%s id:%s of %s)' % (
-      original_issue.subject, original_patch_num, original_patchset_id,
-      original_issue_link))
+  revert_description.append('%s (patchset #%s id:%s of %s)' % (
+      _get_revert_subject(original_issue.subject), original_patch_num,
+      original_patchset_id, original_issue_link))
   # Display the reason for reverting.
   revert_description.append('')  # Extra new line to separate sections.
   revert_description.append('Reason for revert:')
@@ -80,7 +80,21 @@ def _get_revert_description(request, revert_reason, reviewers, original_issue,
 
 
 def _get_revert_subject(original_subject):
-  """Creates and returns a subject for the revert CL."""
+  """Creates and returns a subject for the revert CL.
+
+  If the original CL was a revert CL then 'Revert of' is replaced with
+  'Reland of'.
+  If the original CL was a reland CL then 'Reland of' is replaced
+  with 'Revert of'.
+  All other CLs get 'Revert of' prefixed to the subject.
+  """
+  if original_subject.startswith('Revert of '):
+    # This is going to be a revert of a revert, i.e. a reland.
+    original_subject = original_subject.lstrip('Revert of ')
+    return 'Reland of %s' % original_subject
+  elif original_subject.startswith('Reland of '):
+    # This is going to be a revert of a reland, i.e. a revert.
+    original_subject = original_subject.lstrip('Reland of ')
   return 'Revert of %s' % original_subject
 
 
