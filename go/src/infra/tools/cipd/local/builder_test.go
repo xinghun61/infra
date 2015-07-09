@@ -68,13 +68,15 @@ func TestBuildInstance(t *testing.T) {
 			Output:      &out,
 			PackageName: "testing",
 			VersionFile: "version.json",
+			InstallMode: "copy",
 		})
 		So(err, ShouldBeNil)
 
 		goodManifest := `{
   "format_version": "1",
   "package_name": "testing",
-  "version_file": "version.json"
+  "version_file": "version.json",
+  "install_mode": "copy"
 }`
 
 		// The manifest and all added files.

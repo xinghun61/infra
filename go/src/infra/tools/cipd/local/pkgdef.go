@@ -25,6 +25,8 @@ type PackageDef struct {
 	Package string
 	// Root defines where to search for files, relative to package file itself.
 	Root string
+	// InstallMode defines how to deploy the package file: "copy" or "symlink".
+	InstallMode InstallMode `yaml:"install_mode"`
 	// Data describes what is deployed with the package.
 	Data []PackageChunkDef
 }
@@ -46,28 +48,31 @@ type PackageChunkDef struct {
 // LoadPackageDef loads package definition from a YAML source code. In
 // substitutes %{...} strings in the definition with corresponding values
 // from 'vars' map.
-func LoadPackageDef(r io.Reader, vars map[string]string) (out PackageDef, err error) {
+func LoadPackageDef(r io.Reader, vars map[string]string) (PackageDef, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
-		return
+		return PackageDef{}, err
 	}
-	err = yaml.Unmarshal(data, &out)
-	if err != nil {
-		return
+
+	out := PackageDef{}
+	if err = yaml.Unmarshal(data, &out); err != nil {
+		return PackageDef{}, err
 	}
 
 	// Substitute variables in all strings.
 	for _, str := range out.strings() {
 		*str, err = subVars(*str, vars)
 		if err != nil {
-			return
+			return PackageDef{}, err
 		}
 	}
 
-	// Validate package name right away.
-	err = common.ValidatePackageName(out.Package)
-	if err != nil {
-		return
+	// Validate global package properties.
+	if err = common.ValidatePackageName(out.Package); err != nil {
+		return PackageDef{}, err
+	}
+	if err = ValidateInstallMode(out.InstallMode); err != nil {
+		return PackageDef{}, err
 	}
 
 	versionFile := ""
@@ -105,8 +110,7 @@ func LoadPackageDef(r io.Reader, vars map[string]string) (out PackageDef, err er
 	if out.Root == "" {
 		out.Root = "."
 	}
-
-	return
+	return out, nil
 }
 
 // FindFiles scans files system and returns all files to be added to the

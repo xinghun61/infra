@@ -25,6 +25,8 @@ type PackageInstance interface {
 	Close() error
 	// Pin identifies package name and concreted package instance ID of this package file.
 	Pin() common.Pin
+	// InstallMode defines how to install the package (as specified in the manifest file).
+	InstallMode() InstallMode
 	// Files returns a list of files to deploy with the package.
 	Files() []File
 	// DataReader returns reader that reads raw package data.
@@ -39,8 +41,7 @@ type PackageInstance interface {
 // it (if required).
 func OpenInstance(r io.ReadSeeker, instanceID string) (PackageInstance, error) {
 	out := &packageInstance{data: r}
-	err := out.open(instanceID)
-	if err != nil {
+	if err := out.open(instanceID); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -61,8 +62,7 @@ func OpenInstanceFile(path string, instanceID string) (inst PackageInstance, err
 
 // ExtractInstance extracts all files from a package instance into a destination.
 func ExtractInstance(inst PackageInstance, dest Destination) error {
-	err := dest.Begin()
-	if err != nil {
+	if err := dest.Begin(); err != nil {
 		return err
 	}
 
@@ -135,6 +135,7 @@ func ExtractInstance(inst PackageInstance, dest Destination) error {
 	}
 
 	// Use nested functions in a loop to be able to utilize defers.
+	var err error
 	for _, f := range files {
 		if f.Name() == manifestName {
 			err = extractManifestFile(f)
@@ -174,19 +175,20 @@ type packageInstance struct {
 // open reads the package data , verifies SHA1 hash and reads manifest.
 func (inst *packageInstance) open(instanceID string) error {
 	// Calculate SHA1 of the data to verify it matches expected instanceID.
-	_, err := inst.data.Seek(0, os.SEEK_SET)
-	if err != nil {
+	if _, err := inst.data.Seek(0, os.SEEK_SET); err != nil {
 		return err
 	}
 	hash := sha1.New()
-	_, err = io.Copy(hash, inst.data)
+	if _, err := io.Copy(hash, inst.data); err != nil {
+		return err
+	}
+
+	dataSize, err := inst.data.Seek(0, os.SEEK_CUR)
 	if err != nil {
 		return err
 	}
-	inst.dataSize, err = inst.data.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return err
-	}
+	inst.dataSize = dataSize
+
 	calculatedSHA1 := hex.EncodeToString(hash.Sum(nil))
 	if instanceID != "" && instanceID != calculatedSHA1 {
 		return fmt.Errorf("Package SHA1 hash mismatch")
@@ -246,6 +248,7 @@ func (inst *packageInstance) Pin() common.Pin {
 	}
 }
 
+func (inst *packageInstance) InstallMode() InstallMode  { return inst.manifest.InstallMode }
 func (inst *packageInstance) Files() []File             { return inst.files }
 func (inst *packageInstance) DataReader() io.ReadSeeker { return inst.data }
 

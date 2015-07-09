@@ -29,6 +29,8 @@ type BuildInstanceOptions struct {
 	PackageName string
 	// VersionFile is slash separated path where to drop JSON with version info.
 	VersionFile string
+	// InstallMode defines how to install the package: "copy" or "symlink".
+	InstallMode InstallMode
 	// Log defines logger to use.
 	Logger logging.Logger
 }
@@ -175,11 +177,15 @@ func makeManifestFile(opts BuildInstanceOptions) (File, error) {
 	if opts.VersionFile != "" && !isCleanSlashPath(opts.VersionFile) {
 		return nil, fmt.Errorf("version file path should be a clean path relative to a package root: %s", opts.VersionFile)
 	}
+	if err := ValidateInstallMode(opts.InstallMode); err != nil {
+		return nil, err
+	}
 	buf := &bytes.Buffer{}
 	err := writeManifest(&Manifest{
 		FormatVersion: manifestFormatVersion,
 		PackageName:   opts.PackageName,
 		VersionFile:   opts.VersionFile,
+		InstallMode:   opts.InstallMode,
 	}, buf)
 	if err != nil {
 		return nil, err

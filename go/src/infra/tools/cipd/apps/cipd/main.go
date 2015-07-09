@@ -219,6 +219,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 			Input:       files,
 			PackageName: pkgDef.Package,
 			VersionFile: pkgDef.VersionFile(),
+			InstallMode: pkgDef.InstallMode,
 			Logger:      log,
 		}
 		return out, nil

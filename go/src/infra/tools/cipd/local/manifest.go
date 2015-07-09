@@ -6,6 +6,7 @@ package local
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -21,12 +22,28 @@ const (
 	manifestFormatVersion = "1"
 )
 
+// InstallMode defines how to install a package.
+type InstallMode string
+
+const (
+	// InstallModeSymlink is default (for backward compatibility). In this mode
+	// all files are extracted to .cipd/*/... and then symlinked to the site root
+	// directory. Version switch happens atomically.
+	InstallModeSymlink InstallMode = "symlink"
+	// InstallModeCopy is always used on Windows (and can be optionally) used on
+	// other OSes. In this mode package files are copied directly into the site
+	// root directory. If installation is aborted midway, the package may end up
+	// in inconsistent state.
+	InstallModeCopy InstallMode = "copy"
+)
+
 // Manifest defines structure of manifest.json file.
 type Manifest struct {
-	FormatVersion string     `json:"format_version"`
-	PackageName   string     `json:"package_name"`
-	VersionFile   string     `json:"version_file,omitempty"` // where to put JSON with info about deployed package
-	Files         []FileInfo `json:"files,omitempty"`        // present only in deployed manifest
+	FormatVersion string      `json:"format_version"`
+	PackageName   string      `json:"package_name"`
+	VersionFile   string      `json:"version_file,omitempty"` // where to put JSON with info about deployed package
+	InstallMode   InstallMode `json:"install_mode,omitempty"` // how to install: "copy" or "symlink"
+	Files         []FileInfo  `json:"files,omitempty"`        // present only in deployed manifest
 }
 
 // FileInfo is JSON-ish struct with info extracted from File interface.
@@ -46,6 +63,16 @@ type FileInfo struct {
 type VersionFile struct {
 	PackageName string `json:"package_name"`
 	InstanceID  string `json:"instance_id"`
+}
+
+// ValidateInstallMode returns non nil if install mode is invalid. Valid modes
+// are: "" (client will pick platform default), "copy" (aka InstallModeCopy),
+// "symlink" (aka InstallModeSymlink).
+func ValidateInstallMode(mode InstallMode) error {
+	if mode == "" || mode == InstallModeCopy || mode == InstallModeSymlink {
+		return nil
+	}
+	return fmt.Errorf("invalid install mode %q", mode)
 }
 
 // readManifest reads and decodes manifest JSON from io.Reader.

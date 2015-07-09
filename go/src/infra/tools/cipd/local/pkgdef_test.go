@@ -29,6 +29,7 @@ func TestLoadPackageDef(t *testing.T) {
 		body := strings.NewReader(`{
 			"package": "package/${var1}",
 			"root": "../..",
+			"install_mode": "copy",
 			"data": [
 				{
 					"file": "some_file_${var1}"
@@ -57,8 +58,9 @@ func TestLoadPackageDef(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 		So(def, ShouldResemble, PackageDef{
-			Package: "package/value1",
-			Root:    "../..",
+			Package:     "package/value1",
+			Root:        "../..",
+			InstallMode: "copy",
 			Data: []PackageChunkDef{
 				PackageChunkDef{
 					File: "some_file_value1",

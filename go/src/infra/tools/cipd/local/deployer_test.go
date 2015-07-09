@@ -355,6 +355,7 @@ func makeTestInstance(name string, files []File) *testPackageInstance {
 
 func (f *testPackageInstance) Close() error              { return nil }
 func (f *testPackageInstance) Pin() Pin                  { return Pin{f.packageName, f.instanceID} }
+func (f *testPackageInstance) InstallMode() InstallMode  { return "" }
 func (f *testPackageInstance) Files() []File             { return f.files }
 func (f *testPackageInstance) DataReader() io.ReadSeeker { panic("Not implemented") }
 
