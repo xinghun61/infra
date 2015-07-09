@@ -41,6 +41,10 @@ import textwrap
 
 import pytz
 
+from infra_libs.ts_mon import metrics
+
+log_metric = metrics.CumulativeMetric('proc/log_lines')
+
 if sys.platform.startswith('win'):  # pragma: no cover
   DEFAULT_LOG_DIRECTORIES = os.pathsep.join([
       'E:\\chrome-infra-logs',
@@ -77,6 +81,7 @@ class InfraFilter(logging.Filter):  # pragma: no cover
     dt = datetime.datetime.fromtimestamp(record.created, tz=pytz.utc)
     record.iso8601 = self.tz.normalize(dt).isoformat()
     record.severity = record.levelname[0]
+    log_metric.increment(fields={'level': record.severity})
     record.fullModuleName = self._full_module_name() or record.module
     if self.module_name_blacklist:
       if self.module_name_blacklist.search(record.fullModuleName):
