@@ -54,12 +54,14 @@ ConfigSet->Location mapping can be found by calling
 ## Validation
 
 * luci-config validates
-  [its owns configs](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config).
+  [its owns configs](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config),
+  including
+  [the project registry](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg).
 * [chrome-infra-auth](https://chrome-infra-auth.appspot.com) and
   [buildbucket](https://cr-buildbucket.appspot.com) expose a
   [metadata endpoint](https://apis-explorer.appspot.com/apis-explorer/?base=https://cr-buildbucket.appspot.com/_ah/api#p/config/v1/config.get_metadata)
   that specify that they can validate their configs. The metadata endpoints are
-  registed in
+  registered in
   [servies/luci-config:services.cfg](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/services.cfg).
   Luci-Config discovers and talks to them to delegate the validation.
 
@@ -68,7 +70,7 @@ revision (all files) is rejected if at least one file is invalid. Services that
 consume configs through luci-config are guaranteed not to receive invalid
 configs, as long as they make backward-compatible changes to validation code.
 
-As of 2015-07-09 an, when an invalid config is not imported, an error is emitted
+As of 2015-07-09, when an invalid config is not imported, an error is emitted
 in [luci-config logs](https://console.developers.google.com/project/luci-config/logs?service=appengine.googleapis.com&key1=backend&minLogLevel=500)
 and ereporter2 sends an email to
 [config-ereporeter2-config group](https://chrome-infra-auth.appspot.com/auth/groups#config-ereporter2-reports)
