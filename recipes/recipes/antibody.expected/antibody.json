@@ -83,7 +83,7 @@
       "--git-checkout-path",
       "[ROOT]/src",
       "--html-output-file",
-      "[TMP_BASE]/['/']_tmp_1",
+      "[TMP_BASE]/antibody_tmp_1",
       "--since",
       "2015.01.01",
       "--run-antibody"
@@ -102,7 +102,7 @@
       "3.25",
       "----",
       "cp",
-      "[TMP_BASE]/['/']_tmp_1",
+      "[TMP_BASE]/antibody_tmp_1",
       "gs://chromium-antibody/report.html"
     ],
     "cwd": "[SLAVE_BUILD]",

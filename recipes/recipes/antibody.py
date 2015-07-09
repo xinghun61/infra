@@ -19,7 +19,7 @@ def RunSteps(api):
   api.gclient.set_config('infra_with_chromium')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
-  filename = api.path.mkdtemp(api.path._temp_dir)
+  filename = api.path.mkdtemp('antibody')
 
   cmd = ['infra.tools.antibody']
   cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
@@ -37,4 +37,3 @@ def GenTests(api):
          api.properties(mastername='chromium.infra.cron',
                         buildername='antibody',
                         slavename='fake-slave'))
-
