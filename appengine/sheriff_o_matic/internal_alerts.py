@@ -32,7 +32,7 @@ class InternalAlertsHandler(alerts.AlertsHandler):
       return
 
     email = user.email()
-    if not email.endswith('@google.com'):
+    if not email.endswith('@google.com') and '+' not in email:
       self.response.set_status(403, 'Permission Denied')
       return
 

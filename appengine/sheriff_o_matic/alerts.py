@@ -111,7 +111,7 @@ class AlertsHandler(webapp2.RequestHandler):
         data = self.get_from_gcs(self.ALERT_TYPE, last_entry.gcs_filename)
       data = json.loads(data)
       data['key'] = last_entry.key.integer_id()
-      return self.send_json_data(data)
+      return data
     return False
 
   def get_from_memcache(self):
@@ -120,14 +120,15 @@ class AlertsHandler(webapp2.RequestHandler):
       logging.info('Reading alerts from memcache')
       uncompressed = zlib.decompress(compressed)
       data = json.loads(uncompressed)
-      return self.send_json_data(data)
+      return data
     return False
 
   def get(self):
-    self.send_json_headers()
-    if not self.get_from_memcache():
-      if not self.get_from_datastore():
-        self.response.write({})
+    data = self.get_from_memcache() or self.get_from_datastore()
+    if data:
+      self.send_json_data(data)
+    else:
+      self.response.write({})
 
   def store_alerts(self, alerts):
     last_entry = self.get_last_datastore(self.ALERT_TYPE)

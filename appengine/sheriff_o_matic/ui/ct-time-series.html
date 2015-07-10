@@ -1,0 +1,82 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="../appengine_module/components/net.html">
+
+<polymer-element name="ct-time-series">
+  <template>
+    <style>
+      :host {
+        background-color: #fffc6c;
+      }
+
+      .card {
+        padding: 20px;
+        border-bottom: 1px solid lightgrey;
+        display: flex;
+      }
+
+      .message {
+        width: auto;
+        padding: 0px 50px;
+        float: left;
+      }
+
+      .ct-button {
+        float: right;
+      }
+
+    </style>
+    <template repeat="{{ alert, ind in alerts }}" bind="{{ind as ind}}">
+      <div class="card">
+        <div class="message">
+          <a href="{{ alert.playbook }}" target="_blank">Playbook</a><br>
+          <a href="{{ alert.silence }}" target="_blank">Silence</a>
+        </div>
+        <ct-button on-click="{{ delAlert }}" value="{{ ind }}" id="delAlert" label="Delete">
+        </ct-button>
+        <div class="message"><b>Error:</b> {{ alert.class_name }}<br>
+        <b>Trigger Value:</b> {{ alert.trigger_value }}</div>
+        <div class="message"><b>Active Since:</b> {{ alert.active_since }}<br>
+        <b>Alert Sent:</b> {{ alert.alert_sent }}</div>
+      </div>
+    </template>
+  </template>
+  <script>
+
+  (function() {
+
+    Polymer('ct-time-series', {
+
+      ready: function() {
+        this.update()
+      },
+
+      update: function() {
+        var url = '/ts-alerts';
+        return net.json(url).then(function(response) {
+          this.alerts = response.alerts;
+        }.bind(this));
+      },
+
+      delAlert: function(e, d, target) {
+        index = target.getAttribute('value');
+        var opt = {
+          url: '/ts-alerts/' + index,
+          type: 'DELETE'
+        };
+
+        return net.ajax(opt).then(function(response) {
+          console.log(response);
+          this.alerts.removeAt(index);
+        }.bind(this), function(err) {
+          console.log('Failed to delete: ' + err);
+        });
+      }
+
+    });
+  })();
+  </script>
+</polymer-element>

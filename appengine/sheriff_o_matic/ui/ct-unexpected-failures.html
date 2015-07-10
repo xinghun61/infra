@@ -10,6 +10,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-failure-stream.html">
 <link rel="import" href="ct-last-updated.html">
 <link rel="import" href="ct-party-time.html">
+<link rel="import" href="ct-time-series.html">
 <link rel="import" href="ct-tree-status.html">
 
 <polymer-element name="ct-unexpected-failures" attributes="tree repositories failures">
@@ -38,11 +39,17 @@ found in the LICENSE file.
       <ct-tree-status status="{{ treeStatuses['infra'] }}" state="{{ treeStatuses['infra'].status }}"></ct-tree-status>
       <paper-shadow z="1">
         <div class="trooper-bugs">
-          <a href="https://code.google.com/p/chromium/issues/list?can=2&q=Infra%3DTroopers">Current Trooper bug list</a>
+          <a href="https://code.google.com/p/chromium/issues/list?can=2&q=Infra%3DTroopers">
+            Current Trooper bug list
+          </a>
         </div>
       </paper-shadow>
     </template>
-    <template if="{{ failures && failures.failures && (tree != 'health' && !failures.failures[tree] || !failures.failures[tree].length) }}">
+    <template if="{{ tree == 'time-series-alerts' }}">
+      <ct-time-series>
+      </ct-time-series>
+    </template>
+    <template if="{{ tree != 'time-series-alerts' && (!failures.failures[tree] || failures.failures[tree].length == 0) }}">
       <ct-party-time></ct-party-time>
     </template>
     <ct-failure-stream caption="Tree closers" category="treeCloser" groups="{{ failures && failures.failures[tree] }}" repositories="{{ repositories }}"></ct-failure-stream>

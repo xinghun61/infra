@@ -13,7 +13,7 @@ found in the LICENSE file.
       <ct-trooper-card class='{{ { snoozed: group.isSnoozed } | tokenList }}' group="{{ group.data }}"></ct-trooper-card>
     </template>
   </template>
-  <template if="{{ failures && (!failures.failures['health'] || failures.failures['health'].length == 0) }}">
+  <template if="{{ !failures.failures['health'] || failures.failures['health'].length == 0 }}">
     <ct-party-time></ct-party-time>
   </template>
 </template>
