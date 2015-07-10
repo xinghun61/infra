@@ -81,7 +81,7 @@
       "--sql-password-file",
       "/home/chrome-bot/.antibody_password",
       "--git-checkout-path",
-      "[ROOT]/src",
+      "[ROOT]/infra",
       "--output-dir-path",
       "[TMP_BASE]/antibody_tmp_1",
       "--since",

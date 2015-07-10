@@ -23,7 +23,7 @@ def RunSteps(api):
 
   cmd = ['infra.tools.antibody']
   cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
-  cmd.extend(['--git-checkout-path', api.m.path['root'].join('src')])
+  cmd.extend(['--git-checkout-path', api.m.path['root'].join('infra')])
   cmd.extend(['--output-dir-path', dirname])
   cmd.extend(['--since', '2015-01-01'])
   cmd.extend(['--run-antibody'])
