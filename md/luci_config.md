@@ -62,7 +62,7 @@ ConfigSet->Location mapping can be found by calling
   [metadata endpoint](https://apis-explorer.appspot.com/apis-explorer/?base=https://cr-buildbucket.appspot.com/_ah/api#p/config/v1/config.get_metadata)
   that specify that they can validate their configs. The metadata endpoints are
   registered in
-  [servies/luci-config:services.cfg](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/services.cfg).
+  [services/luci-config:services.cfg](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/services.cfg).
   Luci-Config discovers and talks to them to delegate the validation.
 
 Invalid configs are **NOT** imported into luci-config. Entire config set
