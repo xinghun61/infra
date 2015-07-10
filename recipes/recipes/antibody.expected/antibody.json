@@ -81,14 +81,14 @@
       "--sql-password-file",
       "/home/chrome-bot/.antibody_password",
       "--git-checkout-path",
-      "[ROOT]/infra",
+      "[SLAVE_BUILD]/infra",
       "--output-dir-path",
       "[TMP_BASE]/antibody_tmp_1",
       "--since",
       "2015-01-01",
       "--run-antibody"
     ],
-    "cwd": "[ROOT]/infra",
+    "cwd": "[SLAVE_BUILD]/infra",
     "name": "Antibody"
   },
   {
