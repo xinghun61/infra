@@ -48,6 +48,26 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
         'job_state': 'passed',
       },
     }, {
+      'name': 'Patch Committing',
+      'cat': 'Patch Progress',
+      'ph': 'B',
+      'ts': 1434395579639639,
+      'pid': 'Attempt 1',
+      'tid': 'Patch Progress',
+      'args': {
+        'job_state': 'attempt_running',
+      },
+    }, {
+      'name': 'Patch Committing',
+      'cat': 'Patch Progress',
+      'ph': 'E',
+      'ts': 1434395584564138,
+      'pid': 'Attempt 1',
+      'tid': 'Patch Progress',
+      'args': {
+        'job_state': 'attempt_passed',
+      },
+    }, {
       'name': 'Attempt 1',
       'cat': 'Patch Progress',
       'ph': 'E',
@@ -56,6 +76,7 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'tid': 'Patch Progress',
       'args': {
         'job_state': 'attempt_passed',
+        'action': 'patch_stop',
       },
     }])
 
@@ -65,16 +86,19 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
     bCount = 0
     eCount = 0
     for event in events:
-      # check if it's a patch progress bar
+      self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+      self.assertNotEqual(None, event.get('ts'))
       if re.match('Attempt \d+', event.get('name')):
+        # Patch Progress bar
         self.assertEqual(event.get('name'), event.get('pid'))
         self.assertEqual('Patch Progress', event.get('tid'))
-        self.assertNotEqual(None, event.get('ts'))
-      else:
-        self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+      elif re.match('test_presubmit', event.get('name')):
+        # Builder bar
         self.assertEqual('test_presubmit', event.get('tid'))
-        self.assertEqual('test_presubmit', event.get('name'))
-        self.assertNotEqual(None, event.get('ts'))
+      else:
+        # Committing Progress
+        self.assertEqual('Patch Committing', event.get('name'))
+        self.assertEqual('Patch Progress', event.get('tid'))
       if event.get('ph') == 'B':
         bCount += 1
       if event.get('ph') == 'E':
@@ -85,17 +109,20 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
     events = self._test_patch('patch_cq_buggy')
     self.assertNotEqual(0, len(events))
     for event in events:
-      # check if it's a patch progress bar
+      self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+      self.assertNotEqual(None, event.get('ts'))
       if re.match('Attempt \d+', event.get('name')):
+        # Patch Progress bar
         self.assertEqual(event.get('name'), event.get('pid'))
         self.assertEqual('Patch Progress', event.get('tid'))
-        self.assertNotEqual(None, event.get('ts'))
-      else:
-        self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+      elif re.match('Test-Trybot', event.get('name')):
+        # Builder bar
         self.assertEqual('Test-Trybot', event.get('tid'))
-        self.assertEqual('Test-Trybot', event.get('name'))
-        self.assertNotEqual(None, event.get('ts'))
         self.assertEqual('I', event.get('ph'))
+      else:
+        # Committing Progress
+        self.assertEqual('Patch Committing', event.get('name'))
+        self.assertEqual('Patch Progress', event.get('tid'))
 
   def test_patch_timeline_data_failed(self):
     events = self._test_patch('patch_failed')
@@ -103,13 +130,16 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
     bCount = 0
     eCount = 0
     for event in events:
+      self.assertTrue(re.match('Attempt \d+', event.get('pid')))
+      self.assertNotEqual(None, event.get('ts'))
       if re.match('Attempt \d+', event.get('name')):
+        # Patch Progress bar
         self.assertEqual(event.get('name'), event.get('pid'))
         self.assertEqual('Patch Progress', event.get('tid'))
-        self.assertNotEqual(None, event.get('ts'))
       else:
-        self.assertTrue(re.match('Attempt \d+', event.get('pid')))
-        self.assertNotEqual(None, event.get('ts'))
+        # There should be no commits on failure.
+        self.assertNotEqual('Patch Committing', event.get('name'))
+      # Don't check builders because multiples are used.
       if event.get('ph') == 'B':
         bCount += 1
       if event.get('ph') == 'E':
