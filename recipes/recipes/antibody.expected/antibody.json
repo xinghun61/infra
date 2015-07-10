@@ -82,10 +82,10 @@
       "/home/chrome-bot/.antibody_password",
       "--git-checkout-path",
       "[ROOT]/src",
-      "--html-output-file",
+      "--output-dir-path",
       "[TMP_BASE]/antibody_tmp_1",
       "--since",
-      "2015.01.01",
+      "2015-01-01",
       "--run-antibody"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -102,8 +102,11 @@
       "3.25",
       "----",
       "cp",
+      "-r",
+      "-a",
+      "public-read",
       "[TMP_BASE]/antibody_tmp_1",
-      "gs://chromium-antibody/report.html"
+      "gs://antibody/"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "gsutil cp"

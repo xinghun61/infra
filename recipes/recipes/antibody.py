@@ -19,17 +19,17 @@ def RunSteps(api):
   api.gclient.set_config('infra_with_chromium')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
-  filename = api.path.mkdtemp('antibody')
+  dirname = api.path.mkdtemp('antibody')
 
   cmd = ['infra.tools.antibody']
   cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
   cmd.extend(['--git-checkout-path', api.m.path['root'].join('src')])
-  cmd.extend(['--html-output-file', filename])
-  cmd.extend(['--since', '2015.01.01'])
+  cmd.extend(['--output-dir-path', dirname])
+  cmd.extend(['--since', '2015-01-01'])
   cmd.extend(['--run-antibody'])
 
   api.python('Antibody', 'run.py', cmd)
-  api.gsutil(['cp', filename, 'gs://chromium-antibody/report.html'])
+  api.gsutil(['cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
 
 
 def GenTests(api):
