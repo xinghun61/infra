@@ -20,6 +20,8 @@ const DefaultResourceType = "machine"
 
 // Entry is a single log entry. It can be a text message, or a JSONish struct.
 type Entry struct {
+	// InsertId can be used to deduplicate log entries.
+	InsertID string
 	// Timestamp is an optional timestamp.
 	Timestamp time.Time
 	// Severity is the severity of the log entry.
@@ -32,6 +34,7 @@ type Entry struct {
 
 // Client knows how to send entries to Cloud Logging log.
 type Client interface {
+	// PushEntries sends entries to Cloud Logging. No retries.
 	PushEntries(entries []Entry) error
 }
 
@@ -121,25 +124,20 @@ func (c *loggingClient) PushEntries(entries []Entry) error {
 		metadata := &cloudlog.LogEntryMetadata{ServiceName: c.serviceName}
 		if e.Severity != "" {
 			if err := e.Severity.Validate(); err != nil {
-				return err
+				c.opts.Logger.Warningf("invalid severity, ignoring: %s", e.Severity)
+			} else {
+				metadata.Severity = string(e.Severity)
 			}
-			metadata.Severity = string(e.Severity)
 		}
 		if !e.Timestamp.IsZero() {
 			metadata.Timestamp = e.Timestamp.UTC().Format(time.RFC3339Nano)
 		}
 		req.Entries[i] = &cloudlog.LogEntry{
+			InsertId:      e.InsertID,
 			Metadata:      metadata,
 			TextPayload:   e.TextPayload,
 			StructPayload: e.StructPayload,
 		}
 	}
-	// TODO(vadimsh): Implement retry on transient errors and use InsertId to
-	// deduplicate messages. Drop all unsent message for now to avoid clogging
-	// the buffers in case of persistent send error.
-	err := c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req)
-	if err != nil {
-		c.opts.Logger.Errorf("dropping %d entries, error while sending: %s", len(entries), err)
-	}
-	return nil
+	return c.writeFunc(c.opts.ProjectID, c.opts.LogID, &req)
 }

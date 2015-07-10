@@ -13,8 +13,11 @@ import (
 
 // Default config for PushBuffer if none is provided.
 const (
-	DefaultFlushThreshold = 1000
-	DefaultFlushTimeout   = 5 * time.Second
+	DefaultFlushThreshold  = 1000
+	DefaultFlushTimeout    = 5 * time.Second
+	DefaultMaxPushAttempts = 100
+	DefaultPushRetryDelay  = 1 * time.Second
+	DefaultStopTimeout     = 10 * time.Second
 )
 
 // PushBufferOptions defines configuration for a new PushBuffer instance.
@@ -29,6 +32,12 @@ type PushBufferOptions struct {
 	FlushThreshold int
 	// FlushTimeout is maximum time an entry is kept in buffer before it is sent.
 	FlushTimeout time.Duration
+	// MaxPushAttempts is how many times to push entries when retrying errors.
+	MaxPushAttempts int
+	// PushRetryDelay is how long to wait before retrying a failed push.
+	PushRetryDelay time.Duration
+	// StopTimeout is how long to wait for Stop to flush pending data.
+	StopTimeout time.Duration
 }
 
 // PushBuffer batches log entries together before pushing them to the client.
@@ -39,8 +48,10 @@ type PushBuffer interface {
 	Add(e ...Entry)
 	// Stop waits for all entries to be sent and stops flush timer. It returns
 	// a error if any of pending data wasn't successfully pushed. It panics if
-	// called with already stopped buffer.
-	Stop() error
+	// called with already stopped buffer. It accepts a channel that can be
+	// signaled to abort any pending operations ASAP. The passed channel can
+	// be nil.
+	Stop(abort <-chan struct{}) error
 }
 
 // NewPushBuffer returns PushBuffer that's ready to accept log entries.
@@ -57,11 +68,21 @@ func NewPushBuffer(opts PushBufferOptions) PushBuffer {
 	if opts.FlushTimeout == 0 {
 		opts.FlushTimeout = DefaultFlushTimeout
 	}
+	if opts.MaxPushAttempts == 0 {
+		opts.MaxPushAttempts = DefaultMaxPushAttempts
+	}
+	if opts.PushRetryDelay == 0 {
+		opts.PushRetryDelay = DefaultPushRetryDelay
+	}
+	if opts.StopTimeout == 0 {
+		opts.StopTimeout = DefaultStopTimeout
+	}
 	buf := &pushBufferImpl{
 		PushBufferOptions: opts,
 		input:             make(chan []Entry),
 		output:            make(chan error),
 		timer:             opts.Clock.NewTimer(),
+		stopCh:            make(chan struct{}, 1),
 	}
 	go buf.loop()
 	return buf
@@ -77,10 +98,11 @@ type pushBufferImpl struct {
 	output chan error
 
 	// Used from internal goroutine only.
-	pending  []Entry     // all unacknowledged entries
-	lastErr  error       // last flush error, set in 'flush'
-	timer    clock.Timer // flush timeout timer, gets reset in 'flush'
-	timerSet bool        // true if timer was Reset and hasn't fired yet
+	pending  []Entry       // all unacknowledged entries
+	lastErr  error         // last flush error, set in 'flush'
+	timer    clock.Timer   // flush timeout timer, gets reset in 'flush'
+	timerSet bool          // true if timer was Reset and hasn't fired yet
+	stopCh   chan struct{} // signals that retry loop should die
 }
 
 func (b *pushBufferImpl) Add(e ...Entry) {
@@ -89,8 +111,15 @@ func (b *pushBufferImpl) Add(e ...Entry) {
 	}
 }
 
-func (b *pushBufferImpl) Stop() error {
+func (b *pushBufferImpl) Stop(abort <-chan struct{}) error {
 	close(b.input)
+	go func() {
+		select {
+		case <-abort:
+		case <-b.Clock.After(b.StopTimeout):
+		}
+		close(b.stopCh)
+	}()
 	return <-b.output
 }
 
@@ -138,11 +167,31 @@ func (b *pushBufferImpl) flush() {
 		return
 	}
 	b.Logger.Debugf("flushing %d entries...", len(b.pending))
-	if b.lastErr = b.Client.PushEntries(b.pending); b.lastErr != nil {
-		// Don't clear pending. All messages will be resent on a next flush.
-		// TODO(vadimsh): Chunk giant b.pending into several push calls.
-		b.Logger.Errorf("%s", b.lastErr)
-	} else {
-		b.pending = nil
+	if err := b.pushWithRetries(b.pending); err != nil {
+		b.Logger.Errorf("dropping %d entries, flush failed - %s", len(b.pending), err)
+		b.lastErr = err
+	}
+	b.pending = nil
+}
+
+// pushWithRetries sends messages through the client, retrying on errors
+// MaxPushAttempts number of times before giving up.
+func (b *pushBufferImpl) pushWithRetries(entries []Entry) error {
+	attempt := 0
+	for {
+		attempt++
+		err := b.Client.PushEntries(entries)
+		if err == nil {
+			return nil
+		}
+		if attempt >= b.MaxPushAttempts {
+			return err
+		}
+		b.Logger.Errorf("failed to send %d entries (%s), retrying...", len(entries), err)
+		select {
+		case <-b.stopCh:
+			return err
+		case <-b.Clock.After(b.PushRetryDelay):
+		}
 	}
 }

@@ -24,7 +24,7 @@ func TestPipeFromReader(t *testing.T) {
     `
 
 		PipeFromReader(strings.NewReader(body), NullParser(), buf, nil)
-		So(buf.Stop(), ShouldBeNil)
+		So(buf.Stop(nil), ShouldBeNil)
 
 		text := []string{}
 		for _, e := range client.getEntries() {

@@ -142,6 +142,25 @@ func projectIDFromServiceAccountJSON(path string) string {
 	return chunks[0]
 }
 
+func catchCtrlC(handler func() error) {
+	ctrlC := make(chan os.Signal, 1)
+	signal.Notify(ctrlC, os.Interrupt)
+	go func() {
+		stopCalled := false
+		for _ = range ctrlC {
+			if !stopCalled {
+				stopCalled = true
+				logger.Infof("Caught Ctrl+C, flushing and exiting... Send another Ctrl+C to kill.")
+				if err := handler(); err != nil {
+					logger.Errorf("%s", err)
+				}
+			} else {
+				os.Exit(2)
+			}
+		}
+	}()
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // 'send' subcommand: sends a single line passed as CLI argument.
 
@@ -175,19 +194,22 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		logger.Errorf("-text is required")
 		return 1
 	}
-	client, err := c.commonOptions.makeClient()
+	buf, err := c.commonOptions.makePushBuffer()
 	if err != nil {
 		logger.Errorf("%s", err)
 		return 1
 	}
-	err = client.PushEntries([]cloudtail.Entry{
-		{
-			Timestamp:   time.Now(),
-			Severity:    c.severity,
-			TextPayload: c.text,
-		},
+	buf.Add(cloudtail.Entry{
+		Timestamp:   time.Now(),
+		Severity:    c.severity,
+		TextPayload: c.text,
 	})
-	if err != nil {
+	abort := make(chan struct{}, 1)
+	catchCtrlC(func() error {
+		abort <- struct{}{}
+		return nil
+	})
+	if err := buf.Stop(abort); err != nil {
 		logger.Errorf("%s", err)
 		return 1
 	}
@@ -227,7 +249,12 @@ func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 	if err1 != nil {
 		logger.Errorf("%s", err1)
 	}
-	err2 := buf.Stop()
+	abort := make(chan struct{}, 1)
+	catchCtrlC(func() error {
+		abort <- struct{}{}
+		return nil
+	})
+	err2 := buf.Stop(abort)
 	if err2 != nil {
 		logger.Errorf("%s", err2)
 	}
@@ -287,31 +314,14 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 		return 1
 	}
 	defer cloudtail.CleanupTailer()
-
-	ctrlC := make(chan os.Signal, 1)
-	signal.Notify(ctrlC, os.Interrupt)
-	go func() {
-		stopCalled := false
-		for _ = range ctrlC {
-			if !stopCalled {
-				stopCalled = true
-				logger.Infof("Caught Ctrl+C, flushing and exiting... Send another Ctrl+C to kill.")
-				err := tailer.Stop()
-				if err != nil {
-					logger.Errorf("%s", err)
-				}
-			} else {
-				os.Exit(2)
-			}
-		}
-	}()
+	catchCtrlC(tailer.Stop)
 
 	fail := false
 	if err1 := tailer.Wait(); err1 != nil {
 		logger.Errorf("%s", err1)
 		fail = true
 	}
-	if err2 := buf.Stop(); err2 != nil {
+	if err2 := buf.Stop(nil); err2 != nil {
 		logger.Errorf("%s", err2)
 		fail = true
 	}

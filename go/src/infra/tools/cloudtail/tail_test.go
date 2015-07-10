@@ -66,7 +66,7 @@ func TestTailer(t *testing.T) {
 		putLine("last one", true)
 
 		So(tailer.Stop(), ShouldBeNil)
-		So(buf.Stop(), ShouldBeNil)
+		So(buf.Stop(nil), ShouldBeNil)
 
 		text := []string{}
 		for _, e := range client.getEntries() {

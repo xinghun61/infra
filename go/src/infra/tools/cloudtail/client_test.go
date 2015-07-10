@@ -39,6 +39,7 @@ func TestClient(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = c.PushEntries([]Entry{
 			{
+				InsertID:    "insert-id",
 				Timestamp:   ts,
 				Severity:    Debug,
 				TextPayload: "hi",
@@ -51,6 +52,7 @@ func TestClient(t *testing.T) {
 			"compute.googleapis.com/resource_type": "res-type",
 		})
 		So(len(requests[0].Entries), ShouldEqual, 1)
+		So(requests[0].Entries[0].InsertId, ShouldEqual, "insert-id")
 		So(requests[0].Entries[0].TextPayload, ShouldEqual, "hi")
 		So(requests[0].Entries[0].Metadata, ShouldResemble, &logging.LogEntryMetadata{
 			Severity:    "DEBUG",

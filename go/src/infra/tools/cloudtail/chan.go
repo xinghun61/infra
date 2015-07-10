@@ -5,6 +5,10 @@
 package cloudtail
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/luci/luci-go/common/logging"
@@ -23,10 +27,38 @@ func drainChannel(src chan string, parser LogParser, buf PushBuffer, logger logg
 		entry := parser.ParseLogLine(line)
 		if entry == nil {
 			if logger != nil {
-				logger.Warningf("skipping line, unrecognized format: %s", line)
+				logger.Errorf("skipping line, unrecognized format: %s", line)
 			}
 			continue
 		}
+		if entry.InsertID == "" {
+			insertID, err := computeInsertID(entry)
+			if err != nil {
+				if logger != nil {
+					logger.Errorf("skipping line, can't compute insertId: %s", err)
+				}
+				continue
+			}
+			entry.InsertID = insertID
+		}
 		buf.Add(*entry)
 	}
+}
+
+// computeInsertID takes a LogEntry and deterministically combines its fields
+// to come up with an identifier used for log deduplication. Used only if parser
+// doesn't implement something more smart or efficient.
+func computeInsertID(e *Entry) (string, error) {
+	hasher := sha1.New()
+	hasher.Write([]byte(e.TextPayload))
+	if e.StructPayload != nil {
+		if err := json.NewEncoder(hasher).Encode(e.StructPayload); err != nil {
+			return "", err
+		}
+	}
+	ts := ""
+	if !e.Timestamp.IsZero() {
+		ts = fmt.Sprintf("%d", e.Timestamp.UnixNano())
+	}
+	return ts + ":" + base64.StdEncoding.EncodeToString(hasher.Sum(nil)[:12]), nil
 }

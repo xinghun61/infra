@@ -6,6 +6,7 @@ package cloudtail
 
 import (
 	"testing"
+	"time"
 
 	"github.com/luci/luci-go/common/logging"
 
@@ -28,7 +29,7 @@ func TestDrainChannel(t *testing.T) {
 		}()
 
 		drainChannel(ch, NullParser(), buf, nil)
-		So(buf.Stop(), ShouldBeNil)
+		So(buf.Stop(nil), ShouldBeNil)
 
 		text := []string{}
 		for _, e := range client.getEntries() {
@@ -51,7 +52,37 @@ func TestDrainChannel(t *testing.T) {
 		}()
 
 		drainChannel(ch, parser, buf, logging.Null())
-		So(buf.Stop(), ShouldBeNil)
+		So(buf.Stop(nil), ShouldBeNil)
 		So(len(client.getEntries()), ShouldEqual, 0)
+	})
+}
+
+func TestComputeInsertID(t *testing.T) {
+	Convey("Text with TS", t, func() {
+		id, err := computeInsertID(&Entry{
+			Timestamp:   time.Unix(1435788505, 12345),
+			TextPayload: "Hi",
+		})
+		So(err, ShouldBeNil)
+		So(id, ShouldEqual, "1435788505000012345:lN2eCMEpx4X38lbo")
+	})
+
+	Convey("Text without TS", t, func() {
+		id, err := computeInsertID(&Entry{
+			TextPayload: "Hi",
+		})
+		So(err, ShouldBeNil)
+		So(id, ShouldEqual, ":lN2eCMEpx4X38lbo")
+	})
+
+	Convey("JSON", t, func() {
+		id, err := computeInsertID(&Entry{
+			StructPayload: struct {
+				A int
+				B int
+			}{10, 20},
+		})
+		So(err, ShouldBeNil)
+		So(id, ShouldEqual, ":dJ9ZWHLGN9BWUyLG")
 	})
 }
