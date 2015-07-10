@@ -88,7 +88,7 @@
       "2015-01-01",
       "--run-antibody"
     ],
-    "cwd": "[SLAVE_BUILD]",
+    "cwd": "[ROOT]/infra",
     "name": "Antibody"
   },
   {

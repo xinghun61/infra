@@ -28,7 +28,7 @@ def RunSteps(api):
   cmd.extend(['--since', '2015-01-01'])
   cmd.extend(['--run-antibody'])
 
-  api.python('Antibody', 'run.py', cmd)
+  api.python('Antibody', 'run.py', cmd, cwd=api.m.path['root'].join('infra'))
   api.gsutil(['cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
 
 
