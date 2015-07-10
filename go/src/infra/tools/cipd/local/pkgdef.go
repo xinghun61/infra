@@ -276,6 +276,7 @@ func (def *PackageChunkDef) strings() []*string {
 	out := []*string{
 		&def.Dir,
 		&def.File,
+		&def.VersionFile,
 	}
 	for i := range def.Exclude {
 		out = append(out, &def.Exclude[i])

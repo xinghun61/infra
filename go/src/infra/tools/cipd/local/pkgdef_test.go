@@ -41,7 +41,7 @@ func TestLoadPackageDef(t *testing.T) {
 					"dir": "some/directory"
 				},
 				{
-					"version_file": "some/path/version.json"
+					"version_file": "some/path/version_${var1}.json"
 				},
 				{
 					"dir": "another/${var2}",
@@ -72,7 +72,7 @@ func TestLoadPackageDef(t *testing.T) {
 					Dir: "some/directory",
 				},
 				PackageChunkDef{
-					VersionFile: "some/path/version.json",
+					VersionFile: "some/path/version_value1.json",
 				},
 				PackageChunkDef{
 					Dir: "another/value2",
@@ -83,7 +83,7 @@ func TestLoadPackageDef(t *testing.T) {
 				},
 			},
 		})
-		So(def.VersionFile(), ShouldEqual, "some/path/version.json")
+		So(def.VersionFile(), ShouldEqual, "some/path/version_value1.json")
 	})
 
 	Convey("LoadPackageDef not yaml", t, func() {
