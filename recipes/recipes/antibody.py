@@ -30,7 +30,7 @@ def RunSteps(api):
 
   api.python('Antibody', 'run.py', cmd,
              cwd=api.m.path['slave_build'].join('infra'))
-  api.gsutil(['cp', '-r', '-a', 'public-read', dirname,
+  api.gsutil(['cp', '-r', '-a', 'public-read', dirname.join('*'),
               'gs://antibody/antibody/'])
 
 
