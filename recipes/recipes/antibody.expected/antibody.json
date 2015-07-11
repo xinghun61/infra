@@ -106,7 +106,7 @@
       "-a",
       "public-read",
       "[TMP_BASE]/antibody_tmp_1",
-      "gs://antibody/"
+      "gs://antibody/antibody/"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "gsutil cp"
