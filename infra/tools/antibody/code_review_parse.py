@@ -18,6 +18,7 @@ def extract_json_data(rietveld_url):  # pragma: no cover
   url_components = re.split('(https?:\/\/)([\da-z\.-]+)', rietveld_url)
   json_data_url = '%s%s/api%s?messages=true' %(url_components[1],
                   url_components[2], url_components[3])
+  logging.info('Sending request to: %s', json_data_url)
   response = requests.get(json_data_url)
   if (response.status_code == requests.codes.ok):
     try:
@@ -46,9 +47,9 @@ def contains_tbr(json_data):
 def to_canonical_rietveld_url(rietveld_url):
   if 'chromiumcodereview.appspot.com' in rietveld_url:
     return rietveld_url.replace('chromiumcodereview.appspot.com',
-                                'codereview.chromium.org') 
+                                'codereview.chromium.org')
   if 'chromiumcodereview-hr.appspot.com' in rietveld_url:
-    return rietveld_url.replace('chromiumcodereview-hr.appspot.com', 
+    return rietveld_url.replace('chromiumcodereview-hr.appspot.com',
                                 'codereview.chromium.org')
   return rietveld_url
 
