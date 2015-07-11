@@ -54,16 +54,16 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
   tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
 
   template_vars = {'title' : 'Potentially Suspicious Commits',
-                  'description' : 'List of commits with a TBR but no lgtm',
-                  'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
-                  'tbr_by_user_link' : TBR_BY_USER_NAME,
-                  'page_header_text' : "All Potentially Suspicious Commits",
-                  'to_be_reviewed' : "To be reviewed by user",
-                  'table_headers' : ['git_hash', 'rietveld_url', 
-                                     'request_timestamp'],
-                  'suspicious_commits' : suspicious_commits_data,
-                  'gitiles_prefix' : gitiles_prefix,
-                 }
+                   'description' : 'List of commits with a TBR but no lgtm',
+                   'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
+                   'tbr_by_user_link' : TBR_BY_USER_NAME,
+                   'page_header_text' : "All Potentially Suspicious Commits",
+                   'to_be_reviewed' : "To be reviewed by user",
+                   'table_headers' : ['git_hash', 'rietveld_url', 
+                                      'request_timestamp'],
+                   'suspicious_commits' : suspicious_commits_data,
+                   'gitiles_prefix' : gitiles_prefix,
+                  }
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
     f.write(index_template.render(template_vars)) 
 

@@ -45,6 +45,7 @@ def contains_tbr(json_data):
 
 
 def to_canonical_rietveld_url(rietveld_url):
+  rietveld_url = rietveld_url.strip('.')
   if 'chromiumcodereview.appspot.com' in rietveld_url:
     return rietveld_url.replace('chromiumcodereview.appspot.com',
                                 'codereview.chromium.org')
