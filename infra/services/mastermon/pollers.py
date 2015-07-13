@@ -24,6 +24,8 @@ class Poller(object):
 
     response = requests.get(self._url)
     if response.status_code != requests.codes.ok:
+      LOGGER.warning('Got status code %d from %s',
+                     response.status_code, self._url)
       return False
 
     try:
