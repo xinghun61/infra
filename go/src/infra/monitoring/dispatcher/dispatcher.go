@@ -38,6 +38,8 @@ var (
 	maxErrs             = flag.Int("max-errs", 1, "Max consecutive errors per loop attempt")
 	durationStr         = flag.String("duration", "10s", "Max duration to loop for")
 	cycleStr            = flag.String("cycle", "1s", "Cycle time for loop")
+	snapshot            = flag.String("record-snapshot", "", "save a snapshot of infra responses to this path, which will be created if it does not already exist.")
+	replay              = flag.String("replay-snapshot", "", "replay a snapshot of infra responses from this path, which should have been created previously by running with --record-snapshot.")
 
 	log             = gologger.Get()
 	duration, cycle time.Duration
@@ -54,7 +56,7 @@ var (
 
 func init() {
 	flag.Usage = func() {
-		fmt.Printf("Runs a single check, prints out diagnosis and exits.\n")
+		fmt.Printf("By default runs a single check, saves any alerts to ./alerts.json and exits.")
 		flag.PrintDefaults()
 	}
 }
@@ -204,8 +206,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := analyzer.New(client.NewReader(), 2, 5)
+	if *snapshot != "" && *replay != "" {
+		log.Errorf("Cannot use snapshot and replay flags at the same time.")
+		os.Exit(1)
+	}
 
+	r := client.NewReader()
+	if *snapshot != "" {
+		r = client.NewSnapshot(r, *snapshot)
+	}
+
+	if *replay != "" {
+		r = client.NewReplay(*replay)
+	}
+
+	a := analyzer.New(r, 2, 5)
 	w := client.NewWriter(*dataURL)
 
 	for masterURL, masterCfgs := range gk.Masters {
@@ -234,22 +249,17 @@ func main() {
 	}
 
 	bes := map[string]*messages.BuildExtract{}
-	errs := []error{}
 	for _, masterName := range masterNames {
 		be, err := a.Reader.BuildExtract(masterName)
 		if be != nil {
 			bes[masterName] = be
 		}
 		if err != nil {
-			errs = append(errs, err)
+			log.Errorf("Error reading build extract from %s : %s", masterName, err)
 		}
 	}
 
 	log.Infof("Build Extracts read: %d", len(bes))
-	log.Infof("Errors: %d", len(errs))
-	for url, err := range errs {
-		log.Errorf("Error reading build extract from %s : %s", url, err)
-	}
 
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.

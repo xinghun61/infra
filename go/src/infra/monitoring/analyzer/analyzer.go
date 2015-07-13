@@ -197,7 +197,7 @@ func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtr
 			}()
 
 			// This blocks on IO, hence the goroutine.
-			a.warmBuildCache(masterName, bn, b.CachedBuilds)
+			a.warmBuildCache(masterName, bn)
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
@@ -235,7 +235,7 @@ func alertKey(master, builder, step string) string {
 	return fmt.Sprintf("%s.%s.%s", master, builder, step)
 }
 
-func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) error {
+func (a *MasterAnalyzer) warmBuildCache(master, builder string) error {
 	builds, err := a.Reader.LatestBuilds(master, builder)
 	if err != nil {
 		return err
@@ -769,7 +769,7 @@ func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
 		res, err := sfa.Analyze(f)
 		if err != nil {
 			// TODO: return something that contains errors *and* reasons.
-			log.Errorf("Error get reasons from StepAnalyzer: %v", err)
+			log.Errorf("Error getting reasons from StepAnalyzer: %v", err)
 			continue
 		}
 		if res.Recognized {
