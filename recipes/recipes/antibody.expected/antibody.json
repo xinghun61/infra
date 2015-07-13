@@ -83,7 +83,7 @@
       "--git-checkout-path",
       "[SLAVE_BUILD]/infra",
       "--output-dir-path",
-      "[TMP_BASE]/antibody_tmp_1",
+      "[TMP_BASE]/antibody_tmp_1/antibody",
       "--since",
       "2015-01-01",
       "--run-antibody"
@@ -105,8 +105,8 @@
       "-r",
       "-a",
       "public-read",
-      "[TMP_BASE]/antibody_tmp_1/*",
-      "gs://antibody/antibody/"
+      "[TMP_BASE]/antibody_tmp_1/antibody",
+      "gs://antibody/"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "gsutil cp"

@@ -19,7 +19,7 @@ def RunSteps(api):
   api.gclient.set_config('infra_with_chromium')
   api.bot_update.ensure_checkout(force=True)
   api.gclient.runhooks()
-  dirname = api.path.mkdtemp('antibody')
+  dirname = api.path.mkdtemp('antibody').join('antibody')
 
   cmd = ['infra.tools.antibody']
   cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
@@ -30,8 +30,7 @@ def RunSteps(api):
 
   api.python('Antibody', 'run.py', cmd,
              cwd=api.m.path['slave_build'].join('infra'))
-  api.gsutil(['cp', '-r', '-a', 'public-read', dirname.join('*'),
-              'gs://antibody/antibody/'])
+  api.gsutil(['cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
 
 
 def GenTests(api):
