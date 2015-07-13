@@ -7,6 +7,7 @@ import logging
 
 import requests
 
+from infra_libs import instrumented_requests
 from infra_libs import ts_mon
 
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class Poller(object):
   def poll(self):
     LOGGER.info('Requesting %s', self._url)
 
-    response = requests.get(self._url)
+    response = instrumented_requests.get(self.__class__.__name__, self._url)
     if response.status_code != requests.codes.ok:
       LOGGER.warning('Got status code %d from %s',
                      response.status_code, self._url)

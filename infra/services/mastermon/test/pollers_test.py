@@ -30,7 +30,8 @@ class PollerTest(unittest.TestCase):
     p = FakePoller('http://foobar')
     self.assertTrue(p.poll())
 
-    mock_get.assert_called_once_with('http://foobar/json/foo')
+    self.assertEquals(1, mock_get.call_count)
+    self.assertEquals('http://foobar/json/foo', mock_get.call_args[0][0])
 
   def test_strips_trailing_slashes(self, mock_get):
     response = mock_get.return_value
@@ -40,7 +41,8 @@ class PollerTest(unittest.TestCase):
     p = FakePoller('http://foobar////')
     self.assertTrue(p.poll())
 
-    mock_get.assert_called_once_with('http://foobar/json/foo')
+    self.assertEquals(1, mock_get.call_count)
+    self.assertEquals('http://foobar/json/foo', mock_get.call_args[0][0])
 
   def test_returns_false_for_non_200(self, mock_get):
     response = mock_get.return_value

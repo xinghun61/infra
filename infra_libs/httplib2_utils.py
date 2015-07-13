@@ -10,7 +10,7 @@ import time
 import httplib2
 import oauth2client.client
 
-from infra_libs.ts_mon import metrics
+from infra_libs import http_metrics
 
 DEFAULT_SCOPES = ['email']
 
@@ -146,11 +146,6 @@ def get_authenticated_http(credentials_filename,
 class InstrumentedHttp(httplib2.Http):
   """A httplib2.Http object that reports ts_mon metrics about its requests."""
 
-  request_bytes_metric = metrics.DistributionMetric('http/request_bytes')
-  response_bytes_metric = metrics.DistributionMetric('http/response_bytes')
-  durations_metric = metrics.DistributionMetric('http/durations')
-  response_status_metric = metrics.CounterMetric('http/response_status')
-
   def __init__(self, name, time_fn=time.time, **kwargs):
     """
     Args:
@@ -165,22 +160,17 @@ class InstrumentedHttp(httplib2.Http):
     request_bytes = 0
     if 'body' in kwargs:
       request_bytes = len(kwargs['body'])
-    self.request_bytes_metric.add(request_bytes, fields=self.fields)
+    http_metrics.request_bytes.add(request_bytes, fields=self.fields)
 
     start_time = self.time_fn()
     response, content = super(InstrumentedHttp, self).request(*args, **kwargs)
     duration_msec = (self.time_fn() - start_time) * 1000
 
-    self.response_bytes_metric.add(len(content), fields=self.fields)
-    self.durations_metric.add(duration_msec, fields=self.fields)
+    http_metrics.response_bytes.add(len(content), fields=self.fields)
+    http_metrics.durations.add(duration_msec, fields=self.fields)
 
     status_fields = {'status': response.status}
     status_fields.update(self.fields)
-    self.response_status_metric.increment(fields=status_fields)
+    http_metrics.response_status.increment(fields=status_fields)
 
     return response, content
-
-  def _reset_metrics_for_testing(self):
-    for metric in (self.request_bytes_metric, self.response_bytes_metric,
-                   self.durations_metric, self.response_status_metric):
-      metric.reset()

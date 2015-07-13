@@ -5,6 +5,7 @@
 import os
 import unittest
 
+from infra_libs import http_metrics
 from infra_libs import httplib2_utils
 
 import httplib2
@@ -129,7 +130,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
     self.mock_time = mock.Mock()
     self.mock_time.return_value = 42
     self.http = httplib2_utils.InstrumentedHttp('test', time_fn=self.mock_time)
-    self.http._reset_metrics_for_testing()
+    http_metrics._reset_for_testing()
     self.http._request = mock.Mock()
 
   def test_success_status(self):
@@ -139,9 +140,9 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     response, _ = self.http.request('http://foo/')
     self.assertEqual(200, response.status)
-    self.assertEqual(1, self.http.response_status_metric.get(
+    self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
-    self.assertEqual(0, self.http.response_status_metric.get(
+    self.assertEqual(0, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 404}))
 
   def test_error_status(self):
@@ -151,9 +152,9 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     response, _ = self.http.request('http://foo/')
     self.assertEqual(404, response.status)
-    self.assertEqual(0, self.http.response_status_metric.get(
+    self.assertEqual(0, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
-    self.assertEqual(1, self.http.response_status_metric.get(
+    self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 404}))
 
   def test_response_bytes(self):
@@ -163,9 +164,9 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     _, content = self.http.request('http://foo/')
     self.assertEqual('content', content)
-    self.assertEqual(1, self.http.response_bytes_metric.get(
+    self.assertEqual(1, http_metrics.response_bytes.get(
         {'name': 'test', 'client': 'httplib2'}).count)
-    self.assertEqual(7, self.http.response_bytes_metric.get(
+    self.assertEqual(7, http_metrics.response_bytes.get(
         {'name': 'test', 'client': 'httplib2'}).sum)
 
   def test_request_bytes(self):
@@ -175,9 +176,9 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     _, content = self.http.request('http://foo/', body='wibblewibble')
     self.assertEqual('content', content)
-    self.assertEqual(1, self.http.request_bytes_metric.get(
+    self.assertEqual(1, http_metrics.request_bytes.get(
         {'name': 'test', 'client': 'httplib2'}).count)
-    self.assertEqual(12, self.http.request_bytes_metric.get(
+    self.assertEqual(12, http_metrics.request_bytes.get(
         {'name': 'test', 'client': 'httplib2'}).sum)
 
   def test_duration(self):
@@ -194,7 +195,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
         'content')
 
     _, _ = self.http.request('http://foo/')
-    self.assertEqual(1, self.http.durations_metric.get(
+    self.assertEqual(1, http_metrics.durations.get(
         {'name': 'test', 'client': 'httplib2'}).count)
-    self.assertAlmostEqual(300, self.http.durations_metric.get(
+    self.assertAlmostEqual(300, http_metrics.durations.get(
         {'name': 'test', 'client': 'httplib2'}).sum)
