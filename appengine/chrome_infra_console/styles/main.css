@@ -1,0 +1,80 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file */
+
+body {
+  background: #fafafa;
+  font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+#drawerToolbar {
+  color: #727272;
+  background-color: #ffffff;
+  border-bottom:  1px solid rgba(0, 0, 0, 0.22);
+  height: 64px;
+}
+
+.paper {
+  border-radius: 2px;
+  height: 100%;
+  padding: 16px 0 16px 0;
+  width: calc(98.66% - 16px);
+  margin: 16px auto;
+  background: white;
+}
+
+paper-toolbar.paper-toolbar-0 {
+  background: Orange;
+}
+
+paper-menu iron-icon {
+  margin-right: 33px;
+  opacity: 0.54;
+}
+
+.paper-menu > .iron-selected {
+  color: DarkOrange;
+}
+
+paper-menu paper-item iron-icon {
+  margin-left: 20px;
+}
+
+paper-menu paper-item {
+  margin-top: 10px;
+  text-decoration: none;
+  color: #111111;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-family: 'Roboto', 'Noto', sans-serif;
+  text-rendering: optimizeLegibility;
+  font-size: 20px;
+  font-weight: 450;
+  line-height: 24px;
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+#mainToolbar .middle {
+  margin-left: 48px;
+}
+
+#mainToolbar.has-shadow .middle {
+  font-size: 20px;
+  padding-bottom: 0;
+  margin-left: 48px;
+}
+
+#chromeInfraImg {
+  display: block;
+	margin-left: auto;
+  margin-right:auto;
+  margin-bottom: 30px;
+  margin-top: 30px;
+}
+
+#signIn {
+  background: DarkOrange; 
+}
