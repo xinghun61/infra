@@ -74,8 +74,8 @@ type MasterAnalyzer struct {
 	// build step failures.
 	StepAnalyzers []StepAnalyzer
 
-	// Client is the Client implementation for fetching json from CBE, builds, etc.
-	Client client.Client
+	// Reader is the Reader implementation for fetching json from CBE, builds, etc.
+	Reader client.Reader
 
 	// HungBuilerThresh is the maxumum length of time a builder may be in state "building"
 	// before triggering a "hung builder" alert.
@@ -113,13 +113,13 @@ type MasterAnalyzer struct {
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
 // maxBuilds is the maximum number of builds to check, per builder.
-func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
+func New(c client.Reader, minBuilds, maxBuilds int) *MasterAnalyzer {
 	if c == nil {
-		c = client.New("")
+		c = client.NewReader()
 	}
 
 	return &MasterAnalyzer{
-		Client:                 c,
+		Reader:                 c,
 		MaxRecentBuilds:        maxBuilds,
 		MinRecentBuilds:        minBuilds,
 		HungBuilderThresh:      3 * time.Hour,
@@ -127,8 +127,8 @@ func New(c client.Client, minBuilds, maxBuilds int) *MasterAnalyzer {
 		IdleBuilderCountThresh: 50,
 		StaleMasterThreshold:   10 * time.Minute,
 		StepAnalyzers: []StepAnalyzer{
-			&TestFailureAnalyzer{Client: c},
-			&CompileFailureAnalyzer{Client: c},
+			&TestFailureAnalyzer{Reader: c},
+			&CompileFailureAnalyzer{Reader: c},
 		},
 		MasterCfgs: map[string]messages.MasterConfig{},
 
@@ -235,32 +235,17 @@ func alertKey(master, builder, step string) string {
 	return fmt.Sprintf("%s.%s.%s", master, builder, step)
 }
 
-func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) {
-	v := url.Values{}
-	v.Add("master", master)
-	v.Add("builder", builder)
-
-	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_builds?%s", v.Encode())
-	res := struct {
-		Builds []messages.Build `json:"builds"`
-	}{}
-
-	// TODO: add FetchBuilds to the client interface. Take a list of {master, builder} and
-	// return (map[{master, builder}][]Builds, map [{master, builder}]error)
-	// That way we can do all of these in parallel.
-
-	status, err := a.Client.JSON(URL, &res)
+func (a *MasterAnalyzer) warmBuildCache(master, builder string, recentBuildIDs []int64) error {
+	builds, err := a.Reader.LatestBuilds(master, builder)
 	if err != nil {
-		log.Errorf("Error (%d) fetching %s: %s", status, URL, err)
+		return err
 	}
-
 	a.bLock.Lock()
-	for _, b := range res.Builds {
-		// TODO: consider making res.Builds be []*messages.Build instead of []messages.Build
-		ba := b
-		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = &ba
+	for _, b := range builds {
+		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = b
 	}
 	a.bLock.Unlock()
+	return nil
 }
 
 // This type is used for sorting build IDs.
@@ -308,7 +293,7 @@ func (a *MasterAnalyzer) lastBuilds(mn, bn string, recentBuildIDs []int64) (last
 		a.bLock.Unlock()
 
 		if build == nil {
-			build, err = a.Client.Build(mn, bn, buildID)
+			build, err = a.Reader.Build(mn, bn, buildID)
 			if err != nil {
 				return
 			}
@@ -622,7 +607,7 @@ func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFa
 	a.bLock.Unlock()
 	if !ok {
 		log.Infof("Cache miss for %s", cc)
-		b, err = a.Client.Build(mn, bn, bID)
+		b, err = a.Reader.Build(mn, bn, bID)
 		if err != nil || b == nil {
 			log.Errorf("Error fetching build: %v", err)
 			return nil, err

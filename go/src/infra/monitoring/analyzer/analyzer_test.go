@@ -19,9 +19,10 @@ func fakeNow(t time.Time) func() time.Time {
 	}
 }
 
-type mockClient struct {
+type mockReader struct {
 	build        *messages.Build
 	builds       map[string]*messages.Build
+	latestBuilds map[string]map[string][]*messages.Build
 	testResults  *messages.TestResults
 	stdioForStep []string
 	buildFetchError,
@@ -30,37 +31,41 @@ type mockClient struct {
 	buildFetchErrs map[string]error
 }
 
-func (m mockClient) Build(mn, bn string, bID int64) (*messages.Build, error) {
+func (m mockReader) Build(master, builder string, buildNum int64) (*messages.Build, error) {
 	if m.build != nil {
 		return m.build, m.buildFetchError
 	}
 
-	key := fmt.Sprintf("%s/%s/%d", mn, bn, bID)
+	key := fmt.Sprintf("%s/%s/%d", master, builder, buildNum)
 	fmt.Printf("looking up %q: %+v\n", key, m.builds[key])
 	return m.builds[key], m.buildFetchErrs[key]
 }
 
-func (m mockClient) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (m mockReader) LatestBuilds(master, builder string) ([]*messages.Build, error) {
+	return m.latestBuilds[master][builder], nil
+}
+
+func (m mockReader) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	return m.testResults, m.stepFetchError
 }
 
-func (m mockClient) BuildExtracts(urls []string) (map[string]*messages.BuildExtract, map[string]error) {
+func (m mockReader) BuildExtract(url string) (*messages.BuildExtract, error) {
 	return nil, nil
 }
 
-func (m mockClient) StdioForStep(master, builder, step string, bID int64) ([]string, error) {
+func (m mockReader) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
 	return m.stdioForStep, m.stdioForStepError
 }
 
-func (m mockClient) JSON(url string, v interface{}) (int, error) {
+func (m mockReader) JSON(url string, v interface{}) (int, error) {
 	return 0, nil // Not actually used.
 }
 
-func (m mockClient) PostAlerts(alerts *messages.Alerts) error {
+func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
 	return nil
 }
 
-func (m mockClient) DumpStats() {
+func (m mockReader) DumpStats() {
 	// Not actually used.
 }
 
@@ -114,7 +119,7 @@ func TestMasterAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 0, 10)
+	a := New(&mockReader{}, 0, 10)
 
 	for _, test := range tests {
 		a.now = fakeNow(test.t)
@@ -153,7 +158,7 @@ func TestBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 0, 10)
+	a := New(&mockReader{}, 0, 10)
 
 	for _, test := range tests {
 		a.now = fakeNow(test.t)
@@ -269,7 +274,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.now = fakeNow(test.time)
-		a.Client = mockClient{
+		a.Reader = mockReader{
 			builds: test.builds,
 		}
 		gotAlerts, gotErrs := a.builderAlerts(test.master, test.builder, &test.b)
@@ -485,7 +490,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 
 	for _, test := range tests {
 		a.now = fakeNow(time.Unix(0, 0))
-		a.Client = mockClient{
+		a.Reader = mockReader{
 			builds: test.builds,
 		}
 		gotAlerts, gotErrs := a.builderStepAlerts(test.master, test.builder, test.recentBuilds)
@@ -676,7 +681,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 0, 10)
+	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
 		got := a.mergeAlertsByStep(test.in)
 		if !reflect.DeepEqual(got, test.want) {
@@ -753,7 +758,7 @@ func TestReasonsForFailure(t *testing.T) {
 		},
 	}
 
-	mc := &mockClient{}
+	mc := &mockReader{}
 	a := New(mc, 0, 10)
 
 	for _, test := range tests {
@@ -770,7 +775,7 @@ func TestStepFailures(t *testing.T) {
 		name            string
 		master, builder string
 		b               *messages.Build
-		bID             int64
+		buildNum        int64
 		bCache          map[string]*messages.Build
 		want            []stepFailure
 		wantErr         error
@@ -781,10 +786,10 @@ func TestStepFailures(t *testing.T) {
 			builder: "fake.builder",
 		},
 		{
-			name:    "breaking step",
-			master:  "stepCheck.master",
-			builder: "fake.builder",
-			bID:     0,
+			name:     "breaking step",
+			master:   "stepCheck.master",
+			builder:  "fake.builder",
+			buildNum: 0,
 			bCache: map[string]*messages.Build{
 				"stepCheck.master/fake.builder/0.json": &messages.Build{
 					Steps: []messages.Step{
@@ -829,13 +834,13 @@ func TestStepFailures(t *testing.T) {
 		},
 	}
 
-	mc := &mockClient{}
+	mc := &mockReader{}
 	a := New(mc, 0, 10)
 
 	for _, test := range tests {
 		mc.build = test.b
 		a.bCache = test.bCache
-		got, err := a.stepFailures(test.master, test.builder, test.bID)
+		got, err := a.stepFailures(test.master, test.builder, test.buildNum)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed.\nGot:\n%+v\nwant:\n%+v", test.name, got, test.want)
 		}
@@ -909,7 +914,7 @@ func TestStepFailureAlerts(t *testing.T) {
 		},
 	}
 
-	mc := &mockClient{}
+	mc := &mockReader{}
 	a := New(mc, 0, 10)
 	a.now = fakeNow(time.Unix(0, 0))
 
@@ -1044,7 +1049,7 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 0, 10)
+	a := New(&mockReader{}, 0, 10)
 	a.now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
 		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)
@@ -1128,7 +1133,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 	}
 
-	a := New(&mockClient{}, 0, 10)
+	a := New(&mockReader{}, 0, 10)
 	for _, test := range tests {
 		a.MasterCfgs = test.cfgs
 		got := a.excludeFailure(test.master, test.builder, test.step)

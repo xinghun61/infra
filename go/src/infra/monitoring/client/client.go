@@ -51,35 +51,36 @@ func oldEscape(s string) string {
 
 // Client provides access to read status information from various parts of chrome
 // developer infrastructure.
-type Client interface {
-	// Build fetches the build summary for master mn, builder bn and build id bID
+type Reader interface {
+	// Build fetches the build summary for master, builder and buildNum
 	// from build.chromium.org.
-	Build(mn, bn string, bID int64) (*messages.Build, error)
+	Build(master, builder string, buildNum int64) (*messages.Build, error)
+
+	// LatestBuilds fetches a list of recent build summaries for master and builder
+	// from build.chromium.org.
+	LatestBuilds(master, build string) ([]*messages.Build, error)
 
 	// TestResults fetches the results of a step failure's test run.
 	TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
 
-	// BuildExtracts fetches build information for masters from CBE in parallel.
-	// Returns a map of url to error for any requests that had errors.
-	BuildExtracts(masterNames []string) (map[string]*messages.BuildExtract, map[string]error)
+	// BuildExtract fetches build information for master from CBE.
+	BuildExtract(master string) (*messages.BuildExtract, error)
 
 	// StdioForStep fetches the standard output for a given build step, and an error if any
 	// occurred.
-	StdioForStep(master, builder, step string, bID int64) ([]string, error)
-
-	// JSON fetches data from a json endpoint and decodes it into v.  Returns the
-	// http response code and error, if any.
-	JSON(URL string, v interface{}) (int, error)
-
-	// PostAlerts posts alerts to Sheriff-o-Matic.
-	PostAlerts(alerts *messages.Alerts) error
+	StdioForStep(master, builder, step string, buildNum int64) ([]string, error)
 
 	// DumpStats logs stats about the client to stdout.
 	DumpStats()
 }
 
-type client struct {
-	hc *http.Client
+type Writer interface {
+	// PostAlerts posts alerts to Sheriff-o-Matic.
+	PostAlerts(alerts *messages.Alerts) error
+}
+
+type trackingHTTPClient struct {
+	c *http.Client
 	// Some counters for reporting. Only modify through synchronized methods.
 	// TODO: add some more detailed stats about response times so we can
 	// track and alert on those too.
@@ -87,20 +88,29 @@ type client struct {
 	totalErrs  int64
 	totalBytes int64
 	currReqs   int64
+}
+
+type reader struct {
+	hc *trackingHTTPClient
+}
+
+type writer struct {
+	hc         *trackingHTTPClient
 	alertsBase string
 }
 
-// New returns a new Client, which will post alerts to alertsBase.
-func New(alertsBase string) Client {
-	return &client{hc: http.DefaultClient, alertsBase: alertsBase}
+// NewReader returns a new Reader, which will read data from various chrome infra
+// data sources.
+func NewReader() Reader {
+	return &reader{hc: &trackingHTTPClient{c: http.DefaultClient}}
 }
 
-func (c *client) Build(mn, bn string, bID int64) (*messages.Build, error) {
+func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build, error) {
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/json/builders/%s/builds/%d",
-		mn, bn, bID)
+		master, builder, buildNum)
 
 	bld := &messages.Build{}
-	if code, err := c.JSON(URL, bld); err != nil {
+	if code, err := r.hc.getJSON(URL, bld); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
@@ -108,7 +118,25 @@ func (c *client) Build(mn, bn string, bID int64) (*messages.Build, error) {
 	return bld, nil
 }
 
-func (c *client) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error) {
+	v := url.Values{}
+	v.Add("master", master)
+	v.Add("builder", builder)
+
+	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_builds?%s", v.Encode())
+	res := struct {
+		Builds []*messages.Build `json:"builds"`
+	}{}
+
+	if code, err := r.hc.getJSON(URL, &res); err != nil {
+		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
+	}
+
+	return res.Builds, nil
+}
+
+func (r *reader) TestResults(masterName, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	// This substitution is done in the existing builder_alerts python code.
 	if stepName == "webkit_tests" {
 		stepName = "layout-tests"
@@ -124,7 +152,7 @@ func (c *client) TestResults(masterName, builderName, stepName string, buildNumb
 	URL := fmt.Sprintf("https://test-results.appspot.com/testfile?%s", v.Encode())
 	tr := &messages.TestResults{}
 
-	if code, err := c.JSON(URL, tr); err != nil {
+	if code, err := r.hc.getJSON(URL, tr); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
@@ -132,68 +160,46 @@ func (c *client) TestResults(masterName, builderName, stepName string, buildNumb
 	return tr, nil
 }
 
-// BuildExtracts fetches a BuildExtract for each of the masters in masterNames, and a map of
-// masterName to error for any that could not be fetched.
-func (c *client) BuildExtracts(masterNames []string) (map[string]*messages.BuildExtract, map[string]error) {
-	type r struct {
-		url, masterName string
-		be              *messages.BuildExtract
-		err             error
+func (r *reader) BuildExtract(master string) (*messages.BuildExtract, error) {
+	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", master)
+	ret := &messages.BuildExtract{}
+	if code, err := r.hc.getJSON(URL, ret); err != nil {
+		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
 	}
-
-	ch := make(chan r, len(masterNames))
-
-	for _, mn := range masterNames {
-		go func(m string) {
-			out := r{
-				masterName: m,
-				url:        fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", m),
-			}
-
-			defer func() {
-				ch <- out
-			}()
-
-			out.be = &messages.BuildExtract{}
-			_, out.err = c.JSON(out.url, out.be)
-		}(mn)
-	}
-
-	ret := map[string]*messages.BuildExtract{}
-	errs := map[string]error{}
-	for range masterNames {
-		r := <-ch
-		if r.err != nil {
-			errs[r.masterName] = r.err
-		} else {
-			ret[r.masterName] = r.be
-		}
-	}
-
-	return ret, errs
+	return ret, nil
 }
 
-func (c *client) StdioForStep(master, builder, step string, bID int64) ([]string, error) {
-	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, bID, step)
-	res, _, err := c.Text(URL)
+func (r *reader) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
+	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
+	res, _, err := r.hc.getText(URL)
 	return strings.Split(res, "\n"), err
 }
 
-func (c *client) PostAlerts(alerts *messages.Alerts) error {
-	return c.trackRequestStats(func() (length int64, err error) {
-		log.Infof("POSTing alerts to %s", c.alertsBase)
+func (r *reader) DumpStats() {
+	r.hc.dumpStats()
+}
+
+// NewWriter returns a new Client, which will post alerts to alertsBase.
+func NewWriter(alertsBase string) Writer {
+	return &writer{hc: &trackingHTTPClient{c: http.DefaultClient}, alertsBase: alertsBase}
+}
+
+func (w *writer) PostAlerts(alerts *messages.Alerts) error {
+	return w.hc.trackRequestStats(func() (length int64, err error) {
+		log.Infof("POSTing alerts to %s", w.alertsBase)
 		b, err := json.Marshal(alerts)
 		if err != nil {
 			return
 		}
 
-		resp, err := c.hc.Post(c.alertsBase, "application/json", bytes.NewBuffer(b))
+		resp, err := w.hc.c.Post(w.alertsBase, "application/json", bytes.NewBuffer(b))
 		if err != nil {
 			return
 		}
 
 		if resp.StatusCode >= 400 {
-			err = fmt.Errorf("http status %d: %s", resp.StatusCode, c.alertsBase)
+			err = fmt.Errorf("http status %d: %s", resp.StatusCode, w.alertsBase)
 			return
 		}
 
@@ -204,43 +210,43 @@ func (c *client) PostAlerts(alerts *messages.Alerts) error {
 	})
 }
 
-func (c *client) startReq() {
-	atomic.AddInt64(&c.currReqs, 1)
-	atomic.AddInt64(&c.totalReqs, 1)
+func (hc *trackingHTTPClient) startReq() {
+	atomic.AddInt64(&hc.currReqs, 1)
+	atomic.AddInt64(&hc.totalReqs, 1)
 }
 
-func (c *client) endReq(r int64) {
-	atomic.AddInt64(&c.currReqs, -1)
-	atomic.AddInt64(&c.totalBytes, r)
+func (hc *trackingHTTPClient) endReq(r int64) {
+	atomic.AddInt64(&hc.currReqs, -1)
+	atomic.AddInt64(&hc.totalBytes, r)
 }
 
-func (c *client) errReq() {
-	atomic.AddInt64(&c.currReqs, -1)
-	atomic.AddInt64(&c.totalErrs, 1)
+func (hc *trackingHTTPClient) errReq() {
+	atomic.AddInt64(&hc.currReqs, -1)
+	atomic.AddInt64(&hc.totalErrs, 1)
 }
 
-func (c *client) trackRequestStats(cb func() (int64, error)) error {
+func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error {
 	var err error
 	length := int64(0)
-	c.startReq()
+	hc.startReq()
 	defer func() {
 		if err != nil {
-			c.errReq()
+			hc.errReq()
 		} else {
-			c.endReq(length)
+			hc.endReq(length)
 		}
 	}()
 	length, err = cb()
 	return err
 }
 
-// JSON does a simple HTTP GET on a JSON endpoint.
+// getJSON does a simple HTTP GET on a getJSON endpoint.
 //
 // Returns the status code and the error, if any.
-func (c *client) JSON(url string, v interface{}) (status int, err error) {
-	err = c.trackRequestStats(func() (length int64, err error) {
-		log.Infof("Fetching json (%d): %s", c.currReqs, url)
-		resp, err := c.hc.Get(url)
+func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, err error) {
+	err = hc.trackRequestStats(func() (length int64, err error) {
+		log.Infof("Fetching json (%d): %s", hc.currReqs, url)
+		resp, err := hc.c.Get(url)
 		status = resp.StatusCode
 		if err != nil {
 			return
@@ -269,14 +275,14 @@ func (c *client) JSON(url string, v interface{}) (status int, err error) {
 	return status, err
 }
 
-// Text does a simple HTTP GET on a text endpoint.
+// getText does a simple HTTP GET on a text endpoint.
 //
 // Returns the status code and the error, if any.
-func (c *client) Text(url string) (ret string, status int, err error) {
-	err = c.trackRequestStats(func() (length int64, err error) {
+func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err error) {
+	err = hc.trackRequestStats(func() (length int64, err error) {
 
-		log.Infof("Fetching text (%d): %s", c.currReqs, url)
-		resp, err := c.hc.Get(url)
+		log.Infof("Fetching text (%d): %s", hc.currReqs, url)
+		resp, err := hc.c.Get(url)
 		if err != nil {
 			err = fmt.Errorf("couldn't resolve %s: %s", url, err)
 			return
@@ -303,7 +309,7 @@ func (c *client) Text(url string) (ret string, status int, err error) {
 	return ret, status, nil
 }
 
-func (c *client) DumpStats() {
-	log.Infof("%d reqs total, %d errors, %d current", c.totalReqs, c.totalErrs, c.currReqs)
-	log.Infof("%d bytes read", c.totalBytes)
+func (hc *trackingHTTPClient) dumpStats() {
+	log.Infof("%d reqs total, %d errors, %d current", hc.totalReqs, hc.totalErrs, hc.currReqs)
+	log.Infof("%d bytes read", hc.totalBytes)
 }

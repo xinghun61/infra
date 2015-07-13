@@ -57,7 +57,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 		},
 	}
 
-	mc := &mockClient{}
+	mc := &mockReader{}
 	a := &TestFailureAnalyzer{mc}
 
 	for _, test := range tests {

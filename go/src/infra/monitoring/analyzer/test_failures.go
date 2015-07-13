@@ -13,7 +13,7 @@ import (
 
 // TestFailureAnalyzer determines the reasons, if any, for a test step failure.
 type TestFailureAnalyzer struct {
-	Client client.Client
+	Reader client.Reader
 }
 
 // Analyze returns the reasons, if any, for the step if it was a test failure. Also returns
@@ -29,7 +29,7 @@ func (a *TestFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, error
 	}
 	ret.Recognized = true
 
-	testResults, err := a.Client.TestResults(f.masterName, f.builderName, f.step.Name, f.build.Number)
+	testResults, err := a.Reader.TestResults(f.masterName, f.builderName, f.step.Name, f.build.Number)
 	if err != nil {
 		ret.Reasons = append(ret.Reasons, f.step.Name)
 		return ret, fmt.Errorf("Error fetching test results: %v", err)

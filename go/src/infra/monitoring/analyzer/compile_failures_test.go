@@ -79,7 +79,7 @@ extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
 		},
 	}
 
-	mc := &mockClient{}
+	mc := &mockReader{}
 	a := &CompileFailureAnalyzer{mc}
 
 	for _, test := range tests {

@@ -204,7 +204,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	a := analyzer.New(client.New(*dataURL), 2, 5)
+	a := analyzer.New(client.NewReader(), 2, 5)
+
+	w := client.NewWriter(*dataURL)
 
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
@@ -231,7 +233,18 @@ func main() {
 		}
 	}
 
-	bes, errs := a.Client.BuildExtracts(masterNames)
+	bes := map[string]*messages.BuildExtract{}
+	errs := []error{}
+	for _, masterName := range masterNames {
+		be, err := a.Reader.BuildExtract(masterName)
+		if be != nil {
+			bes[masterName] = be
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	log.Infof("Build Extracts read: %d", len(bes))
 	log.Infof("Errors: %d", len(errs))
 	for url, err := range errs {
@@ -262,7 +275,7 @@ func main() {
 			}
 		} else {
 			log.Infof("Posting alerts to %s", *dataURL)
-			err := a.Client.PostAlerts(alerts)
+			err := w.PostAlerts(alerts)
 			if err != nil {
 				log.Errorf("Couldn't post alerts: %v", err)
 				return err
@@ -270,7 +283,7 @@ func main() {
 		}
 
 		log.Infof("Filtered failures: %v", filteredFailures)
-		a.Client.DumpStats()
+		a.Reader.DumpStats()
 		log.Infof("Elapsed time: %v", time.Since(start))
 
 		return nil

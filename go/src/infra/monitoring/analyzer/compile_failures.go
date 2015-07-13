@@ -19,7 +19,7 @@ var (
 
 // CompileFailureAnalyzer determines the reasons, if any, for a compilation step failure.
 type CompileFailureAnalyzer struct {
-	Client client.Client
+	Reader client.Reader
 }
 
 // Analyze returns the reasons, if any, for the step if it was a compilation failure. Also returns
@@ -32,7 +32,7 @@ func (a *CompileFailureAnalyzer) Analyze(f stepFailure) (*StepAnalyzerResult, er
 	}
 	ret.Recognized = true
 
-	stdio, err := a.Client.StdioForStep(f.masterName, f.builderName, f.step.Name, f.build.Number)
+	stdio, err := a.Reader.StdioForStep(f.masterName, f.builderName, f.step.Name, f.build.Number)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't get stdio for %s.%s.%s: %v", f.masterName, f.builderName, f.step.Name, err)
 	}
