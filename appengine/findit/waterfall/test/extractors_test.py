@@ -12,9 +12,10 @@ from waterfall.failure_signal import FailureSignal
 
 
 class ExtractorsTest(testing.AppengineTestCase):
-  def _RunTest(self, failure_log, extractor_class, expected_signal_json):
+  def _RunTest(self, failure_log, extractor_class, expected_signal_json,
+               bot='bot', master='master'):
     signal = extractor_class().Extract(
-        failure_log, 'suite.test', 'step', 'bot', 'master')
+        failure_log, 'suite.test', 'step', bot, master)
     self.assertEqual(expected_signal_json, signal.ToDict())
 
   def testGeneralExtractor(self):
@@ -137,15 +138,23 @@ Note:You can safely ignore the above warning unless this call should not happen.
         blabla...
         FAILED: /b/build/goma/gomacc ... ../../a/b/c.cc -o obj/a/b/test.c.o
         ../../a/b/c.cc:307:44: error: no member 'kEnableExtensionInfoDialog' ...
-        blabla...
         1 error generated.
+        x/y/not_in_signal.cc
+        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc -o obj/a/b/test.c.o
+        ../../a/b/d.cc:123:44: error: no member 'kEnableExtensionInfoDialog' ...
+        blabla...
+        FAILED: /b/build/goma/gomacc ... ../../a/b/x.cc -o obj/a/b/test.c.o
+        ../../a/b/e.cc:79:44: error: no member 'kEnableExtensionInfoDialog' ...
+        blabla...
         ninja: build stopped: subcommand failed.
 
         /b/build/goma/goma_ctl.sh stat
         blabla...""")
     expected_signal_json = {
         'files': {
-            'a/b/c.cc': [307]
+            'a/b/c.cc': [307],
+            'a/b/d.cc': [123],
+            'a/b/e.cc': [79]
         },
         'tests': [],
         'keywords': {}
@@ -171,6 +180,48 @@ Note:You can safely ignore the above warning unless this call should not happen.
 
     self._RunTest(
         failure_log, extractors.CompileStepExtractor, expected_signal_json)
+
+  def testCompileStepIOSExtractor(self):
+    """Test compile step for builder iOS_Simulator_(dbg) and iOS_Device."""
+    failure_log = textwrap.dedent("""
+        CompileC a/b/not_in_signal_2.cc
+            cd a/b
+            export LANG=en_US.US-ASCII
+            export PATH="x/y/z"
+            /a/b/...
+        In file included from a/b/in_signal_1.cc
+        ../../a/c/in_signal_2.cc
+        In file included from a/c/in_signal_3.cc
+
+        2 errors generated.
+
+        a/b/not_in_signal_1.cc
+        CompileC a/b/not_in_signal_2.cc
+            cd a/b
+            export LANG=en_US.US-ASCII
+            export PATH="x/y/z"
+            /a/b/...
+        In file included from a/b/in_signal_4.cc
+        In file included from a/c/in_signal_5.cc
+        ../../a/c/in_signal_6.cc
+
+        1 error generated.""")
+    expected_signal_json = {
+        'files': {
+            'a/b/in_signal_1.cc' : [],
+            'a/c/in_signal_2.cc' : [],
+            'a/c/in_signal_3.cc' : [],
+            'a/b/in_signal_4.cc' : [],
+            'a/c/in_signal_5.cc' : [],
+            'a/c/in_signal_6.cc' : []
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.CompileStepExtractor, expected_signal_json,
+        'iOS_Simulator_(dbg)', 'chromium.mac')
 
   def testCheckPermExtractor(self):
     failure_log = textwrap.dedent("""

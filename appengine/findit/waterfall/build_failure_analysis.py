@@ -364,6 +364,7 @@ def _StripChromiumRootDirectory(file_path):
     file_path = file_path[4:]
   return file_path
 
+
 def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   """Gets changed line numbers for file in failure log.
 

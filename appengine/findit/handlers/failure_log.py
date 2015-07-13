@@ -25,12 +25,12 @@ class FailureLog(BaseHandler):
                       step_name)
     
     if not step:
-      return BaseHandler.CreateError('No failure log available.', 404)  
+      return BaseHandler.CreateError('No failure log available.', 404)
     data = {
           'master_name': master_name,
           'builder_name': builder_name,
           'build_number': build_number,
-          'step_name': step_name,         
+          'step_name': step_name,
           'step_logs': step.log_data,
     }
     return {'template': 'failure_log.html', 'data': data}
