@@ -28,6 +28,8 @@ import (
 
 	"github.com/maruel/subcommands"
 
+	cipd_lib "infra/libs/cipd"
+
 	"infra/tools/cipd"
 	"infra/tools/cipd/common"
 	"infra/tools/cipd/local"
@@ -1253,6 +1255,7 @@ var application = &subcommands.DefaultApplication{
 	Title: "Chrome infra package deployer",
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
+		cipd_lib.SubcommandVersion,
 
 		// Authentication related commands.
 		authcli.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),

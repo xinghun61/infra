@@ -7,3 +7,4 @@ builders:
 root: ../../go/bin
 data:
   - file: cloudtail${exe_suffix}
+  - version_file: cloudtail${exe_suffix}.cipd_version

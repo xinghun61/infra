@@ -7,3 +7,4 @@ builders:
 root: ../../go/bin
 data:
   - file: cipd${exe_suffix}
+  - version_file: cipd${exe_suffix}.cipd_version
