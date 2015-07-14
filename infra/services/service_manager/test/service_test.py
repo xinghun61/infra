@@ -54,7 +54,7 @@ class ServiceTest(TestBase):
             'root_directory': '/rootdir',
             'tool': 'bar',
             'args': ['one', 'two'],
-            'stop_time': 86,
+            'stop_time': '86',
         },
         time_fn=self.mock_time,
         sleep_fn=self.mock_sleep)

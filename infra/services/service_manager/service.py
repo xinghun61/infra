@@ -50,7 +50,7 @@ class Service(object):
     self.tool = service_config['tool']
 
     self.args = service_config.get('args', [])
-    self.stop_time = service_config.get('stop_time', 10)
+    self.stop_time = int(service_config.get('stop_time', 10))
 
     self._state_file = os.path.join(state_directory, self.name)
     self._time_fn = time_fn
