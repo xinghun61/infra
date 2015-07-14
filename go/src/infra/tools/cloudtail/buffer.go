@@ -187,7 +187,7 @@ func (b *pushBufferImpl) pushWithRetries(entries []Entry) error {
 		if attempt >= b.MaxPushAttempts {
 			return err
 		}
-		b.Logger.Errorf("failed to send %d entries (%s), retrying...", len(entries), err)
+		b.Logger.Warningf("failed to send %d entries (%s), retrying...", len(entries), err)
 		select {
 		case <-b.stopCh:
 			return err

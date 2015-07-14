@@ -16,6 +16,7 @@ import (
 
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/maruel/subcommands"
 	gol "github.com/op/go-logging"
@@ -24,10 +25,8 @@ import (
 	"infra/tools/cloudtail"
 )
 
-var logger = gologger.New(os.Stderr, gol.INFO)
-
 var authOptions = auth.Options{
-	Logger:                 logger,
+	Logger:                 gologger.New(os.Stderr, gol.INFO),
 	ServiceAccountJSONPath: defaultServiceAccountJSONPath(),
 	Scopes: []string{
 		auth.OAuthScopeEmail,
@@ -45,7 +44,8 @@ const (
 // Common functions and structs.
 
 type commonOptions struct {
-	authFlags authcli.Flags
+	authFlags     authcli.Flags
+	localLogLevel logging.Level
 
 	projectID    string
 	resourceType string
@@ -53,50 +53,77 @@ type commonOptions struct {
 	logID        string
 }
 
+type state struct {
+	logger logging.Logger
+	client cloudtail.Client
+	buffer cloudtail.PushBuffer
+}
+
+// registerFlags adds all CLI flags to the flag set.
 func (opts *commonOptions) registerFlags(f *flag.FlagSet) {
+	// Default log level.
+	opts.localLogLevel = logging.Warning
+
 	opts.authFlags.Register(f, authOptions)
+	f.Var(&opts.localLogLevel, "local-log-level", "The logging level of local logger (for cloudtail own logs). "+
+		"Valid options are: debug, info, warning, error.")
+
 	f.StringVar(&opts.projectID, "project-id", "", "Cloud project ID to push logs to")
 	f.StringVar(&opts.resourceType, "resource-type", "machine", "What kind of entity produces the log (e.g. 'master')")
 	f.StringVar(&opts.resourceID, "resource-id", "", "Identifier of the entity producing the log")
 	f.StringVar(&opts.logID, "log-id", "default", "ID of the log")
 }
 
-func (opts *commonOptions) makeClient() (cloudtail.Client, error) {
+// processFlags validates flags, creates and configures logger, client, etc.
+func (opts *commonOptions) processFlags() (state, error) {
+	// Logger.
+	logLevels := map[logging.Level]gol.Level{
+		logging.Debug:   gol.DEBUG,
+		logging.Info:    gol.INFO,
+		logging.Warning: gol.WARNING,
+		logging.Error:   gol.ERROR,
+	}
+	logger := gologger.New(os.Stderr, logLevels[opts.localLogLevel])
+
+	// Auth options.
 	authOpts, err := opts.authFlags.Options()
 	if err != nil {
-		return nil, err
+		return state{}, err
 	}
+	authOpts.Logger = logger
 	if opts.projectID == "" {
 		if authOpts.ServiceAccountJSONPath != "" {
 			opts.projectID = projectIDFromServiceAccountJSON(authOpts.ServiceAccountJSONPath)
 		}
 		if opts.projectID == "" {
-			return nil, fmt.Errorf("-project-id is required")
+			return state{}, fmt.Errorf("-project-id is required")
 		}
 	}
-	client, err := auth.AuthenticatedClient(auth.SilentLogin, auth.NewAuthenticator(authOpts))
+
+	// Client.
+	httpClient, err := auth.AuthenticatedClient(auth.SilentLogin, auth.NewAuthenticator(authOpts))
 	if err != nil {
-		return nil, err
+		return state{}, err
 	}
-	return cloudtail.NewClient(cloudtail.ClientOptions{
-		Client:       client,
+	client, err := cloudtail.NewClient(cloudtail.ClientOptions{
+		Client:       httpClient,
 		Logger:       logger,
 		ProjectID:    opts.projectID,
 		ResourceType: opts.resourceType,
 		ResourceID:   opts.resourceID,
 		LogID:        opts.logID,
 	})
-}
-
-func (opts *commonOptions) makePushBuffer() (cloudtail.PushBuffer, error) {
-	client, err := opts.makeClient()
 	if err != nil {
-		return nil, err
+		return state{}, err
 	}
-	return cloudtail.NewPushBuffer(cloudtail.PushBufferOptions{
+
+	// Buffer.
+	buffer := cloudtail.NewPushBuffer(cloudtail.PushBufferOptions{
 		Client: client,
 		Logger: logger,
-	}), nil
+	})
+
+	return state{logger, client, buffer}, nil
 }
 
 // defaultServiceAccountJSON returns path to a default service account
@@ -151,9 +178,9 @@ func catchCtrlC(handler func() error) {
 		for _ = range ctrlC {
 			if !stopCalled {
 				stopCalled = true
-				logger.Infof("Caught Ctrl+C, flushing and exiting... Send another Ctrl+C to kill.")
+				fmt.Fprintln(os.Stderr, "\nCaught Ctrl+C, flushing and exiting... Send another Ctrl+C to kill.")
 				if err := handler(); err != nil {
-					logger.Errorf("%s", err)
+					fmt.Fprintln(os.Stderr, "\n", err)
 				}
 			} else {
 				os.Exit(2)
@@ -188,19 +215,19 @@ type sendRun struct {
 
 func (c *sendRun) Run(a subcommands.Application, args []string) int {
 	if len(args) != 0 {
-		logger.Errorf("Unexpected command line arguments: %v", args)
+		fmt.Fprintln(os.Stderr, "This tool doesn't accept positional command line arguments")
 		return 1
 	}
 	if c.text == "" {
-		logger.Errorf("-text is required")
+		fmt.Fprintln(os.Stderr, "-text is required")
 		return 1
 	}
-	buf, err := c.commonOptions.makePushBuffer()
+	state, err := c.commonOptions.processFlags()
 	if err != nil {
-		logger.Errorf("%s", err)
+		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
 	}
-	buf.Add(cloudtail.Entry{
+	state.buffer.Add(cloudtail.Entry{
 		Timestamp:   time.Now(),
 		Severity:    c.severity,
 		TextPayload: c.text,
@@ -210,8 +237,8 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		abort <- struct{}{}
 		return nil
 	})
-	if err := buf.Stop(abort); err != nil {
-		logger.Errorf("%s", err)
+	if err := state.buffer.Stop(abort); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
 	}
 	return 0
@@ -238,26 +265,26 @@ type pipeRun struct {
 
 func (c *pipeRun) Run(a subcommands.Application, args []string) int {
 	if len(args) != 0 {
-		logger.Errorf("Unexpected command line arguments: %v", args)
+		fmt.Fprintln(os.Stderr, "This tool doesn't accept positional command line arguments")
 		return 1
 	}
-	buf, err := c.commonOptions.makePushBuffer()
+	state, err := c.commonOptions.processFlags()
 	if err != nil {
-		logger.Errorf("%s", err)
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	err1 := cloudtail.PipeFromReader(os.Stdin, cloudtail.StdParser(), buf, logger)
+	err1 := cloudtail.PipeFromReader(os.Stdin, cloudtail.StdParser(), state.buffer, state.logger)
 	if err1 != nil {
-		logger.Errorf("%s", err1)
+		fmt.Fprintln(os.Stderr, err1)
 	}
 	abort := make(chan struct{}, 1)
 	catchCtrlC(func() error {
 		abort <- struct{}{}
 		return nil
 	})
-	err2 := buf.Stop(abort)
+	err2 := state.buffer.Stop(abort)
 	if err2 != nil {
-		logger.Errorf("%s", err2)
+		fmt.Fprintln(os.Stderr, err2)
 	}
 	if err1 != nil || err2 != nil {
 		return 1
@@ -289,29 +316,29 @@ type tailRun struct {
 
 func (c *tailRun) Run(a subcommands.Application, args []string) int {
 	if len(args) != 0 {
-		logger.Errorf("Unexpected command line arguments: %v", args)
+		fmt.Fprintln(os.Stderr, "This tool doesn't accept positional command line arguments")
 		return 1
 	}
 	if c.path == "" {
-		logger.Errorf("-path is required")
+		fmt.Fprintln(os.Stderr, "-path is required")
 		return 1
 	}
 
-	buf, err := c.commonOptions.makePushBuffer()
+	state, err := c.commonOptions.processFlags()
 	if err != nil {
-		logger.Errorf("%s", err)
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 
 	tailer, err := cloudtail.NewTailer(cloudtail.TailerOptions{
 		Path:       c.path,
 		Parser:     cloudtail.StdParser(),
-		PushBuffer: buf,
-		Logger:     logger,
+		PushBuffer: state.buffer,
+		Logger:     state.logger,
 		SeekToEnd:  true,
 	})
 	if err != nil {
-		logger.Errorf("%s", err)
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	defer cloudtail.CleanupTailer()
@@ -319,11 +346,11 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 
 	fail := false
 	if err1 := tailer.Wait(); err1 != nil {
-		logger.Errorf("%s", err1)
+		fmt.Fprintln(os.Stderr, err1)
 		fail = true
 	}
-	if err2 := buf.Stop(nil); err2 != nil {
-		logger.Errorf("%s", err2)
+	if err2 := state.buffer.Stop(nil); err2 != nil {
+		fmt.Fprintln(os.Stderr, err2)
 		fail = true
 	}
 	if fail {
