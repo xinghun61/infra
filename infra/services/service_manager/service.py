@@ -6,6 +6,7 @@ import errno
 import json
 import logging
 import os.path
+import platform
 import signal
 import sys
 import time
@@ -177,9 +178,18 @@ class Service(object):
     """
 
     try:
-      return psutil.Process(pid).create_time()
+      ret = psutil.Process(pid).create_time()
     except (psutil.NoSuchProcess, psutil.AccessDenied):
       return None
+
+    if platform.system() == 'Linux':
+      # On Linux psutil adds the btime from /proc/stat to the create_time.
+      # Unfortunately this value isn't constant and can drift by 1 second, so
+      # subtract it again to ensure different service_manager processes see the
+      # same create_times.  See crbug/509493.
+      ret -= psutil.BOOT_TIME
+
+    return ret
 
   def _start_child(self, pipe):
     """The part of start() that runs in the child process.
