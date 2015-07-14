@@ -77,6 +77,13 @@ class ServiceTest(TestBase):
     self.assertIs(None, self.s.get_running_process_state())
     self.assertFalse(self.s.is_running())
 
+    # State file present but not readable.
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
+    os.chmod(os.path.join(self.state_directory, 'foo'), 0)
+    self.assertIs(None, self.s.get_running_process_state())
+    self.assertFalse(self.s.is_running())
+    os.unlink(os.path.join(self.state_directory, 'foo'))
+
     # State file present but no /proc file.
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
     self.assertIs(None, self.s.get_running_process_state())

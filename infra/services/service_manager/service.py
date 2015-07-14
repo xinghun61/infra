@@ -71,23 +71,31 @@ class Service(object):
     Returns None if the service is not running.
     """
 
+    if not os.path.exists(self._state_file):
+      LOGGER.info('State file %s does not exist', self._state_file)
+      return None
+
     try:
       with open(self._state_file) as fh:
         data = json.load(fh)
         pid = data['pid']
         starttime = data['starttime']  # pragma: no cover
-    except Exception:
-      # The file was empty or invalid.
+    except IOError as ex:
+      LOGGER.error('Failed to open state file %s: %r', self._state_file, ex)
+      return None
+    except Exception as ex:
+      LOGGER.error('Failed to parse state file %s: %r', self._state_file, ex)
       return None
 
     # Check that the same process is still on this pid.
     actual_starttime = self._read_starttime(pid)
     if actual_starttime is None:
-      # The process isn't running any more.
+      LOGGER.warning('Process with PID %d is no longer running', pid)
       return None
 
     if actual_starttime != starttime:
-      # There's a different process on this PID now.
+      LOGGER.warning('Process with PID %d now has starttime %f, expected %f',
+          pid, actual_starttime, starttime)
       return None
 
     return data
@@ -212,13 +220,16 @@ class Service(object):
       raise ServiceException(
           'Failed to start %s: daemon process exited' % self.name)
 
+    contents = json.dumps({
+        'pid': pid,
+        'starttime': starttime,
+        'version': version_finder.find_version(self.config),
+    })
+    LOGGER.info('Writing state file %s: %s', self._state_file, contents)
+
     # Write the daemon's PID and its starttime to the state file.
     with open(self._state_file, 'w') as fh:
-      json.dump({
-          'pid': pid,
-          'starttime': starttime,
-          'version': version_finder.find_version(self.config),
-      }, fh)
+      fh.write(contents)
 
   def _signal_and_wait(self, pid, starttime, sig, wait_timeout):
     """Sends a signal to the given process, and optionally waits for it to exit.
