@@ -217,6 +217,35 @@ class PackageBundle(object):
         return f.read().strip().split()
     return []
 
+  def build_install_package(self, package):
+    """Builds+Installs a single package.
+
+    'go install' is used to avoid having it dump superfluous binaries into the
+    source tree (e.g. they go to the bin/ folder which is at least marginally
+    useful).
+
+    Returns:
+      TestResults tuple.
+    """
+    cmd = ['go', 'install']
+    build_tags = self.get_build_tags(package)
+    if build_tags:
+      cmd.append(build_tags)
+    cmd.append(package)
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    passed = proc.returncode==0
+    return TestResults(
+        package=package,
+        tests_pass=passed,
+        coverage_percent=None,
+        coverage_expected=None,
+        coverage_pass=passed,
+        coverage_html=None,
+        stdout=out,
+        stderr=err)
+
   def run_package_tests(self, package, coverage_file):
     """Runs unit tests for a single package.
 
@@ -322,7 +351,7 @@ def run_tests(package_root, coverage_dir):
       packages.append(p)
 
   if skipped:
-    print 'Skipping (see "skip_testing" in *.infra_testing):'
+    print 'Build-only (see "skip_testing" in *.infra_testing):'
     for p in skipped:
       print '    %s' % p
     print
@@ -339,10 +368,14 @@ def run_tests(package_root, coverage_dir):
   failed = []
   bad_cover = []
   tpool = ThreadPool(len(packages))
-  def run(pkg):
-    coverage_file = os.path.join(coverage_dir, pkg.replace('/', os.sep))
-    return bundle.run_package_tests(pkg, coverage_file)
-  for result in tpool.imap_unordered(run, packages):
+  def run((pkg, build_only)):
+    if not build_only:
+      coverage_file = os.path.join(coverage_dir, pkg.replace('/', os.sep))
+      return bundle.run_package_tests(pkg, coverage_file)
+    else:
+      return bundle.build_install_package(pkg)
+  work = [(p, False) for p in packages]+[(p, True) for p in skipped]
+  for result in tpool.imap_unordered(run, work):
     if result.tests_pass and result.coverage_pass:
       sys.stdout.write('.')
     elif not result.tests_pass:
