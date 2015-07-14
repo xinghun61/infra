@@ -6,8 +6,8 @@ package example
 
 import (
 	"golang.org/x/net/context"
-	"infra/gae/libs/wrapper"
-	"infra/gae/libs/wrapper/gae"
+	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
@@ -23,11 +23,13 @@ type CurrentValueRsp struct {
 }
 
 // CurrentValue gets the current value of a counter (duh)
-func (Example) CurrentValue(c endpoints.Context, r *CurrentValueReq) (rsp *CurrentValueRsp, err error) {
-	ds := wrapper.GetDS(gae.Use(context.Background(), c))
+func (Example) CurrentValue(c context.Context, r *CurrentValueReq) (rsp *CurrentValueRsp, err error) {
+	c = prod.Use(c)
+	rds := gae.GetRDS(c)
 
-	ctr := &Counter{ID: r.Name}
-	if err = ds.Get(ctr); err != nil {
+	key := rds.NewKey("Counter", r.Name, 0, nil)
+	ctr := &Counter{}
+	if err = rds.Get(key, ctr); err != nil {
 		return
 	}
 

@@ -6,8 +6,8 @@ package example
 
 import (
 	"golang.org/x/net/context"
-	"infra/gae/libs/wrapper"
-	"infra/gae/libs/wrapper/gae"
+	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
@@ -20,10 +20,10 @@ type ListRsp struct {
 
 // List returns a list of all the counters. Note that it's very poorly
 // implemented! It's completely unpaged. I don't care :).
-func (Example) List(c endpoints.Context) (rsp *ListRsp, err error) {
-	ds := wrapper.GetDS(gae.Use(context.Background(), c))
+func (Example) List(c context.Context) (rsp *ListRsp, err error) {
+	rds := gae.GetRDS(prod.Use(c))
 	rsp = &ListRsp{}
-	_, err = ds.GetAll(ds.NewQuery("Counter"), &rsp.Counters)
+	_, err = rds.GetAll(rds.NewQuery("Counter"), &rsp.Counters)
 	if err != nil {
 		return
 	}

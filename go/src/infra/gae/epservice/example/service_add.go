@@ -6,9 +6,8 @@ package example
 
 import (
 	"golang.org/x/net/context"
-	"infra/gae/libs/wrapper"
-	"infra/gae/libs/wrapper/gae"
-	"infra/gae/libs/wrapper/gae/commonErrors"
+	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
@@ -31,19 +30,21 @@ type AddRsp struct {
 
 // Add adds a value to the current counter, and returns the old+new values. It
 // may cause a counter to come into existance.
-func (Example) Add(c endpoints.Context, r *AddReq) (rsp *AddRsp, err error) {
+func (Example) Add(c context.Context, r *AddReq) (rsp *AddRsp, err error) {
 	rsp = &AddRsp{}
 
-	ds := wrapper.GetDS(gae.Use(context.Background(), c))
-	err = ds.RunInTransaction(func(context.Context) error {
-		ctr := &Counter{ID: r.Name}
-		if err := ds.Get(ctr); err != nil && err != commonErrors.ErrNoSuchEntityDS {
+	c = prod.Use(c)
+	err = gae.GetRDS(c).RunInTransaction(func(c context.Context) error {
+		rds := gae.GetRDS(c)
+		ctr := &Counter{}
+		key := rds.NewKey("Counter", r.Name, 0, nil)
+		if err := rds.Get(key, ctr); err != nil && err != gae.ErrDSNoSuchEntity {
 			return err
 		}
 		rsp.Prev = ctr.Val
 		ctr.Val += r.Delta
 		rsp.Cur = ctr.Val
-		_, err := ds.Put(ctr)
+		_, err := rds.Put(key, ctr)
 		return err
 	}, nil)
 	return

@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package example
+package gae
 
-// Crappy datastore model!
-
-// Counter is a stupid model which holds a single numerical value.
-type Counter struct {
-	Val int64 `json:",string"`
+// Testable is the basic interface that every fake service should implement.
+type Testable interface {
+	FeatureBreaker
 }

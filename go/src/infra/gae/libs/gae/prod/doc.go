@@ -2,11 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package example
-
-// Crappy datastore model!
-
-// Counter is a stupid model which holds a single numerical value.
-type Counter struct {
-	Val int64 `json:",string"`
-}
+// Package prod provides an implementation of infra/gae/libs/wrapper which
+// backs to appengine.
+package prod

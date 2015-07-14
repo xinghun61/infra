@@ -11,15 +11,14 @@ package memlock
 import (
 	"bytes"
 	"errors"
-	"infra/gae/libs/wrapper"
-	"infra/libs/clock"
+	"golang.org/x/net/context"
 	"sync/atomic"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
-	"golang.org/x/net/context"
+	"infra/gae/libs/gae"
 
-	"appengine/memcache"
+	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/logging"
 )
 
 // ErrFailedToLock is returned from TryWithLock when it fails to obtain a lock
@@ -67,7 +66,7 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 	ctx = logging.SetField(ctx, "key", key)
 	ctx = logging.SetField(ctx, "clientID", clientID)
 	log := logging.Get(ctx)
-	mc := wrapper.GetMC(ctx)
+	mc := gae.GetMC(ctx)
 
 	key = memlockKeyPrefix + key
 	cid := []byte(clientID)
@@ -90,22 +89,20 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 			return false
 		}
 
-		if len(itm.Value) > 0 && !bytes.Equal(itm.Value, cid) {
-			log.Infof("lock owned by %q", string(itm.Value))
+		if len(itm.Value()) > 0 && !bytes.Equal(itm.Value(), cid) {
+			log.Infof("lock owned by %q", string(itm.Value()))
 			return false
 		}
 
 		if op == refresh {
-			itm.Value = cid
-			itm.Expiration = memcacheLockTime
+			itm.SetValue(cid).SetExpiration(memcacheLockTime)
 		} else {
-			if len(itm.Value) == 0 {
+			if len(itm.Value()) == 0 {
 				// it's already unlocked, no need to CAS
 				log.Infof("lock already released")
 				return true
 			}
-			itm.Value = []byte{}
-			itm.Expiration = delay
+			itm.SetValue([]byte{}).SetExpiration(delay)
 		}
 
 		err = mc.CompareAndSwap(itm)
@@ -119,10 +116,10 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 
 	// Now the actual logic begins. First we 'Add' the item, which will set it if
 	// it's not present in the memcache, otherwise leaves it alone.
-	err := mc.Add(&memcache.Item{
-		Key: key, Value: cid, Expiration: memcacheLockTime})
+
+	err := mc.Add(mc.NewItem(key).SetValue(cid).SetExpiration(memcacheLockTime))
 	if err != nil {
-		if err != memcache.ErrNotStored {
+		if err != gae.ErrMCNotStored {
 			log.Warningf("error adding: %s", err)
 		}
 		if !checkAnd(refresh) {
