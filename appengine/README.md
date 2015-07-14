@@ -16,24 +16,24 @@ Create a new Appengine app by running `run.py infra.tools.new_app <app_name>`.
 The script will create a minimal structure of a working Appengine app in
 infra.git:
 
-* an app directory under `appengine/`, say `appengine/myapp`
-* `appengine/myapp/app.yaml`
-* `appengine/myapp/main.py` implements a trivial public endpoint.
-* `appengine/myapp/.expect_tests_pretest.py` is a symlink pointing at
-  `appengine_modules/expect_tests_pretest.py`. This is required for
-  testing, see below.
-* `appengine/myapp/.expect_tests.cfg` lists any third-party components
-  that should be skipped by tests.
-* `appengine/myapp/components` (optional) points at
-  `luci/appengine/components/components`. Most infra apps require
-  authentication, and components/auth is our standard. Delete this
-  link if your app does not use it, and edit `.expect_tests.cfg`
-  appropriately.
-* `appengine/myapp/gae.py` points at
-  `luci/appengine/components/tools/gae.py` (optional), a handy script
-  for deploying and managing your app.
-* `appengine/myapp/test/main_test.py` (optional, but highly
-  recommended) tests for main.py.
+*  an app directory under `appengine/`, say `appengine/myapp`
+*  `appengine/myapp/app.yaml`
+*  `appengine/myapp/main.py` implements a trivial public endpoint.
+*  `appengine/myapp/.expect_tests_pretest.py` is a symlink pointing at
+   `appengine_modules/expect_tests_pretest.py`. This is required for
+   testing, see below.
+*  `appengine/myapp/.expect_tests.cfg` lists any third-party components
+   that should be skipped by tests.
+*  `appengine/myapp/components` (optional) points at
+   `luci/appengine/components/components`. Most infra apps require
+   authentication, and components/auth is our standard. Delete this
+   link if your app does not use it, and edit `.expect_tests.cfg`
+   appropriately.
+*  `appengine/myapp/gae.py` points at
+   `luci/appengine/components/tools/gae.py` (optional), a handy script
+   for deploying and managing your app.
+*  `appengine/myapp/test/main_test.py` (optional, but highly
+   recommended) tests for main.py.
 
 
 Example: the myapp application should live in `appengine/myapp`. To use
