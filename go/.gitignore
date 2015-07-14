@@ -1,4 +1,4 @@
-.vendor
-bin
-coverage
-pkg
+/.vendor
+/bin
+/coverage
+/pkg

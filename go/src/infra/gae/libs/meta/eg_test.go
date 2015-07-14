@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/gae/libs/wrapper"
-	"infra/gae/libs/wrapper/memory"
+	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/memory"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -20,7 +20,7 @@ func TestGetEntityGroupVersion(t *testing.T) {
 
 	Convey("GetEntityGroupVersion", t, func() {
 		c := memory.Use(context.Background())
-		ds := wrapper.GetDS(c)
+		rds := gae.GetRDS(c)
 
 		type A struct {
 			ID  int64 `datastore:"-" goon:"id"`
@@ -28,24 +28,24 @@ func TestGetEntityGroupVersion(t *testing.T) {
 		}
 
 		a := &A{Val: 10}
-		aKey, err := ds.Put(a)
+		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), a)
 		So(err, ShouldBeNil)
 
 		v, err := GetEntityGroupVersion(c, aKey)
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 1)
 
-		So(ds.Delete(aKey), ShouldBeNil)
+		So(rds.Delete(aKey), ShouldBeNil)
 
-		v, err = GetEntityGroupVersion(c, ds.NewKey("madeUp", "thing", 0, aKey))
+		v, err = GetEntityGroupVersion(c, rds.NewKey("madeUp", "thing", 0, aKey))
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 2)
 
-		v, err = GetEntityGroupVersion(c, ds.NewKey("madeUp", "thing", 0, nil))
+		v, err = GetEntityGroupVersion(c, rds.NewKey("madeUp", "thing", 0, nil))
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 0)
 
-		tDs := ds.(wrapper.Testable)
+		tDs := rds.(gae.Testable)
 		tDs.BreakFeatures(nil, "Get")
 
 		v, err = GetEntityGroupVersion(c, aKey)
