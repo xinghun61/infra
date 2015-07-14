@@ -24,9 +24,8 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395516000184,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
-      'args': {
-        'job_state': 'attempt_running',
-      },
+      'cname': 'cq_build_attempt_running',
+      'args': {},
     }, {
       'name': 'Test-Trybot',
       'cat': 'client.skia.fyi',
@@ -34,6 +33,7 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395520503088,
       'pid': 'Attempt 1',
       'tid': 'Test-Trybot',
+      'cname': 'cq_build_running',
       'args': {},
     }, {
       'name': 'Test-Trybot',
@@ -42,10 +42,10 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395577891760,
       'pid': 'Attempt 1',
       'tid': 'Test-Trybot',
+      'cname': 'cq_build_passed',
       'args': {
         'build_url': ('http://build.chromium.org/p/client.skia.fyi/builders/'
                       'Test-Trybot/builds/794'),
-        'job_state': 'passed',
       },
     }, {
       'name': 'Patch Committing',
@@ -54,9 +54,8 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395579639639,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
-      'args': {
-        'job_state': 'attempt_running',
-      },
+      'cname': 'cq_build_attempt_running',
+      'args': {},
     }, {
       'name': 'Patch Committing',
       'cat': 'Patch Progress',
@@ -64,9 +63,8 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395584564138,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
-      'args': {
-        'job_state': 'attempt_passed',
-      },
+      'cname': 'cq_build_attempt_passed',
+      'args': {},
     }, {
       'name': 'Attempt 1',
       'cat': 'Patch Progress',
@@ -74,8 +72,8 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'ts': 1434395584564362,
       'pid': 'Attempt 1',
       'tid': 'Patch Progress',
+      'cname': 'cq_build_attempt_passed',
       'args': {
-        'job_state': 'attempt_passed',
         'action': 'patch_stop',
       },
     }])

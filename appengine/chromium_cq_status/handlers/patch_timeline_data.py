@@ -43,7 +43,6 @@ def get_attempts(issue, patch): # pragma: no cover
   query = Record.query().order(Record.timestamp).filter(
     Record.tags == TAG_ISSUE % issue,
     Record.tags == TAG_PATCHSET % patch)
-  attempts = []
   attempt = None
   for record in query:
     action = record.fields.get('action')
@@ -54,11 +53,10 @@ def get_attempts(issue, patch): # pragma: no cover
     if attempt is not None and action != 'patch_start':
       attempt.append(record)
       if action == 'patch_stop':
-        attempts.append(attempt)
+        yield attempt
         attempt = None
   if attempt != None:
-    attempts.append(attempt)
-  return attempts
+    yield attempt
 
 
 def attempts_to_events(attempts): # pragma: no cover
@@ -137,13 +135,13 @@ def record_to_events(record, attempt_number): # pragma: no cover
   """
   action = record.fields.get('action')
   attempt_string = 'Attempt %d' % attempt_number
+  timestamp = record.fields.get('timestamp')
   if action == 'verifier_trigger':
-    timestamp = record.fields['timestamp']
     masters = record.fields.get('trybots', {})
     for master in masters:
       for builder in masters[master]:
         yield TraceViewerEvent(builder, master, 'B', timestamp, attempt_string,
-                               builder)
+                               builder, 'cq_build_running')
   elif action == 'verifier_jobs_update':
     job_states = record.fields.get('jobs', {})
     # CQ splits jobs into lists based on their state.
@@ -157,36 +155,33 @@ def record_to_events(record, attempt_number): # pragma: no cover
         master = job_info['master']
         builder = job_info['builder']
         timestamp = rietveld_timestamp(job_info['timestamp'])
+        cname = 'cq_build_' + job_state
         args = {
           'build_url': job_info.get('url'),
-          'job_state': job_state,
         }
         yield TraceViewerEvent(builder, master, 'E', timestamp, attempt_string,
-                               builder, args)
+                               builder, cname, args)
   elif action == 'patch_start':
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'B',
-                           record.fields['timestamp'], attempt_string,
-                           'Patch Progress', {'job_state': 'attempt_running'})
+                           timestamp, attempt_string,
+                           'Patch Progress', 'cq_build_attempt_running')
   elif action == 'patch_ready_to_commit':
     yield TraceViewerEvent('Patch Committing', 'Patch Progress', 'B',
-                           record.fields['timestamp'], attempt_string,
-                           'Patch Progress', {'job_state': 'attempt_running'})
+                           timestamp, attempt_string,
+                           'Patch Progress', 'cq_build_attempt_running')
   elif action == 'patch_committed':
     yield TraceViewerEvent('Patch Committing', 'Patch Progress', 'E',
-                             record.fields['timestamp'], attempt_string,
-                             'Patch Progress', {'job_state': 'attempt_passed'})
+                             timestamp, attempt_string,
+                             'Patch Progress', 'cq_build_attempt_passed')
   elif action == 'patch_stop':
-    state = 'attempt_'
+    cname = 'cq_build_attempt_'
     if 'successfully committed' in record.fields['message']:
-      state += 'passed'
+      cname += 'passed'
     else:
-      state += 'failed'
+      cname += 'failed'
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'E',
-                           record.fields['timestamp'], attempt_string,
-                           'Patch Progress', {
-                               'job_state': state,
-                               'action': action,
-                           })
+                           timestamp, attempt_string, 'Patch Progress',
+                           cname, {'action': action})
 
 
 class TraceViewerEvent(): # pragma: no cover
@@ -201,13 +196,14 @@ class TraceViewerEvent(): # pragma: no cover
   pid: process id, used for grouping threads
   tid: thread id, displayed to the left of all intervals with the same thread
   """
-  def __init__(self, name, cat, ph, ts, pid, tid, args=None):
+  def __init__(self, name, cat, ph, ts, pid, tid, cname, args=None):
     self.name = name
     self.cat = cat
     self.ph = ph
     self.ts = ts
     self.pid = pid
     self.tid = tid
+    self.cname = cname
     self.args = args or {}
 
   def to_dict(self):
@@ -218,6 +214,7 @@ class TraceViewerEvent(): # pragma: no cover
       'ts': int(self.ts * 1000000),
       'pid': self.pid,
       'tid': self.tid,
+      'cname': self.cname,
       'args': self.args
     }
 
