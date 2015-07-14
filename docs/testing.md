@@ -23,12 +23,12 @@ coverage is an error.
 `test.py` enforces some constraints so as to maintain a clear structure
 in the repository:
 
-* tests must be methods of subclasses of unittest.TestCase. test.py
-  will *not* look for standalone functions. In addition, the method
-  name must start with 'test'.
-* tests classes must be contained in files named like `*_test.py`.
-* the coverage information for file `foo.py` is only collected from
-  tests located in `test/foo_test.py` or `tests/foo_test.py`.
+*  tests must be methods of subclasses of unittest.TestCase. test.py
+   will *not* look for standalone functions. In addition, the method
+   name must start with 'test'.
+*  tests classes must be contained in files named like `*_test.py`.
+*  the coverage information for file `foo.py` is only collected from
+   tests located in `test/foo_test.py` or `tests/foo_test.py`.
 
 A test fails when an exception is raised, or if expectations don't match
 (read on). Test methods can return a value. When run in train mode,
@@ -139,26 +139,26 @@ class MyNiceTestSuite(test_case.EndpointsTestCase):
 hides some of the complexity of writing test cases for Endpoints code.
 To explicate, `EndpointsTestCase` provides the following facilities:
 
-* explicit creation of `endpoints.api_server` and `webtest.testApp`
-  with `setUp`
-* correct routing to endpoints methods (the user no longer needs to write
-  `'/_ah/spi/IncredibleEndpointName.someLongMethodName'`) with
-  `call_api`
-* error management (which will become error handling pending a fix for
-  [bug in `call_should_fail`](https://code.google.com/p/googleappengine/issues/detail?id=10544))
+*  explicit creation of `endpoints.api_server` and `webtest.testApp`
+   with `setUp`
+*  correct routing to endpoints methods (the user no longer needs to write
+   `'/_ah/spi/IncredibleEndpointName.someLongMethodName'`) with
+   `call_api`
+*  error management (which will become error handling pending a fix for
+   [bug in `call_should_fail`](https://code.google.com/p/googleappengine/issues/detail?id=10544))
 
 Much of the obscurity in Endpoints testing now evaporates. By using
 `EndpointsTestCase`, we avoid the pitfalls that inhere in setting up and
 posting to such an API in a test environment. A few final points:
 
-* `api_service_cls`, a class member of the test suite, must be set;
-  otherwise, the test suite will not be able to create a test
-  application and will not have any knowledge of the API's methods
+*  `api_service_cls`, a class member of the test suite, must be set;
+   otherwise, the test suite will not be able to create a test
+   application and will not have any knowledge of the API's methods
 
-* `EndpointsTestCase.call_api` and `EndpointsTestCase.call_should_fail` are the
-  recommended ways to make an API call and to handle errors, respectively. Note
-  that the argument structure for `call_api` is
-  `(<method name>, <request body>)`; the method name is literally the name
-  to which a method is bound in the API code, not the name specified in the decorator
+*  `EndpointsTestCase.call_api` and `EndpointsTestCase.call_should_fail` are the
+   recommended ways to make an API call and to handle errors, respectively. Note
+   that the argument structure for `call_api` is
+   `(<method name>, <request body>)`; the method name is literally the name
+   to which a method is bound in the API code, not the name specified in the decorator
 
 Happy testing!

@@ -5,11 +5,11 @@ configured.
 
 ## Top-level commands
 
-* Launching `test.py test` runs all tests in the infra repository in
-  parallel, including those in [appengine/ dir](../appengine). See
-  [testing](testing.md) for details.
-* `run.py` is used to run a command located inside the infra package.
-  See next section for details.
+*  Launching `test.py test` runs all tests in the infra repository in
+   parallel, including those in [appengine/ dir](../appengine). See
+   [testing](testing.md) for details.
+*  `run.py` is used to run a command located inside the infra package.
+   See next section for details.
 
 ## Invoking tools
 
