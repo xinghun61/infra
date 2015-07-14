@@ -167,15 +167,21 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                              u'test3@chromium.org', u'test3@chromium.org',
                              u'2015-06-02 10:35:32'))
     else:
-      blame.AddRegion(Region(1, 6, '7',
+      blame.AddRegion(Region(1, 2, '7',
                              u'test3@chromium.org', u'test3@chromium.org',
                              u'2015-06-07 10:35:32'))
+      blame.AddRegion(Region(3, 3, '5',
+                             u'test3@chromium.org', u'test3@chromium.org',
+                             u'2015-06-05 10:35:32'))
       blame.AddRegion(Region(7, 1, '8',
                              u'test2@chromium.org', u'test2@chromium.org',
                              u'2015-06-08 10:35:32'))
       blame.AddRegion(Region(8, 1, '7',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2014-06-07 10:35:32'))
+                             u'2015-06-07 10:35:32'))
+      blame.AddRegion(Region(9, 10, '12',
+                             u'test3@chromium.org', u'test3@chromium.org',
+                             u'2015-06-12 10:35:32'))
     return blame
 
   def _MockGetChangeLog(self, revision):
@@ -265,12 +271,14 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                                         None)
 
   def testCheckFileInDependencyRollWhenFileIsAddedWithinTheRoll(self):
-    rolls = [{
+    rolls = [
+        {  # One region in blame.
             'path': 'src/third_party/dep/',
             'repo_url': 'https://url_dep',
             'old_revision': '1',
             'new_revision': '2',
-    }]
+        }
+    ]
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 5
     expected_hints = {
@@ -281,6 +289,21 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
                                         None, expected_hints)
+
+  def testCheckFileInDependencyRollWhenFileIsAddedAndChangedWithinTheRoll(self):
+    file_path_in_log = 'third_party/dep/f.cc'
+    rolls = [
+        {  # Multiple regions in blame, but they are all after old revision.
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': '4',
+            'new_revision': '9',
+        },
+    ]
+    expected_score = 5
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
+                                        None)
 
   def testCheckFileInDependencyRollWhenFileIsNotAddedWithinTheRoll(self):
     rolls = [{
@@ -307,7 +330,8 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     expected_score = 4
     expected_hints = {
       ('rolled dependency third_party/dep/ with changes in '
-       'https://url_dep/+log/6..8?pretty=fuller (and f.cc[2, 7] was in log)'): 4
+       'https://url_dep/+log/6..8?pretty=fuller '
+       '(and f.cc[2, 7, 8] was in log)'): 4
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,

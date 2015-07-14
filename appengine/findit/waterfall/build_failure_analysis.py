@@ -390,21 +390,17 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   if not blame:
     return file_change_type, changed_line_numbers
 
-  if len(blame) == 1:
-    # There is only one region, so the file is added as whole.
-    change_author_time = datetime.strptime(blame[0].author_time,
-                                           '%Y-%m-%d %H:%M:%S')
-    if (change_author_time > old_rev_author_time and
-        change_author_time <= new_rev_author_time):
-      file_change_type = ChangeType.ADD
-    return file_change_type, changed_line_numbers
+  file_change_type = ChangeType.ADD
+  file_is_changed_in_roll = False
 
   for region in blame:
     change_author_time = datetime.strptime(region.author_time,
                                            '%Y-%m-%d %H:%M:%S')
     if (change_author_time > old_rev_author_time and
         change_author_time <= new_rev_author_time):
-      file_change_type = ChangeType.MODIFY
+      file_is_changed_in_roll = True
+      if not file_change_type:
+        file_change_type = ChangeType.MODIFY
       if line_numbers:
         for line_number in line_numbers:
           if (line_number >= region.start and
@@ -413,7 +409,16 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
             # the DEPS roll.
             changed_line_numbers.append(line_number)
 
+    elif (change_author_time <= old_rev_author_time and
+        file_change_type == ChangeType.ADD):
+      # One region was changed before old rev, the file cannot be a new file.
+      if file_is_changed_in_roll:
+        file_change_type = ChangeType.MODIFY
+      else:
+        file_change_type = None
+
   return file_change_type, changed_line_numbers
+
 
 def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
                                 line_numbers=None):
