@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging/gologger"
 
-	"infra/libs/clock"
 	"infra/monitoring/analyzer"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
