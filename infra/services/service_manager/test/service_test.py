@@ -352,5 +352,5 @@ class OwnServiceTest(TestBase):
     }, self.s.get_running_process_state())
 
   def test_stop(self):
-    with self.assertRaises(SystemExit):
+    with self.assertRaises(NotImplementedError):
       self.s.stop()

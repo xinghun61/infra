@@ -310,4 +310,4 @@ class OwnService(Service):
       return False
 
   def stop(self):
-    sys.exit()
+    raise NotImplementedError

@@ -67,14 +67,15 @@ class ConfigWatcher(object):
 
     while not self._stop:
       self._iteration()
-      self._sleep_fn(self._config_poll_interval)
+      if not self._stop:  # pragma: no cover
+        self._sleep_fn(self._config_poll_interval)
 
   def _iteration(self):
     """Runs one iteration of the loop.  Useful for testing."""
 
     if self._own_service.has_version_changed():
       logging.info("The service_manager's version has changed, exiting")
-      self._own_service.stop()
+      self.stop()
       return
 
     files = set(glob.glob(self._config_glob))

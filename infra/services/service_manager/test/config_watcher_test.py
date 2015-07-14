@@ -63,7 +63,7 @@ class ConfigWatcherTest(unittest.TestCase):
     self.mock_ownservice.has_version_changed.return_value = True
 
     self.cw._iteration()
-    self.mock_ownservice.stop.assert_called_once_with()
+    self.assertTrue(self.cw._stop)
 
   def test_add(self):
     self._set_config('foo.json', '{"name": "foo"}')
