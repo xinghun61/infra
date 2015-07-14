@@ -141,7 +141,8 @@ class ServiceTest(TestBase):
       self.assertEqual({
           'pid': 777,
           'starttime': 888,
-          'version': {'foo': 'bar'}
+          'version': {'foo': 'bar'},
+          'args': ['one', 'two'],
       }, json.load(fh))
 
   def test_start_parent_child_exited(self):
@@ -301,6 +302,36 @@ class ServiceTest(TestBase):
     self.assertTrue(self.s.has_version_changed())
     self.assertTrue(self.mock_find_version.called)
 
+  def test_has_version_changed_not_written(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.mock_find_version.return_value = 2
+    self.assertTrue(self.s.has_version_changed())
+
+  def test_has_args_changed_not_running(self):
+    self.assertFalse(self.s.has_args_changed())
+
+  def test_has_args_changed_no(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678, "version": 1, '
+                             '"args": ["one", "two"]}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.assertFalse(self.s.has_args_changed())
+
+  def test_has_args_changed_yes(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678, "version": 1, '
+                             '"args": ["one"]}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.assertTrue(self.s.has_args_changed())
+
+  def test_has_args_changed_not_written(self):
+    self._write_state('foo', '{"pid": 1234, "starttime": 5678, "version": 1}')
+    self.mock_read_starttime.return_value = 5678
+
+    self.assertTrue(self.s.has_args_changed())
+
 
 class OwnServiceTest(TestBase):
   def setUp(self):
@@ -349,6 +380,7 @@ class OwnServiceTest(TestBase):
         'pid': 1234,
         'starttime': 5678,
         'version': 42,
+        'args': [],
     }, self.s.get_running_process_state())
 
   def test_stop(self):

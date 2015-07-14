@@ -141,6 +141,7 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.mock_service.is_running.return_value = False
     self.mock_service.has_version_changed.return_value = False
+    self.mock_service.has_args_changed.return_value = False
 
     self.t.start_service()
     self.assertTrue(self.condition.notify_called)
@@ -192,6 +193,22 @@ class ServiceThreadTest(unittest.TestCase):
     self.mock_service.stop.assert_called_once_with()
     self.mock_service_ctor.assert_called_with('/foo', new_config)
     new_service.start.assert_called_once_with()
+
+  def test_new_args_on_startup(self):
+    self.t.start()
+    self.condition.start()
+
+    self.assertEqual(0, self.t.reconfigs.get({'service': 'foo'}))
+
+    self.mock_service.is_running.return_value = True
+    self.mock_service.has_version_changed.return_value = False
+    self.mock_service.has_args_changed.return_value = True
+    self.t.start_service()
+    self.condition.next()
+
+    self.assertEqual(1, self.t.reconfigs.get({'service': 'foo'}))
+    self.mock_service.stop.assert_called_once_with()
+    self.mock_service.start.assert_called_once_with()
 
   def test_start_raises(self):
     self.t.start()

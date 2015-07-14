@@ -110,8 +110,21 @@ class Service(object):
     state = self.get_running_process_state()
     if state is None:
       return False
+    if 'version' not in state:
+      return True
 
     return state['version'] != version_finder.find_version(self.config)
+
+  def has_args_changed(self):
+    """Returns True if the process should be restarted with new args."""
+
+    state = self.get_running_process_state()
+    if state is None:
+      return False
+    if 'args' not in state:
+      return True
+
+    return state['args'] != self.args
 
   def start(self):
     """Starts the service if it's not running already.
@@ -224,6 +237,7 @@ class Service(object):
         'pid': pid,
         'starttime': starttime,
         'version': version_finder.find_version(self.config),
+        'args': self.args,
     })
     LOGGER.info('Writing state file %s: %s', self._state_file, contents)
 
