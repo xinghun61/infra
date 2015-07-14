@@ -11,14 +11,15 @@ package memlock
 import (
 	"bytes"
 	"errors"
-	"golang.org/x/net/context"
+	"infra/gae/libs/wrapper"
+	"infra/libs/clock"
 	"sync/atomic"
 	"time"
 
-	"infra/gae/libs/gae"
-
-	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"golang.org/x/net/context"
+
+	"appengine/memcache"
 )
 
 // ErrFailedToLock is returned from TryWithLock when it fails to obtain a lock
@@ -66,7 +67,7 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 	ctx = logging.SetField(ctx, "key", key)
 	ctx = logging.SetField(ctx, "clientID", clientID)
 	log := logging.Get(ctx)
-	mc := gae.GetMC(ctx)
+	mc := wrapper.GetMC(ctx)
 
 	key = memlockKeyPrefix + key
 	cid := []byte(clientID)
@@ -89,20 +90,22 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 			return false
 		}
 
-		if len(itm.Value()) > 0 && !bytes.Equal(itm.Value(), cid) {
-			log.Infof("lock owned by %q", string(itm.Value()))
+		if len(itm.Value) > 0 && !bytes.Equal(itm.Value, cid) {
+			log.Infof("lock owned by %q", string(itm.Value))
 			return false
 		}
 
 		if op == refresh {
-			itm.SetValue(cid).SetExpiration(memcacheLockTime)
+			itm.Value = cid
+			itm.Expiration = memcacheLockTime
 		} else {
-			if len(itm.Value()) == 0 {
+			if len(itm.Value) == 0 {
 				// it's already unlocked, no need to CAS
 				log.Infof("lock already released")
 				return true
 			}
-			itm.SetValue([]byte{}).SetExpiration(delay)
+			itm.Value = []byte{}
+			itm.Expiration = delay
 		}
 
 		err = mc.CompareAndSwap(itm)
@@ -116,10 +119,10 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(check func() 
 
 	// Now the actual logic begins. First we 'Add' the item, which will set it if
 	// it's not present in the memcache, otherwise leaves it alone.
-
-	err := mc.Add(mc.NewItem(key).SetValue(cid).SetExpiration(memcacheLockTime))
+	err := mc.Add(&memcache.Item{
+		Key: key, Value: cid, Expiration: memcacheLockTime})
 	if err != nil {
-		if err != gae.ErrMCNotStored {
+		if err != memcache.ErrNotStored {
 			log.Warningf("error adding: %s", err)
 		}
 		if !checkAnd(refresh) {

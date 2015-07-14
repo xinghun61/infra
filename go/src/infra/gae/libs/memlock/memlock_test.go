@@ -6,17 +6,18 @@ package memlock
 
 import (
 	"fmt"
+	"infra/gae/libs/wrapper"
+	"infra/gae/libs/wrapper/memory"
+	"infra/libs/clock"
+	"infra/libs/clock/testclock"
 	"runtime"
 	"testing"
 	"time"
 
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/memory"
-
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/clock/testclock"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
+
+	"appengine/memcache"
 )
 
 func init() {
@@ -41,9 +42,9 @@ func TestSimple(t *testing.T) {
 			}
 		})
 		ctx = memory.Use(ctx)
-		mc := gae.GetMC(ctx).(interface {
-			gae.Testable
-			gae.Memcache
+		mc := wrapper.GetMC(ctx).(interface {
+			wrapper.Testable
+			wrapper.MCSingleReadWriter
 		})
 
 		Convey("fails to acquire when memcache is down", func() {
@@ -104,7 +105,7 @@ func TestSimple(t *testing.T) {
 					})
 
 					Convey("or because it was stolen", func() {
-						mc.Set(mc.NewItem(key).SetValue([]byte("wat")))
+						mc.Set(&memcache.Item{Key: key, Value: []byte("wat")})
 						waitFalse()
 					})
 
