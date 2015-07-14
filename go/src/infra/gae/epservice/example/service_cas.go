@@ -6,7 +6,9 @@ package example
 
 import (
 	"golang.org/x/net/context"
+
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/helper"
 	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
@@ -28,13 +30,14 @@ func (Example) CAS(c context.Context, r *CASReq) (err error) {
 		rds := gae.GetRDS(c)
 		key := rds.NewKey("Counter", r.Name, 0, nil)
 		ctr := &Counter{}
-		if err := rds.Get(key, ctr); err != nil {
+		pls := helper.GetPLS(ctr)
+		if err := rds.Get(key, pls); err != nil {
 			return err
 		}
 		if ctr.Val == r.OldVal {
 			success = true
 			ctr.Val = r.NewVal
-			_, err := rds.Put(key, ctr)
+			_, err := rds.Put(key, pls)
 			return err
 		}
 		success = false

@@ -6,7 +6,9 @@ package example
 
 import (
 	"golang.org/x/net/context"
+
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/helper"
 	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
@@ -29,7 +31,7 @@ func (Example) CurrentValue(c context.Context, r *CurrentValueReq) (rsp *Current
 
 	key := rds.NewKey("Counter", r.Name, 0, nil)
 	ctr := &Counter{}
-	if err = rds.Get(key, ctr); err != nil {
+	if err = rds.Get(key, helper.GetPLS(ctr)); err != nil {
 		return
 	}
 

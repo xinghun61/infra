@@ -6,7 +6,9 @@ package example
 
 import (
 	"golang.org/x/net/context"
+
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/helper"
 	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
@@ -37,14 +39,15 @@ func (Example) Add(c context.Context, r *AddReq) (rsp *AddRsp, err error) {
 	err = gae.GetRDS(c).RunInTransaction(func(c context.Context) error {
 		rds := gae.GetRDS(c)
 		ctr := &Counter{}
+		pls := helper.GetPLS(ctr)
 		key := rds.NewKey("Counter", r.Name, 0, nil)
-		if err := rds.Get(key, ctr); err != nil && err != gae.ErrDSNoSuchEntity {
+		if err := rds.Get(key, pls); err != nil && err != gae.ErrDSNoSuchEntity {
 			return err
 		}
 		rsp.Prev = ctr.Val
 		ctr.Val += r.Delta
 		rsp.Cur = ctr.Val
-		_, err := rds.Put(key, ctr)
+		_, err := rds.Put(key, pls)
 		return err
 	}, nil)
 	return

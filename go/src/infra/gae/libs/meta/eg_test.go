@@ -22,13 +22,9 @@ func TestGetEntityGroupVersion(t *testing.T) {
 		c := memory.Use(context.Background())
 		rds := gae.GetRDS(c)
 
-		type A struct {
-			ID  int64 `datastore:"-" goon:"id"`
-			Val int
-		}
-
-		a := &A{Val: 10}
-		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), a)
+		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), gae.DSPropertyMap{
+			"Val": {gae.MkDSProperty(10)},
+		})
 		So(err, ShouldBeNil)
 
 		v, err := GetEntityGroupVersion(c, aKey)

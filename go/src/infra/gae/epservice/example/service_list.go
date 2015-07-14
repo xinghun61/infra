@@ -6,7 +6,9 @@ package example
 
 import (
 	"golang.org/x/net/context"
+
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/helper"
 	"infra/gae/libs/gae/prod"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
@@ -23,9 +25,16 @@ type ListRsp struct {
 func (Example) List(c context.Context) (rsp *ListRsp, err error) {
 	rds := gae.GetRDS(prod.Use(c))
 	rsp = &ListRsp{}
-	_, err = rds.GetAll(rds.NewQuery("Counter"), &rsp.Counters)
+	dst := []gae.DSPropertyMap{}
+	_, err = rds.GetAll(rds.NewQuery("Counter"), &dst)
 	if err != nil {
 		return
+	}
+	rsp.Counters = make([]Counter, len(dst))
+	for i, m := range dst {
+		if err = helper.GetPLS(rsp.Counters[i]).Load(m); err != nil {
+			return
+		}
 	}
 	return
 }

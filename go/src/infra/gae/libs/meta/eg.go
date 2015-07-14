@@ -10,6 +10,7 @@ import (
 	"github.com/luci/luci-go/common/errors"
 
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/helper"
 )
 
 var mark = errors.MakeMarkFn("eg")
@@ -28,15 +29,14 @@ func GetEntityGroupVersion(c context.Context, root gae.DSKey) (int64, error) {
 	for root.Parent() != nil {
 		root = root.Parent()
 	}
-	egm := &EntityGroupMeta{}
 	rds := gae.GetRDS(c)
-	err := rds.Get(rds.NewKey("__entity_group__", "", 1, root), egm)
-	if err != gae.ErrDSNoSuchEntity {
-		err = mark(err)
-	} else {
+	egm := &EntityGroupMeta{}
+	err := rds.Get(rds.NewKey("__entity_group__", "", 1, root), helper.GetPLS(egm))
+	ret := egm.Version
+	if err == gae.ErrDSNoSuchEntity {
 		// this is OK for callers. The version of the entity group is effectively 0
 		// in this case.
 		err = nil
 	}
-	return egm.Version, err
+	return ret, err
 }
