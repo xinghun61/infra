@@ -5,30 +5,30 @@
 ## Repos
 Most of the chrome infra source code lives in these repos:
 
-*  [infra.git](..): primary public repo.
-   Contains many AppEngine apps, monitoring libraries.
-*  [infra_internal.git](https://chrome-internal.googlesource.com/infra/infra_internal):
-   Google-internal couterpart of infra.git. Contains CQ.
-*  [build](https://chromium.googlesource.com/chromium/tools/build/): legacy
-   repo. Contains Buildbot, recipes, gatekeeper-ng.
-*  [build_internal](https://chrome-internal.googlesource.com/chrome/tools/build):
-   internal couterpart of build repo.
-*  [build_limited](https://chrome-internal.googlesource.com/chrome/tools/build_limited/):
-   minimal set of internal code that must be checked out on buildbot slaves
-   that run internal builds.
-*  [luci-py](https://github.com/luci/luci-py) on GitHub: chromium-independent
-   reusable continuous integration services, written in Python.
-   Contains Swarming, Isolate, Auth service, Config service and AppEngine
-   components, used by AppEngine apps in infra.git and infra_internal.git
-*  [luci-go](https://github.com/luci/luci-go): like luci-py, but in Golang.
-   Contains Isolate client.
+* [infra.git](..): primary public repo.
+  Contains many AppEngine apps, monitoring libraries.
+* [infra_internal.git](https://chrome-internal.googlesource.com/infra/infra_internal):
+  Google-internal couterpart of infra.git. Contains CQ.
+* [build](https://chromium.googlesource.com/chromium/tools/build/): legacy
+  repo. Contains Buildbot, recipes, gatekeeper-ng.
+* [build_internal](https://chrome-internal.googlesource.com/chrome/tools/build):
+  internal couterpart of build repo.
+* [build_limited](https://chrome-internal.googlesource.com/chrome/tools/build_limited/):
+  minimal set of internal code that must be checked out on buildbot slaves
+  that run internal builds.
+* [luci-py](https://github.com/luci/luci-py) on GitHub: chromium-independent
+  reusable continuous integration services, written in Python.
+  Contains Swarming, Isolate, Auth service, Config service and AppEngine
+  components, used by AppEngine apps in infra.git and infra_internal.git
+* [luci-go](https://github.com/luci/luci-go): like luci-py, but in Golang.
+  Contains Isolate client.
 
 Standalone one-purpose repos:
 
-*  [expect_tests](https://chromium.googlesource.com/infra/testing/expect_tests):
+* [expect_tests](https://chromium.googlesource.com/infra/testing/expect_tests):
   testing framework used for [recipe tests](users/recipes.md) and
   [infra.git's test.py](../test.py).
-*  [testing_support](https://chromium.googlesource.com/infra/testing/testing_support):
+* [testing_support](https://chromium.googlesource.com/infra/testing/testing_support):
   utilities to support writing unittests for infra-related tools.
 
 See also

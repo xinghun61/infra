@@ -2,11 +2,11 @@
 
 Documentation in infra.git should cover these subjects:
 
-*  Introductory material, to help newcomers use and contribute to the
-   codebase.
-*  Links to design documents, explaining decisions and overall structure. The
-   point of these docs is to give a high-level view of the organisation
-   and inner working.
+* Introductory material, to help newcomers use and contribute to the
+  codebase.
+* Links to design documents, explaining decisions and overall structure. The
+  point of these docs is to give a high-level view of the organisation
+  and inner working.
 
 ## How to edit these docs
 

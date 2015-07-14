@@ -29,8 +29,8 @@ infra_libs.logs.process_argparse_options(options)
 As more packages add their own flags, the output of `--help` can quickly
 become unreadable. To help with that, it is recommended that
 
-*  each package defines an option group
-*  each option for a given package starts with the same prefix
+* each package defines an option group
+* each option for a given package starts with the same prefix
 
 Example (from the `infra_libs.ts_mon` package):
 

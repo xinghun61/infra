@@ -8,9 +8,9 @@ future-proof.
 
 Offered features:
 
-*  log level can be changed from the command-line.
-*  too verbose modules can be blacklisted for easier debugging.
-*  ensures a consistent log format.
+* log level can be changed from the command-line.
+* too verbose modules can be blacklisted for easier debugging.
+* ensures a consistent log format.
 
 A typical log line looks like:
 

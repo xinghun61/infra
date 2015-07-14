@@ -13,19 +13,19 @@ Many services are deployed as Buildbot jobs on the
 [Infra Cron](https://build.chromium.org/p/chromium.infra.cron/builders)
 Buildbot waterfall. These services all have the same basic form:
 
-1.  Check out infra.git and its dependencies
-2.  Invoke the desired service
-3.  Run the service in a tight loop until it fails too many times, or
-    has run for (usually) 10 minutes.
-4.  Stop the service, finish up the buildbot build, and repeat.
+1. Check out infra.git and its dependencies
+2. Invoke the desired service
+3. Run the service in a tight loop until it fails too many times, or
+   has run for (usually) 10 minutes.
+4. Stop the service, finish up the buildbot build, and repeat.
 
 This strategy has a few ramifications for deployment:
 
-*  Deployment is via a source checkout
-*  The source checkout is updated to the latest version every 10
-   minutes
-*  Other data (such as credentials) must use a different deployment
-   system
+* Deployment is via a source checkout
+* The source checkout is updated to the latest version every 10
+  minutes
+* Other data (such as credentials) must use a different deployment
+  system
 
 In order to combat tip-of-tree breakages, these services do not run from
 ToT of the master branch. Instead, they operate in detached-HEAD mode,

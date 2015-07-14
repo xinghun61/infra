@@ -104,27 +104,27 @@ for the wheel.
 
 Values are:
 
-*  version: The pip version of the module
-*  build: An integer representing which build of this version/hash. If you
-   modify the _way_ that a requirement is built, but not the source
-   hash, you can bump the build number to get a new pinned dependency.
+* version: The pip version of the module
+* build: An integer representing which build of this version/hash. If you
+  modify the _way_ that a requirement is built, but not the source
+  hash, you can bump the build number to get a new pinned dependency.
 
 And either:
 
-*  `rev`: The revision or sha1 of the source for this module. The repo
-   is
-   `git+https://chromium.googlesource.com/infra/third_party/{package_name}`
-*  `gs`: `{sha1}.{ext}` indicates file
-   `gs://chrome-python-wheelhouse/sources/{sha1}.{ext}`. The sha1 will
-   be checked against the content of the file.
+* `rev`: The revision or sha1 of the source for this module. The repo
+  is
+  `git+https://chromium.googlesource.com/infra/third_party/{package_name}`
+* `gs`: `{sha1}.{ext}` indicates file
+  `gs://chrome-python-wheelhouse/sources/{sha1}.{ext}`. The sha1 will
+  be checked against the content of the file.
 
 And optionally:
 
-*  `implicit`: A boolean indicating that this dep should only be
-   installed as a dependency of some other dep. For example, you want
-   package A, which depends on package Z, but you don't really care
-   about Z. You should mark Z as `implicit` to allow it to be pinned
-   correctly, but not to deliberately install it.
+* `implicit`: A boolean indicating that this dep should only be
+  installed as a dependency of some other dep. For example, you want
+  package A, which depends on package Z, but you don't really care
+  about Z. You should mark Z as `implicit` to allow it to be pinned
+  correctly, but not to deliberately install it.
 
 ## [ingest_source.py](ingest_source.py)
 
@@ -153,9 +153,9 @@ are missing for the current platform.
 If the module does contain compiled extensions, you must run
 `build_deps.py` on the following systems (all with CPython 2.7):
 
-*  OS X 10.9 - `x86_64`
-*  Windows 7 - `x86_64`
-*  Linux - `x86_64`
+* OS X 10.9 - `x86_64`
+* Windows 7 - `x86_64`
+* Linux - `x86_64`
 
 TODO(iannucci): Add job to build wheels on all appropriate systems.
 
