@@ -13,11 +13,11 @@ Many services are deployed as Buildbot jobs on the
 [Infra Cron](https://build.chromium.org/p/chromium.infra.cron/builders)
 Buildbot waterfall. These services all have the same basic form:
 
-1. Check out infra.git and its dependencies
-2. Invoke the desired service
-3. Run the service in a tight loop until it fails too many times, or
-   has run for (usually) 10 minutes.
-4. Stop the service, finish up the buildbot build, and repeat.
+1.  Check out infra.git and its dependencies
+2.  Invoke the desired service
+3.  Run the service in a tight loop until it fails too many times, or
+    has run for (usually) 10 minutes.
+4.  Stop the service, finish up the buildbot build, and repeat.
 
 This strategy has a few ramifications for deployment:
 
