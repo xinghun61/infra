@@ -11,27 +11,14 @@ found in the LICENSE file. -->
     <p>Each bucket has its own ACLs. By default a bucket is accessible only by
       admins. If a bucket does not exist, its ACL is considered default.</p>
 
-    <p>An ACL is a list of rules, where each rule is a (role, group) tuple.
-      A role can be one of:
-      <ul>
-        <li>READER: read-only access to builds in the buckets.</li>
-        <li>SCHEDULER: same as READER + can schedule and cancel builds.</li>
-        <li>WRITER: same as SCHEDULER + can lease, mark as started and
-          completed.</li>
-        <li>OWNER: same as WRITER + can change ACLs and can reset a build.</li>
-      </ul>
-      Groups are stored and managed at <a href="/auth">chrome-infra-auth</a>.
-      </p>
+    <p>Buckets and their ACLs are configured by &lt;buildbucket-app-id&gt;.cfg
+      files in project repositories. For example, chromium buckets are
+      configured in
+      <a href="https://chromium.googlesource.com/chromium/src/+/master/infra/project-config/cr-buildbucket.cfg">
+       chromium/src</a> repository.
 
-    <p>Anonymous requests can access only public buckets. To access internal
-      buckets, requests must be authenticated. Authentication is done via
-      OAuth2. BuildBucket manages ACLs and
-      <a href="/auth">chrome-infra-auth</a> manages groups.</p>
-
-    <p>A bucket owner or admin can use these API:
-      <ul>
-        <li><api-link name="acl.get"></api-link>: get bucket ACL.</li>
-        <li><api-link name="acl.set"></api-link>: set bucket ACL.</li>
-      </ul></p>
+     See <a href="http://luci-config.appspot.com/schemas/projects:buildbucket.cfg">
+       BuildbucketCfg protobuf message</a> for file format.
+    </p>
   </app-page>
 </template>
