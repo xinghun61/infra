@@ -34,7 +34,10 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
       'pid': 'Attempt 1',
       'tid': 'Test-Trybot',
       'cname': 'cq_build_running',
-      'args': {},
+      'args': {
+        'build_url': ('http://build.chromium.org/p/client.skia.fyi/builders/'
+                      'Test-Trybot/builds/794'),
+      },
     }, {
       'name': 'Test-Trybot',
       'cat': 'client.skia.fyi',

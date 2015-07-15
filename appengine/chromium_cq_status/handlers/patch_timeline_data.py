@@ -81,8 +81,12 @@ def attempts_to_events(attempts): # pragma: no cover
     for record in attempt:
       events_in_attempt = record_to_events(record, attempt_number)
       for event in events_in_attempt:
-        event_dict = event.to_dict()
         builder_key = event.builder_key()
+        if event.is_meta():
+          if builder_key in open_builds:
+            open_builds[builder_key]['args'] = event.args
+          continue
+        event_dict = event.to_dict()
         if event.ph == 'B':
           if event.cat == 'Patch Progress' and builder_key in open_builds:
             # Ignore extra patch_starts and ready_to_commits.
@@ -149,18 +153,26 @@ def record_to_events(record, attempt_number): # pragma: no cover
       # Jobs can be in many different states, JOB_STATE maps them to
       # 'running' or not.
       job_state = JOB_STATE.get(cq_job_state)
-      if not job_state or job_state == 'running':
+
+      if not job_state:
         continue
-      for job_info in jobs:
-        master = job_info['master']
-        builder = job_info['builder']
-        timestamp = rietveld_timestamp(job_info['timestamp'])
-        cname = 'cq_build_' + job_state
-        args = {
-          'build_url': job_info.get('url'),
-        }
-        yield TraceViewerEvent(builder, master, 'E', timestamp, attempt_string,
-                               builder, cname, args)
+      elif job_state == 'running':
+        for job_info in jobs:
+          master = job_info['master']
+          builder = job_info['builder']
+          args = {'build_url': job_info.get('url')}
+          yield MetaEvent(builder, master, args)
+      else:
+        for job_info in jobs:
+          master = job_info['master']
+          builder = job_info['builder']
+          timestamp = rietveld_timestamp(job_info['timestamp'])
+          cname = 'cq_build_' + job_state
+          args = {
+            'build_url': job_info.get('url'),
+          }
+          yield TraceViewerEvent(builder, master, 'E', timestamp, 
+                                 attempt_string, builder, cname, args)
   elif action == 'patch_start':
     yield TraceViewerEvent(attempt_string, 'Patch Progress', 'B',
                            timestamp, attempt_string,
@@ -221,6 +233,28 @@ class TraceViewerEvent(): # pragma: no cover
   def builder_key(self):
     """Returns an identifier for the build of the form master/builder."""
     return self.cat + '/' + self.name
+
+  def is_meta(self):
+    return False
+
+
+class MetaEvent(): # pragma: no cover
+  """A class used to update TraceViewerEvents
+
+  TraceViewer events may need to be modified after they have been created
+  because the data for those events did not exist at time of creation. For
+  example, build URLs are not included with verifier_triggers.
+  """
+  def __init__(self, name, cat, args):
+    self.name = name
+    self.cat = cat
+    self.args = args
+
+  def builder_key(self):
+    return self.cat + '/' + self.name
+
+  def is_meta(self):
+    return True
 
 
 def rietveld_timestamp(timestamp_string): # pragma: no cover
