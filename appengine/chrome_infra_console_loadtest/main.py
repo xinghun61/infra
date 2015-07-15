@@ -5,8 +5,11 @@
 import logging
 
 import endpoints
+import random
 import webapp2
+from apiclient import discovery
 from google.appengine.ext import ndb
+from oauth2client.client import GoogleCredentials
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -14,6 +17,10 @@ from protorpc import remote
 from components import auth
 
 CONFIG_DATASTORE_KEY = "CONFIG_DATASTORE_KEY"
+API_URL = 'https://chrome-infra-console-loadtest.appspot.com'
+API_NAME = 'consoleapp'
+API_VERSION = 'v1'
+DISCOVERY_URL = '%s/_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest'
 
 
 class FieldParamsModel(ndb.Model):
@@ -38,34 +45,35 @@ class Point(messages.Message):
 
 
 class FieldParams(messages.Message):
-  key = messages.StringField(1)
-  values = messages.StringField(2, repeated = True)
+  field_key = messages.StringField(1)
+  values = messages.StringField(2, repeated=True)
 
 
 class Params(messages.Message):
   time = messages.FloatField(1)
   freq = messages.FloatField(2)
-  params = messages.MessageField(FieldParams, 3, repeated = True)
+  params = messages.MessageField(FieldParams, 3, repeated=True)
 
 
 class TimeSeries(messages.Message):
-  points = messages.MessageField(Point, 1, repeated = True)
-  fields = messages.MessageField(Field, 2, repeated = True)
+  points = messages.MessageField(Point, 1, repeated=True)
+  fields = messages.MessageField(Field, 2, repeated=True)
   metric = messages.StringField(3)
 
 
 class DataPacket(messages.Message):
-  timeseries = messages.MessageField(TimeSeries, 1, repeated = True)
+  timeseries = messages.MessageField(TimeSeries, 1, repeated=True)
 
 
-@auth.endpoints_api(name='loadtestapp', version='v1')
+@auth.endpoints_api(name='consoleapp', version='v1')
 class LoadTestApi(remote.Service):
   """A testing endpoint that receives timeseries data."""
 
   @auth.endpoints_method(DataPacket, message_types.VoidMessage,
-                         name='loadtest.timeseries')
+                         name='timeseries.update')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
-  def loadtest_timeseries(self, _request):
+  def timeseries_update(self, request):
+    logging.debug('Datapacket length is %d', len(request.timeseries))
     return message_types.VoidMessage()
 
 
@@ -78,7 +86,7 @@ class UIApi(remote.Service):
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def UI_get(self, _request):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
-    params = [FieldParams(key=field.field_key, values=field.values)
+    params = [FieldParams(field_key=field.field_key, values=field.values)
               for field in data.params]
     return Params(time=data.time, freq=data.freq, params=params)
 
@@ -90,10 +98,57 @@ class UIApi(remote.Service):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
     data.time = request.time
     data.freq = request.freq
-    data.params = [FieldParamsModel(field_key=field.key, values=field.values)
+    data.params = [FieldParamsModel(field_key=field.field_key, 
+                                    values=field.values)
                    for field in request.params]
     data.put()
     return message_types.VoidMessage()
 
+
+def field_generator(dataparams, index, fields):
+  if index == len(dataparams):
+    return [fields]
+  else:
+    key = dataparams[index].field_key
+    return sum((field_generator(
+      dataparams, index+1, fields+[{'key': key, 'value': value}])
+                for value in dataparams[index].values), [])
+
+
+class CronHandler(webapp2.RequestHandler):
+
+  def get(self):
+    metric_ranges = {
+      'disk_used': (0, 100),
+      'cpu': (10, 1000)
+    }
+    data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
+    datapacket = {'timeseries': []}
+    logging.debug('There are %d metrics', len(metric_ranges))
+    fieldlist = field_generator(data.params, 0, [])
+    for metric in metric_ranges:
+      for fields in fieldlist:
+        points = []
+        for x in xrange(0, int(data.time), int(data.freq)):
+          points.append({'time': x,
+                         'value': random.uniform(*metric_ranges[metric])})
+        timeseries = {'points': points,
+                      'fields': fields,
+                      'metric': metric}
+        datapacket['timeseries'].append(timeseries)
+    logging.info('Cron task executed.')
+    discovery_url = DISCOVERY_URL % API_URL
+    credentials = GoogleCredentials.get_application_default()
+    service = discovery.build(API_NAME, API_VERSION,
+                              discoveryServiceUrl=discovery_url, 
+                              credentials=credentials)
+    _response = service.timeseries().update(body=datapacket).execute()
+
+
+backend_handlers = [
+  ('/cron', CronHandler)
+]
+
+WEBAPP = webapp2.WSGIApplication(backend_handlers, debug=True)
 
 APPLICATION = endpoints.api_server([LoadTestApi, UIApi])

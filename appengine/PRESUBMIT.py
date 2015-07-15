@@ -20,6 +20,7 @@ DISABLED_PROJECTS = [
     '\.git',
     '\.wheelcache',
     'bootstrap/virtualenv',
+    '.*/six.py',
 ]
 
 

@@ -2,7 +2,6 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-# Edit this to match your implementation.
 handlers:
 - url: /_ah/spi/.*
   secure: always
@@ -20,6 +19,10 @@ handlers:
 - url: /
   static_files: html/index.html
   upload: html/index\.html
+
+- url: /cron
+  login: admin
+  script: main.WEBAPP
 
 libraries:
 - name: endpoints

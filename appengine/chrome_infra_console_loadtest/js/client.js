@@ -1,4 +1,4 @@
-var clientID="674427939861-l8hmlqge5167io9fi46ugdbc24qvq1dk.apps.googleusercontent.com";
+var clientID="1053480191491-1u50p49gsi961g91urgftep4tr8k93d0.apps.googleusercontent.com";
 
 function init(){
   gapi.auth.setToken(null);

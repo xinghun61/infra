@@ -1,0 +1,4 @@
+cron:
+- description: dispatch loadtest requests
+  url: /cron
+  schedule: every 1 minutes
