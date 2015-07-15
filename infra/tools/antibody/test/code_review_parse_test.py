@@ -26,14 +26,7 @@ class TestCodeReviewParse(unittest.TestCase):
   no_lgtm_tbr = 'https://codereview.chromium.org/1004453003'
   no_lgtm_mult_tbr = 'https://codereview.chromium.org/1171763002'
   lgtm_tbr = 'https://codereview.chromium.org/1175623002'
-
-  lgtm_no_tbr_num = 1158153006
-  not_lgtm_no_tbr_num = 1175993003
-  mult_lgtm_no_tbr_num = 1146053009
-  no_lgtm_tbr_num = 1004453003
-  no_lgtm_mult_tbr_num = 1171763002
-  lgtm_tbr_num = 1175623002
-
+  lgtm_not_lgtm_no_tbr = 'https://codereview.chromium.org/1177013002'
 
   def test_contains_lgtm(self):
     issues_with_lgtm = (self.lgtm_no_tbr, self.mult_lgtm_no_tbr, self.lgtm_tbr)
@@ -46,7 +39,6 @@ class TestCodeReviewParse(unittest.TestCase):
     for issue in issues_without_lgtm:
       self.assertFalse(code_review_parse.contains_lgtm(
                                             fake_extract_json_data(issue)))
- 
 
   def test_contains_tbr(self):
     issues_with_tbr = (self.no_lgtm_tbr, self.no_lgtm_mult_tbr, self.lgtm_tbr)
@@ -60,12 +52,11 @@ class TestCodeReviewParse(unittest.TestCase):
       self.assertFalse(code_review_parse.contains_tbr(
                                             fake_extract_json_data(issue)))
 
-
   def test_to_canonical_rietveld_url(self):
     chrome_internal_url = 'https://chromereviews.googleplex.com/210457013/'
     self.assertEqual(chrome_internal_url,
           code_review_parse.to_canonical_rietveld_url(chrome_internal_url))
-    
+
     cr_appspot_url = 'https://codereview.appspot.com/244460044/'
     self.assertEqual(cr_appspot_url,
                     code_review_parse.to_canonical_rietveld_url(cr_appspot_url))
@@ -82,31 +73,34 @@ class TestCodeReviewParse(unittest.TestCase):
     self.assertEqual(codereview_chromium_url,
            code_review_parse.to_canonical_rietveld_url(codereview_chromium_url))
 
+  def test_get_rietveld_data_for_review_people(self):
+    # email_address, review_url, timestamp, request_timestamp, type
+    expected_out = (
+        ('chromium-reviews@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:00:02', None, 'cc'),
+        ('ksho@google.com', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:00:02', None, 'owner'),
+        ('pgervais@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:00:02', None, 'reviewer'),
+        ('hinoka@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:00:02', None, 'reviewer'),
+        ('pgervais@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:41:29', None, 'lgtm'),
+        ('pgervais@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-10 22:43:06', None, 'not lgtm'),
+        ('pgervais@chromium.org', self.lgtm_not_lgtm_no_tbr,
+         '2015-06-11 18:39:50', None, 'lgtm'),
+    )
+    db_data_all = code_review_parse.get_rietveld_data_for_review_people(
+        self.lgtm_not_lgtm_no_tbr)
+    db_comparable = [(x[0], x[1], x[2], None, x[4]) for x in db_data_all]
+    self.assertEqual(set(db_comparable), set(expected_out))
 
-  def test_get_tbr_no_lgtm(self):
-    with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
-      # set up fake db to read from
-      file_name = os.path.join(dirname, 'rietveld_parse.db')
-      with sqlite3.connect(file_name) as con:
-        cur = con.cursor()
-        cur.execute('CREATE TABLE %s (git_hash, lgtm, tbr, '
-                    'rietveld_url, request_timestamp, num_cced)'
-                    % csql.DEFAULT_RIETVELD_TABLE)
-        fake_data = ( 
-            (1, '1', '0', 'https://codereview.chromium.org/1158153006', 1, 1),
-            (2, '0', '0', 'https://codereview.chromium.org/1175993003', 1, 1),
-            (3, '1', '0', 'https://codereview.chromium.org/1146053009', 1, 1),
-            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1, 1),
-            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1, 1),
-            (6, '1', '1', 'https://codereview.chromium.org/1175623002', 1, 1),
-        )
-        cur.executemany('INSERT INTO %s VALUES(?, ?, ?, ?, ?, ?)'
-                        % csql.DEFAULT_RIETVELD_TABLE, fake_data)
-
-        expected_out = ( 
-            (4, '0', '1', 'https://codereview.chromium.org/1004453003', 1, 1),
-            (5, '0', '1', 'https://codereview.chromium.org/1171763002', 1, 1),
-        )   
-        out = code_review_parse.get_tbr_no_lgtm(cur)
-        for i in xrange(len(out)):
-          self.assertEqual(expected_out[i], out[i])
+  def test_get_rietveld_data_for_review(self):
+    # review_url, request_timestamp, committed_timestamp, patchset_still_exists
+    # reverted, project_prj_id
+    expected_out = (self.lgtm_no_tbr, None, '2015-06-02 16:46:42', True,
+                    None, None)
+    out = code_review_parse.get_rietveld_data_for_review(self.lgtm_no_tbr)
+    out_comparable = (out[0], None) + out[2:]
+    self.assertEqual(out_comparable, expected_out)

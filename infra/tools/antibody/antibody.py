@@ -13,8 +13,8 @@ import shutil
 import infra.tools.antibody.cloudsql_connect as csql
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-ANTIBODY_UI_MAIN_NAME = 'index.html';
-TBR_BY_USER_NAME = 'tbr_by_user.html';
+ANTIBODY_UI_MAIN_NAME = 'index.html'
+TBR_BY_USER_NAME = 'tbr_by_user.html'
 
 # https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
@@ -38,13 +38,13 @@ def add_argparse_options(parser):
   parser.add_argument('--output-dir-path', '-d', default=THIS_DIR,
                       help="path to directory in which the ui will be"
                            "generated")
-  parser.add_argument('--since', '-s', default='2014',
+  parser.add_argument('--since', '-s', default='01-01-2014',
                       help="parse all git commits after this date"
-                           "format as YYYY or YYYY-MM-DD")
+                           "format as YYYY-MM-DD")
 
 
-def setup_antibody_db(cc):  # pragma: no cover
-  csql.create_tables(cc)
+def setup_antibody_db(cc, filename):  # pragma: no cover
+  csql.execute_sql_script_from_file(cc, filename)
 
 
 def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
@@ -65,40 +65,36 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
                    'gitiles_prefix' : gitiles_prefix,
                   }
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
-    f.write(index_template.render(template_vars)) 
+    f.write(index_template.render(template_vars))
 
   with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
-    f.write(tbr_by_user_template.render(template_vars)) 
+    f.write(tbr_by_user_template.render(template_vars))
 
-  try:
+  try:  # pragma: no cover
     if (ui_dirpath != THIS_DIR):  # pragma: no cover
       shutil.rmtree(os.path.join(ui_dirpath, 'static'))
-  except OSError, e:
+  except OSError, e:  # pragma: no cover
     if e.errno == 2:  # [Errno 2] No such file or directory
       pass
-    else:  # pragma: no cover
+    else:
       raise
   if (ui_dirpath != THIS_DIR):  # pragma: no cover
-    shutil.copytree(os.path.join(THIS_DIR, 'static'), 
+    shutil.copytree(os.path.join(THIS_DIR, 'static'),
                     os.path.join(ui_dirpath, 'static'))
 
 
-def get_tbr_by_user(cc, gitiles_prefix, output_dirpath):
-  cc.execute('SELECT g.git_hash, g.tbr, r.review_url, r.request_timestamp '
-             'FROM git g, rietveld r WHERE g.git_hash = r.git_hash '
-             'AND r.lgtm <> "1"')
-  all_tbr_data = cc.fetchall()
-
+def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):
+  # tbr_no_lgtm: review_url, request_timestamp, hash, people_email_address
   tbr_blame_dict = {}
-  for git_hash, reviewers, url, time in all_tbr_data:
-    reviewers = reviewers.split(',')
-    for reviewer in reviewers:
-      reviewer = reviewer.strip().split('@')
-      tbr_blame_dict.setdefault(reviewer[0], []).append([git_hash, url, time])
+  for url, time, git_hash, reviewer in tbr_no_lgtm:
+    reviewer = reviewer.strip().split('@')
+    time = time.strftime("%Y-%m-%d %H:%M:%S")
+    tbr_blame_dict.setdefault(reviewer[0], []).append(
+        [git_hash, url, time])
   tbr_data = {
       "by_user" : tbr_blame_dict,
       "gitiles_prefix" : gitiles_prefix,
-  } 
+  }
   with open(os.path.join(output_dirpath, 'tbr_by_user.json'), 'wb') as f:
     f.write(json.dumps(tbr_data))
 

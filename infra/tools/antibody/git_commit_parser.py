@@ -2,14 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+import dateutil.parser
+import pytz
 import re
 import subprocess
 
 import infra.tools.antibody.cloudsql_connect as csql
 
+curr_time = datetime.datetime.now()
 
-def read_commit_info(git_checkout_path, commits_after_date, 
-                     git_log_format=('%H', '%b')):  # pragma: no cover
+
+def read_commit_info(git_checkout_path, commits_after_date,
+                     git_log_format=('%H', '%b', '%ae',
+                                     '%ci')):  # pragma: no cover
   """Read commit messages and other information
 
   Args:
@@ -26,11 +32,12 @@ def read_commit_info(git_checkout_path, commits_after_date,
 
 
 def parse_commit_info(git_log,
-                      git_commit_fields=('id', 'body')):
+                      git_commit_fields=('id', 'body', 'author',
+                                         'timestamp')):
   """Seperates the various parts of git commit messages
 
   Args:
-    git_log(str): git commits formatted as --format='%H%x1f%b%x1e'
+    git_log(str): git commits as --format='%H%x1f%b%xlf%ae%xlf%ci%x1e'
     git_commit_fields(tuple): labels for the different components of the
                               commit messages corresponding to the --format
 
@@ -44,38 +51,23 @@ def parse_commit_info(git_log,
   return git_log_dict
 
 
-def is_commit_suspicious(git_commit):
-  """Returns True if commit is TBR'ed or lacking a review url else False
-
-  Arg:
-    git_commit(dict): a commit message parsed into a dictionary
-                      e.g. {'id': '429f6042fdd858d6d040a61c68fb94356bff0be3',
-                            'body': 'Fixed the bug.'}
-  """
-  for line in git_commit['body'].split('\n'):
-    if line.startswith('TBR=') and len(line) > 4:
-      return True
-    if get_review_url(line):
-      return False
-  return True
-
-
-def get_bug_num(git_line):
-  bug_number = None
+def get_bug_url(git_line):
+  bug_url = None
   bug_match = (re.match(r'^BUG=https?://code.google.com/p/(?:chromium'
                         '|rietveld)/issues/detail?id=(\d+)', git_line)
                or re.match(r'^BUG=https?://crbug.com/(\d+)', git_line)
                or re.match(r'^BUG=chromium:(\d+)', git_line)
                or re.match(r'^BUG=(\d+)', git_line))
   if bug_match:
-    bug_number = bug_match.group(1)
-  return bug_number
+    bug_url = bug_match.group(1)
+  return bug_url
 
 
 def get_tbr(git_line):
   tbr = None
   if git_line.startswith('TBR=') and len(git_line) > 4:
     tbr = git_line[4:]
+    tbr = [x.strip() for x in tbr.split(',')]
   return tbr
 
 
@@ -90,9 +82,8 @@ def get_review_url(git_line):
   return review_url
 
 
-def get_features_from_commit(git_commit):
-  """Searches the body of a commit message for a TBR, bug number, and/or a
-     review url
+def get_features_for_git_commit(git_commit):
+  """Retrieves the git commit features
 
   Arg:
     git_commit(dict): a commit message parsed into a dictionary
@@ -101,32 +92,72 @@ def get_features_from_commit(git_commit):
     (tuple): relevant features extracted from the commit message
   """
   git_hash = git_commit['id']
-  bug_num, TBR, review_URL = None, None, None
+  dt = dateutil.parser.parse(git_commit['timestamp']).astimezone(pytz.UTC)
+  # dt is a datetime object with timezone info
+  timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
+  bug_url, review_URL = None, None
   for line in git_commit['body'].split('\n'):
-    bug_num = get_bug_num(line) or bug_num
-    TBR = get_tbr(line) or TBR
+    bug_url = get_bug_url(line) or bug_url
     review_URL = get_review_url(line) or review_URL
-  return (git_hash, bug_num, TBR, review_URL)
+  return (git_hash, bug_url, timestamp, review_URL, None)
+
+
+def get_features_for_commit_people(git_commit):
+  """Retrieves the people associated with a git commit
+
+  Arg:
+    git_commit(dict): a commit message parsed into a dictionary
+
+  Return:
+    (tuple): relevant people and type extracted from the commit
+  """
+  git_hash = git_commit['id']
+  author = git_commit['author']
+  people_rows = [(author, git_hash, curr_time, 'author')]
+  TBR = None
+  for line in git_commit['body'].split('\n'):
+    TBR = get_tbr(line) or TBR
+  if TBR is not None:
+    for person in TBR:
+      people_rows.append((person, git_hash, curr_time, 'tbr'))
+  return people_rows
 
 
 def parse_commit_message(git_log):
-  """Identifies all suspicious commits (those w/ a TBR or w/o a review url)
+  """Extracts features from the commit message
 
   Arg:
     git_log(list): all commits in a git log parsed as dictionaries
 
   Return:
-    commits(list): all suspicious commits represented by a tuple with the
-                   extracted features
+    commits(list): all commits represented by a tuple with the
+                   extracted commit features
   """
   commits = []
   for commit in git_log:
-    if is_commit_suspicious(commit):
-      commits.append(get_features_from_commit(commit))
+    commits.append(get_features_for_git_commit(commit))
   return commits
 
 
-def upload_git_to_sql(cc, git_checkout_path, 
+def parse_commit_people(git_log):
+  """Extracts features associated with the people in a commit
+
+  Arg:
+    git_log(list): all commits in a git log parsed as dictionaries
+
+  Return:
+    commits(list): all commits represented by a tuple with the
+                   extracted features about each associated person
+  """
+  commits = []
+  for commit in git_log:
+    associated_people = get_features_for_commit_people(commit)
+    for tup in associated_people:
+      commits.append(tup)
+  return commits
+
+
+def upload_to_sql(cc, git_checkout_path,
                       commits_after_date):  # pragma: no cover
   """Writes suspicious git commits to a Cloud SQL database
 
@@ -136,24 +167,33 @@ def upload_git_to_sql(cc, git_checkout_path,
   """
   log_output = read_commit_info(git_checkout_path, commits_after_date)
   log_dict = parse_commit_info(log_output)
-  output = parse_commit_message(log_dict)
-  csql.write_to_git_table(cc, output)
+  git_commit_output = parse_commit_message(log_dict)
+  commit_people_output = parse_commit_people(log_dict)
+  csql.write_to_git_commit(cc, git_commit_output)
+  csql.write_to_commit_people(cc, commit_people_output)
 
 
-def get_urls_from_git_db(cc):
+def get_urls_from_git_commit(cc):  # pragma: no cover
   """Accesses Cloud SQL instance to find the review urls of the stored
-     commits
+     commits that have a TBR
 
   Arg:
     cc: a cursor for the Cloud SQL connection
 
   Return:
-    commits_with_review_urls(list): all the commits in the db w/ review urls
+    commits_with_review_urls(list): all the commits in the db w/ TBR
+    and have review urls
   """
-  cc.execute("""SELECT * FROM %s""" % csql.DEFAULT_GIT_TABLE)
-  git_data = cc.fetchall()
-  commits_with_review_urls = []
-  for git_hash, _, _, review_url in git_data:
-    if review_url:
-      commits_with_review_urls.append((git_hash, review_url))
-  return commits_with_review_urls
+  cc.execute("""SELECT git_commit.review_url,
+      commit_people.people_email_address, commit_people.type
+      FROM commit_people INNER JOIN (SELECT git_commit_hash,
+      count(*) as c FROM commit_people WHERE type='tbr'
+      GROUP BY git_commit_hash) tbr_count
+      ON commit_people.git_commit_hash = tbr_count.git_commit_hash
+      INNER JOIN git_commit
+      ON commit_people.git_commit_hash = git_commit.hash
+      WHERE tbr_count.c <> 0
+      AND git_commit.review_url IS NOT NULL
+      AND commit_people.type='author'""")
+  commits_with_review_urls = cc.fetchall()
+  return [x[0] for x in commits_with_review_urls]

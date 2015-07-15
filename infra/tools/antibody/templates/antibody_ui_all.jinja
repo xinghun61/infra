@@ -42,8 +42,9 @@
             </tr>
         </thead>
         <tbody>
-          {% for git_hash, _, _, rietveld_url, request_timestamp, _ 
-           in suspicious_commits %}
+          <!-- review_url, request_timestamp, hash, people_email_address -->
+          {% for rietveld_url, request_timestamp, git_hash, _ in 
+          suspicious_commits %}
             <tr class="data_item">
               <td class="git_hash hyperlink">
                 <a href="{{ gitiles_prefix }}{{ git_hash }}">
