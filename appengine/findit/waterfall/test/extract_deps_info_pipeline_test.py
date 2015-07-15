@@ -98,3 +98,18 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
     pipeline = ExtractDEPSInfoPipeline()
     deps_info = pipeline.run(failure_info, change_logs)
     self.assertEqual(expected_deps_info, deps_info)
+
+  def testBailOutIfNoValidChromiumRevision(self):
+    failure_info = {
+        'failed': True,
+        'chromium_revision': None,
+    }
+    change_logs = {}
+    expected_deps_info = {
+        'deps': {},
+        'deps_rolls': {},
+    }
+
+    pipeline = ExtractDEPSInfoPipeline()
+    deps_info = pipeline.run(failure_info, change_logs)
+    self.assertEqual(expected_deps_info, deps_info)

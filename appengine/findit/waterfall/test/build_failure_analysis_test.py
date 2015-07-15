@@ -439,9 +439,19 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         failure_info, change_logs=None, deps_info=None, failure_signals=None)
     self.assertEqual(0, len(result['failures']))
 
+  def testAnalyzeBuildWithoutValidChromiumRevision(self):
+    failure_info = {
+        'failed': True,
+        'chromium_revision': None,
+    }
+    result = build_failure_analysis.AnalyzeBuildFailure(
+        failure_info, change_logs=None, deps_info=None, failure_signals=None)
+    self.assertEqual(0, len(result['failures']))
+
   def testAnalyzeBuildFailure(self):
     failure_info = {
         'failed': True,
+        'chromium_revision': 'r99_2',
         'failed_steps': {
             'a': {
                 'current_failure': 99,

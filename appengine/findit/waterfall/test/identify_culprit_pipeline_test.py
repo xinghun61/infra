@@ -72,7 +72,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
         }
     ]
 
-    self.assertEqual(expected_suspected_cls, 
+    self.assertEqual(expected_suspected_cls,
                      identify_culprit_pipeline._GetSuspectedCLs(dummy_result))
 
   def testGetSuspectedCLsNoDuplicates(self):
@@ -126,7 +126,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
         }
     ]
 
-    self.assertEqual(expected_suspected_cls, 
+    self.assertEqual(expected_suspected_cls,
                      identify_culprit_pipeline._GetSuspectedCLs(dummy_result))
 
   def testGetResultAnalysisStatusFoundUntriaged(self):

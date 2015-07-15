@@ -124,8 +124,8 @@ class ExtractDEPSInfoPipeline(BasePipeline):
         }
       }
     """
-    if not failure_info['failed']:
-      # Bail out if no failed step is found.
+    if not failure_info['failed'] or not failure_info['chromium_revision']:
+      # Bail out if no failed step or no chromium revision.
       return {'deps':{}, 'deps_rolls': {}}
 
     chromium_revision = failure_info['chromium_revision']

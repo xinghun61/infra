@@ -105,8 +105,8 @@ class ExtractSignalPipeline(BasePipeline):
       }
     """
     signals = {}
-    if not failure_info['failed']:
-      # Bail out if no failed step is found.
+    if not failure_info['failed'] or not failure_info['chromium_revision']:
+      # Bail out if no failed step or no chromium revision.
       return signals
 
     master_name = failure_info['master_name']

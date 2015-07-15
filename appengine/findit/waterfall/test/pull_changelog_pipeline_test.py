@@ -56,6 +56,7 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
 
     failure_info = {
       'failed': True,
+      'chromium_revision': 'rev1',
       'builds': {
         '999': {
           'blame_list': ['rev1']
@@ -96,6 +97,17 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
   def testBailOutIfNotAFailedBuild(self):
     failure_info = {
         'failed': False,
+    }
+    expected_change_logs = {}
+
+    pipeline = PullChangelogPipeline()
+    change_logs = pipeline.run(failure_info)
+    self.assertEqual(expected_change_logs, change_logs)
+
+  def testBailOutIfNoValidChromiumRevision(self):
+    failure_info = {
+        'failed': True,
+        'chromium_revision': None,
     }
     expected_change_logs = {}
 

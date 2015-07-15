@@ -571,7 +571,8 @@ def AnalyzeBuildFailure(
       'failures': []
   }
 
-  if not failure_info['failed']:
+  if not failure_info['failed'] or not failure_info['chromium_revision']:
+    # Bail out if no failed step or no chromium revision.
     return analysis_result
 
   def CreateCLInfoDict(justification_dict, build_number, change_log):

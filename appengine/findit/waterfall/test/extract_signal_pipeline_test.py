@@ -37,6 +37,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
       'builder_name': 'b',
       'build_number': 123,
       'failed': True,
+      'chromium_revision': 'a_git_hash',
       'failed_steps': {
           'abc_test': {
               'last_pass': 122,
@@ -200,6 +201,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         'builder_name': 'b',
         'build_number': 124,
         'failed': True,
+        'chromium_revision': 'a_git_hash',
         'failed_steps': {
             'abc_test': {
                 'last_pass': 123,
@@ -232,6 +234,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         'builder_name': 'b',
         'build_number': 125,
         'failed': True,
+        'chromium_revision': 'a_git_hash',
         'failed_steps': {
             'abc_test': {
                 'last_pass': 124,
@@ -260,6 +263,17 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testBailOutIfNotAFailedBuild(self):
     failure_info = {
         'failed': False,
+    }
+    expected_signals = {}
+
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(failure_info)
+    self.assertEqual(expected_signals, signals)
+
+  def testBailOutIfNoValidChromiumRevision(self):
+    failure_info = {
+        'failed': True,
+        'chromium_revision': None,
     }
     expected_signals = {}
 
