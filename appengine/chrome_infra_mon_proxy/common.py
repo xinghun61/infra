@@ -13,6 +13,7 @@ TRAFFIC_SPLIT_KEY = 'traffic_split_key'
 # Header name to pass the endpoint URL to the backend.
 # Note the capitalization: HTTP headers are enforced to have this pattern.
 ENDPOINT_URL_HEADER = 'Endpoint-Url'
+MAX_DATA_SIZE = 512 * 1024
 
 
 class Credentials(ndb.Model):

@@ -139,6 +139,16 @@ class MonacqHandlerTest(testing.AppengineTestCase):
         _request_mock.call_args[1]['headers'].get(common.ENDPOINT_URL_HEADER),
         self.get_config().primary_endpoint.url)
 
+  @mock.patch('components.net.request', spec=True)
+  def test_too_large_request(self, _request_mock):
+    self.populate_config()
+    self.mock(common, 'MAX_DATA_SIZE', 10)
+    payload = '12345678910'
+    with self.assertRaises(webtest.AppError) as cm:
+      self.test_app.post('/monacq', payload, headers=self.headers)
+    logging.info('exception = %s', cm.exception)
+    self.assertIn('413', str(cm.exception))
+
 
 class MainHandlerTest(testing.AppengineTestCase):
 

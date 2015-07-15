@@ -107,7 +107,8 @@ def forward_data(data, ip):
   """
   lb = LoadBalancer()
   module_name = lb.choose_module()
-  logging.info('Forwarding request to module: %s', module_name)
+  logging.info('Forwarding request (%d bytes) to module: %s',
+               len(data), module_name)
   hostname = app_identity.get_default_version_hostname()
   if utils.is_local_dev_server():
     protocol = 'http'
@@ -152,8 +153,14 @@ class MonacqHandler(auth.AuthenticatingHandler):
   @auth.require(lambda: auth.is_group_member(
       'service-account-monitoring-proxy'))
   def post(self):
+    data = self.request.body
+    if len(data) > common.MAX_DATA_SIZE:
+      logging.error('Request is too large: %d bytes; rejecting.', len(data))
+      self.response.write('Request is too large: %d bytes. Max: %d bytes.' % (
+          len(data), common.MAX_DATA_SIZE))
+      self.abort(413)
     try:
-      forward_data(self.request.body, self.request.remote_addr)
+      forward_data(data, self.request.remote_addr)
     except AdminError as e:
       logging.error('%s; please visit https://%s/admin/',
                     e, app_identity.get_default_version_hostname())
