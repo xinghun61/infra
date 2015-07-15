@@ -174,9 +174,14 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
   logging.info(
       'Fetching builds for patchset %s/%s. Buildset: %s',
       issue_id, patchset_id, buildset_tag)
-  resp = yield net.json_request_async(
-      url, params=params,
-      scopes='https://www.googleapis.com/auth/userinfo.email')
+  try:
+    resp = yield net.json_request_async(
+        url, params=params,
+        scopes='https://www.googleapis.com/auth/userinfo.email')
+  except net.NotFoundError as ex:
+    logging.error(
+        'Buildbucket returned 404 unexpectedly. Body: %s', ex.response)
+    raise
   if 'error' in resp:
     bb_error = resp.get('error', {})
     raise BuildBucketError(
