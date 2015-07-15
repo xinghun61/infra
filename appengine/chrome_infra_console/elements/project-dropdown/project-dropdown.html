@@ -1,0 +1,38 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">  
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">  
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="project-dropdown">
+  <link rel="import" type="css" href="project-dropdown.css">
+
+  <template>
+    <div id="dropdownBlock">
+      <select id="projectSelect">
+        <option selected disabled>Choose Project</option>
+        <template id="repeatTemp" is="dom-repeat" items="{{projectList}}">
+          <option value="{{item}}">{{item}}</option>
+        </template>
+      </select>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'project-dropdown',
+      properties: {
+        projectList: {
+          type: Array,
+          notify: true,
+          value: ["Project 1","Project 2", "Project 3"]
+        }
+      },
+    });
+  </script>
+</dom-module>
+
+

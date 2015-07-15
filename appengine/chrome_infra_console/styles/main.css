@@ -1,6 +1,8 @@
-/* Copyright 2015 The Chromium Authors. All rights reserved.
-Use of this source code is governed by a BSD-style license that can be
-found in the LICENSE file */
+/** 
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file 
+ */
 
 body {
   background: #fafafa;
@@ -18,10 +20,11 @@ body {
 .paper {
   border-radius: 2px;
   height: 100%;
-  padding: 16px 0 16px 0;
-  width: calc(98.66% - 16px);
-  margin: 16px auto;
+  width: 90%;
+  padding: 16px 16px 16px 16px;
+  margin: 40px;
   background: white;
+  color: #A75600;
 }
 
 paper-toolbar.paper-toolbar-0 {
@@ -77,4 +80,10 @@ paper-menu paper-item {
 
 #signIn {
   background: DarkOrange; 
+}
+
+project-dropdown {
+  display: block;
+  margin-left: 40px;
+  margin-top: 50px;
 }

@@ -1,0 +1,24 @@
+/** 
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file 
+ */
+
+select {
+  background: #fff;
+  color: #F0A73A; 
+  font-size: 18px;
+  font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: bold;
+  border-radius: 7px;
+  border: 1px solid Orange;
+  box-shadow: 0 1px 1px #FFAF16;
+  position: relative;
+  cursor: pointer;
+  padding: 12px;
+}
+
+select option{
+  background: #FBEFD0;
+  padding-top: 5px;
+}

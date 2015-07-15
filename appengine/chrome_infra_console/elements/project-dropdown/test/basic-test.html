@@ -1,0 +1,44 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../project-dropdown.html">
+  </head>
+  <body>
+
+    <project-dropdown></project-dropdown>
+
+    <script>
+      var myEl = document.querySelector('project-dropdown');
+
+      suite('<project-dropdown>', function() {
+
+        test('Selecting works', function() {
+          var s = myEl.querySelector('#projectSelect');
+          assert.equal(s.options[s.selectedIndex].text, "Choose Project");
+          assert.equal(s.options[s.selectedIndex].disabled, true);
+          myEl.click();
+          s.options[1].selected = true;
+          assert.equal(s.options[s.selectedIndex].value, "Project 1");
+        });
+
+        test('Element binding works', function() {
+          var temp = myEl.querySelector('#repeatTemp');
+          assert.equal(temp.items.length, 3);
+          myEl.projectList = ["a", "b" , "c", "d", "e"];
+          assert.equal(temp.items.length, 5);
+        });
+      });
+    </script>
+
+  </body>
+</html>
