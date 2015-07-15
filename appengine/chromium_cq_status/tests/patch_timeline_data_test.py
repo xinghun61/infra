@@ -103,6 +103,14 @@ class PatchTimelineDataTest(testing.AppengineTestCase):
         eCount += 1
     self.assertEquals(bCount, eCount)
 
+  def test_patch_timeline_increasing_timestamps(self):
+    events = self._test_patch('real_patch_multiple_attempts')
+    self.assertNotEqual(0, len(events))
+    previous_ts = events[0].get('ts')
+    for event in events:
+      self.assertTrue(previous_ts <= event.get('ts'))
+      previous_ts = event.get('ts')
+
   def test_patch_timeline_data_cq_buggy(self):
     events = self._test_patch('patch_cq_buggy')
     self.assertNotEqual(0, len(events))
