@@ -131,6 +131,7 @@ the python standard library, but other quirks are documented as well.
 
 - python 2.7 datetime lets you print a date that itself cannot parse
 
+
   >>> import datetime
   >>> from dateutil import tz
   >>> offset = tz.tzoffset(None, -7*60*60)
@@ -148,6 +149,7 @@ the python standard library, but other quirks are documented as well.
   See https://bugs.python.org/issue19475 for the problem, and see
   [zulu.py](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/time_functions/zulu.py)
   for the 'solution.'
+    
 
 	>>> import datetime
 	>>> a = datetime.datetime(2015, 1, 1, 0, 0, 0, 0).isoformat()
