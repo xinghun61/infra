@@ -113,6 +113,7 @@ def attempts_to_events(attempts): # pragma: no cover
                 close_event['ph'] = 'E'
                 close_event['ts'] = event_dict['ts']
                 close_event['args']['job_state'] = 'abandoned'
+                close_event['cname'] = 'cq_build_abandoned'
                 events.append(close_event)
             events.append(event_dict)
           elif build_url not in completed_build_urls:
