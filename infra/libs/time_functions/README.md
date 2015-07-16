@@ -170,11 +170,13 @@ the python standard library, but other quirks are documented as well.
 
 - it can't understand leap seconds
 
+
 	>>> import datetime
 	>>> datetime.datetime(2015, 6, 30, 23, 59, 60)
 	ValueError: second must be in 0..59
 
 - it can't tell you what timezone datetime.now() is
+
 
 	>>> import datetime
 	>>> datetime.datetime.now().tzinfo is None
@@ -192,6 +194,7 @@ the python standard library, but other quirks are documented as well.
 
 - it can't mix timezone aware datetimes with naive datetimes (why have naive
   datetimes to begin with?)
+
 
 	>>> import datetime
 	>>> from dateutil import tz
@@ -212,6 +215,7 @@ the python standard library, but other quirks are documented as well.
 
 - dateutil can't understand leap seconds
 
+
 	>>> import dateutil.parser
 	>>> dateutil.parser.parse('2015-06-30T23:59:60')
 	ValueError: second must be in 0..59
@@ -220,6 +224,7 @@ the python standard library, but other quirks are documented as well.
 
   (note, running this example will yield different results depending on your
   local timezone. lol.)
+
 
 	>>> import dateutil.parser
 	>>> a = dateutil.parser.parse('2015-01-01T00:00:00 PST')
@@ -253,6 +258,7 @@ computations.
 
 - dates which represent the same moment in time can have different weekdays or
   other attributes
+
 
 	>>> import dateutil.parser
 	>>> a = dateutil.parser.parse('2015-06-17T23:00:00 PDT')
@@ -298,6 +304,7 @@ computations.
   You've now required everyone to convert every timezone into every timezone,
   instead of every timezone into one (UTC):
 
+
 	['2015-06-18T05:00:00+00:00'
 	 '2015-06-17T23:00:00-07:00',
 	 '2015-06-18T06:00:00-10:00',
@@ -309,6 +316,7 @@ Finally, there is a small jail associated with errors occurring due to leap
 seconds themselves. Unfortunately, stiptime is *not* immune to these.
 
 - ambiguous unix time
+
 
 	2015-06-30T23:59:59.0Z -> 1435708799.0
 	2015-06-30T23:59:60.0Z -> 1435708799.0
