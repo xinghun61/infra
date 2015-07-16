@@ -40,7 +40,7 @@ class MainPageHandler(webapp2.RequestHandler):
 
     user = auth_util.User.from_request(self.request)
     template_values['login_url'] = ''
-    if not user:
+    if not user.is_logged_in:
       template_values['login_url'] = users.create_login_url(dest_url='/')
     template_values['lists'] = committers.get_list_names_for_user(user)
 

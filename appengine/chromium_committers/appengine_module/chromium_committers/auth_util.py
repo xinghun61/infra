@@ -46,6 +46,10 @@ class User(object):
     return self._email
 
   @property
+  def is_logged_in(self):
+    return self.email is not None
+
+  @property
   def is_admin(self):
     if callable(self._is_admin):
       # Allow lazy evaluation (is expensive for endpoints).
