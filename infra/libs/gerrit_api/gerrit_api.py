@@ -5,6 +5,7 @@
 """Yet another wrapper around Gerrit REST API."""
 
 import base64
+import cookielib
 import json
 import logging
 import netrc
@@ -26,6 +27,10 @@ class GerritException(Exception):
 
 class NetrcException(GerritException):
   """Netrc file is missing or incorrect."""
+
+
+class GitcookiesException(GerritException):
+  """Gitcookies file is missing or incorrect."""
 
 
 class UnexpectedResponseException(GerritException):
@@ -51,10 +56,13 @@ class Gerrit(object):  # pragma: no cover
       avoid hammering the Gerrit server.
   """
 
-  def __init__(self, host, netrc_path=None, throttle_delay_sec=0):
+  def __init__(self, host, netrc_path=None, gitcookies_path=None,
+               throttle_delay_sec=0):
     auth = _load_netrc(netrc_path).authenticators(host)
     if not auth:
-      raise GerritException('No record for %s in .netrc' % host)
+      auth = _load_gitcookies(gitcookies_path, host)
+    if not auth:
+      raise GerritException('No auth record for %s' % host)
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % (auth[0], auth[2])))
     self._url_base = 'https://%s/a' % host
@@ -266,6 +274,26 @@ def _load_netrc(path=None):  # pragma: no cover
     else:
       raise NetrcException(
           'Cannot use netrc file %s due to a parsing error: %s' % (path, exc))
+
+
+def _load_gitcookies(path, host):
+  if not path:
+    # HOME might not be set on Windows.
+    if 'HOME' not in os.environ:
+      raise GitcookiesException('HOME environment variable is not set')
+    path = os.path.join(os.environ['HOME'], '.gitcookies')
+
+  with open(path) as f:
+    for line in f:
+      fields = line.strip().split('\t')
+      if line.strip().startswith('#') or len(fields) != 7:
+        continue
+      domain, xpath, key, value = fields[0], fields[2], fields[5], fields[6]
+      if cookielib.domain_match(host, domain) and xpath == '/' and key == 'o':
+        login, password = value.split('=', 1)
+        return (login, None, password)
+
+  return None
 
 
 def _is_response_cached(method, full_url):  # pragma: no cover
