@@ -132,15 +132,15 @@ the python standard library, but other quirks are documented as well.
 - python 2.7 datetime lets you print a date that itself cannot parse
 
 
-  >>> import datetime
-  >>> from dateutil import tz
-  >>> offset = tz.tzoffset(None, -7*60*60)
-  >>> dt = datetime.datetime(2015, 1, 1, 0, 0, 0, tzinfo=offset)
-  >>> a = dt.strftime('%Y-%m-%dT%H:%M:%S %z')
-  >>> a
-  '2015-01-01T00:00:00 -0700'
-  >>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S %z')
-  ValueError: 'z' is a bad directive in format '%Y-%m-%dT%H:%M:%S %z'
+	>>> import datetime
+	>>> from dateutil import tz
+	>>> offset = tz.tzoffset(None, -7*60*60)
+	>>> dt = datetime.datetime(2015, 1, 1, 0, 0, 0, tzinfo=offset)
+	>>> a = dt.strftime('%Y-%m-%dT%H:%M:%S %z')
+	>>> a
+	'2015-01-01T00:00:00 -0700'
+	>>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S %z')
+	ValueError: 'z' is a bad directive in format '%Y-%m-%dT%H:%M:%S %z'
 
 
 - it lets you print a date that it can parse most of the time, except that one
