@@ -56,15 +56,10 @@ stiptime's format is UTC represented as follows:
 where
 
 	YYYY: four digit year
-
 	MM: zero padded month
-
 	DD: zero padded day
-
 	hh: zero padded 24hr hour
-
 	mm: zero padded minute
-
 	ss: zero padded second, with a required fractional part
 
 You may notice that this is exactly the [ISO 8601 date
@@ -136,7 +131,6 @@ the python standard library, but other quirks are documented as well.
 
 - python 2.7 datetime lets you print a date that itself cannot parse
 
-  ```python
   >>> import datetime
   >>> from dateutil import tz
   >>> offset = tz.tzoffset(None, -7*60*60)
@@ -146,7 +140,7 @@ the python standard library, but other quirks are documented as well.
   '2015-01-01T00:00:00 -0700'
   >>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S %z')
   ValueError: 'z' is a bad directive in format '%Y-%m-%dT%H:%M:%S %z'
-  ```
+
 
 - it lets you print a date that it can parse most of the time, except that one
   time when you have zero microseconds and then it can't
@@ -155,62 +149,54 @@ the python standard library, but other quirks are documented as well.
   [zulu.py](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/time_functions/zulu.py)
   for the 'solution.'
 
-  ```python
-  >>> import datetime
-  >>> a = datetime.datetime(2015, 1, 1, 0, 0, 0, 0).isoformat()
-  >>> b = datetime.datetime(2015, 1, 1, 0, 0, 0, 123).isoformat()
-  >>> a
-  '2015-01-01T00:00:00'
-  >>> b
-  '2015-01-01T00:00:00.000123'
-  >>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S')
-  datetime.datetime(2015, 1, 1, 0, 0)
-  >>> datetime.datetime.strptime(b, '%Y-%m-%dT%H:%M:%S')
-  ValueError: unconverted data remains: .000123
-  # okay, let's try with .%f at the end
-  >>> datetime.datetime.strptime(b, '%Y-%m-%dT%H:%M:%S.%f')
-  datetime.datetime(2015, 1, 1, 0, 0, 0, 123)
-  >>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S.%f')
-  ValueError: time data '2015-01-01T00:00:00' does not match format '%Y-%m-%dT%H:%M:%S.%f'
-  ```
+	>>> import datetime
+	>>> a = datetime.datetime(2015, 1, 1, 0, 0, 0, 0).isoformat()
+	>>> b = datetime.datetime(2015, 1, 1, 0, 0, 0, 123).isoformat()
+	>>> a
+	'2015-01-01T00:00:00'
+	>>> b
+	'2015-01-01T00:00:00.000123'
+	>>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S')
+	datetime.datetime(2015, 1, 1, 0, 0)
+	>>> datetime.datetime.strptime(b, '%Y-%m-%dT%H:%M:%S')
+	ValueError: unconverted data remains: .000123
+	# okay, let's try with .%f at the end
+	>>> datetime.datetime.strptime(b, '%Y-%m-%dT%H:%M:%S.%f')
+	datetime.datetime(2015, 1, 1, 0, 0, 0, 123)
+	>>> datetime.datetime.strptime(a, '%Y-%m-%dT%H:%M:%S.%f')
+	ValueError: time data '2015-01-01T00:00:00' does not match format '%Y-%m-%dT%H:%M:%S.%f'
 
 - it can't understand leap seconds
 
-- ```python
-  >>> import datetime
-  >>> datetime.datetime(2015, 6, 30, 23, 59, 60)
-  ValueError: second must be in 0..59
-  ```
+	>>> import datetime
+	>>> datetime.datetime(2015, 6, 30, 23, 59, 60)
+	ValueError: second must be in 0..59
 
 - it can't tell you what timezone datetime.now() is
 
-  ```python
-  >>> import datetime
-  >>> datetime.datetime.now().tzinfo is None
-  true
-  >>> datetime.datetime.now().utcoffset() is None
-  true
-  >>> datetime.datetime.utcnow().tzinfo is None
-  true
-  >>> datetime.datetime.utcnow().utcoffset() is None
-  true
-  >>> datetime.datetime.now().isoformat()
-  '2015-07-15T15:36:23.591431'
-  >>> datetime.datetime.utcnow().isoformat()
-  '2015-07-15T22:36:28.431225'
-  ```
+	>>> import datetime
+	>>> datetime.datetime.now().tzinfo is None
+	true
+	>>> datetime.datetime.now().utcoffset() is None
+	true
+	>>> datetime.datetime.utcnow().tzinfo is None
+	true
+	>>> datetime.datetime.utcnow().utcoffset() is None
+	true
+	>>> datetime.datetime.now().isoformat()
+	'2015-07-15T15:36:23.591431'
+	>>> datetime.datetime.utcnow().isoformat()
+	'2015-07-15T22:36:28.431225'
 
 - it can't mix timezone aware datetimes with naive datetimes (why have naive
   datetimes to begin with?)
 
-  ```python
-  >>> import datetime
-  >>> from dateutil import tz
-  >>> a = datetime.datetime(2015, 1, 1, 0, 0, 0, tzinfo=tz.tzoffset(None, -7*60*60))
-  >>> b = datetime.datetime(2015, 1, 1, 0, 0, 0)
-  >>> a == b
-  TypeError: can't compare offset-naive and offset-aware datetimes
-  ```
+	>>> import datetime
+	>>> from dateutil import tz
+	>>> a = datetime.datetime(2015, 1, 1, 0, 0, 0, tzinfo=tz.tzoffset(None, -7*60*60))
+	>>> b = datetime.datetime(2015, 1, 1, 0, 0, 0)
+	>>> a == b
+	TypeError: can't compare offset-naive and offset-aware datetimes
 
 #### that's okay, I'll just use dateutil
 
@@ -224,31 +210,27 @@ the python standard library, but other quirks are documented as well.
 
 - dateutil can't understand leap seconds
 
-  ```python
-  >>> import dateutil.parser
-  >>> dateutil.parser.parse('2015-06-30T23:59:60')
-  ValueError: second must be in 0..59
-  ```
+	>>> import dateutil.parser
+	>>> dateutil.parser.parse('2015-06-30T23:59:60')
+	ValueError: second must be in 0..59
 
 - parser.parse works great, except when it silently doesn't
 
   (note, running this example will yield different results depending on your
   local timezone. lol.)
 
-  ```python
-  >>> import dateutil.parser
-  >>> a = dateutil.parser.parse('2015-01-01T00:00:00 PST')
-  >>> b = dateutil.parser.parse('2015-01-01T00:00:00 PDT')
-  >>> c = dateutil.parser.parse('2015-01-01T00:00:00 EST')
-  >>> a.isoformat()
-  '2015-01-01T00:00:00-08:00'    # great!
-  >>> b.isoformat()
-  '2015-01-01T00:00:00-08:00'    # uh...
-  >>> c.isoformat()
-  '2015-01-01T00:00:00'          # uhhhhhhh
-  >>> c == a
-  TypeError: can't compare offset-naive and offset-aware datetimes
-  ```
+	>>> import dateutil.parser
+	>>> a = dateutil.parser.parse('2015-01-01T00:00:00 PST')
+	>>> b = dateutil.parser.parse('2015-01-01T00:00:00 PDT')
+	>>> c = dateutil.parser.parse('2015-01-01T00:00:00 EST')
+	>>> a.isoformat()
+	'2015-01-01T00:00:00-08:00'		# great!
+	>>> b.isoformat()
+	'2015-01-01T00:00:00-08:00'		# uh...
+	>>> c.isoformat()
+	'2015-01-01T00:00:00'					# uhhhhhhh
+	>>> c == a
+	TypeError: can't compare offset-naive and offset-aware datetimes
 
 #### python 2.7 time
 
@@ -270,17 +252,15 @@ computations.
 - dates which represent the same moment in time can have different weekdays or
   other attributes
 
-  ```python
-  >>> import dateutil.parser
-  >>> a = dateutil.parser.parse('2015-06-17T23:00:00 PDT')
-  >>> b = dateutil.parser.parse('2015-06-18T06:00:00 UTC')
-  >>> a == b
-  True
-  >>> a.weekday()
-  2
-  >>> b.weekday()
-  3
-  ```
+	>>> import dateutil.parser
+	>>> a = dateutil.parser.parse('2015-06-17T23:00:00 PDT')
+	>>> b = dateutil.parser.parse('2015-06-18T06:00:00 UTC')
+	>>> a == b
+	True
+	>>> a.weekday()
+	2
+	>>> b.weekday()
+	3
 
 - it's easy to write code thinking it's in one timezone when it's really in
   another
@@ -316,12 +296,10 @@ computations.
   You've now required everyone to convert every timezone into every timezone,
   instead of every timezone into one (UTC):
 
-  ```json
-  ['2015-06-18T05:00:00+00:00'
-   '2015-06-17T23:00:00-07:00',
-   '2015-06-18T06:00:00-10:00',
-  ]
-  ```
+	['2015-06-18T05:00:00+00:00'
+	 '2015-06-17T23:00:00-07:00',
+	 '2015-06-18T06:00:00-10:00',
+	]
 
 ### leap second time jail
 
@@ -330,9 +308,8 @@ seconds themselves. Unfortunately, stiptime is *not* immune to these.
 
 - ambiguous unix time
 
-  2015-06-30T23:59:59.0Z -> 1435708799.0
-
-  2015-06-30T23:59:60.0Z -> 1435708799.0
+	2015-06-30T23:59:59.0Z -> 1435708799.0
+	2015-06-30T23:59:60.0Z -> 1435708799.0
 
 - illegal unix time
 
