@@ -9,7 +9,7 @@ https://gerrit.googlesource.com/gitiles/+/master/Documentation/markdown.md#Navig
 * [Home](/docs/index.md)
 * [Users](/docs/users/index.md)
 * [Developers](/docs/developers.md)
-* [Troopers](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/troopers.md)
+* [Troopers](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/troopers/index.md)
 
 [home]: /docs/index.md
 [logo]: /docs/images/chrome-infra-logo-32x32.png
