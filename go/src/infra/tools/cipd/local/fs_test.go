@@ -13,24 +13,41 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestToAbsPath(t *testing.T) {
-	Convey("ToAbsPath works", t, func() {
+func TestCwdRelToAbs(t *testing.T) {
+	Convey("CwdRelToAbs works", t, func() {
 		fs := tempFileSystem()
-		p, err := fs.ToAbsPath(fs.Root())
+		p, err := fs.CwdRelToAbs(fs.Root())
 		So(err, ShouldBeNil)
 		So(p, ShouldEqual, fs.Root())
 
-		p, err = fs.ToAbsPath(fs.join("abc"))
+		p, err = fs.CwdRelToAbs(fs.join("already_abs/def"))
 		So(err, ShouldBeNil)
-		So(p, ShouldEqual, fs.join("abc"))
+		So(p, ShouldEqual, fs.join("already_abs/def"))
 
-		_, err = fs.ToAbsPath(fs.join(".."))
+		_, err = fs.CwdRelToAbs(fs.join(".."))
 		So(err, ShouldNotBeNil)
 
-		_, err = fs.ToAbsPath(fs.join("../.."))
+		_, err = fs.CwdRelToAbs(fs.join("../.."))
 		So(err, ShouldNotBeNil)
 
-		_, err = fs.ToAbsPath(fs.join("../abc"))
+		_, err = fs.CwdRelToAbs(fs.join("../abc"))
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestRootRelToAbs(t *testing.T) {
+	Convey("RootRelToAbs works", t, func() {
+		fs := tempFileSystem()
+
+		p, err := fs.RootRelToAbs(".")
+		So(err, ShouldBeNil)
+		So(p, ShouldEqual, fs.Root())
+
+		p, err = fs.RootRelToAbs(fs.join("already_abs/def"))
+		So(err, ShouldBeNil)
+		So(p, ShouldEqual, fs.join("already_abs/def"))
+
+		_, err = fs.RootRelToAbs(filepath.FromSlash("abc/../../def"))
 		So(err, ShouldNotBeNil)
 	})
 }

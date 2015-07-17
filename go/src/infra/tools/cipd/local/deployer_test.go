@@ -40,8 +40,7 @@ func TestUtilities(t *testing.T) {
 		Convey("scanPackageDir works with empty dir", func() {
 			err := os.Mkdir(filepath.Join(tempDir, "dir"), 0777)
 			So(err, ShouldBeNil)
-			files := makeStringSet()
-			err = scanPackageDir(filepath.Join(tempDir, "dir"), files)
+			files, err := scanPackageDir(filepath.Join(tempDir, "dir"), nil)
 			So(err, ShouldBeNil)
 			So(len(files), ShouldEqual, 0)
 		})
@@ -54,12 +53,11 @@ func TestUtilities(t *testing.T) {
 			touch("dir/.cipdpkg/abc")
 			touch("dir/.cipd/abc")
 			ensureLink("dir/a/sym_link", "target")
-			files := makeStringSet()
-			err := scanPackageDir(filepath.Join(tempDir, "dir"), files)
+			files, err := scanPackageDir(filepath.Join(tempDir, "dir"), nil)
 			So(err, ShouldBeNil)
 			names := sort.StringSlice{}
-			for n := range files {
-				names = append(names, filepath.ToSlash(n))
+			for _, f := range files {
+				names = append(names, f.Name)
 			}
 			names.Sort()
 			So(names, ShouldResemble, sort.StringSlice{

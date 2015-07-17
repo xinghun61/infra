@@ -285,7 +285,7 @@ func (d *fileSystemDestination) Begin() error {
 
 	// Ensure a parent directory of the destination directory exists.
 	var err error
-	if d.dir, err = d.fs.ToAbsPath(d.dir); err != nil {
+	if d.dir, err = d.fs.CwdRelToAbs(d.dir); err != nil {
 		return err
 	}
 	if _, err := d.fs.EnsureDirectory(filepath.Dir(d.dir)); err != nil {

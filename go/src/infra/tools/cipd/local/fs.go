@@ -24,9 +24,15 @@ type FileSystem interface {
 	// actions are restricted to this directory.
 	Root() string
 
-	// ToAbsPath converts a relative path to an absolute one and verifies it is
-	// under the root path of the FileSystem object.
-	ToAbsPath(path string) (string, error)
+	// CwdRelToAbs converts a path relative to cwd to an absolute one and verifies
+	// it is under the root path of the FileSystem object. If passed path is
+	// already absolute, just checks that it's under the root.
+	CwdRelToAbs(path string) (string, error)
+
+	// RootRelToAbs converts a path relative to Root() to an absolute one and
+	// verifies it is under the root path of the FileSystem object. If passed path
+	// is already absolute, just checks that it's under the root.
+	RootRelToAbs(path string) (string, error)
 
 	// EnsureDirectory creates a directory at given native path if it doesn't
 	// exist yet. It takes an absolute path or a path relative to the current
@@ -72,7 +78,8 @@ type fsImplErr struct {
 // Root returns absolute path to a directory FileSystem operates in. All FS
 // actions are restricted to this directory.
 func (f *fsImplErr) Root() string                                   { return "" }
-func (f *fsImplErr) ToAbsPath(path string) (string, error)          { return "", f.err }
+func (f *fsImplErr) CwdRelToAbs(path string) (string, error)        { return "", f.err }
+func (f *fsImplErr) RootRelToAbs(path string) (string, error)       { return "", f.err }
 func (f *fsImplErr) EnsureDirectory(path string) (string, error)    { return "", f.err }
 func (f *fsImplErr) EnsureSymlink(path string, target string) error { return f.err }
 func (f *fsImplErr) EnsureFileGone(path string) error               { return f.err }
@@ -90,7 +97,7 @@ func (f *fsImpl) Root() string {
 	return f.root
 }
 
-func (f *fsImpl) ToAbsPath(p string) (string, error) {
+func (f *fsImpl) CwdRelToAbs(p string) (string, error) {
 	p, err := filepath.Abs(p)
 	if err != nil {
 		return "", err
@@ -106,8 +113,15 @@ func (f *fsImpl) ToAbsPath(p string) (string, error) {
 	return p, nil
 }
 
+func (f *fsImpl) RootRelToAbs(p string) (string, error) {
+	if filepath.IsAbs(p) {
+		return f.CwdRelToAbs(p)
+	}
+	return f.CwdRelToAbs(filepath.Join(f.root, p))
+}
+
 func (f *fsImpl) EnsureDirectory(path string) (string, error) {
-	path, err := f.ToAbsPath(path)
+	path, err := f.CwdRelToAbs(path)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +133,7 @@ func (f *fsImpl) EnsureDirectory(path string) (string, error) {
 }
 
 func (f *fsImpl) EnsureSymlink(path string, target string) error {
-	path, err := f.ToAbsPath(path)
+	path, err := f.CwdRelToAbs(path)
 	if err != nil {
 		return err
 	}
@@ -149,7 +163,7 @@ func (f *fsImpl) EnsureSymlink(path string, target string) error {
 }
 
 func (f *fsImpl) EnsureFileGone(path string) error {
-	path, err := f.ToAbsPath(path)
+	path, err := f.CwdRelToAbs(path)
 	if err != nil {
 		return err
 	}
@@ -162,7 +176,7 @@ func (f *fsImpl) EnsureFileGone(path string) error {
 }
 
 func (f *fsImpl) EnsureDirectoryGone(path string) error {
-	path, err := f.ToAbsPath(path)
+	path, err := f.CwdRelToAbs(path)
 	if err != nil {
 		return err
 	}
@@ -183,11 +197,11 @@ func (f *fsImpl) EnsureDirectoryGone(path string) error {
 }
 
 func (f *fsImpl) Replace(oldpath, newpath string) error {
-	oldpath, err := f.ToAbsPath(oldpath)
+	oldpath, err := f.CwdRelToAbs(oldpath)
 	if err != nil {
 		return err
 	}
-	newpath, err = f.ToAbsPath(newpath)
+	newpath, err = f.CwdRelToAbs(newpath)
 	if err != nil {
 		return err
 	}
