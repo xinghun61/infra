@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/filters/featureBreaker"
 	"infra/gae/libs/gae/memory"
 
 	"github.com/luci/luci-go/common/clock"
@@ -40,14 +41,11 @@ func TestSimple(t *testing.T) {
 			default:
 			}
 		})
-		ctx = memory.Use(ctx)
-		mc := gae.GetMC(ctx).(interface {
-			gae.Testable
-			gae.Memcache
-		})
+		ctx, fb := featureBreaker.FilterMC(memory.Use(ctx), nil)
+		mc := gae.GetMC(ctx)
 
 		Convey("fails to acquire when memcache is down", func() {
-			mc.BreakFeatures(nil, "Add")
+			fb.BreakFeatures(nil, "Add")
 			err := TryWithLock(ctx, "testkey", "id", func(check func() bool) error {
 				// should never reach here
 				So(false, ShouldBeTrue)
@@ -109,7 +107,7 @@ func TestSimple(t *testing.T) {
 					})
 
 					Convey("or because of service issues", func() {
-						mc.BreakFeatures(nil, "CompareAndSwap")
+						fb.BreakFeatures(nil, "CompareAndSwap")
 						waitFalse()
 					})
 				})

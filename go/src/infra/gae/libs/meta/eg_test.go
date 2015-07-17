@@ -5,11 +5,13 @@
 package meta
 
 import (
+	"errors"
 	"testing"
 
 	"golang.org/x/net/context"
 
 	"infra/gae/libs/gae"
+	"infra/gae/libs/gae/filters/featureBreaker"
 	"infra/gae/libs/gae/memory"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -20,6 +22,7 @@ func TestGetEntityGroupVersion(t *testing.T) {
 
 	Convey("GetEntityGroupVersion", t, func() {
 		c := memory.Use(context.Background())
+		c, fb := featureBreaker.FilterRDS(c, errors.New("INTERNAL_ERROR"))
 		rds := gae.GetRDS(c)
 
 		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), gae.DSPropertyMap{
@@ -41,8 +44,7 @@ func TestGetEntityGroupVersion(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 0)
 
-		tDs := rds.(gae.Testable)
-		tDs.BreakFeatures(nil, "Get")
+		fb.BreakFeatures(nil, "Get")
 
 		v, err = GetEntityGroupVersion(c, aKey)
 		So(err.Error(), ShouldContainSubstring, "INTERNAL_ERROR")
