@@ -15,6 +15,23 @@ These docs are in
 and rendered by Gitiles on the fly. To see the source of a file, click "source"
 link below any rendered page.
 
+To see the exact preview of your changes, upload your
+[CL to Gerrit](contributing.md#gerrit-cls), open it, click `(gitiles)` link
+to the right of "Commit", open your file at _that_ revision.
+
 In-depth articles documents are stored in [docs](.) directory. When creating
 a new page, remember to add a link to it in the [developers.md](developers.md)
 or [users/index.md](users/index.md) file.
+
+## Styleguide
+
+* For headers use `#` and `##` instead of `==` and `--`.
+* Titling your links as "link" or "here" tells the reader precisely nothing when
+  quickly scanning your doc and is a waste of space. Instead, write the sentence
+  naturally, then go back and wrap the most appropriate phrase with the link.
+* See more at the [internal Documenting page](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/documenting.md#Styleguide).
+
+## For Googlers
+
+Please see
+[internal Documenting page](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/documenting.md).

@@ -7,19 +7,39 @@
 Starting with an [configured checkout](source.md), here's the standard workflow
 to make a modification to the source code:
 
-* Make sure your code is up-to-date: run `gclient sync` anywhere in
-  infra.git.
-* Create a new branch: `git new-branch <branch-name>`.
-* Make modifications, commit them using `git commit`.
-* Upload your modification for review by running `git cl upload`. This
-  step runs the tests, which must pass. If they don't, go back to the
-  previous step to fix any issue. You can use [test.py](../test.py) to run
-  tests anytime. Make sure you've added reviewers for your modifications and
-  sent an email.
-* Once your code has been approved, you can commit it by clicking the
-  "Commit" checkbox on the code review tool, or by running
-  `git cl land` if you're a Chromium committer.
-  For old SVN-based repos, use `git cl dcommit` instead of `git cl land`.
+1. Make sure your code is up-to-date: run `gclient sync` anywhere in
+   infra.git.
+2. Create a new branch: `git new-branch <branch-name>`.
+3. Make modifications, commit them using `git commit`.
+4. Upload your modification for review by running `git cl upload`. This
+   step runs the tests, which must pass. If they don't, go back to the
+   previous step to fix any issue. You can use [test.py](../test.py) to run
+   tests anytime. Make sure you've added reviewers for your modifications and
+   sent an email.
+5. Once your code has been approved, you can commit it by clicking the
+   "Commit" checkbox on the code review tool, or by running
+   `git cl land` if you're a Chromium committer.
+   For old SVN-based repos, use `git cl dcommit` instead of `git cl land`.
+
+# Gerrit CLs
+
+Workflow:
+
+1. Upload CL to Gerrit: `git push origin HEAD:refs/for/master`.
+   The output should contain a link to the new CL.
+2. Manually add reviewers to the CL.
+3. Send "PTAL" and set `Verified +1` if you verified your code works.
+   Use "Reply" button in the top.
+4. Make changes online, or send a second patchset:
+   copy "Change-Id: 1234567890" from the CL to the
+   end of the local commit message.
+   Then do `git push origin HEAD:refs/for/master` again.
+5. When you receive `Code-Review +2` and `Verified +1`, you can press "Submit"
+   button in webui.
+
+If Gerrit is the only codereview you use for a given repo, install
+[commit-msg hook](https://gerrit.googlecode.com/svn/documentation/2.0/cmd-hook-commit-msg.html)
+to avoid copying Change-Id.
 
 ## Deployment process
 
