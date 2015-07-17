@@ -10,7 +10,7 @@ handlers:
   script: alerts.app
   secure: always
 
-- url: /api/v1/alerts
+- url: /api/v1/alerts/.*
   script: alerts.app
   secure: always
 

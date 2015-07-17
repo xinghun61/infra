@@ -193,10 +193,18 @@ class AlertsHandler(webapp2.RequestHandler):
 
 
 class NewAlertsHandler(AlertsHandler):
-  ALERT_TYPE = 'new-alerts'
+  # pylint: disable=arguments-differ
+  def get(self, tree):
+    self.ALERT_TYPE = 'new-alerts/%s' % tree
+    super(NewAlertsHandler, self).get()
+
+  # pylint: disable=arguments-differ
+  def post(self, tree):
+    self.ALERT_TYPE = 'new-alerts/%s' % tree
+    super(NewAlertsHandler, self).post()
 
 
 app = webapp2.WSGIApplication([
     ('/alerts', AlertsHandler),
-    ('/api/v1/alerts', NewAlertsHandler)
+    ('/api/v1/alerts/(.*)', NewAlertsHandler)
 ])
