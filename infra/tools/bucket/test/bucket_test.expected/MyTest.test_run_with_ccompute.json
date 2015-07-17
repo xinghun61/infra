@@ -1,0 +1,34 @@
+[
+  [
+    "ls",
+    "-b",
+    "gs://chromium-public"
+  ],
+  [
+    "mb",
+    "-p",
+    "824709284458",
+    "gs://chromium-public"
+  ],
+  [
+    "acl",
+    "ch",
+    "-u",
+    "182615506979@project.gserviceaccount.com:w",
+    "gs://chromium-public"
+  ],
+  [
+    "acl",
+    "ch",
+    "-g",
+    "AllUsers:R",
+    "gs://chromium-public"
+  ],
+  [
+    "defacl",
+    "ch",
+    "-g",
+    "AllUsers:R",
+    "gs://chromium-public"
+  ]
+]
