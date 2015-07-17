@@ -1,5 +1,7 @@
 # For users
 
+* [Contacting troopers](contacting_troopers.md)
+
 ## User guides
 
 * [How to set up a new buildbot master](new_master.md)
