@@ -2,20 +2,41 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
-import webapp2
+import endpoints
+from protorpc import messages
+from protorpc import message_types
+from protorpc import remote
 
 from components import auth
 
-
-class MainHandler(auth.AuthenticatingHandler):
-  @auth.public
-  def get(self):
-    self.response.write('Hello world!')
+class Field(messages.Message):
+  key = messages.StringField(1)
+  value = messages.StringField(2)
 
 
-main_handlers = [
-      (r'/', MainHandler),
-]
+class Point(messages.Message):
+  time = messages.FloatField(1)
+  value = messages.FloatField(2)
 
-app = webapp2.WSGIApplication(main_handlers, debug=True)
+
+class TimeSeries(messages.Message):
+  points = messages.MessageField(Point, 1, repeated=True)
+  fields = messages.MessageField(Field, 2, repeated=True)
+  metric = messages.StringField(3)
+
+
+class DataPacket(messages.Message):
+  timeseries = messages.MessageField(TimeSeries, 1, repeated=True)
+
+
+@auth.endpoints_api(name='consoleapp', version='v1')
+class LoadTestApi(remote.Service):
+  """A testing endpoint that receives timeseries data."""
+
+  @auth.endpoints_method(DataPacket, message_types.VoidMessage,
+                         name='timeseries.update')
+  @auth.require(lambda: auth.is_group_member('metric-generators'))
+  def timeseries_update(self, _request):
+    return message_types.VoidMessage()
+
+APPLICATION = endpoints.api_server([LoadTestApi])

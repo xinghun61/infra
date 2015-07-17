@@ -2,20 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
 import logging
 
+from components import auth
+from main import LoadTestApi
 from testing_utils import testing
-
 import main
+import mock
 
+class LoadTestApiTest(testing.EndpointsTestCase):
 
-class MainTest(testing.AppengineTestCase):
-  @property
-  def app_module(self):
-    return main.app
+  api_service_cls = LoadTestApi
 
-  def test_get(self):
-    response = self.test_app.get('/')
-    logging.info('response = %s', response)
-    self.assertEquals(200, response.status_int)
+  def testTimeseriesUpdate(self):
+    point = {'time': 0.0,
+             'value': 10.0}
+    fields = [{'key': 'project_id',
+               'value': 'chromium'}]
+    request = {'timeseries': [{'points': [point],
+               'fields': fields,
+               'metric': 'disk_used'}]}
+    self.mock(auth, 'is_group_member', lambda _: True)
+    response = self.call_api('timeseries_update', request)
+    self.assertEquals(response._status, '200 OK')
