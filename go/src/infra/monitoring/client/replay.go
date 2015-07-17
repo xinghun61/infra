@@ -58,7 +58,7 @@ func (c *replay) BuildExtract(master string) (*messages.BuildExtract, error) {
 // occurred.
 func (c *replay) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
 	s := []string{}
-	err := read(filepath.Join(c.baseDir, "stdioforstep", master, builder, step, fmt.Sprintf("%d", buildNum)), s)
+	err := read(filepath.Join(c.baseDir, "stdioforstep", master, builder, step, fmt.Sprintf("%d", buildNum)), &s)
 	return s, err
 }
 
@@ -69,6 +69,7 @@ func (c *replay) DumpStats() {
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func read(path string, v interface{}) error {
 	f, err := os.Open(path)
+	log.Infof("Reading file: %s", path)
 	if err != nil {
 		return err
 	}

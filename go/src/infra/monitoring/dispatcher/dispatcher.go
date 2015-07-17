@@ -220,7 +220,7 @@ func main() {
 		r = client.NewReplay(*replay)
 	}
 
-	a := analyzer.New(r, 2, 5)
+	a := analyzer.New(r, 5, 100)
 	w := client.NewWriter(*dataURL)
 
 	for masterURL, masterCfgs := range gk.Masters {

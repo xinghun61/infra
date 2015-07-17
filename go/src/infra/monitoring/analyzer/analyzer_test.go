@@ -20,6 +20,7 @@ func fakeNow(t time.Time) func() time.Time {
 }
 
 type mockReader struct {
+	bCache       map[string]*messages.Build
 	build        *messages.Build
 	builds       map[string]*messages.Build
 	latestBuilds map[string]map[string][]*messages.Build
@@ -37,6 +38,9 @@ func (m mockReader) Build(master, builder string, buildNum int64) (*messages.Bui
 	}
 
 	key := fmt.Sprintf("%s/%s/%d", master, builder, buildNum)
+	if b, ok := m.bCache[key]; ok {
+		return b, nil
+	}
 	fmt.Printf("looking up %q: %+v\n", key, m.builds[key])
 	return m.builds[key], m.buildFetchErrs[key]
 }
@@ -100,11 +104,12 @@ func TestMasterAlerts(t *testing.T) {
 			t: time.Unix(100, 0).Add(20 * time.Minute),
 			want: []messages.Alert{
 				{
-					Key:   "stale master: fake.master",
-					Title: "Stale fake.master master data",
-					Body:  fmt.Sprintf("%s elapsed since last update (1970-01-01 00:01:40 +0000 UTC).", 20*time.Minute),
-					Time:  messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
-					Links: []messages.Link{{"Master", client.MasterURL("fake.master")}},
+					Key:       "stale master: fake.master",
+					Title:     "Stale fake.master master data",
+					Body:      fmt.Sprintf("%s elapsed since last update.", 20*time.Minute),
+					Time:      messages.TimeToEpochTime(time.Unix(100, 0).Add(20 * time.Minute)),
+					Links:     []messages.Link{{"Master", client.MasterURL("fake.master")}},
+					StartTime: messages.EpochTime(100),
 				},
 			},
 		},
@@ -651,7 +656,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 			},
 			want: []messages.Alert{
 				{
-					Title: "step_a failing on 3 builders",
+					Title: "step_a (failing on 3 builders)",
 					Type:  "buildfailure",
 					Extension: messages.BuildFailure{
 						Builders: []messages.AlertedBuilder{
@@ -666,13 +671,16 @@ func TestMergeAlertsByStep(t *testing.T) {
 						},
 						RegressionRanges: []messages.RegressionRange{
 							{
-								Repo: "repo.a",
+								Repo:      "repo.a",
+								Revisions: []string{},
 							},
 							{
-								Repo: "repo.b",
+								Repo:      "repo.b",
+								Revisions: []string{},
 							},
 							{
-								Repo: "repo.c",
+								Repo:      "repo.c",
+								Revisions: []string{},
 							},
 						},
 					},
@@ -685,7 +693,7 @@ func TestMergeAlertsByStep(t *testing.T) {
 	for _, test := range tests {
 		got := a.mergeAlertsByStep(test.in)
 		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("%s failed. Got: %+v, want: %+v", test.name, got, test.want)
+			t.Errorf("%s failed. Got:\n\t%+v, want:\n\t%+v", test.name, got, test.want)
 		}
 	}
 }
@@ -791,7 +799,7 @@ func TestStepFailures(t *testing.T) {
 			builder:  "fake.builder",
 			buildNum: 0,
 			bCache: map[string]*messages.Build{
-				"stepCheck.master/fake.builder/0.json": &messages.Build{
+				"stepCheck.master/fake.builder/0": &messages.Build{
 					Steps: []messages.Step{
 						{
 							Name:       "ok_step",
@@ -839,7 +847,7 @@ func TestStepFailures(t *testing.T) {
 
 	for _, test := range tests {
 		mc.build = test.b
-		a.bCache = test.bCache
+		mc.bCache = test.bCache
 		got, err := a.stepFailures(test.master, test.builder, test.buildNum)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed.\nGot:\n%+v\nwant:\n%+v", test.name, got, test.want)

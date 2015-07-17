@@ -11,7 +11,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -92,6 +94,11 @@ type trackingHTTPClient struct {
 
 type reader struct {
 	hc *trackingHTTPClient
+
+	// bCache is a map of build cache key to Build message.
+	bCache map[string]*messages.Build
+	// bLock protects bCache
+	bLock sync.Mutex
 }
 
 type writer struct {
@@ -102,20 +109,35 @@ type writer struct {
 // NewReader returns a new Reader, which will read data from various chrome infra
 // data sources.
 func NewReader() Reader {
-	return &reader{hc: &trackingHTTPClient{c: http.DefaultClient}}
+	return &reader{
+		hc:     &trackingHTTPClient{c: http.DefaultClient},
+		bCache: map[string]*messages.Build{},
+	}
+}
+
+func cacheKeyForBuild(master, builder string, number int64) string {
+	return filepath.FromSlash(
+		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master), url.QueryEscape(builder), number))
 }
 
 func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build, error) {
+	// TODO: get this from cache.
+	r.bLock.Lock()
+	build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
+	r.bLock.Unlock()
+	if ok {
+		return build, nil
+	}
+
+	build = &messages.Build{}
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/json/builders/%s/builds/%d",
 		master, builder, buildNum)
-
-	bld := &messages.Build{}
-	if code, err := r.hc.getJSON(URL, bld); err != nil {
+	if code, err := r.hc.getJSON(URL, build); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
-	return bld, nil
+	return build, nil
 }
 
 func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error) {
@@ -132,6 +154,14 @@ func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error)
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
+
+	r.bLock.Lock()
+	for _, b := range res.Builds {
+		if cacheable(b) {
+			r.bCache[cacheKeyForBuild(master, builder, b.Number)] = b
+		}
+	}
+	r.bLock.Unlock()
 
 	return res.Builds, nil
 }
@@ -178,6 +208,10 @@ func (r *reader) StdioForStep(master, builder, step string, buildNum int64) ([]s
 
 func (r *reader) DumpStats() {
 	r.hc.dumpStats()
+}
+
+func cacheable(b *messages.Build) bool {
+	return len(b.Times) > 1 && b.Times[1] != 0
 }
 
 // NewWriter returns a new Client, which will post alerts to alertsBase.

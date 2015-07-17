@@ -7,11 +7,8 @@ package analyzer
 import (
 	"errors"
 	"fmt"
-	"net/url"
-	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -96,11 +93,6 @@ type MasterAnalyzer struct {
 	// MasterCfgs is a map of master name to MasterConfig
 	MasterCfgs map[string]messages.MasterConfig
 
-	// bCache is a map of build cache key to Build message.
-	bCache map[string]*messages.Build
-	// bLock protects bCache
-	bLock *sync.Mutex
-
 	// These limit the scope analysis, useful for debugging.
 	TreeOnly    string
 	MasterOnly  string
@@ -135,9 +127,6 @@ func New(c client.Reader, minBuilds, maxBuilds int) *MasterAnalyzer {
 		now: func() time.Time {
 			return time.Now()
 		},
-
-		bCache: map[string]*messages.Build{},
-		bLock:  &sync.Mutex{},
 	}
 }
 
@@ -154,12 +143,13 @@ func (a *MasterAnalyzer) MasterAlerts(master string, be *messages.BuildExtract) 
 	elapsed := a.now().Sub(be.CreatedTimestamp.Time())
 	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
-			Key:      fmt.Sprintf("stale master: %v", master),
-			Title:    fmt.Sprintf("Stale %s master data", master),
-			Body:     fmt.Sprintf("%s elapsed since last update (%s).", elapsed, be.CreatedTimestamp.Time()),
-			Severity: staleMasterSev,
-			Time:     messages.TimeToEpochTime(a.now()),
-			Links:    []messages.Link{{"Master", client.MasterURL(master)}},
+			Key:       fmt.Sprintf("stale master: %v", master),
+			Title:     fmt.Sprintf("Stale %s master data", master),
+			Body:      fmt.Sprintf("%s elapsed since last update.", elapsed),
+			StartTime: messages.TimeToEpochTime(be.CreatedTimestamp.Time()),
+			Severity:  staleMasterSev,
+			Time:      messages.TimeToEpochTime(a.now()),
+			Links:     []messages.Link{{"Master", client.MasterURL(master)}},
 			// No type or extension for now.
 		})
 	}
@@ -175,10 +165,10 @@ func (a *MasterAnalyzer) MasterAlerts(master string, be *messages.BuildExtract) 
 func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) []messages.Alert {
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
-		bn     string
-		b      messages.Builder
-		alerts []messages.Alert
-		err    []error
+		builderName string
+		b           messages.Builder
+		alerts      []messages.Alert
+		err         []error
 	}
 	c := make(chan r, len(be.Builders))
 
@@ -190,27 +180,25 @@ func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtr
 			continue
 		}
 		scannedBuilders = append(scannedBuilders, builderName)
-		go func(bn string, b messages.Builder) {
-			out := r{bn: bn, b: b}
+		go func(builderName string, b messages.Builder) {
+			out := r{builderName: builderName, b: b}
 			defer func() {
 				c <- out
 			}()
 
-			// This blocks on IO, hence the goroutine.
-			a.warmBuildCache(masterName, bn)
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
-			out.alerts, out.err = a.builderAlerts(masterName, bn, &b)
+			out.alerts, out.err = a.builderAlerts(masterName, builderName, &b)
 		}(builderName, builder)
 	}
 
 	ret := []messages.Alert{}
-	for _, bn := range scannedBuilders {
+	for _, builderName := range scannedBuilders {
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
-			log.Errorf("Error getting alerts for builder %s: %v", bn, r.err)
+			log.Errorf("Error getting alerts for builder %s: %v", builderName, r.err)
 		} else {
 			ret = append(ret, r.alerts...)
 		}
@@ -218,11 +206,6 @@ func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtr
 
 	ret = a.mergeAlertsByStep(ret)
 	return ret
-}
-
-func cacheKeyForBuild(master, builder string, number int64) string {
-	return filepath.FromSlash(
-		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master), url.QueryEscape(builder), number))
 }
 
 // TODO: actually write the on-disk cache.
@@ -235,25 +218,12 @@ func alertKey(master, builder, step string) string {
 	return fmt.Sprintf("%s.%s.%s", master, builder, step)
 }
 
-func (a *MasterAnalyzer) warmBuildCache(master, builder string) error {
-	builds, err := a.Reader.LatestBuilds(master, builder)
-	if err != nil {
-		return err
-	}
-	a.bLock.Lock()
-	for _, b := range builds {
-		a.bCache[cacheKeyForBuild(master, builder, b.Number)] = b
-	}
-	a.bLock.Unlock()
-	return nil
-}
-
 // This type is used for sorting build IDs.
-type buildIDs []int64
+type buildNums []int64
 
-func (a buildIDs) Len() int           { return len(a) }
-func (a buildIDs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a buildIDs) Less(i, j int) bool { return a[i] > a[j] }
+func (a buildNums) Len() int           { return len(a) }
+func (a buildNums) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a buildNums) Less(i, j int) bool { return a[i] > a[j] }
 
 // latestBuildStep returns the latest build step name and update time, and an error
 // if there were any errors.
@@ -281,22 +251,16 @@ func (a *MasterAnalyzer) latestBuildStep(b *messages.Build) (lastStep string, la
 
 // lastBuild returns the last build (which may or may not have completed) and the last completed build (which may be
 // the same as the last build), and any error that occurred while finding them.
-func (a *MasterAnalyzer) lastBuilds(mn, bn string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
+func (a *MasterAnalyzer) lastBuilds(masterName, builderName string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
 	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 
-	for i, buildID := range recentBuildIDs {
-		log.Infof("Checking last %s/%s build ID: %d", mn, bn, buildID)
+	for i, buildNum := range recentBuildIDs {
+		log.Infof("Checking last %s/%s build ID: %d", masterName, builderName, buildNum)
 
-		// TODO: get this from cache.
-		a.bLock.Lock()
-		build := a.bCache[cacheKeyForBuild(mn, bn, buildID)]
-		a.bLock.Unlock()
-
-		if build == nil {
-			build, err = a.Reader.Build(mn, bn, buildID)
-			if err != nil {
-				return
-			}
+		var build *messages.Build
+		build, err = a.Reader.Build(masterName, builderName, buildNum)
+		if err != nil {
+			return
 		}
 
 		if i == 0 {
@@ -315,7 +279,7 @@ func (a *MasterAnalyzer) lastBuilds(mn, bn string, recentBuildIDs []int64) (last
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder) ([]messages.Alert, []error) {
+func (a *MasterAnalyzer) builderAlerts(masterName string, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
 	if len(b.CachedBuilds) == 0 {
 		// TODO: Make an alert for this?
 		return nil, []error{errNoRecentBuilds}
@@ -323,14 +287,14 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 
 	recentBuildIDs := b.CachedBuilds
 	// Should be a *reverse* sort.
-	sort.Sort(buildIDs(recentBuildIDs))
+	sort.Sort(buildNums(recentBuildIDs))
 	if len(recentBuildIDs) > a.MaxRecentBuilds {
 		recentBuildIDs = recentBuildIDs[:a.MaxRecentBuilds]
 	}
 
 	alerts, errs := []messages.Alert{}, []error{}
 
-	lastBuild, lastCompletedBuild, err := a.lastBuilds(mn, bn, recentBuildIDs)
+	lastBuild, lastCompletedBuild, err := a.lastBuilds(masterName, builderName, recentBuildIDs)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -341,23 +305,23 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	// AKA "Reliable failures".  TODO: Identify "Reliable failures"
 	lastStep, lastUpdated, err := a.latestBuildStep(lastBuild)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("Couldn't get latest build step for %s.%s: %v", mn, bn, err))
+		errs = append(errs, fmt.Errorf("Couldn't get latest build step for %s.%s: %v", masterName, builderName, err))
 		return alerts, errs
 	}
 	elapsed := a.now().Sub(lastUpdated.Time())
 	links := []messages.Link{
-		{"Builder", client.BuilderURL(mn, bn)},
-		{"Last build", client.BuildURL(mn, bn, lastBuild.Number)},
-		{"Last build step", client.StepURL(mn, bn, lastStep, lastBuild.Number)},
+		{"Builder", client.BuilderURL(masterName, builderName)},
+		{"Last build", client.BuildURL(masterName, builderName, lastBuild.Number)},
+		{"Last build step", client.StepURL(masterName, builderName, lastStep, lastBuild.Number)},
 	}
 
 	switch b.State {
 	case messages.StateBuilding:
 		if elapsed > a.HungBuilderThresh && lastStep != StepCompletedRun {
 			alerts = append(alerts, messages.Alert{
-				Key:      fmt.Sprintf("%s.%s.hung", mn, bn),
-				Title:    fmt.Sprintf("%s.%s is hung in step %s.", mn, bn, lastStep),
-				Body:     fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
+				Key:      fmt.Sprintf("%s.%s.hung", masterName, builderName),
+				Title:    fmt.Sprintf("%s.%s is hung in step %s.", masterName, builderName, lastStep),
+				Body:     fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", masterName, builderName, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
 				Severity: hungBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
@@ -368,9 +332,9 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	case messages.StateOffline:
 		if elapsed > a.OfflineBuilderThresh {
 			alerts = append(alerts, messages.Alert{
-				Key:      fmt.Sprintf("%s.%s.offline", mn, bn),
-				Title:    fmt.Sprintf("%s.%s is offline.", mn, bn),
-				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s %v), past the alerting threshold of %v", mn, bn, elapsed, lastUpdated.Time(), float64(lastUpdated), a.OfflineBuilderThresh),
+				Key:      fmt.Sprintf("%s.%s.offline", masterName, builderName),
+				Title:    fmt.Sprintf("%s.%s is offline.", masterName, builderName),
+				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s %v), past the alerting threshold of %v", masterName, builderName, elapsed, lastUpdated.Time(), float64(lastUpdated), a.OfflineBuilderThresh),
 				Severity: offlineBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
@@ -379,21 +343,21 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 	case messages.StateIdle:
 		if b.PendingBuilds > a.IdleBuilderCountThresh {
 			alerts = append(alerts, messages.Alert{
-				Key:      fmt.Sprintf("%s.%s.idle", mn, bn),
-				Title:    fmt.Sprintf("%s.%s is idle with too many pending builds.", mn, bn),
-				Body:     fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", mn, bn, b.PendingBuilds, a.IdleBuilderCountThresh),
+				Key:      fmt.Sprintf("%s.%s.idle", masterName, builderName),
+				Title:    fmt.Sprintf("%s.%s is idle with too many pending builds.", masterName, builderName),
+				Body:     fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", masterName, builderName, b.PendingBuilds, a.IdleBuilderCountThresh),
 				Severity: idleBuilderSev,
 				Time:     messages.TimeToEpochTime(a.now()),
 				Links:    links,
 			})
 		}
 	default:
-		log.Errorf("Unknown %s.%s builder state: %s", mn, bn, b.State)
+		log.Errorf("Unknown %s.%s builder state: %s", masterName, builderName, b.State)
 	}
 
 	// Check for alerts on the most recent complete build
-	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), mn, bn)
-	as, es := a.builderStepAlerts(mn, bn, []int64{lastCompletedBuild.Number})
+	log.Infof("Checking %d most recent builds for alertable step failures: %s/%s", len(recentBuildIDs), masterName, builderName)
+	as, es := a.builderStepAlerts(masterName, builderName, []int64{lastCompletedBuild.Number})
 
 	if len(as) > 0 {
 		mostRecentComplete := 0
@@ -402,7 +366,7 @@ func (a *MasterAnalyzer) builderAlerts(mn string, bn string, b *messages.Builder
 				mostRecentComplete = i
 			}
 		}
-		as, es = a.builderStepAlerts(mn, bn, recentBuildIDs[mostRecentComplete:])
+		as, es = a.builderStepAlerts(masterName, builderName, recentBuildIDs[mostRecentComplete:])
 		alerts = append(alerts, as...)
 		errs = append(errs, es...)
 	}
@@ -475,6 +439,9 @@ func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.A
 				if ab.LatestFailure > builder.LatestFailure {
 					builder.LatestFailure = ab.LatestFailure
 				}
+				if ab.StartTime < builder.StartTime || builder.StartTime == 0 {
+					builder.StartTime = ab.StartTime
+				}
 			}
 			builders[builder.Name] = builder
 			regressionRanges[builder.Name] = bf.RegressionRanges
@@ -489,11 +456,28 @@ func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.A
 		for _, name := range builderNames {
 			builder := builders[name]
 			mergedBF.Builders = append(mergedBF.Builders, builder)
+			// Fix this so it de-dupes regression ranges, or at least dedupes the Revisions in
+			// in each repo.
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, regressionRanges[builder.Name]...)
 		}
 
+		// De-dupe regression ranges by repo.
+		revsByRepo := map[string][]string{}
+		for _, regRange := range mergedBF.RegressionRanges {
+			revsByRepo[regRange.Repo] = append(revsByRepo[regRange.Repo], regRange.Revisions...)
+		}
+		mergedBF.RegressionRanges = []messages.RegressionRange{}
+		for repo, revs := range revsByRepo {
+			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, messages.RegressionRange{
+				Repo:      repo,
+				Revisions: uniques(revs),
+			})
+		}
+
+		sort.Sort(byRepo(mergedBF.RegressionRanges))
+
 		if len(mergedBF.Builders) > 1 {
-			merged.Title = fmt.Sprintf("%s failing on %d builders", step, len(mergedBF.Builders))
+			merged.Title = fmt.Sprintf("%s (failing on %d builders)", step, len(mergedBF.Builders))
 		}
 		merged.Extension = mergedBF
 		mergedAlerts = append(mergedAlerts, merged)
@@ -506,13 +490,13 @@ func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.A
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
 // alert instead of one for each build.
-func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
+func (a *MasterAnalyzer) builderStepAlerts(masterName, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
 	// Check for alertable step failures.  We group them by key to de-duplicate and merge values
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
 
-	for _, buildID := range recentBuildIDs {
-		failures, err := a.stepFailures(mn, bn, buildID)
+	for _, buildNum := range recentBuildIDs {
+		failures, err := a.stepFailures(masterName, builderName, buildNum)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -556,12 +540,19 @@ func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64
 			// At this point, there should only be one builder per failure because
 			// alert keys include the builder name.  We merge builders by step failure
 			// in another pass, after this funtion is called.
-			if bf.Builders[0].FirstFailure < mergedBF.Builders[0].FirstFailure {
-				mergedBF.Builders[0].FirstFailure = bf.Builders[0].FirstFailure
+			firstBuilder := bf.Builders[0]
+			mergedBuilder := mergedBF.Builders[0]
+			if firstBuilder.FirstFailure < mergedBuilder.FirstFailure {
+				mergedBuilder.FirstFailure = firstBuilder.FirstFailure
 			}
-			if bf.Builders[0].LatestFailure > mergedBF.Builders[0].LatestFailure {
-				mergedBF.Builders[0].LatestFailure = bf.Builders[0].LatestFailure
+			if firstBuilder.LatestFailure > mergedBuilder.LatestFailure {
+				mergedBuilder.LatestFailure = firstBuilder.LatestFailure
 			}
+			if firstBuilder.StartTime < mergedBuilder.StartTime || mergedBuilder.StartTime == 0 {
+				mergedBuilder.StartTime = firstBuilder.StartTime
+			}
+			mergedBF.Builders[0] = mergedBuilder
+			// TODO: merge these ranges properly and de-dupe.
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, bf.RegressionRanges...)
 		}
 
@@ -577,7 +568,7 @@ func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges,
 				messages.RegressionRange{
 					Repo:      repo,
-					Revisions: revisions,
+					Revisions: uniques(revisions),
 				})
 		}
 
@@ -585,10 +576,25 @@ func (a *MasterAnalyzer) builderStepAlerts(mn, bn string, recentBuildIDs []int64
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
 
 		mergedAlert.Extension = mergedBF
+		mergedAlert.StartTime = mergedBF.Builders[0].StartTime
 		alerts = append(alerts, mergedAlert)
 	}
 
 	return alerts, errs
+}
+
+func uniques(s []string) []string {
+	m := map[string]bool{}
+	for _, s := range s {
+		m[s] = true
+	}
+
+	ret := []string{}
+	for k := range m {
+		ret = append(ret, k)
+	}
+	sort.Strings(ret)
+	return ret
 }
 
 type byRepo []messages.RegressionRange
@@ -597,21 +603,14 @@ func (a byRepo) Len() int           { return len(a) }
 func (a byRepo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byRepo) Less(i, j int) bool { return a[i].Repo < a[j].Repo }
 
-// stepFailures returns the steps that have failed recently on builder bn.
-func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFailure, error) {
-	cc := cacheKeyForBuild(mn, bn, bID)
+// stepFailures returns the steps that have failed recently on builder builderName.
+func (a *MasterAnalyzer) stepFailures(masterName string, builderName string, bID int64) ([]stepFailure, error) {
 
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
-	a.bLock.Lock()
-	b, ok := a.bCache[cc]
-	a.bLock.Unlock()
-	if !ok {
-		log.Infof("Cache miss for %s", cc)
-		b, err = a.Reader.Build(mn, bn, bID)
-		if err != nil || b == nil {
-			log.Errorf("Error fetching build: %v", err)
-			return nil, err
-		}
+	b, err := a.Reader.Build(masterName, builderName, bID)
+	if err != nil || b == nil {
+		log.Errorf("Error fetching build: %v", err)
+		return nil, err
 	}
 
 	ret := []stepFailure{}
@@ -635,8 +634,8 @@ func (a *MasterAnalyzer) stepFailures(mn string, bn string, bID int64) ([]stepFa
 
 		// We have a failure of some kind, so queue it up to check later.
 		ret = append(ret, stepFailure{
-			masterName:  mn,
-			builderName: bn,
+			masterName:  masterName,
+			builderName: builderName,
 			build:       *b,
 			step:        s,
 		})
@@ -713,6 +712,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 					{
 						Name:          f.builderName,
 						URL:           client.BuilderURL(f.masterName, f.builderName),
+						StartTime:     f.build.CreatedTimestamp,
 						FirstFailure:  f.build.Number,
 						LatestFailure: f.build.Number,
 					},
