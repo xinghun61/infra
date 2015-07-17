@@ -115,10 +115,10 @@
     # Required to run/test some appengine apps locally
   },
   'oauth2client': {
-    'version': '1.4.1',
+    'version': '1.4.12',
     'build': '0',
     'repo': 'external/github.com/google/oauth2client',
-    'rev': '00c4c8057a34ee142e9729dbeb51855e0282f82e',
+    'rev': 'f46290a33418bd18308af27e519db95a51b0136c',
     'implicit': True,  # Required by google_api_python_client
   },
   'pyOpenSSL': {
