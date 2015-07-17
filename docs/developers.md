@@ -31,3 +31,7 @@ This section explains some technical choices.
 
 * [Dependency handling in infra.git](../bootstrap/README.md). How it works and
   why it's structured this way.
+
+## For Googlers
+
+See [internal page](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/developers.md).
