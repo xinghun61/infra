@@ -81,7 +81,7 @@ class PubSubMonitorTest(unittest.TestCase):
     m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
     creds.create_scoped.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
     scoped_creds.authorize.assert_called_once_with(http_mock)
-    discovery.build.assert_called_once_with('pubsub', 'v1beta2', http=http_mock)
+    discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 
   @mock.patch('infra_libs.ts_mon.monitors.httplib2')
@@ -101,7 +101,7 @@ class PubSubMonitorTest(unittest.TestCase):
     m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
     storage_inst.get.assert_called_once_with()
     creds.authorize.assert_called_once_with(http_mock)
-    discovery.build.assert_called_once_with('pubsub', 'v1beta2', http=http_mock)
+    discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 
   @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor._initialize')

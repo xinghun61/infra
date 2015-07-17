@@ -136,7 +136,7 @@ class PubSubMonitor(Monitor):
     creds = self._load_credentials(credsfile)
     self._http = httplib2.Http()
     creds.authorize(self._http)
-    self._api = discovery.build('pubsub', 'v1beta2', http=self._http)
+    self._api = discovery.build('pubsub', 'v1', http=self._http)
     self._topic = 'projects/%s/topics/%s' % (project, topic)
 
   def __init__(self, credsfile, project, topic):
