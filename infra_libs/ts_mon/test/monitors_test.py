@@ -8,6 +8,7 @@ import unittest
 
 import mock
 
+from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
 from infra_libs.ts_mon import monitors
@@ -62,6 +63,14 @@ class ApiMonitorTest(unittest.TestCase):
     m.send(metrics_pb2.MetricsData(name='m1'))
 
     self.assertFalse(fake_api.SetHttp.called)
+
+  @mock.patch('infra_libs.ts_mon.monitors.acquisition_api.'
+              'AcquisitionCredential')
+  @mock.patch('infra_libs.ts_mon.monitors.acquisition_api.AcquisitionApi')
+  def test_failed_request_should_not_crash(self, _fake_api, _fake_creds):
+    m = monitors.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api')
+    m._api.Send.side_effect = acquisition_api.AcquisitionApiRequestException()
+    m.send(metrics_pb2.MetricsData(name='m1'))
 
 
 class PubSubMonitorTest(unittest.TestCase):

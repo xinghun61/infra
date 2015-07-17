@@ -6,6 +6,7 @@
 
 
 import copy
+import threading
 import time
 
 from monacq.proto import metrics_pb2
@@ -64,6 +65,7 @@ class Metric(object):
       raise errors.MonitoringTooManyFieldsError(self._name, fields)
     self._fields = fields
     self._normalized_fields = self._normalize_fields(self._fields)
+    self._thread_lock = threading.Lock()
 
     interface.register(self)
 
@@ -224,7 +226,8 @@ class NumericMetric(Metric):  # pylint: disable=abstract-method
   def increment_by(self, step, fields=None):
     if self.get(fields) is None:
       raise errors.MonitoringIncrementUnsetValueError(self._name)
-    self.set(self.get(fields) + step, fields)
+    with self._thread_lock:
+      self.set(self.get(fields) + step, fields)
 
 
 class CounterMetric(NumericMetric):

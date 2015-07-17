@@ -111,7 +111,10 @@ class ApiMonitor(Monitor):
     Args:
       metric_pb (MetricsData or MetricsCollection): the metric protobuf to send
     """
-    self._api.Send(self._wrap_proto(metric_pb))
+    try:
+      self._api.Send(self._wrap_proto(metric_pb))
+    except acquisition_api.AcquisitionApiRequestException as e:
+      logging.error('Failed to send the metrics: %s', e)
 
 
 class PubSubMonitor(Monitor):
