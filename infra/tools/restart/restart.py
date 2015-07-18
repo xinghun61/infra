@@ -26,11 +26,15 @@ class MasterNotFoundException(Exception):
 
 def add_argparse_options(parser):
   parser.add_argument('masters', type=str, nargs='+', help='Master to restart.')
+  parser.add_argument(
+      '-m', '--minutes-in-future', default=15, type=int,
+      help='how many minutes in the future to schedule the restart. '
+           'use 0 for "now." default %(default)d')
 
 
-def get_time():
-  # TODO(hinoka): Also support times that are not now.
-  restart_time = datetime.datetime.utcnow()
+def get_restart_time(delta):
+  """Returns a zulu time string of when to restart a master, now + delta."""
+  restart_time = datetime.datetime.utcnow() + delta
   return zulu.to_zulu_string(restart_time)
 
 
@@ -58,15 +62,18 @@ def commit(target, masters):
        '--tbr-owners', '-c', '-f'], cwd=target)
 
 
-def run(masters):
-  """Restart all the masters in the list of masters."""
+def run(masters, delta):
+  """Restart all the masters in the list of masters.
+
+    Schedules the restart for now + delta.
+  """
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
   master_state_dir = get_master_state_checkout()
   with get_master_state_checkout() as master_state_dir:
     master_state_json = os.path.join(
         master_state_dir, 'desired_master_state.json')
-    restart_time = get_time()
+    restart_time = get_restart_time(delta)
 
     # Step 2: make modifications to the master state json.
     LOGGER.info('Reading %s' % master_state_json)

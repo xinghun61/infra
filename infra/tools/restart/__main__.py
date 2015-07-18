@@ -5,8 +5,9 @@
 """Restart a master via master-manager.  TBRs a random OWNER."""
 
 
-import sys
 import argparse
+import datetime
+import sys
 
 
 import infra_libs.logs
@@ -24,7 +25,12 @@ def main(argv):
   args = parser.parse_args(argv)
   infra_libs.logs.process_argparse_options(args)
 
-  return restart.run(sys.argv[1:])
+  if args.minutes_in_future < 0:
+    parser.error('minutes-in-future must be nonnegative, use 0 for "now"')
+
+  delta = datetime.timedelta(minutes=args.minutes_in_future)
+
+  return restart.run(sys.argv[1:], delta)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))
