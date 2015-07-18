@@ -1,5 +1,3 @@
 set noparent
-agable@chromium.org
-agable@google.com
-pgervais@chromium.org
-pgervais@google.com
+# To prevent changes
+nodir@chromium.org
