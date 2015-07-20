@@ -65,46 +65,7 @@ class GsubtreedConfigRef(config_ref.ConfigRef):
     'path_map_exceptions': {},
     'path_extra_push': {},
   }
-  """DEFAULTS is the default values for the in-repo versioned configuration ref.
-
-  Parameters:
-    interval: The time in seconds between iterations of gsubtreed. Each
-      iteration will fetch from the main repo, and try to push to all of the
-      subtree repos.
-
-    base_url: The base URL is the url relative to which all mirror repos are
-      assumed to exist. For example, if you mirror the path ``bob``, and
-      base_url is ``https://.../main_repo``, then it would assume that the
-      mirror for the ``bob`` subtree is ``https://.../main_repo/bob``.  By
-      default, base_url is set to the repo that gsubtreed is processing.
-
-    enabled_paths: A list of paths in the repo to mirror. These are absolute
-      paths from the ref root. Any commits which affect these paths will be
-      mirrored to the target repo ``'/'.join((base_url, path))``.
-
-    enabled_refglobs: A list of git-style absolute refglobs that gsubtreed
-      should attempt to mirror. If a subtree appears in multiple refs covered by
-      the refglob, then all of those refs will be pushed to the mirror for that
-      subtree. Say you are mirroring the subtree ``bob`` and the refglob
-      ``refs/*``. If ``bob`` appeared on ``refs/foo`` and ``refs/bar``, the
-      ``bob`` subtree repo would then contain both a ``refs/foo`` and
-      a ``refs/bar`` ref.
-
-    path_map_exceptions: A dictionary mapping 'enabled_path' to
-      'mirror_repo_path'. This will be used instead of the generic join rule for
-      calculating the mirror URL (so it would be
-      ``'/'.join((base_url, path_map_exceptions[path]))`` instead of using path
-      directly). For example if this had the value ``{'path/to/foo': 'bar'}``,
-      and base_url was ``https://example.com``, then it would mirror
-      ``path/to/foo`` to ``https://example.com/bar``, instead of
-      ``https://example.com/path/to/foo``.
-
-    path_extra_push: A dictionary mapping 'enabled_path' to
-      a list of full_git_repo_urls. Any time we find changes in the
-      enabled_path, we'll also push those subtree commits to all the git repos
-      in full_git_repo_urls.
-  """
-
+  """These fields are documented in README.md"""
 
   REF = 'refs/gsubtreed-config/main'
   """REF is the git ref where gsubtree tries to find `config.json` in the repo
