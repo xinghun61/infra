@@ -21,6 +21,8 @@ data:
     exclude:
       - .*\.pyc
       - path_hacks
+      # TODO(vadimsh): Depends on depot_tools.
+      - tools/bucket
       - tools/docgen
 
   # Base infra libraries, required by infra
