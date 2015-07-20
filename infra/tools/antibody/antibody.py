@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import shutil
+import time
 
 import infra.tools.antibody.cloudsql_connect as csql
 
@@ -53,17 +54,23 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
   index_template = template_env.get_template('antibody_ui_all.jinja')
   tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
 
-  template_vars = {'title' : 'Potentially Suspicious Commits',
-                   'description' : 'List of commits with a TBR but no lgtm',
-                   'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
-                   'tbr_by_user_link' : TBR_BY_USER_NAME,
-                   'page_header_text' : "All Potentially Suspicious Commits",
-                   'to_be_reviewed' : "To be reviewed by user",
-                   'table_headers' : ['git_hash', 'rietveld_url', 
-                                      'request_timestamp'],
-                   'suspicious_commits' : suspicious_commits_data,
-                   'gitiles_prefix' : gitiles_prefix,
-                  }
+  template_vars = {
+      'title' : 'Potentially Suspicious Commits',
+      'description' : 'List of commits with a TBR but no lgtm',
+      'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
+      'tbr_by_user_link' : TBR_BY_USER_NAME,
+      'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
+                                        time.gmtime()),
+      'page_header_text' : "All Potentially Suspicious Commits",
+      'to_be_reviewed' : "To be reviewed by user",
+      'num_tbr_no_lgtm': len(suspicious_commits_data),
+      'num_no_review_url': 42,
+      'blank_TBR': 3,
+      'table_headers' : ['git_hash', 'rietveld_url', 
+                         'request_timestamp'],
+      'suspicious_commits' : suspicious_commits_data,
+      'gitiles_prefix' : gitiles_prefix,
+  }
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
     f.write(index_template.render(template_vars))
 
@@ -86,11 +93,11 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
 def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):
   # tbr_no_lgtm: review_url, request_timestamp, hash, people_email_address
   tbr_blame_dict = {}
-  for url, time, git_hash, reviewer in tbr_no_lgtm:
+  for url, timestamp, git_hash, reviewer in tbr_no_lgtm:
     reviewer = reviewer.strip().split('@')
-    time = time.strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
     tbr_blame_dict.setdefault(reviewer[0], []).append(
-        [git_hash, url, time])
+        [git_hash, url, timestamp])
   tbr_data = {
       "by_user" : tbr_blame_dict,
       "gitiles_prefix" : gitiles_prefix,

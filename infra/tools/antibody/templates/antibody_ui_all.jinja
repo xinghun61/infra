@@ -28,8 +28,29 @@
         <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
         <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
       </ul>
+      <ul class="pull-right">
+        <li><p class="gen_time">Generated {{ generation_time }} UTC</p></li>
+      </ul>
     </div>
   </div>
+
+  <div class="stats">
+    <div class="container">
+        <div class="col-md-4">
+          <h3> {{ num_tbr_no_lgtm }} </h3>
+          <p> TBR'ed without LGTM </p>
+        </div>
+        <div class="col-md-4">
+          <h3> {{ num_no_review_url }} </h3>
+          <p> without review URL </p>
+        </div>
+        <div class="col-md-4">
+          <h3> {{ blank_TBR }} </h3>
+          <p> with blank TBR </p>
+        </div>
+    </div>
+  </div>
+
 
   <div class="bootstrap-table data_table">
     <div class="container">

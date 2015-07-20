@@ -21,8 +21,12 @@ body {
   text-transform: uppercase;
 }
 
+.gen_time {
+  color: #A3A3A3;
+}
+
 .data_table {
-  margin-top: 70px;
+  margin-top: 30px;
 }
 
 .data_item {
@@ -31,4 +35,29 @@ body {
 
 th {
   text-align: center;
+}
+
+tbody {
+  height: 120px;
+  overflow-y: auto;
+}
+
+.git_hash {
+  width: 40%;
+}
+
+.rietveld_url {
+  width: 40%;
+}
+
+.request_timestamp {
+  width: 20%;
+}
+.stats {
+  text-align: center;
+  margin-top: 70px;
+}
+
+.stats h3 {
+  font-weight: bold;
 }

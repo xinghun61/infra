@@ -40,6 +40,7 @@ class TestCodeReviewParse(unittest.TestCase):
       self.assertFalse(code_review_parse.contains_lgtm(
                                             fake_extract_json_data(issue)))
 
+
   def test_contains_tbr(self):
     issues_with_tbr = (self.no_lgtm_tbr, self.no_lgtm_mult_tbr, self.lgtm_tbr)
     for issue in issues_with_tbr:
@@ -51,6 +52,7 @@ class TestCodeReviewParse(unittest.TestCase):
     for issue in issues_without_tbr:
       self.assertFalse(code_review_parse.contains_tbr(
                                             fake_extract_json_data(issue)))
+
 
   def test_to_canonical_rietveld_url(self):
     chrome_internal_url = 'https://chromereviews.googleplex.com/210457013/'
@@ -72,6 +74,7 @@ class TestCodeReviewParse(unittest.TestCase):
     codereview_chromium_url = 'https://codereview.chromium.org/1147143006/'
     self.assertEqual(codereview_chromium_url,
            code_review_parse.to_canonical_rietveld_url(codereview_chromium_url))
+
 
   def test_get_rietveld_data_for_review_people(self):
     # email_address, review_url, timestamp, request_timestamp, type
@@ -95,6 +98,7 @@ class TestCodeReviewParse(unittest.TestCase):
         self.lgtm_not_lgtm_no_tbr)
     db_comparable = [(x[0], x[1], x[2], None, x[4]) for x in db_data_all]
     self.assertEqual(set(db_comparable), set(expected_out))
+
 
   def test_get_rietveld_data_for_review(self):
     # review_url, request_timestamp, committed_timestamp, patchset_still_exists
