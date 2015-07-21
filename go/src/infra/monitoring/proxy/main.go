@@ -231,13 +231,15 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 
 				// If we hit a transient error, set the message's element to nil,
 				// causing it to not be ACKed.
-				transient := luciErrors.IsTransient(err)
-				log.Fields{
-					log.ErrorKey: err,
-					"transient":  transient,
-				}.Errorf(ctx, "Error when pushing message.")
-				if transient {
-					msgs[idx] = nil
+				if err != nil {
+					transient := luciErrors.IsTransient(err)
+					log.Fields{
+						log.ErrorKey: err,
+						"transient":  transient,
+					}.Errorf(ctx, "Error when pushing message.")
+					if transient {
+						msgs[idx] = nil
+					}
 				}
 				return err
 			}
