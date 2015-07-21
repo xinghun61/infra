@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"testing"
@@ -13,10 +14,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/pubsub"
+	"infra/monitoring/proxy/mock"
 )
 
 type endpointServiceMock struct {
-	mockStruct
+	mock.Mock
 
 	msgC chan []byte
 }
@@ -24,7 +26,7 @@ type endpointServiceMock struct {
 var _ endpointService = (*endpointServiceMock)(nil)
 
 func (s *endpointServiceMock) send(ctx context.Context, data []byte) (err error) {
-	s.pop("send", ctx, data).bindResult(&err)
+	s.Pop("send", ctx, data).BindResult(&err)
 	if err == nil && s.msgC != nil {
 		s.msgC <- data
 	}
@@ -59,12 +61,11 @@ func TestMain(t *testing.T) {
 		pubsubMock := &testPubSubService{
 			infinitePull: true,
 		}
-		defer So(pubsubMock.remaining(), ShouldBeNil)
+		endpointMock := &endpointServiceMock{
+			msgC: make(chan []byte),
+		}
 
-		endpointMock := &endpointServiceMock{}
-		defer So(endpointMock.remaining(), ShouldBeNil)
-
-		pubsubMock.mock("SubExists", "test-subscription").withResult(true, nil)
+		pubsubMock.MockCall("SubExists", "test-subscription").WithResult(true, nil)
 		pubsubClient, err := newPubSubClient(ctx, config.pubsub, pubsubMock)
 		So(err, ShouldBeNil)
 
@@ -81,11 +82,12 @@ func TestMain(t *testing.T) {
 		defer func() {
 			app.shutdown()
 			<-finishedC
+
+			So(pubsubMock, mock.ShouldHaveNoErrors)
+			So(endpointMock, mock.ShouldHaveNoErrors)
 		}()
 
 		Convey(`Will consume messages from Pub/Sub.`, func() {
-			endpointMock.msgC = make(chan []byte)
-
 			buf := make([]byte, binary.MaxVarintLen64)
 			missing := make(map[int]bool)
 			for i := 0; i < 1024; i++ {
@@ -98,9 +100,9 @@ func TestMain(t *testing.T) {
 					Data:  make([]byte, count),
 				}
 				copy(msg.Data, buf)
-				pubsubMock.mock("Pull", "test-subscription", 64).withResult([]*pubsub.Message{msg}, nil)
-				pubsubMock.mock("Ack", "test-subscription", []string{msg.AckID}).withResult(nil)
-				endpointMock.mock("send", mockIgnore, msg.Data).withResult(nil)
+				pubsubMock.MockCall("Pull", "test-subscription", 64).WithResult([]*pubsub.Message{msg}, nil)
+				pubsubMock.MockCall("Ack", "test-subscription", []string{msg.AckID}).WithResult(nil)
+				endpointMock.MockCall("send", mock.Ignore, msg.Data).WithResult(nil)
 			}
 
 			missingCount := len(missing)
@@ -115,6 +117,27 @@ func TestMain(t *testing.T) {
 				missingCount--
 			}
 			So(missingCount, ShouldEqual, 0)
+		})
+
+		Convey(`Will refuse to process a message that is too large, and will ACK it.`, func() {
+			msgs := []*pubsub.Message{
+				&pubsub.Message{
+					ID:    "msg-big",
+					AckID: "ack-big",
+					Data:  bytes.Repeat([]byte{0xAA}, maxMessageSize+1),
+				},
+				&pubsub.Message{
+					ID:    "msg-legit",
+					AckID: "ack-legit",
+					Data:  bytes.Repeat([]byte{0x55}, maxMessageSize),
+				},
+			}
+
+			pubsubMock.MockCall("Pull", "test-subscription", 64).WithResult(msgs, nil)
+			pubsubMock.MockCall("Ack", "test-subscription", []string{"ack-big", "ack-legit"}).WithResult(nil)
+			endpointMock.MockCall("send", mock.Ignore, msgs[1].Data).WithResult(nil)
+
+			So(<-endpointMock.msgC, ShouldResemble, msgs[1].Data)
 		})
 	})
 }

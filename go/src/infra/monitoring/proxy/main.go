@@ -5,6 +5,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"net/http"
 	"os"
@@ -27,13 +28,17 @@ import (
 const (
 	// noMessageDelay is the amount of time to sleep after receiving no messages.
 	noMessageDelay = 1 * time.Second
+
+	// maxMessageSize is the maximum size of a message that the proxy will
+	// forward. Messages larger than this will be discarded by policy.
+	maxMessageSize = 1024 * 512
 )
 
 func init() {
 	// Increase idle connections per host, since we connect to basically two
 	// hosts.
 	if t, ok := http.DefaultTransport.(*http.Transport); ok {
-		t.MaxIdleConnsPerHost = 500
+		t.MaxIdleConnsPerHost = 10000
 	}
 }
 
@@ -215,30 +220,26 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 	// TODO: Validate messages.
 	err := parallel.FanOutIn(func(c chan<- func() error) {
 		for idx, msg := range msgs {
+			msg := msg
 			c <- func() error {
-				msg := msg
 				ctx := log.SetFields(ctx, log.Fields{
 					"size":      len(msg.Data),
 					"messageID": msg.ID,
 				})
-				log.Debugf(ctx, "Sending data to monitoring endpoint.")
 
-				// Execute the request.
-				if err := a.endpoint.send(ctx, msg.Data); err != nil {
-					if luciErrors.IsTransient(err) {
-						transient := luciErrors.IsTransient(err)
-						log.Fields{
-							log.ErrorKey: err,
-							"transient":  transient,
-						}.Errorf(ctx, "Transient error when pushing message.")
-						if transient {
-							// Remove it from ACK list.
-							msgs[idx] = nil
-						}
-					}
-					return err
+				err := a.proxySingleMessage(ctx, msg)
+
+				// If we hit a transient error, set the message's element to nil,
+				// causing it to not be ACKed.
+				transient := luciErrors.IsTransient(err)
+				log.Fields{
+					log.ErrorKey: err,
+					"transient":  transient,
+				}.Errorf(ctx, "Error when pushing message.")
+				if transient {
+					msgs[idx] = nil
 				}
-				return nil
+				return err
 			}
 		}
 	})
@@ -250,6 +251,22 @@ func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message)
 		"errorCount":  len(merr),
 	}.Infof(ctx, "Sent messages to endpoint.")
 	return err
+}
+
+func (a *application) proxySingleMessage(ctx context.Context, msg *pubsub.Message) error {
+	log.Debugf(ctx, "Sending data to monitoring endpoint.")
+
+	// Refuse to transmit message if it's too large.
+	if len(msg.Data) > maxMessageSize {
+		log.Fields{
+			"size":    len(msg.Data),
+			"maxSize": maxMessageSize,
+		}.Errorf(ctx, "Message exceeds maximum size threshold; discarding.")
+		return errors.New("main: message is too large")
+	}
+
+	// Execute the request.
+	return a.endpoint.send(ctx, msg.Data)
 }
 
 // mainImpl is the main execution function.
@@ -274,8 +291,8 @@ func mainImpl(args []string) int {
 	fs.Parse(args)
 
 	// TODO(dnj): Fix this once LUCI logging CL lands.
+	ctx = log.SetLevel(ctx, logConfig.Level)
 	ctx = logConfig.Set(ctx)
-	ctx = log.SetLevel(ctx, log.Debug)
 
 	// Load authenticated client.
 	client, err := config.createAuthenticatedClient(ctx)

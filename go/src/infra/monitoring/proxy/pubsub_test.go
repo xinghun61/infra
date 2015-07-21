@@ -13,11 +13,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/pubsub"
+	"infra/monitoring/proxy/mock"
 )
 
 // testPubSubService implements pubSubService using testing stubs.
 type testPubSubService struct {
-	mockStruct
+	mock.Mock
 
 	infinitePull bool
 }
@@ -25,40 +26,40 @@ type testPubSubService struct {
 var _ pubSubService = (*testPubSubService)(nil)
 
 func (s *testPubSubService) SubExists(sub string) (exists bool, err error) {
-	s.pop("SubExists", sub).bindResult(&exists, &err)
+	s.Pop("SubExists", sub).BindResult(&exists, &err)
 	return
 }
 
 func (s *testPubSubService) CreatePullSub(sub string, topic string) (err error) {
-	s.pop("CreatePullSub", sub, topic).bindResult(&err)
+	s.Pop("CreatePullSub", sub, topic).BindResult(&err)
 	return
 }
 
 func (s *testPubSubService) TopicExists(topic string) (exists bool, err error) {
-	s.pop("TopicExists", topic).bindResult(&exists, &err)
+	s.Pop("TopicExists", topic).BindResult(&exists, &err)
 	return
 }
 
 func (s *testPubSubService) CreateTopic(topic string) (err error) {
-	s.pop("CreateTopic", topic).bindResult(&err)
+	s.Pop("CreateTopic", topic).BindResult(&err)
 	return
 }
 
 func (s *testPubSubService) Pull(sub string, count int) (msgs []*pubsub.Message, err error) {
-	mock, e := s.popErr("Pull", sub, count)
+	mock, e := s.PopErr("Pull", sub, count)
 	if e != nil {
 		if s.infinitePull {
 			return nil, nil
 		}
-		panic("Out of mock Pull entries.")
+		s.AddError(errors.New("out of mock Pull entries"))
 	}
 
-	mock.bindResult(&msgs, &err)
+	mock.BindResult(&msgs, &err)
 	return
 }
 
 func (s *testPubSubService) Ack(sub string, ackIDs []string) (err error) {
-	s.pop("Ack", sub, ackIDs).bindResult(&err)
+	s.Pop("Ack", sub, ackIDs).BindResult(&err)
 	return
 }
 
@@ -80,23 +81,23 @@ func TestPubSub(t *testing.T) {
 		}
 
 		svc := &testPubSubService{}
-		defer So(svc.remaining(), ShouldBeNil)
+		defer So(svc, mock.ShouldHaveNoErrors)
 
 		Convey(`When the subscription does not exist`, func() {
-			svc.mock("SubExists", "test-subscription").withResult(false, nil)
+			svc.MockCall("SubExists", "test-subscription").WithResult(false, nil)
 
 			Convey(`And the topic does not exist, will create a new topic and subscription.`, func() {
-				svc.mock("TopicExists", "test-topic").withResult(false, nil)
-				svc.mock("CreateTopic", "test-topic").withResult(nil)
-				svc.mock("CreatePullSub", "test-subscription", "test-topic").withResult(nil)
+				svc.MockCall("TopicExists", "test-topic").WithResult(false, nil)
+				svc.MockCall("CreateTopic", "test-topic").WithResult(nil)
+				svc.MockCall("CreatePullSub", "test-subscription", "test-topic").WithResult(nil)
 
 				_, err := newPubSubClient(ctx, config, svc)
 				So(err, ShouldBeNil)
 			})
 
 			Convey(`And the topic exists, will create a new subscription.`, func() {
-				svc.mock("TopicExists", "test-topic").withResult(true, nil)
-				svc.mock("CreatePullSub", "test-subscription", "test-topic").withResult(nil)
+				svc.MockCall("TopicExists", "test-topic").WithResult(true, nil)
+				svc.MockCall("CreatePullSub", "test-subscription", "test-topic").WithResult(nil)
 
 				_, err := newPubSubClient(ctx, config, svc)
 				So(err, ShouldBeNil)
@@ -111,13 +112,13 @@ func TestPubSub(t *testing.T) {
 		})
 
 		Convey(`Will create a new client.`, func() {
-			svc.mock("SubExists", "test-subscription").withResult(true, nil)
+			svc.MockCall("SubExists", "test-subscription").WithResult(true, nil)
 
 			client, err := newPubSubClient(ctx, config, svc)
 			So(err, ShouldBeNil)
 
 			Convey(`When executing pull/ack with no messages`, func() {
-				svc.mock("Pull", "test-subscription", 64).withResult(nil, nil)
+				svc.MockCall("Pull", "test-subscription", 64).WithResult(nil, nil)
 
 				Convey(`Returns errNoMessages.`, func() {
 					err := client.pullAckMessages(ctx, func([]*pubsub.Message) {})
@@ -133,10 +134,10 @@ func TestPubSub(t *testing.T) {
 						Data:  []byte{0xd0, 0x65},
 					},
 				}
-				svc.mock("Pull", "test-subscription", 64).withResult(msgs, nil)
+				svc.MockCall("Pull", "test-subscription", 64).WithResult(msgs, nil)
 
 				Convey(`Returns and ACKs that message.`, func() {
-					svc.mock("Ack", "test-subscription", []string{"ack0"}).withResult(nil)
+					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
 
 					var pullMsg []*pubsub.Message
 					err := client.pullAckMessages(ctx, func(msg []*pubsub.Message) {
@@ -148,7 +149,7 @@ func TestPubSub(t *testing.T) {
 				})
 
 				Convey(`ACKs the message even if the handler panics.`, func() {
-					svc.mock("Ack", "test-subscription", []string{"ack0"}).withResult(nil)
+					svc.MockCall("Ack", "test-subscription", []string{"ack0"}).WithResult(nil)
 
 					So(func() {
 						client.pullAckMessages(ctx, func(msg []*pubsub.Message) {
@@ -169,7 +170,7 @@ func TestPubSub(t *testing.T) {
 
 			Convey(`When executing pull/ack with an error`, func() {
 				e := errors.New("TEST ERROR")
-				svc.mock("Pull", "test-subscription", 64).withResult(nil, e)
+				svc.MockCall("Pull", "test-subscription", 64).WithResult(nil, e)
 
 				Convey(`Returns the error as transient.`, func() {
 					So(client.pullAckMessages(ctx, func([]*pubsub.Message) {}), ShouldResemble, luciErrors.Transient{Err: e})

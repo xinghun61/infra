@@ -28,7 +28,7 @@ const (
 
 	// cloudLoggingBatchSize is the number of log messages that will be sent in a
 	// single cloud logging publish request.
-	cloudLoggingBatchSize = 20
+	cloudLoggingBatchSize = 50
 
 	// Number of bytes of random number to read for a unique session ID.
 	loggingSessionIDSize = 36
@@ -45,8 +45,7 @@ var (
 // The logging system chooses to log to either console output (go-logging) or
 // Google Cloud Logging based on configuration parameters.
 type loggerConfig struct {
-	gceAccount             string
-	serviceAccountJSONPath string
+	gceAccount string
 
 	projectName string
 	logsID      string
@@ -77,8 +76,6 @@ func newLoggerConfig() *loggerConfig {
 func (c *loggerConfig) addFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.gceAccount, "logging-gce-account", c.gceAccount,
 		"When using GCE logging, the name of the account to bind to.")
-	fs.StringVar(&c.serviceAccountJSONPath, "logging-cloud-auth-path", "",
-		"When specified, use these credentials and force cloud logging.")
 	fs.StringVar(&c.logsID, "logging-cloud-logs-id", c.logsID,
 		"For cloud logging, the log stream ID.")
 	fs.StringVar(&c.serviceName, "logging-cloud-service", c.serviceName,
@@ -207,7 +204,7 @@ func newCloudLogging(ctx context.Context, config *loggerConfig, service *cloudlo
 		ctx:          ctx,
 		service:      service,
 
-		logC:      make(chan *logEntry, cloudLoggingBatchSize),
+		logC:      make(chan *logEntry, cloudLoggingBatchSize*4),
 		finishedC: make(chan struct{}),
 	}
 	go l.process()
@@ -387,7 +384,7 @@ func (l *boundCloudLogger) Errorf(fmt string, args ...interface{}) {
 }
 
 func (l *boundCloudLogger) LogCall(level log.Level, calldepth int, f string, args []interface{}) {
-	if len(f) == 0 {
+	if len(f) == 0 || !log.IsLogging(l.ctx, level) {
 		return
 	}
 

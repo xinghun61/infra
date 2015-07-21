@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/clock"
 	luciErrors "github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
@@ -223,12 +224,32 @@ func (p *pubsubClient) setupSubscription(ctx context.Context) error {
 // handler is a method that returns true if there was a transient failure,
 // indicating that the messages shouldn't be ACK'd.
 func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubsub.Message)) error {
+	var err error
 	var msgs []*pubsub.Message
-	err := retryCall(ctx, "Pull()", func() error {
+	ackCount := 0
+
+	// Report the duration of a Pull/ACK cycle.
+	startTime := clock.Now(ctx)
+	defer func() {
+		duration := clock.Now(ctx).Sub(startTime)
+		log.Fields{
+			"count":    len(msgs),
+			"ackCount": ackCount,
+			"duration": duration,
+		}.Infof(ctx, "Pull/ACK cycle complete.")
+	}()
+
+	err = retryCall(ctx, "Pull()", func() error {
 		var err error
 		msgs, err = p.service.Pull(p.subscription, p.batchSize)
 		return p.wrapTransient(err)
 	})
+	log.Fields{
+		log.ErrorKey: err,
+		"duration":   clock.Now(ctx).Sub(startTime),
+		"count":      len(msgs),
+	}.Debugf(ctx, "Pull() complete.")
+
 	if err != nil {
 		return err
 	}
@@ -238,7 +259,8 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubs
 	}
 
 	defer func() {
-		if err := p.ackMessages(ctx, msgs); err != nil {
+		ackCount, err = p.ackMessages(ctx, msgs)
+		if err != nil {
 			log.Warningf(log.SetError(ctx, err), "Failed to ACK messages!")
 		}
 	}()
@@ -248,7 +270,7 @@ func (p *pubsubClient) pullAckMessages(ctx context.Context, handler func([]*pubs
 
 // ackMessages ACKs the supplied messages. If a message is nil, it will be
 // ignored.
-func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Message) error {
+func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Message) (int, error) {
 	messageIds := make([]string, 0, len(messages))
 	skipped := 0
 	for _, msg := range messages {
@@ -259,9 +281,10 @@ func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Messa
 		}
 	}
 	if len(messageIds) == 0 {
-		return nil
+		return 0, nil
 	}
 
+	startTime := clock.Now(ctx)
 	ctx = log.SetFields(ctx, log.Fields{
 		"count":   len(messageIds),
 		"skipped": skipped,
@@ -269,13 +292,20 @@ func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Messa
 	err := retryCall(ctx, "Ack()", func() error {
 		return p.wrapTransient(p.service.Ack(p.subscription, messageIds))
 	})
+	duration := clock.Now(ctx).Sub(startTime)
+
 	if err != nil {
-		log.Errorf(log.SetError(ctx, err), "Failed to ACK messages.")
-		return err
+		log.Fields{
+			log.ErrorKey: err,
+			"duration":   duration,
+		}.Errorf(ctx, "Failed to ACK messages.")
+		return 0, err
 	}
 
-	log.Debugf(ctx, "Successfully ACK messages.")
-	return nil
+	log.Fields{
+		"duration": duration,
+	}.Debugf(ctx, "Successfully ACK messages.")
+	return len(messageIds), nil
 }
 
 // wrapTransient examines the supplied error. If it's not a recognized error

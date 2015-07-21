@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"github.com/luci/luci-go/common/auth"
+	"github.com/luci/luci-go/common/clock"
 	luciErrors "github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
@@ -89,6 +90,8 @@ func (c *endpointConfig) createService(ctx context.Context) (endpointService, er
 func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 	ctx = log.SetField(ctx, "endpointURL", s.url)
 	return retryCall(ctx, "endpoint.send", func() error {
+		startTime := clock.Now(ctx)
+
 		log.Debugf(ctx, "Pushing message to endpoint.")
 		req, err := http.NewRequest("POST", s.url, bytes.NewReader(data))
 		if err != nil {
@@ -120,6 +123,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 			"headers":       resp.Header,
 			"contentLength": resp.ContentLength,
 			"body":          string(bodyData),
+			"duration":      clock.Now(ctx).Sub(startTime),
 		}.Debugf(ctx, "Received HTTP response from endpoint.")
 
 		if resp.StatusCode == http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
