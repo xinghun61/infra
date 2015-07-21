@@ -86,12 +86,18 @@ class BuildStatePollerTest(unittest.TestCase):
       'accepting_builds': True,
       'builders': [
         {
+          'buildState': {
+            'pending': [{}, {}, {}, {}],
+          },
           'builderName': 'foo',
           'currentBuilds': [],
-          'pendingBuilds': 4,
+          'pendingBuilds': 0,
           'state': 'offline',
         },
         {
+          'buildState': {
+            'pending': [],
+          },
           'builderName': 'bar',
           'currentBuilds': [1, 2, 3],
           'pendingBuilds': 0,
