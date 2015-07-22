@@ -250,8 +250,8 @@ class FlushThreadTest(unittest.TestCase):
     interface.flush.side_effect = functools.partial(self.increment_time, 5)
 
     self.assertInRange(30, 60, self.stop_event.timeout_wait())
-    self.assertEqual(55, self.stop_event.timeout_wait())
-    self.assertEqual(55, self.stop_event.timeout_wait())
+    self.assertAlmostEqual(55, self.stop_event.timeout_wait())
+    self.assertAlmostEqual(55, self.stop_event.timeout_wait())
 
   def test_sleeps_for_minimum_zero_secs(self):
     self.t.start()
@@ -260,5 +260,5 @@ class FlushThreadTest(unittest.TestCase):
     interface.flush.side_effect = functools.partial(self.increment_time, 65)
 
     self.assertInRange(30, 60, self.stop_event.timeout_wait())
-    self.assertEqual(0, self.stop_event.timeout_wait())
-    self.assertEqual(0, self.stop_event.timeout_wait())
+    self.assertAlmostEqual(0, self.stop_event.timeout_wait())
+    self.assertAlmostEqual(0, self.stop_event.timeout_wait())
