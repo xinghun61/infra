@@ -71,6 +71,9 @@ def construct_pattern_matcher(
       exclusions={'desired_buildbot_state': ['offline']})
   @matchlist.add_match(
       buildbot='draining')
+  @matchlist.add_match(
+      buildbot='crashed',
+      exclusions={'desired_buildbot_state': ['offline']})
   def _do_nothing():
     return []
 
@@ -81,9 +84,6 @@ def construct_pattern_matcher(
       buildbot='drained',
       desired_buildbot_state='drained',
       desired_transition_time='ready_to_fire')
-  @matchlist.add_match(
-      buildbot='crashed',
-      exclusions={'desired_buildbot_state': ['offline']})
   def _make_restart():
     return [
         master.GclientSync, master.MakeStop, master.MakeWait, master.MakeStart]
