@@ -2,7 +2,7 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-# Edit this to match your implementation.
+
 handlers:
 
 - url: /bower_components
@@ -10,9 +10,6 @@ handlers:
 
 - url: /elements
   static_dir: elements
-
-- url: /js
-  static_dir: js
 
 - url: /styles
   static_dir: styles

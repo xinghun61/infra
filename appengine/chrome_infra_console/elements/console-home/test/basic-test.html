@@ -1,0 +1,32 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../console-home.html">
+  </head>
+  <body>
+
+    <console-home></console-home>
+
+    <script>
+      var myEl = document.querySelector('console-home');
+
+      suite('<console-home>', function() {
+
+        test('Page works', function() {
+
+        });
+      });
+    </script>
+
+  </body>
+</html>

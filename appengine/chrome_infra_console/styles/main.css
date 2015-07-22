@@ -22,7 +22,7 @@ body {
   height: 100%;
   width: 90%;
   padding: 16px 16px 16px 16px;
-  margin: 40px;
+  margin: 5%;
   background: white;
   color: #A75600;
 }
@@ -58,6 +58,7 @@ paper-menu paper-item {
   line-height: 24px;
   min-height: 48px;
   padding: 0 16px;
+  cursor: pointer;
 }
 
 #mainToolbar .middle {
@@ -78,10 +79,6 @@ paper-menu paper-item {
   margin-top: 30px;
 }
 
-#signIn {
-  background: DarkOrange; 
-}
-
 project-dropdown {
   display: block;
   margin-left: 40px;
@@ -89,5 +86,64 @@ project-dropdown {
 }
 
 .paperContent {
-  margin-left: 20px;
+  margin-left: 1%;
 } 
+
+.brand-google.theme-dark.google-signin {
+  background: #DB6700;
+  border: 1px solid #DB6700;
+}
+
+/* mobile */
+@media all and (min-width: 0) and (max-width: 513px) and (orientation: portrait) { 
+  paper-toolbar {
+    height: 60px;
+  }
+
+  paper-toolbar.tall {
+    height: 110px;
+  }
+
+  #mainToolbar .middle {
+    margin-top: 10px;
+    padding-bottom: 4%;
+    margin-left: 30px;
+    font-size: 23px;
+    line-height: 30px;
+  }
+
+  #mainToolbar.has-shadow .middle {
+    display: none;
+  }
+
+  #chromeInfraImg {
+    display: none;
+  }
+}
+
+/* mobile */
+@media all and (min-width: 0) and (max-width: 700px) and (orientation: landscape) { 
+  paper-toolbar {
+    height: 60px;
+  }
+
+  paper-toolbar.tall {
+    height: 110px;
+  }
+
+  #mainToolbar .middle {
+    margin-top: 10px;
+    padding-bottom: 4%;
+    margin-left: 30px;
+    font-size: 23px;
+    line-height: 30px;
+  }
+
+  #mainToolbar.has-shadow .middle {
+    display: none;
+  }
+
+  #chromeInfraImg {
+    display: none;
+  }
+}

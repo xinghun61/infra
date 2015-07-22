@@ -12,104 +12,16 @@
   <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
   <meta name="generator" content="Chrome Infra Console" />
   <title>Chrome Infra Console</title>
-
-  <meta name="theme-color" content="DarkOrange">
-  <link rel="manifest" href="../js/manifest.json">
+  <link rel="import" href="../elements/console-app/console-app.html">
   <link rel="stylesheet" href="../styles/main.css">
-  <link rel="import" href="../elements/elements.html">
   <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 </head>
 
 <body unresolved class="fullbleed layout vertical">
   <span id="browser-sync-binding"></span>
   <template is="dom-bind" id="app">
-
-    <paper-drawer-panel id="paperDrawerPanel">
-      <div drawer>
-        <img id="chromeInfraImg" src="../images/chrome-infra-logo-200x200.png" 
-            alt="chrome_infra_icon">
-        <project-dropdown></project-dropdown>
-        <paper-menu class="list" on-iron-select="onMenuSelect">
-          <paper-item on-click="homeClicked">
-            <iron-icon icon="home"></iron-icon>
-            <span>Home</span>
-          </paper-item>
-
-          <paper-item on-click="helpClicked">
-            <iron-icon icon="help"></iron-icon>
-            <span>Help</span>
-          </paper-item>
- 
-          <paper-item on-click="feedbackClicked">
-            <iron-icon icon="mail"></iron-icon>
-            <span>Feedback</span>
-          </paper-item>
-
-        </paper-menu>
-      </div>
-      <paper-header-panel main mode="waterfall-tall">
-
-        <paper-toolbar id="mainToolbar">
-          <paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle>
-          </paper-icon-button>
-          <span class="flex"></span>
-
-          <paper-button id="signIn" raised toggles elevation="4">
-            <span>Sign In</span>
-          </paper-button>
-          <paper-icon-button icon="refresh"></paper-icon-button>
-          <paper-icon-button icon="search"></paper-icon-button>
-
-          <div class="middle paper-font-display2 app-name">
-          Chrome Infrastructure Console</div>
-
-          <div class="bottom title"></div>
-
-        </paper-toolbar>
-
-        <div class="content">
-          <iron-pages selected="0">
-
-            <div>
-              <paper-material class="paper" elevation="1">
-                <div class="paperContent">
-                  <h2>Welcome to Chrome Infrastructure Console</h2>
-                  <p>Please select a project to display its graph.</p>
-                </div>
-              </paper-material>              
-            </div>
-
-            <div>
-              <paper-material class="paper" elevation="1">
-                <div class="paperContent">
-                  <h2>Help</h2>
-                  <p><a href="https://storage.googleapis.com/chromium-infra-docs/infra/html/index.html" 
-                  target="_blank">Chrome Infrastructure Documentation</a></p>
-                  <iframe src="https://storage.googleapis.com/chromium-infra-docs/infra/html/index.html" 
-                  width="900" height="600"></iframe>
-                </div>
-              </paper-material>
-            </div>
-
-            <div>
-              <paper-material class="paper" elevation="1">
-                <div class="paperContent">
-                  <h2>Feedback</h2>
-                  <p><a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper" 
-                  target="_blank" name="iframe1">File a bug to Chromium troopers.</a></p>
-                </div>
-              </paper-material>
-            </div>
-
-          </iron-pages>
-      </paper-header-panel>
-    </paper-drawer-panel>
-
+    <console-app></console-app>
   </template>
-
-  <!-- build:js ../js/app.js -->
-  <script src="../js/app.js"></script>
-  <!-- endbuild-->
 </body>
 
 </html>

@@ -28,14 +28,19 @@ found in the LICENSE file-->
           assert.equal(s.options[s.selectedIndex].disabled, true);
           myEl.click();
           s.options[1].selected = true;
-          assert.equal(s.options[s.selectedIndex].value, "Project 1");
+          assert.equal(s.options[s.selectedIndex].value, "chromium");
+          myEl.selectChanged();
+          assert.equal(myEl.pname, "chromium");
+          assert.equal(s.options[0].disabled, true);
         });
 
         test('Element binding works', function() {
           var temp = myEl.querySelector('#repeatTemp');
-          assert.equal(temp.items.length, 3);
-          myEl.projectList = ["a", "b" , "c", "d", "e"];
+          var s = myEl.querySelector('#projectSelect');
           assert.equal(temp.items.length, 5);
+          myEl.projectList = ["a", "b" , "c", "d", "e","f"];
+          assert.equal(temp.items.length, 6);
+          assert.equal(s.options.length, 6);
         });
       });
     </script>

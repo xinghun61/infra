@@ -1,0 +1,167 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+<!-- Iron elements -->
+<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+
+<!-- Paper elements -->
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-styles/paper-styles-classes.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
+
+<!-- Google Web Components -->
+<link rel="import" href="../../bower_components/google-signin/google-signin.html">
+
+<!-- Custom Elements -->
+<link rel="import" href="../project-dropdown/project-dropdown.html">
+<link rel="import" href="../console-home/console-home.html">
+
+<dom-module id="console-app">
+  <link rel="import" type="css" href="console-app.css">
+
+  <template id="temp">
+    <paper-drawer-panel id="paperDrawerPanel">
+      <div drawer id="drawer">
+        <img id="chromeInfraImg" 
+        src="../../images/chrome-infra-logo-200x200.png"
+        alt="chrome_infra_icon">
+        <project-dropdown pname="{{project}}"></project-dropdown>
+        <paper-menu class="list" on-iron-select="onMenuSelect">
+          <paper-item on-click="homeClicked">
+            <iron-icon id="homeItem" icon="home"></iron-icon>
+            <span>Home</span>
+          </paper-item>
+
+          <paper-item id="helpItem" on-click="helpClicked">
+            <iron-icon icon="help"></iron-icon>
+            <span>Help</span>
+          </paper-item>
+ 
+          <paper-item id="feedbackItem" on-click="feedbackClicked">
+            <iron-icon icon="mail"></iron-icon>
+            <span>Feedback</span>
+          </paper-item>
+
+        </paper-menu>
+      </div>
+      <paper-header-panel main mode="waterfall-tall">
+
+        <paper-toolbar id="mainToolbar">
+          <paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle>
+          </paper-icon-button>
+          <span class="flex"></span>
+          <google-signin id="s" raised toggles elevation="4" client-id="{{clientID}}" 
+          scopes="https://www.googleapis.com/auth/userinfo.email"></google-signin>
+          <paper-icon-button id="refresh" icon="refresh" on-click="refresh">
+          </paper-icon-button>
+          <paper-icon-button icon="search"></paper-icon-button>
+
+          <div class="middle paper-font-display2 app-name">
+          Chrome Infrastructure Console</div>
+
+          <div class="bottom title"></div>
+
+        </paper-toolbar>
+
+        <div class="content">
+          <iron-pages selected="0">
+
+            <div>
+              <console-home project-name="{{project}}"></console-home>            
+            </div>
+
+            <div>
+              <paper-material class="paper" elevation="1">
+                <div class="paperContent">
+                  <h2>Help</h2>
+                  <p><a href="https://chromium.googlesource.com/infra/infra/+/master/docs/index.md" 
+                  target="_blank">Chrome Infrastructure Documentation</a></p>
+                </div>
+              </paper-material>
+            </div>
+
+            <div>
+              <paper-material class="paper" elevation="1">
+                <div class="paperContent">
+                  <h2>Feedback</h2>
+                  <p><a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper" 
+                  target="_blank">
+                  File a bug to Chromium troopers.</a></p>
+                </div>
+              </paper-material>
+            </div>
+
+          </iron-pages>
+      </paper-header-panel>
+    </paper-drawer-panel>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'console-app',
+      properties: {
+        project: {
+          type: String,
+          notify: true,
+          value: ""
+        },
+        clientID: {
+          type: String,
+          value: "422368769108-rfeessef0hqvn4vki2kek098mvodp01h.apps.googleusercontent.com"
+        }
+      },
+  
+      listeners: {
+        'selected': 'homeClicked',
+        'google-signin-success': 'signinSuccess',
+      },
+
+      onMenuSelect: function() {
+        var drawerPanel = document.querySelector('#paperDrawerPanel');
+        if (drawerPanel.narrow) {
+          drawerPanel.closeDrawer();
+        }
+      },
+
+      homeClicked: function() {
+        var pages = document.querySelector('iron-pages');
+        pages.selected = 0 ;
+      },
+
+      helpClicked: function() {
+        var pages = document.querySelector('iron-pages');
+        pages.selected = 1 ;
+      },
+
+      feedbackClicked: function() {
+        var pages = document.querySelector('iron-pages');
+        pages.selected = 2 ;
+      },
+
+      refresh: function() {
+        location.reload();
+      },
+
+      signinSuccess: function() {
+        console.log('SignIn');
+        user = gapi.auth2.getAuthInstance().currentUser.get();   
+      },
+    });
+
+  </script>
+</dom-module>
+
+

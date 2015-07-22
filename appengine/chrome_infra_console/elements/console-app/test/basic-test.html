@@ -1,0 +1,50 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../console-app.html">
+  </head>
+  <body>
+
+    <console-app></console-app>
+
+    <script>
+      var myEl = document.querySelector('console-app');
+
+      suite('<console-app>', function() {
+
+        test('Data binding works', function() {
+          var home = myEl.querySelector('console-home');
+          var drop = myEl.querySelector('project-dropdown');
+          drop.pname= "infra";
+          assert.equal(myEl.project, "infra");
+          assert.equal(home.projectName, "infra");
+        });
+
+        test('SignIn button exists', function() {
+          var sign = myEl.querySelector('google-signin');
+          sign.click();
+          assert.ok(true);
+        });
+
+        test('Menu works', function() {
+          var help = myEl.querySelector('#helpItem');
+          help.click();
+          assert.ok(true);
+          var pages = document.querySelector('iron-pages');
+          assert.equal(pages.selected, 1);
+        });
+      });
+    </script>
+
+  </body>
+</html>
