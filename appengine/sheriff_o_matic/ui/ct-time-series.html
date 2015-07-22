@@ -3,9 +3,12 @@ Copyright 2015 The Chromium Authors. All rights reserved.
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 -->
+
+<link rel="import" href="ct-party-time.html">
+<link rel="import" href="ct-time-series-failure-card-buttons.html">
 <link rel="import" href="../appengine_module/components/net.html">
 
-<polymer-element name="ct-time-series">
+<polymer-element name="ct-time-series" attributes="bug">
   <template>
     <style>
       :host {
@@ -13,34 +16,46 @@ found in the LICENSE file.
       }
 
       .card {
-        padding: 20px;
+        padding: 15px;
         border-bottom: 1px solid lightgrey;
         display: flex;
       }
 
       .message {
         width: auto;
-        padding: 0px 50px;
+        padding: 0px 35px;
         float: left;
       }
 
-      .ct-button {
-        float: right;
-      }
-
     </style>
-    <template repeat="{{ alert, ind in alerts }}" bind="{{ind as ind}}">
+    <template if="{{ alerts.length == 0 }}" attributes="bug">
+      <ct-party-time></ct-party-time>
+    </template>
+    <template repeat="{{ alert, ind in alerts }}" bind="{{ind}}">
       <div class="card">
         <div class="message">
           <a href="{{ alert.playbook }}" target="_blank">Playbook</a><br>
-          <a href="{{ alert.silence }}" target="_blank">Silence</a>
+          <a href="{{ alert.silence }}" target="_blank">Silence</a><br>
+          <a href="/ts-alerts/{{ind}}"> Details </a>
         </div>
-        <ct-button on-click="{{ delAlert }}" value="{{ ind }}" id="delAlert" label="Delete">
-        </ct-button>
+        <ct-time-series-failure-card-buttons index="{{ind}}" alerts="{{alerts}}" bug="{{ alert.bug_id }}">
+        </ct-time-series-failure-card-buttons>
         <div class="message"><b>Error:</b> {{ alert.class_name }}<br>
         <b>Trigger Value:</b> {{ alert.trigger_value }}</div>
         <div class="message"><b>Active Since:</b> {{ alert.active_since }}<br>
+        <b>Active Time:</b> {{ alert.active_time }}<br>
         <b>Alert Sent:</b> {{ alert.alert_sent }}</div>
+        <div class="message">
+          <b>Targeted fields:</b><br>
+          <template repeat="{{ field in _toArray(alert.monarch_target_fields) }}">
+            {{ field.k }}: {{ field.v }}<br>
+          </template>
+        </div>
+        <template if="{{ alert.bug_id }}">
+        <div class="message"><b>Bug:</b>
+          <a href="https://crbug.com/{{alert.bug_id}}">{{ alert.bug_id }}</a><br>
+        </div>
+        </template>
       </div>
     </template>
   </template>
@@ -51,7 +66,7 @@ found in the LICENSE file.
     Polymer('ct-time-series', {
 
       ready: function() {
-        this.update()
+        this.update();
       },
 
       update: function() {
@@ -61,18 +76,9 @@ found in the LICENSE file.
         }.bind(this));
       },
 
-      delAlert: function(e, d, target) {
-        index = target.getAttribute('value');
-        var opt = {
-          url: '/ts-alerts/' + index,
-          type: 'DELETE'
-        };
-
-        return net.ajax(opt).then(function(response) {
-          console.log(response);
-          this.alerts.removeAt(index);
-        }.bind(this), function(err) {
-          console.log('Failed to delete: ' + err);
+      _toArray: function(obj) {
+        return Object.keys(obj).map(function(key) {
+          return {k: key, v: obj[key]}
         });
       }
 

@@ -1,0 +1,95 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="ct-button.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-action-dialog.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+
+<polymer-element name="ct-time-series-failure-card-buttons" attributes="alerts index bug">
+  <template>
+    <style>
+      :host {
+        display: flex;
+      }
+      :host > * {
+        margin-right: 5px;
+      }
+      ct-button {
+        float: right;
+        white-space: nowrap;
+      }
+    </style>
+      <ct-button value="{{index}}" on-tap="{{ showBugDialog }}" label="Link Bug">
+      </ct-button>
+      <paper-action-dialog heading="Enter bug number" transition="paper-transition-center" id="bugDialog">
+        <paper-input label="Bug# or URL" floatingLabel value="{{ bug }}" autofocus id="bug">
+        </paper-input>
+        <ct-button on-tap="{{ removeBug }}" role="button" value="{{ index }}" id="dialogRemoveBug" dismissive label="Remove bug link"></ct-button>
+        <ct-button on-tap="{{ saveBug }}" role="button" value="{{ index }}" id="dialogOk" affirmative label="OK"></ct-button>
+      </paper-action-dialog>
+      <ct-button on-click="{{ toggleDelDialog }}" value="{{index}}" id="delAlert" label="Delete">
+      </ct-button>
+      <paper-action-dialog heading="Delete alert?" transition="paper-transition-center" id="delBugDialog">
+        <ct-button role="button" value="{{index}}" dismissive label="Cancel"></ct-button>
+        <ct-button on-tap="{{ delAlert }}" role="button" value="{{index}}" affirmative label="Delete"></ct-button>
+      </paper-action-dialog>
+  </template>
+  <script>
+    Polymer({
+
+      toggleDelDialog: function(e, d, target) {
+        this.$.delBugDialog.toggle();
+      },
+
+      delAlert: function(e, d, target) {
+        index = target.getAttribute('value');
+        var opt = {
+          url: '/ts-alerts/' + index,
+          type: 'DELETE'
+        };
+        return net.ajax(opt).then(function(response) {
+          console.log(response);
+          this.alerts.removeAt(index);
+        }.bind(this), function(err) {
+          console.log('Failed to delete: ' + err);
+        });
+      },
+
+      showBugDialog: function(e, d, target) {
+        this.$.bugDialog.toggle();
+      },
+
+      updateBug: function(index, bug_id) {
+        opt = {
+          url: '/ts-alerts/' + index,
+          type: 'PUT',
+          data: JSON.stringify({'bug_id': bug_id})
+        };
+        this.$.bugDialog.toggle();
+        return net.ajax(opt).then(function(response) {
+          console.log(response);
+        }.bind(this), function(err) {
+          console.log('Failed to update bug: ' + err);
+        });
+      },
+
+      saveBug: function(e, d, target) {
+        bug_id = /([0-9]{3,})/.exec(this.$.bug.value)
+
+        if (bug_id != null) {
+          index = target.getAttribute('value');
+          this.updateBug(index, bug_id);
+        }
+      },
+
+      removeBug: function(e, d, target) {
+        this.$.bug.value = '';
+        index = target.getAttribute('value');
+        this.updateBug(index, '')
+      }
+    });
+  </script>
+</polymer-element>

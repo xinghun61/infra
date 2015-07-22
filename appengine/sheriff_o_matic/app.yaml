@@ -30,7 +30,7 @@ handlers:
   script: ts_alerts.app
   secure: always
 
-- url: /ts-alerts/(\d+)
+- url: /ts-alerts/.*
   script: ts_alerts.app
   secure: always
 

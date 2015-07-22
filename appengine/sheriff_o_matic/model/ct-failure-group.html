@@ -69,10 +69,10 @@ CTFailureGroup.prototype._computeProperties = function() {
     this.category = this._originalCategory;
   }
 
-  this.bug = this._annotation.bug;
+  this.bug = /([0-9]{3,})/.exec(this._annotation.bug);
   // FIXME: Bug labels would be simpler to implement as a filter in the UI.
   if (this.bug != null)
-    this.bugLabel = 'Bug ' + /([0-9]{3,})/.exec(this.bug)[0];
+    this.bugLabel = 'Bug ' + this.bug[0];
   else
     this.bugLabel = undefined;
 };
