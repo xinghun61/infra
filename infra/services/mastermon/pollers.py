@@ -60,7 +60,7 @@ class ClockPoller(Poller):
 
 
 class BuildStatePoller(Poller):
-  endpoint = '/buildstate?pending_builds=1'
+  endpoint = '/buildstate'
   accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds')
   current_builds = ts_mon.GaugeMetric('buildbot/master/builders/current_builds')
   pending_builds = ts_mon.GaugeMetric('buildbot/master/builders/pending_builds')
@@ -72,8 +72,7 @@ class BuildStatePoller(Poller):
     for builder in data['builders']:
       fields = self.fields({'builder': builder['builderName']})
       self.current_builds.set(len(builder['currentBuilds']), fields=fields)
-      self.pending_builds.set(len(builder['buildState']['pending']),
-                              fields=fields)
+      self.pending_builds.set(builder['pendingBuilds'], fields=fields)
       self.state.set(builder['state'], fields=fields)
 
 
