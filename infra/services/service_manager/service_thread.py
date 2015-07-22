@@ -107,21 +107,33 @@ class ServiceThread(threading.Thread):
           self._service.stop()
           self._started = False
         elif state.should_run == True:
-          if self._started and not self._service.is_running():
-            # We started it last time but it's not running any more.
-            self.failures.increment(fields={'service': self._service.name})
-            LOGGER.warning('Service %s failed, restarting', self._service.name)
-          elif self._service.has_version_changed():
-            self.upgrades.increment(fields={'service': self._service.name})
-            LOGGER.info('Service %s has a new package version, restarting',
-                        self._service.name)
-            self._service.stop()
-          elif self._service.has_args_changed():
-            self.reconfigs.increment(fields={'service': self._service.name})
+          try:
             state = self._service.get_running_process_state()
-            LOGGER.info('Service %s has new args: was %s, restarting with %s',
-                        self._service.name, state['args'], self._service.args)
-            self._service.stop()
+          except service.UnexpectedProcessStateError:
+            self.failures.increment(fields={'service': self._service.name})
+            logging.exception('Unexpected error getting state for service %s',
+                self._service.name)
+          except service.ProcessNotRunning as ex:
+            if self._started:
+              # We started it last time but it's not running any more.
+              self.failures.increment(fields={'service': self._service.name})
+              LOGGER.warning('Service %s failed (%r), restarting',
+                             self._service.name, ex)
+            else:
+              # We're about to start it for the first time.
+              LOGGER.info('Starting service %s for the first time (%r)',
+                          self._service.name, ex)
+          else:
+            if self._service.has_version_changed(state):
+              self.upgrades.increment(fields={'service': self._service.name})
+              LOGGER.info('Service %s has a new package version, restarting',
+                          self._service.name)
+              self._service.stop()
+            elif self._service.has_args_changed(state):
+              self.reconfigs.increment(fields={'service': self._service.name})
+              LOGGER.info('Service %s has new args: was %s, restarting with %s',
+                          self._service.name, state.args, self._service.args)
+              self._service.stop()
 
           # Ensure the service is running.
           self._service.start()

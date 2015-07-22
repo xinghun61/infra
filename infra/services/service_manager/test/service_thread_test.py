@@ -97,7 +97,8 @@ class ServiceThreadTest(unittest.TestCase):
     self.t.start()
     self.condition.start()
 
-    self.mock_service.is_running.return_value = False
+    self.mock_service.get_running_process_state.side_effect = (
+        service.StateFileNotFound)
 
     self.t.start_service()
     self.assertTrue(self.condition.notify_called)
@@ -111,7 +112,8 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.assertEqual(0, self.t.failures.get({'service': 'foo'}))
 
-    self.mock_service.is_running.return_value = False
+    self.mock_service.get_running_process_state.side_effect = (
+        service.StateFileNotFound)
 
     self.t.start_service()
     self.assertTrue(self.condition.notify_called)
@@ -128,7 +130,9 @@ class ServiceThreadTest(unittest.TestCase):
     self.assertEqual(3, self.mock_service.start.call_count)
     self.assertEqual(2, self.t.failures.get({'service': 'foo'}))
 
-    self.mock_service.is_running.return_value = True
+    self.mock_service.get_running_process_state.side_effect = None
+    self.mock_service.get_running_process_state.return_value = (
+        service.ProcessState(pid=1, starttime=2))
 
     self.condition.next()
     self.assertEqual(2, self.t.failures.get({'service': 'foo'}))
@@ -139,7 +143,8 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
 
-    self.mock_service.is_running.return_value = False
+    self.mock_service.get_running_process_state.side_effect = (
+        service.StateFileOpenError)
     self.mock_service.has_version_changed.return_value = False
     self.mock_service.has_args_changed.return_value = False
 
@@ -151,7 +156,9 @@ class ServiceThreadTest(unittest.TestCase):
     self.assertEqual(1, self.mock_service.start.call_count)
     self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
 
-    self.mock_service.is_running.return_value = True
+    self.mock_service.get_running_process_state.side_effect = None
+    self.mock_service.get_running_process_state.return_value = (
+        service.ProcessState(pid=1, starttime=2))
 
     self.condition.next()
     self.assertEqual(0, self.mock_service.stop.call_count)
@@ -200,7 +207,8 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.assertEqual(0, self.t.reconfigs.get({'service': 'foo'}))
 
-    self.mock_service.is_running.return_value = True
+    self.mock_service.get_running_process_state.return_value = (
+        service.ProcessState(pid=1, starttime=2))
     self.mock_service.has_version_changed.return_value = False
     self.mock_service.has_args_changed.return_value = True
     self.t.start_service()

@@ -73,7 +73,8 @@ class ConfigWatcher(object):
   def _iteration(self):
     """Runs one iteration of the loop.  Useful for testing."""
 
-    if self._own_service.has_version_changed():
+    own_state = self._own_service.get_running_process_state()
+    if self._own_service.has_version_changed(own_state):
       logging.info("The service_manager's version has changed, exiting")
       self.stop()
       return

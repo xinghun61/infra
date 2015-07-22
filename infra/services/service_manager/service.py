@@ -20,7 +20,133 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ServiceException(Exception):
+  """Raised if the child process couldn't be started correctly."""
+
+
+class ProcessStateError(Exception):
+  """Raised by get_running_process_state.
+
+  Errors of this type can either be routine errors because the process is not
+  running or unexpected errors (failed to parse the state file).  The former
+  inherit ProcessNotRunning, the latter inherit UnexpectedProcessStateError."""
+
+
+class ProcessNotRunning(ProcessStateError):
   pass
+
+
+class StateFileNotFound(ProcessNotRunning):
+  pass
+
+
+class ProcessHasDifferentStartTime(ProcessNotRunning):
+  pass
+
+
+class UnexpectedProcessStateError(ProcessStateError):
+  pass
+
+
+class StateFileOpenError(UnexpectedProcessStateError):
+  pass
+
+
+class StateFileParseError(UnexpectedProcessStateError):
+  pass
+
+
+def _read_starttime(pid):  # pragma: no cover
+  try:
+    ret = int(psutil.Process(pid).create_time())
+  except (psutil.NoSuchProcess, psutil.AccessDenied):
+    return None
+
+  if platform.system() == 'Linux':
+    # On Linux psutil adds the btime from /proc/stat to the create_time.
+    # Unfortunately this value isn't constant and can drift by 1 second, so
+    # subtract it again to ensure different service_manager processes see the
+    # same create_times.  See crbug/509493.
+    ret -= psutil.BOOT_TIME
+
+  return ret
+
+
+class ProcessState(object):
+  """Reads and writes process state to files.
+
+  A ProcessState object will contain information about a running process
+  accessible using the 'pid', 'starttime', etc. attributes.
+  """
+
+  def __init__(self, pid=None, starttime=None, version=None, args=None):
+    self.pid = None
+    if pid is not None:
+      self.pid = int(pid)
+
+    self.starttime = None
+    if starttime is not None:
+      self.starttime = int(starttime)
+
+    self.version = version
+    self.args = args
+
+  @classmethod
+  def from_file(cls, filename):
+    """Reads a state file from disk."""
+
+    if not os.path.isfile(filename):
+      raise StateFileNotFound(filename)
+
+    try:
+      with open(filename) as fh:
+        data = json.load(fh)
+        pid = data['pid']
+        starttime = data['starttime']  # pragma: no cover (coverage bug??)
+    except IOError as ex:
+      raise StateFileOpenError(filename, ex)
+    except Exception as ex:
+      raise StateFileParseError(filename, ex)
+
+    # Check that the same process is still on this pid.
+    pid_state = cls.from_pid(pid)
+
+    if not pid_state.is_starttime_near(starttime):
+      raise ProcessHasDifferentStartTime(
+          filename, pid, pid_state.starttime, starttime)
+
+    return cls(pid=pid,
+               starttime=starttime,
+               version=data.get('version'),
+               args=data.get('args'))
+
+  @classmethod
+  def from_pid(cls, pid):
+    """Checks if the PID is running and returns a minimal ProcessState object.
+
+    If the process is running the returned object will only have the pid and
+    starttime properties set.
+    """
+
+    starttime = _read_starttime(pid)
+    if starttime is None:
+      raise ProcessNotRunning(None, pid)
+
+    return cls(pid=pid, starttime=starttime)
+
+  def write_to_file(self, filename):
+    contents = json.dumps({
+        'pid': self.pid,
+        'starttime': self.starttime,
+        'version': self.version,
+        'args': self.args,
+    })
+    LOGGER.info('Writing state file %s: %s', filename, contents)
+
+    with open(filename, 'w') as fh:
+      fh.write(contents)
+
+  def is_starttime_near(self, other):
+    return abs(self.starttime - int(other)) < 10
 
 
 class Service(object):
@@ -58,74 +184,29 @@ class Service(object):
     self._sleep_fn = sleep_fn
 
   def get_running_process_state(self):
-    """Returns an information dict about the process if it's currently running.
+    """Returns a ProcessState object about about the process.
 
-    The returned dict contains the following keys:
-      pid: The process' PID.
-      starttime: The time the process started (as read from /proc/$pid/stat).
-          The value can be compared to the starttime of a process that claims
-          the same PID in the future to check whether it's the same process, or
-          a different process that has recycled the same PID.
-      version: The version of the service's package at the time the service was
-          started.
-
-    Returns None if the service is not running.
+    Raises some subclass of ProcessStateError if the process is not running.
     """
 
-    if not os.path.exists(self._state_file):
-      LOGGER.info('State file %s does not exist', self._state_file)
-      return None
+    return ProcessState.from_file(self._state_file)
 
-    try:
-      with open(self._state_file) as fh:
-        data = json.load(fh)
-        pid = data['pid']
-        starttime = data['starttime']  # pragma: no cover
-    except IOError as ex:
-      LOGGER.error('Failed to open state file %s: %r', self._state_file, ex)
-      return None
-    except Exception as ex:
-      LOGGER.error('Failed to parse state file %s: %r', self._state_file, ex)
-      return None
-
-    # Check that the same process is still on this pid.
-    actual_starttime = self._read_starttime(pid)
-    if actual_starttime is None:
-      LOGGER.warning('Process with PID %d is no longer running', pid)
-      return None
-
-    if actual_starttime != starttime:
-      LOGGER.warning('Process with PID %d now has starttime %f, expected %f',
-          pid, actual_starttime, starttime)
-      return None
-
-    return data
-
-  def is_running(self):
-    """Returns True if the service is running."""
-    return self.get_running_process_state() is not None
-
-  def has_version_changed(self):
+  def has_version_changed(self, state):
     """Returns True if the version has changed since the process started."""
 
-    state = self.get_running_process_state()
-    if state is None:
+    if state.version is None:
       return False
-    if 'version' not in state:
-      return True
 
-    return state['version'] != version_finder.find_version(self.config)
+    return state.version != version_finder.find_version(self.config)
 
-  def has_args_changed(self):
-    """Returns True if the process should be restarted with new args."""
+  def has_args_changed(self, state):
+    """Returns True if the args in the config are different to when the process
+    started."""
 
-    state = self.get_running_process_state()
-    if state is None:
+    if state.args is None:
       return False
-    if 'args' not in state:
-      return True
 
-    return state['args'] != self.args
+    return state.args != self.args
 
   def start(self):
     """Starts the service if it's not running already.
@@ -134,8 +215,12 @@ class Service(object):
     the process couldn't be started.
     """
 
-    if self.is_running():
-      return
+    try:
+      self.get_running_process_state()
+    except ProcessStateError:
+      pass
+    else:
+      return  # Running already.
 
     LOGGER.info("Starting service %s", self.name)
 
@@ -157,39 +242,18 @@ class Service(object):
     Does nothing if it's not running.
     """
 
-    data = self.get_running_process_state()
-    if data is None:
-      return
+    try:
+      state = self.get_running_process_state()
+    except ProcessStateError:
+      return  # Not running.
 
-    if not self._signal_and_wait(
-        data['pid'], data['starttime'], signal.SIGTERM, self.stop_time):
-      self._signal_and_wait(
-          data['pid'], data['starttime'], signal.SIGKILL, None)
+    if not self._signal_and_wait(state, signal.SIGTERM, self.stop_time):
+      self._signal_and_wait(state, signal.SIGKILL, None)
 
     LOGGER.info("Service %s stopped", self.name)
 
     # Remove the state file.
     os.unlink(self._state_file)
-
-  def _read_starttime(self, pid):  # pragma: no cover
-    """Reads the starttime value of the process with the given PID.
-
-    Returns None if that PID does not exist.
-    """
-
-    try:
-      ret = psutil.Process(pid).create_time()
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-      return None
-
-    if platform.system() == 'Linux':
-      # On Linux psutil adds the btime from /proc/stat to the create_time.
-      # Unfortunately this value isn't constant and can drift by 1 second, so
-      # subtract it again to ensure different service_manager processes see the
-      # same create_times.  See crbug/509493.
-      ret -= psutil.BOOT_TIME
-
-    return ret
 
   def _start_child(self, pipe):
     """The part of start() that runs in the child process.
@@ -238,30 +302,21 @@ class Service(object):
     LOGGER.info("Service %s started with PID %d", self.name, data['pid'])
 
   def _write_state_file(self, pid):
-    starttime = self._read_starttime(pid)
-    if starttime is None:
+    try:
+      state = ProcessState.from_pid(pid)
+    except ProcessStateError as ex:
       raise ServiceException(
-          'Failed to start %s: daemon process exited' % self.name)
+          'Failed to start %s: daemon process exited (%r)' % (self.name, ex))
 
-    contents = json.dumps({
-        'pid': pid,
-        'starttime': starttime,
-        'version': version_finder.find_version(self.config),
-        'args': self.args,
-    })
-    LOGGER.info('Writing state file %s: %s', self._state_file, contents)
+    state.version = version_finder.find_version(self.config)
+    state.args = self.args
+    state.write_to_file(self._state_file)
 
-    # Write the daemon's PID and its starttime to the state file.
-    with open(self._state_file, 'w') as fh:
-      fh.write(contents)
-
-  def _signal_and_wait(self, pid, starttime, sig, wait_timeout):
+  def _signal_and_wait(self, state, sig, wait_timeout):
     """Sends a signal to the given process, and optionally waits for it to exit.
 
     Args:
-      pid: The PID of the process to signal.
-      starttime: The starttime of the process.  Used to check whether another
-          process has recycled this PID.
+      state: A ProcessState object of the process to signal.
       sig: The signal number to send (see the constants in the signal module).
       wait_timeout: Time in seconds to wait for this process to exit after
           sending the signal, or None to return immediately.
@@ -272,9 +327,9 @@ class Service(object):
     """
 
     LOGGER.info("Sending signal %d to %s with PID %d",
-                sig, self.name, pid)
+                sig, self.name, state.pid)
     try:
-      os.kill(pid, sig)
+      os.kill(state.pid, sig)
     except OSError as ex:
       if ex.errno == errno.ESRCH:
         # The process exited before we could kill it.
@@ -282,21 +337,20 @@ class Service(object):
       raise
 
     if wait_timeout is not None:
-      return self._wait_with_timeout(pid, starttime, wait_timeout)
+      return self._wait_with_timeout(state, wait_timeout)
 
     return True
 
-  def _wait_with_timeout(self, pid, starttime, timeout):
+  def _wait_with_timeout(self, state, timeout):
     """Waits for the process to exit."""
 
     deadline = self._time_fn() + timeout
     while self._time_fn() < deadline:
-      actual_starttime = self._read_starttime(pid)
-      if actual_starttime is None:
-        # The process isn't running any more.
-        return True
-      if actual_starttime != starttime:
-        # This PID belongs to a different process now.
+      try:
+        new_state = ProcessState.from_pid(state.pid)
+      except ProcessStateError:
+        return True  # Not running
+      if not new_state.is_starttime_near(state.starttime):
         return True
 
       self._sleep_fn(0.1)
@@ -306,8 +360,8 @@ class Service(object):
 class OwnService(Service):
   """A special service that represents the service_manager itself.
 
-  Makes the is_running() and has_version_changed() functionality available for
-  the service_manager process.
+  Makes the get_running_process_state() functionality available for the
+  service_manager process.
   """
 
   def __init__(self, state_directory, root_directory, **kwargs):
@@ -325,8 +379,12 @@ class OwnService(Service):
     # start at the same time and both write their own state file.
     try:
       with daemon.flock('service_manager.flock', self._state_directory):
-        if self.is_running():
-          return False
+        try:
+          self.get_running_process_state()
+        except ProcessStateError:
+          pass
+        else:
+          return False  # already running
 
         self._write_state_file(os.getpid())
         return True
