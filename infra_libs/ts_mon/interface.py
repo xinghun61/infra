@@ -41,6 +41,10 @@ from monacq.proto import metrics_pb2
 
 from infra_libs.ts_mon import errors
 
+# The maximum number of MetricsData messages to include in each HTTP request.
+# MetricsCollections larger than this will be split into multiple requests.
+METRICS_DATA_LENGTH_LIMIT = 5000
+
 
 class State(object):
   """Package-level state is stored here so that it is easily accessible.
@@ -91,8 +95,15 @@ def flush():
     raise errors.MonitoringNoConfiguredMonitorError(None)
 
   proto = metrics_pb2.MetricsCollection()
+
+  def loop_action(proto):
+    if len(proto.data) >= METRICS_DATA_LENGTH_LIMIT:
+      state.global_monitor.send(proto)
+      del proto.data[:]
+
   for metric in state.metrics:
-    metric.serialize_to(proto, default_target=state.default_target)
+    metric.serialize_to(proto, default_target=state.default_target,
+                        loop_action=loop_action)
 
   state.global_monitor.send(proto)
 

@@ -85,7 +85,8 @@ class MetricTest(MetricTestBase):
     m.set('val1', fields={'foo': 1})
     m.set('val2', fields={'foo': 2})
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p)
+    loop_action = mock.Mock()
+    m.serialize_to(p, loop_action=loop_action)
     e = textwrap.dedent('''\
         data {
           name: "test"
@@ -123,6 +124,7 @@ class MetricTest(MetricTestBase):
         }
     ''')
     self.assertEquals(str(p), e)
+    self.assertEquals(2, loop_action.call_count)
 
   def test_serialize_default_target(self):
     t = targets.DeviceTarget('reg', 'net', 'host')

@@ -33,7 +33,8 @@ class GlobalsTest(auto_stub.TestCase):
     interface.state.flush_mode = 'all'
     interface.state.global_monitor = stubs.MockMonitor()
 
-    def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def serialize_to(pb, default_target=None, loop_action=None):
       pb.data.add().name = 'foo'
 
     fake_metric = mock.Mock()
@@ -70,7 +71,8 @@ class GlobalsTest(auto_stub.TestCase):
   def test_flush(self):
     interface.state.global_monitor = stubs.MockMonitor()
 
-    def serialize_to(pb, default_target=None): # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def serialize_to(pb, default_target=None, loop_action=None):
       pb.data.add().name = 'foo'
 
     fake_metric = mock.Mock()
@@ -87,6 +89,31 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertIsNone(interface.state.global_monitor)
     with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
       interface.flush()
+
+  def test_flush_many(self):
+    interface.state.global_monitor = stubs.MockMonitor()
+
+    # pylint: disable=unused-argument
+    def serialize_to(pb, default_target=None, loop_action=None):
+      for _ in xrange(5001):
+        loop_action(pb)
+        pb.data.add().name = 'foo'
+
+    # We can't use the mock's call_args_list here because the same object is
+    # reused as the argument to both calls and cleared inbetween.
+    data_lengths = []
+    def send(proto):
+      data_lengths.append(len(proto.data))
+    interface.state.global_monitor.send.side_effect = send
+
+    fake_metric = mock.Mock()
+    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+    interface.state.metrics.add(fake_metric)
+
+    interface.flush()
+    self.assertEquals(2, interface.state.global_monitor.send.call_count)
+    self.assertEqual(5000, data_lengths[0])
+    self.assertEqual(1, data_lengths[1])
 
   def test_register_unregister(self):
     fake_metric = mock.Mock()

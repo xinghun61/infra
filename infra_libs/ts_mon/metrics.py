@@ -72,13 +72,15 @@ class Metric(object):
   def unregister(self):
     interface.unregister(self)
 
-  def serialize_to(self, collection_pb, default_target=None):
-    """Add this Metric to a metrics_pb2.MetricsCollection protobuf.
+  def serialize_to(self, collection_pb, default_target=None, loop_action=None):
+    """Generate metrics_pb2.MetricsData messages for this metric.
 
     Args:
       collection_pb (metrics_pb2.MetricsCollection): protocol buffer into which
         to add the current metric values.
       default_target (Target): a Target to use if self._target is not set.
+      loop_action (function(metrics_pb2.MetricsCollection)): a function that we
+        must call with the collection_pb every loop iteration.
 
     Raises:
       MonitoringNoConfiguredTargetError: if neither self._target nor
@@ -86,6 +88,8 @@ class Metric(object):
     """
 
     for fields, value in self._values.iteritems():
+      if callable(loop_action):
+        loop_action(collection_pb)
       metric_pb = collection_pb.data.add()
       metric_pb.metric_name_prefix = '/chrome/infra/'
       metric_pb.name = self._name
