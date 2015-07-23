@@ -10,7 +10,7 @@ import subprocess
 
 from infra.path_hacks.depot_tools import _depot_tools as depot_tools_path
 
-# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 PROJECT = '824709284458'

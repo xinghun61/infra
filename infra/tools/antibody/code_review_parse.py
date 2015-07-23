@@ -10,7 +10,7 @@ from simplejson.scanner import JSONDecodeError
 
 import infra.tools.antibody.cloudsql_connect as csql
 
-# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 time_format = '%Y-%m-%d %H:%M:%S'

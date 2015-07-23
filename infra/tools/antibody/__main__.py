@@ -24,7 +24,7 @@ import infra_libs.logs
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
