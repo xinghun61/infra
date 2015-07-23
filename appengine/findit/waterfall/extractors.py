@@ -4,8 +4,8 @@
 
 import re
 
-from waterfall.extractor import Extractor
 from waterfall import extractor_util
+from waterfall.extractor import Extractor
 from waterfall.failure_signal import FailureSignal
 
 
@@ -51,7 +51,6 @@ class GeneralExtractor(Extractor):
           # The end line in GMOCK WARNING statements.
           is_gmock_warning = False
         continue  # pragma: no cover
-
 
       if line and not extractor_util.ShouldIgnoreLine(line):
         self.ExtractFiles(line, signal)
@@ -134,9 +133,40 @@ class CheckPermExtractor(Extractor):
     return signal
 
 
+class CheckSizesExtractor(Extractor):
+  """For Sizes, only extract files."""
+  BEGINNING_MARKER = '# Static initializers in'
+  HINT_MARKER = '# HINT:'
+  END_MARKER = re.compile('# Found \\d+ static initializers in \\d+ files?\\.')
+
+  def Extract(self, failure_log, *_):
+    signal = FailureSignal()
+    failure_started = False
+
+    for line in failure_log.splitlines():
+      if line.startswith(self.BEGINNING_MARKER):
+        failure_started = True
+        continue
+
+      # Skip hints.
+      if line.startswith(self.HINT_MARKER):
+        continue
+
+      if self.END_MARKER.match(line):
+        failure_started = False
+        continue
+
+      # Begin extracting file names.
+      if failure_started:
+        self.ExtractFiles(line, signal)
+
+    return signal
+
+
 EXTRACTORS = {
     'compile': CompileStepExtractor,
     'check_perms': CheckPermExtractor,
+    'sizes': CheckSizesExtractor,
 }
 
 

@@ -5,13 +5,12 @@
 import textwrap
 
 from testing_utils import testing
-
-from waterfall.extractor import Extractor
 from waterfall import extractors
-from waterfall.failure_signal import FailureSignal
+from waterfall.extractor import Extractor
 
 
 class ExtractorsTest(testing.AppengineTestCase):
+
   def _RunTest(self, failure_log, extractor_class, expected_signal_json,
                bot='bot', master='master'):
     signal = extractor_class().Extract(
@@ -172,7 +171,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         missing and no known rule to make it""")
     expected_signal_json = {
         'files': {
-            'r/w/c/sess.js' : []
+            'r/w/c/sess.js': []
         },
         'tests': [],
         'keywords': {}
@@ -208,12 +207,12 @@ Note:You can safely ignore the above warning unless this call should not happen.
         1 error generated.""")
     expected_signal_json = {
         'files': {
-            'a/b/in_signal_1.cc' : [],
-            'a/c/in_signal_2.cc' : [],
-            'a/c/in_signal_3.cc' : [],
-            'a/b/in_signal_4.cc' : [],
-            'a/c/in_signal_5.cc' : [],
-            'a/c/in_signal_6.cc' : []
+            'a/b/in_signal_1.cc': [],
+            'a/c/in_signal_2.cc': [],
+            'a/c/in_signal_3.cc': [],
+            'a/b/in_signal_4.cc': [],
+            'a/c/in_signal_5.cc': [],
+            'a/c/in_signal_6.cc': []
         },
         'tests': [],
         'keywords': {}
@@ -241,16 +240,76 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.CheckPermExtractor, expected_signal_json)
 
+  def testCheckSizesExtractor(self):
+    failure_log = textwrap.dedent("""
+        # Static initializers in a/b/c:
+        # HINT: blabla a/b/c.py
+        # HINT: blabla a/b/c.py
+        # a.cc
+        # a.cc
+        # b.cc
+        # Found 1 static initializer in 3 files.
+
+        RESULT x
+
+        # Static initializers in d/e/f:
+        # HINT: blabla a/b/c.py
+        # HINT: blabla a/b/c.py
+        # HINT: blabla a/b/c.py
+        # c.cc
+        # d.cc
+        # d.cc
+        # d.cc
+        # Found 2 static initializers in 2 files.
+        
+        RESULT Y
+
+        # Static initializers in g/h/i:
+        # HINT: blabla a/b/c.py
+        # e.cc
+        # Found 1 static initializer in 1 file.
+
+        RESULT Z
+
+        # Static initializers in j/k/l
+        # HINT: blabla a/b/c.py
+        # Found 0 static initializers in 0 files.
+
+        RESULT X
+
+        # Static initializers in m/n/o
+        # HINT: blabla a/b/c.py
+        # f.cc
+        # Found 1 static initializer in 2 files.""")
+    expected_signal_json = {
+        'files': {
+            'a.cc': [],
+            'b.cc': [],
+            'c.cc': [],
+            'd.cc': [],
+            'e.cc': [],
+            'f.cc': []
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.CheckSizesExtractor, expected_signal_json)
+
   def testExtractSignal(self):
     class DummyGeneralExtractor(Extractor):
+
       def Extract(self, *_):
         return '0'
 
     class DummyExtractor1(Extractor):
+
       def Extract(self, *_):
         return '1'
 
     class DummyExtractor2(Extractor):
+
       def Extract(self, *_):
         return '2'
 
