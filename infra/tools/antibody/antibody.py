@@ -21,7 +21,7 @@ TBR_BY_USER_NAME = 'tbr_by_user.html'
 STATS_NAME = 'stats.html'
 LEADERBOARD_NAME = 'leaderboard.html'
 
-# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
+# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
 
 

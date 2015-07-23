@@ -41,6 +41,13 @@
     'rev': '9ac7d55150c8410a08ee3b00b89bfeac3dbd8e8f',
     'implicit': True,  # Required by pyOpenSSL
   },
+  'docutils': {
+    'version': '0.12',
+    'build': '0',
+    'repo': 'infra/third_party/docutils',
+    'rev': 'fa395d839ba1fe8363f48487067374f7aff658f2',
+    'implicit': True,  # Required by Sphinx
+  },
   'enum34': {
     'version': '1.0.4',
     'build': '0',
@@ -68,6 +75,18 @@
     'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
     'implicit': True,  # Required by oauth2client, google_api_python_client,
                        # and monacq.
+  },
+  'Jinja2': {
+    'version': '2.7.3dev_20141205',
+    'build': '0',
+    'repo': 'external/github.com/mitsuhiko/jinja2',
+    'rev': '762c612e7276889aac265645da00e62e33d1573c',
+    # Bug(https://www.python.org/dev/peps/pep-0440/#handling-of-pre-releases):
+    # When a dev release is the only available release, it SHOULD be used to
+    # satisfy a requirement. However, that does not work here. So the package
+    # has to be installed directly since already-installed dev releases are
+    # used to satisfy requirements.
+    # 'implicit': True,  # Required by Sphinx
   },
   'MarkupSafe': {
     'version': '0.23',
@@ -145,6 +164,13 @@
     'rev': 'c67c9208d858788f9b24b0631171a6910b2c19cf',
     'implicit': True, # Required by cffi
   },
+  'Pygments': {
+    'version': '1.6dev_20140923',
+    'build': '0',
+    'repo': 'external/bitbucket.org/birkenfeld/pygments-main',
+    'rev': '39eadad652f2a4c39a6ee163d03c52c078644dc6',
+    # 'implicit': True,  # Required by Sphinx
+  },
   'pytz': {
     'version': '2014.4',
     'build': '1',
@@ -190,6 +216,18 @@
     'repo': 'external/bitbucket.org/gutworth/six',
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
     'implicit': True,  # Required by python_dateutil, webtest, uritemplate.
+  },
+  'Sphinx': {
+    'version': '1.2.3dev_20140923',
+    'build': '0',
+    'repo': 'external/bitbucket.org/birkenfeld/sphinx',
+    'rev': '1a9c572c4cc5306029a35734afd63797fbe86f4d',
+  },
+  'sphinxcontrib_napoleon': {
+    'version': '0.2.8',
+    'build': '0',
+    'repo': 'infra/third_party/sphinxcontrib_napoleon',
+    'rev': 'bd5bdacd4b364f582258ce0bdfcd507ab3b71270',
   },
   'testing_support': {
     'version': '0.1.6',

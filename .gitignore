@@ -6,6 +6,8 @@ luci
 appengine/swarming
 appengine/milo/vulcanized_main.html
 .DS_Store
+/doc/html
+/doc/source/reference
 /node/runtimes
 # build_cache is used by infra.services.builder_alerts
 build_cache
