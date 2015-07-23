@@ -5,13 +5,10 @@
 package example
 
 import (
-	"golang.org/x/net/context"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/helper"
-	"infra/gae/libs/gae/prod"
-
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/gae/impl/prod"
+	rdsS "github.com/luci/gae/service/rawdatastore"
+	"golang.org/x/net/context"
 )
 
 // AddReq describes the input parameters to the 'Add' RPC. Name is required,
@@ -36,12 +33,12 @@ func (Example) Add(c context.Context, r *AddReq) (rsp *AddRsp, err error) {
 	rsp = &AddRsp{}
 
 	c = prod.Use(c)
-	err = gae.GetRDS(c).RunInTransaction(func(c context.Context) error {
-		rds := gae.GetRDS(c)
+	err = rdsS.Get(c).RunInTransaction(func(c context.Context) error {
+		rds := rdsS.Get(c)
 		ctr := &Counter{}
-		pls := helper.GetPLS(ctr)
+		pls := rdsS.GetPLS(ctr)
 		key := rds.NewKey("Counter", r.Name, 0, nil)
-		if err := rds.Get(key, pls); err != nil && err != gae.ErrDSNoSuchEntity {
+		if err := rds.Get(key, pls); err != nil && err != rdsS.ErrNoSuchEntity {
 			return err
 		}
 		rsp.Prev = ctr.Val

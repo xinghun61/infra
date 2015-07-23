@@ -5,13 +5,10 @@
 package example
 
 import (
-	"golang.org/x/net/context"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/helper"
-	"infra/gae/libs/gae/prod"
-
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/gae/impl/prod"
+	rdsS "github.com/luci/gae/service/rawdatastore"
+	"golang.org/x/net/context"
 )
 
 // CurrentValueReq describes the inputs to the CurrentValueReq RPC.
@@ -27,11 +24,11 @@ type CurrentValueRsp struct {
 // CurrentValue gets the current value of a counter (duh)
 func (Example) CurrentValue(c context.Context, r *CurrentValueReq) (rsp *CurrentValueRsp, err error) {
 	c = prod.Use(c)
-	rds := gae.GetRDS(c)
+	rds := rdsS.Get(c)
 
 	key := rds.NewKey("Counter", r.Name, 0, nil)
 	ctr := &Counter{}
-	if err = rds.Get(key, helper.GetPLS(ctr)); err != nil {
+	if err = rds.Get(key, rdsS.GetPLS(ctr)); err != nil {
 		return
 	}
 

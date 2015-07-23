@@ -5,12 +5,9 @@
 package meta
 
 import (
-	"golang.org/x/net/context"
-
+	rdsS "github.com/luci/gae/service/rawdatastore"
 	"github.com/luci/luci-go/common/errors"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/helper"
+	"golang.org/x/net/context"
 )
 
 var mark = errors.MakeMarkFn("eg")
@@ -25,15 +22,15 @@ type EntityGroupMeta struct {
 // GetEntityGroupVersion returns the entity group version for the entity group
 // containing root. If the entity group doesn't exist, this function will return
 // zero and a nil error.
-func GetEntityGroupVersion(c context.Context, root gae.DSKey) (int64, error) {
+func GetEntityGroupVersion(c context.Context, root rdsS.Key) (int64, error) {
 	for root.Parent() != nil {
 		root = root.Parent()
 	}
-	rds := gae.GetRDS(c)
+	rds := rdsS.Get(c)
 	egm := &EntityGroupMeta{}
-	err := rds.Get(rds.NewKey("__entity_group__", "", 1, root), helper.GetPLS(egm))
+	err := rds.Get(rds.NewKey("__entity_group__", "", 1, root), rdsS.GetPLS(egm))
 	ret := egm.Version
-	if err == gae.ErrDSNoSuchEntity {
+	if err == rdsS.ErrNoSuchEntity {
 		// this is OK for callers. The version of the entity group is effectively 0
 		// in this case.
 		err = nil

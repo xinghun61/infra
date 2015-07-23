@@ -8,13 +8,11 @@ import (
 	"errors"
 	"testing"
 
-	"golang.org/x/net/context"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/filters/featureBreaker"
-	"infra/gae/libs/gae/memory"
-
+	"github.com/luci/gae/filter/featureBreaker"
+	"github.com/luci/gae/impl/memory"
+	"github.com/luci/gae/service/rawdatastore"
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/net/context"
 )
 
 func TestGetEntityGroupVersion(t *testing.T) {
@@ -23,10 +21,10 @@ func TestGetEntityGroupVersion(t *testing.T) {
 	Convey("GetEntityGroupVersion", t, func() {
 		c := memory.Use(context.Background())
 		c, fb := featureBreaker.FilterRDS(c, errors.New("INTERNAL_ERROR"))
-		rds := gae.GetRDS(c)
+		rds := rawdatastore.Get(c)
 
-		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), gae.DSPropertyMap{
-			"Val": {gae.MkDSProperty(10)},
+		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), rawdatastore.PropertyMap{
+			"Val": {rawdatastore.MkProperty(10)},
 		})
 		So(err, ShouldBeNil)
 

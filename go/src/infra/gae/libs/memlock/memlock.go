@@ -11,13 +11,12 @@ package memlock
 import (
 	"bytes"
 	"errors"
-	"golang.org/x/net/context"
 	"time"
 
-	"infra/gae/libs/gae"
-
+	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"golang.org/x/net/context"
 )
 
 // ErrFailedToLock is returned from TryWithLock when it fails to obtain a lock
@@ -71,7 +70,7 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 	ctx = logging.SetField(ctx, "key", key)
 	ctx = logging.SetField(ctx, "clientID", clientID)
 	log := logging.Get(ctx)
-	mc := gae.GetMC(ctx)
+	mc := memcache.Get(ctx)
 
 	key = memlockKeyPrefix + key
 	cid := []byte(clientID)
@@ -124,7 +123,7 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 
 	err := mc.Add(mc.NewItem(key).SetValue(cid).SetExpiration(memcacheLockTime))
 	if err != nil {
-		if err != gae.ErrMCNotStored {
+		if err != memcache.ErrNotStored {
 			log.Warningf("error adding: %s", err)
 		}
 		if !checkAnd(refresh) {

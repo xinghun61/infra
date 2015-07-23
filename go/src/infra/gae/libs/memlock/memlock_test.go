@@ -10,10 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/filters/featureBreaker"
-	"infra/gae/libs/gae/memory"
-
+	"github.com/luci/gae/filter/featureBreaker"
+	"github.com/luci/gae/impl/memory"
+	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
 	. "github.com/smartystreets/goconvey/convey"
@@ -26,14 +25,14 @@ func init() {
 }
 
 type getBlockerFilter struct {
-	gae.Memcache
+	memcache.Interface
 	sync.Mutex
 }
 
-func (f *getBlockerFilter) Get(key string) (gae.MCItem, error) {
+func (f *getBlockerFilter) Get(key string) (memcache.Item, error) {
 	f.Lock()
 	defer f.Unlock()
-	return f.Memcache.Get(key)
+	return f.Interface.Get(key)
 }
 
 func TestSimple(t *testing.T) {
@@ -65,7 +64,7 @@ func TestSimple(t *testing.T) {
 		}
 
 		ctx, fb := featureBreaker.FilterMC(memory.Use(ctx), nil)
-		mc := gae.GetMC(ctx)
+		mc := memcache.Get(ctx)
 
 		Convey("fails to acquire when memcache is down", func() {
 			fb.BreakFeatures(nil, "Add")
@@ -135,11 +134,11 @@ func TestSimple(t *testing.T) {
 
 		Convey("can lose it when it gets stolen", func() {
 			gbf := &getBlockerFilter{}
-			ctx = gae.AddMCFilters(ctx, func(_ context.Context, mc gae.Memcache) gae.Memcache {
-				gbf.Memcache = mc
+			ctx = memcache.AddFilters(ctx, func(_ context.Context, mc memcache.Interface) memcache.Interface {
+				gbf.Interface = mc
 				return gbf
 			})
-			mc = gae.GetMC(ctx)
+			mc = memcache.Get(ctx)
 			err := TryWithLock(ctx, "testkey", "id", func(ctx context.Context) error {
 				// simulate waiting for 64*delay time, and ensuring that checkLoop
 				// runs that many times.

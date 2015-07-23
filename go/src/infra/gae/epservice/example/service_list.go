@@ -5,13 +5,10 @@
 package example
 
 import (
-	"golang.org/x/net/context"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/helper"
-	"infra/gae/libs/gae/prod"
-
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/gae/impl/prod"
+	"github.com/luci/gae/service/rawdatastore"
+	"golang.org/x/net/context"
 )
 
 // ListRsp is the response from the 'List' RPC. It contains a list of Counters
@@ -23,16 +20,16 @@ type ListRsp struct {
 // List returns a list of all the counters. Note that it's very poorly
 // implemented! It's completely unpaged. I don't care :).
 func (Example) List(c context.Context) (rsp *ListRsp, err error) {
-	rds := gae.GetRDS(prod.Use(c))
+	rds := rawdatastore.Get(prod.Use(c))
 	rsp = &ListRsp{}
-	dst := []gae.DSPropertyMap{}
+	dst := []rawdatastore.PropertyMap{}
 	_, err = rds.GetAll(rds.NewQuery("Counter"), &dst)
 	if err != nil {
 		return
 	}
 	rsp.Counters = make([]Counter, len(dst))
 	for i, m := range dst {
-		if err = helper.GetPLS(rsp.Counters[i]).Load(m); err != nil {
+		if err = rawdatastore.GetPLS(rsp.Counters[i]).Load(m); err != nil {
 			return
 		}
 	}

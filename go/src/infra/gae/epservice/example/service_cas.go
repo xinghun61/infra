@@ -5,13 +5,10 @@
 package example
 
 import (
-	"golang.org/x/net/context"
-
-	"infra/gae/libs/gae"
-	"infra/gae/libs/gae/helper"
-	"infra/gae/libs/gae/prod"
-
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
+	"github.com/luci/gae/impl/prod"
+	rdsS "github.com/luci/gae/service/rawdatastore"
+	"golang.org/x/net/context"
 )
 
 // CASReq is the input for the CAS RPC
@@ -26,11 +23,11 @@ type CASReq struct {
 func (Example) CAS(c context.Context, r *CASReq) (err error) {
 	success := false
 	c = prod.Use(c)
-	err = gae.GetRDS(c).RunInTransaction(func(c context.Context) error {
-		rds := gae.GetRDS(c)
+	err = rdsS.Get(c).RunInTransaction(func(c context.Context) error {
+		rds := rdsS.Get(c)
 		key := rds.NewKey("Counter", r.Name, 0, nil)
 		ctr := &Counter{}
-		pls := helper.GetPLS(ctr)
+		pls := rdsS.GetPLS(ctr)
 		if err := rds.Get(key, pls); err != nil {
 			return err
 		}

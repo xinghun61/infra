@@ -26,7 +26,7 @@ golang.org/x/net #5aa7325eaa14d7ed4b520f40d58adf2834c8de01
 golang.org/x/oauth2 #f98d0160877ab4712b906626425ed8b0b320907c
 golang.org/x/text #c93e7c9fff19fb9139b5ab04ce041833add0134e
 google.golang.org/api #d4ab0b854f8606d689612515c3d18bd3b19d7e70
-google.golang.org/appengine #a8764da935a084ad4a46973900f723730c58b87d !https://chromium.googlesource.com/external/github.com/golang/appengine.git
+google.golang.org/appengine #61bec684bd7bce2d7960be6735d0d62fe6c2b99a !https://chromium.googlesource.com/external/github.com/golang/appengine.git
 google.golang.org/cloud #2f1f05fa5ef92aac6109243f351e01ae3e033402
 google.golang.org/grpc #f5ebd86be717593ab029545492c93ddf8914832b !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
 gopkg.in/tomb.v1 #dd632973f1e7218eb1089048e0798ec9ae7dceb8 !https://chromium.googlesource.com/external/github.com/go-tomb/tomb.git
