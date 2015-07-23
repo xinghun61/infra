@@ -102,8 +102,8 @@ def run_state_machine_pass(
       master.convert_action_items_to_cli(
       action_items, abs_master_directory,
       enable_gclient=enable_gclient_sync))
-  logger.info('current state: %s', state)
-  logger.info('performing action: %s', action_name)
+  logger.info('%s: current state: %s', abs_master_directory, state)
+  logger.info('%s: performing action: %s', abs_master_directory, action_name)
 
   if execution_list:
     if prod:
@@ -131,6 +131,7 @@ def main():  # pragma: no cover
   args = parse_args()
   matchlist = buildbot_state.construct_pattern_matcher()
   logger = logging.getLogger(__name__)
+  logs.add_handler(logger)
 
   if args.list_all_states:
     matchlist.print_all_states()
