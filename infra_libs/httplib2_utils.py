@@ -156,14 +156,15 @@ class InstrumentedHttp(httplib2.Http):
     self.fields = {'name': name, 'client': 'httplib2'}
     self.time_fn = time_fn
 
-  def request(self, *args, **kwargs):
+  def request(self, uri, method="GET", body=None, *args, **kwargs):
     request_bytes = 0
-    if 'body' in kwargs:
-      request_bytes = len(kwargs['body'])
+    if body is not None:
+      request_bytes = len(body)
     http_metrics.request_bytes.add(request_bytes, fields=self.fields)
 
     start_time = self.time_fn()
-    response, content = super(InstrumentedHttp, self).request(*args, **kwargs)
+    response, content = super(InstrumentedHttp, self).request(
+        uri, method, body, *args, **kwargs)
     duration_msec = (self.time_fn() - start_time) * 1000
 
     http_metrics.response_bytes.add(len(content), fields=self.fields)
