@@ -79,12 +79,14 @@ def get_tbr(git_line):
 # identify the correct one
 def get_review_url(git_line):
   review_url = None
-  if re.match(r'^Review:.+$', git_line):
+  if re.match(r'^Review: .+$', git_line):
     review_url = git_line[8:]
-  elif re.match(r'^Review URL:.+$', git_line):
+  elif re.match(r'^Review URL: .+$', git_line):
     review_url = git_line[12:]
-  elif re.match(r'^Code review URL:.+$', git_line):
+  elif re.match(r'^Code review URL: .+$', git_line):
     review_url = git_line[17:]
+  elif re.match(r'^Reviewed-on: .+$', git_line):
+    review_url = git_line[13:]
   return review_url
 
 
