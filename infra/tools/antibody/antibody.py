@@ -12,10 +12,13 @@ import shutil
 import time
 
 import infra.tools.antibody.cloudsql_connect as csql
+from infra.tools.antibody import compute_stats
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 ANTIBODY_UI_MAIN_NAME = 'index.html'
 TBR_BY_USER_NAME = 'tbr_by_user.html'
+STATS_NAME = 'stats.html'
+LEADERBOARD_NAME = 'leaderboard.html'
 
 # https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
@@ -51,32 +54,22 @@ def setup_antibody_db(cc, filename):  # pragma: no cover
 def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
   template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   template_env = jinja2.Environment(loader=template_loader)
-  index_template = template_env.get_template('antibody_ui_all.jinja')
-  tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
-
-  template_vars = {
+  template_vars_all = {
       'title' : 'Potentially Suspicious Commits',
       'description' : 'List of commits with a TBR but no lgtm',
       'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
       'tbr_by_user_link' : TBR_BY_USER_NAME,
+      'stats_link' : STATS_NAME,
+      'leaderboard_link' : LEADERBOARD_NAME,
       'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
                                         time.gmtime()),
-      'page_header_text' : "All Potentially Suspicious Commits",
-      'to_be_reviewed' : "To be reviewed by user",
-      'num_tbr_no_lgtm': len(suspicious_commits_data),
-      'num_no_review_url': 42,
-      'blank_TBR': 3,
-      'table_headers' : ['git_hash', 'rietveld_url', 
-                         'request_timestamp'],
+      'page_header_text' : "Antibody",
+      'to_be_reviewed' : "TBR by user",
+      'stats' : 'Stats',
+      'leaderboard' : 'Leaderboard',
       'suspicious_commits' : suspicious_commits_data,
       'gitiles_prefix' : gitiles_prefix,
   }
-  with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
-    f.write(index_template.render(template_vars))
-
-  with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
-    f.write(tbr_by_user_template.render(template_vars))
-
   try:  # pragma: no cover
     if (ui_dirpath != THIS_DIR):  # pragma: no cover
       shutil.rmtree(os.path.join(ui_dirpath, 'static'))
@@ -89,15 +82,78 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
     shutil.copytree(os.path.join(THIS_DIR, 'static'),
                     os.path.join(ui_dirpath, 'static'))
 
+  file_generators = [generate_homepage, generate_tbr_page, generate_stats_page,
+                     generate_leaderboard_page]
+  for item in file_generators:
+    item(template_env, template_vars_all, ui_dirpath)
+
+
+def generate_homepage(template_env, template_vars_all, ui_dirpath):
+  index_template = template_env.get_template('antibody_ui_all.jinja')
+  with open(os.path.join(ui_dirpath, 'all_monthly_stats.json')) as f:
+    data = json.load(f)
+  stats_7_day = data['7_days']
+  template_vars = {
+      'num_tbr_no_lgtm': stats_7_day['tbr_no_lgtm'],
+      'num_no_review_url': stats_7_day['no_review_url'],
+      'blank_TBR': stats_7_day['blank_tbr'],
+      'table_headers' : ['Git Commit Subject', 'Review URL',
+                         'Request Timestamp']}
+  template_vars.update(template_vars_all)
+  with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
+    f.write(index_template.render(template_vars))
+
+
+def generate_tbr_page(template_env, template_vars_all, ui_dirpath):
+  tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
+  template_vars = {
+  }
+  template_vars.update(template_vars_all)
+  with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
+    f.write(tbr_by_user_template.render(template_vars))
+
+
+def generate_stats_page(template_env, template_vars_all, ui_dirpath):
+  stats_template = template_env.get_template('stats.jinja')
+  with open(os.path.join(ui_dirpath, 'all_monthly_stats.json')) as f:
+    data = json.load(f)
+  template_vars = {}
+  stats_all = [
+      [data['7_days'], 'stats_7_day'],
+      [data['30_days'], 'stats_30_day'],
+      [data['all_time'], 'stats_all_time'],
+  ]
+  categories_keys = [
+      ['"Suspicious":Total Commits', 'suspicious_to_total_ratio'],
+      ['Total Commits', 'total_commits'],
+      ['TBR without LGTM', 'tbr_no_lgtm'],
+      ['Without review url', 'no_review_url'],
+      ['Blank TBR', 'blank_tbr'],
+  ]
+  for stats, key in stats_all:
+    template_vars[key] = [[x[0], stats[x[1]]] for x in categories_keys]
+  template_vars.update(template_vars_all)
+  with open(os.path.join(ui_dirpath, STATS_NAME), 'wb') as f:
+    f.write(stats_template.render(template_vars))
+
+
+def generate_leaderboard_page(template_env, template_vars_all, ui_dirpath):
+  leaderboard_template = template_env.get_template('leaderboard.jinja')
+  template_vars = {
+  }
+  template_vars.update(template_vars_all)
+  with open(os.path.join(ui_dirpath, LEADERBOARD_NAME), 'wb') as f:
+    f.write(leaderboard_template.render(template_vars))
+
 
 def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):
-  # tbr_no_lgtm: review_url, request_timestamp, hash, people_email_address
+  # tbr_no_lgtm: review_url, request_timestamp, subject, people_email_address,
+  # hash
   tbr_blame_dict = {}
-  for url, timestamp, git_hash, reviewer in tbr_no_lgtm:
-    reviewer = reviewer.strip().split('@')
-    timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    tbr_blame_dict.setdefault(reviewer[0], []).append(
-        [git_hash, url, timestamp])
+  for url, timestamp, subject, reviewer, git_hash in tbr_no_lgtm:
+    # timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    tbr_blame_dict.setdefault(reviewer, []).append(
+        [subject, url, timestamp, git_hash])
   tbr_data = {
       "by_user" : tbr_blame_dict,
       "gitiles_prefix" : gitiles_prefix,
@@ -106,10 +162,19 @@ def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):
     f.write(json.dumps(tbr_data))
 
 
+def generate_stats_files(cc, output_dirpath):  # pragma: no cover
+  compute_stats.all_time_leaderboard(cc,
+      os.path.join(output_dirpath, 'all_time_leaderboard.json'))
+  compute_stats.past_month_leaderboard(cc,
+      os.path.join(output_dirpath, 'past_month_leaderboard.json'))
+  compute_stats.all_monthly_stats(cc,
+      os.path.join(output_dirpath, 'all_monthly_stats.json'))
+
+
 def get_gitiles_prefix(git_checkout_path):
   with open(os.path.join(git_checkout_path, 'codereview.settings'), 'r') as f:
     lines = f.readlines()
-  for line in lines:  
+  for line in lines:
     if line.startswith('VIEW_VC:'):
       return line[len('VIEW_VC:'):].strip()
   # TODO (ksho): implement more sophisticated solution if codereview.settings

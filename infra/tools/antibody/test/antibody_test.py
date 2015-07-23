@@ -50,6 +50,31 @@ class MyTest(auto_stub.TestCase):
       with open(os.path.join(THIS_DIR, commit_data), 'r') as f:
         suspicious_commits_data = [line.rstrip('\n').split(',') for line in f]
       temp_data_gitiles="https://chromium.googlesource.com/infra/infra/+/"
+      sample_monthly_stats = {
+        '7_days': {
+          'suspicious_to_total_ratio': 1,
+          'total_commits': 2,
+          'tbr_no_lgtm': 3,
+          'no_review_url': 4,
+          'blank_tbr': 5,
+        },
+        '30_days': {
+          'suspicious_to_total_ratio': 1,
+          'total_commits': 2,
+          'tbr_no_lgtm': 3,
+          'no_review_url': 4,
+          'blank_tbr': 5,
+        },
+        'all_time': {
+          'suspicious_to_total_ratio': 1,
+          'total_commits': 2,
+          'tbr_no_lgtm': 3,
+          'no_review_url': 4,
+          'blank_tbr': 5,
+        },
+      }
+      with open(os.path.join(dirname, 'all_monthly_stats.json'), 'w') as f:
+        json.dump(sample_monthly_stats, f)
       antibody.generate_antibody_ui(suspicious_commits_data, temp_data_gitiles,
                                     dirname)
       with open(
@@ -64,25 +89,34 @@ class MyTest(auto_stub.TestCase):
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
+        
+      with open(os.path.join(dirname, antibody.STATS_NAME), 'r') as f:
+        file_string = f.read()
+        self.assertTrue(file_string)
+        self.assertFalse('{{' in file_string)
+        self.assertFalse('}}' in file_string)
+        
+      with open(os.path.join(dirname, antibody.LEADERBOARD_NAME), 'r') as f:
+        file_string = f.read()
+        self.assertTrue(file_string)
+        self.assertFalse('{{' in file_string)
+        self.assertFalse('}}' in file_string)
 
       self.assertTrue(os.path.exists(os.path.join(dirname, 'static')))
 
   def test_get_tbr_by_user(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
-      # tbr_no_lgtm: review_url, request_timestamp, hash, people_email_address
+      # tbr_no_lgtm: review_url, request_timestamp, subject,
+      # people_email_address, hash
       tbr_no_lgtm = (
-          ('https://codereview.chromium.org/1175993003',
-            datetime.datetime(2015, 7, 13, 11, 11, 11),
-           'git_hash_1', 'pgervais@chromium.org'),
-          ('https://codereview.chromium.org/1175993003',
-            datetime.datetime(2015, 7, 13, 11, 11, 11),
-           'git_hash_1', 'hinoka@chromium.org'),
-          ('https://codereview.chromium.org/1171763002',
-            datetime.datetime(2015, 7, 13, 22, 22, 22),
-           'git_hash_2', 'hinoka@google.com'),
-          ('https://codereview.chromium.org/1171763002',
-            datetime.datetime(2015, 7, 13, 22, 22, 22),
-           'git_hash_2', 'keelerh@google.com'),
+          ('hello', '2015-07-13 11:11:11', 'pgervais@chromium.org',
+           'git_hash_1', 'https://codereview.chromium.org/1175993003'),
+          ('hello', '2015-07-13 11:11:11', 'hinoka@chromium.org',
+           'git_hash_1', 'https://codereview.chromium.org/1175993003'),
+          ('world', '2015-07-13 22:22:22', 'hinoka@chromium.org',
+           'git_hash_2', 'https://codereview.chromium.org/1171763002'),
+          ('world', '2015-07-13 22:22:22', 'keelerh@google.com',
+           'git_hash_2', 'https://codereview.chromium.org/1171763002'),
       )
       antibody.get_tbr_by_user(tbr_no_lgtm, 
             'https://chromium.googlesource.com/infra/infra/+/', dirname)

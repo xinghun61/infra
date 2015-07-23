@@ -1,8 +1,8 @@
-https://codereview.chromium.org/1199933012/, 1435109746.31, a25fc86e9a35590e1a1a5855c6339656d6e9cf60, sample1@google.com
-https://codereview.chromium.org/1180073010/, 1435109746.31, f8b52acde5ee2e2fe0aa9994876192019a916521, sample2@google.com
-https://codereview.chromium.org/1207553005, 1435109746.31, 452d9bb31fcf46b5039cf426a21350f5b3c2713e, sample3@google.com
-https://codereview.chromium.org/1039993004/, 1435109746.31, 61f693f181b3203cbfaa6f1c138b7c10366af90f, sample4@google.com
-https://codereview.chromium.org/1196553006, 1435109746.31, 9e1a54fe2c80e13b5cfd9d4d1130cb603570696b, sample5@google.com 
-https://codereview.chromium.org/1206623002, 1435109746.31, 3024ba42e4b2899e670abe58e1b90339647bdf32, sample6@google.com 
-https://codereview.chromium.org/1202733002, 1435109746.31, 0dc37d7100fc0a19d8f9851a468a45244d649468, sample7@google.com
-https://codereview.chromium.org/1195243008, 1435109746.31, 05713afdbd7317568d7264d24bef6565b9af61a3, sample8@google.com
+https://codereview.chromium.org/1199933012/, 2015-07-13 11:11:11, hello, sample1@google.com, a25fc86e9a35590e1a1a5855c6339656d6e9cf60
+https://codereview.chromium.org/1180073010/, 2015-07-13 11:11:11, hello, sample2@google.com, f8b52acde5ee2e2fe0aa9994876192019a916521
+https://codereview.chromium.org/1207553005, 2015-07-13 11:11:11, hello, sample3@google.com, 452d9bb31fcf46b5039cf426a21350f5b3c2713e
+https://codereview.chromium.org/1039993004/, 2015-07-13 11:11:11, hello, sample4@google.com, 61f693f181b3203cbfaa6f1c138b7c10366af90f
+https://codereview.chromium.org/1196553006, 2015-07-13 11:11:11, hello, sample5@google.com, 9e1a54fe2c80e13b5cfd9d4d1130cb603570696b
+https://codereview.chromium.org/1206623002, 2015-07-13 11:11:11, hello, sample6@google.com, 3024ba42e4b2899e670abe58e1b90339647bdf32
+https://codereview.chromium.org/1202733002, 2015-07-13 11:11:11, hello, sample7@google.com, 0dc37d7100fc0a19d8f9851a468a45244d649468
+https://codereview.chromium.org/1195243008, 2015-07-13 11:11:11, hello, sample8@google.com, 05713afdbd7317568d7264d24bef6565b9af61a3

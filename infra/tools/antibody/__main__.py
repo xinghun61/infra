@@ -65,6 +65,7 @@ def main(argv):
     if not os.path.exists(args.output_dir_path):
       os.makedirs(args.output_dir_path)
     suspicious_commits = code_review_parse.get_tbr_no_lgtm(cc)
+    antibody.generate_stats_files(cc, args.output_dir_path)
     gitiles_prefix = antibody.get_gitiles_prefix(checkout)
     if not gitiles_prefix:
       gitiles_prefix = ''

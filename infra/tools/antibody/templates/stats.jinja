@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /> 
+
+  
+  <script 
+      src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+  </script>
+    <script type="text/javascript"
+          src="https://www.google.com/jsapi?autoload={
+            'modules':[{
+              'name':'visualization',
+              'version':'1',
+              'packages':['corechart']
+            }]
+          }"></script>
+  <script src="static/bootstrap.min.js"></script>
+  <script src="static/bootstrap-table.js"></script>
+  <script src="static/stats.js"></script>
+  <link rel="stylesheet" href="static/bootstrap.min.css">
+  <link rel="stylesheet" href="static/bootstrap-table.css">
+  <link rel="stylesheet" type="text/css" href="static/stats.css">
+
+
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}" /> 
+</head>
+
+
+<body>
+
+  <div class="nav navbar-fixed-top">
+    <div class="container">
+      <ul class="pull-left">
+        <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
+        <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
+        <li><a href="{{ stats_link }}">{{ stats }}</a></li>
+        <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
+      </ul>
+      <ul class="pull-right">
+        <li><p class="gen_time">Generated {{ generation_time }} UTC</p></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stats_by_time">
+    <div class="container">
+      <div class="col-md-4">
+        <div class="stats_7_day">
+          <h3>Stats for the past 7 days</h3>
+          <table>
+            {% for data_name, data_point in stats_7_day %}
+            <tr>
+              <td class="data_name">{{ data_name }}</td>
+              <td class="data_point">{{ data_point }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stats_30_day">
+          <h3>Stats for the past 30 days</h3>
+          <table>
+            {% for data_name, data_point in stats_30_day %}
+            <tr>
+              <td class="data_name">{{ data_name }}</td>
+              <td class="data_point">{{ data_point }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stats_all_time">
+          <h3>All time stats</h3>
+          <table>
+            {% for data_name, data_point in stats_all_time %}
+            <tr>
+              <td class="data_name">{{ data_name }}</td>
+              <td class="data_point">{{ data_point }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="container">
+      <div id="ratio_chart"></div>
+      <div id="commits_chart"></div>
+    </div>
+  </div>
+  
+
+</body>
+</html>

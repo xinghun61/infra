@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /> 
+  <meta charset="UTF-8" />
 
-  
-  <script 
+
+  <script
       src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
   </script>
   <script src="static/bootstrap.min.js"></script>
@@ -15,7 +15,7 @@
 
 
   <title>{{ title }}</title>
-  <meta name="description" content="{{ description }}" /> 
+  <meta name="description" content="{{ description }}" />
 </head>
 
 
@@ -27,6 +27,8 @@
       <ul class="pull-left">
         <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
         <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
+        <li><a href="{{ stats_link }}">{{ stats }}</a></li>
+        <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
       </ul>
       <ul class="pull-right">
         <li><p class="gen_time">Generated {{ generation_time }} UTC</p></li>
@@ -36,6 +38,8 @@
 
   <div class="stats">
     <div class="container">
+      In the past 7 days:
+      <div class="numbers">
         <div class="col-md-4">
           <h3> {{ num_tbr_no_lgtm }} </h3>
           <p> TBR'ed without LGTM </p>
@@ -48,6 +52,7 @@
           <h3> {{ blank_TBR }} </h3>
           <p> with blank TBR </p>
         </div>
+      </div>
     </div>
   </div>
 
@@ -63,19 +68,20 @@
             </tr>
         </thead>
         <tbody>
-          <!-- review_url, request_timestamp, hash, people_email_address -->
-          {% for rietveld_url, request_timestamp, git_hash, _ in 
+          <!-- review_url, request_timestamp, subject, people_email_address, hash -->
+          {% for rietveld_url, request_timestamp, subject, _, git_hash in
           suspicious_commits %}
             <tr class="data_item">
               <td class="git_hash hyperlink">
                 <a href="{{ gitiles_prefix }}{{ git_hash }}">
-                  {{ git_hash }} 
+                  {{ subject }}
                 </a></td>
               <td class="rietveld_url hyperlink">
                 <a href="{{ rietveld_url }}">
-                  {{ rietveld_url.strip('/') }} 
+                  {{ rietveld_url.strip('/') }}
                 </a></td>
-              <td class="request_timestamp"> {{ request_timestamp }} </td>
+              <td class="request_timestamp">{{ request_timestamp }}
+              </td>
             </tr>
           {% endfor %}
         </tbody>

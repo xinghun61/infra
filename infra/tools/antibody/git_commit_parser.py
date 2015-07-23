@@ -15,17 +15,18 @@ curr_time = datetime.datetime.now()
 
 def read_commit_info(git_checkout_path, commits_after_date,
                      git_log_format=('%H', '%b', '%ae',
-                                     '%ci')):  # pragma: no cover
+                                     '%ci', '%f')):  # pragma: no cover
   """Read commit messages and other information
 
   Args:
     git_checkout_path(str): path to a local git checkout
     git_log_format(str): formatting directives passed to git log --format
+
   Return:
     log(str): output of git log
   """
   git_log_format = '%x1f'.join(git_log_format) + '%x1e'
-  log = subprocess.check_output(['git', 'log',
+  log = subprocess.check_output(['git', 'log', 'master',
       '--format=%s' % git_log_format, '--after=%s' % commits_after_date],
       cwd=git_checkout_path)
   return log
@@ -33,11 +34,11 @@ def read_commit_info(git_checkout_path, commits_after_date,
 
 def parse_commit_info(git_log,
                       git_commit_fields=('id', 'body', 'author',
-                                         'timestamp')):
+                                         'timestamp', 'subject')):
   """Seperates the various parts of git commit messages
 
   Args:
-    git_log(str): git commits as --format='%H%x1f%b%xlf%ae%xlf%ci%x1e'
+    git_log(str): git commits as --format='%H%x1f%b%xlf%ae%xlf%ci%xlf%s%x1e'
     git_commit_fields(tuple): labels for the different components of the
                               commit messages corresponding to the --format
 
@@ -65,12 +66,17 @@ def get_bug_url(git_line):
 
 def get_tbr(git_line):
   tbr = None
-  if git_line.startswith('TBR=') and len(git_line) > 4:
-    tbr = git_line[4:]
-    tbr = [x.strip() for x in tbr.split(',')]
+  if git_line.startswith('TBR='):
+    if len(git_line) > 4:
+      tbr = git_line[4:]
+      tbr = [x.strip().split('@')[0] for x in tbr.split(',')]
+    else:
+      tbr = ['NOBODY']
   return tbr
 
 
+# TODO(keelerh): scan all review urls in a commit and compare the diffs to
+# identify the correct one
 def get_review_url(git_line):
   review_url = None
   if re.match(r'^Review:.+$', git_line):
@@ -95,11 +101,12 @@ def get_features_for_git_commit(git_commit):
   dt = dateutil.parser.parse(git_commit['timestamp']).astimezone(pytz.UTC)
   # dt is a datetime object with timezone info
   timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
+  subject = git_commit['subject']
   bug_url, review_URL = None, None
   for line in git_commit['body'].split('\n'):
     bug_url = get_bug_url(line) or bug_url
     review_URL = get_review_url(line) or review_URL
-  return (git_hash, bug_url, timestamp, review_URL, None)
+  return (git_hash, bug_url, timestamp, review_URL, None, subject)
 
 
 def get_features_for_commit_people(git_commit):
@@ -112,7 +119,7 @@ def get_features_for_commit_people(git_commit):
     (tuple): relevant people and type extracted from the commit
   """
   git_hash = git_commit['id']
-  author = git_commit['author']
+  author = git_commit['author'].split('@')[0]
   people_rows = [(author, git_hash, curr_time, 'author')]
   TBR = None
   for line in git_commit['body'].split('\n'):
@@ -181,14 +188,18 @@ def get_urls_from_git_commit(cc):  # pragma: no cover
     cc: a cursor for the Cloud SQL connection
 
   Return:
-    commits_with_review_urls(list): all the commits in the db w/ TBR
-    and have review urls
+    commits_with_review_urls(list): all the commits in the db w/ a TBR
+                                    and a review url
   """
   cc.execute("""SELECT git_commit.review_url,
       commit_people.people_email_address, commit_people.type
-      FROM commit_people INNER JOIN (SELECT git_commit_hash,
-      count(*) as c FROM commit_people WHERE type='tbr'
-      GROUP BY git_commit_hash) tbr_count
+      FROM commit_people
+      INNER JOIN (
+        SELECT git_commit_hash, COUNT(*)
+        AS c
+        FROM commit_people
+        WHERE type='tbr'
+        GROUP BY git_commit_hash) tbr_count
       ON commit_people.git_commit_hash = tbr_count.git_commit_hash
       INNER JOIN git_commit
       ON commit_people.git_commit_hash = git_commit.hash

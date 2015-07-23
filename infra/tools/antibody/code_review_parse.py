@@ -123,14 +123,26 @@ def get_rietveld_data_for_review_people(rietveld_url):
 
 
 def get_tbr_no_lgtm(cc):  # pragma: no cover
-  cc.execute("""Select review.review_url, review.request_timestamp,
-      git_commit.hash, commit_people.people_email_address FROM review
-      INNER JOIN git_commit on review.review_url = git_commit.review_url
-      INNER JOIN commit_people on commit_people.git_commit_hash =
-      git_commit.hash
-      LEFT JOIN (SELECT review_url, COUNT(*) AS c FROM review_people
-      WHERE type = 'lgtm' GROUP BY review_url) lgtm_count on
-      review.review_url = lgtm_count.review_url WHERE
-      lgtm_count.c = 0 OR lgtm_count.c IS NULL AND commit_people.type =
-      'tbr'""")
-  return cc.fetchall()
+  cc.execute("""SELECT review.review_url, review.request_timestamp,
+      git_commit.subject, commit_people.people_email_address, git_commit.hash
+      FROM review
+      INNER JOIN git_commit
+      ON review.review_url = git_commit.review_url
+      INNER JOIN commit_people
+      ON commit_people.git_commit_hash = git_commit.hash
+      LEFT JOIN (
+        SELECT review_url, COUNT(*)
+        AS c
+        FROM review_people
+        WHERE type = 'lgtm'
+        GROUP BY review_url) lgtm_count
+      ON review.review_url = lgtm_count.review_url
+      WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
+      AND commit_people.type = 'tbr'""")
+  data_all = cc.fetchall()
+  formatted_data = []
+  for data in data_all:
+    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
+                           subject.replace('-', ' '), data[3], data[4]])
+  return formatted_data

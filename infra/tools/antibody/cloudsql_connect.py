@@ -13,7 +13,7 @@ finally:
   sys.path.remove('/usr/lib/python2.7/dist-packages/')
 
 DB_INSTANCE_IP = '173.194.225.193'
-DEFAULT_DATABASE = 'ANTIBODY_DB'
+DEFAULT_DATABASE = 'ANTIBODY_2'
 USERNAME = 'antibody-team'
 
 
@@ -48,11 +48,11 @@ def write_to_commit_people(cursor, rows):  # pragma: no cover
 
 
 def write_to_git_commit(cursor, rows):  # pragma: no cover
-  """hash|bug_url|timestamp|review_url|project_prj_id
+  """hash|bug_url|timestamp|review_url|project_prj_id|subject
      
-     VARCHAR(40)|VARCHAR(200)|TIMESTAMP|VARCHAR(200)|INT
+     VARCHAR(40)|VARCHAR(200)|TIMESTAMP|VARCHAR(200)|INT|VARCHAR(500)
   """
-  cursor.executemany("""REPLACE INTO git_commit VALUES (%s,%s,%s,%s,%s)""",
+  cursor.executemany("""REPLACE INTO git_commit VALUES (%s,%s,%s,%s,%s,%s)""",
                      rows)
 
 

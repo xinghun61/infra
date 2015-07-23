@@ -30,7 +30,9 @@ class TestGitCommitParser(unittest.TestCase):
         self.assertEqual(git_commit_parser.get_features_for_git_commit(commit),
                         ('df88fd603ca6a3831b4f2b21156a3e0d93e30095', None,
                          '2012-11-13 15:13:54',
-                         'https://codereview.appspot.com/6846046/', None))
+                         'https://codereview.appspot.com/6846046/', None,
+                         'Add new index to make sure the CQ never ever get '
+                         'blocked again'))
 
   def test_get_features_for_commit_people(self):
     for commit in self.log:
@@ -38,9 +40,9 @@ class TestGitCommitParser(unittest.TestCase):
         features = git_commit_parser.get_features_for_commit_people(commit)
         comparable_features = [(x[0], x[1], None, x[3]) for x in features]
     self.assertEqual(comparable_features,
-                     [('maruel@chromium.org',
+                     [('maruel',
                        'df88fd603ca6a3831b4f2b21156a3e0d93e30095',
-                       None, 'author'), ('ilevy@chromium.org',
+                       None, 'author'), ('ilevy',
                        'df88fd603ca6a3831b4f2b21156a3e0d93e30095', None,
                        'tbr')])
 
