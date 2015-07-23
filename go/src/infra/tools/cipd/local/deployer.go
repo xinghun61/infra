@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -27,7 +28,7 @@ import (
 
 // TODO(vadimsh): Use some sort of file lock to reduce a chance of corruption.
 
-// File system layout of a site directory <root>:
+// File system layout of a site directory <root> for "symlink" install method:
 // <root>/.cipd/pkgs/
 //   <package name digest>/
 //     _current -> symlink to fea3ab83440e9dfb813785e16d4101f331ed44f4
@@ -46,6 +47,11 @@ import (
 //
 // Some efforts are made to make sure that during the deployment a window of
 // inconsistency in the file system is as small as possible.
+//
+// For "copy" install method everything is much simpler: files are directly
+// copied to the site root directory and .cipd/pkgs/* contains only metadata,
+// such as manifest file with a list of extracted files (to know what to
+// uninstall).
 
 // Deployer knows how to unzip and place packages into site root directory.
 type Deployer interface {
@@ -124,9 +130,11 @@ func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) 
 		return common.Pin{}, err
 	}
 
-	// Extract new version to the final destination. ExtractPackageInstance knows
-	// how to build full paths and how to atomically extract a package. No need
-	// to delete garbage if it fails.
+	// Extract new version to the .cipd/pkgs/* guts. For "symlink" install mode it
+	// is the final destination. For "copy" install mode it's a temp destination
+	// and files will be moved to the site root later (in addToSiteRoot call).
+	// ExtractPackageInstance knows how to build full paths and how to atomically
+	// extract a package. No need to delete garbage if it fails.
 	pkgPath := d.packagePath(pin.PackageName)
 	destPath := filepath.Join(pkgPath, pin.InstanceID)
 	if err := ExtractInstance(inst, NewFileSystemDestination(destPath, d.fs)); err != nil {
@@ -369,28 +377,52 @@ func (d *deployerImpl) readManifest(instanceDir string) (Manifest, error) {
 // addToSiteRoot moves or symlinks files into the site root directory (depending
 // on passed installMode).
 func (d *deployerImpl) addToSiteRoot(files []FileInfo, installMode InstallMode, pkgDir, srcDir string) error {
-	// TODO(vadimsh): Move files from "srcDir" when "copy" install method is used.
+	// On Windows only InstallModeCopy is supported.
+	if runtime.GOOS == "windows" {
+		installMode = InstallModeCopy
+	} else if installMode == "" {
+		installMode = InstallModeSymlink // default on non-Windows
+	}
+	if err := ValidateInstallMode(installMode); err != nil {
+		return err
+	}
+
 	for _, f := range files {
 		// E.g. bin/tool.
 		relPath := filepath.FromSlash(f.Name)
-		// E.g <root>/bin/tool.
-		symlinkAbs, err := d.fs.RootRelToAbs(relPath)
+		destAbs, err := d.fs.RootRelToAbs(relPath)
 		if err != nil {
 			d.logger.Warningf("Invalid relative path %q: %s", relPath, err)
 			return err
 		}
-		// E.g. <root>/.cipd/pkgs/name/_current/bin/tool.
-		targetAbs := filepath.Join(pkgDir, currentSymlink, relPath)
-		// E.g. ../.cipd/pkgs/name/_current/bin/tool.
-		targetRel, err := filepath.Rel(filepath.Dir(symlinkAbs), targetAbs)
-		if err != nil {
-			d.logger.Warningf("Can't get relative path from %s to %s", filepath.Dir(symlinkAbs), targetAbs)
-			return err
+		if installMode == InstallModeSymlink {
+			// E.g. <root>/.cipd/pkgs/name/_current/bin/tool.
+			targetAbs := filepath.Join(pkgDir, currentSymlink, relPath)
+			// E.g. ../.cipd/pkgs/name/_current/bin/tool.
+			targetRel, err := filepath.Rel(filepath.Dir(destAbs), targetAbs)
+			if err != nil {
+				d.logger.Warningf("Can't get relative path from %s to %s", filepath.Dir(destAbs), targetAbs)
+				return err
+			}
+			if err = d.fs.EnsureSymlink(destAbs, targetRel); err != nil {
+				d.logger.Warningf("Failed to create symlink for %s", relPath)
+				return err
+			}
+		} else if installMode == InstallModeCopy {
+			// E.g. <root>/.cipd/pkgs/name/<id>/bin/tool.
+			srcAbs := filepath.Join(srcDir, relPath)
+			if err := d.fs.Replace(srcAbs, destAbs); err != nil {
+				d.logger.Warningf("Failed to move %s to %s: %s", srcAbs, destAbs, err)
+				return err
+			}
+		} else {
+			// Should not happen. ValidateInstallMode checks this.
+			return fmt.Errorf("impossible state")
 		}
-		if err = d.fs.EnsureSymlink(symlinkAbs, targetRel); err != nil {
-			d.logger.Warningf("Failed to create symlink for %s", relPath)
-			return err
-		}
+	}
+	// Best effort cleanup of empty directories after all files has been moved.
+	if installMode == InstallModeCopy {
+		d.removeEmptyDirs(srcDir)
 	}
 	return nil
 }
@@ -408,7 +440,14 @@ func (d *deployerImpl) removeFromSiteRoot(files []FileInfo) {
 			d.logger.Warningf("Failed to remove a file from the site root: %s", err)
 		}
 	}
-	// TODO(vadimsh): Cleanup empty directories.
+	d.removeEmptyDirs(d.fs.Root())
+}
+
+// removeEmptyDirs recursive removes empty directory subtrees (e.g. subtrees
+// that do not have any files). The root directory itself will not be removed
+// (even if it's empty). Best effort, logs errors.
+func (d *deployerImpl) removeEmptyDirs(root string) {
+	// TODO(vadimsh): Implement.
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -76,8 +76,29 @@ func TestDeployInstance(t *testing.T) {
 		So(err, ShouldBeNil)
 		Reset(func() { os.RemoveAll(tempDir) })
 
+		Convey("Try to deploy package instance with bad package name", func() {
+			_, err := NewDeployer(tempDir, nil).DeployInstance(
+				makeTestInstance("../test/package", nil, InstallModeCopy))
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Try to deploy package instance with bad instance ID", func() {
+			inst := makeTestInstance("test/package", nil, InstallModeCopy)
+			inst.instanceID = "../000000000"
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestDeployInstanceSymlinkMode(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
 		Convey("DeployInstance new empty package instance", func() {
-			inst := makeTestInstance("test/package", nil)
+			inst := makeTestInstance("test/package", nil, InstallModeSymlink)
 			info, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(info, ShouldResemble, inst.Pin())
@@ -92,7 +113,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/file/path", "data a", false),
 				NewTestFile("some/executable", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
-			})
+			}, InstallModeSymlink)
 			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
@@ -120,7 +141,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/file/path", "data a", false),
 				NewTestFile("some/executable", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
-			})
+			}, InstallModeSymlink)
 			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
@@ -147,7 +168,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestSymlink("symlink unchanged", "target"),
 				NewTestSymlink("symlink changed", "old target"),
 				NewTestSymlink("symlink removed", "target"),
-			})
+			}, InstallModeSymlink)
 			oldPkg.instanceID = "0000000000000000000000000000000000000000"
 
 			newPkg := makeTestInstance("test/package", []File{
@@ -157,7 +178,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("mode change 2", "data d", true),
 				NewTestSymlink("symlink unchanged", "target"),
 				NewTestSymlink("symlink changed", "new target"),
-			})
+			}, InstallModeSymlink)
 			newPkg.instanceID = "1111111111111111111111111111111111111111"
 
 			_, err := NewDeployer(tempDir, nil).DeployInstance(oldPkg)
@@ -188,7 +209,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/file/path", "data a old", false),
 				NewTestFile("some/executable", "data b old", true),
 				NewTestFile("pkg1 file", "data c", false),
-			})
+			}, InstallModeSymlink)
 			pkg1.instanceID = "0000000000000000000000000000000000000000"
 
 			// Nesting in package names is allowed.
@@ -196,7 +217,7 @@ func TestDeployInstance(t *testing.T) {
 				NewTestFile("some/file/path", "data a new", false),
 				NewTestFile("some/executable", "data b new", true),
 				NewTestFile("pkg2 file", "data d", false),
-			})
+			}, InstallModeSymlink)
 			pkg2.instanceID = "1111111111111111111111111111111111111111"
 
 			_, err := NewDeployer(tempDir, nil).DeployInstance(pkg1)
@@ -223,17 +244,190 @@ func TestDeployInstance(t *testing.T) {
 				"some/file/path:../../.cipd/pkgs/package_another_4HL4H61fGm/_current/some/file/path",
 			})
 		})
+	})
+}
 
-		Convey("Try to deploy package instance with bad package name", func() {
-			_, err := NewDeployer(tempDir, nil).DeployInstance(makeTestInstance("../test/package", nil))
-			So(err, ShouldNotBeNil)
+func TestDeployInstanceCopyMode(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("DeployInstance new empty package instance", func() {
+			inst := makeTestInstance("test/package", nil, InstallModeCopy)
+			info, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			So(info, ShouldResemble, inst.Pin())
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
+			})
 		})
 
-		Convey("Try to deploy package instance with bad instance ID", func() {
-			inst := makeTestInstance("test/package", nil)
-			inst.instanceID = "../000000000"
+		Convey("DeployInstance new non-empty package instance", func() {
+			inst := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+				NewTestSymlink("some/symlink", "executable"),
+			}, InstallModeCopy)
 			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
+				"some/executable*",
+				"some/file/path",
+				"some/symlink:executable",
+			})
+		})
+
+		Convey("Redeploy same package instance", func() {
+			inst := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+				NewTestSymlink("some/symlink", "executable"),
+			}, InstallModeCopy)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0123456789abcdef00000123456789abcdef0000",
+				"some/executable*",
+				"some/file/path",
+				"some/symlink:executable",
+			})
+		})
+
+		Convey("DeployInstance package update", func() {
+			oldPkg := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("old only", "data c old", true),
+				NewTestFile("mode change 1", "data d", true),
+				NewTestFile("mode change 2", "data e", false),
+				NewTestSymlink("symlink unchanged", "target"),
+				NewTestSymlink("symlink changed", "old target"),
+				NewTestSymlink("symlink removed", "target"),
+			}, InstallModeCopy)
+			oldPkg.instanceID = "0000000000000000000000000000000000000000"
+
+			newPkg := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("mode change 1", "data d", false),
+				NewTestFile("mode change 2", "data d", true),
+				NewTestSymlink("symlink unchanged", "target"),
+				NewTestSymlink("symlink changed", "new target"),
+			}, InstallModeCopy)
+			newPkg.instanceID = "1111111111111111111111111111111111111111"
+
+			_, err := NewDeployer(tempDir, nil).DeployInstance(oldPkg)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(newPkg)
+			So(err, ShouldBeNil)
+
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:1111111111111111111111111111111111111111",
+				"mode change 1",
+				"mode change 2*",
+				"some/executable*",
+				"some/file/path",
+				"symlink changed:new target",
+				"symlink unchanged:target",
+			})
+		})
+
+		Convey("DeployInstance two different packages", func() {
+			pkg1 := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("pkg1 file", "data c", false),
+			}, InstallModeCopy)
+			pkg1.instanceID = "0000000000000000000000000000000000000000"
+
+			// Nesting in package names is allowed.
+			pkg2 := makeTestInstance("test/package/another", []File{
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("pkg2 file", "data d", false),
+			}, InstallModeCopy)
+			pkg2.instanceID = "1111111111111111111111111111111111111111"
+
+			_, err := NewDeployer(tempDir, nil).DeployInstance(pkg1)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(pkg2)
+			So(err, ShouldBeNil)
+
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/package_another_4HL4H61fGm/_current:1111111111111111111111111111111111111111",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:0000000000000000000000000000000000000000",
+				"pkg1 file",
+				"pkg2 file",
+				"some/executable*",
+				"some/file/path",
+			})
+		})
+	})
+}
+
+func TestDeployInstanceSwitchingModes(t *testing.T) {
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		files := []File{
+			NewTestFile("some/file/path", "data a", false),
+			NewTestFile("some/executable", "data b", true),
+			NewTestSymlink("some/symlink", "executable"),
+		}
+
+		Convey("InstallModeCopy => InstallModeSymlink", func() {
+			inst := makeTestInstance("test/package", files, InstallModeCopy)
+			inst.instanceID = "0000000000000000000000000000000000000000"
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+
+			inst = makeTestInstance("test/package", files, InstallModeSymlink)
+			inst.instanceID = "1111111111111111111111111111111111111111"
+			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
+
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/executable*",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/file/path",
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/some/symlink:executable",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:1111111111111111111111111111111111111111",
+				"some/executable:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/executable",
+				"some/file/path:../../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/file/path",
+				"some/symlink:../.cipd/pkgs/test_package_B6R4ErK5ko/_current/some/symlink",
+			})
+		})
+
+		Convey("InstallModeSymlink => InstallModeCopy", func() {
+			inst := makeTestInstance("test/package", files, InstallModeSymlink)
+			inst.instanceID = "0000000000000000000000000000000000000000"
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+
+			inst = makeTestInstance("test/package", files, InstallModeCopy)
+			inst.instanceID = "1111111111111111111111111111111111111111"
+			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
+
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current:1111111111111111111111111111111111111111",
+				"some/executable*",
+				"some/file/path",
+				"some/symlink:executable",
+			})
 		})
 	})
 }
@@ -254,13 +448,13 @@ func TestFindDeployed(t *testing.T) {
 			d := NewDeployer(tempDir, nil)
 
 			// Deploy a bunch of stuff.
-			_, err := d.DeployInstance(makeTestInstance("test/pkg/123", nil))
+			_, err := d.DeployInstance(makeTestInstance("test/pkg/123", nil, InstallModeCopy))
 			So(err, ShouldBeNil)
-			_, err = d.DeployInstance(makeTestInstance("test/pkg/456", nil))
+			_, err = d.DeployInstance(makeTestInstance("test/pkg/456", nil, InstallModeCopy))
 			So(err, ShouldBeNil)
-			_, err = d.DeployInstance(makeTestInstance("test/pkg", nil))
+			_, err = d.DeployInstance(makeTestInstance("test/pkg", nil, InstallModeCopy))
 			So(err, ShouldBeNil)
-			_, err = d.DeployInstance(makeTestInstance("test", nil))
+			_, err = d.DeployInstance(makeTestInstance("test", nil, InstallModeCopy))
 			So(err, ShouldBeNil)
 
 			// Verify it is discoverable.
@@ -294,7 +488,7 @@ func TestRemoveDeployed(t *testing.T) {
 			inst := makeTestInstance("test/package/123", []File{
 				NewTestFile("some/file/path1", "data a", false),
 				NewTestFile("some/executable1", "data b", true),
-			})
+			}, InstallModeCopy)
 			_, err := d.DeployInstance(inst)
 			So(err, ShouldBeNil)
 
@@ -303,7 +497,7 @@ func TestRemoveDeployed(t *testing.T) {
 				NewTestFile("some/file/path2", "data a", false),
 				NewTestFile("some/executable2", "data b", true),
 				NewTestSymlink("some/symlink", "executable"),
-			})
+			}, InstallModeCopy)
 			_, err = d.DeployInstance(inst)
 			So(err, ShouldBeNil)
 
@@ -314,11 +508,9 @@ func TestRemoveDeployed(t *testing.T) {
 			// Verify the final state (only first package should survive).
 			So(scanDir(tempDir), ShouldResemble, []string{
 				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/some/executable1*",
-				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/some/file/path1",
 				".cipd/pkgs/package_123_Wnok5l4iFr/_current:0123456789abcdef00000123456789abcdef0000",
-				"some/executable1:../.cipd/pkgs/package_123_Wnok5l4iFr/_current/some/executable1",
-				"some/file/path1:../../.cipd/pkgs/package_123_Wnok5l4iFr/_current/some/file/path1",
+				"some/executable1*",
+				"some/file/path1",
 			})
 		})
 	})
@@ -330,15 +522,17 @@ type testPackageInstance struct {
 	packageName string
 	instanceID  string
 	files       []File
+	installMode InstallMode
 }
 
 // makeTestInstance returns PackageInstance implementation with mocked guts.
-func makeTestInstance(name string, files []File) *testPackageInstance {
+func makeTestInstance(name string, files []File, installMode InstallMode) *testPackageInstance {
 	// Generate and append manifest file.
 	out := bytes.Buffer{}
 	err := writeManifest(&Manifest{
 		FormatVersion: manifestFormatVersion,
 		PackageName:   name,
+		InstallMode:   installMode,
 	}, &out)
 	if err != nil {
 		panic("Failed to write a manifest")
@@ -353,7 +547,6 @@ func makeTestInstance(name string, files []File) *testPackageInstance {
 
 func (f *testPackageInstance) Close() error              { return nil }
 func (f *testPackageInstance) Pin() Pin                  { return Pin{f.packageName, f.instanceID} }
-func (f *testPackageInstance) InstallMode() InstallMode  { return "" }
 func (f *testPackageInstance) Files() []File             { return f.files }
 func (f *testPackageInstance) DataReader() io.ReadSeeker { panic("Not implemented") }
 

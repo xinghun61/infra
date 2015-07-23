@@ -19,14 +19,12 @@ import (
 	"infra/tools/cipd/common"
 )
 
-// PackageInstance represents a binary package file.
+// PackageInstance represents a binary CIPD package file (with manifest inside).
 type PackageInstance interface {
 	// Close shuts down the package and its data provider.
 	Close() error
 	// Pin identifies package name and concreted package instance ID of this package file.
 	Pin() common.Pin
-	// InstallMode defines how to install the package (as specified in the manifest file).
-	InstallMode() InstallMode
 	// Files returns a list of files to deploy with the package.
 	Files() []File
 	// DataReader returns reader that reads raw package data.
@@ -248,7 +246,6 @@ func (inst *packageInstance) Pin() common.Pin {
 	}
 }
 
-func (inst *packageInstance) InstallMode() InstallMode  { return inst.manifest.InstallMode }
 func (inst *packageInstance) Files() []File             { return inst.files }
 func (inst *packageInstance) DataReader() io.ReadSeeker { return inst.data }
 

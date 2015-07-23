@@ -51,7 +51,8 @@ type FileSystem interface {
 	EnsureDirectoryGone(path string) error
 
 	// Renames oldpath to newpath. If newpath already exists (be it a file or a
-	// directory), removes it first.
+	// directory), removes it first. If oldpath is a symlink, it's moved as is
+	// (e.g. as a symlink).
 	Replace(oldpath, newpath string) error
 }
 
@@ -210,7 +211,7 @@ func (f *fsImpl) Replace(oldpath, newpath string) error {
 	}
 
 	// Make sure oldpath exists before doing heavy stuff.
-	if _, err = os.Stat(oldpath); err != nil {
+	if _, err = os.Lstat(oldpath); err != nil {
 		return err
 	}
 
