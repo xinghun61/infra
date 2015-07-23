@@ -58,15 +58,3 @@ tbody {
   height: 120px;
   overflow-y: auto;
 }
-
-.git_hash {
-  width: 40%;
-}
-
-.rietveld_url {
-  width: 40%;
-}
-
-.request_timestamp {
-  width: 20%;
-}

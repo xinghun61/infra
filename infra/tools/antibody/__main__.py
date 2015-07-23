@@ -64,15 +64,14 @@ def main(argv):
   if args.write_html or args.run_antibody:
     if not os.path.exists(args.output_dir_path):
       os.makedirs(args.output_dir_path)
-    suspicious_commits = code_review_parse.get_tbr_no_lgtm(cc)
     antibody.generate_stats_files(cc, args.output_dir_path)
     gitiles_prefix = antibody.get_gitiles_prefix(checkout)
     if not gitiles_prefix:
       gitiles_prefix = ''
-    antibody.get_tbr_by_user(suspicious_commits, gitiles_prefix,
-                             args.output_dir_path)
-    antibody.generate_antibody_ui(suspicious_commits, gitiles_prefix,
-                                  args.output_dir_path)
+    antibody.get_tbr_by_user(code_review_parse.get_tbr_no_lgtm(cc, 'tbr'),
+                             gitiles_prefix, args.output_dir_path)
+    antibody.generate_antibody_ui(gitiles_prefix, args.output_dir_path,
+        code_review_parse.get_tbr_no_lgtm(cc, 'author'))
 
   csql.close(connection, cc)
 

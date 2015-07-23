@@ -75,8 +75,9 @@ class MyTest(auto_stub.TestCase):
       }
       with open(os.path.join(dirname, 'all_monthly_stats.json'), 'w') as f:
         json.dump(sample_monthly_stats, f)
-      antibody.generate_antibody_ui(suspicious_commits_data, temp_data_gitiles,
-                                    dirname)
+      antibody.generate_antibody_ui(temp_data_gitiles, dirname, 
+                                    suspicious_commits_data)
+      
       with open(
           os.path.join(dirname, antibody.ANTIBODY_UI_MAIN_NAME), 'r') as f:
         file_string = f.read()

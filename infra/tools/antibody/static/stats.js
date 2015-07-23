@@ -3,8 +3,7 @@ google.setOnLoadCallback(draw_charts);
 
 function draw_charts() {
   $.getJSON("./all_monthly_stats.json", function(data) {
-    monthly_breakdown = data['monthly_breakdown'];
-    var colors = [['#594F4F'], ['#547980', '#45ADA8', '#9DE0AD', '#E5FCC2']];
+    var monthly_breakdown = data['monthly_breakdown'];
     var ratio_data = congregate_series(
       ['Month', 'Suspicious/Total Commits'],
       [monthly_breakdown['suspicious_to_total_ratio']]
@@ -19,14 +18,16 @@ function draw_charts() {
       ]
     );
     var line_charts = [
+      ['Commits per Month', all_commit_data, 
+          ['#594F4F', '#547980', '#45ADA8', '#9DE0AD'], 
+          'commits_chart'],
       ['Ratio of "Suspicious" Commits to Commits per Month', ratio_data,
-          'ratio_chart'],
-      ['Commits per Month', all_commit_data, 'commits_chart'],
+          ['#000000'], 'ratio_chart'],
     ];
     for (var i = 0; i < line_charts.length; i++) {
       chart_data = line_charts[i];
-      draw_line_chart(chart_data[0], chart_data[1], chart_data[2],
-          colors[i]);
+      draw_line_chart(chart_data[0], chart_data[1], chart_data[2], 
+                      chart_data[3]);
     }
   });
 }
@@ -43,7 +44,7 @@ function congregate_series(headers, all_series) {
   return all_data;
 }
 
-function draw_line_chart(chart_title, data, element_id, color) {
+function draw_line_chart(chart_title, data, color, element_id) {
   var data = google.visualization.arrayToDataTable(data, false);
   var options = {
     colors: color,
@@ -70,8 +71,6 @@ function draw_line_chart(chart_title, data, element_id, color) {
   chart.draw(data, options);
 }
 
-function resize () {
+$(window).resize(function() {
   draw_charts();
-}
-
-window.onresize = resize;
+});

@@ -13,6 +13,7 @@ import time
 
 import infra.tools.antibody.cloudsql_connect as csql
 from infra.tools.antibody import compute_stats
+from infra.tools.antibody import code_review_parse
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 ANTIBODY_UI_MAIN_NAME = 'index.html'
@@ -51,7 +52,7 @@ def setup_antibody_db(cc, filename):  # pragma: no cover
   csql.execute_sql_script_from_file(cc, filename)
 
 
-def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
+def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
   template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   template_env = jinja2.Environment(loader=template_loader)
   template_vars_all = {
@@ -67,7 +68,6 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
       'to_be_reviewed' : "TBR by user",
       'stats' : 'Stats',
       'leaderboard' : 'Leaderboard',
-      'suspicious_commits' : suspicious_commits_data,
       'gitiles_prefix' : gitiles_prefix,
   }
 
@@ -83,23 +83,26 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
     shutil.copytree(os.path.join(THIS_DIR, 'static'),
                     os.path.join(ui_dirpath, 'static'))
 
-  generate_homepage(template_env, template_vars_all, ui_dirpath)
+  generate_homepage(suspicious_commits, template_env, template_vars_all, 
+                    ui_dirpath)
   generate_tbr_page(template_env, template_vars_all, ui_dirpath)
   generate_stats_page(template_env, template_vars_all, ui_dirpath)
   generate_leaderboard_page(template_env, template_vars_all, ui_dirpath)
 
 
-def generate_homepage(template_env, template_vars_all, ui_dirpath):
+def generate_homepage(suspicious_commits, template_env, template_vars_all, 
+                      ui_dirpath):
   index_template = template_env.get_template('antibody_ui_all.jinja')
   with open(os.path.join(ui_dirpath, 'all_monthly_stats.json')) as f:
     data = json.load(f)
   stats_7_day = data['7_days']
   template_vars = {
+      'blank_TBR': stats_7_day['blank_tbr'],
       'num_tbr_no_lgtm': stats_7_day['tbr_no_lgtm'],
       'num_no_review_url': stats_7_day['no_review_url'],
-      'blank_TBR': stats_7_day['blank_tbr'],
-      'table_headers' : ['Git Commit Subject', 'Review URL',
-                         'Request Timestamp']
+      'suspicious_commits': suspicious_commits,
+      'table_headers' : ['Git Commit Hash', 'Code Review',
+                         'Commit Timestamp (UTC)'],
   }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
@@ -108,8 +111,7 @@ def generate_homepage(template_env, template_vars_all, ui_dirpath):
 
 def generate_tbr_page(template_env, template_vars_all, ui_dirpath):
   tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
-  template_vars = {
-  }
+  template_vars = {}
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
     f.write(tbr_by_user_template.render(template_vars))
@@ -141,8 +143,7 @@ def generate_stats_page(template_env, template_vars_all, ui_dirpath):
 
 def generate_leaderboard_page(template_env, template_vars_all, ui_dirpath):
   leaderboard_template = template_env.get_template('leaderboard.jinja')
-  template_vars = {
-  }
+  template_vars = {}
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, LEADERBOARD_NAME), 'wb') as f:
     f.write(leaderboard_template.render(template_vars))

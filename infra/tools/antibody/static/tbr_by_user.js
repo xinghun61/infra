@@ -22,23 +22,22 @@ $(document).ready(function(){
         var table = $('<table>').attr('data-toggle', 'table').attr(
           'data-cache', 'false');
         table.append($('<thead>').append($('<tr>').append(
-            $('<th>').attr('data-field', 'subject label').text('Git Commit Subject'),
+            $('<th>').attr('data-field', 'subject label').text('Git Commit Hash'),
             $('<th>').attr('data-field', 'rietveld_url label').text(
-                'Review URL'),
+                'Code Review'),
             $('<th>').attr('data-field', 'request_timestamp').text(
-                'Request Timestamp')
+                'Commit Timestamp (UTC)')
           )));
         var tbody = $('<tbody>');
         for (var i = 0; i < commits_tbred_to_user.length; i++) {
           data_item = commits_tbred_to_user[i];
-          console.log(data_item);
           tbody.append($('<tr>').addClass('data_item').append(
               $('<td>').addClass('subject hyperlink').append(
                 $('<a>').attr('href', `${gitiles_prefix}${data_item[3]}`).text(
-                  `${data_item[0]}`)),
+                  `${data_item[3]}`)),
               $('<td>').addClass('rietveld_url hyperlink').append(
                 $('<a>').attr('href', `${data_item[1]}`).text(
-                  `${data_item[1]}`)),
+                  `${data_item[0]}`)),
               $('<td>').addClass('request_timestamp').text(`${data_item[2]}`)
             ));
         }

@@ -1,7 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-# lol
+
 import datetime
 import logging
 import re
@@ -122,8 +122,8 @@ def get_rietveld_data_for_review_people(rietveld_url):
   return db_data_all
 
 
-def get_tbr_no_lgtm(cc):  # pragma: no cover
-  cc.execute("""SELECT review.review_url, review.request_timestamp,
+def get_tbr_no_lgtm(cc, commit_people_type):  # pragma: no cover
+  cc.execute("""SELECT review.review_url, git_commit.timestamp,
       git_commit.subject, commit_people.people_email_address, git_commit.hash
       FROM review
       INNER JOIN git_commit
@@ -138,11 +138,11 @@ def get_tbr_no_lgtm(cc):  # pragma: no cover
         GROUP BY review_url) lgtm_count
       ON review.review_url = lgtm_count.review_url
       WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
-      AND commit_people.type = 'tbr'""")
+      AND commit_people.type = '%s'""" % commit_people_type)
   data_all = cc.fetchall()
   formatted_data = []
   for data in data_all:
     subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
     formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
                            subject.replace('-', ' '), data[3], data[4]])
-  return formatted_data
+  return sorted(formatted_data, key=lambda x: x[1], reverse=True)
