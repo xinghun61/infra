@@ -3,19 +3,19 @@ google.setOnLoadCallback(draw_charts);
 
 function draw_charts() {
   $.getJSON("./all_monthly_stats.json", function(data) {
-    monthly = data['monthly_breakdown'];
+    monthly_breakdown = data['monthly_breakdown'];
     var colors = [['#594F4F'], ['#547980', '#45ADA8', '#9DE0AD', '#E5FCC2']];
     var ratio_data = congregate_series(
       ['Month', 'Suspicious/Total Commits'],
-      [monthly['suspicious_to_total_ratio']]
+      [monthly_breakdown['suspicious_to_total_ratio']]
     );
     var all_commit_data = congregate_series(
       ['Month', 'Total Commits', 'TBR no LGTM', 'No Review URL', 'Blank TBRs'],
       [
-        monthly['total_commits'], 
-        monthly['tbr_no_lgtm'], 
-        monthly['no_review_url'], 
-        monthly['blank_tbrs'],
+        monthly_breakdown['total_commits'], 
+        monthly_breakdown['tbr_no_lgtm'], 
+        monthly_breakdown['no_review_url'], 
+        monthly_breakdown['blank_tbrs'],
       ]
     );
     var line_charts = [
@@ -37,7 +37,8 @@ function congregate_series(headers, all_series) {
     var data_point = [all_series[0][data_item][0]];  // date
     for (var series = 0; series < all_series.length; series++) {
       data_point = data_point.concat(all_series[series][data_item][1]);
-    }      all_data = all_data.concat([data_point]);
+    }      
+    all_data = all_data.concat([data_point]);
   }
   return all_data;
 }
@@ -70,8 +71,7 @@ function draw_line_chart(chart_title, data, element_id, color) {
 }
 
 function resize () {
-    draw_charts();
-  }
+  draw_charts();
+}
 
-  window.onload = resize();
-  window.onresize = resize;
+window.onresize = resize;

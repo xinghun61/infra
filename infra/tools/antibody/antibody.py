@@ -70,6 +70,7 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
       'suspicious_commits' : suspicious_commits_data,
       'gitiles_prefix' : gitiles_prefix,
   }
+
   try:  # pragma: no cover
     if (ui_dirpath != THIS_DIR):  # pragma: no cover
       shutil.rmtree(os.path.join(ui_dirpath, 'static'))
@@ -82,10 +83,10 @@ def generate_antibody_ui(suspicious_commits_data, gitiles_prefix, ui_dirpath):
     shutil.copytree(os.path.join(THIS_DIR, 'static'),
                     os.path.join(ui_dirpath, 'static'))
 
-  file_generators = [generate_homepage, generate_tbr_page, generate_stats_page,
-                     generate_leaderboard_page]
-  for item in file_generators:
-    item(template_env, template_vars_all, ui_dirpath)
+  generate_homepage(template_env, template_vars_all, ui_dirpath)
+  generate_tbr_page(template_env, template_vars_all, ui_dirpath)
+  generate_stats_page(template_env, template_vars_all, ui_dirpath)
+  generate_leaderboard_page(template_env, template_vars_all, ui_dirpath)
 
 
 def generate_homepage(template_env, template_vars_all, ui_dirpath):
@@ -98,7 +99,8 @@ def generate_homepage(template_env, template_vars_all, ui_dirpath):
       'num_no_review_url': stats_7_day['no_review_url'],
       'blank_TBR': stats_7_day['blank_tbr'],
       'table_headers' : ['Git Commit Subject', 'Review URL',
-                         'Request Timestamp']}
+                         'Request Timestamp']
+  }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
     f.write(index_template.render(template_vars))
