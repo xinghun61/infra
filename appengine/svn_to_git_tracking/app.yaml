@@ -1,0 +1,13 @@
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+application: svn-to-git-tracking
+version: 1
+runtime: go
+api_version: go1
+
+handlers:
+- url: /.*
+  script: _go_app
+  secure: always

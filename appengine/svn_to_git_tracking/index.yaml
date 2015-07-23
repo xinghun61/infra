@@ -1,0 +1,6 @@
+indexes:
+- kind: hostState
+  properties:
+  - name: State
+  - name: Reported
+    direction: desc
