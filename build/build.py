@@ -312,6 +312,7 @@ def upload_pkg(go_workspace, pkg_file, service_url, tags, service_account):
   args = ['-service-url', service_url]
   for tag in sorted(tags):
     args.extend(['-tag', tag])
+  args.extend(['-ref', 'latest'])
   if service_account:
     args.extend(['-service-account-json', service_account])
   args.append(pkg_file)
