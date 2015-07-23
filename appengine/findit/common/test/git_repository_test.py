@@ -29,7 +29,7 @@ COMMIT_LOG = """)]}'
   "author": {
     "name": "test1@chromium.org",
     "email": "test1@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538",
-    "time": "Wed Jun 11 19:35:32 2014"
+    "time": "Wed Jun 11 19:35:32 2014 -0400"
   },
   "committer": {
     "name": "test1@chromium.org",
@@ -119,10 +119,8 @@ EXPECTED_CHANGE_LOG_JSON = {
         'old_path': 'Source/devtools/front_end/layers/file.js'
       }
     ],
-    'author_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
-        '%a %b %d %H:%M:%S %Y'),
-    'committer_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
-        '%a %b %d %H:%M:%S %Y'),
+    'author_time': datetime(2014, 06, 11, 23, 35, 32),
+    'committer_time': datetime(2014, 06, 11, 19, 35, 32),
     'commit_url':
         'https://repo.test/+/bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'code_review_url': 'https://codereview.chromium.org/328113005',
@@ -183,7 +181,7 @@ GITILES_FILE_BLAME_RESULT = """)]}'
       "author": {
         "name": "test3@chromium.org",
         "email": "test3@chromium.org@0039d316-1c4b-4281-b951-d872f2087c98",
-        "time": "2014-02-06 09:02:09"
+        "time": "2014-02-06 10:02:10 +0400"
       }
     },
     {
@@ -205,7 +203,7 @@ EXPECTED_FILE_BLAME_JSON = {
       {
         'count': 6,
         'author_email': u'test2@chromium.org',
-        'author_time': u'2013-02-11 20:18:51',
+        'author_time': datetime(2013, 02, 11, 20, 18, 51),
         'author_name': u'test2@chromium.org',
         'start': 1,
         'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
@@ -213,7 +211,7 @@ EXPECTED_FILE_BLAME_JSON = {
       {
         'count': 1,
         'author_email': u'test3@chromium.org',
-        'author_time': u'2014-02-06 09:02:09',
+        'author_time': datetime(2014, 02, 06, 06, 02, 10),
         'author_name': u'test3@chromium.org',
         'start': 7,
         'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
@@ -221,7 +219,7 @@ EXPECTED_FILE_BLAME_JSON = {
       {
         'count': 1,
         'author_email': u'test2@chromium.org',
-        'author_time': u'2013-02-11 20:18:51',
+        'author_time': datetime(2013, 02, 11, 20, 18, 51),
         'author_name': u'test2@chromium.org',
         'start': 8,
         'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
@@ -314,7 +312,7 @@ class GitRepositoryTest(testing.AppengineTestCase):
 
     for testcase in testcases:
       commit_position, code_review_url = \
-          git_repository.ExtractCommitPositionAndCodeReviewUrl(
+          self.git_repo.ExtractCommitPositionAndCodeReviewUrl(
               testcase['message'])
       self.assertEqual(commit_position, testcase['commit_position'])
       self.assertEqual(code_review_url, testcase['code_review_url'])
@@ -390,3 +388,10 @@ class GitRepositoryTest(testing.AppengineTestCase):
         base64.b64encode(original_source))
     source = self.git_repo.GetSource(path, git_revision)
     self.assertEqual(original_source, source)
+
+  def testTimeConversion(self):
+    datetime_with_timezone = 'Wed Jul 22 19:35:32 2014 +0400'
+    expected_datetime = datetime(2014, 7, 22, 15, 35, 32)
+    utc_datetime = self.git_repo._GetDateTimeFromString(datetime_with_timezone)
+
+    self.assertEqual(expected_datetime, utc_datetime)

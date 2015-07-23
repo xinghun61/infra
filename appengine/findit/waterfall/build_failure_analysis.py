@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import collections
-from datetime import datetime
 import os
 import re
 
@@ -394,8 +393,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   file_is_changed_in_roll = False
 
   for region in blame:
-    change_author_time = datetime.strptime(region.author_time,
-                                           '%Y-%m-%d %H:%M:%S')
+    change_author_time = region.author_time
     if (change_author_time > old_rev_author_time and
         change_author_time <= new_rev_author_time):
       file_is_changed_in_roll = True

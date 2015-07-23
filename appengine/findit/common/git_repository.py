@@ -4,6 +4,7 @@
 
 import base64
 from datetime import datetime
+from datetime import timedelta
 import json
 import re
 
@@ -21,47 +22,7 @@ SVN_REVISION_PATTERN = re.compile(
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$')
 CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*)$')
-
-
-def ExtractCommitPositionAndCodeReviewUrl(message):
-  """Returns the commit position and code review url in the commit message.
-
-  Returns:
-    (commit_position, code_review_url)
-  """
-  if not message:
-    return (None, None)
-
-  commit_position = None
-  code_review_url = None
-
-  # Commit position and code review url are in the last 5 lines.
-  lines = message.strip().split('\n')[-5:]
-  lines.reverse()
-
-  for line in lines:
-    if commit_position is None:
-      match = COMMIT_POSITION_PATTERN.match(line)
-      if not match:
-        match = SVN_REVISION_PATTERN.match(line)
-      if match:
-        commit_position = int(match.group(1))
-
-    if code_review_url is None:
-      match = CODE_REVIEW_URL_PATTERN.match(line)
-      if match:
-        code_review_url = match.group(1)
-
-  return (commit_position, code_review_url)
-
-
-def NormalizeEmail(email):
-  """Normalizes the email from git repo.
-
-  Some email is like: test@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
-  """
-  parts = email.split('@')
-  return '@'.join(parts[0:2])
+TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 
 
 class GitRepository(Repository):
@@ -98,6 +59,65 @@ class GitRepository(Repository):
       return None
     return base64.b64decode(content)
 
+  def ExtractCommitPositionAndCodeReviewUrl(self, message):
+    """Returns the commit position and code review url in the commit message.
+
+    Returns:
+      (commit_position, code_review_url)
+    """
+    if not message:
+      return (None, None)
+
+    commit_position = None
+    code_review_url = None
+
+    # Commit position and code review url are in the last 5 lines.
+    lines = message.strip().split('\n')[-5:]
+    lines.reverse()
+
+    for line in lines:
+      if commit_position is None:
+        match = COMMIT_POSITION_PATTERN.match(line)
+        if not match:
+          match = SVN_REVISION_PATTERN.match(line)
+        if match:
+          commit_position = int(match.group(1))
+
+      if code_review_url is None:
+        match = CODE_REVIEW_URL_PATTERN.match(line)
+        if match:
+          code_review_url = match.group(1)
+
+    return (commit_position, code_review_url)
+
+  def _NormalizeEmail(self, email):
+    """Normalizes the email from git repo.
+
+    Some email is like: test@chromium.org@bbb929c8-8fbe-4397-9dbb-9b2b20218538.
+    """
+    parts = email.split('@')
+    return '@'.join(parts[0:2])
+
+  def _GetDateTimeFromString(self, datetime_string,
+      date_format='%a %b %d %H:%M:%S %Y'):
+    if TIMEZONE_PATTERN.findall(datetime_string):
+      # Need to handle timezone conversion.
+      naive_datetime_str, _, offset_str = datetime_string.rpartition(' ')
+      naive_datetime = datetime.strptime(naive_datetime_str,
+                                         date_format)
+      hour_offset = int(offset_str[-4:-2])
+      minute_offset = int(offset_str[-2:])
+      if(offset_str[0]) == '-':
+        hour_offset = -hour_offset
+        minute_offset = -minute_offset
+
+      time_delta = timedelta(hours=hour_offset, minutes=minute_offset)
+
+      utc_datetime = naive_datetime - time_delta
+      return utc_datetime
+
+    return datetime.strptime(datetime_string, date_format)
+
   def GetChangeLog(self, revision):
     url = '%s/+/%s' % (self.repo_url, revision)
 
@@ -105,8 +125,8 @@ class GitRepository(Repository):
     if not data:
       return None
 
-    commit_position, code_review_url = ExtractCommitPositionAndCodeReviewUrl(
-        data['message'])
+    commit_position, code_review_url = (
+        self.ExtractCommitPositionAndCodeReviewUrl(data['message']))
 
     touched_files = []
     for file_diff in data['tree_diff']:
@@ -117,14 +137,14 @@ class GitRepository(Repository):
           FileChangeInfo(
               change_type, file_diff['old_path'], file_diff['new_path']))
 
-    author_time = datetime.strptime(
-        data['author']['time'], '%a %b %d %H:%M:%S %Y')
-    committer_time = datetime.strptime(
-        data['committer']['time'], '%a %b %d %H:%M:%S %Y')
+    author_time = self._GetDateTimeFromString(data['author']['time'])
+    committer_time = self._GetDateTimeFromString(data['committer']['time'])
+
     return ChangeLog(
-        data['author']['name'], NormalizeEmail(data['author']['email']),
+        data['author']['name'], self._NormalizeEmail(data['author']['email']),
         author_time,
-        data['committer']['name'], NormalizeEmail(data['committer']['email']),
+        data['committer']['name'],
+        self._NormalizeEmail(data['committer']['email']),
         committer_time, data['commit'], commit_position,
         data['message'], touched_files, url, code_review_url)
 
@@ -143,11 +163,13 @@ class GitRepository(Repository):
 
     blame = Blame(revision, path)
     for region in data['regions']:
+      author_time = self._GetDateTimeFromString(
+          region['author']['time'], '%Y-%m-%d %H:%M:%S')
+
       blame.AddRegion(
           Region(region['start'], region['count'], region['commit'],
                  region['author']['name'],
-                 NormalizeEmail(region['author']['email']),
-                 region['author']['time']))
+                 self._NormalizeEmail(region['author']['email']),author_time))
 
     return blame
 

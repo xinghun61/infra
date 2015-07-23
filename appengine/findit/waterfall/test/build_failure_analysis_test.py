@@ -165,23 +165,23 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     if revision <= '3':
       blame.AddRegion(Region(1, 10, '2',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2015-06-02 10:35:32'))
+                             datetime(2015, 06, 02, 04, 35, 32)))
     else:
       blame.AddRegion(Region(1, 2, '7',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2015-06-07 10:35:32'))
+                             datetime(2015, 06, 07, 04, 35, 32)))
       blame.AddRegion(Region(3, 3, '5',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2015-06-05 10:35:32'))
+                             datetime(2015, 06, 05, 04, 35, 32)))
       blame.AddRegion(Region(7, 1, '8',
                              u'test2@chromium.org', u'test2@chromium.org',
-                             u'2015-06-08 10:35:32'))
+                             datetime(2015, 06, 8, 04, 35, 32)))
       blame.AddRegion(Region(8, 1, '7',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2015-06-07 10:35:32'))
+                             datetime(2015, 06, 07, 21, 35, 32)))
       blame.AddRegion(Region(9, 10, '12',
                              u'test3@chromium.org', u'test3@chromium.org',
-                             u'2015-06-12 10:35:32'))
+                             datetime(2015, 06, 12, 04, 35, 32)))
     return blame
 
   def _MockGetChangeLog(self, revision):
@@ -189,7 +189,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
       def __init__(self, date):
         self.author_time = datetime.strptime(
-            'Mon Jun %s 10:35:32 2015' % date, '%a %b %d %H:%M:%S %Y')
+            'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y')
 
     return MockChangeLog(revision)
 
