@@ -29,7 +29,8 @@ class DetectFirstFailurePipeline(BasePipeline):
   TODO(stgao): do test-level detection for gtest.
   """
 
-  HTTP_CLIENT = HttpClient()
+  HTTP_CLIENT_LOGGING_ERRORS = HttpClient()
+  HTTP_CLIENT_NO_404_ERROR = HttpClient(no_error_logging_statuses=[404])
 
   def _BuildDataNeedUpdating(self, build):
     return (not build.data or (not build.completed and
@@ -46,7 +47,7 @@ class DetectFirstFailurePipeline(BasePipeline):
       # Retrieve build data from build archive first.
       build.data = buildbot.GetBuildDataFromArchive(
           build.master_name, build.builder_name, build.build_number,
-          self.HTTP_CLIENT)
+          self.HTTP_CLIENT_NO_404_ERROR)
 
       if build.data is None:
         if not lock_util.WaitUntilDownloadAllowed(
@@ -56,7 +57,7 @@ class DetectFirstFailurePipeline(BasePipeline):
         # Retrieve build data from build master.
         build.data = buildbot.GetBuildDataFromBuildMaster(
             build.master_name, build.builder_name, build.build_number,
-            self.HTTP_CLIENT)
+            self.HTTP_CLIENT_LOGGING_ERRORS)
 
       build.last_crawled_time = datetime.utcnow()
       build.put()

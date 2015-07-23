@@ -17,7 +17,9 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     # We wanted to validate certificate to avoid the man in the middle.
     result = urlfetch.fetch(url, deadline=timeout, validate_certificate=True)
 
-    if result.status_code != 200:
+    if (result.status_code != 200 and
+        (not self.no_error_logging_statuses or
+         result.status_code not in self.no_error_logging_statuses)):
       logging.error('Request to %s resulted in %d, headers:%s', url,
                     result.status_code, json.dumps(result.headers.items()))
 
