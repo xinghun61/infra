@@ -142,25 +142,35 @@ def _get_master_web_port(directory):
   return None
 
 
-def get_accepting_builds(directory, timeout=30):
-  """Determine whether the master is accepting new builds or not.
-
-  *** This only works for masters running on localhost.***
-  """
+def _make_master_json_call(directory, endpoint, timeout):
   port = _get_master_web_port(directory)
   if port is not None:
     try:
       res = requests.get(
-          'http://localhost:%d/json/accepting_builds' % port,
+          'http://localhost:%d/json/%s' % (port, endpoint),
           timeout=timeout)
       if res.status_code == 200:
         try:
-          return res.json().get('accepting_builds')
+          return res.json()
         except simplejson.scanner.JSONDecodeError:
           pass
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
       pass
   return None
+
+
+def get_buildstate(directory, timeout=30):
+  """Determine if the master accepts builds and how many builds are running.
+
+  *** This only works for masters running on localhost.***
+  """
+  json_data = _make_master_json_call(directory, 'buildstate', timeout)
+  if json_data is not None:
+    accepting_builds = json_data.get('accepting_builds', False)
+    builders = json_data.get('builders', [])
+    running_builds = sum(len(b.get('currentBuilds', [])) for b in builders)
+    return accepting_builds, running_builds
+  return None, None
 
 
 ######## Performing actions on the master.

@@ -43,10 +43,7 @@ class TestMasterInformation(auto_stub.TestCase):
         DATA_DIR, 'build_internal', 'masters', 'master.chromium.supersecret')
 
     self.Response = collections.namedtuple('Response', ['status_code', 'json'])
-    self.res = self.Response(
-        status_code=200,
-        json=lambda: {'accepting_builds': True})
-
+    self.res = None
     self.requests_handler = lambda *_args, **_kwargs: self.res
 
   def testPidIsRunning(self):
@@ -111,19 +108,38 @@ class TestMasterInformation(auto_stub.TestCase):
     self.assertTrue(
         any(x.endswith('mastermap_internal.py') for x in self.calls[0]))
 
-  def testAcceptingBuilds(self):
+  def testGetBuildstate(self):
     self.mock(requests, 'get', self.requests_handler)
-    self.assertTrue(master.get_accepting_builds(self.chromium_fyi))
+    currentBuilds = [
+        15,
+        16,
+        17,
+    ]
+    self.res = self.Response(
+        status_code=200,
+        json=lambda: {
+            'accepting_builds': True,
+            'builders': [
+                {'currentBuilds': currentBuilds},
+                {},
+            ]
+            })
+    accepting_builds, running_builds = master.get_buildstate(self.chromium_fyi)
+    self.assertTrue(accepting_builds)
+    self.assertEqual(running_builds, len(currentBuilds))
 
   def testNotAcceptingBuilds(self):
+    self.mock(requests, 'get', self.requests_handler)
     self.res = self.Response(
         status_code=200,
         json=lambda: {'accepting_builds': False})
-    self.mock(requests, 'get', self.requests_handler)
-    self.assertFalse(master.get_accepting_builds(self.chromium_fyi))
+
+    accepting_builds, _ = master.get_buildstate(self.chromium_fyi)
+    self.assertFalse(accepting_builds)
 
   def testAcceptingBuildsNoMaster(self):
-    self.assertIsNone(master.get_accepting_builds(self.chromium_webkit))
+    accepting_builds, _ = master.get_buildstate(self.chromium_webkit)
+    self.assertIsNone(accepting_builds)
 
   def testBadStatusCode(self):
     # We shouldn't get to the JSON function since we hit 404.
@@ -132,7 +148,8 @@ class TestMasterInformation(auto_stub.TestCase):
         status_code=404,
         json=lambda: self.assertTrue(False))  # pragma: no cover
     self.mock(requests, 'get', self.requests_handler)
-    self.assertFalse(master.get_accepting_builds(self.chromium_fyi))
+    accepting_builds, _ = master.get_buildstate(self.chromium_fyi)
+    self.assertFalse(accepting_builds)
 
   def testBadJson(self):
     def raiser():
@@ -141,19 +158,23 @@ class TestMasterInformation(auto_stub.TestCase):
         status_code=200,
         json=raiser)
     self.mock(requests, 'get', self.requests_handler)
-    self.assertFalse(master.get_accepting_builds(self.chromium_fyi))
+
+    accepting_builds, _ = master.get_buildstate(self.chromium_fyi)
+    self.assertFalse(accepting_builds)
 
   def testTimeout(self):
     def timeout(*_args, **_kwargs):
       raise requests.exceptions.Timeout('timeout')
     self.mock(requests, 'get', timeout)
-    self.assertIsNone(master.get_accepting_builds(self.chromium_fyi))
+    accepting_builds, _ = master.get_buildstate(self.chromium_fyi)
+    self.assertIsNone(accepting_builds)
 
   def testConnectionErr(self):
     def timeout(*_args, **_kwargs):
       raise requests.exceptions.ConnectionError('error')
     self.mock(requests, 'get', timeout)
-    self.assertIsNone(master.get_accepting_builds(self.chromium_fyi))
+    accepting_builds, _ = master.get_buildstate(self.chromium_fyi)
+    self.assertIsNone(accepting_builds)
 
   def testMastermapHost(self):
     masters = [

@@ -42,14 +42,16 @@ def collect_evidence(master_directory, connection_timeout=30):
   evidence['buildbot_is_running'] = master.buildbot_is_running(master_directory)
 
   if evidence['buildbot_is_running']:
-    evidence['accepting_builds'] = master.get_accepting_builds(
+    accepting_builds, current_running_builds = master.get_buildstate(
         master_directory, timeout=connection_timeout)
+    evidence['accepting_builds'] = accepting_builds
+    evidence['current_running_builds'] = current_running_builds
 
   return evidence
 
 
 def construct_pattern_matcher(
-    boot_timeout_sec=5 * 60, drain_timeout_sec=5 * 60):
+    boot_timeout_sec=5 * 60, drain_timeout_sec=5 * 60, drain_build_thresh=0):
   # There is a bug in pylint which triggers false positives on decorated
   # decorators with arguments: http://goo.gl/Ln6uyn
   # pylint: disable=no-value-for-parameter
@@ -125,12 +127,15 @@ def construct_pattern_matcher(
   def _check_buildbot_state(data):
     if not data['buildbot_is_running']:
       return 'offline'
-    if data['accepting_builds'] is None:
+    if (data['accepting_builds'] is None or
+        data['current_running_builds'] is None):
       if data['last_boot'] > (data['now'] - boot_timeout_sec):
         return 'starting'
       return 'crashed'
     if data['accepting_builds']:
       return 'running'
+    if data['current_running_builds'] <= drain_build_thresh:
+      return 'drained'
     if data['last_no_new_builds'] > (data['now'] - drain_timeout_sec):
       return 'draining'
     return 'drained'

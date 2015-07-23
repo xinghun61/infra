@@ -17,6 +17,7 @@ class TestBuildbotState(auto_stub.TestCase):
     self.last_no_new_builds = 1100
     self.buildbot_is_running = True
     self.accepting_builds = True
+    self.current_running_builds = 10
     self.desired_buildbot_state = 'running'
     self.desired_transition_time = 900
 
@@ -28,14 +29,14 @@ class TestBuildbotState(auto_stub.TestCase):
       return self.last_no_new_builds
     def buildbot_is_running_handler(*_args):
       return self.buildbot_is_running
-    def accepting_builds_handler(*_args, **_kwargs):
-      return self.accepting_builds
+    def buildstate_handler(*_args, **_kwargs):
+      return self.accepting_builds, self.current_running_builds
 
     self.mock(timestamp, 'utcnow_ts', utcnow_handler)
     self.mock(master, 'get_last_boot', last_boot_handler)
     self.mock(master, 'get_last_no_new_builds', last_no_new_builds_handler)
     self.mock(master, 'buildbot_is_running', buildbot_is_running_handler)
-    self.mock(master, 'get_accepting_builds', accepting_builds_handler)
+    self.mock( master, 'get_buildstate', buildstate_handler)
 
   def _get_evidence(self):
     evidence = buildbot_state.collect_evidence('fake_dir')
@@ -78,7 +79,14 @@ class TestBuildbotState(auto_stub.TestCase):
     state = self._get_state()['buildbot']
     self.assertEqual(state, 'draining')
 
-  def testBuildbotIsDrained(self):
+  def testBuildbotIsDrainedNoBuilds(self):
+    self.accepting_builds = False
+    self.current_running_builds = 0
+    self.utcnow = self.last_no_new_builds + 4 * 60
+    state = self._get_state()['buildbot']
+    self.assertEqual(state, 'drained')
+
+  def testBuildbotIsDrainedTimeout(self):
     self.accepting_builds = False
     state = self._get_state()['buildbot']
     self.assertEqual(state, 'drained')
