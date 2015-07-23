@@ -27,10 +27,11 @@ def RunSteps(api):
   cmd.extend(['--output-dir-path', dirname])
   cmd.extend(['--since', '2015-01-01'])
   cmd.extend(['--run-antibody'])
+  cmd.extend(['--logs-debug'])
 
   api.python('Antibody', 'run.py', cmd,
              cwd=api.m.path['slave_build'].join('infra'))
-  api.gsutil(['cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
+  api.gsutil(['-m', 'cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
 
 
 def GenTests(api):

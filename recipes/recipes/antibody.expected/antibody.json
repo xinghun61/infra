@@ -86,7 +86,8 @@
       "[TMP_BASE]/antibody_tmp_1/antibody",
       "--since",
       "2015-01-01",
-      "--run-antibody"
+      "--run-antibody",
+      "--logs-debug"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "Antibody"
@@ -101,6 +102,7 @@
       "--force-version",
       "3.25",
       "----",
+      "-m",
       "cp",
       "-r",
       "-a",
