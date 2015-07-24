@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 import endpoints
+from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -29,6 +32,22 @@ class DataPacket(messages.Message):
   timeseries = messages.MessageField(TimeSeries, 1, repeated=True)
 
 
+class PointModel(ndb.Model):
+  time = ndb.FloatProperty()
+  value = ndb.FloatProperty()
+
+
+class FieldModel(ndb.Model):
+  field_key = ndb.StringProperty()
+  value = ndb.StringProperty()
+
+
+class TimeSeriesModel(ndb.Model):
+  points = ndb.StructuredProperty(PointModel, repeated=True)
+  fields = ndb.StructuredProperty(FieldModel, repeated=True)
+  metric = ndb.StringProperty()
+
+
 @auth.endpoints_api(name='consoleapp', version='v1')
 class LoadTestApi(remote.Service):
   """A testing endpoint that receives timeseries data."""
@@ -36,7 +55,23 @@ class LoadTestApi(remote.Service):
   @auth.endpoints_method(DataPacket, message_types.VoidMessage,
                          name='timeseries.update')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
-  def timeseries_update(self, _request):
+  def timeseries_update(self, request):
+    for timeseries in request.timeseries:
+      query = TimeSeriesModel.query()
+      for field in timeseries.fields:
+        query = query.filter(TimeSeriesModel.fields == FieldModel(
+            field_key=field.key, value=field.value))
+      query = query.filter(TimeSeriesModel.metric == timeseries.metric)
+      ts = query.get()
+      if ts == None:
+        ts = TimeSeriesModel(points=[],
+                             fields=[FieldModel(field_key=field.key, 
+                                                value=field.value) 
+                                     for field in timeseries.fields],
+                             metric=timeseries.metric)
+      ts.points = [PointModel(time=point.time, value=point.value) 
+                   for point in timeseries.points]
+      ts.put()
     return message_types.VoidMessage()
 
 APPLICATION = endpoints.api_server([LoadTestApi])
