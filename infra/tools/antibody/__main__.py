@@ -57,7 +57,11 @@ def main(argv):
         cc)
     for review_url in git_commits_with_review_urls:
       # cannot get access into chromereview.googleplex.com
-      if 'chromereviews.googleplex' not in review_url:
+      # cannot support chromium-review.googlesource.com (gerrit)
+      if not any(host in review_url for host in (
+          'chromereviews.googleplex',
+          'chromium-review.googlesource',
+      )):
         code_review_parse.add_rietveld_data_to_review(review_url, cc)
         code_review_parse.add_rietveld_data_to_review_people(review_url, cc)
     csql.commit(connection)
