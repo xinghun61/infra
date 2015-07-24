@@ -142,6 +142,7 @@ type InputOptions struct {
 	// Alternative to 'pkg-def'.
 	packageName string
 	inputDir    string
+	installMode local.InstallMode
 }
 
 func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
@@ -154,6 +155,8 @@ func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
 	// Interface to accept a single directory (alternative to -pkg-def).
 	f.StringVar(&opts.packageName, "name", "", "package name (unused with -pkg-def)")
 	f.StringVar(&opts.inputDir, "in", "", "path to a directory with files to package (unused with -pkg-def)")
+	f.Var(&opts.installMode, "install-mode",
+		"how the package should be installed: \"copy\" or \"symlink\" (unused with -pkg-def)")
 }
 
 // prepareInput processes InputOptions by collecting all files to be added to
@@ -187,6 +190,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 		out = local.BuildInstanceOptions{
 			Input:       files,
 			PackageName: opts.packageName,
+			InstallMode: opts.installMode,
 			Logger:      log,
 		}
 		return out, nil
@@ -196,6 +200,10 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	if opts.packageDef != "" {
 		if opts.packageName != "" {
 			log.Errorf("-pkg-def and -name can not be used together")
+			return out, cmdErr
+		}
+		if opts.installMode != "" {
+			log.Errorf("-install-mode is ignored if -pkd-def is used")
 			return out, cmdErr
 		}
 

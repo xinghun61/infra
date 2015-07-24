@@ -75,6 +75,21 @@ func ValidateInstallMode(mode InstallMode) error {
 	return fmt.Errorf("invalid install mode %q", mode)
 }
 
+// Set is called by 'flag' package when parsing command line options.
+func (m *InstallMode) Set(value string) error {
+	val := InstallMode(value)
+	if err := ValidateInstallMode(val); err != nil {
+		return err
+	}
+	*m = val
+	return nil
+}
+
+// String is needed to conform to flag.Value interface.
+func (m InstallMode) String() string {
+	return string(m)
+}
+
 // readManifest reads and decodes manifest JSON from io.Reader.
 func readManifest(r io.Reader) (manifest Manifest, err error) {
 	blob, err := ioutil.ReadAll(r)
