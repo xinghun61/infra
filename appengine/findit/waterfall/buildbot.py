@@ -212,14 +212,6 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   for step_data in steps:
     step_name = step_data['name']
 
-    step_logs = step_data.get('logs')
-    if step_logs and 'preamble' == step_logs[0][0]:
-      # Skip a annotating step like "steps" or "slave_steps", which wraps other
-      # steps. A failed annotated step like "content_browsertests" will make
-      # the annotating step like "steps" fail too. Such annotating steps have a
-      # log with name "preamble".
-      continue
-
     if not step_data.get('isFinished', False):
       # Skip steps that haven't started yet or are still running.
       continue
@@ -227,6 +219,14 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
     step_result = GetStepResult(step_data)
     if step_result not in (SUCCESS, WARNINGS):
       build_info.not_passed_steps.append(step_name)
+
+    step_logs = step_data.get('logs')
+    if step_logs and 'preamble' == step_logs[0][0]:
+      # Skip a annotating step like "steps" or "slave_steps", which wraps other
+      # steps. A failed annotated step like "content_browsertests" will make
+      # the annotating step like "steps" fail too. Such annotating steps have a
+      # log with name "preamble".
+      continue
 
     if step_result in (SUCCESS, WARNINGS):
       build_info.passed_steps.append(step_name)

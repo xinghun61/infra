@@ -241,9 +241,9 @@ class BuildBotTest(unittest.TestCase):
         'times': [start_time, stop_time]})
     self.assertEqual(expected_build_start_time, build_start_time)
 
-  def testExtractBuildInfo(self):
+  def testExtractBuildInfoOfRunningBuild(self):
     build_file = os.path.join(
-        os.path.dirname(__file__), 'data', 'sample_build.json')
+        os.path.dirname(__file__), 'data', 'running_build.json')
     with open(build_file, 'r') as f:
       build_data = f.read()
 
@@ -338,6 +338,48 @@ class BuildBotTest(unittest.TestCase):
     ]
     expected_not_passed_steps = [
         'interactive_ui_tests on Windows-XP-SP3',
+        'net_unittests on Windows-XP-SP3',
+    ]
+
+    build_info = buildbot.ExtractBuildInfo(
+        master_name, builder_name, build_number, build_data)
+
+    self.assertEqual(master_name, build_info.master_name)
+    self.assertEqual(builder_name, build_info.builder_name)
+    self.assertEqual(build_number, build_info.build_number)
+    self.assertEqual(expected_build_start_time, build_info.build_start_time)
+    self.assertEqual(expected_chromium_revision, build_info.chromium_revision)
+    self.assertEqual(expected_completed, build_info.completed)
+    self.assertEqual(expected_result, build_info.result)
+    self.assertEqual(expected_blame_list, build_info.blame_list)
+    self.assertEqual(expected_failed_steps, build_info.failed_steps)
+    self.assertEqual(expected_passed_steps, build_info.passed_steps)
+    self.assertEqual(expected_not_passed_steps, build_info.not_passed_steps)
+
+  def testExtractBuildInfoOfCompletedBuild(self):
+    build_file = os.path.join(
+        os.path.dirname(__file__), 'data', 'completed_build.json')
+    with open(build_file, 'r') as f:
+      build_data = f.read()
+
+    master_name = 'a'
+    builder_name = 'b'
+    build_number = 632
+    expected_build_start_time = datetime.fromtimestamp(1417470720.763887)
+    expected_chromium_revision = '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
+    expected_completed = True
+    expected_result = None
+    expected_blame_list = [
+        '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
+    ]
+    expected_failed_steps = [
+        'net_unittests on Windows-XP-SP3'
+    ]
+    expected_passed_steps = [
+        'browser_tests on Windows-XP-SP3'
+    ]
+    expected_not_passed_steps = [
+        'steps',
         'net_unittests on Windows-XP-SP3',
     ]
 

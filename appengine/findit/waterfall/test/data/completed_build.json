@@ -1,0 +1,154 @@
+{
+  "blame": [
+    "test@chromium.org" 
+  ], 
+  "builderName": "XP Tests (1)", 
+  "number": 34239, 
+  "properties": [
+    [
+      "git_revision", 
+      "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+      "Change"
+    ], 
+    [
+      "got_revision", 
+      "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+      "Annotation(bot_update)"
+    ], 
+    [
+      "got_revision_cp", 
+      "refs/heads/master@{#306253}", 
+      "Annotation(bot_update)"
+    ] 
+  ], 
+  "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Mon 01 Dec 2014 13:15:44", 
+        "branch": "master", 
+        "comments": "[NaCl SDK] Add extract_artifacts.py script.\n\nThis is used in conjunction with build_artifacts.py to extract the binary\nresources needed for the Native Client SDK.\n\nBUG=none\nR=test1@chromium.org\n\nReview URL: https://codereview.chromium.org/735833003\n\nCr-Commit-Position: refs/heads/master@{#306253}\n", 
+        "files": [
+          {
+            "name": "native_client_sdk/src/build_tools/build_paths.py"
+          }, 
+          {
+            "name": "native_client_sdk/src/build_tools/extract_artifacts.py"
+          }
+        ], 
+        "number": 126934, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revision": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "when": 1417468544, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "449cdbd05616de91fcf7e8b4282e300336d6d7c5"
+  }, 
+  "steps": [
+    {
+      "expectations": [
+        [
+          "output", 
+          4137210, 
+          4529361.303313555
+        ]
+      ], 
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "preamble", 
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/steps/logs/preamble"
+        ], 
+        [
+          "stdio", 
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/steps/logs/stdio"
+        ]
+      ], 
+      "name": "steps", 
+      "results": [
+        2, 
+        [
+          "steps"
+        ]
+      ], 
+      "text": [
+        "running steps via annotated script"
+      ], 
+      "times": [
+        1417470720.764065, 
+        1417473539.041876
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/browser_tests%20on%20Windows-XP-SP3/logs/stdio"
+        ]
+      ], 
+      "name": "browser_tests on Windows-XP-SP3", 
+      "step_number": 1, 
+      "text": [
+        "browser_tests on Windows-XP-SP3", 
+        "", 
+        "47 disabled"
+      ], 
+      "times": [
+        1417470721.764065, 
+        1417473526.554072 
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/net_unittests%20on%20Windows-XP-SP3/logs/stdio"
+        ]
+      ], 
+      "name": "net_unittests on Windows-XP-SP3", 
+      "results": [
+        2, 
+        [
+          "exception", 
+          "net_unittests on Windows-XP-SP3"
+        ]
+      ], 
+      "step_number": 2, 
+      "text": [
+        "net_unittests on Windows-XP-SP3", 
+        "", 
+        "47 disabled"
+      ], 
+      "times": [
+        1417473528.554072, 
+        1417473537.641876
+      ]
+    } 
+  ], 
+  "text": [
+    "failed", 
+    "net_unittests on Windows-XP-SP3"
+  ], 
+  "times": [
+    1417470720.763887, 
+    1417473539.641876
+  ]
+}
