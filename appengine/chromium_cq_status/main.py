@@ -5,6 +5,7 @@
 import webapp2
 
 from handlers.admin_dispatch import AdminDispatch
+from handlers.builder_timeline_data import BuilderTimelineData
 from handlers.index import Index
 from handlers.patch_status import PatchStatus
 from handlers.patch_summary import PatchSummary
@@ -17,6 +18,7 @@ from handlers.stats_data_points import StatsDataPoints
 handlers = [
   (r'/', Index),
   (r'/admin/(.*)', AdminDispatch),
+  (r'/builder-timeline-data/(.*)/(.*)/(.*)', BuilderTimelineData),
   (r'/patchset/(.*)/(.*)', PatchStatus),  # Legacy URL for old links.
   (r'/patch-status/(.*)/(.*)', PatchStatus),
   (r'/patch-summary/(.*)/(.*)', PatchSummary),

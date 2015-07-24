@@ -209,7 +209,7 @@ class TraceViewerEvent(): # pragma: no cover
   pid: process id, used for grouping threads
   tid: thread id, displayed to the left of all intervals with the same thread
   """
-  def __init__(self, name, cat, ph, ts, pid, tid, cname, args=None):
+  def __init__(self, name, cat, ph, ts, pid, tid, cname=None, args=None):
     self.name = name
     self.cat = cat
     self.ph = ph
@@ -220,16 +220,18 @@ class TraceViewerEvent(): # pragma: no cover
     self.args = args or {}
 
   def to_dict(self):
-    return {
+    event = {
       'name': self.name,
       'cat': self.cat,
       'ph': self.ph,
       'ts': int(self.ts * 1000000),
       'pid': self.pid,
       'tid': self.tid,
-      'cname': self.cname,
-      'args': self.args
+      'args': self.args,
     }
+    if self.cname:
+      event['cname'] = self.cname
+    return event
 
   def builder_key(self):
     """Returns an identifier for the build of the form master/builder."""

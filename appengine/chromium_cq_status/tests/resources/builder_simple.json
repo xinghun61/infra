@@ -1,0 +1,356 @@
+{
+  "blame": [
+    "tester@google.com"
+  ], 
+  "builderName": "tester", 
+  "logs": [
+    [
+      "preamble", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/steps/logs/preamble"
+    ], 
+    [
+      "stdio", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/steps/logs/stdio"
+    ], 
+    [
+      "stdio", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/update_scripts/logs/stdio"
+    ], 
+    [
+      "stdio", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/setup_build/logs/stdio"
+    ], 
+    [
+      "run_recipe", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/setup_build/logs/run_recipe"
+    ], 
+    [
+      "stdio", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/stdio"
+    ], 
+    [
+      "json.output", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/json.output"
+    ], 
+    [
+      "patch error", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/patch%20error"
+    ], 
+    [
+      "stdio", 
+      "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/Patch%20failure/logs/stdio"
+    ]
+  ], 
+  "number": 2490, 
+  "properties": [
+    [
+      "attempt_start_ts", 
+      1437613692284370, 
+      "buildbucket"
+    ], 
+    [
+      "blamelist", 
+      [
+        "tester@google.com"
+      ], 
+      "Build"
+    ], 
+    [
+      "branch", 
+      null, 
+      "Build"
+    ], 
+    [
+      "buildbotURL", 
+      "http://build.chromium.org/p/tryserver/", 
+      "master.cfg"
+    ], 
+    [
+      "buildbucket", 
+      {
+        "build": {
+          "bucket": "master.tryserver", 
+          "created_by": "user:commit-bot@chromium.org", 
+          "created_ts": "1437613763527030", 
+          "id": "9039546426253766736", 
+          "lease_key": "1521661428", 
+          "tags": [
+            "builder:tester", 
+            "buildset:patch/rietveld/codereview.chromium.org/1235373004/140001", 
+            "master:tryserver", 
+            "user_agent:cq"
+          ]
+        }
+      }, 
+      "buildbucket"
+    ], 
+    [
+      "buildername", 
+      "tester", 
+      "Builder"
+    ], 
+    [
+      "buildnumber", 
+      2490, 
+      "Build"
+    ], 
+    [
+      "category", 
+      "cq", 
+      "buildbucket"
+    ], 
+    [
+      "issue", 
+      1235373004, 
+      "buildbucket"
+    ], 
+    [
+      "master", 
+      "tryserver", 
+      "buildbucket"
+    ], 
+    [
+      "mastername", 
+      "tryserver", 
+      "master.cfg"
+    ], 
+    [
+      "patch_project", 
+      "infra", 
+      "buildbucket"
+    ], 
+    [
+      "patch_storage", 
+      "rietveld", 
+      "buildbucket"
+    ], 
+    [
+      "patchset", 
+      140001, 
+      "buildbucket"
+    ], 
+    [
+      "project", 
+      "", 
+      "Build"
+    ], 
+    [
+      "reason", 
+      "CQ", 
+      "buildbucket"
+    ], 
+    [
+      "recipe", 
+      "infra/infra_repo_trybot", 
+      "AnnotatorFactory"
+    ], 
+    [
+      "repository", 
+      "", 
+      "Build"
+    ], 
+    [
+      "requestedAt", 
+      1437613772, 
+      "Build"
+    ], 
+    [
+      "requester", 
+      "commit-bot@chromium.org", 
+      "buildbucket"
+    ], 
+    [
+      "revision", 
+      "", 
+      "Build"
+    ], 
+    [
+      "rietveld", 
+      "https://codereview.chromium.org", 
+      "buildbucket"
+    ], 
+    [
+      "slavename", 
+      "slave854-c4", 
+      "BuildSlave"
+    ], 
+    [
+      "testfilter", 
+      [
+        "defaulttests"
+      ], 
+      "buildbucket"
+    ], 
+    [
+      "workdir", 
+      "/b/build/slave/tester", 
+      "slave"
+    ]
+  ], 
+  "reason": "buildbucket", 
+  "results": 2, 
+  "slave": "slave854-c4", 
+  "sourceStamp": {
+    "changes": [
+      {
+        "at": "Wed 22 Jul 2015 18:09:31", 
+        "category": "buildbucket", 
+        "number": 1819374, 
+        "properties": [
+          [
+            "buildbucket", 
+            {}, 
+            "Change"
+          ]
+        ], 
+        "when": 1437613771, 
+        "who": "keelerh@google.com"
+      }
+    ]
+  }, 
+  "steps": [
+    {
+      "expectations": [
+        [
+          "output", 
+          331808, 
+          240356.3412295534
+        ]
+      ], 
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "preamble", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/steps/logs/preamble"
+        ], 
+        [
+          "stdio", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/steps/logs/stdio"
+        ]
+      ], 
+      "name": "steps", 
+      "results": [
+        2, 
+        [
+          "steps"
+        ]
+      ], 
+      "text": [
+        "running steps via annotated script"
+      ], 
+      "times": [
+        1437613773.467452, 
+        1437613824.094687
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/update_scripts/logs/stdio"
+        ]
+      ], 
+      "name": "update_scripts", 
+      "step_number": 1, 
+      "text": [
+        "update_scripts"
+      ], 
+      "times": [
+        1437613779.791333, 
+        1437613784.317581
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/setup_build/logs/stdio"
+        ], 
+        [
+          "run_recipe", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/setup_build/logs/run_recipe"
+        ]
+      ], 
+      "name": "setup_build", 
+      "step_number": 2, 
+      "text": [
+        "setup_build", 
+        "<br/>running recipe: \"infra/infra_repo_trybot\""
+      ], 
+      "times": [
+        1437613784.317975, 
+        1437613784.318767
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/stdio"
+        ], 
+        [
+          "json.output", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/json.output"
+        ], 
+        [
+          "patch error", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/bot_update/logs/patch%20error"
+        ]
+      ], 
+      "name": "bot_update", 
+      "step_number": 3, 
+      "text": [
+        "bot_update", 
+        "[85GB/492GB used (17%)] PATCH FAILED"
+      ], 
+      "times": [
+        1437613784.319, 
+        1437613824.088214
+      ]
+    }, 
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/tryserver/builders/tester/builds/2490/steps/Patch%20failure/logs/stdio"
+        ]
+      ], 
+      "name": "Patch failure", 
+      "results": [
+        2, 
+        [
+          "failed", 
+          "Patch failure"
+        ]
+      ], 
+      "step_number": 4, 
+      "text": [
+        "Patch failure", 
+        "Check the bot_update step for details"
+      ], 
+      "times": [
+        1437613824.089208, 
+        1437613824.090736
+      ]
+    }
+  ], 
+  "text": [
+    "failed", 
+    "steps", 
+    "failed", 
+    "Patch failure"
+  ], 
+  "times": [
+    1437613773.465045, 
+    1437613824.095871
+  ]
+}
