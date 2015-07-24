@@ -17,6 +17,8 @@ import sys
 import time
 import urllib
 
+from requests.packages import urllib3
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -50,8 +52,10 @@ class Gerrit(object):  # pragma: no cover
 
   Args:
     host (str): gerrit host name.
-    netrc_path (str): path to local netrc file. Is None, default location for
-      the current OS is used.
+    netrc_path (str): path to local netrc file. If None, the default location
+      for the current OS is used.
+    gitcookies_path (str): path to local gitcookies file. If None, the default
+      location for the current OS is used.
     throttle_delay_sec (int): minimal time delay between two requests, to
       avoid hammering the Gerrit server.
   """
@@ -65,25 +69,32 @@ class Gerrit(object):  # pragma: no cover
       raise GerritException('No auth record for %s' % host)
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % (auth[0], auth[2])))
-    self._url_base = 'https://%s/a' % host
+    self._url_base = 'https://%s/a' % host.rstrip('/')
     self._throttle = throttle_delay_sec
     self._last_call_ts = None
+    self.session = requests.Session()
+    retry_config = urllib3.util.Retry(total=4, backoff_factor=0.5,
+                                      status_forcelist=[500, 503])
+    self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
+        max_retries=retry_config))
 
-  def _request(self, method, url, params=None, body=None):
+
+  def _request(self, method, request_path, params=None, body=None):
     """Sends HTTP request to Gerrit.
 
     Args:
       method: HTTP method (e.g 'GET', 'POST', ...).
-      url: URL of the endpoint, relative to host (e.g. '/accounts/self').
+      request_path: URL of the endpoint, relative to host (e.g. '/accounts/id').
       params: dict with query parameters.
       body: optional request body, will be serialized to JSON.
 
     Returns:
       Tuple (response code, deserialized JSON response).
     """
-    if not url.startswith('/'):
-      raise ValueError('URL should start with /: %s' % url)
-    full_url = '%s%s' % (self._url_base, url)
+    if not request_path.startswith('/'):
+      request_path = '/' + request_path
+
+    full_url = '%s%s' % (self._url_base, request_path)
 
     # Wait to avoid Gerrit quota, don't wait if a response is in the cache.
     if self._throttle and not _is_response_cached(method, full_url):
@@ -92,16 +103,25 @@ class Gerrit(object):  # pragma: no cover
         time.sleep(self._throttle - (now - self._last_call_ts))
       self._last_call_ts = time.time()
 
-    headers = {'Authorization': self._auth_header}
+    headers = {
+        # This makes the server return compact JSON.
+        'Accept': 'application/json',
+        # This means responses will be gzip compressed.
+        'Accept-encoding': 'gzip',
+        'Authorization': self._auth_header,
+    }
+
     if body is not None:
+      body = json.dumps(body)
       headers['Content-Type'] = 'application/json;charset=UTF-8'
+      headers['Content-Length'] = str(len(body))
 
     LOGGER.debug('%s %s', method, full_url)
-    response = requests.request(
+    response = self.session.request(
         method=method,
         url=full_url,
         params=params,
-        data=json.dumps(body) if body is not None else None,
+        data=body,
         headers=headers)
 
     # Gerrit prepends )]}' to response.
@@ -146,7 +166,7 @@ class Gerrit(object):  # pragma: no cover
       raise ValueError('Invalid group name: %s' % group)
     code, body = self._request(
         method='POST',
-        url='/groups/%s/members.add' % group,
+        request_path='/groups/%s/members.add' % group,
         body={'members': list(members)})
     if code != 200:
       raise UnexpectedResponseException(code, body)
@@ -156,7 +176,7 @@ class Gerrit(object):  # pragma: no cover
       raise ValueError('Invalid account id: %s' % account_id)
     code, body = self._request(
         method='GET',
-        url='/accounts/%s/active' % account_id)
+        request_path='/accounts/%s/active' % account_id)
     if code == 200:
       return True
     if code == 204:
@@ -176,7 +196,7 @@ class Gerrit(object):  # pragma: no cover
       raise ValueError('Invalid account id: %s' % account_id)
     code, body = self._request(
         method='PUT',
-        url='/accounts/%s/active' % account_id)
+        request_path='/accounts/%s/active' % account_id)
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
 
@@ -194,7 +214,7 @@ class Gerrit(object):  # pragma: no cover
     """
     code, body = self._request(
         method='GET',
-        url='/projects/?p=%s&t' % urllib.quote(prefix, safe=''))
+        request_path='/projects/?p=%s&t' % urllib.quote(prefix, safe=''))
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
     return body
@@ -213,7 +233,7 @@ class Gerrit(object):  # pragma: no cover
     """
     code, body = self._request(
         method='GET',
-        url='/projects/%s/parent' % urllib.quote(project, safe=''))
+        request_path='/projects/%s/parent' % urllib.quote(project, safe=''))
     if code == 404:
       return None
     if code not in (200, 201):
@@ -236,7 +256,7 @@ class Gerrit(object):  # pragma: no cover
         commit_message or ('Changing parent project to %s' % parent))
     code, body = self._request(
         method='PUT',
-        url='/projects/%s/parent' % urllib.quote(project, safe=''),
+        request_path='/projects/%s/parent' % urllib.quote(project, safe=''),
         body={'parent': parent, 'commit_message': commit_message})
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
@@ -277,22 +297,32 @@ def _load_netrc(path=None):  # pragma: no cover
 
 
 def _load_gitcookies(path, host):
+  """Loads gitcookies file with gerrit credentials.
+
+  Args:
+    path: path to .gitcookies or None to use default path.
+
+  Returns:
+    returns (login, None, password) tuple representing the credentials.
+  """
   if not path:
     # HOME might not be set on Windows.
     if 'HOME' not in os.environ:
       raise GitcookiesException('HOME environment variable is not set')
     path = os.path.join(os.environ['HOME'], '.gitcookies')
 
-  with open(path) as f:
-    for line in f:
-      fields = line.strip().split('\t')
-      if line.strip().startswith('#') or len(fields) != 7:
-        continue
-      domain, xpath, key, value = fields[0], fields[2], fields[5], fields[6]
-      if cookielib.domain_match(host, domain) and xpath == '/' and key == 'o':
-        login, password = value.split('=', 1)
-        return (login, None, password)
-
+  try:
+    with open(path) as f:
+      for line in f:
+        fields = line.strip().split('\t')
+        if line.strip().startswith('#') or len(fields) != 7:
+          continue
+        domain, xpath, key, value = fields[0], fields[2], fields[5], fields[6]
+        if cookielib.domain_match(host, domain) and xpath == '/' and key == 'o':
+          login, password = value.split('=', 1)
+          return (login, None, password)
+  except IOError:
+    pass
   return None
 
 
