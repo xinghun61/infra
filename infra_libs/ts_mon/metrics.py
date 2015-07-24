@@ -316,16 +316,20 @@ class DistributionMetric(Metric):
       10: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10,
   }
 
-  def __init__(self, name, bucketer=None, target=None, fields=None):
+  def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
+               fields=None):
     super(DistributionMetric, self).__init__(name, target, fields)
 
     if bucketer is None:
       bucketer = distribution.GeometricBucketer()
 
+    self.is_cumulative = is_cumulative
     self.bucketer = bucketer
 
   def _populate_value(self, metric, value):
     pb = metric.distribution
+
+    pb.is_cumulative = self.is_cumulative
 
     # Copy the bucketer params.
     if (value.bucketer.width == 0 and
@@ -371,12 +375,52 @@ class DistributionMetric(Metric):
         yield value
 
   def add(self, value, fields=None):
-    dist = self.get(fields)
-    if dist is None:
-      dist = distribution.Distribution(self.bucketer)
+    with self._thread_lock:
+      dist = self.get(fields)
+      if dist is None:
+        dist = distribution.Distribution(self.bucketer)
 
-    dist.add(value)
-    self._set_and_send_value(dist, fields)
+      dist.add(value)
+      self._set_and_send_value(dist, fields)
 
   def set(self, value, fields=None):
-    raise TypeError('Cannot set() a DistributionMetric (use add() instead)')
+    """Replaces the distribution with the given fields with another one.
+
+    This only makes sense on non-cumulative DistributionMetrics.
+
+    Args:
+      value: A infra_libs.ts_mon.Distribution.
+    """
+
+    if self.is_cumulative:
+      raise TypeError(
+          'Cannot set() a cumulative DistributionMetric (use add() instead)')
+
+    if not isinstance(value, distribution.Distribution):
+      raise errors.MonitoringInvalidValueTypeError(self._name, value)
+
+    self._set_and_send_value(value, fields)
+
+
+class CumulativeDistributionMetric(DistributionMetric):
+  """A DistributionMetric with is_cumulative set to True."""
+
+  def __init__(self, name, bucketer=None, target=None, fields=None):
+    super(CumulativeDistributionMetric, self).__init__(
+        name,
+        is_cumulative=True,
+        bucketer=bucketer,
+        target=target,
+        fields=fields)
+
+
+class NonCumulativeDistributionMetric(DistributionMetric):
+  """A DistributionMetric with is_cumulative set to False."""
+
+  def __init__(self, name, bucketer=None, target=None, fields=None):
+    super(NonCumulativeDistributionMetric, self).__init__(
+        name,
+        is_cumulative=False,
+        bucketer=bucketer,
+        target=target,
+        fields=fields)

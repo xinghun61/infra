@@ -543,6 +543,20 @@ class DistributionMetricTest(MetricTestBase):
     self.assertEquals(0, pb.distribution.overflow)
     self.assertEquals(-500002.5, pb.distribution.mean)
 
+  def test_populate_is_cumulative(self):
+    pb = metrics_pb2.MetricsData()
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10, num_finite_buckets=10))
+    m = metrics.CumulativeDistributionMetric('test')
+
+    m._populate_value(pb, d)
+    self.assertTrue(pb.distribution.is_cumulative)
+
+    m = metrics.NonCumulativeDistributionMetric('test2')
+
+    m._populate_value(pb, d)
+    self.assertFalse(pb.distribution.is_cumulative)
+
   def test_add(self):
     m = metrics.DistributionMetric('test')
     m.add(1)
@@ -563,6 +577,21 @@ class DistributionMetricTest(MetricTestBase):
     self.assertEquals(3, m.get().count)
 
   def test_set(self):
-    m = metrics.DistributionMetric('test')
+    d = distribution.Distribution(
+        distribution.FixedWidthBucketer(10, num_finite_buckets=10))
+    d.add(1)
+    d.add(10)
+    d.add(100)
+
+    m = metrics.CumulativeDistributionMetric('test')
     with self.assertRaises(TypeError):
+      m.set(d)
+
+    m = metrics.NonCumulativeDistributionMetric('test2')
+    m.set(d)
+    self.assertEquals(d, m.get())
+
+    with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(1)
+    with self.assertRaises(errors.MonitoringInvalidValueTypeError):
+      m.set('foo')
