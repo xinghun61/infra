@@ -5,6 +5,7 @@
 from datetime import datetime
 import logging
 
+from google.appengine.api import modules
 from google.appengine.ext import ndb
 
 from model.wf_analysis import WfAnalysis
@@ -99,7 +100,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     # specified explicitly, and the default target is used rather than the one
     # in the queue.yaml file, but this contradicts the documentation in
     # https://cloud.google.com/appengine/docs/python/taskqueue/tasks#Task.
-    pipeline_job.target = 'build-failure-analysis'
+    pipeline_job.target = ('%s.build-failure-analysis' %
+        modules.get_current_version_name())
     pipeline_job.start(queue_name=queue_name)
 
     logging.info('An analysis was scheduled for build %s, %s, %s: %s',

@@ -36,4 +36,5 @@ For release, make sure you are in a clean branch and deploy to findit-for-me.app
 To make the new version the default:
 1. Go to https://appengine.google.com and select the findit-for-me or findit-for-waterfall app.
 2. Click on the 'Versions' link on the left navigation menu.
-3. Make the new version in all modules as default.
+3. Make the new version in the "default" module as the default version.
+   It is optional to update the default version of the "build-failure-analysis" module.
