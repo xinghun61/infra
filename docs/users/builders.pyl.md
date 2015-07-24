@@ -64,6 +64,7 @@ Here's a simple file containing all of the required fields:
        "recipe": "chromium_mojo",
        "scheduler": "chromium_src_commits",
        "slave_pools": ["linux_precise"],
+       "category": "0builders",
      },
   },
 
@@ -213,6 +214,14 @@ This is an *optional* field; if it is not set, it defaults to the
 builder name. This field can be used to share a single build directory
 between multiple builders (so, for example, you don't have to check out
 the source tree twice for a debug builder and a release builder).
+
+
+### category
+  This is an *optional* field that specifies a category for the builder, so you
+  can group builders visually on the master.  The categories are sorted
+  left-to-right in ascending order, and for display any initial number is
+  stripped.  So categories will often be specified like `"0builders"`,
+  `"1testers"`, etc.
 
 ## Per-scheduler configurations
 
