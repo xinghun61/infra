@@ -1,0 +1,106 @@
+<!-- Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../bower_components/app-router/app-router.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/google-signin/google-signin.html">
+<link rel="import" href="../bower_components/google-apis/google-client-loader.html">
+<link rel="import" href="cipd-pkg-view.html">
+<link rel="import" href="cipd-dir-view.html">
+
+<dom-module id="cipd-app">
+  <template>
+    <style>
+      paper-item[subhead] {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        padding-top: 8px;
+        padding-left: 16px;
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.50);
+        font-size: 14px;
+        border-top: 1px solid #CECECE;
+        pointer-events: none;
+      }
+
+      paper-header-panel {
+        float: left;
+        width: 100%;
+        height: 100%;
+      }
+
+      .paper-header {
+        height: 60px;
+        line-height: 60px;
+        font-size: 18px;
+        padding: 0 10px;
+        background-color: #2f83d0;
+        color: #FFF;
+        transition: height 0.2s;
+      }
+
+      paper-material {
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        max-width: 800px;
+      }
+    </style>
+    <!-- TODO(estaab): Stop using the discovery endpoint to dynamically
+        fetch the API here and switch to a hardcoded client. -->
+    <google-client-loader
+        id="repo"
+        name="repo"
+        version="v1"
+        on-google-api-load="_apiLoaded"
+        on-google-api-load-error="_apiLoadedError"
+        api-root="{{apiRoot}}">
+    </google-client-loader>
+    <paper-header-panel>
+    <a style="float:left" class="paper-header" href="#">
+      <div class="paper-header">Chrome Infra Packages</div>
+    </a>
+    <!-- TODO(estaab): Enable sign in support.
+          <google-signin
+          client-id="chrome-infra-packages"
+          scope="https://www.googleapis.com/auth/userinfo.email"
+          style="float:right"
+          height="short"
+          is-authorized="{{_authorized}}">
+          </google-signin>-->
+    <div class="content">
+      <paper-material elevation="2">
+        <app-router id="appRouter" mode="hash">
+          <app-route path="/pkg" element="cipd-pkg-view"></app-route>
+          <app-route path="/" element="cipd-dir-view"></app-route>
+          <app-route path="*" redirect="/"></app-route>
+        </app-router>
+      </paper-material>
+    </div>
+    </paper-header-panel>
+  </template>
+
+  <script>
+    Polymer({
+      is: "cipd-app",
+      properties: {
+        apiRoot: {
+          type: String,
+          value: cipd.apiRoot,
+          readOnly: true
+        }
+      },
+      _apiLoaded: function() {
+        console.info('API loaded.');
+        this.$.appRouter.activeRoute.firstChild.apiLoaded();
+      },
+      _apiLoadedError: function() {
+        console.error('Error loading API.');
+        // TODO(estaab): Propagate this error down to the current view.
+      },
+    })
+  </script>
+</dom-module>

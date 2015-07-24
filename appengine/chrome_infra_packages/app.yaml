@@ -14,6 +14,25 @@ handlers:
   secure: always
   login: admin
 
+- url: /static/html/
+  static_dir: static/html/
+  secure: always
+
+- url: /static/images/
+  static_dir: static/images/
+  secure: always
+
+# Note: the vulcanized version of the frontend doesn't need all of the
+# source files here but appengine doesn't support conditional stanzas.
+- url: /static/
+  static_dir: static/
+  secure: always
+
+- url: /
+  static_files: static/html/index-vulcanized.html
+  upload: static/html/index-vulcanized.html
+  secure: always
+
 - url: /.*
   script: apps.frontend_app
   secure: always

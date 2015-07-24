@@ -1,0 +1,22 @@
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+  <script src="../../bower_components/web-component-tester/browser.js"></script>
+  <script src="../../bower_components/sugar/release/sugar-full.development.js"></script>
+
+  <link rel="import" href="../../bower_components/polymer/polymer.html">
+  <link rel="import" href="../cipd-breadcrumb.html">
+</head>
+<body>
+  <cipd-breadcrumb id="cipd-test" path="infra/lib/pkg"></cipd-breadcrumb>
+
+  <script>
+    suite('<cipd-breadcrumb>', function() {
+      test('display text should be the path', function() {
+        var el = document.getElementById('cipd-test');
+        assert.equal(el.innerText, 'infra/lib/pkg');
+      });
+    });
+  </script>
+</body>

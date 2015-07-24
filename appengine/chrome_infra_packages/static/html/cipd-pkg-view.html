@@ -1,0 +1,96 @@
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="cipd-breadcrumb.html">
+
+<script src="../cipd.js"></script>
+
+<!-- Component for a directory view page. -->
+<dom-module id="cipd-pkg-view" attributes="path">
+  <template>
+    <style>
+      paper-icon-item:hover {
+        background: #f2f2f2;
+      }
+      a {
+        text-decoration: none;
+      }
+      a:link, a:visited {
+        color: black;
+      }
+      iron-icon {
+        opacity: 0.5;
+      }
+      div.separator {
+        clear: both;
+        border-bottom: 1px solid lightgrey;
+      }
+      paper-progress {
+        width: 100%;
+      }
+    </style>
+    <div class="separator">
+      <h3>Package <cipd-breadcrumb path="{{path}}"></cipd-breadcrumb></h3>
+    </div>
+    <div hidden$="{{loading}}">
+      <div hidden$="{{!forbidden}}">
+        <h4>You don't have permission to view this package.</h4>
+      </div>
+
+      <div hidden$="{{forbidden}}">
+        <div style="display: inline-block">
+          <h4>Instances</h4>
+        </div>
+        <div class="separator"></div>
+        <div style="display: inline-block">
+          <h4>ACLs</h4>
+        </div>
+      </div>
+    </div>
+    <paper-progress hidden$="{{!loading}}" indeterminate="true"></paper-progress>
+  </template>
+  <script>
+    Polymer({
+      is: "cipd-pkg-view",
+      properties: {
+        path: {
+          type: String,
+          observer: 'populatePage',
+        },
+        forbidden: {
+          type: Boolean,
+          value: false
+        },
+        loading: {
+          type: Boolean,
+          value: true
+        }
+      },
+      apiLoaded: function() {
+        this.populatePage();
+      },
+      populatePage: function() {
+        // TODO(estaab): Add support to CIPD server for accessing instance
+        // information for packages.
+        var self = this;
+        if (!window.gapi) {
+          return;
+        }
+        self.loading = true;
+        gapi.client.repo.fetchACL({package_path: this.path}).execute(
+            function(resp) {
+              console.info('fetched ACL.');
+              if (resp.code != 200) {
+                console.warn(resp.message);
+                self.forbidden = true;
+              }
+              self.loading = false;
+            });
+      }
+    });
+  </script>
+</dom-module>

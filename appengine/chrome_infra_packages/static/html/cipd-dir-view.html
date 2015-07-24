@@ -1,0 +1,107 @@
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="cipd-breadcrumb.html">
+
+<script src="../cipd.js"></script>
+
+<!-- Component for a directory view page. -->
+<dom-module id="cipd-dir-view" attributes="path">
+  <template>
+    <style>
+      paper-icon-item:hover {
+        background: #f2f2f2;
+      }
+      a {
+        text-decoration: none;
+      }
+      a:link, a:visited {
+        color: black;
+      }
+      iron-icon {
+        opacity: 0.5;
+      }
+      div.separator {
+        clear: both;
+        border-bottom: 1px solid lightgrey;
+      }
+      paper-progress {
+        width: 100%;
+      }
+    </style>
+    <div class="separator">
+    <h3>Browsing <cipd-breadcrumb path="{{path}}"></cipd-breadcrumb></h3>
+    </div>
+    <div hidden$="{{loading}}">
+      <div style="display: inline-block">
+        <template is="dom-repeat" items="{{directories}}">
+          <a href="{{directoryLink(item)}}">
+            <paper-icon-item>
+              <iron-icon src="/static/images/ic_folder_black_24px.svg" item-icon></iron-icon>
+              <span>{{suffix(item)}}</span>/...
+            </paper-icon-item>
+          </a>
+        </template>
+      </div>
+      <div class="separator"></div>
+      <div style="display: inline-block">
+        <template is="dom-repeat" items="{{packages}}">
+          <a href="{{packageLink(item)}}">
+          <paper-icon-item>
+            <iron-icon src="/static/images/ic_insert_drive_file_black_24px.svg" item-icon></iron-icon>
+            <span>{{suffix(item)}}</span>
+          </paper-icon-item>
+          </a>
+        </template>
+      </div>
+    </div>
+    <paper-progress hidden$="{{!loading}}" indeterminate="true"></paper-progress>
+  </template>
+  <script>
+    Polymer({
+      is: "cipd-dir-view",
+      properties: {
+        directories: Array,
+        packages: Array,
+        path: {
+          type: String,
+          observer: 'populatePage'
+        },
+        loading: Boolean,
+      },
+      suffix: cipd.suffix,
+      directoryLink: cipd.directoryLink,
+      packageLink: cipd.packageLink,
+      apiLoaded: function() {
+        console.log('API loaded.');
+        this.populatePage();
+      },
+      populatePage: function() {
+        var self = this;
+        self.loading = true;
+
+        // If the API client hasn't loaded yet we can't do anything. This method will
+        // be called again by apiLoaded() when the API is actually ready.
+        if (!window.gapi) {
+          return;
+        }
+        gapi.client.repo.listPackages({path: self.path}).execute(function(resp) {
+          console.info('listed Packages.');
+          window.resp = resp;
+          if (resp.status != "SUCCESS") {
+            console.log(resp.message);
+            console.log(resp.code);
+          } else {
+            self.directories = resp.directories;
+            self.packages = resp.packages;
+          }
+          self.loading = false;
+        });
+      }
+    });
+  </script>
+</dom-module>

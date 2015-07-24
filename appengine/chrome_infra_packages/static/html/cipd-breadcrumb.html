@@ -1,0 +1,56 @@
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<script src="../cipd.js"></script>
+
+<!-- Simple component with links to all levels of a path's hierarchy.
+
+Usage:
+  <cipd-breadcrumb path="infra/auth"></cipd-breadcrumb>
+
+This creates text with links to the root, to infra, and to infra/auth. -->
+<dom-module id="cipd-breadcrumb">
+  <template>
+    <style>
+    .sep {
+      margin-left: 0.3ex;
+      margin-right: 0.3ex;
+    }
+    </style>
+    <span id="breadcrumb"></span>
+  </template>
+  <script>
+    Polymer({
+      is: "cipd-breadcrumb",
+      ready: function() {
+      },
+      properties: {
+        path: {
+          type: String,
+          observer: 'pathChanged'
+        }
+      },
+      directoryLink: cipd.directoryLink,
+      suffix: cipd.suffix,
+      pathChanged: function() {
+        var parts = this.path.split('/');
+        if (this.path == '') {
+          parts = [];
+        }
+        var subParts = [];
+        var paths = ['<a href="{1}">{2}</a>'.assign(
+            this.directoryLink(''), '&lt;root>')];
+        var newPath;
+        for (var i = 0; i < parts.length; i++) {
+          subParts.push(parts[i]);
+          newPath = subParts.join('/');
+          paths.push('<a href="{1}">{2}</a>'.assign(
+              this.directoryLink(newPath), parts[i]));
+        }
+        this.$.breadcrumb.innerHTML = paths.join(
+            '<span class="sep">/</span>');
+      }
+    });
+  </script>
+</dom-module>
