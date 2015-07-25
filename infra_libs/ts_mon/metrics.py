@@ -317,8 +317,9 @@ class DistributionMetric(Metric):
   }
 
   def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
-               fields=None):
+               fields=None, start_time=None):
     super(DistributionMetric, self).__init__(name, target, fields)
+    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
 
     if bucketer is None:
       bucketer = distribution.GeometricBucketer()
@@ -330,6 +331,7 @@ class DistributionMetric(Metric):
     pb = metric.distribution
 
     pb.is_cumulative = self.is_cumulative
+    metric.start_timestamp_us = self._start_time
 
     # Copy the bucketer params.
     if (value.bucketer.width == 0 and

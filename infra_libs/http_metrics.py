@@ -4,9 +4,9 @@
 
 from infra_libs.ts_mon import metrics
 
-request_bytes = metrics.DistributionMetric('http/request_bytes')
-response_bytes = metrics.DistributionMetric('http/response_bytes')
-durations = metrics.DistributionMetric('http/durations')
+request_bytes = metrics.CumulativeDistributionMetric('http/request_bytes')
+response_bytes = metrics.CumulativeDistributionMetric('http/response_bytes')
+durations = metrics.CumulativeDistributionMetric('http/durations')
 response_status = metrics.CounterMetric('http/response_status')
 
 
