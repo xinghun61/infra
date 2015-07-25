@@ -327,12 +327,10 @@ class CounterMetricTest(MetricTestBase):
     self.assertEquals(1, m.get({'foo': 'bar'}))
     self.assertEquals(1, m.get({'foo': 'baz'}))
 
-  @mock.patch('time.time')
-  def test_start_timestamp(self, mock_time):
-    mock_time.return_value = 1234
-
+  def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'net', 'host')
-    m = metrics.CounterMetric('test', target=t, fields={'foo': 'bar'})
+    m = metrics.CounterMetric(
+        'test', target=t, fields={'foo': 'bar'}, time_fn=lambda: 1234)
     m.increment()
     p = metrics_pb2.MetricsCollection()
     m.serialize_to(p)
@@ -400,6 +398,15 @@ class CumulativeMetricTest(MetricTestBase):
     m = metrics.CumulativeMetric('test')
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
+
+  def test_start_timestamp(self):
+    t = targets.DeviceTarget('reg', 'net', 'host')
+    m = metrics.CumulativeMetric(
+        'test', target=t, fields={'foo': 'bar'}, time_fn=lambda: 1234)
+    m.set(3.14)
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p)
+    self.assertEquals(1234000000, p.data[0].start_timestamp_us)
 
 
 class FloatMetricTest(MetricTestBase):
@@ -595,3 +602,14 @@ class DistributionMetricTest(MetricTestBase):
       m.set(1)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set('foo')
+
+  def test_start_timestamp(self):
+    t = targets.DeviceTarget('reg', 'net', 'host')
+    m = metrics.CumulativeDistributionMetric(
+        'test', target=t, time_fn=lambda: 1234)
+    m.add(1)
+    m.add(5)
+    m.add(25)
+    p = metrics_pb2.MetricsCollection()
+    m.serialize_to(p)
+    self.assertEquals(1234000000, p.data[0].start_timestamp_us)

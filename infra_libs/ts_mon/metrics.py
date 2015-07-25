@@ -239,9 +239,10 @@ class CounterMetric(NumericMetric):
 
   _initial_value = 0
 
-  def __init__(self, name, target=None, fields=None, start_time=None):
+  def __init__(
+      self, name, target=None, fields=None, start_time=None, time_fn=time.time):
     super(CounterMetric, self).__init__(name, target=target, fields=fields)
-    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
     metric.counter = value
@@ -273,9 +274,10 @@ class CumulativeMetric(NumericMetric):
 
   _initial_value = 0.0
 
-  def __init__(self, name, target=None, fields=None, start_time=None):
+  def __init__(
+      self, name, target=None, fields=None, start_time=None, time_fn=time.time):
     super(CumulativeMetric, self).__init__(name, target=target, fields=fields)
-    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
     metric.cumulative_double_value = value
@@ -317,9 +319,9 @@ class DistributionMetric(Metric):
   }
 
   def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
-               fields=None, start_time=None):
+               fields=None, start_time=None, time_fn=time.time):
     super(DistributionMetric, self).__init__(name, target, fields)
-    self._start_time = start_time or int(time.time() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
     if bucketer is None:
       bucketer = distribution.GeometricBucketer()
@@ -407,22 +409,26 @@ class DistributionMetric(Metric):
 class CumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to True."""
 
-  def __init__(self, name, bucketer=None, target=None, fields=None):
+  def __init__(
+      self, name, bucketer=None, target=None, fields=None, time_fn=time.time):
     super(CumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=True,
         bucketer=bucketer,
         target=target,
-        fields=fields)
+        fields=fields,
+        time_fn=time_fn)
 
 
 class NonCumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to False."""
 
-  def __init__(self, name, bucketer=None, target=None, fields=None):
+  def __init__(
+      self, name, bucketer=None, target=None, fields=None, time_fn=time.time):
     super(NonCumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=False,
         bucketer=bucketer,
         target=target,
-        fields=fields)
+        fields=fields,
+        time_fn=time_fn)
