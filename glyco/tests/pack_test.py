@@ -3,11 +3,13 @@
 # found in the LICENSE file.
 
 import argparse
+import ast
 import os
 import subprocess
 import sys
 import unittest
 
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 sys.path.insert(0, ROOT_DIR)
@@ -81,6 +83,28 @@ class VirtualEnvSetupTest(unittest.TestCase):
         [get_venv_python_path(tempdir), '-c',
          'import wheel; print wheel.__file__'])
       self.assertTrue(output.startswith(tempdir))
+
+
+class SetupPyGenerationTest(unittest.TestCase):
+  def test_gen_setup_simple_case(self):
+    content = pack.get_setup_py_content(os.path.join(DATA_DIR,
+                                                     'simple_case_setup.cfg'))
+    # Smoke test: make sure the result is valid Python
+    ast.parse(content)
+
+  def test_gen_setup_with_quotes(self):
+    content = pack.get_setup_py_content(os.path.join(DATA_DIR,
+                                                     'setup_with_quotes.cfg'))
+    # Smoke test: make sure the result is valid Python
+    ast.parse(content)
+
+  def test_gen_setup_with_package_data(self):
+    content = pack.get_setup_py_content(os.path.join(DATA_DIR,
+                                                     'setup_with_quotes.cfg'))
+    # Smoke test: make sure the result is valid Python
+    print content
+    ast.parse(content)
+
 
 
 if __name__ == '__main__':

@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import ConfigParser
 import hashlib
 import os
 import shutil
 import sys
+import textwrap
 import urllib
 
 from glucose import util
@@ -117,6 +119,61 @@ def grab_wheel(src, dst, build_num=0):
   return dest_path
 
 
+def get_packing_list(source_dirs):
+  """Consolidate the list of things to pack.
+
+  Args:
+    source_dirs (list of str): local source packages locations.
+  """
+  packing_list = []
+  for source_dir in source_dirs:
+    packing_list.append({'location': 'file://%s'
+                         % urllib.pathname2url(os.path.abspath(source_dir))})
+  return packing_list
+
+
+def get_setup_py_content(cfg_path):
+  """Generate a setup.py file based on a setup.cfg file.
+
+  The setup.cfg file is supposed to live within the package itself: the
+  name of the directory containing setup.cfg is treated as the package name.
+
+  Args:
+    cfg_path (str): path to a setup.cfg file.
+
+  Returns:
+    content (str): content of setup.py.
+  """
+  parser = ConfigParser.ConfigParser()
+  parser.read(cfg_path)
+
+  if not parser.has_section('metadata'):
+    raise util.SetupError('Config file must have a [metadata] section: %s' %
+                          cfg_path)
+
+  package_name = os.path.split(os.path.dirname(cfg_path))[-1]
+  setup_kwargs = {'name': package_name, 'packages': [package_name]}
+
+  section = 'metadata'
+  for option in ('version', 'author', 'author_email', 'description', 'url'):
+    if parser.has_option(section, option):
+      setup_kwargs[option] = parser.get(section, option)
+
+  if parser.has_option('metadata', 'package_data'):
+    setup_kwargs['package_data'] = parser.get('metadata',
+                                              'package_data').splitlines()
+
+  setup_py_template = textwrap.dedent("""
+  from setuptools import setup
+
+  setup(
+    {keywords}
+  )
+  """)
+  keywords = ['%s=%r' % (k, v) for k, v in sorted(setup_kwargs.iteritems())]
+  return setup_py_template.format(keywords=',\n  '.join(keywords))
+
+
 def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
   """Create a wheel file from package source available locally.
 
@@ -130,7 +187,6 @@ def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
     wheel_path (str): path to the generated wheel file.
   """
   print 'Packing %s' % path
-  # run the appropriate pip command to generate a wheel file.
   with util.temporary_directory() as tempdir:
     args = ['wheel', '--no-index', '--no-deps', '--wheel-dir', tempdir]
     for op in build_options:
@@ -140,17 +196,40 @@ def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
     grab_wheel(tempdir, wheelhouse, build_num)
 
 
-def get_packing_list(source_dirs):
-  """Consolidate the list of things to pack.
+def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
+                      keep_directory=False):
+  """Create a wheel file from an importable package containing a setup.cfg file.
 
   Args:
-    source_dirs (list of str): local source packages locations.
+    path (str): directory containing the package to pack.
+    wheelhouse (str): directory where to place the generated wheel file.
+    build_num (int): rank of the build, only added to the filename.
+    build_options (list of str): values passed as --global-option to pip.
+
+  Returns:
+    wheel_path (str): path to the generated wheel file.
   """
-  packing_list = []
-  for source_dir in source_dirs:
-    packing_list.append({'location': 'file://%s'
-                         % urllib.pathname2url(os.path.abspath(source_dir))})
-  return packing_list
+  path = os.path.abspath(path)
+
+  print 'Packing %s' % path
+
+  # Generate a "standard" package with a setup.py file, and call
+  # pack_local_package()
+  cfg_file = os.path.join(path, 'setup.cfg')
+  setup_py_content = get_setup_py_content(cfg_file)
+  package_name = os.path.split(path)[-1]
+
+  with util.temporary_directory(prefix="glyco-pack-bare-",
+                                keep_directory=keep_directory) as tempdir:
+    if keep_directory:
+      print '  Using temporary dir: %s' % tempdir
+    with open(os.path.join(tempdir, 'setup.py'), 'w') as f:
+      f.write(setup_py_content)
+
+    shutil.copytree(path, os.path.join(tempdir, package_name), symlinks=True)
+
+    pack_local_package(tempdir, wheelhouse,
+                       build_num=build_num, build_options=build_options)
 
 
 def pack(args):
@@ -170,9 +249,18 @@ def pack(args):
     setup_virtualenv(tempdir, activate=True)
     for element in packing_list:
       if element['location'].startswith('file://'):
-        pack_local_package(urllib.url2pathname(element['location'][7:]),
-                           args.output_dir)
+        pathname = urllib.url2pathname(element['location'][7:])
 
+        # Standard Python source package: contains a setup.py
+        if os.path.isfile(os.path.join(pathname, 'setup.py')):
+          pack_local_package(pathname, args.output_dir)
+
+        # The Glyco special case: importable package with a setup.cfg file.
+        elif (os.path.isfile(os.path.join(pathname, 'setup.cfg')) and
+              os.path.isfile(os.path.join(pathname, '__init__.py'))):
+          pack_bare_package(pathname,
+                            args.output_dir,
+                            keep_directory=args.keep_tmp_directories)
   # Outside the with statement, the virtualenv directory has been deleted.
   # Virtualenvs cannot be deactivated from inside a Python interpreter, so we
   # have no choice but to exit asap.

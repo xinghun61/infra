@@ -1,0 +1,6 @@
+This is a useless package to test Glyco itself.
+
+It is supposed to:
+- be usable as-is by adding the parent directory to sys.path,
+- contain a setup.cfg file with minimal information for Glyco
+  to pack it as a wheel.
