@@ -4,16 +4,18 @@
 
 import logging
 
+from main import ConsoleAppApi
+from main import UIApi
+from main import Project
 from components import auth
 from google.appengine.ext import ndb
-from main import LoadTestApi
 from testing_utils import testing
 import main
 import mock
 
-class LoadTestApiTest(testing.EndpointsTestCase):
+class ConsoleAppApiTest(testing.EndpointsTestCase):
 
-  api_service_cls = LoadTestApi
+  api_service_cls = ConsoleAppApi
 
   def testTimeseriesUpdate(self):
     # TODO(norulez): Verify timeseries is correctly overwritten when UI 
@@ -31,3 +33,20 @@ class LoadTestApiTest(testing.EndpointsTestCase):
     # Calling the function a second time in order to test that the console
     # updates existing data in the datastore.
     self.call_api('timeseries_update', request)
+
+class UIApiTest(testing.EndpointsTestCase):
+
+  api_service_cls = UIApi
+  @mock.patch('components.config.get_projects')
+  def testGetProjects(self, get_projects): 
+    projects = [Project(repo_type="uu", 
+                        id="infra", 
+                        repo_url="a.com", 
+                        name="infra"),
+                Project(repo_type="uu", 
+                        id="chromium", 
+                        repo_url="a.com", 
+                        name="chromium")] 
+    get_projects.return_value = projects
+    response = self.call_api('get_projects').json_body
+    self.assertEquals(len(response['projects']), 2)

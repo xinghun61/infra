@@ -15,7 +15,7 @@ found in the LICENSE file-->
       <select on-change="selectChanged" id="projectSelect">
         <option selected disabled>Choose Project</option>
         <template id="repeatTemp" is="dom-repeat" items="{{projectList}}">
-          <option value="{{item}}">{{item}}</option>
+          <option value="{{item.id}}">{{item.id}}</option>
         </template>
       </select>
     </div>
@@ -28,9 +28,9 @@ found in the LICENSE file-->
         projectList: {
           type: Array,
           notify: true,
-          value: ["chromium", "infra", "naclports", "skia", "v8"]
+          value: []
         },
-        pname: {
+        pId: {
           type: String,
           notify: true,
           value: ""
@@ -39,7 +39,7 @@ found in the LICENSE file-->
       selectChanged: function() {
         var e = document.getElementById("projectSelect");
         var selected = e.options[e.selectedIndex].value;
-        this.pname = selected;
+        this.pId = selected;
         this.fire("selected");
       },
       

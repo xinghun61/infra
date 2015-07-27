@@ -11,6 +11,7 @@ from protorpc import message_types
 from protorpc import remote
 
 from components import auth
+from components import config
 
 class Field(messages.Message):
   key = messages.StringField(1)
@@ -47,10 +48,18 @@ class TimeSeriesModel(ndb.Model):
   fields = ndb.StructuredProperty(FieldModel, repeated=True)
   metric = ndb.StringProperty()
 
+class Project(messages.Message):
+  id = messages.StringField(1, required=True)
+  repo_type = messages.StringField(2)
+  repo_url = messages.StringField(3)
+  name = messages.StringField(4)
+
+class Projects(messages.Message):
+  projects = messages.MessageField(Project, 1, repeated=True)
 
 @auth.endpoints_api(name='consoleapp', version='v1')
-class LoadTestApi(remote.Service):
-  """A testing endpoint that receives timeseries data."""
+class ConsoleAppApi(remote.Service):
+  """API that receives projects timeseries data from Borg job."""
 
   @auth.endpoints_method(DataPacket, message_types.VoidMessage,
                          name='timeseries.update')
@@ -74,4 +83,19 @@ class LoadTestApi(remote.Service):
       ts.put()
     return message_types.VoidMessage()
 
-APPLICATION = endpoints.api_server([LoadTestApi])
+@auth.endpoints_api(name='ui', version='v1')
+class UIApi(remote.Service):
+  """API for the console configuration UI."""
+
+  @auth.endpoints_method(message_types.VoidMessage, Projects)
+  def get_projects(self, _request):
+    projects = config.get_projects()
+    projectList = []
+    for project in projects:
+      projectList.append(Project(repo_type=project.repo_type, 
+                                 id=project.id, 
+                                 repo_url=project.repo_url, 
+                                 name=project.name)) 
+    return Projects(projects=projectList)
+
+APPLICATION = endpoints.api_server([ConsoleAppApi, UIApi, config.ConfigApi])

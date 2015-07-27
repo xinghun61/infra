@@ -7,7 +7,7 @@
 Polymer({
   is: 'console-home',
   properties: {
-    projectName: {
+    projectId: {
       type: String,
       notify: true,
       value: "",
@@ -76,9 +76,9 @@ Polymer({
       node.removeChild(node.firstChild);
     }; 
 
-    if(graphs[this.projectName] != null){
-      for(var i=0; i< graphs[this.projectName].length; i++){
-        var linechart = this.graphDrawing(graphs[this.projectName][i]);
+    if(graphs[this.projectId] != null){
+      for(var i=0; i< graphs[this.projectId].length; i++){
+        var linechart = this.graphDrawing(graphs[this.projectId][i]);
         Polymer.dom(this.$$('#chart0')).appendChild(linechart.element);
       };
     }

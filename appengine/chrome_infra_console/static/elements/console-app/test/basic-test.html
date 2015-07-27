@@ -25,9 +25,9 @@ found in the LICENSE file-->
         test('Data binding works', function() {
           var home = myEl.querySelector('console-home');
           var drop = myEl.querySelector('project-dropdown');
-          drop.pname= "infra";
+          drop.pId= "infra";
           assert.equal(myEl.project, "infra");
-          assert.equal(home.projectName, "infra");
+          assert.equal(home.projectId, "infra");
         });
 
         test('SignIn button exists', function() {

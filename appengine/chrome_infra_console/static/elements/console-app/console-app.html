@@ -38,7 +38,7 @@ found in the LICENSE file-->
         <img id="chromeInfraImg" 
         src="../../images/chrome-infra-logo-200x200.png"
         alt="chrome_infra_icon">
-        <project-dropdown pname="{{project}}"></project-dropdown>
+        <project-dropdown p-id="{{project}}"></project-dropdown>
         <paper-menu class="list" on-iron-select="onMenuSelect">
           <paper-item on-click="homeClicked">
             <iron-icon id="homeItem" icon="home"></iron-icon>
@@ -80,15 +80,18 @@ found in the LICENSE file-->
           <iron-pages selected="0">
 
             <div>
-              <console-home project-name="{{project}}"></console-home>            
+              <console-home project-id="{{project}}">
+              </console-home>            
             </div>
 
             <div>
               <paper-material class="paper" elevation="1">
                 <div class="paperContent">
                   <h2>Help</h2>
-                  <p><a href="https://chromium.googlesource.com/infra/infra/+/master/docs/index.md" 
-                  target="_blank">Chrome Infrastructure Documentation</a></p>
+                  <paper-button on-click="clickDoc" id="doc" 
+                    raised elevation="4">
+                    Chrome Infrastructure Documentation
+                  </paper-button>
                 </div>
               </paper-material>
             </div>
@@ -97,9 +100,10 @@ found in the LICENSE file-->
               <paper-material class="paper" elevation="1">
                 <div class="paperContent">
                   <h2>Feedback</h2>
-                  <p><a href="https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper" 
-                  target="_blank">
-                  File a bug to Chromium troopers.</a></p>
+                  <paper-button on-click="fileBug" id="trooper" 
+                    raised elevation="6">
+                    File a bug to Chromium troopers
+                  </paper-button>
                 </div>
               </paper-material>
             </div>
@@ -123,6 +127,9 @@ found in the LICENSE file-->
           value: "422368769108-rfeessef0hqvn4vki2kek098mvodp01h.apps.googleusercontent.com"
         }
       },
+      ready: function() {
+        init();
+      },
   
       listeners: {
         'selected': 'homeClicked',
@@ -139,6 +146,7 @@ found in the LICENSE file-->
       homeClicked: function() {
         var pages = document.querySelector('iron-pages');
         pages.selected = 0 ;
+        var home = document.querySelector('console-home');
       },
 
       helpClicked: function() {
@@ -157,11 +165,22 @@ found in the LICENSE file-->
 
       signinSuccess: function() {
         console.log('SignIn');
-        user = gapi.auth2.getAuthInstance().currentUser.get();   
+        user = gapi.auth2.getAuthInstance().currentUser.get();
+      },
+
+      clickDoc: function() {
+        var win = window.open("https://chromium.googlesource.com/infra/infra/+/master/docs/index.md", '_blank');
+        win.focus();
+      },
+      fileBug: function() {
+        var win = window.open("https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper", '_blank');
+        win.focus();
       },
     });
 
   </script>
+  <script src="https://apis.google.com/js/client.js?onload=init"></script>
+  <script src="../../js/client.js"></script>
 </dom-module>
 
 

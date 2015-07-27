@@ -22,25 +22,21 @@ found in the LICENSE file-->
 
       suite('<project-dropdown>', function() {
 
+        test('Element binding works', function() {
+          var temp = myEl.querySelector('#repeatTemp');
+          var s = myEl.querySelector('#projectSelect');
+          myEl.projectList = [{name:"a", id:"a1"}, {name:"b", id:"b1"}, 
+          {name:"c", id:"c1"}];
+          assert.equal(myEl.projectList.length, 3);
+          assert.equal(temp.items.length, 3);
+        });
+
         test('Selecting works', function() {
           var s = myEl.querySelector('#projectSelect');
           assert.equal(s.options[s.selectedIndex].text, "Choose Project");
           assert.equal(s.options[s.selectedIndex].disabled, true);
           myEl.click();
-          s.options[1].selected = true;
-          assert.equal(s.options[s.selectedIndex].value, "chromium");
-          myEl.selectChanged();
-          assert.equal(myEl.pname, "chromium");
           assert.equal(s.options[0].disabled, true);
-        });
-
-        test('Element binding works', function() {
-          var temp = myEl.querySelector('#repeatTemp');
-          var s = myEl.querySelector('#projectSelect');
-          assert.equal(temp.items.length, 5);
-          myEl.projectList = ["a", "b" , "c", "d", "e","f"];
-          assert.equal(temp.items.length, 6);
-          assert.equal(s.options.length, 6);
         });
       });
     </script>

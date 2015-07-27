@@ -94,6 +94,24 @@ project-dropdown {
   border: 1px solid #DB6700;
 }
 
+#doc {
+  background: #FFB24C;
+  color: #fff;
+  text-transform: none;
+  font-size: 18px;
+  margin: 10px;
+  
+}
+
+#trooper {
+  background: #FF7C4C;
+  color: #fff;
+  text-transform: none;
+  font-size: 18px;
+  margin: 10px;
+  
+}
+
 /* mobile */
 @media all and (min-width: 0) and (max-width: 513px) and (orientation: portrait) { 
   paper-toolbar {

@@ -4,39 +4,38 @@ threadsafe: true
 
 
 handlers:
-
 - url: /_ah/spi/.*
   secure: always
   script: main.APPLICATION
 
+- url: /favicon.ico
+  static_files: static/images/favicon.ico
+  upload: static/images/favicon.ico
+  secure: always
+
 - url: /bower_components
+  static_dir: static/bower_components
   secure: always
-  static_dir: bower_components
-
-- url: /elements
-  secure: always
-  static_dir: elements
-
-- url: /js
-  secure: always
-  static_dir: js
-
-- url: /styles
-  secure: always
-  static_dir: styles
 
 - url: /images
+  static_dir: static/images
   secure: always
-  static_dir: images
 
-- url: /favicon.ico
-  static_files: images/favicon.ico
-  upload: images/favicon.ico
+- url: /styles
+  static_dir: static/styles
+  secure: always
+
+- url: /elements
+  static_dir: static/elements
+  secure: always
+
+- url: /js
+  static_dir: static/js
   secure: always
 
 - url: /
-  static_files: html/index.html
-  upload: html/index\.html
+  static_files: static/html/index.html
+  upload: static/html/index\.html
   secure: always
 
 libraries:
