@@ -151,7 +151,15 @@
           {%if issue.commit%}checked{%endif%}
           {%if not request.user or issue.closed or issue.private%}disabled{%endif%}
           onchange="document.commitform.cq_dry_run.value=false; M_editFlags('{{issue.key.id}}')" />
-        {%if issue.cq_dry_run %}(dry run){% endif %}
+        {%if not request.user%}
+          (user is not authenticated)
+        {%elif issue.closed%}
+          (issue is closed)
+        {%elif issue.private%}
+          (issue is private)
+        {%elif issue.cq_dry_run %}
+          (dry run)
+        {% endif %}
         <a style="margin-left:10px" href="http://goo.gl/8k1zIY">CQ not working?</a>
       </form>
 
