@@ -95,7 +95,7 @@ PYTHON_STACK_TRACE_FRAME_PATTERN = re.compile(
 
 
 # Pattern for C++ stack trace frame.
-CPP_STACK_TRACE_FRAME_PATTERN = re.compile('\s*#(\d+) 0x[0-9a-fA-F]+ .*')
+CPP_STACK_TRACE_FRAME_PATTERN = re.compile('.*\s+#(\d+) 0x[0-9a-fA-F]+ .*')
 
 
 # Match the file path relative to the root src of a chromium repo checkout.

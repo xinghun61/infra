@@ -36,11 +36,11 @@ class ExtractorsTest(testing.AppengineTestCase):
 
   def testExpectedCrashIsIgnored(self):
     failure_log = textwrap.dedent("""
-        #0 0x113bb76d3 in content::(anonymous namespace)::CrashIntentionally()
-        #1 0x113b8521c in MaybeHandleDebugURL render_frame_impl.cc:341:5
-        #2 0x113b8521c in ... render_frame_impl.cc:4561:0
-        #3 0x113b7d0c4 in ... render_frame_impl.cc:1084:8
-        #4 0x113bb7b2d in ... base/tuple.h:246:3
+          #0 0x113bb76d3 in content::(anonymous namespace)::CrashIntentionally()
+          #1 0x113b8521c in MaybeHandleDebugURL render_frame_impl.cc:341:5
+          #2 0x113b8521c in ... render_frame_impl.cc:4561:0
+          #3 0x113b7d0c4 in ... render_frame_impl.cc:1084:8
+          #4 0x113bb7b2d in ... base/tuple.h:246:3
         ...
         SUMMARY: AddressSanitizer: x/y/z.cc:123:9
         Only this file should be extracted: a/b/c.h:90""")
@@ -57,12 +57,38 @@ class ExtractorsTest(testing.AppengineTestCase):
 
   def testNontopFramesInCrashAreIgnored(self):
     failure_log = textwrap.dedent("""
-        #0 0x113bb76d0 in function0 a.cc:1
-        #1 0x113bb76d1 in function1 b.cc:2
-        #2 0x113bb76d2 in function2 c.cc:3
-        #3 0x113bb76d3 in function3 d.cc:4
-        #4 0x113bb76d4 in function4 e.cc:5
-        #5 0x113bb76d5 in function5 f.cc:6
+          #0 0x113bb76d0 in function0 a.cc:1
+          #1 0x113bb76d1 in function1 b.cc:2
+          #2 0x113bb76d2 in function2 c.cc:3
+          #3 0x113bb76d3 in function3 d.cc:4
+          #4 0x113bb76d4 in function4 e.cc:5
+          #5 0x113bb76d5 in function5 f.cc:6
+        ...
+
+        But this file should be extracted: a/b/c.h:90""")
+    expected_signal_json = {
+        'files': {
+            'a.cc': [1],
+            'b.cc': [2],
+            'c.cc': [3],
+            'd.cc': [4],
+            'a/b/c.h': [90],
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.GeneralExtractor, expected_signal_json)
+
+  def testNontopFramesInCrashAreIgnoredWhenStackFramesHavePrefixString(self):
+    failure_log = textwrap.dedent("""
+        @@@test@  #0 0x113bb76d0 in function0 a.cc:1
+        @@@test@  #1 0x113bb76d1 in function1 b.cc:2
+        @@@test@  #2 0x113bb76d2 in function2 c.cc:3
+        @@@test@  #3 0x113bb76d3 in function3 d.cc:4
+        @@@test@  #4 0x113bb76d4 in function4 e.cc:5
+        @@@test@  #5 0x113bb76d5 in function5 f.cc:6
         ...
 
         But this file should be extracted: a/b/c.h:90""")
@@ -83,12 +109,12 @@ class ExtractorsTest(testing.AppengineTestCase):
 
   def testNontopFramesInDisorderedCrashStackTraceAreIgnored(self):
     failure_log = textwrap.dedent("""
-        #5 0x113bb76d5 in function5 f.cc:6
-        #1 0x113bb76d1 in function1 b.cc:2
-        #4 0x113bb76d4 in function4 e.cc:5
-        #3 0x113bb76d3 in function3 d.cc:4
-        #2 0x113bb76d2 in function2 c.cc:3
-        #0 0x113bb76d0 in function0 a.cc:1
+          #5 0x113bb76d5 in function5 f.cc:6
+          #1 0x113bb76d1 in function1 b.cc:2
+          #4 0x113bb76d4 in function4 e.cc:5
+          #3 0x113bb76d3 in function3 d.cc:4
+          #2 0x113bb76d2 in function2 c.cc:3
+          #0 0x113bb76d0 in function0 a.cc:1
         ...
 
         But this file should be extracted: a/b/c.h:90""")
@@ -261,7 +287,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         # d.cc
         # d.cc
         # Found 2 static initializers in 2 files.
-        
+
         RESULT Y
 
         # Static initializers in g/h/i:

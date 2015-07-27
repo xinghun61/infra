@@ -83,6 +83,9 @@ class ExtractorUtilTest(unittest.TestCase):
     self.assertRegexpMatches(
         ' #1 0x110c7f21c in MaybeHandleDebugURL render_frame_impl.cc:341:5',
         extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
+    self.assertRegexpMatches(
+        '@@bla@ #1 0x110c7f21c in function file.cc:341:5',
+        extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
     self.assertNotRegexpMatches(
         '../../chrome/test/ppapi/ppapi_test.cc:263: Failure',
         extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
