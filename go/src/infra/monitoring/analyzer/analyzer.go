@@ -58,9 +58,9 @@ type StepAnalyzerResult struct {
 	Reasons []string
 }
 
-// MasterAnalyzer runs the process of checking masters, builders, test results and so on,
+// Analyzer runs the process of checking masters, builders, test results and so on,
 // in order to produce alerts.
-type MasterAnalyzer struct {
+type Analyzer struct {
 	// MaxRecentBuilds is the maximum number of recent builds to check, per builder.
 	MaxRecentBuilds int
 
@@ -105,12 +105,12 @@ type MasterAnalyzer struct {
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
 // maxBuilds is the maximum number of builds to check, per builder.
-func New(c client.Reader, minBuilds, maxBuilds int) *MasterAnalyzer {
+func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 	if c == nil {
 		c = client.NewReader()
 	}
 
-	return &MasterAnalyzer{
+	return &Analyzer{
 		Reader:                 c,
 		MaxRecentBuilds:        maxBuilds,
 		MinRecentBuilds:        minBuilds,
@@ -131,7 +131,7 @@ func New(c client.Reader, minBuilds, maxBuilds int) *MasterAnalyzer {
 }
 
 // MasterAlerts returns alerts generated from the master.
-func (a *MasterAnalyzer) MasterAlerts(master string, be *messages.BuildExtract) []messages.Alert {
+func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []messages.Alert {
 	ret := []messages.Alert{}
 
 	// Copied logic from builder_messages.
@@ -162,7 +162,7 @@ func (a *MasterAnalyzer) MasterAlerts(master string, be *messages.BuildExtract) 
 }
 
 // BuilderAlerts returns alerts generated from builders connected to the master.
-func (a *MasterAnalyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) []messages.Alert {
+func (a *Analyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) []messages.Alert {
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
 		builderName string
@@ -227,7 +227,7 @@ func (a buildNums) Less(i, j int) bool { return a[i] > a[j] }
 
 // latestBuildStep returns the latest build step name and update time, and an error
 // if there were any errors.
-func (a *MasterAnalyzer) latestBuildStep(b *messages.Build) (lastStep string, lastUpdate messages.EpochTime, err error) {
+func (a *Analyzer) latestBuildStep(b *messages.Build) (lastStep string, lastUpdate messages.EpochTime, err error) {
 	if len(b.Steps) == 0 {
 		return "", messages.TimeToEpochTime(a.now()), errNoBuildSteps
 	}
@@ -251,7 +251,7 @@ func (a *MasterAnalyzer) latestBuildStep(b *messages.Build) (lastStep string, la
 
 // lastBuild returns the last build (which may or may not have completed) and the last completed build (which may be
 // the same as the last build), and any error that occurred while finding them.
-func (a *MasterAnalyzer) lastBuilds(masterName, builderName string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
+func (a *Analyzer) lastBuilds(masterName, builderName string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
 	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 
 	for i, buildNum := range recentBuildIDs {
@@ -279,7 +279,7 @@ func (a *MasterAnalyzer) lastBuilds(masterName, builderName string, recentBuildI
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *MasterAnalyzer) builderAlerts(masterName string, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
+func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
 	if len(b.CachedBuilds) == 0 {
 		// TODO: Make an alert for this?
 		return nil, []error{errNoRecentBuilds}
@@ -376,7 +376,7 @@ func (a *MasterAnalyzer) builderAlerts(masterName string, builderName string, b 
 
 // mergeAlertsByStep merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
-func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
+func (a *Analyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
 	mergedAlerts := []messages.Alert{}
 	byStep := map[string][]messages.Alert{}
 	for _, alert := range alerts {
@@ -490,7 +490,7 @@ func (a *MasterAnalyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.A
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
 // alert instead of one for each build.
-func (a *MasterAnalyzer) builderStepAlerts(masterName, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
+func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
 	// Check for alertable step failures.  We group them by key to de-duplicate and merge values
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
@@ -604,7 +604,7 @@ func (a byRepo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byRepo) Less(i, j int) bool { return a[i].Repo < a[j].Repo }
 
 // stepFailures returns the steps that have failed recently on builder builderName.
-func (a *MasterAnalyzer) stepFailures(masterName string, builderName string, bID int64) ([]stepFailure, error) {
+func (a *Analyzer) stepFailures(masterName string, builderName string, bID int64) ([]stepFailure, error) {
 
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
 	b, err := a.Reader.Build(masterName, builderName, bID)
@@ -646,7 +646,7 @@ func (a *MasterAnalyzer) stepFailures(masterName string, builderName string, bID
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, error) {
+func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, error) {
 	ret := []messages.Alert{}
 	type res struct {
 		f   stepFailure
@@ -761,7 +761,7 @@ func (a *MasterAnalyzer) stepFailureAlerts(failures []stepFailure) ([]messages.A
 
 // reasonsForFailure examines the step failure and applies some heuristics to
 // to find the cause. It may make blocking IO calls in the process.
-func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
+func (a *Analyzer) reasonsForFailure(f stepFailure) []string {
 	ret := []string{}
 	recognized := false
 	log.Infof("Checking for reasons for failure step: %v", f.step.Name)
@@ -787,7 +787,7 @@ func (a *MasterAnalyzer) reasonsForFailure(f stepFailure) []string {
 	return ret
 }
 
-func (a *MasterAnalyzer) excludeFailure(master, builder, step string) bool {
+func (a *Analyzer) excludeFailure(master, builder, step string) bool {
 	mc, ok := a.MasterCfgs[master]
 	if !ok {
 		log.Errorf("Can't filter unknown master %s", master)
@@ -825,7 +825,7 @@ func (a *MasterAnalyzer) excludeFailure(master, builder, step string) bool {
 	return false
 }
 
-func (a *MasterAnalyzer) wouldCloseTree(master, builder, step string) bool {
+func (a *Analyzer) wouldCloseTree(master, builder, step string) bool {
 	mc, ok := a.MasterCfgs[master]
 	if !ok {
 		log.Errorf("Missing master cfg: %s", master)

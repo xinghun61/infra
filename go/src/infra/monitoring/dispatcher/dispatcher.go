@@ -146,7 +146,7 @@ func loop(f func() error, cycle, duration time.Duration, maxErrs int, c clock.Cl
 	}
 }
 
-func analyzeBuildExtract(a *analyzer.MasterAnalyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
+func analyzeBuildExtract(a *analyzer.Analyzer, masterName string, b *messages.BuildExtract) []messages.Alert {
 	ret := a.MasterAlerts(masterName, b)
 	if *mastersOnly {
 		return ret
@@ -171,6 +171,35 @@ func readJSONFile(filePath string, object interface{}) error {
 func masterFromURL(masterURL string) string {
 	parts := strings.Split(masterURL, "/")
 	return parts[len(parts)-1]
+}
+
+func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messages.BuildExtract {
+	bes := map[string]*messages.BuildExtract{}
+	type beResp struct {
+		name string
+		err  error
+		be   *messages.BuildExtract
+	}
+
+	res := make(chan beResp)
+	for _, masterName := range masterNames {
+		go func(mn string) {
+			r := beResp{name: mn}
+			r.be, r.err = c.BuildExtract(mn)
+			if r.err != nil {
+				log.Errorf("Error reading build extract from %s : %s", mn, r.err)
+			}
+			res <- r
+		}(masterName)
+	}
+
+	for _, _ = range masterNames {
+		r := <-res
+		if r.be != nil {
+			bes[r.name] = r.be
+		}
+	}
+	return bes
 }
 
 func main() {
@@ -248,22 +277,12 @@ func main() {
 		}
 	}
 
-	bes := map[string]*messages.BuildExtract{}
-	for _, masterName := range masterNames {
-		be, err := a.Reader.BuildExtract(masterName)
-		if be != nil {
-			bes[masterName] = be
-		}
-		if err != nil {
-			log.Errorf("Error reading build extract from %s : %s", masterName, err)
-		}
-	}
-
-	log.Infof("Build Extracts read: %d", len(bes))
-
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func() error {
+		bes := fetchBuildExtracts(a.Reader, masterNames)
+		log.Infof("Build Extracts read: %d", len(bes))
+
 		alerts := &messages.Alerts{}
 		for masterName, be := range bes {
 			alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)

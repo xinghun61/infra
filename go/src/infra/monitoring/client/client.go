@@ -9,16 +9,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/luci/luci-go/common/logging/gologger"
 
 	"infra/monitoring/messages"
+)
+
+const (
+	maxRetries = 3
+	// FYI https://github.com/golang/go/issues/9405 in Go 1.4
+	// http timeout errors are logged as "use of closed network connection"
+	timeout = 5 * time.Second
 )
 
 var (
@@ -110,7 +119,7 @@ type writer struct {
 // data sources.
 func NewReader() Reader {
 	return &reader{
-		hc:     &trackingHTTPClient{c: http.DefaultClient},
+		hc:     &trackingHTTPClient{c: &http.Client{Timeout: timeout}},
 		bCache: map[string]*messages.Build{},
 	}
 }
@@ -274,35 +283,52 @@ func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error 
 	return err
 }
 
+func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int, int64, error) {
+	resp, err := hc.c.Get(url)
+	if err != nil {
+		log.Errorf("error: %q, possibly retrying.", err.Error())
+		return false, 0, 0, nil
+	}
+	defer resp.Body.Close()
+	status := resp.StatusCode
+	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
+		return false, status, 0, err
+	}
+	ct := strings.ToLower(resp.Header.Get("Content-Type"))
+	expected := "application/json"
+	if ct != expected {
+		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
+		return false, status, 0, err
+	}
+	log.Infof("Fetched(%d) json: %s", resp.StatusCode, url)
+
+	return true, status, resp.ContentLength, err
+}
+
 // getJSON does a simple HTTP GET on a getJSON endpoint.
 //
 // Returns the status code and the error, if any.
 func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, err error) {
 	err = hc.trackRequestStats(func() (length int64, err error) {
-		log.Infof("Fetching json (%d): %s", hc.currReqs, url)
-		resp, err := hc.c.Get(url)
-		status = resp.StatusCode
-		if err != nil {
-			return
-		}
-		defer resp.Body.Close()
-		if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
-			return
-		}
-		ct := strings.ToLower(resp.Header.Get("Content-Type"))
-		expected := "application/json"
-		if ct != expected {
-			err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
-			return
-		}
-		if resp.StatusCode >= 400 {
-			err = fmt.Errorf("http status %d: %s", resp.StatusCode, url)
-			return
-		}
+		attempts := 0
+		for {
+			log.Infof("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			done, status, length, err := hc.attemptJSON(url, v)
+			if done {
+				return length, err
+			}
 
-		length = resp.ContentLength
+			attempts++
+			if attempts > maxRetries {
+				return 0, fmt.Errorf("Error fetching %s, max retries exceeded.", url)
+			}
 
-		log.Infof("Fetched(%d) json: %s", resp.StatusCode, url)
+			if status >= 400 && status < 500 {
+				return 0, fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
+			}
+
+			time.Sleep(time.Duration(math.Pow(2, float64(attempts))) * time.Second)
+		}
 		return length, err
 	})
 
