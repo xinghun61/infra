@@ -20,7 +20,7 @@ from infra.tools.bucket import bucket
 import infra_libs.logs
 
 
-# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
+# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
