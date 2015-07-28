@@ -193,7 +193,8 @@ def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
       args += ['--global-option', op]
     args += [path]
     util.pip(*args)
-    grab_wheel(tempdir, wheelhouse, build_num)
+    wheel_path = grab_wheel(tempdir, wheelhouse, build_num)
+  return wheel_path
 
 
 def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
@@ -228,21 +229,26 @@ def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
 
     shutil.copytree(path, os.path.join(tempdir, package_name), symlinks=True)
 
-    pack_local_package(tempdir, wheelhouse,
-                       build_num=build_num, build_options=build_options)
+    wheel_path = pack_local_package(tempdir,
+                                    wheelhouse,
+                                    build_num=build_num,
+                                    build_options=build_options)
+  return wheel_path
 
 
 def pack(args):
   """Pack wheel files."""
 
-  if not args.source_dir:
+  if not args.packages:
+    print 'No packages have been provided on the command-line, doing nothing.'
     return
 
-  packing_list = get_packing_list(args.source_dir)
+  packing_list = get_packing_list(args.packages)
 
   if not os.path.isdir(args.output_dir):
     os.makedirs(args.output_dir)
 
+  wheel_paths = []
   with util.temporary_directory(
       prefix="glyco-pack-",
       keep_directory=args.keep_tmp_directories) as tempdir:
@@ -253,14 +259,21 @@ def pack(args):
 
         # Standard Python source package: contains a setup.py
         if os.path.isfile(os.path.join(pathname, 'setup.py')):
-          pack_local_package(pathname, args.output_dir)
+          wheel_path = pack_local_package(pathname, args.output_dir)
 
         # The Glyco special case: importable package with a setup.cfg file.
         elif (os.path.isfile(os.path.join(pathname, 'setup.cfg')) and
               os.path.isfile(os.path.join(pathname, '__init__.py'))):
-          pack_bare_package(pathname,
-                            args.output_dir,
-                            keep_directory=args.keep_tmp_directories)
+          wheel_path = pack_bare_package(
+            pathname,
+            args.output_dir,
+            keep_directory=args.keep_tmp_directories)
+        wheel_paths.append(wheel_path)
+
+  if args.verbose:
+    print '\nGenerated %d packages:' % len(wheel_paths)
+    for wheel_path in wheel_paths:
+      print wheel_path
   # Outside the with statement, the virtualenv directory has been deleted.
   # Virtualenvs cannot be deactivated from inside a Python interpreter, so we
   # have no choice but to exit asap.
@@ -277,21 +290,23 @@ def add_subparser(subparsers):
     subparser: output of argparse.ArgumentParser.add_subparsers()
   """
   pack_parser = subparsers.add_parser('pack',
-                                      help='Make wheel files from Python '
+                                      help='Compile wheel files from Python '
                                       'packages (synonym of gen).')
   pack_parser.set_defaults(command=pack)
 
   # Add synonym, just for the pun
   gen_parser = subparsers.add_parser('gen',
-                                     help='Make wheel files from Python '
+                                     help='Compile wheel files from Python '
                                      'packages (synonym of pack).')
   gen_parser.set_defaults(command=pack)
 
   for parser in (pack_parser, gen_parser):
     parser.add_argument('--output-dir', '-o',
-                        help='Directory where to write generated wheel files.',
+                        help='Directory where to write generated wheel files. '
+                        'Default: %(default)s',
                         default='glyco_wheels')
 
-    parser.add_argument('--source-dir', '-s', nargs='*',
-                        help='Local directory containing the Python package'
-                        ' to process. This path contain a ./setup.py file.')
+    parser.add_argument('packages', metavar='PKG_PATH', nargs='*',
+                        help='Local directory containing Python packages'
+                        ' to process. These directories are supposed to contain'
+                        ' a setup.py or a setup.cfg file.')

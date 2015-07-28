@@ -13,7 +13,8 @@ def add_argparse_options(parser):
   parser.add_argument('--keep-tmp-directories', action='store_true',
                       help="Do not erase temporary directories created. This is"
                       " intended for debugging Glyco only.")
-
+  parser.add_argument('--quiet', dest='verbose',
+                      action='store_false', default=True)
   subparsers = parser.add_subparsers()
   pack.add_subparser(subparsers)
 

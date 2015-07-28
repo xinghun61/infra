@@ -37,23 +37,22 @@ class ParserTest(unittest.TestCase):
   def test_pack_one_package(self):
     parser = argparse.ArgumentParser()
     main_.add_argparse_options(parser)
-    options = parser.parse_args(['pack', '--source-dir', 'something'])
+    options = parser.parse_args(['pack', 'something'])
     self.assertTrue(hasattr(options, 'command'))
     self.assertTrue(callable(options.command))
 
   def test_pack_two_packages(self):
     parser = argparse.ArgumentParser()
     main_.add_argparse_options(parser)
-    options = parser.parse_args(['pack', '--source-dir', 'something',
-                                 '--source-dir', 'another_thing'])
+    options = parser.parse_args(['pack', 'something', 'another_thing'])
     self.assertTrue(hasattr(options, 'command'))
     self.assertTrue(callable(options.command))
 
-  def test_pack_two_packages(self):
+  def test_pack_two_packages_in_specific_dir(self):
     parser = argparse.ArgumentParser()
     main_.add_argparse_options(parser)
-    options = parser.parse_args(['pack', '--source-dir', 'something',
-                                 '--source-dir', 'another_thing'])
+    options = parser.parse_args(['pack', 'something', 'another_thing',
+                                 '--output-dir', 'wheel_directory'])
     self.assertTrue(hasattr(options, 'command'))
     self.assertTrue(callable(options.command))
 
