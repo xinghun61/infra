@@ -6,7 +6,6 @@ import argparse
 import sys
 
 from glucose import pack
-from glucose import selfpack
 from glucose import util
 
 
@@ -16,7 +15,6 @@ def add_argparse_options(parser):
                       " intended for debugging Glyco only.")
 
   subparsers = parser.add_subparsers()
-  selfpack.add_subparser(subparsers)
   pack.add_subparser(subparsers)
 
 
