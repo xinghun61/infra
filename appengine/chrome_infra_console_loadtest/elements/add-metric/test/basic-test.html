@@ -1,0 +1,51 @@
+<!doctype html>
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0,
+      initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../add-metric.html">
+  </head>
+  <body>
+
+    <add-metric></add-metric>
+
+    <script>
+      var a = document.querySelector('add-metric');
+
+      suite('<add-metric>', function() {
+
+        test('add-metric add button works.', function() {
+          assert.equal(a.metrics.length, 1);
+          var button = a.querySelector('#metricAdd');
+          button.click();
+          assert.equal(a.metrics.length, 2);      
+        });
+
+        test('add-metric remove button works.', function() {
+          a.metrics = [{name:"d", minimum: 0, maximum: 10},
+                       {name:"c", minimum: 0, maximum: 16}];
+          var button = a.querySelector('.metricRemove');
+          button.click();
+          assert.equal(a.metrics.length, 1);   
+        });
+
+        test('add-metric repeated Template works.', function() {
+          a.metrics = [{name:"d", minimum: 0, maximum: 10},
+                       {name:"c", minimum: 0, maximum: 16}];
+          assert.equal(a.metrics.length, 2);   
+          var temp = a.querySelector('#repeatTempAdd');
+          assert.equal(temp.items.length, 2);       
+        });
+      });
+    </script>
+
+  </body> 
+</html>

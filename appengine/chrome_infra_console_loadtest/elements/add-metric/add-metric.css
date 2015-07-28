@@ -1,0 +1,41 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file */
+
+.name {
+  display: inline-block;
+  width: 40%;
+  margin-right: 5%;
+}
+
+.min {
+  display: inline-block;
+  width: 12%;
+  margin-right: 3%;
+}
+
+.max {
+  display: inline-block;
+  width: 12%;
+  margin-right: 5%;
+}
+
+#wholeBlock {
+  margin-bottom: 5%;
+}
+
+#title {
+  margin-top: 3%;
+  font-size: 20px;
+  font-weight: 70;
+}
+
+.metricRemove {
+  color: red;
+}
+
+#metricAdd {
+  display: inline-block;
+  color: green;
+  margin-left: 3px;
+}

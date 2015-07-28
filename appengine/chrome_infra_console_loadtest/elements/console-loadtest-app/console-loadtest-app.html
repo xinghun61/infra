@@ -15,7 +15,7 @@ found in the LICENSE file-->
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html"> 
 <link rel="import" href="../field-slider/field-slider.html">
 <link rel="import" href="../add-field/add-field.html">
-
+<link rel="import" href="../add-metric/add-metric.html">
 
 <dom-module id="console-loadtest-app">
 
@@ -51,6 +51,7 @@ found in the LICENSE file-->
                  on-range-changed="handleRangeChanged"></field-slider>
                <add-field id="fieldPara" on-fields-changed ="handleFieldsChanged" 
                  fields-present ="{{fields}}"></add-field>
+               <add-metric metrics="{{metrics}}"></add-metric>
                <hr id="line" size=3 width="88%" ></hr>
 	             <paper-button id="submit" raised on-click="_submit"> 
                  Submit Parameters</paper-button>
@@ -82,16 +83,21 @@ found in the LICENSE file-->
        
         is: 'console-loadtest-app',
         properties:{
-          frequency:{
+          frequency: {
             type: Number,        
           },
-          timeRange:{
+          timeRange: {
             type: Number,           
           },
           fields: {
             type: Array,
             notify: true,
             value: [{key:"", values:[" "]}],
+          },
+          metrics: {
+            type: Array,
+            notify: true,
+            value: [{name:"", minimum: 0, maximum: 0}],
           },
           button: {
             type: String,
@@ -104,12 +110,12 @@ found in the LICENSE file-->
             value: "N/A"
           }
         },
-        _submit: function(){
-           
+        _submit: function() {         
           var requestData = {};
           requestData.freq = this.frequency;
           requestData.time = this.timeRange*86400;
           requestData.params = this.fields;
+          requestData.metrics = this.metrics;
           setPara(requestData);
         },
         _signIn: function(){

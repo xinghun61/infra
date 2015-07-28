@@ -28,10 +28,17 @@ class FieldParamsModel(ndb.Model):
   values = ndb.StringProperty(repeated=True)
 
 
+class MetricModel(ndb.Model):
+  name = ndb.StringProperty(default="")
+  minimum = ndb.FloatProperty(default=0)
+  maximum = ndb.FloatProperty(default=100)
+
+
 class ParamsModel(ndb.Model):
   time = ndb.FloatProperty(default=10)
   freq = ndb.FloatProperty(default=1)
   params = ndb.LocalStructuredProperty(FieldParamsModel, repeated=True)
+  metrics = ndb.LocalStructuredProperty(MetricModel, repeated=True)
 
 
 class Field(messages.Message):
@@ -49,10 +56,17 @@ class FieldParams(messages.Message):
   values = messages.StringField(2, repeated=True)
 
 
+class Metric(messages.Message):
+  name = messages.StringField(1)
+  minimum = messages.FloatField(2)
+  maximum = messages.FloatField(3)
+
+
 class Params(messages.Message):
   time = messages.FloatField(1)
   freq = messages.FloatField(2)
   params = messages.MessageField(FieldParams, 3, repeated=True)
+  metrics = messages.MessageField(Metric, 4, repeated=True)
 
 
 class TimeSeries(messages.Message):
@@ -88,7 +102,12 @@ class UIApi(remote.Service):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
     params = [FieldParams(field_key=field.field_key, values=field.values)
               for field in data.params]
-    return Params(time=data.time, freq=data.freq, params=params)
+    metrics = [Metric(name=metric.name, 
+                      minimum=metric.minimum, 
+                      maximum=metric.maximum)
+              for metric in data.metrics]
+    return Params(time=data.time, freq=data.freq,
+                  params=params, metrics=metrics)
 
   @auth.endpoints_method(Params, message_types.VoidMessage,
                          name='ui.set')
@@ -101,6 +120,10 @@ class UIApi(remote.Service):
     data.params = [FieldParamsModel(field_key=field.field_key, 
                                     values=field.values)
                    for field in request.params]
+    data.metrics = [MetricModel(name=metric.name, 
+                                 minimum=metric.minimum,
+                                 maximum=metric.maximum)
+                   for metric in request.metrics]
     data.put()
     return message_types.VoidMessage()
 
@@ -118,11 +141,10 @@ def field_generator(dataparams, index, fields):
 class CronHandler(webapp2.RequestHandler):
 
   def get(self):
-    metric_ranges = {
-      'disk_used': (0, 100),
-      'cpu': (10, 1000)
-    }
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
+    metric_ranges = {}
+    for metric in data.metrics:
+      metric_ranges[metric.name] = (metric.minimum,metric.maximum)
     datapacket = {'timeseries': []}
     logging.debug('There are %d metrics', len(metric_ranges))
     fieldlist = field_generator(data.params, 0, [])

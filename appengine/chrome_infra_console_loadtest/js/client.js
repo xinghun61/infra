@@ -28,6 +28,10 @@ function userAuthed() {
     document.querySelector('field-slider').currentFreq = resp.freq;
     document.querySelector('field-slider').currentRange = resp.time/86400;
     document.querySelector('add-field').fieldsPresent = resp.params;
+    if(resp.metrics === undefined) {
+      resp.metrics = [{name:"", minimum: 0, maximum: 0}];
+    }
+    document.querySelector('add-metric').metrics = resp.metrics;
     document.querySelector('#fileSize').innerText = fileSize ;
   });
 }

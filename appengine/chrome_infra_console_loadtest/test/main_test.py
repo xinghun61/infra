@@ -9,6 +9,7 @@ from main import LoadTestApi
 from main import UIApi
 from main import ParamsModel
 from main import FieldParamsModel
+from main import MetricModel
 from protorpc import messages
 from protorpc import message_types
 from oauth2client.client import GoogleCredentials
@@ -42,9 +43,11 @@ class UIApiTest(testing.EndpointsTestCase):
   def testUIStoreAndRetrieve(self):
     field = {'field_key': 'project_id',
              'values': ['chromium', 'blink', 'v8']}
+    metric = {'name': 'a','minimum': 0, 'maximum': 100}
     request = {'time': 10,
                'freq': 1,
-               'params': [field]}
+               'params': [field],
+               'metrics': [metric]}
     self.mock(auth, 'is_group_member', lambda _: True)
     self.call_api('UI_set', request)
     response = self.call_api('UI_get', {}).json_body
@@ -64,6 +67,7 @@ class CronTest(testing.AppengineTestCase):
     data.freq = 5
     data.params = [FieldParamsModel(field_key='project_id', 
                                     values=['chromium', 'blink'])]
+    data.metrics =[MetricModel(name='a', minimum=0, maximum=10)]
     data.put()
     self.test_app.get('/cron')
     build.assert_called_with(

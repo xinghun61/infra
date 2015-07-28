@@ -1,0 +1,53 @@
+<!--Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file-->
+
+
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">  
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">  
+<link rel="import" href="../../bower_components/paper-button/paper-button.html"> 
+<link rel="import" href="../field-button/field-button.html">
+
+
+<dom-module id="add-metric">
+  <link rel="import" type="css" href="add-metric.css">
+
+  <template>
+    <div id ="wholeBlock">
+      <div id="title">4. Metrics and Ranges</div>
+      <div class="eachBlock">
+      	<template is="dom-repeat" id="repeatTempAdd" items="{{metrics}}"> 
+        	<paper-input class="name"
+        	  label="Enter metric name" value="{{item.name}}"></paper-input>
+        	<paper-input class="min"
+        	  label="Enter Min" value="{{item.minimum}}"></paper-input> 
+        	<paper-input class="max"
+        	  label="Enter Max" value="{{item.maximum}}"></paper-input>
+          <paper-icon-button class="metricRemove" icon="remove-circle-outline" 
+      on-click="_removeMetricHandle"></paper-icon-button>    
+      	</template>
+        <paper-icon-button id="metricAdd" icon="add-circle-outline" 
+      on-click="_addMetricHandle"></paper-icon-button>
+      </div>
+    </div>
+  </template>
+  <script>
+
+    Polymer({
+      properties: {
+        metrics: {
+          type: Array,
+          notify: true,
+          value: [{name:"", minimum: 0, maximum: 0}],
+        }
+      },
+      _addMetricHandle: function() {
+        this.push('metrics', {name:"", minimum: 0, maximum: 0});
+      },
+      _removeMetricHandle: function(e) {
+        this.splice('metrics', e.model.index, 1);
+      }
+    });
+
+  </script>
+</dom-module>
