@@ -13,7 +13,9 @@ import re
 import string
 import urllib
 
-from google.appengine.api import files, memcache, urlfetch
+import cloudstorage
+
+from google.appengine.api import app_identity, memcache, urlfetch
 from google.appengine.ext import blobstore, db, deferred
 # F0401: 16,0: Unable to import 'webapp2_extras'
 # W0611: 16,0: Unused import jinja2
@@ -65,7 +67,8 @@ class Page(db.Model):
   body_class = db.StringProperty()
   remoteurl = db.TextProperty()
   # Data updated separately, after creation.
-  content_blob = blobstore.BlobReferenceProperty()
+  content_blob = blobstore.BlobReferenceProperty()  # DEPRECATED
+  content_gcs_key = db.IntegerProperty()
 
 
 def get_or_create_page(localpath, remoteurl, maxage):
@@ -77,7 +80,8 @@ def get_or_create_page(localpath, remoteurl, maxage):
     # The real timestamp and content will be filled when the page is saved.
     fetch_timestamp=datetime.datetime.min,
     content=None,
-    content_blob=None)
+    content_blob=None,  # DEPRECATED
+    content_gcs_key=None)
 
 
 def get_and_cache_pagedata(localpath):
@@ -113,12 +117,11 @@ def get_and_cache_pagedata(localpath):
     'title': page.title,
     'fetch_timestamp': page.fetch_timestamp,
   }
-  if page.content_blob:
+  if page.content_gcs_key:
     # Get the blob.
-    logging.debug('content for %s found in blobstore' % localpath)
-    blob_reader = blobstore.BlobReader(page.content_blob)
+    logging.debug('content for %s found in gcs' % localpath)
     page_data['content_blob'] = True
-    page_data['content'] = blob_reader.read().decode('utf-8', 'replace')
+    page_data['content'] = read_blob(page.content_gcs_key)
   else:
     logging.debug('content for %s found in datastore' % localpath)
     page_data['content'] = page.content
@@ -132,7 +135,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
   offsite_base = page_data.get('offsite_base', '')
   title = page_data.get('title', '')
 
-  content_blob_key = None
+  content_gcs_key = None
   try:
     content = content.decode('utf-8', 'replace')
   except UnicodeEncodeError:
@@ -142,7 +145,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
   json_data = json.dumps(content.encode('utf-8'), default=dtdumper)
   if len(json_data) >= 10**6 - 10**5:
     logging.debug('save_page: saving to blob')
-    content_blob_key = write_blob(content, path_to_mime_type(localpath))
+    content_gcs_key = write_blob(localpath, content)
     content = None
   def tx_page(page_key):
     page = Page.get(page_key)
@@ -152,7 +155,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
     if page.fetch_timestamp > fetch_timestamp:
       return
     page.content = content
-    page.content_blob = content_blob_key
+    page.content_gcs_key = content_gcs_key
     page.fetch_timestamp = fetch_timestamp
     # title, offsite_base, body_class can all be empty strings for some
     # content.  Where that's true, they're not used for displaying a console-
@@ -172,7 +175,7 @@ def save_page(page, localpath, fetch_timestamp, page_data):
     'title': title,
     'fetch_timestamp': fetch_timestamp,
   }
-  if content_blob_key:
+  if content_gcs_key:
     page_data['content_blob'] = True
   put_data_into_cache(localpath, page_data)
   logging.info('Saved and cached page with localpath %s' % localpath)
@@ -813,14 +816,26 @@ def put_data_into_cache(localpath, data):
         localpath))
 
 
-def write_blob(data, mime_type):
+def write_blob(name, data):
   """Saves a Unicode string as a new blob, returns the blob's key."""
-  file_name = files.blobstore.create(mime_type=mime_type)
-  data = data.encode('utf-8')
-  with files.open(file_name, 'a') as blob_file:
-    blob_file.write(data)
-  files.finalize(file_name)
-  return files.blobstore.get_blob_key(file_name)
+  bucket = app_identity.get_default_gcs_bucket_name()
+  key = hash(data)
+  path = '/%s/%d' % (bucket, key)
+  mime = path_to_mime_type(name)
+  blob = data.encode('utf-8')
+  with cloudstorage.open(path, 'w', content_type=mime) as f:
+    f.write(blob)
+  return key
+
+
+def read_blob(key):
+  """Reads a Unicode string back from a given blob."""
+  bucket = app_identity.get_default_gcs_bucket_name()
+  path = '/%s/%d' % (bucket, key)
+  with cloudstorage.open(path, 'r') as f:
+    blob = f.read()
+  data = blob.decode('utf-8', 'replace')
+  return data
 
 
 def path_to_mime_type(path):
