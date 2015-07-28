@@ -45,7 +45,7 @@ def _get_revert_description(request, revert_reason, reviewers, original_issue,
   # Contain link to original CL.
   original_issue_link = request.build_absolute_uri(
       reverse('codereview.views.show', args=[original_issue.key.id()]))
-  revert_description.append('%s (patchset #%s id:%s of %s)' % (
+  revert_description.append('%s (patchset #%s id:%s of %s )' % (
       _get_revert_subject(original_issue.subject), original_patch_num,
       original_patchset_id, original_issue_link))
   # Display the reason for reverting.
