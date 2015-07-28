@@ -39,10 +39,10 @@ def totaled_ratio_calculator(numerator, denominator):
   Return:
     ratio(float): a ratio rounded to three decimal places
   """
-  if denominator != 0: 
+  if denominator != 0:
     ratio = round(float(numerator) / denominator, 3)
   else:
-    raise ZeroDivisionError
+    ratio = 0
   return ratio
 
 
@@ -303,7 +303,7 @@ def totaled_total_tbr(cc, sql_time_specification):  # pragma: no cover
   return int(result[0])
 
 
-def totaled_tbr_no_lgtm(cc, sql_time_specification):  # pragma: no cover
+def totaled_tbr_no_lgtm(cc, sql_time_specification):
   """Counts the number of commits with a TBR that have not been lgtm'ed
      in a given timeframe
 
@@ -313,9 +313,12 @@ def totaled_tbr_no_lgtm(cc, sql_time_specification):  # pragma: no cover
                                  returned results
 
   Return:
-    result(int): a count of all commits with a TBR and no lgtm
+    count(int): a count of all commits with a TBR and no lgtm
+    results(list): a list of lists with all tbr'ed commits with no lgtm in the
+                   format [rietveld_url, git_timestamp, git_subject, git_hash]
   """
-  cc.execute("""SELECT COUNT(*)
+  cc.execute("""SELECT git_commit.review_url, git_commit.timestamp,
+      git_commit.subject, git_commit.hash
       FROM review
       INNER JOIN git_commit
       ON review.review_url = git_commit.review_url
@@ -329,8 +332,11 @@ def totaled_tbr_no_lgtm(cc, sql_time_specification):  # pragma: no cover
       ON review.review_url = lgtm_count.review_url
       WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
         AND commit_people.type = 'tbr' AND %s""" % sql_time_specification)
-  result = cc.fetchone()
-  return int(result[0])
+  result = cc.fetchall()
+  count = len(result)
+  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
+              commit[2], commit[3]] for commit in result]
+  return count, results
 
 
 def totaled_blank_tbr(cc, sql_time_specification):  # pragma: no cover
@@ -343,19 +349,25 @@ def totaled_blank_tbr(cc, sql_time_specification):  # pragma: no cover
                                  returned results
 
   Return:
-    result(int): a count of all blank TBRs (TBR=)
+    count(int): a count of all blank TBRs (TBR=)
+    results(list): a list of lists with all tbr'ed commits with no lgtm in the
+                   format [rietveld_url, git_timestamp, git_subject, git_hash]
   """
-  cc.execute("""SELECT COUNT(*)
+  cc.execute("""SELECT git_commit.review_url, git_commit.timestamp,
+      git_commit.subject, git_commit.hash
       FROM commit_people
       INNER JOIN git_commit
       ON commit_people.git_commit_hash = git_commit.hash
       WHERE commit_people.people_email_address = 'NOBODY'
         AND %s""" % sql_time_specification)
-  result = cc.fetchone()
-  return int(result[0])
+  result = cc.fetchall()
+  count = len(result)
+  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
+              commit[2], commit[3]] for commit in result]
+  return count, results
 
 
-def totaled_no_review_url(cc, sql_time_specification):  # pragma: no cover
+def totaled_no_review_url(cc, sql_time_specification):   # pragma: no cover
   """Counts the number of commits with no review url in a given timeframe
 
   Args:
@@ -364,13 +376,19 @@ def totaled_no_review_url(cc, sql_time_specification):  # pragma: no cover
                                  returned results
 
   Return:
-    result(int): a count of all commits with no review_url
+    count(int): a count of all commits with no review_url
+    results(list): a list of lists with all tbr'ed commits with no lgtm in the
+                   format [rietveld_url, git_timestamp, git_subject, git_hash]
   """
-  cc.execute("""SELECT COUNT(*)
+  cc.execute("""SELECT git_commit.review_url, git_commit.timestamp,
+      git_commit.subject, git_commit.hash
     FROM git_commit
     WHERE review_url IS NULL AND %s""" % sql_time_specification)
-  result = cc.fetchone()
-  return int(result[0])
+  result = cc.fetchall()
+  count = len(result)
+  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
+              commit[2], commit[3]] for commit in result]
+  return count, results
 
 
 # TODO(keelerh): change the SQL query to avoid using temporary tables
@@ -490,8 +508,10 @@ def compute_stats_by_time(cc):  # pragma: no cover
   Returns:
     output(list): three dictionaries containing stats for the past 7 days, 30
                   days, and all time respectively, each including timeframe,
-                  suspicious_to_total_ratio, total_commits, tbr_no_lgtm,
-                  no_review_url, blank_tbr
+                  suspicious_to_total_ratio, a count of the number of commits
+                  for total_commits, tbr_no_lgtm, no_review_url, and blank_tbr,
+                  and a list of lists with the relevant commits for
+                  tbr_no_lgtm, no_review_url, and blank_tbr
   """
   stats_7_days = {'timeframe': '7_days'}
   stats_30_days = {'timeframe': '30_days'}
@@ -508,9 +528,16 @@ def compute_stats_by_time(cc):  # pragma: no cover
     d['suspicious_to_total_ratio'] = totaled_ratio_calculator(tot_suspicious,
                                                               tot_commits)
     d['total_commits'] = tot_commits
-    d['tbr_no_lgtm'] = totaled_tbr_no_lgtm(cc, sql_insert)
-    d['no_review_url'] = totaled_no_review_url(cc, sql_insert)
-    d['blank_tbr'] = totaled_blank_tbr(cc, sql_insert)
+    count_tbr_no_lgtm, tbr_no_lgtm_commits = totaled_tbr_no_lgtm(cc, sql_insert)
+    d['tbr_no_lgtm'] = count_tbr_no_lgtm
+    d['tbr_no_lgtm_commits'] = tbr_no_lgtm_commits
+    count_no_review_url, no_review_url_commits = totaled_no_review_url(
+        cc, sql_insert)
+    d['no_review_url'] = count_no_review_url
+    d['no_review_url_commits'] = no_review_url_commits
+    count_blank_tbr, blank_tbr_commits = totaled_blank_tbr(cc, sql_insert)
+    d['blank_tbr'] = count_blank_tbr
+    d['blank_tbr_commits'] = blank_tbr_commits
   output = [stats_7_days, stats_30_days, stats_all_time]
   return output
 

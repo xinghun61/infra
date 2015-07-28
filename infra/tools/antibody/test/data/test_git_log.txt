@@ -45,3 +45,11 @@ TBR=
 
 Reviewed-on: https://codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
+
+df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
+blocked on the fact that the index with -modified wasn't present.
+
+TBR=
+
+Reviewed-on: https://codereview.appspot.com/6846046/
+maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
