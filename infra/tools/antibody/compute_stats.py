@@ -334,8 +334,12 @@ def totaled_tbr_no_lgtm(cc, sql_time_specification):
         AND commit_people.type = 'tbr' AND %s""" % sql_time_specification)
   result = cc.fetchall()
   count = len(result)
-  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
-              commit[2], commit[3]] for commit in result]
+  formatted_data = []
+  for data in result:
+    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
+                           subject.replace('-', ' '), data[3]])
+  results = sorted(formatted_data, key=lambda x: x[1], reverse=True)
   return count, results
 
 
@@ -362,8 +366,12 @@ def totaled_blank_tbr(cc, sql_time_specification):  # pragma: no cover
         AND %s""" % sql_time_specification)
   result = cc.fetchall()
   count = len(result)
-  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
-              commit[2], commit[3]] for commit in result]
+  formatted_data = []
+  for data in result:
+    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
+                           subject.replace('-', ' '), data[3]])
+  results = sorted(formatted_data, key=lambda x: x[1], reverse=True)
   return count, results
 
 
@@ -386,8 +394,12 @@ def totaled_no_review_url(cc, sql_time_specification):   # pragma: no cover
     WHERE review_url IS NULL AND %s""" % sql_time_specification)
   result = cc.fetchall()
   count = len(result)
-  results = [[commit[0], commit[1].strftime("%Y-%m-%d %H:%M:%S"),
-              commit[2], commit[3]] for commit in result]
+  formatted_data = []
+  for data in result:
+    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
+                           subject.replace('-', ' '), data[3]])
+  results = sorted(formatted_data, key=lambda x: x[1], reverse=True)
   return count, results
 
 

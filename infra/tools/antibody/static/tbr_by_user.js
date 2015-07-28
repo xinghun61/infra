@@ -43,6 +43,7 @@ $(document).ready(function(){
         }
         table.append(tbody);
         $('.tbr').append(table);
+        $("table").bootstrapTable();
       }
     });
   }

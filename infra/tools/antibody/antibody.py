@@ -20,6 +20,13 @@ ANTIBODY_UI_MAIN_NAME = 'index.html'
 TBR_BY_USER_NAME = 'tbr_by_user.html'
 STATS_NAME = 'stats.html'
 LEADERBOARD_NAME = 'leaderboard.html'
+TBR_NO_LGTM_NAME = 'tbred_without_lgtm'
+NO_REVIEW_URL_NAME = 'without_review_url'
+BLANK_TBR_NAME = 'with_blank_tbr'
+STATS_7_NAME = 'past_7_days.html'
+STATS_30_NAME = 'past_30_days.html'
+STATS_ALL_TIME_NAME = 'all_time.html'
+
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
@@ -62,9 +69,16 @@ def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
       'tbr_by_user_link' : TBR_BY_USER_NAME,
       'stats_link' : STATS_NAME,
       'leaderboard_link' : LEADERBOARD_NAME,
+      'tbr_no_lgtm_link': TBR_NO_LGTM_NAME,
+      'no_review_url_link': NO_REVIEW_URL_NAME,
+      'blank_tbr_link': BLANK_TBR_NAME,
+      'stats_7_link': STATS_7_NAME,
+      'stats_30_link': STATS_30_NAME,
+      'stats_all_time_link': STATS_ALL_TIME_NAME,
       'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
                                         time.gmtime()),
-      'page_header_text' : "Antibody",
+      # TODO (ksho): make page_header_text dependent on current repo
+      'page_header_text' : "Antibody for Infra",
       'to_be_reviewed' : "TBR by user",
       'stats' : 'Stats',
       'leaderboard' : 'Leaderboard',
@@ -88,6 +102,7 @@ def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
   generate_tbr_page(template_env, template_vars_all, ui_dirpath)
   generate_stats_page(template_env, template_vars_all, ui_dirpath)
   generate_leaderboard_page(template_env, template_vars_all, ui_dirpath)
+  generate_time_period_stats_pages(template_env, template_vars_all, ui_dirpath)
 
 
 def generate_homepage(suspicious_commits, template_env, template_vars_all, 
@@ -121,21 +136,28 @@ def generate_stats_page(template_env, template_vars_all, ui_dirpath):
   stats_template = template_env.get_template('stats.jinja')
   with open(os.path.join(ui_dirpath, 'all_monthly_stats.json')) as f:
     data = json.load(f)
-  template_vars = {}
+  template_vars = {
+    'table_headers': ['Git Hash', 'Review URL', 'Commit Timestamp (UTC)'],
+  }
   stats_all = [
-      [data['7_days'], 'stats_7_day'],
-      [data['30_days'], 'stats_30_day'],
-      [data['all_time'], 'stats_all_time'],
+      [data['7_days'], 'total_stats_7_day', 'indiv_stats_7_day'],
+      [data['30_days'], 'total_stats_30_day', 'indiv_stats_30_day'],
+      [data['all_time'], 'total_stats_all_time', 'indiv_stats_all_time'],
   ]
-  categories_keys = [
+  total_categories_keys = [
       ['"Suspicious":Total Commits', 'suspicious_to_total_ratio'],
       ['Total Commits', 'total_commits'],
-      ['TBR without LGTM', 'tbr_no_lgtm'],
-      ['Without review url', 'no_review_url'],
-      ['Blank TBR', 'blank_tbr'],
   ]
-  for stats, key in stats_all:
-    template_vars[key] = [[x[0], stats[x[1]]] for x in categories_keys]
+  for stats, key, _ in stats_all:
+    template_vars[key] = [[x[0], stats[x[1]]] for x in total_categories_keys]
+  indiv_categories_keys = [
+      ['TBR without LGTM', 'tbr_no_lgtm', TBR_NO_LGTM_NAME],
+      ['Without review url', 'no_review_url', NO_REVIEW_URL_NAME],
+      ['Blank TBR', 'blank_tbr', BLANK_TBR_NAME],
+  ]
+  for stats, _, key in stats_all:
+    template_vars[key] = [[x[0], stats[x[1]], x[2]] 
+                          for x in indiv_categories_keys]
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, STATS_NAME), 'wb') as f:
     f.write(stats_template.render(template_vars))
@@ -147,6 +169,33 @@ def generate_leaderboard_page(template_env, template_vars_all, ui_dirpath):
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, LEADERBOARD_NAME), 'wb') as f:
     f.write(leaderboard_template.render(template_vars))
+
+
+def generate_time_period_stats_pages(template_env, template_vars_all, 
+                                     ui_dirpath):
+  time_period_pages_info = [
+      [STATS_7_NAME, 'Commits in the past 7 days', '7_days'],
+      [STATS_30_NAME, 'Commits in the past 30 days', '30_days'],
+      [STATS_ALL_TIME_NAME, 'All Time Commits', 'all_time'],
+  ]
+  with open(os.path.join(ui_dirpath, 'all_monthly_stats.json'), 'r') as f:
+    commit_data = json.load(f)
+  time_period_template = template_env.get_template('time_period_stats.jinja')
+  for time_period_page in time_period_pages_info:
+    time_period_commits = commit_data[time_period_page[2]]
+    template_vars = {
+      'time_period_header_name': time_period_page[1],
+      'table_headers': ['Git Commit Hash', 'Code Review',
+                        'Commit Timestamp (UTC)'],
+      'table_headers_no_review': ['Git Commit Hash', 'Git Subject',
+                                  'Commit Timestamp (UTC)'],
+      'tbr_no_lgtm': time_period_commits['tbr_no_lgtm_commits'],
+      'no_review_url': time_period_commits['no_review_url_commits'],
+      'blank_tbr': time_period_commits['blank_tbr_commits'],
+    }
+    template_vars.update(template_vars_all)
+    with open(os.path.join(ui_dirpath, time_period_page[0]), 'wb') as f:
+      f.write(time_period_template.render(template_vars))
 
 
 def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):

@@ -7,10 +7,10 @@
   <script
       src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
   </script>
-  <script src="static/bootstrap.min.js"></script>
-  <script src="static/bootstrap-table.js"></script>
-  <link rel="stylesheet" href="static/bootstrap.min.css">
-  <link rel="stylesheet" href="static/bootstrap-table.css">
+  <script src="static/third_party/bootstrap.min.js"></script>
+  <script src="static/third_party/bootstrap-table.js"></script>
+  <link rel="stylesheet" href="static/third_party/bootstrap.min.css">
+  <link rel="stylesheet" href="static/third_party/bootstrap-table.css">
   <link rel="stylesheet" type="text/css" href="static/antibody_ui_all.css">
 
 
@@ -31,7 +31,6 @@
         <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
       </ul>
       <ul class="pull-right">
-        <li><p class="gen_time">Generated {{ generation_time }} UTC</p></li>
       </ul>
     </div>
   </div>
@@ -42,15 +41,27 @@
       <div class="numbers">
         <div class="col-md-4">
           <h3> {{ num_tbr_no_lgtm }} </h3>
-          <p> TBR'ed without LGTM </p>
+          <p>
+            <a href="{{ stats_7_link }}#{{ tbr_no_lgtm_link }}">
+              TBR'ed without LGTM
+            </a>
+          </p>
         </div>
         <div class="col-md-4">
           <h3> {{ num_no_review_url }} </h3>
-          <p> without review URL </p>
+          <p>
+            <a href="{{ stats_7_link }}#{{ no_review_url_link }}">
+              without review URL 
+            </a>
+          </p>
         </div>
         <div class="col-md-4">
           <h3> {{ blank_TBR }} </h3>
-          <p> with blank TBR </p>
+          <p>
+            <a href="{{ stats_7_link }}#{{ blank_tbr_link }}">
+              with blank TBR
+            </a>
+          </p>
         </div>
       </div>
     </div>
@@ -58,7 +69,10 @@
 
   <div class="bootstrap-table data_table">
     <div class="container">
-      <table data-toggle="table" data-cache="false">
+      <table 
+          data-toggle="table" 
+          data-cache="false"
+          data-pagination="true">
         <thead>
             <tr>
             {% for item in table_headers %}
@@ -67,27 +81,31 @@
             </tr>
         </thead>
         <tbody>
-          <!-- review_url, request_timestamp, subject, people_email_address, hash -->
-          {% for rietveld_url, request_timestamp, subject, _, git_hash in
+          <!-- review_url, request_timestamp, subject, email, hash -->
+          {% for rietveld_url, commit_timestamp, subject, _, git_hash in
           suspicious_commits %}
-            <tr class="data_item">
-              <td class="git_hash hyperlink">
-                <a href="{{ gitiles_prefix }}{{ git_hash }}">
-                  {{ git_hash }}
-                </a></td>
-              <td class="rietveld_url hyperlink">
-                <a href="{{ rietveld_url }}">
-                  {{ subject }}
-                </a></td>
-              <td class="request_timestamp">{{ request_timestamp }}
-              </td>
-            </tr>
+          <tr class="data_item">
+            <td class="git_hash hyperlink">
+              <a href="{{ gitiles_prefix }}{{ git_hash }}">
+                {{ git_hash }}
+              </a></td>
+            <td class="rietveld_url hyperlink">
+              <a href="{{ rietveld_url }}">
+                {{ subject }}
+              </a></td>
+            <td class="commit_timestamp">{{ commit_timestamp }}
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 
-
+  <div class="gen_time">
+    <div class="container">
+      <p>Generated {{ generation_time }} UTC</p>
+    </div>
+  </div>
 </body>
 </html>

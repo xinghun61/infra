@@ -76,26 +76,20 @@ class TestComputeStats(unittest.TestCase):
     total_num, output = compute_stats.totaled_tbr_no_lgtm(self.cc,
         sql_time_specification)
     self.assertEqual(total_num, 4)
-    self.assertEqual(output,
+    self.assertItemsEqual(output,
         [['https://codereview.chromium.org/1148323006',
           '2015-05-28 16:08:33',
-          'suppress-uninit-error-from-sessions-SessionBackend-'
-          'AppendCommandsToFile',
+          'suppress uninit error from sessions SessionBackend AppendComm...',
           'bf1cf11bb721eb52bf46868cb831afd1f53567af'],
          ['https://codereview.chromium.org/1159593004',
           '2015-06-01 03:37:20',
-          'Revert-of-Converted-some-extension-browser-tests-into-using-'
-          'event-pages-patchset-1-id-60001-of-https-codereview.chromium.'
-          'org-1108133002',
+          'Revert of Converted some extension browser tests into using e...',
           'cda8c938f06f9955ac895099d05a9db3b61f3ab5'],
          ['https://codereview.chromium.org/1156073004',
           '2015-05-26 20:52:41',
-          'MemSheriff-Expand-suppressions-for-sqlite3-uninitialized-'
-          'reads',
+          'MemSheriff Expand suppressions for sqlite3 uninitialized reads',
           'f48757cfe41e83e770095253b90775eb70f024b3'],
          ['https://codereview.chromium.org/1124083006',
           '2015-05-20 00:26:31',
-          'Revert-of-Temporarily-disable-a-webgl-conformance-test-on-'
-          'D3D9-only.-patchset-1-id-1-of-https-codereview.chromium.org-'
-          '1135333004',
+          'Revert of Temporarily disable a webgl conformance test on D3D...',
           '0b0b636093a7dbb56cc8712e2263b1c9a1ad8079']])

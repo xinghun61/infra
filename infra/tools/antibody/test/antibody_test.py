@@ -57,6 +57,21 @@ class MyTest(auto_stub.TestCase):
           'tbr_no_lgtm': 3,
           'no_review_url': 4,
           'blank_tbr': 5,
+          'tbr_no_lgtm_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 2", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'no_review_url_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'blank_tbr_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
         },
         '30_days': {
           'suspicious_to_total_ratio': 1,
@@ -64,6 +79,21 @@ class MyTest(auto_stub.TestCase):
           'tbr_no_lgtm': 3,
           'no_review_url': 4,
           'blank_tbr': 5,
+          'tbr_no_lgtm_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 2", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'no_review_url_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'blank_tbr_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
         },
         'all_time': {
           'suspicious_to_total_ratio': 1,
@@ -71,6 +101,21 @@ class MyTest(auto_stub.TestCase):
           'tbr_no_lgtm': 3,
           'no_review_url': 4,
           'blank_tbr': 5,
+          'tbr_no_lgtm_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 2", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'no_review_url_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 1", "123456789abcdefghijklmnop"], 
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
+          'blank_tbr_commits': [
+              ["https://codereview.chromium.org/", "2015-07-13 11:11:11", 
+               "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
         },
       }
       with open(os.path.join(dirname, 'all_monthly_stats.json'), 'w') as f:
@@ -98,6 +143,24 @@ class MyTest(auto_stub.TestCase):
         self.assertFalse('}}' in file_string)
         
       with open(os.path.join(dirname, antibody.LEADERBOARD_NAME), 'r') as f:
+        file_string = f.read()
+        self.assertTrue(file_string)
+        self.assertFalse('{{' in file_string)
+        self.assertFalse('}}' in file_string)
+
+      with open(os.path.join(dirname, antibody.STATS_7_NAME), 'r') as f:
+        file_string = f.read()
+        self.assertTrue(file_string)
+        self.assertFalse('{{' in file_string)
+        self.assertFalse('}}' in file_string)
+
+      with open(os.path.join(dirname, antibody.STATS_30_NAME), 'r') as f:
+        file_string = f.read()
+        self.assertTrue(file_string)
+        self.assertFalse('{{' in file_string)
+        self.assertFalse('}}' in file_string)
+
+      with open(os.path.join(dirname, antibody.STATS_ALL_TIME_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)

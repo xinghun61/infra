@@ -7,11 +7,11 @@
   <script 
       src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
   </script>
-  <script src="static/bootstrap.min.js"></script>
-  <script src="static/bootstrap-table.js"></script>
+  <script src="static/third_party/bootstrap.min.js"></script>
+  <script src="static/third_party/bootstrap-table.js"></script>
   <script src="static/leaderboard.js"></script>
-  <link rel="stylesheet" href="static/bootstrap.min.css">
-  <link rel="stylesheet" href="static/bootstrap-table.css">
+  <link rel="stylesheet" href="static/third_party/bootstrap.min.css">
+  <link rel="stylesheet" href="static/third_party/bootstrap-table.css">
   <link rel="stylesheet" type="text/css" href="static/leaderboard_arcade.css">
   <link rel="stylesheet" type="text/css" href="static/leaderboard.css">
 
@@ -33,7 +33,6 @@
         <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
       </ul>
       <ul class="pull-right">
-        <li><p class="gen_time">Generated {{ generation_time }} UTC</p></li>
       </ul>
     </div>
   </div>
@@ -62,6 +61,10 @@
       </table>
     </div>
   </div>
-
+  <div class="gen_time">
+    <div class="container">
+      <p>Generated {{ generation_time }} UTC</p>
+    </div>
+  </div>
 </body>
 </html>

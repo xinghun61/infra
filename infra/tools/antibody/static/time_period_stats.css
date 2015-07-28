@@ -26,25 +26,32 @@ body {
   text-align: right;
 }
 
+.header {
+  position: fixed;
+  margin-top: 50px;
+  padding-top: 30px;
+  margin-left: 5%;
+  margin-right: 5%;
+  background-color: #fff;
+  z-index: 5;
+  width: 100%;
+}
+
 .stats {
-  margin-top: 90px;
-  padding-top: 5px;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  color: #A3A3A3;
+  margin-left: 5%;
+  margin-right: 5%;
+  color: #333;
 }
 
-.stats .numbers {
-  text-align: center;
-  color: #000;
+.pad {
+  padding-top: 130px;
 }
 
-.stats h3 {
-  font-weight: bold;
-}
-
-.data_table {
-  margin-top: 40px;
+a.anchor:before {
+  content: "";
+  display: block;
+  height: 130px; 
+  margin: -130px 0 0; 
 }
 
 .data_item {
@@ -53,9 +60,4 @@ body {
 
 th {
   text-align: center;
-}
-
-tbody {
-  height: 120px;
-  overflow-y: auto;
 }
