@@ -1,0 +1,27 @@
+<!-- Service interfacing with the Milo-buildbot cloud endpoint cache -->
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/components/core-ajax/core-ajax.html">
+
+<polymer-element name="milo-buildbot-service"
+                 attributes="root master builder build">
+  <template>
+    <style>
+      :host {
+        display: none;
+      }
+    </style>
+    <core-ajax
+         auto
+         url="/_ah/api/feebas/v1/buildbot/{{master}}/builders/{{builder}}/builds/{{build}}"
+         response="{{buildJson}}"
+         handleAs="json">
+    </core-ajax>
+  </template>
+  <script>
+    Polymer("milo-buildbot-service", {
+      created: function() {
+        this.root = {};
+      },
+    });
+  </script>
+</polymer-element>

@@ -1,0 +1,159 @@
+<!-- Service interfacing with build.chromium.org -->
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/components/core-ajax/core-ajax.html">
+
+<polymer-element name="milo-bbx-service"
+                 attributes="root master builder build host">
+  <template>
+    <style>
+      :host {
+        display: none;
+      }
+    </style>
+    <core-ajax
+         auto
+         url="{{host}}/{{master}}/json/builders/{{builder}}/builds/{{build}}"
+         response="{{buildJson}}"
+         handleAs="json">
+    </core-ajax>
+  </template>
+  <script>
+    Polymer("milo-bbx-service", {
+      created: function() {
+        this.root = {};
+      },
+
+      getTopbar: function(buildJson) {
+        results = []
+        if (!buildJson.times[1]) {
+          results.push({
+            mainText: 'Running',
+            status: 'running'
+          });
+        } else if (buildJson.results == undefined || !buildJson.results) {
+          results.push({
+            mainText: 'This build passed successfully! :D',
+            status: 'success'
+          });
+        } else {
+          failures = [];
+          for (i in buildJson.steps) {
+            step = buildJson.steps[i];
+            if (step.results[0] && step.name != 'steps') {
+              failures.push(this.getStep(step));
+            }
+          }
+          results.push({
+            isFailure: true,
+            failures: failures
+          });
+        }
+
+        return results;
+      },
+
+      getTime: function(times) {
+        span = times[1] - times[0];
+        if (span < 60) {
+          return String(Math.round(span)) + ' sec';
+        } else if (span < 60 * 60) {
+          return String(Math.round(span / 60)) + ' min';
+        } else {
+          return String(Math.round(span / 3600)) + ' hr';
+        }
+      },
+
+      getStep: function(step) {
+        status = 'unknown';
+        stdio = '#';
+        if (!step.isStarted) {
+          status = 'pending';
+        } else if (!step.isFinished) {
+          status = 'running';
+        } else if (!step.results || !step.results[0]) {
+          status = 'success';
+        } else {
+          status = 'failure';
+        }
+
+        for (i in step.logs) {
+          if (step.logs[i][0] == 'stdio') {
+            stdio = step.logs[i][1];
+            break;
+          }
+        }
+        return {
+          mainText: step.name,
+          status: status,
+          url: stdio,
+          rightText: this.get_time(step.times)
+        };
+      },
+
+      getSteps: function(buildJson) {
+        results = [];
+        for (i in buildJson.steps) {
+          if (buildJson.steps[i].name != 'steps') {
+            results.push(this.getStep(buildJson.steps[i]));
+          }
+        }
+        return results
+      },
+
+      getProperties: function(buildJson) {
+        blamelist = [];
+        revisions = [];
+        others = [];
+        for (i in buildJson.properties) {
+          k = buildJson.properties[i][0];
+          v = buildJson.properties[i][1];
+          if (k == "blamelist") {
+            continue;
+          }
+          if (k.indexOf("revision") > -1) {
+            revisions.push({
+              mainText: k,
+              bottomleft: v
+            });
+          } else {
+            others.push({
+              mainText: k,
+              bottomright: v
+            });
+          }
+        }
+        return {
+          blamelist: blamelist,
+          revisions: revisions,
+          others: others
+        }
+      },
+
+      foo: function(buildJson) {
+        topbar = [];
+        steps = [];
+        properties = [];
+        if (buildJson) {
+          topbar = this.getTopbar(buildJson);
+          steps = this.getSteps(buildJson);
+          properties = this.getProperties(buildJson);
+        }
+        return {
+          name: this.builder + ' - ' + this.build,
+          topbar: topbar,
+          steps: steps,
+          nav: [
+            {name: 'foo'},
+            {name: 'bar'},
+            {name: 'baz'}],
+          properties: properties.others,
+          revisions: properties.revisions
+        };
+      },
+
+      computed: {
+        root: 'foo(buildJson)'
+      }
+    });
+  </script>
+</polymer-element>

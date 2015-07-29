@@ -1,0 +1,40 @@
+{
+  "type": "attempt",
+  "mutable": false,
+  "id": "foobar1",
+  "oneline": {
+    "status": "success",
+    "name": "This attempt was successful!",
+    "elapsed": 200,
+    "status": "success"
+  },
+  "full": [
+    {
+      "type": "attempt",
+      "mutable": false,
+      "id": "foobar2",
+      "name": "Compile",
+      "status": "success",
+      "message": "This attempt was successful!",
+      "elapsed": 100
+    },
+    {
+      "type": "attempt",
+      "mutable": false,
+      "id": "foobar2",
+      "name": "Chrome Tests",
+      "status": "success",
+      "message": "This attempt was successful!",
+      "elapsed": 150
+    }
+  ],
+  "properties": [
+    {
+      "type": "property",
+      "mutable": false,
+      "id": "attempt:foobar1-property:revision",
+      "name": "Revision",
+      "value": "deafbeef"
+    }
+  ]
+}

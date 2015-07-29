@@ -1,0 +1,16 @@
+<!-- Entry point for buildbot related pages -->
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/parts/milo-main.html">
+<link rel="import" href="/services/milo-bbx-service.html">
+
+<polymer-element name="milo-bb"
+                 atributes="master builder build" noscript>
+  <template>
+    <milo-bbx-service
+        id="service" root="{{root}}" master="{{master}}" builder="{{builder}}"
+        build="{{build}}" loading="{{loading}}"
+        host="https://build.chromium.org/p">
+    </milo-bbx-service>
+    <milo-main root="{{root}}"></milo-main>
+  </template>
+</polymer-element>

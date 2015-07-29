@@ -1,0 +1,78 @@
+<!-- A single list item for Milo pages.
+
+  Most often annodated with success/failure/etc.  -->
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/components/paper-item/paper-item.html">
+<link rel="import" href="/components/core-item/core-item.html">
+
+<polymer-element name="milo-item" attributes="item" noscript>
+  <template>
+
+    <style>
+      :host {
+        display: block;
+      }
+      .success {
+        background-color: #C5E1A5;
+        color: #33691E;
+      }
+      .running {
+        background-color: #E6EE9C;
+        color: #827717;
+      }
+      .failure {
+        background-color: #EDA29B;
+        color: #A52714;
+      }
+      #bottom {
+        color: #78909C;
+        font-size: small;
+      }
+      #right {
+        text-align: right;
+      }
+      #bottomright {
+        text-align: right;
+      }
+      #content div {
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      paper-item::shadow .button-content {
+        padding: 0.5em 1em;
+      }
+    </style>
+
+    <template if="{{item.is_failure}}">
+      <paper-item class='failure' layout vertical>
+        <div id='content' flex layout vertical>
+          <div layout horizontal id="top">
+            <div id='main' flex>
+              This build failed on
+              <template repeat="{{failure in item.failures}}">
+                <b>{{failure.main_text}}</b>
+              </template>
+            </div>
+            <div id='right' flex self-right>{{item.right_text}}</div>
+          </div>
+        </div>
+    </template>
+
+    <template if="{{!item.is_failure}}">
+      <paper-item class='{{item.status}}'>
+        <div id='content' flex layout vertical>
+          <div layout horizontal id="top">
+            <div id='main' flex two>{{item.main_text}}</div>
+            <div id='right' flex self-right>{{item.right_text}}</div>
+          </div>
+          <div id="bottom">
+            <div id='bottom_left'>{{item.bottomleft}}</div>
+            <div id='bottom_right'>{{item.bottomright}}</div>
+          </div>
+        </div>
+      </paper-item>
+    </template>
+
+  </template>
+</polymer-element>
+
