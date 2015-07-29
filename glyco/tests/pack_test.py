@@ -5,7 +5,6 @@
 import argparse
 import ast
 import os
-import subprocess
 import sys
 import unittest
 
@@ -18,11 +17,6 @@ sys.path.insert(0, os.path.join(ROOT_DIR, 'third_party'))
 from glucose import main_
 from glucose import pack
 from glucose import util
-
-
-def get_venv_python_path(env_path):
-  # TODO: make that work on windows
-  return os.path.join(env_path, 'bin', 'python')
 
 
 class ParserTest(unittest.TestCase):
@@ -57,33 +51,6 @@ class ParserTest(unittest.TestCase):
     self.assertTrue(callable(options.command))
 
 
-# These tests are rather slow, but because it's integration testing.
-class VirtualEnvSetupTest(unittest.TestCase):
-  def test_setup_virtualenv(self):
-    with util.temporary_directory() as tempdir:
-      pack.setup_virtualenv(tempdir, relocatable=False, activate=False)
-      # Use a separate process instead of activating the virtualenv for
-      # test isolation.
-
-      # Check that modules from the virtualenv are used.
-      output = subprocess.check_output(
-        [get_venv_python_path(tempdir), '-c',
-         'import wheel; print wheel.__file__'])
-      self.assertTrue(output.startswith(tempdir))
-
-  def test_setup_virtualenv_relocatable(self):
-    with util.temporary_directory() as tempdir:
-      pack.setup_virtualenv(tempdir, relocatable=True, activate=False)
-      # Use a separate process instead of activating the virtualenv for
-      # test isolation.
-
-      # Check that modules from the virtualenv are used.
-      output = subprocess.check_output(
-        [get_venv_python_path(tempdir), '-c',
-         'import wheel; print wheel.__file__'])
-      self.assertTrue(output.startswith(tempdir))
-
-
 class SetupPyGenerationTest(unittest.TestCase):
   def test_gen_setup_simple_case(self):
     content = pack.get_setup_py_content(os.path.join(DATA_DIR,
@@ -101,9 +68,37 @@ class SetupPyGenerationTest(unittest.TestCase):
     content = pack.get_setup_py_content(os.path.join(DATA_DIR,
                                                      'setup_with_quotes.cfg'))
     # Smoke test: make sure the result is valid Python
-    print content
     ast.parse(content)
 
+
+class PackPackagesTest(unittest.TestCase):
+  def test_pack_local_package(self):
+    with util.Virtualenv(prefix='glyco-pack-test-') as venv:
+      with util.temporary_directory('glyco-pack-test-output-') as tempdir:
+        path = pack.pack_local_package(venv,
+                                       os.path.join(DATA_DIR, 'source_package'),
+                                       tempdir)
+        self.assertTrue(path.startswith(tempdir))
+
+  def test_pack_bare_package(self):
+    with util.Virtualenv(prefix='glyco-pack-test-') as venv:
+      with util.temporary_directory('glyco-pack-test-output-') as tempdir:
+        path = pack.pack_bare_package(
+          venv,
+          os.path.join(DATA_DIR, 'installed_package'),
+          tempdir)
+        self.assertTrue(path.startswith(tempdir))
+
+  def test_pack(self):
+    parser = argparse.ArgumentParser()
+    main_.add_argparse_options(parser)
+    with util.temporary_directory('glyco-pack-test-') as tempdir:
+      options = parser.parse_args(['pack',
+                                   os.path.join(DATA_DIR, 'source_package'),
+                                   os.path.join(DATA_DIR, 'installed_package'),
+                                   '--output-dir', tempdir])
+      wheel_paths = pack.pack(options)
+      self.assertEqual(len(wheel_paths), 2)
 
 
 if __name__ == '__main__':

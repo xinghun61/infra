@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import subprocess
 import sys
 import unittest
 
@@ -45,6 +46,58 @@ class TemporaryDirectoryTest(unittest.TestCase):
 
     # And everything should have been cleaned up afterward
     self.assertFalse(os.path.isdir(tempdir))
+
+
+def get_venv_python_path(env_path):
+  # TODO: make that work on windows
+  return os.path.join(env_path, 'bin', 'python')
+
+
+# These tests are rather slow, because it's integration testing.
+class VirtualEnvSetupTest(unittest.TestCase):
+  def test_setup_virtualenv(self):
+    with util.temporary_directory() as tempdir:
+      util.setup_virtualenv(tempdir, relocatable=False)
+      # Use a separate process instead of activating the virtualenv for
+      # test isolation.
+
+      # Check that modules from the virtualenv are used.
+      output = subprocess.check_output(
+        [get_venv_python_path(tempdir), '-c',
+         'import wheel; print wheel.__file__'])
+      self.assertTrue(output.startswith(tempdir))
+
+  def test_setup_virtualenv_relocatable(self):
+    with util.temporary_directory() as tempdir:
+      util.setup_virtualenv(tempdir, relocatable=True)
+      # Use a separate process instead of activating the virtualenv for
+      # test isolation.
+
+      # Check that modules from the virtualenv are used.
+      output = subprocess.check_output(
+        [get_venv_python_path(tempdir), '-c',
+         'import wheel; print wheel.__file__'])
+      self.assertTrue(output.startswith(tempdir))
+
+
+
+class VirtualenvTest(unittest.TestCase):
+  def test_check_venv_location(self):
+    with util.Virtualenv(prefix='glyco-venv-test-') as venv:
+      output = venv.check_output(['python', '-c',
+                                  'import wheel; print wheel.__file__'])
+      self.assertTrue(output.startswith(venv._venvdir))
+
+  def test_check_pip_works(self):
+    with util.Virtualenv(prefix='glyco-venv-test-') as venv:
+      output = venv.check_output(['pip', '--version'])
+      # 'pip --version' prints the full path to pip itself:
+      # example: "pip 1.5.4 from /usr/lib/python2.7/dist-packages (python 2.7)"
+      self.assertTrue(venv._venvdir in output)
+
+  def test_check_call_smoke(self):
+    with util.Virtualenv(prefix='glyco-venv-test-') as venv:
+      venv.check_call(['pip', '--version'])
 
 
 if __name__ == '__main__':

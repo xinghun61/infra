@@ -6,74 +6,10 @@ import ConfigParser
 import hashlib
 import os
 import shutil
-import sys
 import textwrap
 import urllib
 
 from glucose import util
-
-
-def check_pydistutils():
-  """Return True if a .pydistutils.cfg has been found."""
-  if os.path.exists(os.path.expanduser('~/.pydistutils.cfg')):
-    raise util.GlycoSetupError('\n'.join([
-      '',
-      'You have a ~/.pydistutils.cfg file, which interferes with the ',
-      'infra virtualenv environment. Please move it to the side and bootstrap ',
-      'again. Once infra has bootstrapped, you may move it back.',
-      '',
-      'Upstream bug: https://github.com/pypa/virtualenv/issues/88/',
-      ''
-    ]))
-
-
-def setup_virtualenv(env_path, activate=False, relocatable=False):
-  """Create a virtualenv in specified location.
-
-  The virtualenv contains a standard Python installation, plus setuptools, pip
-  and wheel.
-
-  Args:
-    env_path (str): where to create the virtual environment.
-    activate (bool): if True, activate the virtualenv inside this process after
-      creating it.
-  """
-  if hasattr(sys, 'real_prefix'):
-    raise AssertionError('Environment already activated.')
-
-  check_pydistutils()
-
-  print 'Creating environment: %r' % env_path
-
-  if os.path.exists(env_path):
-    print '  Removing existing one...'
-    shutil.rmtree(env_path, ignore_errors=True)
-
-
-  print '  Building new environment...'
-  # Import bundled virtualenv lib
-  import virtualenv  # pylint: disable=F0401
-  virtualenv.create_environment(
-    env_path, search_dirs=virtualenv.file_search_dirs())
-
-  if activate:
-    print '  Activating environment'
-    activate_virtualenv(env_path)
-
-  if relocatable:
-    print '  Make environment relocatable'
-    virtualenv.make_environment_relocatable(env_path)
-
-  print 'Done creating environment'
-
-
-def activate_virtualenv(env_path):
-  """Activate an existing virtualenv."""
-  # Ensure hermeticity during activation.
-  os.environ.pop('PYTHONPATH', None)
-  bin_dir = 'Scripts' if sys.platform.startswith('win') else 'bin'
-  activate_this = os.path.join(env_path, bin_dir, 'activate_this.py')
-  execfile(activate_this, dict(__file__=activate_this))
 
 
 def grab_wheel(src, dst, build_num=0):
@@ -174,7 +110,7 @@ def get_setup_py_content(cfg_path):
   return setup_py_template.format(keywords=',\n  '.join(keywords))
 
 
-def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
+def pack_local_package(venv, path, wheelhouse, build_num=0, build_options=()):
   """Create a wheel file from package source available locally.
 
   Args:
@@ -188,16 +124,16 @@ def pack_local_package(path, wheelhouse, build_num=0, build_options=()):
   """
   print 'Packing %s' % path
   with util.temporary_directory() as tempdir:
-    args = ['wheel', '--no-index', '--no-deps', '--wheel-dir', tempdir]
+    args = ['pip', 'wheel', '--no-index', '--no-deps', '--wheel-dir', tempdir]
     for op in build_options:
       args += ['--global-option', op]
     args += [path]
-    util.pip(*args)
+    venv.check_call(args)
     wheel_path = grab_wheel(tempdir, wheelhouse, build_num)
   return wheel_path
 
 
-def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
+def pack_bare_package(venv, path, wheelhouse, build_num=0, build_options=(),
                       keep_directory=False):
   """Create a wheel file from an importable package containing a setup.cfg file.
 
@@ -229,7 +165,7 @@ def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
 
     shutil.copytree(path, os.path.join(tempdir, package_name), symlinks=True)
 
-    wheel_path = pack_local_package(tempdir,
+    wheel_path = pack_local_package(venv, tempdir,
                                     wheelhouse,
                                     build_num=build_num,
                                     build_options=build_options)
@@ -237,7 +173,10 @@ def pack_bare_package(path, wheelhouse, build_num=0, build_options=(),
 
 
 def pack(args):
-  """Pack wheel files."""
+  """Pack wheel files.
+
+  Returns the list of wheel files created.
+  """
 
   if not args.packages:
     print 'No packages have been provided on the command-line, doing nothing.'
@@ -249,36 +188,32 @@ def pack(args):
     os.makedirs(args.output_dir)
 
   wheel_paths = []
-  with util.temporary_directory(
+  with util.Virtualenv(
       prefix="glyco-pack-",
-      keep_directory=args.keep_tmp_directories) as tempdir:
-    setup_virtualenv(tempdir, activate=True)
+      keep_directory=args.keep_tmp_directories) as venv:
     for element in packing_list:
       if element['location'].startswith('file://'):
         pathname = urllib.url2pathname(element['location'][7:])
 
         # Standard Python source package: contains a setup.py
         if os.path.isfile(os.path.join(pathname, 'setup.py')):
-          wheel_path = pack_local_package(pathname, args.output_dir)
+          wheel_path = pack_local_package(venv, pathname, args.output_dir)
 
         # The Glyco special case: importable package with a setup.cfg file.
         elif (os.path.isfile(os.path.join(pathname, 'setup.cfg')) and
               os.path.isfile(os.path.join(pathname, '__init__.py'))):
           wheel_path = pack_bare_package(
+            venv,
             pathname,
             args.output_dir,
             keep_directory=args.keep_tmp_directories)
         wheel_paths.append(wheel_path)
 
-  if args.verbose:
-    print '\nGenerated %d packages:' % len(wheel_paths)
-    for wheel_path in wheel_paths:
-      print wheel_path
-  # Outside the with statement, the virtualenv directory has been deleted.
-  # Virtualenvs cannot be deactivated from inside a Python interpreter, so we
-  # have no choice but to exit asap.
-  # TODO(pgervais): launch a separate process inside the virtualenv instead.
-  sys.exit(0)
+    if args.verbose:
+      print '\nGenerated %d packages:' % len(wheel_paths)
+      for wheel_path in wheel_paths:
+        print wheel_path
+    return wheel_paths
 
 
 def add_subparser(subparsers):
