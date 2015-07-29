@@ -4,7 +4,8 @@ found in the LICENSE file-->
 
 
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">  
-<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">  
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">  
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <dom-module id="project-dropdown">
@@ -12,10 +13,11 @@ found in the LICENSE file-->
 
   <template>
     <div id="dropdownBlock">
+      <paper-spinner id="spinner" active="{{spin}}"></paper-spinner>
       <select on-change="selectChanged" id="projectSelect">
         <option selected disabled>Choose Project</option>
         <template id="repeatTemp" is="dom-repeat" items="{{projectList}}">
-          <option value="{{item.id}}">{{item.id}}</option>
+          <option value="{{item}}">{{item}}</option>
         </template>
       </select>
     </div>
@@ -34,6 +36,11 @@ found in the LICENSE file-->
           type: String,
           notify: true,
           value: ""
+        },
+        spin: {
+          type: Boolean,
+          notify: true,
+          value: true
         }
       },
       selectChanged: function() {

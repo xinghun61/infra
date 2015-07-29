@@ -13,6 +13,7 @@ from protorpc import remote
 
 from components import auth
 from components import config
+from proto import project_config_pb2
 
 class Field(messages.Message):
   key = messages.StringField(1)
@@ -50,15 +51,29 @@ class TimeSeriesModel(ndb.Model):
   metric = ndb.StringProperty()
 
 
-class Project(messages.Message):
+class Config(messages.Message):
   id = messages.StringField(1, required=True)
-  repo_type = messages.StringField(2)
-  repo_url = messages.StringField(3)
-  name = messages.StringField(4)
+  revision = messages.StringField(2)
+  access = messages.StringField(3, repeated=True)
 
 
-class Projects(messages.Message):
-  projects = messages.MessageField(Project, 1, repeated=True)
+class Configs(messages.Message):
+  configs = messages.MessageField(Config, 1, repeated=True)
+
+ 
+def _has_access(access_list):
+  cur_ident = auth.get_current_identity().to_bytes()
+  for ac in access_list:
+    if ac.startswith('group:'):
+      if auth.is_group_member(ac.split(':', 2)[1]):
+        return True
+    else:
+      identity_str = ac
+      if ':' not in identity_str:
+        identity_str = 'user:%s' % identity_str
+      if cur_ident == identity_str:
+        return True
+  return False
 
 
 @auth.endpoints_api(name='consoleapp', version='v1')
@@ -97,16 +112,17 @@ class ConsoleAppApi(remote.Service):
 class UIApi(remote.Service):
   """API for the console configuration UI."""
 
-  @auth.endpoints_method(message_types.VoidMessage, Projects)
+  @auth.endpoints_method(message_types.VoidMessage, Configs)
   def get_projects(self, _request):
-    projects = config.get_projects()
-    projectList = []
-    for project in projects:
-      projectList.append(Project(repo_type=project.repo_type, 
-                                 id=project.id, 
-                                 repo_url=project.repo_url, 
-                                 name=project.name)) 
-    return Projects(projects=projectList)
-
+    project_configs = config.get_project_configs(
+        'project.cfg', project_config_pb2.ProjectCfg) 
+    configList = []
+    for project_id, (revision, project_cfg) in project_configs.iteritems():
+      if _has_access(project_cfg.access):
+        configList.append(Config(id=project_id, 
+                                 revision=revision, 
+                                 access=project_cfg.access[:]))
+    return Configs(configs=configList)
+      
 
 APPLICATION = endpoints.api_server([ConsoleAppApi, UIApi, config.ConfigApi])

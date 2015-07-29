@@ -7,13 +7,15 @@ function init(){
 
 function loadProjects() {
   gapi.client.ui.get_projects().execute(function(resp) {
+    document.querySelector('project-dropdown').spin = true;
     var list = [];
-    if(resp.projects != null){
-      for(var i=0; i< resp.projects.length; i++){
-        list.push({name: resp.projects[i].name, id: resp.projects[i].id});
+    if(resp.configs != null){
+      for(var i=0; i< resp.configs.length; i++){
+        list.push(resp.configs[i].id);
       };
     };
     document.querySelector('project-dropdown').projectList = list;
+    document.querySelector('project-dropdown').spin = false;
   });
 }
 

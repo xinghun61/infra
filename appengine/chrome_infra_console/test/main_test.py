@@ -6,8 +6,9 @@ import logging
 
 from main import ConsoleAppApi
 from main import UIApi
-from main import Project
+from main import Config
 from components import auth
+from components import config
 from google.appengine.ext import ndb
 from testing_utils import testing
 import main
@@ -46,16 +47,26 @@ class ConsoleAppApiTest(testing.EndpointsTestCase):
 class UIApiTest(testing.EndpointsTestCase):
 
   api_service_cls = UIApi
-  @mock.patch('components.config.get_projects')
-  def testGetProjects(self, get_projects): 
-    projects = [Project(repo_type="uu", 
-                        id="infra", 
-                        repo_url="a.com", 
-                        name="infra"),
-                Project(repo_type="uu", 
-                        id="chromium", 
-                        repo_url="a.com", 
-                        name="chromium")] 
-    get_projects.return_value = projects
+
+  def testGetProjects(self): 
+    self.mock(config, 'get_project_configs', mock.Mock())
+    self.mock(auth, 'get_current_identity', mock.Mock())
+    self.mock(auth, 'is_group_member', mock.Mock(return_value=False))
+    auth.get_current_identity.return_value = auth.Identity('user', 'a@a.com')
+    configs = {
+        "infra": ("888", mock.Mock(
+            access=['group:all','a@a.com','user:b@a.com'])), 
+        "v8": ("888666", mock.Mock(access=['group:all','a@a.com']))
+    }
+    config.get_project_configs.return_value = configs
     response = self.call_api('get_projects').json_body
-    self.assertEquals(len(response['projects']), 2)
+    self.assertEquals(len(response['configs']), 2)
+
+    auth.get_current_identity.return_value = auth.Identity('user', 'b@b.com')
+    response = self.call_api('get_projects').json_body
+    self.assertEquals(len(response.keys()), 0)
+
+
+    auth.is_group_member.side_effect = lambda name: name == 'all'
+    response = self.call_api('get_projects').json_body
+    self.assertEquals(len(response['configs']), 2)
