@@ -13,6 +13,7 @@ SUPPORTED_FILE_EXTENSIONS = [
     'css',
     'exe',
     'gn',
+    'gni',
     'gyp',
     'gypi',
     'h',
@@ -23,6 +24,7 @@ SUPPORTED_FILE_EXTENSIONS = [
     'java',
     'js',
     'json',
+    'm',
     'mm',
     'mojom',
     'o',
@@ -47,8 +49,8 @@ FILE_NAME_PATTERN = r'[\w+.-]+'
 
 # Match supported file extensions.
 # Sort extension list to avoid non-full match like 'c' matching 'c' in 'cpp'.
-FILE_EXTENSION_PATTERN = (r'(?:%s)' %
-    '|'.join(sorted(SUPPORTED_FILE_EXTENSIONS, reverse=True)))
+FILE_EXTENSION_PATTERN = (
+    r'(?:%s)' % '|'.join(sorted(SUPPORTED_FILE_EXTENSIONS, reverse=True)))
 
 
 # Match drive root directory on Windows, like "C:/" or "C:\\".

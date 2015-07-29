@@ -9,7 +9,6 @@ from common.blame import Blame
 from common.blame import Region
 from common.diff import ChangeType
 from common.git_repository import GitRepository
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 
@@ -67,6 +66,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         build_failure_analysis._IsRelated('a/x.cc', 'xdtest.cc'))
     self.assertFalse(
         build_failure_analysis._IsRelated('a_tests.cc', 'a_browsertests.cc'))
+    self.assertFalse(
+        build_failure_analysis._IsRelated('cc_unittests.isolate', 'a.cc.obj'))
+    self.assertFalse(
+        build_failure_analysis._IsRelated('a.h', 'a.pyc'))
+    self.assertFalse(
+        build_failure_analysis._IsRelated('a', 'b'))
+    self.assertFalse(build_failure_analysis._IsRelated('a', 'a'))
 
   def testCheckFilesAgainstSuspectedCL(self):
     failure_signal_json = {
@@ -193,7 +199,6 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
     return MockChangeLog(revision)
 
-
   def _testCheckFileInDependencyRoll(
       self, file_path_in_log, rolls, expected_score, line_numbers,
       expected_hints=None):
@@ -233,8 +238,8 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     ]
     expected_score = 1
     expected_hints = {
-      ('rolled dependency third_party/dep/ with changes in '
-       'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'): 1
+        ('rolled dependency third_party/dep/ with changes in '
+         'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'): 1
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -282,9 +287,9 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 5
     expected_hints = {
-      ('rolled dependency third_party/dep/ with changes in '
-       'https://url_dep/+log/1..2?pretty=fuller '
-       '(and f.cc(new file) was in log)'): 5
+        ('rolled dependency third_party/dep/ with changes in '
+         'https://url_dep/+log/1..2?pretty=fuller '
+         '(and f.cc(new file) was in log)'): 5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -307,10 +312,10 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsNotAddedWithinTheRoll(self):
     rolls = [{
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '2',
-            'new_revision': '3',
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '2',
+        'new_revision': '3',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 0
@@ -320,18 +325,18 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollWhenLinesAreChangedWithinTheRoll(self):
     rolls = [{
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '6',
-            'new_revision': '8',
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '6',
+        'new_revision': '8',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
-    line_numbers = [2,7,8]
+    line_numbers = [2, 7, 8]
     expected_score = 4
     expected_hints = {
-      ('rolled dependency third_party/dep/ with changes in '
-       'https://url_dep/+log/6..8?pretty=fuller '
-       '(and f.cc[2, 7, 8] was in log)'): 4
+        ('rolled dependency third_party/dep/ with changes in '
+         'https://url_dep/+log/6..8?pretty=fuller '
+         '(and f.cc[2, 7, 8] was in log)'): 4
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -339,13 +344,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsNotChanged(self):
     rolls = [{
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '8',
-            'new_revision': '9',
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '8',
+        'new_revision': '9',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
-    line_numbers = [2,7,8]
+    line_numbers = [2, 7, 8]
     expected_score = 0
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -353,13 +358,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollRolledDowngrade(self):
     rolls = [{
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '8',
-            'new_revision': '6',
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '8',
+        'new_revision': '6',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
-    line_numbers = [2,7,8]
+    line_numbers = [2, 7, 8]
     expected_score = 0
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -367,13 +372,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollFileNotExist(self):
     rolls = [{
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '6',
-            'new_revision': '8',
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '6',
+        'new_revision': '8',
     }]
     file_path_in_log = 'third_party/dep/f_not_exist.cc'
-    line_numbers = [2,7,8]
+    line_numbers = [2, 7, 8]
     expected_score = 0
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -381,13 +386,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testCheckFileInDependencyRollOnV8(self):
     rolls = [{
-            'path': 'src/v8/',
-            'repo_url': 'https://chromium.googlesource.com/v8/v8.git',
-            'old_revision': '6',
-            'new_revision': '8',
+        'path': 'src/v8/',
+        'repo_url': 'https://chromium.googlesource.com/v8/v8.git',
+        'old_revision': '6',
+        'new_revision': '8',
     }]
     file_path_in_log = 'v8/f.cc'
-    line_numbers = [2,7,8]
+    line_numbers = [2, 7, 8]
     expected_score = 0
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -538,14 +543,14 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     deps_info = {}
     failure_signals_json = {
         'a': {
-          'files': {
-              'src/a/b/f99_2.cc': [],
-          },
+            'files': {
+                'src/a/b/f99_2.cc': [],
+            },
         },
         'b': {
-          'files': {
-              'x/y/f99_1.cc': [],
-          },
+            'files': {
+                'x/y/f99_1.cc': [],
+            },
         },
     }
     expected_analysis_result = {
@@ -677,7 +682,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         'old_path': 'a/b/c.cc',
         'new_path': 'a/b/c.cc'
     }
-    line_numbers = [2, 7 ,8]
+    line_numbers = [2, 7, 8]
     commit_revision = '7'
     self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (

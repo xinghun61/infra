@@ -120,6 +120,12 @@ _COMMON_TEST_SUFFIX_PATTERNS = [
     re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_TEST_SUFFIXES
 ]
 
+_RELATED_FILETYPES = [
+    ['h', 'hh' 'c', 'cc', 'cpp', 'm', 'mm', 'o', 'obj'],
+    ['py', 'pyc'],
+    ['gyp', 'gypi']
+]
+
 
 def _AreBothFilesTestRelated(changed_src_file_path, file_in_log_path):
   """Tests if both file names contain test-related suffixes."""
@@ -161,6 +167,13 @@ def _StripExtensionAndCommonSuffix(file_path):
   return os.path.join(file_dir, file_name).replace(os.sep, '/')
 
 
+def _GetRelatedExtensionsList(extension):
+  for related_filetype_list in _RELATED_FILETYPES:
+    if extension in related_filetype_list:
+      return related_filetype_list
+  return []
+
+
 def _IsRelated(changed_src_file_path, file_path):
   """Checks if two files are related.
 
@@ -172,7 +185,16 @@ def _IsRelated(changed_src_file_path, file_path):
 
   Example of not related files:
     1. a_tests.py <-> a_browsertests.py
+    2. a.isolate <-> a.cc
+    3. a.py <-> a.cpp
   """
+  changed_src_file_extension = os.path.splitext(changed_src_file_path)[1][1:]
+  file_path_extension = os.path.splitext(file_path)[1][1:]
+
+  if file_path_extension not in _GetRelatedExtensionsList(
+      changed_src_file_extension):
+    return False
+
   if file_path.endswith('.o') or file_path.endswith('.obj'):
     file_path = _NormalizeObjectFilePath(file_path)
 
@@ -257,7 +279,8 @@ class _Justification(object):
     if roll_file_change_type == ChangeType.ADD:
       hint = ('%s dependency %s with changes in %s '
               '(and %s(new file) was in log)' % (
-          change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
+                  change_action, dep_path, url_to_changes_in_roll,
+                  file_path_in_log))
     elif changed_line_numbers:
       hint = ('%s dependency %s with changes in %s (and %s[%s] was in log)' % (
           change_action, dep_path, url_to_changes_in_roll, file_path_in_log,
@@ -370,7 +393,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     Tests if the same lines mentioned in failure log are changed within
     the DEPS roll, if so, return those line numbers.
   """
-  roll_repo = GitRepository(roll['repo_url'],  HttpClient())
+  roll_repo = GitRepository(roll['repo_url'], HttpClient())
 
   old_change_log = roll_repo.GetChangeLog(roll['old_revision'])
   old_rev_author_time = old_change_log.author_time
@@ -408,7 +431,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
             changed_line_numbers.append(line_number)
 
     elif (change_author_time <= old_rev_author_time and
-        file_change_type == ChangeType.ADD):
+          file_change_type == ChangeType.ADD):
       # One region was changed before old rev, the file cannot be a new file.
       if file_is_changed_in_roll:
         file_change_type = ChangeType.MODIFY
@@ -496,7 +519,7 @@ def _CheckFiles(failure_signal, change_log, deps_info):
   for touched_file in change_log['touched_files']:
     change_type = touched_file['change_type']
     if (change_type in (ChangeType.ADD, ChangeType.COPY,
-        ChangeType.RENAME, ChangeType.MODIFY)):
+                        ChangeType.RENAME, ChangeType.MODIFY)):
       file_name = os.path.basename(touched_file['new_path'])
       file_name_occurrences[file_name] += 1
 
@@ -507,7 +530,7 @@ def _CheckFiles(failure_signal, change_log, deps_info):
   justification = _Justification()
 
   rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
-  repo_info = deps_info.get('deps',{}).get('src/',{})
+  repo_info = deps_info.get('deps', {}).get('src/', {})
   for file_path_in_log, line_numbers in failure_signal.files.iteritems():
     file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 
