@@ -9,10 +9,11 @@ data:
       # Exclude unneeded and unrelocatable files.
       - .*\.pyc
       - .*/pip-.*-build/.*
+      - bin/activate
       - bin/activate.csh
       - bin/activate.fish
-      - bin/activate
       - lib/.*/site-packages/.*\.dist-info/RECORD
+      - pip-selfcheck.json
 
   # Main infra code, except "path_hacks" and stuff that depends on it.
   # path_hacks are used to access code outside of infra.git repo, it is not
@@ -22,6 +23,7 @@ data:
       - .*\.pyc
       - path_hacks
       # TODO(vadimsh): Depends on depot_tools.
+      - services/cache_updater
       - tools/bucket
       - tools/docgen
 
