@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -72,30 +73,90 @@ func TestEnsureDirectory(t *testing.T) {
 }
 
 func TestEnsureSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on Windows: no symlinks")
+	}
+
 	Convey("EnsureSymlink checks root", t, func() {
 		fs := tempFileSystem()
 		So(fs.EnsureSymlink(fs.join(".."), fs.Root()), ShouldNotBeNil)
 	})
 
-	Convey("ensureSymlink creates new symlink", t, func() {
+	Convey("EnsureSymlink creates new symlink", t, func() {
 		fs := tempFileSystem()
 		So(fs.EnsureSymlink(fs.join("symlink"), "target"), ShouldBeNil)
 		So(fs.readLink("symlink"), ShouldEqual, "target")
 	})
 
-	Convey("ensureSymlink builds full path", t, func() {
+	Convey("EnsureSymlink builds full path", t, func() {
 		fs := tempFileSystem()
 		So(fs.EnsureSymlink(fs.join("a/b/c"), "target"), ShouldBeNil)
 		So(fs.readLink("a/b/c"), ShouldEqual, "target")
 	})
 
-	Convey("ensureSymlink replaces existing one", t, func() {
+	Convey("EnsureSymlink replaces existing symlink", t, func() {
 		fs := tempFileSystem()
 		// Replace with same one, then with another one.
 		So(fs.EnsureSymlink(fs.join("symlink"), "target"), ShouldBeNil)
 		So(fs.EnsureSymlink(fs.join("symlink"), "target"), ShouldBeNil)
 		So(fs.EnsureSymlink(fs.join("symlink"), "another"), ShouldBeNil)
 		So(fs.readLink("symlink"), ShouldEqual, "another")
+	})
+
+	Convey("EnsureSymlink replaces existing file", t, func() {
+		fs := tempFileSystem()
+		fs.write("path", "blah")
+		So(fs.EnsureSymlink(fs.join("path"), "target"), ShouldBeNil)
+		So(fs.readLink("path"), ShouldEqual, "target")
+	})
+
+	Convey("EnsureSymlink replaces existing directory", t, func() {
+		fs := tempFileSystem()
+		fs.write("a/b/c", "something")
+		So(fs.EnsureSymlink(fs.join("a"), "target"), ShouldBeNil)
+		So(fs.readLink("a"), ShouldEqual, "target")
+	})
+}
+
+func TestEnsureFile(t *testing.T) {
+	Convey("EnsureFile checks root", t, func() {
+		fs := tempFileSystem()
+		So(fs.EnsureFile(fs.join(".."), []byte("blah"), 0666), ShouldNotBeNil)
+	})
+
+	Convey("EnsureFile creates new file", t, func() {
+		fs := tempFileSystem()
+		So(fs.EnsureFile(fs.join("name"), []byte("blah"), 0666), ShouldBeNil)
+		So(fs.read("name"), ShouldEqual, "blah")
+	})
+
+	Convey("EnsureFile builds full path", t, func() {
+		fs := tempFileSystem()
+		So(fs.EnsureFile(fs.join("a/b/c"), []byte("blah"), 0666), ShouldBeNil)
+		So(fs.read("a/b/c"), ShouldEqual, "blah")
+	})
+
+	if runtime.GOOS != "windows" {
+		Convey("EnsureFile replaces existing symlink", t, func() {
+			fs := tempFileSystem()
+			So(fs.EnsureSymlink(fs.join("path"), "target"), ShouldBeNil)
+			So(fs.EnsureFile(fs.join("path"), []byte("blah"), 0666), ShouldBeNil)
+			So(fs.read("path"), ShouldEqual, "blah")
+		})
+	}
+
+	Convey("EnsureFile replaces existing file", t, func() {
+		fs := tempFileSystem()
+		So(fs.EnsureFile(fs.join("path"), []byte("huh"), 0666), ShouldBeNil)
+		So(fs.EnsureFile(fs.join("path"), []byte("blah"), 0666), ShouldBeNil)
+		So(fs.read("path"), ShouldEqual, "blah")
+	})
+
+	Convey("EnsureFile replaces existing directory", t, func() {
+		fs := tempFileSystem()
+		fs.write("a/b/c", "something")
+		So(fs.EnsureFile(fs.join("a"), []byte("blah"), 0666), ShouldBeNil)
+		So(fs.read("a"), ShouldEqual, "blah")
 	})
 }
 
@@ -117,12 +178,14 @@ func TestEnsureFileGone(t *testing.T) {
 		So(fs.EnsureFileGone(fs.join("abc")), ShouldBeNil)
 	})
 
-	Convey("EnsureFileGone works with symlink", t, func() {
-		fs := tempFileSystem()
-		So(fs.EnsureSymlink(fs.join("abc"), "target"), ShouldBeNil)
-		So(fs.EnsureFileGone(fs.join("abc")), ShouldBeNil)
-		So(fs.isMissing("abc"), ShouldBeTrue)
-	})
+	if runtime.GOOS != "windows" {
+		Convey("EnsureFileGone works with symlink", t, func() {
+			fs := tempFileSystem()
+			So(fs.EnsureSymlink(fs.join("abc"), "target"), ShouldBeNil)
+			So(fs.EnsureFileGone(fs.join("abc")), ShouldBeNil)
+			So(fs.isMissing("abc"), ShouldBeTrue)
+		})
+	}
 }
 
 func TestEnsureDirectoryGone(t *testing.T) {

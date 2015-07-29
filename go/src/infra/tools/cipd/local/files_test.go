@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -44,21 +45,6 @@ func TestScanFileSystem(t *testing.T) {
 			buf, err := ioutil.ReadAll(r)
 			So(buf, ShouldResemble, []byte("12345"))
 			So(err, ShouldBeNil)
-		})
-
-		Convey("Discovering single executable file works", func() {
-			writeFile(tempDir, "single_file", "12345", 0766)
-			files, err := ScanFileSystem(tempDir, tempDir, nil)
-			So(len(files), ShouldEqual, 1)
-			So(err, ShouldBeNil)
-			file := files[0]
-			So(file.Executable(), ShouldBeTrue)
-		})
-
-		Convey("Relative symlink to outside of package cause error", func() {
-			writeSymlink(tempDir, "a/b1/rel_symlink", filepath.FromSlash("../../.."))
-			_, err := ScanFileSystem(tempDir, tempDir, nil)
-			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Enumerating subdirectories", func() {
@@ -151,6 +137,23 @@ func TestScanFileSystem(t *testing.T) {
 				filepath.Join(tempDir, "b"),
 			})
 		})
+
+		if runtime.GOOS != "windows" {
+			Convey("Discovering single executable file works", func() {
+				writeFile(tempDir, "single_file", "12345", 0766)
+				files, err := ScanFileSystem(tempDir, tempDir, nil)
+				So(len(files), ShouldEqual, 1)
+				So(err, ShouldBeNil)
+				file := files[0]
+				So(file.Executable(), ShouldBeTrue)
+			})
+
+			Convey("Relative symlink to outside of package cause error", func() {
+				writeSymlink(tempDir, "a/b1/rel_symlink", filepath.FromSlash("../../.."))
+				_, err := ScanFileSystem(tempDir, tempDir, nil)
+				So(err, ShouldNotBeNil)
+			})
+		}
 	})
 }
 
@@ -165,13 +168,6 @@ func TestWrapFile(t *testing.T) {
 			out, err := WrapFile(filepath.Join(tempDir, "dir", "a", "b"), tempDir, nil)
 			So(err, ShouldBeNil)
 			So(out.Name(), ShouldEqual, "dir/a/b")
-		})
-
-		Convey("WrapFile executable file works", func() {
-			writeFile(tempDir, "single_file", "12345", 0766)
-			out, err := WrapFile(filepath.Join(tempDir, "single_file"), tempDir, nil)
-			So(err, ShouldBeNil)
-			So(out.Executable(), ShouldBeTrue)
 		})
 
 		Convey("WrapFile directory fails", func() {
@@ -195,33 +191,42 @@ func TestWrapFile(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("WrapFile rel symlink in root", func() {
-			writeSymlink(tempDir, "a/b/c", filepath.FromSlash("../../d"))
-			mkDir(tempDir, "d")
-			out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
-			So(err, ShouldBeNil)
-			ensureSymlinkTarget(out, "../../d")
-		})
+		if runtime.GOOS != "windows" {
+			Convey("WrapFile executable file works", func() {
+				writeFile(tempDir, "single_file", "12345", 0766)
+				out, err := WrapFile(filepath.Join(tempDir, "single_file"), tempDir, nil)
+				So(err, ShouldBeNil)
+				So(out.Executable(), ShouldBeTrue)
+			})
 
-		Convey("WrapFile rel symlink outside root", func() {
-			writeSymlink(tempDir, "a/b/c", filepath.FromSlash("../../../d"))
-			_, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
-			So(err, ShouldNotBeNil)
-		})
+			Convey("WrapFile rel symlink in root", func() {
+				writeSymlink(tempDir, "a/b/c", filepath.FromSlash("../../d"))
+				mkDir(tempDir, "d")
+				out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
+				So(err, ShouldBeNil)
+				ensureSymlinkTarget(out, "../../d")
+			})
 
-		Convey("WrapFile abs symlink in root", func() {
-			writeSymlink(tempDir, "a/b/c", filepath.Join(tempDir, "a", "d"))
-			out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
-			So(err, ShouldBeNil)
-			ensureSymlinkTarget(out, "../d")
-		})
+			Convey("WrapFile rel symlink outside root", func() {
+				writeSymlink(tempDir, "a/b/c", filepath.FromSlash("../../../d"))
+				_, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
+				So(err, ShouldNotBeNil)
+			})
 
-		Convey("WrapFile abs symlink outside root", func() {
-			writeSymlink(tempDir, "a/b/c", filepath.Dir(tempDir))
-			out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
-			So(err, ShouldBeNil)
-			ensureSymlinkTarget(out, filepath.ToSlash(filepath.Dir(tempDir)))
-		})
+			Convey("WrapFile abs symlink in root", func() {
+				writeSymlink(tempDir, "a/b/c", filepath.Join(tempDir, "a", "d"))
+				out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
+				So(err, ShouldBeNil)
+				ensureSymlinkTarget(out, "../d")
+			})
+
+			Convey("WrapFile abs symlink outside root", func() {
+				writeSymlink(tempDir, "a/b/c", filepath.Dir(tempDir))
+				out, err := WrapFile(filepath.Join(tempDir, "a", "b", "c"), tempDir, nil)
+				So(err, ShouldBeNil)
+				ensureSymlinkTarget(out, filepath.ToSlash(filepath.Dir(tempDir)))
+			})
+		}
 	})
 }
 
@@ -332,15 +337,17 @@ func TestFileSystemDestination(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("CreateSymlink rejects invalid relative paths", func() {
-			So(dest.Begin(), ShouldBeNil)
-			defer dest.End(true)
+		if runtime.GOOS != "windows" {
+			Convey("CreateSymlink rejects invalid relative paths", func() {
+				So(dest.Begin(), ShouldBeNil)
+				defer dest.End(true)
 
-			// Rel symlink to a file inside the destination is OK.
-			So(dest.CreateSymlink("a/b/c", "../.."), ShouldBeNil)
-			// Rel symlink to a file outside -> error.
-			So(dest.CreateSymlink("a/b/c", "../../.."), ShouldNotBeNil)
-		})
+				// Rel symlink to a file inside the destination is OK.
+				So(dest.CreateSymlink("a/b/c", "../.."), ShouldBeNil)
+				// Rel symlink to a file outside -> error.
+				So(dest.CreateSymlink("a/b/c", "../../.."), ShouldNotBeNil)
+			})
+		}
 
 		Convey("Committing bunch of files works", func() {
 			So(dest.Begin(), ShouldBeNil)
@@ -348,28 +355,42 @@ func TestFileSystemDestination(t *testing.T) {
 			writeFileToDest("exe", true, "exe data")
 			writeFileToDest("dir/c", false, "dir/c data")
 			writeFileToDest("dir/dir/d", false, "dir/dir/c data")
-			writeSymlinkToDest("abs_symlink", filepath.FromSlash(tempDir))
-			writeSymlinkToDest("dir/dir/rel_symlink", "../../a")
+			if runtime.GOOS != "windows" {
+				writeSymlinkToDest("abs_symlink", filepath.FromSlash(tempDir))
+				writeSymlinkToDest("dir/dir/rel_symlink", "../../a")
+			}
 			So(dest.End(true), ShouldBeNil)
 
 			// Ensure everything is there.
 			files, err := ScanFileSystem(destDir, destDir, nil)
 			So(err, ShouldBeNil)
 			names := []string{}
+			mapping := map[string]File{}
 			for _, f := range files {
 				names = append(names, f.Name())
+				mapping[f.Name()] = f
 			}
-			So(names, ShouldResemble, []string{
-				"a",
-				"abs_symlink",
-				"dir/c",
-				"dir/dir/d",
-				"dir/dir/rel_symlink",
-				"exe",
-			})
+
+			if runtime.GOOS == "windows" {
+				So(names, ShouldResemble, []string{
+					"a",
+					"dir/c",
+					"dir/dir/d",
+					"exe",
+				})
+			} else {
+				So(names, ShouldResemble, []string{
+					"a",
+					"abs_symlink",
+					"dir/c",
+					"dir/dir/d",
+					"dir/dir/rel_symlink",
+					"exe",
+				})
+			}
 
 			// Ensure data is valid (check first file only).
-			r, err := files[0].Open()
+			r, err := mapping["a"].Open()
 			if r != nil {
 				defer r.Close()
 			}
@@ -378,17 +399,12 @@ func TestFileSystemDestination(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(data, ShouldResemble, []byte("a data"))
 
-			// Ensure file mode is valid.
-			So(files[5].Name(), ShouldEqual, "exe")
-			So(files[5].Executable(), ShouldBeTrue)
-
-			// Ensure absolute symlink if valid.
-			So(files[1].Name(), ShouldEqual, "abs_symlink")
-			ensureSymlinkTarget(files[1], filepath.FromSlash(tempDir))
-
-			// Ensure relative symlink is valid.
-			So(files[4].Name(), ShouldEqual, "dir/dir/rel_symlink")
-			ensureSymlinkTarget(files[4], "../../a")
+			// File mode and symlinks are valid.
+			if runtime.GOOS != "windows" {
+				So(mapping["exe"].Executable(), ShouldBeTrue)
+				ensureSymlinkTarget(mapping["abs_symlink"], filepath.FromSlash(tempDir))
+				ensureSymlinkTarget(mapping["dir/dir/rel_symlink"], "../../a")
+			}
 
 			// Ensure no temp files left.
 			allFiles, err := ScanFileSystem(tempDir, tempDir, nil)
@@ -399,7 +415,9 @@ func TestFileSystemDestination(t *testing.T) {
 			So(dest.Begin(), ShouldBeNil)
 			writeFileToDest("a", false, "a data")
 			writeFileToDest("dir/c", false, "dir/c data")
-			writeSymlinkToDest("dir/d", "c")
+			if runtime.GOOS != "windows" {
+				writeSymlinkToDest("dir/d", "c")
+			}
 			So(dest.End(false), ShouldBeNil)
 
 			// No dest directory.
@@ -421,15 +439,22 @@ func TestFileSystemDestination(t *testing.T) {
 			// Now deploy something to it.
 			So(dest.Begin(), ShouldBeNil)
 			writeFileToDest("a", false, "a data")
-			writeSymlinkToDest("b", "a")
+			if runtime.GOOS != "windows" {
+				writeSymlinkToDest("b", "a")
+			}
 			So(dest.End(true), ShouldBeNil)
 
 			// Overwritten.
 			files, err := ScanFileSystem(destDir, destDir, nil)
 			So(err, ShouldBeNil)
-			So(len(files), ShouldEqual, 2)
-			So(files[0].Name(), ShouldEqual, "a")
-			So(files[1].Name(), ShouldEqual, "b")
+			if runtime.GOOS == "windows" {
+				So(len(files), ShouldEqual, 1)
+				So(files[0].Name(), ShouldEqual, "a")
+			} else {
+				So(len(files), ShouldEqual, 2)
+				So(files[0].Name(), ShouldEqual, "a")
+				So(files[1].Name(), ShouldEqual, "b")
+			}
 		})
 
 		Convey("Not overwriting a directory works", func() {
@@ -442,7 +467,9 @@ func TestFileSystemDestination(t *testing.T) {
 			// Now attempt deploy something to it, but roll back.
 			So(dest.Begin(), ShouldBeNil)
 			writeFileToDest("a", false, "a data")
-			writeSymlinkToDest("b", "a")
+			if runtime.GOOS != "windows" {
+				writeSymlinkToDest("b", "a")
+			}
 			So(dest.End(false), ShouldBeNil)
 
 			// Kept as is.

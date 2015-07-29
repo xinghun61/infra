@@ -6,6 +6,7 @@ package local
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,10 @@ type FileSystem interface {
 	// directory path to the symlink if necessary.
 	EnsureSymlink(path string, target string) error
 
+	// EnsureFile creates a file with given content. If will create full directory
+	// path to the file if necessary.
+	EnsureFile(path string, body []byte, perm os.FileMode) error
+
 	// EnsureFileGone removes a file, logging the errors (if any). Missing file is
 	// not an error.
 	EnsureFileGone(path string) error
@@ -78,14 +83,15 @@ type fsImplErr struct {
 
 // Root returns absolute path to a directory FileSystem operates in. All FS
 // actions are restricted to this directory.
-func (f *fsImplErr) Root() string                                   { return "" }
-func (f *fsImplErr) CwdRelToAbs(path string) (string, error)        { return "", f.err }
-func (f *fsImplErr) RootRelToAbs(path string) (string, error)       { return "", f.err }
-func (f *fsImplErr) EnsureDirectory(path string) (string, error)    { return "", f.err }
-func (f *fsImplErr) EnsureSymlink(path string, target string) error { return f.err }
-func (f *fsImplErr) EnsureFileGone(path string) error               { return f.err }
-func (f *fsImplErr) EnsureDirectoryGone(path string) error          { return f.err }
-func (f *fsImplErr) Replace(oldpath, newpath string) error          { return f.err }
+func (f *fsImplErr) Root() string                                                { return "" }
+func (f *fsImplErr) CwdRelToAbs(path string) (string, error)                     { return "", f.err }
+func (f *fsImplErr) RootRelToAbs(path string) (string, error)                    { return "", f.err }
+func (f *fsImplErr) EnsureDirectory(path string) (string, error)                 { return "", f.err }
+func (f *fsImplErr) EnsureSymlink(path string, target string) error              { return f.err }
+func (f *fsImplErr) EnsureFile(path string, body []byte, perm os.FileMode) error { return f.err }
+func (f *fsImplErr) EnsureFileGone(path string) error                            { return f.err }
+func (f *fsImplErr) EnsureDirectoryGone(path string) error                       { return f.err }
+func (f *fsImplErr) Replace(oldpath, newpath string) error                       { return f.err }
 
 /// Implementation.
 
@@ -130,7 +136,36 @@ func (f *fsImpl) EnsureDirectory(path string) (string, error) {
 	if err = os.MkdirAll(path, 0777); err != nil {
 		return "", err
 	}
+	// TODO(vadimsh): Do not fail if path already exists and is a regular file?
 	return path, nil
+}
+
+func (f *fsImpl) EnsureFile(path string, body []byte, perm os.FileMode) error {
+	path, err := f.CwdRelToAbs(path)
+	if err != nil {
+		return err
+	}
+	if _, err := f.EnsureDirectory(filepath.Dir(path)); err != nil {
+		return err
+	}
+
+	// Create a temp file with new content.
+	temp := fmt.Sprintf("%s_%s", path, pseudoRand())
+	if err := ioutil.WriteFile(temp, body, perm); err != nil {
+		return err
+	}
+
+	// Replace the current file (if there's one) with a new one. Use nuclear
+	// version (f.Replace) instead of simple atomicReplace to handle various edge
+	// cases handled by the nuclear version (e.g replacing a non-empty directory).
+	if err := f.Replace(temp, path); err != nil {
+		if err2 := os.Remove(temp); err2 != nil && !os.IsNotExist(err2) {
+			f.logger.Warningf("fs: failed to remove %s - %s", temp, err2)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (f *fsImpl) EnsureSymlink(path string, target string) error {
@@ -151,10 +186,11 @@ func (f *fsImpl) EnsureSymlink(path string, target string) error {
 		return err
 	}
 
-	// Atomically replace the current symlink with a new one.
-	if err := os.Rename(temp, path); err != nil {
-		err2 := os.Remove(temp)
-		if err2 != nil {
+	// Replace the current symlink with a new one. Use nuclear version (f.Replace)
+	// instead of simple atomicReplace to handle various edge cases handled by
+	// the nuclear version (e.g replacing a non-empty directory).
+	if err := f.Replace(temp, path); err != nil {
+		if err2 := os.Remove(temp); err2 != nil && !os.IsNotExist(err2) {
 			f.logger.Warningf("fs: failed to remove %s - %s", temp, err2)
 		}
 		return err
@@ -168,8 +204,7 @@ func (f *fsImpl) EnsureFileGone(path string) error {
 	if err != nil {
 		return err
 	}
-	err = os.Remove(path)
-	if err != nil && !os.IsNotExist(err) {
+	if err = os.Remove(path); err != nil && !os.IsNotExist(err) {
 		f.logger.Warningf("fs: failed to remove %s - %s", path, err)
 		return err
 	}
@@ -183,7 +218,7 @@ func (f *fsImpl) EnsureDirectoryGone(path string) error {
 	}
 	// Make directory "disappear" instantly by renaming it first.
 	temp := fmt.Sprintf("%s_%v", path, pseudoRand())
-	if err = os.Rename(path, temp); err != nil {
+	if err = atomicRename(path, temp); err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
@@ -221,13 +256,13 @@ func (f *fsImpl) Replace(oldpath, newpath string) error {
 	}
 
 	// Try a regular move first. Replaces files and empty directories.
-	if err = os.Rename(oldpath, newpath); err == nil {
+	if err = atomicRename(oldpath, newpath); err == nil {
 		return nil
 	}
 
 	// Move existing path away, if it is there.
 	temp := fmt.Sprintf("%s_%s", newpath, pseudoRand())
-	if err = os.Rename(newpath, temp); err != nil {
+	if err = atomicRename(newpath, temp); err != nil {
 		if !os.IsNotExist(err) {
 			f.logger.Warningf("fs: failed to rename(%v, %v) - %s", newpath, temp, err)
 			return err
@@ -236,11 +271,11 @@ func (f *fsImpl) Replace(oldpath, newpath string) error {
 	}
 
 	// 'newpath' now should be available.
-	if err := os.Rename(oldpath, newpath); err != nil {
+	if err := atomicRename(oldpath, newpath); err != nil {
 		f.logger.Warningf("fs: failed to rename(%v, %v) - %s", oldpath, newpath, err)
 		// Try to return the path back... May be too late already.
 		if temp != "" {
-			if err := os.Rename(temp, newpath); err != nil {
+			if err := atomicRename(temp, newpath); err != nil {
 				f.logger.Errorf("fs: failed to rename(%v, %v) after unsuccessful move - %s", temp, newpath, err)
 			}
 		}

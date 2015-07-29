@@ -21,8 +21,6 @@ import (
 	"infra/tools/cipd/common"
 )
 
-// TODO(vadimsh): Make it work on Windows.
-
 // TODO(vadimsh): How to handle path conflicts between two packages? Currently
 // the last one installed wins.
 
@@ -110,7 +108,12 @@ func (d errDeployer) TempFile(prefix string) (*os.File, error)             { ret
 const packagesDir = siteServiceDir + "/pkgs"
 
 // currentSymlink is a name of a symlink that points to latest deployed version.
+// Used on Linux and Mac.
 const currentSymlink = "_current"
+
+// currentTxt is a name of a text file with instance ID of latest deployed
+// version. Used on Windows.
+const currentTxt = "_current.txt"
 
 // deployerImpl implements Deployer interface.
 type deployerImpl struct {
@@ -325,11 +328,21 @@ func (d *deployerImpl) packagePath(pkg string) string {
 	return abs
 }
 
-// getCurrentInstanceID returns instance ID of currently installed instance given
-// a path to a package directory (.cipd/pkgs/<name>). It returns ("", nil) if no
-// package is installed there.
+// getCurrentInstanceID returns instance ID of currently installed instance
+// given a path to a package directory (.cipd/pkgs/<name>). It returns ("", nil)
+// if no package is installed there.
 func (d *deployerImpl) getCurrentInstanceID(packageDir string) (string, error) {
-	current, err := os.Readlink(filepath.Join(packageDir, currentSymlink))
+	var current string
+	var err error
+	if runtime.GOOS == "windows" {
+		var bytes []byte
+		bytes, err = ioutil.ReadFile(filepath.Join(packageDir, currentTxt))
+		if err == nil {
+			current = strings.TrimSpace(string(bytes))
+		}
+	} else {
+		current, err = os.Readlink(filepath.Join(packageDir, currentSymlink))
+	}
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -337,7 +350,8 @@ func (d *deployerImpl) getCurrentInstanceID(packageDir string) (string, error) {
 		return "", err
 	}
 	if err = common.ValidateInstanceID(current); err != nil {
-		return "", fmt.Errorf("symlink target doesn't look like a valid instance id: %s", err)
+		return "", fmt.Errorf(
+			"pointer to currently installed instance doesn't look like a valid instance id: %s", err)
 	}
 	return current, nil
 }
@@ -347,6 +361,9 @@ func (d *deployerImpl) getCurrentInstanceID(packageDir string) (string, error) {
 func (d *deployerImpl) setCurrentInstanceID(packageDir string, instanceID string) error {
 	if err := common.ValidateInstanceID(instanceID); err != nil {
 		return err
+	}
+	if runtime.GOOS == "windows" {
+		return d.fs.EnsureFile(filepath.Join(packageDir, currentTxt), []byte(instanceID), 0666)
 	}
 	return d.fs.EnsureSymlink(filepath.Join(packageDir, currentSymlink), instanceID)
 }

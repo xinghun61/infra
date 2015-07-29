@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -224,9 +225,13 @@ func TestFindFiles(t *testing.T) {
 			mkF("ENV/dir/def.py")
 			mkD("ENV/empty")      // will be skipped
 			mkF("ENV/exclude_me") // excluded via "exclude: 'exclude_me'"
-			mkL("ENV/abs_link", filepath.Dir(tempDir))
-			mkL("ENV/rel_link", "abc.py")
-			mkL("ENV/abs_in_root", filepath.Join(tempDir, "ENV", "dir", "def.py"))
+
+			// Symlinks do not work on Windows.
+			if runtime.GOOS != "windows" {
+				mkL("ENV/abs_link", filepath.Dir(tempDir))
+				mkL("ENV/rel_link", "abc.py")
+				mkL("ENV/abs_in_root", filepath.Join(tempDir, "ENV", "dir", "def.py"))
+			}
 
 			mkF("infra/xyz.py")
 			mkF("infra/zzz.pyo")
@@ -271,22 +276,33 @@ func TestFindFiles(t *testing.T) {
 				names = append(names, f.Name())
 				byName[f.Name()] = f
 			}
-			So(names, ShouldResemble, []string{
-				"ENV/abc.py",
-				"ENV/abc.pyo",
-				"ENV/abs_in_root",
-				"ENV/abs_link",
-				"ENV/dir/def.py",
-				"ENV/rel_link",
-				"dir/file2.py",
-				"file1.py",
-				"infra/xyz.py",
-			})
 
-			// Separately check symlinks.
-			ensureSymlinkTarget(byName["ENV/abs_in_root"], "dir/def.py")
-			ensureSymlinkTarget(byName["ENV/abs_link"], filepath.ToSlash(filepath.Dir(tempDir)))
-			ensureSymlinkTarget(byName["ENV/rel_link"], "abc.py")
+			if runtime.GOOS == "windows" {
+				So(names, ShouldResemble, []string{
+					"ENV/abc.py",
+					"ENV/abc.pyo",
+					"ENV/dir/def.py",
+					"dir/file2.py",
+					"file1.py",
+					"infra/xyz.py",
+				})
+			} else {
+				So(names, ShouldResemble, []string{
+					"ENV/abc.py",
+					"ENV/abc.pyo",
+					"ENV/abs_in_root",
+					"ENV/abs_link",
+					"ENV/dir/def.py",
+					"ENV/rel_link",
+					"dir/file2.py",
+					"file1.py",
+					"infra/xyz.py",
+				})
+				// Separately check symlinks.
+				ensureSymlinkTarget(byName["ENV/abs_in_root"], "dir/def.py")
+				ensureSymlinkTarget(byName["ENV/abs_link"], filepath.ToSlash(filepath.Dir(tempDir)))
+				ensureSymlinkTarget(byName["ENV/rel_link"], "abc.py")
+			}
 		})
 	})
 }

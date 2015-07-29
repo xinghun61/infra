@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"testing"
 
@@ -33,8 +34,9 @@ func TestUtilities(t *testing.T) {
 			So(err, ShouldBeNil)
 			f.Close()
 		}
-		ensureLink := func(symlinkRel string, target string) error {
-			return os.Symlink(target, filepath.Join(tempDir, symlinkRel))
+		ensureLink := func(symlinkRel string, target string) {
+			err := os.Symlink(target, filepath.Join(tempDir, symlinkRel))
+			So(err, ShouldBeNil)
 		}
 
 		Convey("scanPackageDir works with empty dir", func() {
@@ -52,20 +54,38 @@ func TestUtilities(t *testing.T) {
 			touch("dir/b/1")
 			touch("dir/.cipdpkg/abc")
 			touch("dir/.cipd/abc")
-			ensureLink("dir/a/sym_link", "target")
-			files, err := scanPackageDir(filepath.Join(tempDir, "dir"), nil)
-			So(err, ShouldBeNil)
-			names := sort.StringSlice{}
-			for _, f := range files {
-				names = append(names, f.Name)
+
+			runScanPackageDir := func() sort.StringSlice {
+				files, err := scanPackageDir(filepath.Join(tempDir, "dir"), nil)
+				So(err, ShouldBeNil)
+				names := sort.StringSlice{}
+				for _, f := range files {
+					names = append(names, f.Name)
+				}
+				names.Sort()
+				return names
 			}
-			names.Sort()
-			So(names, ShouldResemble, sort.StringSlice{
-				"a/1",
-				"a/2",
-				"a/sym_link",
-				"b/1",
-			})
+
+			// Symlinks doesn't work on Windows, test them only on Posix.
+			if runtime.GOOS == "windows" {
+				Convey("works on Windows", func() {
+					So(runScanPackageDir(), ShouldResemble, sort.StringSlice{
+						"a/1",
+						"a/2",
+						"b/1",
+					})
+				})
+			} else {
+				Convey("works on Posix", func() {
+					ensureLink("dir/a/sym_link", "target")
+					So(runScanPackageDir(), ShouldResemble, sort.StringSlice{
+						"a/1",
+						"a/2",
+						"a/sym_link",
+						"b/1",
+					})
+				})
+			}
 		})
 	})
 }
@@ -92,6 +112,10 @@ func TestDeployInstance(t *testing.T) {
 }
 
 func TestDeployInstanceSymlinkMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on Windows: no symlinks")
+	}
+
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
@@ -247,7 +271,11 @@ func TestDeployInstanceSymlinkMode(t *testing.T) {
 	})
 }
 
-func TestDeployInstanceCopyMode(t *testing.T) {
+func TestDeployInstanceCopyModePosix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on windows")
+	}
+
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
@@ -375,7 +403,144 @@ func TestDeployInstanceCopyMode(t *testing.T) {
 	})
 }
 
+func TestDeployInstanceCopyModeWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping on posix")
+	}
+
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("DeployInstance new empty package instance", func() {
+			inst := makeTestInstance("test/package", nil, InstallModeCopy)
+			info, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			So(info, ShouldResemble, inst.Pin())
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+			})
+			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
+		})
+
+		Convey("DeployInstance new non-empty package instance", func() {
+			inst := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+			}, InstallModeCopy)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				"some/executable",
+				"some/file/path",
+			})
+			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
+		})
+
+		Convey("Redeploy same package instance", func() {
+			inst := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a", false),
+				NewTestFile("some/executable", "data b", true),
+			}, InstallModeCopy)
+			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
+			So(err, ShouldBeNil)
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				"some/executable",
+				"some/file/path",
+			})
+			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
+		})
+
+		Convey("DeployInstance package update", func() {
+			oldPkg := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("old only", "data c old", true),
+				NewTestFile("mode change 1", "data d", true),
+				NewTestFile("mode change 2", "data e", false),
+			}, InstallModeCopy)
+			oldPkg.instanceID = "0000000000000000000000000000000000000000"
+
+			newPkg := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("mode change 1", "data d", false),
+				NewTestFile("mode change 2", "data d", true),
+			}, InstallModeCopy)
+			newPkg.instanceID = "1111111111111111111111111111111111111111"
+
+			_, err := NewDeployer(tempDir, nil).DeployInstance(oldPkg)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(newPkg)
+			So(err, ShouldBeNil)
+
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				"mode change 1",
+				"mode change 2",
+				"some/executable",
+				"some/file/path",
+			})
+			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			So(cur, ShouldEqual, "1111111111111111111111111111111111111111")
+		})
+
+		Convey("DeployInstance two different packages", func() {
+			pkg1 := makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path", "data a old", false),
+				NewTestFile("some/executable", "data b old", true),
+				NewTestFile("pkg1 file", "data c", false),
+			}, InstallModeCopy)
+			pkg1.instanceID = "0000000000000000000000000000000000000000"
+
+			// Nesting in package names is allowed.
+			pkg2 := makeTestInstance("test/package/another", []File{
+				NewTestFile("some/file/path", "data a new", false),
+				NewTestFile("some/executable", "data b new", true),
+				NewTestFile("pkg2 file", "data d", false),
+			}, InstallModeCopy)
+			pkg2.instanceID = "1111111111111111111111111111111111111111"
+
+			_, err := NewDeployer(tempDir, nil).DeployInstance(pkg1)
+			So(err, ShouldBeNil)
+			_, err = NewDeployer(tempDir, nil).DeployInstance(pkg2)
+			So(err, ShouldBeNil)
+
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/package_another_4HL4H61fGm/_current.txt",
+				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
+				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				"pkg1 file",
+				"pkg2 file",
+				"some/executable",
+				"some/file/path",
+			})
+			cur1 := readFile(tempDir, ".cipd/pkgs/package_another_4HL4H61fGm/_current.txt")
+			So(cur1, ShouldEqual, "1111111111111111111111111111111111111111")
+			cur2 := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			So(cur2, ShouldEqual, "0000000000000000000000000000000000000000")
+		})
+	})
+}
+
 func TestDeployInstanceSwitchingModes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on Windows: no symlinks")
+	}
+
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
@@ -470,7 +635,7 @@ func TestFindDeployed(t *testing.T) {
 	})
 }
 
-func TestRemoveDeployed(t *testing.T) {
+func TestRemoveDeployedCommon(t *testing.T) {
 	Convey("Given a temp directory", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")
 		So(err, ShouldBeNil)
@@ -480,6 +645,18 @@ func TestRemoveDeployed(t *testing.T) {
 			err := NewDeployer(tempDir, nil).RemoveDeployed("package/path")
 			So(err, ShouldBeNil)
 		})
+	})
+}
+
+func TestRemoveDeployedPosix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping on windows")
+	}
+
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
 
 		Convey("RemoveDeployed works", func() {
 			d := NewDeployer(tempDir, nil)
@@ -510,6 +687,50 @@ func TestRemoveDeployed(t *testing.T) {
 				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
 				".cipd/pkgs/package_123_Wnok5l4iFr/_current:0123456789abcdef00000123456789abcdef0000",
 				"some/executable1*",
+				"some/file/path1",
+			})
+		})
+	})
+}
+
+func TestRemoveDeployedWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping on posix")
+	}
+
+	Convey("Given a temp directory", t, func() {
+		tempDir, err := ioutil.TempDir("", "cipd_test")
+		So(err, ShouldBeNil)
+		Reset(func() { os.RemoveAll(tempDir) })
+
+		Convey("RemoveDeployed works", func() {
+			d := NewDeployer(tempDir, nil)
+
+			// Deploy some instance (to keep it).
+			inst := makeTestInstance("test/package/123", []File{
+				NewTestFile("some/file/path1", "data a", false),
+				NewTestFile("some/executable1", "data b", true),
+			}, InstallModeCopy)
+			_, err := d.DeployInstance(inst)
+			So(err, ShouldBeNil)
+
+			// Deploy another instance (to remove it).
+			inst = makeTestInstance("test/package", []File{
+				NewTestFile("some/file/path2", "data a", false),
+				NewTestFile("some/executable2", "data b", true),
+			}, InstallModeCopy)
+			_, err = d.DeployInstance(inst)
+			So(err, ShouldBeNil)
+
+			// Now remove the second package.
+			err = d.RemoveDeployed("test/package")
+			So(err, ShouldBeNil)
+
+			// Verify the final state (only first package should survive).
+			So(scanDir(tempDir), ShouldResemble, []string{
+				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/package_123_Wnok5l4iFr/_current.txt",
+				"some/executable1",
 				"some/file/path1",
 			})
 		})
@@ -595,4 +816,12 @@ func scanDir(root string) (out []string) {
 		panic("Failed to walk a directory")
 	}
 	return
+}
+
+// readFile reads content of an existing text file. Root path is provided as
+// a native path, rel - as a slash-separated path.
+func readFile(root, rel string) string {
+	body, err := ioutil.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	So(err, ShouldBeNil)
+	return string(body)
 }
