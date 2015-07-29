@@ -15,6 +15,11 @@ found in the LICENSE file.
         background-color: #fffc6c;
       }
 
+      #clearAlerts {
+        color: red;
+        margin: 10px;
+      }
+
       .card {
         padding: 15px;
         border-bottom: 1px solid lightgrey;
@@ -28,17 +33,17 @@ found in the LICENSE file.
       }
 
     </style>
-    <template if="{{ alerts.length == 0 }}" attributes="bug">
+    <template if="{{ alerts.length == 0 }}">
       <ct-party-time></ct-party-time>
     </template>
-    <template repeat="{{ alert, ind in alerts }}" bind="{{ind}}">
+    <template repeat="{{ alert in alerts }}">
       <div class="card">
         <div class="message">
           <a href="{{ alert.playbook }}" target="_blank">Playbook</a><br>
           <a href="{{ alert.silence }}" target="_blank">Silence</a><br>
-          <a href="/ts-alerts/{{ind}}"> Details </a>
+          <a href="/ts-alerts/{{alert.hash_key}}"> Details </a>
         </div>
-        <ct-time-series-failure-card-buttons index="{{ind}}" alerts="{{alerts}}" bug="{{ alert.bug_id }}">
+        <ct-time-series-failure-card-buttons key="{{alert.hash_key}}" alerts="{{alerts}}" bug="{{ alert.bug_id }}">
         </ct-time-series-failure-card-buttons>
         <div class="message"><b>Error:</b> {{ alert.class_name }}<br>
         <b>Trigger Value:</b> {{ alert.trigger_value }}</div>
@@ -47,7 +52,10 @@ found in the LICENSE file.
         <b>Alert Sent:</b> {{ alert.alert_sent }}</div>
         <div class="message">
           <b>Targeted fields:</b><br>
-          <template repeat="{{ field in _toArray(alert.monarch_target_fields) }}">
+          <template repeat="{{ field in _toArray(alert.target_fields)}}">
+            {{ field.k }}: {{ field.v }}<br>
+          </template>
+          <template repeat="{{ field in _toArray(alert.metric_fields)}}">
             {{ field.k }}: {{ field.v }}<br>
           </template>
         </div>
@@ -57,6 +65,14 @@ found in the LICENSE file.
         </div>
         </template>
       </div>
+    </template>
+    <template if="{{ alerts.length != 0 && updated }}" alerts="alerts">
+      <ct-button on-click="{{ toggleDelDialog }}" id="clearAlerts" label="Clear All Alerts">
+      </ct-button>
+      <paper-action-dialog heading="Dismiss all alerts?" transition="paper-transition-center" id="delBugDialog">
+        <ct-button role="button" dismissive label="Cancel"></ct-button>
+        <ct-button on-tap="{{ clearAlerts }}" role="button" affirmative label="Dismiss"></ct-button>
+      </paper-action-dialog>
     </template>
   </template>
   <script>
@@ -70,15 +86,41 @@ found in the LICENSE file.
       },
 
       update: function() {
-        var url = '/ts-alerts';
-        return net.json(url).then(function(response) {
-          this.alerts = response.alerts;
+        var alerts_url = '/ts-alerts';
+        return net.json(alerts_url).then(function(data) {
+          if (data['redirect-url']) {
+            url = data['redirect-url']
+            url = url.replace('ts-alerts', 'time-series-alerts');
+            window.location.replace(url);
+          } else {
+            this.alerts = data.alerts;
+            this.updated = true;
+          }
         }.bind(this));
       },
 
       _toArray: function(obj) {
-        return Object.keys(obj).map(function(key) {
-          return {k: key, v: obj[key]}
+        if (obj) {
+          return Object.keys(obj).map(function(key) {
+            return {k: key.remove('metric:'), v: obj[key]}
+          });
+        } else { return []; }
+      },
+
+      toggleDelDialog: function(e, d, target) {
+        this.$.delBugDialog.toggle();
+      },
+
+      clearAlerts: function(e, d, target) {
+        var opt = {
+          url: '/ts-alerts/all',
+          type: 'DELETE'
+        };
+        return net.ajax(opt).then(function(response) {
+          console.log(response);
+          this.alerts = [];
+        }.bind(this), function(err) {
+          console.log('Failed to delete: ' + err);
         });
       }
 
