@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import itertools
 import json
 
 
@@ -11,8 +12,8 @@ def ratio_calculator(numerator, denominator):
   Args:
     numerator(list): list of lists with a year-month string as the first index
                      and a count as the second index
-    denominator(list): list of lists with a year-month string as the first index
-                     and a count as the second index
+    denominator(list): list of lists with a year-month string as the first
+                       index and a count as the second index
 
   Return:
     ratios(list): a list of lists with ratios rounded to three decimal places
@@ -56,24 +57,16 @@ def total_commits(cc):  # pragma: no cover
   Return:
     results(list): a list of lists e.g. [['2014-01', 20], ['2014-02', 45]]
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
-  results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(*)
-        FROM git_commit
-        WHERE YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    result = cc.fetchone()
-    results.append([month, int(result[0])])
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM git_commit
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  output = cc.fetchall()
+  results = [[timestamp, int(count)] for timestamp, count in output]
   return results
 
 
-# TODO(keelerh): group by month and year directly in the sql query instead of
-# with a for loop
-def total_suspicious(cc):  # pragma: no cover
+def total_suspicious(cc):
   """Counts the number of commits with no review url or TBRed with no lgtm
      sorted by month and year
 
@@ -83,37 +76,35 @@ def total_suspicious(cc):  # pragma: no cover
   Return:
     results(list): a list of lists
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM review
+      INNER JOIN git_commit
+      ON review.review_url = git_commit.review_url
+      INNER JOIN commit_people
+      ON commit_people.git_commit_hash = git_commit.hash
+      LEFT JOIN (
+        SELECT review_url, COUNT(*) AS c
+          FROM review_people
+          WHERE type = 'lgtm'
+          GROUP BY review_url) lgtm_count
+      ON review.review_url = lgtm_count.review_url
+      WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
+        AND commit_people.type = 'tbr'
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  no_lgtm = cc.fetchall()
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM git_commit
+      WHERE review_url IS NULL
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  no_review = cc.fetchall()
+  counts_list = [[timestamp, int(count)] for timestamp, count in no_lgtm] + [
+                 [timestamp, int(count)] for timestamp, count in no_review]
+  values = sorted(counts_list, key=lambda x: x[0])
   results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(*)
-        FROM review
-        INNER JOIN git_commit
-        ON review.review_url = git_commit.review_url
-        INNER JOIN commit_people
-        ON commit_people.git_commit_hash = git_commit.hash
-        LEFT JOIN (
-          SELECT review_url, COUNT(*) AS c
-            FROM review_people
-            WHERE type = 'lgtm'
-            GROUP BY review_url) lgtm_count
-        ON review.review_url = lgtm_count.review_url
-        WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
-          AND commit_people.type = 'tbr'
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    no_lgtm = cc.fetchone()
-    cc.execute("""SELECT COUNT(*)
-        FROM git_commit
-        WHERE review_url IS NULL
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    no_review = cc.fetchone()
-    result = int(no_lgtm[0]) + int(no_review[0])
-    results.append([month, result])
+  for timestamp, group in itertools.groupby(values, lambda x: x[0]):
+    results.append([timestamp, sum(v[1] for v in group)])
   return results
 
 
@@ -126,21 +117,16 @@ def total_tbr(cc):  # pragma: no cover
   Return:
     results(list): a list of lists
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
-  results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(DISTINCT git_commit_hash)
-        FROM commit_people
-        INNER JOIN git_commit
-        ON commit_people.git_commit_hash = git_commit.hash
-        WHERE commit_people.type = 'tbr'
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    result = cc.fetchone()
-    results.append([month, int(result[0])])
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'),
+      COUNT(DISTINCT git_commit_hash)
+      FROM commit_people
+      INNER JOIN git_commit
+      ON commit_people.git_commit_hash = git_commit.hash
+      WHERE commit_people.type = 'tbr'
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  output = cc.fetchall()
+  results = [[timestamp, int(count)] for timestamp, count in output]
   return results
 
 
@@ -153,32 +139,27 @@ def tbr_no_lgtm(cc):  # pragma: no cover
   Return:
     results(list): a list of lists
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
-  results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(*)
-        FROM review
-        INNER JOIN git_commit ON review.review_url = git_commit.review_url
-        INNER JOIN commit_people
-        ON commit_people.git_commit_hash = git_commit.hash
-        LEFT JOIN (
-          SELECT review_url, COUNT(*) AS c FROM review_people
-            WHERE type = 'lgtm' GROUP BY review_url) lgtm_count
-        ON review.review_url = lgtm_count.review_url
-        WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
-          AND commit_people.type = 'tbr'
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    result = cc.fetchone()
-    results.append([month, int(result[0])])
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM review
+      INNER JOIN git_commit ON review.review_url = git_commit.review_url
+      INNER JOIN commit_people
+      ON commit_people.git_commit_hash = git_commit.hash
+      LEFT JOIN (
+        SELECT review_url, COUNT(*) AS c FROM review_people
+          WHERE type = 'lgtm' GROUP BY review_url) lgtm_count
+      ON review.review_url = lgtm_count.review_url
+      WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
+        AND commit_people.type = 'tbr'
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  output = cc.fetchall()
+  results = [[timestamp, int(count)] for timestamp, count in output]
   return results
 
 
 def blank_tbr(cc):  # pragma: no cover
-  """Counts the number of occurences of TBR= with no reviewer listed
+  """Counts the number of occurences of TBR= with no reviewer listed.
+     This is identified in the database by 'NOBODY' at people_email_address.
 
   Args:
     cc(cursor)
@@ -186,21 +167,15 @@ def blank_tbr(cc):  # pragma: no cover
   Return:
     results(list): a list of lists
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
-  results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(*)
-        FROM commit_people
-        INNER JOIN git_commit
-        ON commit_people.git_commit_hash = git_commit.hash
-        WHERE commit_people.people_email_address = 'NOBODY'
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    result = cc.fetchone()
-    results.append([month, int(result[0])])
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM commit_people
+      INNER JOIN git_commit
+      ON commit_people.git_commit_hash = git_commit.hash
+      WHERE commit_people.people_email_address = 'NOBODY'
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  output = cc.fetchall()
+  results = [[timestamp, int(count)] for timestamp, count in output]
   return results
 
 
@@ -213,19 +188,13 @@ def no_review_url(cc):  # pragma: no cover
   Return:
     results(list): a list of lists
   """
-  cc.execute("""SELECT DISTINCT DATE_FORMAT(git_commit.timestamp, '%Y-%m')
-      FROM git_commit""")
-  months = cc.fetchall()
-  results = []
-  for month in months:
-    month = month[0]
-    cc.execute("""SELECT COUNT(*)
-        FROM git_commit
-        WHERE review_url IS NULL
-          AND YEAR(git_commit.timestamp) = %s
-          AND MONTH(git_commit.timestamp) = %s""" % (month[:4], month[5:]))
-    result = cc.fetchone()
-    results.append([month, int(result[0])])
+  cc.execute("""SELECT DATE_FORMAT(git_commit.timestamp, '%Y-%m'), COUNT(*)
+      FROM git_commit
+      WHERE review_url IS NULL
+      GROUP BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')
+      ORDER BY DATE_FORMAT(git_commit.timestamp, '%Y-%m')""")
+  output = cc.fetchall()
+  results = [[timestamp, int(count)] for timestamp, count in output]
   return results
 
 
@@ -537,10 +506,11 @@ def compute_stats_by_time(cc):  # pragma: no cover
       sql_insert = 'DATEDIFF(git_commit.timestamp, NOW()) < 0'
     tot_commits = totaled_total_commits(cc, sql_insert)
     tot_suspicious = totaled_total_suspicious(cc, sql_insert)
-    d['suspicious_to_total_ratio'] = totaled_ratio_calculator(tot_suspicious,
-                                                              tot_commits)
+    d['suspicious_to_total_ratio'] = totaled_ratio_calculator(
+        tot_suspicious, tot_commits)
     d['total_commits'] = tot_commits
-    count_tbr_no_lgtm, tbr_no_lgtm_commits = totaled_tbr_no_lgtm(cc, sql_insert)
+    count_tbr_no_lgtm, tbr_no_lgtm_commits = totaled_tbr_no_lgtm(cc,
+        sql_insert)
     d['tbr_no_lgtm'] = count_tbr_no_lgtm
     d['tbr_no_lgtm_commits'] = tbr_no_lgtm_commits
     count_no_review_url, no_review_url_commits = totaled_no_review_url(

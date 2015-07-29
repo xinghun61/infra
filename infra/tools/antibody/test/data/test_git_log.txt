@@ -1,55 +1,38 @@
 df88fd603ca6a3831b4f2b21156a3e0d93e30095I got this morning a case where the old code was run and the CQ was being
 blocked on the fact that the index with -modified wasn't present.
-
 TBR=ilevy@chromium.org
-
 Review: https://codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
-
 
 1404059c574c1b0fb3a9d33851eba660057ed105In 789205957e84 I had temporarily put the new imports at the top of the
 file so it was simpler to reapply the patch on top of the chromium branch
 for manual testing.
-
 I forgot to move the lines back to their respective place before committing
 so fix this here.
-
 BUG=81983
-
 TBR=rogerta@chromium.org
 maruel@chromium.org2013-10-16 15:33:36 -0400Short imports properly.
-
 
 82a0607dd2ad23ea5859c0e0deccd75bbc691eceBUG=496882
-
 Review URL: https://codereview.chromium.org/1167953002
 stgao@chromium.org2015-06-05 10:03:59 -0700[Findit] Tune the http retry backoff.
-
 
 9627740f1cd56641fa170b3492d86b760f692a00 john.abdelmalek@gmail.com2011-07-18 17:35:33 +0000Update trybot checks
-
 
 df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
 blocked on the fact that the index with -modified wasn't present.
-
 TBR=
-
 Code review URL: https://codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
-
 
 df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
 blocked on the fact that the index with -modified wasn't present.
-
 TBR=
-
 Reviewed-on: https://codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
 
 df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
 blocked on the fact that the index with -modified wasn't present.
-
 TBR=
-
 Reviewed-on: https://codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
