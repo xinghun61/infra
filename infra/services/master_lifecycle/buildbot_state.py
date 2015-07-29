@@ -21,9 +21,10 @@ STATES = {
     'crashed',
   ],
   'desired_buildbot_state': [
-    'offline',
-    'running',
     'drained',
+    'offline',
+    'quitquitquit',
+    'running',
   ],
   'desired_transition_time': [
     'ready_to_fire',
@@ -69,13 +70,17 @@ def construct_pattern_matcher(
       buildbot='offline',
       desired_buildbot_state='offline')
   @matchlist.add_match(
-      buildbot='starting',
-      exclusions={'desired_buildbot_state': ['offline']})
+      buildbot='offline',
+      desired_buildbot_state='quitquitquit')
   @matchlist.add_match(
-      buildbot='draining')
+      buildbot='starting',
+      exclusions={'desired_buildbot_state': ['offline', 'quitquitquit']})
+  @matchlist.add_match(
+      buildbot='draining',
+      exclusions={'desired_buildbot_state': ['quitquitquit']})
   @matchlist.add_match(
       buildbot='crashed',
-      exclusions={'desired_buildbot_state': ['offline']})
+      exclusions={'desired_buildbot_state': ['offline', 'quitquitquit']})
   def _do_nothing():
     return []
 
@@ -106,7 +111,7 @@ def construct_pattern_matcher(
   @matchlist.add_match(
       buildbot='offline',
       exclusions={
-        'desired_buildbot_state': ['offline'],
+        'desired_buildbot_state': ['offline', 'quitquitquit'],
       })
   def _make_start():
     return [master.GclientSync, master.MakeStart]
@@ -120,6 +125,9 @@ def construct_pattern_matcher(
   @matchlist.add_match(
       buildbot='drained',
       desired_buildbot_state='offline')
+  @matchlist.add_match(
+      desired_buildbot_state='quitquitquit',
+      exclusions={'buildbot': ['offline']})
   def _make_stop():
     return [master.MakeStop]
 
