@@ -1,0 +1,11 @@
+version: v1
+kind: Pod
+metadata:
+  name: monitoring-proxy
+spec:
+  containers:
+    - name: monitoring-proxy-go-image
+      image: %image_tag%
+      imagePullPolicy: Always
+  restartPolicy: Always
+  dnsPolicy: Default
