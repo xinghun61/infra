@@ -13,6 +13,7 @@ from testing_utils import testing
 import main
 import mock
 
+
 class ConsoleAppApiTest(testing.EndpointsTestCase):
 
   api_service_cls = ConsoleAppApi
@@ -24,15 +25,23 @@ class ConsoleAppApiTest(testing.EndpointsTestCase):
                'value': 10.0}]
     fields = [{'key': 'project_id',
                'value': 'chromium'}]
-    request = {'timeseries': [{'points': points,
-               'fields': fields,
-               'metric': 'disk_used'}]}
+    request = {'timeseries': [
+        {'points': points,
+         'fields': fields,
+         'metric': 'disk_used'}]}
     self.mock(auth, 'is_group_member', lambda _: True)
     response = self.call_api('timeseries_update', request).json_body
     self.assertEquals(response, {})
     # Calling the function a second time in order to test that the console
     # updates existing data in the datastore.
     self.call_api('timeseries_update', request)
+    # Calling the function with an empty fields list tests for anonymous graphs.
+    request = {'timeseries': [
+        {'points': [],
+         'fields': [],
+         'metric': ''}]}
+    self.call_api('timeseries_update', request)
+
 
 class UIApiTest(testing.EndpointsTestCase):
 
