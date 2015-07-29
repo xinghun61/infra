@@ -47,6 +47,11 @@ class UnexpectedResponseException(GerritException):
     return 'Unexpected response (HTTP %d): %s' % (self.http_code, self.body)
 
 
+class BlockCookiesPolicy(cookielib.DefaultCookiePolicy):
+  def set_ok(self, cookie, request):
+    return False
+
+
 class Gerrit(object):  # pragma: no cover
   """Wrapper around a single Gerrit host.
 
@@ -73,6 +78,9 @@ class Gerrit(object):  # pragma: no cover
     self._throttle = throttle_delay_sec
     self._last_call_ts = None
     self.session = requests.Session()
+    # Do not use cookies with Gerrit. This breaks interaction with Google's
+    # Gerrit instances. Do not use cookies as advised by the Gerrit team.
+    self.session.cookies.set_policy(BlockCookiesPolicy())
     retry_config = urllib3.util.Retry(total=4, backoff_factor=0.5,
                                       status_forcelist=[500, 503])
     self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
