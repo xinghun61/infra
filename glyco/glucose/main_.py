@@ -5,6 +5,7 @@
 import argparse
 import sys
 
+from glucose import install
 from glucose import pack
 from glucose import util
 
@@ -16,15 +17,16 @@ def add_argparse_options(parser):
   parser.add_argument('--quiet', dest='verbose',
                       action='store_false', default=True)
   subparsers = parser.add_subparsers()
+  install.add_subparser(subparsers)
   pack.add_subparser(subparsers)
 
 
 def process_argparse_options(options):
   try:
-    options.command(options)
+    return options.command(options)
   except util.GlycoSetupError as err:
     print >> sys.stderr, err.message
-    sys.exit(2)
+    return 2
 
 
 def main():
@@ -34,4 +36,4 @@ def main():
 
   options = parser.parse_args(sys.argv[1:])
 
-  process_argparse_options(options)
+  sys.exit(process_argparse_options(options))

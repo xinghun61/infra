@@ -25,7 +25,6 @@ class InvalidWheelFile(GlycoError):
   This includes errors on the file name.
   """
 
-
 def setup_virtualenv(env_path, relocatable=False):
   """Create a virtualenv in specified location.
 

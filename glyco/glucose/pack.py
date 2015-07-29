@@ -185,7 +185,7 @@ def pack(args):
   packing_list = get_packing_list(args.packages)
 
   if not os.path.isdir(args.output_dir):
-    os.makedirs(args.output_dir)
+    os.mkdir(args.output_dir)
 
   wheel_paths = []
   with util.Virtualenv(
@@ -222,7 +222,7 @@ def add_subparser(subparsers):
   Also add the 'gen' command as a synonym.
 
   Args:
-    subparser: output of argparse.ArgumentParser.add_subparsers()
+    subparsers: output of argparse.ArgumentParser.add_subparsers()
   """
   pack_parser = subparsers.add_parser('pack',
                                       help='Compile wheel files from Python '
