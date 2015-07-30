@@ -66,6 +66,15 @@
     "cmd": [
       "python",
       "-u",
+      "[SLAVE_BUILD]/infra_internal/glyco/tests/run_all_tests.py"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra_internal",
+    "name": "Glyco tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/infra_internal/go/env.py",
       "go",
       "version"

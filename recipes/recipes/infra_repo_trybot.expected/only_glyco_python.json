@@ -85,19 +85,9 @@
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@change list@appengine/chromium_rietveld/codereview/views.py@@@",
+      "@@@STEP_LOG_LINE@change list@infra/glyco/stuff.py@@@",
       "@@@STEP_LOG_END@change list@@@"
     ]
-  },
-  {
-    "cmd": [
-      "make",
-      "-C",
-      "appengine/chromium_rietveld",
-      "test"
-    ],
-    "cwd": "[SLAVE_BUILD]/infra",
-    "name": "rietveld tests"
   },
   {
     "cmd": [
@@ -108,14 +98,5 @@
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "test.py"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[SLAVE_BUILD]/infra/glyco/tests/run_all_tests.py"
-    ],
-    "cwd": "[SLAVE_BUILD]/infra",
-    "name": "Glyco tests"
   }
 ]

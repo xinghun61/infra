@@ -118,6 +118,11 @@ def RunSteps(api):
           'test.py',
           ['test'],
           cwd=api.path['checkout'])
+      api.python(
+          'Glyco tests',
+          api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
+          [],
+          cwd=api.path['checkout'])
     # This downloads Go third parties, so that the next step doesn't have junk
     # output in it.
     api.python(

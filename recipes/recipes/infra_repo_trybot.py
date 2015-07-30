@@ -51,6 +51,12 @@ def RunSteps(api):
     if deps_mod or not all(f.startswith('go/') for f in files):
       api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
 
+    if not any(f.startswith('infra/glyco/') for f in files):
+      api.python(
+        'Glyco tests',
+        api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
+        [], cwd=api.path['checkout'])
+
     if deps_mod or any(f.startswith('go/') for f in files):
       # Note: env.py knows how to expand 'python' into sys.executable.
       api.python(
@@ -88,6 +94,15 @@ def GenTests(api):
         buildername='infra_tester',
         patch_project='infra') +
     diff('infra/stuff.py')
+  )
+
+  yield (
+    api.test('only_glyco_python') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('infra/glyco/stuff.py')
   )
 
   yield (
