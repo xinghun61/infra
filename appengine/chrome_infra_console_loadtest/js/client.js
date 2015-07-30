@@ -26,6 +26,7 @@ function userAuthed() {
     fileSize = fileSize.toString();
 
     document.querySelector('field-slider').currentFreq = resp.freq;
+    document.querySelector('field-slider').url = resp.url;
     document.querySelector('field-slider').currentRange = resp.time/86400;
     document.querySelector('add-field').fieldsPresent = resp.params;
     if(resp.metrics === undefined) {

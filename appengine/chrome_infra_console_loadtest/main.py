@@ -17,7 +17,6 @@ from protorpc import remote
 from components import auth
 
 CONFIG_DATASTORE_KEY = "CONFIG_DATASTORE_KEY"
-API_URL = 'https://chrome-infra-console-loadtest.appspot.com'
 API_NAME = 'consoleapp'
 API_VERSION = 'v1'
 DISCOVERY_URL = '%s/_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest'
@@ -37,6 +36,7 @@ class MetricModel(ndb.Model):
 class ParamsModel(ndb.Model):
   time = ndb.FloatProperty(default=10)
   freq = ndb.FloatProperty(default=1)
+  url = ndb.StringProperty()
   params = ndb.LocalStructuredProperty(FieldParamsModel, repeated=True)
   metrics = ndb.LocalStructuredProperty(MetricModel, repeated=True)
 
@@ -65,8 +65,9 @@ class Metric(messages.Message):
 class Params(messages.Message):
   time = messages.FloatField(1)
   freq = messages.FloatField(2)
-  params = messages.MessageField(FieldParams, 3, repeated=True)
-  metrics = messages.MessageField(Metric, 4, repeated=True)
+  url = messages.StringField(3)
+  params = messages.MessageField(FieldParams, 4, repeated=True)
+  metrics = messages.MessageField(Metric, 5, repeated=True)
 
 
 class TimeSeries(messages.Message):
@@ -106,8 +107,8 @@ class UIApi(remote.Service):
                       minimum=metric.minimum, 
                       maximum=metric.maximum)
               for metric in data.metrics]
-    return Params(time=data.time, freq=data.freq,
-                  params=params, metrics=metrics)
+    return Params(time=data.time, freq=data.freq, url=data.url, params=params,
+                  metrics=metrics)
 
   @auth.endpoints_method(Params, message_types.VoidMessage,
                          name='ui.set')
@@ -117,6 +118,7 @@ class UIApi(remote.Service):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
     data.time = request.time
     data.freq = request.freq
+    data.url = request.url
     data.params = [FieldParamsModel(field_key=field.field_key, 
                                     values=field.values)
                    for field in request.params]
@@ -158,8 +160,8 @@ class CronHandler(webapp2.RequestHandler):
                       'fields': fields,
                       'metric': metric}
         datapacket['timeseries'].append(timeseries)
-    logging.info('Cron task executed.')
-    discovery_url = DISCOVERY_URL % API_URL
+    logging.info('Send data to %s', data.url)
+    discovery_url = DISCOVERY_URL % data.url
     credentials = GoogleCredentials.get_application_default()
     service = discovery.build(API_NAME, API_VERSION,
                               discoveryServiceUrl=discovery_url, 

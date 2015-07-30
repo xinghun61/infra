@@ -24,6 +24,13 @@ paper-slider {
   margin-top: 2%;
 }
 
+.urlBlock {
+  display: inline-block;
+  width: 80%;
+  margin-top: 2%;
+  margin-left: 5%;
+}
+
 .timeblock2 p {
   font-size: 20px;
 }

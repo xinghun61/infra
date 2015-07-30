@@ -67,12 +67,13 @@ class CronTest(testing.AppengineTestCase):
     data.freq = 5
     data.params = [FieldParamsModel(field_key='project_id', 
                                     values=['chromium', 'blink'])]
-    data.metrics =[MetricModel(name='a', minimum=0, maximum=10)]
+    data.metrics = [MetricModel(name='a', minimum=0, maximum=10)]
+    data.url = 'https://example.fake'
     data.put()
     self.test_app.get('/cron')
     build.assert_called_with(
         main.API_NAME, main.API_VERSION,
-        discoveryServiceUrl=main.DISCOVERY_URL % main.API_URL,
+        discoveryServiceUrl=main.DISCOVERY_URL % data.url,
         credentials=Anything())
     service = build.return_value
     service.timeseries.assert_called_with()

@@ -9,15 +9,23 @@ found in the LICENSE file-->
 <dom-module id="field-slider" extends="paper-slider" >
   <link rel="import" type="css" href="field-slider.css">
   <template>
+
      <div class='sliderBlock'>
-       <div class="title">1. Sampling Frequency : every 
+       <div class="title">1. URL destination : </div>
+       <div class='urlBlock'>
+         <paper-input id='url' value="{{url}}" floatingLabel></paper-input>
+       </div>
+     </div>
+
+     <div class='sliderBlock'>
+       <div class="title">2. Sampling Frequency : every 
          <span id="timeFreqLabel">[[currentFreq]]</span> second(s)</div>
        <paper-slider id='timeFreq' pin snaps step="1" min="0" max="300" 
          value="{{currentFreq}}" editable></paper-slider>
      </div>
      
      <div class='sliderBlock'>
-       <div class="title">2. Time Range : </div>
+       <div class="title">3. Time Range : </div>
        <div class='timeblock1'>
          <paper-input id='dayRange' value="{{currentRange}}" floatingLabel></paper-input>
        </div>
@@ -41,6 +49,11 @@ found in the LICENSE file-->
           type:Number,
           notify: true,
           value:0
+        },
+        url:{
+          type:String,
+          notify: true,
+          value:""
         },
       },   
     });

@@ -47,7 +47,7 @@ found in the LICENSE file-->
                <h2>Estimated File Size:<span id='fileSize'>{{fileSize1}}</span> MB</h2>    
                <h2>The Parameters</h2>
                <field-slider current-freq="{{frequency}}" current-range="{{timeRange}}" 
-                 id="allPara" on-freq-changed = "handleFreqChanged" 
+                 id="allPara" url="{{url}}" on-freq-changed = "handleFreqChanged" 
                  on-range-changed="handleRangeChanged"></field-slider>
                <add-field id="fieldPara" on-fields-changed ="handleFieldsChanged" 
                  fields-present ="{{fields}}"></add-field>
@@ -108,12 +108,17 @@ found in the LICENSE file-->
             type: String,
             notify:true,
             value: "N/A"
+          },
+          url: {
+            type: String,
+            notify:true,
           }
         },
         _submit: function() {         
           var requestData = {};
           requestData.freq = this.frequency;
           requestData.time = this.timeRange*86400;
+          requestData.url = this.url;
           requestData.params = this.fields;
           requestData.metrics = this.metrics;
           setPara(requestData);
