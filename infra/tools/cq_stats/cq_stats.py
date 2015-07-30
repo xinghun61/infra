@@ -1057,14 +1057,24 @@ def print_flakiness_stats(args, stats):
     result_counts = {}
     for result in try_job_results:
       master, builder = result['master'], result['builder']
+      build_properties = json.loads(result.get('build_properties', '{}'))
       result_counts.setdefault((master, builder), {
         'successes': 0,
         'failures': 0,
+        'transient_failures': 0,
+        'infra_failures': 0,
+        'other_failures': 0,
       })
       if result['result'] in (SUCCESS, WARNINGS):
         result_counts[(master, builder)]['successes'] += 1
       elif result['result'] in (FAILURE, EXCEPTION):
         result_counts[(master, builder)]['failures'] += 1
+        if result['result'] == EXCEPTION:
+          result_counts[(master, builder)]['infra_failures'] += 1
+        elif build_properties.get('failure_type') == 'TRANSIENT_FAILURE':
+          result_counts[(master, builder)]['transient_failures'] += 1
+        else:
+          result_counts[(master, builder)]['other_failures'] += 1
 
     try_job_stats = {}
     for master, builder in result_counts.iterkeys():
@@ -1078,6 +1088,12 @@ def print_flakiness_stats(args, stats):
       try_job_stats[(master, builder)] = {
         'total': total,
         'flakes': flakes,
+        'transient_failures': result_counts[(master, builder)][
+            'transient_failures'] if flakes else 0,
+        'infra_failures': result_counts[(master, builder)][
+            'infra_failures'] if flakes else 0,
+        'other_failures': result_counts[(master, builder)][
+            'other_failures'] if flakes else 0,
       }
 
     return try_job_stats
@@ -1092,14 +1108,16 @@ def print_flakiness_stats(args, stats):
   try_job_stats = {}
   for result in iterable:
     for master, builder in result.iterkeys():
-      try_job_stats.setdefault((master, builder), {
-        'total': 0,
-        'flakes': 0,
-      })
-      try_job_stats[(master, builder)]['total'] += result[
-          (master, builder)]['total']
-      try_job_stats[(master, builder)]['flakes'] += result[
-          (master, builder)]['flakes']
+      keys = (
+        'total',
+        'flakes',
+        'transient_failures',
+        'infra_failures',
+        'other_failures'
+      )
+      try_job_stats.setdefault((master, builder), {key: 0 for key in keys})
+      for key in keys:
+        try_job_stats[(master, builder)][key] += result[(master, builder)][key]
 
   output()
   output('Top flaky builders (which fail and succeed in the same patch):')
@@ -1109,16 +1127,25 @@ def print_flakiness_stats(args, stats):
                       try_job_stats[master_builder]['total'])
 
   builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
-  output('%-25s %-55s %-15s %-15s %-15s',
-         'Master Name', 'Builder Name', 'Total Builds', 'Flaky Failures',
-         'Flakiness (%)')
+  output('%-25s %-55s %-10s %-10s %-10s %-10s %-10s %-10s',
+         'Master Name', 'Builder Name', 'Builds', 'Flakes',
+         'Flakiness', 'Transient (%)', 'Infra (%)', 'Other (%)')
   for master_builder in builders:
     master, builder = master_builder
-    output('%-25s %-55s %-15s %-15s %-15s',
+    output('%-25s %-55s %-10s %-10s %-10s %-10s %-10s %-10s',
            master, builder,
            '%5d' % try_job_stats[master_builder]['total'],
            '%5d' % try_job_stats[master_builder]['flakes'],
-           '%6.2f%%' % flakiness(master_builder))
+           '%6.2f%%' % flakiness(master_builder),
+           '%6.2f%%' % percentage(
+               try_job_stats[master_builder]['transient_failures'],
+               try_job_stats[master_builder]['flakes']),
+           '%6.2f%%' % percentage(
+               try_job_stats[master_builder]['infra_failures'],
+               try_job_stats[master_builder]['flakes']),
+           '%6.2f%%' % percentage(
+               try_job_stats[master_builder]['other_failures'],
+               try_job_stats[master_builder]['flakes']))
 
 
 def print_stats(args, stats):

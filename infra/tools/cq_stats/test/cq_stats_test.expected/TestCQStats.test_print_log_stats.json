@@ -35,5 +35,5 @@
   "Slowest CLs:",
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Master Name               Builder Name                                            Total Builds    Flaky Failures  Flakiness (%)  "
+  "Master Name               Builder Name                                            Builds     Flakes     Flakiness  Transient (%) Infra (%)  Other (%) "
 ]

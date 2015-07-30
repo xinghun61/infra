@@ -665,6 +665,15 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 2,
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 2,
+      'build_properties': '{"failure_type": "TRANSIENT_FAILURE"}',
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 4,
     }])
 
     cq_stats.print_flakiness_stats(args, stats_set)

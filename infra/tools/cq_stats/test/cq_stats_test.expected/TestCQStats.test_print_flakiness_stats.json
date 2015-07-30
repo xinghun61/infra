@@ -1,10 +1,10 @@
 [
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Master Name               Builder Name                                            Total Builds    Flaky Failures  Flakiness (%)  ",
-  "tryserver.chromium.linux  chromium_presubmit                                          2               1            50.00%        ",
+  "Master Name               Builder Name                                            Builds     Flakes     Flakiness  Transient (%) Infra (%)  Other (%) ",
+  "tryserver.chromium.linux  chromium_presubmit                                          4          3       75.00%     33.33%     33.33%     33.33%   ",
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Master Name               Builder Name                                            Total Builds    Flaky Failures  Flakiness (%)  ",
-  "tryserver.chromium.linux  chromium_presubmit                                          1               0             0.00%        "
+  "Master Name               Builder Name                                            Builds     Flakes     Flakiness  Transient (%) Infra (%)  Other (%) ",
+  "tryserver.chromium.linux  chromium_presubmit                                          1          0        0.00%      0.00%      0.00%      0.00%   "
 ]
