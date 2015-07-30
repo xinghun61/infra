@@ -34,6 +34,9 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         'obj/a/T.x.y.o': 'a/x.y.o',
         'x.o': 'x.o',
         'obj/a/x.obj': 'a/x.obj',
+        'a.cc.obj': 'a.cc.obj',
+        'T.a.c.o': 'a.c.o',
+        'T.a.o': 'a.o'
     }
     for obj_file, expected_file in cases.iteritems():
       self.assertEqual(

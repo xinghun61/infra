@@ -89,7 +89,11 @@ def _NormalizeObjectFilePath(file_path):
   file_name = os.path.basename(file_path)
   parts = file_name.split('.', 1)
   if len(parts) == 2 and (parts[1].endswith('.o') or parts[1].endswith('.obj')):
-    file_name = parts[1]
+    object_file = parts[1]
+    name = os.path.splitext(object_file)[0]
+    # Special case for file.cc.obj and similar cases.
+    if name not in ['c', 'cc', 'cpp', 'm', 'mm']:
+      file_name = parts[1]
 
   if file_dir:
     return '%s/%s' % (file_dir, file_name)
