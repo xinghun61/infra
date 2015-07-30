@@ -108,14 +108,5 @@
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "test.py"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[SLAVE_BUILD]/infra/glyco/tests/run_all_tests.py"
-    ],
-    "cwd": "[SLAVE_BUILD]/infra",
-    "name": "Glyco tests"
   }
 ]

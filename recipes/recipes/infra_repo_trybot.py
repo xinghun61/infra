@@ -51,7 +51,7 @@ def RunSteps(api):
     if deps_mod or not all(f.startswith('go/') for f in files):
       api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
 
-    if not any(f.startswith('infra/glyco/') for f in files):
+    if any(f.startswith('infra/glyco/') for f in files):
       api.python(
         'Glyco tests',
         api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
