@@ -63,19 +63,19 @@ func TestLoadPackageDef(t *testing.T) {
 			Root:        "../..",
 			InstallMode: "copy",
 			Data: []PackageChunkDef{
-				PackageChunkDef{
+				{
 					File: "some_file_value1",
 				},
-				PackageChunkDef{
+				{
 					File: "another_file_value2",
 				},
-				PackageChunkDef{
+				{
 					Dir: "some/directory",
 				},
-				PackageChunkDef{
+				{
 					VersionFile: "some/path/version_value1.json",
 				},
-				PackageChunkDef{
+				{
 					Dir: "another/value2",
 					Exclude: []string{
 						".*\\.pyc",
@@ -249,11 +249,11 @@ func TestFindFiles(t *testing.T) {
 				Package: "test",
 				Root:    "../../",
 				Data: []PackageChunkDef{
-					PackageChunkDef{
+					{
 						Dir:     "ENV",
 						Exclude: []string{".*\\.pyc", "exclude_me"},
 					},
-					PackageChunkDef{
+					{
 						Dir: "infra",
 						Exclude: []string{
 							".*\\.pyo",
@@ -261,10 +261,10 @@ func TestFindFiles(t *testing.T) {
 							"excluded_dir",
 						},
 					},
-					PackageChunkDef{File: "file1.py"},
-					PackageChunkDef{File: "dir/file2.py"},
+					{File: "file1.py"},
+					{File: "dir/file2.py"},
 					// Will be "deduplicated", because already matched by first entry.
-					PackageChunkDef{File: "ENV/abc.py"},
+					{File: "ENV/abc.py"},
 				},
 			}
 

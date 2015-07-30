@@ -128,7 +128,7 @@ func TestPubSub(t *testing.T) {
 
 			Convey(`When executing pull/ack with one message`, func() {
 				msgs := []*pubsub.Message{
-					&pubsub.Message{
+					{
 						ID:    "id0",
 						AckID: "ack0",
 						Data:  []byte{0xd0, 0x65},

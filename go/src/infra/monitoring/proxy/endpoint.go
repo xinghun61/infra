@@ -126,7 +126,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 			"duration":      clock.Now(ctx).Sub(startTime),
 		}.Debugf(ctx, "Received HTTP response from endpoint.")
 
-		if resp.StatusCode == http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		if http.StatusOK <= resp.StatusCode && resp.StatusCode < http.StatusMultipleChoices {
 			log.Debugf(ctx, "Message pushed successfully.")
 			return nil
 		}

@@ -175,7 +175,7 @@ func catchCtrlC(handler func() error) {
 	signal.Notify(ctrlC, os.Interrupt)
 	go func() {
 		stopCalled := false
-		for _ = range ctrlC {
+		for range ctrlC {
 			if !stopCalled {
 				stopCalled = true
 				fmt.Fprintln(os.Stderr, "\nCaught Ctrl+C, flushing and exiting... Send another Ctrl+C to kill.")

@@ -312,7 +312,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builder:      "fake.builder",
 			recentBuilds: []int64{0},
 			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": &messages.Build{
+				"fake.master/fake.builder/0": {
 					Number: 0,
 					Steps: []messages.Step{
 						{
@@ -329,7 +329,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builder:      "fake.builder",
 			recentBuilds: []int64{0},
 			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": &messages.Build{
+				"fake.master/fake.builder/0": {
 					Number: 0,
 					Steps: []messages.Step{
 						{
@@ -382,7 +382,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			builder:      "fake.builder",
 			recentBuilds: []int64{0, 1, 2, 3},
 			builds: map[string]*messages.Build{
-				"fake.master/fake.builder/0": &messages.Build{
+				"fake.master/fake.builder/0": {
 					Number: 0,
 					Steps: []messages.Step{
 						{
@@ -400,7 +400,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 				},
-				"fake.master/fake.builder/1": &messages.Build{
+				"fake.master/fake.builder/1": {
 					Number: 1,
 					Steps: []messages.Step{
 						{
@@ -418,7 +418,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 				},
-				"fake.master/fake.builder/2": &messages.Build{
+				"fake.master/fake.builder/2": {
 					Number: 2,
 					Steps: []messages.Step{
 						{
@@ -436,7 +436,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 					},
 				},
-				"fake.master/fake.builder/3": &messages.Build{
+				"fake.master/fake.builder/3": {
 					Number: 3,
 					Steps: []messages.Step{
 						{
@@ -799,7 +799,7 @@ func TestStepFailures(t *testing.T) {
 			builder:  "fake.builder",
 			buildNum: 0,
 			bCache: map[string]*messages.Build{
-				"stepCheck.master/fake.builder/0": &messages.Build{
+				"stepCheck.master/fake.builder/0": {
 					Steps: []messages.Step{
 						{
 							Name:       "ok_step",
@@ -1093,7 +1093,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			cfgs: map[string]messages.MasterConfig{
-				"fake.master": messages.MasterConfig{
+				"fake.master": {
 					ExcludedBuilders: []string{"fake.builder"},
 				},
 			},
@@ -1105,7 +1105,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			cfgs: map[string]messages.MasterConfig{
-				"fake.master": messages.MasterConfig{
+				"fake.master": {
 					ExcludedSteps: []string{"fake_step"},
 				},
 			},
@@ -1117,9 +1117,9 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			cfgs: map[string]messages.MasterConfig{
-				"fake.master": messages.MasterConfig{
+				"fake.master": {
 					Builders: map[string]messages.BuilderConfig{
-						"fake.builder": messages.BuilderConfig{
+						"fake.builder": {
 							ExcludedSteps: []string{"fake_step"},
 						},
 					},
@@ -1133,7 +1133,7 @@ func TestExcludeFailure(t *testing.T) {
 			builder: "fake.builder",
 			step:    "fake_step",
 			cfgs: map[string]messages.MasterConfig{
-				"fake.master": messages.MasterConfig{
+				"fake.master": {
 					ExcludedBuilders: []string{"*"},
 				},
 			},

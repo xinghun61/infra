@@ -121,12 +121,12 @@ func TestMain(t *testing.T) {
 
 		Convey(`Will refuse to process a message that is too large, and will ACK it.`, func() {
 			msgs := []*pubsub.Message{
-				&pubsub.Message{
+				{
 					ID:    "msg-big",
 					AckID: "ack-big",
 					Data:  bytes.Repeat([]byte{0xAA}, maxMessageSize+1),
 				},
-				&pubsub.Message{
+				{
 					ID:    "msg-legit",
 					AckID: "ack-legit",
 					Data:  bytes.Repeat([]byte{0x55}, maxMessageSize),

@@ -45,7 +45,9 @@ func (h *testEndpointServiceHandler) ServeHTTP(w http.ResponseWriter, req *http.
 	}
 	if err != nil {
 		err.writeError(w)
-		h.errors++
+		if !err.ok() {
+			h.errors++
+		}
 	}
 }
 
@@ -63,7 +65,8 @@ func (h *testEndpointServiceHandler) handlePOST(w http.ResponseWriter, req *http
 	}
 
 	h.messages = append(h.messages, data)
-	return nil
+	// The actual monitoring endpoint always responds 204.
+	return noContent(nil)
 }
 
 // TestEndpoint tests the endpoint implementation and API.
