@@ -20,6 +20,10 @@ def main():
   assert version_info['package_name'].startswith('infra/infra_python/')
   assert version_info['instance_id']
 
+  # TODO(crbug.com/487485): expect_test + venv is broken on Windows.
+  if sys.platform == 'win32':
+    return 0
+
   return subprocess.call(
       ['python', 'test.py', 'test', '--no-coverage'], executable=sys.executable)
 
