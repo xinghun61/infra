@@ -15,12 +15,14 @@ DEPS = [
 ]
 
 
-# Path to a service account credentials to use to talk to CIPD backend.
-# Deployed by Puppet.
-CIPD_BUILDER_CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
-
-
 def build_cipd_packages(api, repo, rev):
+  # Path to a service account credentials to use to talk to CIPD backend.
+  # Deployed by Puppet.
+  if api.platform.is_win:
+    creds = 'C:\\creds\\service_accounts\\service-account-cipd-builder.json'
+  else:
+    creds = '/creds/service_accounts/service-account-cipd-builder.json'
+
   # Build packages locally.
   api.python(
       'cipd - build packages',
@@ -30,12 +32,7 @@ def build_cipd_packages(api, repo, rev):
   # Verify they are good.
   api.python(
       'cipd - test packages integrity',
-      api.path['checkout'].join('build', 'test_packages.py'),
-      [
-        # Use non temp directory to make sure CIPD package works after in-place
-        # update. That's what happens most of the time on real machines.
-        '--work-dir', api.path['slave_build'].join('cipd_staging_dir'),
-      ])
+      api.path['checkout'].join('build', 'test_packages.py'))
 
   # Upload them, attach tags.
   tags = [
@@ -53,7 +50,7 @@ def build_cipd_packages(api, repo, rev):
         [
           '--no-rebuild',
           '--upload',
-          '--service-account-json', CIPD_BUILDER_CREDS,
+          '--service-account-json', creds,
           '--json-output', api.json.output(),
           '--builder', api.properties.get('buildername'),
         ] + ['--tags'] + tags)
@@ -135,9 +132,7 @@ def RunSteps(api):
         api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-  # TODO(crbug.com/481661): CIPD client doesn't support Windows yet.
-  if not api.platform.is_win:
-    build_cipd_packages(api, repo_name, rev)
+  build_cipd_packages(api, repo_name, rev)
 
   # Only build luci-go executables on 64 bits, public CI.
   if project_name == 'infra' and builder_name.endswith('-64'):

@@ -108,9 +108,7 @@
     "cmd": [
       "python",
       "-u",
-      "[SLAVE_BUILD]/infra_internal/build/test_packages.py",
-      "--work-dir",
-      "[SLAVE_BUILD]/cipd_staging_dir"
+      "[SLAVE_BUILD]/infra_internal/build/test_packages.py"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "cipd - test packages integrity"

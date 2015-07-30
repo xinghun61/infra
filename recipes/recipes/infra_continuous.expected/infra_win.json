@@ -73,5 +73,50 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "infra go tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]\\infra\\build\\build.py",
+      "--builder",
+      "infra-continuous"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]\\infra\\build\\test_packages.py"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]\\infra\\build\\build.py",
+      "--no-rebuild",
+      "--upload",
+      "--service-account-json",
+      "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-continuous",
+      "--tags",
+      "buildbot_build:chromium.infra/infra-continuous/123",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "cipd - upload packages",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",
+      "@@@STEP_LOG_END@json.output (invalid)@@@"
+    ]
   }
 ]
