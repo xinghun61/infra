@@ -302,14 +302,14 @@ func (d *fileSystemDestination) Begin() error {
 	}
 
 	// Create root temp dir, on the same level as the destination directory.
-	d.tempDir, err = ioutil.TempDir(filepath.Dir(d.dir), filepath.Base(d.dir)+"_")
+	d.tempDir, err = ioutil.TempDir(filepath.Dir(d.dir), "")
 	if err != nil {
 		cleanup()
 		return err
 	}
 
 	// Create a staging output directory where everything will be extracted.
-	d.outDir, err = d.fs.EnsureDirectory(filepath.Join(d.tempDir, "out"))
+	d.outDir, err = d.fs.EnsureDirectory(filepath.Join(d.tempDir, "x"))
 	if err != nil {
 		cleanup()
 		return err

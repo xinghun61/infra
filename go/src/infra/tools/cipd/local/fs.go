@@ -150,7 +150,7 @@ func (f *fsImpl) EnsureFile(path string, body []byte, perm os.FileMode) error {
 	}
 
 	// Create a temp file with new content.
-	temp := fmt.Sprintf("%s_%s", path, pseudoRand())
+	temp := tempFileName(path)
 	if err := ioutil.WriteFile(temp, body, perm); err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (f *fsImpl) EnsureSymlink(path string, target string) error {
 	}
 
 	// Create a new symlink file, can't modify existing one in place.
-	temp := fmt.Sprintf("%s_%s", path, pseudoRand())
+	temp := tempFileName(path)
 	if err := os.Symlink(target, temp); err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (f *fsImpl) EnsureDirectoryGone(path string) error {
 		return err
 	}
 	// Make directory "disappear" instantly by renaming it first.
-	temp := fmt.Sprintf("%s_%v", path, pseudoRand())
+	temp := tempFileName(path)
 	if err = atomicRename(path, temp); err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -261,7 +261,7 @@ func (f *fsImpl) Replace(oldpath, newpath string) error {
 	}
 
 	// Move existing path away, if it is there.
-	temp := fmt.Sprintf("%s_%s", newpath, pseudoRand())
+	temp := tempFileName(newpath)
 	if err = atomicRename(newpath, temp); err != nil {
 		if !os.IsNotExist(err) {
 			f.logger.Warningf("fs: failed to rename(%v, %v) - %s", newpath, temp, err)
@@ -297,6 +297,13 @@ var (
 	lastUsedTime     int64
 	lastUsedTimeLock sync.Mutex
 )
+
+// tempFileName returns "random enough" path in the same directory as a given
+// path. It's not actively trying to be secure. Assumes that 'path' is not world
+// writable (i.e. not /tmp).
+func tempFileName(path string) string {
+	return filepath.Join(filepath.Dir(path), "tmp"+pseudoRand())
+}
 
 // pseudoRand returns "random enough" string that can be used in file system
 // paths of temp files.

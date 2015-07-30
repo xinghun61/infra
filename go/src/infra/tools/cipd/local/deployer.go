@@ -472,8 +472,10 @@ func (d *deployerImpl) removeEmptyDirs(root string) {
 
 // packageNameDigest returns a filename to use for naming a package directory in
 // the file system. Using package names as is can introduce problems on file
-// systems with path length limits (on Windows in particular). Returns last two
-// components of the package name + stripped SHA1 of the whole package name.
+// systems with path length limits (on Windows in particular). Returns stripped
+// SHA1 of the whole package name on Windows. On Linux\Mac also prepends last
+// two components of the package name (for better readability of .cipd/*
+// directory).
 func packageNameDigest(pkg string) string {
 	// Be paranoid.
 	err := common.ValidatePackageName(pkg)
@@ -485,13 +487,18 @@ func packageNameDigest(pkg string) string {
 	digest := sha1.Sum([]byte(pkg))
 	hash := base64.URLEncoding.EncodeToString(digest[:])[:10]
 
-	// Grab last <= 2 components of the package path.
+	// On Windows paths are restricted to 260 chars, so every byte counts.
+	if runtime.GOOS == "windows" {
+		return hash
+	}
+
+	// On Posix file paths are not so restricted, so we can make names more
+	// readable. Grab last <= 2 components of the package path and join them with
+	// the digest.
 	chunks := strings.Split(pkg, "/")
 	if len(chunks) > 2 {
 		chunks = chunks[len(chunks)-2:]
 	}
-
-	// Join together with '_' as separator.
 	chunks = append(chunks, hash)
 	return strings.Join(chunks, "_")
 }

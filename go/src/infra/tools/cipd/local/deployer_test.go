@@ -419,10 +419,10 @@ func TestDeployInstanceCopyModeWindows(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(info, ShouldResemble, inst.Pin())
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				".cipd/pkgs/B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/B6R4ErK5ko/_current.txt",
 			})
-			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			cur := readFile(tempDir, ".cipd/pkgs/B6R4ErK5ko/_current.txt")
 			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
 		})
 
@@ -434,12 +434,12 @@ func TestDeployInstanceCopyModeWindows(t *testing.T) {
 			_, err := NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				".cipd/pkgs/B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/B6R4ErK5ko/_current.txt",
 				"some/executable",
 				"some/file/path",
 			})
-			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			cur := readFile(tempDir, ".cipd/pkgs/B6R4ErK5ko/_current.txt")
 			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
 		})
 
@@ -453,12 +453,12 @@ func TestDeployInstanceCopyModeWindows(t *testing.T) {
 			_, err = NewDeployer(tempDir, nil).DeployInstance(inst)
 			So(err, ShouldBeNil)
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test_package_B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				".cipd/pkgs/B6R4ErK5ko/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/B6R4ErK5ko/_current.txt",
 				"some/executable",
 				"some/file/path",
 			})
-			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			cur := readFile(tempDir, ".cipd/pkgs/B6R4ErK5ko/_current.txt")
 			So(cur, ShouldEqual, "0123456789abcdef00000123456789abcdef0000")
 		})
 
@@ -486,14 +486,14 @@ func TestDeployInstanceCopyModeWindows(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/test_package_B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
-				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				".cipd/pkgs/B6R4ErK5ko/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/B6R4ErK5ko/_current.txt",
 				"mode change 1",
 				"mode change 2",
 				"some/executable",
 				"some/file/path",
 			})
-			cur := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			cur := readFile(tempDir, ".cipd/pkgs/B6R4ErK5ko/_current.txt")
 			So(cur, ShouldEqual, "1111111111111111111111111111111111111111")
 		})
 
@@ -519,18 +519,18 @@ func TestDeployInstanceCopyModeWindows(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/package_another_4HL4H61fGm/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
-				".cipd/pkgs/package_another_4HL4H61fGm/_current.txt",
-				".cipd/pkgs/test_package_B6R4ErK5ko/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
-				".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt",
+				".cipd/pkgs/4HL4H61fGm/1111111111111111111111111111111111111111/.cipdpkg/manifest.json",
+				".cipd/pkgs/4HL4H61fGm/_current.txt",
+				".cipd/pkgs/B6R4ErK5ko/0000000000000000000000000000000000000000/.cipdpkg/manifest.json",
+				".cipd/pkgs/B6R4ErK5ko/_current.txt",
 				"pkg1 file",
 				"pkg2 file",
 				"some/executable",
 				"some/file/path",
 			})
-			cur1 := readFile(tempDir, ".cipd/pkgs/package_another_4HL4H61fGm/_current.txt")
+			cur1 := readFile(tempDir, ".cipd/pkgs/4HL4H61fGm/_current.txt")
 			So(cur1, ShouldEqual, "1111111111111111111111111111111111111111")
-			cur2 := readFile(tempDir, ".cipd/pkgs/test_package_B6R4ErK5ko/_current.txt")
+			cur2 := readFile(tempDir, ".cipd/pkgs/B6R4ErK5ko/_current.txt")
 			So(cur2, ShouldEqual, "0000000000000000000000000000000000000000")
 		})
 	})
@@ -728,8 +728,8 @@ func TestRemoveDeployedWindows(t *testing.T) {
 
 			// Verify the final state (only first package should survive).
 			So(scanDir(tempDir), ShouldResemble, []string{
-				".cipd/pkgs/package_123_Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
-				".cipd/pkgs/package_123_Wnok5l4iFr/_current.txt",
+				".cipd/pkgs/Wnok5l4iFr/0123456789abcdef00000123456789abcdef0000/.cipdpkg/manifest.json",
+				".cipd/pkgs/Wnok5l4iFr/_current.txt",
 				"some/executable1",
 				"some/file/path1",
 			})
