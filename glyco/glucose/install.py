@@ -5,7 +5,6 @@
 import hashlib
 import logging
 import os
-import re
 import sys
 
 from glucose import util
@@ -23,15 +22,8 @@ def has_valid_sha1(filename):
   Returns:
     matches (bool): true if the file content and the name match.
   """
-  # Copied from pip.wheel.Wheel.wheel_file_re to avoid requiring pip here.
-  wheel_file_re = re.compile(
-    r"""^(?P<namever>(?P<name>.+?)-(?P<ver>\d.*?))
-    ((-(?P<build>\d.*?))?-(?P<pyver>.+?)-(?P<abi>.+?)-(?P<plat>.+?)
-    \.whl)$""",
-    re.VERBOSE
-  )
   basename = os.path.split(filename)[-1]
-  wheel_info = wheel_file_re.match(basename)
+  wheel_info = util.WHEEL_FILE_RE.match(basename)
   if not wheel_info:
     raise util.InvalidWheelFile('Invalid file name for wheel: %s'
                                 % basename)

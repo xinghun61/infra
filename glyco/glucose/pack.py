@@ -22,15 +22,12 @@ def grab_wheel(src, dst, build_num=0):
   Returns:
      wheel_filename (str): path to the generated file, in its final location.
   """
-  # late import lets us grab the virtualenv pip
-  from pip.wheel import Wheel  # pylint: disable=E0611
-
   items = os.listdir(src)
   assert len(items) == 1, (
     'Wrong number of files (%r) in wheel directory: %r' % (items, src))
 
   wheelfile = items[0]
-  wheel_info = Wheel.wheel_file_re.match(wheelfile)
+  wheel_info = util.WHEEL_FILE_RE.match(wheelfile)
 
   assert wheel_info is not None, (
     'Not a wheel file? %r' % os.path.join(src, wheelfile))

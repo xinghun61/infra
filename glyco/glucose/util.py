@@ -5,10 +5,20 @@
 import contextlib
 import os
 import platform
+import re
 import tempfile
 import shutil
 import subprocess
 import sys
+
+
+# Copied from pip.wheel.Wheel.wheel_file_re to avoid requiring pip here.
+WHEEL_FILE_RE = re.compile(
+  r"""^(?P<namever>(?P<name>.+?)-(?P<ver>\d.*?))
+  ((-(?P<build>\d.*?))?-(?P<pyver>.+?)-(?P<abi>.+?)-(?P<plat>.+?)
+  \.whl)$""",
+  re.VERBOSE
+)
 
 
 class GlycoError(Exception):
@@ -24,6 +34,7 @@ class InvalidWheelFile(GlycoError):
 
   This includes errors on the file name.
   """
+
 
 def setup_virtualenv(env_path, relocatable=False):
   """Create a virtualenv in specified location.
