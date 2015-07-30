@@ -117,6 +117,16 @@ hooks = [
     ],
     # extract in go_appengine/
   },
+  {
+    "pattern": ".",
+    "action": [
+      "download_from_google_storage",
+      "--bucket", "chromium-infra",
+      "--recursive",
+      "--directory",
+      "infra/appengine/milo"
+    ]
+  }
 ]
 
 recursedeps = ['build']

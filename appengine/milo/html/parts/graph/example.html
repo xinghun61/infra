@@ -1,0 +1,53 @@
+<html>
+<head>
+  <script src="/components/webcomponentsjs/webcomponents.min.js">
+  </script>
+  <link rel="import" href="/components/polymer/polymer.html">
+  <link rel="import" href="milo-graph.html">
+  <script>
+    var checkout = {
+      display: 'checkout',
+      deps: []
+    };
+    var compile = {
+      display: 'compile',
+      deps: [checkout]
+    };
+    var lint = {
+      display: 'lint',
+      deps: [checkout]
+    };
+    var attempt = {
+      display: 'root',
+      deps: [
+        {
+          display: 'tests',
+          deps: [
+            {
+              display: 'Shard 1',
+              deps: [compile]
+            }, {
+              display: 'Shard 2',
+              deps: [compile]
+            }, {
+              display: 'Shard 3',
+              deps: [compile]
+            },
+            lint
+          ]
+        }
+      ],
+    };
+    /* This is done because theres no other way to attach
+       an arbitrary Javascript object to a polymer element's
+       attribute.
+     */
+    window.addEventListener('WebComponentsReady', function(e) {
+      var elem = document.createElement('milo-graph');
+      elem.attempt = attempt;
+      document.body.appendChild(elem);
+    });
+  </script>
+</head>
+<body style="background-color: gray;"></body>
+</html>
