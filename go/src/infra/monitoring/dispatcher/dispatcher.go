@@ -255,7 +255,6 @@ func main() {
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
 			log.Errorf("Multiple configs for master: %s", masterURL)
-			os.Exit(1)
 		}
 		masterName := masterFromURL(masterURL)
 		a.MasterCfgs[masterName] = masterCfgs[0]
