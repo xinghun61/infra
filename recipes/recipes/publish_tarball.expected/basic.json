@@ -265,6 +265,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -282,6 +285,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -299,6 +305,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -316,6 +325,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -333,6 +345,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -350,6 +365,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -367,6 +385,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -384,6 +405,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -401,6 +425,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -418,6 +445,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -435,6 +465,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -452,6 +485,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -469,6 +505,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -486,6 +525,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -503,6 +545,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -520,6 +565,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -537,6 +585,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -554,6 +605,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -571,6 +625,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -588,6 +645,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -605,6 +665,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -622,6 +685,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -639,6 +705,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -656,6 +725,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -673,6 +745,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -690,6 +765,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -707,6 +785,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -724,6 +805,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -741,6 +825,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -758,6 +845,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -775,6 +865,9 @@
       "!",
       "-iname",
       "*.isolate*",
+      "!",
+      "-iname",
+      "*.grd*",
       "-delete"
     ],
     "cwd": "[SLAVE_BUILD]",

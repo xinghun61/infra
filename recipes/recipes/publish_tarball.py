@@ -113,6 +113,7 @@ def export_lite_tarball(api, version):
             'find', api.path.join(dest_dir, directory), '-type', 'f',
             '!', '-iname', '*.gyp*',
             '!', '-iname', '*.isolate*',
+            '!', '-iname', '*.grd*',
             '-delete'])
       except api.step.StepFailure:  # pragma: no cover
         # Ignore failures to delete these directories - they can be inspected
