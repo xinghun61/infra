@@ -42,7 +42,7 @@ class BuildFailureTest(testing.AppengineTestCase):
     analysis.status = wf_analysis_status.ANALYZED
     analysis.triage_history = [
         {
-            'triage_timestamp': 12312312312,
+            'triage_timestamp': 1438380761,
             'user_name': 'test',
             'result_status': 'dummy status',
             'version': 'dummy version',
@@ -55,7 +55,7 @@ class BuildFailureTest(testing.AppengineTestCase):
     analysis.status = wf_analysis_status.ANALYZED
     analysis.triage_history = [
         {
-            'triage_timestamp': 12312312312,
+            'triage_timestamp': 1438380761,
             'user_name': 'test',
             'result_status': 'dummy status',
             'version': 'dummy version',
