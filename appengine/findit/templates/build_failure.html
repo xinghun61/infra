@@ -268,8 +268,28 @@
             {% endif %}
           {% endfor %}
           </tbody>
+        </table>
       </div>
     {% endif %}
+  {% endif %}
+  {% if triage_history %}
+    <br>
+    <b>Triage History:</b>
+    <div>
+      <table>
+        <tr><th>When</th><th>Who</th><th>Result</th><th>Version</th></tr>
+        <tbody>
+          {% for triage_record in triage_history %}
+            <tr>
+              <td>{{triage_record.triage_time}}</td>
+              <td>{{triage_record.user_name}}</td>
+              <td>{{triage_record.result_status}}</td>
+              <td>{{triage_record.version | default('N/A', true)}}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% endif %}
   <div id="score-explanation-dialog" title="Score Explanation">
     The total score is a sum of scores for all hints.<br>

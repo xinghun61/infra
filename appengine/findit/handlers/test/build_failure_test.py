@@ -12,6 +12,8 @@ import webtest
 from testing_utils import testing
 
 from handlers import build_failure
+from model.wf_analysis import WfAnalysis
+from model import wf_analysis_status
 from waterfall import buildbot
 from waterfall import masters
 
@@ -34,6 +36,33 @@ class BuildFailureTest(testing.AppengineTestCase):
     self.taskqueue_stub = self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME)
     for queue in self.taskqueue_stub.GetQueues():
       self.taskqueue_stub.FlushQueue(queue['name'])
+
+  def testGetTriageHistoryWhenUserIsNotAdmin(self):
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.triage_history = [
+        {
+            'triage_timestamp': 12312312312,
+            'user_name': 'test',
+            'result_status': 'dummy status',
+            'version': 'dummy version',
+        }
+    ]
+    self.assertIsNone(build_failure._GetTriageHistory(analysis))
+
+  def testGetTriageHistoryWhenUserIsAdmin(self):
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.triage_history = [
+        {
+            'triage_timestamp': 12312312312,
+            'user_name': 'test',
+            'result_status': 'dummy status',
+            'version': 'dummy version',
+        }
+    ]
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    self.assertEqual(1, len(build_failure._GetTriageHistory(analysis)))
 
   def testInvalidBuildUrl(self):
     build_url = 'abc'

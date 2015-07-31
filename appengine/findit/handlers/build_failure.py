@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import logging
 import os
 
@@ -9,12 +10,40 @@ from google.appengine.api import users
 
 from base_handler import BaseHandler
 from base_handler import Permission
+from model.wf_analysis_result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
 from waterfall import masters
 
 
 BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
+
+
+def _FormatDatetime(dt):
+  if not dt:
+    return None
+  else:
+    return dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+
+def _GetTriageHistory(analysis):
+  if (not users.is_current_user_admin() or
+      not analysis.completed or
+      not analysis.triage_history):
+    return None
+
+  triage_history = []
+  for triage_record in analysis.triage_history:
+    triage_history.append({
+        'triage_time': _FormatDatetime(
+            datetime.utcfromtimestamp(triage_record['triage_timestamp'])),
+        'user_name': triage_record['user_name'],
+        'result_status': RESULT_STATUS_TO_DESCRIPTION.get(
+            triage_record['result_status']),
+        'version': triage_record.get('version'),
+    })
+
+  return triage_history
 
 
 class BuildFailure(BaseHandler):
@@ -52,27 +81,22 @@ class BuildFailure(BaseHandler):
         master_name, builder_name, build_number,
         force=force, queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
-    def FormatDatetime(datetime):
-      if not datetime:
-        return None
-      else:
-        return datetime.strftime('%Y-%m-%d %H:%M:%S UTC')
-
     data = {
         'master_name': analysis.master_name,
         'builder_name': analysis.builder_name,
         'build_number': analysis.build_number,
         'pipeline_status_path': analysis.pipeline_status_path,
         'show_debug_info': self._ShowDebugInfo(),
-        'analysis_request_time': FormatDatetime(analysis.request_time),
-        'analysis_start_time': FormatDatetime(analysis.start_time),
-        'analysis_end_time': FormatDatetime(analysis.end_time),
+        'analysis_request_time': _FormatDatetime(analysis.request_time),
+        'analysis_start_time': _FormatDatetime(analysis.start_time),
+        'analysis_end_time': _FormatDatetime(analysis.end_time),
         'analysis_duration': analysis.duration,
-        'analysis_update_time': FormatDatetime(analysis.updated_time),
+        'analysis_update_time': _FormatDatetime(analysis.updated_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
         'analysis_result': analysis.result,
         'analysis_correct': analysis.correct,
+        'triage_history': _GetTriageHistory(analysis),
     }
 
     return {'template': 'build_failure.html', 'data': data}

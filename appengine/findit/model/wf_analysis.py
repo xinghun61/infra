@@ -104,6 +104,8 @@ class WfAnalysis(BaseBuildModel):
   end_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis was updated.
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
+  # Record which version of analysis.
+  version = ndb.StringProperty(indexed=False)
 
   # Analysis result for the build failure.
   not_passed_steps = ndb.StringProperty(indexed=False, repeated=True)
@@ -113,6 +115,7 @@ class WfAnalysis(BaseBuildModel):
 
   # The actual culprit CLs that are responsible for the failures.
   culprit_cls = ndb.JsonProperty(indexed=False, compressed=True)
-  # Conlusion of analysis result for the build failure: 'Found' or 'Not Found'.
-  # TODO: Add logic for deciding if the result is correct or not later.
+  # Conclusion of analysis result for the build failure: 'Found' or 'Not Found'.
   result_status = ndb.IntegerProperty(indexed=True)
+  # Record the history of triage.
+  triage_history = ndb.JsonProperty(indexed=False, compressed=True)

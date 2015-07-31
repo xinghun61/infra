@@ -100,6 +100,21 @@ class TriageAnalysisTest(testing.AppengineTestCase):
                       analysis.result_status)
     self.assertIsNone(analysis.culprit_cls)
 
+  def testUpdateAnalysisResultStatusAlsoRecordTriageHistory(self):
+    success = triage_analysis._UpdateAnalysisResultStatus(
+        self.master_name, self.builder_name, self.build_number_found, True)
+    self.assertTrue(success)
+    success = triage_analysis._UpdateAnalysisResultStatus(
+        self.master_name, self.builder_name, self.build_number_found, False)
+    self.assertTrue(success)
+    analysis = WfAnalysis.Get(
+        self.master_name, self.builder_name, self.build_number_found)
+    self.assertEquals(2, len(analysis.triage_history))
+    self.assertEquals(wf_analysis_result_status.FOUND_CORRECT,
+                      analysis.triage_history[0]['result_status'])
+    self.assertEquals(wf_analysis_result_status.FOUND_INCORRECT,
+                      analysis.triage_history[1]['result_status'])
+
   def testInvalidBuildUrl(self):
     build_url = 'http://invalid/build/url'
     response = self.test_app.get(

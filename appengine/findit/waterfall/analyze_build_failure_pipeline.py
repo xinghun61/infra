@@ -4,6 +4,8 @@
 
 from datetime import datetime
 
+from google.appengine.api import modules
+
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall.base_pipeline import BasePipeline
@@ -50,6 +52,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.status = wf_analysis_status.ANALYZING
     analysis.result_status = None
     analysis.start_time = datetime.utcnow()
+    analysis.version = modules.get_current_version_name()
     analysis.end_time = None
     analysis.put()
 
