@@ -15,12 +15,14 @@
               'packages':['corechart']
             }]
           }"></script>
-  <script src="static/third_party/bootstrap.min.js"></script>
-  <script src="static/third_party/bootstrap-table.js"></script>
-  <script src="static/stats.js"></script>
-  <link rel="stylesheet" href="static/third_party/bootstrap.min.css">
-  <link rel="stylesheet" href="static/third_party/bootstrap-table.css">
-  <link rel="stylesheet" type="text/css" href="static/stats.css">
+  <script src="../static/third_party/bootstrap.min.js"></script>
+  <script src="../static/third_party/bootstrap-table.js"></script>
+  <script src="../static/universal.js"></script>
+  <script src="../static/stats.js"></script>
+  <link rel="stylesheet" href="../static/third_party/bootstrap.min.css">
+  <link rel="stylesheet" href="../static/third_party/bootstrap-table.css">
+  <link rel="stylesheet" type="text/css" href="../static/stats.css">
+  <link rel="stylesheet" type="text/css" href="../static/universal.css">
 
 
   <title>{{ title }}</title>
@@ -40,6 +42,24 @@
       </ul>
       <ul class="pull-right">
         <li class="dropdown">
+          <a href="#" class="dropdown-toggle" 
+              data-toggle="dropdown" 
+              role="button" 
+              aria-haspopup="true"
+              aria-expanded="false">{{ curr_repo }}
+              <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-right">
+            {% for repo in all_repos %}
+              {% if repo|lower == curr_repo|lower %}
+              <li class="disabled">
+              {% else %}
+              <li>
+              {% endif %}
+              <a href="../{{ repo }}/{{ curr_page }}">{{ repo }}</a></li>
+            {% endfor %}
+          </ul>
+        </li>
       </ul>
     </div>
   </div>
@@ -94,7 +114,7 @@
       </div>
       <div class="col-md-4">
         <div class="stats_all_time">
-          <h3>All time stats</h3>
+          <h3>Stats since {{ since }}</h3>
           <table>
             {% for data_name, data_point in total_stats_all_time %}
             <tr>

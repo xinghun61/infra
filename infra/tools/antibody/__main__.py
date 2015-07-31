@@ -65,14 +65,12 @@ def main(argv):
   if args.write_html or args.run_antibody:
     if not os.path.exists(args.output_dir_path):
       os.makedirs(args.output_dir_path)
-    antibody.generate_stats_files(cc, args.output_dir_path)
     gitiles_prefix = antibody.get_gitiles_prefix(checkout)
     if not gitiles_prefix:
       gitiles_prefix = ''
-    antibody.get_tbr_by_user(code_review_parse.get_tbr_no_lgtm(cc, 'tbr'),
-                             gitiles_prefix, args.output_dir_path)
-    antibody.generate_antibody_ui(gitiles_prefix, args.output_dir_path,
-        code_review_parse.get_tbr_no_lgtm(cc, 'author'))
+    project_name = antibody.get_project_name(checkout).lower()
+    antibody.generate_antibody_ui(cc, gitiles_prefix, project_name, args.since,
+        args.output_dir_path, code_review_parse.get_tbr_no_lgtm(cc, 'author'))
 
   csql.close(connection, cc)
 

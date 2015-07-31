@@ -7,6 +7,7 @@
 import argparse
 import datetime
 import json
+import mock
 import os
 
 import infra_libs
@@ -44,7 +45,13 @@ class MyTest(auto_stub.TestCase):
     self.assertEqual(args.output_dir_path, '/efg')
     self.assertEqual(args.since, '2000')
 
-  def test_generate_antibody_ui(self):
+  @mock.patch('infra.tools.antibody.antibody.generate_stats_files')
+  @mock.patch('infra.tools.antibody.antibody.get_tbr_by_user')
+  @mock.patch('infra.tools.antibody.code_review_parse.get_tbr_no_lgtm')
+  def test_generate_antibody_ui(self, mock_tbr_by_user, 
+                                mock_gen_stats, mock_tbr_no_lgtm):
+    #pylint: disable=W0613
+    fake_cc = None
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
       commit_data = 'data/sample_suspicious_commits.txt'
       with open(os.path.join(THIS_DIR, commit_data), 'r') as f:
@@ -118,49 +125,56 @@ class MyTest(auto_stub.TestCase):
                "Fake Commit Subject 3", "123456789abcdefghijklmnop"], ],
         },
       }
-      with open(os.path.join(dirname, 'all_monthly_stats.json'), 'w') as f:
+      
+      proj_dirname = os.path.join(dirname, 'proj')
+      os.makedirs(proj_dirname)
+      with open(os.path.join(proj_dirname,
+                             'all_monthly_stats.json'), 'w') as f:
         json.dump(sample_monthly_stats, f)
-      antibody.generate_antibody_ui(temp_data_gitiles, dirname, 
-                                    suspicious_commits_data)
+      antibody.generate_antibody_ui(fake_cc, temp_data_gitiles, 'proj', '2014',
+                                    dirname, suspicious_commits_data)
       
       with open(
-          os.path.join(dirname, antibody.ANTIBODY_UI_MAIN_NAME), 'r') as f:
+          os.path.join(proj_dirname, antibody.ANTIBODY_UI_MAIN_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
 
-      with open(os.path.join(dirname, antibody.TBR_BY_USER_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname,
+                             antibody.TBR_BY_USER_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
         
-      with open(os.path.join(dirname, antibody.STATS_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname, antibody.STATS_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
         
-      with open(os.path.join(dirname, antibody.LEADERBOARD_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname, 
+                             antibody.LEADERBOARD_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
 
-      with open(os.path.join(dirname, antibody.STATS_7_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname, antibody.STATS_7_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
 
-      with open(os.path.join(dirname, antibody.STATS_30_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname, antibody.STATS_30_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
         self.assertFalse('}}' in file_string)
 
-      with open(os.path.join(dirname, antibody.STATS_ALL_TIME_NAME), 'r') as f:
+      with open(os.path.join(proj_dirname, 
+                             antibody.STATS_ALL_TIME_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
@@ -225,3 +239,24 @@ class MyTest(auto_stub.TestCase):
           'PROJECT: infra\n',
         ])
       self.assertEqual(antibody.get_gitiles_prefix(dirname), None)
+
+
+  def test_get_project_name(self):
+    with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
+      with open(os.path.join(dirname, 'codereview.settings'), 'w') as f:
+        f.writelines([
+          'This file is used by gcl to get repository specific information.\n',
+          'CODE_REVIEW_SERVER: https://codereview.chromium.org\n',
+          'VIEW_VC: https://chromium.googlesource.com/infra/infra/+/\n',
+          'CC_LIST: chromium-reviews@chromium.org\n',
+          'PROJECT: infra\n',
+        ])
+      self.assertEqual(antibody.get_project_name(dirname),
+                       'infra')
+
+      with open(os.path.join(dirname, 'codereview.settings'), 'w') as f:
+        f.writelines([
+          'CC_LIST: chromium-reviews@chromium.org\n',
+          'VIEW_VC: https://chromium.googlesource.com/infra/infra/+/\n',
+        ])
+      self.assertEqual(antibody.get_project_name(dirname), None)

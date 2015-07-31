@@ -27,6 +27,8 @@ BLANK_TBR_NAME = 'with_blank_tbr'
 STATS_7_NAME = 'past_7_days.html'
 STATS_30_NAME = 'past_30_days.html'
 STATS_ALL_TIME_NAME = 'all_time.html'
+# TODO(ksho): make command line arg
+REPOSITORIES = ['infra']
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
@@ -55,17 +57,15 @@ def add_argparse_options(parser):
                       help="parse all git commits after this date"
                            "format as YYYY-MM-DD")
 
-
 def setup_antibody_db(cc, filename):  # pragma: no cover
   csql.execute_sql_script_from_file(cc, filename)
 
 
-def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
+def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath, 
+                         suspicious_commits):
   template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   template_env = jinja2.Environment(loader=template_loader)
   template_vars_all = {
-      'title' : 'Potentially Suspicious Commits',
-      'description' : 'List of commits with a TBR but no lgtm',
       'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
       'tbr_by_user_link' : TBR_BY_USER_NAME,
       'stats_link' : STATS_NAME,
@@ -78,12 +78,14 @@ def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
       'stats_all_time_link': STATS_ALL_TIME_NAME,
       'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
                                         time.gmtime()),
-      # TODO(ksho): make page_header_text dependent on current repo
-      'page_header_text' : "Antibody for Infra",
+      'page_header_text': "Antibody",
       'to_be_reviewed' : "TBR by user",
       'stats' : 'Stats',
       'leaderboard' : 'Leaderboard',
       'gitiles_prefix' : gitiles_prefix,
+      'all_repos': REPOSITORIES,
+      'curr_repo': project_name,
+      'since': since,
   }
 
   try:  # pragma: no cover
@@ -98,12 +100,20 @@ def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
     shutil.copytree(os.path.join(THIS_DIR, 'static'),
                     os.path.join(ui_dirpath, 'static'))
 
+
+  repo_dirpath = os.path.join(ui_dirpath, project_name)
+  if not os.path.exists(repo_dirpath):  # pragma: no cover
+      os.makedirs(repo_dirpath)
+  generate_stats_files(cc, repo_dirpath)
+  get_tbr_by_user(code_review_parse.get_tbr_no_lgtm(cc, 'tbr'),
+                             gitiles_prefix, repo_dirpath)
   generate_homepage(suspicious_commits, template_env, template_vars_all, 
-                    ui_dirpath)
-  generate_tbr_page(template_env, template_vars_all, ui_dirpath)
-  generate_stats_page(template_env, template_vars_all, ui_dirpath)
-  generate_leaderboard_page(template_env, template_vars_all, ui_dirpath)
-  generate_time_period_stats_pages(template_env, template_vars_all, ui_dirpath)
+                    repo_dirpath)
+  generate_tbr_page(template_env, template_vars_all, repo_dirpath)
+  generate_stats_page(template_env, template_vars_all, repo_dirpath)
+  generate_leaderboard_page(template_env, template_vars_all, repo_dirpath)
+  generate_time_period_stats_pages(template_env, template_vars_all,
+                                   repo_dirpath)
 
 
 def generate_homepage(suspicious_commits, template_env, template_vars_all, 
@@ -113,6 +123,8 @@ def generate_homepage(suspicious_commits, template_env, template_vars_all,
     data = json.load(f)
   stats_7_day = data['7_days']
   template_vars = {
+      'title' : 'Antibody Homepage',
+      'curr_page': ANTIBODY_UI_MAIN_NAME,
       'blank_TBR': stats_7_day['blank_tbr'],
       'num_tbr_no_lgtm': stats_7_day['tbr_no_lgtm'],
       'num_no_review_url': stats_7_day['no_review_url'],
@@ -127,7 +139,10 @@ def generate_homepage(suspicious_commits, template_env, template_vars_all,
 
 def generate_tbr_page(template_env, template_vars_all, ui_dirpath):
   tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
-  template_vars = {}
+  template_vars = {
+      'title' : 'TBR by User',
+      'curr_page': TBR_BY_USER_NAME,
+  }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
     f.write(tbr_by_user_template.render(template_vars))
@@ -138,7 +153,9 @@ def generate_stats_page(template_env, template_vars_all, ui_dirpath):
   with open(os.path.join(ui_dirpath, 'all_monthly_stats.json')) as f:
     data = json.load(f)
   template_vars = {
-    'table_headers': ['Git Hash', 'Review URL', 'Commit Timestamp (UTC)'],
+      'title' : 'Antibody Stats',
+      'curr_page': STATS_NAME,
+      'table_headers': ['Git Hash', 'Review URL', 'Commit Timestamp (UTC)'],
   }
   stats_all = [
       [data['7_days'], 'total_stats_7_day', 'indiv_stats_7_day'],
@@ -166,7 +183,10 @@ def generate_stats_page(template_env, template_vars_all, ui_dirpath):
 
 def generate_leaderboard_page(template_env, template_vars_all, ui_dirpath):
   leaderboard_template = template_env.get_template('leaderboard.jinja')
-  template_vars = {}
+  template_vars = {
+      'title' : 'Hall of Shame',
+      'curr_page': LEADERBOARD_NAME,
+  }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, LEADERBOARD_NAME), 'wb') as f:
     f.write(leaderboard_template.render(template_vars))
@@ -177,7 +197,8 @@ def generate_time_period_stats_pages(template_env, template_vars_all,
   time_period_pages_info = [
       [STATS_7_NAME, 'Commits in the past 7 days', '7_days'],
       [STATS_30_NAME, 'Commits in the past 30 days', '30_days'],
-      [STATS_ALL_TIME_NAME, 'All Time Commits', 'all_time'],
+      [STATS_ALL_TIME_NAME, 'Commits since ' + template_vars_all['since'],
+       'all_time'],
   ]
   with open(os.path.join(ui_dirpath, 'all_monthly_stats.json'), 'r') as f:
     commit_data = json.load(f)
@@ -185,6 +206,8 @@ def generate_time_period_stats_pages(template_env, template_vars_all,
   for time_period_page in time_period_pages_info:
     time_period_commits = commit_data[time_period_page[2]]
     template_vars = {
+      'title' : time_period_page[1],
+      'curr_page': time_period_page[1],
       'time_period_header_name': time_period_page[1],
       'table_headers': ['Git Commit Hash', 'Code Review',
                         'Commit Timestamp (UTC)'],
@@ -232,4 +255,15 @@ def get_gitiles_prefix(git_checkout_path):
       return line[len('VIEW_VC:'):].strip()
   # TODO(ksho): implement more sophisticated solution if codereview.settings
   # does not contain VIEW_VC
+  return None
+
+
+def get_project_name(git_checkout_path):
+  with open(os.path.join(git_checkout_path, 'codereview.settings'), 'r') as f:
+    lines = f.readlines()
+  for line in lines:
+    if line.startswith('PROJECT:'):
+      return line[len('PROJECT:'):].strip()
+  # TODO (ksho): implement more sophisticated solution if codereview.settings
+  # does not contain PROJECT
   return None
