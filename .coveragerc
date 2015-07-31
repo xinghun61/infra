@@ -13,6 +13,9 @@ omit =
     # Luci code added via DEPS.
     ./luci/*
 
+    # Antibody third_party files
+    ./infra/tools/antibody/static/third_party/*
+
 [report]
 exclude_lines =
     # Have to re-enable the standard pragma

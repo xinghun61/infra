@@ -1,0 +1,233 @@
+{
+  "id": "infra%2Finfra~master~I2214717448776b5d2a60182a8e572f0b8d580561",
+  "project": "infra/infra",
+  "branch": "master",
+  "hashtags": [],
+  "change_id": "I2214717448776b5d2a60182a8e572f0b8d580561",
+  "subject": "Docs: guidelines for service description",
+  "status": "MERGED",
+  "created": "2015-07-25 18:03:27.672000000",
+  "updated": "2015-07-27 23:17:41.128000000",
+  "insertions": 55,
+  "deletions": 0,
+  "_number": 288326,
+  "owner": {
+    "_account_id": 1114299,
+    "name": "Nodir Turakulov",
+    "email": "nodir@chromium.org",
+    "avatars": []
+  },
+  "labels": {
+    "Code-Review": {
+      "approved": {
+        "_account_id": 1113494,
+        "name": "Philippe Gervais",
+        "email": "pgervais@google.com",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 0,
+          "date": "2015-07-27 22:40:34.763000000",
+          "_account_id": 1114299,
+          "name": "Nodir Turakulov",
+          "email": "nodir@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": -2,
+          "date": "2015-07-27 23:15:55.020000000",
+          "_account_id": 1113494,
+          "name": "Philippe Gervais",
+          "email": "pgervais@google.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1105434,
+          "name": "Philippe Gervais",
+          "email": "pgervais@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002931,
+          "name": "Julie Parent",
+          "email": "jparent@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-2": "Do not submit",
+        "-1": "I would prefer that you didn\u0027t submit this",
+        " 0": "No score",
+        "+1": "Looks good to me, but someone else must approve",
+        "+2": "Looks good to me, approved"
+      },
+      "default_value": 0
+    },
+    "Verified": {
+      "approved": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 1,
+          "date": "2015-07-27 23:17:35.757000000",
+          "_account_id": 1114299,
+          "name": "Nodir Turakulov",
+          "email": "nodir@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1113494,
+          "name": "Philippe Gervais",
+          "email": "pgervais@google.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1105434,
+          "name": "Philippe Gervais",
+          "email": "pgervais@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002931,
+          "name": "Julie Parent",
+          "email": "jparent@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-1": "Fails",
+        " 0": "No score",
+        "+1": "Verified"
+      },
+      "default_value": 0
+    }
+  },
+  "permitted_labels": {},
+  "removable_reviewers": [],
+  "messages": [
+    {
+      "id": "0da7a2c0_4391a659",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-25 18:03:27.672000000",
+      "message": "Uploaded patch set 1.",
+      "_revision_number": 1
+    },
+    {
+      "id": "ed8dee45_5c009f75",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-26 19:10:19.774000000",
+      "message": "Patch set 2: Published edit on patch set 1.",
+      "_revision_number": 2
+    },
+    {
+      "id": "2da466b9_caf04709",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-26 19:13:05.906000000",
+      "message": "Patch Set 2:\n\nI am trying to come up with a standard for chrome infra service descriptions. Each service page should have similar structure and there will be a list of user-facing services that we run. WDYT about hello_world.md? Is it useful for those who would write such pages?\n\nThanks.",
+      "_revision_number": 2
+    },
+    {
+      "id": "6d9ade79_32c30504",
+      "author": {
+        "_account_id": 1113494,
+        "name": "Philippe Gervais",
+        "email": "pgervais@google.com",
+        "avatars": []
+      },
+      "date": "2015-07-27 16:39:00.106000000",
+      "message": "Patch Set 2: Code-Review+2\n\n(2 comments)\n\nJust a general comment: having small documents makes it harder to search and read. You may consider merging these two files.",
+      "_revision_number": 2
+    },
+    {
+      "id": "ad977653_a10ec43d",
+      "author": {
+        "_account_id": 1002931,
+        "name": "Julie Parent",
+        "email": "jparent@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-27 17:53:28.849000000",
+      "message": "Patch Set 2: Code-Review+1\n\n(1 comment)",
+      "_revision_number": 2
+    },
+    {
+      "id": "adfcd6c5_27bdf49e",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-27 22:38:13.979000000",
+      "message": "Patch set 3: Published edit on patch set 2.",
+      "_revision_number": 3
+    },
+    {
+      "id": "2d3e264a_a3b8e433",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-27 22:40:34.763000000",
+      "message": "Patch Set 3:\n\n(3 comments)\n\nPhilippe, I agree that in general the less files, the better.\n\nFor this particular case I prefer two separate because hello_world.md\u0027s goal is to be an example of a service description without documentation on how to write a description. Otherwise I\u0027d have to append documenting.md to hello_world.md with section \"Example stops here\" which is undesired.",
+      "_revision_number": 3
+    },
+    {
+      "id": "8df8f2fb_fbbc6f08",
+      "author": {
+        "_account_id": 1113494,
+        "name": "Philippe Gervais",
+        "email": "pgervais@google.com",
+        "avatars": []
+      },
+      "date": "2015-07-27 23:15:55.020000000",
+      "message": "Patch Set 3: Code-Review+2",
+      "_revision_number": 3
+    },
+    {
+      "id": "0d4162d7_02598c0b",
+      "author": {
+        "_account_id": 1114299,
+        "name": "Nodir Turakulov",
+        "email": "nodir@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-27 23:17:35.757000000",
+      "message": "Patch Set 3: Verified+1",
+      "_revision_number": 3
+    },
+    {
+      "id": "adfdb6ea_dcd88d68",
+      "date": "2015-07-27 23:17:41.120000000",
+      "message": "Change has been successfully cherry-picked as dd31e6192f506b26b7557229a1e0c5a88c937deb by Nodir Turakulov",
+      "_revision_number": 3
+    }
+  ]
+}

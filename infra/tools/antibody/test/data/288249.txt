@@ -1,0 +1,159 @@
+{
+  "id": "webm%2Flibvpx~master~I51ec9a5f77c982b7412d922e896348a83ae2d7d6",
+  "project": "webm/libvpx",
+  "branch": "master",
+  "hashtags": [],
+  "change_id": "I51ec9a5f77c982b7412d922e896348a83ae2d7d6",
+  "subject": "build/make/Android.mk: support TARGET_ARCH_ABI\u003dx86_64",
+  "status": "MERGED",
+  "created": "2015-07-25 02:36:56.956000000",
+  "updated": "2015-07-28 21:50:37.518000000",
+  "insertions": 4,
+  "deletions": 0,
+  "_number": 288249,
+  "owner": {
+    "_account_id": 1002219,
+    "name": "James Zern",
+    "email": "jzern@google.com",
+    "avatars": []
+  },
+  "labels": {
+    "Code-Review": {
+      "approved": {
+        "_account_id": 1117029,
+        "name": "Johann Koenig",
+        "email": "johannkoenig@google.com",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 2,
+          "date": "2015-07-27 23:03:44.679000000",
+          "_account_id": 1117029,
+          "name": "Johann Koenig",
+          "email": "johannkoenig@google.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1128364,
+          "name": "WebM Builds",
+          "email": "builds@webmproject.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002219,
+          "name": "James Zern",
+          "email": "jzern@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-2": "Do not submit",
+        "-1": "I would prefer that you didn\u0027t submit this",
+        " 0": "No score",
+        "+1": "Looks good to me, but someone else must approve",
+        "+2": "Looks good to me, approved"
+      },
+      "default_value": 0
+    },
+    "Verified": {
+      "approved": {
+        "_account_id": 1128364,
+        "name": "WebM Builds",
+        "email": "builds@webmproject.org",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 0,
+          "date": "2015-07-27 22:27:52.285000000",
+          "_account_id": 1117029,
+          "name": "Johann Koenig",
+          "email": "johannkoenig@google.com",
+          "avatars": []
+        },
+        {
+          "value": 1,
+          "date": "2015-07-25 03:12:48.845000000",
+          "_account_id": 1128364,
+          "name": "WebM Builds",
+          "email": "builds@webmproject.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002219,
+          "name": "James Zern",
+          "email": "jzern@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-1": "Fails",
+        " 0": "No score",
+        "+1": "Verified"
+      },
+      "default_value": 0
+    }
+  },
+  "permitted_labels": {},
+  "removable_reviewers": [],
+  "messages": [
+    {
+      "id": "ed8dee45_da5e52c0",
+      "author": {
+        "_account_id": 1002219,
+        "name": "James Zern",
+        "email": "jzern@google.com",
+        "avatars": []
+      },
+      "date": "2015-07-25 02:36:56.956000000",
+      "message": "Uploaded patch set 1.",
+      "_revision_number": 1
+    },
+    {
+      "id": "ed8dee45_fa5b0ecd",
+      "author": {
+        "_account_id": 1128364,
+        "name": "WebM Builds",
+        "email": "builds@webmproject.org",
+        "avatars": []
+      },
+      "date": "2015-07-25 02:37:29.211000000",
+      "message": "Patch Set 1: Code-Review+1\n\nStyle check passed.",
+      "_revision_number": 1
+    },
+    {
+      "id": "4d86fa2e_63969ed4",
+      "author": {
+        "_account_id": 1128364,
+        "name": "WebM Builds",
+        "email": "builds@webmproject.org",
+        "avatars": []
+      },
+      "date": "2015-07-25 03:12:48.845000000",
+      "message": "Patch Set 1: Verified+1 -Code-Review\n\nBuild Successful \n\nhttp://build.webmproject.org/jenkins/job/libvpx%20per-commit%20trigger/19799/ : SUCCESS",
+      "_revision_number": 1
+    },
+    {
+      "id": "cdfd8ac1_8b36f19b",
+      "author": {
+        "_account_id": 1117029,
+        "name": "Johann Koenig",
+        "email": "johannkoenig@google.com",
+        "avatars": []
+      },
+      "date": "2015-07-27 23:03:44.679000000",
+      "message": "Patch Set 1: Code-Review+2",
+      "_revision_number": 1
+    },
+    {
+      "id": "2db8e63c_3648c032",
+      "date": "2015-07-28 21:50:37.512000000",
+      "message": "Change has been successfully merged into the git repository by James Zern",
+      "_revision_number": 1
+    }
+  ]
+}

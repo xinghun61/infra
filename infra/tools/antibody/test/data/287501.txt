@@ -1,0 +1,286 @@
+{
+  "id": "chromiumos%2Fthird_party%2Fadhd~master~I9b9f77ff817b5bd4a29b9ee01263002c61ac8f3d",
+  "project": "chromiumos/third_party/adhd",
+  "branch": "master",
+  "hashtags": [],
+  "change_id": "I9b9f77ff817b5bd4a29b9ee01263002c61ac8f3d",
+  "subject": "Cyan: Update eq and volume tuning",
+  "status": "NEW",
+  "created": "2015-07-22 08:49:33.863000000",
+  "updated": "2015-07-28 21:19:14.483000000",
+  "mergeable": true,
+  "insertions": 218,
+  "deletions": 0,
+  "_number": 287501,
+  "owner": {
+    "_account_id": 1106893,
+    "name": "T.H. Lin",
+    "email": "T.H_Lin@quantatw.com",
+    "avatars": []
+  },
+  "labels": {
+    "Code-Review": {
+      "approved": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 2,
+          "date": "2015-07-28 21:11:04.812000000",
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1001696,
+          "name": "Shawn N",
+          "email": "shawnn@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "date": "2015-07-28 21:19:14.483000000",
+          "_account_id": 1104224,
+          "name": "ChromeOS Commit Bot",
+          "email": "chromeos-commit-bot@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1000868,
+          "name": "Bernie Thompson",
+          "email": "bhthompson@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-2": "Do not submit",
+        "-1": "I would prefer that you didn\u0027t submit this",
+        " 0": "No score",
+        "+1": "Looks good to me, but someone else must approve",
+        "+2": "Looks good to me, approved"
+      },
+      "default_value": 0
+    },
+    "Commit-Queue": {
+      "all": [
+        {
+          "value": 0,
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1001696,
+          "name": "Shawn N",
+          "email": "shawnn@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1104224,
+          "name": "ChromeOS Commit Bot",
+          "email": "chromeos-commit-bot@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1000868,
+          "name": "Bernie Thompson",
+          "email": "bhthompson@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        " 0": "Not Ready",
+        "+1": "Ready",
+        "+2": "Sheriff only: Ready, allow in throttled tree",
+        "+3": "Ignore this label"
+      },
+      "default_value": 0,
+      "optional": true
+    },
+    "Verified": {
+      "all": [
+        {
+          "value": 0,
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1001696,
+          "name": "Shawn N",
+          "email": "shawnn@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1104224,
+          "name": "ChromeOS Commit Bot",
+          "email": "chromeos-commit-bot@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1000868,
+          "name": "Bernie Thompson",
+          "email": "bhthompson@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-1": "Fails",
+        " 0": "No score",
+        "+1": "Verified"
+      },
+      "default_value": 0
+    },
+    "Trybot-Ready": {
+      "all": [
+        {
+          "value": 0,
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1001696,
+          "name": "Shawn N",
+          "email": "shawnn@chromium.org",
+          "avatars": []
+        },
+        {
+          "_account_id": 1104224,
+          "name": "ChromeOS Commit Bot",
+          "email": "chromeos-commit-bot@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1000868,
+          "name": "Bernie Thompson",
+          "email": "bhthompson@chromium.org",
+          "avatars": []
+        }
+      ],
+      "values": {
+        " 0": "Not Ready",
+        "+1": "Ready"
+      },
+      "default_value": 0,
+      "optional": true
+    }
+  },
+  "permitted_labels": {},
+  "removable_reviewers": [],
+  "messages": [
+    {
+      "id": "2ddc66fc_7600e80c",
+      "author": {
+        "_account_id": 1106893,
+        "name": "T.H. Lin",
+        "email": "T.H_Lin@quantatw.com",
+        "avatars": []
+      },
+      "date": "2015-07-22 08:49:33.863000000",
+      "message": "Uploaded patch set 1.",
+      "_revision_number": 1
+    },
+    {
+      "id": "edc5ee24_e2472e21",
+      "author": {
+        "_account_id": 1001696,
+        "name": "Shawn N",
+        "email": "shawnn@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-22 17:32:24.560000000",
+      "message": "Patch Set 1:\n\nThe curve here looks almost perfectly linear.",
+      "_revision_number": 1
+    },
+    {
+      "id": "cd7bcaab_0ff299d7",
+      "author": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-22 19:44:18.452000000",
+      "message": "Patch Set 1: Code-Review-2\n\nRight. Linear curve will not translate into linear volume.  Also make sure the headphone volume step is set so at minimum volume, it has perceivable volume and not too loud.",
+      "_revision_number": 1
+    },
+    {
+      "id": "6dd2dee8_e6f3c612",
+      "author": {
+        "_account_id": 1106893,
+        "name": "T.H. Lin",
+        "email": "T.H_Lin@quantatw.com",
+        "avatars": []
+      },
+      "date": "2015-07-23 02:16:22.984000000",
+      "message": "Uploaded patch set 2.",
+      "_revision_number": 2
+    },
+    {
+      "id": "0ddfa2f3_0445a418",
+      "author": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-23 17:27:23.126000000",
+      "message": "Patch Set 2:\n\nEQ seems okay but volume tuning doesn\u0027t align with the codec volume steps.",
+      "_revision_number": 2
+    },
+    {
+      "id": "6d09fedc_7a75f9bc",
+      "author": {
+        "_account_id": 1106893,
+        "name": "T.H. Lin",
+        "email": "T.H_Lin@quantatw.com",
+        "avatars": []
+      },
+      "date": "2015-07-28 02:58:32.289000000",
+      "message": "Uploaded patch set 3.",
+      "_revision_number": 3
+    },
+    {
+      "id": "ad1696fe_7a4051b8",
+      "author": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-28 21:11:04.812000000",
+      "message": "Patch Set 3: Code-Review+2",
+      "_revision_number": 3
+    },
+    {
+      "id": "8da63226_abe9e978",
+      "author": {
+        "_account_id": 1104224,
+        "name": "ChromeOS Commit Bot",
+        "email": "chromeos-commit-bot@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-28 21:19:14.483000000",
+      "message": "Patch Set 3:\n\nThe Pre-Commit Queue has picked up your change. You can follow along at https://uberchromegw.corp.google.com/i/chromiumos.tryserver/builders/mixed-a-pre-cq/builds/16317\nhttps://uberchromegw.corp.google.com/i/chromiumos.tryserver/builders/rambi-pre-cq/builds/16539\nhttps://uberchromegw.corp.google.com/i/chromiumos.tryserver/builders/mixed-c-pre-cq/builds/16123\nhttps://uberchromegw.corp.google.com/i/chromiumos.tryserver/builders/mixed-b-pre-cq/builds/16405 .\n\nCommit queue documentation: http://www.chromium.org/developers/tree-sheriffs/sheriff-details-chromium-os/commit-queue-overview",
+      "_revision_number": 3
+    }
+  ]
+}

@@ -16,6 +16,7 @@ from infra.tools.antibody import compute_stats
 from infra.tools.antibody import code_review_parse
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+ANTIBODY_UI_DIRPATH = os.path.join(THIS_DIR, 'antibody_ui')
 ANTIBODY_UI_MAIN_NAME = 'index.html'
 TBR_BY_USER_NAME = 'tbr_by_user.html'
 STATS_NAME = 'stats.html'
@@ -47,7 +48,7 @@ def add_argparse_options(parser):
   parser.add_argument('--parse-git-rietveld', '-r', action='store_true',
                       help="runs the pipeline from git checkout"
                            "to parsing of rietveld")
-  parser.add_argument('--output-dir-path', '-d', default=THIS_DIR,
+  parser.add_argument('--output-dir-path', '-d', default=ANTIBODY_UI_DIRPATH,
                       help="path to directory in which the ui will be"
                            "generated")
   parser.add_argument('--since', '-s', default='01-01-2014',
@@ -77,7 +78,7 @@ def generate_antibody_ui(gitiles_prefix, ui_dirpath, suspicious_commits):
       'stats_all_time_link': STATS_ALL_TIME_NAME,
       'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
                                         time.gmtime()),
-      # TODO (ksho): make page_header_text dependent on current repo
+      # TODO(ksho): make page_header_text dependent on current repo
       'page_header_text' : "Antibody for Infra",
       'to_be_reviewed' : "TBR by user",
       'stats' : 'Stats',
@@ -229,6 +230,6 @@ def get_gitiles_prefix(git_checkout_path):
   for line in lines:
     if line.startswith('VIEW_VC:'):
       return line[len('VIEW_VC:'):].strip()
-  # TODO (ksho): implement more sophisticated solution if codereview.settings
+  # TODO(ksho): implement more sophisticated solution if codereview.settings
   # does not contain VIEW_VC
   return None

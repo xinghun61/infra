@@ -1,0 +1,379 @@
+{
+  "id": "chromiumos%2Fthird_party%2Fadhd~release-R45-7262.B~I4c2ab57ebbd446b32d9906e46005e80652e22559",
+  "project": "chromiumos/third_party/adhd",
+  "branch": "release-R45-7262.B",
+  "hashtags": [],
+  "change_id": "I4c2ab57ebbd446b32d9906e46005e80652e22559",
+  "subject": "Heli:Tune the Speaker\u0027s outputing volume.",
+  "status": "NEW",
+  "created": "2015-07-24 01:52:17.867000000",
+  "updated": "2015-07-28 21:35:48.624000000",
+  "mergeable": true,
+  "insertions": 99,
+  "deletions": 202,
+  "_number": 288240,
+  "owner": {
+    "_account_id": 1129469,
+    "name": "Run Liu",
+    "email": "liuxiaorun@huaqin.com",
+    "avatars": []
+  },
+  "labels": {
+    "Code-Review": {
+      "rejected": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": -2,
+          "date": "2015-07-28 21:35:48.624000000",
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1129469,
+          "name": "Run Liu",
+          "email": "liuxiaorun@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130869,
+          "name": "LEMON LI",
+          "email": "lining@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130229,
+          "name": "磊 封",
+          "email": "fenglei@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130219,
+          "name": "Bobby Xu",
+          "email": "xubocheng@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1129005,
+          "name": "xinxiong xu",
+          "email": "xuxinxiong@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1117006,
+          "name": "Kaiyen Chang",
+          "email": "kaiyen.chang@intel.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002584,
+          "name": "Mohammed Habibulla",
+          "email": "moch@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-2": "Do not submit",
+        "-1": "I would prefer that you didn\u0027t submit this",
+        " 0": "No score",
+        "+1": "Looks good to me, but someone else must approve",
+        "+2": "Looks good to me, approved"
+      },
+      "default_value": 0,
+      "blocking": true
+    },
+    "Commit-Queue": {
+      "recommended": {
+        "_account_id": 1129469,
+        "name": "Run Liu",
+        "email": "liuxiaorun@huaqin.com",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 0,
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 1,
+          "date": "2015-07-24 01:58:22.955000000",
+          "_account_id": 1129469,
+          "name": "Run Liu",
+          "email": "liuxiaorun@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130869,
+          "name": "LEMON LI",
+          "email": "lining@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130229,
+          "name": "磊 封",
+          "email": "fenglei@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130219,
+          "name": "Bobby Xu",
+          "email": "xubocheng@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1129005,
+          "name": "xinxiong xu",
+          "email": "xuxinxiong@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1117006,
+          "name": "Kaiyen Chang",
+          "email": "kaiyen.chang@intel.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002584,
+          "name": "Mohammed Habibulla",
+          "email": "moch@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        " 0": "Not Ready",
+        "+1": "Ready",
+        "+2": "Sheriff only: Ready, allow in throttled tree",
+        "+3": "Ignore this label"
+      },
+      "value": 1,
+      "default_value": 0,
+      "optional": true
+    },
+    "Verified": {
+      "approved": {
+        "_account_id": 1129469,
+        "name": "Run Liu",
+        "email": "liuxiaorun@huaqin.com",
+        "avatars": []
+      },
+      "all": [
+        {
+          "value": 0,
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "value": 1,
+          "date": "2015-07-24 01:58:22.955000000",
+          "_account_id": 1129469,
+          "name": "Run Liu",
+          "email": "liuxiaorun@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130869,
+          "name": "LEMON LI",
+          "email": "lining@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130229,
+          "name": "磊 封",
+          "email": "fenglei@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1130219,
+          "name": "Bobby Xu",
+          "email": "xubocheng@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1129005,
+          "name": "xinxiong xu",
+          "email": "xuxinxiong@huaqin.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1117006,
+          "name": "Kaiyen Chang",
+          "email": "kaiyen.chang@intel.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "_account_id": 1002584,
+          "name": "Mohammed Habibulla",
+          "email": "moch@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        "-1": "Fails",
+        " 0": "No score",
+        "+1": "Verified"
+      },
+      "default_value": 0
+    },
+    "Trybot-Ready": {
+      "all": [
+        {
+          "value": 0,
+          "date": "2015-07-24 18:43:01.668000000",
+          "_account_id": 1000722,
+          "name": "Yomyung Leem",
+          "email": "yungleem@chromium.org",
+          "avatars": []
+        },
+        {
+          "_account_id": 1129469,
+          "name": "Run Liu",
+          "email": "liuxiaorun@huaqin.com",
+          "avatars": []
+        },
+        {
+          "date": "2015-07-24 01:55:33.600000000",
+          "_account_id": 1130869,
+          "name": "LEMON LI",
+          "email": "lining@huaqin.com",
+          "avatars": []
+        },
+        {
+          "date": "2015-07-24 01:55:50.406000000",
+          "_account_id": 1130229,
+          "name": "磊 封",
+          "email": "fenglei@huaqin.com",
+          "avatars": []
+        },
+        {
+          "date": "2015-07-24 01:55:44.517000000",
+          "_account_id": 1130219,
+          "name": "Bobby Xu",
+          "email": "xubocheng@huaqin.com",
+          "avatars": []
+        },
+        {
+          "date": "2015-07-24 01:56:00.039000000",
+          "_account_id": 1129005,
+          "name": "xinxiong xu",
+          "email": "xuxinxiong@huaqin.com",
+          "avatars": []
+        },
+        {
+          "date": "2015-07-24 01:54:58.806000000",
+          "_account_id": 1117006,
+          "name": "Kaiyen Chang",
+          "email": "kaiyen.chang@intel.com",
+          "avatars": []
+        },
+        {
+          "value": 0,
+          "date": "2015-07-24 01:55:15.635000000",
+          "_account_id": 1002584,
+          "name": "Mohammed Habibulla",
+          "email": "moch@google.com",
+          "avatars": []
+        }
+      ],
+      "values": {
+        " 0": "Not Ready",
+        "+1": "Ready"
+      },
+      "default_value": 0,
+      "optional": true
+    }
+  },
+  "permitted_labels": {},
+  "removable_reviewers": [],
+  "messages": [
+    {
+      "id": "ed8dee45_ae779746",
+      "author": {
+        "_account_id": 1129469,
+        "name": "Run Liu",
+        "email": "liuxiaorun@huaqin.com",
+        "avatars": []
+      },
+      "date": "2015-07-24 01:52:17.867000000",
+      "message": "Uploaded patch set 1.",
+      "_revision_number": 1
+    },
+    {
+      "id": "6d83be1d_eada6709",
+      "author": {
+        "_account_id": 1129469,
+        "name": "Run Liu",
+        "email": "liuxiaorun@huaqin.com",
+        "avatars": []
+      },
+      "date": "2015-07-24 01:58:22.955000000",
+      "message": "Patch Set 1: Commit-Queue+1 Verified+1",
+      "_revision_number": 1
+    },
+    {
+      "id": "ad5136aa_fc2689bc",
+      "author": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-27 19:13:50.740000000",
+      "message": "Patch Set 1:\n\n(1 comment)",
+      "_revision_number": 1
+    },
+    {
+      "id": "ed75ee3e_0e19cb86",
+      "author": {
+        "_account_id": 1129469,
+        "name": "Run Liu",
+        "email": "liuxiaorun@huaqin.com",
+        "avatars": []
+      },
+      "date": "2015-07-28 00:39:18.145000000",
+      "message": "Patch Set 1:\n\nCopy byt-max98090 from winky ,please check,thanks.",
+      "_revision_number": 1
+    },
+    {
+      "id": "ed1c0e21_cae9d378",
+      "author": {
+        "_account_id": 1000722,
+        "name": "Yomyung Leem",
+        "email": "yungleem@chromium.org",
+        "avatars": []
+      },
+      "date": "2015-07-28 21:35:48.624000000",
+      "message": "Patch Set 1: Code-Review-2\n\nI was asking you how you decided to use -5dB as the max volume.  You can\u0027t just copy other project\u0027s volume curve and expect it to work on your speakers.",
+      "_revision_number": 1
+    }
+  ]
+}

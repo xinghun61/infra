@@ -24,7 +24,7 @@ import infra_libs.logs
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
+# https://storage.googleapis.com/chromium-infra-docs/infra/html/logging.html
 LOGGER = logging.getLogger(__name__)
 
 
@@ -57,13 +57,10 @@ def main(argv):
         cc)
     for review_url in git_commits_with_review_urls:
       # cannot get access into chromereview.googleplex.com
-      # cannot support chromium-review.googlesource.com (gerrit)
       if not any(host in review_url for host in (
           'chromereviews.googleplex',
-          'chromium-review.googlesource',
       )):
-        code_review_parse.add_rietveld_data_to_review(review_url, cc)
-        code_review_parse.add_rietveld_data_to_review_people(review_url, cc)
+        code_review_parse.add_code_review_data_to_db(review_url, cc)
     csql.commit(connection)
   if args.write_html or args.run_antibody:
     if not os.path.exists(args.output_dir_path):
