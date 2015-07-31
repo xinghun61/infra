@@ -18,10 +18,14 @@ import (
 	"time"
 
 	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
+
+	"golang.org/x/net/context"
 
 	"infra/monitoring/analyzer"
 	"infra/monitoring/client"
+	"infra/monitoring/looper"
 	"infra/monitoring/messages"
 )
 
@@ -58,91 +62,6 @@ func init() {
 	flag.Usage = func() {
 		fmt.Printf("By default runs a single check, saves any alerts to ./alerts.json and exits.")
 		flag.PrintDefaults()
-	}
-}
-
-type loopResults struct {
-	// success is true if no errors, or all failed attempts succeeded on within maxErrs
-	// subsequent attempts.
-	success bool
-	// overruns counts the total number of overruns.
-	overruns int
-	// errs counts total number of errors, some may have been retried.
-	errs int
-}
-
-/*
-This is slightly different from what outer_loop.py does.
-
-outer_loop.py (very roughly) runs this loop:
-  run task
-  sleep for sleep_timeout
-  if now - start_time > duration:
-    return
-  back to top of loop
-
-Because sleep_timeout always happens on every iteration, a persistent
-one-time increase in runtime for the task will lead to less frequent
-runs of the task.
-
-This implementation OTOH tries to make task runtime and frequency of
-task runs independent. If the task runtime increases by a constant factor,
-the subsequent task completion times will simply all shift forward by that
-amount. The frequency of starts and completions will be the same, just
-phase-shifted.
-
-However, if runtime *exceeds* the requested cycle time, the overall
-frequency will again decrease. This is mitigated somewhat by logging
-errors on task overruns, and is something we should probably consider an
-alertable condition.
-
-TODO: A more robust mechanism would specify overrun policies
-
-Inspired by
-https://chromium.googlesource.com/infra/infra/+/master/infra/libs/service_utils/outer_loop.py
-*/
-func loop(f func() error, cycle, duration time.Duration, maxErrs int, c clock.Clock) *loopResults {
-	// TODO: ts_mon stuff.
-	ret := &loopResults{success: true}
-
-	startTime := c.Now()
-
-	tmr := c.NewTimer()
-	tmr.Reset(0 * time.Second) // Run the first one right away.
-	defer tmr.Stop()
-
-	nextCycle := cycle
-	consecErrs := 0
-	for {
-		<-tmr.GetC()
-		t0 := c.Now()
-		err := f()
-		dur := c.Now().Sub(t0)
-		if dur > cycle {
-			log.Errorf("Task overran by %v (%v - %v)", (dur - cycle), dur, cycle)
-			ret.overruns++
-		}
-
-		if err != nil {
-			log.Errorf("Got an error: %v", err)
-			ret.errs++
-			if consecErrs++; consecErrs >= maxErrs {
-				ret.success = false
-				return ret
-			}
-		} else {
-			consecErrs = 0
-		}
-
-		if c.Now().Sub(startTime) > duration {
-			tmr.Stop()
-			return ret
-		}
-
-		nextCycle = cycle - dur
-		if tmr.Reset(nextCycle) {
-			log.Errorf("Timer was still active")
-		}
 	}
 }
 
@@ -193,7 +112,7 @@ func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messa
 		}(masterName)
 	}
 
-	for range masterNames {
+	for _ = range masterNames {
 		r := <-res
 		if r.be != nil {
 			bes[r.name] = r.be
@@ -278,7 +197,8 @@ func main() {
 
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
-	f := func() error {
+	f := func(ctx context.Context) error {
+		// TODO(seanmccullough): Plumb ctx through the rest of these calls.
 		bes := fetchBuildExtracts(a.Reader, masterNames)
 		log.Infof("Build Extracts read: %d", len(bes))
 
@@ -317,10 +237,13 @@ func main() {
 		return nil
 	}
 
-	loopResults := loop(f, cycle, duration, *maxErrs, clock.GetSystemClock())
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	logging.Set(ctx, log)
+	defer cancel()
+	loopResults := looper.Run(ctx, f, cycle, *maxErrs, clock.GetSystemClock())
 
-	if !loopResults.success {
-		log.Errorf("Failed to run loop, %v errors", loopResults.errs)
+	if !loopResults.Success {
+		log.Errorf("Failed to run loop, %v errors", loopResults.Errs)
 		os.Exit(1)
 	}
 }
