@@ -18,7 +18,7 @@ found in the LICENSE file-->
       <div class="eachBlock">
       	<template is="dom-repeat" id="repeatTempAdd" items="{{fieldsPresent}}"> 
         	<paper-input class="fieldNameInput"
-        	  label="Enter field name" value="{{item.key}}"></paper-input>
+        	  label="Enter field name" value="{{item.field_key}}"></paper-input>
         	<paper-icon-button class="fieldRemove" icon="remove-circle-outline" 
         	  on-click="removeNamesHandle"></paper-icon-button>
         	<field-button class="fieldValueGet" field-input="{{item.values}}">
@@ -45,17 +45,17 @@ found in the LICENSE file-->
         fieldsPresent: {
           type: Array,
           notify: true,
-          value: [{key:"", values:[" "]}],
+          value: [{field_key:"", values:[" "]}],
         }
       },
       addNamesHandle: function(){
-        this.push('fieldsPresent', {key:"", values:[" "]});
+        this.push('fieldsPresent', {field_key:"", values:[" "]});
       },
       removeNamesHandle: function(e){
         this.splice('fieldsPresent', e.model.index, 1);
       },
       _clear: function(){
-        this.fieldsPresent = [{key:"", values:[" "]}];
+        this.fieldsPresent = [{field_key:"", values:[" "]}];
       },   
     });
 

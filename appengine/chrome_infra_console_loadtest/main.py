@@ -103,8 +103,8 @@ class UIApi(remote.Service):
     data = ParamsModel.get_or_insert(CONFIG_DATASTORE_KEY)
     params = [FieldParams(field_key=field.field_key, values=field.values)
               for field in data.params]
-    metrics = [Metric(name=metric.name, 
-                      minimum=metric.minimum, 
+    metrics = [Metric(name=metric.name,
+                      minimum=metric.minimum,
                       maximum=metric.maximum)
               for metric in data.metrics]
     return Params(time=data.time, freq=data.freq, url=data.url, params=params,
@@ -122,7 +122,7 @@ class UIApi(remote.Service):
     data.params = [FieldParamsModel(field_key=field.field_key, 
                                     values=field.values)
                    for field in request.params]
-    data.metrics = [MetricModel(name=metric.name, 
+    data.metrics = [MetricModel(name=metric.name,
                                  minimum=metric.minimum,
                                  maximum=metric.maximum)
                    for metric in request.metrics]
