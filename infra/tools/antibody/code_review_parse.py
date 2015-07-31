@@ -32,11 +32,11 @@ KNOWN_GERRIT_INSTANCES = [
     'chromium-review.googlesource.com',
 ]
 
-def extract_code_review_json_data(review_url, cc):
+def extract_code_review_json_data(review_url, cc, git_checkout_path):
   if any(hostname in review_url for hostname in KNOWN_RIETVELD_INSTANCES):
     return _extract_json_data_from_rietveld(review_url)
   elif any(hostname in review_url for hostname in KNOWN_GERRIT_INSTANCES):
-    return _extract_json_data_from_gerrit(review_url, cc)
+    return _extract_json_data_from_gerrit(review_url, cc, git_checkout_path)
   else:
     LOGGER.error('unknown code review instance: %s' % review_url)
 
@@ -95,7 +95,7 @@ def _extract_json_data_from_rietveld(rietveld_url):
     response.raise_for_status()
 
 
-def _extract_json_data_from_gerrit(gerrit_url, cc):
+def _extract_json_data_from_gerrit(gerrit_url, cc, git_checkout_path):
   """Extracts json data from an issue of a gerrit instance
 
   Args:
@@ -129,7 +129,8 @@ def _extract_json_data_from_gerrit(gerrit_url, cc):
       WHERE review_url = '%s'""" % gerrit_url)
   git_hash = cc.fetchone()[0]
   commit_message = subprocess.check_output(['git', 'show', git_hash, 
-                                            '--format=%b'])
+                                            '--format=%b'],
+                                            cwd=git_checkout_path)
   change_id = None
   match_count = 0
   for line in commit_message.splitlines():
@@ -151,17 +152,17 @@ def to_canonical_review_url(review_url):
   review_url = review_url.strip('.')
   if 'chromiumcodereview.appspot.com' in review_url:
     return review_url.replace('chromiumcodereview.appspot.com',
-                                'codereview.chromium.org')
+                              'codereview.chromium.org')
   if 'chromiumcodereview-hr.appspot.com' in review_url:
     return review_url.replace('chromiumcodereview-hr.appspot.com',
-                                'codereview.chromium.org')
+                              'codereview.chromium.org')
   return review_url
 
 
-def add_code_review_data_to_db(review_url, cc):
+def add_code_review_data_to_db(review_url, cc, git_checkout_path):
   review_url = to_canonical_review_url(review_url)
   try:
-    json_data = extract_code_review_json_data(review_url, cc)
+    json_data = extract_code_review_json_data(review_url, cc, git_checkout_path)
   except JSONDecodeError:  # pragma: no cover
     return
   if any(hostname in review_url for hostname in KNOWN_RIETVELD_INSTANCES):

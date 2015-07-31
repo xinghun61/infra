@@ -79,13 +79,14 @@ class fake_gerrit_util():
 @mock.patch(
     'infra.tools.antibody.static.third_party.gerrit_util.GetChangeDetail',
     side_effect=fake_gerrit_util.GetChangeDetail)
-def fake_extract_json_data(review_url, cc, _, dummy):
+def fake_extract_json_data(review_url, cc, checkout, _, dummy):
   if any(hostname in review_url for hostname in 
       code_review_parse.KNOWN_RIETVELD_INSTANCES):
     return code_review_parse._extract_json_data_from_rietveld(review_url)
   elif any(hostname in review_url for hostname in 
       code_review_parse.KNOWN_GERRIT_INSTANCES):
-    return code_review_parse._extract_json_data_from_gerrit(review_url, cc)
+    return code_review_parse._extract_json_data_from_gerrit(review_url, cc,
+                                                            checkout)
 
 
 class TestCodeReviewParse(unittest.TestCase):
@@ -106,12 +107,16 @@ class TestCodeReviewParse(unittest.TestCase):
   @mock.patch(
       'infra.tools.antibody.code_review_parse._extract_json_data_from_gerrit')
   def test_extract_code_review_json_data(self, mock_g, mock_r):
-    mock_cc = mock.MagicMock()
-    code_review_parse.extract_code_review_json_data(self.r_lgtm_no_tbr, mock_cc)
+    cc = None
+    checkout = None
+    code_review_parse.extract_code_review_json_data(self.r_lgtm_no_tbr, cc,
+        checkout)
     mock_r.assert_called_with(self.r_lgtm_no_tbr)
-    code_review_parse.extract_code_review_json_data(self.g_not_lgtm, mock_cc)
-    mock_g.assert_called_with(self.g_not_lgtm, mock_cc)
-    code_review_parse.extract_code_review_json_data('invalid url', mock_cc)
+    code_review_parse.extract_code_review_json_data(self.g_not_lgtm, cc,
+        checkout)
+    mock_g.assert_called_with(self.g_not_lgtm, cc, checkout)
+    code_review_parse.extract_code_review_json_data('invalid url', cc,
+        checkout)
 
 
   def test_extract_json_data_from_rietveld(self):
@@ -127,18 +132,19 @@ class TestCodeReviewParse(unittest.TestCase):
       side_effect=fake_gerrit_util.GetChangeDetail)
   def test_extract_json_data_from_gerrit(self, mock_gerrit_util, _):
     mock_cc = mock.MagicMock()
+    checkout = None
     _ = code_review_parse._extract_json_data_from_gerrit(
-        self.g_not_lgtm, mock_cc)
+        self.g_not_lgtm, mock_cc, checkout)
     mock_gerrit_util.assert_called_with(
         'chromium-review.googlesource.com', '288240')
 
     _ = code_review_parse._extract_json_data_from_gerrit(
-        self.g_committed, mock_cc)
+        self.g_committed, mock_cc, checkout)
     mock_gerrit_util.assert_called_with(
         'chromium-review.googlesource.com', None)
 
     _ = code_review_parse._extract_json_data_from_gerrit(
-        self.g_not_lgtm, mock_cc)
+        self.g_not_lgtm, mock_cc, checkout)
     mock_gerrit_util.assert_called_with(
         'chromium-review.googlesource.com', '288240')
 
@@ -168,31 +174,30 @@ class TestCodeReviewParse(unittest.TestCase):
   @mock.patch(
       'infra.tools.antibody.code_review_parse.extract_code_review_json_data',
       side_effect=fake_extract_json_data)
+  @mock.patch('subprocess.check_output', 
+      side_effect=('Change-Id: 287501',
+                   'Change-Id: I2214717448776b5d2a60182a8e572f0b8d580561'))
   @mock.patch('infra.tools.antibody.cloudsql_connect.write_to_review', 
       fake_sql_lib.write_to_review)
   @mock.patch('infra.tools.antibody.cloudsql_connect.write_to_review_people', 
       fake_sql_lib.write_to_review_people)
-  def test_add_code_review_data_to_db(self, _):
+  def test_add_code_review_data_to_db(self, _, dummy):
     mock_cc = mock.MagicMock()
-    mock_cc.fetchone.side_effect = (
-        ('dd31e6192f506b26b7557229a1e0c5a88c937deb',),
-        ('127f38a23fa0e42ea889d5e702002b429287744e',),
-    )
-    # email_address, review_url, timestamp, request_timestamp, type
+    checkout = None
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
       mock_cc.dirname.return_value = dirname
       code_review_parse.add_code_review_data_to_db(self.g_not_lgtm, 
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       code_review_parse.add_code_review_data_to_db(self.r_lgtm_not_lgtm_no_tbr,
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       code_review_parse.add_code_review_data_to_db(self.g_lgtm, 
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       code_review_parse.add_code_review_data_to_db(self.r_lgtm_no_tbr,
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       code_review_parse.add_code_review_data_to_db(self.r_lgtm_tbr,
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       code_review_parse.add_code_review_data_to_db('fake url', 
-                                                   mock_cc)
+                                                   mock_cc, checkout)
       with open (os.path.join(dirname, 'output.txt'), 'r') as f:
         return f.readlines()
 

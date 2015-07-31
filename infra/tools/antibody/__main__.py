@@ -60,7 +60,7 @@ def main(argv):
       if not any(host in review_url for host in (
           'chromereviews.googleplex',
       )):
-        code_review_parse.add_code_review_data_to_db(review_url, cc)
+        code_review_parse.add_code_review_data_to_db(review_url, cc, checkout)
     csql.commit(connection)
   if args.write_html or args.run_antibody:
     if not os.path.exists(args.output_dir_path):

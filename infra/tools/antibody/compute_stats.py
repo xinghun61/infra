@@ -331,7 +331,7 @@ def totaled_tbr_no_lgtm(cc, sql_time_specification):
           GROUP BY review_url) lgtm_count
       ON review.review_url = lgtm_count.review_url
       WHERE lgtm_count.c = 0 OR lgtm_count.c IS NULL
-        AND commit_people.type = 'tbr' AND %s""" % sql_time_specification)
+        AND commit_people.type = 'author' AND %s""" % sql_time_specification)
   result = cc.fetchall()
   count = len(result)
   formatted_data = []
