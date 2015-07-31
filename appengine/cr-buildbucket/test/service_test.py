@@ -101,6 +101,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(auth.AuthorizationError):
       self.service.add(self.test_build.bucket)
 
+  def test_add_with_bad_parameters(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.service.add('bucket', parameters=[])
+
   #################################### GET #####################################
 
   def test_get(self):

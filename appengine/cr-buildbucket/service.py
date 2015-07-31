@@ -120,7 +120,8 @@ class BuildBucketService(object):
       if '/' in client_operation_id:  # pragma: no cover
         raise errors.InvalidInputError('client_operation_id must not contain /')
     validate_bucket_name(bucket)
-    assert parameters is None or isinstance(parameters, dict)
+    if parameters is not None and not isinstance(parameters, dict):
+      raise errors.InvalidInputError('parameters must be a dict or None')
     validate_lease_expiration_date(lease_expiration_date)
     validate_tags(tags)
     tags = tags or []
