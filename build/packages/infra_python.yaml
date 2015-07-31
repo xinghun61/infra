@@ -26,6 +26,8 @@ data:
       - services/cache_updater
       - tools/bucket
       - tools/docgen
+      # Depends on presence of .git directory. See crbug.com/515744.
+      - tools/antibody
 
   # Base infra libraries, required by infra
   - dir: "infra_libs"
