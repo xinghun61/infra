@@ -50,6 +50,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.status = wf_analysis_status.ANALYZING
     analysis.result_status = None
     analysis.start_time = datetime.utcnow()
+    analysis.end_time = None
     analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221

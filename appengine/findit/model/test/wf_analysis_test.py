@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
 import unittest
 
 from model.wf_analysis import WfAnalysis
@@ -21,6 +23,30 @@ class WfAnalysisTest(unittest.TestCase):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = status
       self.assertFalse(analysis.completed)
+
+  def testWfAnalysisDurationWhenNotCompleted(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.status = wf_analysis_status.ANALYZING
+    self.assertIsNone(analysis.duration)
+
+  def testWfAnalysisDurationWhenStartTimeNotSet(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.end_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    self.assertIsNone(analysis.duration)
+
+  def testWfAnalysisDurationWhenEndTimeNotSet(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.start_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    self.assertIsNone(analysis.duration)
+
+  def testWfAnalysisDurationWhenCompleted(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.start_time = datetime(2015, 07, 30, 21, 15, 30, 40)
+    analysis.end_time = datetime(2015, 07, 30, 21, 16, 15, 50)
+    self.assertEqual(45, analysis.duration)
 
   def testWfAnalysisStatusIsFailed(self):
     analysis = WfAnalysis.Create('m', 'b', 123)

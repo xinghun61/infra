@@ -155,9 +155,13 @@
       <a href="{{pipeline_status_path}}">pipeline</a>
     {% endif %}
     <br>
-    Requested: {{analysis_requested | default('N/A', true)}}<br>
-    Started: {{analysis_started | default('N/A', true)}}<br>
-    Updated: {{analysis_updated}}<br>
+    Requested: {{analysis_request_time | default('N/A', true)}}<br>
+    {% if analysis_duration %}
+      Duration: {{analysis_duration}} seconds. <br>
+    {% else %}
+      Started: {{analysis_start_time | default('N/A', true)}}<br>
+    {% endif %}
+    Updated: {{analysis_update_time}}<br>
   {% endif %}
   </div>
   <br>

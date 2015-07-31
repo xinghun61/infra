@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from waterfall import build_failure_analysis
@@ -74,6 +76,7 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis.status = wf_analysis_status.ANALYZED
     analysis.result_status = _GetResultAnalysisStatus(analysis_result)
     analysis.suspected_cls = _GetSuspectedCLs(analysis_result)
+    analysis.end_time = datetime.utcnow()
     analysis.put()
 
     return analysis_result

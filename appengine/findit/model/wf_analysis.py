@@ -35,6 +35,13 @@ class WfAnalysis(BaseBuildModel):
         wf_analysis_status.ANALYZED, wf_analysis_status.ERROR)
 
   @property
+  def duration(self):
+    if not self.completed or not self.end_time or not self.start_time:
+      return None
+
+    return int((self.end_time - self.start_time).total_seconds())
+
+  @property
   def failed(self):
     return self.status == wf_analysis_status.ERROR
 
@@ -79,7 +86,9 @@ class WfAnalysis(BaseBuildModel):
     self.status = wf_analysis_status.PENDING
     self.request_time = None
     self.start_time = None
+    self.end_time = None
 
+  # When the build cycle started.
   build_start_time = ndb.DateTimeProperty(indexed=True)
 
   # The url path to the pipeline status page.
@@ -91,6 +100,8 @@ class WfAnalysis(BaseBuildModel):
   request_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis actually started.
   start_time = ndb.DateTimeProperty(indexed=False)
+  # When the analysis actually ended.
+  end_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis was updated.
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
 
