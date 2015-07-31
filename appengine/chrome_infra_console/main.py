@@ -125,4 +125,5 @@ class UIApi(remote.Service):
     return Configs(configs=configList)
       
 
-APPLICATION = endpoints.api_server([ConsoleAppApi, UIApi, config.ConfigApi])
+APPLICATION = ndb.toplevel(endpoints.api_server([
+    ConsoleAppApi, UIApi, config.ConfigApi]))
