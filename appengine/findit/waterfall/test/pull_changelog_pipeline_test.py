@@ -4,7 +4,8 @@
 
 from datetime import datetime
 
-from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
+from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
+    import handlers
 from testing_utils import testing
 
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline

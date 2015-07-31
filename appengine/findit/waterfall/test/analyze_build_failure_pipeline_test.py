@@ -4,7 +4,8 @@
 
 import os
 
-from pipeline_utils.appengine_third_party_pipeline_src_pipeline import handlers
+from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
+    import handlers
 from testing_utils import testing
 
 from common import chromium_deps

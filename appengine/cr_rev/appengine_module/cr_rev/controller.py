@@ -24,10 +24,10 @@ from appengine_module.pipeline_utils import pipelines
 
 from appengine_module.cr_rev import models
 from appengine_module.pipeline_utils.\
-    appengine_third_party_pipeline_src_pipeline \
+    appengine_third_party_pipeline_python_src_pipeline \
     import pipeline
 from appengine_module.pipeline_utils.\
-    appengine_third_party_pipeline_src_pipeline \
+    appengine_third_party_pipeline_python_src_pipeline \
     import common
 
 

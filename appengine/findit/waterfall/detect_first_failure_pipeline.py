@@ -10,7 +10,8 @@ import time
 
 from google.appengine.api import memcache
 
-from pipeline_utils.appengine_third_party_pipeline_src_pipeline import pipeline
+from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
+    import pipeline
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_build import WfBuild

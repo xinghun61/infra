@@ -18,7 +18,7 @@ handlers:
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
   script: "appengine_module.pipeline_utils.\
-          appengine_third_party_pipeline_src_pipeline.handlers._APP"
+          appengine_third_party_pipeline_python_src_pipeline.handlers._APP"
   secure: always
 
 - url: /css

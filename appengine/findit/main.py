@@ -5,7 +5,8 @@
 import endpoints
 import webapp2
 
-from pipeline_utils.appengine_third_party_pipeline_src_pipeline import status_ui
+from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
+    import status_ui
 
 from findit_api import FindItApi
 from handlers import build_failure

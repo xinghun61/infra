@@ -6,7 +6,7 @@ import os
 
 from google.appengine.api import app_identity
 
-from appengine_third_party_pipeline_src_pipeline import pipeline
+from appengine_third_party_pipeline_python_src_pipeline import pipeline
 
 
 class AppenginePipeline(pipeline.Pipeline):

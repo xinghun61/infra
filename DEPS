@@ -44,9 +44,9 @@ deps = {
      "@e11553ba3e303e2db206d04c95f8e51c5692ca28"),
 
   "infra/appengine/third_party/pipeline":
-    ("https://chromium.googlesource.com/infra/third_party/"
-     "appengine-pipeline.git"
-     "@e79945156a7a3a48eecb29b792a9b7925631aadf"),
+    ("https://chromium.googlesource.com/external/github.com/"
+     "GoogleCloudPlatform/appengine-pipelines.git"
+     "@58cf59907f67db359fe626ee06b6d3ac448c9e15"),
 
   "infra/appengine/third_party/google-api-python-client":
     ("https://chromium.googlesource.com/external/github.com/google/"
