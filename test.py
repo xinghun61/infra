@@ -33,6 +33,28 @@ def usage():
 
 INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+# Whitelist of packages to test on Windows.
+WIN_ENABLED_PACKAGES = [
+  'infra/libs/buildbot',
+  'infra/libs/decorators',
+  'infra/libs/gitiles',
+  'infra/libs/process_invocation',
+  # 'infra/libs/service_utils', # TODO: crbug.com/515704
+  'infra/libs/state_machine',
+  'infra/libs/time_functions',
+
+  # 'infra/services/service_manager', # TODO: crbug.com/515704
+  'infra/services/sysmon',
+
+  'infra_libs/event_mon',
+  'infra_libs/infra_types',
+  'infra_libs/logs',
+  # 'infra_libs/ts_mon',  # TODO: crbug.com/515704
+
+  'infra_libs:infra_libs.test.*',
+]
+
+
 # Parse command-line arguments
 if len(sys.argv) == 1:
   usage()
@@ -51,7 +73,10 @@ args = sys.argv[1:]
 
 # Set up default list of packages/directories if none have been provided.
 if all([arg.startswith('--') for arg in sys.argv[2:]]):
-  args.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
+  if sys.platform == 'win32':
+    args.extend(WIN_ENABLED_PACKAGES)
+  else:
+    args.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
   appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
   if sys.platform != 'win32' and os.path.isdir(appengine_dir):
     appengine_dirs = [
@@ -68,4 +93,6 @@ os.chdir(INFRA_ROOT)
 if '--help' not in sys.argv and '-h' not in sys.argv:
   subprocess.check_call(
       [python_bin, os.path.join('bootstrap', 'remove_orphaned_pycs.py')])
+if sys.platform == 'win32' and '--force-coverage' not in args:
+  args.append('--no-coverage')
 sys.exit(subprocess.call([python_bin, expect_tests_path] + args))

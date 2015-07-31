@@ -4,6 +4,8 @@
 
 """A collection of helpers to make lkgr_finder's life easier."""
 
+# pylint: disable=line-too-long
+# pylint: disable=unused-argument
 
 import ast
 import datetime
@@ -613,7 +615,7 @@ def ReadLKGR(filename):  # pragma: no cover
   try:
     with open(path, 'r') as f:
       return f.read().strip()
-  except:
+  except IOError:
     return None
 
 
@@ -642,7 +644,6 @@ def WriteHTML(status_gen, filename, dry):  # pragma: no cover
 def GetProjectConfig(project):  # pragma: no cover
   """Get and combine default and project-specific configuration."""
   try:
-    tmp_namespace = {}
     config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'config', 'default_cfg.pyl')
     config = ast.literal_eval(open(config_file).read())
