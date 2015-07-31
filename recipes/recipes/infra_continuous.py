@@ -108,18 +108,22 @@ def RunSteps(api):
   rev = bot_update_step.presentation.properties['got_revision']
 
   with api.step.defer_results():
-    # TODO(crbug.com/487485): expect_test + venv is broken on Windows.
-    if not api.platform.is_win:
+    # Run Linux\Mac tests everywhere, Windows tests only on public CI.
+    if not api.platform.is_win or project_name == 'infra':
       api.python(
           'infra python tests',
           'test.py',
           ['test'],
           cwd=api.path['checkout'])
+
+    # Run Glyco tests only on public Linux\Mac CI.
+    if project_name == 'infra' and not api.platform.is_win:
       api.python(
           'Glyco tests',
           api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
           [],
           cwd=api.path['checkout'])
+
     # This downloads Go third parties, so that the next step doesn't have junk
     # output in it.
     api.python(
