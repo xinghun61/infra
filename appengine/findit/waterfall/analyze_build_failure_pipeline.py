@@ -8,7 +8,7 @@ from google.appengine.api import modules
 
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
-from waterfall.base_pipeline import BasePipeline
+from pipeline_wrapper import BasePipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline

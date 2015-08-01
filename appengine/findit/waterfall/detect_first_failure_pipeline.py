@@ -8,16 +8,12 @@ import logging
 import random
 import time
 
-from google.appengine.api import memcache
-
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import pipeline
-
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_build import WfBuild
 from model.wf_analysis import WfAnalysis
+from pipeline_wrapper import pipeline
+from pipeline_wrapper import BasePipeline
 from waterfall import buildbot
-from waterfall.base_pipeline import BasePipeline
 from waterfall import lock_util
 
 

@@ -16,8 +16,7 @@ handlers:
 
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
-  script: "pipeline_utils.appengine_third_party_pipeline_python_src_pipeline.\
-           handlers._APP"
+  script: "pipeline_wrapper.pipeline_handlers._APP"
   secure: always
 
 skip_files:

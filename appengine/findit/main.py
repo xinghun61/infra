@@ -5,9 +5,6 @@
 import endpoints
 import webapp2
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import status_ui
-
 from findit_api import FindItApi
 from handlers import build_failure
 from handlers import check_duplicate_failures
@@ -16,6 +13,7 @@ from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import triage_analysis
 from handlers import verify_analysis
+from pipeline_wrapper import pipeline_status_ui
 
 
 # This is for web pages.
@@ -39,10 +37,10 @@ api_application = endpoints.api_server([FindItApi])
 
 # This is for appengine pipeline status pages.
 pipeline_status_handler_mappings = [
-    ('/_ah/pipeline/rpc/tree', status_ui._TreeStatusHandler),
-    ('/_ah/pipeline/rpc/class_paths', status_ui._ClassPathListHandler),
-    ('/_ah/pipeline/rpc/list', status_ui._RootListHandler),
-    ('/_ah/pipeline(/.+)', status_ui._StatusUiHandler),
+    ('/_ah/pipeline/rpc/tree', pipeline_status_ui._TreeStatusHandler),
+    ('/_ah/pipeline/rpc/class_paths', pipeline_status_ui._ClassPathListHandler),
+    ('/_ah/pipeline/rpc/list', pipeline_status_ui._RootListHandler),
+    ('/_ah/pipeline(/.+)', pipeline_status_ui._StatusUiHandler),
 ]
 pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)

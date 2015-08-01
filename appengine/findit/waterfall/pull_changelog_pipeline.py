@@ -2,12 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import pipeline
-
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
-from waterfall.base_pipeline import BasePipeline
+from pipeline_wrapper import pipeline
+from pipeline_wrapper import BasePipeline
 
 
 class PullChangelogPipeline(BasePipeline):

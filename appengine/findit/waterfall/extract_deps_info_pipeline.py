@@ -5,7 +5,7 @@
 import logging
 
 from common import chromium_deps
-from waterfall.base_pipeline import BasePipeline
+from pipeline_wrapper import BasePipeline
 
 
 def _GetOSPlatformName(master_name, builder_name):  # pragma: no cover

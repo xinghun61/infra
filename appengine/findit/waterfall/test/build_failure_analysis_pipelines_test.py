@@ -5,12 +5,11 @@
 import os
 import logging
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis_pipelines
 from waterfall import buildbot
 from waterfall import lock_util
@@ -31,7 +30,7 @@ class _MockRootPipeline(object):
 
 
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   def _CreateAndSaveWfAnalysis(
       self, master_name, builder_name, build_number, not_passed_steps, status):

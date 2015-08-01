@@ -2,18 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
 from common import chromium_deps
 from common.dependency import Dependency
 from common.diff import ChangeType
+from pipeline_wrapper import pipeline_handlers
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 
 
 class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   def testExtractDEPSInfo(self):
     def MockGetChromeDependency(revision, os_platform, _=False):

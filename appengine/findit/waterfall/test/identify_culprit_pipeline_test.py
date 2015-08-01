@@ -2,19 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from model import wf_analysis_result_status
+from pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis
 from waterfall import identify_culprit_pipeline
 
 
 class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   def testGetSuspectedCLs(self):
     dummy_result = {

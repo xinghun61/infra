@@ -9,15 +9,13 @@ import json
 
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import pipeline
-
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_step import WfStep
+from pipeline_wrapper import pipeline
+from pipeline_wrapper import BasePipeline
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util
-from waterfall.base_pipeline import BasePipeline
 
 
 class ExtractSignalPipeline(BasePipeline):

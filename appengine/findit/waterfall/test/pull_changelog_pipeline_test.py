@@ -4,10 +4,9 @@
 
 from datetime import datetime
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
+from pipeline_wrapper import pipeline_handlers
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 
 
@@ -49,7 +48,7 @@ REV1_COMMIT_JSON_URL = '%s?format=json' % REV1_COMMIT_LOG_URL
 
 
 class PullChangelogPipelineTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   def testPullChangelogs(self):
     with self.mock_urlfetch() as urlfetch:

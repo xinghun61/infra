@@ -4,20 +4,19 @@
 
 import os
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
 from common import chromium_deps
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
+from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 from waterfall import lock_util
 
 
 class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   def _MockChangeLog(
       self, urlfetch, user_name, revision, commit_position, file_path):

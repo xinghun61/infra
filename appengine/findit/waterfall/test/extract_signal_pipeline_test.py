@@ -4,18 +4,17 @@
 
 import os
 
-from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
-    import handlers
 from testing_utils import testing
 
 from model.wf_step import WfStep
+from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 
 
 class ExtractSignalPipelineTest(testing.AppengineTestCase):
-  app_module = handlers._APP
+  app_module = pipeline_handlers._APP
 
   ABC_TEST_FAILURE_LOG = """
       ...

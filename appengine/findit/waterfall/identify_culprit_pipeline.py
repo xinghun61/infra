@@ -5,10 +5,10 @@
 from datetime import datetime
 
 from model.wf_analysis import WfAnalysis
-from model import wf_analysis_status
-from waterfall import build_failure_analysis
-from waterfall.base_pipeline import BasePipeline
 from model import wf_analysis_result_status
+from model import wf_analysis_status
+from pipeline_wrapper import BasePipeline
+from waterfall import build_failure_analysis
 
 
 def _GetResultAnalysisStatus(analysis_result):
