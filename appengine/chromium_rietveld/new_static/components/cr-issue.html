@@ -36,44 +36,45 @@ found in the LICENSE file. -->
 
             <div class="issue-content">
                 <div class="issue-toolbar-container">
-                <cr-toolbar class="issue-toolbar">
-                    <button is="cr-button" on-tap="{{ showPublishDialog }}" create>Publish</button>
-                    <template if="{{ !issue.owner.isCurrentUser }}">
-                        <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
-                    </template>
-                    <template if="{{ !issue.closed }}">
-                        <template if="{{ !issue.owner.isCurrentUser && !issue.commit }}">
-                            <button is="cr-button" on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</button>
+                    <cr-toolbar class="issue-toolbar">
+                        <button is="cr-button" on-tap="{{ showPublishDialog }}" create>Publish</button>
+                          <template if="{{ !issue.owner.isCurrentUser }}">
+                            <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
                         </template>
-                        <template if="{{ !issue.commit && !issue.private }}">
-                            <button is="cr-button" on-tap="{{ toggleCommit }}">Commit</button>
+                        <template if="{{ !issue.closed }}">
+                            <template if="{{ !issue.owner.isCurrentUser && !issue.commit }}">
+                                <button is="cr-button" on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</button>
+                            </template>
+                            <template if="{{ !issue.commit && !issue.private }}">
+                                <button is="cr-button" on-tap="{{ toggleCommit }}">Commit</button>
+                            </template>
+                            <button is="cr-button" on-tap="{{ toggleClosed }}">Close</button>
                         </template>
-                        <button is="cr-button" on-tap="{{ toggleClosed }}">Close</button>
+                        <template if="{{ issue.closed }}">
+                            <button is="cr-button" on-tap="{{ startRevertDialog }}">Revert</button>
+                            <button is="cr-button" on-tap="{{ toggleClosed }}">Reopen</button>
+                        </template>
+                        <div class="ui-actions">
+                            <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
+                        </div>
+                    </cr-toolbar>
+                    <template if="{{ !hasBeenSent(issue) }}">
+                        <div class="notice">
+                            This issue has not been sent to reviewers yet.  Press "Publish" to notify them.
+                        </div>
                     </template>
-                    <template if="{{ issue.closed }}">
-                        <button is="cr-button" on-tap="{{ startRevertDialog }}">Revert</button>
-                        <button is="cr-button" on-tap="{{ toggleClosed }}">Reopen</button>
+                    <template if="{{ issue.closed || issue.private }}">
+                        <div class="notice">
+                            Commit Queue is not available because
+                            <template if="{{ issue.closed }}">
+                                the issue is closed.
+                            </template>
+                            <template if="{{ !issue.closed && issue.private }}">
+                                the issue is private.
+                            </template>
+                       </div>
                     </template>
-                    <div class="ui-actions">
-                        <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
-                    </div>
-                </cr-toolbar>
-                <template if="{{ !hasBeenSent(issue) }}">
-                    <div class="notice">
-                        This issue has not been sent to reviewers yet.  Press "Publish" to notify them.
-                    </div>
-                </template>
-                <template if="{{ issue.closed || issue.private }}">
-                   <div class="notice">
-                       Commit Queue is not available because
-                       <template if="{{ issue.closed }}">
-                         the issue is closed.
-                       </template>
-                       <template if="{{ !issue.closed && issue.private }}">
-                         the issue is private.
-                       </template>
-                   </div>
-                </template>
+                </div>
 
                 <template if="{{ issue.commit }}">
                     <h2>
