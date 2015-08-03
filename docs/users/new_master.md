@@ -25,3 +25,22 @@
 7. Commit what you have, then file a third, final [Infra-Labs
    ticket](https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs)
    asking for the appropriate URLs to be set up for your master.
+
+### Testing ###
+
+To run your master locally for testing:
+
+Commit your changes to a local branch. Many builders will "git reset --hard
+HEAD" which will wipe out your local changes.
+
+  $ cd build/masters/master.foo.bar
+  $ make restart
+
+To run a test slave locally to run the build:
+
+  $ cd build/slave
+  $ TESTING_MASTER=FooBar TESTING_MASTER_HOST=localhost TESTING_SLAVENAME=FooSlave make restart
+
+'FooBar' is the same class name pulled from 'master_site_config.py' above.
+'FooSlave' is a slave listed in the builders.pyl, or slaves.cfg that you want to
+impersonate locally.
