@@ -14,6 +14,7 @@ function loadProjects() {
         list.push(resp.configs[i].id);
       };
     };
+    list.sort();
     document.querySelector('project-dropdown').projectList = list;
     document.querySelector('project-dropdown').spin = false;
   });

@@ -15,6 +15,7 @@ from components import auth
 from components import config
 from proto import project_config_pb2
 
+
 class Field(messages.Message):
   key = messages.StringField(1)
   value = messages.StringField(2)
@@ -31,7 +32,7 @@ class TimeSeries(messages.Message):
   metric = messages.StringField(3)
 
 
-class DataPacket(messages.Message):
+class TimeSeriesPacket(messages.Message):
   timeseries = messages.MessageField(TimeSeries, 1, repeated=True)
 
 
@@ -60,7 +61,11 @@ class Config(messages.Message):
 class Configs(messages.Message):
   configs = messages.MessageField(Config, 1, repeated=True)
 
+
+class GetGraphsRequest(messages.Message):
+  project_id = messages.StringField(1, required=True)
  
+
 def _has_access(access_list):
   cur_ident = auth.get_current_identity().to_bytes()
   for ac in access_list:
@@ -80,7 +85,7 @@ def _has_access(access_list):
 class ConsoleAppApi(remote.Service):
   """API that receives projects timeseries data from Borg job."""
 
-  @auth.endpoints_method(DataPacket, message_types.VoidMessage,
+  @auth.endpoints_method(TimeSeriesPacket, message_types.VoidMessage,
                          name='timeseries.update')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def timeseries_update(self, request):
@@ -123,6 +128,35 @@ class UIApi(remote.Service):
                                  revision=revision, 
                                  access=project_cfg.access[:]))
     return Configs(configs=configList)
+
+  @auth.endpoints_method(GetGraphsRequest, TimeSeriesPacket)
+  def get_graphs(self, request):
+    logging.debug('Got %s', request)
+    project_id = request.project_id
+    revision, project_cfg = config.get_project_config(
+        project_id, 'project.cfg', project_config_pb2.ProjectCfg)
+    
+    if revision is None:
+      logging.warning('Project %s does not have project.cfg', project_id)
+      return TimeSeriesPacket()
+
+    graph_list = []
+    if not _has_access(project_cfg.access):
+      logging.warning('Access to %s is denied for user %s',
+                  project_id, auth.get_current_identity())
+      return TimeSeriesPacket()
+    
+    namespace_manager.set_namespace('projects.%s' % project_id)
+    for graph in TimeSeriesModel.query():
+      field_list = [Field(key=field.field_key, value=field.value)
+                    for field in graph.fields]
+      point_list = [Point(time=point.time, value=point.value)
+                    for point in graph.points]
+      graph_list.append(TimeSeries(points=point_list,
+                                   fields=field_list,
+                                   metric=graph.metric))
+
+    return TimeSeriesPacket(timeseries=graph_list)
       
 
 APPLICATION = ndb.toplevel(endpoints.api_server([
