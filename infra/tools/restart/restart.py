@@ -30,6 +30,8 @@ def add_argparse_options(parser):
       '-m', '--minutes-in-future', default=15, type=int,
       help='how many minutes in the future to schedule the restart. '
            'use 0 for "now." default %(default)d')
+  parser.add_argument('-b', '--bug', default=None, type=str,
+                      help='Bug containing master restart request.')
 
 
 def get_restart_time(delta):
@@ -51,9 +53,11 @@ def get_master_state_checkout():
     shutil.rmtree(target_dir)
 
 
-def commit(target, masters):
+def commit(target, masters, bug):
   """Commits the local CL via the CQ."""
-  desc = 'Restarting masters %s' % ', '.join(masters)
+  desc = 'Restarting master(s) %s' % ', '.join(masters)
+  if bug:
+    desc = '%s\nBUG=%s' % (desc, bug)
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
   LOGGER.info('Uploading to Rietveld and CQ.')
@@ -62,7 +66,7 @@ def commit(target, masters):
        '--tbr-owners', '-c', '-f'], cwd=target)
 
 
-def run(masters, delta):
+def run(masters, delta, bug):
   """Restart all the masters in the list of masters.
 
     Schedules the restart for now + delta.
@@ -98,4 +102,4 @@ def run(masters, delta):
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
-    commit(master_state_dir, masters)
+    commit(master_state_dir, masters, bug)
