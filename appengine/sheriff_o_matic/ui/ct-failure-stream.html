@@ -9,7 +9,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-master-failure-card.html">
 <link rel="import" href="ct-step-failure-card.html">
 
-<polymer-element name="ct-failure-stream" attributes="groups commitLog category caption" noscript>
+<polymer-element name="ct-failure-stream" attributes="groups commitLog category caption">
   <template>
     <style>
       :host {
@@ -73,7 +73,7 @@ found in the LICENSE file.
               <template if="{{ group.bug }}">
                 <div class="bugs">
                   <span style="font-weight: bold">Bugs:</span>
-                  <a href="{{ group.bug }}">{{ group.bugLabel }}</a>
+                  <a href="{{ bugLink(group.bug) }}">{{ group.bugLabel }}</a>
                 </div>
               </template>
               <template if="{{ group.data.category == 'step' }}">
@@ -91,4 +91,11 @@ found in the LICENSE file.
       </template>
     </template>
   </template>
+  <script>
+    Polymer({
+      bugLink: function(bug) {
+        return `https://crbug/${bug[0]}`;
+      }
+    });
+  </script>
 </polymer-element>
