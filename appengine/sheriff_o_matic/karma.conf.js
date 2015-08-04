@@ -27,7 +27,6 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       // dependencies
-      'bower_components/webcomponentsjs/webcomponents.js',
       'test/karma-loader.html',
       'bower_components/chai/chai.js',
       'bower_components/sugar/release/sugar-full.development.js',
@@ -46,7 +45,6 @@ module.exports = function(config) {
       'model/test/*.html',
       'scripts/test/*.html',
       'ui/test/*',
-      'bower_components/polymer/polymer.html'
     ],
 
     // list of files to exclude

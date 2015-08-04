@@ -18,7 +18,7 @@ describe('ct-unexpected-failures', function() {
   it('test showing partytime with no CTFailures', function(done) {
     var noFailures = document.createElement('ct-unexpected-failures');
     setTimeout(function() {
-      assert.notOk(noFailures.shadowRoot.querySelector('ct-party-time'));
+      assert.ok(noFailures.shadowRoot.querySelector('ct-party-time'));
       done();
     });
   });
