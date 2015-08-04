@@ -79,8 +79,8 @@ class InstallPackagesTest(unittest.TestCase):
       options = parser.parse_args(['pack',
                                    os.path.join(DATA_DIR, 'source_package'),
                                    '--output-dir', tempdir])
-      wheel_paths = pack.pack(options)
-      self.assertEqual(len(wheel_paths), 1)
+      self.assertFalse(pack.pack(options))
+      wheel_paths = [os.path.join(tempdir, whl) for whl in os.listdir(tempdir)]
 
       options = parser.parse_args(
         ['install', wheel_paths[0],
@@ -103,8 +103,8 @@ class InstallPackagesTest(unittest.TestCase):
                                    os.path.join(DATA_DIR, 'source_package'),
                                    os.path.join(DATA_DIR, 'installed_package'),
                                    '--output-dir', tempdir])
-      wheel_paths = pack.pack(options)
-      self.assertEqual(len(wheel_paths), 2)
+      self.assertFalse(pack.pack(options))
+      wheel_paths = [os.path.join(tempdir, whl) for whl in os.listdir(tempdir)]
 
       options = parser.parse_args(
         ['install', wheel_paths[0], wheel_paths[1],

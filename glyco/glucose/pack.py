@@ -6,6 +6,7 @@ import ConfigParser
 import hashlib
 import os
 import shutil
+import sys
 import textwrap
 import urllib
 
@@ -60,8 +61,17 @@ def get_packing_list(source_dirs):
   """
   packing_list = []
   for source_dir in source_dirs:
-    packing_list.append({'location': 'file://%s'
-                         % urllib.pathname2url(os.path.abspath(source_dir))})
+    location = 'file://%s' % urllib.pathname2url(os.path.abspath(source_dir))
+    if os.path.isfile(os.path.join(source_dir, 'setup.py')):
+      package_type = 'standard'
+    elif (os.path.isfile(os.path.join(source_dir, 'setup.cfg')) and
+          os.path.isfile(os.path.join(source_dir, '__init__.py'))):
+      package_type = 'bare'
+    else:
+      package_type = 'unhandled'
+      if not os.path.exists(source_dir):
+        package_type = 'missing'
+    packing_list.append({'location': location, 'package_type': package_type})
   return packing_list
 
 
@@ -172,14 +182,25 @@ def pack_bare_package(venv, path, wheelhouse, build_num=0, build_options=(),
 def pack(args):
   """Pack wheel files.
 
-  Returns the list of wheel files created.
+  Returns 0 or None if all went well, a non-zero int otherwise.
   """
 
   if not args.packages:
     print 'No packages have been provided on the command-line, doing nothing.'
-    return
+    return 0
 
   packing_list = get_packing_list(args.packages)
+
+  unhandled = [d['location'][len('file://'):]
+               for d in packing_list
+               if d['package_type'] in ('unhandled', 'missing')]
+  if unhandled:
+    print >> sys.stderr, ('These directories do not seem to be packable '
+                          'because they do not exist or\n'
+                          'have neither setup.cfg or setup.py inside them:')
+    print >> sys.stderr, ('\n'.join(unhandled))
+    return 1
+
 
   if not os.path.isdir(args.output_dir):
     os.mkdir(args.output_dir)
@@ -193,24 +214,23 @@ def pack(args):
         pathname = urllib.url2pathname(element['location'][7:])
 
         # Standard Python source package: contains a setup.py
-        if os.path.isfile(os.path.join(pathname, 'setup.py')):
+        if element['package_type'] == 'standard':
           wheel_path = pack_local_package(venv, pathname, args.output_dir)
 
         # The Glyco special case: importable package with a setup.cfg file.
-        elif (os.path.isfile(os.path.join(pathname, 'setup.cfg')) and
-              os.path.isfile(os.path.join(pathname, '__init__.py'))):
+        elif element['package_type'] == 'bare':
           wheel_path = pack_bare_package(
             venv,
             pathname,
             args.output_dir,
             keep_directory=args.keep_tmp_directories)
+
         wheel_paths.append(wheel_path)
 
     if args.verbose:
       print '\nGenerated %d packages:' % len(wheel_paths)
       for wheel_path in wheel_paths:
         print wheel_path
-    return wheel_paths
 
 
 def add_subparser(subparsers):

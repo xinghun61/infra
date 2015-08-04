@@ -97,9 +97,32 @@ class PackPackagesTest(unittest.TestCase):
                                    os.path.join(DATA_DIR, 'source_package'),
                                    os.path.join(DATA_DIR, 'installed_package'),
                                    '--output-dir', tempdir])
-      wheel_paths = pack.pack(options)
-      self.assertEqual(len(wheel_paths), 2)
+      # False is turned into the 0 (success) return code.
+      self.assertFalse(pack.pack(options))
+      self.assertEqual(len(os.listdir(tempdir)), 2)
 
+  def test_pack_unhandled(self):
+    parser = argparse.ArgumentParser()
+    main_.add_argparse_options(parser)
+
+    with util.temporary_directory('glyco-pack-test-') as tempdir:
+      # DATA_DIR is not a package at all.
+      options = parser.parse_args(['pack', DATA_DIR, '--output-dir', tempdir])
+      self.assertTrue(pack.pack(options))
+      self.assertEqual(len(os.listdir(tempdir)), 0)
+
+  def test_pack_partly_unhandled(self):
+    parser = argparse.ArgumentParser()
+    main_.add_argparse_options(parser)
+
+    with util.temporary_directory('glyco-pack-test-') as tempdir:
+      options = parser.parse_args(['pack',
+                                   DATA_DIR,
+                                   os.path.join(DATA_DIR, 'source_package'),
+                                   '--output-dir', tempdir])
+      self.assertTrue(pack.pack(options))
+      # We should not have generated any wheel.
+      self.assertEqual(len(os.listdir(tempdir)), 0)
 
 if __name__ == '__main__':
   unittest.main()
