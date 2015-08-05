@@ -18,17 +18,18 @@ The recipe is in
 
 Alerts dispatcher uses CIPD to deploy new packages. Step one is to build a new
 package (from infra/build):
+
 ```
 ./build.py dispatcher --upload
 ```
 
 Successful build output will tell you something like:
+
 ```
 --------------------------------------------------------------------------------
 Summary
 --------------------------------------------------------------------------------
 infra/monitoring/dispatcher/linux-amd64 2d2f91e467892b53b3cd5a1c1845b7fa1fd78948
-
 ```
 
 Edit alerts_dispatcher.py's pkgs var to use this hash for the "version"
@@ -45,15 +46,17 @@ eval `./env.py` # skip this if you've run it already.
 go build infra/monitoring/dispatcher
 ./dispatcher -tree=chromium
 ```
+
 By default, dispatcher will write its output to a local alerts.json file.  If
 you want to run it against a sheriff-o-matic instance, you should set the
-target URL with the -data_url= flag (make it 
-localhost:8080/api/v1/alerts/chromium for a local instance, e.g.)
+target URL with the -base-url= flag (make it 
+localhost:8080/api/v1/alerts for a local SoM instance, e.g.). Dispatcher
+will post a separate json alerts object for each tree to (base-url)/tree.
 
 Other useful flags for debugging purposes, which can progressively narrow the
 scope of analysis (and thus lower run time and less noisy logging/output):
 
- * -tree= will only check builds for that tree
+ * -trees= (comma separated list) will only check builds for those trees
  * -master= will only scan builds from that master
  * -builder= will only scan that builder
  * -build= will only scan a particular build number

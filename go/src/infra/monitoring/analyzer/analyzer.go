@@ -94,7 +94,6 @@ type Analyzer struct {
 	MasterCfgs map[string]messages.MasterConfig
 
 	// These limit the scope analysis, useful for debugging.
-	TreeOnly    string
 	MasterOnly  string
 	BuilderOnly string
 	BuildOnly   int64

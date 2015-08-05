@@ -30,13 +30,13 @@ import (
 )
 
 var (
-	dataURL             = flag.String("data_url", "", "Url where alerts are stored")
+	alertsBaseURL       = flag.String("base-url", "", "Base URL where alerts are stored. Will be appended with the tree name.")
 	masterFilter        = flag.String("master-filter", "", "Filter out masters that contain this string")
 	masterOnly          = flag.String("master", "", "Only check this master")
 	mastersOnly         = flag.Bool("masters-only", false, "Just check for master alerts, not builders")
 	gatekeeperJSON      = flag.String("gatekeeper", "gatekeeper.json", "Location of gatekeeper json file")
 	gatekeeperTreesJSON = flag.String("gatekeeper-trees", "gatekeeper_trees.json", "Location of gatekeeper json file")
-	treeOnly            = flag.String("tree", "", "Only check this tree")
+	treesOnly           = flag.String("trees", "", "Comma separated list. Only check these trees")
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
 	maxErrs             = flag.Int("max-errs", 1, "Max consecutive errors per loop attempt")
@@ -137,11 +137,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	masterNames := []string{}
-	if *masterOnly != "" {
-		masterNames = append(masterNames, *masterOnly)
-	}
-
 	err = readJSONFile(*gatekeeperJSON, &gk)
 	if err != nil {
 		log.Errorf("Error reading gatekeeper json: %v", err)
@@ -169,7 +164,6 @@ func main() {
 	}
 
 	a := analyzer.New(r, 5, 100)
-	w := client.NewWriter(*dataURL)
 
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
@@ -179,18 +173,24 @@ func main() {
 		a.MasterCfgs[masterName] = masterCfgs[0]
 	}
 
-	a.TreeOnly = *treeOnly
 	a.MasterOnly = *masterOnly
 	a.BuilderOnly = *builderOnly
 	a.BuildOnly = *buildOnly
 
-	if *treeOnly != "" {
-		if t, ok := gkt[*treeOnly]; ok {
-			for _, url := range t.Masters {
-				masterNames = append(masterNames, masterFromURL(url))
-			}
-		} else {
-			log.Errorf("Unrecoginzed tree: %s", *treeOnly)
+	trees := map[string]bool{}
+	if *treesOnly != "" {
+		for _, treeOnly := range strings.Split(*treesOnly, ",") {
+			trees[treeOnly] = true
+		}
+	} else {
+		for treeName := range gkt {
+			trees[treeName] = true
+		}
+	}
+
+	for tree := range trees {
+		if _, ok := gkt[tree]; !ok {
+			log.Errorf("Unrecognized tree name: %s", tree)
 			os.Exit(1)
 		}
 	}
@@ -198,42 +198,68 @@ func main() {
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func(ctx context.Context) error {
-		// TODO(seanmccullough): Plumb ctx through the rest of these calls.
-		bes := fetchBuildExtracts(a.Reader, masterNames)
-		log.Infof("Build Extracts read: %d", len(bes))
+		done := make(chan interface{})
+		errs := make(chan error)
+		for treeName := range trees {
+			go func(tree string) {
+				log.Infof("Checking tree: %s", tree)
+				masterNames := []string{}
+				t := gkt[tree]
+				for _, url := range t.Masters {
+					masterNames = append(masterNames, masterFromURL(url))
+				}
 
-		alerts := &messages.Alerts{}
-		for masterName, be := range bes {
-			alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+				// TODO(seanmccullough): Plumb ctx through the rest of these calls.
+				bes := fetchBuildExtracts(a.Reader, masterNames)
+				log.Infof("Build Extracts read: %d", len(bes))
+
+				alerts := &messages.Alerts{}
+				for masterName, be := range bes {
+					alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+				}
+				alerts.Timestamp = messages.TimeToEpochTime(time.Now())
+
+				if *alertsBaseURL == "" {
+					log.Infof("No data_url provided. Writing to %s-alerts.json", tree)
+
+					abytes, err := json.MarshalIndent(alerts, "", "\t")
+					if err != nil {
+						log.Errorf("Couldn't marshal alerts json: %v", err)
+						errs <- err
+						return
+					}
+
+					if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
+						log.Errorf("Couldn't write to alerts.json: %v", err)
+						errs <- err
+						return
+					}
+				} else {
+					alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
+					w := client.NewWriter(alertsURL)
+					log.Infof("Posting alerts to %s", alertsURL)
+					err := w.PostAlerts(alerts)
+					if err != nil {
+						log.Errorf("Couldn't post alerts: %v", err)
+						errs <- err
+						return
+					}
+				}
+
+				log.Infof("Filtered failures: %v", filteredFailures)
+				a.Reader.DumpStats()
+				log.Infof("Elapsed time: %v", time.Since(start))
+				done <- nil
+			}(treeName)
 		}
-		alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
-		if *dataURL == "" {
-			log.Infof("No data_url provided. Writing to alerts.json")
-
-			abytes, err := json.MarshalIndent(alerts, "", "\t")
-			if err != nil {
-				log.Errorf("Couldn't marshal alerts json: %v", err)
+		for range trees {
+			select {
+			case err := <-errs:
 				return err
-			}
-
-			if err := ioutil.WriteFile("alerts.json", abytes, 0644); err != nil {
-				log.Errorf("Couldn't write to alerts.json: %v", err)
-				return err
-			}
-		} else {
-			log.Infof("Posting alerts to %s", *dataURL)
-			err := w.PostAlerts(alerts)
-			if err != nil {
-				log.Errorf("Couldn't post alerts: %v", err)
-				return err
+			case <-done:
 			}
 		}
-
-		log.Infof("Filtered failures: %v", filteredFailures)
-		a.Reader.DumpStats()
-		log.Infof("Elapsed time: %v", time.Since(start))
-
 		return nil
 	}
 
