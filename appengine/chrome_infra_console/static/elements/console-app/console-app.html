@@ -120,7 +120,8 @@ found in the LICENSE file-->
         project: {
           type: String,
           notify: true,
-          value: ""
+          value: "",
+          observer: '_projectSelected'
         },
         clientID: {
           type: String,
@@ -175,6 +176,13 @@ found in the LICENSE file-->
         var win = window.open("https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper", '_blank');
         win.focus();
       },
+      _projectSelected: function() {
+        console.log(this.project);
+        if(this.project !== ""){
+          var requestData = {};
+          requestData.project_id = this.project;
+          getGraphs(requestData)};
+      }
     });
 
   </script>

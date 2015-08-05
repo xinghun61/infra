@@ -10,8 +10,16 @@ Polymer({
     projectId: {
       type: String,
       notify: true,
-      value: "",
-      observer: '_projectChanged'
+      value: ""
+    },
+    graphs: {
+      type: Object,
+      notify: true,
+      value: {"": null},
+    },
+    spin: {
+      type: Boolean,
+      notify: true,
     }
   },
   graphDrawing: function(params) {
@@ -24,7 +32,7 @@ Polymer({
         x: {
           type: 'timeseries',
           tick: {
-            format: '%Y-%m-%d'
+            format: '%Y-%m-%d %H:%M:%S'
           }
         },
         y: {
@@ -37,50 +45,27 @@ Polymer({
     });
     return linechart;
   },
-  _projectChanged: function() {
-    //demo
-    graphs = {"chromium": [{columsData:[
-            ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-             '2013-01-05', '2013-01-06'],
-            ['CPU usage', 0.76, 0.85, 0.83, 0.67, 0.93, 0.79],
-            ], labelText: 'CPU usage'}, {columsData: [
-            ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-             '2013-01-05', '2013-01-06'],
-            ['Memory Usage', 0.8, 0.85, 0.9, 0.83, 0.93, 0.95],
-            ], labelText: 'Memory Usage'}],
-
-            "infra": [{columsData:[
-             ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-              '2013-01-05', '2013-01-06'],
-             ['RPS', 400, 800, 526, 642, 215, 800],
-             ], labelText:  'RPS'}, {columsData: [
-             ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-              '2013-01-05', '2013-01-06'],
-             ['Memory Usage', 0.5, 0.85, 0.9, 0.56, 0.73, 0.85],
-             ], labelText:'Memory Usage'}], 
-
-            "naclports": [{columsData:[
-             ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-              '2013-01-05', '2013-01-06'],
-             ['RPS', 588, 400, 526, 642, 715, 500],
-             ], labelText:'RPS'}, {columsData: [
-             ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
-              '2013-01-05', '2013-01-06'],
-             ['Memory Usage', 0.45, 0.55, 0.9, 0.56, 0.73, 0.85],
-             ], labelText:'Memory Usage'}], 
-    
-    };
-
+  projectChanged: function() {
+    var graphs = this.graphs;
     var node = this.$$('#chart0');
     while (node.hasChildNodes()) {
       node.removeChild(node.firstChild);
     }; 
 
-    if(graphs[this.projectId] != null){
+    if(graphs != undefined && graphs[this.projectId] != null){
       for(var i=0; i< graphs[this.projectId].length; i++){
-        var linechart = this.graphDrawing(graphs[this.projectId][i]);
+        for(var f=0; f<graphs[this.projectId][i]["fields"].length; f++){
+          var field = graphs[this.projectId][i]["fields"][f];
+          var key = field.key;
+          if(key != "project_id") {
+            var line = key.concat(": ", field.value, "  ");
+            var field_text = document.createTextNode(line);
+            Polymer.dom(this.$$('#chart0')).appendChild(field_text);
+          };
+        };   
+        var linechart = this.graphDrawing(graphs[this.projectId][i]["draw"]);
         Polymer.dom(this.$$('#chart0')).appendChild(linechart.element);
       };
-    }
+    };
   },
 });

@@ -22,8 +22,31 @@ found in the LICENSE file-->
 
       suite('<console-home>', function() {
 
-        test('Page works', function() {
-
+        test('Graphs are generated successfully.', function() {
+          var chart = myEl.querySelector('#chart0').childNodes;
+          assert.equal(chart.length, 0);
+          myEl.spin = true;
+          myEl.graphs = {"infra": [{"draw": {columsData:[
+              ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
+              '2013-01-05', '2013-01-06'],
+              ['CPU usage', 0.76, 0.85, 0.83, 0.67, 0.93, 0.79],
+              ], labelText: 'CPU usage'}, 
+              "fields": [{key:"host", value:"123"}]}, 
+              {"draw": {columsData: [
+              ['x', '2013-01-01', '2013-01-02', '2013-01-03', '2013-01-04', 
+              '2013-01-05', '2013-01-06'],
+              ['Memory Usage', 0.8, 0.85, 0.9, 0.83, 0.93, 0.95],
+              ], labelText: 'Memory Usage'}, 
+              "fields": [{key:"host", value:"213"}]}]};
+          myEl.projectId = "infra";
+          myEl._projectChanged();
+          assert.equal(myEl.spin, false);
+          chart = myEl.querySelector('#chart0').childNodes;
+          assert.equal(chart.length, 4);
+          myEl.projectId = "v8";
+          myEl._projectChanged();
+          chart = myEl.querySelector('#chart0').childNodes;
+          assert.equal(chart.length, 0);
         });
       });
     </script>
