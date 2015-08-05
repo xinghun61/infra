@@ -28,17 +28,23 @@ class MasterMonitor(object):
       self._metric_fields = {'master': name}
       self._name = name
 
+    self._varz_poller = pollers.VarzPoller(url, self._metric_fields)
     self._pollers = [
         cls(url, self._metric_fields) for cls in self.POLLER_CLASSES]
 
   def poll(self):
     logging.info('Polling %s', self._name)
-    for poller in self._pollers:
-      if not poller.poll():
-        self.up.set(False, fields=self._metric_fields)
-        break
+
+    # Try the varz poller first, if it doesn't work fall back on the others.
+    if self._varz_poller.poll():
+      self.up.set(True, fields=self._metric_fields)  # pragma: no cover
     else:
-      self.up.set(True, fields=self._metric_fields)
+      for poller in self._pollers:
+        if not poller.poll():
+          self.up.set(False, fields=self._metric_fields)
+          break
+      else:
+        self.up.set(True, fields=self._metric_fields)
 
 
 def create_from_mastermap(build_dir, hostname):  # pragma: no cover

@@ -51,9 +51,37 @@ class Poller(object):
     return ret
 
 
+class VarzPoller(Poller):
+  endpoint = '/varz'
+
+  uptime = ts_mon.FloatMetric('uptime')
+  accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds')
+
+  connected = ts_mon.GaugeMetric('buildbot/master/builders/connected_slaves')
+  current_builds = ts_mon.GaugeMetric('buildbot/master/builders/current_builds')
+  pending_builds = ts_mon.GaugeMetric('buildbot/master/builders/pending_builds')
+  state = ts_mon.StringMetric('buildbot/master/builders/state')
+  total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves')
+
+  def handle_response(self, data):
+    self.uptime.set(data['server_uptime'], fields=self.fields())
+    self.accepting_builds.set(data['accepting_builds'], self.fields())
+
+    for builder_name, builder_info in data['builders'].iteritems():
+      fields = self.fields({'builder': builder_name})
+
+      self.connected.set(builder_info.get('connected_slaves', 0), fields=fields)
+      self.current_builds.set(
+          builder_info.get('current_builds', 0), fields=fields)
+      self.pending_builds.set(
+          builder_info.get('pending_builds', 0), fields=fields)
+      self.state.set(builder_info.get('state', 'unknown'), fields=fields)
+      self.total.set(builder_info.get('total_slaves', 0), fields=fields)
+
+
 class ClockPoller(Poller):
   endpoint = '/clock'
-  uptime = ts_mon.FloatMetric('uptime')
+  uptime = VarzPoller.uptime
 
   def handle_response(self, data):
     self.uptime.set(data['server_uptime'], fields=self.fields())
@@ -61,10 +89,10 @@ class ClockPoller(Poller):
 
 class BuildStatePoller(Poller):
   endpoint = '/buildstate'
-  accepting_builds = ts_mon.BooleanMetric('buildbot/master/accepting_builds')
-  current_builds = ts_mon.GaugeMetric('buildbot/master/builders/current_builds')
-  pending_builds = ts_mon.GaugeMetric('buildbot/master/builders/pending_builds')
-  state = ts_mon.StringMetric('buildbot/master/builders/state')
+  accepting_builds = VarzPoller.accepting_builds
+  current_builds = VarzPoller.current_builds
+  pending_builds = VarzPoller.pending_builds
+  state = VarzPoller.state
 
   def handle_response(self, data):
     self.accepting_builds.set(data['accepting_builds'], self.fields())
@@ -78,8 +106,8 @@ class BuildStatePoller(Poller):
 
 class SlavesPoller(Poller):
   endpoint = '/slaves'
-  total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves')
-  connected = ts_mon.GaugeMetric('buildbot/master/builders/connected_slaves')
+  total = VarzPoller.total
+  connected = VarzPoller.connected
   running_builds = ts_mon.GaugeMetric('buildbot/master/builders/running_builds')
 
   def handle_response(self, data):

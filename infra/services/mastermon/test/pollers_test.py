@@ -70,6 +70,77 @@ class PollerTest(unittest.TestCase):
     self.assertIsNone(p.called_with_data)
 
 
+class VarzPollerTest(unittest.TestCase):
+  def test_response(self):
+    p = pollers.VarzPoller('', {'x': 'y'})
+
+    p.handle_response({
+        'server_uptime': 123,
+        'accepting_builds': True,
+        'builders': {
+          'foo': {
+            'connected_slaves': 1,
+            'current_builds': 2,
+            'pending_builds': 3,
+            'state': "offline",
+            'total_slaves': 4,
+          },
+          'bar': {
+            'connected_slaves': 5,
+            'current_builds': 6,
+            'pending_builds': 7,
+            'state': "idle",
+            'total_slaves': 8,
+          },
+        },
+    })
+
+    self.assertEqual(123, p.uptime.get({'x': 'y'}))
+    self.assertEqual(True, p.accepting_builds.get({'x': 'y'}))
+    self.assertEqual(1, p.connected.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(2, p.current_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(3, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(4, p.total.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(5, p.connected.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(8, p.total.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual('idle', p.state.get({'builder': 'bar', 'x': 'y'}))
+
+  def test_response_with_missing_data(self):
+    p = pollers.VarzPoller('', {'x': 'y'})
+
+    p.handle_response({
+        'server_uptime': 123,
+        'accepting_builds': True,
+        'builders': {
+          'foo': {
+            'state': "offline",
+            'total_slaves': 4,
+          },
+          'bar': {
+            'connected_slaves': 5,
+            'current_builds': 6,
+            'pending_builds': 7,
+          },
+        },
+    })
+
+    self.assertEqual(123, p.uptime.get({'x': 'y'}))
+    self.assertEqual(True, p.accepting_builds.get({'x': 'y'}))
+    self.assertEqual(0, p.connected.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(0, p.current_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(0, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(4, p.total.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
+    self.assertEqual(5, p.connected.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual(0, p.total.get({'builder': 'bar', 'x': 'y'}))
+    self.assertEqual('unknown', p.state.get({'builder': 'bar', 'x': 'y'}))
+
+
 class ClockPollerTest(unittest.TestCase):
   def test_response(self):
     p = pollers.ClockPoller('', {'x': 'y'})
