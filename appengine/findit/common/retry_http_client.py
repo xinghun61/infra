@@ -16,7 +16,7 @@ class RetryHttpClient(object):
     # not log an error.
     self.no_error_logging_statuses = no_error_logging_statuses
 
-  def _Get(self, url, timeout_seconds):  # pylint: disable=W0613, R0201
+  def _Get(self, url, timeout_seconds, headers):  # pylint: disable=W0613, R0201
     """Sends the actual HTTP GET request.
 
     Returns:
@@ -42,7 +42,7 @@ class RetryHttpClient(object):
       return retry_backoff
 
   def Get(self, url, params=None, timeout_seconds=60,
-          max_retries=5, retry_backoff=1.5):
+          max_retries=5, retry_backoff=1.5, headers=None):
     """Sends a GET request to the url with the given parameters and headers.
 
     Params:
@@ -66,7 +66,7 @@ class RetryHttpClient(object):
     while True:
       tries += 1
 
-      status_code, content = self._Get(url, timeout_seconds)
+      status_code, content = self._Get(url, timeout_seconds, headers)
 
       if status_code in (200, 302, 401, 403, 404, 501):
         break

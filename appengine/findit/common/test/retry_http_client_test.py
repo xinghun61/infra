@@ -20,7 +20,7 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
   def GetBackoff(self, *_):
     return 0
 
-  def _Get(self, url, timeout_seconds):
+  def _Get(self, url, timeout_seconds, headers=None):
     self.requests.append({
         'url': url,
         'timeout_seconds': timeout_seconds,

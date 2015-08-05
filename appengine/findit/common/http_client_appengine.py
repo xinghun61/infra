@@ -13,9 +13,10 @@ from common.retry_http_client import RetryHttpClient
 class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
   """A http client for running on appengine."""
 
-  def _Get(self, url, timeout):
+  def _Get(self, url, timeout, headers=None):
     # We wanted to validate certificate to avoid the man in the middle.
-    result = urlfetch.fetch(url, deadline=timeout, validate_certificate=True)
+    result = urlfetch.fetch(
+        url, headers=headers, deadline=timeout, validate_certificate=True)
 
     if (result.status_code != 200 and
         (not self.no_error_logging_statuses or

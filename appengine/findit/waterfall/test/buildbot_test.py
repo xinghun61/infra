@@ -22,7 +22,7 @@ class DummyHttpClient(RetryHttpClient):
     """Override to avoid sleep."""
     return 0
 
-  def _Get(self, url, _):
+  def _Get(self, url, *_):
     self.requests.append(url)
     return self.status_code, self.response_content
 

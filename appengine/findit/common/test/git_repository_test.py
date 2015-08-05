@@ -242,7 +242,7 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
     """Override to avoid sleep."""
     return 0
 
-  def _Get(self, url, _):
+  def _Get(self, url, *_):
     response = self.response_for_url.get(url)
     if response is None:
       return 404, 'Not Found'
