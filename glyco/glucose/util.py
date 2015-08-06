@@ -10,6 +10,8 @@ import tempfile
 import shutil
 import subprocess
 import sys
+import urllib
+import urlparse
 
 
 # Copied from pip.wheel.Wheel.wheel_file_re to avoid requiring pip here.
@@ -191,3 +193,34 @@ def temporary_directory(suffix="", prefix="tmp", dir=None,
       except OSError as ex:
         print >> sys.stderr, (
           "ERROR: {!r} while cleaning up {!r}".format(ex, tempdir))
+
+
+def path2fileurl(path):
+  """Convert a local absolute path to a file:/// URL
+
+  There is no way to provide a relative path in a file:// URI, because there
+  is no notion of 'working directory'.
+
+  Output conforms to https://tools.ietf.org/html/rfc1630
+  """
+  if not os.path.isabs(path):
+    raise ValueError('Only absolute paths can be turned into a file url. '
+                     'Got: %s' % path)
+  path_comp = urllib.pathname2url(path)
+  return 'file:///' + path_comp.lstrip('/')
+
+
+def fileurl2path(url):
+  """Convert a file:// URL to a local path.
+
+  Note that per https://tools.ietf.org/html/rfc1630 page 18 a host name
+  should be provided. So
+  file://localhost/file/name  points to /file/name on localhost
+  file:///file/name           points to /file/name ('localhost' is optional)
+  file://file/name            points to /name on machine 'file'.
+
+  """
+  if not url.startswith('file://'):
+    raise ValueError('URL must start with "file://". Got %s' % url)
+  parts = urlparse.urlparse(url)
+  return urllib.url2pathname(parts.path)

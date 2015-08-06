@@ -61,7 +61,7 @@ def get_packing_list(source_dirs):
   """
   packing_list = []
   for source_dir in source_dirs:
-    location = 'file://%s' % urllib.pathname2url(os.path.abspath(source_dir))
+    location = util.path2fileurl(os.path.abspath(source_dir))
     if os.path.isfile(os.path.join(source_dir, 'setup.py')):
       package_type = 'standard'
     elif (os.path.isfile(os.path.join(source_dir, 'setup.cfg')) and
@@ -191,7 +191,7 @@ def pack(args):
 
   packing_list = get_packing_list(args.packages)
 
-  unhandled = [d['location'][len('file://'):]
+  unhandled = [util.fileurl2path(d['location'])
                for d in packing_list
                if d['package_type'] in ('unhandled', 'missing')]
   if unhandled:
@@ -211,7 +211,7 @@ def pack(args):
       keep_directory=args.keep_tmp_directories) as venv:
     for element in packing_list:
       if element['location'].startswith('file://'):
-        pathname = urllib.url2pathname(element['location'][7:])
+        pathname = util.fileurl2path(element['location'])
 
         # Standard Python source package: contains a setup.py
         if element['package_type'] == 'standard':

@@ -100,5 +100,32 @@ class VirtualenvTest(unittest.TestCase):
       venv.check_call(['pip', '--version'])
 
 
+class Url2PathTest(unittest.TestCase):
+  def test_path_to_url_to_path(self):
+    # Use an existing file as a way to get an OS-specific absolute path.
+    path = util.fileurl2path(util.path2fileurl(ROOT_DIR))
+    self.assertEqual(path, ROOT_DIR)
+
+  def test_url_to_path_to_url(self):
+    url1 = 'file:///this/is/a/path'
+    url2 = util.path2fileurl(util.fileurl2path(url1))
+    self.assertEqual(url1, url2)
+
+  def test_url_to_path_to_url_with_spaces(self):
+    url1 = 'file:///absolute/path/with%20spaces'
+    url2 = util.path2fileurl(util.fileurl2path(url1))
+    self.assertEqual(url1, url2)
+
+  def test_url_to_path_to_url_absolute_path(self):
+    url1 = 'file:///absolutely/normal/path/'
+    url2 = util.path2fileurl(util.fileurl2path(url1))
+    self.assertEqual(url1, url2)
+
+  def test_errors_out_with_relative_path(self):
+    path = os.path.join('part', 'of', 'path')
+    with self.assertRaises(ValueError):
+      util.path2fileurl(path)
+
+
 if __name__ == '__main__':
   unittest.main()
