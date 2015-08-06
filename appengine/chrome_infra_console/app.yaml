@@ -38,6 +38,9 @@ handlers:
   upload: static/html/index\.html
   secure: always
 
+- url: /stats.*
+  script: google.appengine.ext.appstats.ui.app
+
 libraries:
 - name: endpoints
   version: 1.0
@@ -52,6 +55,9 @@ libraries:
 
 includes:
 - components/auth
+
+builtins:
+- appstats: on
 
 skip_files:
 - ^(.*/)?.*~

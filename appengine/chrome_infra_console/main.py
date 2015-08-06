@@ -7,6 +7,7 @@ import logging
 import endpoints
 from google.appengine.api import namespace_manager
 from google.appengine.ext import ndb
+from google.appengine.ext.appstats import recording
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -85,31 +86,38 @@ def _has_access(access_list):
 class ConsoleAppApi(remote.Service):
   """API that receives projects timeseries data from Borg job."""
 
+  @ndb.tasklet
+  def timeseries_query(self, timeseries):
+    project_id = list(field.value for field in timeseries.fields if
+                      field.key == 'project_id')
+    if not project_id:
+      raise ndb.Return()
+    project_id = project_id[0]
+    namespace_manager.set_namespace('projects.%s' % project_id)
+    query = TimeSeriesModel.query()
+    fieldmodels = []
+    for field in timeseries.fields:
+      fieldmodels.append(FieldModel(field_key=field.key, value=field.value))
+    for fieldmodel in fieldmodels:
+      query = query.filter(TimeSeriesModel.fields == fieldmodel)
+    query = query.filter(TimeSeriesModel.metric == timeseries.metric)
+    ts = yield query.get_async()
+    if ts == None:
+      ts = TimeSeriesModel(
+        points=[], fields=fieldmodels, metric=timeseries.metric)
+    ts.points = [PointModel(time=point.time, value=point.value)
+                 for point in timeseries.points]
+    yield ts.put_async()
+    raise ndb.Return()
+
   @auth.endpoints_method(TimeSeriesPacket, message_types.VoidMessage,
                          name='timeseries.update')
   @auth.require(lambda: auth.is_group_member('metric-generators'))
   def timeseries_update(self, request):
-    for timeseries in request.timeseries:
-      project_id = list(field.value for field in timeseries.fields if
-                        field.key == 'project_id')
-      if not project_id:
-        continue
-      project_id = project_id[0]
-      namespace_manager.set_namespace('projects.%s' % project_id)
-      query = TimeSeriesModel.query()
-      fieldmodels = []
-      for field in timeseries.fields:
-        fieldmodels.append(FieldModel(field_key=field.key, value=field.value))
-      for fieldmodel in fieldmodels:
-        query = query.filter(TimeSeriesModel.fields == fieldmodel)
-      query = query.filter(TimeSeriesModel.metric == timeseries.metric)
-      ts = query.get()
-      if ts == None:
-        ts = TimeSeriesModel(
-            points=[], fields=fieldmodels, metric=timeseries.metric)
-      ts.points = [PointModel(time=point.time, value=point.value)
-                   for point in timeseries.points]
-      ts.put()
+    futures = [self.timeseries_query(t) for t in request.timeseries]
+    ndb.Future.wait_all(futures)
+    for future in futures:
+      future.get_result()
     return message_types.VoidMessage()
 
 
@@ -157,7 +165,11 @@ class UIApi(remote.Service):
                                    metric=graph.metric))
 
     return TimeSeriesPacket(timeseries=graph_list)
-      
 
-APPLICATION = ndb.toplevel(endpoints.api_server([
-    ConsoleAppApi, UIApi, config.ConfigApi]))
+
+def add_appstats(app):
+  return recording.appstats_wsgi_middleware(app)
+
+
+APPLICATION = add_appstats(ndb.toplevel(endpoints.api_server([
+    ConsoleAppApi, UIApi, config.ConfigApi])))
