@@ -29,9 +29,9 @@ or [users/index.md](users/index.md) file.
 * Titling your links as "link" or "here" tells the reader precisely nothing when
   quickly scanning your doc and is a waste of space. Instead, write the sentence
   naturally, then go back and wrap the most appropriate phrase with the link.
-* See more at the [internal Documenting page](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/documenting.md#Styleguide).
+* See more at the [internal Documenting page](http://go/chrome-infra-docs-internal/documenting.md#Styleguide).
 
 ## For Googlers
 
 Please see
-[internal Documenting page](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/documenting.md).
+[internal Documenting page](http://go/chrome-infra-docs-internal/documenting.md).

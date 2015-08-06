@@ -6,10 +6,10 @@ https://gerrit.googlesource.com/gitiles/+/master/Documentation/markdown.md#Navig
 
 # Chrome infrastructure
 
-* [Home](/docs/index.md)
-* [Users](/docs/users/index.md)
-* [Developers](/docs/developers.md)
-* [Troopers](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/troopers/index.md)
+* [Home](/doc/index.md)
+* [Users](/doc/users/index.md)
+* [Developers](/doc/developers.md)
+* [Troopers](http://go/trooper)
 
-[home]: /docs/index.md
-[logo]: /docs/images/chrome-infra-logo-32x32.png
+[home]: /doc/index.md
+[logo]: /doc/images/chrome-infra-logo-32x32.png

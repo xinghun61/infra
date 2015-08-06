@@ -32,7 +32,7 @@ Standalone one-purpose repos:
   utilities to support writing unittests for infra-related tools.
 
 See also
-[other internal repos](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/docs/source.md).
+[other internal repos](http://go/chrome-infra-docs-internal/source.md).
 
 ## Checkout code
 

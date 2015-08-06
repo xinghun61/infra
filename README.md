@@ -3,7 +3,7 @@
 Welcome to the Chrome Infra repository!
 
 Wondering where to start? Check out [General Chrome Infrastructure
-documentation](docs/index.md). The rest of this page is specific to this repo.
+documentation](doc/index.md). The rest of this page is specific to this repo.
 
 ## Entry points
 

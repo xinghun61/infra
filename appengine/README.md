@@ -66,7 +66,7 @@ Some examples can be found in
 existing applications, and a simple test setup is also provided by the
 `infra.tools.new_app` script.
 
-See [Testing in infra.git](/docs/testing.md) for more details. In particular,
+See [Testing in infra.git](/doc/testing.md) for more details. In particular,
 it's important to have a test file `tests/foo_test.py` for every source file
 `foo.py`.
 

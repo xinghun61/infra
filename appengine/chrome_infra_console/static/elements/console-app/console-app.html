@@ -35,7 +35,7 @@ found in the LICENSE file-->
   <template id="temp">
     <paper-drawer-panel id="paperDrawerPanel">
       <div drawer id="drawer">
-        <img id="chromeInfraImg" 
+        <img id="chromeInfraImg"
         src="../../images/chrome-infra-logo-200x200.png"
         alt="chrome_infra_icon">
         <project-dropdown p-id="{{project}}"></project-dropdown>
@@ -49,7 +49,7 @@ found in the LICENSE file-->
             <iron-icon icon="help"></iron-icon>
             <span>Help</span>
           </paper-item>
- 
+
           <paper-item id="feedbackItem" on-click="feedbackClicked">
             <iron-icon icon="mail"></iron-icon>
             <span>Feedback</span>
@@ -63,7 +63,7 @@ found in the LICENSE file-->
           <paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle>
           </paper-icon-button>
           <span class="flex"></span>
-          <google-signin id="s" raised toggles elevation="4" client-id="{{clientID}}" 
+          <google-signin id="s" raised toggles elevation="4" client-id="{{clientID}}"
           scopes="https://www.googleapis.com/auth/userinfo.email"></google-signin>
           <paper-icon-button id="refresh" icon="refresh" on-click="refresh">
           </paper-icon-button>
@@ -81,14 +81,14 @@ found in the LICENSE file-->
 
             <div>
               <console-home project-id="{{project}}">
-              </console-home>            
+              </console-home>
             </div>
 
             <div>
               <paper-material class="paper" elevation="1">
                 <div class="paperContent">
                   <h2>Help</h2>
-                  <paper-button on-click="clickDoc" id="doc" 
+                  <paper-button on-click="clickDoc" id="doc"
                     raised elevation="4">
                     Chrome Infrastructure Documentation
                   </paper-button>
@@ -100,7 +100,7 @@ found in the LICENSE file-->
               <paper-material class="paper" elevation="1">
                 <div class="paperContent">
                   <h2>Feedback</h2>
-                  <paper-button on-click="fileBug" id="trooper" 
+                  <paper-button on-click="fileBug" id="trooper"
                     raised elevation="6">
                     File a bug to Chromium troopers
                   </paper-button>
@@ -131,7 +131,7 @@ found in the LICENSE file-->
       ready: function() {
         init();
       },
-  
+
       listeners: {
         'selected': 'homeClicked',
         'google-signin-success': 'signinSuccess',
@@ -166,14 +166,15 @@ found in the LICENSE file-->
 
       signinSuccess: function() {
         console.log('SignIn');
+        user = gapi.auth2.getAuthInstance().currentUser.get();
       },
 
       clickDoc: function() {
-        var win = window.open("https://chromium.googlesource.com/infra/infra/+/master/docs/index.md", '_blank');
+        var win = window.open("https://chromium.googlesource.com/infra/infra/+/master/doc/index.md", '_blank');
         win.focus();
       },
       fileBug: function() {
-        var win = window.open("https://sites.google.com/a/chromium.org/dev/developers/testing/contacting-a-trooper", '_blank');
+        var win = window.open("https://chromium.googlesource.com/infra/infra/+/master/doc/users/contacting_troopers.md", '_blank');
         win.focus();
       },
       _projectSelected: function() {
