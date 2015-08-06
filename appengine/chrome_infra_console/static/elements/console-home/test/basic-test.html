@@ -39,12 +39,11 @@ found in the LICENSE file-->
               ], labelText: 'Memory Usage'}, 
               "fields": [{key:"host", value:"213"}]}]};
           myEl.projectId = "infra";
-          myEl._projectChanged();
-          assert.equal(myEl.spin, false);
+          myEl.projectChanged();
           chart = myEl.querySelector('#chart0').childNodes;
           assert.equal(chart.length, 4);
           myEl.projectId = "v8";
-          myEl._projectChanged();
+          myEl.projectChanged();
           chart = myEl.querySelector('#chart0').childNodes;
           assert.equal(chart.length, 0);
         });

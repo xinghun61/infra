@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import logging
 
 import endpoints
+import webapp2
 from google.appengine.api import namespace_manager
 from google.appengine.ext import ndb
 from google.appengine.ext.appstats import recording
@@ -48,9 +50,18 @@ class FieldModel(ndb.Model):
 
 
 class TimeSeriesModel(ndb.Model):
+  timestamp = ndb.DateTimeProperty()
   points = ndb.StructuredProperty(PointModel, repeated=True)
   fields = ndb.StructuredProperty(FieldModel, repeated=True)
   metric = ndb.StringProperty()
+
+  def update_timestamp(self):
+    self.timestamp = time_now()
+  
+
+def time_now():
+  """This is for mocking in test."""
+  return datetime.datetime.utcnow()
 
 
 class Config(messages.Message):
@@ -105,6 +116,7 @@ class ConsoleAppApi(remote.Service):
     if ts == None:
       ts = TimeSeriesModel(
         points=[], fields=fieldmodels, metric=timeseries.metric)
+    ts.update_timestamp()
     ts.points = [PointModel(time=point.time, value=point.value)
                  for point in timeseries.points]
     yield ts.put_async()
@@ -170,6 +182,24 @@ class UIApi(remote.Service):
 def add_appstats(app):
   return recording.appstats_wsgi_middleware(app)
 
+
+class CronHandler(webapp2.RequestHandler):
+
+  def get(self):
+    for ns in ndb.metadata.get_namespaces():
+      namespace_manager.set_namespace(ns)
+      cut_off = time_now() - datetime.timedelta(hours=24)
+      query = TimeSeriesModel.query()
+      query = query.filter(TimeSeriesModel.timestamp <= cut_off)
+      query = query.order(TimeSeriesModel.timestamp)
+      for key in query.iter(keys_only=True):
+        key.delete()
+
+handlers = [
+  ('/tasks/clean_outdated_graphs', CronHandler)
+]
+
+WEBAPP = add_appstats(webapp2.WSGIApplication(handlers, debug=True))      
 
 APPLICATION = add_appstats(ndb.toplevel(endpoints.api_server([
     ConsoleAppApi, UIApi, config.ConfigApi])))

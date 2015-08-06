@@ -41,6 +41,10 @@ handlers:
 - url: /stats.*
   script: google.appengine.ext.appstats.ui.app
 
+- url: /tasks/clean_outdated_graphs
+  login: admin
+  script: main.WEBAPP
+
 libraries:
 - name: endpoints
   version: 1.0

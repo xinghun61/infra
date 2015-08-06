@@ -1,0 +1,4 @@
+cron:
+- description: clean up datastore
+  url: /tasks/clean_outdated_graphs
+  schedule: every 30 minutes

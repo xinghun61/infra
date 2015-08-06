@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 
+import datetime
 import logging
 
 from components import auth
@@ -110,4 +111,33 @@ class UIApiTest(testing.EndpointsTestCase):
     config.get_project_config.return_value = (None, None)
     response = self.call_api('get_graphs', {"project_id":'123'}).json_body
     self.assertEquals(len(response.keys()), 0)
-    
+
+
+class CronTest(testing.AppengineTestCase):
+  
+  @property
+  def app_module(self):
+    return main.WEBAPP
+
+  @mock.patch('main.time_now')
+  def test_get(self, time_now_mock): 
+    start_time = datetime.datetime(2015, 8, 3, 8, 0, 43) 
+    points = [main.PointModel(time = 1.0, value= 10.0)]
+    fields = [main.FieldModel(field_key='project_id', value='infra')]
+    ts1 = main.TimeSeriesModel(
+        points=points, fields=fields,metric='disk_used')
+    time_now_mock.return_value = start_time
+    ts1.update_timestamp()
+    ts1.put()
+
+    points = [main.PointModel(time = 3.0, value= 10.0)]
+    fields = [main.FieldModel(field_key='project_id', value='v8')]
+    ts2 = main.TimeSeriesModel(
+        points=points, fields=fields,metric='disk_used')
+    time_now_mock.return_value = start_time + datetime.timedelta(hours=25)
+    ts2.update_timestamp()
+    ts2.put() 
+
+    time_now_mock.return_value = start_time + datetime.timedelta(hours=27)
+    self.test_app.get('/tasks/clean_outdated_graphs')
+    self.assertEquals(main.TimeSeriesModel.query().count(), 1)   
