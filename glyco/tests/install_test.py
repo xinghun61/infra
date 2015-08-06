@@ -49,28 +49,26 @@ class CheckSha1Test(unittest.TestCase):
     filename = os.path.join(
       DATA_DIR, 'wheels', 'source_package_valid_sha1-0.0.1-0_'
       + '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
-    self.assertTrue(install.has_valid_sha1(filename))
+    self.assertTrue(install.has_valid_sha1(filename, verbose=False))
 
   def test_bad_hash(self):
     filename = os.path.join(
       DATA_DIR, 'wheels', 'source_package_invalid_sha1-0.0.1-0_'
       + 'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
-    self.assertFalse(install.has_valid_sha1(filename))
+    self.assertFalse(install.has_valid_sha1(filename, verbose=False))
 
   def test_no_build_number(self):
     # The file doesn't have to exist.
     filename = ('source_package_invalid_sha1-0.0.1-py2-none-any.whl')
-    with self.assertRaises(util.InvalidWheelFile):
-      self.assertFalse(install.has_valid_sha1(filename))
+    self.assertFalse(install.has_valid_sha1(filename, verbose=False))
 
   def test_invalid_filename(self):
     # The file doesn't have to exist.
     filename = ('source_package.txt')
-    with self.assertRaises(util.InvalidWheelFile):
-      self.assertFalse(install.has_valid_sha1(filename))
+    self.assertFalse(install.has_valid_sha1(filename, verbose=False))
 
 
-class InstallPackagesTest(unittest.TestCase):
+class InstallLocalPackagesTest(unittest.TestCase):
   def test_install_one_package(self):
     parser = argparse.ArgumentParser()
     main_.add_argparse_options(parser)
@@ -141,6 +139,262 @@ class InstallPackagesTest(unittest.TestCase):
 
     self.assertNotEqual(result, 0)
 
+
+class FakeHttp(object):
+  """Replacement object for httplib2.Http"""
+
+  def __init__(self):
+    # Map url to header and filename containing response.
+    # File names are relative to DATA_DIR
+    self.filenames = {}
+    filenames = self.filenames  # saving a few characters.
+
+    # Good file
+    filenames['https://a.random.host.com/'
+              'source_package_valid_sha1-0.0.1-0_'
+              '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'] = [
+      {'status': '200'},
+      os.path.join('wheels',
+                   'source_package_valid_sha1-0.0.1-0_'
+                   '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+              ]
+
+    # Bad files
+    filenames['https://a.random.host.com/'
+              'source_package_invalid_sha1-0.0.1-0_'
+              'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'] = [
+      {'status': '200'},
+      os.path.join('wheels',
+                   'source_package_invalid_sha1-0.0.1-0_'
+                   'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+              ]
+
+    filenames['https://a.random.host.com/invalid_name.whl'] = [
+      {'status': '200'},
+      os.path.join('wheels',
+                   'source_package_invalid_sha1-0.0.1-0_'
+                   'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+              ]
+
+    # And simulating an error.
+    filenames['https://a.broken.host.com/'
+              'source_package_valid_sha1-0.0.1-0_'
+              '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'] = [
+      {'status': '403'}, None
+    ]
+
+  def request(self, url, verb):
+    if verb != 'GET':
+      raise NotImplementedError('Only GET is implementd in this mock.')
+    resp, filename = self.filenames[url]
+    content = ''
+    if filename:
+      with open(os.path.join(DATA_DIR, filename), 'rb') as f:
+        content = f.read()
+    return resp, content
+
+
+class FetchPackagesTest(unittest.TestCase):
+  def test_fetch_one_file(self):
+    requester = None
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = os.path.join(
+        DATA_DIR,
+        'wheels',
+        'source_package_valid_sha1-0.0.1-0_'
+        '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+
+      install_list = [{'location': 'file://' + location,
+                       'location_type': 'file'}]
+      paths = install.fetch_packages(
+        install_list, requester=requester, cache=cache, verbose=False)
+
+      self.assertEqual(len(paths), 1)
+      self.assertEqual(paths[0], location)
+      # The file is readily available, nothing should be copied to the cache.
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+  def test_fetch_two_files(self):
+    requester = None
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      locations = [
+        os.path.join(
+          DATA_DIR,
+          'wheels',
+          'source_package_valid_sha1-0.0.1-0_'
+          '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'
+        ),
+        os.path.join(
+          DATA_DIR,
+          'wheels',
+          'installed_package-0.0.1-0_'
+          '58a752f45f35a07c7d94149511b3af04bab11740-py2-none-any.whl'
+        )
+      ]
+
+      install_list = [{'location': 'file://' + location,
+                       'location_type': 'file'}
+                      for location in locations]
+      paths = install.fetch_packages(
+        install_list, requester=requester, cache=cache, verbose=False)
+
+      self.assertEqual(len(paths), 2)
+      self.assertEqual(paths[0], locations[0])
+      self.assertEqual(paths[1], locations[1])
+
+      # The file is readily available, nothing should be copied to the cache.
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+  def test_fetch_one_invalid_file(self):
+    requester = None
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = os.path.join(
+        DATA_DIR,
+        'wheels',
+        'source_package_invalid_sha1-0.0.1-0_'
+        'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'
+      )
+      install_list = [{'location': 'file://' + location,
+                       'location_type': 'file'}]
+      with self.assertRaises(ValueError):
+        install.fetch_packages(
+          install_list, requester=requester, cache=cache, verbose=False)
+
+      # The file is readily available, nothing should be copied to the cache.
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+  def test_fetch_one_http_file_good(self):
+    requester = FakeHttp()
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = ('https://a.random.host.com/'
+                  'source_package_valid_sha1-0.0.1-0_'
+                  '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      install_list = [{'location': location,
+                       'location_type': 'http'}]
+      paths = install.fetch_packages(
+        install_list, requester=requester, cache=cache, verbose=False)
+
+      cache_files = [os.path.join(cache, filename)
+                     for filename in os.listdir(cache)]
+      self.assertEqual(len(cache_files), 1)
+      self.assertEqual(paths[0], cache_files[0])
+
+  def test_fetch_one_http_file_invalid_sha1(self):
+    requester = FakeHttp()
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = ('https://a.random.host.com/'
+                  'source_package_invalid_sha1-0.0.1-0_'
+                  'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      install_list = [{'location': location,
+                       'location_type': 'http'}]
+      with self.assertRaises(ValueError):
+        install.fetch_packages(
+          install_list, requester=requester, cache=cache, verbose=False)
+
+      # An invalid file should be deleted from the cache.
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+  def test_fetch_one_http_file_invalid_name(self):
+    requester = FakeHttp()
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = 'https://a.random.host.com/invalid_name.whl'
+      install_list = [{'location': location,
+                       'location_type': 'http'}]
+      with self.assertRaises(ValueError):
+        install.fetch_packages(
+          install_list, requester=requester, cache=cache, verbose=False)
+
+      # Still nothing in the cache
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+  def test_fetch_one_http_file_http_error(self):
+    requester = FakeHttp()
+    with util.temporary_directory(prefix='glyco-fetch-test-') as tempdir:
+      cache = os.path.join(tempdir, 'cache')
+      location = ('https://a.broken.host.com/'
+                  'source_package_valid_sha1-0.0.1-0_'
+                  '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      install_list = [{'location': location,
+                       'location_type': 'http'}]
+      with self.assertRaises(ValueError):
+        install.fetch_packages(
+          install_list, requester=requester, cache=cache, verbose=False)
+
+      # Still nothing in the cache
+      self.assertEqual(len(os.listdir(cache)), 0)
+
+
+class GetInstallListTest(unittest.TestCase):
+  def test_one_file(self):
+    install_list = install.get_install_list([
+      os.path.join(DATA_DIR, 'wheels', 'source_package_valid_sha1-0.0.1-0_'
+                   '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      ])
+
+    self.assertEqual(len(install_list), 1)
+    self.assertEqual(install_list[0]['location_type'], 'file')
+    self.assertTrue(install_list[0]['location'].startswith('file://'))
+
+  def test_two_files(self):
+    install_list = install.get_install_list([
+      os.path.join(DATA_DIR, 'wheels', 'source_package_valid_sha1-0.0.1-0_'
+                   '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'),
+      os.path.join(DATA_DIR, 'wheels', 'source_package_invalid_sha1-0.0.1-0_'
+                   'deadbeef3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      ])
+
+    self.assertEqual(len(install_list), 2)
+    for item in install_list:
+      self.assertEqual(item['location_type'], 'file')
+      self.assertTrue(item['location'].startswith('file://'))
+
+  def test_existing_and_non_existing_files(self):
+    install_list = install.get_install_list([
+        os.path.join(DATA_DIR, 'wheels', 'source_package_valid_sha1-0.0.1-0_'
+                   '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl'),
+        os.path.join(
+          DATA_DIR, 'wheels', 'non_existing_file-0.0.1-0_'
+              '41128a9c3767ced3ec53b89b297e0268f1338b2b-py2-none-any.whl')
+      ])
+    self.assertTrue(len(install_list), 2)
+    self.assertFalse(install_list[0].get('error'))
+    self.assertTrue(install_list[1].get('error'))
+
+  def test_http_uri(self):
+    install_list = install.get_install_list(
+      ['http://some.host.com/some_package.whl'])
+    self.assertTrue(len(install_list), 1)
+    self.assertTrue(install_list[0].get('error'))
+
+  def test_https_uri(self):
+    install_list = install.get_install_list(
+      ['https://some.host.com/some_package.whl'])
+
+    self.assertEqual(len(install_list), 1)
+    self.assertEqual(install_list[0]['location_type'], 'http')
+    self.assertTrue(install_list[0]['location'].startswith('https://'))
+
+  def test_gs_uri(self):
+    install_list = install.get_install_list(
+      ['gs://some_bucket/some_package.whl'])
+
+    self.assertEqual(len(install_list), 1)
+    self.assertEqual(install_list[0]['location_type'], 'http')
+    self.assertEqual(
+      install_list[0]['location'],
+      'https://storage.googleapis.com/some_bucket/some_package.whl')
+
+  def test_unknown_uri(self):
+    install_list = install.get_install_list(
+      ['weird://some.host.com/some_package.whl'])
+    self.assertTrue(len(install_list), 1)
+    self.assertTrue(install_list[0].get('error'))
 
 if __name__ == '__main__':
   unittest.main()

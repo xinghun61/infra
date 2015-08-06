@@ -1,5 +1,16 @@
-Packages in this directory have been installed there using pip, based on a wheel file:
-pip install -t third_party --no-index --no-deps <package>.whl
+The httplib2 package has been installed using Glyco itself, using revision 
+7d1b88a3cf34774242bf4c0578c09c0092bb05d8:
+
+git clone https://chromium.googlesource.com/external/github.com/jcgregorio/httplib2
+cd httplib2
+git checkout 7d1b88a3cf34774242bf4c0578c09c0092bb05d8
+cd ..
+glyco pack httplib2 -o .
+glyco install httplib2-0.9-0_52d3c1a26ffad2317a89215d0585870d1a08943a-py2-none-any.whl  -i third_party
+
+
+Other packages in this directory have been installed there using pip, based on a wheel 
+file: pip install -t third_party --no-index --no-deps <package>.whl
 
 Installation of virtualenv.
 The following assumes that pip and wheel are installed.
@@ -12,5 +23,6 @@ git checkout 13.0.3
 pip wheel --no-index --no-deps --wheel-dir ./wheelhouse virtualenv/
 # Install the wheel file
 pip install -t ./third_party --no-index --no-deps wheelhouse/virtualenv-13.0.3-py2.py3-none-any.whl
+
 
 
