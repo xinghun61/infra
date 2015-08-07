@@ -14,14 +14,18 @@ class BuilderTimelineDataTest(testing.AppengineTestCase):
 
   def test_simple_data(self):
     data = load_json('builder_simple.json')
+    master = 'tryserver'
     builder = 'test builder'
-    events = create_events(data, builder)
+    buildId = 1
+    attempt_string = 'Attempt 1'
+    events = create_events(data, master, builder, buildId, attempt_string)
     bCount = 0
     eCount = 0
     for event in events:
-      self.assertEqual(builder, event.cat)
+      self.assertEqual(master, event.cat)
       self.assertEqual(builder, event.tid)
-      self.assertEqual('Builder Data', event.pid)
+      self.assertEqual(attempt_string, event.pid)
+      self.assertEqual(buildId, event.args['id'])
       if event.ph == 'B':
         bCount += 1
       if event.ph == 'E':

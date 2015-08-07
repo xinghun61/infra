@@ -21,11 +21,12 @@ from handlers.patch_timeline_data import (
 
 class BuilderTimelineData(webapp2.RequestHandler): # pragma: no cover
   @cross_origin_json
-  def get(self, master, builder, buildId):
+  def get(self, master, builder, buildId, attempt_string):
     data = get_data(master, builder, buildId)
     events = []
     if data:
-      for event in create_events(data, builder):
+      for event in create_events(data, master, builder, buildId, 
+                                 attempt_string):
         events.append(event.to_dict())
     return events
 
@@ -42,10 +43,13 @@ def get_data(master, builder, buildId): # pragma: no cover
     return data
 
 
-def create_events(data, builder): # pragma: no cover
+def create_events(data, master, builder, buildId, 
+                  attempt_string): # pragma: no cover
   steps = data['steps']
+  state = 'cq_build_failed' if data.get('failed_steps') else 'cq_build_passed'
   for step in steps:
-    yield TraceViewerEvent(step['name'], builder, 'B', step['times'][0],
-                           'Builder Data', builder)
-    yield TraceViewerEvent(step['name'], builder, 'E', step['times'][1],
-                           'Builder Data', builder)
+    cname = state if step['name'] == 'steps' else None
+    yield TraceViewerEvent(step['name'], master, 'B', step['times'][0],
+                           attempt_string, builder, cname, {'id': buildId})
+    yield TraceViewerEvent(step['name'], master, 'E', step['times'][1],
+                           attempt_string, builder, cname, {'id': buildId})

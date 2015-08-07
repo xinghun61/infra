@@ -18,7 +18,7 @@ from handlers.stats_data_points import StatsDataPoints
 handlers = [
   (r'/', Index),
   (r'/admin/(.*)', AdminDispatch),
-  (r'/builder-timeline-data/(.*)/(.*)/(.*)', BuilderTimelineData),
+  (r'/builder-timeline-data/(.*)/(.*)/(.*)/(.*)', BuilderTimelineData),
   (r'/patchset/(.*)/(.*)', PatchStatus),  # Legacy URL for old links.
   (r'/patch-status/(.*)/(.*)', PatchStatus),
   (r'/patch-summary/(.*)/(.*)', PatchSummary),
