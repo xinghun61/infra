@@ -9,6 +9,7 @@ from waterfall import extractor_util
 
 
 class ExtractorUtilTest(unittest.TestCase):
+
   def _VerifyPattern(self, pattern, cases):
     self.assertTrue(isinstance(cases, (list, dict)))
 
@@ -72,12 +73,21 @@ class ExtractorUtilTest(unittest.TestCase):
     }
     self._VerifyPattern(extractor_util.FILE_PATH_LINE_PATTERN, cases)
 
-  def testPythonStackTraceFramePattern(self):
+  def testPythonStackTraceFramePattern1(self):
     cases = {
         '  File "a/b/c.py", line 109, in abc':
             [('a/b/c.py', '109', 'abc')],
     }
-    self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN, cases)
+    self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1,
+                        cases)
+
+  def testPythonStackTraceFramePattern2(self):
+    cases = {
+        '  abc at a/b/c.py:123':
+            [('abc', 'a/b/c.py', '123')],
+    }
+    self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2,
+                        cases)
 
   def testCPPStackTraceFramePattern(self):
     self.assertRegexpMatches(

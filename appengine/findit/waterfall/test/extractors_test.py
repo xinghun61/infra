@@ -157,6 +157,64 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.GeneralExtractor, expected_signal_json)
 
+  def testLeastRecentPythonFramesAreIgnored(self):
+    failure_log = textwrap.dedent("""
+        Traceback (most recent call last):
+          method1 at path/a.py:1
+            message1
+          method2 at path/b.py:2
+            message2
+          method3 at path/c.py:3
+            message3
+          method4 at path/d.py:4
+            message4
+          method5 at path/e.py:5
+            message5
+        blablaError: blabla...
+
+        blabla
+
+        Traceback (most recent call last):
+          File "path/f.py", line 12, in method1
+            message1
+          File "path/g.py", line 34, in method2
+            message2
+          File "path/h.py", line 56, in method3
+            message3
+          File "path/i.py", line 78, in method4
+            message4
+          File "path/j.py", line 910, in method5
+            message5
+        blabalError: blabla...
+
+        blabla
+
+        Traceback (most recent call last):
+          File "path/k.py", line 123, in method1
+            message1
+          File "path/l.py", line 456, in method2
+            message2
+        blablaError: blabla...""")
+    expected_signal_json = {
+        'files': {
+            'path/b.py': [2],
+            'path/c.py': [3],
+            'path/d.py': [4],
+            'path/e.py': [5],
+            'path/g.py': [34],
+            'path/h.py': [56],
+            'path/i.py': [78],
+            'path/j.py': [910],
+            'path/k.py': [123],
+            'path/l.py': [456],
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.GeneralExtractor, expected_signal_json)
+
   def testCompileStepExtractor(self):
     failure_log = textwrap.dedent("""
         [1832/2467 | 117.498] CXX obj/a/b/test.file.o

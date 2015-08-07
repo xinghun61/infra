@@ -15,45 +15,80 @@ class GeneralExtractor(Extractor):
   It extracts file name and line numbers.
   """
 
+  def _ExtractCppFiles(self, cpp_stacktrace_frames, signal):
+    in_expected_crash = False
+    for frame in cpp_stacktrace_frames:
+      match = extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(frame)
+      cpp_stack_frame_index = int(match.group(1)) + 1
+
+      if '::CrashIntentionally()' in frame:
+        in_expected_crash = True
+
+      if (not in_expected_crash and cpp_stack_frame_index <=
+          extractor_util.CPP_MAXIMUM_NUMBER_STACK_FRAMES):
+        self.ExtractFiles(frame, signal)
+
+  def _ExtractPythonFiles(self, python_stacktrace_frames, signal):
+    frames_with_filenames = []
+    for frame in python_stacktrace_frames:
+      if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.match(frame) or
+          extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.match(frame)):
+        frames_with_filenames.append(frame)
+
+    for frame in frames_with_filenames[
+        -extractor_util.PYTHON_MAXIMUM_NUMBER_STACK_FRAMES:]:
+      self.ExtractFiles(frame, signal)
+
   def Extract(self, failure_log, *_):
     signal = FailureSignal()
+    failure_log_lines = failure_log.splitlines()
 
-    in_expected_crash = False
-    is_gmock_warning = False
-    # Extract files and line numbers.
-    for line in failure_log.splitlines():
-      match = extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(line)
-      if match:
-        cpp_stack_frame_index = int(match.group(1)) + 1
-        if not in_expected_crash and '::CrashIntentionally()' in line:
-          # TODO: Add a crash stack parser to handle crash separately.
-          # TODO: Re-factor and add a list of crash signature to be ignored.
-          in_expected_crash = True
-      else:
-        cpp_stack_frame_index = 0
-        in_expected_crash = False
+    i = 0
+    end_index = len(failure_log_lines)
 
-      if in_expected_crash or cpp_stack_frame_index > 4:
-        # Ignore expected crashes and frames deep in the unexpected crashes.
-        # For a crash, usually it is caused by some change to files in the top
-        # frames. CLs touching other frames deep in the stacks usually are not
-        # culprits. Here, we set the threshold as 4 frames.
-        continue
-
-      if 'GMOCK WARNING:' in line:
+    while i < end_index:
+      line = failure_log_lines[i]
+      cpp_stacktrace_match = extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(
+          line)
+      if cpp_stacktrace_match:
+        # Handle cpp failure stacktraces.
+        start = i
+        for line in failure_log_lines[start:]:  # pragma: no cover
+          if extractor_util.CPP_STACK_TRACE_FRAME_PATTERN.match(line):
+            i += 1
+          else:
+            break
+        end = i
+        cpp_stacktrace_frames = failure_log_lines[start:end]
+        self._ExtractCppFiles(cpp_stacktrace_frames, signal)
+      elif line.startswith(extractor_util.PYTHON_STACK_TRACE_START_MARKER):
+        # Handle python failure stacktraces.
+        i += 1
+        start = i
+        while i < end_index:  # pragma: no cover
+          line = failure_log_lines[i]
+          if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.match(line) or
+              extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.match(line)):
+            i += 2
+          else:
+            break
+        end = i
+        python_stacktrace_frames = failure_log_lines[start:end]
+        self._ExtractPythonFiles(python_stacktrace_frames, signal)
+      elif 'GMOCK WARNING' in line:
         # Ignore GMOCK WARNING statements.
-        is_gmock_warning = True
-        continue
+        start = i
+        for l in failure_log_lines[start:]:  # pragma: no cover
+          if ('You can safely ignore the above warning unless this call '
+              'should not happen.') in l:
+            # The end line in GMOCK WARNING statements.
+            break
+          i += 1
+      else:
+        if line and not extractor_util.ShouldIgnoreLine(line):
+          self.ExtractFiles(line, signal)
 
-      if is_gmock_warning:
-        if ('You can safely ignore the above warning unless this call '
-            'should not happen.') in line:
-          # The end line in GMOCK WARNING statements.
-          is_gmock_warning = False
-        continue  # pragma: no cover
-
-      if line and not extractor_util.ShouldIgnoreLine(line):
-        self.ExtractFiles(line, signal)
+      i += 1
 
     return signal
 
