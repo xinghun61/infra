@@ -8,8 +8,9 @@ it and report a result back.
 *   Design doc: [go/buildbucket-design]
 *   Deployments:
     *   Prod: [cr-buildbucket.appspot.com](https://cr-buildbucket.appspot.com)
-    *   Test: [cr-buildbucket.appspot.com](https://cr-buildbucket-test.appspot.com)
-    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-test.appspot.com)
+    *   Test: [cr-buildbucket-test.appspot.com](https://cr-buildbucket-test.appspot.com)
+    *   Dev: [cr-buildbucket-dev.appspot.com](https://cr-buildbucket-dev.appspot.com)
+*   Bugs: [Infra-BuildBucket label](https://crbug.com?q=label=Infra-Buildbucket)
 *   Owner: nodir@
 
 [go/buildbucket-design]: http://go/buildbucket-design
