@@ -140,9 +140,8 @@ for file format.
 Each bucket has its own ACLs. By default a bucket is accessible only by admins.
 If a bucket does not exist, its ACL is considered default.
 
-[cr-buildbucket]: http://cr-buildbucket.appspot.com
-[cr-buildbucket-test]: https://cr-buildbucket-test.appspot.com
-[go/buildbucket-design]: go/buildbucket-design
+[cr-buildbucket]: https://cr-buildbucket.appspot.com
+[go/buildbucket-design]: http:/go/buildbucket-design
 [cancel]: http://cr-buildbucket.appspot.com/_ah/api/explorer/#p/buildbucket/v1/buildbucket.cancel
 [cancel_batch]: http://cr-buildbucket.appspot.com/_ah/api/explorer/#p/buildbucket/v1/buildbucket.cancel_batch
 [fail]: http://cr-buildbucket.appspot.com/_ah/api/explorer/#p/buildbucket/v1/buildbucket.fail
