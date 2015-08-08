@@ -9,9 +9,19 @@ import config
 import metrics
 import service
 
+README_MD = (
+    'https://chromium.googlesource.com/infra/infra/+/master/'
+    'appengine/cr-buildbucket/README.md')
+
 
 def create_service():
   return service.BuildBucketService()
+
+
+class MainHandler(webapp2.RequestHandler):  # pragma: no cover
+  """Redirects to README.md."""
+  def get(self):
+    return self.redirect(README_MD)
 
 
 class CronResetExpiredBuilds(webapp2.RequestHandler):
@@ -44,6 +54,7 @@ class BuildHandler(webapp2.RequestHandler):  # pragma: no cover
 
 def get_frontend_routes():  # pragma: no cover
   return [
+      webapp2.Route(r'/', MainHandler),
       webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
   ]
 
