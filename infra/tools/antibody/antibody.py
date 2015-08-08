@@ -18,7 +18,7 @@ from infra.tools.antibody import code_review_parse
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 ANTIBODY_UI_DIRPATH = os.path.join(THIS_DIR, 'antibody_ui')
 ANTIBODY_UI_MAIN_NAME = 'index.html'
-TBR_BY_USER_NAME = 'tbr_by_user.html'
+SEARCH_BY_USER_NAME = 'search_by_user.html'
 STATS_NAME = 'stats.html'
 LEADERBOARD_NAME = 'leaderboard.html'
 TBR_NO_LGTM_NAME = 'tbred_without_lgtm'
@@ -53,7 +53,7 @@ def add_argparse_options(parser):
   parser.add_argument('--output-dir-path', '-d', default=ANTIBODY_UI_DIRPATH,
                       help="path to directory in which the ui will be"
                            "generated")
-  parser.add_argument('--since', '-s', default='01-01-2014',
+  parser.add_argument('--since', '-s', default='01-01-2015',
                       help="parse all git commits after this date"
                            "format as YYYY-MM-DD")
 
@@ -66,10 +66,10 @@ def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath,
   template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   template_env = jinja2.Environment(loader=template_loader)
   template_vars_all = {
-      'antibody_main_link' : ANTIBODY_UI_MAIN_NAME,
-      'tbr_by_user_link' : TBR_BY_USER_NAME,
-      'stats_link' : STATS_NAME,
-      'leaderboard_link' : LEADERBOARD_NAME,
+      'antibody_main_link': ANTIBODY_UI_MAIN_NAME,
+      'search_by_user_link': SEARCH_BY_USER_NAME,
+      'stats_link': STATS_NAME,
+      'leaderboard_link': LEADERBOARD_NAME,
       'tbr_no_lgtm_link': TBR_NO_LGTM_NAME,
       'no_review_url_link': NO_REVIEW_URL_NAME,
       'blank_tbr_link': BLANK_TBR_NAME,
@@ -79,13 +79,27 @@ def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath,
       'generation_time' : time.strftime("%a, %d %b %Y %H:%M:%S",
                                         time.gmtime()),
       'page_header_text': "Antibody",
-      'to_be_reviewed' : "TBR by user",
-      'stats' : 'Stats',
-      'leaderboard' : 'Leaderboard',
-      'gitiles_prefix' : gitiles_prefix,
+      'by_user': "Search by user",
+      'stats': 'Stats',
+      'leaderboard': 'Leaderboard',
+      'gitiles_prefix': gitiles_prefix,
+      'gitiles_link': (gitiles_prefix[:-3]) if (
+          gitiles_prefix[-3:] == '/+/') else '',
       'all_repos': REPOSITORIES,
       'curr_repo': project_name,
       'since': since,
+      'feedback_link': 'https://code.google.com/p/chromium/issues/entry?'
+          'template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-'
+          'Monitoring,Infra&summary=%5BBrief%20description%20of%20problem%20or'
+          '%20feedback%20for%20Antibody%5D&comment=Please%20provide%20the%20'
+          'details%20for%20your%20request%20here.&cc=pgervais@chromium.org,'
+          '%20hinoka@chromium.org,%20keelerh@google.com,%20ksho@google.com',
+      'navbar_items': [
+          [ANTIBODY_UI_MAIN_NAME, 'home_nav', 'Commits'],
+          [SEARCH_BY_USER_NAME, 'search_nav', 'Search by User'],
+          [STATS_NAME, 'stats_nav', 'Stats'],
+          [LEADERBOARD_NAME, 'leaderboard_nav', 'Leaderboard'],
+      ]
   }
 
   try:  # pragma: no cover
@@ -105,8 +119,7 @@ def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath,
   if not os.path.exists(repo_dirpath):  # pragma: no cover
       os.makedirs(repo_dirpath)
   generate_stats_files(cc, repo_dirpath)
-  get_tbr_by_user(code_review_parse.get_tbr_no_lgtm(cc, 'tbr'),
-                             gitiles_prefix, repo_dirpath)
+  get_commits_by_user(cc, gitiles_prefix, repo_dirpath)
   generate_homepage(suspicious_commits, template_env, template_vars_all, 
                     repo_dirpath)
   generate_tbr_page(template_env, template_vars_all, repo_dirpath)
@@ -123,14 +136,15 @@ def generate_homepage(suspicious_commits, template_env, template_vars_all,
     data = json.load(f)
   stats_7_day = data['7_days']
   template_vars = {
-      'title' : 'Antibody Homepage',
-      'curr_page': ANTIBODY_UI_MAIN_NAME,
+      'title' : 'Antibody',
+      'curr_page_link': ANTIBODY_UI_MAIN_NAME,
+      'curr_page_id': 'home_body',
       'blank_TBR': stats_7_day['blank_tbr'],
       'num_tbr_no_lgtm': stats_7_day['tbr_no_lgtm'],
       'num_no_review_url': stats_7_day['no_review_url'],
       'suspicious_commits': suspicious_commits,
-      'table_headers' : ['Git Commit Hash', 'Code Review',
-                         'Commit Timestamp (UTC)'],
+      'table_headers' : ['Commit Timestamp (UTC)', 'Code Review',
+                         'Git Commit Hash'],
   }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, ANTIBODY_UI_MAIN_NAME), 'wb') as f:
@@ -138,14 +152,15 @@ def generate_homepage(suspicious_commits, template_env, template_vars_all,
 
 
 def generate_tbr_page(template_env, template_vars_all, ui_dirpath):
-  tbr_by_user_template = template_env.get_template('tbr_by_user.jinja')
+  search_by_user_template = template_env.get_template('search_by_user.jinja')
   template_vars = {
       'title' : 'TBR by User',
-      'curr_page': TBR_BY_USER_NAME,
+      'curr_page_link': SEARCH_BY_USER_NAME,
+      'curr_page_id': 'search_body',
   }
   template_vars.update(template_vars_all)
-  with open(os.path.join(ui_dirpath, TBR_BY_USER_NAME), 'wb') as f:
-    f.write(tbr_by_user_template.render(template_vars))
+  with open(os.path.join(ui_dirpath, SEARCH_BY_USER_NAME), 'wb') as f:
+    f.write(search_by_user_template.render(template_vars))
 
 
 def generate_stats_page(template_env, template_vars_all, ui_dirpath):
@@ -154,7 +169,8 @@ def generate_stats_page(template_env, template_vars_all, ui_dirpath):
     data = json.load(f)
   template_vars = {
       'title' : 'Antibody Stats',
-      'curr_page': STATS_NAME,
+      'curr_page_link': STATS_NAME,
+      'curr_page_id': 'stats_body',
       'table_headers': ['Git Hash', 'Review URL', 'Commit Timestamp (UTC)'],
   }
   stats_all = [
@@ -185,7 +201,8 @@ def generate_leaderboard_page(template_env, template_vars_all, ui_dirpath):
   leaderboard_template = template_env.get_template('leaderboard.jinja')
   template_vars = {
       'title' : 'Hall of Shame',
-      'curr_page': LEADERBOARD_NAME,
+      'curr_page_link': LEADERBOARD_NAME,
+      'curr_page_id': 'leaderboard_body',
   }
   template_vars.update(template_vars_all)
   with open(os.path.join(ui_dirpath, LEADERBOARD_NAME), 'wb') as f:
@@ -222,19 +239,24 @@ def generate_time_period_stats_pages(template_env, template_vars_all,
       f.write(time_period_template.render(template_vars))
 
 
-def get_tbr_by_user(tbr_no_lgtm, gitiles_prefix, output_dirpath):
+def get_commits_by_user(cc, gitiles_prefix, output_dirpath):
   # tbr_no_lgtm: review_url, request_timestamp, subject, people_email_address,
   # hash
   tbr_blame_dict = {}
-  for url, timestamp, subject, reviewer, git_hash in tbr_no_lgtm:
-    # timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    tbr_blame_dict.setdefault(reviewer, []).append(
-        [subject, url, timestamp, git_hash])
+  commits_tbred_to_user = code_review_parse.get_tbr_no_lgtm(cc, 'tbr')
+  commits_authored_by_user = code_review_parse.get_tbr_no_lgtm(cc, 'author')
+  for url, timestamp, subject, reviewer, git_hash in commits_tbred_to_user:
+    tbr_blame_dict.setdefault(reviewer, {'tbr':[], 'author':[]})['tbr'].append(
+        [subject, url, timestamp, git_hash, 'TBR'])
+  for url, timestamp, subject, reviewer, git_hash in commits_authored_by_user:
+    tbr_blame_dict.setdefault(reviewer, {'tbr':[],
+                                         'author':[]})['author'].append(
+        [subject, url, timestamp, git_hash, 'Author'])
   tbr_data = {
       "by_user" : tbr_blame_dict,
       "gitiles_prefix" : gitiles_prefix,
   }
-  with open(os.path.join(output_dirpath, 'tbr_by_user.json'), 'wb') as f:
+  with open(os.path.join(output_dirpath, 'search_by_user.json'), 'wb') as f:
     f.write(json.dumps(tbr_data))
 
 

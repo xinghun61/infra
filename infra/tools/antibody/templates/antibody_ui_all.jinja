@@ -23,110 +23,147 @@
 
 
 
-<body>
+<body id="{{ curr_page_id }}">
 
-  <div class="nav navbar-fixed-top">
+  <nav class="nav navbar navbar-default navbar-fixed-top">
     <div class="container">
-      <ul class="pull-left">
-        <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
-        <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
-        <li><a href="{{ stats_link }}">{{ stats }}</a></li>
-        <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
-      </ul>
-      <ul class="pull-right">
+      <div class="navbar-header">
+        <button type="button" 
+            class="navbar-toggle collapsed" 
+            data-toggle="collapse" 
+            data-target="#navbar" 
+            aria-expanded="false" 
+            aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand page_title">Antibody</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav ul_nav">
+          {% for link, nav_id, nav_text in navbar_items %}
+          <li id="{{ nav_id }}"><a href="{{ link }}">{{ nav_text }}</a></li>
+          {% endfor %}
+          <li><a href="{{ feedback_link }}" target="_blank">Feedback</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" 
               data-toggle="dropdown" 
               role="button" 
-              aria-haspopup="true"
-              aria-expanded="false">{{ curr_repo }}
-              <span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-right">
+              aria-haspopup="true" 
+              aria-expanded="false">
+            {{ curr_repo }}<span class="caret"></span></a>
+          <ul class="dropdown-menu ul_nav">
             {% for repo in all_repos %}
               {% if repo|lower == curr_repo|lower %}
               <li class="disabled">
               {% else %}
               <li>
               {% endif %}
-              <a href="../{{ repo }}/{{ curr_page }}">{{ repo }}</a></li>
+              <a href="../{{ repo }}/{{ curr_page_link }}">{{ repo }}</a></li>
             {% endfor %}
           </ul>
         </li>
-      </ul>
+        </ul>
+      </div><!--/.nav-collapse -->
     </div>
-  </div>
+  </nav>
 
-  <div class="stats">
+  <div class="contents">
     <div class="container">
-      In the past 7 days:
-      <div class="numbers">
-        <div class="col-md-4">
-          <h3> {{ num_tbr_no_lgtm }} </h3>
-          <p>
-            <a href="{{ stats_7_link }}#{{ tbr_no_lgtm_link }}">
-              TBR'ed without LGTM
-            </a>
-          </p>
-        </div>
-        <div class="col-md-4">
-          <h3> {{ num_no_review_url }} </h3>
-          <p>
-            <a href="{{ stats_7_link }}#{{ no_review_url_link }}">
-              without review URL 
-            </a>
-          </p>
-        </div>
-        <div class="col-md-4">
-          <h3> {{ blank_TBR }} </h3>
-          <p>
-            <a href="{{ stats_7_link }}#{{ blank_tbr_link }}">
-              with blank TBR
-            </a>
-          </p>
+      <div class="intro_text">
+        <p class="page_text">Antibody finds and flags suspicious commits in a
+           codebase that were: either 1. TBR'ed and never got an LGTM, 
+           2. committed without a review URL, or 3. submitted with a blank TBR.
+           The purpose of this is to experiment at monitoring the code review 
+           process.
+        </p>
+        <h4>
+          <a class="repo" href="{{ gitiles_link }}" target="_blank">
+            Source: {{ curr_repo }}
+          </a>
+        </h4>
+      </div>
+    </div>
+
+
+    <div class="stats">
+      <div class="container">
+        In the past 7 days:
+        <div class="numbers">
+          <div class="col-md-4">
+            <h3> {{ num_tbr_no_lgtm }} </h3>
+            <p>
+              <a href="{{ stats_7_link }}#{{ tbr_no_lgtm_link }}">
+                TBR'ed without LGTM
+              </a>
+            </p>
+          </div>
+          <div class="col-md-4">
+            <h3> {{ num_no_review_url }} </h3>
+            <p>
+              <a href="{{ stats_7_link }}#{{ no_review_url_link }}">
+                without review URL 
+              </a>
+            </p>
+          </div>
+          <div class="col-md-4">
+            <h3> {{ blank_TBR }} </h3>
+            <p>
+              <a href="{{ stats_7_link }}#{{ blank_tbr_link }}">
+                with blank TBR
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  
 
-  <div class="bootstrap-table data_table">
-    <div class="container">
-      <table 
-          data-toggle="table" 
-          data-cache="false"
-          data-pagination="true">
-        <thead>
-            <tr>
-            {% for item in table_headers %}
-              <th data-field="{{ item }} label">{{ item }}</th>
-            {% endfor %}
+    <div class="bootstrap-table data_table">
+      <div class="container">
+        <table 
+            data-toggle="table" 
+            data-cache="false"
+            data-pagination="true"
+            data-page-size="50">
+          <thead>
+              <tr>
+              {% for item in table_headers %}
+                <th data-field="{{ item }} label">{{ item }}</th>
+              {% endfor %}
+              </tr>
+          </thead>
+          <tbody>
+            <!-- review_url, request_timestamp, subject, email, hash -->
+            {% for rietveld_url, commit_timestamp, subject, _, git_hash in
+                suspicious_commits %}
+            <tr class="data_item">
+              <td class="commit_timestamp">{{ commit_timestamp }}
+              </td>
+              <td class="rietveld_url hyperlink">
+                <a href="{{ rietveld_url }}" target="_blank">
+                  {{ subject }}
+                </a></td>
+              <td class="git_hash hyperlink">
+                <a href="{{ gitiles_prefix }}{{ git_hash }}" target="_blank">
+                  {{ git_hash }}
+                </a></td>
             </tr>
-        </thead>
-        <tbody>
-          <!-- review_url, request_timestamp, subject, email, hash -->
-          {% for rietveld_url, commit_timestamp, subject, _, git_hash in
-          suspicious_commits %}
-          <tr class="data_item">
-            <td class="git_hash hyperlink">
-              <a href="{{ gitiles_prefix }}{{ git_hash }}">
-                {{ git_hash }}
-              </a></td>
-            <td class="rietveld_url hyperlink">
-              <a href="{{ rietveld_url }}">
-                {{ subject }}
-              </a></td>
-            <td class="commit_timestamp">{{ commit_timestamp }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  
 
-  <div class="gen_time">
-    <div class="container">
-      <p>Generated {{ generation_time }} UTC</p>
+    <div class="gen_time">
+      <div class="container">
+        <p>Generated {{ generation_time }} UTC</p>
+      </div>
     </div>
   </div>
 </body>

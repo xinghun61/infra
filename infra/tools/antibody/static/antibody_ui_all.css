@@ -1,5 +1,6 @@
+@import url(https://fonts.googleapis.com/css?family=Lora);
+
 .stats {
-  margin-top: 90px;
   padding-top: 5px;
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
@@ -31,3 +32,10 @@ tbody {
   height: 120px;
   overflow-y: auto;
 }
+
+a.repo {
+  text-transform: uppercase;
+  font-family: 'Lora';
+  text-align: center;
+}
+

@@ -46,7 +46,7 @@ class MyTest(auto_stub.TestCase):
     self.assertEqual(args.since, '2000')
 
   @mock.patch('infra.tools.antibody.antibody.generate_stats_files')
-  @mock.patch('infra.tools.antibody.antibody.get_tbr_by_user')
+  @mock.patch('infra.tools.antibody.antibody.get_commits_by_user')
   @mock.patch('infra.tools.antibody.code_review_parse.get_tbr_no_lgtm')
   def test_generate_antibody_ui(self, mock_tbr_by_user, 
                                 mock_gen_stats, mock_tbr_no_lgtm):
@@ -142,7 +142,7 @@ class MyTest(auto_stub.TestCase):
         self.assertFalse('}}' in file_string)
 
       with open(os.path.join(proj_dirname,
-                             antibody.TBR_BY_USER_NAME), 'r') as f:
+                             antibody.SEARCH_BY_USER_NAME), 'r') as f:
         file_string = f.read()
         self.assertTrue(file_string)
         self.assertFalse('{{' in file_string)
@@ -182,42 +182,66 @@ class MyTest(auto_stub.TestCase):
 
       self.assertTrue(os.path.exists(os.path.join(dirname, 'static')))
 
-  def test_get_tbr_by_user(self):
+  def test_get_commits_by_user(self):
     with infra_libs.temporary_directory(prefix='antibody-test') as dirname:
       # tbr_no_lgtm: review_url, request_timestamp, subject,
       # people_email_address, hash
-      tbr_no_lgtm = (
-          ('hello', '2015-07-13 11:11:11', 'pgervais@chromium.org',
-           'git_hash_1', 'https://codereview.chromium.org/1175993003'),
-          ('hello', '2015-07-13 11:11:11', 'hinoka@chromium.org',
-           'git_hash_1', 'https://codereview.chromium.org/1175993003'),
-          ('world', '2015-07-13 22:22:22', 'hinoka@chromium.org',
-           'git_hash_2', 'https://codereview.chromium.org/1171763002'),
-          ('world', '2015-07-13 22:22:22', 'keelerh@google.com',
-           'git_hash_2', 'https://codereview.chromium.org/1171763002'),
+      mock_cc = mock.MagicMock();
+      mock_cc.fetchall.side_effect = (
+        (
+          ('https://codereview.chromium.org/1175993003',
+           datetime.datetime(2015, 07, 13, 11, 11, 11), 'hello', 
+           'pgervais', 'git_hash_1'),
+          ('https://codereview.chromium.org/1175993003',
+           datetime.datetime(2015, 07, 13, 11, 11, 11), 'hello',
+           'hinoka', 'git_hash_1'),
+          ('https://codereview.chromium.org/1171763002',
+           datetime.datetime(2015, 07, 13, 22, 22, 22), 'world', 
+           'hinoka', 'git_hash_2'),
+          ('https://codereview.chromium.org/1171763002',
+           datetime.datetime(2015, 07, 13, 22, 22, 22), 'world',
+           'keelerh', 'git_hash_2'),
+        ),
+        (
+          ('https://codereview.chromium.org/1175993001',
+           datetime.datetime(2015, 07, 13, 11, 11, 11), 'hi',
+           'pgervais', 'git_hash_3'),
+          ('https://codereview.chromium.org/1171763000',
+           datetime.datetime(2015, 07, 13, 22, 22, 22), 'there',
+           'hinoka', 'git_hash_4'),
+        ),
       )
-      antibody.get_tbr_by_user(tbr_no_lgtm, 
+      antibody.get_commits_by_user(mock_cc, 
             'https://chromium.googlesource.com/infra/infra/+/', dirname)
       expected_out = {
         "by_user" : {
-          "pgervais" : [['git_hash_1',
-                         'https://codereview.chromium.org/1175993003',
-                         '2015-07-13 11:11:11']],
-          "hinoka" : [['git_hash_1',
-                       'https://codereview.chromium.org/1175993003',
-                       '2015-07-13 11:11:11'],
-                      ['git_hash_2',
-                       'https://codereview.chromium.org/1171763002',
-                       '2015-07-13 22:22:22']],
-          "keelerh" : [['git_hash_2',
-                        'https://codereview.chromium.org/1171763002',
-                        '2015-07-13 22:22:22']]
+          "pgervais" : {
+              "tbr": [['hello', 'https://codereview.chromium.org/1175993003',
+                       '2015-07-13 11:11:11', 'git_hash_1', 'TBR']],
+              "author": [['hi', 'https://codereview.chromium.org/1175993001',
+                          '2015-07-13 11:11:11', 'git_hash_3', 'Author']],
+          },
+          "hinoka" : {
+              "tbr": [['world', 'https://codereview.chromium.org/1171763002',
+                       '2015-07-13 22:22:22', 'git_hash_2', 'TBR'],
+                       ['hello', 'https://codereview.chromium.org/1175993003',
+                       '2015-07-13 11:11:11', 'git_hash_1', 'TBR'],
+                      ],
+              "author": [['there', 'https://codereview.chromium.org/1171763000',
+                          '2015-07-13 22:22:22', 'git_hash_4', 'Author']],
+          },
+          "keelerh" : {
+              "tbr": [['world', 'https://codereview.chromium.org/1171763002',
+                       '2015-07-13 22:22:22', 'git_hash_2', 'TBR']],
+              "author": [],
+          },
         },
         "gitiles_prefix" : "https://chromium.googlesource.com/infra/infra/+/",
       }
-      with open(os.path.join(dirname, 'tbr_by_user.json'), 'r') as f:
+      with open(os.path.join(dirname, 'search_by_user.json'), 'r') as f:
         output = json.load(f)
-      self.assertItemsEqual(output, expected_out)
+        print output
+      self.assertEqual(output, expected_out)
 
 
   def test_get_gitiles_prefix(self):

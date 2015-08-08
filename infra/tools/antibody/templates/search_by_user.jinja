@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8" /> 
 
-  
   <script 
       src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
   </script>
   <script src="../static/third_party/bootstrap.min.js"></script>
   <script src="../static/third_party/bootstrap-table.js"></script>
   <script src="../static/universal.js"></script>
-  <script src="../static/leaderboard.js"></script>
+  <script src="../static/search_by_user.js"></script>
   <link rel="stylesheet" href="../static/third_party/bootstrap.min.css">
   <link rel="stylesheet" href="../static/third_party/bootstrap-table.css">
-  <link rel="stylesheet" type="text/css" href="../static/leaderboard.css">
+  <link rel="stylesheet" type="text/css" href="../static/search_by_user.css">
   <link rel="stylesheet" type="text/css" href="../static/universal.css">
 
 
@@ -24,7 +23,6 @@
 
 
 <body id="{{ curr_page_id }}">
-
   <nav class="nav navbar navbar-default navbar-fixed-top">
     <div class="container">
       <div class="navbar-header">
@@ -72,40 +70,53 @@
     </div>
   </nav>
 
-  <div class="leaderboard">
-    <div class="container">
-      <div class="intro_text">
-        <p class="page_text">Ranking of committers based on ratio of 
-           antibody-detected potentially suspicious commits to total commits
-           since {{ since }}. Sort by email, total number of suspicious 
-           commits, or total commits.
-        </p>
+<div class="search">
+  <div class="container">
+
+    <div class="intro_text">
+      <p class="page_text">Look up potentially suspicious commits to 
+          {{ curr_repo }} by username. Filter by either authored or TBR'ed.</p>
+    </div>
+
+
+    <div class="row">    
+      <div class="col-xs-8 col-xs-offset-2">
+        <div class="input-group">
+          <div class="input-group-btn search-panel">
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+              <span id="search_concept">Select by</span> <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu type_menu" role="menu">
+              <li><a href="#tbr">TBR'ed</a></li>
+              <li><a href="#author">Authored</a></li>
+              <li class="divider"></li>
+              <li><a href="#all">All</a></li>
+            </ul>
+          </div>
+          <input type="hidden" name="search_param" value="all" id="search_param">         
+          <input type="text" class="form-control username" name="x" placeholder="Username">
+          <span class="input-group-btn">
+            <button class="btn btn-default" id="search_btn" type="button">
+              <span class="glyphicon glyphicon-search"></span>
+            </button>
+          </span>
+        </div>
       </div>
-      <table id="table"
-             data-toggle="table"
-             data-url="all_time_leaderboard.json"
-             data-pagination="true"
-             data-page-size="50"
-             data-sort-name="name"
-             data-sort-order="desc">
-        <thead>
-          <tr>
-            <th data-field="rank" data-sortable="true">Rank</th>
-            <th data-field="email" data-sortable="true">Username</th>
-            <th data-field="suspicious" data-sortable="true">
-                Suspicious Commits</th>
-            <th data-field="total" data-sortable="true">Total Commits</th>
-            <th data-field="ratio" data-sortable="true">
-                Ratio Suspicious:Total Commits</th>
-          </tr>
-        </thead>
-      </table>
     </div>
   </div>
+</div>
+
+  
+  <div class="commits_to_be_reviewed bootstrap-table">
+    <div class="container tbr">
+    </div>
+  </div>
+
   <div class="gen_time">
     <div class="container">
       <p>Generated {{ generation_time }} UTC</p>
     </div>
   </div>
+
 </body>
 </html>

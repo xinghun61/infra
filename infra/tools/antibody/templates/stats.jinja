@@ -30,42 +30,63 @@
 </head>
 
 
-<body>
-
-  <div class="nav navbar-fixed-top">
+<body id="{{ curr_page_id }}">
+  <nav class="nav navbar navbar-default navbar-fixed-top">
     <div class="container">
-      <ul class="pull-left">
-        <li><a href="{{ antibody_main_link }}">{{ page_header_text }}</a></li>
-        <li><a href="{{ tbr_by_user_link }}">{{ to_be_reviewed }}</a></li>
-        <li><a href="{{ stats_link }}">{{ stats }}</a></li>
-        <li><a href="{{ leaderboard_link }}">{{ leaderboard }}</a></li>
-      </ul>
-      <ul class="pull-right">
+      <div class="navbar-header">
+        <button type="button" 
+            class="navbar-toggle collapsed" 
+            data-toggle="collapse" 
+            data-target="#navbar" 
+            aria-expanded="false" 
+            aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand page_title">Antibody</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav ul_nav">
+          {% for link, nav_id, nav_text in navbar_items %}
+          <li id="{{ nav_id }}"><a href="{{ link }}">{{ nav_text }}</a></li>
+          {% endfor %}
+          <li><a href="{{ feedback_link }}" target="_blank">Feedback</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" 
               data-toggle="dropdown" 
               role="button" 
-              aria-haspopup="true"
-              aria-expanded="false">{{ curr_repo }}
-              <span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-right">
+              aria-haspopup="true" 
+              aria-expanded="false">
+            {{ curr_repo }}<span class="caret"></span></a>
+          <ul class="dropdown-menu ul_nav">
             {% for repo in all_repos %}
               {% if repo|lower == curr_repo|lower %}
               <li class="disabled">
               {% else %}
               <li>
               {% endif %}
-              <a href="../{{ repo }}/{{ curr_page }}">{{ repo }}</a></li>
+              <a href="../{{ repo }}/{{ curr_page_link }}">{{ repo }}</a></li>
             {% endfor %}
           </ul>
         </li>
-      </ul>
+        </ul>
+      </div><!--/.nav-collapse -->
     </div>
-  </div>
+  </nav>
+
 
   <div class="stats_by_time">
     <div class="container">
+      <div class="intro_text">
+        <p class="page_text">Important data points and visualizations about
+            long term suspicious commit behavior in {{ curr_repo }}.</p>
+      </div>
+
+
       <div class="col-md-4">
         <div class="stats_7_day">
           <h3>Stats for the past 7 days</h3>
