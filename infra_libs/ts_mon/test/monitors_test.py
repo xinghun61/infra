@@ -75,14 +75,14 @@ class ApiMonitorTest(unittest.TestCase):
 
 class PubSubMonitorTest(unittest.TestCase):
 
-  @mock.patch('infra_libs.ts_mon.monitors.httplib2')
+  @mock.patch('infra_libs.InstrumentedHttp')
   @mock.patch('infra_libs.ts_mon.monitors.discovery')
   @mock.patch('infra_libs.ts_mon.monitors.GoogleCredentials')
-  def test_init_service_account(self, gc, discovery, httplib2):
+  def test_init_service_account(self, gc, discovery, instrumented_http):
     m_open = mock.mock_open(read_data='{"type": "service_account"}')
     creds = gc.from_stream.return_value
     scoped_creds = creds.create_scoped.return_value
-    http_mock = httplib2.Http.return_value
+    http_mock = instrumented_http.return_value
     with mock.patch('infra_libs.ts_mon.monitors.open', m_open, create=True):
       mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
                                    'mytopic')
@@ -93,16 +93,16 @@ class PubSubMonitorTest(unittest.TestCase):
     discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 
-  @mock.patch('infra_libs.ts_mon.monitors.httplib2')
+  @mock.patch('infra_libs.InstrumentedHttp')
   @mock.patch('infra_libs.ts_mon.monitors.discovery')
   @mock.patch('infra_libs.ts_mon.monitors.Storage')
-  def test_init_storage(self, storage, discovery, httplib2):
+  def test_init_storage(self, storage, discovery, instrumented_http):
     storage_inst = mock.Mock()
     storage.return_value = storage_inst
     creds = storage_inst.get.return_value
 
     m_open = mock.mock_open(read_data='{}')
-    http_mock = httplib2.Http.return_value
+    http_mock = instrumented_http.return_value
     with mock.patch('infra_libs.ts_mon.monitors.open', m_open, create=True):
       mon = monitors.PubSubMonitor('/path/to/creds.p8.json', 'myproject',
                                    'mytopic')

@@ -134,23 +134,28 @@ class PubSubMonitor(Monitor):
       return credentials
     return Storage(credentials_file_path).get()
 
-  def _initialize(self, credsfile, project, topic):
+  def _initialize(self, credsfile, project, topic, use_instrumented_http):
     # Copied from acquisition_api.AcquisitionCredential.Load.
     creds = self._load_credentials(credsfile)
-    self._http = httplib2.Http()
+    if use_instrumented_http:
+      self._http = infra_libs.InstrumentedHttp('acq-mon-api-pubsub')
+    else:  # pragma: no cover
+      self._http = httplib2.Http()
     creds.authorize(self._http)
     self._api = discovery.build('pubsub', 'v1', http=self._http)
     self._topic = 'projects/%s/topics/%s' % (project, topic)
 
-  def __init__(self, credsfile, project, topic):
+  def __init__(self, credsfile, project, topic, use_instrumented_http=True):
     """Process monitoring related command line flags and initialize api.
 
     Args:
       credsfile (str): path to the credentials json file
       project (str): the name of the Pub/Sub project to publish to.
       topic (str): the name of the Pub/Sub topic to publish to.
+      use_instrumented_http (bool): whether to record monitoring metrics for
+          HTTP requests made to the pubsub API.
     """
-    self._initialize(credsfile, project, topic)
+    self._initialize(credsfile, project, topic, use_instrumented_http)
 
   def send(self, metric_pb):
     """Send a metric proto to the monitoring api.

@@ -151,17 +151,19 @@ def process_argparse_options(args):
     interface.state.global_monitor = monitors.DiskMonitor(
         endpoint[len('file://'):])
   elif credentials:
+    # If the flush mode is 'all' metrics will be sent immediately as they are
+    # updated.  If this is the case, we mustn't set metrics while we're
+    # sending metrics.
+    use_instrumented_http = args.ts_mon_flush != 'all'
+
     if endpoint.startswith('pubsub://'):
       url = urlparse.urlparse(endpoint)
       project = url.netloc
       topic = url.path.strip('/')
       interface.state.global_monitor = monitors.PubSubMonitor(
-          credentials, project, topic)
+          credentials, project, topic,
+          use_instrumented_http=use_instrumented_http)
     else:
-      # If the flush mode is 'all' metrics will be sent immediately as they are
-      # updated.  If this is the case, we mustn't set metrics while we're
-      # sending metrics.
-      use_instrumented_http = args.ts_mon_flush != 'all'
       interface.state.global_monitor = monitors.ApiMonitor(
           credentials, endpoint, use_instrumented_http=use_instrumented_http)
   else:
