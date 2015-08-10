@@ -70,6 +70,8 @@ class ExtractorUtilTest(unittest.TestCase):
             [('a/b.cpp', '234'), ('c/d.h', '')],
         'ERROR at //BUILD.gn:246:7: Item not found':
             [('//BUILD.gn', '246')],
+        'At a.java:[line 123]':
+            [('a.java', '123')]
     }
     self._VerifyPattern(extractor_util.FILE_PATH_LINE_PATTERN, cases)
 

@@ -70,6 +70,7 @@ ROOT_DIR_PATTERN = r'(?:{WIN_ROOT}|{UNIX_ROOT})'.format(
 # It could match files with or without line numbers like below:
 #   c:\\a\\b.txt:12
 #   c:\a\b.txt(123)
+#   c:\a\b.txt:[line 123]
 #   D:/a/b.txt
 #   /a/../b/./c.txt
 #   a/b/c.txt
@@ -82,7 +83,7 @@ FILE_PATH_LINE_PATTERN = re.compile((
     r'(?:{FILE_NAME}{SEP})*'  # Directories.
     r'{FILE_NAME}\.{FILE_EXTENSION}'  # File name and extension.
     r')'
-    r'(?:[\(:](\d+))?'  # Line number might not be available.
+    r'(?:[\(:](?:\[line )?(\d+))?'  # Line number might not be available.
     r'(?=\W+|$)'  # Non-path characters, match but no consume.
     ).format(
         ROOT_DIR=ROOT_DIR_PATTERN,
