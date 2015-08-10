@@ -667,9 +667,14 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       'result': 2,
     }, {
       'master': 'tryserver.chromium.linux',
-      'builder': 'chromium_presubmit',
+      'builder': 'linux_chromium_rel_ng',
       'result': 2,
-      'build_properties': '{"failure_type": "TRANSIENT_FAILURE"}',
+      'build_properties': '{"failure_type": "COMPILE_FAILURE"}',
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'linux_chromium_rel_ng',
+      'result': 2,
+      'build_properties': '{"failure_type": "TEST_FAILURE"}',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
