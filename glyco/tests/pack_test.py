@@ -74,7 +74,8 @@ class SetupPyGenerationTest(unittest.TestCase):
 class PackPackagesTest(unittest.TestCase):
   def test_pack_local_package(self):
     with util.Virtualenv(prefix='glyco-pack-test-') as venv:
-      with util.temporary_directory('glyco-pack-test-output-') as tempdir:
+      with util.temporary_directory(
+          prefix='glyco-pack-test-output-') as tempdir:
         path = pack.pack_local_package(venv,
                                        os.path.join(DATA_DIR, 'source_package'),
                                        tempdir)
@@ -92,7 +93,7 @@ class PackPackagesTest(unittest.TestCase):
   def test_pack(self):
     parser = argparse.ArgumentParser()
     main_.add_argparse_options(parser)
-    with util.temporary_directory('glyco-pack-test-') as tempdir:
+    with util.temporary_directory(prefix='glyco-pack-test-') as tempdir:
       options = parser.parse_args(['pack',
                                    os.path.join(DATA_DIR, 'source_package'),
                                    os.path.join(DATA_DIR, 'installed_package'),

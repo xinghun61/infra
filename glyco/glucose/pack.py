@@ -8,9 +8,9 @@ import os
 import shutil
 import sys
 import textwrap
-import urllib
 
 from glucose import util
+from glucose import zipfix
 
 
 def grab_wheel(src, dst, build_num=0):
@@ -33,11 +33,13 @@ def grab_wheel(src, dst, build_num=0):
   assert wheel_info is not None, (
     'Not a wheel file? %r' % os.path.join(src, wheelfile))
 
+  src_path = os.path.join(src, wheelfile)
+  zipfix.reset_all_timestamps_in_zip(src_path)
+
   plat_tag = ''
   if not wheelfile.endswith('none-any.whl'):
     plat_tag = util.platform_tag()
 
-  src_path = os.path.join(src, wheelfile)
   with open(src_path, 'rb') as f:
     digest = hashlib.sha1(f.read())
   wheel_sha = digest.hexdigest()

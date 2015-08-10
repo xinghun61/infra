@@ -25,4 +25,14 @@ pip wheel --no-index --no-deps --wheel-dir ./wheelhouse virtualenv/
 pip install -t ./third_party --no-index --no-deps wheelhouse/virtualenv-13.0.3-py2.py3-none-any.whl
 
 
+To be able to generate files deterministically, we need a yet unreleased (as 
+of 2015-08-17) version of python wheel. We need to overwrite the wheel version
+provided with virtualenv:
 
+hg clone https://bitbucket.org/pypa/wheel
+cd wheel
+hg update -r af5f7b357f837066cf2c3ce2beadb3dab2c290f6
+cd ..
+pip wheel --no-index --no-deps --wheel-dir ./wheelhouse/ wheel/
+rm glyco/third_party/virtualenv_support/wheel-0.24.0-py2.py3-none-any.whl
+cp wheelhouse/wheel-0.25.0-py2.py3-none-any.whl glyco/third_party/virtualenv_support
