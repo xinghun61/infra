@@ -7,7 +7,7 @@
 select {
   background: #fff;
   color: #F0A73A; 
-  font-size: 18px;
+  font-size: 17px;
   font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: bold;
   border-radius: 7px;
@@ -15,7 +15,7 @@ select {
   box-shadow: 0 1px 1px #FFAF16;
   position: relative;
   cursor: pointer;
-  padding: 16px;
+  padding: 10px;
 }
 
 select option{

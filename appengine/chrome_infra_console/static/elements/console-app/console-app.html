@@ -167,6 +167,7 @@ found in the LICENSE file-->
       signinSuccess: function() {
         console.log('SignIn');
         user = gapi.auth2.getAuthInstance().currentUser.get();
+        init();
       },
 
       clickDoc: function() {

@@ -22,7 +22,7 @@ body {
   height: 100%;
   width: 90%;
   padding: 16px 16px 16px 16px;
-  margin: 5%;
+  margin: 3%;
   background: white;
   color: #A75600;
 }
@@ -99,8 +99,7 @@ project-dropdown {
   color: #fff;
   text-transform: none;
   font-size: 18px;
-  margin: 10px;
-  
+  margin: 10px; 
 }
 
 #trooper {
@@ -108,8 +107,7 @@ project-dropdown {
   color: #fff;
   text-transform: none;
   font-size: 18px;
-  margin: 10px;
-  
+  margin: 10px;  
 }
 
 /* mobile */
