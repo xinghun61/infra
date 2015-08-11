@@ -15,6 +15,7 @@
   <link rel="import" href="../elements/console-app/console-app.html">
   <link rel="stylesheet" href="../styles/main.css">
   <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="../elements/analytics/analytics.html">
 </head>
 
 <body unresolved class="fullbleed layout vertical">
@@ -22,6 +23,7 @@
   <template is="dom-bind" id="app">
     <console-app></console-app>
   </template>
+  <script> new Analytics('UA-55762617-17'); </script>
 </body>
 
 </html>
