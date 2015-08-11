@@ -11,6 +11,7 @@ import sys
 import time
 
 from infra.services.service_manager import config_watcher
+from infra.services.service_manager import root_setup
 from infra_libs import logs
 from infra_libs import ts_mon
 
@@ -43,6 +44,13 @@ def parse_args(argv):
       default=10,
       help='how frequently (in seconds) to restart failed services')
 
+  p.add_argument(
+      '--root-setup',
+      action='store_true',
+      help='if this is set service_manager will run once to initialise configs '
+           'in /etc and then exit immediately.  Used on GCE bots to bootstrap '
+           'service_manager')
+
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
 
@@ -62,6 +70,9 @@ def parse_args(argv):
 
 def main(argv):
   opts = parse_args(argv)
+
+  if opts.root_setup:
+    return root_setup.root_setup()
 
   watcher = config_watcher.ConfigWatcher(
       opts.config_directory,

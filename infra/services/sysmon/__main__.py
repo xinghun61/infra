@@ -14,8 +14,9 @@ import time
 import psutil
 
 from infra.libs.service_utils import outer_loop
-from infra_libs import ts_mon
+from infra.services.sysmon import root_setup
 from infra_libs import logs
+from infra_libs import ts_mon
 
 
 cpu_time = ts_mon.FloatMetric('dev/cpu/time')
@@ -86,6 +87,11 @@ def parse_args(argv):
       '--interval',
       default=10, type=int,
       help='time (in seconds) between sampling system metrics')
+  p.add_argument(
+      '--root-setup',
+      action='store_true',
+      help='if this is set sysmon will run once to initialise configs in /etc '
+           'and then exit immediately.  Used on GCE bots to bootstrap sysmon')
 
   logs.add_argparse_options(p)
   ts_mon.add_argparse_options(p)
@@ -103,6 +109,9 @@ def parse_args(argv):
 
 def main(argv):
   opts, loop_opts = parse_args(argv)
+
+  if opts.root_setup:
+    return root_setup.root_setup()
 
   def single_iteration():
     try:
