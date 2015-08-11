@@ -25,6 +25,7 @@ data:
       # TODO(vadimsh): Depends on depot_tools.
       - services/cache_updater
       - tools/bucket
+      - tools/dumpthis
       - tools/docgen
       # Depends on presence of .git directory. See crbug.com/515744.
       - tools/antibody
