@@ -116,13 +116,16 @@ CTFailures.prototype.update = function() {
     });
   }
 
-  this.rotations = {};
-  return Promise.all([annotationPromise, net.json(alertsUrl),
-      net.json('https://trooper-o-matic.appspot.com/alerts')]).then(function(data_array) {
+  this.rotations = {}
+  return Promise.all([annotationPromise,
+      net.json(alertsUrl),
+      net.json('https://trooper-o-matic.appspot.com/alerts'),
+      // TODO(seanmccullough): fetch other trees from /api/v1/alerts.
+      net.json('/api/v1/alerts/chromium')]).then(function(data_array) {
     var annotations = data_array[0];
     var sheriff_data = data_array[1];
     var trooper_data = data_array[2];
-
+    this.alerts = {'chromium': data_array[3]};
     var newFailures = {};
 
     var lastPosted = (sheriff_data.last_posted || sheriff_data.date) * 1000;
@@ -153,7 +156,9 @@ CTFailures.prototype.update = function() {
 
     this.failures = updateUtil.updateLeft(this.failures, newFailures);
     this._processTrooperFailures(newFailures, trooper_data);
-  }.bind(this));
+  }.bind(this), function(reject) {
+    window.console.log(['rejected', reject]);
+  });
 };
 
 CTFailures.prototype._failureComparator = function(a, b) {

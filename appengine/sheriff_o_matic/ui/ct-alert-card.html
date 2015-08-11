@@ -1,0 +1,63 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="ct-alert-extension.html">
+<link rel="import" href="ct-alert-card-buttons.html">
+<link rel="import" href="ct-user-prefs.html">
+<polymer-element name="ct-alert-card" attributes="alert tree">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      div {
+        margin-bottom: 10px;
+      }
+      .title {
+        font-weight: bold;
+      }
+      .since {
+        font-style: fixed-width;
+      }
+      .title, .since, .body, .severity, .links {
+        margin: 0.5em;
+      }
+    </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
+    <div horizontal layout>
+      <ct-alert-card-buttons bug="{{ bug }}" alert="{{ alert }}" tree="{{ tree }}"></ct-alert-card-buttons>
+      <div flex vertical layout class='severity-{{ alert.severity }}'>
+        <div class='title'>
+          {{ alert.title }}
+        </div>
+        <div class='links'>
+          <template repeat="{{ link in alert.links }}">
+            <a href="{{ {url: link.href, useUber: $.userPrefs.values.useUberchromegw} | rewriteUrl }}" target="{{ $.userPrefs.values.linkTarget }}">{{ link.title }}</a>
+          </template>
+        </div>
+        <div class='since'>
+        </div>
+        <div class='body'>
+           {{ alert.body }}
+        </div>
+      </div>
+      <div if='{{ alert.type }}'>
+        <ct-alert-extension extension="{{ alert.extension }}" type="{{ alert.type }}"></ct-alert-extension>
+      </div>
+    </div>
+  </template>
+  <script>
+  Polymer({
+    rewriteUrl: function(props) {
+      if (this.$ && this.$.userPrefs) {
+        return this.$.userPrefs.rewriteUrl(props.url);
+      }
+      return props.url;
+    },
+  });
+  </script>
+</polymer-element>
+
+

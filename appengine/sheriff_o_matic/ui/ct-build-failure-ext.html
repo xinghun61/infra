@@ -1,0 +1,74 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="ct-user-prefs.html">
+<link rel="import" href="ct-commit-list.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<polymer-element name="ct-build-failure-ext" attributes="failure">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      div {
+        margin-bottom: 10px;
+      }
+    </style>
+    <ct-user-prefs id="userPrefs"></ct-user-prefs>
+    <div layout vertical>
+      <template if="{{ failure.tree_closer }}">
+      <b>TREE CLOSER</b>
+      </template>
+      <template repeat="{{ builder in failure.builders }}">
+        <div>
+          <a href="{{ builder.url }}" target="{{ $.userPrefs.values.linkTarget }}">{{ builder.name }}</a>
+            <!-- TODO(seanmccullough): Use revision numbers instead of build numbers -->
+            {{ builder.first_failure }} : {{ builder.latest_failure }}
+        </div>
+      </template>
+      <template if="{{ failure.reasons }}">
+        Reason:
+        <template repeat="{{ reason in failure.reasons }}">
+          <div>
+            <a href="{{ reason.url }}">{{ reason.step }}</a>
+          </div>
+        </template>
+      </template>
+      <template repeat="{{ range in failure.regression_ranges }}">
+        <div>
+          <paper-item on-click="{{ _toggle }}" repo="{{ range.repo }}">
+          <paper-icon-button icon="unfold-more"></paper-icon-button>
+            {{ range.repo }} ({{ range.revisions.length}})
+					</paper-item>
+          <template if="{{ range.expanded }}">
+          <ul>
+          <template repeat="{{ rev in range.revisions }}">
+            <li><a href="{{ range.repo }}/+/{{ rev }}">{{ rev }}</a></li>
+          </template>
+          </ul>
+          </template>
+				</div>
+      </template>
+    </div>
+  </template>
+  <script>
+    Polymer({
+      revisionInfo: function(rev) {
+        return "Revision info for " + rev;
+      },
+      _toggle: function(evt, detail, el) {
+        for (var i = 0; i < this.failure.regression_ranges.length; i++) {
+          var range = this.failure.regression_ranges[i];
+          if (range.repo == el.getAttribute("repo")) {
+            range.expanded = !range.expanded;
+          }
+        }
+      }
+    });
+  </script>
+</polymer-element>
+
+

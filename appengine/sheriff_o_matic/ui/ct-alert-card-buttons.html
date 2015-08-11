@@ -1,0 +1,36 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../model/ct-builder-list.html">
+<link rel="import" href="ct-button.html">
+
+<polymer-element name="ct-alert-card-buttons" attributes="bug alert tree" noscript>
+  <template>
+    <style>
+      :host {
+        display: flex;
+      }
+      :host > * {
+        margin-right: 5px;
+      }
+      ct-button {
+        white-space: nowrap;
+      }
+
+      #bugReminder {
+        font-size: large;
+        color: red;
+      }
+
+      #examineLink {
+        padding: 6px 22px;
+      }
+    </style>
+    <a id="examineLink" href="/{{ tree }}/failures/{{ alert.key }}">Examine</a>
+    <ct-button id="snooze" on-tap="{{ snooze }}" label="Snooze"></ct-button>
+    <ct-button id="link-bug" on-tap="{{ linkBug }}" label="Link Bug"></ct-button>
+  </template>
+</polymer-element>

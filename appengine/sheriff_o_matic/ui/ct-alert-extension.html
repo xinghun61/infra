@@ -1,0 +1,19 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+<link rel="import" href="ct-build-failure-ext.html">
+
+<polymer-element name="ct-alert-extension" attributes="type extension">
+  <template if="{{type == 'buildfailure'}}">
+    <ct-build-failure-ext failure="{{ extension }}"></ct-build-failure-ext>
+  </template>
+  <script>
+    Polymer({
+      type: null,
+      extension: null
+    });
+  </script>
+</polymer-element>
+
