@@ -1,5 +1,7 @@
 # Setting Up a New Master
 
+[go/new-master](http://go/new-master)
+
 1. To set up a new master, you need three ports. File an [Infra-Labs
    ticket](https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs,Restrict-View-Google)
    requesting ports for a new master and ask which VLAN your master should
