@@ -45,6 +45,10 @@ handlers:
   login: admin
   script: main.WEBAPP
 
+- url: /timeseries_update
+  secure: always
+  script: main.WEBAPP
+
 libraries:
 - name: endpoints
   version: 1.0

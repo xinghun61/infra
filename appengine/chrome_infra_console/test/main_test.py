@@ -4,6 +4,7 @@
 
 
 import datetime
+import json
 import logging
 
 from components import auth
@@ -140,4 +141,25 @@ class CronTest(testing.AppengineTestCase):
 
     time_now_mock.return_value = start_time + datetime.timedelta(hours=27)
     self.test_app.get('/tasks/clean_outdated_graphs')
-    self.assertEquals(main.TimeSeriesModel.query().count(), 1)   
+    self.assertEquals(main.TimeSeriesModel.query().count(), 1)
+
+
+class TimeSeriesTest(testing.AppengineTestCase):
+
+  @property
+  def app_module(self):
+    return main.WEBAPP
+
+  def test_post(self):
+    points = [{'time': 1.0,
+               'value': 10.0}]
+    fields = [{'key': 'project_id',
+               'value': 'chromium'}]
+    request = {'timeseries': [
+        {'points': points,
+         'fields': fields,
+         'metric': 'disk_used'}]}
+    self.mock(auth, 'is_group_member', lambda _: True)
+    self.mock(main.TimeSeriesHandler, 'xsrf_token_enforce_on', [])
+    headers = {'content-type': 'application/json'}
+    self.test_app.post('/timeseries_update', json.dumps(request), headers)

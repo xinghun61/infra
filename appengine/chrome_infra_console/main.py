@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import json
 import logging
 
 import endpoints
@@ -97,40 +98,42 @@ def _has_access(access_list):
 class ConsoleAppApi(remote.Service):
   """API that receives projects timeseries data from Borg job."""
 
-  @ndb.tasklet
-  def timeseries_query(self, timeseries):
-    project_id = list(field.value for field in timeseries.fields if
-                      field.key == 'project_id')
-    if not project_id:
-      raise ndb.Return()
-    project_id = project_id[0]
-    namespace_manager.set_namespace('projects.%s' % project_id)
-    query = TimeSeriesModel.query()
-    fieldmodels = []
-    for field in timeseries.fields:
-      fieldmodels.append(FieldModel(field_key=field.key, value=field.value))
-    for fieldmodel in fieldmodels:
-      query = query.filter(TimeSeriesModel.fields == fieldmodel)
-    query = query.filter(TimeSeriesModel.metric == timeseries.metric)
-    ts = yield query.get_async()
-    if ts == None:
-      ts = TimeSeriesModel(
-        points=[], fields=fieldmodels, metric=timeseries.metric)
-    ts.update_timestamp()
-    ts.points = [PointModel(time=point.time, value=point.value)
-                 for point in timeseries.points]
-    yield ts.put_async()
-    raise ndb.Return()
-
   @auth.endpoints_method(TimeSeriesPacket, message_types.VoidMessage,
                          name='timeseries.update')
-  @auth.require(lambda: auth.is_group_member('metric-generators'))
+  @auth.require(lambda: auth.is_group_member(
+      'chrome-infra-console-update-access'))
   def timeseries_update(self, request):
-    futures = [self.timeseries_query(t) for t in request.timeseries]
+    futures = [timeseries_query(t) for t in request.timeseries]
     ndb.Future.wait_all(futures)
     for future in futures:
       future.get_result()
     return message_types.VoidMessage()
+
+
+@ndb.tasklet
+def timeseries_query(timeseries):
+  project_id = list(field.value for field in timeseries.fields if
+                    field.key == 'project_id')
+  if not project_id:
+    raise ndb.Return()
+  project_id = project_id[0]
+  namespace_manager.set_namespace('projects.%s' % project_id)
+  query = TimeSeriesModel.query()
+  fieldmodels = []
+  for field in timeseries.fields:
+    fieldmodels.append(FieldModel(field_key=field.key, value=field.value))
+  for fieldmodel in fieldmodels:
+    query = query.filter(TimeSeriesModel.fields == fieldmodel)
+  query = query.filter(TimeSeriesModel.metric == timeseries.metric)
+  ts = yield query.get_async()
+  if ts == None:
+    ts = TimeSeriesModel(
+      points=[], fields=fieldmodels, metric=timeseries.metric)
+  ts.update_timestamp()
+  ts.points = [PointModel(time=point.time, value=point.value)
+               for point in timeseries.points]
+  yield ts.put_async()
+  raise ndb.Return()
 
 
 @auth.endpoints_api(name='ui', version='v1')
@@ -195,8 +198,34 @@ class CronHandler(webapp2.RequestHandler):
       for key in query.iter(keys_only=True):
         key.delete()
 
+
+class TimeSeriesHandler(auth.AuthenticatingHandler):
+
+  @auth.require(lambda: auth.is_group_member(
+      'chrome-infra-console-update-access'))
+  def post(self):
+    data = json.loads(self.request.body)
+    tsList = []
+    for timeseries in data['timeseries']:
+      points = []
+      fields = []
+      for point in timeseries['points']:
+        points.append(Point(time=float(point['time']),
+                            value=float(point['value'])))
+      for field in timeseries['fields']:
+        fields.append(Field(key=field['key'], value=field['value']))
+      tsList.append(TimeSeries(points=points, fields=fields,
+                               metric=timeseries['metric']))
+    futures = [timeseries_query(t) for t in tsList]
+    ndb.Future.wait_all(futures)
+    for future in futures:
+      future.get_result()
+    return message_types.VoidMessage()
+
+
 handlers = [
-  ('/tasks/clean_outdated_graphs', CronHandler)
+  ('/tasks/clean_outdated_graphs', CronHandler),
+  ('/timeseries_update', TimeSeriesHandler),
 ]
 
 WEBAPP = add_appstats(webapp2.WSGIApplication(handlers, debug=True))      
