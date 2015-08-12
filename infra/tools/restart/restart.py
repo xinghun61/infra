@@ -73,7 +73,6 @@ def run(masters, delta, bug):
   """
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
-  master_state_dir = get_master_state_checkout()
   with get_master_state_checkout() as master_state_dir:
     master_state_json = os.path.join(
         master_state_dir, 'desired_master_state.json')
