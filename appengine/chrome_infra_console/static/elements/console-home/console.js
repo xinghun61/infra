@@ -20,6 +20,11 @@ Polymer({
     spin: {
       type: Boolean,
       notify: true,
+    },
+    projectName: {
+      type: String,
+      notify: true,
+      value: ""
     }
   },
   graphDrawing: function(params) {

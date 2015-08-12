@@ -76,8 +76,9 @@ class UIApiTest(testing.EndpointsTestCase):
     self.mock(config, 'get_project_config', mock.Mock())
     self.mock(auth, 'get_current_identity', mock.Mock())
     self.mock(auth, 'is_group_member', mock.Mock(return_value=False))
-
-    cfg = ("888", mock.Mock(access=['group:all','a@a.com','user:b@a.com']))
+    mock_class1 = mock.Mock(access=['group:all','a@a.com','user:b@a.com'])
+    mock_class1.configure_mock(name="infra.git")
+    cfg = ("888", mock_class1)
     config.get_project_config.return_value = cfg
 
     auth.get_current_identity.return_value = auth.Identity('user', 'a@a.com')
@@ -104,6 +105,7 @@ class UIApiTest(testing.EndpointsTestCase):
     self.assertEquals(len(response['timeseries']), 1)
 
     auth.is_group_member.return_value = True
+    config.get_project_config.return_value = (None, None)
     response = self.call_api('get_graphs', {"project_id":'v8'}).json_body
     self.assertEquals(len(response.keys()), 0)
     

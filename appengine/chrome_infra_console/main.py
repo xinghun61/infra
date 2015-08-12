@@ -38,7 +38,7 @@ class TimeSeries(messages.Message):
 
 class TimeSeriesPacket(messages.Message):
   timeseries = messages.MessageField(TimeSeries, 1, repeated=True)
-
+  project_name = messages.StringField(2)
 
 class PointModel(ndb.Model):
   time = ndb.FloatProperty()
@@ -147,7 +147,7 @@ class UIApi(remote.Service):
     configList = []
     for project_id, (revision, project_cfg) in project_configs.iteritems():
       if _has_access(project_cfg.access):
-        configList.append(Config(id=project_id, 
+        configList.append(Config(id=project_id,
                                  revision=revision, 
                                  access=project_cfg.access[:]))
     return Configs(configs=configList)
@@ -179,7 +179,8 @@ class UIApi(remote.Service):
                                    fields=field_list,
                                    metric=graph.metric))
 
-    return TimeSeriesPacket(timeseries=graph_list)
+    return TimeSeriesPacket(timeseries=graph_list,
+                            project_name=project_cfg.name)
 
 
 def add_appstats(app):

@@ -48,6 +48,7 @@ function getGraphs(requestData) {
     document.querySelector('console-home').graphs = graphs_packet;
     document.querySelector('console-home').projectChanged();
     document.querySelector('console-home').spin = false; 
+    document.querySelector('console-home').projectName = resp.project_name; 
   });
 
 }
