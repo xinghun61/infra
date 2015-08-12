@@ -8,12 +8,8 @@ import base64
 import cookielib
 import json
 import logging
-import netrc
-import os
 import requests
 import requests_cache
-import stat
-import sys
 import time
 import urllib
 
@@ -23,19 +19,7 @@ from requests.packages import urllib3
 LOGGER = logging.getLogger(__name__)
 
 
-class GerritException(Exception):
-  """Base class for exceptions raised by this module."""
-
-
-class NetrcException(GerritException):
-  """Netrc file is missing or incorrect."""
-
-
-class GitcookiesException(GerritException):
-  """Gitcookies file is missing or incorrect."""
-
-
-class UnexpectedResponseException(GerritException):
+class UnexpectedResponseException(Exception):
   """Gerrit returned something unexpected."""
 
   def __init__(self, http_code, body):  # pragma: no cover
@@ -47,7 +31,7 @@ class UnexpectedResponseException(GerritException):
     return 'Unexpected response (HTTP %d): %s' % (self.http_code, self.body)
 
 
-class BlockCookiesPolicy(cookielib.DefaultCookiePolicy):
+class BlockCookiesPolicy(cookielib.DefaultCookiePolicy): #pragma: no cover
   def set_ok(self, cookie, request):
     return False
 
@@ -57,23 +41,14 @@ class Gerrit(object):  # pragma: no cover
 
   Args:
     host (str): gerrit host name.
-    netrc_path (str): path to local netrc file. If None, the default location
-      for the current OS is used.
-    gitcookies_path (str): path to local gitcookies file. If None, the default
-      location for the current OS is used.
+    creds (Credentials): provides credentials for the Gerrit host.
     throttle_delay_sec (int): minimal time delay between two requests, to
       avoid hammering the Gerrit server.
   """
 
-  def __init__(self, host, netrc_path=None, gitcookies_path=None,
-               throttle_delay_sec=0):
-    auth = _load_netrc(netrc_path).authenticators(host)
-    if not auth:
-      auth = _load_gitcookies(gitcookies_path, host)
-    if not auth:
-      raise GerritException('No auth record for %s' % host)
+  def __init__(self, host, creds, throttle_delay_sec=0):
     self._auth_header = 'Basic %s' % (
-        base64.b64encode('%s:%s' % (auth[0], auth[2])))
+        base64.b64encode('%s:%s' % creds[host]))
     self._url_base = 'https://%s/a' % host.rstrip('/')
     self._throttle = throttle_delay_sec
     self._last_call_ts = None
@@ -270,70 +245,6 @@ class Gerrit(object):  # pragma: no cover
       raise UnexpectedResponseException(code, body)
 
 
-def _load_netrc(path=None):  # pragma: no cover
-  """Loads netrc file with gerrit credentials.
-
-  Args:
-    path: path to .netrc or None to use default path.
-
-  Returns:
-    netrc_obj (:class:`netrc.netrc`):
-
-  Raises:
-    NetrcException: if the netrc file can't be read, for any reason.
-  """
-  if not path:
-    # HOME might not be set on Windows.
-    if 'HOME' not in os.environ:
-      raise NetrcException('HOME environment variable is not set')
-    path = os.path.join(
-        os.environ['HOME'],
-        '_netrc' if sys.platform.startswith('win') else '.netrc')
-  try:
-    return netrc.netrc(path)
-  except IOError as exc:
-    raise NetrcException('Could not read netrc file %s: %s' % (path, exc))
-  except netrc.NetrcParseError as exc:
-    netrc_stat = os.stat(exc.filename)
-    if netrc_stat.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
-      raise NetrcException(
-          'netrc file %s cannot be used because its file permissions '
-          'are insecure.  netrc file permissions should be 600.' % path)
-    else:
-      raise NetrcException(
-          'Cannot use netrc file %s due to a parsing error: %s' % (path, exc))
-
-
-def _load_gitcookies(path, host):
-  """Loads gitcookies file with gerrit credentials.
-
-  Args:
-    path: path to .gitcookies or None to use default path.
-
-  Returns:
-    returns (login, None, password) tuple representing the credentials.
-  """
-  if not path:
-    # HOME might not be set on Windows.
-    if 'HOME' not in os.environ:
-      raise GitcookiesException('HOME environment variable is not set')
-    path = os.path.join(os.environ['HOME'], '.gitcookies')
-
-  try:
-    with open(path) as f:
-      for line in f:
-        fields = line.strip().split('\t')
-        if line.strip().startswith('#') or len(fields) != 7:
-          continue
-        domain, xpath, key, value = fields[0], fields[2], fields[5], fields[6]
-        if cookielib.domain_match(host, domain) and xpath == '/' and key == 'o':
-          login, password = value.split('=', 1)
-          return (login, None, password)
-  except IOError:
-    pass
-  return None
-
-
 def _is_response_cached(method, full_url):  # pragma: no cover
   """Returns True if response to GET request is in requests_cache.
 
@@ -350,4 +261,3 @@ def _is_response_cached(method, full_url):  # pragma: no cover
   except AttributeError:
     cache = None
   return cache.has_url(full_url) if cache else False
-
