@@ -83,6 +83,9 @@ class TryserverBuilders(ndb.Model):
     'tryserver.chromium.win': [
       'http://build.chromium.org/p/tryserver.chromium.win/json/builders'
     ],
+    'tryserver.infra': [
+      'http://build.chromium.org/p/tryserver.infra/json/builders'
+    ],
     'client.gyp': [
       'http://build.chromium.org/p/client.gyp/json/builders'
     ],
