@@ -25,7 +25,9 @@ class MasterNotFoundException(Exception):
 
 
 def add_argparse_options(parser):
-  parser.add_argument('masters', type=str, nargs='+', help='Master to restart.')
+  parser.add_argument(
+      'masters', type=str, nargs='+',
+      help='Master(s) to restart. "master." prefix can be omitted.')
   parser.add_argument(
       '-m', '--minutes-in-future', default=15, type=int,
       help='how many minutes in the future to schedule the restart. '
@@ -85,6 +87,8 @@ def run(masters, delta, bug):
     LOGGER.info('Loaded')
 
     for master in masters:
+      if not master.startswith('master.'):
+        master = 'master.%s' % master
       if master not in master_state:
         msg = '%s not found in master state' % master
         LOGGER.error(msg)
