@@ -1,5 +1,7 @@
 # Contacting troopers
 
+[go/bug-a-trooper]
+
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
 
@@ -68,3 +70,4 @@ Common Non-Trooper Requests:
 [Device restart requests]: https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers,Infra-Labs,Pri-2&summary=%5BDevice%20Restart%5D%20for%20%5Bmastername%5D&comment=Please%20provide%20the%20reason%20for%20restart.%0A%0ALeave%20at%20Pri-2%20for%20restart%20by%20end-of-day;%20Pri-1%20if%20you%20would%20like%20a%20restart%20sooner%20than%20that;%20or%20Pri-0%20if%20this%20is%20part%20of%20fixing%20an%20ongoing%20outage.
 [General requests]: https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google,Infra-Troopers&summary=%5BBrief%20description%20of%20problem%5D&comment=Please%20provide%20the%20details%20for%20your%20request%20here.%0A%0ASet%20Pri-0%20iff%20it%20requires%20immediate%20attention,%20Pri-1%20if%20resolution%20within%20a%20few%20hours%20is%20acceptable,%20and%20Pri-2%20if%20it%20just%20needs%20to%20be%20handled%20today.
 [current trooper queue]: https://code.google.com/p/chromium/issues/list?q=Infra=Troopers&sort=pri+-status.
+[go/bug-a-trooper]: http://go/bug-a-trooper
