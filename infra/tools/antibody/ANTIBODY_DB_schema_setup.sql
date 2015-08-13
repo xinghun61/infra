@@ -8,19 +8,19 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 
 -- -----------------------------------------------------
--- Schema ANTIBODY_KATIE
+-- Schema _DB_NAME
 -- -----------------------------------------------------
 
 -- -----------------------------------------------------
--- Schema ANTIBODY_KATIE
+-- Schema _DB_NAME
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `ANTIBODY_KATIE` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
-USE `ANTIBODY_KATIE` ;
+CREATE SCHEMA IF NOT EXISTS `_DB_NAME` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
+USE `_DB_NAME` ;
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`project`
+-- Table `_DB_NAME`.`project`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`project` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`project` (
   `prj_id` INT NOT NULL COMMENT '',
   `prj_name` VARCHAR(45) NULL COMMENT '',
   `prj_repository` VARCHAR(250) NOT NULL COMMENT '',
@@ -29,9 +29,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`review`
+-- Table `_DB_NAME`.`review`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`review` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`review` (
   `review_url` VARCHAR(200) NOT NULL COMMENT '',
   `request_timestamp` TIMESTAMP NULL COMMENT '',
   `patchset_commited` TIMESTAMP NULL COMMENT '',
@@ -42,18 +42,18 @@ CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`review` (
 
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`people`
+-- Table `_DB_NAME`.`people`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`people` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`people` (
   `email_address` VARCHAR(200) NOT NULL COMMENT '',
   `commiter_since` TIMESTAMP NULL COMMENT '',
   PRIMARY KEY (`email_address`)  COMMENT '');
 
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`git_commit`
+-- Table `_DB_NAME`.`git_commit`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`git_commit` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`git_commit` (
   `hash` VARCHAR(40) NOT NULL COMMENT '',
   `bug_url` VARCHAR(200) NULL COMMENT '',
   `timestamp` TIMESTAMP NULL COMMENT '',
@@ -64,9 +64,9 @@ CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`git_commit` (
 
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`commit_people`
+-- Table `_DB_NAME`.`commit_people`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`commit_people` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`commit_people` (
   `people_email_address` VARCHAR(200) NOT NULL COMMENT '',
   `git_commit_hash` VARCHAR(40) NOT NULL COMMENT '',
   `request_timestamp` TIMESTAMP NULL COMMENT '',
@@ -76,9 +76,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `ANTIBODY_KATIE`.`review_people`
+-- Table `_DB_NAME`.`review_people`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ANTIBODY_KATIE`.`review_people` (
+CREATE TABLE IF NOT EXISTS `_DB_NAME`.`review_people` (
   `people_email_address` VARCHAR(200) NOT NULL COMMENT '',
   `review_url` VARCHAR(200) NOT NULL COMMENT '',
   `timestamp` TIMESTAMP NULL COMMENT '',

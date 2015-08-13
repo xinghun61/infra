@@ -27,8 +27,6 @@ BLANK_TBR_NAME = 'with_blank_tbr'
 STATS_7_NAME = 'past_7_days.html'
 STATS_30_NAME = 'past_30_days.html'
 STATS_ALL_TIME_NAME = 'all_time.html'
-# TODO(ksho): make command line arg
-REPOSITORIES = ['infra']
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
@@ -56,13 +54,18 @@ def add_argparse_options(parser):
   parser.add_argument('--since', '-s', default='01-01-2015',
                       help="parse all git commits after this date"
                            "format as YYYY-MM-DD")
+  parser.add_argument('--database', '-b', required=True,
+                      help="database name for current repo")
+  parser.add_argument('--repo-list', '-l', nargs='*', required=True,
+                      help="list of all repos to link to from ui")
 
-def setup_antibody_db(cc, filename):  # pragma: no cover
-  csql.execute_sql_script_from_file(cc, filename)
+
+def setup_antibody_db(cc, filename, database_name):  # pragma: no cover
+  csql.execute_sql_script_from_file(cc, filename, database_name)
 
 
 def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath, 
-                         suspicious_commits):
+                         suspicious_commits, repo_list):
   template_loader = jinja2.FileSystemLoader(os.path.join(THIS_DIR, 'templates'))
   template_env = jinja2.Environment(loader=template_loader)
   template_vars_all = {
@@ -85,7 +88,7 @@ def generate_antibody_ui(cc, gitiles_prefix, project_name, since, ui_dirpath,
       'gitiles_prefix': gitiles_prefix,
       'gitiles_link': (gitiles_prefix[:-3]) if (
           gitiles_prefix[-3:] == '/+/') else '',
-      'all_repos': REPOSITORIES,
+      'all_repos': repo_list,
       'curr_repo': project_name,
       'since': since,
       'feedback_link': 'https://code.google.com/p/chromium/issues/entry?'

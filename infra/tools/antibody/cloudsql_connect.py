@@ -13,27 +13,27 @@ finally:
   sys.path.remove('/usr/lib/python2.7/dist-packages/')
 
 DB_INSTANCE_IP = '173.194.225.193'
-DEFAULT_DATABASE = 'ANTIBODY_KATIE'
 USERNAME = 'antibody-team'
 
 
-def connect(password):  # pragma: no cover
+def connect(password, database_name):  # pragma: no cover
   """Connect to Cloud SQL instance google.com:antibody-978:antibody-sql"""
   connection = MySQLdb.connect(host=DB_INSTANCE_IP,
                                user=USERNAME, passwd=password,
-                               db=DEFAULT_DATABASE)
+                               db=database_name)
   cc = connection.cursor()
   return connection, cc
 
 
-def execute_sql_script_from_file(cursor, filename):  # pragma: no cover
+def execute_sql_script_from_file(cursor, filename, 
+                                 database_name):  # pragma: no cover
   with open(filename, 'r') as f:
     sql_file = f.read()
 
   sql_commands = sql_file.split(';')[:-1]
 
   for command in sql_commands:
-    cursor.execute(command)
+    cursor.execute(command.replace('_DB_NAME', database_name))
 
 
 def write_to_commit_people(cursor, rows):  # pragma: no cover

@@ -24,7 +24,8 @@ class MyTest(auto_stub.TestCase):
     args = parser.parse_args(['--cache-path', '/ab', '--git-checkout-path',
         '/bcd', '--sql-password-file', 'abd.txt','--write-html', 
         '--run-antibody', '--parse-git-rietveld', '--output-dir-path',
-        '/efg', '--since', '2000'])
+        '/efg', '--since', '2000', '--database', 'db_name', '--repo-list',
+        'db_name1', 'db_name2'])
     self.assertEqual(args.cache_path, '/ab')
     self.assertEqual(args.git_checkout_path, '/bcd')
     self.assertEqual(args.sql_password_file, 'abd.txt')
@@ -33,9 +34,12 @@ class MyTest(auto_stub.TestCase):
     self.assertTrue(args.parse_git_rietveld)
     self.assertEqual(args.output_dir_path, '/efg')
     self.assertEqual(args.since, '2000')
+    self.assertEqual(args.database, 'db_name')
+    self.assertEqual(args.repo_list, ['db_name1', 'db_name2'])
 
     args = parser.parse_args(['-c', '/ab', '-g', '/bcd', '-p', 'abd.txt', '-w',
-                              '-a', '-r', '-d', '/efg', '-s', '2000'])
+                              '-a', '-r', '-d', '/efg', '-s', '2000', '-b',
+                              'db_name', '-l', 'db_name1', 'db_name2'])
     self.assertEqual(args.cache_path, '/ab')
     self.assertEqual(args.git_checkout_path, '/bcd')
     self.assertEqual(args.sql_password_file, 'abd.txt')
@@ -44,6 +48,9 @@ class MyTest(auto_stub.TestCase):
     self.assertTrue(args.parse_git_rietveld)
     self.assertEqual(args.output_dir_path, '/efg')
     self.assertEqual(args.since, '2000')
+    self.assertEqual(args.database, 'db_name')
+    self.assertEqual(args.repo_list, ['db_name1', 'db_name2'])
+
 
   @mock.patch('infra.tools.antibody.antibody.generate_stats_files')
   @mock.patch('infra.tools.antibody.antibody.get_commits_by_user')
@@ -132,7 +139,7 @@ class MyTest(auto_stub.TestCase):
                              'all_monthly_stats.json'), 'w') as f:
         json.dump(sample_monthly_stats, f)
       antibody.generate_antibody_ui(fake_cc, temp_data_gitiles, 'proj', '2014',
-                                    dirname, suspicious_commits_data)
+                                    dirname, suspicious_commits_data, ['db 1'])
       
       with open(
           os.path.join(proj_dirname, antibody.ANTIBODY_UI_MAIN_NAME), 'r') as f:

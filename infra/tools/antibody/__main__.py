@@ -47,11 +47,11 @@ def main(argv):
   LOGGER.info('Antibody starting')
   with open(args.sql_password_file, 'r') as f:
     password = f.read().strip()
-  connection, cc = csql.connect(password)
+  connection, cc = csql.connect(password, args.database)
   checkout = args.git_checkout_path
   if args.parse_git_rietveld or args.run_antibody:
     antibody.setup_antibody_db(cc, os.path.join(
-        DATA_DIR, 'ANTIBODY_DB_schema_setup.sql'))
+        DATA_DIR, 'ANTIBODY_DB_schema_setup.sql'), args.database)
     git_commit_parser.upload_to_sql(cc, checkout, args.since)
     git_commits_with_review_urls = git_commit_parser.get_urls_from_git_commit(
         cc)
@@ -70,7 +70,8 @@ def main(argv):
       gitiles_prefix = ''
     project_name = antibody.get_project_name(checkout).lower()
     antibody.generate_antibody_ui(cc, gitiles_prefix, project_name, args.since,
-        args.output_dir_path, code_review_parse.get_tbr_no_lgtm(cc, 'author'))
+        args.output_dir_path, code_review_parse.get_tbr_no_lgtm(cc, 'author'),
+        args.repo_list)
   csql.close(connection, cc)
 
 
