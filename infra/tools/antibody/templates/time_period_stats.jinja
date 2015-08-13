@@ -38,7 +38,8 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand page_title">Antibody</a>
+        <a href="{{ antibody_main_link }}"
+           class="navbar-brand page_title">Antibody</a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav ul_nav">
@@ -100,16 +101,17 @@
           {% for rietveld_url, commit_timestamp, subject, git_hash in
           tbr_no_lgtm %}
           <tr class="data_item">
-            <td class="git_hash hyperlink">
+            <td class="commit_timestamp truncate">{{ commit_timestamp }}
+            </td>
+            <td class="rietveld_url hyperlink truncate">
+              <a href="{{ rietveld_url }}" target="_blank" 
+                  title="{{ subject }}">
+                {{ subject }}
+              </a></td>
+            <td class="git_hash hyperlink truncate">
               <a href="{{ gitiles_prefix }}{{ git_hash }}" target="_blank">
                 {{ git_hash }}
               </a></td>
-            <td class="rietveld_url hyperlink">
-              <a href="{{ rietveld_url }}" target="_blank">
-                {{ subject }}
-              </a></td>
-            <td class="commit_timestamp">{{ commit_timestamp }}
-            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -138,14 +140,14 @@
           {% for rietveld_url, commit_timestamp, subject, git_hash in
           no_review_url %}
           <tr class="data_item">
-            <td class="git_hash hyperlink">
+            <td class="commit_timestamp truncate">{{ commit_timestamp }}
+            </td>
+            <td class="rietveld_url hyperlink truncate" title="{{ subject }}">
+                {{ subject }}
+            <td class="git_hash hyperlink truncate">
               <a href="{{ gitiles_prefix }}{{ git_hash }}" target="_blank">
                 {{ git_hash }}
               </a></td>
-            <td class="rietveld_url hyperlink">
-                {{ subject }}
-            <td class="commit_timestamp">{{ commit_timestamp }}
-            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -174,16 +176,17 @@
           {% for rietveld_url, commit_timestamp, subject, git_hash in
           blank_tbr %}
           <tr class="data_item">
-            <td class="git_hash hyperlink">
+            <td class="commit_timestamp truncate">{{ commit_timestamp }}
+            </td>
+            <td class="rietveld_url hyperlink truncate">
+              <a href="{{ rietveld_url }}" target="_blank" 
+                  title="{{ subject }}">
+                {{ subject }}
+              </a></td>
+            <td class="git_hash hyperlink truncate">
               <a href="{{ gitiles_prefix }}{{ git_hash }}" target="_blank">
                 {{ git_hash }}
               </a></td>
-            <td class="rietveld_url hyperlink">
-              <a href="{{ rietveld_url }}" target="_blank">
-                {{ subject }}
-              </a></td>
-            <td class="commit_timestamp">{{ commit_timestamp }}
-            </td>
           </tr>
           {% endfor %}
         </tbody>

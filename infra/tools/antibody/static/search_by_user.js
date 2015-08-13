@@ -65,7 +65,7 @@ $(document).ready(function(){
           'data-cache', 'false');
         table.append($('<thead>').append($('<tr>').append(
             $('<th>').attr('data-field', 'request_timestamp').text(
-                'Commit Timestamp (UTC)'),
+                'Commit Time (UTC)'),
             $('<th>').attr('data-field', 'rietveld_url label').text(
                 'Code Review'),
             $('<th>').attr('data-field', 'subject label').text('Git Commit Hash'),
@@ -77,11 +77,13 @@ $(document).ready(function(){
           // [subject, url, timestamp, git_hash, { 'TBR' | 'Author'} ]
           data_item = commits_by_user[i];
           tbody.append($('<tr>').addClass('data_item').append(
-              $('<td>').addClass('commit_timestamp').text(`${data_item[2]}`),
-              $('<td>').addClass('rietveld_url hyperlink').append(
+              $('<td>').addClass('commit_timestamp truncate').text(
+                `${data_item[2]}`),
+              $('<td>').addClass('rietveld_url hyperlink truncate').append(
                 $('<a>').attr('href', `${data_item[1]}`).attr(
-                  'target', '_blank').text(`${data_item[0]}`)),
-              $('<td>').addClass('subject hyperlink').append(
+                  'target', '_blank').attr(
+                  'title', `${data_item[0]}`).text(`${data_item[0]}`)),
+              $('<td>').addClass('git_hash hyperlink truncate').append(
                 $('<a>').attr('href', `${gitiles_prefix}${data_item[3]}`).attr(
                   'target', '_blank').text(`${data_item[3]}`)),
               $('<td>').addClass('type').text(`${data_item[4]}`)

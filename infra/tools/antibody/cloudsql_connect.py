@@ -13,7 +13,7 @@ finally:
   sys.path.remove('/usr/lib/python2.7/dist-packages/')
 
 DB_INSTANCE_IP = '173.194.225.193'
-DEFAULT_DATABASE = 'ANTIBODY_2'
+DEFAULT_DATABASE = 'ANTIBODY_KATIE'
 USERNAME = 'antibody-team'
 
 

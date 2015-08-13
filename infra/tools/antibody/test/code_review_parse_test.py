@@ -223,10 +223,10 @@ class TestCodeReviewParse(unittest.TestCase):
        'Also let cipd support i686 architecture', 'vadimsh',
        '8871159ca3f8d481e0e7aee7c1255fec9d5c92ee'],
       ['https://codereview.chromium.org/993263002', '2015-03-11 07:11:54',
-      'Reland Changes in infra to get bot_setup to work on GCE Windo...',
+      'Reland Changes in infra to get bot_setup to work on GCE Windows',
       'vadimsh', '846e3e4cb43006dbe4f026881ba8ee06835f46b1'],
       ['https://codereview.chromium.org/845263005', '2015-01-13 00:57:32',
-      'Revert of Revert Revert of Add internal.DEPS to bot_start. pa...',
+      'Revert of Revert Revert of Add internal.DEPS to bot_start. patchset 5',
       'vadimsh', 'e263ef04abaffd4e59fd9b9009bb523179212467'],
     ]
     out = code_review_parse.get_tbr_no_lgtm(mock_cc, 'tbr')

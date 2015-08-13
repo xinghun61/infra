@@ -300,7 +300,7 @@ def get_tbr_no_lgtm(cc, commit_people_type):
   data_all = cc.fetchall()
   formatted_data = []
   for data in data_all:
-    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    subject = data[2]
     formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
                            subject.replace('-', ' '), data[3], data[4]])
   return sorted(formatted_data, key=lambda x: x[1], reverse=True)

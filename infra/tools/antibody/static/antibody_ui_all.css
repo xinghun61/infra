@@ -20,14 +20,6 @@
   margin-top: 40px;
 }
 
-.data_item {
-  text-align: center;
-}
-
-th {
-  text-align: center;
-}
-
 tbody {
   height: 120px;
   overflow-y: auto;
@@ -36,6 +28,65 @@ tbody {
 a.repo {
   text-transform: uppercase;
   font-family: 'Lora';
+}
+
+.intro_text {
   text-align: center;
 }
 
+@media screen and (max-width: 991px) {
+  table {
+    border: 0;
+  }
+
+  table thead {
+    display: none;
+  }
+
+  table tr {
+    margin-bottom: 10px;
+    display: block;
+    border: 1px solid #ddd;
+    border-bottom: 2px solid #ddd;
+  }
+
+  table td {
+    display: block;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  .bootstrap-table .table {
+    border-bottom: 0;
+  }
+
+  table td:last-child {
+    border-bottom: 0;
+  }
+
+  table td:before {
+    content: attr(data-label);
+    float: left;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  .fixed-table-container {
+    border: 0;
+  }
+
+  .fixed-table-container tbody td {
+    border-left: 0;
+  }
+
+  .fixed-table-body {
+    overflow-y: auto; overflow-x: hidden;
+  }
+
+  .table>tbody>tr>td {
+    border-top: 0;
+  }
+
+  .truncate {
+    max-width: 715px;
+  }
+}

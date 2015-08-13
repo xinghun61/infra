@@ -336,7 +336,7 @@ def totaled_tbr_no_lgtm(cc, sql_time_specification):
   count = len(result)
   formatted_data = []
   for data in result:
-    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    subject = data[2]
     formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
                            subject.replace('-', ' '), data[3]])
   results = sorted(formatted_data, key=lambda x: x[1], reverse=True)
@@ -368,7 +368,7 @@ def totaled_blank_tbr(cc, sql_time_specification):  # pragma: no cover
   count = len(result)
   formatted_data = []
   for data in result:
-    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    subject = data[2]
     formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
                            subject.replace('-', ' '), data[3]])
   results = sorted(formatted_data, key=lambda x: x[1], reverse=True)
@@ -396,7 +396,7 @@ def totaled_no_review_url(cc, sql_time_specification):   # pragma: no cover
   count = len(result)
   formatted_data = []
   for data in result:
-    subject = (data[2][:61] + '...') if len(data[2]) > 62 else data[2]
+    subject = data[2]
     formatted_data.append([data[0], data[1].strftime("%Y-%m-%d %H:%M:%S"),
                            subject.replace('-', ' '), data[3]])
   results = sorted(formatted_data, key=lambda x: x[1], reverse=True)

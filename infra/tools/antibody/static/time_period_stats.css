@@ -25,14 +25,6 @@ a.anchor:before {
   margin: -130px 0 0; 
 }
 
-.data_item {
-  text-align: center;
-}
-
-th {
-  text-align: center;
-}
-
 .table_margin {
   margin-bottom: 50px;
 }

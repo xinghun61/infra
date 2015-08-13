@@ -97,21 +97,6 @@ body#leaderboard_body .navbar-nav > li#leaderboard_nav > a,
   color: #777777;
 }
 
-@media (min-width: 767px) and (max-width: 991px) {
-  .navbar-collapse.collapse {
-      display: none !important;
-  }
-  .navbar-collapse.collapse.in {
-      display: block !important;
-  }
-  .navbar-header .collapse, .navbar-toggle {
-      display:block !important;
-  }
-  .navbar-header {
-      float:none;
-  }
-}
-
 .navbar-toggle {
   height: 26px;
   border:1px solid #A3A3A3;
@@ -145,7 +130,6 @@ body#leaderboard_body .navbar-nav > li#leaderboard_nav > a,
 }
 
 .intro_text {
-  text-align: center;
   margin-bottom: 30px;
 }
 
@@ -168,4 +152,47 @@ body#leaderboard_body .navbar-nav > li#leaderboard_nav > a,
 
 .contents {
   height: 70%;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media screen and (min-width: 991px) {
+  .truncate.rietveld_url {
+    max-width: 200px;
+    min-width: 100px;
+  }
+  
+  .truncate.git_hash {
+    max-width: 100px;
+    min-width: 50px;
+  }
+  
+  .truncate.commit_timestamp {
+    max-width: 50px;
+    min-width: 20px;
+  }
+  
+  th {
+    text-align: left;
+    max-width: 50px;
+  }
+}
+
+@media screen and (max-width: 991px) {
+  .navbar-collapse.collapse {
+      display: none !important;
+  }
+  .navbar-collapse.collapse.in {
+      display: block !important;
+  }
+  .navbar-header .collapse, .navbar-toggle {
+      display:block !important;
+  }
+  .navbar-header {
+      float:none;
+  }
 }
