@@ -35,6 +35,10 @@ class ApiMonitorTest(unittest.TestCase):
         fake_api.AcquisitionCredential.Load.return_value,
         'https://www.tld/api')
 
+  def test_init_gce_credential(self):
+    with self.assertRaises(NotImplementedError):
+      monitors.ApiMonitor(':gce', 'https://www.tld/api')
+
   @mock.patch('infra_libs.ts_mon.monitors.acquisition_api')
   def test_send(self, _fake_api):
     m = monitors.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api')
@@ -90,6 +94,19 @@ class PubSubMonitorTest(unittest.TestCase):
     m_open.assert_called_once_with('/path/to/creds.p8.json', 'r')
     creds.create_scoped.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
     scoped_creds.authorize.assert_called_once_with(http_mock)
+    discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
+    self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
+
+  @mock.patch('infra_libs.InstrumentedHttp')
+  @mock.patch('infra_libs.ts_mon.monitors.discovery')
+  @mock.patch('infra_libs.ts_mon.monitors.AppAssertionCredentials')
+  def test_init_gce_credential(self, aac, discovery, instrumented_http):
+    creds = aac.return_value
+    http_mock = instrumented_http.return_value
+    mon = monitors.PubSubMonitor(':gce', 'myproject', 'mytopic')
+
+    aac.assert_called_once_with(monitors.PubSubMonitor._SCOPES)
+    creds.authorize.assert_called_once_with(http_mock)
     discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 

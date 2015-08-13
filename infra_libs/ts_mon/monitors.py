@@ -47,6 +47,11 @@ import httplib2
 from apiclient import discovery
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage
+from oauth2client.gce import AppAssertionCredentials
+
+# Special string that can be passed through as the credentials path to use the
+# default GCE service account.
+GCE_CREDENTIALS = ':gce'
 
 
 def _logging_callback(resp, content):  # pragma: no cover
@@ -95,6 +100,10 @@ class ApiMonitor(Monitor):
       endpoint (str): url of the monitoring endpoint to hit
     """
 
+    if credsfile == GCE_CREDENTIALS:
+      raise NotImplementedError(
+          'GCE service accounts are not supported for ApiMonitor')
+
     creds = acquisition_api.AcquisitionCredential.Load(
         os.path.abspath(credsfile))
     api = acquisition_api.AcquisitionApi(creds, endpoint)
@@ -126,6 +135,9 @@ class PubSubMonitor(Monitor):
 
   @classmethod
   def _load_credentials(cls, credentials_file_path):
+    if credentials_file_path == GCE_CREDENTIALS:
+      return AppAssertionCredentials(cls._SCOPES)
+
     with open(credentials_file_path, 'r') as credentials_file:
       credentials_json = json.load(credentials_file)
     if credentials_json.get('type', None):
