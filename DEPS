@@ -53,10 +53,10 @@ deps = {
      "google-api-python-client.git"
      "@49d45a6c3318b75e551c3022020f46c78655f365"),
 
-  "infra/appengine/third_party/trace-viewer":
-    ("https://chromium.googlesource.com/external/"
-     "trace-viewer.git"
-     '@' + '6c50e784746e6c785b4f5476cf843edecb4fab00'),
+  "infra/appengine/third_party/catapult":
+    ("https://chromium.googlesource.com/external/github.com/catapult-project/"
+     "catapult.git"
+     "@a1e7a27797b3068637cb3bdcfd03982decc8d389"),
 
   ## For ease of development. These are pulled in as wheels for run.py/test.py
   "expect_tests":
