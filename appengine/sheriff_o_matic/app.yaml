@@ -34,10 +34,6 @@ handlers:
   script: ts_alerts.app
   secure: always
 
-- url: /ts-internal-alerts
-  script: ts_alerts.app
-  secure: always
-
 - url: /ts-alerts-history
   script: ts_alerts.app
   secure: always

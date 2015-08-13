@@ -16,7 +16,6 @@ from google.appengine.ext import ndb
 class AlertsHistory(webapp2.RequestHandler):
   MAX_LIMIT_PER_PAGE = 100
   PUBLIC_TYPE = AlertsHandler.ALERT_TYPE
-  PRIVATE_TYPE = InternalAlertsHandler.ALERT_TYPE
 
   def get_entry(self, query, key):
     try:
@@ -68,9 +67,6 @@ class AlertsHistory(webapp2.RequestHandler):
     # Return only public alerts for non-internal users.
     if not user or not user.email().endswith('@google.com'):
       query = query.filter(AlertsJSON.type == self.PUBLIC_TYPE)
-    else:
-      query = query.filter(AlertsJSON.type.IN([self.PUBLIC_TYPE,
-                                                      self.PRIVATE_TYPE]))
 
     if key:
       result_json.update(self.get_entry(query, key))
