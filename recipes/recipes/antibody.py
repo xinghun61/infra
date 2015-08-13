@@ -22,15 +22,26 @@ def RunSteps(api):
   dirname = api.path.mkdtemp('antibody').join('antibody')
 
   cmd = ['infra.tools.antibody']
-  cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
-  cmd.extend(['--git-checkout-path', api.m.path['slave_build'].join('infra')])
-  cmd.extend(['--output-dir-path', dirname])
-  cmd.extend(['--since', '2015-01-01'])
-  cmd.extend(['--run-antibody'])
-  cmd.extend(['--logs-debug'])
 
-  api.python('Antibody', 'run.py', cmd,
-             cwd=api.m.path['slave_build'].join('infra'))
+  # project name, checkout path, database name
+  repos = [
+    ['chromium', api.m.path['slave_build'].join('chromium'), 'CHROMIUM_DB'],
+    ['infra', api.m.path['slave_build'].join('infra'), 'INFRA_DB'],
+  ]
+
+  repo_list = [repo_name for repo_name, _, _ in repos]
+  for _, checkout_path, database_name in repos:
+    cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
+    cmd.extend(['--git-checkout-path', checkout_path])
+    cmd.extend(['--output-dir-path', dirname])
+    cmd.extend(['--since', '2015-01-01'])
+    cmd.extend(['--database', database_name])
+    cmd.extend(['--repo-list'] + repo_list)
+    cmd.extend(['--run-antibody'])
+    cmd.extend(['--logs-debug'])
+
+    api.python('Antibody', 'run.py', cmd,
+               cwd=api.m.path['slave_build'].join('infra'))
   api.gsutil(['-m', 'cp', '-r', '-a', 'public-read', dirname, 'gs://antibody/'])
 
 
