@@ -15,6 +15,8 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
 
   def _Get(self, url, timeout, headers=None):
     # We wanted to validate certificate to avoid the man in the middle.
+    if not headers:
+      headers = {}
     result = urlfetch.fetch(
         url, headers=headers, deadline=timeout, validate_certificate=True)
 
