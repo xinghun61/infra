@@ -17,9 +17,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_file_type(path):  # pragma: no cover
+  if not os.path.exists(path):
+    return None
+
   try:
-    out = subprocess.check_output(['file', '-i', '-L', path])
-    return out.strip().split(":")[-1]
+    out = subprocess.check_output(['file', '--mime-type', '-L', path])
+    return out.strip().split(":")[-1].strip()
   except (ValueError, IndexError, subprocess.CalledProcessError):
     return None
 
