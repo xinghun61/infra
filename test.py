@@ -39,7 +39,7 @@ WIN_ENABLED_PACKAGES = [
   'infra/libs/decorators',
   'infra/libs/gitiles',
   'infra/libs/process_invocation',
-  # 'infra/libs/service_utils', # TODO: crbug.com/515704
+  'infra/libs/service_utils',
   'infra/libs/state_machine',
   'infra/libs/time_functions',
 

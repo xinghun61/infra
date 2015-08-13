@@ -25,13 +25,9 @@ Stat = collections.namedtuple('Stat', ['st_ino'])
 
 
 class TestFlock(auto_stub.TestCase):
+  @unittest.skipIf(sys.platform == 'win32', 'Requires not windows')
   def setUp(self):
     super(TestFlock, self).setUp()
-
-    # daemon.flock() only works on linux/osx, so set 'linux' here if we're
-    # testing in windows. The OS calls are mocked so it will still work. If
-    # windows support is added, remove this mock entirely.
-    self.mock(sys, 'platform', 'linux2')
 
   @contextlib.contextmanager
   def _assert_reached(self):
@@ -155,13 +151,9 @@ class TestFlock(auto_stub.TestCase):
 
 
 class TestTimeout(auto_stub.TestCase):
+  @unittest.skipIf(sys.platform == 'win32', 'Requires not windows')
   def setUp(self):
     super(TestTimeout, self).setUp()
-
-    # daemon.add_timeout() only works on linux, so set 'linux' here if we're
-    # testing in windows/osx. If windows or osx support is added, change
-    # accordingly.
-    self.mock(sys, 'platform', 'linux2')
 
   def testAddTimeout(self):
     self.assertEqual(
@@ -177,6 +169,10 @@ class TestTimeout(auto_stub.TestCase):
 @mock.patch('os.chdir')
 @mock.patch('os._exit')
 class TestBecomeDaemon(unittest.TestCase):
+  @unittest.skipIf(sys.platform == 'win32', 'Requires not windows')
+  def setUp(self):
+    super(TestBecomeDaemon, self).setUp()
+
   def testClosesFds(self, _mock_exit, _mock_chdir, _mock_dup2, _mock_open,
                     mock_close, _mock_setsid, _mock_fork):
     daemon.become_daemon()

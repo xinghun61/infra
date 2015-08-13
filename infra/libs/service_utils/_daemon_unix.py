@@ -6,15 +6,10 @@
 
 import contextlib
 import errno
+import fcntl
 import os
 import sys
 import tempfile
-
-try:
-  import fcntl
-except ImportError:  # pragma: no cover
-  # Doesn't exist on Windows. See also crbug.com/515704.
-  pass
 
 
 @contextlib.contextmanager
@@ -58,9 +53,6 @@ def flock(lockfile, lockdir=None):
   except daemon.LockAlreadyLocked:
     print 'toaster is occupied!'
   """
-
-  if sys.platform.startswith('win'):  # pragma: no cover
-    raise NotImplementedError
 
   lockdir = lockdir or tempfile.gettempdir()
   full_lockfile = os.path.join(lockdir, lockfile)
@@ -110,7 +102,7 @@ def flock(lockfile, lockdir=None):
 def add_timeout(cmd, timeout_secs):
   """Adds a timeout to a command using linux's (gnu) /bin/timeout."""
 
-  if sys.platform.startswith('win') or sys.platform.startswith('darwin'):
+  if sys.platform.startswith('darwin'):
     raise NotImplementedError  # pragma: no cover
 
   return ['timeout', str(timeout_secs)] + cmd
