@@ -17,7 +17,7 @@ from protorpc import remote
 
 from components import auth
 from components import config
-from proto import project_config_pb2
+from luci_config_proto import project_config_pb2
 
 
 class Field(messages.Message):
