@@ -327,7 +327,7 @@ def primary_key_uniquifier(seq, idfun=lambda x: x):
 def get_code_review_data(cc, git_checkout_path):  # pragma: no cover
   review_data, review_people_data = [], []
   git_commits_with_tbr_and_review_url = get_urls_from_git_commit(cc)
-  for review_url in git_commits_with_tbr_and_review_url:
+  for num, review_url in enumerate(git_commits_with_tbr_and_review_url):
     url = to_canonical_review_url(review_url)
     # cannot get access into chromereview.googleplex.com
     if not any(host in url for host in (
@@ -353,8 +353,13 @@ def get_code_review_data(cc, git_checkout_path):  # pragma: no cover
           review_people_data.append(data_row)
       else:
         LOGGER.error('unknown code review instance: %s' % url)
-  unique_review_people_data = primary_key_uniquifier(review_people_data,
-      lambda x: (x[0], x[1], x[2], x[4]))
+
+      if num % 100 == 0:
+        cc.execute("""SELECT COUNT(*) FROM git_commit""")
+        LOGGER.debug("Rows in git_commit: %s", str(cc.fetchall()))
+
+  unique_review_people_data = primary_key_uniquifier(
+    review_people_data, lambda x: (x[0], x[1], x[2], x[4]))
   return review_data, unique_review_people_data
 
 
