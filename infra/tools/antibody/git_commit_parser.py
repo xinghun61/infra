@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import csv
 import datetime
 import dateutil.parser
 import pytz
@@ -9,8 +10,8 @@ import re
 import subprocess
 
 import infra.tools.antibody.cloudsql_connect as csql
-
-curr_time = datetime.datetime.now()
+import infra.tools.antibody.code_review_parse as crp
+from infra.tools.antibody.diff_comparer import get_diff_comparison_score
 
 
 def read_commit_info(git_checkout_path, commits_after_date,
@@ -52,7 +53,7 @@ def parse_commit_info(git_log,
   return git_log_dict
 
 
-def get_bug_url(git_line):
+def get_bug_url(git_line):  # pragma: no cover
   bug_url = None
   bug_match = (re.match(r'^BUG=https?://code.google.com/p/(?:chromium'
                         '|rietveld)/issues/detail?id=(\d+)', git_line)
@@ -64,20 +65,101 @@ def get_bug_url(git_line):
   return bug_url
 
 
-def get_tbr(git_line):
+def get_tbr(git_line):  # pragma: no cover
   tbr = None
   if git_line.startswith('TBR='):
     if len(git_line) > 4:
       tbr = git_line[4:]
       tbr = [x.strip().split('@')[0] for x in tbr.split(',')]
     else:
+      # identifies a blank tbr (TBR= )
       tbr = ['NOBODY']
   return tbr
 
 
-# TODO(keelerh): scan all review urls in a commit and compare the diffs to
-# identify the correct one
-def get_review_url(git_line):
+def url_cleaner(url):  # pragma: no cover
+  clean_url = url.strip(' .,()<>:')
+  if 'https' not in clean_url:
+    clean_url = 'https://' + clean_url
+  return clean_url
+
+
+# TODO: target a required perfect review diff to git diff match accuracy for
+# all code review instances to assert a valid review url to add to the table,
+# else no review url. This would gurantee that if there were a difference
+# between the git diff actually commited and the corresponding diff at the
+# review url, it would be investigated to minimize the chances of a barely
+# perceptible malicious insertion/deletion of a few lines.
+def get_review_url(git_commit, git_checkout_path, cc):  # pragma: no cover
+  """Examines all the review urls in a commit to find the most likely review
+  url for that commit, and takes one of three actions based on the url type:
+    - unblocked rietveld instance: the rietveld diff and git diff are compared
+                                   and given a similarity score
+    - blocked rietveld instance: internal google and considered trusted
+                                 e.g. chromereviews.googleplex.com
+    - gerrit instance: currently unable to access a diff suitable for
+                       comparison
+  Chooses the best url (if at least one strong option is identified) based on:
+    1. a review url prefaced with a comment indicating that it is a review url
+       (preferred because comparing the diffs is computationaly expensive)
+    2. a review url with a similarity score > 0.90
+    3. None
+
+  Args:
+    git_commit(dict): a commit message parsed into a dictionary
+    git_checkout_path(str): path to a local git checkout
+    cc: Cloud SQL cursor
+
+  Return:
+    top_scored_url(str): the review url identified to be the best match else
+                         None
+  """
+  review_urls = []
+  url_matches = [
+      'chromiumcodereview-hr.appspot.com',
+      'chromiumcodereview.appspot.com',
+      'codereview.appspot.com',
+      'codereview.chromium.org',
+      'skia-codereview-staging.appspot.com',
+      'skia-codereview-staging2.appspot.com',
+      'skia-codereview-staging3.appspot.com',
+  ]
+  inaccessable = [
+      'chromereviews.googleplex.com',
+      'chromium-review.googlesource.com',
+  ]
+  for line in git_commit['body'].split('\n'):
+    for word in line.split():
+      if any(url in word for url in inaccessable) \
+          or any(url in word for url in url_matches):
+        url = basic_review_url_identifier(line)
+        if url:
+          good_url = url_cleaner(url)
+          return good_url
+      if any(url in word for url in url_matches) and 'diff' not in word:
+        good_url = url_cleaner(word)
+        review_urls.append(good_url)
+  top_scored_url = [None, 0]
+  for url in review_urls:
+    score = get_diff_comparison_score(git_commit['id'], url,
+                                      git_checkout_path, cc)
+    if score >= top_scored_url[1]:
+      top_scored_url = [url, score]
+  if top_scored_url[1] > 0.90:
+    return top_scored_url[0]
+  return None
+
+
+def basic_review_url_identifier(git_line):  # pragma: no cover
+  """Used to check the basic case in which a review url is prefaced with some
+  known indicator in the commit message
+
+  Args:
+    git_line(str): a line in the git commit body
+
+  Returns:
+    review_url(str): a review url if one is found
+  """
   review_url = None
   if re.match(r'^Review: .+$', git_line):
     review_url = git_line[8:]
@@ -87,10 +169,14 @@ def get_review_url(git_line):
     review_url = git_line[17:]
   elif re.match(r'^Reviewed-on: .+$', git_line):
     review_url = git_line[13:]
-  return review_url
+  if review_url:
+    return review_url.strip(' .,()<>:')
+  return None
 
 
-def get_features_for_git_commit(git_commit):
+# TODO(keelerh): populate project table and add project ids (currently auto
+# inserts 0 as the project id)
+def get_features_for_git_commit(git_commit, git_checkout_path, cc):
   """Retrieves the git commit features
 
   Arg:
@@ -104,11 +190,11 @@ def get_features_for_git_commit(git_commit):
   # dt is a datetime object with timezone info
   timestamp = dt.strftime('%Y-%m-%d %H:%M:%S')
   subject = git_commit['subject']
-  bug_url, review_URL = None, None
-  for line in git_commit['body'].split('\n'):
+  bug_url = None
+  for line in git_commit['body'].strip(',').split('\n'):
     bug_url = get_bug_url(line) or bug_url
-    review_URL = get_review_url(line) or review_URL
-  return (git_hash, bug_url, timestamp, review_URL, None, subject)
+  review_URL = get_review_url(git_commit, git_checkout_path, cc)
+  return (git_hash, bug_url, timestamp, review_URL, 0, subject)
 
 
 def get_features_for_commit_people(git_commit):
@@ -120,6 +206,7 @@ def get_features_for_commit_people(git_commit):
   Return:
     (tuple): relevant people and type extracted from the commit
   """
+  curr_time = datetime.datetime.utcnow()
   git_hash = git_commit['id']
   author = git_commit['author'].split('@')[0]
   people_rows = [(author, git_hash, curr_time, 'author')]
@@ -132,7 +219,7 @@ def get_features_for_commit_people(git_commit):
   return people_rows
 
 
-def parse_commit_message(git_log):
+def parse_commit_message(git_log, git_checkout_path, cc):  # pragma: no cover
   """Extracts features from the commit message
 
   Arg:
@@ -144,7 +231,7 @@ def parse_commit_message(git_log):
   """
   commits = []
   for commit in git_log:
-    commits.append(get_features_for_git_commit(commit))
+    commits.append(get_features_for_git_commit(commit, git_checkout_path, cc))
   return commits
 
 
@@ -161,52 +248,40 @@ def parse_commit_people(git_log):
   commits = []
   for commit in git_log:
     associated_people = get_features_for_commit_people(commit)
-    for tup in associated_people:
+    uniq_primary_keys = crp.primary_key_uniquifier(associated_people,
+        lambda x: (x[0].lower(), x[1], x[3]))
+    for tup in uniq_primary_keys:
       commits.append(tup)
   return commits
 
 
-def upload_to_sql(cc, git_checkout_path,
-                      commits_after_date):  # pragma: no cover
+def write_to_csv(git_commit_filename, git_people_filename, cc,
+    git_checkout_path, commits_after_date):  # pragma: no cover
+  log_output = read_commit_info(git_checkout_path, commits_after_date)
+  log_dict = parse_commit_info(log_output)
+  git_commit_output = parse_commit_message(log_dict, git_checkout_path, cc)
+  with open(git_commit_filename, 'w') as f:
+    for row in git_commit_output:
+      # hash|bug_url|timestamp|review_url|project_prj_id|subject
+      # VARCHAR(40)|VARCHAR(200)|TIMESTAMP|VARCHAR(200)|INT|VARCHAR(500)
+      csv.writer(f).writerow(row)
+  commit_people_output = parse_commit_people(log_dict)
+  with open(git_people_filename, 'w') as f:
+    for row in commit_people_output:
+      # people_email_address|git_commit_hash|request_timestamp|type
+      # VARCHAR(200)|VARCHAR(40)|TIMESTAMP|VARCHAR(10)
+      csv.writer(f).writerow(row)
+
+
+def upload_to_sql(git_commit_filename, commit_people_filename, cc,
+      git_checkout_path, commits_after_date):  # pragma: no cover
   """Writes suspicious git commits to a Cloud SQL database
 
   Args:
     cc: a cursor for the Cloud SQL connection
     git_checkout_path(str): path to a local git checkout
   """
-  log_output = read_commit_info(git_checkout_path, commits_after_date)
-  log_dict = parse_commit_info(log_output)
-  git_commit_output = parse_commit_message(log_dict)
-  commit_people_output = parse_commit_people(log_dict)
-  csql.write_to_git_commit(cc, git_commit_output)
-  csql.write_to_commit_people(cc, commit_people_output)
-
-
-def get_urls_from_git_commit(cc):  # pragma: no cover
-  """Accesses Cloud SQL instance to find the review urls of the stored
-     commits that have a TBR
-
-  Arg:
-    cc: a cursor for the Cloud SQL connection
-
-  Return:
-    commits_with_review_urls(list): all the commits in the db w/ a TBR
-                                    and a review url
-  """
-  cc.execute("""SELECT git_commit.review_url,
-      commit_people.people_email_address, commit_people.type
-      FROM commit_people
-      INNER JOIN (
-        SELECT git_commit_hash, COUNT(*)
-        AS c
-        FROM commit_people
-        WHERE type='tbr'
-        GROUP BY git_commit_hash) tbr_count
-      ON commit_people.git_commit_hash = tbr_count.git_commit_hash
-      INNER JOIN git_commit
-      ON commit_people.git_commit_hash = git_commit.hash
-      WHERE tbr_count.c <> 0
-      AND git_commit.review_url IS NOT NULL
-      AND commit_people.type='author'""")
-  commits_with_review_urls = cc.fetchall()
-  return [x[0] for x in commits_with_review_urls]
+  write_to_csv(git_commit_filename, commit_people_filename, cc,
+      git_checkout_path, commits_after_date)
+  csql.write_to_sql_table(cc, commit_people_filename, 'commit_people')
+  csql.write_to_sql_table(cc, git_commit_filename, 'git_commit')

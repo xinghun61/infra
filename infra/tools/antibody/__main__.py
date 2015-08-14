@@ -52,15 +52,11 @@ def main(argv):
   if args.parse_git_rietveld or args.run_antibody:
     antibody.setup_antibody_db(cc, os.path.join(
         DATA_DIR, 'ANTIBODY_DB_schema_setup.sql'), args.database)
-    git_commit_parser.upload_to_sql(cc, checkout, args.since)
-    git_commits_with_review_urls = git_commit_parser.get_urls_from_git_commit(
-        cc)
-    for review_url in git_commits_with_review_urls:
-      # cannot get access into chromereview.googleplex.com
-      if not any(host in review_url for host in (
-          'chromereviews.googleplex',
-      )):
-        code_review_parse.add_code_review_data_to_db(review_url, cc, checkout)
+    git_commit_parser.upload_to_sql('git_commit.csv', 'commit_people.csv', cc,
+                                    checkout, args.since)
+    csql.commit(connection)
+    code_review_parse.upload_to_sql(cc, checkout, 'review.csv',
+                                    'review_people.csv')
     csql.commit(connection)
   if args.write_html or args.run_antibody:
     if not os.path.exists(args.output_dir_path):

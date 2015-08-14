@@ -3,26 +3,17 @@ google.setOnLoadCallback(draw_charts);
 
 function draw_charts() {
   $.getJSON("./all_monthly_stats.json", function(data) {
-    var monthly_breakdown = data['monthly_breakdown'];
-    var ratio_data = congregate_series(
-      ['Month', 'Suspicious/Total Commits'],
-      [monthly_breakdown['suspicious_to_total_ratio']]
-    );
-    var all_commit_data = congregate_series(
-      ['Month', 'Total Commits', 'TBR no LGTM', 'No Review URL', 'Blank TBRs'],
-      [
-        monthly_breakdown['total_commits'], 
-        monthly_breakdown['tbr_no_lgtm'], 
-        monthly_breakdown['no_review_url'], 
-        monthly_breakdown['blank_tbrs'],
-      ]
-    );
+    var all_commit_data = [['Month', 'Total Commits', 'Total TBR',
+        'TBR no LGTM', 'No Review URL',
+        'Blank TBRs']].concat(data['all_stats_by_month']);
+    var ratio_data = [['Month', 'Suspicious/Total Commits']].concat(
+        data['suspicious_to_total_ratio_by_month']);
     var line_charts = [
       ['Commits per Month', all_commit_data, 
-          ['#594F4F', '#547980', '#45ADA8', '#9DE0AD'], 
+          ['#0B486B', '#3B8686', '#79BD9A', '#A8DBA8', '#CFF09E'], 
           'commits_chart'],
       ['Ratio of "Suspicious" Commits to Commits per Month', ratio_data,
-          ['#000000'], 'ratio_chart'],
+          ['#594F4F'], 'ratio_chart'],
     ];
     for (var i = 0; i < line_charts.length; i++) {
       chart_data = line_charts[i];
