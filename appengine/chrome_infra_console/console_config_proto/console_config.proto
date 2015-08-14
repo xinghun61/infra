@@ -1,0 +1,30 @@
+// Copyright 2015 The Swarming Authors. All rights reserved.
+// Use of this source code is governed by the Apache v2.0 license that can be
+// found in the LICENSE file.
+
+syntax = "proto2";
+
+message ConsoleCfg {
+  message Pane {
+    // A free-form text describing the pane.
+    // It should not include HTML. 
+    required string info = 1;
+    message Graph {
+      message Timeseries {
+        // If the name is not specified, the name will be derived 
+        // from metic and fields.
+        optional string name = 1;
+        message Field {
+          required string key = 1;
+          required string value = 2;
+        }
+        repeated Field field = 2;
+        required string metric = 3;
+      }
+      required string name = 1;
+      repeated Timeseries timeseries = 2;     
+    }
+    repeated Graph graph = 2;
+  }
+  repeated Pane pane = 1;
+}

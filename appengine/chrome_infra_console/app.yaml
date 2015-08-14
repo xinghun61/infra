@@ -69,3 +69,4 @@ builtins:
 
 skip_files:
 - ^(.*/)?.*~
+- ^tools.*
