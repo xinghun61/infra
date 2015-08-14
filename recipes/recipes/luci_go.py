@@ -8,12 +8,21 @@ DEPS = [
   'path',
   'properties',
   'python',
+  'tryserver',
 ]
+
+
+LUCI_GO_ROOT = 'infra/go/src/github.com/luci/luci-go'
 
 
 def RunSteps(api):
   api.gclient.set_config('luci_go')
-  api.bot_update.ensure_checkout(force=True)
+  # patch_root must match the luci-go repo, not infra checkout.
+  for path in api.gclient.c.got_revision_mapping:
+    if 'luci-go' in path:
+      patch_root = path
+      break
+  api.bot_update.ensure_checkout(force=True, patch_root=patch_root)
   api.gclient.runhooks()
 
   # This downloads the third parties, so that the next step doesn't have junk
@@ -42,4 +51,5 @@ def GenTests(api):
         buildnumber=123,
         mastername='chromium.infra',
         repository='https://chromium.googlesource.com/external/github.com/luci/luci-go',
-    ))
+    )
+  )
