@@ -128,8 +128,10 @@ def _extract_json_data_from_gerrit(gerrit_url, cc, git_checkout_path):
         - 'date': timestamp the message was posted
         - 'message': str containing contents of the message
   """
+  LOGGER.debug('Fetching gerrit review %s', gerrit_url)
+
   url_components = urlparse(gerrit_url)
-  cc.execute(""" SELECT hash
+  cc.execute("""SELECT hash
       FROM git_commit
       WHERE review_url = '%s'""" % gerrit_url)
   git_hash = cc.fetchone()[0]
