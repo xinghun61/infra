@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import os
 
 
@@ -27,23 +28,21 @@ def find_version(service_config):
   return ret
 
 
-def _cipd_version_finder(service_config):
-  pkgs_dir = os.path.join(service_config['root_directory'], '.cipd', 'pkgs')
-  if not os.path.isdir(pkgs_dir):
+def _cipd_version_file_finder(service_config):
+  """Load the new CIPD VERSION.json file.
+
+  This isn't used anywhere yet, but will be in the future.
+  """
+
+  filename = os.path.join(service_config['root_directory'], 'CIPD_VERSION.json')
+  if not os.path.isfile(filename):
     # Probably not a CIPD package.
     return None
 
-  ret = {}
-  for name in os.listdir(pkgs_dir):
-    current = os.path.join(pkgs_dir, name, '_current')
-    if not os.path.islink(current):
-      continue
-
-    ret[name] = os.readlink(current)
-
-  return ret
+  with open(filename) as fh:
+    return json.load(fh)
 
 
 VERSION_FINDERS = {
-    'cipd': _cipd_version_finder,
+    'cipd_version_file': _cipd_version_file_finder,
 }
