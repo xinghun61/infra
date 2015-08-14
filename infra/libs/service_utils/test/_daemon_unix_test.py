@@ -151,7 +151,7 @@ class TestFlock(auto_stub.TestCase):
 
 
 class TestTimeout(auto_stub.TestCase):
-  @unittest.skipIf(sys.platform == 'win32', 'Requires not windows')
+  @unittest.skipUnless(sys.platform.startswith('linux'), 'Requires linux')
   def setUp(self):
     super(TestTimeout, self).setUp()
 
