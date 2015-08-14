@@ -10,6 +10,8 @@ import sys
 import urlparse
 import re
 
+import requests
+
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon import monitors
 from infra_libs.ts_mon import standard_metrics
@@ -27,6 +29,35 @@ def load_machine_config(filename):
   except Exception:
     logging.error('Configuration file couldn\'t be read: %s', filename)
     raise
+
+
+def _default_region(fqdn):
+  # Check if we're running in a GCE instance.
+  try:
+    r = requests.get(
+        'http://metadata.google.internal/computeMetadata/v1/instance/zone',
+        headers={'Metadata-Flavor': 'Google'},
+        timeout=1.0)
+  except requests.exceptions.RequestException:
+    pass
+  else:
+    if r.status_code == requests.codes.ok:
+      # The zone is the last slash-separated component.
+      return r.text.split('/')[-1]
+
+  try:
+    return fqdn.split('.')[1]  # [chrome|golo]
+  except IndexError:
+    return ''
+
+
+def _default_network(host):
+  try:
+    # Regular expression that matches the vast majority of our host names.
+    # Matches everything of the form 'masterN', 'masterNa', and 'foo-xN'.
+    return re.match(r'^([\w-]*?-[acm]|master)(\d+)a?$', host).group(2)  # N
+  except AttributeError:
+    return ''
 
 
 def add_argparse_options(parser):
@@ -75,24 +106,17 @@ def add_argparse_options(parser):
 
   fqdn = socket.getfqdn()  # foo-[a|m]N.[chrome|golo].chromium.org
   host = fqdn.split('.')[0]  # foo-[a|m]N
+  region = _default_region(fqdn)
+  network = _default_network(host)
+
   parser.add_argument(
       '--ts-mon-device-hostname',
       default=host,
       help='name of this device, (default: %(default)s')
-  try:
-    region = fqdn.split('.')[1]  # [chrome|golo]
-  except IndexError:
-    region = ''
   parser.add_argument(
       '--ts-mon-device-region',
       default=region,
       help='name of the region this devices lives in. (default: %(default)s)')
-  try:
-    # Regular expression that matches the vast majority of our host names.
-    # Matches everything of the form 'masterN', 'masterNa', and 'foo-xN'.
-    network = re.match(r'^([\w-]*?-[acm]|master)(\d+)a?$', host).group(2)  # N
-  except AttributeError:
-    network = ''
   parser.add_argument(
       '--ts-mon-device-network',
       default=network,

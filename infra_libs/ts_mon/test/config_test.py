@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import requests
 import tempfile
 import unittest
 
@@ -31,14 +32,17 @@ class GlobalsTest(auto_stub.TestCase):
     interface.close()
     super(GlobalsTest, self).tearDown()
 
+  @mock.patch('requests.get')
   @mock.patch('socket.getfqdn')
   @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra_libs.ts_mon.targets.DeviceTarget')
-  def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
+  def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn,
+                                fake_get):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton
     fake_target.return_value = singleton
     fake_fqdn.return_value = 'slave1-a1.reg.tld'
+    fake_get.return_value.side_effect = requests.exceptions.ConnectionError
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
     args = p.parse_args([
@@ -57,14 +61,17 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertIsNotNone(interface.state.flush_thread)
     self.assertTrue(standard_metrics.up.get())
 
+  @mock.patch('requests.get')
   @mock.patch('socket.getfqdn')
   @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra_libs.ts_mon.targets.DeviceTarget')
-  def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn):
+  def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn,
+                                 fake_get):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton
     fake_target.return_value = singleton
     fake_fqdn.return_value = 'foo'
+    fake_get.return_value.side_effect = requests.exceptions.ConnectionError
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
     args = p.parse_args([
@@ -207,6 +214,26 @@ class GlobalsTest(auto_stub.TestCase):
     config.process_argparse_options(args)
     fake_monitor.assert_called_once()
     self.assertIs(interface.state.global_monitor, singleton)
+
+  @mock.patch('requests.get')
+  def test_gce_region(self, mock_get):
+    r = mock_get.return_value
+    r.status_code = 200
+    r.text = 'projects/182615506979/zones/us-central1-f'
+
+    self.assertEquals('us-central1-f', config._default_region('foo.golo'))
+
+  @mock.patch('requests.get')
+  def test_gce_region_timeout(self, mock_get):
+    mock_get.side_effect = requests.exceptions.Timeout
+    self.assertEquals('golo', config._default_region('foo.golo'))
+
+  @mock.patch('requests.get')
+  def test_gce_region_404(self, mock_get):
+    r = mock_get.return_value
+    r.status_code = 404
+
+    self.assertEquals('golo', config._default_region('foo.golo'))
 
 
 class ConfigTest(unittest.TestCase):
