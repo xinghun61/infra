@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Locking, timeout, and other process management functions."""
-
 import contextlib
 import errno
 import fcntl
@@ -97,15 +95,6 @@ def flock(lockfile, lockdir=None):
     except OSError:
       # If the file was deleted for some other reason, don't sweat it.
       pass
-
-
-def add_timeout(cmd, timeout_secs):
-  """Adds a timeout to a command using linux's (gnu) /bin/timeout."""
-
-  if sys.platform.startswith('darwin'):
-    raise NotImplementedError  # pragma: no cover
-
-  return ['timeout', str(timeout_secs)] + cmd
 
 
 def _fork_then_exit_parent():

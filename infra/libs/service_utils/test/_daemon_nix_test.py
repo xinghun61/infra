@@ -150,17 +150,6 @@ class TestFlock(auto_stub.TestCase):
         reached['yup'] = True
 
 
-class TestTimeout(auto_stub.TestCase):
-  @unittest.skipUnless(sys.platform.startswith('linux'), 'Requires linux')
-  def setUp(self):
-    super(TestTimeout, self).setUp()
-
-  def testAddTimeout(self):
-    self.assertEqual(
-        ['timeout', '600', 'echo', 'hey'],
-        daemon.add_timeout(['echo', 'hey'], 600))
-
-
 @mock.patch('os.fork', return_value=0)
 @mock.patch('os.setsid')
 @mock.patch('os.close')
