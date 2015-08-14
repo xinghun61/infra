@@ -361,20 +361,28 @@ def get_code_review_data(cc, git_checkout_path):  # pragma: no cover
 
 def write_code_review_data_to_csv(cc, git_checkout_path, review_filename,
                                   review_people_filename):  # pragma: no cover
+  LOGGER.debug('Starting write_code_review_data_to_csv() for %s and %s',
+               review_filename, review_people_filename)
   csv_review_data, csv_review_people_data = get_code_review_data(cc,
       git_checkout_path)
+
+  LOGGER.debug('Writing %s ...', review_filename)
   with open(review_filename, 'w') as f:
     for row in csv_review_data:
       # review_url|url_exists|request_timestamp|patchset_committed|
       # patchset_still_exists|reverted|project_prj_id
       # VARCHAR(200)|TINYINT|TIMESTAMP|TIMESTAMP|TINYINT|TINYINT|INT
       csv.writer(f).writerow(row)
+  LOGGER.debug('Done writing %s', review_filename)
+
+  LOGGER.debug('Writing %s ...', review_people_filename)
   with open(review_people_filename, 'w') as f:
     for row in csv_review_people_data:
       # people_email_address|review_url|timestamp|request_timestamp|type
       # VARCHAR(200)|VARCHAR(200)|TIMESTAMP|TIMESTAMP|VARCHAR(10)
       # type: author, reviewer, cc, lgtm, or not lgtm
       csv.writer(f).writerow(row)
+  LOGGER.debug('Done writing %s', review_people_filename)
 
 
 def upload_to_sql(cc, git_checkout_path, review_filename,
@@ -384,11 +392,12 @@ def upload_to_sql(cc, git_checkout_path, review_filename,
   Args:
     cc: a cursor for the Cloud SQL connection
   """
+  LOGGER.debug('Starting upload_to_sql().')
   write_code_review_data_to_csv(cc, git_checkout_path, review_filename,
                                 review_people_filename)
   csql.write_to_sql_table(cc, review_filename, 'review')
   csql.write_to_sql_table(cc, review_people_filename, 'review_people')
-
+  LOGGER.debug('Finished upload_to_sql().')
 
 def get_tbr_no_lgtm(cc, commit_people_type):
   cc.execute("""SELECT review.review_url, git_commit.timestamp,
