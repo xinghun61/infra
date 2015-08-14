@@ -6,6 +6,7 @@
 """Send system monitoring data to the timeseries monitoring API."""
 
 import argparse
+import errno
 import os
 import random
 import sys
@@ -49,7 +50,15 @@ def get_disk_info():
   for disk in disks:
     labels = {'path': disk.mountpoint}
 
-    usage = psutil.disk_usage(disk.mountpoint)
+    try:
+      usage = psutil.disk_usage(disk.mountpoint)
+    except OSError as ex:
+      if ex.errno == errno.ENOENT:
+        # This happens on Windows when querying a removable drive that doesn't
+        # have any media inserted right now.
+        continue
+      raise
+
     disk_free.set(usage.free, labels)
     disk_total.set(usage.total, labels)
 
