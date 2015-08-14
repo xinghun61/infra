@@ -18,6 +18,8 @@ USE `_DB_NAME` ;
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`project`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`project` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`project` (
   `prj_id` INT NOT NULL COMMENT '',
   `prj_name` VARCHAR(45) NULL COMMENT '',
@@ -29,6 +31,8 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`review`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`review` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`review` (
   `review_url` VARCHAR(200) NOT NULL COMMENT '',
   `url_exists` TINYINT NULL COMMENT '',
@@ -43,6 +47,8 @@ CREATE TABLE IF NOT EXISTS `_DB_NAME`.`review` (
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`people`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`people` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`people` (
   `email_address` VARCHAR(200) NOT NULL COMMENT '',
   `commiter_since` TIMESTAMP NULL COMMENT '',
@@ -52,6 +58,8 @@ CREATE TABLE IF NOT EXISTS `_DB_NAME`.`people` (
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`git_commit`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`git_commit` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`git_commit` (
   `hash` VARCHAR(40) NOT NULL COMMENT '',
   `bug_url` VARCHAR(200) NULL COMMENT '',
@@ -65,6 +73,8 @@ CREATE TABLE IF NOT EXISTS `_DB_NAME`.`git_commit` (
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`commit_people`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`commit_people` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`commit_people` (
   `people_email_address` VARCHAR(200) NOT NULL COMMENT '',
   `git_commit_hash` VARCHAR(40) NOT NULL COMMENT '',
@@ -77,6 +87,8 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `_DB_NAME`.`review_people`
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `_DB_NAME`.`review_people` ;
+
 CREATE TABLE IF NOT EXISTS `_DB_NAME`.`review_people` (
   `people_email_address` VARCHAR(200) NOT NULL COMMENT '',
   `review_url` VARCHAR(200) NOT NULL COMMENT '',

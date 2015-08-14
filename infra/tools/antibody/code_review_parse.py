@@ -82,7 +82,6 @@ def _extract_json_data_from_rietveld(rietveld_url):
   url_components = urlparse(rietveld_url)
   json_data_url = '%s://%s/api%s?messages=true' % (url_components.scheme,
                   url_components.netloc, url_components.path.strip(','))
-  # logging.info('Sending request to: %s', json_data_url)
   response = requests.get(json_data_url)
   if (response.status_code == requests.codes.ok):
     try:
