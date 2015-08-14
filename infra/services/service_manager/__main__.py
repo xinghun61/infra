@@ -17,21 +17,30 @@ from infra_libs import ts_mon
 
 
 def parse_args(argv):
+  if sys.platform == 'win32':
+    default_state_directory = 'C:\\chrome-infra\\service-state'
+    default_config_directory = 'C:\\chrome-infra\\service-config'
+    default_root_directory = 'C:\\infra-python'
+  else:
+    default_state_directory = '/var/run/infra-services'
+    default_config_directory = '/etc/infra-services'
+    default_root_directory = '/opt/infra-python'
+
   p = argparse.ArgumentParser(
       description='Starts and stops machine-wide infra services with arguments '
                   'from config files')
 
   p.add_argument(
       '--state-directory',
-      default='/var/run/infra-services',
+      default=default_state_directory,
       help='directory to store PID files (default %(default)s)')
   p.add_argument(
       '--config-directory',
-      default='/etc/infra-services',
+      default=default_config_directory,
       help='directory to read JSON config files (default %(default)s)')
   p.add_argument(
       '--root-directory',
-      default='/opt/infra-python',
+      default=default_root_directory,
       help='directory where the service_manager package is deployed. If this '
            'package is updated the process will exit')
 

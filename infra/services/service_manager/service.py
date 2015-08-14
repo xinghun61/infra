@@ -8,6 +8,7 @@ import logging
 import os.path
 import platform
 import signal
+import subprocess
 import sys
 import time
 
@@ -149,6 +150,26 @@ class ProcessState(object):
     return abs(self.starttime - int(other)) < 10
 
 
+class ProcessCreator(object):
+  """Contains the platform-specific code for creating a service's process."""
+
+  @staticmethod
+  def for_platform(service, plat=sys.platform):
+    """Creates an appropriate ProcessCreator subclass for the given platform."""
+
+    if plat == 'win32':  # pragma: no cover
+      return WindowsProcessCreator(service)
+    return UnixProcessCreator(service)
+
+  def __init__(self, service):
+    self.service = service
+
+  def start(self):
+    """Starts a process for this service and returns its PID."""
+
+    raise NotImplementedError
+
+
 class Service(object):
   """Controls a running service process.
 
@@ -182,6 +203,8 @@ class Service(object):
     self._state_file = os.path.join(state_directory, self.name)
     self._time_fn = time_fn
     self._sleep_fn = sleep_fn
+
+    self._process_creator = ProcessCreator.for_platform(self)
 
   def get_running_process_state(self):
     """Returns a ProcessState object about about the process.
@@ -224,17 +247,10 @@ class Service(object):
 
     LOGGER.info("Starting service %s", self.name)
 
-    pipe_r, pipe_w = os.pipe()
-    child_pid = os.fork()
-    if child_pid == 0:
-      os.close(pipe_r)
-      try:
-        self._start_child(os.fdopen(pipe_w, 'w'))
-      finally:
-        os._exit(1)
-    else:
-      os.close(pipe_w)
-      self._start_parent(os.fdopen(pipe_r, 'r'), child_pid)
+    pid = self._process_creator.start()
+    self._write_state_file(pid)
+
+    LOGGER.info("Service %s started with PID %d", self.name, pid)
 
   def stop(self):
     """Stops the service if it is currently running.
@@ -254,52 +270,6 @@ class Service(object):
 
     # Remove the state file.
     os.unlink(self._state_file)
-
-  def _start_child(self, pipe):
-    """The part of start() that runs in the child process.
-
-    Daemonises the current process, writes the new PID to the pipe, and execs
-    the service executable.
-    """
-
-    # Detach from the parent and close all FDs except that of the pipe.
-    daemon.become_daemon(keep_fds={pipe.fileno()})
-
-    # Write our new PID to the pipe and close it.
-    json.dump({'pid': os.getpid()}, pipe)
-    pipe.close()
-
-    # Exec the service.
-    runpy = os.path.join(self.root_directory, 'run.py')
-    os.execv(runpy, [runpy, self.tool] + self.args)
-
-  def _start_parent(self, pipe, child_pid):
-    """The part of start() that runs in the parent process.
-
-    Waits for the child to start and writes a state file for the process.
-    """
-
-    # Read the data from the pipe.  The daemon process will close this pipe
-    # before starting the service, or it will be closed when the child exits.
-    data = pipe.read()
-
-    # Reap the child we forked.
-    _, exit_status = os.waitpid(child_pid, 0)
-    if exit_status != 0:
-      raise ServiceException(
-          'Failed to start %s: child process exited with %d' % (
-              self.name, exit_status))
-
-    # Try to parse the JSON sent by the daemon process.
-    try:
-      data = json.loads(data)
-    except Exception:
-      raise ServiceException(
-          'Failed to start %s: daemon process didn\'t send a valid PID' %
-          self.name)
-
-    self._write_state_file(data['pid'])
-    LOGGER.info("Service %s started with PID %d", self.name, data['pid'])
 
   def _write_state_file(self, pid):
     try:
@@ -393,3 +363,88 @@ class OwnService(Service):
 
   def stop(self):
     raise NotImplementedError
+
+
+class UnixProcessCreator(ProcessCreator):  # pragma: no cover
+  """Implementation of ProcessCreator for Unix systems.
+
+  Forks twice and sends the PID of the service over a pipe to the parent.
+  """
+
+  def start(self):
+    pipe_r, pipe_w = os.pipe()
+    child_pid = os.fork()
+    if child_pid == 0:
+      os.close(pipe_r)
+      try:
+        self._start_child(os.fdopen(pipe_w, 'w'))
+      finally:
+        os._exit(1)
+    else:
+      os.close(pipe_w)
+      return self._start_parent(os.fdopen(pipe_r, 'r'), child_pid)
+
+  def _start_child(self, pipe):
+    """The part of start() that runs in the child process.
+
+    Daemonises the current process, writes the new PID to the pipe, and execs
+    the service executable.
+    """
+
+    # Detach from the parent and close all FDs except that of the pipe.
+    daemon.become_daemon(keep_fds={pipe.fileno()})
+
+    # Write our new PID to the pipe and close it.
+    json.dump({'pid': os.getpid()}, pipe)
+    pipe.close()
+
+    # Exec the service.
+    runpy = os.path.join(self.service.root_directory, 'run.py')
+    os.execv(runpy, [runpy, self.service.tool] + self.service.args)
+
+  def _start_parent(self, pipe, child_pid):
+    """The part of start() that runs in the parent process.
+
+    Waits for the child to start and writes a state file for the process.
+    """
+
+    # Read the data from the pipe.  The daemon process will close this pipe
+    # before starting the service, or it will be closed when the child exits.
+    data = pipe.read()
+
+    # Reap the child we forked.
+    _, exit_status = os.waitpid(child_pid, 0)
+    if exit_status != 0:
+      raise ServiceException(
+          'Failed to start %s: child process exited with %d' % (
+              self.service.name, exit_status))
+
+    # Try to parse the JSON sent by the daemon process.
+    try:
+      data = json.loads(data)
+    except Exception:
+      raise ServiceException(
+          'Failed to start %s: daemon process didn\'t send a valid PID' %
+          self.service.name)
+
+    return data['pid']
+
+
+class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
+  """Implementation of ProcessCreator for Windows systems."""
+
+  # https://msdn.microsoft.com/en-us/library/windows/desktop/ms684863(v=vs.85).aspx
+  CREATE_NO_WINDOW = 0x08000000
+
+  def start(self):
+    handle = subprocess.Popen(
+        creationflags=self.CREATE_NO_WINDOW,
+        close_fds=True,
+        args=[
+            os.path.join(self.service.root_directory, 'ENV/bin/python.bat'),
+            os.path.join(self.service.root_directory, 'run.py'),
+            self.service.tool,
+        ] + self.service.args,
+    )
+
+    return handle.pid

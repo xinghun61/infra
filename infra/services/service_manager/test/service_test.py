@@ -216,7 +216,10 @@ class ServiceTest(TestBase):
 
     self.mock_getpid.return_value = 555
 
-    self.s.start()
+    # Skip the end of Process.start that assumes it's still the parent process.
+    self.mock_exit.side_effect = SystemExit
+    with self.assertRaises(SystemExit):
+      self.s.start()
 
     self.assertTrue(self.mock_fork.called)
     self.assertTrue(self.mock_pipe.called)
