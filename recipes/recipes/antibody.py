@@ -21,16 +21,15 @@ def RunSteps(api):
   api.gclient.runhooks()
   dirname = api.path.mkdtemp('antibody').join('antibody')
 
-  cmd = ['infra.tools.antibody']
-
   # project name, checkout path, database name
   repos = [
-    ['chromium', api.m.path['slave_build'].join('chromium'), 'CHROMIUM_DB'],
+    ['chromium', api.m.path['slave_build'].join('src'), 'CHROMIUM_DB'],
     ['infra', api.m.path['slave_build'].join('infra'), 'INFRA_DB'],
   ]
 
   repo_list = [repo_name for repo_name, _, _ in repos]
   for _, checkout_path, database_name in repos:
+    cmd = ['infra.tools.antibody']
     cmd.extend(['--sql-password-file', '/home/chrome-bot/.antibody_password'])
     cmd.extend(['--git-checkout-path', checkout_path])
     cmd.extend(['--output-dir-path', dirname])
