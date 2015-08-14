@@ -3,53 +3,88 @@ blocked on the fact that the index with -modified wasn't present.
 
 TBR=ilevy@chromium.org
 
-Review: https://codereview.appspot.com/6846046/
+Review: codereview.appspot.com/6846046/
 maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
 
-
-1404059c574c1b0fb3a9d33851eba660057ed105In 789205957e84 I had temporarily put the new imports at the top of the
-file so it was simpler to reapply the patch on top of the chromium branch
-for manual testing.
-
-I forgot to move the lines back to their respective place before committing
-so fix this here.
-
-BUG=81983
-
-TBR=rogerta@chromium.org
-maruel@chromium.org2013-10-16 15:33:36 -0400Short imports properly.
 
 
-82a0607dd2ad23ea5859c0e0deccd75bbc691eceBUG=496882
+341501468209de6c4687a82e034a654442ba6c4aCreated a go link to new master user guide
 
-Review URL: https://codereview.chromium.org/1167953002
-stgao@chromium.org2015-06-05 10:03:59 -0700[Findit] Tune the http retry backoff.
+R=pgervais@chromium.org
+BUG=
 
-
-9627740f1cd56641fa170b3492d86b760f692a00 john.abdelmalek@gmail.com2011-07-18 17:35:33 +0000Update trybot checks
+Reviewed-on URL: https://codereview.chromium.org/1278403004
+nodir@chromium.org2015-08-11 13:39:50 -0700go-new-master
 
-
-df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
-blocked on the fact that the index with -modified wasn't present.
-
-TBR=
-
-Code review URL: https://codereview.appspot.com/6846046/
-maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
 
 
-df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
-blocked on the fact that the index with -modified wasn't present.
+434c6c6bbfa93a509cd09fddf07ea4e6d9da2a61[first of a few CLs]
 
-TBR=
+The new alerts doesn's get a left nav link yet since it's not quite ready for normal use, but you can navigate to it directly.
 
-Reviewed-on: https://codereview.appspot.com/6846046/
-maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
+- Adds a generic /new-alerts/:tree route.
+- New api: each tree (using that term loosely here, they're just namespaces) gets its own json feed requested at /api/v1/alerts/:tree
+- This only pulls chromium alerts for now.
+- The only alert extension currently implemented is builder failures.
+- Examine/Snooze/Link Bug are dummy actions for now.
+- Need to make some changes to dispatcher so that the revision lists have all the necessary info before we can render them properly.  For now it's just the git hash + link.
+
+BUG=
+
+Review URL: https://codereview.chromium.org/1261273004
+seanmccullough@chromium.org2015-08-11 13:01:21-0700SoM-generic-alerts-UI
+
+
 
-df88fd603ca6a3831b4f2b21156a3e0d93e30096I got this morning a case where the old code was run and the CQ was being
-blocked on the fact that the index with -modified wasn't present.
+17e99b8b3010f217bea519178c439dec345f36f0BUG=519611
 
-TBR=
+Code Review URL: https://codereview.chromium.org/1284943002
+norulez@google.com2015-08-11 12:00:56 -0700Added-endpoint-to-allow-Borg-to-hit-console-app
 
-Reviewed-on: https://codereview.appspot.com/6846046/
-maruel@chromium.org2012-11-13 10:13:54 -0500Add new index to make sure the CQ never ever get blocked again
+
+
+c4e9b668446885ef2692f71d886b096287e14826Use this tool to quickly upload some file or just stream from any bot to Google storage:
+
+$ grep "needle" haystack.log | cit dumpthis
+ ...
+ Use https://storage.cloud.google.com/chrome-dumpfiles/deadbeaf-uuid
+
+BUG=
+R=hinoka@chromium.org,akuegel@chromium.org,vadimsh@chromium.org
+
+Review URL: https://codereview.chromium.org/1280283002
+tandrii@chromium.org2015-08-11 11:46:10 -0700New-infra-tool-cit-dumpthis
+
+
+
+f90ae28873bf61e9d7c020b916d1dbd1d54121c5These are called on ccompute slaves to do the job that puppet normally does
+
+BUG=
+
+Review URL: https://codereview.chromium.org/1284623002
+dsansome@chromium.org2015-08-10 17:46:26 -0700Add-a-root-setup-option-to-sysmon-and-service_manager-that-configures-the-system-to-run-them
+
+
+
+83e0f44b23a77d1f2bb456c57b3557003169eabdReview URL: https://codereview.chromium.org/1272273005
+stip@chromium.org2015-08-10 17:20:29 -0700Add-analytics-to-chrome-infra-console)
+
+
+
+6c122a55bd871c611deadd5ed128517bc1d4e1a3Presently line numbers in the form file.extension(<line number>) and file.extension:<line number> are supported. This change adds support for the case file.extension:[line <line number>] as found in cases for FindBugs failures for Android builds. Without this change, findit is only able to extract the filename, but not the line number, which can lead to false positives should we add support for filtering by line distance in the future.
+
+BUG=506360
+
+Review URL: https://codereview.chromium.org/1277293002
+lijeffrey@chromium.org2015-08-10 14:46:40 -0700Findit-Modifying-file-path-line-regular-expression-pattern-to-account-for-additional-cases
+
+
+
+e2e875171afec27704a0557b1623ca05af5012c8pip wheel is making mostly deterministic builds. The only non-determinism is
+the presence of timestamps. Glyco now resets all timestamps to the origin of
+time (as understood by a zip file: 1980-01-01 00:00:00)
+
+BUG=489420
+
+Review URL: https://codereview.chromium.org/1268263003
+pgervais@chromium.org2015-08-10 14:00:06 -0700Glyco-deterministic-builds-pure-Python
