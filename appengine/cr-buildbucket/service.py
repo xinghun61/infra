@@ -319,7 +319,7 @@ class BuildBucketService(object):
         model.Build.is_leased == False,
         model.Build.bucket.IN(buckets),
     )
-    q = q.order(model.Build.create_time) # oldest first.
+    q = q.order(-model.Build.key) # oldest first.
 
     # Check once again locally because an ndb query may return an entity not
     # satisfying the query.

@@ -2,10 +2,11 @@ indexes:
 
 - kind: Build
   properties:
-  - name: status
-  - name: is_leased
   - name: bucket
-  - name: create_time
+  - name: is_leased
+  - name: status
+  - name: __key__
+    direction: desc
 
 - kind: Build
   properties:

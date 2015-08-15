@@ -8,6 +8,7 @@ import json
 
 from components import auth
 from components import utils
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from testing_utils import testing
 import mock
@@ -318,6 +319,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.put()
     builds, _ = self.service.peek(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
+
+  def test_peek_multi(self):
+    self.test_build.key = ndb.Key(model.Build, model.new_build_id())
+    self.test_build.put()
+    build2 = model.Build(id=model.new_build_id(), bucket='bucket2')
+    build2.put()
+    builds, _ = self.service.peek(buckets=[self.test_build.bucket, 'bucket2'])
+    self.assertEqual(builds, [self.test_build, build2])
 
   def test_peek_with_paging(self):
     self.put_many_builds()
