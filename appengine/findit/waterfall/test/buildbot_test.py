@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import gzip
 import os
 import unittest
 
@@ -28,6 +27,7 @@ class DummyHttpClient(RetryHttpClient):
 
 
 class BuildBotTest(unittest.TestCase):
+
   def testGetMasternameFromUrl(self):
     cases = {
         None: None,
@@ -63,7 +63,7 @@ class BuildBotTest(unittest.TestCase):
         None: None,
         '': None,
         ('https://unknown_host/p/chromium/builders/Linux/builds/55833/'
-        '/steps/compile'): None,
+         '/steps/compile'): None,
         'http://build.chromium.org/p/chromium/builders/Linux': None,
         ('http://build.chromium.org/p/chromium/builders/Linux/builds/55833'
          '/steps/compile'): (
@@ -397,3 +397,23 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(expected_failed_steps, build_info.failed_steps)
     self.assertEqual(expected_passed_steps, build_info.passed_steps)
     self.assertEqual(expected_not_passed_steps, build_info.not_passed_steps)
+
+  def testExtractBuildInfoBlameList(self):
+    build_file = os.path.join(
+        os.path.dirname(__file__), 'data', 'blame_list_test.json')
+    with open(build_file, 'r') as f:
+      build_data = f.read()
+
+    master_name = 'a'
+    builder_name = 'b'
+    build_number = 632
+
+    expected_blame_list = [
+        '449cdbd05616de91fcf7e8b4282e300336d6d7c5',
+        '6addffac2601ab1083a55d085847d9bf8e66da02'
+    ]
+
+    build_info = buildbot.ExtractBuildInfo(
+        master_name, builder_name, build_number, build_data)
+
+    self.assertEqual(expected_blame_list, build_info.blame_list)

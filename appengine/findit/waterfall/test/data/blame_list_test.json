@@ -1,0 +1,87 @@
+{
+  "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Mon 01 Dec 2014 13:15:44", 
+        "branch": "master", 
+        "comments": "Change1\n", 
+        "files": [
+          {
+            "name": "native_client_sdk/src/build_tools/build_paths.py"
+          }
+        ], 
+        "number": 123456, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revision": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "when": 1417468544, 
+        "who": "test@chromium.org"
+      },
+      {
+        "at": "Mon 01 Dec 2014 13:15:44", 
+        "branch": "master", 
+        "comments": "Change2\n", 
+        "files": [
+          {
+            "name": "native_client_sdk/src/build_tools/extract_artifacts.py"
+          }
+        ], 
+        "number": 654321, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "6addffac2601ab1083a55d085847d9bf8e66da02", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "6addffac2601ab1083a55d085847d9bf8e66da02", 
+        "revision": "6addffac2601ab1083a55d085847d9bf8e66da02", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/6addffac2601ab1083a55d085847d9bf8e66da02", 
+        "when": 1417468544, 
+        "who": "test@chromium.org"
+      },
+      {
+        "at": "Mon 01 Dec 2014 13:15:44", 
+        "branch": "master", 
+        "comments": "Change1\n", 
+        "files": [
+          {
+            "name": "native_client_sdk/src/build_tools/extract_artifacts.py"
+          }
+        ], 
+        "number": 126934,
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revision": "449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/449cdbd05616de91fcf7e8b4282e300336d6d7c5", 
+        "when": 1417468544, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "449cdbd05616de91fcf7e8b4282e300336d6d7c5"
+  }, 
+  "steps": [
+  ]
+}

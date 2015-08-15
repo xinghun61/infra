@@ -14,14 +14,14 @@ import cloudstorage as gcs
 from waterfall.build_info import BuildInfo
 
 _MASTER_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)'
-                                  '(/.*)?$')
+                                 '(/.*)?$')
 
 _BUILD_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
-                                 'builders/([^/]+)/builds/([\d]+)(/.*)?$')
+                                'builders/([^/]+)/builds/([\d]+)(/.*)?$')
 
 _STEP_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)/'
-                                 'builders/([^/]+)/builds/([\d]+)/steps/'
-                                 '([^/]+)(/.*)?$')
+                               'builders/([^/]+)/builds/([\d]+)/steps/'
+                               '([^/]+)(/.*)?$')
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
@@ -103,7 +103,7 @@ def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
 
 def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
   return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (
-              master_name, builder_name, build_number, step_name)
+      master_name, builder_name, build_number, step_name)
 
 
 def GetBuildDataFromBuildMaster(master_name,
@@ -200,7 +200,8 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
 
   changes = data_json.get('sourceStamp', {}).get('changes', [])
   for change in changes:
-    build_info.blame_list.append(change['revision'])
+    if change['revision'] not in build_info.blame_list:
+      build_info.blame_list.append(change['revision'])
 
   # Step categories:
   # 1. A step is passed if it is in SUCCESS or WARNINGS status.
