@@ -30,6 +30,23 @@ deps = {
     ("https://chromium.googlesource.com/infra/third_party/cloudstorage.git"
      "@ad74316d12e198e0c7352bd666bbc2ec7938bd65"),
 
+  "infra/appengine/third_party/six":
+    ("https://chromium.googlesource.com/infra/third_party/six.git"
+     "@e0898d97d5951af01ba56e86acaa7530762155c8"),
+
+  "infra/appengine/third_party/oauth2client":
+    ("https://chromium.googlesource.com/infra/third_party/oauth2client.git"
+     "@e8b1e794d28f2117dd3e2b8feeb506b4c199c533"),
+
+  "infra/appengine/third_party/uritemplate":
+    ("https://chromium.googlesource.com/external/github.com/uri-templates/"
+     "uritemplate-py.git"
+     "@1e780a49412cdbb273e9421974cb91845c124f3f"),
+
+  "infra/appengine/third_party/httplib2":
+    ("https://chromium.googlesource.com/infra/third_party/httplib2.git"
+     "@058a1f9448d5c27c23772796f83a596caf9188e6"),
+
   "infra/appengine/third_party/endpoints-proto-datastore":
     ("https://chromium.googlesource.com/infra/third_party/"
      "endpoints-proto-datastore.git"
