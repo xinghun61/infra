@@ -1,13 +1,16 @@
 github.com/ActiveState/tail #c86531131426fb939fe8627ffa57a3c649f04cd4 !https://chromium.googlesource.com/external/github.com/ActiveState/tail.git
+github.com/GoogleCloudPlatform/go-endpoints/endpoints #f1f8f40c9363e7d1f4631dc75dd6f2b22f656a0a !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/bradfitz/http2 #f8202bc903bda493ebba4aa54922d78430c2c42f !https://chromium.googlesource.com/external/github.com/bradfitz/http2.git
 github.com/go-yaml/yaml #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/protobuf #16256d3ce6929458613798ee44b7914a3f59f5c6 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #2c0e3555140502254399772c277c54fbaa207e80 !https://code.googlesource.com/google-api-go-client.git
-github.com/GoogleCloudPlatform/go-endpoints/endpoints #f1f8f40c9363e7d1f4631dc75dd6f2b22f656a0a !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/howeyc/fsnotify #4894fe7efedeeef21891033e1cce3b23b9af7ad2 !https://chromium.googlesource.com/external/github.com/howeyc/fsnotify.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
+github.com/klauspost/compress #058815a5f6d073a77523c0323777dda1c64f26ff !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
+github.com/klauspost/cpuid #3b0816bb6cb682eea8e1973f4168b6c86880efe1 !https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
+github.com/klauspost/crc32 #55bf046ad09604e8e121b8494e3f16b081b1a6d5 !https://chromium.googlesource.com/external/github.com/klauspost/crc32.git
 github.com/kr/pretty #cb0850c1681cbca3233e84f7e6ec3e4c3f352085 !https://chromium.googlesource.com/external/github.com/kr/pretty.git
 github.com/kr/pty #5cf931ef8f76dccd0910001d74a58a7fca84a83d !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.googlesource.com/external/github.com/kr/text.git
