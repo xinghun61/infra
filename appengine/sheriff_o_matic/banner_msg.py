@@ -4,14 +4,13 @@
 
 import calendar
 import cgi
-import contextlib
 import datetime
-import datetime_encoder
 import json
 import logging
 import os
 import sys
-import time 
+import time
+import utils
 import webapp2
 import zlib
 
@@ -19,7 +18,6 @@ import zlib
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.api import users
-from google.appengine.datastore import datastore_query
 from google.appengine.ext import ndb
 
 
@@ -67,7 +65,7 @@ class BannerMessageHandler(webapp2.RequestHandler):
   def send_json_data(self, data):
     self.set_json_headers()
     self.response.write(
-        json.dumps(data, cls=datetime_encoder.DateTimeEncoder, indent=1))
+        json.dumps(data, cls=utils.DateTimeEncoder, indent=1))
 
   def get_from_datastore(self, msg_type):
     last_entry = BannerMessage.get_last_datastore(msg_type)
@@ -95,17 +93,10 @@ class BannerMessageHandler(webapp2.RequestHandler):
     self.get_msg(BannerMessageHandler.MSG_TYPE)
 
 
-# TODO(seanmccullough): move this into a general purpose auth lib if
-# we need to run this check elsehere in SoM.
-def is_trooper_or_admin():
-  return (auth.is_group_member("mdb/chrome-troopers") or
-      users.is_current_user_admin())
-
-
 class BannerMessageFormHandler(auth.AuthenticatingHandler):
 
   @auth.autologin
-  @auth.require(is_trooper_or_admin)
+  @auth.require(utils.is_trooper_or_admin)
   def get(self):
     user = users.get_current_user()
     template_values = {
@@ -115,7 +106,7 @@ class BannerMessageFormHandler(auth.AuthenticatingHandler):
 
     latest_msg = BannerMessage.get_last_datastore(
         BannerMessageHandler.MSG_TYPE)
- 
+
     if latest_msg is not None and latest_msg.active:
       template_values['latest_msg'] = latest_msg
 
@@ -152,7 +143,7 @@ class BannerMessageFormHandler(auth.AuthenticatingHandler):
       if content:
         return self.store_msg(msg_type, content)
 
-  @auth.require(is_trooper_or_admin)
+  @auth.require(utils.is_trooper_or_admin)
   def post(self):
     user = users.get_current_user()
     if user:

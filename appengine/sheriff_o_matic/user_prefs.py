@@ -2,26 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import calendar
-import contextlib
-import datetime
-import datetime_encoder
 import json
 import logging
-import os
-import sys
 import webapp2
-import zlib
-
-import cloudstorage as gcs
-
-from google.appengine.api import app_identity
-from google.appengine.api import memcache
-from google.appengine.api import users
-from google.appengine.datastore import datastore_query
-from google.appengine.ext import ndb
 
 from components import auth
+import utils
+
+from google.appengine.api import users
+from google.appengine.ext import ndb
 
 
 class UserPrefs(ndb.Model):

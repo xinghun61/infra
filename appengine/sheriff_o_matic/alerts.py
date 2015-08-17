@@ -4,10 +4,9 @@
 
 import contextlib
 import datetime
-import datetime_encoder
 import json
 import logging
-import urllib
+import utils
 import webapp2
 import zlib
 
@@ -15,8 +14,6 @@ import cloudstorage as gcs
 
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
-from google.appengine.api import users
-from google.appengine.datastore import datastore_query
 from google.appengine.ext import ndb
 
 LOGGER = logging.getLogger(__name__)
@@ -76,7 +73,7 @@ class AlertsHandler(webapp2.RequestHandler):
 
   @staticmethod
   def generate_json_dump(alerts):
-    return json.dumps(alerts, cls=datetime_encoder.DateTimeEncoder, indent=1)
+    return json.dumps(alerts, cls=utils.DateTimeEncoder, indent=1)
 
   @staticmethod
   def get_last_datastore(alerts_type):

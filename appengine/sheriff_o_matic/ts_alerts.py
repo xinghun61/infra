@@ -3,70 +3,20 @@
 # found in the LICENSE file.
 
 import alerts_history
-import datetime_encoder
-import hashlib
 import json
 import logging
+import utils
 import webapp2
 import zlib
 
 from datetime import datetime as dt
 from google.appengine.api import memcache
 from google.appengine.api import users
-from google.appengine.datastore import datastore_query
 from google.appengine.ext import ndb
 
 
 ALLOWED_APP_IDS = ('google.com:monarch-email-alerts-parser')
 INBOUND_APP_ID = 'X-Appengine-Inbound-Appid'
-
-
-def is_googler():
-  user = users.get_current_user()
-  if user:
-    email = user.email()
-    return email.endswith('@google.com') and '+' not in email
-  return False
-
-
-def convert_to_secs(duration_str):
-  duration_str = duration_str.strip()
-  if duration_str[-1] == 's':
-    return int(duration_str[:-1])
-  elif duration_str[-1] == 'm':
-    return 60 * int(duration_str[:-1])
-  elif duration_str[-1] == 'h':
-    return 3600 * int(duration_str[:-1])
-  elif duration_str[-1] == 'd':
-    return 24 * 3600 * int(duration_str[:-1])
-  elif duration_str[-1] == 'w':
-    return 7 * 24 * 3600 * int(duration_str[:-1])
-  else:
-    raise Exception('Invalid duration_str ' + duration_str[-1])
-
-
-def secs_ago(time_string, time_now=None):
-  try:
-    time_sent = dt.strptime(time_string, '%Y-%m-%d %H:%M:%S %Z')
-  except ValueError:
-    time_sent = dt.strptime(time_string, '%Y-%m-%d %H:%M:%S')
-  time_now = time_now or int(dt.utcnow().strftime('%s'))
-  latency = int(time_now) - int(time_sent.strftime('%s'))
-  return latency
-
-
-def hash_string(input_str):
-  return hashlib.sha1(input_str).hexdigest()
-
-
-def generate_json_dump(alerts, human_readable=True):
-  if human_readable:
-    return json.dumps(alerts, cls=datetime_encoder.DateTimeEncoder,
-                              indent=2,
-                              separators=(',', ': '))
-  return json.dumps(alerts, cls=datetime_encoder.DateTimeEncoder,
-                            indent=None,
-                            separators=(',', ':'))
 
 
 class TSAlertsJSON(ndb.Model):
@@ -90,6 +40,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
   STALE_ALERT_TIMEOUT = 300
 
   def get(self, key=None):
+    utils.increment_monarch('ts-alerts')
     self.remove_expired_alerts()
     if not users.get_current_user():
       results = {'date': dt.utcnow(),
@@ -108,7 +59,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
       if not data:
         self.response.write('This alert does not exist.')
         self.response.set_status(404, 'Alert does not exist')
-      elif data.get('private', True) and not is_googler():
+      elif data.get('private', True) and not utils.is_googler():
         logging.info('Permission denied.')
         self.abort(403)
       else:
@@ -117,7 +68,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
       query = TSAlertsJSON.query_active().fetch()
       data = []
       for item in query:
-        if item.json.get('private', True) and not is_googler():
+        if item.json.get('private', True) and not utils.is_googler():
           continue
         data.append(item.json)
       self.write_json({'alerts': data})
@@ -131,7 +82,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
     self.update_alerts()
 
   def put(self, key):
-    if not is_googler():
+    if not utils.is_googler():
       self.response.set_status(403, 'Permission Denied')
       return
     changed_alert = TSAlertsJSON.query_hash(key)
@@ -154,7 +105,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
     self.response.write("Updated ts-alerts.")
 
   def delete(self, key):
-    if not is_googler():
+    if not utils.is_googler():
       self.response.set_status(403, 'Permission Denied')
       return
     if key == 'all':
@@ -176,14 +127,14 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
   def write_json(self, data):
     self.response.headers['Access-Control-Allow-Origin'] = '*'
     self.response.headers['Content-Type'] = 'application/json'
-    data = generate_json_dump(data)
+    data = utils.generate_json_dump(data)
     self.response.write(data)
 
   def remove_expired_alerts(self):
     active_alerts = TSAlertsJSON.query_active().fetch()
 
     for alert in active_alerts:
-      alert_age = secs_ago(alert.json['alert_sent_utc'])
+      alert_age = utils.secs_ago(alert.json['alert_sent_utc'])
       if alert_age > self.STALE_ALERT_TIMEOUT:
         logging.info('%s expired. alert age: %d.', alert.key.id(), alert_age)
         alert.active_until = dt.utcnow()
@@ -204,7 +155,8 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
       self.store_alerts(alerts)
 
   def store_alerts(self, alert):
-    hash_key = hash_string(alert['mash_expression'] + alert['active_since'])
+    pre_hash_string = alert['mash_expression'] + alert['active_since']
+    hash_key = utils.hash_string(pre_hash_string)
     alert['hash_key'] = hash_key
 
     new_entry = TSAlertsJSON(
@@ -215,7 +167,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
     memcache.set(hash_key, alert)
 
   def set_memcache(self, key, data):
-    json_data = generate_json_dump(data, False)
+    json_data = utils.generate_json_dump(data, False)
     compression_level = self.MEMCACHE_COMPRESSION_LEVEL
     compressed = zlib.compress(json_data, compression_level)
     memcache.set(key, compressed)
@@ -224,6 +176,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
 class TimeSeriesAlertsHistory(alerts_history.AlertsHistory):
 
   def get(self, timestamp=None):
+    utils.increment_monarch('ts-alerts-history')
     result_json = {}
     if not users.get_current_user():
       result_json['login-url'] = users.create_login_url(self.request.uri)
@@ -246,8 +199,8 @@ class TimeSeriesAlertsHistory(alerts_history.AlertsHistory):
     history = []
     for a in alerts:
       ts, private = timestamp, a.json['private']
-      in_range = not (ts and secs_ago(a.json['active_since_utc'], ts) < 0)
-      permission = is_googler() or not private
+      in_range = not (ts and utils.secs_ago(a.json['active_since_utc'], ts) < 0)
+      permission = utils.is_googler() or not private
       if in_range and permission:
         history.append(a.json)
 
@@ -262,7 +215,7 @@ class TimeSeriesAlertsHistory(alerts_history.AlertsHistory):
   def write_json(self, data):
     self.response.headers['Access-Control-Allow-Origin'] = '*'
     self.response.headers['Content-Type'] = 'application/json'
-    data = generate_json_dump(data)
+    data = utils.generate_json_dump(data)
     self.response.write(data)
 
 
