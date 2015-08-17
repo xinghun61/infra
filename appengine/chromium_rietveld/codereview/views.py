@@ -1699,10 +1699,14 @@ def _remove_blocked_emails(emails):
 
 
 def replace_bug(message):
+  dit_base_tracker_url = 'http://code.google.com/p/%s/issues/detail?id=%s'
+  dit_valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner', 'gyp',
+                        'skia', 'v8', 'webrtc', 'libyuv')
+  monorail_base_tracker_url = (
+      'http://monorail-prod.appspot.com/p/%s/issues/detail?id=%s')
+  monorail_valid_trackers = ('monorail',)
+
   bugs = re.split(r"[\s,]+", message.group(1))
-  base_tracker_url = 'http://code.google.com/p/%s/issues/detail?id=%s'
-  valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner', 'gyp',
-                    'skia', 'v8', 'webrtc', 'libyuv')
   urls = []
   for bug in bugs:
     if not bug:
@@ -1710,11 +1714,17 @@ def replace_bug(message):
     tracker = 'chromium'
     if ':' in bug:
       tracker, bug_id = bug.split(':', 1)
-      if tracker not in valid_trackers:
+      if tracker not in dit_valid_trackers + monorail_valid_trackers:
         urls.append(bug)
         continue
     else:
       bug_id = bug
+    # Temporary check to support both Monorail and Codesite. After Monorail's
+    # launch all projects will be on monorail by default.
+    if tracker in monorail_valid_trackers:
+      base_tracker_url = monorail_base_tracker_url
+    else:
+      base_tracker_url = dit_base_tracker_url
     url = '<a href="' + base_tracker_url % (tracker, bug_id) + '">'
     urls.append(url + bug + '</a>')
 
