@@ -323,7 +323,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_peek_multi(self):
     self.test_build.key = ndb.Key(model.Build, model.new_build_id())
     self.test_build.put()
-    build2 = model.Build(id=model.new_build_id(), bucket='bucket2')
+    # We test that peek returns builds in decreasing order of the build key. The
+    # build key is derived from the inverted current time, so later builds get
+    # smaller ids. Only exception: if the time is the same, randomness decides
+    # the order. So artificially create an id here to avoid flakiness.
+    build2 = model.Build(id=self.test_build.key.id() - 1, bucket='bucket2')
     build2.put()
     builds, _ = self.service.peek(buckets=[self.test_build.bucket, 'bucket2'])
     self.assertEqual(builds, [self.test_build, build2])
