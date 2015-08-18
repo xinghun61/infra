@@ -43,7 +43,7 @@ from infra_libs.ts_mon import errors
 
 # The maximum number of MetricsData messages to include in each HTTP request.
 # MetricsCollections larger than this will be split into multiple requests.
-METRICS_DATA_LENGTH_LIMIT = 5000
+METRICS_DATA_LENGTH_LIMIT = 1000
 
 
 class State(object):

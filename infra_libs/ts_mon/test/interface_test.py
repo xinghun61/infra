@@ -95,7 +95,7 @@ class GlobalsTest(auto_stub.TestCase):
 
     # pylint: disable=unused-argument
     def serialize_to(pb, default_target=None, loop_action=None):
-      for _ in xrange(5001):
+      for _ in xrange(1001):
         loop_action(pb)
         pb.data.add().name = 'foo'
 
@@ -112,7 +112,7 @@ class GlobalsTest(auto_stub.TestCase):
 
     interface.flush()
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
-    self.assertEqual(5000, data_lengths[0])
+    self.assertEqual(1000, data_lengths[0])
     self.assertEqual(1, data_lengths[1])
 
   def test_register_unregister(self):
