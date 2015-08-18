@@ -6,6 +6,7 @@
 
 import base64
 import cookielib
+import functools
 import json
 import logging
 import requests
@@ -18,6 +19,18 @@ from requests.packages import urllib3
 
 LOGGER = logging.getLogger(__name__)
 
+def _not_read_only(f):
+  @functools.wraps(f)
+  def wrapper(self, *args, **kwargs):
+    if self._read_only:
+      raise AccessViolationException(
+          'Method call of method not accessible for read_only Gerrit instance.')
+    return f(self, *args, **kwargs)
+  return wrapper
+
+
+class AccessViolationException(Exception):
+  """A method was called which would require write access to Gerrit."""
 
 class UnexpectedResponseException(Exception):
   """Gerrit returned something unexpected."""
@@ -31,13 +44,13 @@ class UnexpectedResponseException(Exception):
     return 'Unexpected response (HTTP %d): %s' % (self.http_code, self.body)
 
 
-class BlockCookiesPolicy(cookielib.DefaultCookiePolicy): #pragma: no cover
+class BlockCookiesPolicy(cookielib.DefaultCookiePolicy):
   def set_ok(self, cookie, request):
-    return False
+    return False # pragma: no cover
 
 
-class Gerrit(object):  # pragma: no cover
-  """Wrapper around a single Gerrit host.
+class Gerrit(object):
+  """Wrapper around a single Gerrit host. Not thread-safe.
 
   Args:
     host (str): gerrit host name.
@@ -46,21 +59,24 @@ class Gerrit(object):  # pragma: no cover
       avoid hammering the Gerrit server.
   """
 
-  def __init__(self, host, creds, throttle_delay_sec=0):
+  def __init__(self, host, creds, throttle_delay_sec=0, read_only=False):
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % creds[host]))
     self._url_base = 'https://%s/a' % host.rstrip('/')
     self._throttle = throttle_delay_sec
+    self._read_only = read_only
     self._last_call_ts = None
     self.session = requests.Session()
     # Do not use cookies with Gerrit. This breaks interaction with Google's
     # Gerrit instances. Do not use cookies as advised by the Gerrit team.
     self.session.cookies.set_policy(BlockCookiesPolicy())
-    retry_config = urllib3.util.Retry(total=4, backoff_factor=0.5,
+    retry_config = urllib3.util.Retry(total=4, backoff_factor=2,
                                       status_forcelist=[500, 503])
     self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
         max_retries=retry_config))
 
+  def _sleep(self, time_since_last_call):
+    time.sleep(self._throttle - time_since_last_call) # pragma: no cover
 
   def _request(self, method, request_path, params=None, body=None):
     """Sends HTTP request to Gerrit.
@@ -81,9 +97,10 @@ class Gerrit(object):  # pragma: no cover
 
     # Wait to avoid Gerrit quota, don't wait if a response is in the cache.
     if self._throttle and not _is_response_cached(method, full_url):
-      now = time.time()
-      if self._last_call_ts and now - self._last_call_ts < self._throttle:
-        time.sleep(self._throttle - (now - self._last_call_ts))
+      if self._last_call_ts:
+        time_since_last_call = time.time() - self._last_call_ts
+        if time_since_last_call < self._throttle:
+          self._sleep(time_since_last_call)
       self._last_call_ts = time.time()
 
     headers = {
@@ -97,7 +114,6 @@ class Gerrit(object):  # pragma: no cover
     if body is not None:
       body = json.dumps(body)
       headers['Content-Type'] = 'application/json;charset=UTF-8'
-      headers['Content-Length'] = str(len(body))
 
     LOGGER.debug('%s %s', method, full_url)
     response = self.session.request(
@@ -117,6 +133,8 @@ class Gerrit(object):  # pragma: no cover
 
   def get_account(self, account_id):
     """Returns a dict describing a Gerrit account or None if no such account.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-accounts.html#get-account
 
     Args:
       account_id: email, numeric account id, or 'self'.
@@ -132,8 +150,11 @@ class Gerrit(object):  # pragma: no cover
       return None
     raise UnexpectedResponseException(code, body)
 
+  @_not_read_only
   def add_group_members(self, group, members):
     """Adds a bunch of members to a group.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-groups.html#_add_group_members
 
     Args:
       group: name of a group to add members to.
@@ -153,8 +174,9 @@ class Gerrit(object):  # pragma: no cover
         body={'members': list(members)})
     if code != 200:
       raise UnexpectedResponseException(code, body)
+    return body
 
-  def is_account_active(self, account_id):
+  def is_account_active(self, account_id): # pragma: no cover
     if '/' in account_id:
       raise ValueError('Invalid account id: %s' % account_id)
     code, body = self._request(
@@ -166,7 +188,8 @@ class Gerrit(object):  # pragma: no cover
       return False
     raise UnexpectedResponseException(code, body)
 
-  def activate_account(self, account_id):
+  @_not_read_only
+  def activate_account(self, account_id): # pragma: no cover
     """Sets account state to 'active'.
 
     Args:
@@ -183,7 +206,7 @@ class Gerrit(object):  # pragma: no cover
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
 
-  def get_projects(self, prefix=''):
+  def get_projects(self, prefix=''): # pragma: no cover
     """Returns list of projects with names starting with a prefix.
 
     Args:
@@ -202,7 +225,7 @@ class Gerrit(object):  # pragma: no cover
       raise UnexpectedResponseException(code, body)
     return body
 
-  def get_project_parent(self, project):
+  def get_project_parent(self, project): # pragma: no cover
     """Retrieves the name of a project's parent project.
 
     Returns None If |project| is not registered on Gerrit or doesn't have
@@ -224,8 +247,11 @@ class Gerrit(object):  # pragma: no cover
     assert isinstance(body, unicode)
     return body if body else None
 
+  @_not_read_only
   def set_project_parent(self, project, parent, commit_message=None):
     """Changes project's parent project.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-projects.html#set-project-parent
 
     Args:
       project (str): project to change.
@@ -243,9 +269,59 @@ class Gerrit(object):  # pragma: no cover
         body={'parent': parent, 'commit_message': commit_message})
     if code not in (200, 201):
       raise UnexpectedResponseException(code, body)
+    return body
 
+  def query(
+      self,
+      project,
+      query_name=None,
+      with_messages=True,
+      with_labels=True,
+      with_revisions=True,
+      **kwargs):
+    """Queries the Gerrit API changes endpoint. Returns a list of ChangeInfo
+    dictionaries.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#list-changes
 
-def _is_response_cached(method, full_url):  # pragma: no cover
+    Args:
+      project: (str) The project name.
+      query_name: (str) The name of the named query stored for the CQ user.
+      with_messages: (bool) If True, adds the o=MESSAGES option.
+      with_labels: (bool) If True, adds the o=LABELS option.
+      with_revisions: (bool) If True, adds the o=ALL_REVISIONS option.
+      kwargs: Allows to specify additional query parameters.
+    """
+
+    # We always restrict queries with the project name.
+    query_params = 'project:%s' % project
+
+    if query_name:
+      query_params += ' query:%s' % query_name
+    for operator,value in kwargs.iteritems():
+      query_params += ' %s:%s' % (operator, value)
+
+    option_params = []
+    if with_messages:
+      option_params.append('MESSAGES')
+    if with_labels:
+      option_params.append('LABELS')
+    if with_revisions:
+      option_params.append('ALL_REVISIONS')
+
+    # The requests library takes care of url encoding the params. For example
+    # the spaces above in query_params will be replaced by '+'.
+    params = {
+        'q': query_params,
+        'o': option_params
+    }
+    code, body = self._request(method='GET', request_path='/changes/',
+                               params=params)
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
+def _is_response_cached(method, full_url):
   """Returns True if response to GET request is in requests_cache.
 
   Args:
@@ -255,9 +331,9 @@ def _is_response_cached(method, full_url):  # pragma: no cover
     is_cached (bool):
 """
   if method != 'GET':
-    return False
+    return False # pragma: no cover
   try:
     cache = requests_cache.get_cache()
-  except AttributeError:
+  except AttributeError: # pragma: no cover
     cache = None
   return cache.has_url(full_url) if cache else False
