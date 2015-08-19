@@ -10,3 +10,7 @@ cron:
 - description: Delete old pending jobs
   url: /restricted/delete_old_pending_jobs
   schedule: every 12 hours
+
+- description: Update the list of available CQs
+  url: /restricted/update_cq_list
+  schedule: every 10 minutes

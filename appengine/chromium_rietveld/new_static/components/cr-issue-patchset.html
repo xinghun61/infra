@@ -59,8 +59,11 @@ found in the LICENSE file. -->
                     <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
                 </template>
                 <template if="{{ patchset.mostRecent && !patchset.issue.closed && !patchset.issue.commit }}">
-                    <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose try jobs</a> /
-                    <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
+                    <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose try jobs</a>
+                    <template if="{{ patchset.issue.offer_cq }}">
+                      /
+                      <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
+                    </template>
                 </template>
             </div>
         </template>

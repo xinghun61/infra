@@ -16,6 +16,7 @@ function Issue(id)
     this.messageCount = 0;
     this.draftCount = 0;
     this.owner = null; // User
+    this.offer_cq = true;
     this.private = false;
     this.baseUrl = "";
     this.targetRef = "";
@@ -110,6 +111,7 @@ Issue.prototype.parseData = function(data)
     this.created = Date.utc.create(data.created);
     this.description = data.description || "";
     this.lastModified = Date.utc.create(data.modified);
+    this.offer_cq = data.offer_cq;
     this.owner = User.forName(data.owner, data.owner_email);
     this.private = data.private;
     this.subject = data.subject || "";

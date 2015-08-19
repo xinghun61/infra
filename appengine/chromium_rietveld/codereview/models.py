@@ -45,7 +45,7 @@ from codereview.exceptions import FetchError
 REQUIRED_REVIEWER_PREFIX = '*'
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 PRIVILEGED_USER_DOMAINS = ('@chromium.org', '@google.com', '@webrtc.org')
-PROJECTS_WITHOUT_CQ = ()
+AVAILABLE_CQS_MEMCACHE_KEY = 'available_cqs'
 
 
 def format_reviewer(reviewer, required_reviewers, reviewer_func=None):
@@ -70,6 +70,13 @@ def is_privileged_user(user):
   email = user.email().lower()
   return (email.endswith(PRIVILEGED_USER_DOMAINS) or
           email in committer_list.Committers())
+
+
+### CQList ###
+
+class CQList(ndb.Model):
+  """Stores the last known list of available CQs."""
+  names = ndb.StringProperty(repeated=True)
 
 
 ### Issues, PatchSets, Patches, Contents, Comments, Messages ###
@@ -125,7 +132,16 @@ class Issue(ndb.Model):
   @property
   def is_cq_available(self):
     """Return true if this issue is part of a project that has a CQ."""
-    return self.project not in PROJECTS_WITHOUT_CQ
+    available_cqs = memcache.get(AVAILABLE_CQS_MEMCACHE_KEY)
+    if not available_cqs:
+      cq_list = ndb.Key(CQList, 'singleton').get()
+      if cq_list:
+        available_cqs = cq_list.names
+        memcache.set(AVAILABLE_CQS_MEMCACHE_KEY, available_cqs, 600)
+
+    if available_cqs:
+      return self.project in available_cqs
+    return True
 
   @property
   def is_starred(self):

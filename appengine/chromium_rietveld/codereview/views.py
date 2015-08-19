@@ -2372,6 +2372,7 @@ def download_patch(request):
 def _issue_as_dict(issue, messages, request=None):
   """Converts an issue into a dict."""
   values = {
+    'offer_cq': issue.is_cq_available,
     'owner': library.get_nickname(issue.owner, True, request),
     'owner_email': issue.owner.email(),
     'modified': str(issue.modified),

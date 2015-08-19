@@ -42,10 +42,10 @@ found in the LICENSE file. -->
                             <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
                         </template>
                         <template if="{{ !issue.closed }}">
-                            <template if="{{ !issue.owner.isCurrentUser && !issue.commit }}">
+                            <template if="{{ !issue.owner.isCurrentUser && !issue.commit && issue.offer_cq }}">
                                 <button is="cr-button" on-tap="{{ quickLgtmAndCommit }}">Quick LGTM + CQ</button>
                             </template>
-                            <template if="{{ !issue.commit && !issue.private }}">
+                            <template if="{{ !issue.commit && !issue.private && issue.offer_cq }}">
                                 <button is="cr-button" on-tap="{{ toggleCommit }}">Commit</button>
                             </template>
                             <button is="cr-button" on-tap="{{ toggleClosed }}">Close</button>
@@ -63,7 +63,7 @@ found in the LICENSE file. -->
                             This issue has not been sent to reviewers yet.  Press "Publish" to notify them.
                         </div>
                     </template>
-                    <template if="{{ issue.closed || issue.private }}">
+                    <template if="{{ issue.closed || issue.private || !issue.offer_cq }}">
                         <div class="notice">
                             Commit Queue is not available because
                             <template if="{{ issue.closed }}">
@@ -71,6 +71,9 @@ found in the LICENSE file. -->
                             </template>
                             <template if="{{ !issue.closed && issue.private }}">
                                 the issue is private.
+                            </template>
+                            <template if="{{ !issue.closed && !issue.private && !issue.offer_cq }}">
+                                it is not supported for this project.
                             </template>
                        </div>
                     </template>

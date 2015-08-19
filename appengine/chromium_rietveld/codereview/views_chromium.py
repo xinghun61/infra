@@ -18,7 +18,10 @@ import datetime
 import logging
 import re
 
+from google.appengine.api import app_identity
+from google.appengine.api import datastore_errors
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.datastore import datastore_query
 from google.appengine.ext import ndb
@@ -519,6 +522,39 @@ def download_binary(request):
       r'[^\w\.]', '_', request.patch.filename.encode('ascii', 'replace'))
   response['Content-Disposition'] = 'attachment; filename="%s"' % filename
   return response
+
+
+def update_cq_list(_request):
+  """/restricted/update_cq_list - Updates list of known CQs."""
+  scope = 'https://www.googleapis.com/auth/userinfo.email'
+  url = 'https://commit-queue.appspot.com/api/list'
+  auth_token, _ = app_identity.get_access_token(scope)
+  response = urlfetch.fetch(
+      url, headers={'Authorization': 'Bearer ' + auth_token}, deadline=60)
+  if response.status_code != 200:
+    msg = 'Received non-200 status code when loading %s' % url
+    return HttpResponseServerError(msg, content_type='text/plain')
+
+  try:
+    cq_names = json.loads(response.content)
+  except ValueError as e:
+    msg = 'Failed to parse CQ list from %s: %s' % (url, e)
+    return HttpResponseServerError(msg, content_type='text/plain')
+
+  @ndb.transactional
+  def update():
+    key = ndb.Key(models.CQList, 'singleton')
+    cq_list = key.get() or models.CQList(key=key)
+    cq_list.names = cq_names
+    cq_list.put()
+
+  try:
+    update()
+  except datastore_errors.TransactionFailedError as e:
+    msg = 'Failed update CQ list in transaction: %s' % e
+    return HttpResponseServerError(msg, content_type='text/plain')
+
+  return HttpResponse('success', content_type='text/plain')
 
 
 def update_default_builders(_request):
