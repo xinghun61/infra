@@ -17,8 +17,8 @@ handled by the Systems team, please follow their
 For fastest response, please use the provided templates:
 
 *   [Master restart requests]
-*   [Slave restart requests)
-*   [Mobile device restart requests)
+*   [Slave restart requests]
+*   [Mobile device restart requests]
 *   [General requests]
 
 ## Priority Levels
