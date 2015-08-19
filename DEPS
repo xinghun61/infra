@@ -73,7 +73,7 @@ deps = {
   "infra/appengine/third_party/catapult":
     ("https://chromium.googlesource.com/external/github.com/catapult-project/"
      "catapult.git"
-     "@a1e7a27797b3068637cb3bdcfd03982decc8d389"),
+     "@b1ed0c91a981cbef63d1e8929914c30532686bf3"),
 
   ## For ease of development. These are pulled in as wheels for run.py/test.py
   "expect_tests":

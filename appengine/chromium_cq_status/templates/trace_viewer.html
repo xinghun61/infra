@@ -14,6 +14,7 @@ found in the LICENSE file.
 
 <link rel="import" href="/tracing/base/xhr.html">
 <link rel="import" href="/tracing/extras/full_config.html">
+<link rel="import" href="/tracing/importer/import.html">
 <link rel="import" href="/tracing/ui/timeline_view.html">
 
 <style>
@@ -40,7 +41,7 @@ found in the LICENSE file.
   body > tr-ui-timeline-view:focus {
     outline: none;
   }
-  
+
 </style>
 </head>
 <body>
@@ -75,21 +76,90 @@ found in the LICENSE file.
   }
 
   function createViewFromTraces(filenames, traces) {
-    var m = timelineViewEl.model || new tr.Model();
-    var p = m.importTracesWithProgressDialog(traces, true);
+    var m = new tr.Model();
+    var shiftWorld = true;
+    if (timelineViewEl.model) {
+      m = timelineViewEl.model;
+      shiftWorld = false;
+      for (var traceIndex = 0; traceIndex < traces.length; traceIndex++) {
+        var eventList = JSON.parse(traces[traceIndex]);
+        for (var eventIndex = 0; eventIndex < eventList.length; eventIndex++) {
+          var traceEvent = eventList[eventIndex];
+          traceEvent.ts = m.convertTimestampToModelTime('traceEventClock',
+                                                        0) * 1000 + traceEvent.ts;
+        }
+        traces[traceIndex] = JSON.stringify(eventList);
+      };
+    }
+    var options = new tr.importer.ImportOptions();
+    options.shiftWorldToZero = shiftWorld;
+    var i = new tr.importer.Import(m, options);
+    var p = i.importTracesWithProgressDialog(traces);
     p.then(
       function() {
         timelineViewEl.model = m;
         timelineViewEl.updateDocumentFavicon();
         timelineViewEl.globalMode = true;
         timelineViewEl.viewTitle = '';
+
+        if (timelineViewEl.trackView) {
+          // Remove the default double-click functionality.
+          var trackView = timelineViewEl.trackView;
+          trackView.removeEventListener('dblclick', trackView.onDblClick_);
+          // Define replacement double-click method.
+          var loadBuildbotData = function(e) {
+            if (this.mouseModeSelector_.mode !==
+                tr.ui.b.MOUSE_SELECTOR_MODE.SELECTION)
+              return;
+
+            var controller = this.brushingStateController_;
+
+            // Fetch slices currently being selected.
+            var curSelection = controller.selection;
+            if (!curSelection.length || !curSelection[0].title)
+              return;
+
+            var build = curSelection[0];
+            if (build.args && build.args.build_url) {
+              if (build.expanded) {
+                // TODO: Currently deleting the expanded slices isn't possible
+              } else {
+                // TODO: Fix private variable invocation, currently necessary
+                // to allow a second import.
+                timelineViewEl.model.importOptions_ = undefined;
+                var requestUrl = '/builder-timeline-data/' + build.category +
+                                 '/' + build.title + '/';
+                var buildUrl = build.args.build_url;
+                var buildId = buildUrl.substr(buildUrl.indexOf('/builds/') +
+                                  '/builds/'.length, buildUrl.length);
+                var parentProcess = build.parentContainer.parent.pid;
+                requestUrl += buildId + '/' + parentProcess;
+
+                loadTraces([requestUrl], createViewFromTraces);
+                build.expanded = true;
+              }
+            } else {
+              // Perform the previous default action otherwise.
+              var selection = new tr.model.EventSet();
+              var filter = new tr.c.ExactTitleFilter(curSelection[0].title);
+              this.modelTrack_.addAllEventsMatchingFilterToSelection(filter,
+                                                                     selection);
+
+              controller.changeSelectionFromTimeline(selection);
+            }
+          }
+
+          var onDblClick = loadBuildbotData.bind(trackView);
+          trackView.addEventListener('dblclick', onDblClick);
+        }
       },
       function(err) {
         var overlay = new tr.ui.b.Overlay();
         overlay.textContent = tr.b.normalizeException(err).message;
         overlay.title = 'Import error';
         overlay.visible = true;
-      });
+      }
+    );
   }
 
   function cleanFilename(file) {
