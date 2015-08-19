@@ -14,8 +14,8 @@ import requests
 
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon import monitors
-from infra_libs.ts_mon import standard_metrics
-from infra_libs.ts_mon import targets
+from infra_libs.ts_mon.common import standard_metrics
+from infra_libs.ts_mon.common import targets
 
 
 def load_machine_config(filename):
@@ -224,5 +224,6 @@ def process_argparse_options(args):
         args.ts_mon_flush_interval_secs)
     interface.state.flush_thread.start()
 
+  print "ts_mon registering standard metrics"
   standard_metrics.init()
 

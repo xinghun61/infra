@@ -9,11 +9,16 @@ import copy
 import threading
 import time
 
-from monacq.proto import metrics_pb2
-
-from infra_libs.ts_mon import distribution
-from infra_libs.ts_mon import errors
-from infra_libs.ts_mon import interface
+try:
+  from infra_libs.ts_mon import interface
+  from infra_libs.ts_mon.common import distribution
+  from infra_libs.ts_mon.common import errors
+  from monacq.proto import metrics_pb2
+except ImportError: # pragma: no cover
+  import interface
+  from common import distribution
+  from common import errors
+  from proto import metrics_pb2
 
 
 MICROSECONDS_PER_SECOND = 1000000
@@ -68,6 +73,14 @@ class Metric(object):
     self._thread_lock = threading.Lock()
 
     interface.register(self)
+
+
+  def __eq__(self, other):
+    name = self._name == other._name
+    target = self._target == other._target
+    field = self._fields == other._fields
+    instance_type = type(self) == type(other)
+    return name and target and field and instance_type
 
   def unregister(self):
     interface.unregister(self)
