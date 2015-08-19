@@ -18,6 +18,10 @@ from requests.packages import urllib3
 
 
 LOGGER = logging.getLogger(__name__)
+NOTIFY_NONE = 'NONE'
+NOTIFY_OWNER = 'OWNER'
+NOTIFY_OWNER_REVIEWERS = 'OWNER_REVIEWERS'
+NOTIFY_ALL = 'ALL'
 
 def _not_read_only(f):
   @functools.wraps(f)
@@ -317,6 +321,58 @@ class Gerrit(object):
     }
     code, body = self._request(method='GET', request_path='/changes/',
                                params=params)
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
+  def get_issue(self, issue_id):
+    """Returns a ChangeInfo dictionary for a given issue_id or None if it
+    doesn't exist.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change-detail
+
+    Args:
+      issue_id is gerrit issue id like project~branch~change_id.
+    """
+    request_path = '/changes/%s/detail' % urllib.quote(issue_id, safe='~')
+    code, body = self._request(method='GET', request_path=request_path)
+    if code == 404:
+      return None
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
+  @_not_read_only
+  def set_review(self, change_id, revision_id, message=None, labels=None,
+                 notify=NOTIFY_NONE):
+    """Uses the Set Review endpoint of the Gerrit API to add messages and/or set
+    labels for a patchset.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#set-review
+
+    Args:
+      change_id: (str) The id of the change list.
+      revision_id: (str) The id of the affected revision.
+      message: (str) The message to add to the patchset.
+      labels: (dict) The dictionary which maps label names to their new value.
+      notify: (str) Who should get a notification.
+    """
+    if message:
+      max_message = 300
+      tail = u'\n(message too large)'
+      if len(message) > max_message:
+        message = message[:max_message-len(tail)] + tail # pragma: no cover
+      logging.info('change_id: %s; comment: %s' % (change_id, message.strip()))
+    payload = {}
+    for var, attr in [(message, 'message'), (notify, 'notify'),
+                      (labels, 'labels')]:
+      if var is not None:
+        payload[attr] = var
+    code, body = self._request(method='POST',
+                  request_path='/changes/%s/revisions/%s/review' % (
+                      urllib.quote(change_id, safe='~'),
+                      urllib.quote(revision_id, safe='')),
+                  body=payload)
     if code != 200:
       raise UnexpectedResponseException(code, body)
     return body

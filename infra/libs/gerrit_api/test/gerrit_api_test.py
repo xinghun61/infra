@@ -25,6 +25,21 @@ HEADERS = {
 HEADERS_WITH_CONTENT_TYPE = HEADERS.copy()
 HEADERS_WITH_CONTENT_TYPE['Content-Type'] = 'application/json;charset=UTF-8'
 
+TEST_PAYLOAD = {
+    'labels': {
+        'Code-Review': 1,
+    },
+    'message': 'Test message.',
+    'notify': 'NONE',
+}
+
+TEST_PAYLOAD_LABELS_ONLY = {
+    'labels': {
+        'Code-Review': 1,
+    },
+    'notify': 'OWNER',
+}
+
 TEST_CHANGE_INFO = {
     'id': 'project~branch~12345~change',
     'change_id': 12345,
@@ -266,3 +281,72 @@ class GerritAgentTestCase(unittest.TestCase):
     self.assertRaises(gerrit_api.UnexpectedResponseException,
                       self.gerrit.query, 'a', with_messages=False,
                       with_labels=False, with_revisions=False)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(TEST_CHANGE_INFO)), 200)
+    result = self.gerrit.get_issue('test/project~weird/branch~hash')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'test%2Fproject~weird%2Fbranch~hash/detail'),
+        headers=HEADERS)
+    self.assertEquals(result, TEST_CHANGE_INFO)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_not_found(self, mock_method):
+    mock_method.return_value = _create_mock_return('Not found', 404)
+    result = self.gerrit.get_issue('unknown~branch~hash')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'unknown~branch~hash/detail'),
+        headers=HEADERS)
+    self.assertEquals(result, None)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_unexpected_response(self, mock_method):
+    mock_method.return_value = _create_mock_return(None, 500)
+    self.assertRaises(gerrit_api.UnexpectedResponseException,
+                      self.gerrit.get_issue, 'issue')
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_set_review(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER,
+                  json.dumps({'labels':{'Code-Review':1}})), 200)
+    self.gerrit.set_review('change_id', 'revision_id', 'Test message.',
+                           { 'Code-Review': 1 })
+    mock_method.assert_called_once_with(
+        data=json.dumps(TEST_PAYLOAD),
+        method='POST',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'change_id/revisions/revision_id/review'),
+        headers=HEADERS_WITH_CONTENT_TYPE)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_set_review_only_label(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER,
+                  json.dumps({'labels':{'Code-Review':1}})), 200)
+    self.gerrit.set_review('change_id', 'revision_id',
+                           labels={ 'Code-Review': 1 }, notify='OWNER')
+    mock_method.assert_called_once_with(
+        data=json.dumps(TEST_PAYLOAD_LABELS_ONLY),
+        method='POST',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'change_id/revisions/revision_id/review'),
+        headers=HEADERS_WITH_CONTENT_TYPE)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_set_review_unexpected_response(self, mock_method):
+    mock_method.return_value = _create_mock_return(None, 500)
+    self.assertRaises(gerrit_api.UnexpectedResponseException,
+                      self.gerrit.set_review, 'change_id', 'revision_id')
