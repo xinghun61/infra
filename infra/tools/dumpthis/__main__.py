@@ -30,7 +30,7 @@ def main(argv):
   infra_libs.logs.add_argparse_options(parser)
   args = parser.parse_args(argv)
   infra_libs.logs.process_argparse_options(args)
-  dumpthis.run(args.bucket, args.file)
+  dumpthis.run(args.bucket, args.src)
   return 0
 
 
