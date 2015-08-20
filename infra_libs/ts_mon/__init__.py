@@ -32,10 +32,12 @@ from infra_libs.ts_mon.targets import TaskTarget
 
 from infra_libs.ts_mon.metrics import BooleanMetric
 from infra_libs.ts_mon.metrics import CounterMetric
+from infra_libs.ts_mon.metrics import CumulativeDistributionMetric
 from infra_libs.ts_mon.metrics import CumulativeMetric
 from infra_libs.ts_mon.metrics import DistributionMetric
 from infra_libs.ts_mon.metrics import FloatMetric
 from infra_libs.ts_mon.metrics import GaugeMetric
+from infra_libs.ts_mon.metrics import NonCumulativeDistributionMetric
 from infra_libs.ts_mon.metrics import StringMetric
 
 from infra_libs.ts_mon.monitors import ApiMonitor
