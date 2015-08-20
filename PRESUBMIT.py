@@ -347,8 +347,24 @@ def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
 
 # Unused argument - pylint: disable=W0613
 def GetPreferredTryMasters(project, change):  # pragma: no cover
-  return {
-    'tryserver.chromium.linux': {
-      'infra_tester': set(['defaulttests']),
-    }
-  }
+  import json
+  import os.path
+  import platform
+  import subprocess
+  cq_config_path = os.path.join(
+      change.RepositoryRoot(), 'config', 'cq.cfg')
+  # commit_queue.py below is a script in depot_tools directory, which has a
+  # 'builders' command to retrieve a list of CQ builders from the CQ config.
+  is_win = platform.system() == 'Windows'
+  masters = json.loads(subprocess.check_output(
+      ['commit_queue', 'builders', cq_config_path], shell=is_win))
+  try_config = {}
+  for master in masters:
+      try_config.setdefault(master, {})
+      for builder in masters[master]:
+          # Do not trigger presubmit builders, since they're likely to fail
+          # (e.g. OWNERS checks before finished code review), and we're
+          # running local presubmit anyway.
+          if 'presubmit' not in builder:
+              try_config[master][builder] = ['defaulttests']
+  return try_config
