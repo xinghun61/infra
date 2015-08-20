@@ -13,10 +13,10 @@ DEPS = [
 
 
 def RunSteps(api):
-  api.gclient.set_config('luci_go')
-  # patch_root must match the luci-go repo, not infra checkout.
+  api.gclient.set_config('luci_gae')
+  # patch_root must match the luci/gae repo, not infra checkout.
   for path in api.gclient.c.got_revision_mapping:
-    if 'luci-go' in path:
+    if 'github.com/luci/gae' in path:
       patch_root = path
       break
   api.bot_update.ensure_checkout(force=True, patch_root=patch_root)
@@ -32,21 +32,21 @@ def RunSteps(api):
   api.python(
       'go build',
       api.path['checkout'].join('go', 'env.py'),
-      ['go', 'build', 'github.com/luci/luci-go/...'])
+      ['go', 'build', 'github.com/luci/gae/...'])
 
   api.python(
       'go test',
       api.path['checkout'].join('go', 'env.py'),
-      ['go', 'test', 'github.com/luci/luci-go/...'])
+      ['go', 'test', 'github.com/luci/gae/...'])
 
 
 def GenTests(api):
   yield (
-    api.test('luci_go') +
+    api.test('luci_gae') +
     api.properties.git_scheduled(
-        buildername='luci-go-linux64',
+        buildername='luci-gae-linux64',
         buildnumber=123,
         mastername='chromium.infra',
-        repository='https://chromium.googlesource.com/external/github.com/luci/luci-go',
+        repository='https://chromium.googlesource.com/external/github.com/luci/gae',
     )
   )
