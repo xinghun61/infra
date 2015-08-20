@@ -5,6 +5,8 @@
 package status
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -12,14 +14,31 @@ import (
 	"appengine/datastore"
 )
 
-type hostState struct {
+type hostStateReport struct {
 	Host     string
 	State    string
 	Reported time.Time
 }
 
+type hostLatestState struct {
+	State string
+}
+
 func init() {
 	http.HandleFunc("/api/reportState", reportState)
+	http.HandleFunc("/", svnSlaves)
+}
+
+func getFormParam(r *http.Request, paramName string) (string, error) {
+	val, ok := r.Form[paramName]
+	switch {
+	case !ok:
+		return "", errors.New(fmt.Sprintf("Missing %s parameter", paramName))
+	case len(val) > 1:
+		return "", errors.New(fmt.Sprintf("Too many %s parameters", paramName))
+	}
+
+	return val[0], nil
 }
 
 func reportState(w http.ResponseWriter, r *http.Request) {
@@ -29,32 +48,49 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, ok := r.Form["host"]
-	switch {
-	case !ok:
-		http.Error(w, "Missing host parameter", http.StatusBadRequest)
-		return
-	case len(host) > 1:
-		http.Error(w, "Too many host parameters", http.StatusBadRequest)
+	host, err := getFormParam(r, "host")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	state, ok := r.Form["state"]
-	switch {
-	case !ok:
-		http.Error(w, "Missing state parameter", http.StatusBadRequest)
-		return
-	case len(state) > 1:
-		http.Error(w, "Too many state parameters", http.StatusBadRequest)
+	state, err := getFormParam(r, "state")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	c := appengine.NewContext(r)
-	hs := hostState{host[0], state[0], time.Now().UTC()}
-	key := datastore.NewIncompleteKey(c, "hostState", nil)
-	_, err = datastore.Put(c, key, &hs)
+	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
+		hsr := hostStateReport{host, state, time.Now().UTC()}
+		hsrKey := datastore.NewIncompleteKey(c, "hostStateReport", nil)
+		if _, err := datastore.Put(c, hsrKey, &hsr); err != nil {
+			return err
+		}
+
+		hls := hostLatestState{state}
+		hlsKey := datastore.NewKey(c, "hostLatestState", host, 0, nil)
+		_, err = datastore.Put(c, hlsKey, &hls)
+		return err
+	}, &datastore.TransactionOptions{XG: true})
+
 	if err != nil {
-		http.Error(w, "Failed to store state", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func svnSlaves(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	q := datastore.NewQuery("hostLatestState").Filter("State=", "SVN").KeysOnly()
+	hosts, err := q.GetAll(c, nil)
+	if err != nil {
+		c.Errorf("Failed to get host states: %s", err)
+		http.Error(w, "Failed to get host states", http.StatusInternalServerError)
+		return
+	}
+
+	for _, host := range hosts {
+		fmt.Fprintln(w, host.StringID())
 	}
 }
