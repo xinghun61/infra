@@ -10,7 +10,7 @@ import time
 import httplib2
 import oauth2client.client
 
-from infra_libs import http_metrics
+from infra_libs.ts_mon.common import http_metrics
 
 DEFAULT_SCOPES = ['email']
 

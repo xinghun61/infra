@@ -43,11 +43,11 @@ from monacq.proto import metrics_pb2
 from infra_libs import logs
 import infra_libs
 
-import httplib2
 from apiclient import discovery
 from oauth2client.client import GoogleCredentials
 from oauth2client.file import Storage
 from oauth2client.gce import AppAssertionCredentials
+import httplib2
 
 # Special string that can be passed through as the credentials path to use the
 # default GCE service account.
@@ -147,7 +147,6 @@ class PubSubMonitor(Monitor):
     return Storage(credentials_file_path).get()
 
   def _initialize(self, credsfile, project, topic, use_instrumented_http):
-    # Copied from acquisition_api.AcquisitionCredential.Load.
     creds = self._load_credentials(credsfile)
     if use_instrumented_http:
       self._http = infra_libs.InstrumentedHttp('acq-mon-api-pubsub')

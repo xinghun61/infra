@@ -11,8 +11,8 @@ import mock
 
 from testing_support import auto_stub
 
-from infra_libs.ts_mon import errors
 from infra_libs.ts_mon import interface
+from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.test import stubs
 
 

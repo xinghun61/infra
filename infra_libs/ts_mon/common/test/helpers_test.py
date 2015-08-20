@@ -6,8 +6,12 @@ import unittest
 
 import mock
 
-from infra_libs.ts_mon import helpers
-from infra_libs.ts_mon import metrics
+try:
+  from infra_libs.ts_mon.common import metrics
+  from infra_libs.ts_mon.common import helpers
+except ImportError: # pragma: no cover
+  from common import metrics
+  from common import helpers
 
 
 class ScopedIncrementCounterTest(unittest.TestCase):

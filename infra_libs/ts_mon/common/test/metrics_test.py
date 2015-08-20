@@ -8,13 +8,20 @@ import unittest
 
 import mock
 
-from monacq.proto import metrics_pb2
-
-from infra_libs.ts_mon import distribution
-from infra_libs.ts_mon import errors
-from infra_libs.ts_mon import interface
-from infra_libs.ts_mon import metrics
-from infra_libs.ts_mon import targets
+try:
+  from infra_libs.ts_mon import interface
+  from infra_libs.ts_mon.common import metrics
+  from infra_libs.ts_mon.common import distribution
+  from infra_libs.ts_mon.common import errors
+  from infra_libs.ts_mon.common import targets
+  from monacq.proto import metrics_pb2
+except ImportError: # pragma: no cover
+  import interface
+  from common import metrics
+  from common import distribution
+  from common import errors
+  from common import targets
+  from monacq.proto import metrics_pb2
 
 
 class FakeState(interface.State):

@@ -4,8 +4,10 @@
 
 import unittest
 
-from infra_libs.ts_mon import standard_metrics
-
+try:
+  from infra_libs.ts_mon.common import standard_metrics
+except ImportError: # pragma: no cover
+  from common import standard_metrics
 
 class StandardMetricsTest(unittest.TestCase):
 
