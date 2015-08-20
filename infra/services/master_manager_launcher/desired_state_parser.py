@@ -32,10 +32,16 @@ def load_desired_state_file(filename):
 def parse_desired_state(data):
   try:
     desired_state = json.loads(data)
-  except ValueError:
-    raise InvalidDesiredMasterState()
-  if not desired_master_state_is_valid(desired_state):
-    raise InvalidDesiredMasterState()
+  except ValueError as ex:
+    LOGGER.exception('Failed to parse desired state JSON')
+    raise InvalidDesiredMasterState(str(ex))
+
+  try:
+    validate_desired_master_state(desired_state)
+  except InvalidDesiredMasterState as ex:
+    LOGGER.error(ex.args[0])
+    raise
+
   return desired_state
 
 
@@ -46,7 +52,7 @@ def parse_transition_time(transition_time):
   return zulu.parse_zulu_ts(transition_time)
 
 
-def desired_master_state_is_valid(desired_state):
+def validate_desired_master_state(desired_state):
   """Verify that the desired_master_state file is valid."""
   now = timestamp.utcnow_ts()
 
@@ -56,43 +62,38 @@ def desired_master_state_is_valid(desired_state):
       # Verify desired_state and transition_time_utc are present.
       for k in ('desired_state', 'transition_time_utc'):
         if not k in state:
-          LOGGER.error(
-              'one or more states for master %s do not contain %s',
-              mastername, k)
-          return False
+          raise InvalidDesiredMasterState(
+              'one or more states for master %s do not contain %s' % (
+                  mastername, k))
 
       # Verify the desired state is in the allowed set.
       if (state['desired_state'] not in
           buildbot_state.STATES['desired_buildbot_state']):
-        LOGGER.error(
-            'desired_state \'%s\' is not one of %s',
-            state['desired_state'],
-            buildbot_state.STATES['desired_buildbot_state'])
-        return False
+        raise InvalidDesiredMasterState(
+            'desired_state \'%s\' is not one of %s' %(
+                state['desired_state'],
+                buildbot_state.STATES['desired_buildbot_state']))
 
       # Verify the timestamp is a number or Zulu time.
       if parse_transition_time(state['transition_time_utc']) is None:
-        LOGGER.error(
-            'transition_time_utc \'%s\' is not an int, float, or Zulu time',
-            state['transition_time_utc'])
-        return False
+        raise InvalidDesiredMasterState(
+            'transition_time_utc \'%s\' is not an int, float, or Zulu time' % (
+                state['transition_time_utc']))
 
     # Verify the list is properly sorted.
     sorted_states = sorted(
         states, key=operator.itemgetter('transition_time_utc'))
     if sorted_states != states:
-      LOGGER.error('master %s does not have states sorted by timestamp',
-          mastername)
-      LOGGER.error('should be:\n%s', json.dumps(sorted_states, indent=2))
-      return False
+      raise InvalidDesiredMasterState(
+          'master %s does not have states sorted by timestamp\n'
+          'should be:\n%s' % (
+              mastername,
+              json.dumps(sorted_states, indent=2)))
 
     # Verify there is at least one state in the past.
     if not get_master_state(states, now=now):
-      LOGGER.error(
-          'master %s does not have a state older than %s', mastername, now)
-      return False
-
-  return True
+      raise InvalidDesiredMasterState(
+          'master %s does not have a state older than %s' % (mastername, now))
 
 
 def get_master_state(states, now=None):
@@ -118,7 +119,7 @@ def get_masters_for_host(desired_state, build_dir, hostname):
   Returns triggered_masters and ignored_masters (a list and a set respectively).
 
   triggered_masters are masters on this host which have a corresponding entry in
-  the desired_master_state file. Any master running assigned to this host that 
+  the desired_master_state file. Any master running assigned to this host that
   does *not* have an entry in the desired_master_state file is considered
   'ignored.'
 
