@@ -22,6 +22,8 @@
       "infra@origin/master",
       "--revision",
       "infra/go/src/github.com/luci/gae@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+      "--revision",
+      "infra/go/src/github.com/luci/luci-go@origin/master",
       "--force"
     ],
     "cwd": "[SLAVE_BUILD]",
