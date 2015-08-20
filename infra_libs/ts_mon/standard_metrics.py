@@ -4,16 +4,12 @@
 
 """Metrics common to all tasks and devices."""
 
-try:
-  from infra_libs.ts_mon.common import metrics
-except ImportError: # pragma: no cover
-  from common import metrics
+from infra_libs.ts_mon import metrics
 
-
+# TODO(dsansome): Add more metrics for git revision, cipd package version,
+# uptime, etc.
 up = metrics.BooleanMetric('presence/up')
 
 
 def init():
-  # TODO(dsansome): Add more metrics for git revision, cipd package version,
-  # uptime, etc.
   up.set(True)

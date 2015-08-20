@@ -4,12 +4,9 @@
 
 import unittest
 
-try:
-  from monacq.proto import metrics_pb2
-  from infra_libs.ts_mon.common import targets
-except ImportError: # pragma: no cover
-  from proto import metrics_pb2
-  from common import targets
+from monacq.proto import metrics_pb2
+
+from infra_libs.ts_mon import targets
 
 
 class DeviceTargetTest(unittest.TestCase):

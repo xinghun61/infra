@@ -39,7 +39,7 @@ import time
 
 from monacq.proto import metrics_pb2
 
-from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon import errors
 
 # The maximum number of MetricsData messages to include in each HTTP request.
 # MetricsCollections larger than this will be split into multiple requests.
@@ -111,19 +111,18 @@ def flush():
 def register(metric):
   """Adds the metric to the list of metrics sent by flush().
 
-  This is called automatically by Metric's constructor.
+  This is called automatically by Metric's constructor - you don't need to call
+  it manually.
   """
   # If someone is registering the same metric object twice, that's okay, but
   # registering two different metric objects with the same metric name is not.
-  for m in state.metrics:
-    if metric == m:
-      state.metrics.remove(m)
-      state.metrics.add(metric)
-      return
+  if metric in state.metrics:
+    return
   if any([metric._name == m._name for m in state.metrics]):
     raise errors.MonitoringDuplicateRegistrationError(metric._name)
 
   state.metrics.add(metric)
+
 
 def unregister(metric):
   """Removes the metric from the list of metrics sent by flush()."""

@@ -40,6 +40,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
   STALE_ALERT_TIMEOUT = 300
 
   def get(self, key=None):
+    utils.increment_monarch('ts-alerts')
     self.remove_expired_alerts()
     if not users.get_current_user():
       results = {'date': dt.utcnow(),
@@ -175,6 +176,7 @@ class TimeSeriesAlertsHandler(webapp2.RequestHandler):
 class TimeSeriesAlertsHistory(alerts_history.AlertsHistory):
 
   def get(self, timestamp=None):
+    utils.increment_monarch('ts-alerts-history')
     result_json = {}
     if not users.get_current_user():
       result_json['login-url'] = users.create_login_url(self.request.uri)

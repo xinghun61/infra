@@ -26,7 +26,7 @@ import functools
 
 import requests
 
-from infra_libs.ts_mon.common import http_metrics
+from infra_libs import http_metrics
 
 
 def instrumentation_hook(name):

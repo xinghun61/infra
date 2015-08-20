@@ -6,7 +6,7 @@ import mock
 
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon import monitors
-from infra_libs.ts_mon.common import targets
+from infra_libs.ts_mon import targets
 
 
 class MockState(interface.State):  # pragma: no cover

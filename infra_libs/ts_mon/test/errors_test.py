@@ -4,10 +4,7 @@
 
 import unittest
 
-try:
-  from infra_libs.ts_mon.common import errors
-except ImportError: # pragma: no cover
-  from common import errors
+from infra_libs.ts_mon import errors
 
 
 class ErrorsTest(unittest.TestCase):

@@ -1,5 +1,0 @@
-cron:
-- description: flush alerts metrics
-  url: /monitoring
-  schedule: every 5 minutes
-  target: monitoring

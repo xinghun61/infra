@@ -41,9 +41,9 @@ import textwrap
 
 import pytz
 
-from infra_libs.ts_mon.common.metrics import CumulativeMetric
+from infra_libs.ts_mon import metrics
 
-log_metric = CumulativeMetric('proc/log_lines')
+log_metric = metrics.CumulativeMetric('proc/log_lines')
 
 if sys.platform.startswith('win'):  # pragma: no cover
   DEFAULT_LOG_DIRECTORIES = os.pathsep.join([

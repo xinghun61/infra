@@ -5,7 +5,7 @@
 import datetime
 import unittest
 
-from infra_libs.ts_mon.common import http_metrics
+from infra_libs import http_metrics
 from infra_libs import instrumented_requests
 
 import requests

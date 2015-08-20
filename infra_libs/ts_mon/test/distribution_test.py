@@ -4,10 +4,7 @@
 
 import unittest
 
-try:
-  from infra_libs.ts_mon.common import distribution
-except ImportError: # pragma: no cover
-  from common import distribution
+from infra_libs.ts_mon import distribution
 
 
 class BucketerTestBase(unittest.TestCase):
