@@ -72,7 +72,8 @@ class BuildFailure(BaseHandler):
           'Url "%s" is not pointing to a build.' % url, 501)
     master_name, builder_name, build_number = build_info
 
-    if not masters.MasterIsSupported(master_name):
+    if not (masters.MasterIsSupported(master_name) or
+            users.is_current_user_admin()):
       return BaseHandler.CreateError(
           'Master "%s" is not supported yet.' % master_name, 501)
 

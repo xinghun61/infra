@@ -73,7 +73,7 @@ class BuildFailureTest(testing.AppengineTestCase):
                    re.MULTILINE|re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
-  def testMasterNotSupported(self):
+  def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -91,7 +91,25 @@ class BuildFailureTest(testing.AppengineTestCase):
                    re.MULTILINE|re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
-  def testBuildFailureAnalysisScheduled(self):
+  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    def MockMasterIsSupported(*_):
+      return False
+    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
+
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    response = self.test_app.get('/build-failure', params={'url': build_url})
+    self.assertEquals(200, response.status_int)
+
+    self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
+
+  def testAnyoneCanRequestAnalysisOfFailureOnSupportedMaster(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
