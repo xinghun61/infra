@@ -127,20 +127,26 @@ def clear_wheelhouse():
     pass
 
 
+def copy_wheel_to_local_cache():
+  if not os.path.isdir(LOCAL_STORAGE_PATH):
+    os.makedirs(LOCAL_STORAGE_PATH)
+  for filename in glob.glob(os.path.join(WHEELHOUSE, '*')):
+    shutil.copy(filename, LOCAL_STORAGE_PATH)
+
 def push_wheelhouse():
   status = subprocess.call([
       sys.executable, GSUTIL, '--force-version', '4.7', '-m', 'cp',
       os.path.join(WHEELHOUSE, '*'), WHEELS_URL])
   if status:
     print('Failed to upload wheels, falling back to local cache')
-    if not os.path.isdir(LOCAL_STORAGE_PATH):
-      os.makedirs(LOCAL_STORAGE_PATH)
-    for filename in glob.glob(os.path.join(WHEELHOUSE, '*')):
-      shutil.copy(filename, LOCAL_STORAGE_PATH)
+    copy_wheel_to_local_cache()
   return status
 
 def main(args):
   parser = argparse.ArgumentParser()
+  parser.add_argument(
+      '--upload', action='store_true',
+      help='Upload wheelhouse instead of copying to local cache')
   parser.add_argument(
       '--deps_file', action='append',
       help='Path to deps.pyl file (default: bootstrap/deps.pyl)')
@@ -197,7 +203,11 @@ def main(args):
                  options.get('build_options', ()))
     else:
       raise Exception('Invalid options %r for %r' % (options, name))
-    push_wheelhouse()
+
+    if opts.upload:
+      push_wheelhouse()
+    else:
+      copy_wheel_to_local_cache()
 
 
 if __name__ == '__main__':
