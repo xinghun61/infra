@@ -19,15 +19,17 @@ import (
 
 const (
 	// StepCompletedRun is a synthetic step name used to indicate the build run is complete.
-	StepCompletedRun  = "completed run"
-	treeCloserPri     = 0
-	staleMasterSev    = 0
-	staleBuilderSev   = 0
-	hungBuilderSev    = 1
-	idleBuilderSev    = 1
-	offlineBuilderSev = 1
-	resOK             = float64(1)
-	resInfraFailure   = float64(4)
+	StepCompletedRun   = "completed run"
+	treeCloserPri      = 0
+	reliableFailureSev = 0
+	newFailureSev      = 1
+	staleMasterSev     = 0
+	staleBuilderSev    = 0
+	hungBuilderSev     = 1
+	idleBuilderSev     = 1
+	offlineBuilderSev  = 1
+	resOK              = float64(1)
+	resInfraFailure    = float64(4)
 )
 
 var (
@@ -98,6 +100,8 @@ type Analyzer struct {
 	BuilderOnly string
 	BuildOnly   int64
 
+	revisionSummaries map[string]messages.RevisionSummary
+
 	// Now is useful for mocking the system clock in testing and simulating time
 	// during replay.
 	Now func() time.Time
@@ -124,6 +128,7 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 		},
 		MasterCfgs: map[string]messages.MasterConfig{},
 
+		revisionSummaries: map[string]messages.RevisionSummary{},
 		Now: func() time.Time {
 			return time.Now()
 		},
@@ -486,6 +491,20 @@ func (a *Analyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
 	return mergedAlerts
 }
 
+// GetRevisionSummaries returns a slice of RevisionSummaries for the list of hashes.
+func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSummary, error) {
+	ret := []messages.RevisionSummary{}
+	for _, h := range hashes {
+		s, ok := a.revisionSummaries[h]
+		if !ok {
+			return nil, fmt.Errorf("Unrecognized hash:  %s", h)
+		}
+		ret = append(ret, s)
+	}
+
+	return ret, nil
+}
+
 // builderStepAlerts scans the steps of recent builds done on a particular builder,
 // generating an Alert for each step output that warrants one.  Alerts are then
 // merged by key so that failures that occur across a range of builds produce a single
@@ -576,7 +595,15 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 		sort.Sort(byRepo(mergedBF.RegressionRanges))
 
 		mergedAlert.Extension = mergedBF
-		mergedAlert.StartTime = mergedBF.Builders[0].StartTime
+
+		for _, failingBuilder := range mergedBF.Builders {
+			if failingBuilder.LatestFailure-failingBuilder.FirstFailure > 0 {
+				mergedAlert.Severity = reliableFailureSev
+			}
+			if failingBuilder.StartTime < mergedAlert.StartTime {
+				mergedAlert.StartTime = failingBuilder.StartTime
+			}
+		}
 		alerts = append(alerts, mergedAlert)
 	}
 
@@ -689,17 +716,26 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 			}
 
 			regRanges := []messages.RegressionRange{}
-			revsByRepo := map[string][]string{}
+			revisionsByRepo := map[string][]string{}
 
 			for _, change := range f.build.SourceStamp.Changes {
 				// check change.Comments for text like
 				// "Cr-Commit-Position: refs/heads/master@{#330158}" to pick out revs from git commits.
-				revsByRepo[change.Repository] = append(revsByRepo[change.Repository], change.Revision)
+				revisionsByRepo[change.Repository] = append(revisionsByRepo[change.Repository], change.Revision)
+
+				a.revisionSummaries[change.Revision] = messages.RevisionSummary{
+					GitHash:     change.Revision,
+					Link:        change.Revlink,
+					Description: trunc(change.Comments),
+					Author:      change.Who,
+					When:        change.When,
+				}
 			}
-			for repo, revs := range revsByRepo {
+
+			for repo, revisions := range revisionsByRepo {
 				regRanges = append(regRanges, messages.RegressionRange{
 					Repo:      repo,
-					Revisions: revs,
+					Revisions: revisions,
 				})
 			}
 
@@ -757,6 +793,13 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 	}
 
 	return ret, nil
+}
+
+func trunc(s string) string {
+	if len(s) < 100 {
+		return s
+	}
+	return s[:100]
 }
 
 // reasonsForFailure examines the step failure and applies some heuristics to

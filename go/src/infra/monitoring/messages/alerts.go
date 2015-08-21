@@ -49,8 +49,9 @@ func TimeToEpochTime(t time.Time) EpochTime {
 
 // Alerts is the top-level entity in alerts.json.
 type Alerts struct {
-	Alerts    []Alert   `json:"alerts"`
-	Timestamp EpochTime `json:"timestamp"`
+	Alerts            []Alert                    `json:"alerts"`
+	RevisionSummaries map[string]RevisionSummary `json:"revision_summaries"`
+	Timestamp         EpochTime                  `json:"timestamp"`
 }
 
 // Alert represents a condition that should be examined by a human.
@@ -107,4 +108,13 @@ type RegressionRange struct {
 	Repo      string   `json:"repo"`
 	URL       string   `json:"url"`
 	Revisions []string `json:"revisions"`
+}
+
+// RevisionSummary summarizes some information about a revision.
+type RevisionSummary struct {
+	GitHash     string    `json:"git_hash"`
+	Link        string    `json:"link"`
+	Description string    `json:"description"`
+	Author      string    `json:"author"`
+	When        EpochTime `json:"when"`
 }

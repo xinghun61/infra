@@ -226,9 +226,27 @@ func main() {
 				bes := fetchBuildExtracts(a.Reader, masterNames)
 				log.Infof("Build Extracts read: %d", len(bes))
 
-				alerts := &messages.Alerts{}
+				alerts := &messages.Alerts{
+					RevisionSummaries: map[string]messages.RevisionSummary{},
+				}
 				for masterName, be := range bes {
 					alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+				}
+
+				// Make sure we have summaries for each revision implicated in a builder failure.
+				for _, alert := range alerts.Alerts {
+					if bf, ok := alert.Extension.(messages.BuildFailure); ok {
+						for _, r := range bf.RegressionRanges {
+							revs, err := a.GetRevisionSummaries(r.Revisions)
+							if err != nil {
+								log.Errorf("Couldn't get revision summaries: %v", err)
+								continue
+							}
+							for _, rev := range revs {
+								alerts.RevisionSummaries[rev.GitHash] = rev
+							}
+						}
+					}
 				}
 				alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 
