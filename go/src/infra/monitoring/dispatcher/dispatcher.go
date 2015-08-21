@@ -42,8 +42,9 @@ var (
 	maxErrs             = flag.Int("max-errs", 1, "Max consecutive errors per loop attempt")
 	durationStr         = flag.String("duration", "10s", "Max duration to loop for")
 	cycleStr            = flag.String("cycle", "1s", "Cycle time for loop")
-	snapshot            = flag.String("record-snapshot", "", "save a snapshot of infra responses to this path, which will be created if it does not already exist.")
-	replay              = flag.String("replay-snapshot", "", "replay a snapshot of infra responses from this path, which should have been created previously by running with --record-snapshot.")
+	snapshot            = flag.String("record-snapshot", "", "Save a snapshot of infra responses to this path, which will be created if it does not already exist.")
+	replay              = flag.String("replay-snapshot", "", "Replay a snapshot of infra responses from this path, which should have been created previously by running with --record-snapshot.")
+	replayTime          = flag.String("replay-time", "", "Specify a simulated starting time for the replay in RFC3339 format, used with --replay-snapshot.")
 
 	log             = gologger.Get()
 	duration, cycle time.Duration
@@ -164,6 +165,18 @@ func main() {
 	}
 
 	a := analyzer.New(r, 5, 100)
+	if *replayTime != "" {
+		t, err := time.Parse(time.RFC3339, *replayTime)
+		if err != nil {
+			log.Errorf("Couldn't parse replay-time: %s", err)
+			os.Exit(1)
+		}
+		start := time.Now()
+		a.Now = func() time.Time {
+			diff := time.Now().Sub(start)
+			return t.Add(diff)
+		}
+	}
 
 	for masterURL, masterCfgs := range gk.Masters {
 		if len(masterCfgs) != 1 {
@@ -266,6 +279,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	logging.Set(ctx, log)
 	defer cancel()
+
 	loopResults := looper.Run(ctx, f, cycle, *maxErrs, clock.GetSystemClock())
 
 	if !loopResults.Success {

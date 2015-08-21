@@ -98,8 +98,9 @@ type Analyzer struct {
 	BuilderOnly string
 	BuildOnly   int64
 
-	// now is useful for mocking the system clock in testing.
-	now func() time.Time
+	// Now is useful for mocking the system clock in testing and simulating time
+	// during replay.
+	Now func() time.Time
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
@@ -123,7 +124,7 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 		},
 		MasterCfgs: map[string]messages.MasterConfig{},
 
-		now: func() time.Time {
+		Now: func() time.Time {
 			return time.Now()
 		},
 	}
@@ -139,7 +140,7 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 		return ret
 	}
 
-	elapsed := a.now().Sub(be.CreatedTimestamp.Time())
+	elapsed := a.Now().Sub(be.CreatedTimestamp.Time())
 	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
 			Key:       fmt.Sprintf("stale master: %v", master),
@@ -147,14 +148,14 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 			Body:      fmt.Sprintf("%s elapsed since last update.", elapsed),
 			StartTime: messages.TimeToEpochTime(be.CreatedTimestamp.Time()),
 			Severity:  staleMasterSev,
-			Time:      messages.TimeToEpochTime(a.now()),
+			Time:      messages.TimeToEpochTime(a.Now()),
 			Links:     []messages.Link{{"Master", client.MasterURL(master)}},
 			// No type or extension for now.
 		})
 	}
 	if elapsed < 0 {
 		// Add this to the alerts returned, rather than just log it?
-		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", master, a.now(), elapsed)
+		log.Errorf("Master %s timestamp is newer than current time (%s): %s old.", master, a.Now(), elapsed)
 	}
 
 	return ret
@@ -228,7 +229,7 @@ func (a buildNums) Less(i, j int) bool { return a[i] > a[j] }
 // if there were any errors.
 func (a *Analyzer) latestBuildStep(b *messages.Build) (lastStep string, lastUpdate messages.EpochTime, err error) {
 	if len(b.Steps) == 0 {
-		return "", messages.TimeToEpochTime(a.now()), errNoBuildSteps
+		return "", messages.TimeToEpochTime(a.Now()), errNoBuildSteps
 	}
 	if len(b.Times) > 1 && b.Times[1] != 0 {
 		return StepCompletedRun, b.Times[1], nil
@@ -307,7 +308,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 		errs = append(errs, fmt.Errorf("Couldn't get latest build step for %s.%s: %v", masterName, builderName, err))
 		return alerts, errs
 	}
-	elapsed := a.now().Sub(lastUpdated.Time())
+	elapsed := a.Now().Sub(lastUpdated.Time())
 	links := []messages.Link{
 		{"Builder", client.BuilderURL(masterName, builderName)},
 		{"Last build", client.BuildURL(masterName, builderName, lastBuild.Number)},
@@ -322,7 +323,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Title:    fmt.Sprintf("%s.%s is hung in step %s.", masterName, builderName, lastStep),
 				Body:     fmt.Sprintf("%s.%s has been building for %v (last step update %s), past the alerting threshold of %v", masterName, builderName, elapsed, lastUpdated.Time(), a.HungBuilderThresh),
 				Severity: hungBuilderSev,
-				Time:     messages.TimeToEpochTime(a.now()),
+				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
 			})
 			// Note, just because it's building doesn't mean it's in a good state. If the last N builds
@@ -335,7 +336,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Title:    fmt.Sprintf("%s.%s is offline.", masterName, builderName),
 				Body:     fmt.Sprintf("%s.%s has been offline for %v (last step update %s %v), past the alerting threshold of %v", masterName, builderName, elapsed, lastUpdated.Time(), float64(lastUpdated), a.OfflineBuilderThresh),
 				Severity: offlineBuilderSev,
-				Time:     messages.TimeToEpochTime(a.now()),
+				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
 			})
 		}
@@ -346,7 +347,7 @@ func (a *Analyzer) builderAlerts(masterName string, builderName string, b *messa
 				Title:    fmt.Sprintf("%s.%s is idle with too many pending builds.", masterName, builderName),
 				Body:     fmt.Sprintf("%s.%s is idle with %d pending builds, past the alerting threshold of %d", masterName, builderName, b.PendingBuilds, a.IdleBuilderCountThresh),
 				Severity: idleBuilderSev,
-				Time:     messages.TimeToEpochTime(a.now()),
+				Time:     messages.TimeToEpochTime(a.Now()),
 				Links:    links,
 			})
 		}
@@ -683,7 +684,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 		go func(f stepFailure) {
 			alr := messages.Alert{
 				Title: fmt.Sprintf("Builder step failure: %s.%s", f.masterName, f.builderName),
-				Time:  messages.EpochTime(a.now().Unix()),
+				Time:  messages.EpochTime(a.Now().Unix()),
 				Type:  "buildfailure",
 			}
 

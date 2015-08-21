@@ -127,7 +127,7 @@ func TestMasterAlerts(t *testing.T) {
 	a := New(&mockReader{}, 0, 10)
 
 	for _, test := range tests {
-		a.now = fakeNow(test.t)
+		a.Now = fakeNow(test.t)
 		got := a.MasterAlerts(test.master, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.want)
@@ -166,7 +166,7 @@ func TestBuilderAlerts(t *testing.T) {
 	a := New(&mockReader{}, 0, 10)
 
 	for _, test := range tests {
-		a.now = fakeNow(test.t)
+		a.Now = fakeNow(test.t)
 		got := a.BuilderAlerts(test.url, &test.be)
 		if !reflect.DeepEqual(got, test.wantBuilders) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.wantBuilders)
@@ -278,7 +278,7 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 	a := New(nil, 0, 10)
 
 	for _, test := range tests {
-		a.now = fakeNow(test.time)
+		a.Now = fakeNow(test.time)
 		a.Reader = mockReader{
 			builds: test.builds,
 		}
@@ -494,7 +494,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 	a := New(nil, 0, 10)
 
 	for _, test := range tests {
-		a.now = fakeNow(time.Unix(0, 0))
+		a.Now = fakeNow(time.Unix(0, 0))
 		a.Reader = mockReader{
 			builds: test.builds,
 		}
@@ -924,7 +924,7 @@ func TestStepFailureAlerts(t *testing.T) {
 
 	mc := &mockReader{}
 	a := New(mc, 0, 10)
-	a.now = fakeNow(time.Unix(0, 0))
+	a.Now = fakeNow(time.Unix(0, 0))
 
 	for _, test := range tests {
 		mc.testResults = &test.testResults
@@ -1058,7 +1058,7 @@ func TestLatestBuildStep(t *testing.T) {
 	}
 
 	a := New(&mockReader{}, 0, 10)
-	a.now = fakeNow(time.Unix(0, 0))
+	a.Now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
 		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)
 		if gotStep != test.wantStep {
