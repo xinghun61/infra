@@ -122,9 +122,9 @@ for that. Known chrome-infra build requesters:
 
 ## Buildbot integration
 
-Buildbot is integrated with buildbucket, with two-way sync, so buildbot can be
-completely encapsulated by buildbucket API (e.g. if you cancel a build on
-buildbucket, it will be cancelled on buildbot). Read more in
+Buildbot is integrated with buildbucket, with two-way sync. Using buildbucket
+you can schedule, cancel, search and read build results (but no logs).
+Read more in
 [buildbot-buildbucket README.md](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/README.md).
 
 ## Configuration

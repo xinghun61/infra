@@ -1,7 +1,6 @@
 # Infra steps in the builds
 
-This page describes the purpose of various common steps in builders on
-the waterfall and tryservers.
+Purpose of various common steps in builders on the waterfall and tryservers.
 
 ## find_isolated_tests step
 
@@ -11,12 +10,12 @@ swarming job where it is used to reconstruct the file tree (by downloading files
 from the isolate server). *.isolated files are built during compilation (ninja
 invokes isolate.py)
 
-# clean_isolated_files step
+## clean_isolated_files step
 
 Removes .isolate files from the build directory before compilation (and
 isolation), to ensure no stale *.isolated are left.
 
-# cleanup_temp step
+## cleanup_temp step
 
 This step is a hack, which tries to delete portions of the live temp directory
 based on a variety of hard-coded globs. This is not scalable as people change

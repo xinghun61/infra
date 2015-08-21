@@ -1,27 +1,17 @@
-# Chrome Infra Configuration service (luci-config)
+# Luci-config
 
-* Owner: nodir@
-* Prod instance: luci-config.appspot.com
+Stores a registery of projects that use chrome-infra.
+Imports config files from repos and provides unified API to read them.
+
+*   Location: [luci-config.appspot.com](http://luci-config.appspot.com)
+*   [Documentation](https://github.com/luci/luci-py/blob/master/appengine/config_service/README.md)
+*   [Design Doc](http://go/luci-config)
+*   [API](https://luci-config.appspot.com/_ah/api/explorer#p/config/v1/)
+*   Safe to use for internal projects: yes, has ACLs.
+*   Crbug label: [Infra-Config](https://code.google.com/p/chromium/issues/list?q=Infra%3DConfig)
+*   Owner: nodir@
 
 [TOC]
-
-## Overview
-
-* Stores a registry of projects (clients) and chrome infra services
-* Gathers configuration files scattered across repositories and provides unified
-  API to discover and read them.
-* Validates config files
-
-Non-chromium detailed documentation can be found on
-[GitHub](https://github.com/luci/luci-py/tree/master/appengine/config_service).
-This page explains specifics of chromium's instance.
-
-## Project registry
-
-Projects that want to use CQ or BuildBucket must be registered in
-[projects.cfg](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg).
-
-Send a CL or file a bug to nodir@ or sergiyb@.
 
 ## Import
 
@@ -30,28 +20,14 @@ Luci-config imports config files from
 
 * Service configs are imported from
   [infradata/config repo](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/)
-* Project configs are imported from project repositories. They are either in
-  the root of `infra/config` branch
-  (example: [infra.git](https://chromium.googlesource.com/infra/infra/+/infra/config)) or
-  `infra/project-config` dir of `master` branch (example:
-  [chromium/src.git](https://chromium.googlesource.com/chromium/src/+/master/infra/project-config))
+* Project configs are imported from `infra/config` branch of project repos
+  (example: [infra.git](https://chromium.googlesource.com/infra/infra/+/infra/config))
 * Ref configs are typically imported from `infra/config` directory of a branch.
 
 ConfigSet->Location mapping can be found by calling
-[get_mapping API](https://luci-config.appspot.com/_ah/api/explorer#p/config/v1/config.get_mapping).
+[config.get_mapping](https://luci-config.appspot.com/_ah/api/explorer#p/config/v1/config.get_mapping).
 
-## Who uses it?
-
-* CQ [reads cq.cfg files](https://luci-config.appspot.com/_ah/api/explorer#p/config/v1/config.get_ref_configs?path=cq.cfg),
-  discovers projects and reads a list of builders to trigger
-* [BuildBucket](https://cr-buildbucket.appspot.com)
-  [reads cr-buildbucket.cfg](https://luci-config.appspot.com/_ah/api/explorer#p/config/v1/config.get_project_configs?path=cr-buildbucket.cfg),
-  discovers and registers buckets.
-* [CIA](https://chrome-infra-auth.appspot.com) reads
-  [its configs](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/chrome-infra-auth/)
-  and updates its internal state.
-
-## Validation
+### Validation
 
 * luci-config validates
   [its owns configs](https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config),
@@ -70,9 +46,23 @@ revision (all files) is rejected if at least one file is invalid. Services that
 consume configs through luci-config are guaranteed not to receive invalid
 configs, as long as they make backward-compatible changes to validation code.
 
-As of 2015-07-09, when an invalid config is not imported, an error is emitted
+As of 2015-08-13, when an invalid config is not imported, an error is emitted
 in [luci-config logs](https://console.developers.google.com/project/luci-config/logs?service=appengine.googleapis.com&key1=backend&minLogLevel=500)
 and ereporter2 sends an email to
 [config-ereporeter2-config group](https://chrome-infra-auth.appspot.com/auth/groups#config-ereporter2-reports)
 with max an hour latency. The plan is to implement presubmit check for configs
 through luci-config API, and maybe send an email to a commit author.
+
+## Security
+
+A project declares its visibility in `project.cfg` configuration file in
+`infra/config` branch. Example:
+
+    access: "group:all"
+
+Means the project is public. If not set, it is visible only to a whitelist of
+trusted services.
+
+## See also
+
+* [FAQ](faq.md)

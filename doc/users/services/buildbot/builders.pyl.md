@@ -1,5 +1,7 @@
 # The builders.pyl File Format
 
+[go/builders-pyl]
+
 builders.pyl is a declarative definition of a buildbot master. It is
 intended to hide all of the buildbot-specific implementation details
 from the user and just expose the features and settings a
@@ -130,10 +132,10 @@ tryservers or triggered from other bots). Such builders normally have
 their scheduler set to `None`, so, equivalently, if any of the builders
 have their scheduler set to `None`, this field must be present.
 
-If set, it should contain the string value of the [buildbucket
-bucket](buildbucket.md) created for this buildbot.
-If it is not set, it defaults to `None`. By convention, buckets are
-named to match the master name, e.g. "master.tryserver.nacl".
+If set, it should contain the string value of the
+[buildbucket bucket](/appengine/cr-buildbucket/README.md) created for this
+buildbot master. If it is not set, it defaults to `None`. By convention, buckets
+are named to match the master name, e.g. "master.tryserver.nacl".
 
 ### master_classname
 This is an *optional* field. If it is not specified, it is synthesized
@@ -310,3 +312,5 @@ os       | Valid values
 
 [crbug](https://crbug.com) label:
 [Infra-MasterGen](https://crbug.com?q=label:Infra-MasterGen)
+
+[go/builders-pyl]: http://go/builders-pyl
