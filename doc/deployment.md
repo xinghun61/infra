@@ -51,7 +51,7 @@ should be rare):
 Some of our services (in particular monitoring services such as sysmon
 and mastermon) are deployed across a wide variety of hosts.
 These services are not deployed via source checkouts. Instead, they are
-packaged by [CIPD](/appengine/chrome_infra_pacakges) (the Chrome Infra Package
+packaged by [CIPD](/appengine/chrome_infra_packages) (the Chrome Infra Package
 Deployer). The CIPD packages are built for every green revision by the
 continuous builders on the [Infra
 Continuous](https://build.chromium.org/p/chromium.infra/console) Buildbot
