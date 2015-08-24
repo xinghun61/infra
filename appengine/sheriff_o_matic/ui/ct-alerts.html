@@ -15,7 +15,7 @@ found in the LICENSE file.
     </style>
     <div class='main' style=''>
       <template repeat="{{ alert in alerts[tree].alerts }}">
-        <ct-alert-card alert="{{ alert }}" tree="{{ tree }}"></ct-alert-card>
+        <ct-alert-card alert="{{ alert }}" tree="{{ tree }}" alerts="{{ alerts[tree] }}"></ct-alert-card>
       </template>
     </div>
   </template>

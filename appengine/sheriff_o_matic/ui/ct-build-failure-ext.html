@@ -6,8 +6,9 @@ found in the LICENSE file.
 
 <link rel="import" href="ct-user-prefs.html">
 <link rel="import" href="ct-commit-list.html">
+<link rel="import" href="../model/ct-failures.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
-<polymer-element name="ct-build-failure-ext" attributes="failure">
+<polymer-element name="ct-build-failure-ext" attributes="failure alerts">
   <template>
     <style>
       :host {
@@ -19,9 +20,6 @@ found in the LICENSE file.
     </style>
     <ct-user-prefs id="userPrefs"></ct-user-prefs>
     <div layout vertical>
-      <template if="{{ failure.tree_closer }}">
-      <b>TREE CLOSER</b>
-      </template>
       <template repeat="{{ builder in failure.builders }}">
         <div>
           <a href="{{ builder.url }}" target="{{ $.userPrefs.values.linkTarget }}">{{ builder.name }}</a>
@@ -46,7 +44,15 @@ found in the LICENSE file.
           <template if="{{ range.expanded }}">
           <ul>
           <template repeat="{{ rev in range.revisions }}">
-            <li><a href="{{ range.repo }}/+/{{ rev }}">{{ rev }}</a></li>
+            <li>
+              <a href="{{ range.repo }}/+/{{ rev }}">{{ shortRev(rev) }}</a>
+              {{ revisionDesc(rev) }}
+              <br/>
+              {{ revisionWhen(rev) }}
+              <br/>
+              {{ revisionWho(rev) }}
+              <br/>
+            </li>
           </template>
           </ul>
           </template>
@@ -56,8 +62,32 @@ found in the LICENSE file.
   </template>
   <script>
     Polymer({
-      revisionInfo: function(rev) {
-        return "Revision info for " + rev;
+      shortRev: function(rev) {
+        return rev.substr(0, 8);
+      },
+      revisionWho: function(rev) {
+        var r = this.alerts.revision_summaries[rev];
+        if (r) {
+          return r.who;
+        }
+        console.log("missing revision " + rev);
+        return "?";
+      },
+      revisionWhen: function(rev) {
+        var r = this.alerts.revision_summaries[rev];
+        if (r) {
+          return new Date(r.when*1000);
+        }
+        console.log("missing revision " + rev);
+        return "?";
+      },
+      revisionDesc: function(rev) {
+        var r = this.alerts.revision_summaries[rev];
+        if (r) {
+          return r.description;
+        }
+        console.log("missing revision " + rev);
+        return "?";
       },
       _toggle: function(evt, detail, el) {
         for (var i = 0; i < this.failure.regression_ranges.length; i++) {

@@ -5,9 +5,9 @@ found in the LICENSE file.
 -->
 <link rel="import" href="ct-build-failure-ext.html">
 
-<polymer-element name="ct-alert-extension" attributes="type extension">
+<polymer-element name="ct-alert-extension" attributes="type extension alerts">
   <template if="{{type == 'buildfailure'}}">
-    <ct-build-failure-ext failure="{{ extension }}"></ct-build-failure-ext>
+    <ct-build-failure-ext failure="{{ extension }}" alerts="{{ alerts }}"></ct-build-failure-ext>
   </template>
   <script>
     Polymer({

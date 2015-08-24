@@ -6,7 +6,7 @@ found in the LICENSE file.
 <link rel="import" href="ct-alert-extension.html">
 <link rel="import" href="ct-alert-card-buttons.html">
 <link rel="import" href="ct-user-prefs.html">
-<polymer-element name="ct-alert-card" attributes="alert tree">
+<polymer-element name="ct-alert-card" attributes="alert tree alerts">
   <template>
     <style>
       :host {
@@ -44,7 +44,7 @@ found in the LICENSE file.
         </div>
       </div>
       <div if='{{ alert.type }}'>
-        <ct-alert-extension extension="{{ alert.extension }}" type="{{ alert.type }}"></ct-alert-extension>
+        <ct-alert-extension extension="{{ alert.extension }}" type="{{ alert.type }}" alerts="{{ alerts }}"></ct-alert-extension>
       </div>
     </div>
   </template>
