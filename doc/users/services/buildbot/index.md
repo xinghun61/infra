@@ -44,7 +44,7 @@ other.
 
 [master.chromium.win]: https://build.chromium.org/p/chromium.win
 [master.tryserver.chromium.linux]: https://build.chromium.org/p/tryserver.chromium.linux
-[master.clint.v8]: https://build.chromium.org/p/clint.v8
+[master.client.v8]: https://build.chromium.org/p/client.v8
 [master.tryserver.v8]: https://build.chromium.org/p/tryserver.v8
 [go/chrome-infra-mastermap]: http://go/chrome-infra-mastermap
 [go/botmap]: http://go/botmap
