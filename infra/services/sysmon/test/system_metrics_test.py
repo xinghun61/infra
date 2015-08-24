@@ -8,8 +8,6 @@ import sys
 import time
 import unittest
 
-import psutil
-
 from infra.services.sysmon import system_metrics
 
 
@@ -22,10 +20,6 @@ class SystemMetricsTest(unittest.TestCase):
     self.assertLessEqual(value, upper)
 
   def test_cpu_info(self):
-    # Give psutil 1 second to measure the CPU usage.
-    psutil.cpu_percent()
-    time.sleep(1.0)
-
     system_metrics.get_cpu_info()
 
     user = system_metrics.cpu_time.get({'mode': 'user'})
@@ -38,7 +32,6 @@ class SystemMetricsTest(unittest.TestCase):
     self.assertBetween(0, 100, user)
     self.assertBetween(0, 100, system)
     self.assertBetween(0, 100, idle)
-    self.assertBetween(95, 105, user + system + idle)
 
   def test_disk_info(self):
     system_metrics.get_disk_info()
