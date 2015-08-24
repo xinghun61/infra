@@ -6,8 +6,6 @@
 """Send system monitoring data to the timeseries monitoring API."""
 
 import argparse
-import errno
-import os
 import random
 import sys
 import time
@@ -16,77 +14,9 @@ import psutil
 
 from infra.libs.service_utils import outer_loop
 from infra.services.sysmon import root_setup
+from infra.services.sysmon import system_metrics
 from infra_libs import logs
 from infra_libs import ts_mon
-
-
-cpu_time = ts_mon.FloatMetric('dev/cpu/time')
-
-disk_free = ts_mon.GaugeMetric('dev/disk/free')
-disk_total = ts_mon.GaugeMetric('dev/disk/total')
-
-# inode counts are only available on Unix.
-if os.name == 'posix':
-  inodes_free = ts_mon.GaugeMetric('dev/inodes/free')
-  inodes_total = ts_mon.GaugeMetric('dev/inodes/total')
-
-mem_free = ts_mon.GaugeMetric('dev/mem/free')
-mem_total = ts_mon.GaugeMetric('dev/mem/total')
-
-net_up = ts_mon.GaugeMetric('dev/net/up')
-net_down = ts_mon.GaugeMetric('dev/net/down')
-
-proc_count = ts_mon.GaugeMetric('dev/proc/count')
-
-
-def get_cpu_info():
-  times = psutil.cpu_times_percent()
-  for mode in ('user', 'system', 'idle'):
-    cpu_time.set(getattr(times, mode), {'mode': mode})
-
-
-def get_disk_info():
-  disks = psutil.disk_partitions()
-  for disk in disks:
-    labels = {'path': disk.mountpoint}
-
-    try:
-      usage = psutil.disk_usage(disk.mountpoint)
-    except OSError as ex:
-      if ex.errno == errno.ENOENT:
-        # This happens on Windows when querying a removable drive that doesn't
-        # have any media inserted right now.
-        continue
-      raise
-
-    disk_free.set(usage.free, labels)
-    disk_total.set(usage.total, labels)
-
-    # inode counts are only available on Unix.
-    if os.name == 'posix':
-      stats = os.statvfs(disk.mountpoint)
-      inodes_free.set(stats.f_favail, labels)
-      inodes_total.set(stats.f_files, labels)
-
-
-def get_mem_info():
-  # We don't report mem.used because (due to virtual memory) it is not useful.
-  mem = psutil.virtual_memory()
-  mem_free.set(mem.available)
-  mem_total.set(mem.total)
-
-
-def get_net_info():
-  nics = psutil.net_io_counters(pernic=True)
-  for nic, counters in nics.iteritems():
-    # This could easily be extended to track packets, errors, and drops.
-    net_up.set(counters.bytes_sent, {'interface': nic})
-    net_down.set(counters.bytes_recv, {'interface': nic})
-
-
-def get_proc_info():
-  procs = psutil.pids()
-  proc_count.set(len(procs))
 
 
 def parse_args(argv):
@@ -124,11 +54,11 @@ def main(argv):
 
   def single_iteration():
     try:
-      get_cpu_info()
-      get_disk_info()
-      get_mem_info()
-      get_net_info()
-      get_proc_info()
+      system_metrics.get_cpu_info()
+      system_metrics.get_disk_info()
+      system_metrics.get_mem_info()
+      system_metrics.get_net_info()
+      system_metrics.get_proc_info()
     finally:
       ts_mon.flush()
     return True
