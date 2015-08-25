@@ -103,8 +103,12 @@ found in the LICENSE file.
         timelineViewEl.viewTitle = '';
 
         if (timelineViewEl.trackView) {
-          // Remove the default double-click functionality.
           var trackView = timelineViewEl.trackView;
+          // Set the clicker to be in select mode.
+          trackView.mouseModeSelector_.mode =
+              tr.ui.b.MOUSE_SELECTOR_MODE.SELECTION;
+
+          // Remove the default double-click functionality.
           trackView.removeEventListener('dblclick', trackView.onDblClick_);
           // Define replacement double-click method.
           var loadBuildbotData = function(e) {
@@ -179,6 +183,11 @@ found in the LICENSE file.
   function onLoad() {
     timelineViewEl = document.querySelector('tr-ui-timeline-view');
     timelineViewEl.globalMode = true;
+
+    var instrEl = document.createElement('div');
+    instrEl.innerHTML = 'Double click on a builder to display build data.' +
+        'Build data may take up to 30 minutes to be available.';
+    timelineViewEl.leftControls.appendChild(instrEl);
 
     var file = "/patch-timeline-data/%(issue)s/%(patchset)s";
     var filenames = [file];
