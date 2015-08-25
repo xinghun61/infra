@@ -65,6 +65,26 @@ class GlobalsTest(auto_stub.TestCase):
   @mock.patch('socket.getfqdn')
   @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget')
+  def test_default_monitor_args_uppercase_fqdn(self, fake_target, fake_monitor,
+                                               fake_fqdn, fake_get):
+    singleton = mock.Mock()
+    fake_monitor.return_value = singleton
+    fake_target.return_value = singleton
+    fake_fqdn.return_value = 'SLAVE1-A1.REG.TLD'
+    fake_get.return_value.side_effect = requests.exceptions.ConnectionError
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args([
+        '--ts-mon-credentials', '/path/to/creds.p8.json',
+        '--ts-mon-endpoint',
+        'https://www.googleapis.com/acquisitions/v1_mon_shared/storage'])
+    config.process_argparse_options(args)
+    fake_target.assert_called_once_with('reg', '1', 'slave1-a1')
+
+  @mock.patch('requests.get')
+  @mock.patch('socket.getfqdn')
+  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
+  @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget')
   def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn,
                                  fake_get):
     singleton = mock.Mock()

@@ -109,7 +109,7 @@ def add_argparse_options(parser):
       help='the type of target that is being monitored ("device" or "task").'
            ' (default: %(default)s)')
 
-  fqdn = socket.getfqdn()  # foo-[a|m]N.[chrome|golo].chromium.org
+  fqdn = socket.getfqdn().lower()  # foo-[a|m]N.[chrome|golo].chromium.org
   host = fqdn.split('.')[0]  # foo-[a|m]N
   region = _default_region(fqdn)
   network = _default_network(host)
