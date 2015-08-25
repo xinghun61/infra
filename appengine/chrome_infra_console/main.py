@@ -17,7 +17,7 @@ from protorpc import remote
 
 from components import auth
 from components import config
-from luci_config_proto import project_config_pb2
+from components.config.proto import project_config_pb2
 
 
 class Field(messages.Message):
@@ -58,7 +58,7 @@ class TimeSeriesModel(ndb.Model):
 
   def update_timestamp(self):
     self.timestamp = time_now()
-  
+
 
 def time_now():
   """This is for mocking in test."""
@@ -77,7 +77,7 @@ class Configs(messages.Message):
 
 class GetGraphsRequest(messages.Message):
   project_id = messages.StringField(1, required=True)
- 
+
 
 def _has_access(access_list):
   cur_ident = auth.get_current_identity().to_bytes()
@@ -143,12 +143,12 @@ class UIApi(remote.Service):
   @auth.endpoints_method(message_types.VoidMessage, Configs)
   def get_projects(self, _request):
     project_configs = config.get_project_configs(
-        'project.cfg', project_config_pb2.ProjectCfg) 
+        'project.cfg', project_config_pb2.ProjectCfg)
     configList = []
     for project_id, (revision, project_cfg) in project_configs.iteritems():
       if _has_access(project_cfg.access):
         configList.append(Config(id=project_id,
-                                 revision=revision, 
+                                 revision=revision,
                                  access=project_cfg.access[:]))
     return Configs(configs=configList)
 
@@ -158,7 +158,7 @@ class UIApi(remote.Service):
     project_id = request.project_id
     revision, project_cfg = config.get_project_config(
         project_id, 'project.cfg', project_config_pb2.ProjectCfg)
-    
+
     if revision is None:
       logging.warning('Project %s does not have project.cfg', project_id)
       return TimeSeriesPacket()
@@ -168,7 +168,7 @@ class UIApi(remote.Service):
       logging.warning('Access to %s is denied for user %s',
                   project_id, auth.get_current_identity())
       return TimeSeriesPacket()
-    
+
     namespace_manager.set_namespace('projects.%s' % project_id)
     for graph in TimeSeriesModel.query():
       field_list = [Field(key=field.field_key, value=field.value)
@@ -229,7 +229,7 @@ handlers = [
   ('/timeseries_update', TimeSeriesHandler),
 ]
 
-WEBAPP = add_appstats(webapp2.WSGIApplication(handlers, debug=True))      
+WEBAPP = add_appstats(webapp2.WSGIApplication(handlers, debug=True))
 
 APPLICATION = add_appstats(ndb.toplevel(endpoints.api_server([
     ConsoleAppApi, UIApi, config.ConfigApi])))

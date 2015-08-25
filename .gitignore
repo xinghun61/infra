@@ -1,4 +1,5 @@
 *.pyc
+.coverage
 .expect_tests_coverage*
 ENV
 .wheelcache
