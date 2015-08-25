@@ -365,6 +365,6 @@ def GetPreferredTryMasters(project, change):  # pragma: no cover
           # Do not trigger presubmit builders, since they're likely to fail
           # (e.g. OWNERS checks before finished code review), and we're
           # running local presubmit anyway.
-          if 'presubmit' not in builder:
+          if 'presubmit' not in builder.lower():
               try_config[master][builder] = ['defaulttests']
   return try_config
