@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import shutil
 import tempfile
 import unittest
 
@@ -15,14 +16,19 @@ class PuppetMetricsTest(unittest.TestCase):
   def setUp(self):
     puppet_metrics.reset_metrics_for_unittest()
 
-    self.fh = tempfile.NamedTemporaryFile()
+    self.tempdir = tempfile.mkdtemp()
+    self.filename = os.path.join(self.tempdir, 'last_run_summary.yaml')
+    self.fh = open(self.filename, 'w')
 
     self.mock_lastrunfile = mock.patch(
         'infra.services.sysmon.puppet_metrics._lastrunfile').start()
-    self.mock_lastrunfile.return_value = self.fh.name
+    self.mock_lastrunfile.return_value = self.filename
 
   def tearDown(self):
     mock.patch.stopall()
+
+    self.fh.close()
+    shutil.rmtree(self.tempdir)
 
   def test_empty_file(self):
     puppet_metrics.get_puppet_summary()
@@ -31,7 +37,7 @@ class PuppetMetricsTest(unittest.TestCase):
     self.assertIs(None, puppet_metrics.puppet_version.get())
 
   def test_file_not_found(self):
-    self.mock_lastrunfile.return_value = '/does/not/exist'
+    self.mock_lastrunfile.return_value = os.path.join(self.tempdir, 'missing')
 
     puppet_metrics.get_puppet_summary()
 
@@ -40,7 +46,7 @@ class PuppetMetricsTest(unittest.TestCase):
 
   def test_invalid_file(self):
     self.fh.write('"')
-    self.fh.flush()
+    self.fh.close()
 
     puppet_metrics.get_puppet_summary()
 
@@ -52,7 +58,7 @@ class PuppetMetricsTest(unittest.TestCase):
 - one
 - two
 """)
-    self.fh.flush()
+    self.fh.close()
 
     puppet_metrics.get_puppet_summary()
 
@@ -93,7 +99,7 @@ class PuppetMetricsTest(unittest.TestCase):
     success: 2
     total: 3
 """)
-    self.fh.flush()
+    self.fh.close()
 
     mock_time = mock.Mock()
     mock_time.return_value = 1440132466 + 123
@@ -136,7 +142,7 @@ class PuppetMetricsTest(unittest.TestCase):
     foo: 123
     bar: 456
 """)
-    self.fh.flush()
+    self.fh.close()
 
     mock_time = mock.Mock()
     mock_time.return_value = 1440132466 + 123
