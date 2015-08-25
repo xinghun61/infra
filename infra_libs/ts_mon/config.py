@@ -66,10 +66,15 @@ def add_argparse_options(parser):
   Args:
     parser (argparse.ArgumentParser): the parser for the main process.
   """
+  if sys.platform == 'win32':  # pragma: no cover
+    default_config_file = 'C:\\chrome-infra\\ts-mon.json'
+  else:  # pragma: no cover
+    default_config_file = '/etc/chrome-infra/ts-mon.json'
+
   parser = parser.add_argument_group('Timeseries Monitoring Options')
   parser.add_argument(
       '--ts-mon-config-file',
-      default='/etc/chrome-infra/ts-mon.json',
+      default=default_config_file,
       help='path to a JSON config file that contains suitable values for '
            '"endpoint" and "credentials" for this machine. This config file is '
            'intended to be shared by all processes on the machine, as the '
