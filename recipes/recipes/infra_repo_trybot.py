@@ -7,6 +7,7 @@ DEPS = [
   'gclient',
   'git',
   'path',
+  'platform',
   'properties',
   'python',
   'raw_io',
@@ -42,7 +43,7 @@ def RunSteps(api):
     # Rietveld tests.
     deps_mod = 'DEPS' in files
 
-    if (deps_mod or
+    if not api.platform.is_win and (deps_mod or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
       api.step('rietveld tests',
                ['make', '-C', 'appengine/chromium_rietveld', 'test'],
@@ -121,6 +122,16 @@ def GenTests(api):
         buildername='infra_tester',
         patch_project='infra') +
     diff('appengine/chromium_rietveld/codereview/views.py')
+  )
+
+  yield (
+    api.test('rietveld_tests_on_win') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('appengine/chromium_rietveld/codereview/views.py') +
+    api.platform.name('win')
   )
 
   yield (
