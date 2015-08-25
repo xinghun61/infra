@@ -121,14 +121,6 @@ def check_patches_reversable(patches):
     if not invert_patches.is_git_diff_header(diff_header):
       raise exceptions.RevertError('Can only invert Git patches.')
 
-    if re.search(r"(?m)^similarity index 100%", diff_header):
-      # We cannot invert A+ patches with 100% similarity index because they do
-      # not contain the git SHA-1 indexes. Rietveld currently stores only MD5
-      # checksums of data in Content, it would require a significant change to
-      # support this.
-      raise exceptions.RevertError(
-          'Unable to inverse \'A +\' patches with 100% similarity indexes.')
-
   if large_patches > MAX_LARGE_PATCHES_REVERSIBLE:
     raise exceptions.RevertError('The Patchset is too large to invert.')
   return True
@@ -229,7 +221,9 @@ def revert_patchset(request):
     # Find the original content and patched content.
     if original_patch.is_binary:
       original_content = original_patch.content_key.get()
-      original_patched_content = original_patch.patched_content_key.get()
+      original_patched_content = (
+          original_patch.patched_content_key.get()
+          if original_patch.patched_content_key else None)
     else:
       original_content = original_patch.get_content()
       original_patched_content = original_patch.get_patched_content()

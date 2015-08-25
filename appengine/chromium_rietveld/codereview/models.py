@@ -1014,10 +1014,13 @@ class Patch(ndb.Model):
     # Find the content and the patched content to use for inverse diffing.
     if self.is_binary:
       original_content = self.content_key.get()
-      original_patched_content = self.patched_content_key.get()
+      original_patched_content = (
+          self.patched_content_key.get() if self.patched_content_key else None)
+      original_file_data = original_content.data
     else:
       original_content = self.get_content()
       original_patched_content = self.get_patched_content()
+      original_file_data = original_content.text
 
     invert_git_patches = invert_patches.InvertGitPatches(
         self.text, self.filename)
@@ -1032,7 +1035,8 @@ class Patch(ndb.Model):
       patched_content_for_diff = []
 
     inverted_patch_text = invert_git_patches.get_inverted_patch_text(
-        content_for_diff, patched_content_for_diff)
+        content_for_diff, patched_content_for_diff, original_file_data,
+        self.is_binary)
 
     first_patch_id, _ = Patch.allocate_ids(1, parent=patchset.key)
     patch_key = ndb.Key(Patch, first_patch_id, parent=patchset.key)

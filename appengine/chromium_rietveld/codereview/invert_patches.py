@@ -16,6 +16,7 @@
 
 import difflib
 import re
+from hashlib import sha1
 
 from codereview import patching
 
@@ -28,6 +29,9 @@ MODIFIED_STATUS = 'M'
 # Null file constants.
 NULL_FILE = '/dev/null'
 NULL_FILE_HASH = '0000000000000000000000000000000000000000'
+
+# Default file mode to use during inversion if none is specified.
+DEFAULT_FILE_MODE = 100644
 
 
 def is_git_diff_header(diff_header):
@@ -51,6 +55,11 @@ def split_header(diff):
   if chunks:
     assert chunks[0].startswith('--- '), 'Inconsistent header'
   return ''.join(header), ''.join(chunks)
+
+
+def  is_copy_modify_with_no_change(diff_header):
+  """Returns true if similarity index is 100% in the diff header."""
+  return re.search(r"(?m)^similarity index 100%", diff_header)
 
 
 class InvertGitPatches(object):
@@ -95,6 +104,9 @@ class InvertGitPatches(object):
         if (re.search(r"(?m)^(copy|rename) from ", diff_header)
             and re.search(r"(?m)^(copy|rename) to ", diff_header)):
           return COPIED_AND_MODIFIED_STATUS
+    elif is_copy_modify_with_no_change(diff_header):
+      return COPIED_AND_MODIFIED_STATUS
+
     # Assume 'M' for everything else.
     return MODIFIED_STATUS
 
@@ -120,9 +132,9 @@ class InvertGitPatches(object):
       inverted_status = MODIFIED_STATUS
     return inverted_status
 
-  def get_inverted_patch_text(self, lines, patched_lines):
+  def get_inverted_patch_text(self, lines, patched_lines, file_data, is_binary):
     """Inverts the text of the patch."""
-    inverted_header = self._get_inverted_header()
+    inverted_header = self._get_inverted_header(file_data, is_binary)
     (left_file, right_file) = self._get_left_and_right_for_inverted_patch()
 
     diff_lines = []
@@ -163,7 +175,7 @@ class InvertGitPatches(object):
       left_filename = NULL_FILE
     return (left_filename, right_filename)
 
-  def _get_inverted_header(self):
+  def _get_inverted_header(self, file_data, is_binary):
     """Inverts the header of the patch."""
 
     # Start off with the original header and invert in place.
@@ -216,7 +228,25 @@ class InvertGitPatches(object):
 
       if index_match:
         new_header.append('index %s..%s' % (index_match.group(2),
-                                             NULL_FILE_HASH))
+                                            NULL_FILE_HASH))
+      elif file_data and is_copy_modify_with_no_change(self._diff_header):
+        # Patches with 100% similarity indexes do not have a file mode
+        # specified. Use the default mode. Using the wrong mode only throws a
+        # warning, so this should be harmless. This is what the warning looks
+        # like: "warning: file80 has type 100755, expected 100644".
+        new_header.append('deleted file mode %s' % DEFAULT_FILE_MODE)
+
+        # Patches with 100% similarity indexes do not have an 'index 123..xyz'
+        # line. Calculate the SHA1 of the file data and add a new index line.
+        data_sha1 = sha1()
+        data_sha1.update("blob %u\0" % len(file_data))
+        data_sha1.update(file_data)
+        new_header.append('index %s..%s' % (
+            data_sha1.hexdigest(), NULL_FILE_HASH))
+        if is_binary:
+          # Binary patches need a 'Binary files...' line at the end.
+          new_header.append('Binary files a/%s and %s differ' % (
+              self._filename, NULL_FILE))
 
       # Preserve the 'Binary files..' line if it exists.
       binary_files_match = re.search(r"(?m)^Binary files .*", inverted_header)
