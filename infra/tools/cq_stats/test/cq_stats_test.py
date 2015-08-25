@@ -352,7 +352,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     stats = cq_stats.derive_list_stats(series)
     # Ensure consistent float results - generally float arithmetic
     # can be slightly different between CPUs and implementations.
-    stats = {k: round(v, 2) for k, v in stats.iteritems()}
+    stats = {k: round(v, 2) for k, v in stats.iteritems() if k != 'raw'}
     self.assertDictEqual({
       '10': 9.9,
       '25': 24.75,
@@ -760,7 +760,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.mock(cq_stats, 'derive_svn_stats', lambda *_: {})
 
     cq_stats.acquire_stats(Args(project='blink', bots=[]))
-    cq_stats.acquire_stats(Args(project='chromium', bots=[]))
+    cq_stats.acquire_stats(Args(project='chromium', bots=[]),
+                           add_tree_stats=False)
     cq_stats.acquire_stats(Args(
         project='chromium', bots=[], use_logs=True, range='week'))
     cq_stats.acquire_stats(Args(

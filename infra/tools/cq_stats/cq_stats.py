@@ -512,6 +512,7 @@ def derive_list_stats(series):
       'max': max(series),
       'mean': numpy.mean(series),
       'size': len(series),
+      'raw': series,
   }
 
 
@@ -1251,7 +1252,7 @@ def print_stats(args, stats):
   print_flakiness_stats(args, stats)
 
 
-def acquire_stats(args):
+def acquire_stats(args, add_tree_stats=True):
   stats = {}
   logging.info('Acquiring stats for project %s for a %s of %s using %s',
                args.project, args.range, args.date,
@@ -1278,14 +1279,15 @@ def acquire_stats(args):
   else:
     stats = organize_stats(fetch_stats(args))
 
-  stats['tree'] = derive_tree_stats(args.project, args.date, end_date)
+  if add_tree_stats:
+    stats['tree'] = derive_tree_stats(args.project, args.date, end_date)
 
-  if PROJECTS[args.project]['type'] == 'git':
-    stats['usage'] = derive_git_stats(
-        args.project, args.date, end_date, args.bots)
-  else:
-    stats['usage'] = derive_svn_stats(
-        args.project, args.date, end_date, args.bots)
+    if PROJECTS[args.project]['type'] == 'git':
+      stats['usage'] = derive_git_stats(
+          args.project, args.date, end_date, args.bots)
+    else:
+      stats['usage'] = derive_svn_stats(
+          args.project, args.date, end_date, args.bots)
 
   return stats
 

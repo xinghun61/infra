@@ -43,6 +43,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-commit-count": 0,
@@ -57,6 +60,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-committed-durations": {
@@ -70,6 +76,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-committed-global-retry-quota": {
@@ -83,6 +92,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-committed-tryjob-retries": {
@@ -96,6 +108,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-count": 0,
@@ -110,6 +125,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "patchset-false-reject-count": 0,
@@ -124,6 +142,9 @@
     "max": 0,
     "mean": 0.0,
     "min": 0,
+    "raw": [
+      0
+    ],
     "size": 1
   },
   "rejected-patches": [],
