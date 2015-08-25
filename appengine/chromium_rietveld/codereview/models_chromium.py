@@ -107,9 +107,6 @@ class TryserverBuilders(ndb.Model):
     'tryserver.client.mojo': [
       'http://build.chromium.org/p/tryserver.client.mojo/json/builders'
     ],
-    'tryserver.infra': [
-      'http://build.chromium.org/p/tryserver.infra/json/builders'
-    ],
   }
 
   MEMCACHE_KEY = 'default_builders'
