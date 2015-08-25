@@ -13,6 +13,7 @@ import time
 import psutil
 
 from infra.libs.service_utils import outer_loop
+from infra.services.sysmon import puppet_metrics
 from infra.services.sysmon import root_setup
 from infra.services.sysmon import system_metrics
 from infra_libs import logs
@@ -59,6 +60,7 @@ def main(argv):
       system_metrics.get_mem_info()
       system_metrics.get_net_info()
       system_metrics.get_proc_info()
+      puppet_metrics.get_puppet_summary()
     finally:
       ts_mon.flush()
     return True
