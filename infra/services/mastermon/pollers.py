@@ -23,7 +23,12 @@ class Poller(object):
   def poll(self):
     LOGGER.info('Requesting %s', self._url)
 
-    response = instrumented_requests.get(self.__class__.__name__, self._url)
+    try:
+      response = instrumented_requests.get(self.__class__.__name__, self._url)
+    except requests.exceptions.RequestException:
+      logging.exception('Request for %s failed', self._url)
+      return False
+
     if response.status_code != requests.codes.ok:
       LOGGER.warning('Got status code %d from %s',
                      response.status_code, self._url)

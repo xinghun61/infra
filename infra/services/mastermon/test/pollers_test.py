@@ -5,6 +5,7 @@
 import unittest
 
 import mock
+import requests
 
 from infra.services.mastermon import pollers
 
@@ -47,6 +48,12 @@ class PollerTest(unittest.TestCase):
   def test_returns_false_for_non_200(self, mock_get):
     response = mock_get.return_value
     response.status_code = 404
+
+    p = FakePoller('http://foobar')
+    self.assertFalse(p.poll())
+
+  def test_returns_false_for_exception(self, mock_get):
+    mock_get.side_effect = requests.exceptions.ConnectionError
 
     p = FakePoller('http://foobar')
     self.assertFalse(p.poll())
