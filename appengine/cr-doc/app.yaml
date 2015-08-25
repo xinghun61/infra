@@ -1,0 +1,47 @@
+application: cr-doc
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /static/
+  static_dir: static/
+  secure: always
+
+- url: /_ah/spi/.*
+  script: apps.endpoints
+
+- url: /.*
+  script: apps.html
+  secure: always
+
+libraries:
+- name: endpoints
+  version: 1.0
+- name: jinja2
+  version: latest
+- name: pycrypto
+  version: "2.6"
+- name: webapp2
+  version: "2.5.2"
+- name: webob
+  version: "1.2.3"
+
+builtins:
+- deferred: on
+- remote_api: on
+
+includes:
+- components/auth
+- components/ereporter2
+
+skip_files:
+- ^(.*/)?.*\.(orig|rej|py[co])
+- ^(.*/)?#.*#
+- ^(.*/)?.*~
+- ^(.*/)?\..*
+- ^test.*
+- ^tools.*
+- ^[A-Z]+(\.[a-z]+)?
+- .+\.md

@@ -1,0 +1,67 @@
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file. -->
+
+<!doctype html>
+<html>
+<head>
+  <title>Docsearch</title>
+
+  <meta name="viewport"
+        content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <link rel="stylesheet" type="text/css"
+      href="/static/bootstrap/css/bootstrap.min.css">
+
+  <style>
+    #searchForm {
+      margin-top: 10px;
+    }
+    #searchForm input[name=q] {
+      width: 400px;
+    }
+    .search-result {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div>
+      {% if user.email %}
+      Signed in as {{ user.email }}.
+      <a href="{{user.logout_url}}">Sign out</a>
+      {% else %}
+      <a href="{{user.login_url}}">Sign in</a>
+      {% endif %}
+    </div>
+    <h1>Documentation search</h1>
+
+    <form id="searchForm" class="form-inline">
+      <input type="text" name="q" value="{{query}}" class="form-control"
+        autofocus>
+      <input type="submit" value="Search" class="btn btn-default">
+    </form>
+
+    {% if error %}
+      <div class="alert alert-danger">
+        {{error}}
+      </div>
+    {% endif %}
+
+    {% if not search_results %}
+      {% if query %}
+        <div>Nothing found!</div>
+      {% endif %}
+    {% else %}
+      {% for item in search_results %}
+        <div class="search-result">
+          <a href="{{item.url}}">{{item.title}}</a>
+          {% autoescape false %}
+          <p>{{item.snippet}}</p>
+          {% endautoescape %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</body>
+</html>
