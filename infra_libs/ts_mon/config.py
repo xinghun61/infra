@@ -229,6 +229,5 @@ def process_argparse_options(args):
         args.ts_mon_flush_interval_secs)
     interface.state.flush_thread.start()
 
-  print "ts_mon registering standard metrics"
   standard_metrics.init()
 
