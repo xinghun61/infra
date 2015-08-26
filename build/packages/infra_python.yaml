@@ -29,6 +29,8 @@ data:
       - tools/docgen
       # Depends on presence of .git directory. See crbug.com/515744.
       - tools/antibody
+      # Depnds on infra/node/node.py and also a npm module.
+      - tools/testjs
 
   # Base infra libraries, required by infra
   - dir: "infra_libs"
