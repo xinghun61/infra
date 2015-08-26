@@ -17,8 +17,12 @@ github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.g
 github.com/luci/gkvlite #cf7fa95b097418138e80474e217d865e2eb853ac !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/maruel/subcommands #3a25827b419f7ec71b1f54d075cdc43fef2e3a59 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 github.com/maruel/ut #814808268666eb186d9691c504a057988da05a05 !https://chromium.googlesource.com/external/github.com/maruel/ut.git
+github.com/mattn/go-colorable #40e4aedc8fabf8c23e040057540867186712faa5 !https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
+github.com/mattn/go-isatty #7fcbc72f853b92b5720db4a6b8482be612daef24 !https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
+github.com/mgutz/ansi #452f5f5396543168418a299cd963697ac742b56e !https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
 github.com/mjibson/goon #b3d2e1ef84070229eeee1e8511b50e09f97e0749 !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
 github.com/op/go-logging #b45e089a5a94cc79c8e78fc03cd83d04b5d8410f !https://chromium.googlesource.com/external/github.com/op/go-logging.git
+github.com/sergi/go-diff #ffccea18eeb30a700e65bdf8a9f99456e5d254fa !https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
 github.com/smartystreets/assertions #c702abfa8e05e48f79068ed1cf1aac7cf43f5eef !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
 github.com/smartystreets/goconvey #7a3785c3002a330211525464d402c07b2afce5a7 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/steveyen/go-slab #ece58fcb4e3fa722d66af3b5320ee884a104ba83 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
