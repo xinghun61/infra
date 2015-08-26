@@ -48,7 +48,7 @@ def garbage_collect(cache_dir):
         rmtree(full_filename)
 
 
-def run(browser, cache_dir, version=None):  # pragma: no cover
+def run(browser, cache_dir, platform, version=None):  # pragma: no cover
   if browser not in BROWSERS:
     LOGGER.exception('Unsupported browser %s' % browser)
 
@@ -62,7 +62,7 @@ def run(browser, cache_dir, version=None):  # pragma: no cover
   fetcher = browser_info['target']
   version = version or browser_info['default_version']
   LOGGER.info('Fetching %s at version %s' % (browser, version))
-  installed_path, installed_version = fetcher(cache_dir, version)
+  installed_path, installed_version = fetcher(cache_dir, version, platform)
   print 'Successfully fetched %s into %s at version %s' % (
       browser, installed_path, installed_version)
   return installed_path, installed_version

@@ -1,19 +1,19 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Fetch a copy of a browser to some directory
+"""Runs javascript tests.
 
 Example invocation:
-./run.py infra.tools.fetch_browser [chrome|firefox]
+./run.py infra.tools.testjs <root path>
 """
 # This file is untested, keep as little code as possible in there.
 
 import argparse
-import json
 import logging
 import os
 import sys
 
+from infra.tools.testjs import testjs
 from infra.tools.fetch_browser import fetch_browser
 import infra_libs.logs
 
@@ -24,24 +24,32 @@ LOGGER = logging.getLogger(__name__)
 
 def main(argv):
   parser = argparse.ArgumentParser(
-    prog="fetch_browser",
+    prog="testjs",
     description=sys.modules['__main__'].__doc__,
     formatter_class=argparse.RawTextHelpFormatter)
 
-  fetch_browser.add_argparse_options(parser)
+  testjs.add_argparse_options(parser)
   infra_libs.logs.add_argparse_options(parser)
   args = parser.parse_args(argv)
   infra_libs.logs.process_argparse_options(args)
 
   # Do more processing here
-  LOGGER.info('Fetch_browser starting.')
+  LOGGER.info('Testjs starting.')
 
-  browser = args.browser[0]
-  cache_dir = os.path.abspath(os.path.expanduser(args.cache_dir))
-  result = fetch_browser.run(browser, cache_dir, args.platform, args.version)
-  if args.output_json:
-    with open(args.output_json, 'w') as f:
-      json.dump(result, f)
+  LOGGER.info('Fetching Chrome...')
+  cache_dir = os.path.expanduser('~/.cached_browsers')
+  chrome, _ = fetch_browser.run('chrome', cache_dir, sys.platform, 'stable')
+
+  if sys.platform == 'linux2':
+    with testjs.get_display() as display:
+      for target in args.target:
+        LOGGER.info('Running karma for %s', target)
+        testjs.test_karma(target, chrome, display)
+  else:
+    for target in args.target:
+      LOGGER.info('Running karma for %s', target)
+      testjs.test_karma(target, chrome, display)
+
 
 
 if __name__ == '__main__':
