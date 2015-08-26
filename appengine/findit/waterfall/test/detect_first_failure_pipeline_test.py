@@ -78,7 +78,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
       return f.read()
 
   def _MockUrlfetchWithBuildData(
-      self, master_name, builder_name, build_number, 
+      self, master_name, builder_name, build_number,
       build_data=None, archive=False):
     """If build data is None, use json file in waterfall/test/data."""
     if build_data is None:
@@ -190,7 +190,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     # 96: net_unitests passed, unit_tests passed.
     for i in range(5):
          self._MockUrlfetchWithBuildData(master_name, builder_name, 100 - i)
-  
+
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
