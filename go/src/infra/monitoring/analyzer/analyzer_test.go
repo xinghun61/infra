@@ -6,6 +6,7 @@ package analyzer
 
 import (
 	"fmt"
+	"infra/libs/testing/ansidiff"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 	"reflect"
@@ -370,6 +371,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 							{
 								Repo:      "testing.git",
 								Revisions: []string{"4242"},
+								Positions: []string{},
 							},
 						},
 					},
@@ -399,6 +401,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 							},
 						},
 					},
+					Properties: [][]interface{}{
+						{"got_revision_cp", "refs/heads/master@{#291569}"},
+					},
 				},
 				"fake.master/fake.builder/1": {
 					Number: 1,
@@ -417,6 +422,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 							},
 						},
 					},
+					Properties: [][]interface{}{
+						{"got_revision_cp", "refs/heads/master@{#291570}"},
+					},
 				},
 				"fake.master/fake.builder/2": {
 					Number: 2,
@@ -434,6 +442,9 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Revision:   "4343",
 							},
 						},
+					},
+					Properties: [][]interface{}{
+						{"got_revision_cp", "refs/heads/master@{#291570}"},
 					},
 				},
 				"fake.master/fake.builder/3": {
@@ -477,12 +488,22 @@ func TestBuilderStepAlerts(t *testing.T) {
 						},
 						RegressionRanges: []messages.RegressionRange{
 							{
+								Repo:      "chromium",
+								Revisions: []string{},
+								Positions: []string{
+									"refs/heads/master@{#291569}",
+									"refs/heads/master@{#291570}",
+								},
+							},
+							{
 								Repo:      "testing1.git",
 								Revisions: []string{"4141", "4242"},
+								Positions: []string{},
 							},
 							{
 								Repo:      "testing2.git",
 								Revisions: []string{"4343", "4444"},
+								Positions: []string{},
 							},
 						},
 					},
@@ -500,7 +521,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 		}
 		gotAlerts, gotErrs := a.builderStepAlerts(test.master, test.builder, test.recentBuilds)
 		if !reflect.DeepEqual(gotAlerts, test.wantAlerts) {
-			t.Errorf("%s failed. Got:\n%+v, want:\n%+v", test.name, gotAlerts, test.wantAlerts)
+			t.Errorf("%s failed. Diff:\n%+v", test.name, ansidiff.Diff(gotAlerts, test.wantAlerts))
 		}
 		if !reflect.DeepEqual(gotErrs, test.wantErrs) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, gotErrs, test.wantErrs)
@@ -673,14 +694,17 @@ func TestMergeAlertsByStep(t *testing.T) {
 							{
 								Repo:      "repo.a",
 								Revisions: []string{},
+								Positions: []string{},
 							},
 							{
 								Repo:      "repo.b",
 								Revisions: []string{},
+								Positions: []string{},
 							},
 							{
 								Repo:      "repo.c",
 								Revisions: []string{},
+								Positions: []string{},
 							},
 						},
 					},

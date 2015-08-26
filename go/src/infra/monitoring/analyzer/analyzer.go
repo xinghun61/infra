@@ -468,13 +468,18 @@ func (a *Analyzer) mergeAlertsByStep(alerts []messages.Alert) []messages.Alert {
 
 		// De-dupe regression ranges by repo.
 		revsByRepo := map[string][]string{}
+		posByRepo := map[string][]string{}
 		for _, regRange := range mergedBF.RegressionRanges {
 			revsByRepo[regRange.Repo] = append(revsByRepo[regRange.Repo], regRange.Revisions...)
+			posByRepo[regRange.Repo] = append(posByRepo[regRange.Repo], regRange.Positions...)
 		}
+
 		mergedBF.RegressionRanges = []messages.RegressionRange{}
 		for repo, revs := range revsByRepo {
+			pos := posByRepo[repo]
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, messages.RegressionRange{
 				Repo:      repo,
+				Positions: uniques(pos),
 				Revisions: uniques(revs),
 			})
 		}
@@ -561,6 +566,9 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 			// in another pass, after this funtion is called.
 			firstBuilder := bf.Builders[0]
 			mergedBuilder := mergedBF.Builders[0]
+			// These failure numbers are build numbers. The UI should probably indicate
+			// gnumbd sequence numbers instead or in addition to build numbers.
+
 			if firstBuilder.FirstFailure < mergedBuilder.FirstFailure {
 				mergedBuilder.FirstFailure = firstBuilder.FirstFailure
 			}
@@ -571,22 +579,25 @@ func (a *Analyzer) builderStepAlerts(masterName, builderName string, recentBuild
 				mergedBuilder.StartTime = firstBuilder.StartTime
 			}
 			mergedBF.Builders[0] = mergedBuilder
-			// TODO: merge these ranges properly and de-dupe.
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, bf.RegressionRanges...)
 		}
 
 		// Now merge regression ranges by repo.
 		revisionsByRepo := map[string][]string{}
+		positionsByRepo := map[string][]string{}
 		for _, rr := range mergedBF.RegressionRanges {
 			revisionsByRepo[rr.Repo] = append(revisionsByRepo[rr.Repo], rr.Revisions...)
+			positionsByRepo[rr.Repo] = append(positionsByRepo[rr.Repo], rr.Positions...)
 		}
 
 		mergedBF.RegressionRanges = []messages.RegressionRange{}
 
 		for repo, revisions := range revisionsByRepo {
+			pos := positionsByRepo[repo]
 			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges,
 				messages.RegressionRange{
 					Repo:      repo,
+					Positions: uniques(pos),
 					Revisions: uniques(revisions),
 				})
 		}
@@ -707,6 +718,17 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 			continue
 		}
 
+		// Gets the named revision number from gnumbd metadata.
+		getCommitPos := func(b messages.Build, name string) (string, bool) {
+			for _, p := range b.Properties {
+				if p[0] == name {
+					s, ok := p[1].(string)
+					return s, ok
+				}
+			}
+			return "", false
+		}
+
 		scannedFailures = append(scannedFailures, failure)
 		go func(f stepFailure) {
 			alr := messages.Alert{
@@ -718,11 +740,44 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 			regRanges := []messages.RegressionRange{}
 			revisionsByRepo := map[string][]string{}
 
-			for _, change := range f.build.SourceStamp.Changes {
-				// check change.Comments for text like
-				// "Cr-Commit-Position: refs/heads/master@{#330158}" to pick out revs from git commits.
-				revisionsByRepo[change.Repository] = append(revisionsByRepo[change.Repository], change.Revision)
+			// Get gnumbd sequence numbers for whatever this build pulled in.
+			chromiumPos, ok := getCommitPos(f.build, "got_revision_cp")
+			if ok {
+				regRanges = append(regRanges, messages.RegressionRange{
+					Repo:      "chromium",
+					Positions: []string{chromiumPos},
+				})
+			}
 
+			blinkPos, ok := getCommitPos(f.build, "got_webkit_revision_cp")
+			if ok {
+				regRanges = append(regRanges, messages.RegressionRange{
+					Repo:      "blink",
+					Positions: []string{blinkPos},
+				})
+			}
+
+			v8Pos, ok := getCommitPos(f.build, "got_v8_revision_cp")
+			if ok {
+				regRanges = append(regRanges, messages.RegressionRange{
+					Repo:      "v8",
+					Positions: []string{v8Pos},
+				})
+			}
+
+			naclPos, ok := getCommitPos(f.build, "got_nacl_revision_cp")
+			if ok {
+				regRanges = append(regRanges, messages.RegressionRange{
+					Repo:      "nacl",
+					Positions: []string{naclPos},
+				})
+			}
+
+			for _, change := range f.build.SourceStamp.Changes {
+				revisionsByRepo[change.Repository] = append(revisionsByRepo[change.Repository], change.Revision)
+				// change.Revision is *not* always a git hash. Sometimes it is a position from gnumbd.
+				// change.Revision is git hash or gnumbd depending on what exactly? Not obvious at this time.
+				// A potential problem here is when multiple repos have overlapping gnumbd ranges.
 				a.revisionSummaries[change.Revision] = messages.RevisionSummary{
 					GitHash:     change.Revision,
 					Link:        change.Revlink,

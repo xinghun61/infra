@@ -108,6 +108,7 @@ type RegressionRange struct {
 	Repo      string   `json:"repo"`
 	URL       string   `json:"url"`
 	Revisions []string `json:"revisions"`
+	Positions []string `json:"positions"`
 }
 
 // RevisionSummary summarizes some information about a revision.
