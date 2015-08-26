@@ -155,7 +155,7 @@ class FilePoller(Poller):
 
     if not os.path.isfile(self._url):
       LOGGER.info('No file found, assuming no data: %s', self._url)
-      return False
+      return True
 
     try:
       rotated_name = '%s.1' % self._url
@@ -168,8 +168,8 @@ class FilePoller(Poller):
       LOGGER.error('Could not collect or send results from %s: %s',
                    self._url, e)
       safe_remove(rotated_name)
-      return False
 
+    # Never return False - we don't know if master is down.
     return True
 
   def handle_response(self, data):

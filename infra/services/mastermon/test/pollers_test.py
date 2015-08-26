@@ -187,7 +187,7 @@ class FilePollerTest(unittest.TestCase):
 
   def test_no_file(self):
     p = pollers.FilePoller('no-such-file', {})
-    self.assertFalse(p.poll())
+    self.assertTrue(p.poll())
 
   @mock.patch('infra_libs.ts_mon.CounterMetric.increment')
   def test_file_has_data(self, fake_increment):
@@ -208,7 +208,7 @@ class FilePollerTest(unittest.TestCase):
     with open(filename, 'a') as f:
       f.write('}')
     p = pollers.FilePoller(filename, {})
-    self.assertFalse(p.poll())
+    self.assertTrue(p.poll())
     with self.assertRaises(OSError):
       os.remove(filename)
 
