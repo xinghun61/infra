@@ -68,7 +68,8 @@ def main(args):
       durations_dist.add(duration)
     patchset_committed_durations.set(durations_dist)
 
-    attempt_false_reject_count.set(stats['attempt-false-reject-count'])
+    attempt_false_reject_count.set(
+        sum(p['count'] for p in stats['false-rejections']))
     attempt_count.set(stats['attempt-count'])
   finally:
     ts_mon.flush()
