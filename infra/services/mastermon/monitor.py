@@ -9,6 +9,9 @@ from infra.services.mastermon import pollers
 from infra_libs import ts_mon
 
 
+RESULTS_FILE = '/var/log/chrome-infra/status_logger-%s/ts_mon.log'
+
+
 class MasterMonitor(object):
   up = ts_mon.BooleanMetric('buildbot/master/up')
 
@@ -16,7 +19,7 @@ class MasterMonitor(object):
     pollers.VarzPoller,
   ]
 
-  def __init__(self, url, name=None):
+  def __init__(self, url, name=None, results_file=None):
     if name is None:
       logging.info('Created monitor for %s', url)
       self._metric_fields = {}
@@ -28,6 +31,10 @@ class MasterMonitor(object):
 
     self._pollers = [
         cls(url, self._metric_fields) for cls in self.POLLER_CLASSES]
+
+    if results_file:
+      self._pollers.append(pollers.FilePoller(
+          results_file, self._metric_fields))
 
   def poll(self):
     logging.info('Polling %s', self._name)
@@ -48,6 +55,7 @@ def create_from_mastermap(build_dir, hostname):  # pragma: no cover
 
 def _create_from_mastermap(mastermap):
   return [
-      MasterMonitor('http://localhost:%d' % entry['port'], entry['dirname'])
+      MasterMonitor('http://localhost:%d' % entry['port'], entry['dirname'],
+                    RESULTS_FILE % entry['dirname'])
       for entry
       in mastermap]

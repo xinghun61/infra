@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+import os
+import tempfile
 import unittest
 
 import mock
@@ -172,3 +175,43 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(0, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('unknown', p.state.get({'builder': 'bar', 'x': 'y'}))
+
+
+class FilePollerTest(unittest.TestCase):
+  @staticmethod
+  def create_data_file(data_list):
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+      for data in data_list:
+        f.write('%s\n' % json.dumps(data))
+      return f.name
+
+  def test_no_file(self):
+    p = pollers.FilePoller('no-such-file', {})
+    self.assertFalse(p.poll())
+
+  @mock.patch('infra_libs.ts_mon.CounterMetric.increment')
+  def test_file_has_data(self, fake_increment):
+    result1 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
+    result2 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
+    data1 = result1.copy()
+    data1['random'] = 'value'
+    filename = self.create_data_file([data1, result2])
+    p = pollers.FilePoller(filename, {})
+    self.assertTrue(p.poll())
+    fake_increment.assert_any_call(result1)
+    fake_increment.assert_any_call(result2)
+    with self.assertRaises(OSError):
+      os.remove(filename)
+
+  def test_file_has_bad_data(self):
+    filename = self.create_data_file([])
+    with open(filename, 'a') as f:
+      f.write('}')
+    p = pollers.FilePoller(filename, {})
+    self.assertFalse(p.poll())
+    with self.assertRaises(OSError):
+      os.remove(filename)
+
+  def test_safe_remove_error(self):
+    """Smoke test: the function should not raise an exception."""
+    pollers.safe_remove('nonexistent-file')

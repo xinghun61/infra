@@ -4,7 +4,9 @@
 
 import collections
 import copy
+import json
 import logging
+import os
 
 import requests
 
@@ -33,7 +35,10 @@ class Poller(object):
   endpoint = None
 
   def __init__(self, base_url, metric_fields):
-    self._url = '%s/json%s' % (base_url.rstrip('/'), self.endpoint)
+    if self.endpoint == 'FILE':
+      self._url = base_url
+    else:
+      self._url = '%s/json%s' % (base_url.rstrip('/'), self.endpoint)
     self._metric_fields = metric_fields
 
   def poll(self):
@@ -42,7 +47,7 @@ class Poller(object):
     try:
       response = instrumented_requests.get(self.__class__.__name__, self._url)
     except requests.exceptions.RequestException:
-      logging.exception('Request for %s failed', self._url)
+      LOGGER.exception('Request for %s failed', self._url)
       return False
 
     if response.status_code != requests.codes.ok:
@@ -51,13 +56,13 @@ class Poller(object):
       return False
 
     try:
-      json = response.json()
+      json_data = response.json()
     except Exception:
       LOGGER.exception('Failed to parse response from %s as JSON: %s',
                        self._url, response.text)
       return False
 
-    self.handle_response(json)
+    self.handle_response(json_data)
     return True
 
   def handle_response(self, data):
@@ -123,3 +128,50 @@ class VarzPoller(Poller):
       for duration in builder_info.get('recent_finished_build_times', []):
         finished_dist.add(duration)
       self.recent_finished_build_times.set(finished_dist, fields=fields)
+
+
+def safe_remove(filename):
+  try:
+    os.remove(filename)
+  except OSError as e:
+    LOGGER.error('Could not remove rotated file %s: %s', filename, e)
+
+
+class FilePoller(Poller):
+  """Poll a file instead of an endpoint.
+
+  The base_url in __init__ must be the file path.  The file is assumed
+  to contain JSON objects, one per line.
+
+  The poller will first rotate the file (rename), read it, and delete
+  the file.  The writer of the file is expected to create a new file if
+  it was rotated or deleted.
+  """
+  endpoint = 'FILE'
+  result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
+
+  def poll(self):
+    LOGGER.info('Collecting results from %s', self._url)
+
+    if not os.path.isfile(self._url):
+      LOGGER.info('No file found, assuming no data: %s', self._url)
+      return False
+
+    try:
+      rotated_name = '%s.1' % self._url
+      os.rename(self._url, rotated_name)
+      with open(rotated_name, 'r') as f:
+        for line in f:  # pragma: no branch
+          self.handle_response(json.loads(line))
+      safe_remove(rotated_name)
+    except (ValueError, OSError, IOError) as e:
+      LOGGER.error('Could not collect or send results from %s: %s',
+                   self._url, e)
+      safe_remove(rotated_name)
+      return False
+
+    return True
+
+  def handle_response(self, data):
+    keys = ('builder', 'slave', 'result')
+    self.result_count.increment({k: data[k] for k in keys if k in data})

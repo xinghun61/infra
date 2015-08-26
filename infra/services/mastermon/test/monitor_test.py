@@ -47,14 +47,18 @@ class MasterMonitorTest(unittest.TestCase):
 
 class MastermapTest(unittest.TestCase):
   def test_create_from_mastermap(self):
-    m = monitor._create_from_mastermap([
+    specs = [
       {'port': 1234, 'dirname': 'master.foo.bar'},
       {'port': 5678, 'dirname': 'master.baz'},
-    ])
+    ]
+    monitors = monitor._create_from_mastermap(specs)
 
-    self.assertEquals(2, len(m))
-    self.assertTrue(m[0]._pollers[0]._url.startswith('http://localhost:1234/'))
-    self.assertTrue(m[1]._pollers[0]._url.startswith('http://localhost:5678/'))
-    self.assertEquals({'master': 'master.foo.bar'}, m[0]._pollers[0].fields())
-    self.assertEquals({'master': 'master.baz'}, m[1]._pollers[0].fields())
-
+    self.assertEquals(len(specs), len(monitors))
+    for mon, spec in zip(monitors, specs):
+      self.assertEquals(2, len(mon._pollers))
+      self.assertTrue(mon._pollers[0]._url.startswith(
+          'http://localhost:%s/' % spec['port']))
+      self.assertEquals({'master': spec['dirname']},
+                        mon._pollers[0].fields())
+      self.assertEquals(mon._pollers[1]._url,
+                        monitor.RESULTS_FILE % spec['dirname'])
