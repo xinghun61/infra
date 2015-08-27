@@ -164,11 +164,14 @@ def ShouldIgnoreLine(line):
   are not related to the failure at all and could lead to false positive.
   """
   # TODO: log of ERROR level should be taken care of?
-  for log_level in ('INFO:', 'WARNING:', 'ERROR:', 'VERBOSE2:'):
-    if log_level in line:
-      return True
-
-  if 'SUMMARY: AddressSanitizer' in line:
-    return True
-
-  return False
+  ignored_line_markers = (
+      'INFO:',
+      'WARNING:',
+      'ERROR',
+      'VERBOSE2',
+      '(INFO)',
+      '(CRITICAL)',
+      '(WARNING)',
+      'SUMMARY: AddressSanitizer',
+  )
+  return any(x in line for x in ignored_line_markers)
