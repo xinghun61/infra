@@ -174,4 +174,5 @@ class FilePoller(Poller):
 
   def handle_response(self, data):
     keys = ('builder', 'slave', 'result')
-    self.result_count.increment({k: data[k] for k in keys if k in data})
+    self.result_count.increment(
+        self.fields({k: data[k] for k in keys if k in data}))
