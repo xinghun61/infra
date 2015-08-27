@@ -199,6 +199,7 @@ def revert_patchset(request):
       issue_key=issue.key,
       url=None,
       key=ps_key)
+  patchset_data = []  # Will be populated with the diff texts of all patches.
   pending_commits.append(patchset)
 
   # Loop through all the original patches and create inversions.
@@ -244,6 +245,19 @@ def revert_patchset(request):
         is_uploaded=original_patched_content.is_uploaded,
         is_bad=original_patched_content.is_bad,
         file_too_large=original_patched_content.file_too_large)
+    elif (original_content and
+          invert_patches.is_patch_binary_copy_modify_with_no_change(
+              original_patch)):
+      # For binary patches with 100% similarity indexes use the original content
+      # as the content. See crbug.com/525625
+      content = models.Content(
+        key=content_key,
+        text=original_content.text,
+        data=original_content.data,
+        checksum=original_content.checksum,
+        is_uploaded=original_content.is_uploaded,
+        is_bad=original_content.is_bad,
+        file_too_large=original_content.file_too_large)
     else:
       # Create an empty content if there is no patched_content.
       empty_data = ''
@@ -284,6 +298,13 @@ def revert_patchset(request):
     patch.content_key = content.key
     patch.patched_content_key = patched_content.key
     pending_commits.append(patch)
+
+    # Append the text of this patch to the patchset's data. Strip out ending
+    # new line (if it exists) because one will be added during the below join.
+    patchset_data.append(str(patch.text).rstrip('\n'))
+
+  # Add all gathered patch texts to the patchset's data field.
+  patchset.data = '\n'.join(patchset_data)
 
   # Commit the gathered revert Issue, PatchSet, Patches and Contents.
   _db_commit_all_pending_commits(pending_commits)

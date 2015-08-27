@@ -62,6 +62,12 @@ def  is_copy_modify_with_no_change(diff_header):
   return re.search(r"(?m)^similarity index 100%", diff_header)
 
 
+def is_patch_binary_copy_modify_with_no_change(patch):
+  """Returns true for binary patches with 100% similarity indexes."""
+  diff_header = split_header(patch.text)[0]
+  return patch.is_binary and is_copy_modify_with_no_change(diff_header)
+
+
 class InvertGitPatches(object):
   """Utility to invert a Git patch.
 
