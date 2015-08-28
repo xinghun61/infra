@@ -73,6 +73,7 @@
     analysisFailed = '{{analysis_failed}}' == 'True';
     build_url = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}';
     analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
+    show_triage_help_button = '{{show_triage_help_button}}' == 'True';
 
     function TriageAnalysisResult(e) {
       var target = $(this);
@@ -87,6 +88,37 @@
         } else {
           alert('Failed to update datastore. Please refresh and try again.');
         }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+
+      e.preventDefault();
+    }
+
+    function TriageHelp(e) {
+      $('#triage_help_button').prop('disabled', true);
+      $('#triage_help_result').html("Checking...");
+      $.getJSON('help-triage?url=' + build_url, function(data) {
+        if (! jQuery.isEmptyObject(data)) {
+          tableString = '<table><tr><th width="150">Build Number</th><th width="150">Culprit CL</th>'
+          tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
+          fixed_cls = data;
+          for(var key in fixed_cls){
+            tableString += '<tr>';
+            tableString += '<td><a href="' + fixed_cls[key]['fixed_build_url'] + '">'+ fixed_cls[key]['fixed_build_number'] +'</a></td>';
+            tableString += '<td><a href="' + fixed_cls[key]['fixed_cl_review_url'] + '">'+ fixed_cls[key]['fixed_cl_commit_position'] +'</a></td>';
+            tableString += '<td><a href="' + fixed_cls[key]['fixing_build_url'] + '">'+ fixed_cls[key]['fixing_build_number'] +'</a></td>';
+            tableString += '<td><a href="' + fixed_cls[key]['fixing_cl_review_url'] + '">'+ fixed_cls[key]['fixing_cl_commit_position'] +'</a></td>';
+            tableString += '<td>' + fixed_cls[key]['action'] + '</td>';
+            tableString += '</tr>';
+          }
+          tableString += '</table>';
+          $('#triage_help_result').html(tableString);
+        } else {
+          $('#triage_help_result').html('No results found.');
+        }
+        $('#triage_help_button').prop('disabled', false);
       }).error(function(xhr) {
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;
@@ -115,7 +147,9 @@
         $('#status_message').attr('class', 'completed');
 
         $('.triage').click(TriageAnalysisResult);
-
+        if (show_triage_help_button){
+          $('#triage_help_button').click(TriageHelp);
+        }
         if (analysisCorrect == 'True') {
           $('.thumb-up').addClass('triaged').removeClass('triage');
         } else if (analysisCorrect == 'False') {
@@ -271,6 +305,15 @@
         </table>
       </div>
     {% endif %}
+  {% endif %}
+  {% if show_triage_help_button %}
+    <br><br>
+    <div id="triage_help">
+      <button id="triage_help_button">Triage Help</button>
+      <br>
+      <div id="triage_help_result">
+      </div>
+    </div>
   {% endif %}
   {% if triage_history %}
     <br>

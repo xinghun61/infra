@@ -1,0 +1,61 @@
+{
+    "failed_steps": "<strong>steps</strong> and <strong>gn_check</strong>", "slave": "build24-a1", 
+    "results": 2,
+    "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Tue 04 Aug 2015 14:21:23", 
+        "branch": "master", 
+        "comments": "Test for no reverts\n\ngreen build.\n\nBUG=516658\n\nReview URL: https://codereview.chromium.org/126322186\n\nCr-Commit-Position: refs/heads/master@{#341961}\n", 
+        "files": [
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/etgfre.java"
+          }, 
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/enhancedbookmarks/ewr.java"
+          }
+        ], 
+        "number": 162514, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "584de179f8sa4fw6dfsb2b7df04fc3", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "584de179f8sa4fw6dfsb2b7df04fc3", 
+        "revision": "584de179f8sa4fw6dfsb2b7df04fc3", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/584de179f8sa4fw6dfsb2b7df04fc3", 
+        "when": 1438809683, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "584de179f8sa4fw6dfsb2b7df04fc3"
+  },
+  "steps":[
+    {
+      "isFinished": true, 
+      "isStarted": true, 
+      "logs": [
+        [
+          "stdio", 
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/39251/steps/gn_check/logs/stdio"
+        ]
+      ], 
+      "name": "gn_check", 
+      "results": null, 
+      "text": [
+        "blabla"
+      ], 
+      "times": [
+        1438790019.575908, 
+        1438792249.626245
+      ]
+    }
+  ]
+}

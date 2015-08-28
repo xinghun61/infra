@@ -9,6 +9,7 @@ from findit_api import FindItApi
 from handlers import build_failure
 from handlers import check_duplicate_failures
 from handlers import failure_log
+from handlers import help_triage
 from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import triage_analysis
@@ -22,6 +23,7 @@ web_pages_handler_mappings = [
     ('/check-duplicate-failures',
         check_duplicate_failures.CheckDuplicateFailures),
     ('/failure-log', failure_log.FailureLog),
+    ('/help-triage', help_triage.HelpTriage),
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/triage-analysis', triage_analysis.TriageAnalysis),

@@ -56,6 +56,9 @@ class BuildFailure(BaseHandler):
     return (os.environ['SERVER_SOFTWARE'].startswith('Development') or
             users.is_current_user_admin() or self.request.get('debug') == '1')
 
+  def _ShowTriageHelpButton(self):
+    return users.is_current_user_admin()
+
   def HandleGet(self):
     """Triggers analysis of a build failure on demand and return current result.
 
@@ -98,6 +101,7 @@ class BuildFailure(BaseHandler):
         'analysis_result': analysis.result,
         'analysis_correct': analysis.correct,
         'triage_history': _GetTriageHistory(analysis),
+        'show_triage_help_button': self._ShowTriageHelpButton(),
     }
 
     return {'template': 'build_failure.html', 'data': data}

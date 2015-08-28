@@ -1,0 +1,30 @@
+)]}'
+{
+  "commit": "062a6f974d7c08d27902060c241149ce193e4dd5",
+  "tree": "f39ce86dacfde5f0fa37b0fc901a7bf9e41b9ef9",
+  "parents": [
+    "5ca13f9080367ad8eb07dc6906f969ca7a2117d4"
+  ],
+  "author": {
+    "name": "test",
+    "email": "test@chromium.org",
+    "time": "Thu Aug 13 15:58:04 2015"
+  },
+  "committer": {
+    "name": "Commit bot",
+    "email": "commit-bot@chromium.org",
+    "time": "Thu Aug 13 15:58:34 2015"
+  },
+  "message": "[Contextual Search] Prevent UI from disappearing when selection is cleared.\n\nBUG=516665\n\nReview URL: https://codereview.chromium.org/1268183002\n\nCr-Commit-Position: refs/heads/master@{#341977}\n",
+  "tree_diff": [
+    {
+      "type": "modify",
+      "old_id": "9a87ef7e9667f5d773f87e1f2870198a40385814",
+      "old_mode": 33188,
+      "old_path": "chrome/android/java/src/org/chromium/chrome/browser/contextualsearch/ContextualSearchManager.java",
+      "new_id": "5536fd8e7e83a9ffdaa94ea9dc88a5b9d15404d9",
+      "new_mode": 33188,
+      "new_path": "chrome/android/java/src/org/chromium/chrome/browser/contextualsearch/ContextualSearchManager.java"
+    }
+  ]
+}

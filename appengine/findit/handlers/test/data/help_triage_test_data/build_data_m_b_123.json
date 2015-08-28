@@ -1,0 +1,52 @@
+{
+    "failed_steps": null, 
+    "results": 0,
+    "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Fri 07 Aug 2015 14:23:42", 
+        "branch": "master", 
+        "comments": "Revert of cl3\n\nReason for revert:\nblabla\n\nOriginal issue's description:\n> Mandoline: Support about:blank URL.\n>\n> This CL adds a Fetcher implementation to provide responses for about: URLs.\n\n> BUG=504558\n>\n> Committed: https://crrev.com/3e4aaaa45c528d4ab0670331a6c0ebfc4f3ab8e6\n>\n> Cr-Commit-Position: refs/heads/master@{#341978}\nTBR=test@chromium.org\nNOPRESUBMIT=true\nNOTREECHECKS=true\nNOTRY=true\nBUG=none\n\nReview URL: https://codereview.chromium.org/1280463100\n\nCr-Commit-Position: refs/heads/master@{#332070}\n", 
+        "files": [
+          {
+            "name": "mojo/runner/BUILD.gn"
+          }, 
+          {
+            "name": "mojo/runner/about_fetcher.cc"
+          }, 
+          {
+            "name": "mojo/runner/about_fetcher.h"
+          }, 
+          {
+            "name": "mojo/runner/about_fetcher_unittest.cc"
+          }, 
+          {
+            "name": "mojo/runner/context.cc"
+          }, 
+          {
+            "name": "mojo/runner/shell_test_main.cc"
+          }
+        ], 
+        "number": 162520, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "123455668d4ab0670331a6c0ebfc4f3ab8e6", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "123455668d4ab0670331a6c0ebfc4f3ab8e6", 
+        "revision": "123455668d4ab0670331a6c0ebfc4f3ab8e6", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/123455668d4ab0670331a6c0ebfc4f3ab8e6", 
+        "when": 1438810070, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "123455668d4ab0670331a6c0ebfc4f3ab8e6"
+  }
+}

@@ -12,7 +12,6 @@ from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
-from waterfall import detect_first_failure_pipeline
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall import lock_util
 
@@ -34,36 +33,6 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
 
-  def testBuildDataNeedUpdating(self):
-    build = WfBuild.Create('m', 'b', 1)
-    pipeline = DetectFirstFailurePipeline('m', 'b', 1)
-
-    # Build data is not available.
-    self.assertTrue(pipeline._BuildDataNeedUpdating(build))
-
-    # Build was not completed and data is not recent.
-    build.data = 'dummy'
-    build.completed = False
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
-    self.assertTrue(pipeline._BuildDataNeedUpdating(build))
-
-  def testBuildDataNotNeedUpdating(self):
-    build = WfBuild.Create('m', 'b', 1)
-    pipeline = DetectFirstFailurePipeline('m', 'b', 1)
-
-    # Build is not completed yet but data is recent.
-    build.data = 'dummy'
-    build.completed = False
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(60)
-    self.assertFalse(pipeline._BuildDataNeedUpdating(build))
-
-    # Build was completed and data is final.
-    build.data = 'dummy'
-    build.completed = True
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
-    self.assertFalse(pipeline._BuildDataNeedUpdating(build))
-
-
   def _CreateAndSaveWfAnanlysis(
       self, master_name, builder_name, build_number, status):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -79,56 +48,14 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
 
   def _MockUrlfetchWithBuildData(
       self, master_name, builder_name, build_number,
-      build_data=None, archive=False):
+      build_data=None):
     """If build data is None, use json file in waterfall/test/data."""
     if build_data is None:
       build_data = self._GetBuildData(master_name, builder_name, build_number)
 
-    if archive:
-      if build_data == 'Test get build data':
-        build_data = build_data + ' from archive'
-      archived_build_url = buildbot.CreateArchivedBuildUrl(
-          master_name, builder_name, build_number)
-      self.mocked_urlfetch.register_handler(archived_build_url, build_data)
-
-    if build_data == 'Test get build data':
-      build_data = build_data + ' from build master'
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number, json_api=True)
     self.mocked_urlfetch.register_handler(build_url, build_data)
-
-  def testGetBuildeDataFromArchive(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
-                                    build_data='Test get build data',
-                                    archive=True)
-
-    pipeline = DetectFirstFailurePipeline()
-    build = pipeline._DownloadBuildData(master_name, builder_name, build_number)
-
-    expected_build_data = 'Test get build data from archive'
-
-    self.assertIsNotNone(build)
-    self.assertEqual(expected_build_data, build.data)
-
-  def testGetBuildeDataFromBuildMaster(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
-                                    build_data='Test get build data')
-
-    pipeline = DetectFirstFailurePipeline()
-    build = pipeline._DownloadBuildData(master_name, builder_name, build_number)
-
-    expected_build_data = 'Test get build data from build master'
-
-    self.assertIsNotNone(build)
-    self.assertEqual(expected_build_data, build.data)
 
   def testLookBackUntilGreenBuild(self):
     master_name = 'm'
@@ -189,7 +116,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     # 97: net_unitests failed, unit_tests failed.
     # 96: net_unitests passed, unit_tests passed.
     for i in range(5):
-         self._MockUrlfetchWithBuildData(master_name, builder_name, 100 - i)
+      self._MockUrlfetchWithBuildData(master_name, builder_name, 100 - i)
 
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
@@ -220,7 +147,7 @@ class DetectFirstFailureTest(testing.AppengineTestCase):
     # Setup build data for builds:
     self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
     self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
-                                    build_data=None, archive=True)
+                                    build_data=None)
     self._MockUrlfetchWithBuildData(
         master_name, builder_name, 122, build_data='Blow up if used!')
 

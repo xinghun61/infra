@@ -42,6 +42,7 @@ class ChangeLogTest(unittest.TestCase):
       'message': 'blabla...',
       'commit_url': 'https://chromium.googlesource.com/chromium/src/+/git_hash',
       'code_review_url': 'https://codereview.chromium.org/2222',
+      'reverted_revision': '8d4a4fa6s18raf3re12tg6r'
     }
 
     change_log = ChangeLog.FromDict(change_log_dict)

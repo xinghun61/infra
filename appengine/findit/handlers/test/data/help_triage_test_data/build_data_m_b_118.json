@@ -1,0 +1,40 @@
+{
+    "failed_steps": "<strong>steps</strong> and <strong>gn_check</strong>", "slave": "build24-a1", 
+    "results": 2,
+    "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Mon 03 Aug 2015 14:21:23", 
+        "branch": "master", 
+        "comments": "Test for no reverts\n\nRed build\nBUG=578946\n\nReview URL: https://codereview.chromium.org/1263227525\n\nCr-Commit-Position: refs/heads/master@{#341960}\n", 
+        "files": [
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/abc.java"
+          }, 
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/enhancedbookmarks/def.java"
+          }
+        ], 
+        "number": 162514, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "87d7sef4e8wtcdb98eae1fb0d92b2b7df04fc3", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "87d7sef4e8wtcdb98eae1fb0d92b2b7df04fc3", 
+        "revision": "87d7sef4e8wtcdb98eae1fb0d92b2b7df04fc3", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/87d7sef4e8wtcdb98eae1fb0d92b2b7df04fc3", 
+        "when": 1438809683, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "87d7sef4e8wtcdb98eae1fb0d92b2b7df04fc3"
+  }
+}

@@ -1,0 +1,40 @@
+{
+    "failed_steps": "<strong>steps</strong> and <strong>gn_check</strong>", "slave": "build24-a1", 
+    "results": 2,
+    "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Wed 10 Aug 2015 14:27:50", 
+        "branch": "master", 
+        "comments": "Latest build is red.\n\nThis CL indicates the latest build is red.\n\nBUG=504558\n\nReview URL: https://codereview.chromium.org/124613254\n\nCr-Commit-Position: refs/heads/master@{#342000}\n", 
+        "files": [
+          {
+            "name": "mojo/runner/BUILD.gn"
+          }, 
+          {
+            "name": "mojo/runner/about_fetcher.cc"
+          }
+        ], 
+        "number": 162516, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "8736126148dfgdrg331a6c0ebfc4f3ab8e6", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "8736126148dfgdrg331a6c0ebfc4f3ab8e6", 
+        "revision": "8736126148dfgdrg331a6c0ebfc4f3ab8e6", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/8736126148dfgdrg331a6c0ebfc4f3ab8e6", 
+        "when": 1438810070, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "8736126148dfgdrg331a6c0ebfc4f3ab8e6"
+  }
+}

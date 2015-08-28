@@ -86,7 +86,8 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
         'commit_url': REV1_COMMIT_LOG_URL,
         'code_review_url': None,
         'committer_name': 'someone@chromium.org',
-        'revision': 'rev1'
+        'revision': 'rev1',
+        'reverted_revision': None
       }
     }
 

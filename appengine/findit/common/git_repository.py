@@ -22,6 +22,8 @@ SVN_REVISION_PATTERN = re.compile(
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$')
 CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*)$')
+REVERTED_REVISION_PATTERN = re.compile(
+    '^> Committed: https://crrev.com/([0-9a-z]+)$')
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 
 
@@ -118,10 +120,24 @@ class GitRepository(Repository):
 
     return datetime.strptime(datetime_string, date_format)
 
-  def GetChangeLog(self, revision):
+  def _DownloadChangeLogData(self, revision):
     url = '%s/+/%s' % (self.repo_url, revision)
+    return url, self._SendRequestForJsonResponse(url)
 
-    data = self._SendRequestForJsonResponse(url)
+  def GetRevertedRevision(self, message):
+    """Parse message to get the reverted revision if there is one."""
+    lines = message.strip().splitlines()
+    if not lines[0].lower().startswith('revert'):
+      return None
+
+    for line in reversed(lines):  # pragma: no cover
+      # TODO: Handle cases where no reverted_revision in reverting message.
+      reverted_revision_match = REVERTED_REVISION_PATTERN.match(line)
+      if reverted_revision_match:
+        return reverted_revision_match.group(1)
+
+  def GetChangeLog(self, revision):
+    url, data = self._DownloadChangeLogData(revision)
     if not data:
       return None
 
@@ -139,6 +155,7 @@ class GitRepository(Repository):
 
     author_time = self._GetDateTimeFromString(data['author']['time'])
     committer_time = self._GetDateTimeFromString(data['committer']['time'])
+    reverted_revision = self.GetRevertedRevision(data['message'])
 
     return ChangeLog(
         data['author']['name'], self._NormalizeEmail(data['author']['email']),
@@ -146,7 +163,8 @@ class GitRepository(Repository):
         data['committer']['name'],
         self._NormalizeEmail(data['committer']['email']),
         committer_time, data['commit'], commit_position,
-        data['message'], touched_files, url, code_review_url)
+        data['message'], touched_files, url, code_review_url,
+        reverted_revision)
 
   def GetChangeDiff(self, revision):
     """Returns the raw diff of the given revision."""

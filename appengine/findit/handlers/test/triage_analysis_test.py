@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from google.appengine.ext import ndb
-from google.appengine.ext import testbed
 import webapp2
 
 from testing_utils import testing

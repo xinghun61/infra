@@ -1,0 +1,39 @@
+)]}'
+{
+  "commit": "584de1b73f811bcdb98eae1fb0d92b2b7df04fc3",
+  "tree": "f39ce86dacfde5f0fa37b0fc901a7bf9e41b9ef9",
+  "parents": [
+    "5ca13f9080367ad8eb07dc6906f969ca7a2117d4"
+  ],
+  "author": {
+    "name": "test",
+    "email": "test@chromium.org",
+    "time": "Thu Aug 13 15:58:04 2015"
+  },
+  "committer": {
+    "name": "Commit bot",
+    "email": "commit-bot@chromium.org",
+    "time": "Thu Aug 13 15:58:34 2015"
+  },
+  "message": "Allow only one bookmark to be added for multiple fast starring\n\nA quick user might be able to save duplicated bookmarks when he clicks\nthe star button before the bookmark model is loaded yet. This CL forces\nthat only one operation can be done before the model is loaded.\n\nBUG=516658\n\nReview URL: https://codereview.chromium.org/1263223005\n\nCr-Commit-Position: refs/heads/master@{#341976}\n",
+  "tree_diff": [
+    {
+      "type": "modify",
+      "old_id": "9a87ef7e9667f5d773f87e1f2870198a40385814",
+      "old_mode": 33188,
+      "old_path": "chrome/android/java/src/org/chromium/chrome/browser/ChromeActivity.java",
+      "new_id": "5536fd8e7e83a9ffdaa94ea9dc88a5b9d15404d9",
+      "new_mode": 33188,
+      "new_path": "chrome/android/java/src/org/chromium/chrome/browser/ChromeActivity.java"
+    },
+    {
+      "type": "modify",
+      "old_id": "9a87ef7e9667f5d773f87e1f2870198a40385814",
+      "old_mode": 33188,
+      "old_path": "chrome/android/java/src/org/chromium/chrome/browser/enhancedbookmarks/EnhancedBookmarkUtils.java",
+      "new_id": "24657f02463cf0686dfc6f3776637aa1cf93fa04",
+      "new_mode": 33188,
+      "new_path": "chrome/android/java/src/org/chromium/chrome/browser/enhancedbookmarks/EnhancedBookmarkUtils.java"
+    }
+  ]
+}

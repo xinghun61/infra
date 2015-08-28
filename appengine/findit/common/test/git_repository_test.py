@@ -125,7 +125,8 @@ EXPECTED_CHANGE_LOG_JSON = {
         'https://repo.test/+/bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'code_review_url': 'https://codereview.chromium.org/328113005',
     'committer_name': 'test1@chromium.org',
-    'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb'
+    'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
+    'reverted_revision': None
 }
 
 COMMIT_LOG_WITH_UNKNOWN_FILE_CHANGE_TYPE = """)]}'
@@ -395,3 +396,47 @@ class GitRepositoryTest(testing.AppengineTestCase):
     utc_datetime = self.git_repo._GetDateTimeFromString(datetime_with_timezone)
 
     self.assertEqual(expected_datetime, utc_datetime)
+
+  def testGetRevertedRevision(self):
+    message = ('Revert of test1\n\nReason for revert:\nrevert test1\n\n'+
+        'Original issue\'s description:\n> test 1\n>\n'+
+        '> description of test 1.\n>\n> BUG=none\n> TEST=none\n'+
+        '> R=test@chromium.org\n> TBR=test@chromium.org\n>\n'+
+        '> Committed: https://crrev.com/c9cc182781484f9010f062859cda048afefe\n'+
+        '> Cr-Commit-Position: refs/heads/master@{#341992}\n\n'+
+        'TBR=test@chromium.org\nNOPRESUBMIT=true\nNOTREECHECKS=true\n'+
+        'NOTRY=true\nBUG=none\n\n'+
+        'Review URL: https://codereview.chromium.org/1278653002\n\n'+
+        'Cr-Commit-Position: refs/heads/master@{#342013}\n')
+
+    reverted_revision = self.git_repo.GetRevertedRevision(message)
+    self.assertEqual('c9cc182781484f9010f062859cda048afefe', reverted_revision)
+
+  def testGetRevertedRevisionRevertOfRevert(self):
+    message = ('Revert of Revert\n\nReason for revert:\nRevert of revert\n\n'+
+        'Original issue\'s description:\n> test case of revert of revert\n>\n'+
+        '> Reason for revert:\n> reason\n>\n> Original issue\'s description:\n'+
+        '> > base cl\n> >\n> > R=kalman\n> > BUG=424661\n> >\n'+
+        '> > Committed: https://crrev.com/34ea66b8ac1d56dadd670431063857ffdd\n'+
+        '> > Cr-Commit-Position: refs/heads/master@{#326953}\n>\n'+
+        '> TBR=test@chromium.org\n> NOPRESUBMIT=true\n'+
+        '> NOTREECHECKS=true\n> NOTRY=true\n> BUG=424661\n>\n'+
+        '> Committed: https://crrev.com/76a7e3446188256ca240dc31f78de2951\n'+
+        '> Cr-Commit-Position: refs/heads/master@{#327021}\n\n'+
+        'TBR=test@chromium.org\nNOPRESUBMIT=true\n'+
+        'NOTREECHECKS=true\nNOTRY=true\nBUG=424661\n\n'+
+        'Review URL: https://codereview.chromium.org/1161773008\n\n'+
+        'Cr-Commit-Position: refs/heads/master@{#332062}\n')
+
+    reverted_revision = self.git_repo.GetRevertedRevision(message)
+    self.assertEqual('76a7e3446188256ca240dc31f78de2951', reverted_revision)
+
+  def testGetRevertedRevisionNoRevertedCL(self):
+    message = ('Test for not revert cl\n\n'+
+        'TBR=test@chromium.org\nNOPRESUBMIT=true\n'+
+        'NOTREECHECKS=true\nNOTRY=true\nBUG=424661\n\n'+
+        'Review URL: https://codereview.chromium.org/1161773008\n\n'+
+        'Cr-Commit-Position: refs/heads/master@{#332062}\n')
+
+    reverted_revision = self.git_repo.GetRevertedRevision(message)
+    self.assertIsNone(reverted_revision)

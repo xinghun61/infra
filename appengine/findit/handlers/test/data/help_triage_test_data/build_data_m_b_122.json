@@ -1,0 +1,92 @@
+{
+    "failed_steps": "<strong>steps</strong> and <strong>gn_check</strong>", "slave": "build24-a1", 
+    "results": 2,
+    "sourceStamp": {
+    "branch": "master", 
+    "changes": [
+      {
+        "at": "Fri 07 Aug 2015 14:23:42", 
+        "branch": "master", 
+        "comments": "Revert of Revert of cl2\n\nReason for revert:\nRe-landing\n\nOriginal issue's description:\n> Revert of cl2\n>\n> Reason for revert:\n> blabla\n>\n> Original issue's description:\n> > [Contextual Search] Prevent UI from disappearing when selection is cleared.\n> >\n> > BUG=516665\n> >\n> > Committed: https://crrev.com/062a6f974d7c08d27902060c241149ce193e4dd5\n> >\n> > Cr-Commit-Position: refs/heads/master@{#341977}\n>\n> TBR=test@chromium.org\n> NOPRESUBMIT=true\n> NOTREECHECKS=true\n> NOTRY=true\n> BUG=none\n>\n> Committed: https://crrev.com/1234567c08d27902060c241149ce193e4dd5\n>\n> Cr-Commit-Position: refs/heads/master@{#342015}\n\nTBR=test@chromium.org\nNOPRESUBMIT=true\nNOTREECHECKS=true\nNOTRY=true\nBUG=424661\n\nReview URL: https://codereview.chromium.org/1161773008\n\nCr-Commit-Position: refs/heads/master@{#332062}\n", 
+        "files": [
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/contextualsearch/ContextualSearchManager.java"
+          }
+        ], 
+        "number": 162519, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "062a6f974d7c01234569ce193e4dd5", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "062a6f974d7c01234569ce193e4dd5", 
+        "revision": "062a6f974d7c01234569ce193e4dd5", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/062a6f974d7c01234569ce193e4dd5", 
+        "when": 1438809822, 
+        "who": "test@chromium.org"
+      },
+      {
+        "category": null, 
+        "files": [
+          {
+            "url": null, 
+            "name": "tools/telemetry/telemetry/internal/backends/chrome/oobe.py"
+          }
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "123ef4fe9ba98342fcb6bd6f5437a10592d0ed2f", 
+        "who": "vsankar@google.com", 
+        "when": 1438818993, 
+        "number": 162553, 
+        "comments": "Fix CrOS telemetry browser not navigating through GAIA sign-in webview.\n\nNOTRY=true\n\nReview URL: https://codereview.chromium.org/1272873002\n\nCr-Commit-Position: refs/heads/master@{#342015}\n", 
+        "project": "src", 
+        "at": "Wed 05 Aug 2015 16:56:33", 
+        "branch": "master", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/123ef4fe9ba98342fcb6bd6f5437a10592d0ed2f", 
+        "properties": [
+          [
+            "git_revision", 
+            "123ef4fe9ba98342fcb6bd6f5437a10592d0ed2f", 
+            "Change"
+          ]
+        ], 
+        "revision": "123ef4fe9ba98342fcb6bd6f5437a10592d0ed2f"
+      },
+      {
+        "at": "Thu 06 Aug 2015 14:21:23", 
+        "branch": "master", 
+        "comments": "Revert of cl1\n\nReason for revert:\nblabla\n\nOriginal issue's description:\n> Allow only one bookmark to be added for multiple fast starring\n>\n> A quick user might be able to save duplicated bookmarks when he clicks\n> the star button before the bookmark model is loaded yet. This CL forces\n> that only one operation can be done before the model is loaded.\n>\n> BUG=516658\n>\n> Committed: https://crrev.com/584de1b73f811bcdb98eae1fb0d92b2b7df04fc3\n>\n> Cr-Commit-Position: refs/heads/master@{#341976}\n\nTBR=test@chromium.org\nNOPRESUBMIT=true\nNOTREECHECKS=true\nNOTRY=true\nBUG=none\n\nReview URL: https://codereview.chromium.org/1280463003\n\nCr-Commit-Position: refs/heads/master@{#342014}\n", 
+        "files": [
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/ChromeActivity.java"
+          }, 
+          {
+            "name": "chrome/android/java/src/org/chromium/chrome/browser/enhancedbookmarks/EnhancedBookmarkUtils.java"
+          }
+        ], 
+        "number": 162517, 
+        "project": "src", 
+        "properties": [
+          [
+            "git_revision", 
+            "123456671bcdb98eae1fb0d92b2b7df04fc3", 
+            "Change"
+          ]
+        ], 
+        "repository": "https://chromium.googlesource.com/chromium/src", 
+        "rev": "123456671bcdb98eae1fb0d92b2b7df04fc3", 
+        "revision": "123456671bcdb98eae1fb0d92b2b7df04fc3", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/123456671bcdb98eae1fb0d92b2b7df04fc3", 
+        "when": 1438809683, 
+        "who": "test@chromium.org"
+      }
+    ], 
+    "project": "src", 
+    "repository": "https://chromium.googlesource.com/chromium/src", 
+    "revision": "062a6f974d7c01234569ce193e4dd5"
+  }
+}

@@ -2,19 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-from datetime import datetime
-import logging
-import random
-import time
-
-from common.http_client_appengine import HttpClientAppengine as HttpClient
-from model.wf_build import WfBuild
 from model.wf_analysis import WfAnalysis
 from pipeline_wrapper import pipeline
 from pipeline_wrapper import BasePipeline
 from waterfall import buildbot
-from waterfall import lock_util
+from waterfall import build_util
 
 
 _MAX_BUILDS_TO_CHECK = 20
@@ -26,44 +18,13 @@ class DetectFirstFailurePipeline(BasePipeline):
   TODO(stgao): do test-level detection for gtest.
   """
 
-  HTTP_CLIENT_LOGGING_ERRORS = HttpClient()
-  HTTP_CLIENT_NO_404_ERROR = HttpClient(no_error_logging_statuses=[404])
-
-  def _BuildDataNeedUpdating(self, build):
-    return (not build.data or (not build.completed and
-        (datetime.utcnow() - build.last_crawled_time).total_seconds() >= 300))
-
-  def _DownloadBuildData(self, master_name, builder_name, build_number):
-    """Downloads build data and returns a WfBuild instance."""
-    build = WfBuild.Get(master_name, builder_name, build_number)
-    if not build:
-      build = WfBuild.Create(master_name, builder_name, build_number)
-
-    # Cache the data to avoid pulling from master again.
-    if self._BuildDataNeedUpdating(build):
-      # Retrieve build data from build archive first.
-      build.data = buildbot.GetBuildDataFromArchive(
-          build.master_name, build.builder_name, build.build_number,
-          self.HTTP_CLIENT_NO_404_ERROR)
-
-      if build.data is None:
-        if not lock_util.WaitUntilDownloadAllowed(
-            master_name):  # pragma: no cover
-          raise pipeline.Retry('Too many download from %s' % master_name)
-
-        # Retrieve build data from build master.
-        build.data = buildbot.GetBuildDataFromBuildMaster(
-            build.master_name, build.builder_name, build.build_number,
-            self.HTTP_CLIENT_LOGGING_ERRORS)
-
-      build.last_crawled_time = datetime.utcnow()
-      build.put()
-
-    return build
-
   def _ExtractBuildInfo(self, master_name, builder_name, build_number):
     """Returns a BuildInfo instance for the specified build."""
-    build = self._DownloadBuildData(master_name, builder_name, build_number)
+    build = build_util.DownloadBuildData(
+        master_name, builder_name, build_number)
+
+    if build is None:  # pragma: no cover
+      raise pipeline.Retry('Too many download from %s' % master_name)
     if not build.data:  # pragma: no cover
       return None
 
@@ -143,8 +104,7 @@ class DetectFirstFailurePipeline(BasePipeline):
     earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
     for n in range(build_number - 1, earliest_build_number - 1, -1):
       # Extraction should stop when when we reach to the first build
-      build_info = self._ExtractBuildInfo(
-          master_name, builder_name, n)
+      build_info = self._ExtractBuildInfo(master_name, builder_name, n)
 
       if not build_info:  # pragma: no cover
         # Failed to extract the build information, bail out.
