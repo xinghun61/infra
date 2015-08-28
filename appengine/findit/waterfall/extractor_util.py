@@ -94,12 +94,13 @@ FILE_PATH_LINE_PATTERN = re.compile((
 
 # Patterns for Python stack trace frames.
 PYTHON_STACK_TRACE_FRAME_PATTERN_1 = re.compile(
-    r'\s*File "(?P<file>.+\.py)", line (?P<line>[0-9]+), in (?P<function>.+)')
+    r'File "(?P<file>.+\.py)", line (?P<line>[0-9]+), in (?P<function>.+)')
 PYTHON_STACK_TRACE_FRAME_PATTERN_2 = re.compile(
     r'(?P<function>[^\s]+) at (?P<file>.+\.py):(?P<line>[0-9]+)')
 
 # Beginning string for Python stack trace start marker.
-PYTHON_STACK_TRACE_START_MARKER = 'Traceback (most recent call last):'
+PYTHON_STACK_TRACE_START_PATTERN = re.compile(
+    r'Traceback \(most recent call last\)\:')
 
 # The number of stack frames for a python stacktrace to extract.
 PYTHON_MAXIMUM_NUMBER_STACK_FRAMES = 4

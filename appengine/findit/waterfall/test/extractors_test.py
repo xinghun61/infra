@@ -194,7 +194,41 @@ Note:You can safely ignore the above warning unless this call should not happen.
             message1
           File "path/l.py", line 456, in method2
             message2
-        blablaError: blabla...""")
+        blablaError: blabla...
+
+        blabla Traceback (most recent call last):
+        blabla   File "path/m.py", line 1, in method1
+        blabla     message1
+        blabla   File "path/n.py", line 2, in method2
+        blabla     message2
+        blabla   File "path/o.py", line 3, in method3
+        blabla     message3
+        blabla   File "path/p.py", line 4, in method4
+        blabla     message4
+        blabla   File "path/q.py", line 5, in method5
+        blabla     message5
+        blabla   File "path/r.py", line 6, in method6
+        blabla     message6
+        blabla   File "path/s.py", line 7, in method7
+        blabla     message7
+        blabla   File "path/t.py", line 8, in method8
+        blabla     message8
+        blabla blablaError: blabla...
+
+        blabla
+
+        blabla Traceback (most recent call last):
+        blabla  method1 at path/u.py:1
+        blabla    message1
+        blabla  method2 at path/v.py:2
+        blabla    message2
+        blabla  method3 at path/w.py:3
+        blabla    message3
+        blabla  method4 at path/x.py:4
+        blabla    message4
+        blabla  method5 at path/y.py:5
+        blabla    message5
+        blabla blablaError: blabla...""")
     expected_signal_json = {
         'files': {
             'path/b.py': [2],
@@ -207,6 +241,14 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'path/j.py': [910],
             'path/k.py': [123],
             'path/l.py': [456],
+            'path/q.py': [5],
+            'path/r.py': [6],
+            'path/s.py': [7],
+            'path/t.py': [8],
+            'path/v.py': [2],
+            'path/w.py': [3],
+            'path/x.py': [4],
+            'path/y.py': [5],
         },
         'tests': [],
         'keywords': {}

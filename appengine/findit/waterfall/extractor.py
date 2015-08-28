@@ -11,8 +11,9 @@ class Extractor(object):
   def ExtractFiles(self, message_line, failure_signal):
     """Extracts files from given message line into ``failure_signal``."""
     match = (
-        extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.match(message_line) or
-        extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.match(message_line))
+        extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.search(message_line)
+        or
+        extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.search(message_line))
     if match:
       trace_line = match.groupdict()
       failure_signal.AddFile(

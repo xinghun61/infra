@@ -30,9 +30,10 @@ class GeneralExtractor(Extractor):
 
   def _ExtractPythonFiles(self, python_stacktrace_frames, signal):
     frames_with_filenames = []
+
     for frame in python_stacktrace_frames:
-      if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.match(frame) or
-          extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.match(frame)):
+      if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.search(frame) or
+          extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.search(frame)):
         frames_with_filenames.append(frame)
 
     for frame in frames_with_filenames[
@@ -61,14 +62,14 @@ class GeneralExtractor(Extractor):
         end = i
         cpp_stacktrace_frames = failure_log_lines[start:end]
         self._ExtractCppFiles(cpp_stacktrace_frames, signal)
-      elif line.startswith(extractor_util.PYTHON_STACK_TRACE_START_MARKER):
+      elif extractor_util.PYTHON_STACK_TRACE_START_PATTERN.search(line):
         # Handle python failure stacktraces.
         i += 1
         start = i
         while i < end_index:  # pragma: no cover
           line = failure_log_lines[i]
-          if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.match(line) or
-              extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.match(line)):
+          if (extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1.search(line) or
+              extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2.search(line)):
             i += 2
           else:
             break
