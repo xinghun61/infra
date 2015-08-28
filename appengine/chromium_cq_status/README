@@ -36,7 +36,8 @@ here: https://cloud.google.com/appengine/downloads
 
 Then load: http://localhost:8080/.  Note, that /query endpoint is
 served by highend module, and will be served at localhost:8081, which
-is not where the app's UI expects it.
+is not where the app's UI expects it. Some endpoints rely on the
+datastore and therefore do not work locally.
 
 # TESTING
 
@@ -66,14 +67,17 @@ debug.
 # PUSHING
 
 0. cd appengine/chromium_cq_status:
-1. make deploy
-2. Test the newly deployed version: visit
+1. (optional) reduce the size of the upload
+    $ rm -r third_party/catapult/tracing/third_party
+    $ rm -r third_party/catapult/tracing/tracing/test_data
+2. make deploy
+3. Test the newly deployed version: visit
    http://<version>-dot-chromium-cq-status.appspot.com, make sure the
    relevant pages and endpoints load correctly. Check the logs for any errors.
-3. Go to appengine.google.com and select the chromium-cq-status app.
-4. Click on the version tab
-5. Make the new version of both modules the default.
-6. Check again that the new default version continues to serve the traffic,
+4. Go to appengine.google.com and select the chromium-cq-status app.
+5. Click on the version tab
+6. Make the new version of both modules the default.
+7. Check again that the new default version continues to serve the traffic,
    and the logs look good.
 
 The versioning is so that we can easily roll back if there's something
@@ -94,3 +98,6 @@ mocha: testing framework. Provides good asynchronous and synchronous test
        test case.
 
 chai:  assertion library.
+
+catapult: Project containing Trace Viewer, used as the front-end for the
+          timeline view.
