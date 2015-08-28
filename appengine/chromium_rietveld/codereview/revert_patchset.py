@@ -305,6 +305,10 @@ def revert_patchset(request):
 
   # Add all gathered patch texts to the patchset's data field.
   patchset.data = '\n'.join(patchset_data)
+  # Patchset data needs to end with '\n' for 'git cl patch' to work. For more
+  # context see: crbug.com/479881#c12
+  if not patchset.data.endswith('\n'):
+    patchset.data += '\n'
 
   # Commit the gathered revert Issue, PatchSet, Patches and Contents.
   _db_commit_all_pending_commits(pending_commits)
