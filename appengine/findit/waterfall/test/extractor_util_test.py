@@ -102,6 +102,17 @@ class ExtractorUtilTest(unittest.TestCase):
         '../../chrome/test/ppapi/ppapi_test.cc:263: Failure',
         extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
 
+  def testJavaStackTraceFramePattern(self):
+    self.assertRegexpMatches(
+        'C 1855.518s Main   at a.b.file.method(file.java:214)',
+        extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN)
+    self.assertRegexpMatches(
+        'C 1855.519s Main   at a.b.file$class.method(file.java:1701)',
+        extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN)
+    self.assertRegexpMatches(
+        'C 1855.518s Main   at a.b.c.d.method(Native Method)',
+        extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN)
+
   def testChromiumSrcPattern(self):
     cases = {
         '/b/build/slave/Android_Tests/build/src/a/b/c.py': ['a/b/c.py'],

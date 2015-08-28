@@ -423,6 +423,46 @@ Note:You can safely ignore the above warning unless this call should not happen.
     self._RunTest(
         failure_log, extractors.CheckSizesExtractor, expected_signal_json)
 
+  def testInstrumentationTestExtractor(self):
+    failure_log = textwrap.dedent("""
+        C 1855.516s Main  at org.chromium.not.this.file.method(file.java:0)
+        C 1855.516s Main  ******************************************************
+        C 1855.516s Main  Detailed Logs
+        C 1855.516s Main  ******************************************************
+        C 1855.518s Main  [FAIL] blabla#test1:
+        C 1855.518s Main  junit.framework.AssertionFailedError: blabla
+        C 1855.518s Main    at org.chromium.a.file1.method1(file1.java:123)
+        C 1855.518s Main    at java.lang.reflect.Method.run(Native Method)
+        C 1855.519s Main    at org.chromium.b.file2$class.method(file2.java:456)
+        C 1855.518s Main    at org.blabla.c.file3.method3(file3.java:789)
+        C 1855.519s Main    at org.chromium.d.file4$class.method(file4.java:111)
+        C 1855.519s Main    at org.chromium.e.file5$class.method(file5.java:222)
+        C 1855.519s Main    at org.chromium.f.file6$class.method(file6.java:333)
+        C 1855.519s Main
+        C 1855.518s Main  [FAIL] blabla#test2:
+        C 1855.518s Main  junit.framework.AssertionFailedError: blabla
+        C 1855.518s Main    at org.chromium.g.file7.method1(file7.java:333)
+        C 1855.519s Main    at org.chromium.h.file8$class.method(file8.java:444)
+        C 1855.519s Main  ******************************************************
+        C 1855.519s Main  Summary
+        C 1855.519s Main  ******************************************************
+        C 1855.516s Main  at org.chromium.not.this.file.method(file.java:0)
+        """)
+
+    expected_signal_json = {
+        'files': {
+            'org/chromium/a/file1.java': [123],
+            'org/chromium/b/file2.java': [456],
+            'org/chromium/g/file7.java': [333],
+            'org/chromium/h/file8.java': [444]
+        },
+        'tests': [],
+        'keywords': {}
+    }
+    self._RunTest(failure_log,
+                  extractors.InstrumentationTestExtractor,
+                  expected_signal_json)
+
   def testExtractSignal(self):
     class DummyGeneralExtractor(Extractor):
 

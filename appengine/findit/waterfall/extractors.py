@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import re
 
 from waterfall import extractor_util
@@ -199,10 +200,71 @@ class CheckSizesExtractor(Extractor):
     return signal
 
 
+class InstrumentationTestExtractor(Extractor):
+  """For Instrtumentation tests."""
+  # Beginning marker for Java stack trace.
+  JAVA_STACK_TRACE_BEGINNING_MARKER = re.compile(r'^.*\[FAIL] .*\#.*:')
+  JAVA_PACKAGES_TO_CONSIDER = ['org.chromium.']
+
+  def _InWhitelist(self, package_filename):
+    for package in self.JAVA_PACKAGES_TO_CONSIDER:
+      if package_filename.startswith(package):
+        return True
+    return False
+
+  def Extract(self, failure_log, *_):
+    signal = FailureSignal()
+    failure_started = False
+    in_failure_stacktrace_within_range = False
+    java_stack_frame_index = 0
+
+    for line in failure_log.splitlines():  # pragma: no cover
+      if not failure_started and line.endswith('Detailed Logs'):
+        failure_started = True
+        continue
+
+      if failure_started:
+        if (not in_failure_stacktrace_within_range and
+            self.JAVA_STACK_TRACE_BEGINNING_MARKER.match(line)):
+          in_failure_stacktrace_within_range = True
+          java_stack_frame_index = 0
+          continue
+
+        if line.endswith('Summary'):
+          break
+
+        if in_failure_stacktrace_within_range:
+          match = extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN.search(line)
+
+          if match:
+            package_classname = match.group('package_classname')
+            filename = match.group('filename')
+            line_number = match.group('line_number')
+
+            if (self._InWhitelist(package_classname) and
+                filename and line_number):
+              file_path = os.path.join(
+                  '/'.join(package_classname.split('.')[:-2]), filename)
+              signal.AddFile(extractor_util.NormalizeFilePath(file_path),
+                             line_number)
+
+            java_stack_frame_index += 1
+
+            # Only extract the top several frames of each stack.
+            if (java_stack_frame_index >=
+                extractor_util.JAVA_MAXIMUM_NUMBER_STACK_FRAMES):
+              in_failure_stacktrace_within_range = False
+
+    return signal
+
+
 EXTRACTORS = {
     'compile': CompileStepExtractor,
     'check_perms': CheckPermExtractor,
     'sizes': CheckSizesExtractor,
+    'Instrumentation_test_ChromePublicTest': InstrumentationTestExtractor,
+    'Instrumentation_test_ContentShellTest': InstrumentationTestExtractor,
+    'Instrumentation_test_AndroidWebViewTest': InstrumentationTestExtractor,
 }
 
 

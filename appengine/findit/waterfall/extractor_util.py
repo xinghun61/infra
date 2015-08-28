@@ -111,6 +111,15 @@ CPP_STACK_TRACE_FRAME_PATTERN = re.compile('.*\s+#(\d+) 0x[0-9a-fA-F]+ .*')
 # The number of stack frames for a c++ stacktrace to extract.
 CPP_MAXIMUM_NUMBER_STACK_FRAMES = 4
 
+# Pattern for java stack trace frame.
+JAVA_STACK_TRACE_FRAME_PATTERN = re.compile(
+    r'(at (?P<package_classname>(?:\w+(?:\$\w+)?\.)+)'
+    r'(?P<method>\w+)\((?:(?P<filename>\w+\.java):'
+    r'(?P<line_number>\d+)\))?)')
+
+# The numbert of stack frames for a Java stacktrace to extract.
+JAVA_MAXIMUM_NUMBER_STACK_FRAMES = 4
+
 # Match the file path relative to the root src of a chromium repo checkout.
 CHROMIUM_SRC_PATTERN = re.compile(
     r'.*/build/slave/\w+[^\t\n/]*/build/src/(.*)')
