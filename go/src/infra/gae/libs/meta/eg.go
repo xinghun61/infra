@@ -5,7 +5,8 @@
 package meta
 
 import (
-	rdsS "github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/datastore/dskey"
 	"github.com/luci/luci-go/common/errors"
 	"golang.org/x/net/context"
 )
@@ -16,21 +17,22 @@ var mark = errors.MakeMarkFn("eg")
 // appengine. You shouldn't need to use this struct directly, but instead should
 // use GetEntityGroupVersion.
 type EntityGroupMeta struct {
+	kind   string     `gae:"$kind,__entity_group__"`
+	id     int64      `gae:"$id,1"`
+	Parent dstore.Key `gae:"$parent"`
+
 	Version int64 `gae:"__version__"`
 }
 
 // GetEntityGroupVersion returns the entity group version for the entity group
 // containing root. If the entity group doesn't exist, this function will return
 // zero and a nil error.
-func GetEntityGroupVersion(c context.Context, root rdsS.Key) (int64, error) {
-	for root.Parent() != nil {
-		root = root.Parent()
-	}
-	rds := rdsS.Get(c)
-	egm := &EntityGroupMeta{}
-	err := rds.Get(rds.NewKey("__entity_group__", "", 1, root), rdsS.GetPLS(egm))
+func GetEntityGroupVersion(c context.Context, root dstore.Key) (int64, error) {
+	ds := dstore.Get(c)
+	egm := &EntityGroupMeta{Parent: dskey.Root(root)}
+	err := ds.Get(egm)
 	ret := egm.Version
-	if err == rdsS.ErrNoSuchEntity {
+	if err == dstore.ErrNoSuchEntity {
 		// this is OK for callers. The version of the entity group is effectively 0
 		// in this case.
 		err = nil

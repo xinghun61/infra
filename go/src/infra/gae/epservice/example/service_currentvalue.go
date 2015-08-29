@@ -7,7 +7,7 @@ package example
 import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/luci/gae/impl/prod"
-	rdsS "github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
 	"golang.org/x/net/context"
 )
 
@@ -24,11 +24,10 @@ type CurrentValueRsp struct {
 // CurrentValue gets the current value of a counter (duh)
 func (Example) CurrentValue(c context.Context, r *CurrentValueReq) (rsp *CurrentValueRsp, err error) {
 	c = prod.Use(c)
-	rds := rdsS.Get(c)
+	ds := dstore.Get(c)
 
-	key := rds.NewKey("Counter", r.Name, 0, nil)
-	ctr := &Counter{}
-	if err = rds.Get(key, rdsS.GetPLS(ctr)); err != nil {
+	ctr := &Counter{Name: r.Name}
+	if err = ds.Get(ctr); err != nil {
 		return
 	}
 

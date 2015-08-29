@@ -19,20 +19,23 @@ import (
 	"golang.org/x/net/context"
 )
 
-func init() {
-	delay = time.Millisecond
-	memcacheLockTime = time.Millisecond * 4
-}
-
 type getBlockerFilter struct {
-	memcache.Interface
+	memcache.RawInterface
 	sync.Mutex
+
+	dropAll bool
 }
 
-func (f *getBlockerFilter) Get(key string) (memcache.Item, error) {
+func (f *getBlockerFilter) GetMulti(keys []string, cb memcache.RawItemCB) error {
 	f.Lock()
 	defer f.Unlock()
-	return f.Interface.Get(key)
+	if f.dropAll {
+		for _, key := range keys {
+			cb(f.NewItem(key), nil)
+		}
+		return nil
+	}
+	return f.RawInterface.GetMulti(keys, cb)
 }
 
 func TestSimple(t *testing.T) {
@@ -51,6 +54,7 @@ func TestSimple(t *testing.T) {
 			default:
 			}
 		})
+
 		waitFalse := func(ctx context.Context) {
 		loop:
 			for {
@@ -67,7 +71,7 @@ func TestSimple(t *testing.T) {
 		mc := memcache.Get(ctx)
 
 		Convey("fails to acquire when memcache is down", func() {
-			fb.BreakFeatures(nil, "Add")
+			fb.BreakFeatures(nil, "AddMulti")
 			err := TryWithLock(ctx, "testkey", "id", func(context.Context) error {
 				// should never reach here
 				So(false, ShouldBeTrue)
@@ -123,7 +127,7 @@ func TestSimple(t *testing.T) {
 					})
 
 					Convey("or because of service issues", func() {
-						fb.BreakFeatures(nil, "CompareAndSwap")
+						fb.BreakFeatures(nil, "CompareAndSwapMulti")
 						waitFalse(ctx)
 					})
 				})
@@ -134,8 +138,8 @@ func TestSimple(t *testing.T) {
 
 		Convey("can lose it when it gets stolen", func() {
 			gbf := &getBlockerFilter{}
-			ctx = memcache.AddFilters(ctx, func(_ context.Context, mc memcache.Interface) memcache.Interface {
-				gbf.Interface = mc
+			ctx = memcache.AddRawFilters(ctx, func(_ context.Context, mc memcache.RawInterface) memcache.RawInterface {
+				gbf.RawInterface = mc
 				return gbf
 			})
 			mc = memcache.Get(ctx)
@@ -150,6 +154,28 @@ func TestSimple(t *testing.T) {
 				mc.Set(mc.NewItem(key).SetValue([]byte("wat")))
 				gbf.Unlock()
 				waitFalse(ctx)
+				return nil
+			})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("can lose it when it gets preemptively released", func() {
+			gbf := &getBlockerFilter{}
+			ctx = memcache.AddRawFilters(ctx, func(_ context.Context, mc memcache.RawInterface) memcache.RawInterface {
+				gbf.RawInterface = mc
+				return gbf
+			})
+			ctx = context.WithValue(ctx, testStopCBKey, func() {
+				gbf.dropAll = true
+			})
+			mc = memcache.Get(ctx)
+			err := TryWithLock(ctx, "testkey", "id", func(ctx context.Context) error {
+				// simulate waiting for 64*delay time, and ensuring that checkLoop
+				// runs that many times.
+				for i := 0; i < 64; i++ {
+					<-blocker
+					clk.Add(delay)
+				}
 				return nil
 			})
 			So(err, ShouldBeNil)

@@ -6,7 +6,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -14,7 +13,7 @@ import (
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
-	luciErrors "github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
 )
@@ -105,7 +104,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 		if err != nil {
 			// Treat a client error as transient.
 			log.Warningf(log.SetError(ctx, err), "Failed proxy client request.")
-			return luciErrors.Transient{Err: err}
+			return errors.WrapTransient(err)
 		}
 		defer resp.Body.Close()
 
@@ -114,7 +113,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 		bodyData, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf(log.SetError(ctx, err), "Error during endpoint connection.")
-			return luciErrors.Transient{Err: err}
+			return errors.WrapTransient(err)
 		}
 
 		log.Fields{
@@ -133,7 +132,7 @@ func (s *endpointServiceImpl) send(ctx context.Context, data []byte) error {
 
 		err = fmt.Errorf("http: server error (%d)", resp.StatusCode)
 		if resp.StatusCode >= http.StatusInternalServerError {
-			err = luciErrors.Transient{Err: err}
+			err = errors.WrapTransient(err)
 		}
 
 		log.Fields{

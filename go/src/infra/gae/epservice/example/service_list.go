@@ -7,7 +7,7 @@ package example
 import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/luci/gae/impl/prod"
-	"github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
 	"golang.org/x/net/context"
 )
 
@@ -20,19 +20,9 @@ type ListRsp struct {
 // List returns a list of all the counters. Note that it's very poorly
 // implemented! It's completely unpaged. I don't care :).
 func (Example) List(c context.Context) (rsp *ListRsp, err error) {
-	rds := rawdatastore.Get(prod.Use(c))
+	ds := dstore.Get(prod.Use(c))
 	rsp = &ListRsp{}
-	dst := []rawdatastore.PropertyMap{}
-	_, err = rds.GetAll(rds.NewQuery("Counter"), &dst)
-	if err != nil {
-		return
-	}
-	rsp.Counters = make([]Counter, len(dst))
-	for i, m := range dst {
-		if err = rawdatastore.GetPLS(rsp.Counters[i]).Load(m); err != nil {
-			return
-		}
-	}
+	err = ds.GetAll(ds.NewQuery("Counter"), &rsp.Counters)
 	return
 }
 

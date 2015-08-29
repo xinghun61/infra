@@ -5,10 +5,9 @@
 package main
 
 import (
-	"errors"
 	"testing"
 
-	luciErrors "github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/retry"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
@@ -68,7 +67,7 @@ func TestPubSub(t *testing.T) {
 
 	Convey(`Using a testing Pub/Sub config`, t, func() {
 		// Do not retry.
-		ctx := retry.Use(context.Background(), func(context.Context) retry.Iterator {
+		ctx := context.WithValue(context.Background(), backoffPolicyKey, func() retry.Iterator {
 			return &retry.Limited{}
 		})
 
@@ -173,7 +172,7 @@ func TestPubSub(t *testing.T) {
 				svc.MockCall("Pull", "test-subscription", 64).WithResult(nil, e)
 
 				Convey(`Returns the error as transient.`, func() {
-					So(client.pullAckMessages(ctx, func([]*pubsub.Message) {}), ShouldResemble, luciErrors.Transient{Err: e})
+					So(client.pullAckMessages(ctx, func([]*pubsub.Message) {}), ShouldResemble, errors.WrapTransient(e))
 				})
 			})
 		})

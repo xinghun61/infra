@@ -10,7 +10,7 @@ import (
 
 	"github.com/luci/gae/filter/featureBreaker"
 	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 )
@@ -21,28 +21,32 @@ func TestGetEntityGroupVersion(t *testing.T) {
 	Convey("GetEntityGroupVersion", t, func() {
 		c := memory.Use(context.Background())
 		c, fb := featureBreaker.FilterRDS(c, errors.New("INTERNAL_ERROR"))
-		rds := rawdatastore.Get(c)
+		ds := dstore.Get(c)
 
-		aKey, err := rds.Put(rds.NewKey("A", "", 0, nil), rawdatastore.PropertyMap{
-			"Val": {rawdatastore.MkProperty(10)},
-		})
-		So(err, ShouldBeNil)
+		pm := dstore.PropertyMap{
+			"$key": {dstore.MkPropertyNI(ds.NewKey("A", "", 0, nil))},
+			"Val":  {dstore.MkProperty(10)},
+		}
+		So(ds.Put(pm), ShouldBeNil)
+		aKey, ok := pm.GetMetaDefault("key", nil).(dstore.Key)
+		So(ok, ShouldBeTrue)
+		So(aKey, ShouldNotBeNil)
 
 		v, err := GetEntityGroupVersion(c, aKey)
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 1)
 
-		So(rds.Delete(aKey), ShouldBeNil)
+		So(ds.Delete(aKey), ShouldBeNil)
 
-		v, err = GetEntityGroupVersion(c, rds.NewKey("madeUp", "thing", 0, aKey))
+		v, err = GetEntityGroupVersion(c, ds.NewKey("madeUp", "thing", 0, aKey))
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 2)
 
-		v, err = GetEntityGroupVersion(c, rds.NewKey("madeUp", "thing", 0, nil))
+		v, err = GetEntityGroupVersion(c, ds.NewKey("madeUp", "thing", 0, nil))
 		So(err, ShouldBeNil)
 		So(v, ShouldEqual, 0)
 
-		fb.BreakFeatures(nil, "Get")
+		fb.BreakFeatures(nil, "GetMulti")
 
 		v, err = GetEntityGroupVersion(c, aKey)
 		So(err.Error(), ShouldContainSubstring, "INTERNAL_ERROR")

@@ -286,7 +286,7 @@ func (l *cloudLogging) sendLogEntries(entries []*logEntry, index int64) error {
 
 	svc := cloudlog.NewProjectsLogsEntriesService(l.service)
 	call := svc.Write(l.projectName, l.logsID, &req)
-	return retry.Retry(l.ctx, func() error {
+	return retry.Retry(l.ctx, backoffPolicy(l.ctx), func() error {
 		_, err := call.Do()
 		return err
 	}, func(err error, delay time.Duration) {

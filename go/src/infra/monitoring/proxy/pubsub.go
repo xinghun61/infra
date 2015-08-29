@@ -5,14 +5,13 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
-	luciErrors "github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud"
@@ -322,6 +321,6 @@ func (*pubsubClient) wrapTransient(err error) error {
 		return err
 
 	default:
-		return luciErrors.Transient{Err: err}
+		return errors.WrapTransient(err)
 	}
 }

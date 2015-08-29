@@ -7,7 +7,7 @@ package example
 import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/luci/gae/impl/prod"
-	rdsS "github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
 	"golang.org/x/net/context"
 )
 
@@ -33,19 +33,16 @@ func (Example) Add(c context.Context, r *AddReq) (rsp *AddRsp, err error) {
 	rsp = &AddRsp{}
 
 	c = prod.Use(c)
-	err = rdsS.Get(c).RunInTransaction(func(c context.Context) error {
-		rds := rdsS.Get(c)
-		ctr := &Counter{}
-		pls := rdsS.GetPLS(ctr)
-		key := rds.NewKey("Counter", r.Name, 0, nil)
-		if err := rds.Get(key, pls); err != nil && err != rdsS.ErrNoSuchEntity {
+	err = dstore.Get(c).RunInTransaction(func(c context.Context) error {
+		ds := dstore.Get(c)
+		ctr := &Counter{Name: r.Name}
+		if err := ds.Get(ctr); err != nil && err != dstore.ErrNoSuchEntity {
 			return err
 		}
 		rsp.Prev = ctr.Val
 		ctr.Val += r.Delta
 		rsp.Cur = ctr.Val
-		_, err := rds.Put(key, pls)
-		return err
+		return ds.Put(ctr)
 	}, nil)
 	return
 }

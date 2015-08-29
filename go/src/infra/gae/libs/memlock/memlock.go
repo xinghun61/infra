@@ -35,6 +35,10 @@ type checkOp string
 // var so we can override it in the tests
 var delay = time.Second
 
+type testStopCBKeyType int
+
+var testStopCBKey testStopCBKeyType
+
 const (
 	release checkOp = "release"
 	refresh         = "refresh"
@@ -87,8 +91,8 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 	// another lock observing an empty clientID will know that the lock is
 	// obtainable.
 	checkAnd := func(op checkOp) bool {
-		itm, err := mc.Get(key)
-		if err != nil {
+		itm := mc.NewItem(key)
+		if err := mc.Get(itm); err != nil {
 			log.Warningf("error getting: %s", err)
 			return false
 		}
@@ -109,8 +113,7 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 			itm.SetValue([]byte{}).SetExpiration(delay)
 		}
 
-		err = mc.CompareAndSwap(itm)
-		if err != nil {
+		if err := mc.CompareAndSwap(itm); err != nil {
 			log.Warningf("failed to %s lock: %q", op, err)
 			return false
 		}
@@ -139,6 +142,8 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 		<-finished
 	}()
 
+	testStopCB, _ := ctx.Value(testStopCBKey).(func())
+
 	// This goroutine checks to see if we still posess the lock, and refreshes it
 	// if we do.
 	go func() {
@@ -160,6 +165,9 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 			}
 		}
 
+		if testStopCB != nil {
+			testStopCB()
+		}
 		checkAnd(release)
 	}()
 

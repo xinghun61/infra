@@ -8,5 +8,7 @@ package example
 
 // Counter is a stupid model which holds a single numerical value.
 type Counter struct {
+	Name string `gae:"$id"`
+
 	Val int64 `json:",string"`
 }

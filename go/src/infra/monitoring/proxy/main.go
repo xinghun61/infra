@@ -20,7 +20,6 @@ import (
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/parallel"
-	"github.com/luci/luci-go/common/retry"
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/pubsub"
 )
@@ -130,7 +129,6 @@ func (a *application) loadServices(ctx context.Context, client *http.Client) err
 func (a *application) run(ctx context.Context) error {
 	// Setup common context parameters.
 	ctx, cancelFunc := context.WithCancel(ctx)
-	ctx = retry.WithTransientOnly(retry.Use(ctx, exponentialBackoff))
 
 	// Monitor our shutdown singal. Cancel our context if it is closed.
 	go func() {

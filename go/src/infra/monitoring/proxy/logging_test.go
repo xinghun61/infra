@@ -126,7 +126,7 @@ func TestCloudLogging(t *testing.T) {
 		ctx, _ := testclock.UseTime(context.Background(), time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC))
 
 		// Do not retry.
-		ctx = retry.Use(ctx, func(context.Context) retry.Iterator {
+		ctx = context.WithValue(ctx, backoffPolicyKey, func() retry.Iterator {
 			return &retry.Limited{}
 		})
 

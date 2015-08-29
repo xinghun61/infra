@@ -16,11 +16,15 @@ import (
 
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
-	luciErrors "github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/retry"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 )
+
+func init() {
+	backoffTestMode = true
+}
 
 // testEndpointServiceHandler is a testing HTTP server. It is not goroutine-safe.
 type testEndpointServiceHandler struct {
@@ -77,7 +81,7 @@ func TestEndpointService(t *testing.T) {
 		ctx, tc := testclock.UseTime(context.Background(), time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC))
 
 		// Retry up to ten times without delaying.
-		ctx = retry.Use(ctx, func(context.Context) retry.Iterator {
+		ctx = context.WithValue(ctx, backoffPolicyKey, func() retry.Iterator {
 			return &retry.Limited{Retries: 10}
 		})
 
@@ -124,7 +128,7 @@ func TestEndpointService(t *testing.T) {
 			h.failures = 11
 			err := c.send(ctx, msg)
 			So(err, ShouldNotBeNil)
-			So(err, ShouldHaveSameTypeAs, luciErrors.Transient{})
+			So(errors.IsTransient(err), ShouldBeTrue)
 
 			So(h.connections, ShouldEqual, 11)
 			So(h.errors, ShouldEqual, 11)

@@ -16,7 +16,7 @@ import (
 // the retry attempts.
 func retryCall(ctx context.Context, title string, f func() error) error {
 	log.Debugf(ctx, "Executing retriable call %s.", title)
-	err := retry.Retry(ctx, func() error {
+	err := retry.Retry(ctx, backoffPolicy(ctx), func() error {
 		return f()
 	}, func(err error, delay time.Duration) {
 		log.Fields{
@@ -31,16 +31,24 @@ func retryCall(ctx context.Context, title string, f func() error) error {
 	return nil
 }
 
+type backoffPolicyKeyType int
+
+var backoffTestMode = false
+var backoffPolicyKey backoffPolicyKeyType
+
 // exponentialBackoff is a retry.Factory which returns a retry.Iterator that
 // implements exponential backoff.
 //
 // It's used for all external service calls.
-func exponentialBackoff(context.Context) retry.Iterator {
-	return &retry.ExponentialBackoff{
-		Limited: retry.Limited{
-			Delay:   200 * time.Millisecond,
-			Retries: 5,
-		},
-		Multiplier: 3,
+func backoffPolicy(ctx context.Context) retry.Iterator {
+	if !backoffTestMode {
+		return &retry.ExponentialBackoff{
+			Limited: retry.Limited{
+				Delay:   200 * time.Millisecond,
+				Retries: 5,
+			},
+			Multiplier: 3,
+		}
 	}
+	return ctx.Value(backoffPolicyKey).(func() retry.Iterator)()
 }

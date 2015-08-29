@@ -7,7 +7,7 @@ package example
 import (
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 	"github.com/luci/gae/impl/prod"
-	rdsS "github.com/luci/gae/service/rawdatastore"
+	dstore "github.com/luci/gae/service/datastore"
 	"golang.org/x/net/context"
 )
 
@@ -23,19 +23,16 @@ type CASReq struct {
 func (Example) CAS(c context.Context, r *CASReq) (err error) {
 	success := false
 	c = prod.Use(c)
-	err = rdsS.Get(c).RunInTransaction(func(c context.Context) error {
-		rds := rdsS.Get(c)
-		key := rds.NewKey("Counter", r.Name, 0, nil)
-		ctr := &Counter{}
-		pls := rdsS.GetPLS(ctr)
-		if err := rds.Get(key, pls); err != nil {
+	err = dstore.Get(c).RunInTransaction(func(c context.Context) error {
+		ds := dstore.Get(c)
+		ctr := &Counter{Name: r.Name}
+		if err := ds.Get(ctr); err != nil {
 			return err
 		}
 		if ctr.Val == r.OldVal {
 			success = true
 			ctr.Val = r.NewVal
-			_, err := rds.Put(key, pls)
-			return err
+			return ds.Put(ctr)
 		}
 		success = false
 		return nil
