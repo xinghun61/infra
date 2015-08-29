@@ -6,33 +6,34 @@
 
 [go/new-master](http://go/new-master)
 
-1.  To set up a new master, you need three ports. File an
-    [Infra-Labs ticket](https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs,Restrict-View-Google)
-    requesting ports for a new master and ask which VLAN your master should
-    be on (and hence which `master_base_class` you should use). The port numbers
-    and `master_base_class` settings go into your `builders.pyl` config file
-    (see below).
-1.  Create a new master directory in
-    [build/masters](https://chromium.googlesource.com/chromium/tools/build/+/master/masters/) or
-    [build_internal/masters](https://chrome-internal.googlesource.com/chrome/tools/build/+/master/masters/)
-1.  Create a [builders.pyl file](builders.pyl.md) in the master directory
-    describing the builders on this master. Set the port numbers and
-    `master_base_class` to the values you got in step 1.
-1.  File an
-    [Infra-Labs ticket](https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs,Restrict-View-Google)
-    for build slaves, and specify how many of each configuration you will need.
-    After slaves are allocated, specify them in the
-    `builders.pyl` file.
-1.  Use [buildbot-tool](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/tools/buildbot-tool)
-    to generate the rest of the master configuration.
-1.  Add your new master to the long list in
-    [masters_test.py](/chromium/tools/build/+/master/tests/masters_test.py):
-    `'master.foo.bar': 'FooBar',`. You can find the class name `FooBar` in the
-    `master_site_config.py` that was generated in your master directory.
-1.  Commit what you have, then file a third, final
-    [Infra-Labs ticket](https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs)
-    asking for the appropriate URLs to be set up for your master, and a database
-    configuration.
+1. Determine the host machine for your buildbot master.
+   Refer to [go/chrome-infra-mastermap] for examples.
+   Do not put an internal master together with public ones, otherwise public
+   slaves with possibly untrusted code will have network access to your slaves.
+   Typical safe choices for new chrome infra clients: `master3` (public) or
+   `master7` (internal).
+1. Choose a master name, e.g. `master.client.x`.
+1. File a [slave-request ticket] early.
+1. Create a new master directory in
+   [build/masters](https://chromium.googlesource.com/chromium/tools/build/+/master/masters/) or
+   [build_internal/masters](https://chrome-internal.googlesource.com/chrome/tools/build/+/master/masters/).
+1. Create a [builders.pyl file](builders.pyl.md) in the master directory
+   describing the builders on this master.
+1. Run `../../build/scripts/tools/buildbot-tool gen .` in master dir
+   to regenerate master configuration. Run it whenever `builders.pyl` changes.
+1. Run `mastermap.py --find <master-class-name>` where `master-class-name` is
+   a name of the class in the generated `master_site_config.py`.
+   It will search for available master port numbers.
+   Put them to `builders.pyl` and regenerate the configuration.
+1. Add your new master to the list of masters in [masters_test.py]:
+   `'<master-name>': '<master-class-name>',`,
+   so the master is included in presubmit checks.
+1. If you were provided with slaves, update builders.pyl.
+1. Send the CL, land it.
+1. File a [master deployment ticket].
+
+Whenever you modify builders.pyl, e.g. add/remove slaves, you need to
+[restart the master].
 
 ## How to run buildbot locally for testing?
 
