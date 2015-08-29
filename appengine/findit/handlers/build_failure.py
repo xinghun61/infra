@@ -10,6 +10,7 @@ from google.appengine.api import users
 
 from base_handler import BaseHandler
 from base_handler import Permission
+from model.wf_analysis import WfAnalysis
 from model.wf_analysis_result_status import RESULT_STATUS_TO_DESCRIPTION
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
@@ -75,15 +76,20 @@ class BuildFailure(BaseHandler):
           'Url "%s" is not pointing to a build.' % url, 501)
     master_name, builder_name, build_number = build_info
 
+    analysis = None
     if not (masters.MasterIsSupported(master_name) or
             users.is_current_user_admin()):
-      return BaseHandler.CreateError(
-          'Master "%s" is not supported yet.' % master_name, 501)
+      # If the build failure was already analyzed, just show it to the user.
+      analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+      if not analysis:
+        return BaseHandler.CreateError(
+            'Master "%s" is not supported yet.' % master_name, 501)
 
-    force = self.request.get('force') == '1'
-    analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-        master_name, builder_name, build_number,
-        force=force, queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
+    if not analysis:
+      force = self.request.get('force') == '1'
+      analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
+          master_name, builder_name, build_number,
+          force=force, queue_name=BUILD_FAILURE_ANALYSIS_TASKQUEUE)
 
     data = {
         'master_name': analysis.master_name,

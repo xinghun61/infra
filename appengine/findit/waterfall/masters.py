@@ -4,7 +4,7 @@
 
 
 _SUPPORTED_MASTERS = [
-    # Masters of tree-closer waterfalls.
+    # Tree-closer.
     'chromium',
     'chromium.win',
     'chromium.mac',
@@ -12,21 +12,20 @@ _SUPPORTED_MASTERS = [
     'chromium.chromiumos',
     'chromium.chrome',
     'chromium.memory',
-    'chromium.gpu',
 
-    # Masters of non-tree-closer waterfalls.
-    'chromium.lkgr',
+    # Non-tree-closer.
 ]
 
 
 # Explicitly list unsupported masters. Additional work might be needed in order
 # to support them.
 _UNSUPPORTED_MASTERS = [
+    'chromium.lkgr',  # Disable as results are not showed on Sheriff-o-Matic.
+    'chromium.gpu',  # Disable as too many false positives.
+
     'chromium.memory.fyi',
     'chromium.gpu.fyi',
 
-    'chromiumos',
-    'client.nacl',
     'chromium.webkit',
     'chromium.perf',
 ]

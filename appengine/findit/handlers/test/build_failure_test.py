@@ -73,6 +73,26 @@ class BuildFailureTest(testing.AppengineTestCase):
                    re.MULTILINE|re.DOTALL),
         self.test_app.get, '/build-failure', params={'url': build_url})
 
+  def testNonAdminCanViewAnalysisOfFailureOnUnsupportedMaster(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    def MockMasterIsSupported(*_):
+      return False
+    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.put()
+
+    response = self.test_app.get('/build-failure',
+                                 params={'url': build_url, 'force': '1'})
+    self.assertEquals(200, response.status_int)
+    self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
+
   def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(self):
     master_name = 'm'
     builder_name = 'b 1'
