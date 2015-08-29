@@ -87,7 +87,8 @@ func TestMain(t *testing.T) {
 			So(endpointMock, mock.ShouldHaveNoErrors)
 		}()
 
-		SkipConvey(`Will consume messages from Pub/Sub.`, func() {
+		Convey(`Will consume messages from Pub/Sub.`, func() {
+			pubsubMock.ackC = make(chan []string, 1024)
 			buf := make([]byte, binary.MaxVarintLen64)
 			missing := make(map[int]bool)
 			for i := 0; i < 1024; i++ {
@@ -117,9 +118,15 @@ func TestMain(t *testing.T) {
 				missingCount--
 			}
 			So(missingCount, ShouldEqual, 0)
+
+			// We should get 1024 ACKs.
+			for i := 0; i < 1024; i++ {
+				<-pubsubMock.ackC
+			}
 		})
 
-		SkipConvey(`Will refuse to process a message that is too large, and will ACK it.`, func() {
+		Convey(`Will refuse to process a message that is too large, and will ACK it.`, func() {
+			pubsubMock.ackC = make(chan []string, 1024)
 			msgs := []*pubsub.Message{
 				{
 					ID:    "msg-big",
@@ -138,6 +145,7 @@ func TestMain(t *testing.T) {
 			endpointMock.MockCall("send", mock.Ignore, msgs[1].Data).WithResult(nil)
 
 			So(<-endpointMock.msgC, ShouldResemble, msgs[1].Data)
+			So(<-pubsubMock.ackC, ShouldResemble, []string{"ack-big", "ack-legit"})
 		})
 	})
 }

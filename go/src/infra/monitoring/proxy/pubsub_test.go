@@ -20,6 +20,7 @@ type testPubSubService struct {
 	mock.Mock
 
 	infinitePull bool
+	ackC         chan []string
 }
 
 var _ pubSubService = (*testPubSubService)(nil)
@@ -59,6 +60,9 @@ func (s *testPubSubService) Pull(sub string, count int) (msgs []*pubsub.Message,
 
 func (s *testPubSubService) Ack(sub string, ackIDs []string) (err error) {
 	s.Pop("Ack", sub, ackIDs).BindResult(&err)
+	if s.ackC != nil {
+		s.ackC <- ackIDs
+	}
 	return
 }
 

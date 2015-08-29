@@ -56,6 +56,9 @@ func (c *pubsubConfig) addFlags(fs *flag.FlagSet) {
 }
 
 // pubSubService is an interface built around the actual Cloud PubSub API.
+//
+// TODO(dnj): Replace with github.com/luci/luci-go/common/gcloud/gcps#PubSub
+// once it expresses create methods.
 type pubSubService interface {
 	SubExists(string) (bool, error)
 	CreatePullSub(sub string, topic string) error
