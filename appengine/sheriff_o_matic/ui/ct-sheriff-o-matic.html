@@ -327,13 +327,20 @@ found in the LICENSE file.
           [this.repositories.update(),
            this.failures.update(),
            this.$.trooperBanner.update()]).then(
-             this._updateCompleted.bind(this));
+             this._updateCompleted.bind(this),
+             this._updateFailed.bind(this));
       },
 
       failureGroupKeyChanged: function() {
         this.examinedFailureGroup = null;
         this._pendingFailureGroupKey = this.failureGroupKey;
         this._updateCompleted();
+      },
+
+      _updateFailed: function(reason) {
+        this._promise = null;
+        this.$.spinner.active = false;
+        window.console.log(['update failed', reason]);
       },
 
       _updateCompleted: function() {
