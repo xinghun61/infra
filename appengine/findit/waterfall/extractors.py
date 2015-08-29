@@ -15,6 +15,8 @@ class GeneralExtractor(Extractor):
 
   It extracts file name and line numbers.
   """
+  INDIRECT_LEAK_MARKER_PATTERN = re.compile(
+      r'.*Indirect leak of \d+ byte\(s\) in \d+ object\(s\) allocated from:.*')
 
   def _ExtractCppFiles(self, cpp_stacktrace_frames, signal):
     in_expected_crash = False
@@ -61,6 +63,13 @@ class GeneralExtractor(Extractor):
           else:
             break
         end = i
+
+        if (start >= 1 and
+            self.INDIRECT_LEAK_MARKER_PATTERN.match(
+                failure_log_lines[start - 1])):
+          # Ignore stack trace of an indirect leak.
+          continue
+
         cpp_stacktrace_frames = failure_log_lines[start:end]
         self._ExtractCppFiles(cpp_stacktrace_frames, signal)
       elif extractor_util.PYTHON_STACK_TRACE_START_PATTERN.search(line):

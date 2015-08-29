@@ -55,6 +55,38 @@ class ExtractorsTest(testing.AppengineTestCase):
     self._RunTest(
         failure_log, extractors.GeneralExtractor, expected_signal_json)
 
+  def testIndirectLeakCrashIsIgnored(self):
+    failure_log = textwrap.dedent("""
+        ==14537==ERROR: LeakSanitizer: detected memory leaks
+
+        Direct leak of 104 byte(s) in 1 object(s) allocated from:
+          #0 0x67ed4b in operator new(unsigned long) (browser_tests+0x67ed4b)
+          #1 0xe560961 in method1 path/to/a.cc:1
+          #2 0xe5600ef in method2 path/to/b.cc:2
+          ...
+
+        Indirect leak of 4080 byte(s) in 1 object(s) allocated from:
+          #0 0x67ed4b in operator new(unsigned long) (browser_tests+0x67ed4b)
+          #1 0x2f91118 in method3 path/to/c.cc:3
+          #2 0x2f91218 in method3 path/to/d.cc:4
+          #3 0x2f91518 in method3 path/to/e.cc:5
+          ...
+
+        ...
+        This file should be extracted: path/to/f.cc:90""")
+    expected_signal_json = {
+        'files': {
+            'path/to/a.cc': [1],
+            'path/to/b.cc': [2],
+            'path/to/f.cc': [90],
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.GeneralExtractor, expected_signal_json)
+
   def testNontopFramesInCrashAreIgnored(self):
     failure_log = textwrap.dedent("""
           #0 0x113bb76d0 in function0 a.cc:1
