@@ -1,0 +1,13 @@
+application: helloworld
+version: 1
+module: default
+runtime: go
+api_version: go1
+
+handlers:
+- url: /.*
+  script: _go_app
+
+# Magic sauce to enable Cloud Endpoints routing.
+- url: /_ah/spi/.*
+  script: _go_app
