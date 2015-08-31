@@ -7,5 +7,8 @@
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
   "Master Name               Builder Name                                            Builds     Flakes     Flakiness  Infra (%)  Compile (%) Test (%)   Other (%) ",
-  "tryserver.chromium.linux  chromium_presubmit                                          1          0        0.00%      0.00%      0.00%      0.00%      0.00%   "
+  "tryserver.chromium.linux  linux_chromium_rel_ng                                       1          0        0.00%      0.00%      0.00%      0.00%      0.00%   ",
+  "tryserver.chromium.linux  chromium_presubmit                                          1          0        0.00%      0.00%      0.00%      0.00%      0.00%   ",
+  "  Uncategorized flakes:",
+  "    https://build.chromium.org/70"
 ]

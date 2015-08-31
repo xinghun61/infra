@@ -26,6 +26,7 @@ class Args(object):
     self.project = 'test_project'
     self.list_rejections = False
     self.list_false_rejections = False
+    self.list_uncategorized_flakes = False
     self.use_logs = False
     self.date = datetime.datetime(2014, 1, 1)
     self.range = 'week'
@@ -657,37 +658,51 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 0,
+      'url': 'https://build.chromium.org/10',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': -1,
+      'url': 'https://build.chromium.org/20',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 2,
+      'url': 'https://build.chromium.org/30',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'linux_chromium_rel_ng',
       'result': 2,
       'build_properties': '{"failure_type": "COMPILE_FAILURE"}',
+      'url': 'https://build.chromium.org/40',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'linux_chromium_rel_ng',
       'result': 2,
       'build_properties': '{"failure_type": "TEST_FAILURE"}',
+      'url': 'https://build.chromium.org/50',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 4,
+      'url': 'https://build.chromium.org/60',
     }])
 
     cq_stats.print_flakiness_stats(args, stats_set)
 
     args.seq = False
+    args.list_uncategorized_flakes = True
     self.mock(cq_stats, 'fetch_json', lambda _: [{
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 2,
+      'url': 'https://build.chromium.org/70',
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'linux_chromium_rel_ng',
+      'result': 2,
+      'build_properties': '{"failure_type": "COMPILE_FAILURE"}',
+      'url': 'https://build.chromium.org/80',
     }])
     cq_stats.print_flakiness_stats(args, stats_set)
 

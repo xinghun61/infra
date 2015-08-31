@@ -154,6 +154,10 @@ def parse_args():
       '--list-false-rejections', action='store_true',
       help='List CLs that were committed in more than one attempt.')
   parser.add_argument(
+      '--list-uncategorized-flakes', action='store_true',
+      help='List CLs which have not been assigned to existing flake '
+           'categories.')
+  parser.add_argument(
       '--use-logs', action='store_true',
       default=True,
       help=('On by default. '
@@ -1056,6 +1060,7 @@ def print_flakiness_stats(args, stats):
       return {}
 
     result_counts = {}
+    uncategorized_flakes = collections.defaultdict(list)
     for result in try_job_results:
       master, builder = result['master'], result['builder']
       build_properties = json.loads(result.get('build_properties', '{}'))
@@ -1079,6 +1084,7 @@ def print_flakiness_stats(args, stats):
           result_counts[(master, builder)]['test_failures'] += 1
         else:
           result_counts[(master, builder)]['other_failures'] += 1
+          uncategorized_flakes[(master, builder)].append(result)
 
     try_job_stats = {}
     for master, builder in result_counts.iterkeys():
@@ -1100,6 +1106,7 @@ def print_flakiness_stats(args, stats):
             'test_failures'] if flakes else 0,
         'other_failures': result_counts[(master, builder)][
             'other_failures'] if flakes else 0,
+        'uncategorized_flakes': uncategorized_flakes.get((master, builder), []),
       }
 
     return try_job_stats
@@ -1122,9 +1129,14 @@ def print_flakiness_stats(args, stats):
         'test_failures',
         'other_failures'
       )
-      try_job_stats.setdefault((master, builder), {key: 0 for key in keys})
+      init_dict = {key: 0 for key in keys}
+      init_dict['uncategorized_flakes'] = []
+      try_job_stats.setdefault((master, builder), init_dict)
       for key in keys:
         try_job_stats[(master, builder)][key] += result[(master, builder)][key]
+
+      try_job_stats[(master, builder)]['uncategorized_flakes'].extend(
+          result[(master, builder)]['uncategorized_flakes'])
 
   output()
   output('Top flaky builders (which fail and succeed in the same patch):')
@@ -1156,6 +1168,13 @@ def print_flakiness_stats(args, stats):
            '%6.2f%%' % percentage(
                try_job_stats[master_builder]['other_failures'],
                try_job_stats[master_builder]['flakes']))
+    if args.list_uncategorized_flakes:
+      uncategorized_flakes = try_job_stats[
+          master_builder]['uncategorized_flakes']
+      if uncategorized_flakes:
+        output('  Uncategorized flakes:')
+        for result in uncategorized_flakes:
+          output('    %s' % result['url'])
 
 
 def print_stats(args, stats):
