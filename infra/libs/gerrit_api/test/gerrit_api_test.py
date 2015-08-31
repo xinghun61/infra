@@ -350,3 +350,30 @@ class GerritAgentTestCase(unittest.TestCase):
     mock_method.return_value = _create_mock_return(None, 500)
     self.assertRaises(gerrit_api.UnexpectedResponseException,
                       self.gerrit.set_review, 'change_id', 'revision_id')
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_submit_revision(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER,
+                  json.dumps({'status': 'MERGE'})), 200)
+    self.gerrit.submit_revision('change_id', 'current_revision_id')
+    mock_method.assert_called_once_with(
+        data=json.dumps({'wait_for_merge': True}),
+        method='POST',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'change_id/revisions/current_revision_id/submit'),
+        headers=HEADERS_WITH_CONTENT_TYPE)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_submit_revision_revision_conflict(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        'revision revision_id is not current revision', 409)
+    self.assertRaises(gerrit_api.RevisionConflictException,
+                      self.gerrit.submit_revision, 'change_id', 'revision_id')
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_submit_revision_unexpected_response(self, mock_method):
+    mock_method.return_value = _create_mock_return(None, 500)
+    self.assertRaises(gerrit_api.UnexpectedResponseException,
+                      self.gerrit.submit_revision, 'change_id', 'revision_id')

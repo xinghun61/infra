@@ -36,6 +36,9 @@ def _not_read_only(f):
 class AccessViolationException(Exception):
   """A method was called which would require write access to Gerrit."""
 
+class RevisionConflictException(Exception):
+  """Committing failed because of a revision conflict."""
+
 class UnexpectedResponseException(Exception):
   """Gerrit returned something unexpected."""
 
@@ -368,11 +371,35 @@ class Gerrit(object):
                       (labels, 'labels')]:
       if var is not None:
         payload[attr] = var
-    code, body = self._request(method='POST',
-                  request_path='/changes/%s/revisions/%s/review' % (
-                      urllib.quote(change_id, safe='~'),
-                      urllib.quote(revision_id, safe='')),
-                  body=payload)
+    code, body = self._request(
+        method='POST',
+        request_path='/changes/%s/revisions/%s/review' % (
+            urllib.quote(change_id, safe='~'),
+            urllib.quote(revision_id, safe='')),
+        body=payload)
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
+  @_not_read_only
+  def submit_revision(self, change_id, current_revision_id):
+    """Uses the Submit Revision endpoint of the Gerrit API to submit a change
+    list. Returns a SubmitInfo object corresponding to the status of the submit.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#submit-revision
+
+    Args:
+      change_id: (str) The id of the change list.
+      current_revision_id: (str) The id of the current revision.
+    """
+    code, body = self._request(
+        method='POST',
+        request_path='/changes/%s/revisions/%s/submit' % (
+            urllib.quote(change_id, safe='~'),
+            urllib.quote(current_revision_id, safe='')),
+        body={'wait_for_merge': True})
+    if code == 409:
+      raise RevisionConflictException(body)
     if code != 200:
       raise UnexpectedResponseException(code, body)
     return body

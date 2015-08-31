@@ -3,7 +3,8 @@
 # found in the LICENSE file.
 
 from infra.libs.gerrit_api.gerrit_api import (
-    AccessViolationException, Gerrit, UnexpectedResponseException)
+    AccessViolationException, Gerrit, RevisionConflictException,
+    UnexpectedResponseException)
 
 from infra.libs.gerrit_api.credentials import (
     Credentials, CredentialsException, GitcookiesException, NetrcException,
