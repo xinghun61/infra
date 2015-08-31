@@ -78,3 +78,9 @@ class CredentialsTestCase(unittest.TestCase):
         netrc_path=self.netrc_file.name,
         gitcookies_path=self.gitcookie_file.name)
     self.assertRaises(KeyError, creds.__getitem__, 'some.other.host.com')
+
+  def test_mock_credentials(self):
+    creds = gerrit_api.Credentials(
+        auth=('git-commit-bot@chromium.org', 'secret'))
+    self.assertEqual(creds['whatever.com'],
+                     ('git-commit-bot@chromium.org', 'secret'))

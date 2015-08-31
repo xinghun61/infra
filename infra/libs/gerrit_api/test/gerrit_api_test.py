@@ -87,6 +87,8 @@ TEST_CHANGE_INFO = {
     ],
 }
 
+MOCK_AUTH=('git-commit-bot@chromium.org', 'secret')
+
 def _create_mock_return(content, code):
   r = requests.Response()
   r._content = content
@@ -94,24 +96,16 @@ def _create_mock_return(content, code):
   return r
 
 
-class MockCredentials(object):
-  def __init__(self, login='git-commit-bot@chromium.org',
-               secret_token='secret'):
-    self.login = login
-    self.secret_token = secret_token
-
-  def __getitem__(self, host):
-    return (self.login, self.secret_token)
-
-
 # TODO(akuegel): Add more test cases and remove the pragma no covers.
 class GerritAgentTestCase(unittest.TestCase):
 
   def setUp(self):
     self.gerrit = gerrit_api.Gerrit('chromium-review.googlesource.com',
-                                    MockCredentials())
+                                    gerrit_api.Credentials(auth=MOCK_AUTH))
     self.gerrit_read_only = gerrit_api.Gerrit(
-        'chromium-review.googlesource.com', MockCredentials(), read_only=True)
+        'chromium-review.googlesource.com',
+        gerrit_api.Credentials(auth=MOCK_AUTH),
+        read_only=True)
 
   @mock.patch.object(requests.Session, 'request')
   def test_request_no_leading_slash(self, mock_method):
@@ -133,7 +127,8 @@ class GerritAgentTestCase(unittest.TestCase):
   @mock.patch.object(requests.Session, 'request')
   def test_request_throttled(self, mock_method, time_mock_method, sleep_mock):
     gerrit_throttled = gerrit_api.Gerrit('chromium-review.googlesource.com',
-                                         MockCredentials(), 0.1)
+                                         gerrit_api.Credentials(auth=MOCK_AUTH),
+                                         0.1)
     mock_method.return_value = _create_mock_return(None, 404)
     time_mock_method.return_value = 100
     gerrit_throttled._request(method='GET', request_path='/accounts/self')

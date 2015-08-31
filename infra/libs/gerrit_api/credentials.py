@@ -61,8 +61,16 @@ def get_default_credentials(): # pragma: no cover
 
 class Credentials(object):
   """Handles extracting credentials for Gerrit from netrc or gitcookies.
+
+  Args:
+    netrc_path: Path to .netrc file
+    gitcookies_path: Path to .gitcookies file
+    auth: (login, token) tuple. Takes precedence for authentication.
   """
-  def __init__(self, netrc_path=None, gitcookies_path=None):
+  def __init__(self, netrc_path=None, gitcookies_path=None, auth=None):
+    if auth is not None:
+      assert netrc_path is None and gitcookies_path is None
+    self.auth = auth
     self.gitcookies = load_gitcookie_file(gitcookies_path)
     self.netrc = load_netrc_file(netrc_path) if netrc_path else None
 
@@ -78,6 +86,8 @@ class Credentials(object):
     Raises:
       KeyError: if no matching credentials were found.
     """
+    if self.auth:
+      return self.auth
     if self.netrc:
       auth = self.netrc.authenticators(host)
       # Get rid of the account in the tuple, it is always None, anyway.
