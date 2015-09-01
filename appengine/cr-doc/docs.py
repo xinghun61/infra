@@ -88,9 +88,9 @@ def find(query_string, include_internal=False):
           ],
       ),
   )
-  return_facets = []
-  if not include_internal:
-    return_facets=[search.FacetRequest(FACET_HOSTNAME, values=PUBLIC_HOSTNAMES)]
+  return_facets=[search.FacetRequest(FACET_HOSTNAME, values=PUBLIC_HOSTNAMES)]
+  if include_internal:
+    return_facets = []
   query = search.Query(
       query_string=query_string,
       options=options,
