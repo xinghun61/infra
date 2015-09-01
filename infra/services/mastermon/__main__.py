@@ -35,7 +35,7 @@ def parse_args(argv):
       'monitor')
   p.add_argument(
       '--interval',
-      default=300, type=int,
+      default=60, type=int,
       help='time (in seconds) between sampling the buildbot master')
 
   logs.add_argparse_options(p)
