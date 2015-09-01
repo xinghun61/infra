@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import unittest
 
 import mock
 
+from infra_libs import temporary_directory
 from infra.services.mastermon import monitor
 
 
@@ -34,7 +36,7 @@ class MasterMonitorTest(unittest.TestCase):
     class MasterMonitor(monitor.MasterMonitor):
       POLLER_CLASSES = [mock_poller_class]
 
-    m = MasterMonitor('http://example.com', 'foobar')
+    m = MasterMonitor('http://example.com', name='foobar')
 
     mock_poller.poll.return_value = True
     m.poll()
@@ -43,6 +45,34 @@ class MasterMonitorTest(unittest.TestCase):
     mock_poller.poll.return_value = False
     m.poll()
     self.assertFalse(m.up.get({'master': 'foobar'}))
+
+  def test_ts_mon_file_deletion(self):
+    class MasterMonitor(monitor.MasterMonitor):
+      POLLER_CLASSES = []
+
+    with temporary_directory(prefix='monitor-test-') as tempdir:
+      ts_mon_filename = os.path.join(tempdir, 'ts_mon.json')
+      with open(ts_mon_filename, 'w') as f:
+        f.write(' ')
+      self.assertTrue(os.path.isfile(ts_mon_filename))
+      MasterMonitor('http://example.com',
+                    name='foobar',
+                    results_file=ts_mon_filename)
+      self.assertFalse(os.path.isfile(ts_mon_filename))
+
+  def test_ts_mon_file_polling_file_missing(self):
+    # Test that asking to poll a missing file works.
+    # Mostly a smoke test.
+    class MasterMonitor(monitor.MasterMonitor):
+      POLLER_CLASSES = []
+
+    with temporary_directory(prefix='monitor-test-') as tempdir:
+      ts_mon_filename = os.path.join(tempdir, 'ts_mon.json')
+      self.assertFalse(os.path.isfile(ts_mon_filename))
+      MasterMonitor('http://example.com',
+                    name='foobar',
+                    results_file=ts_mon_filename)
+      self.assertFalse(os.path.isfile(ts_mon_filename))
 
 
 class MastermapTest(unittest.TestCase):

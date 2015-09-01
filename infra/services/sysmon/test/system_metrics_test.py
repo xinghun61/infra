@@ -81,7 +81,7 @@ class SystemMetricsTest(unittest.TestCase):
     elif sys.platform == 'darwin':  # pragma: no cover
       interface = 'en0'
     else:  # pragma: no cover
-      interface = 'eth0'
+      interface = 'lo'
 
     up = system_metrics.net_up.get({'interface': interface})
     down = system_metrics.net_down.get({'interface': interface})

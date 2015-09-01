@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import logging
 
 from infra.libs.buildbot import master
@@ -33,8 +34,12 @@ class MasterMonitor(object):
         cls(url, self._metric_fields) for cls in self.POLLER_CLASSES]
 
     if results_file:
+      # Ignore events that were posted while we weren't listening.
+      # That will avoid posting a lot of build events at the wrong time.
+      if os.path.isfile(results_file):
+        pollers.safe_remove(results_file)
       self._pollers.append(pollers.FilePoller(
-          results_file, self._metric_fields))
+        results_file, self._metric_fields))
 
   def poll(self):
     logging.info('Polling %s', self._name)
@@ -55,7 +60,8 @@ def create_from_mastermap(build_dir, hostname):  # pragma: no cover
 
 def _create_from_mastermap(mastermap):
   return [
-      MasterMonitor('http://localhost:%d' % entry['port'], entry['dirname'],
-                    RESULTS_FILE % entry['dirname'])
+      MasterMonitor('http://localhost:%d' % entry['port'],
+                    name=entry['dirname'],
+                    results_file=RESULTS_FILE % entry['dirname'])
       for entry
       in mastermap]

@@ -184,6 +184,9 @@ class FilePollerTest(unittest.TestCase):
       for data in data_list:
         f.write('%s\n' % json.dumps(data))
       return f.name
+    # FIXME(pgervais): We have to close the file on windows to be able
+    # to open it a second time.
+    # https://docs.python.org/2/library/tempfile.html#tempfile.NamedTemporaryFile
 
   def test_no_file(self):
     p = pollers.FilePoller('no-such-file', {})
