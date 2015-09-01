@@ -46,6 +46,9 @@ class MetricTestBase(unittest.TestCase):
 
 
 class MetricTest(MetricTestBase):
+  def test_name_property(self):
+    m1 = metrics.Metric('/foo', fields={'asdf': 1})
+    self.assertEquals(m1.name, 'foo')
 
   def test_init_too_may_fields(self):
     fields = {str(i): str(i) for i in xrange(8)}
@@ -162,7 +165,7 @@ class MetricTest(MetricTestBase):
       p = metrics_pb2.MetricsCollection()
       m.serialize_to(p)
 
-  def test_serialze_too_many_fields(self):
+  def test_serialize_too_many_fields(self):
     t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.StringMetric('test', target=t,
                             fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})

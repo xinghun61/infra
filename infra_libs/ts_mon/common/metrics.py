@@ -74,6 +74,9 @@ class Metric(object):
 
     interface.register(self)
 
+  @property
+  def name(self):
+    return self._name
 
   def __eq__(self, other):
     name = self._name == other._name
