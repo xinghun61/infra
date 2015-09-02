@@ -39,7 +39,7 @@
   "http://chromium-cq-status.appspot.com/patch-status/123/1 (1.0 hrs)",
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Master Name               Builder Name                                            Builds     Flakes     Flakiness  Infra (%)  Compile (%) Test (%)   Other (%) ",
+  "Master          Builder                                                 Flakes          |Infra  |Compile|Test   |Invalid|Other  ",
   "Statistics for project test_project",
   "  No stats since 2014-01-01 00:00:00"
 ]

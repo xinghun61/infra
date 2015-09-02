@@ -1070,6 +1070,7 @@ def print_flakiness_stats(args, stats):
         'infra_failures': 0,
         'compile_failures': 0,
         'test_failures': 0,
+        'invalid_results_failures': 0,
         'other_failures': 0,
       })
       if result['result'] in (SUCCESS, WARNINGS):
@@ -1082,6 +1083,8 @@ def print_flakiness_stats(args, stats):
           result_counts[(master, builder)]['compile_failures'] += 1
         elif build_properties.get('failure_type') == 'TEST_FAILURE':
           result_counts[(master, builder)]['test_failures'] += 1
+        elif build_properties.get('failure_type') == 'INVALID_TEST_RESULTS':
+          result_counts[(master, builder)]['invalid_results_failures'] += 1
         else:
           result_counts[(master, builder)]['other_failures'] += 1
           uncategorized_flakes[(master, builder)].append(result)
@@ -1104,6 +1107,8 @@ def print_flakiness_stats(args, stats):
             'compile_failures'] if flakes else 0,
         'test_failures': result_counts[(master, builder)][
             'test_failures'] if flakes else 0,
+        'invalid_results_failures': result_counts[(master, builder)][
+            'invalid_results_failures'] if flakes else 0,
         'other_failures': result_counts[(master, builder)][
             'other_failures'] if flakes else 0,
         'uncategorized_flakes': uncategorized_flakes.get((master, builder), []),
@@ -1127,6 +1132,7 @@ def print_flakiness_stats(args, stats):
         'infra_failures',
         'compile_failures',
         'test_failures',
+        'invalid_results_failures',
         'other_failures'
       )
       init_dict = {key: 0 for key in keys}
@@ -1146,26 +1152,30 @@ def print_flakiness_stats(args, stats):
                       try_job_stats[master_builder]['total'])
 
   builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
-  output('%-25s %-55s %-10s %-10s %-10s %-10s %-10s %-10s %-10s',
-         'Master Name', 'Builder Name', 'Builds', 'Flakes',
-         'Flakiness', 'Infra (%)', 'Compile (%)', 'Test (%)', 'Other (%)')
+  format_string = '%-15s %-55s %-16s|%-7s|%-7s|%-7s|%-7s|%-7s'
+  output(format_string,
+         'Master', 'Builder', 'Flakes',
+         'Infra', 'Compile', 'Test', 'Invalid', 'Other')
   for master_builder in builders:
     master, builder = master_builder
-    output('%-25s %-55s %-10s %-10s %-10s %-10s %-10s %-10s %-10s',
-           master, builder,
-           '%5d' % try_job_stats[master_builder]['total'],
-           '%5d' % try_job_stats[master_builder]['flakes'],
-           '%6.2f%%' % flakiness(master_builder),
-           '%6.2f%%' % percentage(
+    output(format_string,
+           master.replace('tryserver.', ''), builder,
+           '%4d/%4d (%3.0f%%)' % (try_job_stats[master_builder]['flakes'],
+                                  try_job_stats[master_builder]['total'],
+                                  flakiness(master_builder)),
+           '%6.0f%%' % percentage(
                try_job_stats[master_builder]['infra_failures'],
                try_job_stats[master_builder]['flakes']),
-           '%6.2f%%' % percentage(
+           '%6.0f%%' % percentage(
                try_job_stats[master_builder]['compile_failures'],
                try_job_stats[master_builder]['flakes']),
-           '%6.2f%%' % percentage(
+           '%6.0f%%' % percentage(
                try_job_stats[master_builder]['test_failures'],
                try_job_stats[master_builder]['flakes']),
-           '%6.2f%%' % percentage(
+           '%6.0f%%' % percentage(
+               try_job_stats[master_builder]['invalid_results_failures'],
+               try_job_stats[master_builder]['flakes']),
+           '%6.0f%%' % percentage(
                try_job_stats[master_builder]['other_failures'],
                try_job_stats[master_builder]['flakes']))
     if args.list_uncategorized_flakes:

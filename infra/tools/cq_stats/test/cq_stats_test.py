@@ -683,6 +683,12 @@ Review URL: https://codereview.chromium.org/697833002</msg>
       'url': 'https://build.chromium.org/50',
     }, {
       'master': 'tryserver.chromium.linux',
+      'builder': 'linux_chromium_rel_ng',
+      'result': 2,
+      'build_properties': '{"failure_type": "INVALID_TEST_RESULTS"}',
+      'url': 'https://build.chromium.org/50',
+    }, {
+      'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
       'result': 4,
       'url': 'https://build.chromium.org/60',
