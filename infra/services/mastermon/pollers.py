@@ -137,6 +137,10 @@ def safe_remove(filename):
     LOGGER.error('Could not remove rotated file %s: %s', filename, e)
 
 
+def rotated_filename(filename):
+  return '%s.1' % filename
+
+
 class FilePoller(Poller):
   """Poll a file instead of an endpoint.
 
@@ -149,6 +153,8 @@ class FilePoller(Poller):
   """
   endpoint = 'FILE'
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
+  cycle_times = ts_mon.CumulativeDistributionMetric(
+      'buildbot/master/builders/builds/durations')
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
@@ -158,21 +164,24 @@ class FilePoller(Poller):
       return True
 
     try:
-      rotated_name = '%s.1' % self._url
+      rotated_name = rotated_filename(self._url)
+      # Remove the previous rotated file. We keep it on disk after
+      # processing for debugging.
+      safe_remove(rotated_name)
       os.rename(self._url, rotated_name)
       with open(rotated_name, 'r') as f:
         for line in f:  # pragma: no branch
           self.handle_response(json.loads(line))
-      safe_remove(rotated_name)
     except (ValueError, OSError, IOError) as e:
       LOGGER.error('Could not collect or send results from %s: %s',
                    self._url, e)
-      safe_remove(rotated_name)
 
     # Never return False - we don't know if master is down.
     return True
 
   def handle_response(self, data):
-    keys = ('builder', 'slave', 'result')
-    self.result_count.increment(
-        self.fields({k: data[k] for k in keys if k in data}))
+    field_keys = ('builder', 'slave', 'result')
+    fields = self.fields({k: data[k] for k in field_keys if k in data})
+    self.result_count.increment(fields)
+    if 'duration_s' in data:
+      self.cycle_times.add(data['duration_s'], fields)

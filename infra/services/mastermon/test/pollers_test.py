@@ -10,6 +10,7 @@ import unittest
 import mock
 import requests
 
+from infra_libs import temporary_directory
 from infra.services.mastermon import pollers
 
 
@@ -179,41 +180,50 @@ class VarzPollerTest(unittest.TestCase):
 
 class FilePollerTest(unittest.TestCase):
   @staticmethod
-  def create_data_file(data_list):
-    with tempfile.NamedTemporaryFile(delete=False) as f:
+  def create_data_file(dirname, data_list):
+    with open(os.path.join(dirname, 'ts_mon.log'), 'w') as f:
       for data in data_list:
         f.write('%s\n' % json.dumps(data))
       return f.name
-    # FIXME(pgervais): We have to close the file on windows to be able
-    # to open it a second time.
-    # https://docs.python.org/2/library/tempfile.html#tempfile.NamedTemporaryFile
 
   def test_no_file(self):
-    p = pollers.FilePoller('no-such-file', {})
-    self.assertTrue(p.poll())
+    with temporary_directory(prefix='poller-test-') as tempdir:
+      filename = os.path.join(tempdir, 'no-such-file')
+      p = pollers.FilePoller(filename, {})
+      self.assertTrue(p.poll())
+      self.assertFalse(os.path.isfile(pollers.rotated_filename(filename)))
 
   @mock.patch('infra_libs.ts_mon.CounterMetric.increment')
-  def test_file_has_data(self, fake_increment):
+  @mock.patch('infra_libs.ts_mon.CumulativeDistributionMetric.add')
+  def test_file_has_data(self, fake_add, fake_increment):
     result1 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
     result2 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
     data1 = result1.copy()
+    data2 = result1.copy()
     data1['random'] = 'value'
-    filename = self.create_data_file([data1, result2])
-    p = pollers.FilePoller(filename, {})
-    self.assertTrue(p.poll())
-    fake_increment.assert_any_call(result1)
-    fake_increment.assert_any_call(result2)
-    with self.assertRaises(OSError):
-      os.remove(filename)
+    data2['duration_s'] = 5
+    with temporary_directory(prefix='poller-test-') as tempdir:
+      filename = self.create_data_file(tempdir, [data1, data2])
+      p = pollers.FilePoller(filename, {})
+      self.assertTrue(p.poll())
+      fake_increment.assert_any_call(result1)
+      fake_increment.assert_any_call(result2)
+      fake_add.assert_any_call(data2['duration_s'], result2)
+      self.assertFalse(os.path.isfile(filename))
+      # Make sure the rotated file is still there - for debugging.
+      self.assertTrue(os.path.isfile(pollers.rotated_filename(filename)))
 
   def test_file_has_bad_data(self):
-    filename = self.create_data_file([])
-    with open(filename, 'a') as f:
-      f.write('}')
-    p = pollers.FilePoller(filename, {})
-    self.assertTrue(p.poll())
-    with self.assertRaises(OSError):
-      os.remove(filename)
+    """Mostly a smoke test: don't crash on bad data."""
+    with temporary_directory(prefix='poller-test-') as tempdir:
+      filename = self.create_data_file(tempdir, [])
+      with open(filename, 'a') as f:
+        f.write('}')
+      p = pollers.FilePoller(filename, {})
+      self.assertTrue(p.poll())
+      self.assertFalse(os.path.isfile(filename))
+      # Make sure the rotated file is still there - for debugging.
+      self.assertTrue(os.path.isfile(pollers.rotated_filename(filename)))
 
   def test_safe_remove_error(self):
     """Smoke test: the function should not raise an exception."""
