@@ -7,8 +7,8 @@
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
   "Master          Builder                                                 Flakes          |Infra  |Compile|Test   |Invalid|Other  ",
-  "chromium.linux  linux_chromium_rel_ng                                      0/   1 (  0%)|     0%|     0%|     0%|     0%|     0%",
-  "chromium.linux  chromium_presubmit                                         0/   1 (  0%)|     0%|     0%|     0%|     0%|     0%",
+  "chromium.linux  chromium_presubmit                                         1/   2 ( 50%)|     0%|     0%|     0%|     0%|   100%",
   "  Uncategorized flakes:",
-  "    https://build.chromium.org/70"
+  "    https://build.chromium.org/75",
+  "chromium.linux  linux_chromium_rel_ng                                      0/   1 (  0%)|     0%|     0%|     0%|     0%|     0%"
 ]

@@ -701,8 +701,13 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.mock(cq_stats, 'fetch_json', lambda _: [{
       'master': 'tryserver.chromium.linux',
       'builder': 'chromium_presubmit',
-      'result': 2,
+      'result': 0,
       'url': 'https://build.chromium.org/70',
+    }, {
+      'master': 'tryserver.chromium.linux',
+      'builder': 'chromium_presubmit',
+      'result': 2,
+      'url': 'https://build.chromium.org/75',
     }, {
       'master': 'tryserver.chromium.linux',
       'builder': 'linux_chromium_rel_ng',

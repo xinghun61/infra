@@ -1111,7 +1111,8 @@ def print_flakiness_stats(args, stats):
             'invalid_results_failures'] if flakes else 0,
         'other_failures': result_counts[(master, builder)][
             'other_failures'] if flakes else 0,
-        'uncategorized_flakes': uncategorized_flakes.get((master, builder), []),
+        'uncategorized_flakes': uncategorized_flakes.get(
+            (master, builder), []) if flakes else [],
       }
 
     return try_job_stats
