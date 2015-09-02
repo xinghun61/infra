@@ -5,9 +5,9 @@
 import itertools
 
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
-from tests.stats_test import StatsTest, hours
 from stats.analysis import PatchsetReference
 from stats.patchset_stats import IssueReference
+from stats.test.stats_test import StatsTest, hours
 
 class PatchsetStatsTest(StatsTest):
   attempt_records = (
@@ -41,7 +41,7 @@ class PatchsetStatsTest(StatsTest):
         unit='seconds',
         points=(
           (hours(2), PatchsetReference(1, 1)),
-          (hours(10), PatchsetReference(1, 1)),
+          (hours(11), PatchsetReference(1, 1)),
           (hours(12), PatchsetReference(2, 1)),
         ),
       ), self.get_stats('attempt-durations'))

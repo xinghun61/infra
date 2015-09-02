@@ -88,9 +88,9 @@ def attempts_for_interval(begin, end): # pragma: no cover
     interval_attempts = []
     attempt = None
     for record in interval_query:
-      if TAG_START in record.tags:
+      if attempt is None and TAG_START in record.tags:
         attempt = []
-      if attempt != None:
+      if attempt is not None:
         attempt.append(record)
         if TAG_STOP in record.tags:
           if record.timestamp >= begin:

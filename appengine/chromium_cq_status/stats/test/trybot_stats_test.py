@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
-from tests.stats_test import StatsTest
 from stats.analysis import PatchsetReference
 from stats.trybot_stats import TrybotReference
+from stats.test.stats_test import StatsTest
 
 passed = 'JOB_SUCCEEDED'
 failed = 'JOB_FAILED'

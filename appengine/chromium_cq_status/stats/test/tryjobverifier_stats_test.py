@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 # StatsTest must be imported first in order to get proper ndb monkeypatching.
-from tests.stats_test import StatsTest, hours
 from stats.analysis import PatchsetReference
+from stats.test.stats_test import StatsTest, hours
 
 
 class TryjobverifierStatsTest(StatsTest):

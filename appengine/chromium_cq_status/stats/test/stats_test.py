@@ -10,20 +10,21 @@ import main
 from model.record import Record
 from model.cq_stats import CountStats, CQStats, ListStats
 from shared.config import STATS_START_TIMESTAMP
+from shared.config import TRYJOBVERIFIER
 from shared.utils import minutes_per_day
 from handlers import update_stats
 
 stats_start = datetime.utcfromtimestamp(STATS_START_TIMESTAMP)
 test_analysis_end = stats_start + timedelta(days=1)
 
-class StatsTest(testing.AppengineTestCase): # pragma: no cover
+class StatsTest(testing.AppengineTestCase):  # pragma: no cover
   '''Utility class for stats tests that want to load/clear test Record data.'''
   app_module = main.app
 
   def add_record(self, hours_from_start, tagged_fields):
     tagged_fields.setdefault('project', 'test')
     if tagged_fields.get('action', '').startswith('verifier_'):
-      tagged_fields.setdefault('verifier', 'try job')
+      tagged_fields.setdefault('verifier', TRYJOBVERIFIER)
     self.mock_now(datetime.utcfromtimestamp(STATS_START_TIMESTAMP) +
         timedelta(hours=hours_from_start))
     Record(

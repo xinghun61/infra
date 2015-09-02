@@ -40,13 +40,13 @@ class PatchsetAnalyzer(AnalyzerGroup):
     )
 
 
-class AttemptCount(CountAnalyzer):  # pragma: no cover
+class AttemptCount(CountAnalyzer):
   description = 'Number of CQ attempts made.'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     self.tally[reference] += len(interval_attempts)
 
 
-class AttemptDurations(ListAnalyzer):  # pragma: no cover
+class AttemptDurations(ListAnalyzer):
   description = 'Total time spent per CQ attempt.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -55,7 +55,7 @@ class AttemptDurations(ListAnalyzer):  # pragma: no cover
       self.points.append((delta.total_seconds(), reference))
 
 
-class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
+class AttemptFalseRejectCount(CountAnalyzer):
   description = ('Number of failed attempts on a committed patch that passed '
                  'presubmit, had all LGTMs and were not manually cancelled.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -66,7 +66,7 @@ class AttemptFalseRejectCount(CountAnalyzer):  # pragma: no cover
           if is_flaky_failure_record(record))
 
 
-class AttemptFalseRejectCommitCount(CountAnalyzer):  # pragma: no cover
+class AttemptFalseRejectCommitCount(CountAnalyzer):
   description = ('Number of failed commit attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(all_attempts, ('patch_committed',)):
@@ -76,7 +76,7 @@ class AttemptFalseRejectCommitCount(CountAnalyzer):  # pragma: no cover
           if is_failure_record('failed_commit', record))
 
 
-class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):  # pragma: no cover
+class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):
   description = ('Number of failed CQ presubmit checks on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(all_attempts, ('patch_committed',)):
@@ -86,7 +86,7 @@ class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):  # pragma: no cover
           if is_failure_record('failed_presubmit_check', record))
 
 
-class AttemptFalseRejectTriggerCount(CountAnalyzer):  # pragma: no cover
+class AttemptFalseRejectTriggerCount(CountAnalyzer):
   description = ('Number of failed job trigger attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(all_attempts, ('patch_committed',)):
@@ -96,7 +96,7 @@ class AttemptFalseRejectTriggerCount(CountAnalyzer):  # pragma: no cover
           if is_failure_record('failed_to_trigger_jobs', record))
 
 
-class AttemptFalseRejectTryjobCount(CountAnalyzer):  # pragma: no cover
+class AttemptFalseRejectTryjobCount(CountAnalyzer):
   description = ('Number of failed job attempts on a committed patch.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(all_attempts, ('patch_committed',)):
@@ -106,7 +106,7 @@ class AttemptFalseRejectTryjobCount(CountAnalyzer):  # pragma: no cover
           if is_failure_record('failed_jobs', record))
 
 
-class BlockedOnClosedTreeDurations(ListAnalyzer):  # pragma: no cover
+class BlockedOnClosedTreeDurations(ListAnalyzer):
   description = 'Time spent per committed patchset blocked on a closed tree.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -116,7 +116,7 @@ class BlockedOnClosedTreeDurations(ListAnalyzer):  # pragma: no cover
       self.points.append((duration, reference))
 
 
-class BlockedOnThrottledTreeDurations(ListAnalyzer):  # pragma: no cover
+class BlockedOnThrottledTreeDurations(ListAnalyzer):
   description = 'Time spent per committed patchset blocked on a throttled tree.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -126,7 +126,7 @@ class BlockedOnThrottledTreeDurations(ListAnalyzer):  # pragma: no cover
       self.points.append((duration, reference))
 
 
-class IssueCount(CountAnalyzer):  # pragma: no cover
+class IssueCount(CountAnalyzer):
   description = 'Number of issues processed by the CQ.'
   def __init__(self):
     super(IssueCount, self).__init__()
@@ -139,33 +139,33 @@ class IssueCount(CountAnalyzer):  # pragma: no cover
       self.tally[IssueReference(issue)] += 1
 
 
-class PatchsetAttempts(ListAnalyzer):  # pragma: no cover
+class PatchsetAttempts(ListAnalyzer):
   description = 'Number of CQ attempts per patchset.'
   unit = 'attempts'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     self.points.append((len(interval_attempts), reference))
 
 
-class PatchsetCount(CountAnalyzer):  # pragma: no cover
+class PatchsetCount(CountAnalyzer):
   description = 'Number of patchsets processed by the CQ.'
   def __init__(self):
     super(PatchsetCount, self).__init__()
     self.seen_patchsets = set()
 
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
-    if reference not in self.seen_patchsets:
+    if reference not in self.seen_patchsets:  # pragma: no branch
       self.seen_patchsets.add(reference)
       self.tally[reference] += 1
 
 
-class PatchsetCommitCount(CountAnalyzer):  # pragma: no cover
+class PatchsetCommitCount(CountAnalyzer):
   description = 'Number of patchsets committed by the CQ.'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(interval_attempts, ('patch_committed',)):
       self.tally[reference] += 1
 
 
-class PatchsetCommitDurations(ListAnalyzer):  # pragma: no cover
+class PatchsetCommitDurations(ListAnalyzer):
   description = 'Time taken by the CQ to land a patch after passing all checks.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -174,7 +174,7 @@ class PatchsetCommitDurations(ListAnalyzer):  # pragma: no cover
     if duration != None:
       self.points.append((duration, reference))
 
-class PatchsetDurations(ListAnalyzer):  # pragma: no cover
+class PatchsetDurations(ListAnalyzer):
   description = ('Total time spent in the CQ per patchset, '
                  'counts multiple CQ attempts as one.')
   unit = 'seconds'
@@ -186,7 +186,7 @@ class PatchsetDurations(ListAnalyzer):  # pragma: no cover
     self.points.append((duration, reference))
 
 
-class PatchsetFalseRejectCount(CountAnalyzer):  # pragma: no cover
+class PatchsetFalseRejectCount(CountAnalyzer):
   description = ('Number of patchsets rejected by the trybots '
                  'that eventually passed.')
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -195,14 +195,14 @@ class PatchsetFalseRejectCount(CountAnalyzer):  # pragma: no cover
       self.tally[reference] += 1
 
 
-class PatchsetRejectCount(CountAnalyzer):  # pragma: no cover
+class PatchsetRejectCount(CountAnalyzer):
   description = 'Number of patchsets rejected by the trybots at least once.'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
     if has_any_actions(interval_attempts, ('verifier_retry', 'verifier_fail')):
       self.tally[reference] += 1
 
 
-class PatchsetTotalCommitQueueDurations(ListAnalyzer):  # pragma: no cover
+class PatchsetTotalCommitQueueDurations(ListAnalyzer):
   description = 'Total time spent in the CQ per patch.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -212,7 +212,7 @@ class PatchsetTotalCommitQueueDurations(ListAnalyzer):  # pragma: no cover
     self.points.append((duration, reference))
 
 
-class PatchsetTotalWallTimeDurations(ListAnalyzer):  # pragma: no cover
+class PatchsetTotalWallTimeDurations(ListAnalyzer):
   description = 'Total time per patch since their commit box was checked.'
   unit = 'seconds'
   def new_attempts(self, project, reference, all_attempts, interval_attempts):
@@ -223,21 +223,21 @@ class PatchsetTotalWallTimeDurations(ListAnalyzer):  # pragma: no cover
     self.points.append((duration, reference))
 
 
-def has_any_actions(attempts, actions):  # pragma: no cover
+def has_any_actions(attempts, actions):
   assert type(actions) in (tuple, list)
   for attempt in attempts:
     for record in attempt:
       action = record.fields.get('action')
       if action in actions:
-        if (action.startswith('verifier_') and
+        if (action.startswith('verifier_') and  # pragma: no branch
             record.fields.get('verifier') != TRYJOBVERIFIER):
-          continue
+          continue  # pragma: no cover
         return True
   return False
 
 
 def duration_between_actions(attempts, action_start, action_end,
-    requires_start):  # pragma: no cover
+    requires_start):
   '''Counts the duration between start and end actions per patchset
 
   The end action must be present for the duration to be recorded.
@@ -261,7 +261,7 @@ def duration_between_actions(attempts, action_start, action_end,
   return None
 
 
-def is_flaky_failure_record(record):  # pragma: no cover
+def is_flaky_failure_record(record):
   if record.fields.get('action') == 'patch_failed':
     reason = record.fields.get('reason') or {}
     fail_type = reason.get('fail_type')
@@ -284,7 +284,7 @@ def is_flaky_failure_record(record):  # pragma: no cover
   return False
 
 
-def is_failure_record(fail_type_check, record):  # pragma: no cover
+def is_failure_record(fail_type_check, record):
   action = record.fields.get('action')
   reason = record.fields.get('reason') or {}
   fail_type = reason.get('fail_type')
