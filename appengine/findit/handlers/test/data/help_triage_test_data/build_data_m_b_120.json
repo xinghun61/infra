@@ -43,14 +43,14 @@
         "properties": [
           [
             "git_revision", 
-            "598sd4fa15s6a1g0d92b2b7df04fc3", 
+            "598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829", 
             "Change"
           ]
         ], 
         "repository": "https://chromium.googlesource.com/chromium/src", 
-        "rev": "598sd4fa15s6a1g0d92b2b7df04fc3", 
-        "revision": "598sd4fa15s6a1g0d92b2b7df04fc3", 
-        "revlink": "https://chromium.googlesource.com/chromium/src/+/598sd4fa15s6a1g0d92b2b7df04fc3", 
+        "rev": "598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e8291ab5d6e829", 
+        "revision": "598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829", 
+        "revlink": "https://chromium.googlesource.com/chromium/src/+/598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829", 
         "when": 1438809683, 
         "who": "test@chromium.org"
       },

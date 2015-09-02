@@ -23,7 +23,7 @@ COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$')
 CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*\d+).*$')
 REVERTED_REVISION_PATTERN = re.compile(
-    '^> Committed: https://crrev.com/([0-9a-z]+)$')
+    '^> Committed: https://.+/([0-9a-fA-F]{40})$')
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 
 

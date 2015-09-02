@@ -18,7 +18,7 @@ from waterfall import build_util
 
 
 EXPECTED_RESULTS_120 = {
-    '598sd4fa15s6a1g0d92b2b7df04fc3': {
+    '598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829': {
         'fixed_cl_review_url': 'https://codereview.chromium.org/12578123',
         'fixing_build_url': (
             'https://build.chromium.org/p/m/builders/b/builds/121'),
@@ -28,7 +28,7 @@ EXPECTED_RESULTS_120 = {
         'fixing_cl_review_url': 'https://codereview.chromium.org/1280463001',
         'fixing_cl_commit_position': 342013,
         'fixed_cl_commit_position': 341971,
-        'fixed_revision': '598sd4fa15s6a1g0d92b2b7df04fc3',
+        'fixed_revision': '598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829',
         'fixing_build_number': 121,
         'action': 'Reverted',
         'fixing_revision': '598sd489df74g125svf35s04fc3'
@@ -46,7 +46,7 @@ EXPECTED_RESULTS_120 = {
         'fixed_revision': '062a6f974d7c08d27902060c241149ce193e4dd5',
         'fixing_build_number': 121,
         'action': 'Reverted',
-        'fixing_revision': '1234567c08d27902060c241149ce193e4dd5'
+        'fixing_revision': '123456789c08d27902060c241149ce193e4dd5dd'
     },
     '584de1b73f811bcdb98eae1fb0d92b2b7df04fc3': {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
@@ -111,7 +111,7 @@ EXPECTED_RESULTS_121 = {
         'fixing_cl_commit_position': 342014,
         'fixing_revision': '123456671bcdb98eae1fb0d92b2b7df04fc3'
     },
-    '1234567c08d27902060c241149ce193e4dd5': {
+    '123456789c08d27902060c241149ce193e4dd5dd': {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1280463006',
         'fixing_build_url': (
             'https://build.chromium.org/p/m/builders/b/builds/122'),
@@ -121,7 +121,7 @@ EXPECTED_RESULTS_121 = {
         'fixing_cl_review_url': 'https://codereview.chromium.org/1161773008',
         'action': 'Reverted',
         'fixed_cl_commit_position': 342015,
-        'fixed_revision': '1234567c08d27902060c241149ce193e4dd5',
+        'fixed_revision': '123456789c08d27902060c241149ce193e4dd5dd',
         'fixing_build_number': 122,
         'fixing_cl_commit_position': 332062,
         'fixing_revision': '062a6f974d7c01234569ce193e4dd5'
@@ -212,6 +212,7 @@ class HelpTriageTest(testing.AppengineTestCase):
 
     results = help_triage._CheckReverts(
         self.master_name, self.builder_name, 120)
+
     self.assertEqual(EXPECTED_RESULTS_120, results)
 
   def testCheckRevertsReturnNoneWhenNoGreenBuild(self):
