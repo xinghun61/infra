@@ -21,7 +21,7 @@ SVN_REVISION_PATTERN = re.compile(
     '^git\-svn\-id: svn://[^@]*@(\d+) [a-z0-9\-]*$')
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$')
-CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*)$')
+CODE_REVIEW_URL_PATTERN = re.compile('^Review URL: (.*\d+).*$')
 REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://crrev.com/([0-9a-z]+)$')
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
@@ -89,7 +89,6 @@ class GitRepository(Repository):
         match = CODE_REVIEW_URL_PATTERN.match(line)
         if match:
           code_review_url = match.group(1)
-
     return (commit_position, code_review_url)
 
   def _NormalizeEmail(self, email):

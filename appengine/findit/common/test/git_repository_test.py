@@ -305,6 +305,21 @@ class GitRepositoryTest(testing.AppengineTestCase):
                 'https://chromiumcodereview.appspot.com/18862002',
         },
         {
+            'message':
+                'balabala...\n'
+                '\n'
+                'BUG=none\n'
+                'NOTRY=true\n'
+                '\n'
+                'Review URL: https://chromiumcodereview.appspot.com/1862002 .\n'
+                '\n'
+                'git-svn-id: svn://svn.chromium.org/chrome/trunk/src@12345 '
+                '0039d316-1c4b-4281-b951-d872f2087c98',
+            'commit_position': 12345,
+            'code_review_url':
+                'https://chromiumcodereview.appspot.com/1862002',
+        },
+        {
             'message': None,
             'commit_position': None,
             'code_review_url': None
