@@ -299,9 +299,12 @@ def revert_patchset(request):
     patch.patched_content_key = patched_content.key
     pending_commits.append(patch)
 
+    # Encode the unicode patch.txt to later put in patchset.data which is stored
+    # as ndb.Blob (str). For more context see crbug.com/527325
+    patch_text = patch.text.encode('utf-8')
     # Append the text of this patch to the patchset's data. Strip out ending
     # new line (if it exists) because one will be added during the below join.
-    patchset_data.append(str(patch.text).rstrip('\n'))
+    patchset_data.append(patch_text.rstrip('\n'))
 
   # Add all gathered patch texts to the patchset's data field.
   patchset.data = '\n'.join(patchset_data)
