@@ -66,6 +66,15 @@
     "cmd": [
       "python",
       "-u",
+      "testjs.py"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "infra javascript tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/infra/glyco/tests/run_all_tests.py"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
