@@ -129,18 +129,6 @@ def ensure_checkout(root_dir, depot_tools, internal):
 def seed_passwords(root_dir, password_file):
   with open(password_file, 'r') as f:
     passwords = json.load(f)
-  for var in ['svn_user', 'svn_password', 'bot_password']:
-    assert var in passwords
-
-  if not IS_WINDOWS:
-    # Seed SVN passwords, except on Windows, where we don't bother installing.
-    svn_user = passwords['svn_user']
-    svn_password = passwords['svn_password']
-    for svn_url in SVN_URLS:
-      # Use subprocess.call() so that the password doesn't get printed.
-      subprocess.call(
-          ['svn', 'info', svn_url, '--username', svn_user,
-           '--password', svn_password])
 
   # Seed buildbot bot password.
   bot_password_path = os.path.join(
