@@ -8,12 +8,13 @@ from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 
+import goma_stats_pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='chrome_infra_log.proto',
   package='crit_event.proto',
-  serialized_pb='\n\x16\x63hrome_infra_log.proto\x12\x10\x63rit_event.proto\"\xe8\x03\n\x18\x43ommitQueuePatchsetEvent\x12\x44\n\x04type\x18\x01 \x01(\x0e\x32\x36.crit_event.proto.CommitQueuePatchsetEvent.CQEventType\x12S\n\x0bresult_type\x18\x02 \x01(\x0e\x32\x35.crit_event.proto.CommitQueuePatchsetEvent.ResultType:\x07UNKNOWN\"\xa6\x01\n\x0b\x43QEventType\x12\x11\n\rPATCH_FAILURE\x10\x00\x12\x0e\n\nPATCH_STOP\x10\x01\x12\x15\n\x11PATCH_TREE_CLOSED\x10\x02\x12\x13\n\x0fPATCH_THROTTLED\x10\x03\x12\x19\n\x15PATCH_READY_TO_COMMIT\x10\x04\x12\x16\n\x12PATCH_COMMIT_START\x10\x05\x12\x15\n\x11PATCH_COMMIT_DONE\x10\x06\"\x87\x01\n\nResultType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x10\n\x0cMISSING_LGTM\x10\x01\x12\x10\n\x0cINVALID_LGTM\x10\x02\x12\x12\n\x0e\x46\x41ILED_TRYJOBS\x10\x03\x12\x11\n\rCOMMIT_FAILED\x10\x04\x12\r\n\tCOMMITTED\x10\n\x12\x12\n\x0eUSER_CANCELLED\x10\x0b\"i\n\x0b\x43odeVersion\x12\x12\n\nsource_url\x18\x01 \x01(\t\x12\r\n\x05\x64irty\x18\x02 \x01(\x08\x12\x0f\n\x07version\x18\x03 \x01(\t\x12\x10\n\x08git_hash\x18\x04 \x01(\t\x12\x14\n\x0csvn_revision\x18\x05 \x01(\x05\"\x82\x02\n\x0cServiceEvent\x12\x46\n\x04type\x18\x01 \x01(\x0e\x32/.crit_event.proto.ServiceEvent.ServiceEventType:\x07UNKNOWN\x12\x33\n\x0c\x63ode_version\x18\x02 \x03(\x0b\x32\x1d.crit_event.proto.CodeVersion\x12\x13\n\x0bstack_trace\x18\x03 \x01(\t\"`\n\x10ServiceEventType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\t\n\x05START\x10\x01\x12\x08\n\x04STOP\x10\x02\x12\n\n\x06UPDATE\x10\x03\x12\x13\n\x0f\x43URRENT_VERSION\x10\x04\x12\t\n\x05\x43RASH\x10\x05\"\xb5\x03\n\nBuildEvent\x12\x39\n\x04type\x18\x01 \x01(\x0e\x32+.crit_event.proto.BuildEvent.BuildEventType\x12\x11\n\thost_name\x18\x02 \x01(\t\x12\x12\n\nbuild_name\x18\x03 \x01(\t\x12\x14\n\x0c\x62uild_number\x18\x04 \x01(\x05\x12 \n\x18\x62uild_scheduling_time_ms\x18\x05 \x01(\x03\x12\x11\n\tstep_name\x18\x06 \x01(\t\x12\x13\n\x0bstep_number\x18\x07 \x01(\x05\x12\x41\n\x06result\x18\x08 \x01(\x0e\x32(.crit_event.proto.BuildEvent.BuildResult:\x07UNKNOWN\"4\n\x0e\x42uildEventType\x12\r\n\tSCHEDULER\x10\x00\x12\t\n\x05\x42UILD\x10\x01\x12\x08\n\x04STEP\x10\x02\"l\n\x0b\x42uildResult\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x0b\n\x07\x46\x41ILURE\x10\x02\x12\x11\n\rINFRA_FAILURE\x10\x03\x12\x0b\n\x07WARNING\x10\x04\x12\x0b\n\x07SKIPPED\x10\x05\x12\t\n\x05RETRY\x10\x06\"S\n\x10InfraEventSource\x12\x11\n\thost_name\x18\x01 \x01(\t\x12\x16\n\x0e\x61ppengine_name\x18\x02 \x01(\t\x12\x14\n\x0cservice_name\x18\x03 \x01(\t\"\xc3\x03\n\x10\x43hromeInfraEvent\x12Q\n\x0etimestamp_kind\x18\x01 \x01(\x0e\x32\x30.crit_event.proto.ChromeInfraEvent.TimestampKind:\x07UNKNOWN\x12\x10\n\x08trace_id\x18\x02 \x01(\t\x12\x0f\n\x07span_id\x18\x03 \x01(\t\x12\x11\n\tparent_id\x18\x04 \x01(\t\x12\x38\n\x0c\x65vent_source\x18\x05 \x01(\x0b\x32\".crit_event.proto.InfraEventSource\x12\x35\n\rservice_event\x18\x06 \x01(\x0b\x32\x1e.crit_event.proto.ServiceEvent\x12\x45\n\x11\x63q_patchset_event\x18\x07 \x01(\x0b\x32*.crit_event.proto.CommitQueuePatchsetEvent\x12\x31\n\x0b\x62uild_event\x18\x08 \x01(\x0b\x32\x1c.crit_event.proto.BuildEvent\";\n\rTimestampKind\x12\x0b\n\x07UNKNOWN\x10\x00\x12\t\n\x05POINT\x10\x01\x12\t\n\x05\x42\x45GIN\x10\x02\x12\x07\n\x03\x45ND\x10\x03')
+  serialized_pb='\n\x16\x63hrome_infra_log.proto\x12\x10\x63rit_event.proto\x1a\x10goma_stats.proto\"\xe8\x03\n\x18\x43ommitQueuePatchsetEvent\x12\x44\n\x04type\x18\x01 \x01(\x0e\x32\x36.crit_event.proto.CommitQueuePatchsetEvent.CQEventType\x12S\n\x0bresult_type\x18\x02 \x01(\x0e\x32\x35.crit_event.proto.CommitQueuePatchsetEvent.ResultType:\x07UNKNOWN\"\xa6\x01\n\x0b\x43QEventType\x12\x11\n\rPATCH_FAILURE\x10\x00\x12\x0e\n\nPATCH_STOP\x10\x01\x12\x15\n\x11PATCH_TREE_CLOSED\x10\x02\x12\x13\n\x0fPATCH_THROTTLED\x10\x03\x12\x19\n\x15PATCH_READY_TO_COMMIT\x10\x04\x12\x16\n\x12PATCH_COMMIT_START\x10\x05\x12\x15\n\x11PATCH_COMMIT_DONE\x10\x06\"\x87\x01\n\nResultType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x10\n\x0cMISSING_LGTM\x10\x01\x12\x10\n\x0cINVALID_LGTM\x10\x02\x12\x12\n\x0e\x46\x41ILED_TRYJOBS\x10\x03\x12\x11\n\rCOMMIT_FAILED\x10\x04\x12\r\n\tCOMMITTED\x10\n\x12\x12\n\x0eUSER_CANCELLED\x10\x0b\"i\n\x0b\x43odeVersion\x12\x12\n\nsource_url\x18\x01 \x01(\t\x12\r\n\x05\x64irty\x18\x02 \x01(\x08\x12\x0f\n\x07version\x18\x03 \x01(\t\x12\x10\n\x08git_hash\x18\x04 \x01(\t\x12\x14\n\x0csvn_revision\x18\x05 \x01(\x05\"\x82\x02\n\x0cServiceEvent\x12\x46\n\x04type\x18\x01 \x01(\x0e\x32/.crit_event.proto.ServiceEvent.ServiceEventType:\x07UNKNOWN\x12\x33\n\x0c\x63ode_version\x18\x02 \x03(\x0b\x32\x1d.crit_event.proto.CodeVersion\x12\x13\n\x0bstack_trace\x18\x03 \x01(\t\"`\n\x10ServiceEventType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\t\n\x05START\x10\x01\x12\x08\n\x04STOP\x10\x02\x12\n\n\x06UPDATE\x10\x03\x12\x13\n\x0f\x43URRENT_VERSION\x10\x04\x12\t\n\x05\x43RASH\x10\x05\"\xe3\x03\n\nBuildEvent\x12\x39\n\x04type\x18\x01 \x01(\x0e\x32+.crit_event.proto.BuildEvent.BuildEventType\x12\x11\n\thost_name\x18\x02 \x01(\t\x12\x12\n\nbuild_name\x18\x03 \x01(\t\x12\x14\n\x0c\x62uild_number\x18\x04 \x01(\x05\x12 \n\x18\x62uild_scheduling_time_ms\x18\x05 \x01(\x03\x12\x11\n\tstep_name\x18\x06 \x01(\t\x12\x13\n\x0bstep_number\x18\x07 \x01(\x05\x12\x41\n\x06result\x18\x08 \x01(\x0e\x32(.crit_event.proto.BuildEvent.BuildResult:\x07UNKNOWN\x12,\n\ngoma_stats\x18\t \x01(\x0b\x32\x18.devtools_goma.GomaStats\"4\n\x0e\x42uildEventType\x12\r\n\tSCHEDULER\x10\x00\x12\t\n\x05\x42UILD\x10\x01\x12\x08\n\x04STEP\x10\x02\"l\n\x0b\x42uildResult\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SUCCESS\x10\x01\x12\x0b\n\x07\x46\x41ILURE\x10\x02\x12\x11\n\rINFRA_FAILURE\x10\x03\x12\x0b\n\x07WARNING\x10\x04\x12\x0b\n\x07SKIPPED\x10\x05\x12\t\n\x05RETRY\x10\x06\"S\n\x10InfraEventSource\x12\x11\n\thost_name\x18\x01 \x01(\t\x12\x16\n\x0e\x61ppengine_name\x18\x02 \x01(\t\x12\x14\n\x0cservice_name\x18\x03 \x01(\t\"\xc3\x03\n\x10\x43hromeInfraEvent\x12Q\n\x0etimestamp_kind\x18\x01 \x01(\x0e\x32\x30.crit_event.proto.ChromeInfraEvent.TimestampKind:\x07UNKNOWN\x12\x10\n\x08trace_id\x18\x02 \x01(\t\x12\x0f\n\x07span_id\x18\x03 \x01(\t\x12\x11\n\tparent_id\x18\x04 \x01(\t\x12\x38\n\x0c\x65vent_source\x18\x05 \x01(\x0b\x32\".crit_event.proto.InfraEventSource\x12\x35\n\rservice_event\x18\x06 \x01(\x0b\x32\x1e.crit_event.proto.ServiceEvent\x12\x45\n\x11\x63q_patchset_event\x18\x07 \x01(\x0b\x32*.crit_event.proto.CommitQueuePatchsetEvent\x12\x31\n\x0b\x62uild_event\x18\x08 \x01(\x0b\x32\x1c.crit_event.proto.BuildEvent\";\n\rTimestampKind\x12\x0b\n\x07UNKNOWN\x10\x00\x12\t\n\x05POINT\x10\x01\x12\t\n\x05\x42\x45GIN\x10\x02\x12\x07\n\x03\x45ND\x10\x03')
 
 
 
@@ -54,8 +55,8 @@ _COMMITQUEUEPATCHSETEVENT_CQEVENTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=229,
-  serialized_end=395,
+  serialized_start=247,
+  serialized_end=413,
 )
 
 _COMMITQUEUEPATCHSETEVENT_RESULTTYPE = _descriptor.EnumDescriptor(
@@ -95,8 +96,8 @@ _COMMITQUEUEPATCHSETEVENT_RESULTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=398,
-  serialized_end=533,
+  serialized_start=416,
+  serialized_end=551,
 )
 
 _SERVICEEVENT_SERVICEEVENTTYPE = _descriptor.EnumDescriptor(
@@ -132,8 +133,8 @@ _SERVICEEVENT_SERVICEEVENTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=805,
-  serialized_end=901,
+  serialized_start=823,
+  serialized_end=919,
 )
 
 _BUILDEVENT_BUILDEVENTTYPE = _descriptor.EnumDescriptor(
@@ -157,8 +158,8 @@ _BUILDEVENT_BUILDEVENTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1179,
-  serialized_end=1231,
+  serialized_start=1243,
+  serialized_end=1295,
 )
 
 _BUILDEVENT_BUILDRESULT = _descriptor.EnumDescriptor(
@@ -198,8 +199,8 @@ _BUILDEVENT_BUILDRESULT = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1233,
-  serialized_end=1341,
+  serialized_start=1297,
+  serialized_end=1405,
 )
 
 _CHROMEINFRAEVENT_TIMESTAMPKIND = _descriptor.EnumDescriptor(
@@ -227,8 +228,8 @@ _CHROMEINFRAEVENT_TIMESTAMPKIND = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1821,
-  serialized_end=1880,
+  serialized_start=1885,
+  serialized_end=1944,
 )
 
 
@@ -264,8 +265,8 @@ _COMMITQUEUEPATCHSETEVENT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=45,
-  serialized_end=533,
+  serialized_start=63,
+  serialized_end=551,
 )
 
 
@@ -320,8 +321,8 @@ _CODEVERSION = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=535,
-  serialized_end=640,
+  serialized_start=553,
+  serialized_end=658,
 )
 
 
@@ -363,8 +364,8 @@ _SERVICEEVENT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=643,
-  serialized_end=901,
+  serialized_start=661,
+  serialized_end=919,
 )
 
 
@@ -431,6 +432,13 @@ _BUILDEVENT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='goma_stats', full_name='crit_event.proto.BuildEvent.goma_stats', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -442,8 +450,8 @@ _BUILDEVENT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=904,
-  serialized_end=1341,
+  serialized_start=922,
+  serialized_end=1405,
 )
 
 
@@ -484,8 +492,8 @@ _INFRAEVENTSOURCE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1343,
-  serialized_end=1426,
+  serialized_start=1407,
+  serialized_end=1490,
 )
 
 
@@ -562,8 +570,8 @@ _CHROMEINFRAEVENT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=1429,
-  serialized_end=1880,
+  serialized_start=1493,
+  serialized_end=1944,
 )
 
 _COMMITQUEUEPATCHSETEVENT.fields_by_name['type'].enum_type = _COMMITQUEUEPATCHSETEVENT_CQEVENTTYPE
@@ -575,6 +583,7 @@ _SERVICEEVENT.fields_by_name['code_version'].message_type = _CODEVERSION
 _SERVICEEVENT_SERVICEEVENTTYPE.containing_type = _SERVICEEVENT;
 _BUILDEVENT.fields_by_name['type'].enum_type = _BUILDEVENT_BUILDEVENTTYPE
 _BUILDEVENT.fields_by_name['result'].enum_type = _BUILDEVENT_BUILDRESULT
+_BUILDEVENT.fields_by_name['goma_stats'].message_type = goma_stats_pb2._GOMASTATS
 _BUILDEVENT_BUILDEVENTTYPE.containing_type = _BUILDEVENT;
 _BUILDEVENT_BUILDRESULT.containing_type = _BUILDEVENT;
 _CHROMEINFRAEVENT.fields_by_name['timestamp_kind'].enum_type = _CHROMEINFRAEVENT_TIMESTAMPKIND
