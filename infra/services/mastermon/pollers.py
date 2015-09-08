@@ -180,7 +180,7 @@ class FilePoller(Poller):
     return True
 
   def handle_response(self, data):
-    field_keys = ('builder', 'slave', 'result')
+    field_keys = ('builder', 'slave', 'result', 'project_id')
     fields = self.fields({k: data[k] for k in field_keys if k in data})
     self.result_count.increment(fields)
     if 'duration_s' in data:
