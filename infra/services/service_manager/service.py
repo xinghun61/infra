@@ -437,14 +437,21 @@ class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
   CREATE_NO_WINDOW = 0x08000000
 
   def start(self):
-    handle = subprocess.Popen(
-        creationflags=self.CREATE_NO_WINDOW,
-        close_fds=True,
-        args=[
-            os.path.join(self.service.root_directory, 'ENV/bin/python.bat'),
-            os.path.join(self.service.root_directory, 'run.py'),
-            self.service.tool,
-        ] + self.service.args,
-    )
+    # A process started with CREATE_NO_WINDOW doesn't get an open stdout or
+    # stderr on Windows, so writes (eg. from a print statement) will fail with
+    # 'Bad file descriptor'.  Work around this by giving the process open file
+    # handles to 'nul' instead.  See http://bugs.python.org/issue706263.
+    with open(os.devnull, 'w') as null_fh:
+      handle = subprocess.Popen(
+          creationflags=self.CREATE_NO_WINDOW,
+          stderr=null_fh,
+          stdout=null_fh,
+          args=[
+              os.path.join(self.service.root_directory,
+                           'ENV/Scripts/python.exe'),
+              os.path.join(self.service.root_directory, 'run.py'),
+              self.service.tool,
+          ] + self.service.args,
+      )
 
     return handle.pid
