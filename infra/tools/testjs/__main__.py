@@ -48,7 +48,7 @@ def main(argv):
   else:
     for target in args.target:
       LOGGER.info('Running karma for %s', target)
-      testjs.test_karma(target, chrome, display)
+      testjs.test_karma(target, chrome, None)
 
 
 
