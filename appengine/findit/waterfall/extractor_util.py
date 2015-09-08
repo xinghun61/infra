@@ -114,7 +114,7 @@ CPP_MAXIMUM_NUMBER_STACK_FRAMES = 4
 # Pattern for java stack trace frame.
 JAVA_STACK_TRACE_FRAME_PATTERN = re.compile(
     r'(at (?P<package_classname>(?:\w+(?:\$\w+)?\.)+)'
-    r'(?P<method>\w+)\((?:(?P<filename>\w+\.java):'
+    r'(?P<method><?\w+>?)\((?:(?P<filename>\w+\.java):'
     r'(?P<line_number>\d+)\))?)')
 
 # The numbert of stack frames for a Java stacktrace to extract.

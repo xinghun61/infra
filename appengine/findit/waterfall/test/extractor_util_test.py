@@ -112,6 +112,9 @@ class ExtractorUtilTest(unittest.TestCase):
     self.assertRegexpMatches(
         'C 1855.518s Main   at a.b.c.d.method(Native Method)',
         extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN)
+    self.assertRegexpMatches(
+        'C 1855.518s Main   at a.b.c.d.<method>(Native Method)',
+        extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN)
 
   def testChromiumSrcPattern(self):
     cases = {

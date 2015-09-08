@@ -495,6 +495,67 @@ Note:You can safely ignore the above warning unless this call should not happen.
                   extractors.InstrumentationTestExtractor,
                   expected_signal_json)
 
+  def testJunitTestExtractor(self):
+    failure_log = textwrap.dedent("""
+        [----------] Run 3 test cases from org.chromium.a.b.c.test
+        [ RUN      ] org.chromium.a.b.c.test
+        [       OK ] org.chromium.a.b.c.test (30 ms)
+        [----------] Run 13 test cases from org.chromium.a.b.c.test (2831 ms)
+
+        [----------] Run 1 test cases from org.chromium.a.b.file1
+        [ RUN      ] org.chromium.a.b.testFile1.test1
+        java.lang.SomeError: a/b/c/Class;
+            at java.lang.Class.getDeclaredFields0(Native Method)
+            at java.lang.Class.privateGetDeclaredFields(Class.java:2397)
+            at org.chromium.a.class1.<method1>(file1.java:1)
+            at org.chromium.a.class2.method2(file2.java:2)
+            at org.chromium.a.class3.method3(file3.java:3)
+        Caused by: java.lang.ClassNotFoundException: x.y.z.class
+            at java.net.URLClassLoader$1.run(URLClassLoader.java:366)
+            at java.net.URLClassLoader$1.run(URLClassLoader.java:355)
+            at java.security.AccessController.doPrivileged(Native Method)
+            at org.chromium.a.class4.method4(file4.java:4)
+            at java.lang.ClassLoader.loadClass(ClassLoader.java:425)
+            at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:308)
+            at java.lang.ClassLoader.loadClass(ClassLoader.java:358)
+            ... 27 more
+        [   FAILED ] org.chromium.a.b.testFile1.test1 (2 ms)
+        [----------] Run 1 test cases from org.chromium.a.b.testFile1.test1
+
+        [ RUN      ] org.chromium.a.b.testFile2.test2
+        java.lang.SomeError: a/b/c/Class;
+            at java.lang.Class.getDeclaredFields0(Native Method)
+            at java.lang.Class.privateGetDeclaredFields(Class.java:2397)
+            at org.chromium.a.class5.<method1>(file5.java:5)
+            at org.chromium.a.class6.method2(file6.java:6)
+            at org.chromium.a.class7.method3(file7.java:7)
+        [ RUN      ] org.chromium.a.b.testFile3.test3
+        java.lang.SomeError: a/b/c/Class;
+            at java.lang.Class.getDeclaredFields0(Native Method)
+            at java.lang.Class.privateGetDeclaredFields(Class.java:2397)
+            at org.chromium.a.class8.<method8>(file8.java:8)
+            at org.chromium.a.class9.method9(file9.java:9)
+            at org.chromium.a.class10.method10(file10.java:10)
+        [   FAILED ] org.chromium.a.b.testFile3.test3 (2 ms)
+        """)
+
+    expected_signal_json = {
+        'files': {
+            'org/chromium/a/file1.java': [1],
+            'org/chromium/a/file2.java': [2],
+            'org/chromium/a/file4.java': [4],
+            'org/chromium/a/b/testFile1.java': [],
+            'org/chromium/a/file8.java': [8],
+            'org/chromium/a/file9.java': [9],
+            'org/chromium/a/b/testFile3.java': []
+        },
+        'tests': [],
+        'keywords': {}
+    }
+    self._RunTest(failure_log,
+                  extractors.JunitTestExtractor,
+                  expected_signal_json)
+
   def testExtractSignal(self):
     class DummyGeneralExtractor(Extractor):
 

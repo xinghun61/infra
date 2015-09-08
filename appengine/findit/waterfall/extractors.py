@@ -209,17 +209,56 @@ class CheckSizesExtractor(Extractor):
     return signal
 
 
-class InstrumentationTestExtractor(Extractor):
+class AndroidJavaTestExtractor(Extractor):
+  """An extractor for java-based Android tests.
+
+    Note this extractor should not be used directly, but contains shared
+    constants and functions to be used by its children classes.
+  """
+  # White-list of java packages to consider.
+  JAVA_PACKAGES_TO_CONSIDER = ['org.chromium.']
+
+  JAVA_TEST_NAME_PATTERN = re.compile(
+      r'((?P<package_classname>(?:\w+(?:\$\w+)?\.)+)(?P<method><?\w+>?))')
+
+  JAVA_STACK_TRACE_START_MARKERS = ['Caused by:']
+
+  def _IsStartOfStackTrace(self, line):
+    for start_marker in self.JAVA_STACK_TRACE_START_MARKERS:
+      if line.startswith(start_marker):
+        return True
+    return False
+
+  def _InWhitelist(self, package_filename):
+    if package_filename:  # pragma: no cover
+      for package in self.JAVA_PACKAGES_TO_CONSIDER:
+        if package_filename.startswith(package):
+          return True
+    return False
+
+  def ExtractJavaFileMatch(self, match, signal):
+    match_dict = match.groupdict()
+    package_classname = match_dict.get('package_classname')
+    filename = match_dict.get('filename')
+    line_number = match_dict.get('line_number')
+
+    if self._InWhitelist(package_classname):
+      if filename:
+        file_path = os.path.join(
+            '/'.join(package_classname.split('.')[:-2]), filename)
+      else:
+        file_path = '/'.join(package_classname.split('.')[:-1]) + '.java'
+      signal.AddFile(extractor_util.NormalizeFilePath(file_path), line_number)
+
+  def Extract(self, failure_log, *_):
+    raise NotImplementedError(
+        'Extract should be implemented in the child class.')  # pragma: no cover
+
+
+class InstrumentationTestExtractor(AndroidJavaTestExtractor):
   """For Instrtumentation tests."""
   # Beginning marker for Java stack trace.
   JAVA_STACK_TRACE_BEGINNING_MARKER = re.compile(r'^.*\[FAIL] .*\#.*:')
-  JAVA_PACKAGES_TO_CONSIDER = ['org.chromium.']
-
-  def _InWhitelist(self, package_filename):
-    for package in self.JAVA_PACKAGES_TO_CONSIDER:
-      if package_filename.startswith(package):
-        return True
-    return False
 
   def Extract(self, failure_log, *_):
     signal = FailureSignal()
@@ -246,17 +285,7 @@ class InstrumentationTestExtractor(Extractor):
           match = extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN.search(line)
 
           if match:
-            package_classname = match.group('package_classname')
-            filename = match.group('filename')
-            line_number = match.group('line_number')
-
-            if (self._InWhitelist(package_classname) and
-                filename and line_number):
-              file_path = os.path.join(
-                  '/'.join(package_classname.split('.')[:-2]), filename)
-              signal.AddFile(extractor_util.NormalizeFilePath(file_path),
-                             line_number)
-
+            self.ExtractJavaFileMatch(match, signal)
             java_stack_frame_index += 1
 
             # Only extract the top several frames of each stack.
@@ -267,6 +296,70 @@ class InstrumentationTestExtractor(Extractor):
     return signal
 
 
+class JunitTestExtractor(AndroidJavaTestExtractor):
+  """For Junit tests."""
+  TEST_START_MARKER = '[ RUN      ]'
+  TEST_FAILED_MARKER = '[   FAILED ]'
+
+  def ProcessTestFailure(self, log_lines, signal):
+    in_failure_stacktrace_within_range = False
+    java_stack_frame_index = 0
+
+    # Find first failure stacktrace.
+    index = 0
+    end_index = len(log_lines)
+    while index < end_index:  # pragma: no cover
+      line = log_lines[index]
+      if extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN.search(line):
+        in_failure_stacktrace_within_range = True
+        break
+      index += 1
+
+    for line in log_lines[index:]:  # pragma: no cover
+      if in_failure_stacktrace_within_range:
+        match = extractor_util.JAVA_STACK_TRACE_FRAME_PATTERN.search(line)
+
+        if match:
+          self.ExtractJavaFileMatch(match, signal)
+          java_stack_frame_index += 1
+
+          # Only extract the top several frames of each stack.
+          if (java_stack_frame_index >=
+              extractor_util.JAVA_MAXIMUM_NUMBER_STACK_FRAMES):
+            in_failure_stacktrace_within_range = False
+
+      if self._IsStartOfStackTrace(line):
+        in_failure_stacktrace_within_range = True
+        java_stack_frame_index = 0
+        continue
+
+  def Extract(self, failure_log, *_):
+    signal = FailureSignal()
+    log_lines = failure_log.splitlines()
+
+    index = 0
+    start = index
+    end = len(log_lines)
+
+    while index < end:  # pragma: no cover
+      line = log_lines[index]
+      if line.startswith(self.TEST_START_MARKER):
+        start = index + 1
+      elif line.startswith(self.TEST_FAILED_MARKER):
+        # Extract the test that failed as a possible signal.
+        match = self.JAVA_TEST_NAME_PATTERN.search(line)
+        self.ExtractJavaFileMatch(match, signal)
+
+        # Extract the rest of the stacks associated with this failure.
+        test_failure_lines = log_lines[start:index]
+        self.ProcessTestFailure(test_failure_lines, signal)
+      index += 1
+    return signal
+
+# TODO(lijeffrey): Several steps are named similarly and may use the same
+# extractor. We may need to implement a solution to map a name to an extractor
+# in a cleaner fashion, though there may be some shortcomings of special-case
+# extractors that match a name pattern but do not use the same extractors.
 EXTRACTORS = {
     'compile': CompileStepExtractor,
     'check_perms': CheckPermExtractor,
@@ -274,6 +367,11 @@ EXTRACTORS = {
     'Instrumentation_test_ChromePublicTest': InstrumentationTestExtractor,
     'Instrumentation_test_ContentShellTest': InstrumentationTestExtractor,
     'Instrumentation_test_AndroidWebViewTest': InstrumentationTestExtractor,
+    'chrome_junit_tests': JunitTestExtractor,
+    'components_junit_tests': JunitTestExtractor,
+    'content_junit_tests': JunitTestExtractor,
+    'junit_unit_tests': JunitTestExtractor,
+    'net_junit_tests': JunitTestExtractor,
 }
 
 
