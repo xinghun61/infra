@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"appengine"
@@ -26,12 +25,8 @@ type hostLatestState struct {
 	State string
 }
 
-type whitelistedHost struct {
-}
-
 func init() {
 	http.HandleFunc("/api/reportState", reportState)
-	http.HandleFunc("/api/whitelistHost", whitelistHost)
 	http.HandleFunc("/api/pending", pendingHosts)
 }
 
@@ -85,86 +80,27 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	q:= datastore.NewQuery("whitelistedHost").KeysOnly()
-	whitelistedHosts, err := q.GetAll(c, nil)
-	if err != nil {
-		c.Errorf("Failed to get whitelisted hosts: %s", err)
-		http.Error(w, "Failed to get whitelisted hosts", http.StatusInternalServerError)
-		return
-	}
-
-	convert := false
+	w.Header().Set("Content-Type", "application/json")
 	if state == "SVN" {
-		for _, wh := range whitelistedHosts {
-			whitelistedHost := strings.ToLower(wh.StringID())
-			host = strings.ToLower(host)
-			if strings.Contains(host, whitelistedHost) {
-				convert = true
-				break
-			}
-		}
+		fmt.Fprintln(w, "true")
+	} else {
+		fmt.Fprintln(w, "false")
 	}
-
-	out, err := json.Marshal(convert)
-	if err != nil {
-		c.Errorf("Failed to encode conversion status as JSON: %s", err)
-		http.Error(w, "Failed to encode conversion status as  JSON", http.StatusInternalServerError)
-		return
-	}
-	fmt.Fprintln(w, string(out))
-}
-
-func whitelistHost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, "Failed to parse request parameters", http.StatusBadRequest)
-		return
-	}
-
-	host, err := getFormParam(r, "host")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	c := appengine.NewContext(r)
-	wh := whitelistedHost{}
-	whKey := datastore.NewKey(c, "whitelistedHost", host, 0, nil)
-	if _, err := datastore.Put(c, whKey, &wh); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Fprintln(w, "Done")
 }
 
 func pendingHosts(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	q1 := datastore.NewQuery("hostLatestState").Filter("State=", "SVN").KeysOnly()
-	svnHosts, err := q1.GetAll(c, nil)
+	q := datastore.NewQuery("hostLatestState").Filter("State=", "SVN").KeysOnly()
+	svnHosts, err := q.GetAll(c, nil)
 	if err != nil {
 		c.Errorf("Failed to get host states: %s", err)
 		http.Error(w, "Failed to get host states", http.StatusInternalServerError)
 		return
 	}
 
-	q2:= datastore.NewQuery("whitelistedHost").KeysOnly()
-	whitelistedHosts, err := q2.GetAll(c, nil)
-	if err != nil {
-		c.Errorf("Failed to get whitelisted hosts: %s", err)
-		http.Error(w, "Failed to get whitelisted hosts", http.StatusInternalServerError)
-		return
-	}
-
 	pendingHosts := make([]string, 0)
-	for _, host := range whitelistedHosts {
-		whitelistedHost := strings.ToLower(host.StringID())
-		for _, host2 := range svnHosts {
-			svnHost := strings.ToLower(host2.StringID())
-			if strings.Contains(svnHost, whitelistedHost) {
-				pendingHosts = append(pendingHosts, svnHost)
-			}
-		}
+	for _, host := range svnHosts {
+		pendingHosts = append(pendingHosts, host.StringID())
 	}
 
 	out, err := json.Marshal(pendingHosts)
