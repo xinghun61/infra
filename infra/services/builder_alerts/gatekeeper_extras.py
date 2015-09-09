@@ -15,6 +15,12 @@ def excluded_builders(master_config):
 
 def tree_for_master(master_url, gatekeeper_trees_config):
   """Get the name of the tree for a given master url, or the master's name."""
+
+  # TODO(phajdan.jr): Read config from gatekeeper.json instead and remove hack.
+  # See https://code.google.com/p/chromium/issues/detail?id=529801 .
+  if 'chromium.webkit' in master_url:
+    return 'blink'
+
   for tree_name, tree_config in gatekeeper_trees_config.iteritems():
     if master_url in tree_config['masters']:
       return tree_name
