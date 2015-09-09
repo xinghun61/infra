@@ -183,7 +183,7 @@ Each builder is described by a dict that contains three or four fields:
 
 ### recipe
 This is a *required* field that specifies the [recipe
-name](recipes.md).
+name](/doc/users/recipes.md).
 
 ### scheduler
 This is a *required* field that indicates which scheduler will be used
