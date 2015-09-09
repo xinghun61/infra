@@ -32,6 +32,11 @@ _masters = {
         'name': 'ChromiumMac',
         'groups': ['@ToT Chromium']
     },
+    # Swarming staging master.
+    'chromium.swarm': {
+        'name': 'chromium.swarm',
+        'groups': ['ThisIsUnused']
+    },
     'chromium.webkit': {
         'name': 'ChromiumWebkit',
         'groups': ['@ToT Chromium', '@ToT Blink'],

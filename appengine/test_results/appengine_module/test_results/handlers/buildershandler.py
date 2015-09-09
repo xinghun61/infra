@@ -69,6 +69,12 @@ BUILDS_URL_TEMPLATE = ('http://chrome-build-extract.appspot.com/get_builds?'
   'builder=%s&master=%s&num_builds=1')
 MASTER_URL_TEMPLATE = 'http://chrome-build-extract.appspot.com/get_master/%s'
 
+# When uploading gtest results from swarming the step with contain the following
+# with the test name in brackets. Keep in sync with
+# scripts/slave/recipe_modules/test_results/api.py.
+# TODO(estaab): Figure out a better place to derive test types than step names.
+GTEST_UPLOADER_STEP_REGEX = re.compile(r'Upload to test-results \[([^]]*)\]')
+
 
 class FetchBuildersException(Exception):
   pass
@@ -135,7 +141,7 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
       for step in build['builds'][0]['steps']:
         step_name = step['name']
 
-        if not 'test' in step_name:
+        if 'test' not in step_name:
           continue
 
         if any(name in step_name for name in NON_TEST_STEP_NAMES):
@@ -143,6 +149,17 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
 
         if re.search('_only|_ignore|_perf$', step_name):
           continue
+
+        # This is just triggering and collecting tests on swarming, not the
+        # actual test types.
+        if (step_name.startswith('[trigger]') or
+            step_name.startswith('[collect]')):
+          continue
+
+        # Get the test type from the test-results uploading step name.
+        match = GTEST_UPLOADER_STEP_REGEX.match(step_name)
+        if match:
+          step_name = match.group(1)
 
         if step_name == 'webkit_tests':
           step_name = 'layout-tests'

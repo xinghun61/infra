@@ -59,7 +59,8 @@ class BuildersHandlerTest(unittest.TestCase):
                              {'name': 'browser_tests'},
                              {'name': 'mini_installer_test'},
                              {'name': 'archive_test_results'},
-                             {'name': 'compile'}
+                             {'name': 'compile'},
+                             {'name': 'Upload to test-results [swarming_gtest_tests]'}
                             ]
                   },
               ],
@@ -110,7 +111,8 @@ class BuildersHandlerTest(unittest.TestCase):
               'tests': {
                   'browser_tests': {'builders': ['WebKit Linux', 'WebKit Mac']},
                   'mini_installer_test': {'builders': ['WebKit Linux', 'WebKit Mac', 'WebKit Win']},
-                  'layout-tests': {'builders': ['WebKit Linux', 'WebKit Win']}},
+                  'layout-tests': {'builders': ['WebKit Linux', 'WebKit Win']},
+                  'swarming_gtest_tests': {'builders': ['WebKit Linux']}},
               'name': 'ChromiumWebkit',
               'url_name': 'chromium.webkit',
               'groups': ['@ToT Chromium', '@ToT Blink'],
