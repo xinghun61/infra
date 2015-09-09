@@ -2,11 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import logging
+import zlib
 
+from google.protobuf.message import DecodeError
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import BuildEvent
+from infra_libs.event_mon.goma_stats_pb2 import GomaStats
 from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
 from infra_libs.event_mon import config, router
 
@@ -203,6 +207,7 @@ def get_build_event(event_type,
                     step_name=None,
                     step_number=None,
                     result=None,
+                    goma_stats_gz=None,
                     timestamp_kind='POINT',
                     event_timestamp=None,
                     service_name=None):
@@ -297,6 +302,20 @@ def get_build_event(event_type,
                       '(%s). This is only accepted for BUILD and TEST types.',
                       result)
 
+  if goma_stats_gz:
+    try:
+      goma_stats = GomaStats()
+      goma_stats.ParseFromString(
+          zlib.decompress(base64.b64decode(goma_stats_gz)))
+      event.build_event.goma_stats.CopyFrom(goma_stats)
+      if event_type != 'STEP' or 'compile' not in step_name:
+        logging.error('A goma_stats can be used only for compile STEP. '
+                      'However, it is provided for %s %s.',
+                      event_type, step_name)
+    except (TypeError, zlib.error, DecodeError):
+      logging.error('Invalid goma_stats_gz (%s) is passed',
+                    goma_stats_gz)
+
   return _get_log_event_lite(event, event_timestamp=event_timestamp)
 
 
@@ -308,6 +327,7 @@ def send_build_event(event_type,
                      step_name=None,
                      step_number=None,
                      result=None,
+                     goma_stats_gz=None,
                      timestamp_kind='POINT',
                      event_timestamp=None):
   """Send a ChromeInfraEvent filled with a BuildEvent
@@ -330,6 +350,7 @@ def send_build_event(event_type,
       order.
     result (string): any name of enum BuildEvent.BuildResult.
       (listed in infra_libs.event_mon.monitoring.BUILD_RESULTS)
+    goma_stats_gz(string): base64 gzipped GomaStats binary protobuf.
 
   Returns:
     success (bool): False if some error happened.
@@ -342,6 +363,7 @@ def send_build_event(event_type,
                               step_name=step_name,
                               step_number=step_number,
                               result=result,
+                              goma_stats_gz=goma_stats_gz,
                               timestamp_kind=timestamp_kind,
                               event_timestamp=event_timestamp)
 
