@@ -198,10 +198,10 @@
     'implicit': True,  # Required by python_dateutil, webtest, uritemplate.
   },
   'testing_support': {
-    'version': '0.1.6',
+    'version': '0.1.7',
     'build': '0',
     'repo': 'infra/testing/testing_support',
-    'rev': 'a6e1c88d2f488f6b3207bf0976d96a76a0b3f44e',
+    'rev': '9f50821f3f3fae9e7e775907ac2b902f504c0f49',
   },
   'uritemplate': {
     'version': '0.6',
