@@ -30,7 +30,7 @@ def main(argv):
 
   delta = datetime.timedelta(minutes=args.minutes_in_future)
 
-  return restart.run(args.masters, delta, args.bug)
+  return restart.run(args.masters, delta, args.bug, args.force)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

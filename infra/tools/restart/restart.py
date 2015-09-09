@@ -4,6 +4,7 @@
 
 import contextlib
 import datetime
+import distutils.util
 import json
 import logging
 import os
@@ -18,6 +19,8 @@ from infra.libs.time_functions import zulu
 
 
 LOGGER = logging.getLogger(__name__)
+
+MM_REPO = 'https://chrome-internal.googlesource.com/infradata/master-manager'
 
 
 class MasterNotFoundException(Exception):
@@ -34,6 +37,9 @@ def add_argparse_options(parser):
            'use 0 for "now." default %(default)d')
   parser.add_argument('-b', '--bug', default=None, type=str,
                       help='Bug containing master restart request.')
+  parser.add_argument(
+      '-f', '--force', action='store_true',
+      help='don\'t ask for confirmation, just commit')
 
 
 def get_restart_time(delta):
@@ -45,30 +51,51 @@ def get_restart_time(delta):
 @contextlib.contextmanager
 def get_master_state_checkout():
   target_dir = tempfile.mkdtemp()
-  mm_repo = 'https://chrome-internal.googlesource.com/infradata/master-manager'
   try:
-    LOGGER.info('Cloning %s into %s' % (mm_repo, target_dir))
-    subprocess.call(['git', 'clone', mm_repo, target_dir])
+    LOGGER.info('Cloning %s into %s' % (MM_REPO, target_dir))
+    subprocess.call(['git', 'clone', MM_REPO, target_dir])
     LOGGER.info('done')
     yield target_dir
   finally:
     shutil.rmtree(target_dir)
 
 
-def commit(target, masters, bug):
+def commit(target, masters, bug, timestring, delta, force):
   """Commits the local CL via the CQ."""
   desc = 'Restarting master(s) %s' % ', '.join(masters)
   if bug:
     desc = '%s\nBUG=%s' % (desc, bug)
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
+
+  print
+  print 'Restarting the following masters in %d minutes (%s)' % (
+      delta.total_seconds() / 60, timestring)
+  for master in sorted(masters):
+    print '  %s' % master
+  print
+
+  print "This will upload a CL for master_manager.git, TBR an owner, and "
+  print "commit the CL through the CQ."
+  print
+
+  if not force:
+    print 'Commit? [Y/n]:',
+    input_string = raw_input()
+    if input_string != '' and not distutils.util.strtobool(input_string):
+      print 'Aborting.'
+      return
+
+  print 'To cancel, edit desired_master_state.json in %s.' % MM_REPO
+  print
+
   LOGGER.info('Uploading to Rietveld and CQ.')
   subprocess.check_call(
       ['git', 'cl', 'upload', '-m', desc, '-t', desc,
        '--tbr-owners', '-c', '-f'], cwd=target)
 
 
-def run(masters, delta, bug):
+def run(masters, delta, bug, force):
   """Restart all the masters in the list of masters.
 
     Schedules the restart for now + delta.
@@ -105,4 +132,4 @@ def run(masters, delta, bug):
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
-    commit(master_state_dir, masters, bug)
+    commit(master_state_dir, masters, bug, restart_time, delta, force)
