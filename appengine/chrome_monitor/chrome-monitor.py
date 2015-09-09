@@ -415,7 +415,6 @@ class UpdateBuildQueue(webapp2.RequestHandler):
   Graphs the following information:
     * Build Queue & Running Builds (win/mac/linux/all)
   """
-  @render_json
   def get(self, master):
     url = 'http://chrome-build-extract.appspot.com/get_master/%s' % master
     master_data = json.loads(urlfetch.fetch(url, deadline=600).content)
@@ -471,13 +470,8 @@ class UpdateBuildQueue(webapp2.RequestHandler):
                  y_label='Num Builds',
                  tags=[master, platform, 'build_queue', 'platform'])
 
-    return {
-        'data': master_data,
-        'point_names': points
-    }
-
   def post(self, *args, **kwargs):
-    return self.get(*args, **kwargs)
+    self.get(*args, **kwargs)
 
 
 class UpdateBuilderSuccessRate(webapp2.RequestHandler):
@@ -486,7 +480,6 @@ class UpdateBuilderSuccessRate(webapp2.RequestHandler):
   Graphs the following information:
     * Builder Success Rate
   """
-  @render_json
   def get(self, master, builder, num_builds):
     url = ('https://chrome-build-extract.appspot.com/get_builds'
            '?master=%s&builder=%s&num_builds=%s' % (
@@ -520,12 +513,8 @@ class UpdateBuilderSuccessRate(webapp2.RequestHandler):
                y_label='percent',
                tags=[master, builder, 'success_rate', 'builder'])
 
-    return {
-        'data': builds_data,
-    }
-
   def post(self, *args, **kwargs):
-    return self.get(*args, **kwargs)
+    self.get(*args, **kwargs)
 
 
 class UpdateBuilderTimes(webapp2.RequestHandler):
@@ -534,7 +523,6 @@ class UpdateBuilderTimes(webapp2.RequestHandler):
   Graphs the following information:
     * Builder Times Stats
   """
-  @render_json
   def get(self, master, builder, num_builds):
     url = ('https://chrome-build-extract.appspot.com/get_builds'
            '?master=%s&builder=%s&num_builds=%s' %
@@ -559,12 +547,8 @@ class UpdateBuilderTimes(webapp2.RequestHandler):
               y_label='minutes',
               tags=[master, builder, 'builder_time', 'builder'])
 
-    return {
-        'data': builds_data,
-    }
-
   def post(self, *args, **kwargs):
-    return self.get(*args, **kwargs)
+    self.get(*args, **kwargs)
 
 
 class UpdateCQ(webapp2.RequestHandler):
@@ -576,7 +560,6 @@ class UpdateCQ(webapp2.RequestHandler):
     * Commits per hour.  (Last 1hr, 4hr, 24hr)
     * Commit Queue Length.
   """
-  @render_json
   def get(self):
     # Run a search for all issues that have the commit box checked, but not
     # yet closed.  Also we want messages.
@@ -606,7 +589,6 @@ class UpdateCQ(webapp2.RequestHandler):
               y_label='Minutes',
               tags=['cq', 'length'],
               config={'log_scale': True})
-
 
   def post(self, *args, **kwargs):
     return self.get(*args, **kwargs)
