@@ -21,6 +21,7 @@ import json
 import logging
 import md5
 import os
+import random
 import re
 import sys
 import time
@@ -132,12 +133,15 @@ class Issue(ndb.Model):
   @property
   def is_cq_available(self):
     """Return true if this issue is part of a project that has a CQ."""
-    available_cqs = memcache.get(AVAILABLE_CQS_MEMCACHE_KEY)
+    # Shard the list of CQs onto 16 different memcache keys to avoid hitting the
+    # same memcache server over and over in each request.
+    memcache_key = '%s_%d' % (AVAILABLE_CQS_MEMCACHE_KEY, random.randint(0, 16))
+    available_cqs = memcache.get(memcache_key)
     if not available_cqs:
       cq_list = ndb.Key(CQList, 'singleton').get()
       if cq_list:
         available_cqs = cq_list.names
-        memcache.set(AVAILABLE_CQS_MEMCACHE_KEY, available_cqs, 600)
+        memcache.set(memcache_key, available_cqs, 600)
 
     if available_cqs:
       return self.project in available_cqs
