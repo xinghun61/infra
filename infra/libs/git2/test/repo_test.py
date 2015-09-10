@@ -285,9 +285,11 @@ class TestRepo(test_util.TestBasis):
                   git2.INVALID)
 
   def testNotes(self):
+    env = os.environ.copy()
+    env.update(self.repo.get_git_commit_env())
+
     r = self.mkRepo()
     self.assertIsNone(r.notes(r['refs/heads/branch_O'], 'refs/notes/commits'))
-    r.run('notes', 'add', 'refs/heads/branch_O', '-m', 'sup',
-          env=self.repo.get_git_commit_env())
+    r.run('notes', 'add', 'refs/heads/branch_O', '-m', 'sup', env=env)
     self.assertEqual(r.notes(r['refs/heads/branch_O'], 'refs/notes/commits'),
                      'sup\n')

@@ -73,7 +73,12 @@ def RunTest(test_name):
       if include_log:
         root_logger.removeHandler(shandler)
         root_logger.setLevel(log_level)
-        ret.append({'log output': logout.getvalue().splitlines()})
+
+        # infra.libs.git2.repo logs this message if the command took longer than
+        # 1s to run.  This causes test flakes occasionally.
+        log_lines = [x for x in logout.getvalue().splitlines()
+                     if 'Finished in ' not in x]
+        ret.append({'log output': log_lines})
 
       ret.append({
         'inner_loop success': success,

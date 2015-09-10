@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import os
 
 from infra.libs import git2
 from infra.libs.git2.test import test_util
@@ -59,16 +60,22 @@ class TestCommit(test_util.TestBasis):
       c.alter(tree='failbeef')
 
   def testNotes(self):
+    env = os.environ.copy()
+    env.update(self.repo.get_git_commit_env())
+
     r = self.mkRepo()
     self.assertIsNone(r['refs/heads/branch_O'].commit.notes())
     r.run('notes', '--ref', 'refs/notes/wacko', 'add', 'refs/heads/branch_O',
-          '-m', 'cool notes, fellow robot!', env=self.repo.get_git_commit_env())
+          '-m', 'cool notes, fellow robot!', env=env)
     self.assertIsNone(r['refs/heads/branch_O'].commit.notes())
     self.assertEqual(r['refs/heads/branch_O'].commit.notes('refs/notes/wacko'),
                      # note the trailing \n
                      'cool notes, fellow robot!\n')
 
   def testExtraFooters(self):
+    env = os.environ.copy()
+    env.update(self.repo.get_git_commit_env())
+
     r = self.mkRepo()
     self.assertEqual(r['refs/heads/branch_O'].commit.extra_footers(), {})
     r.run('notes', '--ref', 'refs/notes/extra_footers', 'add',
@@ -77,7 +84,7 @@ class TestCommit(test_util.TestBasis):
             'Nerd-Rage: extreme',
             'Happy-Footer: sup2',
           ]),
-          env=self.repo.get_git_commit_env())
+          env=env)
     self.assertEqual(
       r['refs/heads/branch_O'].commit.extra_footers(),
       freeze(collections.OrderedDict([
