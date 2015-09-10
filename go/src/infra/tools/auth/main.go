@@ -28,6 +28,7 @@ func main() {
 			authcli.SubcommandInfo(opts, "info"),
 			authcli.SubcommandLogin(opts, "login"),
 			authcli.SubcommandLogout(opts, "logout"),
+			authcli.SubcommandToken(opts, "token"),
 		},
 	}
 	os.Exit(subcommands.Run(application, nil))
