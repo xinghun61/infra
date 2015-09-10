@@ -152,6 +152,7 @@ class FilePoller(Poller):
   it was rotated or deleted.
   """
   endpoint = 'FILE'
+  field_keys = ('builder', 'slave', 'result', 'project_id')
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
   cycle_times = ts_mon.CumulativeDistributionMetric(
       'buildbot/master/builders/builds/durations')
@@ -180,8 +181,7 @@ class FilePoller(Poller):
     return True
 
   def handle_response(self, data):
-    field_keys = ('builder', 'slave', 'result', 'project_id')
-    fields = self.fields({k: data[k] for k in field_keys if k in data})
+    fields = self.fields({k: data.get(k, 'unknown') for k in self.field_keys})
     self.result_count.increment(fields)
     if 'duration_s' in data:
       self.cycle_times.add(data['duration_s'], fields)

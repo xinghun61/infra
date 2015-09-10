@@ -196,11 +196,18 @@ class FilePollerTest(unittest.TestCase):
   @mock.patch('infra_libs.ts_mon.CounterMetric.increment')
   @mock.patch('infra_libs.ts_mon.CumulativeDistributionMetric.add')
   def test_file_has_data(self, fake_add, fake_increment):
-    result1 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
-    result2 = {'builder': 'b1', 'slave': 's1', 'result': 'r1'}
+    result1 = {'builder': 'b1', 'slave': 's1',
+               'result': 'r1', 'project_id': 'chromium'}
+    result2 = {'builder': 'b1', 'slave': 's1',
+               'result': 'r1', 'project_id': 'unknown'}
+    # Check that we've listed all the required metric fields.
+    self.assertEqual(set(result1), set(pollers.FilePoller.field_keys))
+    self.assertEqual(set(result2), set(pollers.FilePoller.field_keys))
+
     data1 = result1.copy()
-    data2 = result1.copy()
-    data1['random'] = 'value'
+    data2 = result2.copy()
+    data1['random'] = 'value'  # Extra field, should be ignored.
+    del data2['project_id']    # Missing field, should become 'unknown'.
     data2['duration_s'] = 5
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = self.create_data_file(tempdir, [data1, data2])
