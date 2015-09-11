@@ -1,0 +1,12 @@
+package: infra/tools/authutil/${platform}
+description: auth is CLI for authentication.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+root: ../../go/bin
+data:
+  - file: authutil${exe_suffix}
+  - version_file: authutil${exe_suffix}.cipd_version
