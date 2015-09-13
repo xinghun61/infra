@@ -1,6 +1,5 @@
 github.com/ActiveState/tail #c86531131426fb939fe8627ffa57a3c649f04cd4 !https://chromium.googlesource.com/external/github.com/ActiveState/tail.git
 github.com/bradfitz/http2 #f8202bc903bda493ebba4aa54922d78430c2c42f !https://chromium.googlesource.com/external/github.com/bradfitz/http2.git
-github.com/go-yaml/yaml #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/protobuf #16256d3ce6929458613798ee44b7914a3f59f5c6 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #2c0e3555140502254399772c277c54fbaa207e80 !https://code.googlesource.com/google-api-go-client.git
@@ -8,6 +7,8 @@ github.com/GoogleCloudPlatform/go-endpoints/endpoints #f1f8f40c9363e7d1f4631dc75
 github.com/howeyc/fsnotify #4894fe7efedeeef21891033e1cce3b23b9af7ad2 !https://chromium.googlesource.com/external/github.com/howeyc/fsnotify.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
+github.com/kisielk/errcheck #a4f12b02dc24fba8e9cd3706f3c35795616f2687 !https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
+github.com/kisielk/gotool #58a7a198f2ec6ea7af221fd216e7f559d663ce02 !https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 github.com/klauspost/compress #058815a5f6d073a77523c0323777dda1c64f26ff !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
 github.com/klauspost/cpuid #3b0816bb6cb682eea8e1973f4168b6c86880efe1 !https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
 github.com/klauspost/crc32 #55bf046ad09604e8e121b8494e3f16b081b1a6d5 !https://chromium.googlesource.com/external/github.com/klauspost/crc32.git
@@ -15,8 +16,12 @@ github.com/kr/pretty #cb0850c1681cbca3233e84f7e6ec3e4c3f352085 !https://chromium
 github.com/kr/pty #5cf931ef8f76dccd0910001d74a58a7fca84a83d !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.googlesource.com/external/github.com/kr/text.git
 github.com/luci/gkvlite #cf7fa95b097418138e80474e217d865e2eb853ac !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+github.com/maruel/panicparse #35b70c396b3b7ff615b29678b2385d8adb91c9c2 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
+github.com/maruel/pre-commit-go #38201f5f9c0fe5dd126b76840d35d6e09196e95a !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #3a25827b419f7ec71b1f54d075cdc43fef2e3a59 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
 github.com/maruel/ut #814808268666eb186d9691c504a057988da05a05 !https://chromium.googlesource.com/external/github.com/maruel/ut.git
+github.com/mattn/go-colorable #40e4aedc8fabf8c23e040057540867186712faa5 !https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
+github.com/mattn/go-isatty #7fcbc72f853b92b5720db4a6b8482be612daef24 !https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
 github.com/mgutz/ansi #452f5f5396543168418a299cd963697ac742b56e !https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
 github.com/mjibson/goon #b3d2e1ef84070229eeee1e8511b50e09f97e0749 !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
 github.com/op/go-logging #b45e089a5a94cc79c8e78fc03cd83d04b5d8410f !https://chromium.googlesource.com/external/github.com/op/go-logging.git
@@ -30,9 +35,10 @@ golang.org/x/crypto #4d48e5fa3d62b5e6e71260571bf76c767198ca02
 golang.org/x/net #5aa7325eaa14d7ed4b520f40d58adf2834c8de01
 golang.org/x/oauth2 #f98d0160877ab4712b906626425ed8b0b320907c
 golang.org/x/text #c93e7c9fff19fb9139b5ab04ce041833add0134e
+golang.org/x/tools #31971b752158ba9a2e6f5f4f01677ba1c075ef16
 google.golang.org/api #d4ab0b854f8606d689612515c3d18bd3b19d7e70
 google.golang.org/appengine #61bec684bd7bce2d7960be6735d0d62fe6c2b99a !https://chromium.googlesource.com/external/github.com/golang/appengine.git
 google.golang.org/cloud #2f1f05fa5ef92aac6109243f351e01ae3e033402
 google.golang.org/grpc #f5ebd86be717593ab029545492c93ddf8914832b !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
 gopkg.in/tomb.v1 #dd632973f1e7218eb1089048e0798ec9ae7dceb8 !https://chromium.googlesource.com/external/github.com/go-tomb/tomb.git
-
+gopkg.in/yaml.v2 #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git

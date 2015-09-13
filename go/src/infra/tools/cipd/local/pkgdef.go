@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v2"
 
 	"infra/tools/cipd/common"
 )
