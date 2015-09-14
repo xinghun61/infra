@@ -107,7 +107,7 @@ class DocsTest(testing.AppengineTestCase):
     self.mock(net, 'request_async', mock.Mock())
 
     @ndb.tasklet
-    def request_async(url, headers):  # pylint: disable=unused-argument
+    def request_async(url, headers, scopes):  # pylint: disable=unused-argument
       name = os.path.basename(url)
       raise ndb.Return(html('Title of %s' % name, 'Contents of %s' % name))
 

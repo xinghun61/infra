@@ -26,6 +26,7 @@ from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
 from components import config
+from components import gerrit
 from components import gitiles
 from components import net
 from components import utils
@@ -292,7 +293,7 @@ def _load_docs_async(locs, rev):
     'User-Agent': app_identity.get_default_version_hostname(),
   }
   htmls = yield [
-    net.request_async(str(l), headers=headers)
+    net.request_async(str(l), headers=headers, scopes=gerrit.AUTH_SCOPE)
     for l in fixed_locs
   ]
   raise ndb.Return([
