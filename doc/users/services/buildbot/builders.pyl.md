@@ -125,6 +125,13 @@ will be used to display the builds. Each directory is searched in order
 for templates as needed (so earlier directories override later
 directories).
 
+### buildbot_url
+
+This is an *optional* field. It can be set to customize the URL
+the HTML templates use to refer to the top-level web page. If it
+is not provided, we will synthesize one for build.chromium.org based
+on the master name.
+
 ### buildbucket_bucket
 This is an *optional* field but must be present if the builders on the
 master are intended to be scheduled through buildbucket (i.e., they are
