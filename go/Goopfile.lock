@@ -5,6 +5,7 @@ github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromi
 github.com/golang/lint #7b7f4364ff76043e6c3610281525fabc0d90f0e4 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #16256d3ce6929458613798ee44b7914a3f59f5c6 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #2c0e3555140502254399772c277c54fbaa207e80 !https://code.googlesource.com/google-api-go-client.git
+github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/howeyc/fsnotify #4894fe7efedeeef21891033e1cce3b23b9af7ad2 !https://chromium.googlesource.com/external/github.com/howeyc/fsnotify.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
