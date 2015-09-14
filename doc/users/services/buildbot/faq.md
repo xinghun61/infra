@@ -82,3 +82,10 @@ Use [recipes](../../recipes.md)
 [buildbucket.search]: https://cr-buildbucket.appspot.com/_ah/api/explorer/#p/buildbucket/v1/buildbucket.search
 [go/bug-a-trooper]: http://go/bug-a-trooper
 [master-service-account-bug]: https://code.google.com/p/chromium/issues/entry?cc=nodir@chromium.org&labels=Infra-Buildbucket,Restrict-View-Google&summary=Service%20account%20[short%20name]%20for%20master.[master_name]&comment=Please%20provide%20a%20service%20account%20json%20key%20file%20%22service-account-[short%20name].json%22%20for%20[master%20name]%0A%0APlease%20remove%20Restrict-View-Google%20label%20if%20this%20not%20for%20an%20internal%20master.
+
+[buildbot-tool]: https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/tools/buildbot-tool
+[slave-request ticket]: https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs,Restrict-View-Google&summary=[Slave%20request]%20for%20%3Cmaster%20name%3E&comment=Request%20for%20new%20slaves%20for%20master%20%3Cmaster-name%3E.%0A%0AQuantity:%0AOS:%0AVersion:%20default%0ABitness:%20default%20%0AExample:%20%3Cspecify%20an%20example%20slave%3E%0A%0ARepeat%20this%20block%20if%20you%20need%20different%20configurations.
+[master deployment ticket]: https://code.google.com/p/chromium/issues/entry?labels=Type-Bug,Pri-2,Infra-Labs,Restrict-View-Google&summary=[Deploy%20master]%20%3Cmaster%20name%3E&comment=Please%20deploy%20master%20%3Cmaster-name%3E.%20It%20is%20committed%20to%20%3Cgitiles%20link%20to%20master,%20e.g.%20https://chromium.googlesource.com/chromium/tools/build/+/master/masters/master.tryserver.blink%3E%0A%0AFor%20admins:%20this%20typically%20includes%20%0A*%20configuring%20the%20reverse%20proxy%20on%20chromegw%0A*%20adding%20a%20.dbconfig.%0A*%20starting%20the%20master%20for%20the%20first%20time.
+[go/chrome-infra-mastermap]: http://go/chrome-infra-mastermap
+[restart the master]: contacting_troopers.md
+[masters_test.py]: https://chromium.googlesource.com/chromium/tools/build/+/master/tests/masters_test.py
