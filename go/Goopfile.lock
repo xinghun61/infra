@@ -2,6 +2,7 @@ github.com/ActiveState/tail #c86531131426fb939fe8627ffa57a3c649f04cd4 !https://c
 github.com/GoogleCloudPlatform/go-endpoints/endpoints #f1f8f40c9363e7d1f4631dc75dd6f2b22f656a0a !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/bradfitz/http2 #f8202bc903bda493ebba4aa54922d78430c2c42f !https://chromium.googlesource.com/external/github.com/bradfitz/http2.git
 github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromium.googlesource.com/external/github.com/golang/glog.git
+github.com/golang/lint #7b7f4364ff76043e6c3610281525fabc0d90f0e4 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #16256d3ce6929458613798ee44b7914a3f59f5c6 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #2c0e3555140502254399772c277c54fbaa207e80 !https://code.googlesource.com/google-api-go-client.git
 github.com/howeyc/fsnotify #4894fe7efedeeef21891033e1cce3b23b9af7ad2 !https://chromium.googlesource.com/external/github.com/howeyc/fsnotify.git
