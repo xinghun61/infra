@@ -27,9 +27,20 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     })
     self.request_count += 1
     if self.request_count > self.simulated_failures:
-      return 200, 'success'
+      return 200, 'success - GET'
     else:
-      return self.failure_status, 'failure'
+      return self.failure_status, 'failure - GET'
+
+  def _Post(self, url, data, timeout_seconds, headers=None):
+    self.requests.append({
+        'url': url,
+        'timeout_seconds': timeout_seconds,
+    })
+    self.request_count += 1
+    if self.request_count > self.simulated_failures:
+      return 200, 'success - POST'
+    else:
+      return self.failure_status, 'failure - POST'
 
 class HttpClientTest(testing.AppengineTestCase):
   def testRequestWithTimeout(self):
@@ -39,7 +50,7 @@ class HttpClientTest(testing.AppengineTestCase):
     status_code, content = dummy_http_client.Get(
         url, timeout_seconds=timeout_seconds)
     self.assertEquals(200, status_code)
-    self.assertEquals('success', content)
+    self.assertEquals('success - GET', content)
     self.assertEquals(1, dummy_http_client.request_count)
     self.assertEquals(url, dummy_http_client.requests[0]['url'])
     self.assertEquals(timeout_seconds,
@@ -49,9 +60,10 @@ class HttpClientTest(testing.AppengineTestCase):
     url = 'http://test'
     params = {'a': 1, 'b': 'b&b'}
     dummy_http_client = DummyHttpClient(0, 404)
-    status_code, content = dummy_http_client.Get(url, params=params)
+    status_code, content = dummy_http_client.Get(
+        url, params=params)
     self.assertEquals(200, status_code)
-    self.assertEquals('success', content)
+    self.assertEquals('success - GET', content)
     self.assertEquals(1, dummy_http_client.request_count)
     target_url, query_str = urllib.splitquery(
         dummy_http_client.requests[0]['url'])
@@ -75,38 +87,63 @@ class HttpClientTest(testing.AppengineTestCase):
                            http_client.GetBackoff(retry_backoff, tries))
 
   def testRequestWithRetry(self):
-    url = 'http://test'
     simulated_failures = 2
 
     self.mock_sleep()
 
     dummy_http_client = DummyHttpClient(simulated_failures, 503)
-    retry_backoff = 1
 
     status_code, content = dummy_http_client.Get(
-        url, max_retries=simulated_failures + 2,
-        retry_backoff=retry_backoff)
+        'http://test', max_retries=simulated_failures + 2,
+        retry_backoff=1)
     self.assertEquals(200, status_code)
-    self.assertEquals('success', content)
+    self.assertEquals('success - GET', content)
     self.assertEquals(simulated_failures + 1,
                       dummy_http_client.request_count)
 
   def testFailedRequest(self):
-    url = 'http://test'
     dummy_http_client = DummyHttpClient(5, 503)
     status_code, content = dummy_http_client.Get(
-        url, max_retries=2, retry_backoff=0.01)
+        'http://test', max_retries=2, retry_backoff=0.01)
     self.assertEquals(2, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
-    self.assertEquals('failure', content)
+    self.assertEquals('failure - GET', content)
 
   def testNoRetryForSpecificHttpStatusCode(self):
-    url = 'http://test'
     for expected_status_code in (302, 401, 403, 404, 501):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
 
       status_code, content = dummy_http_client.Get(
-          url, max_retries=2000, retry_backoff=0.1)
+          'http://test', max_retries=2000, retry_backoff=0.1)
       self.assertEquals(1, dummy_http_client.request_count)
       self.assertEquals(expected_status_code, status_code)
-      self.assertEquals('failure', content)
+      self.assertEquals('failure - GET', content)
+
+  def testPostFailure(self):
+    dummy_http_client = DummyHttpClient(1, 404)
+    status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+    self.assertEquals(404, status_code)
+    self.assertEquals('failure - POST', content)
+
+  def testPostSuccess(self):
+    dummy_http_client = DummyHttpClient(0, 404)
+    status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+    self.assertEquals(200, status_code)
+    self.assertEquals('success - POST', content)
+
+  def testNoRetryForSpecificHttpStatusCodePost(self):
+    for expected_status_code in (302, 401, 403, 404, 501):
+      dummy_http_client = DummyHttpClient(20000000, expected_status_code)
+
+      status_code, content = dummy_http_client.Post('http://test', {'data': 0})
+      self.assertEquals(1, dummy_http_client.request_count)
+      self.assertEquals(expected_status_code, status_code)
+      self.assertEquals('failure - POST', content)
+
+  def testRetryForPost(self):
+    dummy_http_client = DummyHttpClient(5, 503)
+    status_code, content = dummy_http_client.Post('http://test', {'data': 0},
+                                                  max_retries=3)
+    self.assertEquals(3, dummy_http_client.request_count)
+    self.assertEquals(503, status_code)
+    self.assertEquals('failure - POST', content)

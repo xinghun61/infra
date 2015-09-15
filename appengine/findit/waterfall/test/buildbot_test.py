@@ -25,6 +25,9 @@ class DummyHttpClient(RetryHttpClient):
     self.requests.append(url)
     return self.status_code, self.response_content
 
+  def _Post(self, *_):  # pragma: no cover
+    pass
+
 
 class BuildBotTest(unittest.TestCase):
 
