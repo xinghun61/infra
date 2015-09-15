@@ -25,6 +25,8 @@ from google.appengine.runtime import apiproxy_errors
 
 from codereview import common
 
+EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
+
 
 class Error(Exception):
   """Raised on non-transient errors."""

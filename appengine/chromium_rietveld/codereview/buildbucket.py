@@ -21,7 +21,7 @@ import os
 import urllib
 
 from google.appengine.api import app_identity
-from google.appengine.api import urlfetch
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -32,14 +32,18 @@ from codereview import models
 from codereview import net
 
 EPOCH = datetime.datetime.utcfromtimestamp(0)
-BUILDBUCKET_HOSTNAME = (
-    'cr-buildbucket-test.appspot.com' if common.IS_DEV
-    else 'cr-buildbucket.appspot.com')
+BUILDBUCKET_APP_ID = (
+    'cr-buildbucket-test' if common.IS_DEV else 'cr-buildbucket')
 BUILDBUCKET_API_ROOT = (
-    'https://%s/_ah/api/buildbucket/v1' % BUILDBUCKET_HOSTNAME)
-
+    'https://%s.appspot.com/_ah/api/buildbucket/v1' % BUILDBUCKET_APP_ID)
 # See tag conventions http://cr-buildbucket.appspot.com/#docs/conventions
 BUILDSET_TAG_FORMAT = 'patch/rietveld/{hostname}/{issue}/{patch}'
+
+AUTH_SERVICE_ID = 'chrome-infra-auth'
+IMPERSONATION_TOKEN_MINT_URL = (
+    'https://%s.appspot.com/auth_service/api/v1/delegation/token/create' %
+    AUTH_SERVICE_ID)
+IMPERSONATION_TOKEN_CACHE_KEY_FORMAT = 'impersonation_token/v1/%s'
 
 
 class BuildBucketError(Exception):
@@ -141,6 +145,10 @@ class BuildbucketTryJobResult(models.TryJobResult):
     )
 
 
+################################################################################
+## Gettings builds.
+
+
 @ndb.tasklet
 def get_builds_for_patchset_async(project, issue_id, patchset_id):
   """Queries BuildBucket for builds associated with the patchset.
@@ -170,14 +178,11 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
       'tag': 'buildset:%s' % buildset_tag,
   }
 
-  url = '%s/search' % BUILDBUCKET_API_ROOT
   logging.info(
       'Fetching builds for patchset %s/%s. Buildset: %s',
       issue_id, patchset_id, buildset_tag)
   try:
-    resp = yield net.json_request_async(
-        url, params=params,
-        scopes='https://www.googleapis.com/auth/userinfo.email')
+    resp = yield rpc_async('GET', 'search', params=params)
   except net.NotFoundError as ex:
     logging.error(
         'Buildbucket returned 404 unexpectedly. Body: %s', ex.response)
@@ -204,6 +209,78 @@ def get_try_job_results_for_patchset_async(project, issue_id, patchset_id):
       continue
     results.append(try_job_result)
   raise ndb.Return(results)
+
+
+################################################################################
+## Buildbucket RPC.
+
+
+@ndb.tasklet
+def _mint_delegation_token_async():
+  """Generates an access token to impersonate the current user, if any.
+
+  Memcaches the token.
+  """
+  account = models.Account.current_user_account
+  if account is None:
+    raise ndb.Return(None)
+
+  ctx = ndb.get_context()
+  # Get from cache.
+  cache_key = IMPERSONATION_TOKEN_CACHE_KEY_FORMAT % account.email
+  token = yield ctx.memcache_get(cache_key)
+  if token:
+    raise ndb.Return(token)
+
+  # Request a new one.
+  logging.debug('Minting a delegation token for %s', account.email)
+  req = {
+    'audience': ['user:%s' % app_identity.get_service_account_name()],
+    'services': ['service:%s' % BUILDBUCKET_APP_ID],
+    'impersonate': 'user:%s' % account.email,
+  }
+  resp = yield net.json_request_async(
+      IMPERSONATION_TOKEN_MINT_URL,
+      method='POST',
+      payload=req,
+      scopes=net.EMAIL_SCOPE)
+  token = resp.get('delegation_token')
+  if not token:
+    raise BuildBucketError(
+        'Could not mint a delegation token. Response: %s' % resp)
+
+  # Put to cache.
+  validity_duration_sec = resp.get('validity_duration')
+  assert isinstance(validity_duration_sec, int)
+  if validity_duration_sec >= 10:
+    validity_duration_sec -= 10  # Refresh the token 10 sec in advance.
+    yield ctx.memcache_add(cache_key, token, time=validity_duration_sec)
+
+  raise ndb.Return(token)
+
+
+@ndb.tasklet
+def rpc_async(method, path, **kwargs):
+  """Makes an authenticated request to buildbucket.
+
+  Impersonates the current user if he/she is logged in.
+  Otherwise sends an anonymous request.
+  """
+  assert 'scopes' not in kwargs
+  assert 'headers' not in kwargs
+  url = '%s/%s' % (BUILDBUCKET_API_ROOT, path)
+  delegation_token = yield _mint_delegation_token_async()
+  headers = {}
+  scopes = None
+  if delegation_token:
+    headers['X-Delegation-Token-V1'] = delegation_token
+    scopes = net.EMAIL_SCOPE
+  res = yield net.json_request_async(
+      url, method=method,
+      headers=headers,
+      scopes=scopes,
+      **kwargs)
+  raise ndb.Return(res)
 
 
 ################################################################################

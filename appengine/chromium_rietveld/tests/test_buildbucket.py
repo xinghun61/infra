@@ -23,6 +23,7 @@ import setup
 setup.process_args()
 
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
 from utils import TestCase
@@ -165,7 +166,9 @@ class BuildbucketFunctionsTest(TestCase):
 
   def setUp(self):
     self.fake_responses = []
-    def json_request_async(*_, **__):
+    self.requests = []
+    def json_request_async(*args, **kwargs):
+      self.requests.append((args, kwargs))
       future = ndb.Future()
       future.set_result(self.fake_responses.pop(0))
       return future
@@ -175,16 +178,33 @@ class BuildbucketFunctionsTest(TestCase):
               lambda *_, **__: 'codereview.chromium.org')
 
   def test_get_try_job_results_for_patchset(self):
-    response_data = {
+    models.Account.current_user_account = models.Account(
+        email='johndoe@chromium.org')
+
+    put_builds_response = {
       'builds': [
         {'id': '1', 'status': 'SCHEDULED'},
         {'id': '2', 'status': 'SCHEDULED'},
-      ]
+      ],
     }
-    self.fake_responses = [response_data]
+    self.fake_responses = [
+      {'delegation_token': 'deltok', 'validity_duration': 1000},
+      put_builds_response,
+    ]
     actual_builds = buildbucket.get_builds_for_patchset_async(
         'project', 1, 2).get_result()
-    self.assertEqual(actual_builds, response_data['builds'])
+    self.assertEqual(actual_builds, put_builds_response['builds'])
+
+    mint_token_req_body = self.requests[0][1]['payload']
+    self.assertEqual(mint_token_req_body, {
+      'audience': ['user:test@localhost'],
+      'services': ['service:cr-buildbucket-test'],
+      'impersonate': 'user:johndoe@chromium.org',
+    })
+    put_builds_req_headers = self.requests[1][1]['headers']
+    self.assertEqual(
+        put_builds_req_headers['X-Delegation-Token-V1'],
+        'deltok')
 
 
 if __name__ == '__main__':
