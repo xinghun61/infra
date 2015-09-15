@@ -11,23 +11,19 @@ found in the LICENSE file.
     <style>
       :host {
         display: block;
-      }
-      div {
-        margin-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1em;
       }
       .title {
         font-weight: bold;
+        white-space: nowrap;
       }
       .since {
         font-style: fixed-width;
       }
-      .title, .since, .body, .severity, .links {
-        margin: 0.5em;
-      }
     </style>
     <ct-user-prefs id="userPrefs"></ct-user-prefs>
-    <div horizontal layout>
-      <ct-alert-card-buttons bug="{{ bug }}" alert="{{ alert }}" tree="{{ tree }}"></ct-alert-card-buttons>
+    <div verticallayout>
       <div flex vertical layout class='severity-{{ alert.severity }}'>
         <div class='title'>
           {{ alert.title }}

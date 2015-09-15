@@ -117,15 +117,23 @@ CTFailures.prototype.update = function() {
   }
 
   this.rotations = {}
-  return Promise.all([annotationPromise,
+  var reqs =[annotationPromise,
       net.json(alertsUrl),
       net.json('https://trooper-o-matic.appspot.com/alerts'),
-      // TODO(seanmccullough): fetch other trees from /api/v1/alerts.
-      net.json('/api/v1/alerts/chromium')]).then(function(data_array) {
+      net.json('/api/v1/alerts/chromium'),
+      net.json('/api/v1/alerts/blink'),
+      net.json('/api/v1/alerts/chromium.perf')];
+
+  return Promise.all(reqs).then(function(data_array) {
     var annotations = data_array[0];
     var sheriff_data = data_array[1];
     var trooper_data = data_array[2];
-    this.alerts = {'chromium': data_array[3]};
+    this.alerts = {
+      'chromium': data_array[3],
+      'blink': data_array[4],
+      'chromium.perf': data_array[5]
+    };
+
     var newFailures = {};
 
     var lastPosted = (sheriff_data.last_posted || sheriff_data.date) * 1000;
