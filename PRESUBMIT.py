@@ -201,6 +201,22 @@ def NoForkCheck(input_api, output_api): # pragma: no cover
   return []
 
 
+def GoGoopRollCheck(input_api, output_api):
+  goops = set([input_api.os_path.join('go', f)
+               for f in ('Goopfile', 'Goopfile.lock')])
+  changed = []
+  for f in input_api.AffectedTextFiles():
+    if f.LocalPath() in goops:
+      changed.append(f.LocalPath())
+  assert len(changed) <= 2
+  if len(changed) == 1:
+    return [output_api.PresubmitPromptWarning(
+      'You modified only 1 Goop file, but a pair should be modified at once.\n'
+      '%s should also be modified.\n' %
+      (list(goops.difference(set(changed)))[0])
+    )]
+  return []
+
 
 def EmptiedFilesCheck(input_api, output_api): # pragma: no cover
   """Warns if a CL empties a file.
@@ -332,6 +348,7 @@ def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
   output.extend(NoForkCheck(input_api, output_api))
   output.extend(EmptiedFilesCheck(input_api, output_api))
+  output.extend(GoGoopRollCheck(input_api, output_api))
   return output
 
 
