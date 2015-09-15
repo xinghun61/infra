@@ -15,3 +15,9 @@ libraries:
 builtins:
 - deferred: on
 - remote_api: on
+
+instance_class: F4
+automatic_scaling:
+  min_idle_instances: 2
+  min_pending_latency: 50ms
+  max_pending_latency: 250ms
