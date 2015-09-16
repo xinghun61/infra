@@ -14,6 +14,7 @@ from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import triage_analysis
 from handlers import verify_analysis
+from handlers import version
 from pipeline_wrapper import pipeline_status_ui
 
 
@@ -28,6 +29,7 @@ web_pages_handler_mappings = [
     ('/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/triage-analysis', triage_analysis.TriageAnalysis),
     ('/verify-analysis', verify_analysis.VerifyAnalysis),
+    ('/version', version.Version),
 ]
 web_application = webapp2.WSGIApplication(
     web_pages_handler_mappings, debug=False)

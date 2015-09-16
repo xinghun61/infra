@@ -50,11 +50,50 @@ deploy_findit() {
     app_id="findit-for-me"
   fi
 
-  local version="$(git rev-parse --short HEAD)"
+  local current_version=`curl -s https://${app_id}.appspot.com/version`
+  if ! [[ $current_version =~ ^[0-9a-fA-F]+$ ]]; then
+    echo $current_version
+    echo "Failed to retrieve current version of Findit from the live app."
+    echo "Please input the current version, followed by [ENTER]:"
+    read current_version
+    echo
+  fi
+
+  local new_version="$(git rev-parse --short HEAD)"
   local app_cfg="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
 
-  python ${app_cfg} update -A ${app_id} $FINDIT_MODULES --version ${version}
-  echo "Findit(${version}) was deployed to ${app_id}"
+  echo "Current deployed version is '$current_version'."
+  echo "Deploying new version '${new_version}'..."
+
+  echo
+  echo "-----------------------------------"
+  python ${app_cfg} update -A ${app_id} $FINDIT_MODULES --version ${new_version}
+  echo "-----------------------------------"
+  echo
+
+  echo "New version '${new_version}' of Findit was deployed to ${app_id}."
+  if ! [[ "$1" == "prod" ]]; then
+    return
+  fi
+
+  local dashboard_url="https://${new_version}-dot-${app_id}.appspot.com/list-analyses"
+  echo "Please force a re-run of a recent build failure on dashboard ${dashboard_url},"
+  echo "ensure that the analysis is run in the new version and gives correct results,"
+  echo "and then set the new version ${new_version} as default for all modules."
+  echo
+
+  local change_log_url="https://chromium.googlesource.com/infra/infra/+log/${current_version}..${new_version}/appengine/findit"
+  echo "Please also email chrome-findit@ with the following:"
+  echo "Subject: 'Release: findit-for-me was updated to ${new_version}.'"
+  echo "Hi all,"
+  echo
+  echo "The app findit-for-me was updated from ${current_version} to ${new_version}."
+  echo "Changelogs: ${change_log_url}"
+  echo
+  echo "If your bug fixes/features are included in the release, please verify on ${app_id} and mark them as verified on http://crbug.com"
+  echo
+  echo "Thanks,"
+  echo "Released by ${USER}@"
 }
 
 case "$1" in
