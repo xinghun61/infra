@@ -1876,14 +1876,19 @@ def get_patchset_try_job_results(patchset, swallow_exceptions=True):
     if not isinstance(props, dict):
       return None
 
-    bb_info = props.get('buildbucket', {})
-    if isinstance(bb_info, basestring):
-      bb_info = json.loads(bb_info)
-    if not isinstance(bb_info, dict):
-      logging.error('Could not parse buildbucket build property: %r', bb_info)
-      return None
+    def get_subdict(d, key):
+      v = d.get(key, {})
+      if isinstance(v, basestring):
+        v = json.loads(v)
+      if not isinstance(v, dict):
+        logging.error(
+            'Could not parse buildbucket build property. Properties: %r', props)
+        return {}
+      return v
+
+    bb_info = get_subdict(props, 'buildbucket')
     return (
-        bb_info.get('build', {}).get('id') or
+        get_subdict(bb_info, 'build').get('id') or
         bb_info.get('build_id'))
 
   for result in local_try_job_results:
