@@ -1071,6 +1071,7 @@ def print_flakiness_stats(args, stats):
         'compile_failures': 0,
         'test_failures': 0,
         'invalid_results_failures': 0,
+        'patch_failures': 0,
         'other_failures': 0,
       })
       if result['result'] in (SUCCESS, WARNINGS):
@@ -1085,6 +1086,8 @@ def print_flakiness_stats(args, stats):
           result_counts[(master, builder)]['test_failures'] += 1
         elif build_properties.get('failure_type') == 'INVALID_TEST_RESULTS':
           result_counts[(master, builder)]['invalid_results_failures'] += 1
+        elif build_properties.get('failure_type') == 'PATCH_FAILURE':
+          result_counts[(master, builder)]['patch_failures'] += 1
         else:
           result_counts[(master, builder)]['other_failures'] += 1
           uncategorized_flakes[(master, builder)].append(result)
@@ -1109,6 +1112,8 @@ def print_flakiness_stats(args, stats):
             'test_failures'] if flakes else 0,
         'invalid_results_failures': result_counts[(master, builder)][
             'invalid_results_failures'] if flakes else 0,
+        'patch_failures': result_counts[(master, builder)][
+            'patch_failures'] if flakes else 0,
         'other_failures': result_counts[(master, builder)][
             'other_failures'] if flakes else 0,
         'uncategorized_flakes': uncategorized_flakes.get(
@@ -1134,6 +1139,7 @@ def print_flakiness_stats(args, stats):
         'compile_failures',
         'test_failures',
         'invalid_results_failures',
+        'patch_failures',
         'other_failures'
       )
       init_dict = {key: 0 for key in keys}
@@ -1153,10 +1159,10 @@ def print_flakiness_stats(args, stats):
                       try_job_stats[master_builder]['total'])
 
   builders = sorted(try_job_stats.iterkeys(), key=flakiness, reverse=True)
-  format_string = '%-15s %-55s %-16s|%-7s|%-7s|%-7s|%-7s|%-7s'
+  format_string = '%-15s %-55s %-16s|%-7s|%-7s|%-7s|%-7s|%-7s|%-7s'
   output(format_string,
          'Master', 'Builder', 'Flakes',
-         'Infra', 'Compile', 'Test', 'Invalid', 'Other')
+         'Infra', 'Compile', 'Test', 'Invalid', 'Patch', 'Other')
   for master_builder in builders:
     master, builder = master_builder
     output(format_string,
@@ -1175,6 +1181,9 @@ def print_flakiness_stats(args, stats):
                try_job_stats[master_builder]['flakes']),
            '%6.0f%%' % percentage(
                try_job_stats[master_builder]['invalid_results_failures'],
+               try_job_stats[master_builder]['flakes']),
+           '%6.0f%%' % percentage(
+               try_job_stats[master_builder]['patch_failures'],
                try_job_stats[master_builder]['flakes']),
            '%6.0f%%' % percentage(
                try_job_stats[master_builder]['other_failures'],

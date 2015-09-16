@@ -35,5 +35,5 @@
   "Slowest CLs:",
   "",
   "Top flaky builders (which fail and succeed in the same patch):",
-  "Master          Builder                                                 Flakes          |Infra  |Compile|Test   |Invalid|Other  "
+  "Master          Builder                                                 Flakes          |Infra  |Compile|Test   |Invalid|Patch  |Other  "
 ]
