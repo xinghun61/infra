@@ -24,6 +24,9 @@ class MockUser(object):
   def email(self):
     return self._email
 
+  def user_id(self):
+    return '1234567'
+
 
 class AdminTest(testing.AppengineTestCase):
 

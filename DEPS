@@ -11,7 +11,7 @@ deps = {
 
   "infra/luci":
    ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
-     "@a0be248090b1f593816bdb7ed6814ba4c12674a4"),
+     "@d03653b1439f6319b1a37cc9a46adfc2783d7c12"),
 
   "infra/go/src/github.com/luci/luci-go":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
