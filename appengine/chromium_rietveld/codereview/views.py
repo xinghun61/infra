@@ -1875,9 +1875,16 @@ def get_patchset_try_job_results(patchset, swallow_exceptions=True):
       return None
     if not isinstance(props, dict):
       return None
+
+    bb_info = props.get('buildbucket', {})
+    if isinstance(bb_info, basestring):
+      bb_info = json.loads(bb_info)
+    if not isinstance(bb_info, dict):
+      logging.error('Could not parse buildbucket build property: %r', bb_info)
+      return None
     return (
-        props.get('buildbucket', {}).get('build', {}).get('id') or
-        props.get('buildbucket', {}).get('build_id'))
+        bb_info.get('build', {}).get('id') or
+        bb_info.get('build_id'))
 
   for result in local_try_job_results:
     build_id = try_get_build_id(result)
