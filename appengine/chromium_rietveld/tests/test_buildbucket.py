@@ -24,6 +24,7 @@ setup.process_args()
 
 
 from google.appengine.api import app_identity
+from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from utils import TestCase
@@ -176,11 +177,10 @@ class BuildbucketFunctionsTest(TestCase):
     self.mock(net, 'json_request_async', json_request_async)
     self.mock(common, 'get_preferred_domain',
               lambda *_, **__: 'codereview.chromium.org')
-
-  def test_get_try_job_results_for_patchset(self):
     models.Account.current_user_account = models.Account(
         email='johndoe@chromium.org')
 
+  def test_get_try_job_results_for_patchset(self):
     put_builds_response = {
       'builds': [
         {'id': '1', 'status': 'SCHEDULED'},
@@ -205,6 +205,33 @@ class BuildbucketFunctionsTest(TestCase):
     self.assertEqual(
         put_builds_req_headers['X-Delegation-Token-V1'],
         'deltok')
+
+  def test_schedule(self):
+    put_builds_response = {
+      'results': [
+        {
+          'build': {'id': '1'},
+        },
+        {
+          'build': {'id': '1'},
+        },
+      ]
+    }
+    self.fake_responses = [
+      {'delegation_token': 'deltok', 'validity_duration': 1000},
+      put_builds_response,
+    ]
+    issue = models.Issue(
+        id='123',
+        project='chromium',
+        owner=users.User(email='owner@chromium.org'),
+    )
+    builds = buildbucket.schedule(issue, '1', [
+        ('tryserver.chromium.linux', 'linux_rel'),
+        ('tryserver.chromium.linux', 'win_rel'),
+    ])
+    self.assertEqual(
+        builds, [r['build'] for r in put_builds_response['results']])
 
 
 if __name__ == '__main__':

@@ -16,6 +16,7 @@
 
 import datetime
 import logging
+import random
 import re
 
 from google.appengine.api import app_identity
@@ -34,6 +35,7 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.http import HttpResponseServerError
 from django.utils import simplejson as json
 
+from codereview import buildbucket
 from codereview import decorators as deco
 from codereview import decorators_chromium as deco_cr
 from codereview import models
@@ -406,24 +408,10 @@ def edit_flags(request):
       return HttpResponseBadRequest(
         'Cannot add trybots on private issues', content_type='text/plain')
 
-    def txn():
-      jobs_to_save = []
-
-      # Add any new builders.
-      for builder in new_builders:
-        mastername, buildername = builder.split(':', 1)
-        try_job = models.TryJobResult(parent=last_patchset.key,
-                                      reason='',
-                                      result=models.TryJobResult.TRYPENDING,
-                                      master=mastername,
-                                      builder=buildername,
-                                      revision='',
-                                      clobber=False)
-        jobs_to_save.append(try_job)
-
-      # Commit everything.
-      ndb.put_multi(jobs_to_save)
-    ndb.transaction(txn)
+  buildbucket.schedule(
+      request.issue,
+      last_patchset.key.id(),
+      [b.split(':', 1) for b in new_builders])
 
   return HttpResponse('OK', content_type='text/plain')
 

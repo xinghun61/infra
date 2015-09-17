@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import urllib
+import uuid
 
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
@@ -36,7 +37,8 @@ BUILDBUCKET_APP_ID = (
     'cr-buildbucket-test' if common.IS_DEV else 'cr-buildbucket')
 BUILDBUCKET_API_ROOT = (
     'https://%s.appspot.com/_ah/api/buildbucket/v1' % BUILDBUCKET_APP_ID)
-# See tag conventions http://cr-buildbucket.appspot.com/#docs/conventions
+# See the convention
+# https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/index.md#buildset-tag
 BUILDSET_TAG_FORMAT = 'patch/rietveld/{hostname}/{issue}/{patch}'
 
 AUTH_SERVICE_ID = 'chrome-infra-auth'
@@ -70,7 +72,7 @@ class BuildbucketTryJobResult(models.TryJobResult):
     """Converts build status to TryJobResult.result.
 
     See buildbucket docs here:
-    https://cr-buildbucket.appspot.com/#/docs/build
+    https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/index.md#Build
     """
     status = build.get('status')
     if status == 'SCHEDULED':
@@ -160,19 +162,7 @@ def get_builds_for_patchset_async(project, issue_id, patchset_id):
   Returns:
     A list of buildbucket build dicts.
   """
-  # See tag conventions http://cr-buildbucket.appspot.com/#docs/conventions .
-  hostname = common.get_preferred_domain(project, default_to_appid=False)
-  if not hostname:
-    logging.error(
-        'Preferred domain name for this app is not set. '
-        'See PREFERRED_DOMAIN_NAMES in settings.py: %r', hostname)
-    raise ndb.Return([])
-
-  buildset_tag = BUILDSET_TAG_FORMAT.format(
-      hostname=hostname,
-      issue=issue_id,
-      patch=patchset_id,
-  )
+  buildset_tag = get_buildset_for(project, issue_id, patchset_id)
   params = {
       'max_builds': 500,
       'tag': 'buildset:%s' % buildset_tag,
@@ -209,6 +199,75 @@ def get_try_job_results_for_patchset_async(project, issue_id, patchset_id):
       continue
     results.append(try_job_result)
   raise ndb.Return(results)
+
+
+################################################################################
+## Scheduling builds.
+
+
+def schedule(issue, patchset_id, builds):
+  """Schedules builds on buildbucket.
+
+  |builds| is a list of (master, builder) tuples, where master must not have
+  '.master' prefix.
+  """
+  account = models.Account.current_user_account
+  assert account, 'User is not logged in; cannot schedule builds.'
+
+  if not builds:
+    return
+
+  self_hostname = common.get_preferred_domain(issue.project)
+
+  req = {'builds':[]}
+  opid = uuid.uuid4()
+
+  for i, (master, builder) in enumerate(builds):
+    # Build definitions are similar to what CQ produces:
+    # https://chrome-internal.googlesource.com/infra/infra_internal/+/c3092da98975c7a3e083093f21f0f4130c66a51c/commit_queue/buildbucket_util.py#171
+    req['builds'].append({
+        'bucket': 'master.%s' % master,
+        'parameters_json': json.dumps({
+          'builder_name': builder,
+          'changes': [{
+              'author': {'email': issue.owner.email()},
+              'url': 'https://%s/%s/%s/' % (
+                  self_hostname, issue.key.id(), patchset_id)
+          }],
+          'properties': {
+            'issue': issue.key.id(),
+            'master': master,
+            'patch_project': issue.project,
+            'patch_storage': 'rietveld',
+            'patchset': patchset_id,
+            'project': issue.project,
+            'rietveld': self_hostname,
+          },
+        }),
+        'tags': [
+            'builder:%s' % builder,
+            'buildset:%s' % get_buildset_for(
+                issue.project, issue.key.id(), patchset_id),
+            'master:%s' % master,
+            'user_agent:rietveld',
+        ],
+        'client_operation_id': '%s:%s' % (opid, i),
+    })
+
+  logging.debug(
+      'Scheduling %d builds on behalf of %s', len(req['builds']), account.email)
+  res = rpc_async('PUT', 'builds/batch', payload=req).get_result()
+  for r in res['results']:
+    error = r.get('error')
+    if error:
+      logging.error('Build scheduling failed. Response: %r', res)
+      raise BuildBucketError('Could not schedule build(s): %r' % error)
+
+  actual_builds = [r['build'] for r in res['results']]
+  logging.info(
+      'Scheduled buildbucket builds: %r',
+      ', '.join([str(b['id']) for b in actual_builds]))
+  return actual_builds
 
 
 ################################################################################
@@ -326,3 +385,20 @@ def timestamp_to_datetime(timestamp):
   if isinstance(timestamp, basestring):
     timestamp = int(timestamp)
   return EPOCH + datetime.timedelta(microseconds=timestamp)
+
+
+def get_buildset_for(project, issue_id, patchset_id):
+  # See the convention
+  # https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/index.md#buildset-tag
+  hostname = common.get_preferred_domain(project, default_to_appid=False)
+  if not hostname:
+    logging.error(
+        'Preferred domain name for this app is not set. '
+        'See PREFERRED_DOMAIN_NAMES in settings.py: %r', hostname)
+    raise ndb.Return([])
+
+  return BUILDSET_TAG_FORMAT.format(
+      hostname=hostname,
+      issue=issue_id,
+      patch=patchset_id,
+  )
