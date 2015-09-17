@@ -74,6 +74,9 @@ class TryserverBuilders(ndb.Model):
     'tryserver.blink': [
       'http://build.chromium.org/p/tryserver.blink/json/builders'
     ],
+    'tryserver.chromium.android': [
+      'http://build.chromium.org/p/tryserver.chromium.android/json/builders'
+    ],
     'tryserver.chromium.mac': [
       'http://build.chromium.org/p/tryserver.chromium.mac/json/builders'
     ],
