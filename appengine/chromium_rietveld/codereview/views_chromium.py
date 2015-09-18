@@ -408,10 +408,10 @@ def edit_flags(request):
       return HttpResponseBadRequest(
         'Cannot add trybots on private issues', content_type='text/plain')
 
-  buildbucket.schedule(
-      request.issue,
-      last_patchset.key.id(),
-      [b.split(':', 1) for b in new_builders])
+    buildbucket.schedule(
+        request.issue,
+        last_patchset.key.id(),
+        [b.split(':', 1) for b in new_builders])
 
   return HttpResponse('OK', content_type='text/plain')
 
