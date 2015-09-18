@@ -300,7 +300,7 @@ def parse_cq_data(json_data):
           buildnumber = get_int_value(build_properties, 'buildnumber')
           issue = get_int_value(build_properties, 'issue')
           patchset = get_int_value(build_properties, 'patchset')
-        except ValueError as e:
+        except ValueError:
           continue
 
         if build_result.isResultPending(result):
