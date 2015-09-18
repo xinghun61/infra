@@ -2,5 +2,6 @@ User-agent: *
 Disallow: /
 
 User-agent: Googlebot
+Allow: /p/chromium/all_rotations.js
 Allow: /p/chromium/sheriff_*
 Disallow: /
