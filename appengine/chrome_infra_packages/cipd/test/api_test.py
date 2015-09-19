@@ -65,6 +65,28 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'error_message': 'Invalid package name',
     }, resp.json_body)
 
+  def test_delete_package_ok(self):
+    self.register_fake_instance('good/name')
+    resp = self.call_api('delete_package', {'package_name': 'good/name'})
+    self.assertEqual({'status': 'SUCCESS'}, resp.json_body)
+
+  def test_delete_package_no_access(self):
+    self.register_fake_instance('good/name')
+    self.mock(api.acl, 'can_delete_package', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('delete_package', {'package_name': 'good/name'})
+
+  def test_delete_package_no_such_package(self):
+    resp = self.call_api('delete_package', {'package_name': 'good/name'})
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_delete_package_bad_name(self):
+    resp = self.call_api('delete_package', {'package_name': 'bad name'})
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Invalid package name',
+    }, resp.json_body)
+
   def test_list_packages_no_results(self):
     resp = self.call_api('list_packages', {})
     self.assertEqual({

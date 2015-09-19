@@ -83,13 +83,43 @@ class TestRepoService(testing.AppengineTestCase):
     self.mock(impl.cas, 'get_cas_service', lambda: self.mocked_cas_service)
     self.service = impl.get_repo_service()
 
-  def register_fake_instance(self, pkg_name):
+  def register_fake_instance(self, pkg_name, instance_id=None):
     _, registered = self.service.register_instance(
         package_name=pkg_name,
-        instance_id='a'*40,
+        instance_id=instance_id or 'a'*40,
         caller=auth.Identity.from_bytes('user:abc@example.com'),
         now=datetime.datetime(2014, 1, 1, 0, 0))
     self.assertTrue(registered)
+
+  def test_delete_package_ok(self):
+    caller = auth.Identity.from_bytes('user:abc@example.com')
+    # Setup all sorts of stuff associated with a package.
+    self.register_fake_instance('a/b', 'a'*40)
+    self.register_fake_instance('a/b', 'b'*40)
+    self.service.set_package_ref('a/b', 'ref1', 'a'*40, caller)
+    self.service.set_package_ref('a/b', 'ref2', 'b'*40, caller)
+    self.service.attach_tags('a/b', 'a'*40, ['tag1:tag1', 'tag2:tag2'], caller)
+    self.service.attach_tags('a/b', 'b'*40, ['tag1:tag1', 'tag2:tag2'], caller)
+
+    # Another package, to make sure it stays alive.
+    self.register_fake_instance('c/d')
+
+    # Delete a/b and all associated stuff. Ensure entire entity group is nuked.
+    # The implementation of delete_package doesn't use this sort of query (and
+    # use explicit list of entity classes) as a reminder for future developers
+    # to be mindful about what they are deleting and how.
+    q = 'SELECT __key__ WHERE ANCESTOR IS :1'
+    self.assertTrue(ndb.gql(q, impl.package_key('a/b')).fetch())
+    self.service.delete_package('a/b')
+    self.assertFalse(ndb.gql(q, impl.package_key('a/b')).fetch())
+    self.assertFalse(self.service.get_instance('a/b', 'a'*40))
+
+    # Another package is still fine.
+    self.assertTrue(self.service.get_instance('c/d', 'a'*40))
+
+  def test_delete_package_missing(self):
+    self.assertIsNone(self.service.get_package('a/b'))
+    self.assertFalse(self.service.delete_package('a/b'))
 
   def test_list_packages_no_path(self):
     self.assertIsNone(self.service.get_package('a/b'))

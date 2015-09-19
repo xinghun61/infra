@@ -250,6 +250,15 @@ class ListPackagesResponse(messages.Message):
 ################################################################################
 
 
+class DeletePackageResponse(messages.Message):
+  """Results of deletePackage call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+
+################################################################################
+
+
 class FetchInstanceResponse(messages.Message):
   """Results of fetchInstance call."""
   status = messages.EnumField(Status, 1, required=True)
@@ -603,6 +612,27 @@ class PackageRepositoryApi(remote.Service):
     visible_dirs = [d for d in dirs if acl.can_fetch_package(d, caller)]
 
     return ListPackagesResponse(packages=visible_pkgs, directories=visible_dirs)
+
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True)),
+      DeletePackageResponse,
+      http_method='DELETE',
+      path='package',
+      name='deletePackage')
+  def delete_package(self, request):
+    """Deletes a package along with all its instances."""
+    package_name = validate_package_name(request.package_name)
+
+    caller = auth.get_current_identity()
+    if not acl.can_delete_package(package_name, caller):
+      raise auth.AuthorizationError()
+
+    deleted = self.service.delete_package(package_name)
+    if not deleted:
+      raise PackageNotFoundError()
+    return DeletePackageResponse()
 
 
   ### PackageInstance methods.

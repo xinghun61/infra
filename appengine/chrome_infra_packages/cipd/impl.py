@@ -179,6 +179,41 @@ class RepoService(object):
     """
     return package_key(package_name).get()
 
+  @ndb.transactional
+  def delete_package(self, package_name):
+    """Deletes a package along with all its instances.
+
+    Very nuclear method. Removes all associated metadata (refs, tags). There's
+    no undo. Note that actual package files are left in the CAS storage since
+    there's no garbage collection mechanism there yet.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+
+    Returns:
+      True if deleted something, False if already gone.
+    """
+    # TODO(vadimsh): This would probably exceed transaction size limit for huge
+    # packages with lots of instances.
+    assert is_valid_package_name(package_name), package_name
+    root_key = package_key(package_name)
+    queries = [
+      PackageInstance.query(ancestor=root_key),
+      PackageRef.query(ancestor=root_key),
+      InstanceTag.query(ancestor=root_key),
+      ProcessingResult.query(ancestor=root_key),
+    ]
+    futures = [q.fetch_async(keys_only=True) for q in queries]
+    keys_to_delete = [root_key]
+    for f in futures:
+      keys_to_delete.extend(f.get_result())
+    # Proceed with deleting even if len(keys_to_delete) == 1. It covers the case
+    # of packages with no instances. It impossible with current version of API,
+    # but was possible before and there are few such packages in the datastore.
+    logging.warning('Deleting %d entities', len(keys_to_delete))
+    ndb.delete_multi(keys_to_delete)
+    return len(keys_to_delete) > 1
+
   @staticmethod
   def _is_in_directory(directory, path, recursive):
     """Tests if the path is under the given directory.
