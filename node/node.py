@@ -5,7 +5,6 @@
 
 """Download and run node.js."""
 
-import optparse
 import os
 import shutil
 import sys
@@ -102,15 +101,10 @@ def install_latest_node_js(version, tmp_dir):
 
 
 def main(mode=None):
-  parser = optparse.OptionParser(prog='python -m %s' % __package__)
-  parser.add_option('-v', '--version', default=DEFAULT_VERSION,
-                    help='Specify a version, default %s' % DEFAULT_VERSION)
-
-  options, args = parser.parse_args()
-
+  version = os.environ.get('NODE_VERSION', DEFAULT_VERSION)
   try:
     tmp_dir = tempfile.mkdtemp(dir=THIS_DIR)
-    bin_location = install_latest_node_js(options.version, tmp_dir)
+    bin_location = install_latest_node_js(version, tmp_dir)
   finally:
     if os.path.exists(tmp_dir):
       shutil.rmtree(tmp_dir)
@@ -119,7 +113,7 @@ def main(mode=None):
     # TODO(hinoka): How about Windows...?
     bin_location = os.path.join(os.path.dirname(bin_location), 'npm')
 
-  return subprocess.call([bin_location,] + args)
+  return subprocess.call([bin_location,] + sys.argv[1:])
 
 
 if __name__ == '__main__':

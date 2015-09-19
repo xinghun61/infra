@@ -48,7 +48,7 @@ class GoogleStorageConfig(messages.Message):
 @auth.endpoints_api(
     name='admin',
     version='v1',
-    title='Administration API')
+    title='CIPD Administration API')
 class AdminApi(remote.Service):
   """Administration API accessibly only by the service admins."""
 

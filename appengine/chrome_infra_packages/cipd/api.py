@@ -514,7 +514,7 @@ def endpoints_method(request_message, response_message, **kwargs):
 @auth.endpoints_api(
     name='repo',
     version='v1',
-    title='Package Repository API')
+    title='CIPD Package Repository API')
 class PackageRepositoryApi(remote.Service):
   """Package Repository API."""
 

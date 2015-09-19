@@ -8,11 +8,9 @@ var cipd = cipd || {};
 
 'use strict';
 
-// Override this if you want to test against another instance (e.g. to prod from
-// dev or local).
-// TODO(estaab): Make this smarter by selecting document.location if not running
-// a local dev instance.
-cipd.apiRoot = 'https://chrome-infra-packages.appspot.com/_ah/api';
+cipd.apiRoot = [
+  window.location.protocol, '//', window.location.host, '/_ah/api'
+].join('');
 
 cipd.directoryLink = function(path) {
   return '#/?path=' + path;

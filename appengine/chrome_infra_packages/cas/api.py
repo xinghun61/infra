@@ -97,7 +97,7 @@ _HASH_ALGO_MAPPING = {
 @auth.endpoints_api(
     name='cas',
     version='v1',
-    title='Content Addressable Storage API')
+    title='CIPD Content Addressable Storage API')
 class CASServiceApi(remote.Service):
   """Content addressable storage API."""
 
