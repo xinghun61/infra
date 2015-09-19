@@ -25,6 +25,7 @@ import (
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/logging/gologger"
+	gol "github.com/op/go-logging"
 
 	"github.com/maruel/subcommands"
 
@@ -35,29 +36,52 @@ import (
 	"infra/tools/cipd/local"
 )
 
-var (
-	log = gologger.Get()
-)
+// log is also overwritten in Subcommand's init.
+var log = gologger.Get()
 
 ////////////////////////////////////////////////////////////////////////////////
-// Utility functions.
+// Common subcommand functions.
 
-// checkCommandLine ensures all required positional and flag-like parameters
-// are set. Returns true if they are, or false (and prints to stderr) if not.
-func checkCommandLine(args []string, flags *flag.FlagSet, minPosCount, maxPosCount int) bool {
+// Subcommand is a base of all CIPD subcommands. It defines some common flags,
+// such as logging and JSON output parameters.
+type Subcommand struct {
+	subcommands.CommandRunBase
+
+	jsonOutput string
+	verbose    bool
+}
+
+// registerBaseFlags registers common flags used by all subcommands.
+func (c *Subcommand) registerBaseFlags() {
+	c.Flags.StringVar(&c.jsonOutput, "json-output", "", "Path to write operation results to.")
+	c.Flags.BoolVar(&c.verbose, "verbose", false, "Enable more logging.")
+}
+
+// init initializes subcommand state (including global logger). It ensures all
+// required positional and flag-like parameters are set. Returns true if they
+// are, or false (and prints to stderr) if not.
+func (c *Subcommand) init(args []string, minPosCount, maxPosCount int) bool {
 	// Check number of expected positional arguments.
 	if maxPosCount == 0 && len(args) != 0 {
-		log.Errorf("Unexpected arguments: %v", args)
+		c.printError(makeCLIError("unexpected arguments %v", args))
 		return false
 	}
 	if len(args) < minPosCount || len(args) > maxPosCount {
-		log.Errorf("Expecting [%d, %d] arguments, got %d", minPosCount,
-			maxPosCount, len(args))
+		var err error
+		if minPosCount == maxPosCount {
+			err = makeCLIError("expecting %d positional argument, got %d instead", minPosCount, len(args))
+		} else {
+			err = makeCLIError(
+				"expecting from %d to %d positional arguments, got %d instead",
+				minPosCount, maxPosCount, len(args))
+		}
+		c.printError(err)
 		return false
 	}
+
 	// Check required unset flags.
 	unset := []*flag.Flag{}
-	flags.VisitAll(func(f *flag.Flag) {
+	c.Flags.VisitAll(func(f *flag.Flag) {
 		if strings.HasPrefix(f.DefValue, "<") && f.Value.String() == f.DefValue {
 			unset = append(unset, f)
 		}
@@ -67,10 +91,93 @@ func checkCommandLine(args []string, flags *flag.FlagSet, minPosCount, maxPosCou
 		for _, f := range unset {
 			missing = append(missing, f.Name)
 		}
-		log.Errorf("Missing required flags: %v", missing)
+		c.printError(makeCLIError("missing required flags: %v", missing))
 		return false
 	}
+
+	// Setup logger.
+	loggerConfig := gologger.LoggerConfig{
+		Format: `[P%{pid} %{time:15:04:05.000} %{shortfile} %{level:.1s}] %{message}`,
+		Out:    os.Stderr,
+		Level:  gol.INFO,
+	}
+	if c.verbose {
+		loggerConfig.Level = gol.DEBUG
+	}
+	log = loggerConfig.Get()
 	return true
+}
+
+// printError prints error to stderr (recognizing commandLineError).
+func (c *Subcommand) printError(err error) {
+	if _, ok := err.(commandLineError); ok {
+		fmt.Fprintf(os.Stderr, "Bad command line: %s.\n\n", err)
+		c.Flags.Usage()
+	} else {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
+// writeJSONOutput writes result to JSON output file. It returns original error
+// if it is non-nil.
+func (c *Subcommand) writeJSONOutput(result interface{}, err error) error {
+	// -json-output flag wasn't specified.
+	if c.jsonOutput == "" {
+		return err
+	}
+
+	// Prepare the body of the output file.
+	var body struct {
+		Error  string      `json:"error,omitempty"`
+		Result interface{} `json:"result,omitempty"`
+	}
+	if err != nil {
+		body.Error = err.Error()
+	}
+	body.Result = result
+	out, e := json.MarshalIndent(&body, "", "  ")
+	if e != nil {
+		if err == nil {
+			err = e
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed to serialize JSON output: %s\n", e)
+		}
+		return err
+	}
+
+	e = ioutil.WriteFile(c.jsonOutput, out, 0600)
+	if e != nil {
+		if err == nil {
+			err = e
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed write JSON output to %s: %s\n", c.jsonOutput, e)
+		}
+		return err
+	}
+
+	return err
+}
+
+// done is called as a last step of processing a subcommand. It dumps command
+// result (or error) to JSON output file, prints error message and generates
+// process exit code.
+func (c *Subcommand) done(result interface{}, err error) int {
+	err = c.writeJSONOutput(result, err)
+	if err != nil {
+		c.printError(err)
+		return 1
+	}
+	return 0
+}
+
+// commandLineError is used to tag errors related to CLI.
+type commandLineError struct {
+	error
+}
+
+// makeCLIError returns new commandLineError.
+func makeCLIError(msg string, args ...interface{}) error {
+	return commandLineError{fmt.Errorf(msg, args...)}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +191,7 @@ type ServiceOptions struct {
 }
 
 func (opts *ServiceOptions) registerFlags(f *flag.FlagSet) {
-	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one")
+	f.StringVar(&opts.serviceURL, "service-url", "", "URL of a backend to use instead of the default one.")
 	opts.authFlags.Register(f, auth.Options{})
 }
 
@@ -126,7 +233,7 @@ func (vars *PackageVars) Set(value string) error {
 	// <key>:<value> pair.
 	chunks := strings.Split(value, ":")
 	if len(chunks) != 2 {
-		return fmt.Errorf("Expecting <key>:<value> pair, got %q", value)
+		return makeCLIError("expecting <key>:<value> pair, got %q", value)
 	}
 	(*vars)[chunks[0]] = chunks[1]
 	return nil
@@ -149,14 +256,14 @@ func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
 	opts.vars = PackageVars{}
 
 	// Interface to accept package definition file.
-	f.StringVar(&opts.packageDef, "pkg-def", "", "*.yaml file that defines what to put into the package")
-	f.Var(&opts.vars, "pkg-var", "variables accessible from package definition file")
+	f.StringVar(&opts.packageDef, "pkg-def", "", "*.yaml file that defines what to put into the package.")
+	f.Var(&opts.vars, "pkg-var", "Variables accessible from package definition file.")
 
 	// Interface to accept a single directory (alternative to -pkg-def).
-	f.StringVar(&opts.packageName, "name", "", "package name (unused with -pkg-def)")
-	f.StringVar(&opts.inputDir, "in", "", "path to a directory with files to package (unused with -pkg-def)")
+	f.StringVar(&opts.packageName, "name", "", "Package name (unused with -pkg-def).")
+	f.StringVar(&opts.inputDir, "in", "", "Path to a directory with files to package (unused with -pkg-def).")
 	f.Var(&opts.installMode, "install-mode",
-		"how the package should be installed: \"copy\" or \"symlink\" (unused with -pkg-def)")
+		"How the package should be installed: \"copy\" or \"symlink\" (unused with -pkg-def).")
 }
 
 // prepareInput processes InputOptions by collecting all files to be added to
@@ -164,21 +271,17 @@ func (opts *InputOptions) registerFlags(f *flag.FlagSet) {
 // fill out Output field of BuildInstanceOptions.
 func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	out := local.BuildInstanceOptions{Logger: log}
-	cmdErr := fmt.Errorf("Invalid command line options")
 
 	// Handle -name and -in if defined. Do not allow -pkg-def and -pkg-var in that case.
 	if opts.inputDir != "" {
 		if opts.packageName == "" {
-			log.Errorf("Missing required flag: -name")
-			return out, cmdErr
+			return out, makeCLIError("missing required flag: -name")
 		}
 		if opts.packageDef != "" {
-			log.Errorf("-pkg-def and -in can not be used together")
-			return out, cmdErr
+			return out, makeCLIError("-pkg-def and -in can not be used together")
 		}
 		if len(opts.vars) != 0 {
-			log.Errorf("-pkg-var and -in can not be used together")
-			return out, cmdErr
+			return out, makeCLIError("-pkg-var and -in can not be used together")
 		}
 
 		// Simply enumerate files in the directory.
@@ -199,12 +302,10 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	// Handle -pkg-def case. -in is "" (already checked), reject -name.
 	if opts.packageDef != "" {
 		if opts.packageName != "" {
-			log.Errorf("-pkg-def and -name can not be used together")
-			return out, cmdErr
+			return out, makeCLIError("-pkg-def and -name can not be used together")
 		}
 		if opts.installMode != "" {
-			log.Errorf("-install-mode is ignored if -pkd-def is used")
-			return out, cmdErr
+			return out, makeCLIError("-install-mode is ignored if -pkd-def is used")
 		}
 
 		// Parse the file, perform variable substitution.
@@ -220,7 +321,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 
 		// Scan the file system. Package definition may use path relative to the
 		// package definition file itself, so pass its location.
-		log.Infof("Enumerating files to zip...")
+		fmt.Println("Enumerating files to zip...")
 		files, err := pkgDef.FindFiles(filepath.Dir(opts.packageDef))
 		if err != nil {
 			return out, err
@@ -236,8 +337,7 @@ func (opts *InputOptions) prepareInput() (local.BuildInstanceOptions, error) {
 	}
 
 	// All command line options are missing.
-	log.Errorf("-pkg-def or -name/-in are required")
-	return out, cmdErr
+	return out, makeCLIError("-pkg-def or -name/-in are required")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -258,7 +358,7 @@ func (refs *Refs) String() string {
 func (refs *Refs) Set(value string) error {
 	err := common.ValidatePackageRef(value)
 	if err != nil {
-		return err
+		return commandLineError{err}
 	}
 	*refs = append(*refs, value)
 	return nil
@@ -272,7 +372,7 @@ type RefsOptions struct {
 
 func (opts *RefsOptions) registerFlags(f *flag.FlagSet) {
 	opts.refs = []string{}
-	f.Var(&opts.refs, "ref", "a ref to point to the package instance (can be used multiple times)")
+	f.Var(&opts.refs, "ref", "A ref to point to the package instance (can be used multiple times).")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,7 +393,7 @@ func (tags *Tags) String() string {
 func (tags *Tags) Set(value string) error {
 	err := common.ValidateInstanceTag(value)
 	if err != nil {
-		return err
+		return commandLineError{err}
 	}
 	*tags = append(*tags, value)
 	return nil
@@ -307,58 +407,7 @@ type TagsOptions struct {
 
 func (opts *TagsOptions) registerFlags(f *flag.FlagSet) {
 	opts.tags = []string{}
-	f.Var(&opts.tags, "tag", "a tag to attach to the package instance (can be used multiple times)")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// JSONOutputOptions mixin.
-
-// JSONOutputOptions define -json-output option that is used to return
-// structured operation result back to caller.
-type JSONOutputOptions struct {
-	jsonOutput string
-}
-
-func (opts *JSONOutputOptions) registerFlags(f *flag.FlagSet) {
-	f.StringVar(&opts.jsonOutput, "json-output", "", "Path to write operation results to")
-}
-
-// writeJSONOutput writes result to JSON output file. It returns original error
-// if it is non-nil.
-func (opts *JSONOutputOptions) writeJSONOutput(result interface{}, err error) error {
-	// -json-output flag wasn't specified.
-	if opts.jsonOutput == "" {
-		return err
-	}
-
-	// Prepare the body of the output file.
-	var body struct {
-		Error  string      `json:"error,omitempty"`
-		Result interface{} `json:"result,omitempty"`
-	}
-	if err != nil {
-		body.Error = err.Error()
-	}
-	body.Result = result
-	out, e := json.MarshalIndent(&body, "", "  ")
-	if e != nil {
-		log.Errorf("Failed to serialize JSON output: %s", e)
-		if err == nil {
-			err = e
-		}
-		return err
-	}
-
-	e = ioutil.WriteFile(opts.jsonOutput, out, 0600)
-	if e != nil {
-		log.Errorf("Failed write JSON output to %s: %s", opts.jsonOutput, e)
-		if err == nil {
-			err = e
-		}
-		return err
-	}
-
-	return err
+	f.Var(&opts.tags, "tag", "A tag to attach to the package instance (can be used multiple times).")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -398,7 +447,7 @@ func expandPkgDir(c cipd.Client, packagePrefix string) ([]string, error) {
 		}
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("No packages under %s", packagePrefix)
+		return nil, fmt.Errorf("no packages under %s", packagePrefix)
 	}
 	return out, nil
 }
@@ -446,11 +495,29 @@ func callConcurrently(pkgs []string, callback func(pkg string) pinOrError) []pin
 }
 
 func printPinsAndError(pins []pinOrError) {
+	hasPins := false
+	hasErrors := false
 	for _, p := range pins {
-		if p.Err != "" {
-			log.Warningf("%s", p.Err)
+		if p.Err == "" {
+			hasPins = true
 		} else {
-			log.Infof("%s", p.Pin)
+			hasErrors = true
+		}
+	}
+	if hasPins {
+		fmt.Println("Instances:")
+		for _, p := range pins {
+			if p.Err == "" {
+				fmt.Printf("  %s\n", p.Pin)
+			}
+		}
+	}
+	if hasErrors {
+		fmt.Fprintln(os.Stderr, "Errors:")
+		for _, p := range pins {
+			if p.Err != "" {
+				fmt.Fprintf(os.Stderr, "  %s\n", p.Err)
+			}
 		}
 	}
 }
@@ -473,35 +540,28 @@ var cmdCreate = &subcommands.Command{
 	LongDesc:  "Builds and uploads a package instance file.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &createRun{}
+		c.registerBaseFlags()
 		c.InputOptions.registerFlags(&c.Flags)
 		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
-		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type createRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	InputOptions
 	RefsOptions
 	TagsOptions
 	ServiceOptions
-	JSONOutputOptions
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
+	if !c.init(args, 0, 0) {
 		return 1
 	}
-	pin, err := buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(&pin, err)
-	if err != nil {
-		log.Errorf("Error while uploading the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(buildAndUploadInstance(c.InputOptions, c.RefsOptions, c.TagsOptions, c.ServiceOptions))
 }
 
 func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
@@ -525,19 +585,20 @@ func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOp
 
 var cmdEnsure = &subcommands.Command{
 	UsageLine: "ensure [options]",
-	ShortDesc: "installs, removes and updates packages",
-	LongDesc:  "Installs, removes and updates packages.",
+	ShortDesc: "installs, removes and updates packages in one go",
+	LongDesc:  "Installs, removes and updates packages in one go.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensureRun{}
-		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
-		c.Flags.StringVar(&c.listFile, "list", "<path>", "a file with a list of '<package name> <version>' pairs")
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to a installation site root directory.")
+		c.Flags.StringVar(&c.listFile, "list", "<path>", "A file with a list of '<package name> <version>' pairs.")
 		return c
 	},
 }
 
 type ensureRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
 
 	rootDir  string
@@ -545,32 +606,30 @@ type ensureRun struct {
 }
 
 func (c *ensureRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
+	if !c.init(args, 0, 0) {
 		return 1
 	}
-	err := ensurePackages(c.rootDir, c.listFile, c.ServiceOptions)
-	if err != nil {
-		log.Errorf("Error while updating packages: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(ensurePackages(c.rootDir, c.listFile, c.ServiceOptions))
 }
 
-func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOptions) error {
+func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOptions) ([]common.Pin, error) {
 	f, err := os.Open(desiredStateFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 	client, err := serviceOpts.makeCipdClient(root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	desiredState, err := client.ProcessEnsureFile(f)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return client.EnsurePackages(desiredState)
+	if err = client.EnsurePackages(desiredState); err != nil {
+		return nil, err
+	}
+	return desiredState, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -582,36 +641,31 @@ var cmdResolve = &subcommands.Command{
 	LongDesc:  "Returns concrete package instance ID given a version.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &resolveRun{}
-		c.Flags.StringVar(&c.version, "version", "<version>", "package version to resolve")
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
-		c.JSONOutputOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>", "Package version to resolve.")
 		return c
 	},
 }
 
 type resolveRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
-	JSONOutputOptions
 
 	version string
 }
 
 func (c *resolveRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
 	pins, err := resolveVersion(args[0], c.version, c.ServiceOptions)
-	err = c.writeJSONOutput(pins, err)
-	if err != nil {
-		log.Errorf("%s", err)
-		return 1
-	}
 	printPinsAndError(pins)
-	if hasErrors(pins) {
+	ret := c.done(pins, err)
+	if hasErrors(pins) && ret == 0 {
 		return 1
 	}
-	return 0
+	return ret
 }
 
 func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) ([]pinOrError, error) {
@@ -637,42 +691,36 @@ var cmdSetRef = &subcommands.Command{
 	LongDesc:  "Moves a ref to point to a given version.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &setRefRun{}
-		c.Flags.StringVar(&c.version, "version", "<version>", "package version to point the ref to")
+		c.registerBaseFlags()
 		c.RefsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
-		c.JSONOutputOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>", "Package version to point the ref to.")
 		return c
 	},
 }
 
 type setRefRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	RefsOptions
 	ServiceOptions
-	JSONOutputOptions
 
 	version string
 }
 
 func (c *setRefRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
 	if len(c.refs) == 0 {
-		log.Errorf("At least one -ref must be provided")
-		return 1
+		return c.done(nil, makeCLIError("at least one -ref must be provided"))
 	}
 	pins, err := setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(pins, err)
-	if err != nil {
-		log.Errorf("%s", err)
-		return 1
-	}
 	printPinsAndError(pins)
-	if hasErrors(pins) {
+	ret := c.done(pins, err)
+	if hasErrors(pins) && ret == 0 {
 		return 1
 	}
-	return 0
+	return ret
 }
 
 func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) ([]pinOrError, error) {
@@ -695,7 +743,7 @@ func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts Ser
 	}
 	if hasErrors(pins) {
 		printPinsAndError(pins)
-		return nil, fmt.Errorf("Can't find %q version in all packages, aborting.", version)
+		return nil, fmt.Errorf("can't find %q version in all packages, aborting.", version)
 	}
 
 	// Prepare for the next batch call.
@@ -727,10 +775,11 @@ func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts Ser
 
 var cmdListPackages = &subcommands.Command{
 	UsageLine: "ls [-r] [<prefix string>]",
-	ShortDesc: "List matching packages.",
-	LongDesc:  "List packages in the given path to which the user has access, optionally recursively",
+	ShortDesc: "lists matching packages",
+	LongDesc:  "List packages in the given path to which the user has access, optionally recursively.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &listPackagesRun{}
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
 		c.Flags.BoolVar(&c.recursive, "r", false, "Whether to list packages in subdirectories.")
 		return c
@@ -738,44 +787,40 @@ var cmdListPackages = &subcommands.Command{
 }
 
 type listPackagesRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
+
 	recursive bool
 }
 
 func (c *listPackagesRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0, 1) {
+	if !c.init(args, 0, 1) {
 		return 1
 	}
 	path := ""
 	if len(args) == 1 {
 		path = args[0]
 	}
-	err := listPackages(path, c.recursive, c.ServiceOptions)
-	if err != nil {
-		log.Errorf("Error while listing packages: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(listPackages(path, c.recursive, c.ServiceOptions))
 }
 
-func listPackages(path string, recursive bool, serviceOpts ServiceOptions) error {
+func listPackages(path string, recursive bool, serviceOpts ServiceOptions) ([]string, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	packages, err := client.ListPackages(path, recursive)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(packages) == 0 {
-		log.Infof("No matching packages.")
+		fmt.Println("No matching packages.")
 	} else {
 		for _, p := range packages {
-			log.Infof("%s", p)
+			fmt.Println(p)
 		}
 	}
-	return nil
+	return packages, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -784,29 +829,25 @@ func listPackages(path string, recursive bool, serviceOpts ServiceOptions) error
 var cmdListACL = &subcommands.Command{
 	UsageLine: "acl-list <package subpath>",
 	ShortDesc: "lists package path Access Control List",
-	LongDesc:  "Lists package path Access Control List",
+	LongDesc:  "Lists package path Access Control List.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &listACLRun{}
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type listACLRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
 }
 
 func (c *listACLRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	err := listACL(args[0], c.ServiceOptions)
-	if err != nil {
-		log.Errorf("Error while listing ACL: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(nil, listACL(args[0], c.ServiceOptions))
 }
 
 func listACL(packagePath string, serviceOpts ServiceOptions) error {
@@ -828,15 +869,15 @@ func listACL(packagePath string, serviceOpts ServiceOptions) error {
 	}
 
 	listRoleACL := func(title string, acls []cipd.PackageACL) {
-		log.Infof("%s:", title)
+		fmt.Printf("%s:\n", title)
 		if len(acls) == 0 {
-			log.Infof("  none")
+			fmt.Printf("  none\n")
 			return
 		}
 		for _, a := range acls {
-			log.Infof("  via '%s':", a.PackagePath)
+			fmt.Printf("  via %q:\n", a.PackagePath)
 			for _, u := range a.Principals {
-				log.Infof("    %s", u)
+				fmt.Printf("    %s\n", u)
 			}
 		}
 	}
@@ -862,7 +903,7 @@ func (l *principalsList) Set(value string) error {
 	// Ensure <type>:<id> syntax is used. Let the backend to validate the rest.
 	chunks := strings.Split(value, ":")
 	if len(chunks) != 2 {
-		return fmt.Errorf("The string %q doesn't look principal id (<type>:<id>)", value)
+		return makeCLIError("%q doesn't look like principal id (<type>:<id>)", value)
 	}
 	*l = append(*l, value)
 	return nil
@@ -871,20 +912,21 @@ func (l *principalsList) Set(value string) error {
 var cmdEditACL = &subcommands.Command{
 	UsageLine: "acl-edit <package subpath> [options]",
 	ShortDesc: "modifies package path Access Control List",
-	LongDesc:  "Modifies package path Access Control List",
+	LongDesc:  "Modifies package path Access Control List.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &editACLRun{}
-		c.Flags.Var(&c.owner, "owner", "users or groups to grant OWNER role")
-		c.Flags.Var(&c.writer, "writer", "users or groups to grant WRITER role")
-		c.Flags.Var(&c.reader, "reader", "users or groups to grant READER role")
-		c.Flags.Var(&c.revoke, "revoke", "users or groups to remove from all roles")
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.Var(&c.owner, "owner", "Users or groups to grant OWNER role.")
+		c.Flags.Var(&c.writer, "writer", "Users or groups to grant WRITER role.")
+		c.Flags.Var(&c.reader, "reader", "Users or groups to grant READER role.")
+		c.Flags.Var(&c.revoke, "revoke", "Users or groups to remove from all roles.")
 		return c
 	},
 }
 
 type editACLRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
 
 	owner  principalsList
@@ -894,15 +936,10 @@ type editACLRun struct {
 }
 
 func (c *editACLRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	err := editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.ServiceOptions)
-	if err != nil {
-		log.Errorf("Error while editing ACL: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(nil, editACL(args[0], c.owner, c.writer, c.reader, c.revoke, c.ServiceOptions))
 }
 
 func editACL(packagePath string, owners, writers, readers, revoke principalsList, serviceOpts ServiceOptions) error {
@@ -938,7 +975,7 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 	if err != nil {
 		return err
 	}
-	log.Infof("ACL changes applied.")
+	fmt.Println("ACL changes applied.")
 	return nil
 }
 
@@ -951,38 +988,29 @@ var cmdBuild = &subcommands.Command{
 	LongDesc:  "Builds a package instance producing *.cipd file.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &buildRun{}
+		c.registerBaseFlags()
 		c.InputOptions.registerFlags(&c.Flags)
-		c.JSONOutputOptions.registerFlags(&c.Flags)
-		c.Flags.StringVar(&c.outputFile, "out", "<path>", "path to a file to write the final package to")
+		c.Flags.StringVar(&c.outputFile, "out", "<path>", "Path to a file to write the final package to.")
 		return c
 	},
 }
 
 type buildRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	InputOptions
-	JSONOutputOptions
 
 	outputFile string
 }
 
 func (c *buildRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 0, 0) {
+	if !c.init(args, 0, 0) {
 		return 1
 	}
 	err := buildInstanceFile(c.outputFile, c.InputOptions)
 	if err != nil {
-		log.Errorf("Error while building the package: %s", err)
-		return 1
+		return c.done(nil, err)
 	}
-	// Print information about built package, also verify it is readable.
-	pin, err := inspectInstanceFile(c.outputFile, false)
-	err = c.writeJSONOutput(&pin, err)
-	if err != nil {
-		log.Errorf("Error while building the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(inspectInstanceFile(c.outputFile, false))
 }
 
 func buildInstanceFile(instanceFile string, inputOpts InputOptions) error {
@@ -1018,38 +1046,33 @@ var cmdDeploy = &subcommands.Command{
 	LongDesc:  "Deploys a *.cipd package instance into a site root.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &deployRun{}
-		c.Flags.StringVar(&c.rootDir, "root", "<path>", "path to a installation site root directory")
+		c.registerBaseFlags()
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to a installation site root directory.")
 		return c
 	},
 }
 
 type deployRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 
 	rootDir string
 }
 
 func (c *deployRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	err := deployInstanceFile(c.rootDir, args[0])
-	if err != nil {
-		log.Errorf("Error while deploying the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(deployInstanceFile(c.rootDir, args[0]))
 }
 
-func deployInstanceFile(root string, instanceFile string) error {
+func deployInstanceFile(root string, instanceFile string) (common.Pin, error) {
 	inst, err := local.OpenInstanceFile(instanceFile, "")
 	if err != nil {
-		return err
+		return common.Pin{}, err
 	}
 	defer inst.Close()
 	inspectInstance(inst, false)
-	_, err = local.NewDeployer(root, log).DeployInstance(inst)
-	return err
+	return local.NewDeployer(root, log).DeployInstance(inst)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1061,15 +1084,16 @@ var cmdFetch = &subcommands.Command{
 	LongDesc:  "Fetches a package instance file from the repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &fetchRun{}
-		c.Flags.StringVar(&c.version, "version", "<version>", "package version to fetch")
-		c.Flags.StringVar(&c.outputPath, "out", "<path>", "path to a file to write fetch to")
+		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>", "Package version to fetch.")
+		c.Flags.StringVar(&c.outputPath, "out", "<path>", "Path to a file to write fetch to.")
 		return c
 	},
 }
 
 type fetchRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	ServiceOptions
 
 	version    string
@@ -1077,30 +1101,25 @@ type fetchRun struct {
 }
 
 func (c *fetchRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	err := fetchInstanceFile(args[0], c.version, c.outputPath, c.ServiceOptions)
-	if err != nil {
-		log.Errorf("Error while fetching the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(fetchInstanceFile(args[0], c.version, c.outputPath, c.ServiceOptions))
 }
 
-func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts ServiceOptions) error {
+func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts ServiceOptions) (common.Pin, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
-		return err
+		return common.Pin{}, err
 	}
 	pin, err := client.ResolveVersion(packageName, version)
 	if err != nil {
-		return err
+		return common.Pin{}, err
 	}
 
 	out, err := os.OpenFile(instanceFile, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		return err
+		return common.Pin{}, err
 	}
 	ok := false
 	defer func() {
@@ -1112,7 +1131,7 @@ func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts Se
 
 	err = client.FetchInstance(pin, out)
 	if err != nil {
-		return err
+		return common.Pin{}, err
 	}
 
 	// Verify it (by checking that instanceID matches the file content).
@@ -1121,11 +1140,11 @@ func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts Se
 	inst, err := local.OpenInstanceFile(instanceFile, pin.InstanceID)
 	if err != nil {
 		os.Remove(instanceFile)
-		return err
+		return common.Pin{}, err
 	}
 	defer inst.Close()
 	inspectInstance(inst, false)
-	return nil
+	return inst.Pin(), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1137,27 +1156,20 @@ var cmdInspect = &subcommands.Command{
 	LongDesc:  "Reads contents *.cipd file and prints information about it.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &inspectRun{}
-		c.JSONOutputOptions.registerFlags(&c.Flags)
+		c.registerBaseFlags()
 		return c
 	},
 }
 
 type inspectRun struct {
-	subcommands.CommandRunBase
-	JSONOutputOptions
+	Subcommand
 }
 
 func (c *inspectRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	pin, err := inspectInstanceFile(args[0], true)
-	err = c.writeJSONOutput(&pin, err)
-	if err != nil {
-		log.Errorf("Error while inspecting the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(inspectInstanceFile(args[0], true))
 }
 
 func inspectInstanceFile(instanceFile string, listFiles bool) (common.Pin, error) {
@@ -1171,19 +1183,19 @@ func inspectInstanceFile(instanceFile string, listFiles bool) (common.Pin, error
 }
 
 func inspectInstance(inst local.PackageInstance, listFiles bool) {
-	log.Infof("Instance: %s", inst.Pin())
+	fmt.Printf("Instance: %s\n", inst.Pin())
 	if listFiles {
-		log.Infof("Package files:")
+		fmt.Println("Package files:")
 		for _, f := range inst.Files() {
 			if f.Symlink() {
 				target, err := f.SymlinkTarget()
 				if err != nil {
-					log.Infof(" E %s (%s)", f.Name(), err)
+					fmt.Printf(" E %s (%s)\n", f.Name(), err)
 				} else {
-					log.Infof(" S %s -> %s", f.Name(), target)
+					fmt.Printf(" S %s -> %s\n", f.Name(), target)
 				}
 			} else {
-				log.Infof(" F %s", f.Name())
+				fmt.Printf(" F %s\n", f.Name())
 			}
 		}
 	}
@@ -1198,33 +1210,26 @@ var cmdRegister = &subcommands.Command{
 	LongDesc:  "Uploads and registers package instance in the package repository.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &registerRun{}
+		c.registerBaseFlags()
 		c.RefsOptions.registerFlags(&c.Flags)
 		c.TagsOptions.registerFlags(&c.Flags)
 		c.ServiceOptions.registerFlags(&c.Flags)
-		c.JSONOutputOptions.registerFlags(&c.Flags)
 		return c
 	},
 }
 
 type registerRun struct {
-	subcommands.CommandRunBase
+	Subcommand
 	RefsOptions
 	TagsOptions
 	ServiceOptions
-	JSONOutputOptions
 }
 
 func (c *registerRun) Run(a subcommands.Application, args []string) int {
-	if !checkCommandLine(args, c.GetFlags(), 1, 1) {
+	if !c.init(args, 1, 1) {
 		return 1
 	}
-	pin, err := registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions)
-	err = c.writeJSONOutput(&pin, err)
-	if err != nil {
-		log.Errorf("Error while registering the package: %s", err)
-		return 1
-	}
-	return 0
+	return c.done(registerInstanceFile(args[0], c.RefsOptions, c.TagsOptions, c.ServiceOptions))
 }
 
 func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
@@ -1260,7 +1265,7 @@ func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts Ta
 
 var application = &subcommands.DefaultApplication{
 	Name:  "cipd",
-	Title: "Chrome infra package deployer",
+	Title: "Chrome Infra Package Deployer",
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 		cipd_lib.SubcommandVersion,

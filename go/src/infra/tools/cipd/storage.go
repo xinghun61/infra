@@ -133,7 +133,7 @@ func (s *storageImpl) upload(url string, data io.ReadSeeker) error {
 		}
 
 		// Fatal error.
-		return fmt.Errorf("Unexpected response during file upload: HTTP %d", resp.StatusCode)
+		return fmt.Errorf("unexpected response during file upload: HTTP %d", resp.StatusCode)
 	}
 
 	return ErrUploadError
@@ -173,7 +173,7 @@ func (s *storageImpl) getNextOffset(url string, length int64) (offset int64, err
 	} else if isTemporaryHTTPError(resp.StatusCode) {
 		err = errTransientError
 	} else {
-		err = fmt.Errorf("Unexpected response (HTTP %d) when querying for uploaded offset", resp.StatusCode)
+		err = fmt.Errorf("unexpected response (HTTP %d) when querying for uploaded offset", resp.StatusCode)
 	}
 	return
 }
@@ -245,7 +245,7 @@ func (s *storageImpl) download(url string, output io.WriteSeeker) error {
 		// Fatal error, abort.
 		if resp.StatusCode >= 400 {
 			resp.Body.Close()
-			return fmt.Errorf("Server replied with HTTP code %d", resp.StatusCode)
+			return fmt.Errorf("server replied with HTTP code %d", resp.StatusCode)
 		}
 
 		// Try to fetch (will close resp.Body when done).

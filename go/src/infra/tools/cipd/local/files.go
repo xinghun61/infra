@@ -68,12 +68,12 @@ func (f *fileSystemFile) SymlinkTarget() (string, error) {
 	if f.symlinkTarget != "" {
 		return f.symlinkTarget, nil
 	}
-	return "", fmt.Errorf("Not a symlink: %s", f.Name())
+	return "", fmt.Errorf("not a symlink: %s", f.Name())
 }
 
 func (f *fileSystemFile) Open() (io.ReadCloser, error) {
 	if f.Symlink() {
-		return nil, fmt.Errorf("Opening a symlink is not allowed: %s", f.Name())
+		return nil, fmt.Errorf("opening a symlink is not allowed: %s", f.Name())
 	}
 	return os.Open(f.absPath)
 }
@@ -98,7 +98,7 @@ func ScanFileSystem(dir string, root string, exclude ScanFilter) ([]File, error)
 		return nil, err
 	}
 	if !isSubpath(dir, root) {
-		return nil, fmt.Errorf("Scanned directory must be under root directory")
+		return nil, fmt.Errorf("scanned directory must be under root directory")
 	}
 
 	files := []File{}
@@ -136,13 +136,13 @@ func ScanFileSystem(dir string, root string, exclude ScanFilter) ([]File, error)
 // os.Lstat will be used to get it. Recognizes symlinks.
 func WrapFile(abs string, root string, fileInfo *os.FileInfo) (File, error) {
 	if !filepath.IsAbs(abs) {
-		return nil, fmt.Errorf("Expecting absolute path, got this: %q", abs)
+		return nil, fmt.Errorf("expecting absolute path, got this: %q", abs)
 	}
 	if !filepath.IsAbs(root) {
-		return nil, fmt.Errorf("Expecting absolute path, got this: %q", root)
+		return nil, fmt.Errorf("expecting absolute path, got this: %q", root)
 	}
 	if !isSubpath(abs, root) {
-		return nil, fmt.Errorf("Path %q is not under %q", abs, root)
+		return nil, fmt.Errorf("path %q is not under %q", abs, root)
 	}
 
 	var info os.FileInfo
@@ -205,7 +205,7 @@ func WrapFile(abs string, root string, fileInfo *os.FileInfo) (File, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("Not a regular file or symlink: %s", abs)
+	return nil, fmt.Errorf("not a regular file or symlink: %s", abs)
 }
 
 // isSubpath returns true if 'path' is 'root' or is inside a subdirectory of
@@ -280,7 +280,7 @@ func NewFileSystemDestination(dir string, fs FileSystem) Destination {
 
 func (d *fileSystemDestination) Begin() error {
 	if d.tempDir != "" {
-		return fmt.Errorf("Destination is already open")
+		return fmt.Errorf("destination is already open")
 	}
 
 	// Ensure a parent directory of the destination directory exists.
@@ -320,7 +320,7 @@ func (d *fileSystemDestination) Begin() error {
 
 func (d *fileSystemDestination) CreateFile(name string, executable bool) (io.WriteCloser, error) {
 	if _, ok := d.openFiles[name]; ok {
-		return nil, fmt.Errorf("File %s is already open", name)
+		return nil, fmt.Errorf("file %s is already open", name)
 	}
 
 	path, err := d.prepareFilePath(name)
@@ -361,7 +361,7 @@ func (d *fileSystemDestination) CreateSymlink(name string, target string) error 
 	if !filepath.IsAbs(target) {
 		targetAbs := filepath.Clean(filepath.Join(filepath.Dir(path), target))
 		if !isSubpath(targetAbs, d.outDir) {
-			return fmt.Errorf("Relative symlink is pointing outside of the destination dir: %s", name)
+			return fmt.Errorf("relative symlink is pointing outside of the destination dir: %s", name)
 		}
 	}
 
@@ -370,10 +370,10 @@ func (d *fileSystemDestination) CreateSymlink(name string, target string) error 
 
 func (d *fileSystemDestination) End(success bool) error {
 	if d.tempDir == "" {
-		return fmt.Errorf("Destination is not open")
+		return fmt.Errorf("destination is not open")
 	}
 	if len(d.openFiles) != 0 {
-		return fmt.Errorf("Not all files were closed. Leaking.")
+		return fmt.Errorf("not all files were closed (leaking %d files)", len(d.openFiles))
 	}
 
 	// Clean up temp dir and the state no matter what.
@@ -396,11 +396,11 @@ func (d *fileSystemDestination) End(success bool) error {
 // be put.
 func (d *fileSystemDestination) prepareFilePath(name string) (string, error) {
 	if d.tempDir == "" {
-		return "", fmt.Errorf("Destination is not open")
+		return "", fmt.Errorf("destination is not open")
 	}
 	path := filepath.Clean(filepath.Join(d.outDir, filepath.FromSlash(name)))
 	if !isSubpath(path, d.outDir) {
-		return "", fmt.Errorf("Invalid relative file name: %s", name)
+		return "", fmt.Errorf("invalid relative file name: %s", name)
 	}
 	if _, err := d.fs.EnsureDirectory(filepath.Dir(path)); err != nil {
 		return "", err

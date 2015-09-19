@@ -291,7 +291,6 @@ func (client *clientImpl) ModifyACL(packagePath string, changes []PackageACLChan
 }
 
 func (client *clientImpl) ListPackages(path string, recursive bool) ([]string, error) {
-	client.Logger.Debugf("cipd: listing %s...", path)
 	pkgs, dirs, err := client.remote.listPackages(path, recursive)
 	if err != nil {
 		return nil, err
@@ -369,7 +368,6 @@ func (client *clientImpl) ResolveVersion(packageName, version string) (common.Pi
 	if err := common.ValidateInstanceVersion(version); err != nil {
 		return common.Pin{}, err
 	}
-	client.Logger.Debugf("cipd: resolving version %q of %q...", version, packageName)
 	return client.remote.resolveVersion(packageName, version)
 }
 
@@ -524,7 +522,7 @@ func (client *clientImpl) FetchAndDeployInstance(pin common.Pin) error {
 func (client *clientImpl) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
 	lineNo := 0
 	makeError := func(msg string) error {
-		return fmt.Errorf("Failed to parse desired state (line %d): %s", lineNo, msg)
+		return fmt.Errorf("failed to parse desired state (line %d): %s", lineNo, msg)
 	}
 
 	out := []common.Pin{}
@@ -575,7 +573,7 @@ func (client *clientImpl) EnsurePackages(pins []common.Pin) error {
 	seen := make(map[string]bool, len(pins))
 	for _, p := range pins {
 		if seen[p.PackageName] {
-			return fmt.Errorf("Package %s is specified twice", p.PackageName)
+			return fmt.Errorf("package %s is specified twice", p.PackageName)
 		}
 		seen[p.PackageName] = true
 	}

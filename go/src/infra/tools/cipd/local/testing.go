@@ -44,14 +44,14 @@ func (f *testFile) Symlink() bool    { return f.symlinkTarget != "" }
 
 func (f *testFile) SymlinkTarget() (string, error) {
 	if f.symlinkTarget == "" {
-		return "", fmt.Errorf("Not a symlink: %s", f.Name())
+		return "", fmt.Errorf("not a symlink: %s", f.Name())
 	}
 	return f.symlinkTarget, nil
 }
 
 func (f *testFile) Open() (io.ReadCloser, error) {
 	if f.Symlink() {
-		return nil, fmt.Errorf("Can't open symlink: %s", f.Name())
+		return nil, fmt.Errorf("can't open symlink: %s", f.Name())
 	}
 	r := bytes.NewReader([]byte(f.data))
 	return ioutil.NopCloser(r), nil

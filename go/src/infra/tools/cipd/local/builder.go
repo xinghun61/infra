@@ -51,7 +51,7 @@ func BuildInstance(opts BuildInstanceOptions) error {
 	// Make sure no files are written to package service directory.
 	for _, f := range opts.Input {
 		if strings.HasPrefix(f.Name(), packageServiceDir+"/") {
-			return fmt.Errorf("Can't write to %s: %s", packageServiceDir, f.Name())
+			return fmt.Errorf("can't write to %s: %s", packageServiceDir, f.Name())
 		}
 	}
 
@@ -67,7 +67,7 @@ func BuildInstance(opts BuildInstanceOptions) error {
 	for _, f := range files {
 		_, seen := seenNames[f.Name()]
 		if seen {
-			return fmt.Errorf("File %s is provided twice", f.Name())
+			return fmt.Errorf("file %s is provided twice", f.Name())
 		}
 		seenNames[f.Name()] = struct{}{}
 	}
@@ -138,7 +138,7 @@ func zipRegularFile(dst io.Writer, f File) error {
 		return err
 	}
 	if uint64(written) != f.Size() {
-		return fmt.Errorf("File %s changed midway", f.Name())
+		return fmt.Errorf("file %s changed midway", f.Name())
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func (m *manifestFile) Executable() bool { return false }
 func (m *manifestFile) Symlink() bool    { return false }
 
 func (m *manifestFile) SymlinkTarget() (string, error) {
-	return "", fmt.Errorf("Not a symlink: %s", m.Name())
+	return "", fmt.Errorf("not a symlink: %s", m.Name())
 }
 
 func (m *manifestFile) Open() (io.ReadCloser, error) {

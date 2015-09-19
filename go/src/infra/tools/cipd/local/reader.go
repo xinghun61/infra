@@ -189,7 +189,7 @@ func (inst *packageInstance) open(instanceID string) error {
 
 	calculatedSHA1 := hex.EncodeToString(hash.Sum(nil))
 	if instanceID != "" && instanceID != calculatedSHA1 {
-		return fmt.Errorf("Package SHA1 hash mismatch")
+		return fmt.Errorf("package SHA1 hash mismatch")
 	}
 	inst.instanceID = calculatedSHA1
 
@@ -267,7 +267,7 @@ func readManifestFile(f File) (Manifest, error) {
 // package definition YAML.
 func makeVersionFile(relPath string, versionFile VersionFile) (File, error) {
 	if !isCleanSlashPath(relPath) {
-		return nil, fmt.Errorf("Invalid version_file: %s", relPath)
+		return nil, fmt.Errorf("invalid version_file: %s", relPath)
 	}
 	blob, err := json.MarshalIndent(versionFile, "", "  ")
 	if err != nil {
@@ -321,7 +321,7 @@ func (f *fileInZip) Size() uint64 {
 
 func (f *fileInZip) SymlinkTarget() (string, error) {
 	if !f.Symlink() {
-		return "", fmt.Errorf("Not a symlink: %s", f.Name())
+		return "", fmt.Errorf("not a symlink: %s", f.Name())
 	}
 	r, err := f.z.Open()
 	if err != nil {
@@ -337,7 +337,7 @@ func (f *fileInZip) SymlinkTarget() (string, error) {
 
 func (f *fileInZip) Open() (io.ReadCloser, error) {
 	if f.Symlink() {
-		return nil, fmt.Errorf("Opening a symlink is not allowed: %s", f.Name())
+		return nil, fmt.Errorf("opening a symlink is not allowed: %s", f.Name())
 	}
 	return f.z.Open()
 }

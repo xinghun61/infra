@@ -14,7 +14,7 @@ import (
 // SubcommandVersion implement subcommand that prints version of CIPD package
 // that contains the executable.
 var SubcommandVersion = &subcommands.Command{
-	UsageLine:  "cipd-version",
+	UsageLine:  "version",
 	ShortDesc:  "prints version of CIPD package this exe was installed from",
 	LongDesc:   "Prints version of CIPD package this exe was installed from.",
 	CommandRun: func() subcommands.CommandRun { return &versionRun{} },

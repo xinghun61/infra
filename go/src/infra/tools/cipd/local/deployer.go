@@ -77,7 +77,7 @@ type Deployer interface {
 func NewDeployer(root string, logger logging.Logger) Deployer {
 	var err error
 	if root == "" {
-		err = fmt.Errorf("Site root path is not provided")
+		err = fmt.Errorf("site root path is not provided")
 	} else {
 		root, err = filepath.Abs(filepath.Clean(root))
 	}
@@ -210,7 +210,7 @@ func (d *deployerImpl) DeployInstance(inst PackageInstance) (common.Pin, error) 
 	// Verify it's all right.
 	newPin, err := d.CheckDeployed(pin.PackageName)
 	if err == nil && newPin.InstanceID != pin.InstanceID {
-		err = fmt.Errorf("Other instance (%s) was deployed concurrently", newPin.InstanceID)
+		err = fmt.Errorf("other instance (%s) was deployed concurrently", newPin.InstanceID)
 	}
 	if err == nil {
 		d.logger.Infof("Successfully deployed %s", pin)
@@ -321,7 +321,7 @@ func (d *deployerImpl) packagePath(pkg string) string {
 	rel := filepath.Join(filepath.FromSlash(packagesDir), packageNameDigest(pkg))
 	abs, err := d.fs.RootRelToAbs(rel)
 	if err != nil {
-		msg := fmt.Sprintf("Can't get absolute path of '%s'", rel)
+		msg := fmt.Sprintf("can't get absolute path of %q", rel)
 		d.logger.Errorf("%s", msg)
 		panic(msg)
 	}

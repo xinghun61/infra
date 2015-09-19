@@ -37,7 +37,7 @@ func (pin Pin) String() string {
 // ValidatePackageName returns error if a string doesn't look like a valid package name.
 func ValidatePackageName(name string) error {
 	if !packageNameRe.MatchString(name) {
-		return fmt.Errorf("Invalid package name: %s", name)
+		return fmt.Errorf("invalid package name: %s", name)
 	}
 	return nil
 }
@@ -46,11 +46,11 @@ func ValidatePackageName(name string) error {
 func ValidateInstanceID(s string) error {
 	// Instance id is SHA1 hex digest currently.
 	if len(s) != 40 {
-		return fmt.Errorf("Not a valid package instance ID \"%s\": not 40 bytes", s)
+		return fmt.Errorf("not a valid package instance ID %q: not 40 bytes", s)
 	}
 	for _, c := range s {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-			return fmt.Errorf("Not a valid package instance ID \"%s\": wrong char %c", s, c)
+			return fmt.Errorf("not a valid package instance ID %q: wrong char %c", s, c)
 		}
 	}
 	return nil
@@ -70,10 +70,10 @@ func ValidatePin(pin Pin) error {
 // ValidatePackageRef returns error if a string doesn't look like a valid ref.
 func ValidatePackageRef(r string) error {
 	if ValidateInstanceID(r) == nil {
-		return fmt.Errorf("Invalid ref name (looks like an instance ID): %q", r)
+		return fmt.Errorf("invalid ref name (looks like an instance ID): %q", r)
 	}
 	if !packageRefRe.MatchString(r) {
-		return fmt.Errorf("Invalid ref name: %q", r)
+		return fmt.Errorf("invalid ref name: %q", r)
 	}
 	return nil
 }
@@ -82,13 +82,13 @@ func ValidatePackageRef(r string) error {
 func ValidateInstanceTag(t string) error {
 	chunks := strings.SplitN(t, ":", 2)
 	if len(chunks) != 2 {
-		return fmt.Errorf("The string %q doesn't look like a tag (a key:value pair)", t)
+		return fmt.Errorf("%q doesn't look like a tag (a key:value pair)", t)
 	}
 	if len(t) > 400 {
-		return fmt.Errorf("The tag is too long: %q", t)
+		return fmt.Errorf("the tag is too long: %q", t)
 	}
 	if !instanceTagKeyRe.MatchString(chunks[0]) {
-		return fmt.Errorf("Invalid tag key in %q. Should be a lowercase word.", t)
+		return fmt.Errorf("invalid tag key in %q (should be a lowercase word)", t)
 	}
 	return nil
 }
@@ -99,5 +99,5 @@ func ValidateInstanceVersion(v string) error {
 	if ValidateInstanceID(v) == nil || ValidatePackageRef(v) == nil || ValidateInstanceTag(v) == nil {
 		return nil
 	}
-	return fmt.Errorf("Bad version (not an instance ID, a ref or a tag): %q", v)
+	return fmt.Errorf("bad version (not an instance ID, a ref or a tag): %q", v)
 }

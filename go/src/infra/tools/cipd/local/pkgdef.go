@@ -174,7 +174,7 @@ func (def *PackageDef) FindFiles(cwd string) ([]File, error) {
 		}
 
 		// LoadPackageDef does validation, so this should not happen.
-		return nil, fmt.Errorf("Unexpected definition: %v", chunk)
+		return nil, fmt.Errorf("unexpected definition: %v", chunk)
 	}
 
 	// Sort by Name().
@@ -299,7 +299,7 @@ func subVars(s string, vars map[string]string) (string, error) {
 		return val
 	})
 	if len(badKeys) != 0 {
-		return res, fmt.Errorf("Values for some variables are not provided: %v", badKeys)
+		return res, fmt.Errorf("values for some variables are not provided: %v", badKeys)
 	}
 	return res, nil
 }

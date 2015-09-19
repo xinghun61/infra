@@ -75,6 +75,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 	}
 
 	url := fmt.Sprintf("%s/_ah/api/%s", r.client.ServiceURL, path)
+	r.client.Logger.Debugf("cipd: %s %s", method, url)
 	for attempt := 0; attempt < remoteMaxRetries; attempt++ {
 		if attempt != 0 {
 			r.client.Logger.Warningf("cipd: retrying request to %s", url)
@@ -126,7 +127,7 @@ func (r *remoteImpl) makeRequest(path, method string, request, response interfac
 		if resp.StatusCode == 403 || resp.StatusCode == 401 {
 			return ErrAccessDenined
 		}
-		return fmt.Errorf("Unexpected reply (HTTP %d):\n%s", resp.StatusCode, string(responseBody))
+		return fmt.Errorf("unexpected reply (HTTP %d):\n%s", resp.StatusCode, string(responseBody))
 	}
 
 	return ErrBackendInaccessible
@@ -149,9 +150,9 @@ func (r *remoteImpl) initiateUpload(sha1 string) (s *UploadSession, err error) {
 	case "SUCCESS":
 		s = &UploadSession{reply.UploadSessionID, reply.UploadURL}
 	case "ERROR":
-		err = fmt.Errorf("Server replied with error: %s", reply.ErrorMessage)
+		err = fmt.Errorf("server replied with error: %s", reply.ErrorMessage)
 	default:
-		err = fmt.Errorf("Unexpected status: %s", reply.Status)
+		err = fmt.Errorf("unexpected status: %s", reply.Status)
 	}
 	return
 }
@@ -175,7 +176,7 @@ func (r *remoteImpl) finalizeUpload(sessionID string) (finished bool, err error)
 	case "ERROR":
 		err = errors.New(reply.ErrorMessage)
 	default:
-		err = fmt.Errorf("Unexpected upload session status: %s", reply.Status)
+		err = fmt.Errorf("unexpected upload session status: %s", reply.Status)
 	}
 	return
 }
@@ -202,20 +203,20 @@ func (r *remoteImpl) resolveVersion(packageName, version string) (pin common.Pin
 	switch reply.Status {
 	case "SUCCESS":
 		if common.ValidateInstanceID(reply.InstanceID) != nil {
-			err = fmt.Errorf("Backend returned invalid instance ID: %s", reply.InstanceID)
+			err = fmt.Errorf("backend returned invalid instance ID: %s", reply.InstanceID)
 		} else {
 			pin = common.Pin{PackageName: packageName, InstanceID: reply.InstanceID}
 		}
 	case "PACKAGE_NOT_FOUND":
-		err = fmt.Errorf("Package '%s' is not registered", packageName)
+		err = fmt.Errorf("package %q is not registered", packageName)
 	case "INSTANCE_NOT_FOUND":
-		err = fmt.Errorf("Package '%s' doesn't have instance with version '%s'", packageName, version)
+		err = fmt.Errorf("package %q doesn't have instance with version %q", packageName, version)
 	case "AMBIGUOUS_VERSION":
-		err = fmt.Errorf("More than one instance of package '%s' match version '%s'", packageName, version)
+		err = fmt.Errorf("more than one instance of package %q match version %q", packageName, version)
 	case "ERROR":
 		err = errors.New(reply.ErrorMessage)
 	default:
-		err = fmt.Errorf("Unexpected backend response: %s", reply.Status)
+		err = fmt.Errorf("unexpected backend response: %s", reply.Status)
 	}
 	return
 }
@@ -257,7 +258,7 @@ func (r *remoteImpl) registerInstance(pin common.Pin) (*registerInstanceResponse
 	case "ERROR":
 		return nil, errors.New(reply.ErrorMessage)
 	}
-	return nil, fmt.Errorf("Unexpected register package status: %s", reply.Status)
+	return nil, fmt.Errorf("unexpected register package status: %s", reply.Status)
 }
 
 func (r *remoteImpl) fetchInstance(pin common.Pin) (*fetchInstanceResponse, error) {
@@ -287,13 +288,13 @@ func (r *remoteImpl) fetchInstance(pin common.Pin) (*fetchInstanceResponse, erro
 			registeredTs: ts,
 		}, nil
 	case "PACKAGE_NOT_FOUND":
-		return nil, fmt.Errorf("Package '%s' is not registered", pin.PackageName)
+		return nil, fmt.Errorf("package %q is not registered", pin.PackageName)
 	case "INSTANCE_NOT_FOUND":
-		return nil, fmt.Errorf("Package '%s' doesn't have instance '%s'", pin.PackageName, pin.InstanceID)
+		return nil, fmt.Errorf("package %q doesn't have instance %q", pin.PackageName, pin.InstanceID)
 	case "ERROR":
 		return nil, errors.New(reply.ErrorMessage)
 	}
-	return nil, fmt.Errorf("Unexpected reply status: %s", reply.Status)
+	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
 }
 
 func (r *remoteImpl) fetchACL(packagePath string) ([]PackageACL, error) {
@@ -338,7 +339,7 @@ func (r *remoteImpl) fetchACL(packagePath string) ([]PackageACL, error) {
 	case "ERROR":
 		return nil, errors.New(reply.ErrorMessage)
 	}
-	return nil, fmt.Errorf("Unexpected reply status: %s", reply.Status)
+	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
 }
 
 func (r *remoteImpl) modifyACL(packagePath string, changes []PackageACLChange) error {
@@ -356,7 +357,7 @@ func (r *remoteImpl) modifyACL(packagePath string, changes []PackageACLChange) e
 		} else if c.Action == RevokeRole {
 			action = "REVOKE"
 		} else {
-			return fmt.Errorf("Unexpected action: %s", action)
+			return fmt.Errorf("unexpected action: %s", action)
 		}
 		request.Changes = append(request.Changes, roleChangeMsg{
 			Action:    action,
@@ -378,7 +379,7 @@ func (r *remoteImpl) modifyACL(packagePath string, changes []PackageACLChange) e
 	case "ERROR":
 		return errors.New(reply.ErrorMessage)
 	}
-	return fmt.Errorf("Unexpected reply status: %s", reply.Status)
+	return fmt.Errorf("unexpected reply status: %s", reply.Status)
 }
 
 func (r *remoteImpl) setRef(ref string, pin common.Pin) error {
@@ -410,7 +411,7 @@ func (r *remoteImpl) setRef(ref string, pin common.Pin) error {
 	case "ERROR", "PROCESSING_FAILED":
 		return errors.New(reply.ErrorMessage)
 	}
-	return fmt.Errorf("Unexpected status when moving ref: %s", reply.Status)
+	return fmt.Errorf("unexpected status when moving ref: %s", reply.Status)
 }
 
 func (r *remoteImpl) attachTags(pin common.Pin, tags []string) error {
@@ -447,7 +448,7 @@ func (r *remoteImpl) attachTags(pin common.Pin, tags []string) error {
 	case "ERROR", "PROCESSING_FAILED":
 		return errors.New(reply.ErrorMessage)
 	}
-	return fmt.Errorf("Unexpected status when attaching tags: %s", reply.Status)
+	return fmt.Errorf("unexpected status when attaching tags: %s", reply.Status)
 }
 
 func (r *remoteImpl) listPackages(path string, recursive bool) ([]string, []string, error) {
@@ -473,7 +474,7 @@ func (r *remoteImpl) listPackages(path string, recursive bool) ([]string, []stri
 	case "ERROR":
 		return nil, nil, errors.New(reply.ErrorMessage)
 	}
-	return nil, nil, fmt.Errorf("Unexpected list packages status: %s", reply.Status)
+	return nil, nil, fmt.Errorf("unexpected list packages status: %s", reply.Status)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -544,7 +545,7 @@ func tagsEndpoint(pin common.Pin, tags []string) (string, error) {
 func convertTimestamp(ts string) (time.Time, error) {
 	i, err := strconv.ParseInt(ts, 10, 64)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("Unexpected timestamp value '%s' in the server response", ts)
+		return time.Time{}, fmt.Errorf("unexpected timestamp value %q in the server response", ts)
 	}
 	return time.Unix(0, i*1000), nil
 }
