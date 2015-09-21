@@ -208,8 +208,11 @@ def get_try_job_results_for_patchset_async(project, issue_id, patchset_id):
 def schedule(issue, patchset_id, builds):
   """Schedules builds on buildbucket.
 
-  |builds| is a list of (master, builder) tuples, where master must not have
-  '.master' prefix.
+  |builds| is a list of dicts with keys:
+    master: required. Must not have '.master' prefix.
+    builder: required.
+    revision
+    properties
   """
   account = models.Account.current_user_account
   assert account, 'User is not logged in; cannot schedule builds.'
@@ -222,33 +225,41 @@ def schedule(issue, patchset_id, builds):
   req = {'builds':[]}
   opid = uuid.uuid4()
 
-  for i, (master, builder) in enumerate(builds):
+  for i, build in enumerate(builds):
+    assert 'master' in build, build
+    assert 'builder' in build, build
     # Build definitions are similar to what CQ produces:
     # https://chrome-internal.googlesource.com/infra/infra_internal/+/c3092da98975c7a3e083093f21f0f4130c66a51c/commit_queue/buildbucket_util.py#171
+    change = {
+      'author': {'email': issue.owner.email()},
+      'url': 'https://%s/%s/%s/' % (
+          self_hostname, issue.key.id(), patchset_id)
+    }
+    if build.get('revision'):
+      change['revision'] = build.get('revision')
+
+    properties = build.get('properties') or {}
+    properties.update({
+      'issue': issue.key.id(),
+      'master': build['master'],
+      'patch_project': issue.project,
+      'patch_storage': 'rietveld',
+      'patchset': patchset_id,
+      'project': issue.project,
+      'rietveld': self_hostname,
+    })
     req['builds'].append({
-        'bucket': 'master.%s' % master,
+        'bucket': 'master.%s' % build['master'],
         'parameters_json': json.dumps({
-          'builder_name': builder,
-          'changes': [{
-              'author': {'email': issue.owner.email()},
-              'url': 'https://%s/%s/%s/' % (
-                  self_hostname, issue.key.id(), patchset_id)
-          }],
-          'properties': {
-            'issue': issue.key.id(),
-            'master': master,
-            'patch_project': issue.project,
-            'patch_storage': 'rietveld',
-            'patchset': patchset_id,
-            'project': issue.project,
-            'rietveld': self_hostname,
-          },
+          'builder_name': build['builder'],
+          'changes': [change],
+          'properties': properties,
         }),
         'tags': [
-            'builder:%s' % builder,
+            'builder:%s' % build['builder'],
             'buildset:%s' % get_buildset_for(
                 issue.project, issue.key.id(), patchset_id),
-            'master:%s' % master,
+            'master:%s' % build['master'],
             'user_agent:rietveld',
         ],
         'client_operation_id': '%s:%s' % (opid, i),

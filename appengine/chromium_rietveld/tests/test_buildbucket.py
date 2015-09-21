@@ -227,8 +227,8 @@ class BuildbucketFunctionsTest(TestCase):
         owner=users.User(email='owner@chromium.org'),
     )
     builds = buildbucket.schedule(issue, '1', [
-        ('tryserver.chromium.linux', 'linux_rel'),
-        ('tryserver.chromium.linux', 'win_rel'),
+        {'master': 'tryserver.chromium.linux', 'builder': 'linux_rel'},
+        {'master': 'tryserver.chromium.linux', 'builder': 'linux_debug'},
     ])
     self.assertEqual(
         builds, [r['build'] for r in put_builds_response['results']])

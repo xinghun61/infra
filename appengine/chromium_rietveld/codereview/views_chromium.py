@@ -408,11 +408,14 @@ def edit_flags(request):
       return HttpResponseBadRequest(
         'Cannot add trybots on private issues', content_type='text/plain')
 
-    buildbucket.schedule(
-        request.issue,
-        last_patchset.key.id(),
-        [b.split(':', 1) for b in new_builders])
-
+    builds = []
+    for b in new_builders:
+      master, builder = b.split(':', 1)
+      builds.append({
+        'master': master,
+        'builder': builder,
+      })
+    buildbucket.schedule(request.issue, last_patchset.key.id(), builds)
   return HttpResponse('OK', content_type='text/plain')
 
 
@@ -667,33 +670,28 @@ def try_patchset(request):
       'clobber=%s\nrevision=%s\nreason=%s\nmaster=%s\nbuilders=%s\category=%s',
       clobber, revision, reason, master, builders, category)
 
-  def txn():
-    # Get list of existing pending try jobs for this patchset.  Don't create
-    # duplicates here.
-    patchset = last_patchset_key.get()
+  builds = []
+  for builder, tests in builders.iteritems():
+    props = {
+      'reason': reason,
+      'testfilter': tests,
+    }
+    if clobber:
+      # clobber property is checked for presence. Its value is ignored.
+      props['clobber'] = True
+    builds.append({
+      'builder': builder,
+      'category': category,
+      'master': master,
+      'properties': props,
+      'revision': revision,
+    })
 
-    jobs_to_save = []
-    for builder, tests in builders.iteritems():
-      try_job = models.TryJobResult(parent=patchset.key,
-                                    result=models.TryJobResult.TRYPENDING,
-                                    master=master,
-                                    builder=builder,
-                                    revision=revision,
-                                    clobber=clobber,
-                                    tests=tests,
-                                    reason=reason,
-                                    requester=request.user,
-                                    category=category)
-      jobs_to_save.append(try_job)
-
-    if jobs_to_save:
-      ndb.put_multi(jobs_to_save)
-    return dict((j.builder, j.key.id()) for j in jobs_to_save)
-  job_saved = ndb.transaction(txn)
-  content = 'Started %d jobs.' % len(job_saved)
-  logging.info('%s\n%s', content, job_saved)
+  scheduled_builds = buildbucket.schedule(
+      request.issue, request.patchset.key.id(), builds)
+  logging.info('Started %d jobs: %r', len(scheduled_builds), scheduled_builds)
   return {
-    'jobs': job_saved,
+    'jobs': scheduled_builds,
   }
 
 @deco.json_response
