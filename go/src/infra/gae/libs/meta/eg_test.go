@@ -24,11 +24,11 @@ func TestGetEntityGroupVersion(t *testing.T) {
 		ds := dstore.Get(c)
 
 		pm := dstore.PropertyMap{
-			"$key": {dstore.MkPropertyNI(ds.NewKey("A", "", 0, nil))},
+			"$key": {dstore.MkPropertyNI(ds.MakeKey("A", ""))},
 			"Val":  {dstore.MkProperty(10)},
 		}
 		So(ds.Put(pm), ShouldBeNil)
-		aKey, ok := pm.GetMetaDefault("key", nil).(dstore.Key)
+		aKey, ok := pm.GetMetaDefault("key", nil).(*dstore.Key)
 		So(ok, ShouldBeTrue)
 		So(aKey, ShouldNotBeNil)
 

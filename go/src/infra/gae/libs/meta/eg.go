@@ -6,7 +6,6 @@ package meta
 
 import (
 	dstore "github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/datastore/dskey"
 	"github.com/luci/luci-go/common/errors"
 	"golang.org/x/net/context"
 )
@@ -17,9 +16,9 @@ var mark = errors.MakeMarkFn("eg")
 // appengine. You shouldn't need to use this struct directly, but instead should
 // use GetEntityGroupVersion.
 type EntityGroupMeta struct {
-	kind   string     `gae:"$kind,__entity_group__"`
-	id     int64      `gae:"$id,1"`
-	Parent dstore.Key `gae:"$parent"`
+	kind   string      `gae:"$kind,__entity_group__"`
+	id     int64       `gae:"$id,1"`
+	Parent *dstore.Key `gae:"$parent"`
 
 	Version int64 `gae:"__version__"`
 }
@@ -27,9 +26,9 @@ type EntityGroupMeta struct {
 // GetEntityGroupVersion returns the entity group version for the entity group
 // containing root. If the entity group doesn't exist, this function will return
 // zero and a nil error.
-func GetEntityGroupVersion(c context.Context, root dstore.Key) (int64, error) {
+func GetEntityGroupVersion(c context.Context, key *dstore.Key) (int64, error) {
 	ds := dstore.Get(c)
-	egm := &EntityGroupMeta{Parent: dskey.Root(root)}
+	egm := &EntityGroupMeta{Parent: key.Root()}
 	err := ds.Get(egm)
 	ret := egm.Version
 	if err == dstore.ErrNoSuchEntity {

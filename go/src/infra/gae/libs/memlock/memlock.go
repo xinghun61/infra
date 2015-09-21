@@ -91,8 +91,8 @@ func TryWithLock(ctx context.Context, key, clientID string, f func(context.Conte
 	// another lock observing an empty clientID will know that the lock is
 	// obtainable.
 	checkAnd := func(op checkOp) bool {
-		itm := mc.NewItem(key)
-		if err := mc.Get(itm); err != nil {
+		itm, err := mc.Get(key)
+		if err != nil {
 			log.Warningf("error getting: %s", err)
 			return false
 		}

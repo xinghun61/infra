@@ -22,7 +22,7 @@ type ListRsp struct {
 func (Example) List(c context.Context) (rsp *ListRsp, err error) {
 	ds := dstore.Get(prod.Use(c))
 	rsp = &ListRsp{}
-	err = ds.GetAll(ds.NewQuery("Counter"), &rsp.Counters)
+	err = ds.GetAll(dstore.NewQuery("Counter"), &rsp.Counters)
 	return
 }
 
