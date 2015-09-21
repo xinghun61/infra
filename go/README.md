@@ -1,5 +1,6 @@
 # Chromium Infra Go Area
 
+[TOC]
 
 ## Why Go?
 
@@ -24,11 +25,12 @@ natural to split building and deployment into two distinct phases, and deploy
 only the executable.
 
 What makes Go to stand out even more:
-  * Go code is much more cross platform (compared to other compiled languages)
-  * Go has batteries included
-  * Go package management, while not without holes, is pretty good
-  * Go is fast
-  * Go is easy to learn
+
+*   Go code is much more cross platform (compared to other compiled languages)
+*   Go has batteries included
+*   Go package management, while not without holes, is pretty good
+*   Go is fast
+*   Go is easy to learn
 
 
 ## Bootstrap
@@ -92,44 +94,84 @@ OR, to also grab code coverage report:
     ./env.py ./test.py
 
 
-## Dependencies
+## Adding or updating a single dependency
 
-Adding or updating a dependency:
+In a nutshell, to add a dependency add it to Goopfile, run goop update to
+fetch all new dependencies (i.e. indirect ones). Then copy over all new
+dependencies from Goopfile.lock to Goopfile. We need to move them to Goopfile
+to be able to attach git mirror locations (see below).
 
     cd infra/go
     vi Goopfile
     <modify revision of the appropriate package, add new package, etc>
     ./env.py goop update
-    <review Goopfile.lock diff, revert undesired changes>
+    <review Goopfile.lock diff, copy new lines to Goopfile>
+    <setup git mirrors, update Goopfile with location of git mirrors>
+    ./env.py goop update # run again to ensure mirrors work
     ./bootstrap.py
     <verify everything works>
     <commit the change to Goopfile and Goopfile.lock>
 
-**Do not use 'go get'. Modify Goopfile instead.**
+**Packages fetched by 'go get' do not persist. Modify Goopfile instead.**
 
 See more information about Goopfile file format on
 [goop github page](https://github.com/nitrous-io/goop).
 
 
+## Rolling all dependencies at once
+
+Use roll_goop.py script. The full workflow:
+
+    ./roll_goop.py
+    ./env.py goop update
+
+    # Examine diff. Setup mirrors for all new dependencies. Copy all new
+    # dependencies from Goopfile.lock to Goopfile, otherwise next 'goop update'
+    # will overwrite mirror URLs.
+    git diff Goopfile.lock
+    vi Goopfile
+
+    # Now that Goopfile is updated with mirror URLs, make sure everything looks
+    # fine by repeating exact same procedure again. There should be no new
+    # dependencies.
+    ./roll_goop.py
+    ./env.py goop update
+    git diff Goopfile.lock
+
+    # Test that our code still works.
+    ./env.py go test github.com/luci/gae/...
+    ./env.py go test github.com/luci/luci-go/...
+    ./env.py go test infra/...
+
+    # Commit, upload the CL.
+    git add ...
+    git commit ...
+    git cl upload
+
+    # Send try jobs on Windows. There may be Windows specific dependencies.
+    git cl try -m tryserver.infra -b "Infra Win Tester"
+
+    # Add some missing one (you may need to setup a mirror and/or transfer more
+    # dependencies from Goopfile.lock to Goopfile).
+    vi Goopfile
+    ./env.py goop update
+    git diff Goopfile.lock
+
+    # Rinse and repeat until all Win dependencies added.
+    git add ...
+    git commit --amend
+    git cl upload
+    git cl try -m tryserver.infra -b "Infra Win Tester"
+
+
 ## Git mirrors for dependencies
 
-All dependencies should be fetched from chromium.googlesource.com host.
+All dependencies should be fetched from a *.googlesource.com host.
 
-To convert Mercurial project to Git you may use fast-export tool. For example,
-the entire process of importing goauth2 package looks like this:
+Some Golang related packages are already on *.googlesource.com (though it may
+be non obvious at the first glance). For example all golang.org/x/* ones are
+actually served from https://go.googlesource.com/.
 
-    hg clone https://code.google.com/p/goauth2/
-    git clone git://repo.or.cz/fast-export.git
-    git init goauth2.git
-    cd goauth2.git
-    ../fast-export/hg-fast-export.sh -r ../goauth2
-    git push https://chromium.googlesource.com/infra/third_party/go/code.google.com/p/goauth2.git refs/*:refs/*
-
-For Go projects that are originally in Git use git_updater service.
-
-Once the mirror is up, add pinned dependency to Goopfile, asking goop to
-use the mirror when fetching it:
-
-    code.google.com/p/goauth2/oauth #f02aa781ad087b29b5b6276564da3215d39a6d61 !https://chromium.googlesource.com/infra/third_party/go/code.google.com/p/goauth2.git
-
-(note: .git suffix is important)
+If you are positive that mirror is needed, file
+[Infra-Git](https://code.google.com/p/chromium/issues/entry?template=Infra-Git)
+ticket specifying what repository you need to be mirrored.

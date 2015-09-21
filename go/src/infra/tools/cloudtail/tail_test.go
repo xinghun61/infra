@@ -57,7 +57,7 @@ func TestTailer(t *testing.T) {
 			PushBuffer: buf,
 		})
 		So(err, ShouldBeNil)
-		defer CleanupTailer()
+		defer tailer.Cleanup()
 
 		putLine("line", true)
 		putLine("   ", false)

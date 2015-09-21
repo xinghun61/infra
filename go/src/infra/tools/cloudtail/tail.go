@@ -32,6 +32,8 @@ type Tailer interface {
 	Stop() error
 	// Wait waits for the tailer to be in stopped state.
 	Wait() error
+	// Cleanup removes inotify watches added by the tailer.
+	Cleanup()
 }
 
 // NewTailer spawn a goroutine that watches a file for changes and pushes
@@ -73,10 +75,4 @@ func NewTailer(opts TailerOptions) (Tailer, error) {
 	go drainChannel(source, opts.Parser, opts.PushBuffer, opts.Logger)
 
 	return tailer, nil
-}
-
-// CleanupTailer cleans the global state. Should be called before existing
-// the process.
-func CleanupTailer() {
-	tail.Cleanup()
 }

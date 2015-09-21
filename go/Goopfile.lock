@@ -1,46 +1,49 @@
-github.com/ActiveState/tail #c86531131426fb939fe8627ffa57a3c649f04cd4 !https://chromium.googlesource.com/external/github.com/ActiveState/tail.git
-github.com/GoogleCloudPlatform/go-endpoints/endpoints #f1f8f40c9363e7d1f4631dc75dd6f2b22f656a0a !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
+github.com/ActiveState/tail #4b368d1590196ade29993d6a0896591403180bbd !https://chromium.googlesource.com/external/github.com/ActiveState/tail.git
+github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/bradfitz/http2 #f8202bc903bda493ebba4aa54922d78430c2c42f !https://chromium.googlesource.com/external/github.com/bradfitz/http2.git
-github.com/golang/glog #44145f04b68cf362d9c4df2182967c2275eaefed !https://chromium.googlesource.com/external/github.com/golang/glog.git
+github.com/coreos/etcd #6188933c81b3653a9dc1fe79ca1886c824e86b3b !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
+github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #7b7f4364ff76043e6c3610281525fabc0d90f0e4 !https://chromium.googlesource.com/external/github.com/golang/lint.git
-github.com/golang/protobuf #16256d3ce6929458613798ee44b7914a3f59f5c6 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
-github.com/google/google-api-go-client/google-api-go-generator #2c0e3555140502254399772c277c54fbaa207e80 !https://code.googlesource.com/google-api-go-client.git
+github.com/golang/protobuf #8df8a93c670173cd1d8737a507a253b94f2d0b5a !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
+github.com/google/google-api-go-client/google-api-go-generator #ebc7799043c9e8d3c71fedcb958ac491caad03d4 !https://code.googlesource.com/google-api-go-client.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/howeyc/fsnotify #4894fe7efedeeef21891033e1cce3b23b9af7ad2 !https://chromium.googlesource.com/external/github.com/howeyc/fsnotify.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 github.com/kisielk/errcheck #a4f12b02dc24fba8e9cd3706f3c35795616f2687 !https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 github.com/kisielk/gotool #58a7a198f2ec6ea7af221fd216e7f559d663ce02 !https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
-github.com/klauspost/compress #058815a5f6d073a77523c0323777dda1c64f26ff !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
-github.com/klauspost/cpuid #3b0816bb6cb682eea8e1973f4168b6c86880efe1 !https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
-github.com/klauspost/crc32 #55bf046ad09604e8e121b8494e3f16b081b1a6d5 !https://chromium.googlesource.com/external/github.com/klauspost/crc32.git
-github.com/kr/pretty #cb0850c1681cbca3233e84f7e6ec3e4c3f352085 !https://chromium.googlesource.com/external/github.com/kr/pretty.git
+github.com/klauspost/compress #3627ee40db8a49773cde09fe3404692fd33c5ae4 !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
+github.com/klauspost/cpuid #50eec7f95054178a12a2ed5240f16530a5c6e622 !https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
+github.com/klauspost/crc32 #f8d2e12057f7ef26ae42ecfa42697f4bdc32d7eb !https://chromium.googlesource.com/external/github.com/klauspost/crc32.git
+github.com/kr/pretty #e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb !https://chromium.googlesource.com/external/github.com/kr/pretty.git
 github.com/kr/pty #5cf931ef8f76dccd0910001d74a58a7fca84a83d !https://chromium.googlesource.com/external/github.com/kr/pty.git
-github.com/kr/text #6807e777504f54ad073ecef66747de158294b639 !https://chromium.googlesource.com/external/github.com/kr/text.git
+github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
 github.com/luci/gkvlite #cf7fa95b097418138e80474e217d865e2eb853ac !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/maruel/panicparse #35b70c396b3b7ff615b29678b2385d8adb91c9c2 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #480f19b6bfc4ad8989f989f37d8837e2f487a14d !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
-github.com/maruel/subcommands #3a25827b419f7ec71b1f54d075cdc43fef2e3a59 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
-github.com/maruel/ut #814808268666eb186d9691c504a057988da05a05 !https://chromium.googlesource.com/external/github.com/maruel/ut.git
+github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
+github.com/maruel/ut #7a409e904fa721e4784f8295740480ed308a266d !https://chromium.googlesource.com/external/github.com/maruel/ut.git
 github.com/mattn/go-colorable #40e4aedc8fabf8c23e040057540867186712faa5 !https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
 github.com/mattn/go-isatty #7fcbc72f853b92b5720db4a6b8482be612daef24 !https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
-github.com/mgutz/ansi #452f5f5396543168418a299cd963697ac742b56e !https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
+github.com/mgutz/ansi #c286dcecd19ff979eeb73ea444e479b903f2cfcb !https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
 github.com/mjibson/goon #b3d2e1ef84070229eeee1e8511b50e09f97e0749 !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
-github.com/op/go-logging #b45e089a5a94cc79c8e78fc03cd83d04b5d8410f !https://chromium.googlesource.com/external/github.com/op/go-logging.git
+github.com/olekukonko/ts #ecf753e7c962639ab5a1fb46f7da627d4c0a04b8 !https://chromium.googlesource.com/external/github.com/olekukonko/ts.git
+github.com/op/go-logging #e8d5414f0947014548c2334044a0fac13187dfee !https://chromium.googlesource.com/external/github.com/op/go-logging.git
 github.com/sergi/go-diff #ffccea18eeb30a700e65bdf8a9f99456e5d254fa !https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
-github.com/smartystreets/assertions #c702abfa8e05e48f79068ed1cf1aac7cf43f5eef !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
-github.com/smartystreets/goconvey #7a3785c3002a330211525464d402c07b2afce5a7 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
-github.com/steveyen/go-slab #ece58fcb4e3fa722d66af3b5320ee884a104ba83 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
-github.com/texttheater/golang-levenshtein #243f206144276890fddc49a38b565eedee7563c2 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
+github.com/smartystreets/assertions #e20084b55acef0ee9b0aa38cad708f830b9537ad !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
+github.com/smartystreets/goconvey #a29728e4d70bb23e436d03bee49b1793e70a9352 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
+github.com/steveyen/go-slab #2f82a688478741b7843a5575749f726d4b3f92b1 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
+github.com/texttheater/golang-levenshtein #9ab79d77423b5c17e36d1f02838fe9e788678ff0 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
-golang.org/x/crypto #4d48e5fa3d62b5e6e71260571bf76c767198ca02
-golang.org/x/net #5aa7325eaa14d7ed4b520f40d58adf2834c8de01
-golang.org/x/oauth2 #f98d0160877ab4712b906626425ed8b0b320907c
-golang.org/x/text #c93e7c9fff19fb9139b5ab04ce041833add0134e
-golang.org/x/tools #31971b752158ba9a2e6f5f4f01677ba1c075ef16
-google.golang.org/api #d4ab0b854f8606d689612515c3d18bd3b19d7e70
-google.golang.org/appengine #61bec684bd7bce2d7960be6735d0d62fe6c2b99a !https://chromium.googlesource.com/external/github.com/golang/appengine.git
-google.golang.org/cloud #2f1f05fa5ef92aac6109243f351e01ae3e033402
-google.golang.org/grpc #f5ebd86be717593ab029545492c93ddf8914832b !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
+golang.org/x/crypto #aedad9a179ec1ea11b7064c57cbc6dc30d7724ec
+golang.org/x/net #db8e4de5b2d6653f66aea53094624468caad15d2
+golang.org/x/oauth2 #d5ff5ab876fbb2a8c14cc5470db12f6b60fb90ef
+golang.org/x/text #7d45f341367c736d863bda0371545fe388222956
+golang.org/x/tools #5a90b2958f12ca0f046ffe2eb1523c5896af5dae
+google.golang.org/api #ebc7799043c9e8d3c71fedcb958ac491caad03d4
+google.golang.org/appengine #64b9ee471d66150c6065d945a7acf87e718d40c1 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
+google.golang.org/cloud #b6ddb0c0087d1e898fc199445c27302974c31d28
+google.golang.org/grpc #66a18cfe4f33281f217939a1581575b723b72f97 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
+gopkg.in/fsnotify.v0 #ea925a0a47d225b2ca7f9932b01d2ed4f3ec74f6 !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 gopkg.in/tomb.v1 #dd632973f1e7218eb1089048e0798ec9ae7dceb8 !https://chromium.googlesource.com/external/github.com/go-tomb/tomb.git
-gopkg.in/yaml.v2 #49c95bdc21843256fb6c4e0d370a05f24a0bf213 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
+gopkg.in/yaml.v2 #7ad95dd0798a40da1ccdff6dff35fd177b5edf40 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
