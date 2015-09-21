@@ -94,6 +94,7 @@ def get_goos():
     return 'linux'
   raise ValueError('Unrecognized platform: %s' % sys.platform)
 
+
 def parse_info_file(info_file):
   """Returns contents of <package>/<name>.infra_testing file or {} if missing.
 
@@ -365,9 +366,14 @@ def run_tests(package_root, coverage_dir):
     return 0
   print '-' * 80
 
+  # TODO(vadimsh): Windows seems to have problems building & testing go packages
+  # in parallel (file locking issues). So don't build stuff in parallel on
+  # Windows for now.
+  tpool_size = 1 if sys.platform == 'win32' else len(packages)
+
   failed = []
   bad_cover = []
-  tpool = ThreadPool(len(packages))
+  tpool = ThreadPool(tpool_size)
   def run((pkg, build_only)):
     if not build_only:
       coverage_file = os.path.join(coverage_dir, pkg.replace('/', os.sep))
