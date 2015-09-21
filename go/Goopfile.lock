@@ -26,7 +26,6 @@ github.com/maruel/ut #7a409e904fa721e4784f8295740480ed308a266d !https://chromium
 github.com/mattn/go-colorable #40e4aedc8fabf8c23e040057540867186712faa5 !https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
 github.com/mattn/go-isatty #7fcbc72f853b92b5720db4a6b8482be612daef24 !https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
 github.com/mgutz/ansi #c286dcecd19ff979eeb73ea444e479b903f2cfcb !https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
-github.com/mjibson/goon #b3d2e1ef84070229eeee1e8511b50e09f97e0749 !https://chromium.googlesource.com/external/github.com/mjibson/goon.git
 github.com/olekukonko/ts #ecf753e7c962639ab5a1fb46f7da627d4c0a04b8 !https://chromium.googlesource.com/external/github.com/olekukonko/ts.git
 github.com/op/go-logging #e8d5414f0947014548c2334044a0fac13187dfee !https://chromium.googlesource.com/external/github.com/op/go-logging.git
 github.com/sergi/go-diff #ffccea18eeb30a700e65bdf8a9f99456e5d254fa !https://chromium.googlesource.com/external/github.com/sergi/go-diff.git

@@ -32,6 +32,10 @@ LOGGER = logging.getLogger(__name__)
 # /path/to/infra
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# The current overarching Infra version. If this changes, everything will be
+# updated regardless of its version.
+INFRA_VERSION = 1
+
 # Where to install Go toolset to. GOROOT would be <TOOLSET_ROOT>/go.
 TOOLSET_ROOT = os.path.join(os.path.dirname(ROOT), 'golang')
 
@@ -267,67 +271,6 @@ def check_hello_world(toolset_root):
     return True
 
 
-def maybe_patch_appengine_sdk(toolset_root, go_appengine):
-  """Copies GAE_PKGS dirs into toolset_root.
-
-  This is necessary to convince go-get/goop to consider the appengine code as
-  'system' level. Otherwise simply putting them on GOPATH would have been
-  sufficient.
-
-  If Appengine SDK provides a better way to play nice in the go ecosystem at
-  some point, we should probably do that instead.
-  """
-  if not os.path.exists(go_appengine):
-    raise Failure(
-      '%s SDK not present... did you `gclient runhooks`?' % go_appengine)
-
-  sdk_version = read_file([go_appengine, 'VERSION'])
-  patched_version = read_file([toolset_root, 'INSTALLED_GAE_SDK'])
-
-  new = None if sdk_version is None else sdk_version.splitlines()[0]
-  old = None if patched_version is None else patched_version.splitlines()[0]
-
-  if sdk_version == patched_version:  # compares whole VERSION because why not?
-    LOGGER.debug('Appengine code patch up-to-date: %s', old)
-    return False
-  else:
-    LOGGER.info('Patching Appengine code into Go toolset:')
-    LOGGER.info('  Old Appengine version is %s', old)
-    LOGGER.info('  New Appengine version is %s', new)
-
-    base_sdk_dir = os.path.join(go_appengine, 'goroot', 'src')
-    base_tool_dir = os.path.join(toolset_root, 'go', 'src')
-
-    for d in GAE_PKGS:
-      sdk_dir = os.path.join(base_sdk_dir, d)
-      tool_dir = os.path.join(base_tool_dir, d)
-      remove_directory([tool_dir])
-      LOGGER.info('Copying %s -> %s', sdk_dir, tool_dir)
-      shutil.copytree(sdk_dir, tool_dir)
-
-    for pkg in GAE_HACK_PKGS:
-      shutil.rmtree(os.path.join(base_tool_dir, pkg))
-
-    patches = [os.path.join(WORKSPACE, 'patches', p)
-               for p in os.listdir(os.path.join(WORKSPACE, 'patches'))
-               if p.endswith('.patch')]
-    for patch in patches:
-      subprocess.check_call([GIT_EXE, 'apply'], cwd=toolset_root,
-                            stdin=open(patch), stdout=sys.stderr)
-
-    to_build = []
-    for d in GAE_PKGS:
-      to_build.extend(discover_targets(base_tool_dir, d))
-
-    LOGGER.info('Building %d Appengine libs', len(to_build))
-    subprocess.check_call(
-        [get_go_exe(toolset_root), 'build'] + to_build,
-        env=get_go_environ(toolset_root))
-
-    write_file([toolset_root, 'INSTALLED_GAE_SDK'], sdk_version)
-    return True
-
-
 def discover_targets(src_dir, pkg):
   ret = []
   for root, _, fnames in os.walk(os.path.join(src_dir, pkg)):
@@ -347,18 +290,30 @@ def is_suitable_toolset_installed(installed, toolset):
     return False
 
 
-def ensure_toolset_installed(toolset_root, go_appengine, toolset=None):
+def infra_version_outdated(root):
+  infra = read_file([root, 'INFRA_VERSION'])
+  if not infra:
+    return True
+  return int(infra.strip()) < INFRA_VERSION
+
+
+def write_infra_version(root):
+  write_file([root, 'INFRA_VERSION'], str(INFRA_VERSION))
+
+
+def ensure_toolset_installed(toolset_root, toolset=None):
   """Installs or updates Go toolset if necessary.
 
   Returns True if new toolset was installed.
   """
   if toolset is None:
     toolset = get_default_toolset()
+  infra_outdated = infra_version_outdated(toolset_root)
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
 
-  if is_suitable_toolset_installed(installed, toolset):
-    if maybe_patch_appengine_sdk(toolset_root, go_appengine):
-      return True
+  if infra_outdated:
+    LOGGER.info('Infra version is out of date.')
+  elif is_suitable_toolset_installed(installed, toolset):
     LOGGER.debug('Go toolset is up-to-date: %s', installed)
     return False
 
@@ -368,9 +323,9 @@ def ensure_toolset_installed(toolset_root, go_appengine, toolset=None):
   LOGGER.info('  New toolset is %s', available)
   remove_directory([toolset_root])
   install_toolset(toolset_root, toolset)
-  maybe_patch_appengine_sdk(toolset_root, go_appengine)
   LOGGER.info('Go toolset installed: %s', available)
   write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
+  write_infra_version(toolset_root)
   return True
 
 
@@ -572,7 +527,7 @@ def bootstrap(go_paths, logging_level, toolset=None):
   """
   logging.basicConfig()
   LOGGER.setLevel(logging_level)
-  updated = ensure_toolset_installed(TOOLSET_ROOT, GO_APPENGINE, toolset)
+  updated = ensure_toolset_installed(TOOLSET_ROOT, toolset)
   ensure_goop_installed(TOOLSET_ROOT)
   for p in go_paths:
     update_vendor_packages(TOOLSET_ROOT, p, force=updated)
