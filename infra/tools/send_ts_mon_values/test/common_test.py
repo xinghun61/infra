@@ -195,4 +195,4 @@ class test_set_metric(unittest.TestCase):
 class main_test(unittest.TestCase):
   def test_main(self):
     """Smoke test for the main function."""
-    common.main([])
+    common.main(['--ts-mon-config-file', 'non-existent-file'])
