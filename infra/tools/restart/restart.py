@@ -66,8 +66,7 @@ def get_master_state_checkout():
 
 def commit(target, masters, reviewers, bug, timestring, delta, force):
   """Commits the local CL via the CQ."""
-  title = 'Restarting master(s) %s' % ', '.join(masters)
-  desc = title
+  desc = 'Restarting master(s) %s\n' % ', '.join(masters)
   if bug:
     desc += '\nBUG=%s' % bug
   if reviewers:
@@ -100,7 +99,7 @@ def commit(target, masters, reviewers, bug, timestring, delta, force):
   upload_cmd = [
       'git', 'cl', 'upload',
       '-m', desc,
-      '-t', title,
+      '-t', desc, # Title becomes the message of CL. TBR and BUG must be there.
       '-c', '-f',
   ]
   if not reviewers:
