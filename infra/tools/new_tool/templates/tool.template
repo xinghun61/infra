@@ -5,8 +5,3 @@ import logging
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
-
-
-def add_argparse_options(parser):
-  """Define command-line arguments."""
-  parser.add_argument('--my-argument', '-m', help='')

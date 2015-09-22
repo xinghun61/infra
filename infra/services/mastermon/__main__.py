@@ -5,98 +5,84 @@
 
 """Send buildbot master monitoring data to the timeseries monitoring API."""
 
-import argparse
 import socket
-import sys
 import urlparse
 
 from infra.libs.service_utils import outer_loop
 from infra.services.mastermon import monitor
-from infra_libs import logs
 from infra_libs import ts_mon
 
 
-def parse_args(argv):
-  p = argparse.ArgumentParser()
+class Application(outer_loop.Application):
+  def __init__(self):
+    super(Application, self).__init__()
+    self.monitors = []
 
-  group = p.add_mutually_exclusive_group(required=True)
-  group.add_argument(
-      '--url',
-      help='URL of one buildbot master to monitor')
-  group.add_argument('--build-dir',
-      help='location of the tools/build directory. Used with --hostname to get '
-      'the list of all buildbot masters on this host to monitor. Cannot be '
-      'used with --url')
+  def add_argparse_options(self, parser):
+    super(Application, self).add_argparse_options(parser)
 
-  p.add_argument('--hostname',
-      default=socket.getfqdn(),
-      help='override local hostname (currently %(default)s). Used with '
-      '--build-dir to get the list of all buildbot masters on this host to '
-      'monitor')
-  p.add_argument(
-      '--interval',
-      default=60, type=int,
-      help='time (in seconds) between sampling the buildbot master')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--url',
+        help='URL of one buildbot master to monitor')
+    group.add_argument('--build-dir',
+        help='location of the tools/build directory. Used with --hostname to '
+        'get the list of all buildbot masters on this host to monitor. Cannot '
+        'be used with --url')
 
-  logs.add_argparse_options(p)
-  ts_mon.add_argparse_options(p)
-  outer_loop.add_argparse_options(p)
+    parser.add_argument('--hostname',
+        default=socket.getfqdn(),
+        help='override local hostname (currently %(default)s). Used with '
+        '--build-dir to get the list of all buildbot masters on this host to '
+        'monitor')
+    parser.add_argument('--interval',
+        default=60, type=int,
+        help='time (in seconds) between sampling the buildbot master')
 
-  DEFAULT_ARG_VALUE = '(default)'
+    parser.set_defaults(
+        ts_mon_flush='manual',
+        ts_mon_target_type='task',
+        ts_mon_task_service_name='mastermon',
+        ts_mon_task_job_name='(default)',
+    )
 
-  p.set_defaults(
-      ts_mon_flush='manual',
-      ts_mon_target_type='task',
-      ts_mon_task_service_name='mastermon',
-      ts_mon_task_job_name=DEFAULT_ARG_VALUE,
-  )
-  opts = p.parse_args(argv)
+  def process_argparse_options(self, options):
+    super(Application, self).process_argparse_options(options)
 
-  if opts.ts_mon_task_job_name == DEFAULT_ARG_VALUE:
-    # The ts_mon job name defaults to either the hostname when monitoring all
-    # masters on a host, or the name of the master extracted from the URL.
-    if opts.build_dir:
-      opts.ts_mon_task_job_name = opts.hostname
-    else:
-      parsed_url = urlparse.urlsplit(opts.url)
-      path_components = [x for x in parsed_url.path.split('/') if x]
-      if path_components:
-        opts.ts_mon_task_job_name = path_components[-1]
+    if options.ts_mon_task_job_name == '(default)':
+      # The ts_mon job name defaults to either the hostname when monitoring all
+      # masters on a host, or the name of the master extracted from the URL.
+      if options.build_dir:
+        options.ts_mon_task_job_name = options.hostname
       else:
-        opts.ts_mon_task_job_name = parsed_url.netloc
+        parsed_url = urlparse.urlsplit(options.url)
+        path_components = [x for x in parsed_url.path.split('/') if x]
+        if path_components:
+          options.ts_mon_task_job_name = path_components[-1]
+        else:
+          options.ts_mon_task_job_name = parsed_url.netloc
 
-  logs.process_argparse_options(opts)
-  ts_mon.process_argparse_options(opts)
-  loop_opts = outer_loop.process_argparse_options(opts)
+  def main(self, opts):
+    if opts.url:
+      # Monitor a single master specified on the commandline.
+      self.monitors = [monitor.MasterMonitor(opts.url)]
+    else:
+      # Query the mastermap and monitor all the masters on a host.
+      self.monitors = monitor.create_from_mastermap(
+          opts.build_dir, opts.hostname)
 
-  return opts, loop_opts
+    super(Application, self).main(opts)
 
+  def sleep_timeout(self):
+    return self.opts.interval
 
-def main(argv):
-  opts, loop_opts = parse_args(argv)
-
-  if opts.url:
-    # Monitor a single master specified on the commandline.
-    monitors = [monitor.MasterMonitor(opts.url)]
-  else:
-    # Query the mastermap and monitor all the masters on a host.
-    monitors = monitor.create_from_mastermap(opts.build_dir, opts.hostname)
-
-  def single_iteration():
+  def task(self):
     try:
-      for mon in monitors:
+      for mon in self.monitors:
         mon.poll()
     finally:
       ts_mon.flush()
     return True
 
-  loop_results = outer_loop.loop(
-      task=single_iteration,
-      sleep_timeout=lambda: opts.interval,
-      **loop_opts)
-
-  return 0 if loop_results.success else 1
-
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+  Application().run()

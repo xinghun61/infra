@@ -40,8 +40,7 @@ import os
 from monacq import acquisition_api
 from monacq.proto import metrics_pb2
 
-from infra_libs import logs
-import infra_libs
+from infra_libs import httplib2_utils
 
 from apiclient import discovery
 from oauth2client.client import GoogleCredentials
@@ -52,6 +51,8 @@ import httplib2
 # Special string that can be passed through as the credentials path to use the
 # default GCE service account.
 GCE_CREDENTIALS = ':gce'
+
+LOGGER = logging.getLogger('__name__')
 
 
 def _logging_callback(resp, content):  # pragma: no cover
@@ -110,7 +111,7 @@ class ApiMonitor(Monitor):
     api.SetResponseCallback(_logging_callback)
 
     if use_instrumented_http:
-      api.SetHttp(infra_libs.InstrumentedHttp('acq-mon-api'))
+      api.SetHttp(httplib2_utils.InstrumentedHttp('acq-mon-api'))
 
     self._api = api
 
@@ -149,7 +150,7 @@ class PubSubMonitor(Monitor):
   def _initialize(self, credsfile, project, topic, use_instrumented_http):
     creds = self._load_credentials(credsfile)
     if use_instrumented_http:
-      self._http = infra_libs.InstrumentedHttp('acq-mon-api-pubsub')
+      self._http = httplib2_utils.InstrumentedHttp('acq-mon-api-pubsub')
     else:  # pragma: no cover
       self._http = httplib2.Http()
     creds.authorize(self._http)
@@ -188,12 +189,13 @@ class PubSubMonitor(Monitor):
 class DiskMonitor(Monitor):
   """Class which writes metrics to a local file for debugging."""
   def __init__(self, filepath):
-    self._logger = logging.getLogger('__name__')
-    filehandler = logging.FileHandler(filepath, 'a')
-    logs.add_handler(self._logger, handler=filehandler, level=logging.INFO)
+    self._fh = open(filepath, 'a')
 
   def send(self, metric_pb):
-    self._logger.info('\n' + str(self._wrap_proto(metric_pb)))
+    text = str(self._wrap_proto(metric_pb))
+    LOGGER.info('\n' + text)
+    self._fh.write(text + '\n\n')
+    self._fh.flush()
 
 
 class NullMonitor(Monitor):

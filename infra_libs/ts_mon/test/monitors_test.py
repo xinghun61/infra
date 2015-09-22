@@ -58,7 +58,7 @@ class ApiMonitorTest(unittest.TestCase):
     api = fake_api.AcquisitionApi.return_value
     api.SetHttp.assert_called_once()
     self.assertIsInstance(api.SetHttp.call_args[0][0],
-                          infra_libs.InstrumentedHttp)
+                          infra_libs.httplib2_utils.InstrumentedHttp)
 
   @mock.patch('infra_libs.ts_mon.monitors.acquisition_api')
   def test_not_instrumented(self, fake_api):
@@ -79,7 +79,7 @@ class ApiMonitorTest(unittest.TestCase):
 
 class PubSubMonitorTest(unittest.TestCase):
 
-  @mock.patch('infra_libs.InstrumentedHttp')
+  @mock.patch('infra_libs.httplib2_utils.InstrumentedHttp')
   @mock.patch('infra_libs.ts_mon.monitors.discovery')
   @mock.patch('infra_libs.ts_mon.monitors.GoogleCredentials')
   def test_init_service_account(self, gc, discovery, instrumented_http):
@@ -97,7 +97,7 @@ class PubSubMonitorTest(unittest.TestCase):
     discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 
-  @mock.patch('infra_libs.InstrumentedHttp')
+  @mock.patch('infra_libs.httplib2_utils.InstrumentedHttp')
   @mock.patch('infra_libs.ts_mon.monitors.discovery')
   @mock.patch('infra_libs.ts_mon.monitors.AppAssertionCredentials')
   def test_init_gce_credential(self, aac, discovery, instrumented_http):
@@ -110,7 +110,7 @@ class PubSubMonitorTest(unittest.TestCase):
     discovery.build.assert_called_once_with('pubsub', 'v1', http=http_mock)
     self.assertEquals(mon._topic, 'projects/myproject/topics/mytopic')
 
-  @mock.patch('infra_libs.InstrumentedHttp')
+  @mock.patch('infra_libs.httplib2_utils.InstrumentedHttp')
   @mock.patch('infra_libs.ts_mon.monitors.discovery')
   @mock.patch('infra_libs.ts_mon.monitors.Storage')
   def test_init_storage(self, storage, discovery, instrumented_http):

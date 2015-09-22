@@ -5,32 +5,29 @@
 """
 # This file is untested, keep as little code as possible in there.
 
-import argparse
 import logging
 import sys
 
 from infra.tools.{toolname} import {toolname}
-import infra_libs.logs
+import infra_libs
 
 
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 
 
-def main(argv):
-  parser = argparse.ArgumentParser(
-    prog="{toolname}",
-    description=sys.modules['__main__'].__doc__,
-    formatter_class=argparse.RawTextHelpFormatter)
+class {Toolname}(infra_libs.BaseApplication):
+  DESCRIPTION = sys.modules['__main__'].__doc__
+  PROG_NAME = '{toolname}'
 
-  {toolname}.add_argparse_options(parser)
-  infra_libs.logs.add_argparse_options(parser)
-  args = parser.parse_args(argv)
-  infra_libs.logs.process_argparse_options(args)
+  def add_argparse_options(self, parser):
+    super({Toolname}, self).add_argparse_options(parser)
+    parser.add_argument('--my-argument', '-m', help='')
 
-  # Do more processing here
-  LOGGER.info('{Toolname} starting.')
+  def main(self, opts):
+    # Do more processing here
+    pass
 
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+  {Toolname}().run()

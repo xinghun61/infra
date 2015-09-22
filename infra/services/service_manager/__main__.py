@@ -3,106 +3,87 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import argparse
-import logging
 import signal
 import socket
 import sys
-import time
 
 from infra.services.service_manager import config_watcher
 from infra.services.service_manager import root_setup
-from infra_libs import logs
-from infra_libs import ts_mon
+
+import infra_libs
 
 
-def parse_args(argv):
-  if sys.platform == 'win32':
-    default_state_directory = 'C:\\chrome-infra\\service-state'
-    default_config_directory = 'C:\\chrome-infra\\service-config'
-    default_root_directory = 'C:\\infra-python'
-  else:
-    default_state_directory = '/var/run/infra-services'
-    default_config_directory = '/etc/infra-services'
-    default_root_directory = '/opt/infra-python'
+class ServiceManager(infra_libs.BaseApplication):
+  DESCRIPTION = ('Starts and stops machine-wide infra services with arguments '
+                 'from config files')
 
-  p = argparse.ArgumentParser(
-      description='Starts and stops machine-wide infra services with arguments '
-                  'from config files')
+  def add_argparse_options(self, parser):
+    super(ServiceManager, self).add_argparse_options(parser)
 
-  p.add_argument(
-      '--state-directory',
-      default=default_state_directory,
-      help='directory to store PID files (default %(default)s)')
-  p.add_argument(
-      '--config-directory',
-      default=default_config_directory,
-      help='directory to read JSON config files (default %(default)s)')
-  p.add_argument(
-      '--root-directory',
-      default=default_root_directory,
-      help='directory where the service_manager package is deployed. If this '
-           'package is updated the process will exit')
+    if sys.platform == 'win32':
+      default_state_directory = 'C:\\chrome-infra\\service-state'
+      default_config_directory = 'C:\\chrome-infra\\service-config'
+      default_root_directory = 'C:\\infra-python'
+    else:
+      default_state_directory = '/var/run/infra-services'
+      default_config_directory = '/etc/infra-services'
+      default_root_directory = '/opt/infra-python'
 
-  p.add_argument(
-      '--config-poll-interval',
-      default=10,
-      help='how frequently (in seconds) to poll the config directory')
-  p.add_argument(
-      '--service-poll-interval',
-      default=10,
-      help='how frequently (in seconds) to restart failed services')
+    parser.add_argument(
+        '--state-directory',
+        default=default_state_directory,
+        help='directory to store PID files (default %(default)s)')
+    parser.add_argument(
+        '--config-directory',
+        default=default_config_directory,
+        help='directory to read JSON config files (default %(default)s)')
+    parser.add_argument(
+        '--root-directory',
+        default=default_root_directory,
+        help='directory where the service_manager package is deployed. If this '
+             'package is updated the process will exit')
 
-  p.add_argument(
-      '--root-setup',
-      action='store_true',
-      help='if this is set service_manager will run once to initialise configs '
-           'in /etc and then exit immediately.  Used on GCE bots to bootstrap '
-           'service_manager')
+    parser.add_argument(
+        '--config-poll-interval',
+        default=10,
+        help='how frequently (in seconds) to poll the config directory')
+    parser.add_argument(
+        '--service-poll-interval',
+        default=10,
+        help='how frequently (in seconds) to restart failed services')
 
-  logs.add_argparse_options(p)
-  ts_mon.add_argparse_options(p)
+    parser.add_argument(
+        '--root-setup',
+        action='store_true',
+        help='if this is set service_manager will run once to initialise '
+             'configs in /etc and then exit immediately.  Used on GCE bots to '
+             'bootstrap service_manager')
 
-  p.set_defaults(
-      ts_mon_target_type='task',
-      ts_mon_task_service_name='service_manager',
-      ts_mon_task_job_name=socket.getfqdn(),
-  )
+    parser.set_defaults(
+        ts_mon_target_type='task',
+        ts_mon_task_service_name='service_manager',
+        ts_mon_task_job_name=socket.getfqdn(),
+    )
 
-  opts = p.parse_args(argv)
+  def main(self, opts):
+    if opts.root_setup:
+      return root_setup.root_setup()
 
-  logs.process_argparse_options(opts)
-  ts_mon.process_argparse_options(opts)
+    watcher = config_watcher.ConfigWatcher(
+        opts.config_directory,
+        opts.config_poll_interval,
+        opts.service_poll_interval,
+        opts.state_directory,
+        opts.root_directory)
 
-  return opts
+    def sigint_handler(_signal, _frame):
+      watcher.stop()
 
-
-def main(argv):
-  opts = parse_args(argv)
-
-  if opts.root_setup:
-    return root_setup.root_setup()
-
-  watcher = config_watcher.ConfigWatcher(
-      opts.config_directory,
-      opts.config_poll_interval,
-      opts.service_poll_interval,
-      opts.state_directory,
-      opts.root_directory)
-
-  def sigint_handler(_signal, _frame):
-    watcher.stop()
-
-  try:
     previous_sigint_handler = signal.signal(signal.SIGINT, sigint_handler)
     watcher.run()
     signal.signal(signal.SIGINT, previous_sigint_handler)
-  finally:
-    ts_mon.close()
-
-  return 0
 
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+  ServiceManager().run()
 

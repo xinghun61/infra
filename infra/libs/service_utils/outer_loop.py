@@ -6,9 +6,11 @@
 
 import collections
 import logging
+import sys
 import time
 
 from infra_libs import ts_mon
+import infra_libs
 
 LOGGER = logging.getLogger(__name__)
 
@@ -141,3 +143,55 @@ def process_argparse_options(opts):  # pragma: no cover
     'duration': opts.duration,
     'max_errors': opts.max_errors,
   }
+
+
+class Application(infra_libs.BaseApplication):  # pragma: no cover
+  """A top-level Application class for apps that use outer_loop.
+
+  Subclasses must implement the task() and sleep_timeout() methods.
+  See the docs for infra_libs.BaseApplication for more details.
+
+  Usage::
+
+    class MyApplication(outer_loop.Application):
+      def task(self):
+        # Do stuff
+        return True
+
+      def sleep_timeout(self):
+        return 60
+
+    if __name__ == '__main__':
+      MyApplication().run()
+  """
+
+  def add_argparse_options(self, parser):
+    super(Application, self).add_argparse_options(parser)
+    add_argparse_options(parser)
+
+  def process_argparse_options(self, opts):
+    super(Application, self).process_argparse_options(opts)
+    process_argparse_options(opts)
+
+  def task(self):
+    """Called every loop iteration to do the work.
+
+    Should return True on success, and False (or raise an exception) in error.
+    """
+    raise NotImplementedError
+
+  def sleep_timeout(self):
+    """Returns how long to sleep between task invocations (sec).
+
+    Called once per loop.
+    """
+    raise NotImplementedError
+
+  def main(self, opts):
+    result = loop(
+        task=self.task,
+        sleep_timeout=self.sleep_timeout,
+        duration=opts.duration,
+        max_errors=opts.max_errors)
+
+    return 0 if result.success else 1
