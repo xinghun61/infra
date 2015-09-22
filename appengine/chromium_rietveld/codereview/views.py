@@ -1804,20 +1804,27 @@ def show(request):
   # the builder to differentiate them.
   builds_to_parents = {}
   has_exp_jobs = False
-  try_job_results = get_patchset_try_job_results(last_patchset)
-  for try_job in try_job_results:
-    if try_job.parent_name:
-      builds_to_parents.setdefault(try_job.builder,
-                                   set()).add(try_job.parent_name)
-    if try_job.category == 'cq_experimental':
-      has_exp_jobs = True
+  try_job_loading_error = False
+  try_job_results = []
+  try:
+    try_job_results = get_patchset_try_job_results(last_patchset)
+    for try_job in try_job_results:
+      if try_job.parent_name:
+        builds_to_parents.setdefault(try_job.builder,
+                                     set()).add(try_job.parent_name)
+      if try_job.category == 'cq_experimental':
+        has_exp_jobs = True
 
-  if display_exp_tryjob_results and not has_exp_jobs:
-    display_exp_tryjob_results = False
+    if display_exp_tryjob_results and not has_exp_jobs:
+      display_exp_tryjob_results = False
 
-  for try_job in try_job_results:
-    if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
-      try_job.builder = try_job.parent_name + ':' + try_job.builder
+    for try_job in try_job_results:
+      if try_job.parent_name and len(builds_to_parents[try_job.builder]) > 1:
+        try_job.builder = try_job.parent_name + ':' + try_job.builder
+  except Exception:
+    # Do not crash, but degrade.
+    logging.exception('Error while loading try job results')
+    try_job_loading_error = True
 
   auto_open_revert = request.issue.closed and request.path.endswith('/revert')
   return respond(request, 'issue.html', {
@@ -1834,6 +1841,7 @@ def show(request):
     'num_patchsets': num_patchsets,
     'patchsets': patchsets,
     'try_job_results': try_job_results,
+    'try_job_loading_error': try_job_loading_error,
     'src_url': src_url,
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
