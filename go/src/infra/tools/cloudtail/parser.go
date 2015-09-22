@@ -5,6 +5,8 @@
 package cloudtail
 
 import (
+	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -34,12 +36,75 @@ func (c LogParserChain) ParseLogLine(line string) *Entry {
 // StdParser returns a parser that recognizes common types of logs.
 func StdParser() LogParser {
 	// TODO(vadimsh): Recognize python logs, master logs, etc.
-	return LogParserChain{}
+	return LogParserChain{
+		&infraLogsParser{},
+	}
 }
 
 // NullParser returns a parser that converts log line into a raw text Entry.
 func NullParser() LogParser {
 	return &nullParser{}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	infraLogsRe = regexp.MustCompile(
+		`^\[` +
+			`([DIWEC])` + // Severity
+			`(\d{4}-\d{2}-\d{2}` + // YYYY-MM-DD
+			`T\d{2}:\d{2}:\d{2}` + // THH:MM:SS
+			`(?:\.\d{6})?` + // Optional milliseconds
+			`(?:[\+-]\d{2}:\d{2})?` + // Optional timezone offset
+			`)` +
+			` (\d+)` + // PID
+			` (\d+)` + // TID
+			` ([^:]+):(\d+)` + // Module and line number
+			`\] (.*)`) // Message
+
+	infraLogsSeverity = map[string]Severity{
+		"D": Debug,
+		"I": Info,
+		"W": Warning,
+		"E": Error,
+		"C": Critical,
+	}
+)
+
+type infraLogsEntry struct {
+	ProcessID int    `json:"processId"`
+	ThreadID  int    `json:"threadId"`
+	Module    string `json:"module"`
+	Line      int    `json:"line"`
+	Message   string `json:"message"`
+}
+
+type infraLogsParser struct{}
+
+func (p *infraLogsParser) ParseLogLine(line string) *Entry {
+	if matches := infraLogsRe.FindStringSubmatch(line); matches != nil {
+		timestamp, err := time.Parse("2006-01-02T15:04:05.000000-07:00", matches[2])
+		if err != nil {
+			return nil
+		}
+
+		processID, _ := strconv.Atoi(matches[3])
+		threadID, _ := strconv.Atoi(matches[4])
+		line, _ := strconv.Atoi(matches[6])
+
+		return &Entry{
+			Timestamp: timestamp,
+			Severity:  infraLogsSeverity[matches[1]],
+			StructPayload: &infraLogsEntry{
+				ProcessID: processID,
+				ThreadID:  threadID,
+				Module:    matches[5],
+				Line:      line,
+				Message:   matches[7],
+			},
+		}
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

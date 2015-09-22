@@ -107,7 +107,7 @@ type writeFunc func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) 
 type loggingClient struct {
 	opts ClientOptions
 
-	// These are passed to Cloud Loggin API as is.
+	// These are passed to Cloud Logging API as is.
 	commonLabels map[string]string
 	serviceName  string
 
