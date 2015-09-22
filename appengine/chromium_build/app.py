@@ -977,6 +977,13 @@ URLS = [
     'maxage': 30,  # 30 secs
   },
   {
+    'remoteurl': 'http://build.chromium.org/p/chromium.webkit/console',
+    'localpath': 'chromium.webkit/console',
+    'postfetch': [console_handler, parse_master],
+    'postsave': console_merger,
+    'maxage': 30,  # 30 secs
+  },
+  {
     'remoteurl': 'http://build.chromium.org/p/chromium.win/console',
     'localpath': 'chromium.win/console',
     'postfetch': [console_handler, parse_master],
@@ -1035,6 +1042,11 @@ URLS = [
   {
     'remoteurl': 'http://build.chromium.org/p/chromium.memory/default.css',
     'localpath': 'chromium.memory/default.css',
+    'maxage': 15*60,  # 15 mins
+  },
+  {
+    'remoteurl': 'http://build.chromium.org/p/chromium.webkit/default.css',
+    'localpath': 'chromium.webkit/default.css',
     'maxage': 15*60,  # 15 mins
   },
   {
@@ -1206,6 +1218,14 @@ URLS = [
         ('http://build.chromium.org/p/chromium.memory/'
          'horizontal_one_box_per_builder'),
     'localpath': 'chromium.memory/horizontal_one_box_per_builder',
+    'postfetch': one_box_handler,
+    'maxage': 30,  # 30 secs
+  },
+  {
+    'remoteurl':
+        ('http://build.chromium.org/p/chromium.webkit/'
+         'horizontal_one_box_per_builder'),
+    'localpath': 'chromium.webkit/horizontal_one_box_per_builder',
     'postfetch': one_box_handler,
     'maxage': 30,  # 30 secs
   },
