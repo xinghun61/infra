@@ -38,65 +38,99 @@ class JsonParsingTest(unittest.TestCase):
     md = common.json_to_metric_data('{"name": "testname", "value": 13}')
     self.assertIsInstance(md.name, str)
     self.assertEquals(md.name, "testname")
-    self.assertEquals(md.value, 13)
+    self.assertEquals(md.points[0].value, 13)
     self.assertIsNone(md.start_time)
-    self.assertIsNone(md.fields)
+    self.assertIsNone(md.points[0].fields)
 
   def test_json_parsing_with_fields(self):
     md = common.json_to_metric_data('{"name": "testname", "value": 13, '
                                     '"myfield": "mystring", "otherfield": 42}')
     self.assertIsInstance(md.name, str)
     self.assertEquals(md.name, "testname")
-    self.assertEquals(md.value, 13)
+    self.assertEquals(md.points[0].value, 13)
     self.assertIsNone(md.start_time)
-    self.assertEquals(md.fields, {'myfield': 'mystring', 'otherfield': 42})
+    self.assertEquals(md.points[0].fields,
+                      {'myfield': 'mystring', 'otherfield': 42})
 
   def test_json_parsing_with_start_time(self):
     md = common.json_to_metric_data('{"name": "testname", "value": 13, '
                                     '"start_time": 1234}')
     self.assertIsInstance(md.name, str)
     self.assertEquals(md.name, "testname")
-    self.assertEquals(md.value, 13)
+    self.assertEquals(md.points[0].value, 13)
     self.assertEquals(md.start_time, 1234)
-    self.assertIsNone(md.fields)
+    self.assertIsNone(md.points[0].fields)
 
   def test_json_parsing_with_missing_name(self):
-    with self.assertRaises(KeyError):
-      common.json_to_metric_data('{"value": 13, "start_time": 1234}')
+    self.assertIsNone(common.json_to_metric_data(
+        '{"value": 13, "start_time": 1234}'))
 
   def test_json_parsing_with_missing_value(self):
-    with self.assertRaises(KeyError):
-      common.json_to_metric_data('{"name": "test/name", "start_time": 1234}')
+    self.assertIsNone(common.json_to_metric_data(
+        '{"name": "test/name", "start_time": 1234}'))
+
+  def test_json_parsing_bad_string(self):
+    self.assertIsNone(common.json_to_metric_data('}'))
+
+
+class test_collapse_metrics(unittest.TestCase):
+  def test_collapse_metrics_empty(self):
+    """Test for empty input, for coverage."""
+    self.assertIsNone(common.collapse_metrics([]))
+
+  def test_collapse_metrics_no_points(self):
+    """Test when no points are present, for coverage."""
+    self.assertIsNone(common.collapse_metrics([
+        common.MetricData('name', None, [])]))
+
+  def test_collapse_metrics_multi_points(self):
+    """Test that it can handle multiple points in the input."""
+    points1 = [common.PointData(1, {'f': 'v1'}),
+               common.PointData(2, {'f': 'v2'})]
+    points2 = [common.PointData(3, {'f': 'v3'}),
+               common.PointData(4, {'f': 'v4'})]
+    md = common.collapse_metrics([
+        common.MetricData('name', None, points1),
+        common.MetricData('name', None, points2)])
+    self.assertEqual(md.points, points1 + points2)
 
 
 class test_set_metric(unittest.TestCase):
+  def test_set_no_metrics(self):
+    metrics = common.set_metrics([], ts_mon.GaugeMetric)
+    self.assertEqual(0, len(metrics))
+
   def test_set_one_metric(self):
     json_str = '{"name": "test/name", "value": 13}'
-    metric = common.set_metric(json_str, ts_mon.GaugeMetric)
-    self.assertIsInstance(metric, ts_mon.GaugeMetric)
-    ts_mon.unregister(metric)  # Cleanup
+    metrics = common.set_metrics([json_str], ts_mon.GaugeMetric)
+    self.assertEqual(1, len(metrics))
+    self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
+    for metric in metrics:
+      ts_mon.unregister(metric)  # Cleanup
 
   def test_set_metric_no_input(self):
-    metric = common.set_metric(None, ts_mon.GaugeMetric)
-    self.assertIsNone(metric)
+    metrics = common.set_metrics(None, ts_mon.GaugeMetric)
+    self.assertEqual([], metrics)
 
   def test_set_one_metric_with_start_time(self):
     json_str = '{"name": "test/name", "value": 13, "start_time": 1234}'
-    metric = common.set_metric(json_str, ts_mon.CounterMetric)
-    self.assertIsInstance(metric, ts_mon.CounterMetric)
-    self.assertTrue(metric._name.startswith("test/name"))
-    self.assertEquals(metric._start_time, 1234)
-    ts_mon.unregister(metric)  # Cleanup
+    metrics = common.set_metrics([json_str], ts_mon.CounterMetric)
+    self.assertEqual(1, len(metrics))
+    self.assertIsInstance(metrics[0], ts_mon.CounterMetric)
+    self.assertTrue(metrics[0].name.startswith("test/name"))
+    self.assertEquals(metrics[0]._start_time, 1234)
+    for metric in metrics:
+      ts_mon.unregister(metric)  # Cleanup
 
   def test_set_one_metric_missing_name(self):
     json_str = '{"value": 13, "start_time": 1234}'
-    metric = common.set_metric(json_str, ts_mon.CounterMetric)
-    self.assertIsNone(metric)
+    metrics = common.set_metrics([json_str], ts_mon.CounterMetric)
+    self.assertEqual([], metrics)
 
   def test_set_one_metric_missing_value(self):
     json_str = '{"name": "test/name", "start_time": 1234}'
-    metric = common.set_metric(json_str, ts_mon.CounterMetric)
-    self.assertIsNone(metric)
+    metrics = common.set_metrics([json_str], ts_mon.CounterMetric)
+    self.assertEqual([], metrics)
 
   def test_set_multiple_metrics(self):
     # list of json strs, call set_metrics
@@ -108,9 +142,40 @@ class test_set_metric(unittest.TestCase):
 
     for metric in metrics:
       self.assertIsInstance(metric, ts_mon.GaugeMetric)
-      # TODO(pgervais): Add a property to ts_mon.Metric instead.
-      self.assertTrue(metric._name.startswith("test/name"))
+      self.assertTrue(metric.name.startswith("test/name"))
       ts_mon.unregister(metric)  # Cleanup
+
+  def test_set_multiple_points(self):
+    # list of json strs, call set_metrics
+    json_strs = ['{"name": "test/name", "field": "foo", "value": 13}',
+                 '{"name": "test/name", "field": "bar", "value": 14}']
+    metrics = common.set_metrics(json_strs, ts_mon.GaugeMetric)
+
+    self.assertEquals(1, len(metrics))
+
+    self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
+    self.assertEqual(metrics[0].name, "test/name")
+    self.assertEqual(2, len(metrics[0]._values))
+    for metric in metrics:
+      ts_mon.unregister(metric)  # Cleanup
+
+  def test_set_multiple_points_wrong_fields(self):
+    # list of json strs, call set_metrics
+    json_strs = ['{"name": "test/name", "field1": "foo", "value": 13}',
+                 '{"name": "test/name", "field2": "bar", "value": 14}']
+    metrics = common.set_metrics(json_strs, ts_mon.GaugeMetric)
+
+    self.assertEquals(0, len(metrics))
+
+  def test_set_multiple_points_wrong_start_time(self):
+    # list of json strs, call set_metrics
+    json_strs = [
+        '{"name": "test", "field": "foo", "value": 13, "start_time": 1234}',
+        '{"name": "test", "field": "baz", "value": 17, "start_time": 1234}',
+        '{"name": "test", "field": "bar", "value": 14, "start_time": 123}']
+    metrics = common.set_metrics(json_strs, ts_mon.CounterMetric)
+
+    self.assertEquals(0, len(metrics))
 
   def test_set_multiple_metrics_with_invalid(self):
     # list of json strs, call set_metrics
@@ -119,12 +184,15 @@ class test_set_metric(unittest.TestCase):
                  '{"name": "test/name3", "value": 14}']
     metrics = common.set_metrics(json_strs, ts_mon.GaugeMetric)
 
-    self.assertEquals(len(metrics), len(json_strs))
-    self.assertIsNone(metrics[1])
-    metrics.pop(1)
+    self.assertEquals(len(metrics) + 1, len(json_strs))
 
     for metric in metrics:
       self.assertIsInstance(metric, ts_mon.GaugeMetric)
-      # TODO(pgervais): Add a property to ts_mon.Metric instead.
-      self.assertTrue(metric._name.startswith("test/name"))
+      self.assertTrue(metric.name.startswith("test/name"))
       ts_mon.unregister(metric)  # Cleanup
+
+
+class main_test(unittest.TestCase):
+  def test_main(self):
+    """Smoke test for the main function."""
+    common.main([])
