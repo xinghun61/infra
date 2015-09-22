@@ -2,7 +2,7 @@
 # Copyright 2014 Google Inc. All Rights Reserved.
 # pylint: disable=F0401
 
-"""Restart a master via master-manager.  TBRs a random OWNER."""
+"""Restart a master via master-manager."""
 
 
 import argparse
@@ -30,7 +30,7 @@ def main(argv):
 
   delta = datetime.timedelta(minutes=args.minutes_in_future)
 
-  return restart.run(args.masters, delta, args.bug, args.force)
+  return restart.run(args.masters, delta, args.reviewer, args.bug, args.force)
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

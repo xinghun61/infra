@@ -37,6 +37,10 @@ def add_argparse_options(parser):
            'use 0 for "now." default %(default)d')
   parser.add_argument('-b', '--bug', default=None, type=str,
                       help='Bug containing master restart request.')
+  parser.add_argument('-r', '--reviewer', action='append', type=str,
+                      help=(
+                          'Reviewer to TBR the CL to. If not specified, '
+                          'chooses a random reviewer from OWNERS file'))
   parser.add_argument(
       '-f', '--force', action='store_true',
       help='don\'t ask for confirmation, just commit')
@@ -60,11 +64,14 @@ def get_master_state_checkout():
     shutil.rmtree(target_dir)
 
 
-def commit(target, masters, bug, timestring, delta, force):
+def commit(target, masters, reviewers, bug, timestring, delta, force):
   """Commits the local CL via the CQ."""
-  desc = 'Restarting master(s) %s' % ', '.join(masters)
+  title = 'Restarting master(s) %s' % ', '.join(masters)
+  desc = title
   if bug:
-    desc = '%s\nBUG=%s' % (desc, bug)
+    desc += '\nBUG=%s' % bug
+  if reviewers:
+    desc += '\nTBR=%s' % ', '.join(reviewers)
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
 
@@ -90,12 +97,18 @@ def commit(target, masters, bug, timestring, delta, force):
   print
 
   LOGGER.info('Uploading to Rietveld and CQ.')
-  subprocess.check_call(
-      ['git', 'cl', 'upload', '-m', desc, '-t', desc,
-       '--tbr-owners', '-c', '-f'], cwd=target)
+  upload_cmd = [
+      'git', 'cl', 'upload',
+      '-m', desc,
+      '-t', title,
+      '-c', '-f',
+  ]
+  if not reviewers:
+    upload_cmd.append('--tbr-owners')
+  subprocess.check_call(upload_cmd, cwd=target)
 
 
-def run(masters, delta, bug, force):
+def run(masters, delta, reviewers, bug, force):
   """Restart all the masters in the list of masters.
 
     Schedules the restart for now + delta.
@@ -132,4 +145,5 @@ def run(masters, delta, bug, force):
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
     LOGGER.info('Committing back into repository')
-    commit(master_state_dir, masters, bug, restart_time, delta, force)
+    commit(
+        master_state_dir, masters, reviewers, bug, restart_time, delta, force)
