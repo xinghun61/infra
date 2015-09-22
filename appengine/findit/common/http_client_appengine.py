@@ -13,7 +13,7 @@ from common.retry_http_client import RetryHttpClient
 class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
   """A http client for running on appengine."""
   def _ShouldLogError(self, status_code):
-    if self.no_error_logging_statuses:
+    if not self.no_error_logging_statuses:
       return True
     return status_code not in self.no_error_logging_statuses
 
