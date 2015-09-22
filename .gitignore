@@ -13,3 +13,4 @@ appengine/milo/html/parts/graph/viz.js
 # build_cache is used by infra.services.builder_alerts
 build_cache
 go/src/github.com
+recipes-py
