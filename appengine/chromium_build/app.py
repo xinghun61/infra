@@ -43,6 +43,7 @@ DEFAULT_MASTERS_TO_MERGE = [
   'chromium.chromiumos',
   'chromium.chrome',
   'chromium.memory',
+  'chromium.webkit',
 ]
 
 
