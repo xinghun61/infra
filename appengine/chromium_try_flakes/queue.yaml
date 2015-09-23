@@ -2,3 +2,6 @@ queue:
 - name: default
   rate: 20/s
   bucket_size: 40
+- name: issue-updates
+  rate: 1/s
+  max_concurrent_requests: 1

@@ -5,6 +5,10 @@ api_version: 1
 threadsafe: true
 
 handlers:
+- url: /issues/.*
+  script: main.app
+  login: admin
+  secure: always
 - url: /.*
   script: main.app
 

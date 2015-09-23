@@ -5,9 +5,11 @@
 import datetime
 import logging
 import json
+import sha
 import time
 import urllib2
 
+from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
@@ -125,6 +127,35 @@ def update_flake_month_counter():
     update_flake_counters(flake)
 
 
+@ndb.transactional
+def _process_flake(flake_key):
+  flake = flake_key.get()
+
+  # Only process flakes that happened at least 3 times in the last 24 hours.
+  if flake.count_day < 3:
+    return
+
+  # TODO(sergiyb): Also consider that issues may be closed as Duplicate, Fixed,
+  # Verified, WontFix, Archived - we need to handle these cases appropriately,
+  # i.e. file new issues or re-open existing ones.
+  if flake.issue_id == 0:
+    task_name = 'create_issue_for_%s' % sha.new(flake.name).hexdigest()
+    try:
+      taskqueue.add(name=task_name, queue_name='issue-updates',
+                    url='/issues/create/%s' % flake.key.urlsafe())
+    except taskqueue.TombstonedTaskError:
+      pass
+  else:
+    taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
+                  queue_name='issue-updates', transactional=True)
+
+
+def update_issue_tracker():
+  """File/update issues for new flakes on issue_tracker."""
+  for flake_key in Flake.query().iter(keys_only=True):
+    _process_flake(flake_key)
+
+
 @ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
 def add_failure_to_flake(name, flaky_run):
   flake = Flake.get_by_id(name)
@@ -185,8 +216,6 @@ def get_flakes(step):
 
 # A queued task which polls the tryserver to get more information about why a
 # run failed.
-# TODO(jam): ideally we would get json output which doesn't need so much
-# parsing.
 def get_flaky_run_reason(flaky_run_key):
   flaky_run = flaky_run_key.get()
   failure_run = flaky_run.failure_run.get()

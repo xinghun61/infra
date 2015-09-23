@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
 from google.appengine.ext import ndb
 
 from model.build_run import BuildRun
@@ -48,3 +50,10 @@ class Flake(ndb.Model):
   last_day = ndb.BooleanProperty(default=False)
   last_week = ndb.BooleanProperty(default=False)
   last_month = ndb.BooleanProperty(default=False)
+
+  # An issue filed on issue tracker to track flakiness of this step/test.
+  issue_id = ndb.IntegerProperty(default=0)
+  issue_last_updated = ndb.DateTimeProperty(default=datetime.datetime.min)
+
+  # Number of occurences that were already reported on the issue.
+  num_reported_flaky_runs = ndb.IntegerProperty(default=0)

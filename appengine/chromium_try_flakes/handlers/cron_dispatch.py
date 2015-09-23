@@ -10,6 +10,7 @@ from status import cq_status
 
 commands = {
   'fetch_cq_status': cq_status.fetch_cq_status,
+  'update_issue_tracker': cq_status.update_issue_tracker,
   'update_flake_hour_counter': cq_status.update_flake_hour_counter,
   'update_flake_day_counter': cq_status.update_flake_day_counter,
   'update_flake_week_counter': cq_status.update_flake_week_counter,
