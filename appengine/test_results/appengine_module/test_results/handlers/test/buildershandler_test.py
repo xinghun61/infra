@@ -59,6 +59,8 @@ class BuildersHandlerTest(unittest.TestCase):
                              {'name': 'browser_tests'},
                              {'name': 'mini_installer_test'},
                              {'name': 'archive_test_results'},
+                             {'name': 'duplicate_builders_test'},
+                             {'name': 'duplicate_builders_test'},
                              {'name': 'compile'},
                              {'name': 'Upload to test-results [swarming_gtest_tests]'}
                             ]
@@ -112,7 +114,8 @@ class BuildersHandlerTest(unittest.TestCase):
                   'browser_tests': {'builders': ['WebKit Linux', 'WebKit Mac']},
                   'mini_installer_test': {'builders': ['WebKit Linux', 'WebKit Mac', 'WebKit Win']},
                   'layout-tests': {'builders': ['WebKit Linux', 'WebKit Win']},
-                  'swarming_gtest_tests': {'builders': ['WebKit Linux']}},
+                  'swarming_gtest_tests': {'builders': ['WebKit Linux']},
+                  'duplicate_builders_test': {'builders': ['WebKit Linux']}},
               'name': 'ChromiumWebkit',
               'url_name': 'chromium.webkit',
               'groups': ['@ToT Chromium', '@ToT Blink'],
@@ -167,6 +170,8 @@ class BuildersHandlerTest(unittest.TestCase):
       masters = [
           {'name': 'ChromiumGPU', 'url_name': 'chromium.gpu'},
           {'name': 'ChromiumWebkit', 'url_name': 'chromium.webkit'},
+          {'name': 'ChromiumFYI', 'url_name': 'chromium.fyi'},
+          # Check that masters are de-duped.
           {'name': 'ChromiumFYI', 'url_name': 'chromium.fyi'},
       ]
 

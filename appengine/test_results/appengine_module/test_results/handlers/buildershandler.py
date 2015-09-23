@@ -164,11 +164,11 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
         if step_name == 'webkit_tests':
           step_name = 'layout-tests'
 
-        tests_object.setdefault(step_name, {'builders': []})
-        tests_object[step_name]['builders'].append(builder)
+        tests_object.setdefault(step_name, {'builders': set()})
+        tests_object[step_name]['builders'].add(builder)
 
     for builders in tests_object.values():
-      builders['builders'].sort()
+      builders['builders'] = sorted(builders['builders'])
 
   output_data = {'masters': all_masters_data,
                  'no_upload_test_types': TEST_STEPS_THAT_DO_NOT_UPLOAD_YET}
