@@ -128,7 +128,7 @@ def update_flake_month_counter():
 
 def update_issue_tracker():
   """File/update issues for flakes on issue_tracker."""
-  for flake in Flake.query():
+  for flake in Flake.query(projection=[Flake.count_day]):
     # Only process flakes that happened at least 10 times in the last 24 hours.
     if flake.count_day < 10:
       continue
