@@ -131,8 +131,8 @@ def update_flake_month_counter():
 def _process_flake(flake_key):
   flake = flake_key.get()
 
-  # Only process flakes that happened at least 3 times in the last 24 hours.
-  if flake.count_day < 3:
+  # Only process flakes that happened at least 10 times in the last 24 hours.
+  if flake.count_day < 10:
     return
 
   # TODO(sergiyb): Also consider that issues may be closed as Duplicate, Fixed,
