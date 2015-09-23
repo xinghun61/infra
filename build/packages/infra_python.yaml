@@ -24,6 +24,7 @@ data:
       - path_hacks
       # TODO(vadimsh): Depends on depot_tools.
       - services/cache_updater
+      - services/git_cache_updater
       - tools/bucket
       - tools/dumpthis
       - tools/docgen
