@@ -56,7 +56,7 @@ class CreateIssue(webapp2.RequestHandler):
     flake = ndb.Key(urlsafe=urlsafe_key).get()
 
     # TODO(sergiyb): Actually start filing issues.
-    flake.issue_id = -1  # fake issue id until we will create issues for real
+    flake.issue_id = -2  # fake issue id until we will create issues for real
 
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
@@ -74,7 +74,7 @@ class ProcessIssue(webapp2.RequestHandler):
     # TODO(sergiyb): Also consider that issues may be closed as Duplicate,
     # Fixed, Verified, WontFix, Archived - we need to handle these cases
     # appropriately, i.e. file new issues or re-open existing ones.
-    if flake.issue_id == 0:
+    if flake.issue_id == 0 or flake.issue_id == -1:
       task_name = 'create_issue_for_%s' % sha.new(flake.name).hexdigest()
       try:
         taskqueue.add(name=task_name, queue_name='issue-updates',
