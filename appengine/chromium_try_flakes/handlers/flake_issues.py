@@ -6,6 +6,7 @@
 
 import datetime
 import logging
+import sha
 import webapp2
 
 from google.appengine.api import taskqueue
@@ -63,3 +64,23 @@ class CreateIssue(webapp2.RequestHandler):
 
     taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
                   queue_name='issue-updates', transactional=True)
+
+
+class ProcessIssue(webapp2.RequestHandler):
+  @ndb.transactional
+  def post(self, urlsafe_key):
+    flake = ndb.Key(urlsafe=urlsafe_key).get()
+
+    # TODO(sergiyb): Also consider that issues may be closed as Duplicate,
+    # Fixed, Verified, WontFix, Archived - we need to handle these cases
+    # appropriately, i.e. file new issues or re-open existing ones.
+    if flake.issue_id == 0:
+      task_name = 'create_issue_for_%s' % sha.new(flake.name).hexdigest()
+      try:
+        taskqueue.add(name=task_name, queue_name='issue-updates',
+                      url='/issues/create/%s' % flake.key.urlsafe())
+      except taskqueue.TombstonedTaskError:
+        pass
+    else:
+      taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
+                    queue_name='issue-updates', transactional=True)

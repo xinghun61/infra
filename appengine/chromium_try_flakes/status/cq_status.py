@@ -5,7 +5,6 @@
 import datetime
 import logging
 import json
-import sha
 import time
 import urllib2
 
@@ -127,33 +126,15 @@ def update_flake_month_counter():
     update_flake_counters(flake)
 
 
-@ndb.transactional
-def _process_flake(flake_key):
-  flake = flake_key.get()
-
-  # Only process flakes that happened at least 10 times in the last 24 hours.
-  if flake.count_day < 10:
-    return
-
-  # TODO(sergiyb): Also consider that issues may be closed as Duplicate, Fixed,
-  # Verified, WontFix, Archived - we need to handle these cases appropriately,
-  # i.e. file new issues or re-open existing ones.
-  if flake.issue_id == 0:
-    task_name = 'create_issue_for_%s' % sha.new(flake.name).hexdigest()
-    try:
-      taskqueue.add(name=task_name, queue_name='issue-updates',
-                    url='/issues/create/%s' % flake.key.urlsafe())
-    except taskqueue.TombstonedTaskError:
-      pass
-  else:
-    taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
-                  queue_name='issue-updates', transactional=True)
-
-
 def update_issue_tracker():
-  """File/update issues for new flakes on issue_tracker."""
-  for flake_key in Flake.query().iter(keys_only=True):
-    _process_flake(flake_key)
+  """File/update issues for flakes on issue_tracker."""
+  for flake in Flake.query():
+    # Only process flakes that happened at least 10 times in the last 24 hours.
+    if flake.count_day < 10:
+      continue
+
+    taskqueue.add(queue_name='issue-updates',
+                  url='/issues/process/%s' % flake.key.urlsafe())
 
 
 @ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
