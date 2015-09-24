@@ -3,27 +3,11 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-builtins:
-- deferred: on
-- appstats: on
-
 handlers:
 - url: /static/css
   static_dir: css
-- url: /static/js
-  static_dir: js
 - url: /static/img
   static_dir: img
-- url: /tasks/.*
-  login: admin
-  script: chrome-monitor.app
 - url: /.*
-  script: chrome-monitor.app
-
-libraries:
-- name: jinja2
-  version: latest
-- name: markupsafe
-  version: latest
-- name: pycrypto
-  version: latest
+  static_files: index.html
+  upload: index\.html

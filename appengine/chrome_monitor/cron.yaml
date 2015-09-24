@@ -1,7 +1,0 @@
-cron:
-- description: Run full update
-  url: /tasks/update_all
-  schedule: every 1 minutes
-- description: Run pruning jobs
-  url: /tasks/update_prune
-  schedule: every 4 hours

@@ -2,15 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>{% block title %}Chrome Monitor{% endblock %}</title>
+    <title>Chrome Monitor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <!-- Le styles -->
-    <script src="http://code.jquery.com/jquery.js"></script>
-    <script src="/static/js/bootstrap.min.js"></script>
-    <script src="/static/js/prettify.js"></script>
     <style type="text/css">
       body {
         padding-top: 60px;
@@ -41,9 +37,7 @@
     </style>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
-    {% block head %}{% endblock %}
-  </head>
-  <body>
+ <body>
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div id='navbar-container' class="container-fluid">
@@ -54,35 +48,32 @@
             <span class="icon-bar"></span>
           </button>
           <a id="branding" class="brand" href="/">
-            Chrome Monitor<small id='beta'>Beta</small>
+            Chrome Monitor<small id='beta'>Deprecated</small>
           </a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              {% for crumb, link in breadcrumbs %}
-                {% if loop.last %}
-                  <li class="active">
-                {% else %}
-                  <li>
-                {% endif %}
-                  <a href="{{link}}">{{crumb}}</a>
-                </li>
-              {% endfor %}
+              
             </ul>
           </div><!--/.nav-collapse -->
         </div>
       </div>
     </div>
     <div id="main-container" class="container-fluid">
-      {% block body %}{% endblock %}
-      {% block footer %}
+      
+   <div class="row">
+     <div class="span12">
+      Chrome Monitor is now deprecated. Find new graphs at <a href="http://go/chrome-infra-graphs">go/chrome-infra-graphs</a>.
+
+     </div>
+   </div>
       <div class="row">
         <hr>
         <div class="span4">
-          {% block sub_footer %}{% endblock sub_footer %}
+          
         </div>
         <div class="span2 pull-right">
         <span class="pull-right">
-          <a href="https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&comment=This+is+a+user+reported+issue+with+the+new+build.chromium.org+interface.&summary=One+liner+issue+description+here">
+          <a href="https://code.google.com/p/chromium/issues/entry?template=Build%20Infrastructure&comment=This+is+a+user+reported+issue+with+chrome-monitor.appspot.com.&summary=One+liner+issue+description+here">
             Report an issue
           </a>
         </span>
@@ -91,7 +82,7 @@
           "http://www.google.com/intl/en/chrome/assets/common/images/chrome_logo_2x.png">
         </div>
       </div>
-      {% endblock %}
+      
     </div>
 
     <script>
