@@ -10,7 +10,9 @@ except ImportError: # pragma: no cover
   from common import metrics
 
 
-up = metrics.BooleanMetric('presence/up')
+up = metrics.BooleanMetric(
+    'presence/up',
+    description="Set to True when the program is running, missing otherwise.")
 
 
 def init():

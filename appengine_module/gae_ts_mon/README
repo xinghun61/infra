@@ -34,11 +34,11 @@ gae_ts_mon.request_bytes.add(48)
 
 See __init__.py for list of predefined metrics.
 
-# SENDING A SPECIFIC METRIC TO MONARCH
+# SENDING A SPECIFIC METRIC TO TS_MON
 
 gae_ts_mon.send(gae_ts_mon.access_count)
 
-# MANUALLY FLUSHING (SEND TO MONARCH) ALL METRICS
+# MANUALLY FLUSHING (SEND) ALL METRICS
 
 gae_ts_mon.flush()
 

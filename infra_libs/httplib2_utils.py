@@ -150,6 +150,8 @@ class InstrumentedHttp(httplib2.Http):
     """
     Args:
       name: An identifier for the HTTP requests made by this object.
+      time_fn: Function returning the current time in seconds. Use for testing
+        purposes only.
     """
 
     super(InstrumentedHttp, self).__init__(**kwargs)

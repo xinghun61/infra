@@ -4,7 +4,6 @@
 
 """Classes representing individual metrics that can be sent."""
 
-
 import copy
 import threading
 import time
@@ -52,7 +51,7 @@ class Metric(object):
 
   _initial_value = None
 
-  def __init__(self, name, target=None, fields=None):
+  def __init__(self, name, target=None, fields=None, description=None):
     """Create an instance of a Metric.
 
     Args:
@@ -61,6 +60,8 @@ class Metric(object):
       target (Target): a Target to be used with this metric. This should be
                        specified only rarely; usually the library's default
                        Target will be used (set up by the top-level process).
+      description (string): help string for the metric. Should be enough to
+                            know what the metric is about.
     """
     self._name = name.lstrip('/')
     self._values = {}
@@ -71,6 +72,9 @@ class Metric(object):
     self._fields = fields
     self._normalized_fields = self._normalize_fields(self._fields)
     self._thread_lock = threading.Lock()
+    # pgervais: Yes, description is unused. Waiting for the rest of the pipeline
+    # to support it.
+    self._description = description
 
     interface.register(self)
 
@@ -255,9 +259,10 @@ class CounterMetric(NumericMetric):
 
   _initial_value = 0
 
-  def __init__(
-      self, name, target=None, fields=None, start_time=None, time_fn=time.time):
-    super(CounterMetric, self).__init__(name, target=target, fields=fields)
+  def __init__(self, name, target=None, fields=None, start_time=None,
+               time_fn=time.time, description=None):
+    super(CounterMetric, self).__init__(
+        name, target=target, fields=fields, description=description)
     self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
@@ -290,9 +295,10 @@ class CumulativeMetric(NumericMetric):
 
   _initial_value = 0.0
 
-  def __init__(
-      self, name, target=None, fields=None, start_time=None, time_fn=time.time):
-    super(CumulativeMetric, self).__init__(name, target=target, fields=fields)
+  def __init__(self, name, target=None, fields=None, start_time=None,
+               time_fn=time.time, description=None):
+    super(CumulativeMetric, self).__init__(
+        name, target=target, fields=fields, description=description)
     self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
   def _populate_value(self, metric, value):
@@ -335,8 +341,10 @@ class DistributionMetric(Metric):
   }
 
   def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
-               fields=None, start_time=None, time_fn=time.time):
-    super(DistributionMetric, self).__init__(name, target, fields)
+               fields=None, start_time=None, time_fn=time.time,
+               description=None):
+    super(DistributionMetric, self).__init__(
+        name, target=target, fields=fields, description=description)
     self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
 
     if bucketer is None:
@@ -425,26 +433,28 @@ class DistributionMetric(Metric):
 class CumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to True."""
 
-  def __init__(
-      self, name, bucketer=None, target=None, fields=None, time_fn=time.time):
+  def __init__(self, name, bucketer=None, target=None, fields=None,
+               time_fn=time.time, description=None):
     super(CumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=True,
         bucketer=bucketer,
         target=target,
         fields=fields,
-        time_fn=time_fn)
+        time_fn=time_fn,
+        description=description)
 
 
 class NonCumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to False."""
 
-  def __init__(
-      self, name, bucketer=None, target=None, fields=None, time_fn=time.time):
+  def __init__(self, name, bucketer=None, target=None, fields=None,
+               time_fn=time.time, description=None):
     super(NonCumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=False,
         bucketer=bucketer,
         target=target,
         fields=fields,
-        time_fn=time_fn)
+        time_fn=time_fn,
+        description=description)

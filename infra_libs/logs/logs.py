@@ -43,7 +43,8 @@ import pytz
 
 from infra_libs.ts_mon.common.metrics import CumulativeMetric
 
-log_metric = CumulativeMetric('proc/log_lines')
+log_metric = CumulativeMetric(
+  'proc/log_lines', description="Number of log lines, per severity level.")
 
 if sys.platform.startswith('win'):  # pragma: no cover
   DEFAULT_LOG_DIRECTORIES = os.pathsep.join([
