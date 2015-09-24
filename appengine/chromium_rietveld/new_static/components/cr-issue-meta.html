@@ -68,7 +68,7 @@ found in the LICENSE file. -->
                 <div class="issue-meta-type">CQ</div>
                 <div class="issue-meta-value">
                     <template if="{{ issue.commit }}">
-                        <a href="https://chromium-status.appspot.com/cq/{{ issue.author.email }}" target="_blank">Yes</a>
+                        <a href="https://chromium-cq-status.appspot.com/recent#issue={{ issue.id }}" target="_blank">Yes</a>
                     </template>
                     <template if="{{ !issue.commit }}">
                         No
