@@ -11,12 +11,7 @@ function TreeStatus(project) {
   this.project = project;
   this.message = '';
   this.status = 'unknown';
-  // TODO(phajdan.jr): Make this somehow configurable and remove hack.
-  if (project == 'blink') {
-    this.url = "https://chromium-status.appspot.com/";
-  } else {
-    this.url = "https://{1}-status.appspot.com/".assign(project);
-  }
+  this.url = "https://{1}-status.appspot.com/".assign(project);
 }
 
 TreeStatus.prototype.update = function() {
