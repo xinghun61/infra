@@ -4,8 +4,8 @@ import httplib2
 import logging
 import time
 
-from third_party.apiclient import discovery
-from third_party.apiclient.errors import HttpError
+from apiclient import discovery
+from apiclient.errors import HttpError
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 from oauth2client.appengine import AppAssertionCredentials

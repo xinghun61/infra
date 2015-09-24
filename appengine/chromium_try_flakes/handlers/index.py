@@ -11,7 +11,7 @@ from status.cq_status import is_last_hour
 from status.cq_status import is_last_day
 from status.cq_status import is_last_week
 from status.cq_status import is_last_month
-from third_party.pytz.gae import pytz
+from pytz.gae import pytz
 
 import datetime
 import logging

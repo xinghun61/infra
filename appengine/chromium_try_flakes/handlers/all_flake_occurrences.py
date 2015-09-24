@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext.webapp import template
 
 from model.flake import Flake
-from third_party.pytz.gae import pytz
+from pytz.gae import pytz
 
 import datetime
 import logging
