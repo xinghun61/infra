@@ -15,6 +15,7 @@ import unittest
 import urllib2
 
 import dateutil
+import mock
 
 from testing_support import auto_stub
 
@@ -371,7 +372,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.assertEqual(cq_stats.derive_list_stats([])['size'], 1)
 
   def get_mock_derive_patch_stats(self, supported=True):
-    def mock_derive_patch_stats(_begin_date, _end_date, patch_id):
+    def mock_derive_patch_stats(_args, _begin_date, _end_date, patch_id):
       # The original function expects patch_id to be a 2-tuple.
       self.assertIsInstance(patch_id, tuple)
       self.assertEqual(len(patch_id), 2)
@@ -473,8 +474,12 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         entries.append({'fields': {'action': 'patch_committed'},
                         'timestamp': time_obj['time']})
       else:
+        details = [] if not supported else [{
+            'master': 'master', 'builder': 'builder'
+        }]
         entries.append({'fields': {'action': 'patch_failed',
-                                   'reason': {'fail_type': reason}},
+                                   'reason': {'fail_type': reason,
+                                              'fail_details': details}},
                         'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       entries.append({'fields': {'action': 'patch_stop', 'message': message},
@@ -483,20 +488,24 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     attempts = [
         attempt('CQ bit was unchecked on CL'),
-        attempt('No LGTM from valid reviewers', reason='reviewer_lgtm'),
-        attempt('A disapproval has been posted'),
-        attempt('Transient error: Invalid delimiter'),
-        attempt('Failed to commit', reason='commit'),
-        attempt('Failed to apply patch'),
-        attempt('Presubmit check'),
-        attempt('Custom trybots', supported=False),
+        attempt('No LGTM from valid reviewers', reason='reviewer-lgtm'),
+        attempt('A disapproval has been posted', reason='not-lgtm'),
+        attempt('Transient error: Invalid delimiter',
+                reason='invalid-delimiter'),
+        attempt('Failed to commit', reason='failed-commit'),
+        attempt('Failed to apply patch', reason='failed-patch'),
+        attempt('Presubmit check', reason='failed-presubmit-check'),
+        # This also checks for the combination of failed-jobs and no
+        # failed jobs list supplied.
+        attempt('Custom trybots', supported=False, reason='failed-jobs'),
         attempt('Retrying', retry=True),
         attempt('CLs for remote refs other than refs/heads/master'),
-        attempt('Try jobs failed:\n test_dbg', reason='simple try job',
+        attempt('Try jobs failed:\n test_dbg', reason='failed-jobs',
                 verifier_pass=False),
         attempt('Try jobs failed:\n chromium_presubmit',
-                verifier_pass=False),
-        attempt('Exceeded time limit waiting for builds to trigger'),
+                verifier_pass=False, reason='failed-jobs'),
+        attempt('Exceeded time limit waiting for builds to trigger',
+                reason='failed-to-trigger'),
         attempt('Some totally random unknown reason') + [
             {'fields': {'action': 'random garbage'},
              'timestamp': time_obj['time'] + 0.5}],
@@ -520,14 +529,17 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs)
 
     patch_id = ('pid', 5)
+    args = mock.Mock()
+    args.use_message_parsing = True
     pid, stats = cq_stats.derive_patch_stats(
+        args,
         datetime.datetime(2014, 10, 15),
         datetime.datetime(2014, 10, 15),
         patch_id)
     self.assertEqual(patch_id, pid)
     # Check required fields in the result.
     mock_derive_patch_stats = self.get_mock_derive_patch_stats()
-    for k in mock_derive_patch_stats(None, None, patch_id)[1]:
+    for k in mock_derive_patch_stats(None, None, None, patch_id)[1]:
       self.assertIsNotNone(stats.get(k))
     # A few sanity checks.
     self.assertEqual(stats['attempts'], len(attempts))
@@ -536,12 +548,14 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_0)
     pid, stats = cq_stats.derive_patch_stats(
+        args,
         datetime.datetime(2014, 10, 15),
         datetime.datetime(2014, 10, 15),
         patch_id)
     # Cover the case when there are actions, but no CQ attempts.
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_junk)
     pid, stats = cq_stats.derive_patch_stats(
+        args,
         datetime.datetime(2014, 10, 15),
         datetime.datetime(2014, 10, 15),
         patch_id)

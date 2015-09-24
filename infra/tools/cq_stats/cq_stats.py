@@ -87,15 +87,39 @@ VALID_REASONS = collections.OrderedDict([
         'message': 'did not contain NOTRY & NOPRESUBMIT for non master remote '
                    'ref',
     }),
+    ('commit-false', {
+        'item': 'patches',
+        'message': 'contain COMMIT=false, hence not committed',
+    }),
+    ('open-dependency', {
+        'item': 'failures',
+        'message': 'depend on other uncommitted CL(s)',
+    }),
+    ('no-cigncla', {
+        'item': 'failures',
+        'message': 'submitted by a user who hasn\'t signed CLA',
+    }),
 ])
 FLAKY_REASONS = collections.OrderedDict([
     ('failed-commit', {
         'item': 'failures',
         'message': 'failed to commit',
     }),
+    ('failed-checkout', {
+        'item': 'failures',
+        'message': 'failed to checkout a patch',
+    }),
+    ('failed-request-patch', {
+        'item': 'failures',
+        'message': 'failed to download a patch from Rietveld',
+    }),
     ('failed-jobs', {
         'item': 'failures',
         'message': 'failed jobs (excluding presubmit)',
+    }),
+    ('retry-quota-exceeded', {
+        'item': 'failures',
+        'message': 'cannot run jobs because retry quota exceeded',
     }),
     ('failed-to-trigger', {
         'item': 'failures',
@@ -104,6 +128,10 @@ FLAKY_REASONS = collections.OrderedDict([
     ('failed-presubmit-check', {
         'item': 'failures',
         'message': 'failed presubmit check',
+    }),
+    ('failed-signcla-request', {
+        'item': 'failures',
+        'message': 'failed to verify if the user has signed CLA',
     }),
 ])
 KNOWN_REASONS = collections.OrderedDict()
@@ -169,6 +197,9 @@ def parse_args():
       dest='use_logs',
       action='store_false',
       help=('Fetch the cached stats from the app. Opposite to --use-logs.'))
+  parser.add_argument(
+      '--use-message-parsing', action='store_true',
+      help='DEPRECATED: use message parsing to derive failure reasons.')
   parser.add_argument(
       '--date',
       help='Start date of stats YYYY-MM-DD[ HH[:MM]]. Default: --range ago.')
@@ -609,7 +640,7 @@ def derive_stats(args, begin_date, init_stats=None):
   patch_stats = {}
   # Fetch and process each patchset log
   def get_patch_stats(patch_id):
-    return derive_patch_stats(begin_date, end_date, patch_id)
+    return derive_patch_stats(args, begin_date, end_date, patch_id)
 
   if args.seq or not args.thread_pool:
     iterable = map(get_patch_stats, patches)
@@ -662,7 +693,7 @@ def parse_failing_tryjobs(message):
   return builders
 
 
-def derive_patch_stats(begin_date, end_date, patch_id):
+def derive_patch_stats(args, begin_date, end_date, patch_id):
   """``patch_id`` is a tuple (issue, patchset)."""
   results = fetch_cq_logs(start_date=begin_date, end_date=end_date, filters=[
       'issue=%s' % patch_id[0], 'patchset=%s' % patch_id[1]])
@@ -723,57 +754,66 @@ def derive_patch_stats(begin_date, end_date, patch_id):
     attempt['actions'].append(result)
     if action == 'patch_stop':
       attempt['end'] = result['timestamp']
-      message = result['fields'].get('message', '')
-      if 'CQ bit was unchecked on CL' in message:
-        attempt['manual-cancel'] = True
-      if 'No LGTM' in message:
-        attempt['missing-lgtm'] = True
-      if 'A disapproval has been posted' in message:
-        attempt['not-lgtm'] = True
-      if 'Transient error: Invalid delimiter' in message:
-        attempt['invalid-delimiter'] = True
-      if 'Failed to commit' in message:
-        attempt['failed-commit'] = True
-      if('Failed to apply patch' in message or
-         'Failed to apply the patch' in message):
-        attempt['failed-patch'] = True
-      if 'Presubmit check' in message:
-        attempt['failed-presubmit-check'] = True
-      if 'CLs for remote refs other than refs/heads/master' in message:
-        attempt['failed-remote-ref-presubmit'] = True
-      if 'Try jobs failed' in message:
-        if 'presubmit' in message:
-          attempt['failed-presubmit-bot'] = True
-        else:
-          attempt['failed-jobs'] = message
-          builders = parse_failing_tryjobs(message)
-          for b in builders:
-            failing_builders.setdefault(b, 0)
-            failing_builders[b] += 1
-      if 'Exceeded time limit waiting for builds to trigger' in message:
-        attempt['failed-to-trigger'] = True
       attempt_counter += 1
       add_attempt(attempt, attempt_counter)
       attempt = new_attempt()
       state = 'stop'
+      # TODO(sergeyberezin): DEPRECATE this entire message parsing branch.
+      if args.use_message_parsing:  # pragma: no branch
+        message = result['fields'].get('message', '')
+        if 'CQ bit was unchecked on CL' in message:
+          attempt['manual-cancel'] = True
+        if 'No LGTM' in message:
+          attempt['missing-lgtm'] = True
+        if 'A disapproval has been posted' in message:
+          attempt['not-lgtm'] = True
+        if 'Transient error: Invalid delimiter' in message:
+          attempt['invalid-delimiter'] = True
+        if 'Failed to commit' in message:
+          attempt['failed-commit'] = True
+        if('Failed to apply patch' in message or
+           'Failed to apply the patch' in message):
+          attempt['failed-patch'] = True
+        if 'Presubmit check' in message:
+          attempt['failed-presubmit-check'] = True
+        if 'CLs for remote refs other than refs/heads/master' in message:
+          attempt['failed-remote-ref-presubmit'] = True
+        if 'Try jobs failed' in message:
+          if 'presubmit' in message:
+            attempt['failed-presubmit-bot'] = True
+          else:
+            attempt['failed-jobs'] = message
+            builders = parse_failing_tryjobs(message)
+            for b in builders:
+              failing_builders.setdefault(b, 0)
+              failing_builders[b] += 1
+        if 'Exceeded time limit waiting for builds to trigger' in message:
+          attempt['failed-to-trigger'] = True
       continue
     if action == 'patch_committed':
       attempt['committed'] = True
-    # TODO(sergeyberezin): enable this after this action is stable in CQ.
     if action == 'patch_failed':
       attempt['reason'] = parse_json(
           result['fields'].get('reason', {}), return_type=dict)
       logging.info('Attempt reason: %r', attempt['reason'])
-      if attempt['reason'].get('fail_type') == 'reviewer_lgtm':
-        attempt['missing-lgtm'] = True
-      if attempt['reason'].get('fail_type') == 'commit':
-        attempt['failed-commit'] = True
-      if attempt['reason'].get('fail_type') == 'simple try job':
-        failed_jobs = parse_json(attempt['reason'].get(
-            'fail_details', [('unknown_master', 'unknown_bot')]))
-        # Remove presubmit bot - it's accounted separately.
-        failed_jobs = [j for j in failed_jobs if 'presubmit' in j[1]]
-        attempt['failed-jobs'] = failed_jobs
+      fail_type = attempt['reason'].get('fail_type')
+      if fail_type in KNOWN_REASONS:
+        attempt[fail_type] = True
+      if fail_type == 'failed-jobs':
+        fail_details = parse_json(attempt['reason'].get('fail_details', []))
+        failed_jobs = [d['builder'] for d in fail_details]
+        # TODO(sergeyberezin): DEPRECATE message parsing.
+        if args.use_message_parsing and not failed_jobs:
+          failed_jobs = parse_failing_tryjobs(
+              result['fields'].get('message', ''))
+        for builder in failed_jobs:
+          failing_builders.setdefault(builder, 0)
+          failing_builders[builder] += 1
+        # TODO(sergeyberezin): Assign machine-readable value.
+        # Message parsing code sets this field to the original message.
+        # Since message parsing is being deprecated, for compatibility
+        # we assign a string value.
+        attempt['failed-jobs'] = '\n'.join(str(b) for b in failed_jobs)
     if action == 'verifier_custom_trybots':
       attempt['supported'] = False
     if action == 'verifier_retry':
