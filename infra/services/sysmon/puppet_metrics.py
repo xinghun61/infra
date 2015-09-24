@@ -38,7 +38,6 @@ def _lastrunfile():  # pragma: no cover
 
 def get_puppet_summary(time_fn=time.time):
   path = _lastrunfile()
-  logging.info('Using puppet lastrunfile: %s', path)
 
   try:
     with open(path) as fh:

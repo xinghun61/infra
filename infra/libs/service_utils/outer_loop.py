@@ -58,7 +58,6 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
     while True:
       # Log that new attempt is starting.
       start = time_mod.time()
-      LOGGER.info('-------------------')
       if deadline is not None:
         LOGGER.info(
             'Begin loop %d (%.1f sec to deadline)',
@@ -81,7 +80,6 @@ def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):
         elapsed = time_mod.time() - start
         LOGGER.info('End loop %d (%f sec)', loop_count, elapsed)
         durations_metric.add(elapsed)
-        LOGGER.info('-------------------')
 
       # Reset error counter on success, or abort on too many errors.
       if attempt_success:
