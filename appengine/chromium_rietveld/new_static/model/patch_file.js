@@ -24,7 +24,7 @@ function PatchFile(patchset, name)
     this.drafts = []; // Array<PatchFileMessage>
     this.draftCount = 0;
     this.diff = null;
-    this.isLayoutTest = this.name.startsWith("LayoutTests/");
+    this.isLayoutTest = this.name.startsWith("third_party/WebKit/LayoutTests/");
     this.isHeader = false;
     this.previousFile = null;
     this.nextFile = null;
