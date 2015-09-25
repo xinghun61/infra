@@ -45,6 +45,7 @@ class StatsArgs(object):
     self.use_logs = True
     self.seq = False
     self.thread_pool = 200
+    self.use_message_parsing = False
 
 
 patchset_committed_durations = ts_mon.NonCumulativeDistributionMetric(
