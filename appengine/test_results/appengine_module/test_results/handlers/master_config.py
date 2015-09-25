@@ -57,6 +57,22 @@ _masters = {
         'name': 'WebRTC',
         'groups': ['@ToT WebRTC']
     },
+    'tryserver.blink': {
+        'name': 'BlinkTryServer',
+        'groups': ['Unused']
+    },
+    'tryserver.chromium.linux': {
+        'name': 'TryServerChromiumLinux',
+        'groups': ['Unused']
+    },
+    'tryserver.chromium.mac': {
+        'name': 'TryServerChromiumMac',
+        'groups': ['Unused']
+    },
+    'tryserver.chromium.win': {
+        'name': 'TryServerChromiumWin',
+        'groups': ['Unused']
+    },
 }
 
 _master_name_to_url_name = dict((v['name'], k) for k, v in _masters.items())
