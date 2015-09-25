@@ -181,8 +181,8 @@ class Service(object):
   condition of a different process reusing the same PID.
   """
 
-  def __init__(self, state_directory, service_config, time_fn=time.time,
-               sleep_fn=time.sleep):
+  def __init__(self, state_directory, service_config, cloudtail_path,
+               time_fn=time.time, sleep_fn=time.sleep):
     """
     Args:
       state_directory: A file will be created in this directory (with the same
@@ -190,6 +190,8 @@ class Service(object):
           starttime.
       service_config: A dictionary containing the service's config.  See README
           for a description of the fields.
+      cloudtail_path: Path to the cloudtail binary to use for logging, or None
+          if logging is disabled.
     """
 
     self.config = service_config
@@ -199,6 +201,15 @@ class Service(object):
 
     self.args = service_config.get('args', [])
     self.stop_time = int(service_config.get('stop_time', 10))
+
+    if cloudtail_path is None:
+      self.cloudtail_args = None
+    else:
+      self.cloudtail_args = [
+          cloudtail_path, 'pipe',
+          '--log-id', self.name,
+          '--local-log-level', 'info',
+      ]
 
     self._state_file = os.path.join(state_directory, self.name)
     self._time_fn = time_fn
@@ -339,7 +350,7 @@ class OwnService(Service):
         'name': 'service_manager',
         'tool': '',
         'root_directory': root_directory,
-    }, **kwargs)
+    }, None, '', **kwargs)
     self._state_directory = state_directory
 
   def start(self):
@@ -372,31 +383,59 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
   """
 
   def start(self):
-    pipe_r, pipe_w = os.pipe()
+    control_r, control_w = os.pipe()
     child_pid = os.fork()
     if child_pid == 0:
-      os.close(pipe_r)
+      os.close(control_r)
       try:
-        self._start_child(os.fdopen(pipe_w, 'w'))
+        self._start_child(os.fdopen(control_w, 'w'))
       finally:
         os._exit(1)
     else:
-      os.close(pipe_w)
-      return self._start_parent(os.fdopen(pipe_r, 'r'), child_pid)
+      os.close(control_w)
+      return self._start_parent(os.fdopen(control_r, 'r'), child_pid)
 
-  def _start_child(self, pipe):
+  def _start_child(self, control_fh):
     """The part of start() that runs in the child process.
 
     Daemonises the current process, writes the new PID to the pipe, and execs
     the service executable.
     """
 
-    # Detach from the parent and close all FDs except that of the pipe.
-    daemon.become_daemon(keep_fds={pipe.fileno()})
+    # Detach from the parent but keep FDs open so we can write to the log still.
+    daemon.become_daemon(keep_fds=True)
 
     # Write our new PID to the pipe and close it.
-    json.dump({'pid': os.getpid()}, pipe)
-    pipe.close()
+    json.dump({'pid': os.getpid()}, control_fh)
+    control_fh.close()
+
+    # Start cloudtail.  This needs to be done after become_daemon so it's a
+    # child of the service itself, not service_manager.
+    # Cloudtail will inherit service_manager's stdout and stderr, so its errors
+    # will go to service_manager's log.
+    if self.service.cloudtail_args is not None:
+      log_r, log_w = os.pipe()
+      try:
+        handle = subprocess.Popen(
+            self.service.cloudtail_args, stdin=log_r, close_fds=True)
+      except OSError:
+        log_w = None
+        logging.exception('Failed to start cloudtail with args %s',
+                          self.service.cloudtail_args)
+      else:
+        logging.info('Started cloudtail for %s with PID %d',
+                     self.service.name, handle.pid)
+    else:
+      log_w = None
+
+    # Pipe our stdout and stderr to cloudtail if configured.  Close all other
+    # FDs.
+    if log_w is not None:
+      os.dup2(log_w, 1)
+      os.dup2(log_w, 2)
+      daemon.close_all_fds(keep_fds={1, 2})
+    else:
+      daemon.close_all_fds(keep_fds=None)
 
     # Exec the service.
     runpy = os.path.join(self.service.root_directory, 'run.py')

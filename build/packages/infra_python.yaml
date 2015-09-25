@@ -44,5 +44,8 @@ data:
   - file: bootstrap/run_helper.py
   - file: bootstrap/remove_orphaned_pycs.py
 
+  # Binaries used by infra_python things.
+  - file: go/bin/cloudtail${exe_suffix}
+
   # Where to put info about installed package version.
   - version_file: CIPD_VERSION.json

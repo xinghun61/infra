@@ -6,6 +6,7 @@
 
 from ._daemon_nix import (
     become_daemon,
+    close_all_fds,
     flock,
     LockAlreadyLocked,
 )

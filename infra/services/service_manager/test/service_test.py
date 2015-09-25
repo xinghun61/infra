@@ -113,6 +113,7 @@ class ServiceTest(TestBase):
             'args': ['one', 'two'],
             'stop_time': '86',
         },
+        None,
         time_fn=self.mock_time,
         sleep_fn=self.mock_sleep)
 
@@ -126,6 +127,8 @@ class ServiceTest(TestBase):
     self.mock_kill = mock.patch('os.kill').start()
     self.mock_become_daemon = mock.patch(
         'infra.libs.service_utils.daemon.become_daemon').start()
+    self.mock_close_all_fds = mock.patch(
+        'infra.libs.service_utils.daemon.close_all_fds').start()
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
@@ -225,7 +228,8 @@ class ServiceTest(TestBase):
     self.assertTrue(self.mock_pipe.called)
     self.assertEqual(mock.call(42), self.mock_close.call_args_list[0])
     self.mock_fdopen.assert_called_once_with(43, 'w')
-    self.mock_become_daemon.assert_called_once_with(keep_fds={43})
+    self.mock_become_daemon.assert_called_once_with(keep_fds=True)
+    self.mock_close_all_fds.assert_called_once_with(keep_fds=None)
     self.assertEqual('{"pid": 555}', self._all_writes(mock_pipe_object))
     mock_pipe_object.close.assert_called_once_with()
     self.mock_execv.assert_called_once_with('/rootdir/run.py', [
@@ -347,6 +351,25 @@ class ServiceTest(TestBase):
   def test_has_args_changed_not_written(self):
     state = service.ProcessState(pid=1234, starttime=5678, version=1)
     self.assertFalse(self.s.has_args_changed(state))
+
+  def test_cloudtail_args(self):
+    self.assertIsNone(self.s.cloudtail_args)
+
+    self.s = service.Service(
+        self.state_directory,
+        {
+            'name': 'foo',
+            'root_directory': '/rootdir',
+            'tool': 'bar',
+            'args': ['one', 'two'],
+            'stop_time': '86',
+        },
+        '/cloudtail',
+        time_fn=self.mock_time,
+        sleep_fn=self.mock_sleep)
+
+    self.assertIn('/cloudtail', self.s.cloudtail_args)
+    self.assertIn('foo', self.s.cloudtail_args)
 
 
 class OwnServiceTest(TestBase):

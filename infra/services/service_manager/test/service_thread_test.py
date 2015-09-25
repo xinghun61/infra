@@ -57,9 +57,9 @@ class ServiceThreadTest(unittest.TestCase):
     config = {'name': 'foo'}
     self.condition = FakeCondition()
     self.t = service_thread.ServiceThread(
-        10, '/foo', config, wait_condition=self.condition)
+        10, '/foo', config, None, wait_condition=self.condition)
 
-    self.mock_service_ctor.assert_called_once_with('/foo', config)
+    self.mock_service_ctor.assert_called_once_with('/foo', config, None)
 
   def tearDown(self):
     if self.t.is_alive():
@@ -198,7 +198,7 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.assertEqual(1, self.t.reconfigs.get({'service': 'foo'}))
     self.mock_service.stop.assert_called_once_with()
-    self.mock_service_ctor.assert_called_with('/foo', new_config)
+    self.mock_service_ctor.assert_called_with('/foo', new_config, None)
     new_service.start.assert_called_once_with()
 
   def test_new_args_on_startup(self):

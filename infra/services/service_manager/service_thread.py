@@ -41,6 +41,7 @@ class ServiceThread(threading.Thread):
   upgrades = ts_mon.CounterMetric('service_manager/upgrades')
 
   def __init__(self, poll_interval, state_directory, service_config,
+               cloudtail_path,
                wait_condition=None):
     """
     Args:
@@ -50,6 +51,8 @@ class ServiceThread(threading.Thread):
           starttime.
       service_config: A dictionary containing the service's config.  See README
           for a description of the fields.
+      cloudtail_path: Path to the cloudtail binary to use for logging, or None
+          if logging is disabled.
     """
 
     super(ServiceThread, self).__init__()
@@ -59,7 +62,10 @@ class ServiceThread(threading.Thread):
 
     self._poll_interval = poll_interval
     self._state_directory = state_directory
-    self._service = service.Service(state_directory, service_config)
+    self._cloudtail_path = cloudtail_path
+    self._service = service.Service(self._state_directory,
+                                    service_config,
+                                    self._cloudtail_path)
 
     self._condition = wait_condition  # Protects _state.
     self._state = _State()  # _condition must be held.
@@ -98,8 +104,9 @@ class ServiceThread(threading.Thread):
 
           # Recreate it with the new config and start it.
           self.reconfigs.increment(fields={'service': self._service.name})
-          self._service = service.Service(
-              self._state_directory, state.new_config)
+          self._service = service.Service(self._state_directory,
+                                          state.new_config,
+                                          self._cloudtail_path)
           self._service.start()
           self._started = True
         elif state.should_run == False:

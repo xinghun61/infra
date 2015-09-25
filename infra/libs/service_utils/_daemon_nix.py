@@ -103,21 +103,10 @@ def _fork_then_exit_parent():
     os._exit(0)
 
 
-def become_daemon(keep_fds=None):
-  """Makes this process a daemon process.
-
-  Starts a new process group, closes all open file handles, opens /dev/null on
-  stdin, stdout and stderr, and changes the current working directory to /.
-  """
-
+def close_all_fds(keep_fds):
   if keep_fds is None:
     keep_fds = set()
 
-  _fork_then_exit_parent()
-  os.setsid()
-  _fork_then_exit_parent()
-
-  # Close all open files.
   for fd in reversed(range(2048)):
     if fd in keep_fds:
       continue
@@ -131,6 +120,29 @@ def become_daemon(keep_fds=None):
   # Open /dev/null on stdin, stdout and stderr.
   null = os.open(os.devnull, os.O_RDWR)
   for i in range(3):
-    os.dup2(null, i)
+    if i not in keep_fds:
+      os.dup2(null, i)
+
+
+def become_daemon(keep_fds=None):
+  """Makes this process a daemon process.
+
+  Starts a new process group, closes all open file handles, opens /dev/null on
+  stdin, stdout and stderr, and changes the current working directory to /.
+
+  Args:
+    keep_fds: One of:
+      None: close all FDs
+      True: keep all FDs (don't close any)
+      a set: close all FDs except the ones in this set.
+  """
+
+  _fork_then_exit_parent()
+  os.setsid()
+  _fork_then_exit_parent()
+
+  if keep_fds != True:
+    # Close all open files.
+    close_all_fds(keep_fds)
 
   os.chdir('/')

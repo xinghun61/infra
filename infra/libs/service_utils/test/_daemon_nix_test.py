@@ -179,6 +179,13 @@ class TestBecomeDaemon(unittest.TestCase):
     self.assertEqual([((i,),) for i in reversed(range(2048)) if i != 42],
                      mock_close.call_args_list)
 
+  def testClosesFdsKeepingAll(self, _mock_exit, _mock_chdir, _mock_dup2,
+                              _mock_open, mock_close, _mock_setsid,
+                              _mock_fork):
+    daemon.become_daemon(keep_fds=True)
+
+    self.assertEqual(0, mock_close.call_count)
+
   def testClosesInvalidFds(self, _mock_exit, _mock_chdir, _mock_dup2,
                            _mock_open, mock_close, _mock_setsid, _mock_fork):
     mock_close.side_effect = EnvironmentError(errno.EIO, '')
@@ -198,6 +205,19 @@ class TestBecomeDaemon(unittest.TestCase):
     self.assertEqual([
         ((handle, 0),),
         ((handle, 1),),
+        ((handle, 2),),
+    ], mock_dup2.call_args_list)
+
+  def testOpensDevNullWithExceptions(self, _mock_exit, _mock_chdir, mock_dup2,
+                                     mock_open, _mock_close, _mock_setsid,
+                                     _mock_fork):
+    handle = object()
+    mock_open.return_value = handle
+
+    daemon.become_daemon(keep_fds={1})
+
+    self.assertEqual([
+        ((handle, 0),),
         ((handle, 2),),
     ], mock_dup2.call_args_list)
 

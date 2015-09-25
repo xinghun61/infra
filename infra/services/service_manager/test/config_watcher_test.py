@@ -36,6 +36,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         '/rootdir',
+        '/cloudtail',
         sleep_fn=self.mock_sleep)
 
   def tearDown(self):
@@ -70,7 +71,8 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self.cw._iteration()
 
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -86,7 +88,8 @@ class ConfigWatcherTest(unittest.TestCase):
 
     self.cw._iteration()
 
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'bar'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'bar'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -103,7 +106,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 100)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
 
     self._set_config('foo.json', '{"name": "foo", "args": [1, 2, 3]}', 200)
 
@@ -139,7 +143,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 200)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -158,7 +163,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 100)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -182,7 +188,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 100)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -195,7 +202,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 100)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -216,7 +224,8 @@ class ConfigWatcherTest(unittest.TestCase):
     self._set_config('foo.json', '{"name": "foo"}', 100)
 
     self.cw._iteration()
-    self.mock_thread_ctor.assert_called_once_with(43, '/state', {'name': 'foo'})
+    self.mock_thread_ctor.assert_called_once_with(
+        43, '/state', {'name': 'foo'}, '/cloudtail')
 
     def sleep_impl(_duration):
       self.cw.stop()

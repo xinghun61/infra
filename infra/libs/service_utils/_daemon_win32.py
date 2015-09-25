@@ -92,5 +92,9 @@ def add_timeout(_cmd, _timeout_secs):  # pragma: no cover
   raise NotImplementedError
 
 
+def close_all_fds(_keep_fds):  # pragma: no cover
+  raise NotImplementedError
+
+
 def become_daemon(_keep_fds=None):  # pragma: no cover
   raise NotImplementedError
