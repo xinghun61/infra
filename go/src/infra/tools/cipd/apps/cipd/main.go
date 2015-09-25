@@ -743,7 +743,7 @@ func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts Ser
 	}
 	if hasErrors(pins) {
 		printPinsAndError(pins)
-		return nil, fmt.Errorf("can't find %q version in all packages, aborting.", version)
+		return nil, fmt.Errorf("can't find %q version in all packages, aborting", version)
 	}
 
 	// Prepare for the next batch call.
