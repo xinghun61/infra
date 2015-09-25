@@ -74,18 +74,22 @@ class Ref(object):
       return INVALID
 
   # Methods
-  def to(self, other, path=None):
+  def to(self, other, path=None, first_parent=False):
     """Generate Commit()'s which occur from `self..other`.
 
     If the current ref is INVAILD, list all of the commits reachable from
     other.
 
     Args:
+      first_parent - only return commits following the first parent of
+         merge commits.
       path - A string indicating a repo-root-relative path to filter commits on.
              Only Commits which change this path will be yielded. See help for
              `git rev-list self..other -- <path>`.
     """
     args = ['rev-list', '--reverse']
+    if first_parent:
+      args.append('--first-parent')
     if self.commit is INVALID:
       args.append(other.ref)
     else:

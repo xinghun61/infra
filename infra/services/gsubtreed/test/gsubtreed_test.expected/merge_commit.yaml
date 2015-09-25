@@ -1,0 +1,93 @@
+- - setup
+  - origin:
+      refs/heads/master:
+        171ed7e6b40b51ca004d687ba129bb6ca41f9004:
+        - squish
+        bfc77fe06e3c7c557c3d760d199fa12ea427076f:
+        - other 1
+        6bda83c28c95c807aa73663f9c72931bdd9ca55a:
+        - main 2
+        31f586c5024ec8376115bb90d89aaf1ac3961528:
+        - main 1
+      refs/heads/other:
+        bfc77fe06e3c7c557c3d760d199fa12ea427076f:
+        - other 1
+    mirror(cool_path): {}
+    mirror(extra_mirror): {}
+    mirror(mirrored_path): {}
+    mirror(mirrored_path/subpath): {}
+- log output:
+  - 'INFO: Running (''git'', ''fetch'')'
+  - 'INFO: processing path ''mirrored_path/subpath'''
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing path ''mirrored_path'''
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing Commit(TestRepo(''local''), ''31f586c5024ec8376115bb90d89aaf1ac3961528'')'
+  - 'INFO: found new tree ''1c553a72a6fbf7b6dab9c3160e9a2548d1ee02a2'''
+  - 'INFO: processing Commit(TestRepo(''local''), ''6bda83c28c95c807aa73663f9c72931bdd9ca55a'')'
+  - 'INFO: found new tree ''3246ab8ea66d081ca43a97bbd821cc391a7e51e6'''
+  - 'INFO: processing Commit(TestRepo(''local''), ''171ed7e6b40b51ca004d687ba129bb6ca41f9004'')'
+  - 'INFO: found new tree ''f2c1bf989e3a653a4faa416d1454008cb522f56a'''
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing Commit(TestRepo(''local''), ''bfc77fe06e3c7c557c3d760d199fa12ea427076f'')'
+  - 'INFO: found new tree ''b9a74f4dc448377cecfbcb6f9b11428f231139c2'''
+  - 'INFO: processing path ''exception/path'''
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/master'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: processing Ref(TestRepo(''local''), ''refs/heads/other'')'
+  - 'INFO: starting with tree git2.INVALID'
+  - 'INFO: Completed push for ''mirrored_path/subpath'''
+  - 'INFO: Running (''git'', ''push'', ''origin'', ''8d28848963cec2ccdeacdef23e9d6746ce80ef50:refs/heads/master'',
+    ''098533c9ce095923e9b854ef66d5b5f7323a58a6:refs/heads/other'')'
+  - 'INFO: Completed push for ''mirrored_path'''
+  - 'INFO: Completed push for ''exception/path'''
+- inner_loop success: true
+  processed:
+    exception/path: 0
+    mirrored_path: 4
+    mirrored_path/subpath: 0
+- - should not see `other 1` in subtree mirror
+  - origin:
+      refs/heads/master:
+        171ed7e6b40b51ca004d687ba129bb6ca41f9004:
+        - squish
+        bfc77fe06e3c7c557c3d760d199fa12ea427076f:
+        - other 1
+        6bda83c28c95c807aa73663f9c72931bdd9ca55a:
+        - main 2
+        31f586c5024ec8376115bb90d89aaf1ac3961528:
+        - main 1
+      refs/heads/other:
+        bfc77fe06e3c7c557c3d760d199fa12ea427076f:
+        - other 1
+    mirror(cool_path): {}
+    mirror(extra_mirror): {}
+    mirror(mirrored_path):
+      refs/heads/master:
+        8d28848963cec2ccdeacdef23e9d6746ce80ef50:
+        - squish
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 171ed7e6b40b51ca004d687ba129bb6ca41f9004'
+        cfc1259543aa506fd3de32a271105353018d434d:
+        - main 2
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 6bda83c28c95c807aa73663f9c72931bdd9ca55a'
+        0feb062b986c2b3db4cdb79cf3323e05f8a1b26f:
+        - main 1
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: 31f586c5024ec8376115bb90d89aaf1ac3961528'
+      refs/heads/other:
+        098533c9ce095923e9b854ef66d5b5f7323a58a6:
+        - other 1
+        - ''
+        - 'Cr-Mirrored-From: [FILE-URL]'
+        - 'Cr-Mirrored-Commit: bfc77fe06e3c7c557c3d760d199fa12ea427076f'
+    mirror(mirrored_path/subpath): {}

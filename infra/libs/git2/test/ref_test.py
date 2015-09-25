@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 from infra.libs import git2
+from infra.libs.git2 import data
+from infra.libs.git2.testing_support import GitEntry, GitTree
 from infra.libs.git2.test import test_util
 
 
@@ -58,6 +60,33 @@ class TestRef(test_util.TestBasis):
     self.assertEqual(
         list(c.hsh for c in A.to(O, 'path')),
         [self.repo[c] for c in 'DM']
+    )
+
+  def testToFirstParent(self):
+    r = self.mkRepo()
+
+    SK = r['refs/heads/branch_SK']
+    S, K = r['refs/heads/branch_S'], r['refs/heads/branch_K']
+    spec_S, spec_K = GitEntry.spec_for(r, S.ref), GitEntry.spec_for(r, K.ref)
+    newTreeHsh = GitTree.from_spec(
+      GitEntry.merge_specs(spec_S, spec_K)).intern(r)
+
+    cd = data.CommitData(
+      newTreeHsh, [S.commit.hsh, K.commit.hsh], S.commit.data.author,
+      S.commit.data.committer, (), ["merge commit"], (), False)
+    merge = r.get_commit(r.intern(cd, 'commit'))
+    SK.update_to(merge)
+
+    A = r['refs/heads/root_A']
+
+    self.assertEqual(
+        list(c.hsh for c in A.to(SK)),
+        [self.repo[c] for c in 'BCGDHILJMKNOPQRS'] + [merge.hsh]
+    )
+
+    self.assertEqual(
+        list(c.hsh for c in A.to(SK, first_parent=True)),
+        [self.repo[c] for c in 'BCDLMNOPQRS'] + [merge.hsh]
     )
 
   def testInvalidTo(self):

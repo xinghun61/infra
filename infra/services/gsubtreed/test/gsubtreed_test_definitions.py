@@ -8,6 +8,7 @@ import shutil
 from collections import OrderedDict
 
 from infra.libs.git2 import repo
+from infra.libs.git2 import data
 from infra.libs.git2.testing_support import GitEntry
 from infra_libs.infra_types import thaw
 
@@ -293,4 +294,37 @@ def multi_push(origin, run, checkpoint, mirrors, config, **_):
   assert GitEntry.spec_for(mirrors['extra_mirror'], 'refs/heads/master') == {
     'mirror_file': ('awesome sauce', 0644),
     'some_other_file': ('neat', 0644),
+  }
+
+@test
+def merge_commit(origin, run, checkpoint, mirrors, **_):
+  master = origin['refs/heads/master']
+  mc = master.make_commit
+  mc('main 1', {'mirrored_path': {'some_file': 'data'}})
+  master_head = mc('main 2', {'mirrored_path': {'some_file': 'data2'}})
+
+  mc = origin['refs/heads/other'].make_commit
+  other_head = mc('other 1', {'mirrored_path': {'other_file': 'something'}})
+
+  # do a crappy merge commit. this logic should probably be on TestRepo at some
+  # point, but merge commits are pretty rare so keep it here until the next
+  # person needs to do this.
+  tree_hsh = GitEntry.from_spec(GitEntry.merge_specs(
+    origin.spec_for(master_head),
+    origin.spec_for(other_head),
+  )).intern(origin)
+  user = master_head.data.author
+  commit = origin.get_commit(origin.intern(data.CommitData(
+    tree_hsh, [master_head.hsh, other_head.hsh],
+    user, user, (), ["squish"], (), False
+  ), 'commit'))
+  master.fast_forward(commit)
+
+  checkpoint('setup')
+  run()
+  checkpoint('should not see `other 1` in subtree mirror')
+
+  assert GitEntry.spec_for(mirrors['mirrored_path'], 'refs/heads/master') == {
+    'some_file': ('data2', 0644),
+    'other_file': ('something', 0644),
   }

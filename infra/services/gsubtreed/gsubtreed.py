@@ -183,7 +183,7 @@ def process_path(path, origin_repo, config):
 
       LOGGER.info('starting with tree %r', synth_parent.data.tree)
 
-      for commit in origin_repo[processed.hsh].to(ref, path):
+      for commit in origin_repo[processed.hsh].to(ref, path, first_parent=True):
         LOGGER.info('processing %s', commit)
         obj_name = '{.hsh}:{}'.format(commit, path)
         dir_tree = None
