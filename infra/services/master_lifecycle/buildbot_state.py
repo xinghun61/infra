@@ -33,7 +33,13 @@ STATES = {
 }
 
 
-def collect_evidence(master_directory, connection_timeout=30):
+DEFAULT_BOOT_TIMEOUT_SEC = 5*60
+DEFAULT_DRAIN_TIMEOUT_SEC = 5*60
+DEFAULT_DRAIN_BUILD_THRESHOLD = 0
+
+
+def collect_evidence(master_directory, connection_timeout=30,
+                     builder_filters=None):
   """Collects evidence from the OS for late state determination."""
   evidence = {}
   evidence['now'] = timestamp.utcnow_ts()
@@ -46,13 +52,21 @@ def collect_evidence(master_directory, connection_timeout=30):
     accepting_builds, current_running_builds = master.get_buildstate(
         master_directory, timeout=connection_timeout)
     evidence['accepting_builds'] = accepting_builds
-    evidence['current_running_builds'] = current_running_builds
 
+    if builder_filters:
+      current_running_builds = set(b for b in current_running_builds
+                                   if any(f.match(b[0])
+                                      for f in builder_filters))
+    evidence['current_running_builds'] = current_running_builds
   return evidence
 
 
-def construct_pattern_matcher(
-    boot_timeout_sec=5 * 60, drain_timeout_sec=5 * 60, drain_build_thresh=0):
+def construct_pattern_matcher(boot_timeout_sec=None, drain_timeout_sec=None,
+                              drain_build_thresh=None):
+  boot_timeout_sec = boot_timeout_sec or DEFAULT_BOOT_TIMEOUT_SEC
+  drain_timeout_sec = drain_timeout_sec or DEFAULT_DRAIN_TIMEOUT_SEC
+  drain_build_thresh = drain_build_thresh or DEFAULT_DRAIN_BUILD_THRESHOLD
+
   # There is a bug in pylint which triggers false positives on decorated
   # decorators with arguments: http://goo.gl/Ln6uyn
   # pylint: disable=no-value-for-parameter
@@ -142,7 +156,7 @@ def construct_pattern_matcher(
       return 'crashed'
     if data['accepting_builds']:
       return 'running'
-    if data['current_running_builds'] <= drain_build_thresh:
+    if len(data['current_running_builds']) <= drain_build_thresh:
       return 'drained'
     if data['last_no_new_builds'] > (data['now'] - drain_timeout_sec):
       return 'draining'

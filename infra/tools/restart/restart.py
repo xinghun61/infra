@@ -16,6 +16,7 @@ import tempfile
 
 
 from infra.libs.time_functions import zulu
+from infra.services.master_manager_launcher import desired_state_parser
 
 
 LOGGER = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ def add_argparse_options(parser):
   parser.add_argument(
       '-f', '--force', action='store_true',
       help='don\'t ask for confirmation, just commit')
+  parser.add_argument(
+      '-n', '--no-commit', action='store_true',
+      help='update the file, but refrain from performing the actual commit')
 
 
 def get_restart_time(delta):
@@ -107,7 +111,7 @@ def commit(target, masters, reviewers, bug, timestring, delta, force):
   subprocess.check_call(upload_cmd, cwd=target)
 
 
-def run(masters, delta, reviewers, bug, force):
+def run(masters, delta, reviewers, bug, force, no_commit):
   """Restart all the masters in the list of masters.
 
     Schedules the restart for now + delta.
@@ -122,27 +126,42 @@ def run(masters, delta, reviewers, bug, force):
     # Step 2: make modifications to the master state json.
     LOGGER.info('Reading %s' % master_state_json)
     with open(master_state_json, 'r') as f:
-      master_state = json.load(f)
+      desired_master_state = json.load(f)
     LOGGER.info('Loaded')
 
+    # Validate the current master state file.
+    try:
+      desired_state_parser.validate_desired_master_state(desired_master_state)
+    except desired_state_parser.InvalidDesiredMasterState:
+      LOGGER.exception("Failed to validate current master state JSON.")
+      return 1
+
+    master_states = desired_master_state.get('master_states', {})
+    entries = 0
     for master in masters:
       if not master.startswith('master.'):
         master = 'master.%s' % master
-      if master not in master_state:
+      if master not in master_states:
         msg = '%s not found in master state' % master
         LOGGER.error(msg)
         raise MasterNotFoundException(msg)
 
-      master_state[master].append({
+      master_states.setdefault(master, []).append({
           'desired_state': 'running', 'transition_time_utc': restart_time
       })
+      entries += 1
 
-    LOGGER.info('Writing back to JSON file, %d new entries' % len(master_state))
+    LOGGER.info('Writing back to JSON file, %d new entries' % (entries,))
     with open(master_state_json, 'w') as f:
       json.dump(
-          master_state, f, sort_keys=True, indent=2, separators=(',', ':'))
+          desired_master_state, f, sort_keys=True, indent=2,
+          separators=(',', ':'))
 
     # Step 3: Send the patch to Rietveld and commit it via the CQ.
+    if no_commit:
+      LOGGER.info('Refraining from committing back to repository (--no-commit)')
+      return 0
+
     LOGGER.info('Committing back into repository')
     commit(
         master_state_dir, masters, reviewers, bug, restart_time, delta, force)

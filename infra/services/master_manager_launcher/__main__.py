@@ -56,7 +56,7 @@ def parse_args():
   logs.process_argparse_options(args)
 
   if args.json_file and args.json_gitiles:
-    parser.error('Can\'t specify --json-file and --json-gitiles simultaneously')
+    parser.error("Can't specify --json-file and --json-gitiles simultaneously")
 
   if not args.json_gitiles and not args.json_file:
     parser.error('Must specify either --json-gitiles or --json-file.')
@@ -70,7 +70,9 @@ def parse_args():
 
 def synthesize_master_manager_cmd(master_dict, hostname, prod=False):
   """Find the current desired state and synthesize a command for the master."""
-  state = desired_state_parser.get_master_state(master_dict['states'])
+  states = master_dict['states']
+  params = master_dict['params']
+  state = desired_state_parser.get_master_state(states)
   cmd = [
       RUNPY,
       'infra.tools.master_manager',
@@ -82,6 +84,10 @@ def synthesize_master_manager_cmd(master_dict, hostname, prod=False):
       '--enable-gclient-sync',
       '--verbose',
   ]
+  if params.get('drain_timeout_sec'):
+    cmd.extend(['--drain-timeout', str(params['drain_timeout_sec'])])
+  for builder_filter in params.get('builder_filters', []):
+    cmd.extend(['--builder-filter', builder_filter])
 
   if prod:
     cmd.append('--prod')

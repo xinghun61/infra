@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import re
+
 from testing_support import auto_stub
 
 from infra.libs.buildbot import master
@@ -17,9 +19,10 @@ class TestBuildbotState(auto_stub.TestCase):
     self.last_no_new_builds = 1100
     self.buildbot_is_running = True
     self.accepting_builds = True
-    self.current_running_builds = 10
+    self.current_running_builds = set(('test', d) for d in xrange(10))
     self.desired_buildbot_state = 'running'
     self.desired_transition_time = 900
+    self.builder_filters = None
 
     def utcnow_handler():
       return self.utcnow
@@ -39,7 +42,9 @@ class TestBuildbotState(auto_stub.TestCase):
     self.mock( master, 'get_buildstate', buildstate_handler)
 
   def _get_evidence(self):
-    evidence = buildbot_state.collect_evidence('fake_dir')
+    evidence = buildbot_state.collect_evidence(
+        'fake_dir',
+        builder_filters=self.builder_filters)
     evidence['desired_buildbot_state'] = {
         'desired_state': self.desired_buildbot_state,
         'transition_time_utc': self.desired_transition_time,
@@ -81,7 +86,32 @@ class TestBuildbotState(auto_stub.TestCase):
 
   def testBuildbotIsDrainedNoBuilds(self):
     self.accepting_builds = False
-    self.current_running_builds = 0
+    self.current_running_builds = set()
+    self.utcnow = self.last_no_new_builds + 4 * 60
+    state = self._get_state()['buildbot']
+    self.assertEqual(state, 'drained')
+
+  def testBuildbotIsDrainingWithBuilderFilters(self):
+    self.accepting_builds = False
+    self.current_running_builds = set([
+      ('irrelevant builder', 1),
+      ('my special builder', 1337),
+      ])
+    self.builder_filters = [
+        re.compile('.*special.*'),
+        ]
+    self.utcnow = self.last_no_new_builds + 4 * 60
+    state = self._get_state()['buildbot']
+    self.assertEqual(state, 'draining')
+
+  def testBuildbotIsDrainedWithBuilderFiltersNoBuilds(self):
+    self.accepting_builds = False
+    self.current_running_builds = set([
+      ('irrelevant builder', 1),
+      ])
+    self.builder_filters = [
+        re.compile('.*special.*'),
+        ]
     self.utcnow = self.last_no_new_builds + 4 * 60
     state = self._get_state()['buildbot']
     self.assertEqual(state, 'drained')

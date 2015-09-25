@@ -168,7 +168,13 @@ def get_buildstate(directory, timeout=30):
   if json_data is not None:
     accepting_builds = json_data.get('accepting_builds', False)
     builders = json_data.get('builders', [])
-    running_builds = sum(len(b.get('currentBuilds', [])) for b in builders)
+    running_builds = set()
+    for b in builders:
+      buildername = b.get('builderName')
+      if not buildername:
+        continue
+      for buildnumber in b.get('currentBuilds'):
+        running_builds.add((buildername, buildnumber))
     return accepting_builds, running_builds
   return None, None
 

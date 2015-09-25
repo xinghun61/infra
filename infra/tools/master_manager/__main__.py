@@ -7,6 +7,7 @@
 import argparse
 import logging
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -33,6 +34,14 @@ def parse_args():  # pragma: no cover
       help='seconds since the UTC epoch to trigger the state')
   parser.add_argument('--list-all-states', action='store_true',
       help='list all states with their actions and exit')
+  parser.add_argument('--builder-filter', action='append', default=[],
+      help='appends a Python regular expression to the list of builder '
+           'filters. By default, all builders count as building; if builder '
+           'filters are supplied, only builders that match at least one filter '
+           'will be counted.')
+  parser.add_argument('--drain-timeout', metavar='SECONDS', type=int,
+      default=buildbot_state.DEFAULT_DRAIN_TIMEOUT_SEC,
+      help='sets the drain state timeout, in seconds.')
   parser.add_argument('--enable-gclient-sync', action='store_true',
       help='perform a gclient sync before every master start')
   parser.add_argument('--emergency-file',
@@ -80,7 +89,7 @@ def master_hostname_is_valid(local_hostname, abs_master_directory, logger):
 def run_state_machine_pass(
     logger, matchlist, abs_master_directory, emergency_file, desired_state,
     transition_time_utc, enable_gclient_sync, prod, connection_timeout,
-    hostname):
+    hostname, builder_filters):
   # pragma: no cover
   if os.path.exists(os.path.join(abs_master_directory, emergency_file)):
     logger.error('%s detected in %s, aborting!',
@@ -91,7 +100,9 @@ def run_state_machine_pass(
     return 1
 
   evidence = buildbot_state.collect_evidence(
-      abs_master_directory, connection_timeout=connection_timeout)
+      abs_master_directory,
+      connection_timeout=connection_timeout,
+      builder_filters=builder_filters)
   evidence['desired_buildbot_state'] = {
       'desired_state': desired_state,
       'transition_time_utc': transition_time_utc,
@@ -129,9 +140,12 @@ def run_state_machine_pass(
 
 def main():  # pragma: no cover
   args = parse_args()
-  matchlist = buildbot_state.construct_pattern_matcher()
+
   logger = logging.getLogger(__name__)
   logs.add_handler(logger)
+
+  matchlist = buildbot_state.construct_pattern_matcher(
+      drain_timeout_sec=args.drain_timeout)
 
   if args.list_all_states:
     matchlist.print_all_states()
@@ -139,10 +153,11 @@ def main():  # pragma: no cover
 
   abs_master_directory = os.path.abspath(args.directory)
 
+  builder_filters = [re.compile(f) for f in args.builder_filter]
   state_machine = partial(run_state_machine_pass, logger,
         matchlist, abs_master_directory, args.emergency_file,
         args.desired_state, args.transition_time_utc, args.enable_gclient_sync,
-        args.prod, args.connection_timeout, args.hostname)
+        args.prod, args.connection_timeout, args.hostname, builder_filters)
 
   if args.loop:
     loop_opts = outer_loop.process_argparse_options(args)

@@ -14,85 +14,145 @@ from testing_support import auto_stub
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 
+# UNIX timestamp corresponding to 6000 seconds past epoch.
+UNIX_TIMESTAMP_6000 = '1970-01-01T01:40:00Z'
+
+
 class TestDesiredStateValidation(auto_stub.TestCase):
   def setUp(self):
     super(TestDesiredStateValidation, self).setUp()
 
     self.mock(timestamp, 'utcnow_ts', lambda: 5000)
 
+  def _stateConfig(self, states, **params):
+    c = {
+        'version': desired_state_parser.VERSION,
+        'master_states': {
+          'master.chromium.fyi': states,
+        },
+    }
+    if params:
+      c['master_params'] = {
+          'master.chromium.fyi': params,
+      }
+    return c
+
+
   def testValidState(self):
-    desired_state_parser.validate_desired_master_state({
-      'master.chromium.fyi': [
+    desired_state_parser.validate_desired_master_state(self._stateConfig(
+      [
         {'desired_state': 'running', 'transition_time_utc': 4000},
         {'desired_state': 'offline', 'transition_time_utc': 6000},
-    ]})
+      ],
+      drain_timeout_sec=1300,
+      builder_filters=[
+        r'^valid$',
+      ],
+    ))
 
   def testValidStateZulu(self):
-    desired_state_parser.validate_desired_master_state({
-      'master.chromium.fyi': [
+    desired_state_parser.validate_desired_master_state(self._stateConfig([
         {'desired_state': 'running',
          'transition_time_utc': 4000},
         {'desired_state': 'offline',
-         'transition_time_utc': '1970-01-01T01:40:00Z'},  # Unix timestamp 6000
-    ]})
+         'transition_time_utc': UNIX_TIMESTAMP_6000},
+    ]))
 
   def testNoDesiredState(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'transition_time_utc': 4000},
           {'desired_state': 'offline', 'transition_time_utc': 6000},
-      ]})
+      ]))
 
   def testNoTransitionTime(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'running', 'transition_time_utc': 4000},
           {'desired_state': 'offline'},
-      ]})
+      ]))
 
   def testTransitionTimeInvalid(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'running', 'transition_time_utc': 'boats'},
           {'desired_state': 'offline', 'transition_time_utc': 'llama'},
-      ]})
+      ]))
 
   def testNotSorted(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'offline', 'transition_time_utc': 6000},
           {'desired_state': 'running', 'transition_time_utc': 4000},
-      ]})
+      ]))
 
   def testNotSortedZulu(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'offline',
-           'transition_time_utc': '1970-01-01T01:40:00Z'}, # Unix timestamp 6000
+           'transition_time_utc': UNIX_TIMESTAMP_6000},
           {'desired_state': 'running',
            'transition_time_utc': 4000},
-      ]})
+      ]))
 
   def testInvalidState(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'pajamas', 'transition_time_utc': 4000},
           {'desired_state': 'offline', 'transition_time_utc': 6000},
-      ]})
+      ]))
 
   def testUncertainPresent(self):
     with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
-      desired_state_parser.validate_desired_master_state({
-        'master.chromium.fyi': [
+      desired_state_parser.validate_desired_master_state(self._stateConfig([
           {'desired_state': 'running', 'transition_time_utc': 6000},
           {'desired_state': 'offline', 'transition_time_utc': 8000},
-      ]})
+      ]))
+
+  def testUnknownKeyPresent(self):
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      desired_state_parser.validate_desired_master_state(self._stateConfig(
+        [
+          {'desired_state': 'running', 'transition_time_utc': 4000},
+          {'desired_state': 'offline', 'transition_time_utc': 6000},
+        ],
+        unknown_key=1337,
+      ))
+
+  def testNonNumericDrainTimeout(self):
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      desired_state_parser.validate_desired_master_state(self._stateConfig(
+        [
+          {'desired_state': 'running', 'transition_time_utc': 4000},
+          {'desired_state': 'offline', 'transition_time_utc': 6000},
+        ],
+        drain_timeout_sec='abc',
+      ))
+
+  def testInvalidBuilderFilter(self):
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      desired_state_parser.validate_desired_master_state(self._stateConfig(
+        [
+          {'desired_state': 'running', 'transition_time_utc': 4000},
+          {'desired_state': 'offline', 'transition_time_utc': 6000},
+        ],
+        builder_filters=[
+          r'+invalid-regex+',
+        ],
+      ))
+
+  def testDifferentVersion(self):
+    # Confirm that the configuration loads.
+    c = self._stateConfig([
+        {'desired_state': 'running', 'transition_time_utc': 4000},
+        {'desired_state': 'offline', 'transition_time_utc': 6000},
+    ])
+    desired_state_parser.validate_desired_master_state(c)
+
+    # Modify the version to invalidate it.
+    c['version'] = 'test'
+    with self.assertRaises(desired_state_parser.InvalidDesiredMasterState):
+      desired_state_parser.validate_desired_master_state(c)
 
   def testValidFile(self):
     desired_state_parser.load_desired_state_file(
@@ -110,22 +170,22 @@ class TestDesiredStateValidation(auto_stub.TestCase):
 
 
 class TestMasterStateLookup(unittest.TestCase):
-  STATES = [
-        {'desired_state': 'pajamas', 'transition_time_utc': 4000},
-        {'desired_state': 'offline', 'transition_time_utc': 6000},
+  STATE_CONFIG = [
+      {'desired_state': 'pajamas', 'transition_time_utc': 4000},
+      {'desired_state': 'offline', 'transition_time_utc': 6000},
   ]
 
   def testUnknownPast(self):
-    state = desired_state_parser.get_master_state(self.STATES, now=300)
+    state = desired_state_parser.get_master_state(self.STATE_CONFIG, now=300)
     self.assertIsNone(state)
 
   def testMiddle(self):
-    state = desired_state_parser.get_master_state(self.STATES, now=4500)
-    self.assertEqual(state, self.STATES[0])
+    state = desired_state_parser.get_master_state(self.STATE_CONFIG, now=4500)
+    self.assertEqual(state, self.STATE_CONFIG[0])
 
   def testEnd(self):
-    state = desired_state_parser.get_master_state(self.STATES, now=8000)
-    self.assertEqual(state, self.STATES[1])
+    state = desired_state_parser.get_master_state(self.STATE_CONFIG, now=8000)
+    self.assertEqual(state, self.STATE_CONFIG[1])
 
 
 class TestHostnameLookup(auto_stub.TestCase):
@@ -143,12 +203,20 @@ class TestHostnameLookup(auto_stub.TestCase):
   def testHostnameLookup(self):
     """Test that selected masters are triggered and all else are ignored."""
     desired_state = {
-        'master.chromium.fyi': [
-          {'desired_state': 'running', 'transition_time_utc': 4000},
-        ],
-        'master.supersecret': [
-          {'desired_state': 'running', 'transition_time_utc': 4000},
-        ],
+        'version': desired_state_parser.VERSION,
+        'master_states': {
+          'master.chromium.fyi': [
+            {'desired_state': 'running', 'transition_time_utc': 4000},
+          ],
+          'master.supersecret': [
+            {'desired_state': 'running', 'transition_time_utc': 4000},
+          ],
+        },
+        'master_params': {
+          'master.chromium.fyi': {
+            'drain_timeout_sec': 1337,
+          },
+        },
     }
     triggered, ignored = desired_state_parser.get_masters_for_host(
         desired_state,
@@ -156,8 +224,15 @@ class TestHostnameLookup(auto_stub.TestCase):
         'impenetrablefortress.cool'
     )
 
-    self.assertEqual(len(triggered), 2)
-    self.assertEqual(len(ignored), 2)
+    self.assertEqual(
+        [t['dirname'] for t in triggered],
+        ['master.chromium.fyi', 'master.supersecret'])
+    self.assertEqual(ignored, set(['master.chromium', 'master.ultrasecret']))
+
+    self.assertEqual(triggered[0]['params'], {
+      'drain_timeout_sec': 1337,
+    })
+    self.assertEqual(triggered[1]['params'], {})
 
     self.assertEqual(sorted(ignored), [
       'master.chromium',
@@ -165,4 +240,4 @@ class TestHostnameLookup(auto_stub.TestCase):
     ])
 
     for master_dict in triggered:
-      self.assertIn(master_dict['dirname'], desired_state)
+      self.assertIn(master_dict['dirname'], desired_state['master_states'])

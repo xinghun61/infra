@@ -1,5 +1,13 @@
 {
-  "master.chromium.fyi": [
-     {"desired_state": "running", "transition_time_utc": 4000}
-  ]
+  "version": "1",
+  "master_states": {
+    "master.chromium.fyi": [
+      {"desired_state": "running", "transition_time_utc": 4000}
+    ]
+  },
+  "master_params": {
+    "master.chromium.fyi": {
+      "drain_timeout_sec": 60
+    }
+  }
 }

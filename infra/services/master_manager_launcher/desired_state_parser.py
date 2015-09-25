@@ -10,6 +10,7 @@ import json
 import logging
 import operator
 import os
+import re
 
 from infra.libs.buildbot import master
 from infra.libs.time_functions import timestamp
@@ -18,6 +19,12 @@ from infra.services.master_lifecycle import buildbot_state
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+# A string that uniquely identifies the structure of a master state
+# configuration file. Any changes made to the structure that are not backwards-
+# compatible MUST update this value.
+VERSION = '1'
 
 
 class InvalidDesiredMasterState(ValueError):
@@ -56,7 +63,13 @@ def validate_desired_master_state(desired_state):
   """Verify that the desired_master_state file is valid."""
   now = timestamp.utcnow_ts()
 
-  for mastername, states in desired_state.iteritems():
+  version = desired_state.get('version', None)
+  if version != VERSION:
+    raise InvalidDesiredMasterState(
+        "State version doesn't match current (%s != %s)" % (version, VERSION))
+
+  master_states = desired_state.get('master_states', {})
+  for mastername, states in master_states.iteritems():
     # Verify desired_state and timestamp are valid.
     for state in states:
       # Verify desired_state and transition_time_utc are present.
@@ -95,6 +108,33 @@ def validate_desired_master_state(desired_state):
       raise InvalidDesiredMasterState(
           'master %s does not have a state older than %s' % (mastername, now))
 
+  master_params = desired_state.get('master_params', {})
+  for mastername, params in master_params.iteritems():
+    allowed_config_keys = set((
+        'drain_timeout_sec',
+        'builder_filters',
+        ))
+    extra_configs = set(params.iterkeys()) - allowed_config_keys
+    if extra_configs:
+      raise InvalidDesiredMasterState(
+          'found unsupported configuration keys: %s' % (sorted(extra_configs),))
+
+    if params.get('drain_timeout_sec') is not None:
+      try:
+        int(params['drain_timeout_sec'])
+      except ValueError as e:
+        raise InvalidDesiredMasterState(
+            'invalid "drain_timeout_sec" for %s (%s): %s' % (
+                mastername, params['drain_timeout_sec'], e))
+
+    for builder_filter in params.get('builder_filters', []):
+      try:
+        re.compile(builder_filter)
+      except re.error as e:
+        raise InvalidDesiredMasterState(
+            'invalid "builder_filters" entry for %s (%s): %s' % (
+                mastername, builder_filter, e))
+
 
 def get_master_state(states, now=None):
   """Returns the latest state earlier than the current (or specified) time.
@@ -124,28 +164,34 @@ def get_masters_for_host(desired_state, build_dir, hostname):
   'ignored.'
 
   triggered_masters is a list of dicts. Each dict is the full dict from
-  mastermap.py with two extra keys: 'fulldir' (the absolute path to the master
-  directory), and 'states' (a list of desired states sorted by transition time,
-  pulled from the desired states file).
+  mastermap.py with two extra keys:
+    - 'fulldir': the absolute path to the master directory
+    - 'states': the state configuration for that master
+    - 'params': any configured parameters for that master
 
   ignored_masters is a set of 'dirname' strings (ex: master.chromium).
   """
+  master_states = desired_state.get('master_states', {})
+  master_params = desired_state.get('master_params', {})
+
   triggered_masters = []
   ignored_masters = set()
   for master_dict in master.get_mastermap_for_host(
       build_dir, hostname):
-    if master_dict['dirname'] in desired_state:
+    mastername = master_dict['dirname']
+    if mastername in master_states:
       if master_dict['internal']:
         master_dir = os.path.abspath(os.path.join(
           build_dir, os.pardir, 'build_internal', 'masters',
-          master_dict['dirname']))
+          mastername))
       else:
         master_dir = os.path.abspath(os.path.join(
-          build_dir, 'masters', master_dict['dirname']))
+          build_dir, 'masters', mastername))
       master_dict['fulldir'] = master_dir
-      master_dict['states'] = desired_state[master_dict['dirname']]
+      master_dict['states'] = master_states[mastername]
+      master_dict['params'] = master_params.get(mastername, {})
 
       triggered_masters.append(master_dict)
     else:
-      ignored_masters.add(master_dict['dirname'])
+      ignored_masters.add(mastername)
   return triggered_masters, ignored_masters

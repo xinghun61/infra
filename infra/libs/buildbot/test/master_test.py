@@ -120,13 +120,17 @@ class TestMasterInformation(auto_stub.TestCase):
         json=lambda: {
             'accepting_builds': True,
             'builders': [
-                {'currentBuilds': currentBuilds},
+                {
+                  'builderName': 'test',
+                  'currentBuilds': currentBuilds,
+                },
                 {},
             ]
             })
     accepting_builds, running_builds = master.get_buildstate(self.chromium_fyi)
     self.assertTrue(accepting_builds)
-    self.assertEqual(running_builds, len(currentBuilds))
+    self.assertEqual(running_builds, set([
+      ('test', 15), ('test', 16), ('test', 17)]))
 
   def testNotAcceptingBuilds(self):
     self.mock(requests, 'get', self.requests_handler)
