@@ -1,0 +1,18 @@
+<dom-module id="milo-pokeball">
+  <link rel="stylesheet" type="text/css" href="milo-pokeball.css">
+
+  <template>
+    <div id="pokeball-container">
+      <div id="pokeball-circle"><span>{{circle}}</span></div>
+      <div id="pokeball-top"><span>{{top}}</span></div>
+      <template is="dom-repeat" items="{{middleItems}}">
+        <div class="pokeball-item">
+          <span>{{item}}</span>
+        </div>
+      </template>
+      <div id="pokeball-bottom"><span>{{bottom}}<span></div>
+    </div>
+  </template>
+
+  <script src="milo-pokeball.js"></script>
+</dom-module>
