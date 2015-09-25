@@ -12,6 +12,8 @@ class WfStep(BaseBuildModel):
 
   'Wf' is short for waterfall.
   """
+  log_data = ndb.BlobProperty(indexed=False, compressed=True)
+  isolated = ndb.BooleanProperty(default=False)
 
   @staticmethod
   def _CreateKey(
@@ -20,16 +22,16 @@ class WfStep(BaseBuildModel):
         master_name, builder_name, build_number)
     return ndb.Key('WfBuild', build_id, 'WfStep', step_name)
 
-  @staticmethod
+  @classmethod
   def Create(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return WfStep(key=WfStep._CreateKey(
+      cls, master_name, builder_name, build_number,
+      step_name):  # pragma: no cover
+    return cls(key=cls._CreateKey(
                           master_name, builder_name, build_number, step_name))
 
-  @staticmethod
+  @classmethod
   def Get(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return WfStep._CreateKey(
+      cls, master_name, builder_name, build_number,
+      step_name):  # pragma: no cover
+    return cls._CreateKey(
         master_name, builder_name, build_number, step_name).get()
-
-  log_data = ndb.BlobProperty(indexed=False, compressed=True)

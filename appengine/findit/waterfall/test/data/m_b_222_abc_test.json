@@ -39,11 +39,18 @@
                         "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
                     },
                     {
-                        "elapsed_time_ms": 50,
+                        "elapsed_time_ms": 64,
                         "losless_snippet": true,
-                        "output_snippet": "[       OK ]\\n",
-                        "status": "SUCCESS",
-                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
+                    },
+                    {
+                        "elapsed_time_ms": 64,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
                     }
                 ],
                 "Unittest2.Subtest1": [
@@ -110,18 +117,11 @@
                         "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
                     },
                     {
-                        "elapsed_time_ms": 60,
+                        "elapsed_time_ms": 50,
                         "losless_snippet": true,
-                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
-                        "status": "FAILURE",
-                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
-                    },
-                    {
-                        "elapsed_time_ms": 60,
-                        "losless_snippet": true,
-                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
-                        "status": "FAILURE",
-                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                     }
                 ],
                 "Unittest3.Subtest3": [
@@ -177,5 +177,5 @@
         "parent_git_number": null,
         "parentslavename": null
     },
-    "test_exe": "unittests"
+    "test_exe": "abc_test"
 }

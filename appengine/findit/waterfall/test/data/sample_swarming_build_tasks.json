@@ -46,7 +46,12 @@
         "user:"
       ], 
       "try_number": 0, 
-      "user": ""
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhashnetunittests"
+      }
     }, 
     {
       "abandoned_ts": null, 
@@ -93,7 +98,12 @@
         "user:"
       ], 
       "try_number": 0, 
-      "user": ""
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhashunittests"
+      }
     },
     {
       "abandoned_ts": null, 
@@ -140,7 +150,12 @@
         "user:"
       ], 
       "try_number": 0, 
-      "user": ""
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhashunittests1"
+      }
     },
     {
       "abandoned_ts": null, 
@@ -189,7 +204,12 @@
         "user:"
       ], 
       "try_number": 1, 
-      "user": ""
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhasha"
+      }
     }, 
     {
       "abandoned_ts": null, 
@@ -236,7 +256,64 @@
         "user:"
       ], 
       "try_number": 0, 
-      "user": ""
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhashatests"
+      }
+    }, 
+    {
+      "abandoned_ts": null, 
+      "bot_id": "vm811-m1", 
+      "bot_version": "0d49d7d9780ab16924dbb550d86a7cbb7f0d1a23", 
+      "children_task_ids": [], 
+      "completed_ts": "2015-08-14 04:22:32", 
+      "cost_saved_usd": 0.000895640932671676, 
+      "costs_usd": [], 
+      "created_ts": "2015-08-14 11:00:16", 
+      "deduped_from": "29434145d469c811", 
+      "durations": [
+        7.515000104904175
+      ], 
+      "exit_codes": [
+        0
+      ], 
+      "failure": true, 
+      "id": "31fe2495a8b97f10", 
+      "internal_failure": false, 
+      "modified_ts": "2015-08-14 11:00:17", 
+      "name": "abc_test/Windows-XP-SP3/908d1eda5a/XP Tests (1)/39454", 
+      "properties_hash": null, 
+      "server_versions": [
+        "1494-366a17e"
+      ], 
+      "started_ts": "2015-08-14 04:22:24", 
+      "state": 112, 
+      "tags": [
+        "buildername:XP Tests (1)", 
+        "buildnumber:39447", 
+        "cpu:x86-32", 
+        "data:908d1eda5a05d8badf941d84c97b88c0456a8d86", 
+        "gpu:none", 
+        "master:chromium.win", 
+        "name:abc_test", 
+        "os:Windows-XP-SP3", 
+        "pool:Chrome", 
+        "priority:25", 
+        "project:chromium", 
+        "purpose:CI", 
+        "purpose:post-commit", 
+        "stepname:abc_test", 
+        "user:"
+      ], 
+      "try_number": 0, 
+      "user": "",
+      "outputs_ref": {
+        "isolatedserver": "https://isolateserver.appspot.com",
+        "namespace": "default-gzip",
+        "isolated": "isolatedhashabctest"
+      }
     }
   ]
 }

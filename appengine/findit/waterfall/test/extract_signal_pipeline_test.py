@@ -35,14 +35,14 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   FAILURE_INFO = {
       'master_name': 'm',
       'builder_name': 'b',
-      'build_number': 123,
+      'build_number': 223,
       'failed': True,
       'chromium_revision': 'a_git_hash',
       'failed_steps': {
           'abc_test': {
-              'last_pass': 122,
-              'current_failure': 123,
-              'first_failure': 123,
+              'last_pass': 222,
+              'current_failure': 223,
+              'first_failure': 223,
           }
       }
   }
@@ -66,7 +66,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testWfStepStdioLogAlreadyDownloaded(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 123
+    build_number = 223
     step_name = 'abc_test'
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
     step.log_data = self.ABC_TEST_FAILURE_LOG
@@ -91,7 +91,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testWfStepStdioLogNotDownloadedYet(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 123
+    build_number = 223
     step_name = 'abc_test'
 
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
@@ -115,7 +115,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetTestLevelFailures(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 123
+    build_number = 223
     step_name = 'abc_test'
 
     expected_failure_log = ('ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
@@ -138,7 +138,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetTestLevelFailuresFlaky(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 124
+    build_number = 224
     step_name = 'abc_test'
 
     expected_failure_log = 'flaky'
@@ -152,7 +152,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetTestLevelFailuresInvalid(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 125
+    build_number = 225
     step_name = 'abc_test'
 
     expected_failure_log = 'invalid'
@@ -169,7 +169,7 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetSignalFromStepLog(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 123
+    build_number = 223
     step_name = 'abc_test'
 
     # Mock both stdiolog and gtest json results to test whether Findit will
@@ -193,20 +193,20 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetSignalFromStepLogFlaky(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 124
+    build_number = 224
     step_name = 'abc_test'
 
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
-        'build_number': 124,
+        'build_number': 224,
         'failed': True,
         'chromium_revision': 'a_git_hash',
         'failed_steps': {
             'abc_test': {
-                'last_pass': 123,
-                'current_failure': 124,
-                'first_failure': 124,
+                'last_pass': 223,
+                'current_failure': 224,
+                'first_failure': 224,
             }
         }
     }
@@ -226,20 +226,20 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   def testGetSignalFromStepLogInvalid(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 125
+    build_number = 225
     step_name = 'abc_test'
 
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
-        'build_number': 125,
+        'build_number': 225,
         'failed': True,
         'chromium_revision': 'a_git_hash',
         'failed_steps': {
             'abc_test': {
-                'last_pass': 124,
-                'current_failure': 125,
-                'first_failure': 125,
+                'last_pass': 224,
+                'current_failure': 225,
+                'first_failure': 225,
             }
         }
     }

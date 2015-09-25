@@ -117,6 +117,7 @@ class ExtractSignalPipeline(BasePipeline):
         failure_log = step.log_data
       else:
         # TODO: do test-level analysis instead of step-level.
+        # TODO: Use swarming test result instead of archived gtest results
         gtest_result = buildbot.GetGtestResultLog(
               master_name, builder_name, build_number, step_name)
         if gtest_result:

@@ -13,6 +13,7 @@ import cloudstorage as gcs
 
 from waterfall.build_info import BuildInfo
 
+
 _MASTER_URL_PATTERN = re.compile(r'^https?://build\.chromium\.org/p/([^/]+)'
                                  '(/.*)?$')
 
@@ -80,7 +81,7 @@ def CreateArchivedBuildUrl(master_name, builder_name, build_number):
   builder_name = urllib.quote(builder_name)
   return ('https://chrome-build-extract.appspot.com/p/%s/builders/%s/builds/%s'
           '?json=1' % (master_name, builder_name, build_number))
-        
+
 
 def CreateBuildUrl(master_name, builder_name, build_number, json_api=False):
   """Creates the url for the given build."""

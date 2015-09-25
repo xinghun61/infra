@@ -1,0 +1,89 @@
+{
+  "all_tests": [
+    "AccountTrackerServiceTest.Basic",
+    "AccountTrackerServiceTest.FindAccountInfoByEmail",
+    "AccountTrackerServiceTest.FindAccountInfoByGaiaId",
+    "AccountTrackerServiceTest.GetAccountInfo_Empty",
+    "AccountTrackerServiceTest.GetAccountInfo_TokenAvailable",
+    "AccountTrackerServiceTest.GetAccountInfo_TokenAvailable_EnableNetwork",
+    "AccountTrackerServiceTest.GetAccountInfo_TokenAvailable_UserInfo",
+    "AccountTrackerServiceTest.GetAccounts",
+    "AccountTrackerServiceTest.LegacyDottedAccountIds"
+  ],
+  "per_iteration_data": [
+    {
+      "AccountTrackerServiceTest.GetAccountInfo_TokenAvailable_UserInfo": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN ] AccountTrackerServiceTest.GetAccountInfo_Token.\\r\\n",
+          "output_snippet_base64":
+              "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydmljZVRlc3QuR2V0Q1zKQ",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.GetAccounts": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN] AccountTrackerServiceTest.GetAccounts\\r\\n",
+          "output_snippet_base64":
+              "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydY291bnRzICgwIG1zKQ0K",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.GetAccountInfo_Empty": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN ] AccountTrackerServiceTest.GetAccountInfo_Empty\\r\\n",
+          "output_snippet_base64":
+              "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2Vydmlj0VtcHR5ICgwIG1zKQ",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.GetAccountInfo_TokenAvailable": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN] AccountTrackerServiceTest.GetAccountInfo_Tok...\\r\\n",
+          "output_snippet_base64":
+           "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydmljZVRlc3QuR2V0QWIG1zKQ",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.GetAccountInfo_EnableNetwork":[{
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN] AccountTrackerServiceTest.GetAccountInfo_TokenAvaila..",
+          "output_snippet_base64":
+               "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydmljZVRlc3QdEluZm9fV",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.Basic": [{
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet": "[ RUN   ] AccountTrackerServiceTest.Basic\\r\\n",
+          "output_snippet_base64": "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2Vy",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.FindAccountInfoByEmail": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN  ] AccountTrackerServiceTest.FindAccountInfoBy...\\r\\n",
+          "output_snippet_base64":
+              "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydmljZVRlc3QuRmluZEFjY",
+          "status": "SUCCESS"
+      }],
+      "AccountTrackerServiceTest.FindAccountInfoByGaiaId": [ {
+          "elapsed_time_ms": 0,
+          "losless_snippet": true,
+          "output_snippet":
+              "[ RUN ] AccountTrackerServiceTest.FindAccountInfoByGId\\r\\n",
+          "output_snippet_base64":
+              "WyBSVU4gICAgICBdIEFjY291bnRUcmFja2VyU2VydmljZVRlc3QuRmluZEFjY",
+          "status": "SUCCESS"
+      }]
+    }
+  ]
+}
+
+
