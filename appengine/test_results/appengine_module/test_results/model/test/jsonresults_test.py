@@ -58,13 +58,13 @@ FULL_RESULT_EXAMPLE = """ADD_RESULTS({
     "tests": {
         "media": {
             "encrypted-media": {
-                "encrypted-media-v2-events.html": {
+                "random-test-1.html": {
                     "bugs": ["crbug.com/1234"],
                     "expected": "TIMEOUT",
                     "actual": "TIMEOUT",
                     "time": 6.0
                 },
-                "encrypted-media-v2-syntax.html": {
+                "random-test-2.html": {
                     "expected": "TIMEOUT",
                     "actual": "TIMEOUT"
                 }
@@ -481,13 +481,13 @@ class JsonResultsTest(unittest.TestCase):
                         }
                     },
                     "encrypted-media": {
-                        "encrypted-media-v2-events.html": {
+                        "random-test-1.html": {
                             "bugs": ["crbug.com/1234"],
                             "expected": "TIMEOUT",
                             "results": [[1, TIMEOUT]],
                             "times": [[1, 6]],
                         },
-                        "encrypted-media-v2-syntax.html": {
+                        "random-test-2.html": {
                             "expected": "TIMEOUT",
                             "results": [[1, TIMEOUT]],
                             "times": [[1, 0]],
