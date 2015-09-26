@@ -8,12 +8,12 @@ from datetime import timedelta
 import json
 import re
 
+from common import diff
 from common.blame import Blame
 from common.blame import Region
 from common.cache_decorator import Cached
 from common.change_log import ChangeLog
 from common.change_log import FileChangeInfo
-from common import diff
 from common.repository import Repository
 
 
@@ -42,15 +42,19 @@ class GitRepository(Repository):
     return self.repo_url
 
   @Cached(namespace='Gitiles-json-view', expire_time=24*60*60)
-  def _SendRequestForJsonResponse(self, url):
+  def _SendRequestForJsonResponse(self, url, params=None):
+    if params is None:  # pragma: no cover
+      params = {}
+    params['format'] = 'json'
+
     # Gerrit prepends )]}' to json-formatted response.
     prefix = ')]}\'\n'
 
-    status_code, content = self.http_client.Get(url, {'format': 'json'})
+    status_code, content = self.http_client.Get(url, params)
     if status_code != 200:
       return None
     elif not content or not content.startswith(prefix):
-      raise Exception('Response does not begins with %s' % prefix)
+      raise Exception('Response does not begin with %s' % prefix)
 
     return json.loads(content[len(prefix):])
 
@@ -100,7 +104,7 @@ class GitRepository(Repository):
     return '@'.join(parts[0:2])
 
   def _GetDateTimeFromString(self, datetime_string,
-      date_format='%a %b %d %H:%M:%S %Y'):
+                             date_format='%a %b %d %H:%M:%S %Y'):
     if TIMEZONE_PATTERN.findall(datetime_string):
       # Need to handle timezone conversion.
       naive_datetime_str, _, offset_str = datetime_string.rpartition(' ')
@@ -165,6 +169,40 @@ class GitRepository(Repository):
         data['message'], touched_files, url, code_review_url,
         reverted_revision)
 
+  def GetCommitsBetweenRevisions(self, start_revision, end_revision, n=1000):
+    """Gets a list of commit hashes between start_revision and end_revision.
+
+    Args:
+      start_revision: The oldest revision in the range.
+      end_revision: The latest revision in the range.
+      n: The maximum number of revisions to request at a time.
+
+    Returns:
+      A list of commit hashes made since start_revision through and including
+      end_revision in order from most-recent to least-recent. This includes
+      end_revision, but not start_revision.
+    """
+    params = {'n': n}
+    next_end_revision = end_revision
+    commits = []
+
+    while next_end_revision:
+      url = '%s/+log/%s..%s' % (
+          self.repo_url, start_revision, next_end_revision)
+      data = self._SendRequestForJsonResponse(url, params)
+
+      if not data:
+        break
+
+      for log in data.get('log', []):
+        commit = log.get('commit')
+        if commit:
+          commits.append(commit)
+
+      next_end_revision = data.get('next')
+
+    return commits
+
   def GetChangeDiff(self, revision):
     """Returns the raw diff of the given revision."""
     url = '%s/+/%s%%5E%%21/' % (self.repo_url, revision)
@@ -186,7 +224,7 @@ class GitRepository(Repository):
       blame.AddRegion(
           Region(region['start'], region['count'], region['commit'],
                  region['author']['name'],
-                 self._NormalizeEmail(region['author']['email']),author_time))
+                 self._NormalizeEmail(region['author']['email']), author_time))
 
     return blame
 

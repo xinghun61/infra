@@ -282,7 +282,12 @@ class _Justification(object):
 
     if roll_file_change_type == ChangeType.ADD:
       hint = ('%s dependency %s with changes in %s '
-              '(and %s(new file) was in log)' % (
+              '(and %s(added) was in log)' % (
+                  change_action, dep_path, url_to_changes_in_roll,
+                  file_path_in_log))
+    elif roll_file_change_type == ChangeType.DELETE:
+      hint = ('%s dependency %s with changes in %s '
+              '(and %s(deleted) was in log)' % (
                   change_action, dep_path, url_to_changes_in_roll,
                   file_path_in_log))
     elif changed_line_numbers:
@@ -292,6 +297,7 @@ class _Justification(object):
     else:
       hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
           change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
+
     self._hints[hint] = score
     self._score += score
 
@@ -391,6 +397,41 @@ def _StripChromiumRootDirectory(file_path):
   return file_path
 
 
+def _GetChangeTypeAndCulpritCommit(file_path_in_log, roll_repo,
+                                   commits_between_revisions):
+  """Determines the first commit that touches a file within a revision range.
+
+  Args:
+    file_path_in_log: The file to search each commit's change logs for.
+    roll_repo: A git repository object to make requests to git for changes logs.
+    commits_between_revisions: A list of revisions to request change logs.
+
+  Returns:
+    The modification type made to file_path_in_log if found.
+    The corresponding commit that touched file_path_in_log if found.
+  """
+  for commit in commits_between_revisions:
+    # Use the change log for each commit to determine if and how
+    # file_path_in_log log was modified.
+    change_log = roll_repo.GetChangeLog(commit)
+    for file_change_info in change_log.touched_files:
+      if file_change_info.change_type in (ChangeType.DELETE, ChangeType.RENAME):
+        changed_src_file_path = file_change_info.old_path
+      else:
+        changed_src_file_path = file_change_info.new_path
+
+      if _IsSameFile(changed_src_file_path, file_path_in_log):
+        # Found the file and the commit that modified it.
+        # TODO(lijeffrey): It is possible multiple commits modified the file.
+        return file_change_info.change_type, commit
+
+      # TODO(lijeffrey): It is possible _IsRelated(changed_src_file_path,
+      # file_path_in_log) may also provide useful information, but how is not
+      # yet determined.
+
+  return None, None
+
+
 def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   """Gets changed line numbers for file in failure log.
 
@@ -398,10 +439,11 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     the DEPS roll, if so, return those line numbers.
   """
   roll_repo = GitRepository(roll['repo_url'], HttpClient())
-
-  old_change_log = roll_repo.GetChangeLog(roll['old_revision'])
+  old_revision = roll['old_revision']
+  new_revision = roll['new_revision']
+  old_change_log = roll_repo.GetChangeLog(old_revision)
   old_rev_author_time = old_change_log.author_time
-  new_change_log = roll_repo.GetChangeLog(roll['new_revision'])
+  new_change_log = roll_repo.GetChangeLog(new_revision)
   new_rev_author_time = new_change_log.author_time
 
   file_change_type = None
@@ -411,36 +453,33 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     # If the DEPS roll is downgrade, bail out.
     return file_change_type, changed_line_numbers
 
-  blame = roll_repo.GetBlame(file_path_in_log, roll['new_revision'])
+  commits_in_roll = roll_repo.GetCommitsBetweenRevisions(
+      old_revision, new_revision)
 
-  if not blame:
+  file_change_type, culprit_commit = _GetChangeTypeAndCulpritCommit(
+      file_path_in_log, roll_repo, commits_in_roll)
+
+  if culprit_commit is None:
+    # Bail out if no commits touched the file in the log.
     return file_change_type, changed_line_numbers
 
-  file_change_type = ChangeType.ADD
-  file_is_changed_in_roll = False
+  if file_change_type == ChangeType.MODIFY:
+    # If the file was modified, use the blame information to determine which
+    # lines were changed.
+    blame = roll_repo.GetBlame(file_path_in_log, culprit_commit)
 
-  for region in blame:
-    change_author_time = region.author_time
-    if (change_author_time > old_rev_author_time and
-        change_author_time <= new_rev_author_time):
-      file_is_changed_in_roll = True
-      if not file_change_type:
-        file_change_type = ChangeType.MODIFY
+    if not blame:
+      return file_change_type, changed_line_numbers
+
+    for region in blame:
       if line_numbers:
         for line_number in line_numbers:
           if (line_number >= region.start and
-              line_number <= region.start + region.count - 1):
+              line_number <= region.start + region.count - 1 and
+              region.revision in commits_in_roll):
             # One line which appears in the failure log is changed within
             # the DEPS roll.
             changed_line_numbers.append(line_number)
-
-    elif (change_author_time <= old_rev_author_time and
-          file_change_type == ChangeType.ADD):
-      # One region was changed before old rev, the file cannot be a new file.
-      if file_is_changed_in_roll:
-        file_change_type = ChangeType.MODIFY
-      else:
-        file_change_type = None
 
   return file_change_type, changed_line_numbers
 
@@ -480,18 +519,21 @@ def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
     if roll['old_revision'] and roll['new_revision']:
       roll_file_change_type, changed_lines = _GetChangedLinesForDependencyRepo(
           roll, file_path_in_log[len(dep_path):], line_numbers)
+
       if not roll_file_change_type:
         continue
 
       change_action = 'rolled'
-      if roll_file_change_type == ChangeType.ADD:  # File is newly added.
+      if (roll_file_change_type == ChangeType.ADD or
+          roll_file_change_type == ChangeType.DELETE):
+        # File was either added or deleted.
         score = 5
       elif not changed_lines:
         # File is changed, but not the same line.
         score = 1
-      else:  # The lines which appear in the failure log are changed.
+      else:
+        # The lines which appear in the failure log are changed.
         score = 4
-
     elif roll['new_revision']:
       change_action = 'added'
       score = 5
@@ -535,6 +577,7 @@ def _CheckFiles(failure_signal, change_log, deps_info):
 
   rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
   repo_info = deps_info.get('deps', {}).get('src/', {})
+
   for file_path_in_log, line_numbers in failure_signal.files.iteritems():
     file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 

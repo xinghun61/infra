@@ -93,31 +93,31 @@ EXPECTED_CHANGE_LOG_JSON = {
     'commit_position': 175976,
     'author_email': 'test1@chromium.org',
     'touched_files': [
-      {
-        'change_type': 'add',
-        'new_path': 'Source/devtools/front_end/layers/added_file.js',
-        'old_path': '/dev/null'
-      },
-      {
-        'change_type': 'delete',
-        'new_path': '/dev/null',
-        'old_path': 'Source/devtools/front_end/layers/deleted_file.js'
-      },
-      {
-        'change_type': 'modify',
-        'new_path': 'Source/devtools/front_end/layers/modified_file.js',
-        'old_path': 'Source/devtools/front_end/layers/modified_file.js'
-      },
-      {
-        'change_type': 'copy',
-        'new_path': 'Source/devtools/front_end/layers/copied_file.js',
-        'old_path': 'Source/devtools/front_end/layers/file.js'
-      },
-      {
-        'change_type': 'rename',
-        'new_path': 'Source/devtools/front_end/layers/renamed_file.js',
-        'old_path': 'Source/devtools/front_end/layers/file.js'
-      }
+        {
+            'change_type': 'add',
+            'new_path': 'Source/devtools/front_end/layers/added_file.js',
+            'old_path': '/dev/null'
+        },
+        {
+            'change_type': 'delete',
+            'new_path': '/dev/null',
+            'old_path': 'Source/devtools/front_end/layers/deleted_file.js'
+        },
+        {
+            'change_type': 'modify',
+            'new_path': 'Source/devtools/front_end/layers/modified_file.js',
+            'old_path': 'Source/devtools/front_end/layers/modified_file.js'
+        },
+        {
+            'change_type': 'copy',
+            'new_path': 'Source/devtools/front_end/layers/copied_file.js',
+            'old_path': 'Source/devtools/front_end/layers/file.js'
+        },
+        {
+            'change_type': 'rename',
+            'new_path': 'Source/devtools/front_end/layers/renamed_file.js',
+            'old_path': 'Source/devtools/front_end/layers/file.js'
+        }
     ],
     'author_time': datetime(2014, 06, 11, 23, 35, 32),
     'committer_time': datetime(2014, 06, 11, 19, 35, 32),
@@ -201,30 +201,30 @@ GITILES_FILE_BLAME_RESULT = """)]}'
 
 EXPECTED_FILE_BLAME_JSON = {
     'regions': [
-      {
-        'count': 6,
-        'author_email': u'test2@chromium.org',
-        'author_time': datetime(2013, 02, 11, 20, 18, 51),
-        'author_name': u'test2@chromium.org',
-        'start': 1,
-        'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
-      },
-      {
-        'count': 1,
-        'author_email': u'test3@chromium.org',
-        'author_time': datetime(2014, 02, 06, 06, 02, 10),
-        'author_name': u'test3@chromium.org',
-        'start': 7,
-        'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
-      },
-      {
-        'count': 1,
-        'author_email': u'test2@chromium.org',
-        'author_time': datetime(2013, 02, 11, 20, 18, 51),
-        'author_name': u'test2@chromium.org',
-        'start': 8,
-        'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
-      }
+        {
+            'count': 6,
+            'author_email': u'test2@chromium.org',
+            'author_time': datetime(2013, 02, 11, 20, 18, 51),
+            'author_name': u'test2@chromium.org',
+            'start': 1,
+            'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
+        },
+        {
+            'count': 1,
+            'author_email': u'test3@chromium.org',
+            'author_time': datetime(2014, 02, 06, 06, 02, 10),
+            'author_name': u'test3@chromium.org',
+            'start': 7,
+            'revision': u'030b5d9bb7d6c9f673cd8f0c86d8f1e921de7076'
+        },
+        {
+            'count': 1,
+            'author_email': u'test2@chromium.org',
+            'author_time': datetime(2013, 02, 11, 20, 18, 51),
+            'author_name': u'test2@chromium.org',
+            'start': 8,
+            'revision': u'584ae1f26b070150f65a03dba75fc8af6b6f6ece'
+        }
     ],
     'path': 'a/b/c.cc',
     'revision': 'dummy_abcd1234'
@@ -232,6 +232,7 @@ EXPECTED_FILE_BLAME_JSON = {
 
 
 class HttpClientForGit(retry_http_client.RetryHttpClient):
+
   def __init__(self):
     super(HttpClientForGit, self).__init__()
     self.response_for_url = {}
@@ -255,6 +256,7 @@ class HttpClientForGit(retry_http_client.RetryHttpClient):
 
 
 class GitRepositoryTest(testing.AppengineTestCase):
+
   def setUp(self):
     super(GitRepositoryTest, self).setUp()
     self.http_client_for_git = HttpClientForGit()
@@ -330,9 +332,9 @@ class GitRepositoryTest(testing.AppengineTestCase):
     ]
 
     for testcase in testcases:
-      commit_position, code_review_url = \
-          self.git_repo.ExtractCommitPositionAndCodeReviewUrl(
-              testcase['message'])
+      (commit_position,
+       code_review_url) = self.git_repo.ExtractCommitPositionAndCodeReviewUrl(
+           testcase['message'])
       self.assertEqual(commit_position, testcase['commit_position'])
       self.assertEqual(code_review_url, testcase['code_review_url'])
 
@@ -349,7 +351,7 @@ class GitRepositoryTest(testing.AppengineTestCase):
     self.http_client_for_git.SetResponseForUrl(
         '%s/+/%s?format=json' % (self.repo_url, 'aaa'), 'abcde{"a": 1}')
     self.assertRaisesRegexp(
-        Exception, re.escape('Response does not begins with )]}\'\n'),
+        Exception, re.escape('Response does not begin with )]}\'\n'),
         self.git_repo.GetChangeLog, 'aaa')
 
   def testGetChangeLog(self):
@@ -416,7 +418,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
     self.assertEqual(expected_datetime, utc_datetime)
 
   def testGetRevertedRevision(self):
-    message = ('Revert of test1\n\nReason for revert:\nrevert test1\n\n'
+    message = (
+        'Revert of test1\n\nReason for revert:\nrevert test1\n\n'
         'Original issue\'s description:\n> test 1\n>\n'
         '> description of test 1.\n>\n> BUG=none\n> TEST=none\n'
         '> R=test@chromium.org\n> TBR=test@chromium.org\n>\n'
@@ -433,7 +436,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
                      reverted_revision)
 
   def testGetRevertedRevisionRevertOfRevert(self):
-    message = ('Revert of Revert\n\nReason for revert:\nRevert of revert\n\n'
+    message = (
+        'Revert of Revert\n\nReason for revert:\nRevert of revert\n\n'
         'Original issue\'s description:\n> test case of revert of revert\n>\n'
         '> Reason for revert:\n> reason\n>\n> Original issue\'s description:\n'
         '> > base cl\n> >\n> > R=kalman\n> > BUG=424661\n> >\n'
@@ -454,7 +458,8 @@ class GitRepositoryTest(testing.AppengineTestCase):
                      reverted_revision)
 
   def testGetRevertedRevisionNoRevertedCL(self):
-    message = ('Test for not revert cl\n\n'
+    message = (
+        'Test for not revert cl\n\n'
         'TBR=test@chromium.org\nNOPRESUBMIT=true\n'
         'NOTREECHECKS=true\nNOTRY=true\nBUG=424661\n\n'
         'Review URL: https://codereview.chromium.org/1161773008\n\n'
@@ -462,3 +467,64 @@ class GitRepositoryTest(testing.AppengineTestCase):
 
     reverted_revision = self.git_repo.GetRevertedRevision(message)
     self.assertIsNone(reverted_revision)
+
+  def testGetCommitsBetweenRevisions(self):
+    def _MockSendRequestForJsonResponse(*_):
+      return {
+          'log': [
+              {'commit': '3'},
+              {'commit': '2'},
+              {'commit': '1'}]
+      }
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
+    expected_commits = ['3', '2', '1']
+    actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
+    self.assertEqual(expected_commits, actual_commits)
+
+  def testGetCommitsBetweenRevisionsWithEmptyData(self):
+    def _MockSendRequestForJsonResponse(*_):
+      return None
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
+    expected_commits = []
+    actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
+    self.assertEqual(expected_commits, actual_commits)
+
+  def testGetCommitsBetweenRevisionsWithIncompleteData(self):
+    def _MockSendRequestForJsonResponse(*_):
+      return {
+          'log': [
+              {'commit': '1'},
+              {'something_else': '2'}
+          ]
+      }
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
+    expected_commits = ['1']
+    actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3')
+    self.assertEqual(expected_commits, actual_commits)
+
+  def testGetCommitsBetweenRevisionsWithPaging(self):
+    def _MockSendRequestForJsonResponse(*args, **_):
+      url = args[1]
+      if '0..3' in url:
+        return {
+            'log': [
+                {'commit': '3'},
+                {'commit': '2'}
+            ],
+            'next': '1'
+        }
+      else:
+        return {
+            'log': [
+                {'commit': '1'}
+            ]
+        }
+
+    self.mock(git_repository.GitRepository, '_SendRequestForJsonResponse',
+              _MockSendRequestForJsonResponse)
+    expected_commits = ['3', '2', '1']
+    actual_commits = self.git_repo.GetCommitsBetweenRevisions('0', '3', n=2)
+    self.assertEqual(expected_commits, actual_commits)

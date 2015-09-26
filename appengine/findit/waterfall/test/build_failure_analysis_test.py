@@ -3,10 +3,12 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+
 from testing_utils import testing
 
 from common.blame import Blame
 from common.blame import Region
+from common.change_log import FileChangeInfo
 from common.diff import ChangeType
 from common.git_repository import GitRepository
 from waterfall import build_failure_analysis
@@ -14,6 +16,95 @@ from waterfall.failure_signal import FailureSignal
 
 
 class BuildFailureAnalysisTest(testing.AppengineTestCase):
+
+  def _MockGetChangeLog(self, revision):
+
+    class MockChangeLog(object):
+
+      def __init__(self, date, touched_files):
+        self.author_time = datetime.strptime(
+            'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y')
+        self.touched_files = touched_files
+
+    MOCK_CHANGE_LOGS = {}
+    MOCK_CHANGE_LOGS['1'] = MockChangeLog('1', [])
+    MOCK_CHANGE_LOGS['2'] = MockChangeLog('2', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.ADD,
+             'old_path': 'dev/null',
+             'new_path': 'third_party/dep/f.cc'})])
+    MOCK_CHANGE_LOGS['3'] = MockChangeLog('3', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f.cc',
+             'new_path': 'third_party/dep/f.cc'})])
+    MOCK_CHANGE_LOGS['4'] = MockChangeLog('4', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f2.cc',
+             'new_path': 'third_party/dep/f2.cc'})])
+    MOCK_CHANGE_LOGS['5'] = MockChangeLog('5', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f3.cc',
+             'new_path': 'third_party/dep/f3.cc'})])
+    MOCK_CHANGE_LOGS['6'] = MockChangeLog('6', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f.cc',
+             'new_path': 'third_party/dep/f.cc'})])
+    MOCK_CHANGE_LOGS['7'] = MockChangeLog('7', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f.cc',
+             'new_path': 'third_party/dep/f.cc'})])
+    MOCK_CHANGE_LOGS['8'] = MockChangeLog('8', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f.cc',
+             'new_path': 'third_party/dep/f.cc'})])
+    MOCK_CHANGE_LOGS['9'] = MockChangeLog('9', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.DELETE,
+             'old_path': 'third_party/dep/f.cc',
+             'new_path': 'dev/null'})])
+    MOCK_CHANGE_LOGS['10'] = MockChangeLog('10', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f2.cc',
+             'new_path': 'third_party/dep/f2.cc'})])
+    MOCK_CHANGE_LOGS['11'] = MockChangeLog('11', [
+        FileChangeInfo.FromDict(
+            {'change_type': ChangeType.MODIFY,
+             'old_path': 'third_party/dep/f2.cc',
+             'new_path': 'third_party/dep/f2.cc'})])
+
+    return MOCK_CHANGE_LOGS.get(revision, MockChangeLog('12', []))
+
+  def _MockGetCommitsBetweenRevisions(self, start_revision, end_revision):
+    return map(str, range(int(start_revision) + 1, int(end_revision) + 1))
+
+  def _MockGetBlame(self, path, revision):
+    if revision == '10' or revision == '11' or path == 'f_not_exist.cc':
+      return None
+    blame = Blame(revision, path)
+
+    blame.AddRegion(Region(1, 2, '7',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           datetime(2015, 06, 07, 04, 35, 32)))
+    blame.AddRegion(Region(3, 3, '5',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           datetime(2015, 06, 05, 04, 35, 32)))
+    blame.AddRegion(Region(7, 1, '8',
+                           u'test2@chromium.org', u'test2@chromium.org',
+                           datetime(2015, 06, 8, 04, 35, 32)))
+    blame.AddRegion(Region(8, 1, '7',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           datetime(2015, 06, 07, 21, 35, 32)))
+    blame.AddRegion(Region(9, 10, '12',
+                           u'test3@chromium.org', u'test3@chromium.org',
+                           datetime(2015, 06, 12, 04, 35, 32)))
+    return blame
 
   def testIsSameFile(self):
     self.assertTrue(build_failure_analysis._IsSameFile('a/b/x.cc', 'x.cc'))
@@ -167,46 +258,13 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         change_log_json, deps_info)
     self.assertIsNone(justification)
 
-  def _MockGetBlame(self, path, revision):
-    if revision == '10' or path == 'f_not_exist.cc':
-      return None
-    blame = Blame(revision, path)
-    if revision <= '3':
-      blame.AddRegion(Region(1, 10, '2',
-                             u'test3@chromium.org', u'test3@chromium.org',
-                             datetime(2015, 06, 02, 04, 35, 32)))
-    else:
-      blame.AddRegion(Region(1, 2, '7',
-                             u'test3@chromium.org', u'test3@chromium.org',
-                             datetime(2015, 06, 07, 04, 35, 32)))
-      blame.AddRegion(Region(3, 3, '5',
-                             u'test3@chromium.org', u'test3@chromium.org',
-                             datetime(2015, 06, 05, 04, 35, 32)))
-      blame.AddRegion(Region(7, 1, '8',
-                             u'test2@chromium.org', u'test2@chromium.org',
-                             datetime(2015, 06, 8, 04, 35, 32)))
-      blame.AddRegion(Region(8, 1, '7',
-                             u'test3@chromium.org', u'test3@chromium.org',
-                             datetime(2015, 06, 07, 21, 35, 32)))
-      blame.AddRegion(Region(9, 10, '12',
-                             u'test3@chromium.org', u'test3@chromium.org',
-                             datetime(2015, 06, 12, 04, 35, 32)))
-    return blame
-
-  def _MockGetChangeLog(self, revision):
-    class MockChangeLog(object):
-
-      def __init__(self, date):
-        self.author_time = datetime.strptime(
-            'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y')
-
-    return MockChangeLog(revision)
-
   def _testCheckFileInDependencyRoll(
       self, file_path_in_log, rolls, expected_score, line_numbers,
       expected_hints=None):
     self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
     self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(GitRepository, 'GetCommitsBetweenRevisions',
+              self._MockGetCommitsBetweenRevisions)
     justification = build_failure_analysis._Justification()
     build_failure_analysis._CheckFileInDependencyRolls(
         file_path_in_log, rolls, justification, line_numbers)
@@ -292,7 +350,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
          'https://url_dep/+log/1..2?pretty=fuller '
-         '(and f.cc(new file) was in log)'): 5
+         '(and f.cc(added) was in log)'): 5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -304,8 +362,8 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         {  # Multiple regions in blame, but they are all after old revision.
             'path': 'src/third_party/dep/',
             'repo_url': 'https://url_dep',
-            'old_revision': '4',
-            'new_revision': '9',
+            'old_revision': '1',
+            'new_revision': '3',
         },
     ]
     expected_score = 5
@@ -313,12 +371,12 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
                                         None)
 
-  def testCheckFileInDependencyRollWhenFileIsNotAddedWithinTheRoll(self):
+  def testCheckFileInDependencyRollWhenFileIsNotTouchedWithinTheRoll(self):
     rolls = [{
         'path': 'src/third_party/dep/',
         'repo_url': 'https://url_dep',
-        'old_revision': '2',
-        'new_revision': '3',
+        'old_revision': '3',
+        'new_revision': '5',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 0
@@ -334,12 +392,12 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         'new_revision': '8',
     }]
     file_path_in_log = 'third_party/dep/f.cc'
-    line_numbers = [2, 7, 8]
+    line_numbers = [2, 7, 12]
     expected_score = 4
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
          'https://url_dep/+log/6..8?pretty=fuller '
-         '(and f.cc[2, 7, 8] was in log)'): 4
+         '(and f.cc[2, 7] was in log)'): 4
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -352,9 +410,45 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         'old_revision': '8',
         'new_revision': '9',
     }]
-    file_path_in_log = 'third_party/dep/f.cc'
+    file_path_in_log = 'third_party/dep/not_this_file.cc'
     line_numbers = [2, 7, 8]
     expected_score = 0
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
+                                        line_numbers)
+
+  def testCheckFileInDependencyRollWhenFileIsDeleted(self):
+    rolls = [
+        {
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': '8',
+            'new_revision': '10',
+        }
+    ]
+    file_path_in_log = 'third_party/dep/f.cc'
+    expected_score = 5
+    expected_hints = {
+        ('rolled dependency third_party/dep/ with changes in '
+         'https://url_dep/+log/8..10?pretty=fuller '
+         '(and f.cc(deleted) was in log)'): 5
+    }
+
+    self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
+                                        None, expected_hints)
+
+  def testCheckFileInDependencyRollWhenFileIsModifiedWithoutBlame(self):
+    rolls = [
+        {
+            'path': 'src/third_party/dep/',
+            'repo_url': 'https://url_dep',
+            'old_revision': '10',
+            'new_revision': '11',
+        }
+    ]
+    file_path_in_log = 'third_party/dep/f2.cc'
+    line_numbers = [2, 7, 8]
+    expected_score = 1
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
                                         line_numbers)
@@ -401,7 +495,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
                                         line_numbers)
 
-  def testCheckFilesAgainstDEPSRoll(self):
+  def testCheckFilesAgainstDEPSRollWithUnrelatedLinesChanged(self):
     failure_signal_json = {
         'files': {
             'src/third_party/dep1/f.cc': [123],
@@ -430,6 +524,8 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         }
     }
     self.mock(GitRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(GitRepository, 'GetCommitsBetweenRevisions',
+              self._MockGetCommitsBetweenRevisions)
     self.mock(GitRepository, 'GetBlame', self._MockGetBlame)
     justification = build_failure_analysis._CheckFiles(
         FailureSignal.FromDict(failure_signal_json),
