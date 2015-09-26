@@ -8,9 +8,11 @@ appengine/swarming
 appengine/milo/vulcanized_main.html
 appengine/experimental/milo-linear/vulcanized_main.html
 appengine/milo/html/parts/graph/viz.js
+/cipd/*
 .DS_Store
 /node/runtimes
 # build_cache is used by infra.services.builder_alerts
 build_cache
 go/src/github.com
 recipes-py
+!/cipd/README.md

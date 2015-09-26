@@ -472,6 +472,7 @@ def get_go_environ(
   paths_to_add = [
     os.path.join(env['GOROOT'], 'bin'),
     env.get('GOBIN'),
+    os.path.join(ROOT, 'cipd'),
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
   if go_appengine_path:

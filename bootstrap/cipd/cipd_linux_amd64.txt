@@ -1,0 +1,9 @@
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# Instructions for building packages can be found in the "doc/" subdirectory
+# under that package name.
+
+# Proto3 Protocol Buffers generator.
+infra/tools/protoc/linux-amd64      73762c0ef02cba4887fc01a3a593a4949f3f1c56
