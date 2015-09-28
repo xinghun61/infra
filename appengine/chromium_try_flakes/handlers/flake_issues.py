@@ -129,7 +129,8 @@ class UpdateIssue(webapp2.RequestHandler):
 class CreateIssue(webapp2.RequestHandler):
   def _get_googler_mapping(self):
     # Get and parse Googler mapping.
-    content = urlfetch.fetch(GOOGLER_MAPPING_URL).content
+    content = urlfetch.fetch(GOOGLER_MAPPING_URL,
+                             follow_redirects=False).content
     lines = [line.split(',') for line in content.splitlines()]
     return {google_email: chromium_email
             for chromium_email, google_email in lines}
