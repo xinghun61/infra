@@ -25,9 +25,15 @@ type hostLatestState struct {
 	State string
 }
 
+type brokenSlave struct {
+	Host      string
+	ErrorType string
+}
+
 func init() {
 	http.HandleFunc("/api/reportState", reportState)
 	http.HandleFunc("/api/pending", pendingHosts)
+	http.HandleFunc("/api/reportBrokenSlave", reportBrokenSlave)
 }
 
 func getFormParam(r *http.Request, paramName string) (string, error) {
@@ -112,4 +118,30 @@ func pendingHosts(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintln(w, string(out))
+}
+
+func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse request parameters", http.StatusBadRequest)
+		return
+	}
+
+	host, err := getFormParam(r, "host")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	error_type, err := getFormParam(r, "error_type")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	bs := brokenSlave{host, error_type}
+	if _, err := datastore.Put(c, hsrKey, &hsr); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
