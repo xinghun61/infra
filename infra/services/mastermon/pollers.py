@@ -129,8 +129,12 @@ class FilePoller(Poller):
   endpoint = 'FILE'
   field_keys = ('builder', 'slave', 'result', 'project_id')
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
+  # A custom bucketer with 12% resolution in the range of 1..10**5,
+  # better suited for build cycle times.
+  bucketer = ts_mon.GeometricBucketer(
+      growth_factor=10**0.05, num_finite_buckets=100)
   cycle_times = ts_mon.CumulativeDistributionMetric(
-      'buildbot/master/builders/builds/durations')
+      'buildbot/master/builders/builds/durations', bucketer=bucketer)
 
   def poll(self):
     LOGGER.info('Collecting results from %s', self._url)
