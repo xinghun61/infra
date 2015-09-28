@@ -58,7 +58,7 @@ var (
 			`(?:[\+-]\d{2}:\d{2})?` + // Optional timezone offset
 			`)` +
 			` (\d+)` + // PID
-			` (\d+)` + // TID
+			` (-?\d+)` + // TID
 			` ([^:]+):(\d+)` + // Module and line number
 			`\] (.*)`) // Message
 

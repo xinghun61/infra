@@ -74,6 +74,19 @@ func TestInfraLogsParser(t *testing.T) {
 				Message:   "Hello world",
 			},
 		},
+		{
+			line:          "[C2015-09-22T01:02:03.000004-07:00 123 -456 foo.bar:789] Hello world",
+			wantSuccess:   true,
+			wantTimestamp: "2015-09-22T01:02:03.000004-07:00",
+			wantSeverity:  Critical,
+			wantPayload: infraLogsEntry{
+				ProcessID: 123,
+				ThreadID:  -456,
+				Module:    "foo.bar",
+				Line:      789,
+				Message:   "Hello world",
+			},
+		},
 	}
 
 	timeLayout := "2006-01-02T15:04:05.000000-07:00"
