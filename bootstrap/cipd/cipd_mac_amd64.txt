@@ -6,4 +6,4 @@
 # under that package name.
 
 # Proto3 Protocol Buffers generator (built from git rev 0e5686a7).
-infra/tools/protoc/linux-amd64      5a789bd289df1bc0c6f0dd5f863184e6d1f3badb
+infra/tools/protoc/mac-amd64      34b6cb7a946e3b588dc6ef8a69dae0ae533575d3
