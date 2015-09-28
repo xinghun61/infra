@@ -59,9 +59,9 @@ class IssueTrackerAPI(object):
     self.project_name = project_name
     discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
                      '{apiVersion}/rest')
-    self.client = _buildClient(discovery_url,
+    self.client = _buildClient('projecthosting', 'v2',
                                _createHttpObject(PROJECT_HOSTING_SCOPE),
-                               'projecthosting', 'v2')
+                               discovery_url)
 
 
   def create(self, issue, send_email=True):
@@ -69,18 +69,17 @@ class IssueTrackerAPI(object):
     tmp = self.client.issues().insert(projectId=self.project_name,
                                       sendEmail=send_email,
                                       body={'summary': issue.summary,
-                                            'description': issue.body,
+                                            'description': issue.description,
                                             'status': issue.status,
                                             'owner': {'name': issue.owner},
                                             'labels': issue.labels,
                                             'cc': cc}).execute()
     issue.id = int(tmp['id'])
     issue.dirty = False
-    issue.new = False
     return issue
 
   def update(self, issue, comment=None, send_email=True):
-    if not issue.dirty:
+    if not issue.dirty and not comment:
       return issue
     if not issue.owner:
       # workaround for existing bug:

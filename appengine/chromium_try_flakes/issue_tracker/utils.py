@@ -3,6 +3,8 @@
 import datetime
 
 def parseDateTime(dt_str):
+  if dt_str is None:
+    return None
   dt, _, us = dt_str.partition(".")
   dt = datetime.datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
   if us:

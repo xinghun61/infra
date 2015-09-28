@@ -7,47 +7,47 @@ from issue_tracker.utils import parseDateTime
 
 class Issue(object):
   def __init__(self, issue_entry):
-    self.id = issue_entry['id']
+    self.id = issue_entry.get('id')
 
     self.blocked_on = [e['issueId'] for e in issue_entry.get('blockedOn', [])]
-    self.blocking =  [e['issueId'] for e in issue_entry.get('blocking', [])]
+    self.blocking = [e['issueId'] for e in issue_entry.get('blocking', [])]
 
     self.merged_into = issue_entry.get('mergedInto', {}).get('issueId')
 
-    self.created = parseDateTime(issue_entry['published'])
-    self.updated = parseDateTime(issue_entry['updated'])
+    self.created = parseDateTime(issue_entry.get('published'))
+    self.updated = parseDateTime(issue_entry.get('updated'))
 
     if issue_entry.get('closed', []):
       self.closed = parseDateTime(issue_entry.get('closed', []))
     else:
       self.closed = None
 
-    self.summary = issue_entry['summary']
+    self.summary = issue_entry.get('summary')
+    self.description = issue_entry.get('description')
     self.reporter = issue_entry.get('author', {}).get('name')
     self.owner = issue_entry.get('owner', {}).get('name')
     self.status = issue_entry.get('status')
-    self.stars = issue_entry['stars']
-    self.open = issue_entry['state'] == 'open'
+    self.stars = issue_entry.get('stars')
+    self.open = issue_entry.get('state') == 'open'
     self.labels = ChangeTrackingList(issue_entry.get('labels', []))
     self.cc = ChangeTrackingList([e['name'] for e in issue_entry.get('cc', [])])
 
     self.dirty = False
-    self.new = False
-    self.changed = set()
-
-  def __getattribute__(self, item):
-    return object.__getattribute__(self, item)
 
   def __setattr__(self, name, value):
-    self.__dict__[name] = value
-    self.changed.add(name)
-    self.dirty = True
+    self.__dict__.setdefault('dirty', False)
+    self.__dict__.setdefault('changed', set())
 
     # If dirty flag was reset to false.
     if name == 'dirty' and not value:
-      self.labels.reset()
-      self.cc.reset()
-      self.changed.clear()
+      self.__dict__['labels'].reset()
+      self.__dict__['cc'].reset()
+      self.__dict__['changed'].clear()
+      self.__dict__['dirty'] = value
+    else:
+      self.__dict__[name] = value
+      self.__dict__['dirty'] = True
+      self.__dict__['changed'].add(name)
 
   def addLabel(self, label):
     if not self.hasLabel(label):

@@ -55,5 +55,8 @@ class Flake(ndb.Model):
   issue_id = ndb.IntegerProperty(default=0)
   issue_last_updated = ndb.DateTimeProperty(default=datetime.datetime.min)
 
+  # Stores previous issue ID when the issue need to be re-created.
+  old_issue_id = ndb.IntegerProperty(default=0)
+
   # Number of occurences that were already reported on the issue.
   num_reported_flaky_runs = ndb.IntegerProperty(default=0)
