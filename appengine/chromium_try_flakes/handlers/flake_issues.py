@@ -109,7 +109,7 @@ class UpdateIssue(webapp2.RequestHandler):
         # to reduce flakiness to propagate and take effect. If after one week we
         # still see flakiness, we will create a new issue.
         now = datetime.datetime.utcnow()
-        if issue.update < now - datetime.timedelta(weeks=1):
+        if issue.updated < now - datetime.timedelta(weeks=1):
           self.recreate_issue_for_flake(flake)
         return
 
