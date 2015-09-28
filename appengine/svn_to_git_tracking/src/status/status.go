@@ -139,8 +139,10 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	c := appengine.NewContext(r)
 	bs := brokenSlave{host, error_type}
-	if _, err := datastore.Put(c, hsrKey, &hsr); err != nil {
+	bsKey := datastore.NewIncompleteKey(c, "brokenSlave", nil)
+	if _, err := datastore.Put(c, bsKey, &bs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
