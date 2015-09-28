@@ -95,12 +95,6 @@ class VarzPollerTest(unittest.TestCase):
             'pending_builds': 3,
             'state': "offline",
             'total_slaves': 4,
-            'recent_builds_by_status': {
-              '0': 1,
-              '2': 2,
-              '4': 3,
-              'building': 4,
-            },
             'recent_finished_build_times': [1, 2, 3],
             'recent_successful_build_times': [1, 2, 3],
           },
@@ -110,14 +104,6 @@ class VarzPollerTest(unittest.TestCase):
             'pending_builds': 7,
             'state': "idle",
             'total_slaves': 8,
-            'recent_builds_by_status': {
-              '0': 1,
-              '2': 2,
-              '4': 3,
-              'building': 4,
-            },
-            'recent_finished_build_times': [1, 2, 3],
-            'recent_successful_build_times': [1, 2, 3],
           },
         },
     })
@@ -134,16 +120,6 @@ class VarzPollerTest(unittest.TestCase):
     self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual(8, p.total.get({'builder': 'bar', 'x': 'y'}))
     self.assertEqual('idle', p.state.get({'builder': 'bar', 'x': 'y'}))
-
-    self.assertEqual(1, p.recent_builds.get(
-        {'builder': 'foo', 'x': 'y', 'status': 'success'}))
-    self.assertEqual(4, p.recent_builds.get(
-        {'builder': 'foo', 'x': 'y', 'status': 'building'}))
-
-    self.assertIsNotNone(p.recent_finished_build_times.get(
-        {'builder': 'foo', 'x': 'y'}))
-    self.assertIsNotNone(p.recent_successful_build_times.get(
-        {'builder': 'foo', 'x': 'y'}))
 
   def test_response_with_missing_data(self):
     p = pollers.VarzPoller('', {'x': 'y'})

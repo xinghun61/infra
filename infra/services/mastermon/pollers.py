@@ -89,14 +89,6 @@ class VarzPoller(Poller):
   state = ts_mon.StringMetric('buildbot/master/builders/state')
   total = ts_mon.GaugeMetric('buildbot/master/builders/total_slaves')
 
-  recent_builds = ts_mon.GaugeMetric(
-      'buildbot/master/builders/recent_builds')
-
-  recent_successful_build_times = ts_mon.NonCumulativeDistributionMetric(
-      'buildbot/master/builders/recent_successful_build_times')
-  recent_finished_build_times = ts_mon.NonCumulativeDistributionMetric(
-      'buildbot/master/builders/recent_finished_build_times')
-
   def handle_response(self, data):
     self.uptime.set(data['server_uptime'], fields=self.fields())
     self.accepting_builds.set(data['accepting_builds'], self.fields())
@@ -111,23 +103,6 @@ class VarzPoller(Poller):
           builder_info.get('pending_builds', 0), fields=fields)
       self.state.set(builder_info.get('state', 'unknown'), fields=fields)
       self.total.set(builder_info.get('total_slaves', 0), fields=fields)
-
-      for status, builds in builder_info.get(
-          'recent_builds_by_status', {}).iteritems():
-        recent_builds_fields = copy.copy(fields)
-        recent_builds_fields['status'] = STATUS_TO_STRING.get(
-            str(status), str(status))
-        self.recent_builds.set(builds, fields=recent_builds_fields)
-
-      successful_dist = ts_mon.Distribution(ts_mon.GeometricBucketer())
-      for duration in builder_info.get('recent_successful_build_times', []):
-        successful_dist.add(duration)
-      self.recent_successful_build_times.set(successful_dist, fields=fields)
-
-      finished_dist = ts_mon.Distribution(ts_mon.GeometricBucketer())
-      for duration in builder_info.get('recent_finished_build_times', []):
-        finished_dist.add(duration)
-      self.recent_finished_build_times.set(finished_dist, fields=fields)
 
 
 def safe_remove(filename):
