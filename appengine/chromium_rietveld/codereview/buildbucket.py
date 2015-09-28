@@ -246,7 +246,7 @@ def schedule(issue, patchset_id, builds):
       'patch_storage': 'rietveld',
       'patchset': patchset_id,
       'project': issue.project,
-      'rietveld': self_hostname,
+      'rietveld': 'https://%s' % self_hostname,
     })
     req['builds'].append({
         'bucket': 'master.%s' % build['master'],
