@@ -1261,6 +1261,51 @@ func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts Ta
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'set-tag' subcommand.
+
+var cmdSetTag = &subcommands.Command{
+	UsageLine: "set-tag <package or package prefix> -tag=key:value [options]",
+	ShortDesc: "tags specific package in the package repository",
+	LongDesc:  "Tags specific package in the package repository.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &setTagRun{}
+		c.registerBaseFlags()
+		c.TagsOptions.registerFlags(&c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>",
+			"package version to resolve. Could also be itself a tag or ref")
+		return c
+	},
+}
+
+type setTagRun struct {
+	Subcommand
+	TagsOptions
+	ServiceOptions
+
+	version string
+}
+
+func (c *setTagRun) Run(a subcommands.Application, args []string) int {
+	if !c.init(args, 1, 1) {
+		return 1
+	}
+	return c.done(tagPackage(args[0], c.version, c.TagsOptions, c.ServiceOptions))
+}
+
+func tagPackage(packageName, version string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
+	client, err := serviceOpts.makeCipdClient("")
+	if err != nil {
+		return common.Pin{}, err
+	}
+	pin, err := client.ResolveVersion(packageName, version)
+	if err != nil {
+		return common.Pin{}, err
+	}
+	return pin, client.AttachTagsWhenReady(pin, tagsOpts.tags)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Main.
 
 var application = &subcommands.DefaultApplication{
@@ -1281,6 +1326,7 @@ var application = &subcommands.DefaultApplication{
 		cmdEnsure,
 		cmdResolve,
 		cmdSetRef,
+		cmdSetTag,
 
 		// ACLs.
 		cmdListACL,
