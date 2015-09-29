@@ -34,6 +34,7 @@ func init() {
 	http.HandleFunc("/api/reportState", reportState)
 	http.HandleFunc("/api/pending", pendingHosts)
 	http.HandleFunc("/api/reportBrokenSlave", reportBrokenSlave)
+	http.HandleFunc("/api/broken", brokenSlaves)
 }
 
 func getFormParam(r *http.Request, paramName string) (string, error) {
@@ -146,4 +147,34 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func brokenSlaves(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	q := datastore.NewQuery("brokenSlave").Project("Host", "ErrorType").Distinct()
+	var brokenSlaves []brokenSlave
+	_, err := q.GetAll(c, &brokenSlaves)
+	if err != nil {
+		c.Errorf("Failed to get broken slaves: %s", err)
+		http.Error(w, "Failed to get broken slaves", http.StatusInternalServerError)
+		return
+	}
+
+	slaveErrors := make(map[string][]string)
+	for _, brokenSlave := range brokenSlaves {
+		if _, ok := slaveErrors[brokenSlave.ErrorType]; !ok {
+			slaveErrors[brokenSlave.ErrorType] = []string{}
+		}
+		slaveErrors[brokenSlave.ErrorType] = append(slaveErrors[brokenSlave.ErrorType], brokenSlave.Host)
+	}
+
+	out, err := json.Marshal(slaveErrors)
+	if err != nil {
+		c.Errorf("Failed to encode list of slave errors as JSON: %s", err)
+		http.Error(w, "Failed to encode list of slave errors as JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintln(w, string(out))
 }

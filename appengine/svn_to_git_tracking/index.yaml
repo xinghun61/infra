@@ -4,3 +4,7 @@ indexes:
   - name: State
   - name: Reported
     direction: desc
+- kind: brokenSlave
+  properties:
+  - name: Host
+  - name: ErrorType
