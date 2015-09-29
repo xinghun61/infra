@@ -16,10 +16,9 @@ class DeviceTargetTest(unittest.TestCase):
 
   def test_populate_target(self):
     pb = metrics_pb2.MetricsData()
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     t._populate_target_pb(pb)
     self.assertEquals(pb.network_device.metro, 'reg')
-    self.assertEquals(pb.network_device.role, 'role')
     self.assertEquals(pb.network_device.hostgroup, 'net')
     self.assertEquals(pb.network_device.hostname, 'host')
     self.assertEquals(pb.network_device.realm, 'ACQ_CHROME')

@@ -58,31 +58,105 @@ class MetricTest(MetricTestBase):
     self.assertEquals(len(e.exception.fields), 8)
 
   def test_serialize(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.StringMetric('test', target=t, fields={'bar': 1})
     m.set('val', fields={'baz': False})
     p = metrics_pb2.MetricsCollection()
     m.serialize_to(p)
-    return str(p).splitlines()
+    e = textwrap.dedent('''\
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "bar"
+            type: INT
+            int_value: 1
+          }
+          fields {
+            name: "baz"
+            type: BOOL
+            bool_value: false
+          }
+          string_value: "val"
+        }
+    ''')
+    self.assertEquals(str(p), e)
 
   def test_serialize_multiple_values(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.StringMetric('test', target=t)
     m.set('val1', fields={'foo': 1})
     m.set('val2', fields={'foo': 2})
     p = metrics_pb2.MetricsCollection()
     loop_action = mock.Mock()
     m.serialize_to(p, loop_action=loop_action)
+    e = textwrap.dedent('''\
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "foo"
+            type: INT
+            int_value: 2
+          }
+          string_value: "val2"
+        }
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          fields {
+            name: "foo"
+            type: INT
+            int_value: 1
+          }
+          string_value: "val1"
+        }
+    ''')
+    self.assertEquals(str(p), e)
     self.assertEquals(2, loop_action.call_count)
-    return str(p).splitlines()
 
   def test_serialize_default_target(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.StringMetric('test')
     m.set('val')
     p = metrics_pb2.MetricsCollection()
     m.serialize_to(p, default_target=t)
-    return str(p).splitlines()
+    e = textwrap.dedent('''\
+        data {
+          name: "test"
+          metric_name_prefix: "/chrome/infra/"
+          network_device {
+            alertable: true
+            realm: "ACQ_CHROME"
+            metro: "reg"
+            hostname: "host"
+            hostgroup: "net"
+          }
+          string_value: "val"
+        }
+    ''')
+    self.assertEquals(str(p), e)
 
   def test_serialize_no_target(self):
     m = metrics.StringMetric('test')
@@ -92,7 +166,7 @@ class MetricTest(MetricTestBase):
       m.serialize_to(p)
 
   def test_serialize_too_many_fields(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.StringMetric('test', target=t,
                             fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
     m.set('val', fields={'e': 5, 'f': 6, 'g': 7})
@@ -264,7 +338,7 @@ class CounterMetricTest(MetricTestBase):
     self.assertEquals(1, m.get({'foo': 'baz'}))
 
   def test_start_timestamp(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.CounterMetric(
         'test', target=t, fields={'foo': 'bar'}, time_fn=lambda: 1234)
     m.increment()
@@ -336,7 +410,7 @@ class CumulativeMetricTest(MetricTestBase):
       m.set(object())
 
   def test_start_timestamp(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.CumulativeMetric(
         'test', target=t, fields={'foo': 'bar'}, time_fn=lambda: 1234)
     m.set(3.14)
@@ -540,7 +614,7 @@ class DistributionMetricTest(MetricTestBase):
       m.set('foo')
 
   def test_start_timestamp(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
+    t = targets.DeviceTarget('reg', 'net', 'host')
     m = metrics.CumulativeDistributionMetric(
         'test', target=t, time_fn=lambda: 1234)
     m.add(1)

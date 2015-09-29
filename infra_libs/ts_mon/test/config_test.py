@@ -55,7 +55,7 @@ class GlobalsTest(auto_stub.TestCase):
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
-    fake_target.assert_called_once_with('reg', '', '1', 'slave1-a1')
+    fake_target.assert_called_once_with('reg', '1', 'slave1-a1')
     self.assertIs(interface.state.default_target, singleton)
     self.assertEquals(args.ts_mon_flush, 'auto')
     self.assertIsNotNone(interface.state.flush_thread)
@@ -79,7 +79,7 @@ class GlobalsTest(auto_stub.TestCase):
         '--ts-mon-endpoint',
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage'])
     config.process_argparse_options(args)
-    fake_target.assert_called_once_with('reg', '', '1', 'slave1-a1')
+    fake_target.assert_called_once_with('reg', '1', 'slave1-a1')
 
   @mock.patch('requests.get')
   @mock.patch('socket.getfqdn')
@@ -104,7 +104,7 @@ class GlobalsTest(auto_stub.TestCase):
         'https://www.googleapis.com/acquisitions/v1_mon_shared/storage',
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
-    fake_target.assert_called_once_with('', '', '', 'foo')
+    fake_target.assert_called_once_with('', '', 'foo')
     self.assertIs(interface.state.default_target, singleton)
 
   @mock.patch('socket.getfqdn')
@@ -200,11 +200,10 @@ class GlobalsTest(auto_stub.TestCase):
     args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
                          '--ts-mon-target-type', 'device',
                          '--ts-mon-device-region', 'reg',
-                         '--ts-mon-device-role', 'role',
                          '--ts-mon-device-network', 'net',
                          '--ts-mon-device-hostname', 'host'])
     config.process_argparse_options(args)
-    fake_target.assert_called_once_with('reg', 'role', 'net', 'host')
+    fake_target.assert_called_once_with('reg', 'net', 'host')
     self.assertIs(interface.state.default_target, singleton)
 
   @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor')
