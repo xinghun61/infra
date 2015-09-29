@@ -123,6 +123,10 @@ def add_argparse_options(parser):
       default=region,
       help='name of the region this devices lives in. (default: %(default)s)')
   parser.add_argument(
+      '--ts-mon-device-role',
+      default='default',
+      help='Role of the device. (default: "%(default)s")')
+  parser.add_argument(
       '--ts-mon-device-network',
       default=network,
       help='name of the network this device is connected to. '
@@ -203,6 +207,7 @@ def process_argparse_options(args):
   if args.ts_mon_target_type == 'device':
     interface.state.default_target = targets.DeviceTarget(
         args.ts_mon_device_region,
+        args.ts_mon_device_role,
         args.ts_mon_device_network,
         args.ts_mon_device_hostname)
   if args.ts_mon_target_type == 'task':  # pragma: no cover

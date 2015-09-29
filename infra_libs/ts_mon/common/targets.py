@@ -25,7 +25,7 @@ class Target(object):
 class DeviceTarget(Target):
   """Monitoring interface class for monitoring specific hosts or devices."""
 
-  def __init__(self, region, network, hostname):
+  def __init__(self, region, role, network, hostname):
     """Create a Target object exporting info about a specific device.
 
     Args:
@@ -35,6 +35,7 @@ class DeviceTarget(Target):
     """
     super(DeviceTarget, self).__init__()
     self._region = region
+    self._role = role
     self._network = network
     self._hostname = hostname
     self._realm = 'ACQ_CHROME'
@@ -48,6 +49,7 @@ class DeviceTarget(Target):
     """
     # Note that this disregards the pop, asn, role, and vendor fields.
     metric.network_device.metro = self._region
+    metric.network_device.role = self._role
     metric.network_device.hostgroup = self._network
     metric.network_device.hostname = self._hostname
     metric.network_device.realm = self._realm
