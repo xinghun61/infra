@@ -70,8 +70,8 @@ class UpdateIssue(webapp2.RequestHandler):
     now = datetime.datetime.utcnow()
     flake = ndb.Key(urlsafe=urlsafe_key).get()
 
-    # Update issues at most once an hour.
-    if flake.issue_last_updated > now - datetime.timedelta(hours=1):
+    # Update issues at most once a day.
+    if flake.issue_last_updated > now - datetime.timedelta(days=1):
       return
 
     # Only update issues if there are new flaky runs.
