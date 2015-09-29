@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 from multiprocessing.pool import ThreadPool
 
@@ -314,6 +315,15 @@ class PackageBundle(object):
         stderr=err)
 
 
+def reinstall_packages(packages, silent=False):
+  """Rebuilds and reinstalls all given packages."""
+  proc = subprocess.Popen(
+      ['go', 'install', '-a'] + sorted(packages),
+      stdout=subprocess.PIPE if silent else None,
+      stderr=subprocess.PIPE if silent else None)
+  proc.communicate()
+
+
 def run_tests(package_root, coverage_dir):
   """Runs an equivalent of 'go test <package_root>/...'.
 
@@ -351,6 +361,18 @@ def run_tests(package_root, coverage_dir):
     else:
       packages.append(p)
 
+  # Silently rebuild everything (in particular recursively imported packages
+  # from non-main GOPATH). Do not abort here yet on failure, since we want to
+  # split failures by packages (it is done below). Note that we issue a full
+  # rebuild (not just clean), because otherwise parallel 'go test' calls below
+  # will bump into each other while trying to rebuild commonly references
+  # dependencies.
+  print 'Rebuilding dependencies...'
+  started = time.time()
+  reinstall_packages(skipped + packages, silent=True)
+  print 'Finished in %.1f sec.' % (time.time() - started)
+  print
+
   if skipped:
     print 'Build-only (see "skip_testing" in *.infra_testing):'
     for p in skipped:
@@ -361,9 +383,6 @@ def run_tests(package_root, coverage_dir):
     print 'About to run tests for: '
     for p in packages:
       print '    %s' % p
-  else:
-    print 'No tests to run'
-    return 0
   print '-' * 80
 
   # TODO(vadimsh): Windows seems to have problems building & testing go packages
