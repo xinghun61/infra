@@ -163,6 +163,26 @@ Use roll_goop.py script. The full workflow:
     git cl upload
     git cl try -m tryserver.infra -b "Infra Win Tester"
 
+If you suspect that some packages are no longer needed, you can run
+clean_goop.py script. It will detect potentially unused packages and print them.
+It's not fully trusted to work yet, and thus it's not used automatically.
+
+    ./env.py python clean_goop.py
+    <remove what it said to remove>
+
+    ./env.py goop update
+    git diff Goopfile.lock
+    <ensure packages are gone from Goopfile.lock>
+
+    # Test that our code still works.
+    ./env.py go test github.com/luci/gae/...
+    ./env.py go test github.com/luci/luci-go/...
+    ./env.py go test infra/...
+
+Note: both roll_goop.py and clean_goop.py have lists of exceptional packages
+hardcoded in them. If you encounter some stubborn package that is handled badly
+by these scripts, consider adding it to the exceptions.
+
 
 ## Git mirrors for dependencies
 
