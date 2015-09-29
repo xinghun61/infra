@@ -1,13 +1,4 @@
 dispatch:
 
-- url: "*/monitoring"
-  module: monitoring
-
-- url: "*/monitoring/*"
-  module: monitoring
-
-- url: "*/_ah/start"
-  module: monitoring
-
 - url: "*/*"
   module: default
