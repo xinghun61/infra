@@ -15,7 +15,9 @@ import tempfile
 import urllib2
 import zipfile
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+URLOPEN_RETRIES = 5
 
 
 def get_gae_sdk_version(gae_path):
@@ -33,7 +35,19 @@ def get_latest_gae_sdk_url(name):
   """Returns the url to get the latest GAE SDK and its version."""
   url = 'https://cloud.google.com/appengine/downloads.html'
   logging.debug('%s', url)
-  content = urllib2.urlopen(url).read()
+
+  for retry in xrange(URLOPEN_RETRIES):
+    try:
+      content = urllib2.urlopen(url).read()
+      break
+    except urllib2.HttpError as e:
+      if e.code == 500 and retry < URLOPEN_RETRIES - 1:
+        delay = 2 ** retry
+        logging.info('Failed to get %s. Retrying after %d seconds.', url, delay)
+        time.sleep(delay)
+      else:
+        raise e
+
   regexp = (
       r'(https\:\/\/storage.googleapis.com\/appengine-sdks\/featured\/'
       + re.escape(name) + r'[0-9\.]+?\.zip)')
