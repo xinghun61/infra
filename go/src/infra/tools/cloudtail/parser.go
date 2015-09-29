@@ -5,6 +5,7 @@
 package cloudtail
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -88,20 +89,16 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 			return nil
 		}
 
+		severity := matches[1]
 		processID, _ := strconv.Atoi(matches[3])
-		threadID, _ := strconv.Atoi(matches[4])
+		module := matches[5]
 		line, _ := strconv.Atoi(matches[6])
+		message := matches[7]
 
 		return &Entry{
-			Timestamp: timestamp,
-			Severity:  infraLogsSeverity[matches[1]],
-			StructPayload: &infraLogsEntry{
-				ProcessID: processID,
-				ThreadID:  threadID,
-				Module:    matches[5],
-				Line:      line,
-				Message:   matches[7],
-			},
+			Timestamp:   timestamp,
+			Severity:    infraLogsSeverity[severity],
+			TextPayload: fmt.Sprintf("%d %s:%d] %s", processID, module, line, message),
 		}
 	}
 	return nil

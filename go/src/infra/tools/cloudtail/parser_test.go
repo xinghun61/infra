@@ -5,7 +5,6 @@
 package cloudtail
 
 import (
-	"reflect"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -42,7 +41,7 @@ func TestInfraLogsParser(t *testing.T) {
 		wantSuccess   bool
 		wantTimestamp string
 		wantSeverity  Severity
-		wantPayload   infraLogsEntry
+		wantPayload   string
 	}{
 		{
 			line:        "not a valid log line",
@@ -53,39 +52,21 @@ func TestInfraLogsParser(t *testing.T) {
 			wantSuccess:   true,
 			wantTimestamp: "2015-09-22T01:02:03.000004+00:00",
 			wantSeverity:  Info,
-			wantPayload: infraLogsEntry{
-				ProcessID: 123,
-				ThreadID:  456,
-				Module:    "__main__",
-				Line:      789,
-				Message:   "Hello world",
-			},
+			wantPayload:   "123 __main__:789] Hello world",
 		},
 		{
 			line:          "[C2015-09-22T01:02:03.000004-07:00 123 456 foo.bar:789] Hello world",
 			wantSuccess:   true,
 			wantTimestamp: "2015-09-22T01:02:03.000004-07:00",
 			wantSeverity:  Critical,
-			wantPayload: infraLogsEntry{
-				ProcessID: 123,
-				ThreadID:  456,
-				Module:    "foo.bar",
-				Line:      789,
-				Message:   "Hello world",
-			},
+			wantPayload:   "123 foo.bar:789] Hello world",
 		},
 		{
 			line:          "[C2015-09-22T01:02:03.000004-07:00 123 -456 foo.bar:789] Hello world",
 			wantSuccess:   true,
 			wantTimestamp: "2015-09-22T01:02:03.000004-07:00",
 			wantSeverity:  Critical,
-			wantPayload: infraLogsEntry{
-				ProcessID: 123,
-				ThreadID:  -456,
-				Module:    "foo.bar",
-				Line:      789,
-				Message:   "Hello world",
-			},
+			wantPayload:   "123 foo.bar:789] Hello world",
 		},
 	}
 
@@ -102,8 +83,8 @@ func TestInfraLogsParser(t *testing.T) {
 			t.Errorf("%d: ParseLogLine('%s').Timestamp -> %v, want %v", i, test.line, got.Timestamp, test.wantTimestamp)
 		} else if test.wantSuccess && got.Severity != test.wantSeverity {
 			t.Errorf("%d: ParseLogLine('%s').Severity -> %v, want %v", i, test.line, got.Severity, test.wantSeverity)
-		} else if test.wantSuccess && !reflect.DeepEqual(*got.StructPayload.(*infraLogsEntry), test.wantPayload) {
-			t.Errorf("%d: ParseLogLine('%s').StructPayload -> %v, want %v", i, test.line, *got.StructPayload.(*infraLogsEntry), test.wantPayload)
+		} else if test.wantSuccess && got.TextPayload != test.wantPayload {
+			t.Errorf("%d: ParseLogLine('%s').TextPayload -> %v, want %v", i, test.line, got.TextPayload, test.wantPayload)
 		}
 	}
 }
