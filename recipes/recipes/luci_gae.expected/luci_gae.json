@@ -24,7 +24,8 @@
       "infra/go/src/github.com/luci/gae@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
       "--revision",
       "infra/go/src/github.com/luci/luci-go@origin/master",
-      "--force"
+      "--force",
+      "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "bot_update",
@@ -32,6 +33,12 @@
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/gae\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/github.com/luci/gae.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/github.com/luci/gae\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",

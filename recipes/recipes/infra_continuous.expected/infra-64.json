@@ -20,7 +20,8 @@
       "/path/to/tmp/json",
       "--revision",
       "infra@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
-      "--force"
+      "--force",
+      "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "bot_update",
@@ -28,6 +29,12 @@
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",

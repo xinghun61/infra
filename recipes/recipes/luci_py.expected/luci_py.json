@@ -22,7 +22,8 @@
       "infra@origin/master",
       "--revision",
       "infra/luci@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
-      "--force"
+      "--force",
+      "--output_manifest"
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "bot_update",
@@ -30,6 +31,12 @@
       "@@@STEP_TEXT@Some step text@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/luci\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/luci.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"2fed50a953d2415fd4185c8fb72bf4c9808a597e\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
