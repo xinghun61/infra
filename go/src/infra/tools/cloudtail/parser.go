@@ -36,9 +36,9 @@ func (c LogParserChain) ParseLogLine(line string) *Entry {
 
 // StdParser returns a parser that recognizes common types of logs.
 func StdParser() LogParser {
-	// TODO(vadimsh): Recognize python logs, master logs, etc.
 	return LogParserChain{
 		&infraLogsParser{},
+		&twistedLogsParser{},
 	}
 }
 
@@ -99,6 +99,36 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 			Timestamp:   timestamp,
 			Severity:    infraLogsSeverity[severity],
 			TextPayload: fmt.Sprintf("%d %s:%d] %s", processID, module, line, message),
+		}
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	twistedLogsRe = regexp.MustCompile(
+		`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[\+-]\d{4})` + // YYYY-MM-DD HH:MM:SS+ZZZZ
+			` \[([^\]]+)\]` + // System
+			` (.*)`) // Message
+)
+
+type twistedLogsParser struct{}
+
+func (p *twistedLogsParser) ParseLogLine(line string) *Entry {
+	if matches := twistedLogsRe.FindStringSubmatch(line); matches != nil {
+		timestamp, err := time.Parse("2006-01-02 15:04:05-0700", matches[1])
+		if err != nil {
+			return nil
+		}
+
+		system := matches[2]
+		message := matches[3]
+
+		return &Entry{
+			Timestamp:   timestamp,
+			Severity:    Default,
+			TextPayload: fmt.Sprintf("%s] %s", system, message),
 		}
 	}
 	return nil
