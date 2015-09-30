@@ -69,6 +69,14 @@ Infra members go on Envoys from time to time.  This is our current schedule:
 * Munich: 10/12 - 10/16 estaab@
 * Sydney: 11/2 - 11/13 hinoka@
 * Munich: 11/16 - 11/20 pgervais@
+* Stockholm: 10/19 - 10/23 stip@
+
+During visit days, infra memeber generally are available to answer long standing
+questions, listen to gripes, and give a tech talk (look for it on your office
+mailing list!).
+
+If you would like an infra member to visit your office, drop a line to
+chrome-infra@, we love visiting!
 
 ## More Information
 
