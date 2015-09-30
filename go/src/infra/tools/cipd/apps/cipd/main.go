@@ -42,6 +42,20 @@ var log = gologger.Get()
 ////////////////////////////////////////////////////////////////////////////////
 // Common subcommand functions.
 
+// pinInfo contains information about single package pin inside some site root,
+// or an error related to it. It is passed through channels when running batch
+// operations and dumped to JSON results file in doneWithPins.
+type pinInfo struct {
+	// Pkg is package name. Always set.
+	Pkg string `json:"package"`
+	// Pin is not nil if pin related operation succeeded. It contains instanceID.
+	Pin *common.Pin `json:"pin,omitempty"`
+	// Tracking is what ref is being tracked by that package in the site root.
+	Tracking string `json:"tracking,omitempty"`
+	// Err is not empty if pin related operation failed. Pin is nil in that case.
+	Err string `json:"error,omitempty"`
+}
+
 // Subcommand is a base of all CIPD subcommands. It defines some common flags,
 // such as logging and JSON output parameters.
 type Subcommand struct {
@@ -66,14 +80,20 @@ func (c *Subcommand) init(args []string, minPosCount, maxPosCount int) bool {
 		c.printError(makeCLIError("unexpected arguments %v", args))
 		return false
 	}
-	if len(args) < minPosCount || len(args) > maxPosCount {
+	if len(args) < minPosCount || (maxPosCount >= 0 && len(args) > maxPosCount) {
 		var err error
 		if minPosCount == maxPosCount {
 			err = makeCLIError("expecting %d positional argument, got %d instead", minPosCount, len(args))
 		} else {
-			err = makeCLIError(
-				"expecting from %d to %d positional arguments, got %d instead",
-				minPosCount, maxPosCount, len(args))
+			if maxPosCount >= 0 {
+				err = makeCLIError(
+					"expecting from %d to %d positional arguments, got %d instead",
+					minPosCount, maxPosCount, len(args))
+			} else {
+				err = makeCLIError(
+					"expecting at least %d positional arguments, got %d instead",
+					minPosCount, len(args))
+			}
 		}
 		c.printError(err)
 		return false
@@ -114,7 +134,7 @@ func (c *Subcommand) printError(err error) {
 		fmt.Fprintf(os.Stderr, "Bad command line: %s.\n\n", err)
 		c.Flags.Usage()
 	} else {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Error: %s.\n", err)
 	}
 }
 
@@ -168,6 +188,21 @@ func (c *Subcommand) done(result interface{}, err error) int {
 		return 1
 	}
 	return 0
+}
+
+// doneWithPins is a handy shortcut that prints list of pinInfo and deduces
+// process exit code based on presence of errors there.
+func (c *Subcommand) doneWithPins(pins []pinInfo, err error) int {
+	if len(pins) == 0 {
+		fmt.Println("No packages.")
+	} else {
+		printPinsAndError(pins)
+	}
+	ret := c.done(pins, err)
+	if hasErrors(pins) && ret == 0 {
+		return 1
+	}
+	return ret
 }
 
 // commandLineError is used to tag errors related to CLI.
@@ -421,13 +456,6 @@ type batchOperation struct {
 	callback      func(pkg string) (common.Pin, error)
 }
 
-// pinOrError is passed through channels and also dumped to JSON results file.
-type pinOrError struct {
-	Pkg string      `json:"package"`
-	Pin *common.Pin `json:"pin,omitempty"`
-	Err string      `json:"error,omitempty"`
-}
-
 // expandPkgDir takes a package name or '<prefix>/' and returns a list
 // of matching packages (asking backend if necessary). Doesn't recurse, returns
 // only direct children.
@@ -454,7 +482,7 @@ func expandPkgDir(c cipd.Client, packagePrefix string) ([]string, error) {
 
 // performBatchOperation expands a package prefix into a list of packages and
 // calls callback for each of them (concurrently) gathering the results.
-func performBatchOperation(op batchOperation) ([]pinOrError, error) {
+func performBatchOperation(op batchOperation) ([]pinInfo, error) {
 	pkgs := op.packages
 	if len(pkgs) == 0 {
 		var err error
@@ -463,52 +491,57 @@ func performBatchOperation(op batchOperation) ([]pinOrError, error) {
 			return nil, err
 		}
 	}
-	return callConcurrently(pkgs, func(pkg string) pinOrError {
+	return callConcurrently(pkgs, func(pkg string) pinInfo {
 		pin, err := op.callback(pkg)
 		if err != nil {
-			return pinOrError{pkg, nil, err.Error()}
+			return pinInfo{pkg, nil, "", err.Error()}
 		}
-		return pinOrError{pkg, &pin, ""}
+		return pinInfo{pkg, &pin, "", ""}
 	}), nil
 }
 
-func callConcurrently(pkgs []string, callback func(pkg string) pinOrError) []pinOrError {
+func callConcurrently(pkgs []string, callback func(pkg string) pinInfo) []pinInfo {
 	// Push index through channel to make results ordered as 'pkgs'.
 	ch := make(chan struct {
 		int
-		pinOrError
+		pinInfo
 	})
 	for idx, pkg := range pkgs {
 		go func(idx int, pkg string) {
 			ch <- struct {
 				int
-				pinOrError
+				pinInfo
 			}{idx, callback(pkg)}
 		}(idx, pkg)
 	}
-	pins := make([]pinOrError, len(pkgs))
+	pins := make([]pinInfo, len(pkgs))
 	for i := 0; i < len(pkgs); i++ {
 		res := <-ch
-		pins[res.int] = res.pinOrError
+		pins[res.int] = res.pinInfo
 	}
 	return pins
 }
 
-func printPinsAndError(pins []pinOrError) {
+func printPinsAndError(pins []pinInfo) {
 	hasPins := false
 	hasErrors := false
 	for _, p := range pins {
-		if p.Err == "" {
-			hasPins = true
-		} else {
+		if p.Err != "" {
 			hasErrors = true
+		} else if p.Pin != nil {
+			hasPins = true
 		}
 	}
 	if hasPins {
-		fmt.Println("Instances:")
+		fmt.Println("Packages:")
 		for _, p := range pins {
-			if p.Err == "" {
+			if p.Err != "" || p.Pin == nil {
+				continue
+			}
+			if p.Tracking == "" {
 				fmt.Printf("  %s\n", p.Pin)
+			} else {
+				fmt.Printf("  %s (tracking %q)\n", p.Pin, p.Tracking)
 			}
 		}
 	}
@@ -516,13 +549,13 @@ func printPinsAndError(pins []pinOrError) {
 		fmt.Fprintln(os.Stderr, "Errors:")
 		for _, p := range pins {
 			if p.Err != "" {
-				fmt.Fprintf(os.Stderr, "  %s\n", p.Err)
+				fmt.Fprintf(os.Stderr, "  %s: %s.\n", p.Pkg, p.Err)
 			}
 		}
 	}
 }
 
-func hasErrors(pins []pinOrError) bool {
+func hasErrors(pins []pinInfo) bool {
 	for _, p := range pins {
 		if p.Err != "" {
 			return true
@@ -586,12 +619,15 @@ func buildAndUploadInstance(inputOpts InputOptions, refsOpts RefsOptions, tagsOp
 var cmdEnsure = &subcommands.Command{
 	UsageLine: "ensure [options]",
 	ShortDesc: "installs, removes and updates packages in one go",
-	LongDesc:  "Installs, removes and updates packages in one go.",
+	LongDesc: "Installs, removes and updates packages in one go.\n\n" +
+		"Supposed to be used from scripts and automation. Alternative to 'init', " +
+		"'install' and 'remove'. As such, it doesn't try to discover site root " +
+		"directory on its own.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensureRun{}
 		c.registerBaseFlags()
 		c.ServiceOptions.registerFlags(&c.Flags)
-		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to a installation site root directory.")
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to an installation site root directory.")
 		c.Flags.StringVar(&c.listFile, "list", "<path>", "A file with a list of '<package name> <version>' pairs.")
 		return c
 	},
@@ -659,16 +695,10 @@ func (c *resolveRun) Run(a subcommands.Application, args []string) int {
 	if !c.init(args, 1, 1) {
 		return 1
 	}
-	pins, err := resolveVersion(args[0], c.version, c.ServiceOptions)
-	printPinsAndError(pins)
-	ret := c.done(pins, err)
-	if hasErrors(pins) && ret == 0 {
-		return 1
-	}
-	return ret
+	return c.doneWithPins(resolveVersion(args[0], c.version, c.ServiceOptions))
 }
 
-func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) ([]pinOrError, error) {
+func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) ([]pinInfo, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return nil, err
@@ -714,16 +744,10 @@ func (c *setRefRun) Run(a subcommands.Application, args []string) int {
 	if len(c.refs) == 0 {
 		return c.done(nil, makeCLIError("at least one -ref must be provided"))
 	}
-	pins, err := setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions)
-	printPinsAndError(pins)
-	ret := c.done(pins, err)
-	if hasErrors(pins) && ret == 0 {
-		return 1
-	}
-	return ret
+	return c.doneWithPins(setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions))
 }
 
-func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) ([]pinOrError, error) {
+func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) ([]pinInfo, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return nil, err
@@ -775,8 +799,9 @@ func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts Ser
 
 var cmdListPackages = &subcommands.Command{
 	UsageLine: "ls [-r] [<prefix string>]",
-	ShortDesc: "lists matching packages",
-	LongDesc:  "List packages in the given path to which the user has access, optionally recursively.",
+	ShortDesc: "lists matching packages on the server",
+	LongDesc: "Queries the backend for a list of packages in the given path to " +
+		"which the user has access, optionally recursively.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &listPackagesRun{}
 		c.registerBaseFlags()
@@ -1047,7 +1072,7 @@ var cmdDeploy = &subcommands.Command{
 	CommandRun: func() subcommands.CommandRun {
 		c := &deployRun{}
 		c.registerBaseFlags()
-		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to a installation site root directory.")
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to an installation site root directory.")
 		return c
 	},
 }
@@ -1314,6 +1339,12 @@ var application = &subcommands.DefaultApplication{
 	Commands: []*subcommands.Command{
 		subcommands.CmdHelp,
 		cipd_lib.SubcommandVersion,
+
+		// User friendly subcommands that operates within a site root. Implemented
+		// in friendly.go.
+		cmdInit,
+		cmdInstall,
+		cmdInstalled,
 
 		// Authentication related commands.
 		authcli.SubcommandInfo(auth.Options{Logger: log}, "auth-info"),

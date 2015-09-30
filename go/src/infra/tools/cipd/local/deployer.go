@@ -105,7 +105,7 @@ func (d errDeployer) TempFile(prefix string) (*os.File, error)             { ret
 // Real deployer implementation.
 
 // packagesDir is a subdirectory of site root to extract packages to.
-const packagesDir = siteServiceDir + "/pkgs"
+const packagesDir = SiteServiceDir + "/pkgs"
 
 // currentSymlink is a name of a symlink that points to latest deployed version.
 // Used on Linux and Mac.
@@ -306,7 +306,7 @@ func (d *deployerImpl) RemoveDeployed(packageName string) error {
 }
 
 func (d *deployerImpl) TempFile(prefix string) (*os.File, error) {
-	dir, err := d.fs.EnsureDirectory(filepath.Join(d.fs.Root(), siteServiceDir, "tmp"))
+	dir, err := d.fs.EnsureDirectory(filepath.Join(d.fs.Root(), SiteServiceDir, "tmp"))
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +518,7 @@ func scanPackageDir(dir string, l logging.Logger) ([]FileInfo, error) {
 		if err != nil {
 			return err
 		}
-		if rel == packageServiceDir || rel == siteServiceDir {
+		if rel == packageServiceDir || rel == SiteServiceDir {
 			return filepath.SkipDir
 		}
 		if info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {

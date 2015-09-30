@@ -11,14 +11,19 @@ import (
 	"io/ioutil"
 )
 
+// SiteServiceDir is a name of the directory inside an installation root
+// reserved for cipd stuff.
+const SiteServiceDir = ".cipd"
+
 const (
-	// Name of the directory inside an installation root reserved for cipd stuff.
-	siteServiceDir = ".cipd"
-	// Name of the directory inside the package reserved for cipd stuff.
+	// packageServiceDir is a name of the directory inside the package
+	// reserved for cipd stuff.
 	packageServiceDir = ".cipdpkg"
-	// Name of the manifest file inside the package.
+
+	// manifestName is a name of the manifest file inside the package.
 	manifestName = packageServiceDir + "/manifest.json"
-	// Format version to write to the manifest file.
+
+	// manifestFormatVersion is a version to write to the manifest file.
 	manifestFormatVersion = "1"
 )
 
