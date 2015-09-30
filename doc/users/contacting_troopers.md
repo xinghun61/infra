@@ -59,6 +59,17 @@ Troopers provide full time coverage with the expected response times outlined
 above during the PST work day. Support during EMEA work hours is limited to P0
 only. Other times support is provided best-effort.
 
+## Office Hours
+
+Infra holds office hours on Thursdays 2pm in MTV-43-1-171 Kampala, as well as
+on VC "cit-officehours".
+
+Infra members go on Envoys from time to time.  This is our current schedule:
+* Stockholm: 9/22 - 9/25 estaab@
+* Munich: 10/12 - 10/16 estaab@
+* Sydney: 11/2 - 11/13 hinoka@
+* Munich: 11/16 - 11/20 pgervais@
+
 ## More Information
 
 View the [current trooper queue].
