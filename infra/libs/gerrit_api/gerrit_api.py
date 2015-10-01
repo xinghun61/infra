@@ -157,6 +157,29 @@ class Gerrit(object):
       return None
     raise UnexpectedResponseException(code, body)
 
+  def list_group_members(self, group):
+    """Lists the direct members of a group.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-groups.html#group-members
+
+    Args:
+      group: name of a group to list
+
+    Returns:
+      List of AccountInfo dicts.
+
+    Raises:
+      UnexpectedResponseException: if call failed.
+    """
+    if '/' in group:
+      raise ValueError('Invalid group name: %s' % group)
+    code, body = self._request(
+        method='GET',
+        request_path='/groups/%s/members' % group)
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
   @_not_read_only
   def add_group_members(self, group, members):
     """Adds a bunch of members to a group.
@@ -181,6 +204,33 @@ class Gerrit(object):
         body={'members': list(members)})
     if code != 200:
       raise UnexpectedResponseException(code, body)
+    return body
+
+  @_not_read_only
+  def delete_group_members(self, group, members):
+    """Deletes a bunch of members from a group.
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-groups.html#delete-group-members
+
+    Args:
+      group: name of a group to delete members from.
+      members: iterable with emails of accounts to delete from the group.
+
+    Returns:
+      None
+
+    Raises:
+      UnexpectedResponseException: if call failed.
+    """
+    if '/' in group:
+      raise ValueError('Invalid group name: %s' % group)
+    code, body = self._request(
+        method='POST',
+        request_path='/groups/%s/members.delete' % group,
+        body={'members': list(members)})
+    if code != 204:
+      raise UnexpectedResponseException(code, body)
+    # TODO(phajdan.jr): Make return consistent with doc and add_group_members.
     return body
 
   def is_account_active(self, account_id): # pragma: no cover

@@ -180,6 +180,37 @@ class GerritAgentTestCase(unittest.TestCase):
                       self.gerrit.get_account, 'self')
 
   @mock.patch.object(requests.Session, 'request')
+  def test_list_group_members(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        ('%s[{"_account_id":1000057,"name":"Jane Roe","email":'
+         '"jane.roe@example.com","username": "jane"}]') % GERRIT_JSON_HEADER,
+        200)
+    result = self.gerrit.list_group_members('test-group')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/groups/'
+             'test-group/members'),
+        headers=HEADERS)
+    expected_result = [{
+        '_account_id': 1000057,
+        'name': 'Jane Roe',
+        'email': 'jane.roe@example.com',
+        'username': 'jane'
+    }]
+    self.assertEqual(result, expected_result)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_list_group_members_unexpected_response(self, mock_method):
+    mock_method.return_value = _create_mock_return(None, 400)
+    self.assertRaises(gerrit_api.UnexpectedResponseException,
+                      self.gerrit.list_group_members, 'test-group')
+
+  def test_list_group_members_wrong_group(self):
+    self.assertRaises(ValueError, self.gerrit.list_group_members, 'a/b/c')
+
+  @mock.patch.object(requests.Session, 'request')
   def test_add_group_members(self, mock_method):
     mock_method.return_value = _create_mock_return(
         ('%s[{"_account_id":1000057,"name":"Jane Roe","email":'
@@ -215,6 +246,45 @@ class GerritAgentTestCase(unittest.TestCase):
   def test_add_group_members_read_only(self):
     self.assertRaises(gerrit_api.AccessViolationException,
                       self.gerrit_read_only.add_group_members,
+                      'test-group', ['a@b.com'])
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_delete_group_members(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        ('%s[{"_account_id":1000057,"name":"Jane Roe","email":'
+         '"jane.roe@example.com","username": "jane"}]') % GERRIT_JSON_HEADER,
+        204)
+    members = ['jane.roe@example.com']
+    payload = { 'members': members }
+    result = self.gerrit.delete_group_members('test-group', members)
+    mock_method.assert_called_once_with(
+        data=json.dumps(payload),
+        method='POST',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/groups/'
+             'test-group/members.delete'),
+        headers=HEADERS_WITH_CONTENT_TYPE)
+    expected_result = [{
+        '_account_id': 1000057,
+        'name': 'Jane Roe',
+        'email': 'jane.roe@example.com',
+        'username': 'jane'
+    }]
+    self.assertEqual(result, expected_result)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_delete_group_members_unexpected_response(self, mock_method):
+    mock_method.return_value = _create_mock_return(None, 400)
+    self.assertRaises(
+        gerrit_api.UnexpectedResponseException,
+        self.gerrit.delete_group_members, 'test-group', ['a@b.com'])
+
+  def test_delete_group_members_wrong_group(self):
+    self.assertRaises(ValueError, self.gerrit.delete_group_members, 'a/b/c', [])
+
+  def test_delete_group_members_read_only(self):
+    self.assertRaises(gerrit_api.AccessViolationException,
+                      self.gerrit_read_only.delete_group_members,
                       'test-group', ['a@b.com'])
 
   @mock.patch.object(requests.Session, 'request')
