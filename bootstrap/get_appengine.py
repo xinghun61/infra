@@ -40,7 +40,7 @@ def get_latest_gae_sdk_url(name):
     try:
       content = urllib2.urlopen(url).read()
       break
-    except urllib2.HttpError as e:
+    except urllib2.HTTPError as e:
       if e.code == 500 and retry < URLOPEN_RETRIES - 1:
         delay = 2 ** retry
         logging.info('Failed to get %s. Retrying after %d seconds.', url, delay)
