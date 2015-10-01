@@ -1,9 +1,1 @@
 dispatch:
-- url: "*.appspot.com/vm1*"
-  module: vm1
-- url: "*.appspot.com/vm2*"
-  module: vm2
-- url: "*.appspot.com/vm3*"
-  module: vm3
-- url: "*/*"
-  module: default

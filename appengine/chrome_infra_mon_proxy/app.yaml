@@ -3,39 +3,6 @@ api_version: 1
 threadsafe: true
 
 handlers:
-- url: /admin/.*
-  secure: always
-  script: app.admin_app
-
-# Add chrome infra logo icon.
-- url: /favicon.ico
-  static_files: static/favicon.ico
-  upload: static/favicon.ico
-  secure: always
-
-- url: /css
-  static_dir: css
-  secure: always
 - url: /.*
-  secure: always
-  script: app.main_app
-
-automatic_scaling:
-  min_pending_latency: 100ms
-  max_pending_latency: 500ms
-  max_concurrent_requests: 20
-
-libraries:
-- name: endpoints
-  version: 1.0
-- name: jinja2
-  version: latest
-- name: pycrypto
-  version: "2.6"
-- name: webapp2
-  version: "2.5.2"
-- name: webob
-  version: "1.2.3"
-
-includes:
-- components/auth
+  static_files: index.html
+  upload: index\.html
