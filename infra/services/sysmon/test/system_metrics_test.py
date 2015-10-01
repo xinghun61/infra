@@ -83,11 +83,14 @@ class SystemMetricsTest(unittest.TestCase):
     else:  # pragma: no cover
       interface = 'lo'
 
-    up = system_metrics.net_up.get({'interface': interface})
-    down = system_metrics.net_down.get({'interface': interface})
+    labels = {'interface': interface}
 
-    self.assertIsNotNone(up)
-    self.assertIsNotNone(down)
+    self.assertIsNotNone(system_metrics.net_up.get(labels))
+    self.assertIsNotNone(system_metrics.net_down.get(labels))
+    self.assertIsNotNone(system_metrics.net_err_up.get(labels))
+    self.assertIsNotNone(system_metrics.net_err_down.get(labels))
+    self.assertIsNotNone(system_metrics.net_drop_up.get(labels))
+    self.assertIsNotNone(system_metrics.net_drop_down.get(labels))
 
   def test_proc_info(self):
     system_metrics.get_proc_info()
