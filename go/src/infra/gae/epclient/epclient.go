@@ -18,12 +18,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -83,12 +87,72 @@ func startServer() func() {
 	}
 }
 
-func generate() {
-	gencmd := exec.Command("google-api-go-generator", "-discoveryurl", discoveryURL, "-gendir", *outDir, "-cache=false")
-	gencmd.Stdout = os.Stdout
-	gencmd.Stderr = os.Stderr
-	if err := gencmd.Run(); err != nil {
+type apiItem struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
+type apiList struct {
+	Items []apiItem `json:"items"`
+}
+
+func fixImportPath(path string) {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, "-gen.go") {
+			fmt.Println("fixing import line in", path)
+			if err != nil {
+				panic(err)
+			}
+			wholeFile, err := ioutil.ReadFile(path)
+			if err != nil {
+				panic(err)
+			}
+			newFile := bytes.Replace(wholeFile,
+				[]byte("// import \"google.golang.org/api"),
+				[]byte("// import \"infra/gae/epclient"),
+				-1)
+			err = ioutil.WriteFile(path, newFile, info.Mode())
+			if err != nil {
+				panic(err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		panic(err)
+	}
+}
+
+func generate() {
+	// generate api-list.json
+	genlist := exec.Command("google-api-go-generator", "-discoveryurl", discoveryURL, "-gendir", *outDir, "-cache=false", "-api=\"\"")
+	genlist.Stdout = os.Stdout
+	genlist.Stderr = os.Stderr
+	genlist.Run()
+
+	apiListFile, err := os.Open(filepath.Join(*outDir, "api-list.json"))
+	if err != nil {
+		panic(err)
+	}
+	defer apiListFile.Close()
+
+	al := apiList{}
+	err = json.NewDecoder(apiListFile).Decode(&al)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, itm := range al.Items {
+		gencmd := exec.Command("google-api-go-generator", "-discoveryurl", discoveryURL,
+			"-gendir", *outDir, "-cache=false", "-api="+itm.ID)
+		gencmd.Stdout = os.Stdout
+		gencmd.Stderr = os.Stderr
+		err = gencmd.Run()
+		if err != nil {
+			panic(err)
+		}
+		fixImportPath(filepath.Join(*outDir, itm.Name, itm.Version))
 	}
 }
 

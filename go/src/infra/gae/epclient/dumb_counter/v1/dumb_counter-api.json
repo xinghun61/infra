@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"u_zXkMELIlX4ktyNbM2XKD4vK8E/rJUrs9Jz3NBAGyCFAalnzbr2I7M\"",
+ "etag": "\"u_zXkMELIlX4ktyNbM2XKD4vK8E/_kzVvqG2PiIMKpMhp05BCHIz364\"",
  "discoveryVersion": "v1",
  "id": "dumb_counter:v1",
  "name": "dumb_counter",
@@ -110,7 +110,7 @@
    "id": "Counter",
    "type": "object",
    "properties": {
-    "ID": {
+    "Name": {
      "type": "string"
     },
     "Val": {

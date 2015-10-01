@@ -5,7 +5,7 @@
 //   import "google.golang.org/api/dumb_counter/v1"
 //   ...
 //   dumb_counterService, err := dumb_counter.New(oauthHttpClient)
-package dumb_counter
+package dumb_counter // import "infra/gae/epclient/dumb_counter/v1"
 
 import (
 	"bytes"
@@ -13,7 +13,9 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/internal"
 	"io"
 	"net/http"
 	"net/url"
@@ -32,7 +34,7 @@ var _ = url.Parse
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = internal.MarshalJSON
 
 const apiId = "dumb_counter:v1"
 const apiName = "dumb_counter"
@@ -64,12 +66,40 @@ type AddReq struct {
 	Delta int64 `json:"Delta,omitempty,string"`
 
 	Name string `json:"Name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Delta") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AddReq) MarshalJSON() ([]byte, error) {
+	type noMethod AddReq
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AddRsp struct {
 	Cur int64 `json:"Cur,omitempty,string"`
 
 	Prev int64 `json:"Prev,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Cur") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AddRsp) MarshalJSON() ([]byte, error) {
+	type noMethod AddRsp
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CASReq struct {
@@ -78,20 +108,76 @@ type CASReq struct {
 	NewVal int64 `json:"NewVal,omitempty,string"`
 
 	OldVal int64 `json:"OldVal,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CASReq) MarshalJSON() ([]byte, error) {
+	type noMethod CASReq
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Counter struct {
-	ID string `json:"ID,omitempty"`
+	Name string `json:"Name,omitempty"`
 
 	Val int64 `json:"Val,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Counter) MarshalJSON() ([]byte, error) {
+	type noMethod Counter
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CurrentValueRsp struct {
 	Val int64 `json:"Val,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Val") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CurrentValueRsp) MarshalJSON() ([]byte, error) {
+	type noMethod CurrentValueRsp
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ListRsp struct {
 	Counters []*Counter `json:"Counters,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Counters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ListRsp) MarshalJSON() ([]byte, error) {
+	type noMethod ListRsp
+	raw := noMethod(*s)
+	return internal.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "dumb_counter.add":
@@ -101,6 +187,7 @@ type AddCall struct {
 	Name   string
 	addreq *AddReq
 	opt_   map[string]interface{}
+	ctx_   context.Context
 }
 
 // Add: Add an an amount to a particular counter
@@ -119,7 +206,15 @@ func (c *AddCall) Fields(s ...googleapi.Field) *AddCall {
 	return c
 }
 
-func (c *AddCall) Do() (*AddRsp, error) {
+// Context sets the context to be used in this call's Do method.
+// Any pending HTTP request will be aborted if the provided context
+// is canceled.
+func (c *AddCall) Context(ctx context.Context) *AddCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AddCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.addreq)
 	if err != nil {
@@ -127,7 +222,7 @@ func (c *AddCall) Do() (*AddRsp, error) {
 	}
 	ctype := "application/json"
 	params := make(url.Values)
-	params.Set("alt", "json")
+	params.Set("alt", alt)
 	if v, ok := c.opt_["fields"]; ok {
 		params.Set("fields", fmt.Sprintf("%v", v))
 	}
@@ -139,7 +234,14 @@ func (c *AddCall) Do() (*AddRsp, error) {
 	})
 	req.Header.Set("Content-Type", ctype)
 	req.Header.Set("User-Agent", c.s.userAgent())
-	res, err := c.s.client.Do(req)
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+func (c *AddCall) Do() (*AddRsp, error) {
+	res, err := c.doRequest("json")
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +287,7 @@ type CasCall struct {
 	Name   string
 	casreq *CASReq
 	opt_   map[string]interface{}
+	ctx_   context.Context
 }
 
 // Cas: Compare and swap a counter value
@@ -203,15 +306,23 @@ func (c *CasCall) Fields(s ...googleapi.Field) *CasCall {
 	return c
 }
 
-func (c *CasCall) Do() error {
+// Context sets the context to be used in this call's Do method.
+// Any pending HTTP request will be aborted if the provided context
+// is canceled.
+func (c *CasCall) Context(ctx context.Context) *CasCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CasCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.casreq)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
 	params := make(url.Values)
-	params.Set("alt", "json")
+	params.Set("alt", alt)
 	if v, ok := c.opt_["fields"]; ok {
 		params.Set("fields", fmt.Sprintf("%v", v))
 	}
@@ -223,7 +334,14 @@ func (c *CasCall) Do() error {
 	})
 	req.Header.Set("Content-Type", ctype)
 	req.Header.Set("User-Agent", c.s.userAgent())
-	res, err := c.s.client.Do(req)
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+func (c *CasCall) Do() error {
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -261,6 +379,7 @@ type CurrentvalueCall struct {
 	s    *Service
 	Name string
 	opt_ map[string]interface{}
+	ctx_ context.Context
 }
 
 // Currentvalue: Returns the current value held by the named counter
@@ -278,10 +397,18 @@ func (c *CurrentvalueCall) Fields(s ...googleapi.Field) *CurrentvalueCall {
 	return c
 }
 
-func (c *CurrentvalueCall) Do() (*CurrentValueRsp, error) {
+// Context sets the context to be used in this call's Do method.
+// Any pending HTTP request will be aborted if the provided context
+// is canceled.
+func (c *CurrentvalueCall) Context(ctx context.Context) *CurrentvalueCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CurrentvalueCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	params := make(url.Values)
-	params.Set("alt", "json")
+	params.Set("alt", alt)
 	if v, ok := c.opt_["fields"]; ok {
 		params.Set("fields", fmt.Sprintf("%v", v))
 	}
@@ -292,7 +419,14 @@ func (c *CurrentvalueCall) Do() (*CurrentValueRsp, error) {
 		"Name": c.Name,
 	})
 	req.Header.Set("User-Agent", c.s.userAgent())
-	res, err := c.s.client.Do(req)
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+func (c *CurrentvalueCall) Do() (*CurrentValueRsp, error) {
+	res, err := c.doRequest("json")
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +466,7 @@ func (c *CurrentvalueCall) Do() (*CurrentValueRsp, error) {
 type ListCall struct {
 	s    *Service
 	opt_ map[string]interface{}
+	ctx_ context.Context
 }
 
 // List: Returns all of the available counters
@@ -348,10 +483,18 @@ func (c *ListCall) Fields(s ...googleapi.Field) *ListCall {
 	return c
 }
 
-func (c *ListCall) Do() (*ListRsp, error) {
+// Context sets the context to be used in this call's Do method.
+// Any pending HTTP request will be aborted if the provided context
+// is canceled.
+func (c *ListCall) Context(ctx context.Context) *ListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	params := make(url.Values)
-	params.Set("alt", "json")
+	params.Set("alt", alt)
 	if v, ok := c.opt_["fields"]; ok {
 		params.Set("fields", fmt.Sprintf("%v", v))
 	}
@@ -360,7 +503,14 @@ func (c *ListCall) Do() (*ListRsp, error) {
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("User-Agent", c.s.userAgent())
-	res, err := c.s.client.Do(req)
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+func (c *ListCall) Do() (*ListRsp, error) {
+	res, err := c.doRequest("json")
 	if err != nil {
 		return nil, err
 	}
