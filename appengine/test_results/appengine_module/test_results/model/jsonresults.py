@@ -617,7 +617,7 @@ class JsonResults(object):
                  (JSON_RESULTS_FILE_SMALL, JSON_RESULTS_FILE))
     if (is_full_results_format and
         not cls.is_valid_full_results_json(results_json)):
-      return ('Invalid full_results.json file.', 500)
+      return ('Invalid full_results.json file.', 403)
     small_file = cls._get_aggregate_file(
         master, builder, test_type, JSON_RESULTS_FILE_SMALL, deprecated_master)
     large_file = cls._get_aggregate_file(
