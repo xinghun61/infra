@@ -744,10 +744,19 @@ func (c *setRefRun) Run(a subcommands.Application, args []string) int {
 	if len(c.refs) == 0 {
 		return c.done(nil, makeCLIError("at least one -ref must be provided"))
 	}
-	return c.doneWithPins(setRef(args[0], c.version, c.RefsOptions, c.ServiceOptions))
+	return c.doneWithPins(setRefOrTag(args[0], c.version, c.ServiceOptions,
+		func(client cipd.Client, pin common.Pin) error {
+			for _, ref := range c.refs {
+				if err := client.SetRefWhenReady(ref, pin); err != nil {
+					return err
+				}
+			}
+			return nil
+		}))
 }
 
-func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts ServiceOptions) ([]pinInfo, error) {
+func setRefOrTag(packagePrefix, version string, serviceOpts ServiceOptions,
+	updatePin func(client cipd.Client, pin common.Pin) error) ([]pinInfo, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
 		return nil, err
@@ -778,20 +787,57 @@ func setRef(packagePrefix, version string, refsOpts RefsOptions, serviceOpts Ser
 		pinsToUse[p.Pkg] = *p.Pin
 	}
 
-	// Update all refs.
+	// Update all refs or tags.
 	return performBatchOperation(batchOperation{
 		client:   client,
 		packages: packages,
 		callback: func(pkg string) (common.Pin, error) {
 			pin := pinsToUse[pkg]
-			for _, ref := range refsOpts.refs {
-				if err := client.SetRefWhenReady(ref, pin); err != nil {
-					return common.Pin{}, err
-				}
+			if err := updatePin(client, pin); err != nil {
+				return common.Pin{}, err
 			}
 			return pin, nil
 		},
 	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'set-tag' subcommand.
+
+var cmdSetTag = &subcommands.Command{
+	UsageLine: "set-tag <package or package prefix> -tag=key:value [options]",
+	ShortDesc: "tags package of a specific version",
+	LongDesc:  "Tags package of a specific version",
+	CommandRun: func() subcommands.CommandRun {
+		c := &setTagRun{}
+		c.registerBaseFlags()
+		c.TagsOptions.registerFlags(&c.Flags)
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>",
+			"Package version to resolve. Could also be itself a tag or ref")
+		return c
+	},
+}
+
+type setTagRun struct {
+	Subcommand
+	TagsOptions
+	ServiceOptions
+
+	version string
+}
+
+func (c *setTagRun) Run(a subcommands.Application, args []string) int {
+	if !c.init(args, 1, 1) {
+		return 1
+	}
+	if len(c.tags) == 0 {
+		return c.done(nil, makeCLIError("at least one -tag must be provided"))
+	}
+	return c.done(setRefOrTag(args[0], c.version, c.ServiceOptions,
+		func(client cipd.Client, pin common.Pin) error {
+			return client.AttachTagsWhenReady(pin, c.tags)
+		}))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1283,51 +1329,6 @@ func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts Ta
 		}
 	}
 	return inst.Pin(), nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 'set-tag' subcommand.
-
-var cmdSetTag = &subcommands.Command{
-	UsageLine: "set-tag <package or package prefix> -tag=key:value [options]",
-	ShortDesc: "tags specific package in the package repository",
-	LongDesc:  "Tags specific package in the package repository.",
-	CommandRun: func() subcommands.CommandRun {
-		c := &setTagRun{}
-		c.registerBaseFlags()
-		c.TagsOptions.registerFlags(&c.Flags)
-		c.ServiceOptions.registerFlags(&c.Flags)
-		c.Flags.StringVar(&c.version, "version", "<version>",
-			"package version to resolve. Could also be itself a tag or ref")
-		return c
-	},
-}
-
-type setTagRun struct {
-	Subcommand
-	TagsOptions
-	ServiceOptions
-
-	version string
-}
-
-func (c *setTagRun) Run(a subcommands.Application, args []string) int {
-	if !c.init(args, 1, 1) {
-		return 1
-	}
-	return c.done(tagPackage(args[0], c.version, c.TagsOptions, c.ServiceOptions))
-}
-
-func tagPackage(packageName, version string, tagsOpts TagsOptions, serviceOpts ServiceOptions) (common.Pin, error) {
-	client, err := serviceOpts.makeCipdClient("")
-	if err != nil {
-		return common.Pin{}, err
-	}
-	pin, err := client.ResolveVersion(packageName, version)
-	if err != nil {
-		return common.Pin{}, err
-	}
-	return pin, client.AttachTagsWhenReady(pin, tagsOpts.tags)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
