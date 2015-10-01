@@ -54,11 +54,16 @@ class ConfigWatcherTest(unittest.TestCase):
   def _remove_config(self, name):
     os.unlink(os.path.join(self.config_directory, name))
 
-  def test_already_running(self):
+  @mock.patch('os._exit')
+  def test_already_running(self, mock_exit):
     self.mock_ownservice.start.return_value = False
+    mock_exit.side_effect = SystemExit
 
-    self.cw.run()
+    with self.assertRaises(SystemExit):
+      self.cw.run()
+
     self.assertFalse(self.mock_sleep.called)
+    mock_exit.assert_called_once_with(0)
 
   def test_version_changed(self):
     self.mock_ownservice.has_version_changed.return_value = True

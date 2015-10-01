@@ -6,6 +6,7 @@ import collections
 import glob
 import json
 import logging
+import os
 import os.path
 import time
 
@@ -65,9 +66,10 @@ class ConfigWatcher(object):
   def run(self):
     """Runs continuously in this thread until stop() is called."""
 
-    if not self._own_service.start():
-      # Another instance is already running.
-      return
+    if not self._own_service.start():  # pragma: no cover
+      # Another instance is already running.  Exit immediately to prevent the
+      # ts_mon.close() in BaseApplication from being called.
+      os._exit(0)
 
     while not self._stop:
       self._iteration()
