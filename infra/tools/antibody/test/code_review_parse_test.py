@@ -81,7 +81,7 @@ class fake_gerrit_util():
     side_effect=fake_gerrit_util.GetChangeDetail)
 def fake_extract_json_data(review_url, cc, checkout, _,
                            dummy):  # pragma: no cover
-  if any(hostname in review_url for hostname in 
+  if any(hostname in review_url for hostname in
       code_review_parse.KNOWN_RIETVELD_INSTANCES):
     return code_review_parse._extract_json_data_from_rietveld(review_url)
   elif any(hostname in review_url for hostname in
@@ -119,13 +119,12 @@ class TestCodeReviewParse(unittest.TestCase):
     code_review_parse.extract_code_review_json_data('invalid url', cc,
         checkout)
 
+  @mock.patch('requests.get', autospec=True)
+  def test_extract_json_data_from_rietveld(self, _):
+    code_review_parse._extract_json_data_from_rietveld(self.r_lgtm_no_tbr)
 
-  def test_extract_json_data_from_rietveld(self):
-    _ = code_review_parse._extract_json_data_from_rietveld(
-        self.r_lgtm_no_tbr)
-
-  @mock.patch('subprocess.check_output', 
-      side_effect=('x\nChange-Id: 288240', 'no change id', 
+  @mock.patch('subprocess.check_output',
+      side_effect=('x\nChange-Id: 288240', 'no change id',
                    'Change-Id: 288240\nChange-Id: 288240'))
   @mock.patch(
       'infra.tools.antibody.static.third_party.gerrit_util.GetChangeDetail',

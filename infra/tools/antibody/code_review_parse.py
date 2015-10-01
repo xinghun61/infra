@@ -84,14 +84,14 @@ def _extract_json_data_from_rietveld(rietveld_url):
                   url_components.netloc, url_components.path.strip(','))
   response = requests.get(json_data_url)
   if (response.status_code == requests.codes.ok):
-    try:
+    try:  # pragma: no cover
       return response.json()
     except JSONDecodeError:  # pragma: no cover
       LOGGER.error('json parse failed for url: %s' % rietveld_url)
       return {'messages': [{'text': ''}]}
-  else:  # pragma: no cover
+  else:
     LOGGER.info('unable to access: %s' % rietveld_url)
-    if (response.status_code == 404):
+    if (response.status_code == 404):  # pragma: no cover
       # fake json response so the review url is still put in the review table
       # even though the relevant data is inaccessable
       return {'messages': [{'text': ''}]}
