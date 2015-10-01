@@ -143,6 +143,16 @@ def content_of(commit):
   return commit._cr_content  # pylint: disable=W0212
 
 
+def content_difference(ref_a, ref_b):
+  """Returns printable difference between contents of two commits."""
+  a, b = map(lambda x: content_of(x.commit).to_dict(), [ref_a, ref_b])
+  diff = {}
+  for k in a:
+    if a[k] != b[k]:
+      diff[k] = '%s != %s' % (a[k], b[k])
+  return diff
+
+
 def get_git_svn_rev(commit):
   """Extracts SVN revision from git-svn-id footer of a commit.
 
@@ -510,8 +520,10 @@ def process_repo(repo, cref, clock=time):
             synthesized_commits.extend(commits)
         else:
           if content_of(pending_tag.commit) != content_of(real_ref.commit):
-            LOGGER.error('%r and %r match, but %r\'s content doesn\'t match!',
-                         pending_tag, pending_tip, real_ref)
+            LOGGER.error(
+                '%r and %r match, but %r\'s content doesn\'t match (diff %s)!',
+                pending_tag, pending_tip, real_ref,
+                content_difference(pending_tag, real_ref))
             success = False
           else:
             LOGGER.info('%r is up to date', real_ref)

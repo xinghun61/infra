@@ -21,7 +21,9 @@
   - 'INFO: Running (''git'', ''fetch'')'
   - 'ERROR: Ref(TestRepo(''local''), ''refs/pending-tags/heads/master'') and Ref(TestRepo(''local''),
     ''refs/pending/heads/master'') match, but Ref(TestRepo(''local''), ''refs/heads/master'')''s
-    content doesn''t match!'
+    content doesn''t match (diff {''message_lines'': "(''Base commit'',) != (''Directly
+    landed commit!'',)", ''author'': ''Test User <test_user@example.com> 1402589356
+    +0800 != Test User <test_user@example.com> 1402589366 +0800''})!'
 - inner_loop success: false
   synthesized_commits: []
 - - Should have errored and nothing changed
