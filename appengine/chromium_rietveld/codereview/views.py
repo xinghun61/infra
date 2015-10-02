@@ -1700,8 +1700,8 @@ def _remove_blocked_emails(emails):
 
 def replace_bug(message):
   dit_base_tracker_url = 'http://code.google.com/p/%s/issues/detail?id=%s'
-  dit_valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner', 'gyp',
-                        'skia', 'v8', 'webrtc', 'libyuv')
+  dit_valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner',
+                        'crashpad', 'gyp', 'skia', 'v8', 'webrtc', 'libyuv')
   monorail_base_tracker_url = (
       'http://monorail-prod.appspot.com/p/%s/issues/detail?id=%s')
   monorail_valid_trackers = ('monorail',)
