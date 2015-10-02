@@ -256,7 +256,7 @@ class AndroidJavaTestExtractor(Extractor):
 
 
 class InstrumentationTestExtractor(AndroidJavaTestExtractor):
-  """For Instrtumentation tests."""
+  """For Instrumentation tests."""
   # Beginning marker for Java stack trace.
   JAVA_STACK_TRACE_BEGINNING_MARKER = re.compile(r'^.*\[FAIL] .*\#.*:')
 
@@ -364,9 +364,11 @@ EXTRACTORS = {
     'compile': CompileStepExtractor,
     'check_perms': CheckPermExtractor,
     'sizes': CheckSizesExtractor,
-    'Instrumentation_test_ChromePublicTest': InstrumentationTestExtractor,
-    'Instrumentation_test_ContentShellTest': InstrumentationTestExtractor,
-    'Instrumentation_test_AndroidWebViewTest': InstrumentationTestExtractor,
+    'Instrumentation test ChromePublicTest': InstrumentationTestExtractor,
+    'Instrumentation test ContentShellTest': InstrumentationTestExtractor,
+    'Instrumentation test AndroidWebViewTest': InstrumentationTestExtractor,
+    'Instrumentation test ChromeSyncShellTest': InstrumentationTestExtractor,
+    'base_junit_tests': JunitTestExtractor,
     'chrome_junit_tests': JunitTestExtractor,
     'components_junit_tests': JunitTestExtractor,
     'content_junit_tests': JunitTestExtractor,
