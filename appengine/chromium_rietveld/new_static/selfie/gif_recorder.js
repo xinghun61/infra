@@ -24,7 +24,7 @@ function GifRecorder(options)
     this.context = canvas.getContext("2d");
 }
 
-GifRecorder.WORKER_URL = "new_static/bower_components/gif.js/dist/gif.worker.js";
+GifRecorder.WORKER_URL = "/new_static/bower_components/gif.js/dist/gif.worker.js";
 
 GifRecorder.prototype.ensureEncoder = function()
 {

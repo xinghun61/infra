@@ -31,8 +31,9 @@ found in the LICENSE file. -->
             },
             stop: function() {
                 URL.revokeObjectURL(this.$.video.src);
+                this.$.video.src = "";
                 if (this.rawStream)
-                    this.rawStream.stop();
+                    this.rawStream.getTracks()[0].stop();
                 this.rawStream = null;
                 this.stream = null;
                 this.videoWidth = 0;
@@ -64,7 +65,7 @@ found in the LICENSE file. -->
                     navigator.webkitGetUserMedia({video: true}, function(stream) {
                         self.rawStream = stream;
                         if (!self.active)
-                            stream.stop();
+                            self.stop();
                         resolve(stream);
                     }, function(e) {
                         reject(e);
