@@ -356,6 +356,34 @@ class JunitTestExtractor(AndroidJavaTestExtractor):
       index += 1
     return signal
 
+
+class RunhooksExtractor(Extractor):
+  """For runhooks and gclient runhooks."""
+  IGNORE_LINE_MARKER = re.compile('@@@.+@@@')
+  STOP_MARKER = re.compile('________ running')
+
+  def _ShouldIgnoreLine(self, line):
+    return bool(self.IGNORE_LINE_MARKER.search(line))
+
+  def Extract(self, failure_log, *_):
+    signal = FailureSignal()
+    log_lines = failure_log.splitlines()
+
+    index = len(log_lines) - 1
+
+    while index >= 0:  # pragma: no cover
+      # Start at the bottom of the log and read up.
+      line = log_lines[index]
+      if line:
+        if self.STOP_MARKER.search(line):
+          break
+
+        if not self._ShouldIgnoreLine(line):
+          self.ExtractFiles(line, signal)
+
+      index -= 1
+    return signal
+
 # TODO(lijeffrey): Several steps are named similarly and may use the same
 # extractor. We may need to implement a solution to map a name to an extractor
 # in a cleaner fashion, though there may be some shortcomings of special-case
@@ -374,6 +402,8 @@ EXTRACTORS = {
     'content_junit_tests': JunitTestExtractor,
     'junit_unit_tests': JunitTestExtractor,
     'net_junit_tests': JunitTestExtractor,
+    'runhooks': RunhooksExtractor,
+    'gclient runhooks': RunhooksExtractor
 }
 
 

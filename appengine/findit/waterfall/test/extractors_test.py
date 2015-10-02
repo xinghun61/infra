@@ -556,6 +556,47 @@ Note:You can safely ignore the above warning unless this call should not happen.
                   extractors.JunitTestExtractor,
                   expected_signal_json)
 
+  def testRunhooksExtractor(self):
+    failure_log = textwrap.dedent("""
+        Step info:
+        Master name: chromium.chrome
+        Builder name: Google Chrome Win
+        Build number: 1149
+        Step name: gclient runhooks
+
+        Log:
+        @@@STEP_CURSOR gclient runhooks@@@
+
+        @@@STEP_STARTED@@@
+
+        python -u c:\\a\\blabla\\gclient.py runhooks
+        blabla
+
+        Could Not Find not\\this\\f.lock
+
+        ________ running 'c:\\python.exe blabla1.py' in 'c:\\build'
+
+        ________ running 'c:\\python.exe babla2.py' in 'c:\\build'
+        Enabled Psyco JIT.
+        Updating projects from gyp files...
+        gyp: blabla in c:\\a\\b\\file1.gyp
+        Hook ''c:\\a\\b\\c\\file2.exe' src/build/gyp_chromium' took 20.57 secs
+
+        @@@blabla@@@
+
+        @@@blabla blabla blabla@@@""")
+    expected_signal_json = {
+        'files': {
+            'c:/a/b/c/file2.exe': [],
+            'c:/a/b/file1.gyp': []
+        },
+        'tests': [],
+        'keywords': {}
+    }
+
+    self._RunTest(
+        failure_log, extractors.RunhooksExtractor, expected_signal_json)
+
   def testExtractSignal(self):
     class DummyGeneralExtractor(Extractor):
 
