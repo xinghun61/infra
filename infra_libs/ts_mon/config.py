@@ -175,9 +175,9 @@ def process_argparse_options(args):
   credentials = config.get('credentials', '')
 
   # Command-line args override the values in the config file.
-  if args.ts_mon_endpoint:
+  if args.ts_mon_endpoint is not None:
     endpoint = args.ts_mon_endpoint
-  if args.ts_mon_credentials:
+  if args.ts_mon_credentials is not None:
     credentials = args.ts_mon_credentials
 
   if endpoint.startswith('file://'):

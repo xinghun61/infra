@@ -119,7 +119,5 @@ class BaseApplication(object):
     except Exception:
       logging.exception('Uncaught exception, exiting:')
       status = 1
-    finally:
-      ts_mon.close()
 
     sys.exit(status)
