@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import socket
 import time
 
 import httplib2
@@ -158,6 +159,14 @@ class InstrumentedHttp(httplib2.Http):
     self.fields = {'name': name, 'client': 'httplib2'}
     self.time_fn = time_fn
 
+  def _update_metrics(self, status, start_time):
+    status_fields = {'status': status}
+    status_fields.update(self.fields)
+    http_metrics.response_status.increment(fields=status_fields)
+
+    duration_msec = (self.time_fn() - start_time) * 1000
+    http_metrics.durations.add(duration_msec, fields=self.fields)
+
   def request(self, uri, method="GET", body=None, *args, **kwargs):
     request_bytes = 0
     if body is not None:
@@ -165,15 +174,20 @@ class InstrumentedHttp(httplib2.Http):
     http_metrics.request_bytes.add(request_bytes, fields=self.fields)
 
     start_time = self.time_fn()
-    response, content = super(InstrumentedHttp, self).request(
-        uri, method, body, *args, **kwargs)
-    duration_msec = (self.time_fn() - start_time) * 1000
-
+    try:
+      response, content = super(InstrumentedHttp, self).request(
+          uri, method, body, *args, **kwargs)
+    except socket.timeout:
+      self._update_metrics(http_metrics.STATUS_TIMEOUT, start_time)
+      raise
+    except socket.error:
+      self._update_metrics(http_metrics.STATUS_ERROR, start_time)
+      raise
+    except httplib2.HttpLib2Error:
+      self._update_metrics(http_metrics.STATUS_EXCEPTION, start_time)
+      raise
     http_metrics.response_bytes.add(len(content), fields=self.fields)
-    http_metrics.durations.add(duration_msec, fields=self.fields)
 
-    status_fields = {'status': response.status}
-    status_fields.update(self.fields)
-    http_metrics.response_status.increment(fields=status_fields)
+    self._update_metrics(response.status, start_time)
 
     return response, content

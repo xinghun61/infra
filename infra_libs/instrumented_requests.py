@@ -29,7 +29,7 @@ import requests
 from infra_libs.ts_mon.common import http_metrics
 
 
-def instrumentation_hook(name):
+def instrumentation_hook(fields):
   """Returns a hook function that records ts_mon metrics about the request.
 
   Usage::
@@ -41,8 +41,6 @@ def instrumentation_hook(name):
   Args:
     name: An identifier for the HTTP requests made by this object.
   """
-
-  fields = {'name': name, 'client': 'requests'}
 
   def _content_length(headers):
     if headers is None or 'content-length' not in headers:
@@ -58,20 +56,35 @@ def instrumentation_hook(name):
     http_metrics.response_bytes.add(response_bytes, fields=fields)
     http_metrics.durations.add(duration_msec, fields=fields)
 
-    status_fields = {'status': response.status_code}
-    status_fields.update(fields)
-    http_metrics.response_status.increment(fields=status_fields)
+    _update_status(fields, response.status_code)
 
   return hook
 
 
+def _update_status(fields, status):
+  status_fields = {'status': status}
+  status_fields.update(fields)
+  http_metrics.response_status.increment(fields=status_fields)
+
+
 def _wrap(method, name, url, *args, **kwargs):
-  hooks = {'response': instrumentation_hook(name)}
+  fields = {'name': name, 'client': 'requests'}
+  hooks = {'response': instrumentation_hook(fields)}
   if 'hooks' in kwargs:
     hooks.update(kwargs['hooks'])
   kwargs['hooks'] = hooks
 
-  return getattr(requests, method)(url, *args, **kwargs)
+  try:
+    return getattr(requests, method)(url, *args, **kwargs)
+  except requests.exceptions.ReadTimeout:
+    _update_status(fields, http_metrics.STATUS_TIMEOUT)
+    raise
+  except requests.exceptions.ConnectionError:
+    _update_status(fields, http_metrics.STATUS_ERROR)
+    raise
+  except requests.exceptions.RequestException:
+    _update_status(fields, http_metrics.STATUS_EXCEPTION)
+    raise
 
 
 request = functools.partial(_wrap, 'request')

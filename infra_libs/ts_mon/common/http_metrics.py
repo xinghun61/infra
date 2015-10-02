@@ -9,6 +9,12 @@ except ImportError: # pragma: no cover
   from common.metrics import CumulativeDistributionMetric
   from common.metrics import CounterMetric
 
+# Extending HTTP status codes to client-side errors and timeouts.
+STATUS_ERROR = 901
+STATUS_TIMEOUT = 902
+STATUS_EXCEPTION = 909
+
+
 request_bytes = CumulativeDistributionMetric(
     'http/request_bytes',
     description='Bytes sent per http request (body only).')

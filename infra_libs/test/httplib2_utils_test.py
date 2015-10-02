@@ -11,6 +11,7 @@ from infra_libs import httplib2_utils
 import httplib2
 import mock
 import oauth2client.client
+import socket
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
@@ -156,6 +157,39 @@ class InstrumentedHttplib2Test(unittest.TestCase):
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 404}))
+
+  def test_timeout(self):
+    self.http._request.side_effect = socket.timeout
+
+    with self.assertRaises(socket.timeout):
+      self.http.request('http://foo/')
+    self.assertEqual(0, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2', 'status': 200}))
+    self.assertEqual(1, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2',
+         'status': http_metrics.STATUS_TIMEOUT}))
+
+  def test_connection_error(self):
+    self.http._request.side_effect = socket.error
+
+    with self.assertRaises(socket.error):
+      self.http.request('http://foo/')
+    self.assertEqual(0, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2', 'status': 200}))
+    self.assertEqual(1, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2',
+         'status': http_metrics.STATUS_ERROR}))
+
+  def test_exception(self):
+    self.http._request.side_effect = httplib2.HttpLib2Error
+
+    with self.assertRaises(httplib2.HttpLib2Error):
+      self.http.request('http://foo/')
+    self.assertEqual(0, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2', 'status': 200}))
+    self.assertEqual(1, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2',
+         'status': http_metrics.STATUS_EXCEPTION}))
 
   def test_response_bytes(self):
     self.http._request.return_value = (

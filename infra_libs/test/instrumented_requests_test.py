@@ -23,7 +23,8 @@ class InstrumentedRequestsTest(unittest.TestCase):
     self.response.request = requests.PreparedRequest()
     self.response.request.prepare_headers(None)
 
-    self.hook = instrumented_requests.instrumentation_hook('foo')
+    self.hook = instrumented_requests.instrumentation_hook({
+        'name': 'foo', 'client': 'requests'})
 
   def tearDown(self):
     super(InstrumentedRequestsTest, self).tearDown()
@@ -78,11 +79,20 @@ class InstrumentedRequestsTest(unittest.TestCase):
     self.assertEquals(2500, http_metrics.durations.get(
         {'name': 'foo', 'client': 'requests'}).sum)
 
-  def test_wrap(self):
+  @staticmethod
+  def _setup_wrap(hooks=None, side_effect=None):
     requests._instrumented_test = mock.Mock()
-    f = requests._instrumented_test
+    if side_effect is not None:
+      requests._instrumented_test.side_effect = side_effect
+    kwargs = {}
+    if hooks:
+      kwargs = {'hooks': hooks}
     instrumented_requests._wrap(
-        '_instrumented_test', 'foo', 'http://example.com')
+        '_instrumented_test', 'foo', 'http://example.com', **kwargs)
+    return requests._instrumented_test
+
+  def test_wrap(self):
+    f = self._setup_wrap()
 
     self.assertTrue(f.called)
     self.assertEquals(('http://example.com',), f.call_args[0])
@@ -91,11 +101,7 @@ class InstrumentedRequestsTest(unittest.TestCase):
     self.assertTrue(hasattr(f.call_args[1]['hooks']['response'], '__call__'))
 
   def test_wrap_merges_hooks(self):
-    requests._instrumented_test = mock.Mock()
-    f = requests._instrumented_test
-    instrumented_requests._wrap(
-        '_instrumented_test', 'foo', 'http://example.com',
-        hooks={'foo': lambda: 42})
+    f = self._setup_wrap(hooks={'foo': lambda: 42})
 
     self.assertTrue(f.called)
     self.assertEquals(('http://example.com',), f.call_args[0])
@@ -104,3 +110,33 @@ class InstrumentedRequestsTest(unittest.TestCase):
     self.assertIn('foo', f.call_args[1]['hooks'])
     self.assertTrue(hasattr(f.call_args[1]['hooks']['response'], '__call__'))
     self.assertEquals(42, f.call_args[1]['hooks']['foo']())
+
+  def test_wrap_times_out(self):
+    with self.assertRaises(requests.exceptions.ReadTimeout):
+      self._setup_wrap(side_effect=requests.exceptions.ReadTimeout)
+
+    self.assertEquals(0, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests', 'status': 200}))
+    self.assertEquals(1, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests',
+         'status': http_metrics.STATUS_TIMEOUT}))
+
+  def test_wrap_errors_out(self):
+    with self.assertRaises(requests.exceptions.ConnectionError):
+      self._setup_wrap(side_effect=requests.exceptions.ConnectionError)
+
+    self.assertEquals(0, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests', 'status': 200}))
+    self.assertEquals(1, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests',
+         'status': http_metrics.STATUS_ERROR}))
+
+  def test_wrap_raises_other_exception(self):
+    with self.assertRaises(requests.exceptions.RequestException):
+      self._setup_wrap(side_effect=requests.exceptions.RequestException)
+
+    self.assertEquals(0, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests', 'status': 200}))
+    self.assertEquals(1, http_metrics.response_status.get(
+        {'name': 'foo', 'client': 'requests',
+         'status': http_metrics.STATUS_EXCEPTION}))
