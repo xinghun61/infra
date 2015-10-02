@@ -24,18 +24,25 @@ const (
 type PushBufferOptions struct {
 	// Client is configured client to use to push messages.
 	Client Client
+
 	// Logger is local logger to use for cloudtail own local messages.
 	Logger logging.Logger
+
 	// Clock is useful in unittests.
 	Clock clock.Clock
+
 	// FlushThreshold defines how many pending messages trigger a flush.
 	FlushThreshold int
+
 	// FlushTimeout is maximum time an entry is kept in buffer before it is sent.
 	FlushTimeout time.Duration
+
 	// MaxPushAttempts is how many times to push entries when retrying errors.
 	MaxPushAttempts int
+
 	// PushRetryDelay is how long to wait before retrying a failed push.
 	PushRetryDelay time.Duration
+
 	// StopTimeout is how long to wait for Stop to flush pending data.
 	StopTimeout time.Duration
 }
@@ -44,8 +51,10 @@ type PushBufferOptions struct {
 type PushBuffer interface {
 	// Add appends entries to the buffer. They all will be sent via logging
 	// client eventually. Add can occasionally block, waiting for pending data to
-	// be sent. It panics when called with a stopped buffer.
-	Add(e ...Entry)
+	// be sent. It panics when called with a stopped buffer. Array used by 'e'
+	// will be processed asynchronously, be careful when reusing it.
+	Add(e []Entry)
+
 	// Stop waits for all entries to be sent and stops flush timer. It returns
 	// a error if any of pending data wasn't successfully pushed. It panics if
 	// called with already stopped buffer. It accepts a channel that can be
@@ -105,7 +114,7 @@ type pushBufferImpl struct {
 	stopCh   chan struct{} // signals that retry loop should die
 }
 
-func (b *pushBufferImpl) Add(e ...Entry) {
+func (b *pushBufferImpl) Add(e []Entry) {
 	if len(e) != 0 {
 		b.input <- e
 	}

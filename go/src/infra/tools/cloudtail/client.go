@@ -5,6 +5,7 @@
 package cloudtail
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -42,20 +43,29 @@ type Client interface {
 type ClientOptions struct {
 	// Client is used http.Client (that must implement proper authentication).
 	Client *http.Client
+
 	// Logger is used to emit local log messages related to the client itself.
 	Logger logging.Logger
+
 	// UserAgent is an optional string appended to User-Agent HTTP header.
 	UserAgent string
+
 	// ProjectID is Cloud project to sends logs to. Must be set.
 	ProjectID string
+
 	// ResourceType identifies a kind of entity that produces this log (e.g.
 	// 'machine', 'master'). Default is DefaultResourceType.
 	ResourceType string
+
 	// ResourceID identifies exact instance of provided resource type (e.g
 	// 'vm12-m4', 'master.chromium.fyi'). Default is machine hostname.
 	ResourceID string
+
 	// LogID identifies what sort of log this is. Must be set.
 	LogID string
+
+	// Debug is true to print log entries to stdout instead of sending them.
+	Debug bool
 }
 
 // NewClient returns new object that knows how to push log entries to a single
@@ -94,8 +104,16 @@ func NewClient(opts ClientOptions) (Client, error) {
 		},
 		serviceName: "compute.googleapis.com",
 		writeFunc: func(projID, logID string, req *cloudlog.WriteLogEntriesRequest) error {
-			_, err := service.Projects.Logs.Entries.Write(projID, logID, req).Do()
-			return err
+			if !opts.Debug {
+				_, err := service.Projects.Logs.Entries.Write(projID, logID, req).Do()
+				return err
+			}
+			buf, err := json.MarshalIndent(req, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Printf("----------\n%s\n----------\n", string(buf))
+			return nil
 		},
 	}, nil
 }

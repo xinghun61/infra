@@ -46,6 +46,7 @@ const (
 type commonOptions struct {
 	authFlags     authcli.Flags
 	localLogLevel logging.Level
+	debug         bool
 
 	projectID    string
 	resourceType string
@@ -65,8 +66,10 @@ func (opts *commonOptions) registerFlags(f *flag.FlagSet) {
 	opts.localLogLevel = logging.Warning
 
 	opts.authFlags.Register(f, authOptions)
-	f.Var(&opts.localLogLevel, "local-log-level", "The logging level of local logger (for cloudtail own logs). "+
-		"Valid options are: debug, info, warning, error.")
+	f.Var(&opts.localLogLevel, "local-log-level",
+		"The logging level of local logger (for cloudtail own logs): debug, info, warning, error")
+	f.BoolVar(&opts.debug, "debug", false,
+		"If set, will print Cloud Logging calls to stdout instead of sending them")
 
 	f.StringVar(&opts.projectID, "project-id", "", "Cloud project ID to push logs to")
 	f.StringVar(&opts.resourceType, "resource-type", "machine", "What kind of entity produces the log (e.g. 'master')")
@@ -112,6 +115,7 @@ func (opts *commonOptions) processFlags() (state, error) {
 		ResourceType: opts.resourceType,
 		ResourceID:   opts.resourceID,
 		LogID:        opts.logID,
+		Debug:        opts.debug,
 	})
 	if err != nil {
 		return state{}, err
@@ -227,10 +231,12 @@ func (c *sendRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return 1
 	}
-	state.buffer.Add(cloudtail.Entry{
-		Timestamp:   time.Now(),
-		Severity:    c.severity,
-		TextPayload: c.text,
+	state.buffer.Add([]cloudtail.Entry{
+		{
+			Timestamp:   time.Now(),
+			Severity:    c.severity,
+			TextPayload: c.text,
+		},
 	})
 	abort := make(chan struct{}, 1)
 	catchCtrlC(func() error {

@@ -26,20 +26,25 @@ func TestPushBuffer(t *testing.T) {
 		cl := testclock.New(time.Time{})
 		client := &fakeClient{clock: cl}
 		buf := NewPushBuffer(PushBufferOptions{Client: client, Clock: cl})
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 		So(buf.Stop(nil), ShouldBeNil)
 		So(len(client.getCalls()), ShouldEqual, 1)
 	})
 
 	Convey("Send a big chunk to trigger immediate flush, then stop.", t, func() {
 		cl := testclock.New(time.Time{})
-		client := &fakeClient{clock: cl}
+		client := &fakeClient{clock: cl, ch: make(chan pushEntriesCall)}
 		buf := NewPushBuffer(PushBufferOptions{
 			Client:         client,
 			Clock:          cl,
 			FlushThreshold: 2,
 		})
-		buf.Add(Entry{}, Entry{}, Entry{}, Entry{})
+		buf.Add(make([]Entry, 4))
+		select {
+		case <-client.ch:
+		case <-time.After(5 * time.Second): // use real clock to detect stuck queue
+			t.Fatalf("Timeout while waiting for a flush")
+		}
 		cl.Add(time.Second)
 		So(buf.Stop(nil), ShouldBeNil)
 		So(len(client.getCalls()), ShouldEqual, 1)
@@ -50,9 +55,9 @@ func TestPushBuffer(t *testing.T) {
 		cl := testclock.New(time.Time{})
 		client := &fakeClient{clock: cl, ch: make(chan pushEntriesCall)}
 		buf := NewPushBuffer(PushBufferOptions{Client: client, Clock: cl})
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 		cl.Add(time.Second)
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 
 		// Spin time until flush is called.
 		done := false
@@ -80,7 +85,7 @@ func TestPushBuffer(t *testing.T) {
 			MaxPushAttempts: 10,
 			PushRetryDelay:  1 * time.Second,
 		})
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 		So(buf.Stop(nil), ShouldBeNil)
 		So(len(client.getCalls()), ShouldEqual, 5) // 4 failures, 1 success
 	})
@@ -96,7 +101,7 @@ func TestPushBuffer(t *testing.T) {
 			MaxPushAttempts: 5,
 			PushRetryDelay:  1 * time.Second,
 		})
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 		So(buf.Stop(nil), ShouldNotBeNil)
 		So(len(client.calls), ShouldEqual, 5)
 	})
@@ -114,7 +119,7 @@ func TestPushBuffer(t *testing.T) {
 			PushRetryDelay:  100 * time.Second,
 			StopTimeout:     1 * time.Second,
 		})
-		buf.Add(Entry{})
+		buf.Add(make([]Entry, 1))
 		So(buf.Stop(nil), ShouldNotBeNil)
 		So(len(client.calls), ShouldEqual, 1)
 		So(cl.Now().Sub(startTs), ShouldBeLessThan, 100*time.Second)

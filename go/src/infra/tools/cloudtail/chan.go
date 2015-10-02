@@ -19,17 +19,20 @@ import (
 // parser and pushes log entries to the push buffer. Doesn't return errors: use
 // buf.Stop() to check for any errors during sending.
 func drainChannel(src chan string, parser LogParser, buf PushBuffer, logger logging.Logger) {
-	for line := range src {
+	batch := []Entry(nil)
+
+	// Helper function to parse log line into an Entry and add it to 'batch'.
+	addEntry := func(line string) {
 		line = strings.TrimSpace(line)
 		if line == "" {
-			continue
+			return
 		}
 		entry := parser.ParseLogLine(line)
 		if entry == nil {
 			if logger != nil {
 				logger.Errorf("skipping line, unrecognized format: %s", line)
 			}
-			continue
+			return
 		}
 		if entry.InsertID == "" {
 			insertID, err := computeInsertID(entry)
@@ -37,11 +40,42 @@ func drainChannel(src chan string, parser LogParser, buf PushBuffer, logger logg
 				if logger != nil {
 					logger.Errorf("skipping line, can't compute insertId: %s", err)
 				}
-				continue
+				return
 			}
 			entry.InsertID = insertID
 		}
-		buf.Add(*entry)
+		batch = append(batch, *entry)
+	}
+
+	line := ""
+	alive := true
+
+	for alive {
+		// Wait for the first entry.
+		line, alive = <-src
+		if !alive {
+			return
+		}
+		addEntry(line)
+
+		// Fetch the rest of them in non blocking way.
+		blocks := false
+		for alive && !blocks {
+			select {
+			case line, alive = <-src:
+				if alive {
+					addEntry(line)
+				}
+			default:
+				blocks = true
+			}
+		}
+
+		// Send them all.
+		if len(batch) != 0 {
+			buf.Add(batch)
+			batch = nil
+		}
 	}
 }
 
