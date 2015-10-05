@@ -22,7 +22,8 @@ type hostStateReport struct {
 }
 
 type hostLatestState struct {
-	State string
+	State    string
+	Reported time.Time
 }
 
 type brokenSlave struct {
@@ -77,7 +78,7 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
-		hls := hostLatestState{state}
+		hls := hostLatestState{state, time.Now().UTC()}
 		hlsKey := datastore.NewKey(c, "hostLatestState", host, 0, nil)
 		_, err = datastore.Put(c, hlsKey, &hls)
 		return err
@@ -99,7 +100,10 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 func pendingHosts(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	weekAgo := time.Now().AddDate(0, 0, -7)
-	q := datastore.NewQuery("hostLatestState").Filter("Reported >", weekAgo).Filter("State=", "SVN").KeysOnly()
+	q := datastore.NewQuery("hostLatestState").
+		Filter("Reported >", weekAgo).
+		Filter("State=", "SVN").
+		KeysOnly()
 	svnHosts, err := q.GetAll(c, nil)
 	if err != nil {
 		c.Errorf("Failed to get host states: %s", err)
@@ -115,7 +119,8 @@ func pendingHosts(w http.ResponseWriter, r *http.Request) {
 	out, err := json.Marshal(pendingHosts)
 	if err != nil {
 		c.Errorf("Failed to encode list of pending hosts as JSON: %s", err)
-		http.Error(w, "Failed to encode list of pending hosts as JSON", http.StatusInternalServerError)
+		http.Error(w, "Failed to encode list of pending hosts as JSON",
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -154,7 +159,9 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 func brokenSlaves(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	dayAgo := time.Now().AddDate(0, 0, -1)
-	q := datastore.NewQuery("brokenSlave").Filter("Reported >", dayAgo).Project("Host", "ErrorType", "Reported").Distinct()
+	q := datastore.NewQuery("brokenSlave").
+		Filter("Reported >", dayAgo).
+		Project("Host", "ErrorType", "Reported")
 	var brokenSlaves []brokenSlave
 	_, err := q.GetAll(c, &brokenSlaves)
 	if err != nil {
@@ -163,18 +170,33 @@ func brokenSlaves(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slaveErrors := make(map[string][]string)
+	// Due to the limitations of datastore, we may only request all reports for a
+	// given slave within 1 day (can't group them by host and error type only).
+	// In this loop we deduplicate them by creating a map from error type to
+	// another map from slave name to boolean value, which is always true, to
+	// simulate a set. In the next loop, we convert this map into a map from error
+	// type to a list of slave names.
+	slaveErrorMap := make(map[string]map[string]bool)
 	for _, brokenSlave := range brokenSlaves {
-		if _, ok := slaveErrors[brokenSlave.ErrorType]; !ok {
-			slaveErrors[brokenSlave.ErrorType] = []string{}
+		if _, ok := slaveErrorMap[brokenSlave.ErrorType]; !ok {
+			slaveErrorMap[brokenSlave.ErrorType] = make(map[string]bool)
 		}
-		slaveErrors[brokenSlave.ErrorType] = append(slaveErrors[brokenSlave.ErrorType], brokenSlave.Host)
+		slaveErrorMap[brokenSlave.ErrorType][brokenSlave.Host] = true
+	}
+
+	slaveErrors := make(map[string][]string)
+	for errorType, slaveMap := range slaveErrorMap {
+		slaveErrors[errorType] = make([]string, 0)
+		for slaveName, _ := range slaveMap {
+			slaveErrors[errorType] = append(slaveErrors[errorType], slaveName)
+		}
 	}
 
 	out, err := json.Marshal(slaveErrors)
 	if err != nil {
 		c.Errorf("Failed to encode list of slave errors as JSON: %s", err)
-		http.Error(w, "Failed to encode list of slave errors as JSON", http.StatusInternalServerError)
+		http.Error(w, "Failed to encode list of slave errors as JSON",
+			http.StatusInternalServerError)
 		return
 	}
 
