@@ -477,6 +477,33 @@ func (r *remoteImpl) listPackages(path string, recursive bool) ([]string, []stri
 	return nil, nil, fmt.Errorf("unexpected list packages status: %s", reply.Status)
 }
 
+func (r *remoteImpl) searchInstances(tag, packageName string) ([]common.Pin, error) {
+	endpoint, err := packageSearchInstancesEndpoint(tag, packageName)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status       string               `json:"status"`
+		ErrorMessage string               `json:"error_message"`
+		Instances    []packageInstanceMsg `json:"instances"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		pins := make([]common.Pin, len(reply.Instances))
+		for i, instance := range reply.Instances {
+			pins[i] = common.Pin{instance.PackageName, instance.InstanceID}
+		}
+		return pins, nil
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("unexpected searchInstances status: %s", reply.Status)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func instanceEndpoint(pin common.Pin) (string, error) {
@@ -520,6 +547,15 @@ func packageSearchEndpoint(path string, recursive bool) (string, error) {
 	}
 	params.Add("recursive", recursiveString)
 	return "repo/v1/package/search?" + params.Encode(), nil
+}
+
+func packageSearchInstancesEndpoint(tag, packageName string) (string, error) {
+	params := url.Values{}
+	if packageName != "" {
+		params.Add("package_name", packageName)
+	}
+	params.Add("tag", tag)
+	return "repo/v1/instance/search?" + params.Encode(), nil
 }
 
 func tagsEndpoint(pin common.Pin, tags []string) (string, error) {

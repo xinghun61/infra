@@ -179,6 +179,10 @@ type Client interface {
 	// ListPackages returns a list of strings of package names.
 	ListPackages(path string, recursive bool) ([]string, error)
 
+	// SearchInstances finds all instances with given tag and optionally name and
+	// returns their concrete Pins.
+	SearchInstances(tag, packageName string) ([]common.Pin, error)
+
 	// ProcessEnsureFile parses text file that describes what should be installed
 	// by EnsurePackages function. It is a text file where each line has a form:
 	// <package name> <desired version>. Whitespaces are ignored. Lines that start
@@ -463,6 +467,16 @@ func (client *clientImpl) AttachTagsWhenReady(pin common.Pin, tags []string) err
 	return ErrAttachTagsTimeout
 }
 
+func (client *clientImpl) SearchInstances(tag, packageName string) ([]common.Pin, error) {
+	if packageName != "" {
+		// Don't bother searching if packageName is invalid.
+		if err := common.ValidatePackageName(packageName); err != nil {
+			return []common.Pin{}, err
+		}
+	}
+	return client.remote.searchInstances(tag, packageName)
+}
+
 func (client *clientImpl) FetchInstance(pin common.Pin, output io.WriteSeeker) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
@@ -652,6 +666,7 @@ type remote interface {
 	fetchInstance(pin common.Pin) (*fetchInstanceResponse, error)
 
 	listPackages(path string, recursive bool) ([]string, []string, error)
+	searchInstances(tag, packageName string) ([]common.Pin, error)
 }
 
 type storage interface {

@@ -895,6 +895,62 @@ func listPackages(path string, recursive bool, serviceOpts ServiceOptions) ([]st
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'search' subcommand.
+
+var cmdSearch = &subcommands.Command{
+	UsageLine: "search [package] -tag key:value [options]",
+	ShortDesc: "searches for package instances by tag",
+	LongDesc:  "Searches for package instances by tag, optionally constrained by package name.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &searchRun{}
+		c.registerBaseFlags()
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.TagsOptions.registerFlags(&c.Flags)
+		return c
+	},
+}
+
+type searchRun struct {
+	Subcommand
+	ServiceOptions
+	TagsOptions
+}
+
+func (c *searchRun) Run(a subcommands.Application, args []string) int {
+	if !c.init(args, 0, 1) {
+		return 1
+	}
+	if len(c.tags) != 1 {
+		return c.done(nil, makeCLIError("exactly one -tag must be provided"))
+	}
+	packageName := ""
+	if len(args) == 1 {
+		packageName = args[0]
+	}
+	return c.done(searchInstances(packageName, c.tags[0], c.ServiceOptions))
+}
+
+func searchInstances(packageName, tag string, serviceOpts ServiceOptions) ([]common.Pin, error) {
+	client, err := serviceOpts.makeCipdClient("")
+	if err != nil {
+		return nil, err
+	}
+	pins, err := client.SearchInstances(tag, packageName)
+	if err != nil {
+		return nil, err
+	}
+	if len(pins) == 0 {
+		fmt.Println("No matching packages.")
+	} else {
+		fmt.Println("Packages:")
+		for _, pin := range pins {
+			fmt.Printf("  %s\n", pin)
+		}
+	}
+	return pins, err
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'acl-list' subcommand.
 
 var cmdListACL = &subcommands.Command{
@@ -1354,6 +1410,7 @@ var application = &subcommands.DefaultApplication{
 
 		// High level commands.
 		cmdListPackages,
+		cmdSearch,
 		cmdCreate,
 		cmdEnsure,
 		cmdResolve,
