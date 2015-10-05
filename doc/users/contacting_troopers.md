@@ -65,11 +65,12 @@ Infra holds office hours on Thursdays 2pm in MTV-43-1-171 Kampala, as well as
 on VC "cit-officehours".
 
 Infra members go on Envoys from time to time.  This is our current schedule:
-* Stockholm: 9/22 - 9/25 estaab@
-* Munich: 10/12 - 10/16 estaab@
-* Sydney: 11/2 - 11/13 hinoka@
-* Munich: 11/16 - 11/20 pgervais@
-* Stockholm: 10/19 - 10/23 stip@
+
+*   Stockholm: 9/22 - 9/25 estaab@
+*   Munich: 10/12 - 10/16 estaab@
+*   Stockholm: 10/19 - 10/23 stip@
+*   Sydney: 11/2 - 11/13 hinoka@
+*   Munich: 11/16 - 11/20 pgervais@
 
 During visit days, infra memeber generally are available to answer long standing
 questions, listen to gripes, and give a tech talk (look for it on your office
