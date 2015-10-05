@@ -81,8 +81,6 @@ type fsImplErr struct {
 	err error
 }
 
-// Root returns absolute path to a directory FileSystem operates in. All FS
-// actions are restricted to this directory.
 func (f *fsImplErr) Root() string                                                { return "" }
 func (f *fsImplErr) CwdRelToAbs(path string) (string, error)                     { return "", f.err }
 func (f *fsImplErr) RootRelToAbs(path string) (string, error)                    { return "", f.err }

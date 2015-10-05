@@ -658,6 +658,7 @@ func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOpt
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 	desiredState, err := client.ProcessEnsureFile(f)
 	if err != nil {
 		return nil, err
@@ -703,6 +704,7 @@ func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) (
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 	return performBatchOperation(batchOperation{
 		client:        client,
 		packagePrefix: packagePrefix,
@@ -761,6 +763,7 @@ func setRefOrTag(packagePrefix, version string, serviceOpts ServiceOptions,
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 
 	// Do not touch anything if some packages do not have requested version. So
 	// resolve versions first and only then move refs.
@@ -880,6 +883,7 @@ func listPackages(path string, recursive bool, serviceOpts ServiceOptions) ([]st
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 	packages, err := client.ListPackages(path, recursive)
 	if err != nil {
 		return nil, err
@@ -935,6 +939,7 @@ func searchInstances(packageName, tag string, serviceOpts ServiceOptions) ([]com
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 	pins, err := client.SearchInstances(tag, packageName)
 	if err != nil {
 		return nil, err
@@ -982,6 +987,7 @@ func listACL(packagePath string, serviceOpts ServiceOptions) error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	acls, err := client.FetchACL(packagePath)
 	if err != nil {
 		return err
@@ -1098,6 +1104,7 @@ func editACL(packagePath string, owners, writers, readers, revoke principalsList
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	err = client.ModifyACL(packagePath, changes)
 	if err != nil {
 		return err
@@ -1239,6 +1246,7 @@ func fetchInstanceFile(packageName, version, instanceFile string, serviceOpts Se
 	if err != nil {
 		return common.Pin{}, err
 	}
+	defer client.Close()
 	pin, err := client.ResolveVersion(packageName, version)
 	if err != nil {
 		return common.Pin{}, err
@@ -1369,6 +1377,7 @@ func registerInstanceFile(instanceFile string, refsOpts RefsOptions, tagsOpts Ta
 	if err != nil {
 		return common.Pin{}, err
 	}
+	defer client.Close()
 	inspectInstance(inst, false)
 	err = client.RegisterInstance(inst)
 	if err != nil {

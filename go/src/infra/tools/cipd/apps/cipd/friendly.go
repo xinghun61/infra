@@ -208,6 +208,14 @@ func (site *installationSite) initClient(authFlags authcli.Flags) (err error) {
 	return
 }
 
+// closeClient closes the underlying cipd.Client if necessary.
+func (site *installationSite) closeClient() {
+	if site.client != nil {
+		site.client.Close()
+		site.client = nil
+	}
+}
+
 // modifyConfig reads config file, calls callback to mutate it, then writes
 // it back.
 func (site *installationSite) modifyConfig(cb func(cfg *installationSiteConfig) error) error {
@@ -461,6 +469,7 @@ func (c *installRun) Run(a subcommands.Application, args []string) int {
 	if err = site.initClient(c.authFlags); err != nil {
 		return c.done(nil, err)
 	}
+	defer site.closeClient()
 
 	return c.done(site.installPackage(pkgName, version, c.force))
 }
