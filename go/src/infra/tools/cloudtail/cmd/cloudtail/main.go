@@ -347,7 +347,6 @@ func (c *tailRun) Run(a subcommands.Application, args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	defer tailer.Cleanup()
 	catchCtrlC(tailer.Stop)
 
 	fail := false

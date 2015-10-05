@@ -1,4 +1,3 @@
-github.com/ActiveState/tail #4b368d1590196ade29993d6a0896591403180bbd !https://chromium.googlesource.com/external/github.com/ActiveState/tail.git
 github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/coreos/etcd #a535cf2cad524ccb99dd267afea3fc2a75751515 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
@@ -41,6 +40,5 @@ google.golang.org/api #09c6521081a8b11e2c277b747b24324cfdfa5c25
 google.golang.org/appengine #0b869404e81685c5f3f2e5126bc2309215c7ad72 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
 google.golang.org/cloud #c7e49e47d60cc26958b9d52bc612d384ba8045f1
 google.golang.org/grpc #f3de7c238c93bde3228d59a428ba97edf0d81c57 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
-gopkg.in/fsnotify.v0 #ea925a0a47d225b2ca7f9932b01d2ed4f3ec74f6 !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
-gopkg.in/tomb.v1 #dd632973f1e7218eb1089048e0798ec9ae7dceb8 !https://chromium.googlesource.com/external/github.com/go-tomb/tomb.git
+gopkg.in/fsnotify.v1 #96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0 !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 gopkg.in/yaml.v2 #53feefa2559fb8dfa8d81baad31be332c97d6c77 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git

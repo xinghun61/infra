@@ -25,8 +25,7 @@ GO_DIR = os.path.dirname(os.path.abspath(__file__))
 # Packages that should be checked out via some non-standard ref. Notable
 # examples are packages distributed via gopkg.in hackery.
 EXCEPTIONS = {
-  'gopkg.in/fsnotify.v0': 'refs/heads/v0',
-  'gopkg.in/tomb.v1': 'refs/heads/v1',
+  'gopkg.in/fsnotify.v1': 'refs/tags/v1.2.0',
   'gopkg.in/yaml.v2': 'refs/heads/v2',
 }
 
