@@ -370,6 +370,10 @@ def edit_flags(request):
     if request.issue.private and form.cleaned_data['commit'] :
       return HttpResponseBadRequest(
         'Cannot set commit on private issues', content_type='text/plain')
+    if not request.issue.is_cq_available and form.cleaned_data['commit']:
+      return HttpResponseBadRequest(
+        'Cannot set commit on an issue that does not have a commit queue',
+        content_type='text/plain')
     request.issue.commit = form.cleaned_data['commit']
     request.issue.cq_dry_run = form.cleaned_data['cq_dry_run']
     user_email = request.user.email().lower()
