@@ -98,7 +98,8 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 
 func pendingHosts(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	q := datastore.NewQuery("hostLatestState").Filter("State=", "SVN").KeysOnly()
+	weekAgo := time.Now().AddDate(0, 0, -7)
+	q := datastore.NewQuery("hostLatestState").Filter("Reported >", weekAgo).Filter("State=", "SVN").KeysOnly()
 	svnHosts, err := q.GetAll(c, nil)
 	if err != nil {
 		c.Errorf("Failed to get host states: %s", err)
