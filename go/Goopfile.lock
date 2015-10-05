@@ -1,9 +1,9 @@
 github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
-github.com/coreos/etcd #a535cf2cad524ccb99dd267afea3fc2a75751515 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
+github.com/coreos/etcd #ba949ae2be9a2dee53e09c5c0ad365233a4a4711 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #7b7f4364ff76043e6c3610281525fabc0d90f0e4 !https://chromium.googlesource.com/external/github.com/golang/lint.git
-github.com/golang/protobuf #0c959e80d8acfedb1ecd50c9f14a58cee287dc95 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
-github.com/google/google-api-go-client/google-api-go-generator #09c6521081a8b11e2c277b747b24324cfdfa5c25 !https://code.googlesource.com/google-api-go-client.git
+github.com/golang/protobuf #3d2510a4dd961caffa2ae781669c628d82db700a !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
+github.com/google/google-api-go-client/google-api-go-generator #7f3774db0aa426a2390fa9abcccbc272dbb93111 !https://code.googlesource.com/google-api-go-client.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
@@ -26,19 +26,19 @@ github.com/mgutz/ansi #c286dcecd19ff979eeb73ea444e479b903f2cfcb !https://chromiu
 github.com/olekukonko/ts #ecf753e7c962639ab5a1fb46f7da627d4c0a04b8 !https://chromium.googlesource.com/external/github.com/olekukonko/ts.git
 github.com/op/go-logging #e8d5414f0947014548c2334044a0fac13187dfee !https://chromium.googlesource.com/external/github.com/op/go-logging.git
 github.com/sergi/go-diff #ffccea18eeb30a700e65bdf8a9f99456e5d254fa !https://chromium.googlesource.com/external/github.com/sergi/go-diff.git
-github.com/smartystreets/assertions #52d9726e53763b138bfe32bfa7d732bb2ad3f03e !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
-github.com/smartystreets/goconvey #a29728e4d70bb23e436d03bee49b1793e70a9352 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
+github.com/smartystreets/assertions #01fedaa993c0a9f9aa55111501cd7c81a49e812e !https://chromium.googlesource.com/external/github.com/smartystreets/assertions.git
+github.com/smartystreets/goconvey #774d3725ebf523fce2f74b0e9c7a0c5b64d05a14 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/steveyen/go-slab #2f82a688478741b7843a5575749f726d4b3f92b1 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
 github.com/texttheater/golang-levenshtein #9ab79d77423b5c17e36d1f02838fe9e788678ff0 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
-golang.org/x/crypto #59a4410d829a8bb774b02b56d4aeab633414f233
-golang.org/x/net #c2528b2dd8352441850638a8bb678c2ad056fd3e
-golang.org/x/oauth2 #3cab960fb9cdffabf543e8bae3a377f29e82b163
-golang.org/x/text #601048ad6acbab6cedd582db09b8c4839ff25b15
-golang.org/x/tools #e1d85eb8a3a8d29c824a9f1d33a8a78a8ab90b78
-google.golang.org/api #09c6521081a8b11e2c277b747b24324cfdfa5c25
+golang.org/x/crypto #c8b9e6388ef638d5a8a9d865c634befdc46a6784
+golang.org/x/net #01256db42e5106196a3473ec1620727a383500e8
+golang.org/x/oauth2 #2fbf3d7329d847b125188ad64b68cfb1f548938a
+golang.org/x/text #5722c1c97facbc41d1f9329ce722ed374db7d819
+golang.org/x/tools #9d2ff756b797a862da0686e2e41e09cd87da017b
+google.golang.org/api #7f3774db0aa426a2390fa9abcccbc272dbb93111
 google.golang.org/appengine #0b869404e81685c5f3f2e5126bc2309215c7ad72 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
-google.golang.org/cloud #c7e49e47d60cc26958b9d52bc612d384ba8045f1
-google.golang.org/grpc #f3de7c238c93bde3228d59a428ba97edf0d81c57 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
+google.golang.org/cloud #253b8fdc700b7dd3ccac674fe3697bb5f1a49fab
+google.golang.org/grpc #3e7b7e58f491074e9577050058fb95d2351a60b0 !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
 gopkg.in/fsnotify.v1 #96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0 !https://chromium.googlesource.com/external/github.com/go-fsnotify/fsnotify.git
 gopkg.in/yaml.v2 #53feefa2559fb8dfa8d81baad31be332c97d6c77 !https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
