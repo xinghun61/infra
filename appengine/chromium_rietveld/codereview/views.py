@@ -2432,7 +2432,8 @@ def _issue_as_dict(issue, messages, request=None):
   return values
 
 
-def _patchset_as_dict(patchset, comments, try_jobs, request):
+def _patchset_as_dict(
+    patchset, comments, try_jobs, request, swallow_exceptions=True):
   """Converts a patchset into a dict."""
   issue = patchset.issue_key.get()
   values = {
@@ -2449,9 +2450,10 @@ def _patchset_as_dict(patchset, comments, try_jobs, request):
     'dependent_patchsets': patchset.dependent_patchsets,
     'files': {},
   }
-  if (try_jobs):
-    values['try_job_results'] = [
-        t.to_dict() for t in patchset.try_job_results]
+  if try_jobs:
+    try_job_results = get_patchset_try_job_results(
+        patchset, swallow_exceptions=swallow_exceptions)
+    values['try_job_results'] = [t.to_dict() for t in try_job_results]
 
   all_no_base_file_keys_future = models.Content.query(
       models.Content.file_too_large == True,
@@ -2533,7 +2535,8 @@ def api_patchset(request):
   """
   comments = request.GET.get('comments', 'false').lower() == 'true'
   try_jobs = request.GET.get('try_jobs', 'true').lower() == 'true'
-  values = _patchset_as_dict(request.patchset, comments, try_jobs, request)
+  values = _patchset_as_dict(
+      request.patchset, comments, try_jobs, request, swallow_exceptions=False)
 
   # Add the current datetime as seen by AppEngine (it should always be UTC).
   # This makes it possible to reliably compare try job timestamps (also based
