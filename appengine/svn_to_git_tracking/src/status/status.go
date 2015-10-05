@@ -28,6 +28,7 @@ type hostLatestState struct {
 type brokenSlave struct {
 	Host      string
 	ErrorType string
+	Reported  time.Time
 }
 
 func init() {
@@ -141,7 +142,7 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := appengine.NewContext(r)
-	bs := brokenSlave{host, error_type}
+	bs := brokenSlave{host, error_type, time.Now().UTC()}
 	bsKey := datastore.NewIncompleteKey(c, "brokenSlave", nil)
 	if _, err := datastore.Put(c, bsKey, &bs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -151,7 +152,8 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 
 func brokenSlaves(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	q := datastore.NewQuery("brokenSlave").Project("Host", "ErrorType").Distinct()
+	dayAgo := time.Now().AddDate(0, 0, -1)
+	q := datastore.NewQuery("brokenSlave").Filter("Reported >", dayAgo).Project("Host", "ErrorType", "Reported").Distinct()
 	var brokenSlaves []brokenSlave
 	_, err := q.GetAll(c, &brokenSlaves)
 	if err != nil {
