@@ -90,6 +90,7 @@ def run_py_main(args, runpy_path, env_path, package):
     for root, _, files in os.walk(package):
       if '__main__.py' in files:
         commands.append(root.replace(os.path.sep, '.'))
+    commands = sorted(commands)
 
     if completing:
       # Argcomplete is listening for strings on fd 8
