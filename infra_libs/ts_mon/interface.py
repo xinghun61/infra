@@ -32,14 +32,13 @@ Library usage:
 """
 
 import logging
-import os
 import random
 import threading
 import time
 
-from monacq.proto import metrics_pb2
-
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.protos import metrics_pb2
+
 
 # The maximum number of MetricsData messages to include in each HTTP request.
 # MetricsCollections larger than this will be split into multiple requests.

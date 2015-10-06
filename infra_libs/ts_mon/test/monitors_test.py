@@ -9,9 +9,9 @@ import unittest
 import mock
 
 from monacq import acquisition_api
-from monacq.proto import metrics_pb2
 
 from infra_libs.ts_mon import monitors
+from infra_libs.ts_mon.protos import metrics_pb2
 import infra_libs
 
 

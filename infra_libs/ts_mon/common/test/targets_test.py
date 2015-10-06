@@ -3,12 +3,11 @@
 # found in the LICENSE file.
 
 import unittest
+from infra_libs.ts_mon.protos import metrics_pb2
 
 try:
-  from monacq.proto import metrics_pb2
   from infra_libs.ts_mon.common import targets
 except ImportError: # pragma: no cover
-  from monacq.proto import metrics_pb2
   from common import targets
 
 

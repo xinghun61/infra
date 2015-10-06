@@ -8,16 +8,17 @@ import copy
 import threading
 import time
 
+from infra_libs.ts_mon.protos import metrics_pb2
+
 try:
   from infra_libs.ts_mon import interface
   from infra_libs.ts_mon.common import distribution
   from infra_libs.ts_mon.common import errors
-  from monacq.proto import metrics_pb2
 except ImportError: # pragma: no cover
+  # TODO(pgervais): remove this branch
   import interface
   from common import distribution
   from common import errors
-  from monacq.proto import metrics_pb2
 
 
 MICROSECONDS_PER_SECOND = 1000000

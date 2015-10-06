@@ -38,9 +38,9 @@ import logging
 import os
 
 from monacq import acquisition_api
-from monacq.proto import metrics_pb2
 
 from infra_libs import httplib2_utils
+from infra_libs.ts_mon.protos import metrics_pb2
 
 from apiclient import discovery
 from oauth2client.client import GoogleCredentials
