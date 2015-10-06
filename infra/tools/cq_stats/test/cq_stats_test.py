@@ -25,6 +25,8 @@ from infra.tools.cq_stats import cq_stats
 class Args(object):
   def __init__(self, **kwargs):
     self.project = 'test_project'
+    self.path_filter_include = None
+    self.path_filter_exclude = None
     self.list_rejections = False
     self.list_false_rejections = False
     self.list_uncategorized_flakes = False
@@ -450,10 +452,10 @@ Review URL: https://codereview.chromium.org/697833002</msg>
   def test_derive_patch_stats(self):
     time_obj = {'time': 1415150492.4}
     def attempt(message, commit=False, supported=True, reason='', retry=False,
-                verifier_pass=True):
+                verifier_pass=True, files=None):
       time_obj['time'] += 1.37  # Trick python to use global var.
       entries = []
-      entries.append({'fields': {'action': 'patch_start'},
+      entries.append({'fields': {'action': 'patch_start', 'files': files},
                       'timestamp': time_obj['time']})
       time_obj['time'] += 1.37
       if not supported:
@@ -495,6 +497,9 @@ Review URL: https://codereview.chromium.org/697833002</msg>
         attempt('Failed to commit', reason='failed-commit'),
         attempt('Failed to apply patch', reason='failed-patch'),
         attempt('Presubmit check', reason='failed-presubmit-check'),
+        attempt('webkit CL', files=['third_party/WebKit/Source/config.h']),
+        attempt('infra CL', files=['infra/config/cq.cfg']),
+        attempt('other CL', files=['OWNERS']),
         # This also checks for the combination of failed-jobs and no
         # failed jobs list supplied.
         attempt('Custom trybots', supported=False, reason='failed-jobs'),
@@ -530,6 +535,8 @@ Review URL: https://codereview.chromium.org/697833002</msg>
 
     patch_id = ('pid', 5)
     args = mock.Mock()
+    args.path_filter_include = None
+    args.path_filter_exclude = None
     args.use_message_parsing = True
     pid, stats = cq_stats.derive_patch_stats(
         args,
@@ -545,6 +552,16 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.assertEqual(stats['attempts'], len(attempts))
     self.assertEqual(stats['committed'], True)
     self.assertGreater(stats['false-rejections'], 0)
+
+    # Test path filters.
+    args.path_filter_include = ['infra']
+    args.path_filter_exclude = ['third_party/WebKit']
+    pid, stats = cq_stats.derive_patch_stats(
+        args,
+        datetime.datetime(2014, 10, 15),
+        datetime.datetime(2014, 10, 15),
+        patch_id)
+    self.assertEqual(patch_id, pid)
 
     self.mock(cq_stats, 'fetch_cq_logs', mock_fetch_cq_logs_0)
     pid, stats = cq_stats.derive_patch_stats(
@@ -781,6 +798,15 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     cq_stats.print_stats(args, None)
     cq_stats.print_stats(args, stats_set)
     cq_stats.print_stats(args, swapped_stats)
+
+    args = Args()
+    args.path_filter_include = ['third_party/WebKit']
+    cq_stats.print_stats(args, stats_set)
+
+    args = Args()
+    args.path_filter_exclude = ['third_party/WebKit']
+    cq_stats.print_stats(args, stats_set)
+
     return self.expectations
 
   def test_print_log_stats(self):

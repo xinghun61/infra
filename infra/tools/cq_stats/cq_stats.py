@@ -159,6 +159,14 @@ def parse_args():
       choices=PROJECTS.keys(),
       help='Collect stats about this project.')
   parser.add_argument(
+      '--path-filter-include',
+      action='append',
+      help='Only consider CLs containing one of the whitelisted paths.')
+  parser.add_argument(
+      '--path-filter-exclude',
+      action='append',
+      help='Exclude CLs containing one of the blacklisted paths.')
+  parser.add_argument(
       '--bot', type=str, dest='bots',
       action='append',
       default=['blink-deps-roller@chromium.org',
@@ -695,6 +703,7 @@ def parse_failing_tryjobs(message):
 
 def derive_patch_stats(args, begin_date, end_date, patch_id):
   """``patch_id`` is a tuple (issue, patchset)."""
+  # TODO(phajdan.jr): Document or simplify this function.
   results = fetch_cq_logs(start_date=begin_date, end_date=end_date, filters=[
       'issue=%s' % patch_id[0], 'patchset=%s' % patch_id[1]])
   # The results should already ordered, but sort it again just to be sure.
@@ -735,6 +744,9 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
         ', '.join([r for r in REASONS if attempt[r]]))
     attempts.append(attempt)
 
+  def matches_path_filter(entry, filters):
+    return any(entry.startswith(f) for f in filters)
+
   # An attempt is a set of actions between patch_start and patch_stop
   # actions. Repeated patch_start / patch_stop actions are ignored.
   attempt = new_attempt()
@@ -749,6 +761,21 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
       if action == 'patch_start' and not dry_run:
         state = 'start'
         attempt['begin'] = result['timestamp']
+
+        files = result['fields'].get('files')
+        if args.path_filter_include:
+          if not files:
+            attempt['supported'] = False
+          elif not any(matches_path_filter(p, args.path_filter_include)
+                       for p in files):
+            attempt['supported'] = False
+        if args.path_filter_exclude:
+          if not files:
+            attempt['supported'] = False
+          elif any(matches_path_filter(p, args.path_filter_exclude)
+                   for p in files):
+            attempt['supported'] = False
+
     if state != 'start':
       continue
     attempt['actions'].append(result)
@@ -1242,6 +1269,14 @@ def print_stats(args, stats):
     output('No stats to display.')
     return
   output('Statistics for project %s', args.project)
+  if args.path_filter_include:
+    output('only for paths in the following set:')
+    for path in sorted(args.path_filter_include):
+      output('  %s' % path)
+  if args.path_filter_exclude:
+    output('excluding paths in the following set:')
+    for path in sorted(args.path_filter_exclude):
+      output('  %s' % path)
   if stats['begin'] > stats['end']:
     output('  No stats since %s', args.date)
     return
