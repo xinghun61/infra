@@ -171,8 +171,7 @@ class CreateIssue(webapp2.RequestHandler):
     sheriff_emails = self._get_current_sheriff_emails()
     issue = Issue({'summary': summary,
                    'description': description,
-                   'status': 'Assigned',
-                   'owner': {'name': random.choice(sheriff_emails)},
+                   'status': 'Untriaged',
                    'cc': [{'name': email} for email in sheriff_emails],
                    'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                               'Via-TryFlakes', 'Sheriff-Chromium']})
