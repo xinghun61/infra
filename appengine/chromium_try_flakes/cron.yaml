@@ -19,6 +19,6 @@ cron:
   url: /cron/update_flake_month_counter
   schedule: every 24 hours
 
-- description: File/update issues for flaky tests/steps on issue tracker.
-  url: /cron/update_issue_tracker
-  schedule: every 30 minutes
+#- description: File/update issues for flaky tests/steps on issue tracker.
+#  url: /cron/update_issue_tracker
+#  schedule: every 30 minutes
