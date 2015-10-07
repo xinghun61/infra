@@ -26,9 +26,12 @@ def _IsSameFile(changed_src_file_path, file_path_in_log):
       True: (a/b/x.cc, a/b/x.cc)
       False: (c/x.cc, a/b/c/x.cc)
   """
-  if changed_src_file_path == file_path_in_log:
+  changed_src_file_path_lower = changed_src_file_path.lower()
+  file_path_in_log_lower = file_path_in_log.lower()
+
+  if changed_src_file_path_lower == file_path_in_log_lower:
     return True
-  return changed_src_file_path.endswith('/%s' % file_path_in_log)
+  return changed_src_file_path_lower.endswith('/%s' % file_path_in_log_lower)
 
 
 def _GetGitBlame(repo_info, touched_file_path):

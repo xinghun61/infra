@@ -110,6 +110,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     self.assertTrue(build_failure_analysis._IsSameFile('a/b/x.cc', 'x.cc'))
     self.assertTrue(build_failure_analysis._IsSameFile('a/b/x.cc', 'b/x.cc'))
     self.assertTrue(build_failure_analysis._IsSameFile('a/b/x.cc', 'a/b/x.cc'))
+    self.assertTrue(build_failure_analysis._IsSameFile('A/B/X.cc', 'a/b/x.cc'))
 
     self.assertFalse(
         build_failure_analysis._IsSameFile('a/prefix_x.cc.', 'x.cc'))
