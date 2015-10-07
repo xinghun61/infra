@@ -411,13 +411,14 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
 
     # Start cloudtail.  This needs to be done after become_daemon so it's a
     # child of the service itself, not service_manager.
-    # Cloudtail will inherit service_manager's stdout and stderr, so its errors
-    # will go to service_manager's log.
+    # Cloudtail's stdout and stderr will go to /dev/null.
     if self.service.cloudtail_args is not None:
       log_r, log_w = os.pipe()
       try:
-        handle = subprocess.Popen(
-            self.service.cloudtail_args, stdin=log_r, close_fds=True)
+        with open(os.devnull, 'w') as null_fh:
+          handle = subprocess.Popen(
+              self.service.cloudtail_args,
+              stdin=log_r, stdout=null_fh, stderr=null_fh, close_fds=True)
       except OSError:
         log_w = None
         logging.exception('Failed to start cloudtail with args %s',
