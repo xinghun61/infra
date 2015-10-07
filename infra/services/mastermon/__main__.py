@@ -6,6 +6,7 @@
 """Send buildbot master monitoring data to the timeseries monitoring API."""
 
 import socket
+import sys
 import urlparse
 
 from infra.libs.service_utils import outer_loop
@@ -20,6 +21,11 @@ class Application(outer_loop.Application):
 
   def add_argparse_options(self, parser):
     super(Application, self).add_argparse_options(parser)
+
+    if sys.platform == 'win32':
+      default_cloudtail_path = 'C:\\infra-python\\go\\bin\\cloudtail.exe'
+    else:
+      default_cloudtail_path = '/opt/infra-python/go/bin/cloudtail'
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--url',
@@ -37,6 +43,11 @@ class Application(outer_loop.Application):
     parser.add_argument('--interval',
         default=60, type=int,
         help='time (in seconds) between sampling the buildbot master')
+
+    parser.add_argument(
+        '--cloudtail-path',
+        default=default_cloudtail_path,
+        help='Path to the cloudtail binary')
 
     parser.set_defaults(
         ts_mon_flush='manual',
@@ -68,7 +79,7 @@ class Application(outer_loop.Application):
     else:
       # Query the mastermap and monitor all the masters on a host.
       self.monitors = monitor.create_from_mastermap(
-          opts.build_dir, opts.hostname)
+          opts.build_dir, opts.hostname, opts.cloudtail_path)
 
     super(Application, self).main(opts)
 
