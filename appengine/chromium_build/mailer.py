@@ -180,8 +180,7 @@ class Email(BaseHandler):
 
     text_content, html_content, subject = template.genMessageContent(build_data)
 
-    sentries = ['gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com',
-                'stip@chromium.org']
+    sentries = ['gatekeeper-ng@chromium-gatekeeper-sentry.appspotmail.com']
 
     recipients = list(set(build_data['recipients'] + sentries))
 
