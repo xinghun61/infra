@@ -104,20 +104,39 @@ var (
 	ErrEnsurePackagesFailed = errors.New("failed to update packages, see the log")
 )
 
+// UnixTime is time.Time that serializes to unix timestamp in JSON (represented
+// as a number of seconds since January 1, 1970 UTC).
+type UnixTime time.Time
+
+// String is needed to be able to print UnixTime.
+func (t UnixTime) String() string {
+	return time.Time(t).String()
+}
+
+// Before is used to compare UnixTime objects.
+func (t UnixTime) Before(t2 UnixTime) bool {
+	return time.Time(t).Before(time.Time(t2))
+}
+
+// MarshalJSON is used by JSON encoder.
+func (t UnixTime) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
+}
+
 // PackageACL is per package path per role access control list that is a part of
 // larger overall ACL: ACL for package "a/b/c" is a union of PackageACLs for "a"
 // "a/b" and "a/b/c".
 type PackageACL struct {
 	// PackagePath is a package subpath this ACL is defined for.
-	PackagePath string
+	PackagePath string `json:"package_path"`
 	// Role is a role that listed users have, e.g. 'READER', 'WRITER', ...
-	Role string
+	Role string `json:"role"`
 	// Principals list users and groups granted the role.
-	Principals []string
+	Principals []string `json:"principals"`
 	// ModifiedBy specifies who modified the list the last time.
-	ModifiedBy string
+	ModifiedBy string `json:"modified_by"`
 	// ModifiedTs is a timestamp when the list was modified the last time.
-	ModifiedTs time.Time
+	ModifiedTs UnixTime `json:"modified_ts"`
 }
 
 // PackageACLChange is a mutation to some package ACL.
@@ -136,6 +155,26 @@ type UploadSession struct {
 	ID string
 	// URL is where to upload the data to.
 	URL string
+}
+
+// InstanceInfo is returned by FetchInstanceInfo.
+type InstanceInfo struct {
+	// Pin identifies package instance.
+	Pin common.Pin `json:"pin"`
+	// RegisteredBy is identify of whoever uploaded this instance.
+	RegisteredBy string `json:"registered_by"`
+	// RegisteredTs is when the instance was registered.
+	RegisteredTs UnixTime `json:"registered_ts"`
+}
+
+// TagInfo is returned by FetchInstanceTags.
+type TagInfo struct {
+	// Tag is actual tag name ("key:value" pair).
+	Tag string `json:"tag"`
+	// RegisteredBy is identify of whoever attached this tag.
+	RegisteredBy string `json:"registered_by"`
+	// RegisteredTs is when the tag was registered.
+	RegisteredTs UnixTime `json:"registered_ts"`
 }
 
 // Client provides high-level CIPD client interface. Thread safe.
@@ -171,6 +210,15 @@ type Client interface {
 	// AttachTagsWhenReady attaches tags to an instance, retrying on "not yet
 	// processed" responses.
 	AttachTagsWhenReady(pin common.Pin, tags []string) error
+
+	// FetchInstanceInfo returns general information about the instance, such as
+	// who registered it and when.
+	FetchInstanceInfo(pin common.Pin) (InstanceInfo, error)
+
+	// FetchInstanceTags returns information about tags attached to the package
+	// instance sorted by tag key and creation timestamp (newest first). If 'tags'
+	// is empty, fetches all attached tags, otherwise only ones specified.
+	FetchInstanceTags(pin common.Pin, tags []string) ([]TagInfo, error)
 
 	// FetchInstance downloads package instance file from the repository.
 	FetchInstance(pin common.Pin, output io.WriteSeeker) error
@@ -576,6 +624,50 @@ func (client *clientImpl) SearchInstances(tag, packageName string) ([]common.Pin
 	return client.remote.searchInstances(tag, packageName)
 }
 
+func (client *clientImpl) FetchInstanceInfo(pin common.Pin) (InstanceInfo, error) {
+	err := common.ValidatePin(pin)
+	if err != nil {
+		return InstanceInfo{}, err
+	}
+	info, err := client.remote.fetchInstance(pin)
+	if err != nil {
+		return InstanceInfo{}, err
+	}
+	return InstanceInfo{
+		Pin:          pin,
+		RegisteredBy: info.registeredBy,
+		RegisteredTs: UnixTime(info.registeredTs),
+	}, nil
+}
+
+type sortByTagKey []TagInfo
+
+func (s sortByTagKey) Len() int      { return len(s) }
+func (s sortByTagKey) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+func (s sortByTagKey) Less(i, j int) bool {
+	k1 := common.GetInstanceTagKey(s[i].Tag)
+	k2 := common.GetInstanceTagKey(s[j].Tag)
+	if k1 == k2 {
+		// Newest first.
+		return s[j].RegisteredTs.Before(s[i].RegisteredTs)
+	}
+	return k1 < k2
+}
+
+func (client *clientImpl) FetchInstanceTags(pin common.Pin, tags []string) ([]TagInfo, error) {
+	err := common.ValidatePin(pin)
+	if err != nil {
+		return nil, err
+	}
+	fetched, err := client.remote.fetchTags(pin, tags)
+	if err != nil {
+		return nil, err
+	}
+	sort.Sort(sortByTagKey(fetched))
+	return fetched, nil
+}
+
 func (client *clientImpl) FetchInstance(pin common.Pin, output io.WriteSeeker) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
@@ -770,6 +862,7 @@ type remote interface {
 
 	setRef(ref string, pin common.Pin) error
 	attachTags(pin common.Pin, tags []string) error
+	fetchTags(pin common.Pin, tags []string) ([]TagInfo, error)
 	fetchInstance(pin common.Pin) (*fetchInstanceResponse, error)
 
 	listPackages(path string, recursive bool) ([]string, []string, error)

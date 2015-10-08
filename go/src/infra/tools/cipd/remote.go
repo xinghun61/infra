@@ -297,6 +297,49 @@ func (r *remoteImpl) fetchInstance(pin common.Pin) (*fetchInstanceResponse, erro
 	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
 }
 
+func (r *remoteImpl) fetchTags(pin common.Pin, tags []string) ([]TagInfo, error) {
+	endpoint, err := tagsEndpoint(pin, tags)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+		Tags         []struct {
+			Tag          string `json:"tag"`
+			RegisteredBy string `json:"registered_by"`
+			RegisteredTs string `json:"registered_ts"`
+		} `json:"tags"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		out := make([]TagInfo, len(reply.Tags))
+		for i, tag := range reply.Tags {
+			ts, err := convertTimestamp(tag.RegisteredTs)
+			if err != nil {
+				r.client.Logger.Warningf("cipd: failed to parse timestamp %q: %s", tag.RegisteredTs, err)
+			}
+			out[i] = TagInfo{
+				Tag:          tag.Tag,
+				RegisteredBy: tag.RegisteredBy,
+				RegisteredTs: UnixTime(ts),
+			}
+		}
+		return out, nil
+	case "PACKAGE_NOT_FOUND":
+		return nil, fmt.Errorf("package %q is not registered", pin.PackageName)
+	case "INSTANCE_NOT_FOUND":
+		return nil, fmt.Errorf("package %q doesn't have instance %q", pin.PackageName, pin.InstanceID)
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
+}
+
 func (r *remoteImpl) fetchACL(packagePath string) ([]PackageACL, error) {
 	endpoint, err := aclEndpoint(packagePath)
 	if err != nil {
@@ -332,7 +375,7 @@ func (r *remoteImpl) fetchACL(packagePath string) ([]PackageACL, error) {
 				Role:        acl.Role,
 				Principals:  acl.Principals,
 				ModifiedBy:  acl.ModifiedBy,
-				ModifiedTs:  ts,
+				ModifiedTs:  UnixTime(ts),
 			})
 		}
 		return out, nil

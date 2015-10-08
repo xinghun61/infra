@@ -101,3 +101,12 @@ func ValidateInstanceVersion(v string) error {
 	}
 	return fmt.Errorf("bad version (not an instance ID, a ref or a tag): %q", v)
 }
+
+// GetInstanceTagKey returns key portion of the instance tag or empty string.
+func GetInstanceTagKey(t string) string {
+	chunks := strings.SplitN(t, ":", 2)
+	if len(chunks) != 2 {
+		return ""
+	}
+	return chunks[0]
+}

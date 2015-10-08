@@ -88,3 +88,12 @@ func TestPinToString(t *testing.T) {
 			"good/name:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	})
 }
+
+func TestGetInstanceTagKey(t *testing.T) {
+	Convey("GetInstanceTagKey works", t, func() {
+		So(GetInstanceTagKey("a:b"), ShouldEqual, "a")
+		So(GetInstanceTagKey("a:b:c"), ShouldEqual, "a")
+		So(GetInstanceTagKey(":b"), ShouldEqual, "")
+		So(GetInstanceTagKey(""), ShouldEqual, "")
+	})
+}

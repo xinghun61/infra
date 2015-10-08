@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/auth"
@@ -54,6 +55,12 @@ type pinInfo struct {
 	Tracking string `json:"tracking,omitempty"`
 	// Err is not empty if pin related operation failed. Pin is nil in that case.
 	Err string `json:"error,omitempty"`
+}
+
+// describeOutput defines JSON format for 'cipd describe' output.
+type describeOutput struct {
+	cipd.InstanceInfo
+	Tags []cipd.TagInfo `json:"tags"`
 }
 
 // Subcommand is a base of all CIPD subcommands. It defines some common flags,
@@ -715,6 +722,95 @@ func resolveVersion(packagePrefix, version string, serviceOpts ServiceOptions) (
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 'describe' subcommand.
+
+var cmdDescribe = &subcommands.Command{
+	UsageLine: "describe <package> [options]",
+	ShortDesc: "returns information about a package instance given its version",
+	LongDesc: "Returns information about a package instance given its version: " +
+		"who uploaded the instance and when and a list of attached tags.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &describeRun{}
+		c.registerBaseFlags()
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.version, "version", "<version>", "Package version to describe.")
+		return c
+	},
+}
+
+type describeRun struct {
+	Subcommand
+	ServiceOptions
+
+	version string
+}
+
+func (c *describeRun) Run(a subcommands.Application, args []string) int {
+	if !c.init(args, 1, 1) {
+		return 1
+	}
+	return c.done(describeInstance(args[0], c.version, c.ServiceOptions))
+}
+
+func describeInstance(pkg, version string, serviceOpts ServiceOptions) (*describeOutput, error) {
+	client, err := serviceOpts.makeCipdClient("")
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	// Grab instance ID.
+	pin, err := client.ResolveVersion(pkg, version)
+	if err != nil {
+		return nil, err
+	}
+
+	wg := sync.WaitGroup{}
+
+	// Fetch who and when registered it.
+	var info cipd.InstanceInfo
+	var infoErr error
+	wg.Add(1)
+	go func() {
+		info, infoErr = client.FetchInstanceInfo(pin)
+		wg.Done()
+	}()
+
+	// Fetch the list of attached tags.
+	var tags []cipd.TagInfo
+	var tagErr error
+	wg.Add(1)
+	go func() {
+		tags, tagErr = client.FetchInstanceTags(pin, nil)
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	if infoErr != nil {
+		return nil, infoErr
+	}
+	if tagErr != nil {
+		return nil, tagErr
+	}
+
+	fmt.Printf("Package:       %s\n", info.Pin.PackageName)
+	fmt.Printf("Instance ID:   %s\n", info.Pin.InstanceID)
+	fmt.Printf("Registered by: %s\n", info.RegisteredBy)
+	fmt.Printf("Registered at: %s\n", info.RegisteredTs)
+	if len(tags) != 0 {
+		fmt.Printf("Tags:\n")
+		for _, t := range tags {
+			fmt.Printf("  %s\n", t.Tag)
+		}
+	} else {
+		fmt.Printf("Tags:          none\n")
+	}
+
+	return &describeOutput{info, tags}, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 'set-ref' subcommand.
 
 var cmdSetRef = &subcommands.Command{
@@ -979,18 +1075,18 @@ func (c *listACLRun) Run(a subcommands.Application, args []string) int {
 	if !c.init(args, 1, 1) {
 		return 1
 	}
-	return c.done(nil, listACL(args[0], c.ServiceOptions))
+	return c.done(listACL(args[0], c.ServiceOptions))
 }
 
-func listACL(packagePath string, serviceOpts ServiceOptions) error {
+func listACL(packagePath string, serviceOpts ServiceOptions) (map[string][]cipd.PackageACL, error) {
 	client, err := serviceOpts.makeCipdClient("")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer client.Close()
 	acls, err := client.FetchACL(packagePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Split by role, drop empty ACLs.
@@ -1019,7 +1115,7 @@ func listACL(packagePath string, serviceOpts ServiceOptions) error {
 	listRoleACL("Writers", byRole["WRITER"])
 	listRoleACL("Readers", byRole["READER"])
 
-	return nil
+	return byRole, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1423,6 +1519,7 @@ var application = &subcommands.DefaultApplication{
 		cmdCreate,
 		cmdEnsure,
 		cmdResolve,
+		cmdDescribe,
 		cmdSetRef,
 		cmdSetTag,
 

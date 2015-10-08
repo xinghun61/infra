@@ -312,6 +312,97 @@ func TestAttachTagsWhenReady(t *testing.T) {
 	})
 }
 
+func TestFetchInstanceInfo(t *testing.T) {
+	Convey("FetchInstanceInfo works", t, func(c C) {
+		client := mockClient(c, "", []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/instance",
+				Query: url.Values{
+					"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+					"package_name": []string{"pkgname"},
+				},
+				Reply: `{
+					"status": "SUCCESS",
+					"instance": {
+						"registered_by": "user:a@example.com",
+						"registered_ts": "1420244414571500"
+					}
+				}`,
+			},
+		})
+		pin := common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		info, err := client.FetchInstanceInfo(pin)
+		So(err, ShouldBeNil)
+		So(info, ShouldResemble, InstanceInfo{
+			Pin:          pin,
+			RegisteredBy: "user:a@example.com",
+			RegisteredTs: UnixTime(time.Unix(0, 1420244414571500000)),
+		})
+	})
+}
+
+func TestFetchInstanceTags(t *testing.T) {
+	Convey("FetchInstanceTags( works", t, func(c C) {
+		client := mockClient(c, "", []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/tags",
+				Query: url.Values{
+					"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+					"package_name": []string{"pkgname"},
+				},
+				Reply: `{
+					"status": "SUCCESS",
+					"tags": [
+						{
+							"tag": "z:earlier",
+							"registered_by": "user:a@example.com",
+							"registered_ts": "1420244414571500"
+						},
+						{
+							"tag": "z:later",
+							"registered_by": "user:a@example.com",
+							"registered_ts": "1420244414572500"
+						},
+						{
+							"tag": "a:later",
+							"registered_by": "user:a@example.com",
+							"registered_ts": "1420244414572500"
+						}
+					]
+				}`,
+			},
+		})
+		pin := common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		tags, err := client.FetchInstanceTags(pin, nil)
+		So(err, ShouldBeNil)
+		So(tags, ShouldResemble, []TagInfo{
+			{
+				Tag:          "a:later",
+				RegisteredBy: "user:a@example.com",
+				RegisteredTs: UnixTime(time.Unix(0, 1420244414572500000)),
+			},
+			{
+				Tag:          "z:later",
+				RegisteredBy: "user:a@example.com",
+				RegisteredTs: UnixTime(time.Unix(0, 1420244414572500000)),
+			},
+			{
+				Tag:          "z:earlier",
+				RegisteredBy: "user:a@example.com",
+				RegisteredTs: UnixTime(time.Unix(0, 1420244414571500000)),
+			},
+		})
+	})
+}
+
 func TestFetch(t *testing.T) {
 	Convey("Mocking remote services", t, func() {
 		tempDir, err := ioutil.TempDir("", "cipd_test")

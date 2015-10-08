@@ -68,6 +68,25 @@ func TestRemoteImpl(t *testing.T) {
 		return remote.fetchInstance(Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
 	}
 
+	mockFetchTags := func(c C, reply string, tags []string) ([]TagInfo, error) {
+		query := url.Values{
+			"package_name": []string{"pkgname"},
+			"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		}
+		if len(tags) != 0 {
+			query["tags"] = tags
+		}
+		remote := mockRemoteImpl(c, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/tags",
+				Query:  query,
+				Reply:  reply,
+			},
+		})
+		return remote.fetchTags(Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, tags)
+	}
+
 	mockFetchACL := func(c C, reply string) ([]PackageACL, error) {
 		remote := mockRemoteImpl(c, []expectedHTTPCall{
 			{
@@ -415,6 +434,58 @@ func TestRemoteImpl(t *testing.T) {
 		So(result, ShouldBeNil)
 	})
 
+	Convey("fetchTags SUCCESS", t, func(c C) {
+		result, err := mockFetchTags(c, `{
+				"status": "SUCCESS",
+				"tags": [
+					{
+						"tag": "a:b1",
+						"registered_by": "user:a@example.com",
+						"registered_ts": "1420244414571500"
+					},
+					{
+						"tag": "a:b2",
+						"registered_by": "user:a@example.com",
+						"registered_ts": "bad-timestamp"
+					}
+				]
+			}`, nil)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, []TagInfo{
+			{
+				Tag:          "a:b1",
+				RegisteredBy: "user:a@example.com",
+				RegisteredTs: UnixTime(time.Unix(0, 1420244414571500000)),
+			},
+			TagInfo{
+				Tag:          "a:b2",
+				RegisteredBy: "user:a@example.com",
+				RegisteredTs: UnixTime{},
+			},
+		})
+	})
+
+	Convey("fetchTags PACKAGE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchTags(c, `{"status": "PACKAGE_NOT_FOUND"}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchTags INSTANCE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchTags(c, `{"status": "INSTANCE_NOT_FOUND"}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchTags ERROR", t, func(c C) {
+		result, err := mockFetchTags(c, `{
+				"status": "ERROR",
+				"error_message": "Some error message"
+			}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
 	Convey("fetchACL SUCCESS", t, func(c C) {
 		result, err := mockFetchACL(c, `{
 				"status": "SUCCESS",
@@ -444,14 +515,14 @@ func TestRemoteImpl(t *testing.T) {
 				Role:        "OWNER",
 				Principals:  []string{"user:a", "group:b"},
 				ModifiedBy:  "user:abc@example.com",
-				ModifiedTs:  time.Unix(0, 1420244414571500000),
+				ModifiedTs:  UnixTime(time.Unix(0, 1420244414571500000)),
 			},
 			{
 				PackagePath: "a/b",
 				Role:        "READER",
 				Principals:  []string{"group:c"},
 				ModifiedBy:  "user:abc@example.com",
-				ModifiedTs:  time.Unix(0, 1420244414571500000),
+				ModifiedTs:  UnixTime(time.Unix(0, 1420244414571500000)),
 			},
 		})
 	})
