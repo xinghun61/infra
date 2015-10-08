@@ -5,5 +5,5 @@
 # Instructions for building packages can be found in the "doc/" subdirectory
 # under that package name.
 
-# Proto3 Protocol Buffers generator (built from git rev 0e5686a7).
-infra/tools/protoc/linux-amd64      5a789bd289df1bc0c6f0dd5f863184e6d1f3badb
+# Proto3 Protocol Buffers generator (protoc).
+infra/tools/protoc/linux-amd64    git_commit:0e5686a70768a289782eb1e1aa86646e56897e4d
