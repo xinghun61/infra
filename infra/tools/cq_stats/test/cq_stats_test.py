@@ -212,63 +212,6 @@ class TestCQStats(auto_stub.TestCase):
 
     return map(ensure_serializable, [data, derived_data])
 
-  def test_fetch_svn_logs(self):
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
-<log>
-<logentry
-   revision="184775">
-<author>amikhaylova@google.com</author>
-<date>2014-11-01T20:49:20.468030Z</date>
-<msg>Move Promise Tracker out of hidden experiments.
-
-BUG=348919
-
-Review URL: https://codereview.chromium.org/697833002</msg>
-<revprops>
-<property
-   name="commit-bot">commit-bot@chromium.org</property>
-</revprops>
-</logentry>
-<logentry
-   revision="184774">
-<author>amikhaylova@google.com</author>
-<date>2014-11-01T20:49:20.468030Z</date>
-<msg>Move Promise Tracker out of hidden experiments.
-
-BUG=348919
-
-Review URL: https://codereview.chromium.org/697833002</msg>
-<revprops>
-<property
-   name="foo">bar</property>
-</revprops>
-</logentry>
-<logentry
-   revision="184773">
-<author>amikhaylova@google.com</author>
-<date>2014-11-01T20:49:20.468030Z</date>
-<msg>Move Promise Tracker out of hidden experiments.
-
-BUG=348919
-
-Review URL: https://codereview.chromium.org/697833002</msg>
-</logentry>
-</log>
-"""
-    self.mock(subprocess, 'check_output', lambda *_: xml)
-    data = cq_stats.fetch_svn_logs(
-        'chromium',
-        datetime.datetime(2014, 1, 1),
-        datetime.datetime(2014, 1, 1))
-
-    derived_data = cq_stats.derive_svn_stats(
-        'chromium',
-        datetime.datetime(2014, 1, 1),
-        datetime.datetime(2014, 1, 1),
-        [])
-
-    return map(ensure_serializable, [data, derived_data])
-
   def test_fetch_stats(self):
     self.mock(cq_stats, 'fetch_json', lambda _: 'json')
     self.assertEqual('json', cq_stats.fetch_stats(Args()))
@@ -829,9 +772,7 @@ Review URL: https://codereview.chromium.org/697833002</msg>
     self.mock(cq_stats, 'derive_tree_stats',
         lambda *_: {'open': 0.0, 'total': 3600.0})
     self.mock(cq_stats, 'derive_git_stats', lambda *_: {})
-    self.mock(cq_stats, 'derive_svn_stats', lambda *_: {})
 
-    cq_stats.acquire_stats(Args(project='blink', bots=[]))
     cq_stats.acquire_stats(Args(project='chromium', bots=[]),
                            add_tree_stats=False)
     cq_stats.acquire_stats(Args(

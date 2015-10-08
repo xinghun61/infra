@@ -36,17 +36,10 @@ TREE_STATUS_URL = 'http://%s-status.appspot.com'
 PROJECTS = {
     'chromium': {
         'tree-status': TREE_STATUS_URL % 'chromium',
-        'type': 'git',
         'repo': 'https://chromium.googlesource.com/chromium/src',
-    },
-    'blink': {
-        'tree-status': TREE_STATUS_URL % 'blink',
-        'type': 'svn',
-        'repo': 'svn://svn.chromium.org/blink/trunk/',
     },
     'skia': {
         'tree-status': TREE_STATUS_URL % 'skia-tree',
-        'type': 'git',
         'repo': 'https://skia.googlesource.com/skia',
     },
 }
@@ -261,12 +254,6 @@ def local_date_to_timestamp(date):
   return time.mktime(date.timetuple())
 
 
-def local_to_utc(local_time):
-  timestamp = local_date_to_timestamp(local_time)
-  utcTime = datetime.datetime.utcfromtimestamp(timestamp)
-  return utcTime
-
-
 session = requests.Session()
 http_adapter = requests.adapters.HTTPAdapter(
     max_retries=urllib3.util.Retry(total=4, backoff_factor=0.5),
@@ -381,33 +368,6 @@ def fetch_git_logs(repo, from_date, to_date):
 
     if commit_date < from_date:
       break
-  return data
-
-
-def fetch_svn_logs(repo, from_date, to_date):
-  from_date = local_to_utc(from_date)
-  to_date = local_to_utc(to_date)
-  range_str = (
-      '{%s +0000}:{%s +0000}' % (from_date, to_date))
-  out = subprocess.check_output(
-      ['svn', 'log', '--with-all-revprops', '--xml', repo, '-r', range_str])
-  data = []
-  for logentry in ElementTree.XML(out).findall('logentry'):
-    date_str = logentry.find('date').text
-    date = date_from_string(date_str)
-    entry = {
-        'author': logentry.find('author').text,
-        'date': date,
-        'revprops': {},
-        'commit-bot': False,
-    }
-    revprops = logentry.find('revprops')
-    if revprops is not None:
-      for revprop in revprops.findall('property'):
-        entry['revprops'][revprop.attrib['name']] = revprop.text
-        if revprop.attrib['name'] == 'commit-bot':
-          entry['commit-bot'] = True
-    data.append(entry)
   return data
 
 
@@ -967,11 +927,6 @@ def derive_git_stats(project, start_date, end_date, bots):
   return derive_log_stats(log_data, bots)
 
 
-def derive_svn_stats(project, start_date, end_date, bots):
-  log_data = fetch_svn_logs(PROJECTS[project]['repo'], start_date, end_date)
-  return derive_log_stats(log_data, bots)
-
-
 def percentage_tuple(data, total):
   num_data = data if isinstance(data, numbers.Number) else len(data)
   num_total = total if isinstance(total, numbers.Number) else len(total)
@@ -1395,13 +1350,8 @@ def acquire_stats(args, add_tree_stats=True):
 
   if add_tree_stats:
     stats['tree'] = derive_tree_stats(args.project, args.date, end_date)
-
-    if PROJECTS[args.project]['type'] == 'git':
-      stats['usage'] = derive_git_stats(
-          args.project, args.date, end_date, args.bots)
-    else:
-      stats['usage'] = derive_svn_stats(
-          args.project, args.date, end_date, args.bots)
+    stats['usage'] = derive_git_stats(
+        args.project, args.date, end_date, args.bots)
 
   return stats
 
