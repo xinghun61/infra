@@ -322,6 +322,10 @@ found in the LICENSE file.
         if (this._promise)
           return;
         this.$.spinner.active = true;
+        var unexpected = this.querySelector('::shadow #unexpected');
+        if (unexpected) {
+          unexpected.waiting = true;
+        }
 
         this._promise = Promise.all(
           [this.repositories.update(),
@@ -338,22 +342,12 @@ found in the LICENSE file.
       },
 
       _updateFailed: function(reason) {
-        this._promise = null;
-        this.$.spinner.active = false;
+        this._endUpdating();
         window.console.log(['update failed', reason]);
       },
 
       _updateCompleted: function() {
-        this._promise = null;
-        this.$.spinner.active = false;
-        // FIXME: Shouldn't have to do this, but $ doesn't contain dynamically inserted
-        // elements (app-router dynamically inserts resultsPanel if some other route was
-        // in the initial page load).  This logic should probably be pushed down into
-        // ct-results-panel and ct-unexpected-failures.
-        var unexpected = this.querySelector('::shadow #unexpected');
-        if (unexpected) {
-          unexpected.update();
-        }
+        this._endUpdating();
         if (!this.failures.failures)
           return;
         this.alertsHistoryKey = this.failures.alertsHistoryKey;
@@ -374,6 +368,20 @@ found in the LICENSE file.
           });
         }
         this._pendingFailureGroupKey = '';
+      },
+
+      _endUpdating: function() {
+        this._promise = null;
+        this.$.spinner.active = false;
+        // FIXME: Shouldn't have to do this, but $ doesn't contain dynamically inserted
+        // elements (app-router dynamically inserts resultsPanel if some other route was
+        // in the initial page load).  This logic should probably be pushed down into
+        // ct-results-panel and ct-unexpected-failures.
+        var unexpected = this.querySelector('::shadow #unexpected');
+        if (unexpected) {
+          unexpected.waiting = false;
+          unexpected.update();
+        }
       },
 
       fileSoMBug: function() {
