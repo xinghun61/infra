@@ -74,6 +74,19 @@ func TestPushBuffer(t *testing.T) {
 		So(len(client.getCalls()), ShouldEqual, 1)
 	})
 
+	Convey("Send some entries that should be merged into one", t, func() {
+		cl := testclock.New(time.Time{})
+		client := &fakeClient{clock: cl}
+		buf := NewPushBuffer(PushBufferOptions{Client: client, Clock: cl})
+		buf.Add([]Entry{
+			{TextPayload: "a", ParsedBy: NullParser()},
+			{TextPayload: "b"},
+		})
+		So(buf.Stop(nil), ShouldBeNil)
+		So(len(client.getCalls()), ShouldEqual, 1)
+		So(client.getEntries()[0].TextPayload, ShouldEqual, "a\nb")
+	})
+
 	Convey("Retry works", t, func() {
 		cl := testclock.New(time.Time{})
 		cl.SetTimerCallback(func(clock.Timer) { cl.Add(1 * time.Second) })

@@ -167,6 +167,28 @@ func (b *pushBufferImpl) loop() {
 	b.flush()
 }
 
+func (b *pushBufferImpl) mergeEntries() {
+	merged := make([]Entry, 0, len(b.pending))
+
+	for i, e := range b.pending {
+		// Always skip the first one - there's nothing to merge it into.
+		if i == 0 {
+			merged = append(merged, e)
+			continue
+		}
+
+		last := &merged[len(merged)-1]
+
+		if e.ParsedBy == nil && last.ParsedBy != nil && last.ParsedBy.MergeLogLine(e.TextPayload, last) {
+			continue
+		} else {
+			merged = append(merged, e)
+		}
+	}
+
+	b.pending = merged
+}
+
 // flush sends all buffered entries via client and stops flush timeout timer.
 // It stops the timer even if flush failed (so restart the timer if needed).
 func (b *pushBufferImpl) flush() {
@@ -175,6 +197,7 @@ func (b *pushBufferImpl) flush() {
 	if len(b.pending) == 0 {
 		return
 	}
+	b.mergeEntries()
 	b.Logger.Debugf("flushing %d entries...", len(b.pending))
 	if err := b.pushWithRetries(b.pending); err != nil {
 		b.Logger.Errorf("dropping %d entries, flush failed - %s", len(b.pending), err)

@@ -31,6 +31,9 @@ type Entry struct {
 	TextPayload string
 	// StructPayload is the log entry payload, represented as a JSONish structure.
 	StructPayload interface{}
+	// ParsedBy is the parser that parsed this line, or nil if it fell through to
+	// the default parser.
+	ParsedBy LogParser
 }
 
 // Client knows how to send entries to Cloud Logging log.

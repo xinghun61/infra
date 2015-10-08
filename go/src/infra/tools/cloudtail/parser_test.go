@@ -125,7 +125,10 @@ func TestTwistedLogsParser(t *testing.T) {
 }
 
 type callbackParser struct {
-	cb func(line string) *Entry
+	cb      func(line string) *Entry
+	mergeCb func(line string, e *Entry) bool
 }
 
 func (p *callbackParser) ParseLogLine(line string) *Entry { return p.cb(line) }
+
+func (p *callbackParser) MergeLogLine(line string, e *Entry) bool { return p.mergeCb(line, e) }

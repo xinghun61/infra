@@ -16,6 +16,11 @@ type LogParser interface {
 	// ParseLogLine returns log entry with all recognized info filled in or nil
 	// if the line format is not recognized.
 	ParseLogLine(line string) *Entry
+
+	// MergeLogLine appends the line of text to the existing Entry.  The Entry was
+	// created by this LogParser.  Returns true if the merge succeeded, false if
+	// the line should be added as a separate log entry.
+	MergeLogLine(line string, e *Entry) bool
 }
 
 // LogParserChain is a list of log parsers applied one after another until
@@ -32,6 +37,12 @@ func (c LogParserChain) ParseLogLine(line string) *Entry {
 		}
 	}
 	return lineToEntry(line)
+}
+
+// MergeLogLine does nothing.  Concrete parsers should set the ParsedBy Entry
+// member for their own MergeLogLine methods to be called.
+func (c LogParserChain) MergeLogLine(line string, e *Entry) bool {
+	return false
 }
 
 // StdParser returns a parser that recognizes common types of logs.
@@ -99,9 +110,15 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 			Timestamp:   timestamp,
 			Severity:    infraLogsSeverity[severity],
 			TextPayload: fmt.Sprintf("%d %s:%d] %s", processID, module, line, message),
+			ParsedBy:    p,
 		}
 	}
 	return nil
+}
+
+func (p *infraLogsParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,9 +146,15 @@ func (p *twistedLogsParser) ParseLogLine(line string) *Entry {
 			Timestamp:   timestamp,
 			Severity:    Default,
 			TextPayload: fmt.Sprintf("%s] %s", system, message),
+			ParsedBy:    p,
 		}
 	}
 	return nil
+}
+
+func (p *twistedLogsParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,6 +162,11 @@ func (p *twistedLogsParser) ParseLogLine(line string) *Entry {
 type nullParser struct{}
 
 func (p *nullParser) ParseLogLine(line string) *Entry { return lineToEntry(line) }
+
+func (p *nullParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
+}
 
 func lineToEntry(line string) *Entry {
 	return &Entry{Timestamp: time.Now(), TextPayload: line}
