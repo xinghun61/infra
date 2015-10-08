@@ -472,6 +472,58 @@ class RepoService(object):
       ref.put()
     return ref
 
+  def get_package_refs(self, package_name, refs):
+    """Fetches information about given package refs.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      refs: list of strings with refs to look for.
+
+    Returns:
+      {ref: corresponding PackageRef or None if not set}.
+    """
+    assert is_valid_package_name(package_name), package_name
+    assert refs and all(is_valid_package_ref(ref) for ref in refs), refs
+    entities = ndb.get_multi(package_ref_key(package_name, ref) for ref in refs)
+    return dict(zip(refs, entities))
+
+  def query_package_refs(self, package_name):
+    """Lists all refs belonging to a package (sorted by creation time).
+
+    Newest refs first.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+
+    Returns:
+      List of PackageRef instances.
+    """
+    assert is_valid_package_name(package_name), package_name
+    q = PackageRef.query(ancestor=package_key(package_name))
+    q = q.order(-PackageRef.modified_ts)
+    return q.fetch()
+
+  def query_instance_refs(self, package_name, instance_id):
+    """Lists all refs pointing to a package instance sorted by creation time.
+
+    Newest refs first.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      instance_id: identifier of the package instance (SHA1 of package file).
+
+    Returns:
+      List of PackageRef instances.
+    """
+    assert is_valid_package_name(package_name), package_name
+    assert is_valid_instance_id(instance_id), instance_id
+    q = PackageRef.query(
+        PackageRef.instance_id == instance_id,
+        ancestor=package_key(package_name))
+    q = q.order(-PackageRef.modified_ts)
+    return q.fetch()
+
   def query_tags(self, package_name, instance_id):
     """Lists all tags attached to a package instance sorted by creation time.
 
@@ -485,6 +537,8 @@ class RepoService(object):
       List of InstanceTag instances.
     """
     # TODO(vadimsh): Support cursors.
+    assert is_valid_package_name(package_name), package_name
+    assert is_valid_instance_id(instance_id), instance_id
     q = InstanceTag.query(
         ancestor=package_instance_key(package_name, instance_id))
     q = q.order(-InstanceTag.registered_ts)
@@ -501,11 +555,13 @@ class RepoService(object):
     Returns:
       {tag: corresponding InstanceTag or None if not attached}.
     """
+    assert is_valid_package_name(package_name), package_name
+    assert is_valid_instance_id(instance_id), instance_id
     assert tags and all(is_valid_instance_tag(tag) for tag in tags), tags
     attached = ndb.get_multi(
         instance_tag_key(package_name, instance_id, tag)
         for tag in tags)
-    return {tag: entity for tag, entity in zip(tags, attached)}
+    return dict(zip(tags, attached))
 
   @ndb.transactional
   def attach_tags(self, package_name, instance_id, tags, caller, now=None):
@@ -852,6 +908,11 @@ class PackageRef(ndb.Model):
   def package_name(self):
     """Name of the package this ref belongs to."""
     return self.key.parent().string_id()
+
+  @property
+  def ref(self):
+    """Name of the ref (extracted from entity key)."""
+    return self.key.string_id()
 
 
 def package_ref_key(package_name, ref):

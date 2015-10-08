@@ -11,3 +11,16 @@ indexes:
   properties:
   - name: registered_ts
     direction: desc
+
+- kind: PackageRef
+  ancestor: yes
+  properties:
+  - name: modified_ts
+    direction: desc
+
+- kind: PackageRef
+  ancestor: yes
+  properties:
+  - name: instance_id
+  - name: modified_ts
+    direction: desc

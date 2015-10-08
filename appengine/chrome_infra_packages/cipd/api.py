@@ -104,14 +104,16 @@ def tag_to_proto(entity):
 
 class PackageRef(messages.Message):
   """Information about some ref belonging to a package."""
-  instance_id = messages.StringField(1, required=True)
-  modified_by = messages.StringField(2, required=True)
-  modified_ts = messages.IntegerField(3, required=True)
+  ref = messages.StringField(1, required=True)
+  instance_id = messages.StringField(2, required=True)
+  modified_by = messages.StringField(3, required=True)
+  modified_ts = messages.IntegerField(4, required=True)
 
 
 def package_ref_to_proto(entity):
   """PackageRef entity -> PackageRef proto message."""
   return PackageRef(
+      ref=entity.ref,
       instance_id=entity.instance_id,
       modified_by=entity.modified_by.to_bytes(),
       modified_ts=utils.datetime_to_timestamp(entity.modified_ts))
@@ -223,14 +225,12 @@ def processors_protos(instance):
 
 class FetchPackageResponse(messages.Message):
   """Results of fetchPackage call."""
-
-  # TODO(vadimsh): Add more info (like a list of labels or instances).
-
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
   # For SUCCESS, information about the package.
   package = messages.MessageField(Package, 3, required=False)
+  refs = messages.MessageField(PackageRef, 4, repeated=True)
 
 
 ################################################################################
@@ -238,7 +238,6 @@ class FetchPackageResponse(messages.Message):
 
 class ListPackagesResponse(messages.Message):
   """Results of listPackage call."""
-
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
@@ -315,6 +314,15 @@ class SetRefResponse(messages.Message):
 
   # For SUCCESS status, details about the ref.
   ref = messages.MessageField(PackageRef, 3, required=False)
+
+
+class FetchRefsResponse(messages.Message):
+  """Results of fetchRefs call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS status, details about fetches refs.
+  refs = messages.MessageField(PackageRef, 3, repeated=True)
 
 
 ################################################################################
@@ -464,6 +472,12 @@ def validate_package_ref(ref):
   return ref
 
 
+def validate_package_ref_list(refs):
+  if not refs:  # pragma: no cover
+    raise ValidationError('Ref list is empty')
+  return [validate_package_ref(ref) for ref in refs]
+
+
 def validate_instance_id(instance_id):
   if not impl.is_valid_instance_id(instance_id):
     raise ValidationError('Invalid package instance ID')
@@ -574,7 +588,8 @@ class PackageRepositoryApi(remote.Service):
   @endpoints_method(
       endpoints.ResourceContainer(
           message_types.VoidMessage,
-          package_name=messages.StringField(1, required=True)),
+          package_name=messages.StringField(1, required=True),
+          with_refs=messages.BooleanField(2, required=False)),
       FetchPackageResponse,
       http_method='GET',
       path='package',
@@ -590,7 +605,14 @@ class PackageRepositoryApi(remote.Service):
     pkg = self.service.get_package(package_name)
     if pkg is None:
       raise PackageNotFoundError()
-    return FetchPackageResponse(package=package_to_proto(pkg))
+
+    refs = []
+    if request.with_refs:
+      refs = self.service.query_package_refs(package_name)
+
+    return FetchPackageResponse(
+        package=package_to_proto(pkg),
+        refs=[package_ref_to_proto(r) for r in refs])
 
   @endpoints_method(
       endpoints.ResourceContainer(
@@ -738,6 +760,41 @@ class PackageRepositoryApi(remote.Service):
         now=utils.utcnow())
     return SetRefResponse(ref=package_ref_to_proto(ref_entity))
 
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          instance_id=messages.StringField(2, required=True),
+          ref=messages.StringField(3, repeated=True)),
+      FetchRefsResponse,
+      path='ref',
+      http_method='GET',
+      name='fetchRefs')
+  def fetch_refs(self, request):
+    """Lists package instance refs (newest first)."""
+    package_name = validate_package_name(request.package_name)
+    instance_id = validate_instance_id(request.instance_id)
+    refs = validate_package_ref_list(request.ref) if request.ref else None
+
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      raise auth.AuthorizationError()
+    self.verify_instance_exists(package_name, instance_id)
+
+    if not refs:
+      # Fetch all.
+      output = self.service.query_instance_refs(package_name, instance_id)
+    else:
+      # Fetch selected refs, pick ones pointing to the instance.
+      output = [
+        r
+        for r in self.service.get_package_refs(package_name, refs).itervalues()
+        if r and r.instance_id == instance_id
+      ]
+      output.sort(key=lambda r: r.modified_ts, reverse=True)
+
+    return FetchRefsResponse(refs=[package_ref_to_proto(ref) for ref in output])
+
 
   ### Tags methods.
 
@@ -753,7 +810,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       name='fetchTags')
   def fetch_tags(self, request):
-    """Lists package instance tags (in no particular order)."""
+    """Lists package instance tags (newest first)."""
     package_name = validate_package_name(request.package_name)
     instance_id = validate_instance_id(request.instance_id)
     tags = validate_instance_tag_list(request.tag) if request.tag else None
@@ -770,6 +827,7 @@ class PackageRepositoryApi(remote.Service):
       # Fetch selected only. "Is tagged by?" check essentially.
       found = self.service.get_tags(package_name, instance_id, tags)
       attached = [found[tag] for tag in tags if found[tag]]
+      attached.sort(key=lambda t: t.registered_ts, reverse=True)
 
     return FetchTagsResponse(tags=[tag_to_proto(tag) for tag in attached])
 

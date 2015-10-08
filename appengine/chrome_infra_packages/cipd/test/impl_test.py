@@ -469,6 +469,7 @@ class TestRepoService(testing.AppengineTestCase):
       'modified_by': ident1,
       'modified_ts': now1,
     }, ref.to_dict())
+    self.assertEqual('ref', ref.ref)
 
     # Move to the same value -> modified_ts do not change.
     ref = self.service.set_package_ref('a/b', 'ref', 'a'*40, ident2, now2)
@@ -488,6 +489,73 @@ class TestRepoService(testing.AppengineTestCase):
 
     # Code coverage for package_name.
     self.assertEqual('a/b', ref.package_name)
+
+  def test_get_package_refs(self):
+    ident = auth.Identity.from_bytes('user:abc@example.com')
+    now1 = datetime.datetime(2015, 1, 1, 0, 0)
+    now2 = datetime.datetime(2015, 1, 2, 0, 0)
+
+    self.register_fake_instance('a/b', 'a'*40)
+    self.service.set_package_ref('a/b', 'ref1', 'a'*40, ident, now1)
+
+    self.register_fake_instance('a/b', 'b'*40)
+    self.service.set_package_ref('a/b', 'ref2', 'b'*40, ident, now2)
+
+    refs = self.service.get_package_refs('a/b', ['ref1', 'ref2', 'missing'])
+    self.assertEqual({
+      'missing': None,
+      'ref1': {
+        'instance_id': 'a'*40,
+        'modified_by': ident,
+        'modified_ts': now1,
+      },
+      'ref2': {
+        'instance_id': 'b'*40,
+        'modified_by': ident,
+        'modified_ts': now2,
+      },
+    }, {k: v.to_dict() if v else None for k, v in refs.iteritems()})
+
+  def test_query_package_refs(self):
+    ident = auth.Identity.from_bytes('user:abc@example.com')
+    now1 = datetime.datetime(2015, 1, 1, 0, 0)
+    now2 = datetime.datetime(2015, 1, 2, 0, 0)
+
+    self.register_fake_instance('a/b', 'a'*40)
+    self.service.set_package_ref('a/b', 'ref1', 'a'*40, ident, now1)
+
+    self.register_fake_instance('a/b', 'b'*40)
+    self.service.set_package_ref('a/b', 'ref2', 'b'*40, ident, now2)
+
+    refs = self.service.query_package_refs('a/b')
+    self.assertEqual([
+      {
+        'instance_id': 'b'*40,
+        'modified_by': ident,
+        'modified_ts': now2,
+      },
+      {
+        'instance_id': 'a'*40,
+        'modified_by': ident,
+        'modified_ts': now1,
+      },
+    ], [ref.to_dict() for ref in refs])
+
+  def test_query_instance_refs(self):
+    ident = auth.Identity.from_bytes('user:abc@example.com')
+    now1 = datetime.datetime(2015, 1, 1, 0, 0)
+    now2 = datetime.datetime(2015, 1, 2, 0, 0)
+
+    self.register_fake_instance('a/b', 'a'*40)
+    self.service.set_package_ref('a/b', 'ref1', 'a'*40, ident, now1)
+    self.service.set_package_ref('a/b', 'ref2', 'a'*40, ident, now2)
+
+    # Should not appear in results.
+    self.register_fake_instance('a/b', 'b'*40)
+    self.service.set_package_ref('a/b', 'ref3', 'b'*40, ident, now1)
+
+    refs = self.service.query_instance_refs('a/b', 'a'*40)
+    self.assertEqual(['ref2', 'ref1'], [ref.ref for ref in refs])
 
   def test_attach_detach_tags(self):
     _, registered = self.service.register_instance(

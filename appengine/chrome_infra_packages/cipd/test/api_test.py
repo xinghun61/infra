@@ -48,6 +48,35 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'status': 'SUCCESS',
     }, resp.json_body)
 
+  def test_fetch_package_with_refs(self):
+    self.register_fake_instance('good/name')
+    self.repo_service.set_package_ref(
+        package_name='good/name',
+        ref='ref',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 2, 0, 0))
+    resp = self.call_api('fetch_package', {
+      'package_name': 'good/name',
+      'with_refs': True,
+    })
+    self.assertEqual({
+      'package': {
+        'package_name': 'good/name',
+        'registered_by': 'user:abc@example.com',
+        'registered_ts': '1388534400000000',
+      },
+      'refs': [
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'modified_by': 'user:abc@example.com',
+          'modified_ts': '1388620800000000',
+          'ref': 'ref',
+        },
+      ],
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
   def test_fetch_package_no_access(self):
     self.register_fake_instance('good/name')
     self.mock(api.acl, 'can_fetch_package', lambda *_: False)
@@ -667,6 +696,7 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
     })
     self.assertEqual({
       'ref': {
+        'ref': 'ref',
         'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         'modified_by': 'user:mocked@example.com',
         'modified_ts': '1388534400000000',
@@ -727,6 +757,109 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
       'status': 'PROCESSING_NOT_FINISHED_YET',
     }, resp.json_body)
 
+  def test_fetch_refs_all(self):
+    self.register_mock_instance()
+    self.repo_service.set_package_ref(
+        package_name='a/b',
+        ref='ref1',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.repo_service.set_package_ref(
+        package_name='a/b',
+        ref='ref2',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 2, 0, 0))
+    resp = self.call_api('fetch_refs', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({
+      'refs': [
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'modified_by': 'user:abc@example.com',
+          'modified_ts': '1388620800000000',
+          'ref': 'ref2',
+        },
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'modified_by': 'user:abc@example.com',
+          'modified_ts': '1388534400000000',
+          'ref': 'ref1',
+        },
+      ],
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_fetch_refs_some(self):
+    self.register_mock_instance()
+    self.repo_service.set_package_ref(
+        package_name='a/b',
+        ref='ref1',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1, 0, 0))
+    self.repo_service.set_package_ref(
+        package_name='a/b',
+        ref='ref2',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 2, 0, 0))
+    self.repo_service.set_package_ref(
+        package_name='a/b',
+        ref='ref3',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 3, 0, 0))
+    resp = self.call_api('fetch_refs', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+      'ref': ['ref1', 'ref2', 'missing'],
+    })
+    self.assertEqual({
+      'refs': [
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'modified_by': 'user:abc@example.com',
+          'modified_ts': '1388620800000000',
+          'ref': 'ref2',
+        },
+        {
+          'instance_id': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          'modified_by': 'user:abc@example.com',
+          'modified_ts': '1388534400000000',
+          'ref': 'ref1',
+        },
+      ],
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+  def test_fetch_refs_no_access(self):
+    self.register_mock_instance()
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('fetch_refs', {
+        'package_name': 'a/b',
+        'instance_id': 'a'*40,
+      })
+
+  def test_fetch_refs_no_package(self):
+    resp = self.call_api('fetch_refs', {
+      'package_name': 'a/b',
+      'instance_id': 'a'*40,
+    })
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_fetch_refs_no_instance(self):
+    self.register_mock_instance()
+    resp = self.call_api('fetch_refs', {
+      'package_name': 'a/b',
+      'instance_id': 'b'*40,
+    })
+    self.assertEqual({'status': 'INSTANCE_NOT_FOUND'}, resp.json_body)
+
   def set_tag(self, pkg, tag, ts, instance_id='a'*40):
     self.repo_service.register_instance(
         package_name=pkg,
@@ -766,16 +899,22 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
 
   def test_fetch_tags_some(self):
     self.set_tag('a/b', 'tag1:', datetime.datetime(2014, 1, 1))
-    self.set_tag('a/b', 'tag2:', datetime.datetime(2015, 1, 1))
+    self.set_tag('a/b', 'tag2:', datetime.datetime(2015, 1, 2))
+    self.set_tag('a/b', 'tag3:', datetime.datetime(2015, 1, 3))
 
     resp = self.call_api('fetch_tags', {
       'package_name': 'a/b',
       'instance_id': 'a'*40,
-      'tag': ['tag1:', 'missing:'],
+      'tag': ['tag1:', 'tag2:', 'missing:'],
     })
     self.assertEqual({
       'status': u'SUCCESS',
       'tags': [
+        {
+          'registered_by': 'user:abc@example.com',
+          'registered_ts': '1420156800000000',
+          'tag': 'tag2:',
+        },
         {
           'registered_by': 'user:abc@example.com',
           'registered_ts': '1388534400000000',
