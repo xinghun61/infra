@@ -71,7 +71,7 @@ const (
 	TagAttachTimeout = 1 * time.Minute
 
 	// UserAgent is HTTP user agent string for CIPD client.
-	UserAgent = "cipd 1.0"
+	UserAgent = "cipd 1.1"
 
 	// ServiceURL is URL of a backend to connect to by default.
 	ServiceURL = "https://chrome-infra-packages.appspot.com"
