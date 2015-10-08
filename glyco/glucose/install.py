@@ -209,8 +209,8 @@ def install(args):
     os.mkdir(args.install_dir)
 
   with util.Virtualenv() as venv:
-    cmd = (['pip', 'install', '--no-index', '--target', args.install_dir]
-           + package_paths)
+    cmd = (['pip', 'install', '--no-deps', '--no-index', '--target',
+            args.install_dir] + package_paths)
     LOGGER.debug('Running %s', ' '.join(cmd))
     venv.check_call(cmd)
 
