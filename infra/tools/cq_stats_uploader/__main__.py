@@ -4,6 +4,7 @@
 
 import argparse
 import datetime
+import logging
 import sys
 
 from infra.tools.cq_stats import cq_stats
@@ -46,6 +47,10 @@ class StatsArgs(object):
     self.seq = False
     self.thread_pool = 200
     self.use_message_parsing = False
+
+  def __getattr__(self, name):
+    logging.warn('StatsArgs: returning None for undefined attribute %r' % name)
+    return None
 
 
 patchset_committed_durations = ts_mon.NonCumulativeDistributionMetric(
