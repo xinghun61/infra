@@ -346,7 +346,7 @@ func TestFetchInstanceInfo(t *testing.T) {
 }
 
 func TestFetchInstanceTags(t *testing.T) {
-	Convey("FetchInstanceTags( works", t, func(c C) {
+	Convey("FetchInstanceTags works", t, func(c C) {
 		client := mockClient(c, "", []expectedHTTPCall{
 			{
 				Method: "GET",
@@ -398,6 +398,54 @@ func TestFetchInstanceTags(t *testing.T) {
 				Tag:          "z:earlier",
 				RegisteredBy: "user:a@example.com",
 				RegisteredTs: UnixTime(time.Unix(0, 1420244414571500000)),
+			},
+		})
+	})
+}
+
+func TestFetchInstanceRefs(t *testing.T) {
+	Convey("FetchInstanceRefs works", t, func(c C) {
+		client := mockClient(c, "", []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query: url.Values{
+					"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+					"package_name": []string{"pkgname"},
+				},
+				Reply: `{
+					"status": "SUCCESS",
+					"refs": [
+						{
+							"ref": "ref1",
+							"modified_by": "user:a@example.com",
+							"modified_ts": "1420244414572500"
+						},
+						{
+							"ref": "ref2",
+							"modified_by": "user:a@example.com",
+							"modified_ts": "1420244414571500"
+						}
+					]
+				}`,
+			},
+		})
+		pin := common.Pin{
+			PackageName: "pkgname",
+			InstanceID:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		}
+		refs, err := client.FetchInstanceRefs(pin, nil)
+		So(err, ShouldBeNil)
+		So(refs, ShouldResemble, []RefInfo{
+			{
+				Ref:        "ref1",
+				ModifiedBy: "user:a@example.com",
+				ModifiedTs: UnixTime(time.Unix(0, 1420244414572500000)),
+			},
+			{
+				Ref:        "ref2",
+				ModifiedBy: "user:a@example.com",
+				ModifiedTs: UnixTime(time.Unix(0, 1420244414571500000)),
 			},
 		})
 	})

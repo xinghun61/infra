@@ -87,6 +87,25 @@ func TestRemoteImpl(t *testing.T) {
 		return remote.fetchTags(Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, tags)
 	}
 
+	mockFetchRefs := func(c C, reply string, refs []string) ([]RefInfo, error) {
+		query := url.Values{
+			"package_name": []string{"pkgname"},
+			"instance_id":  []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		}
+		if len(refs) != 0 {
+			query["refs"] = refs
+		}
+		remote := mockRemoteImpl(c, []expectedHTTPCall{
+			{
+				Method: "GET",
+				Path:   "/_ah/api/repo/v1/ref",
+				Query:  query,
+				Reply:  reply,
+			},
+		})
+		return remote.fetchRefs(Pin{"pkgname", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, refs)
+	}
+
 	mockFetchACL := func(c C, reply string) ([]PackageACL, error) {
 		remote := mockRemoteImpl(c, []expectedHTTPCall{
 			{
@@ -457,7 +476,7 @@ func TestRemoteImpl(t *testing.T) {
 				RegisteredBy: "user:a@example.com",
 				RegisteredTs: UnixTime(time.Unix(0, 1420244414571500000)),
 			},
-			TagInfo{
+			{
 				Tag:          "a:b2",
 				RegisteredBy: "user:a@example.com",
 				RegisteredTs: UnixTime{},
@@ -479,6 +498,58 @@ func TestRemoteImpl(t *testing.T) {
 
 	Convey("fetchTags ERROR", t, func(c C) {
 		result, err := mockFetchTags(c, `{
+				"status": "ERROR",
+				"error_message": "Some error message"
+			}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchRefs SUCCESS", t, func(c C) {
+		result, err := mockFetchRefs(c, `{
+				"status": "SUCCESS",
+				"refs": [
+					{
+						"ref": "ref1",
+						"modified_by": "user:a@example.com",
+						"modified_ts": "1420244414571500"
+					},
+					{
+						"ref": "ref2",
+						"modified_by": "user:a@example.com",
+						"modified_ts": "bad-timestamp"
+					}
+				]
+			}`, nil)
+		So(err, ShouldBeNil)
+		So(result, ShouldResemble, []RefInfo{
+			{
+				Ref:        "ref1",
+				ModifiedBy: "user:a@example.com",
+				ModifiedTs: UnixTime(time.Unix(0, 1420244414571500000)),
+			},
+			{
+				Ref:        "ref2",
+				ModifiedBy: "user:a@example.com",
+				ModifiedTs: UnixTime{},
+			},
+		})
+	})
+
+	Convey("fetchRefs PACKAGE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchRefs(c, `{"status": "PACKAGE_NOT_FOUND"}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchRefs INSTANCE_NOT_FOUND", t, func(c C) {
+		result, err := mockFetchRefs(c, `{"status": "INSTANCE_NOT_FOUND"}`, nil)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("fetchRefs ERROR", t, func(c C) {
+		result, err := mockFetchRefs(c, `{
 				"status": "ERROR",
 				"error_message": "Some error message"
 			}`, nil)

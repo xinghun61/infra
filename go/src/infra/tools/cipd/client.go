@@ -177,6 +177,16 @@ type TagInfo struct {
 	RegisteredTs UnixTime `json:"registered_ts"`
 }
 
+// RefInfo is returned by FetchInstanceRefs.
+type RefInfo struct {
+	// Ref is the ref name.
+	Ref string `json:"ref"`
+	// ModifiedBy is identify of whoever modified this ref last time.
+	ModifiedBy string `json:"modified_by"`
+	// ModifiedTs is when the ref was modified last time.
+	ModifiedTs UnixTime `json:"modified_ts"`
+}
+
 // Client provides high-level CIPD client interface. Thread safe.
 type Client interface {
 	// FetchACL returns a list of PackageACL objects (parent paths first) that
@@ -219,6 +229,11 @@ type Client interface {
 	// instance sorted by tag key and creation timestamp (newest first). If 'tags'
 	// is empty, fetches all attached tags, otherwise only ones specified.
 	FetchInstanceTags(pin common.Pin, tags []string) ([]TagInfo, error)
+
+	// FetchInstanceRefs returns information about refs pointing to the package
+	// instance sorted by modification timestamp (newest first). If 'ref' is
+	// empty, fetches all refs, otherwise only ones specified.
+	FetchInstanceRefs(pin common.Pin, refs []string) ([]RefInfo, error)
 
 	// FetchInstance downloads package instance file from the repository.
 	FetchInstance(pin common.Pin, output io.WriteSeeker) error
@@ -668,6 +683,14 @@ func (client *clientImpl) FetchInstanceTags(pin common.Pin, tags []string) ([]Ta
 	return fetched, nil
 }
 
+func (client *clientImpl) FetchInstanceRefs(pin common.Pin, refs []string) ([]RefInfo, error) {
+	err := common.ValidatePin(pin)
+	if err != nil {
+		return nil, err
+	}
+	return client.remote.fetchRefs(pin, refs)
+}
+
 func (client *clientImpl) FetchInstance(pin common.Pin, output io.WriteSeeker) error {
 	err := common.ValidatePin(pin)
 	if err != nil {
@@ -863,6 +886,7 @@ type remote interface {
 	setRef(ref string, pin common.Pin) error
 	attachTags(pin common.Pin, tags []string) error
 	fetchTags(pin common.Pin, tags []string) ([]TagInfo, error)
+	fetchRefs(pin common.Pin, refs []string) ([]RefInfo, error)
 	fetchInstance(pin common.Pin) (*fetchInstanceResponse, error)
 
 	listPackages(path string, recursive bool) ([]string, []string, error)

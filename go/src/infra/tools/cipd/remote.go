@@ -340,6 +340,49 @@ func (r *remoteImpl) fetchTags(pin common.Pin, tags []string) ([]TagInfo, error)
 	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
 }
 
+func (r *remoteImpl) fetchRefs(pin common.Pin, refs []string) ([]RefInfo, error) {
+	endpoint, err := refEndpoint(pin.PackageName, pin.InstanceID, refs)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Status       string `json:"status"`
+		ErrorMessage string `json:"error_message"`
+		Refs         []struct {
+			Ref        string `json:"ref"`
+			ModifiedBy string `json:"modified_by"`
+			ModifiedTs string `json:"modified_ts"`
+		} `json:"refs"`
+	}
+	err = r.makeRequest(endpoint, "GET", nil, &reply)
+	if err != nil {
+		return nil, err
+	}
+	switch reply.Status {
+	case "SUCCESS":
+		out := make([]RefInfo, len(reply.Refs))
+		for i, ref := range reply.Refs {
+			ts, err := convertTimestamp(ref.ModifiedTs)
+			if err != nil {
+				r.client.Logger.Warningf("cipd: failed to parse timestamp %q: %s", ref.ModifiedTs, err)
+			}
+			out[i] = RefInfo{
+				Ref:        ref.Ref,
+				ModifiedBy: ref.ModifiedBy,
+				ModifiedTs: UnixTime(ts),
+			}
+		}
+		return out, nil
+	case "PACKAGE_NOT_FOUND":
+		return nil, fmt.Errorf("package %q is not registered", pin.PackageName)
+	case "INSTANCE_NOT_FOUND":
+		return nil, fmt.Errorf("package %q doesn't have instance %q", pin.PackageName, pin.InstanceID)
+	case "ERROR":
+		return nil, errors.New(reply.ErrorMessage)
+	}
+	return nil, fmt.Errorf("unexpected reply status: %s", reply.Status)
+}
+
 func (r *remoteImpl) fetchACL(packagePath string) ([]PackageACL, error) {
 	endpoint, err := aclEndpoint(packagePath)
 	if err != nil {
@@ -429,7 +472,7 @@ func (r *remoteImpl) setRef(ref string, pin common.Pin) error {
 	if err := common.ValidatePin(pin); err != nil {
 		return err
 	}
-	endpoint, err := refEndpoint(pin.PackageName, ref)
+	endpoint, err := refEndpoint(pin.PackageName, "", []string{ref})
 	if err != nil {
 		return err
 	}
@@ -568,16 +611,28 @@ func aclEndpoint(packagePath string) (string, error) {
 	return "repo/v1/acl?" + params.Encode(), nil
 }
 
-func refEndpoint(packageName string, ref string) (string, error) {
+func refEndpoint(packageName, instanceID string, refs []string) (string, error) {
 	if err := common.ValidatePackageName(packageName); err != nil {
 		return "", err
 	}
-	if err := common.ValidatePackageRef(ref); err != nil {
-		return "", err
+	if instanceID != "" {
+		if err := common.ValidateInstanceID(instanceID); err != nil {
+			return "", err
+		}
+	}
+	for _, ref := range refs {
+		if err := common.ValidatePackageRef(ref); err != nil {
+			return "", err
+		}
 	}
 	params := url.Values{}
 	params.Add("package_name", packageName)
-	params.Add("ref", ref)
+	if instanceID != "" {
+		params.Add("instance_id", instanceID)
+	}
+	for _, ref := range refs {
+		params.Add("ref", ref)
+	}
 	return "repo/v1/ref?" + params.Encode(), nil
 }
 

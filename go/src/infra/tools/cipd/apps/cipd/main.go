@@ -60,6 +60,7 @@ type pinInfo struct {
 // describeOutput defines JSON format for 'cipd describe' output.
 type describeOutput struct {
 	cipd.InstanceInfo
+	Refs []cipd.RefInfo `json:"refs"`
 	Tags []cipd.TagInfo `json:"tags"`
 }
 
@@ -776,12 +777,21 @@ func describeInstance(pkg, version string, serviceOpts ServiceOptions) (*describ
 		wg.Done()
 	}()
 
-	// Fetch the list of attached tags.
-	var tags []cipd.TagInfo
-	var tagErr error
+	// Fetch the list of refs pointing to the instance.
+	var refs []cipd.RefInfo
+	var refsErr error
 	wg.Add(1)
 	go func() {
-		tags, tagErr = client.FetchInstanceTags(pin, nil)
+		refs, refsErr = client.FetchInstanceRefs(pin, nil)
+		wg.Done()
+	}()
+
+	// Fetch the list of attached tags.
+	var tags []cipd.TagInfo
+	var tagsErr error
+	wg.Add(1)
+	go func() {
+		tags, tagsErr = client.FetchInstanceTags(pin, nil)
 		wg.Done()
 	}()
 
@@ -790,14 +800,25 @@ func describeInstance(pkg, version string, serviceOpts ServiceOptions) (*describ
 	if infoErr != nil {
 		return nil, infoErr
 	}
-	if tagErr != nil {
-		return nil, tagErr
+	if refsErr != nil {
+		return nil, refsErr
+	}
+	if tagsErr != nil {
+		return nil, tagsErr
 	}
 
 	fmt.Printf("Package:       %s\n", info.Pin.PackageName)
 	fmt.Printf("Instance ID:   %s\n", info.Pin.InstanceID)
 	fmt.Printf("Registered by: %s\n", info.RegisteredBy)
 	fmt.Printf("Registered at: %s\n", info.RegisteredTs)
+	if len(refs) != 0 {
+		fmt.Printf("Refs:\n")
+		for _, t := range refs {
+			fmt.Printf("  %s\n", t.Ref)
+		}
+	} else {
+		fmt.Printf("Refs:          none\n")
+	}
 	if len(tags) != 0 {
 		fmt.Printf("Tags:\n")
 		for _, t := range tags {
@@ -807,7 +828,7 @@ func describeInstance(pkg, version string, serviceOpts ServiceOptions) (*describ
 		fmt.Printf("Tags:          none\n")
 	}
 
-	return &describeOutput{info, tags}, nil
+	return &describeOutput{info, refs, tags}, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
