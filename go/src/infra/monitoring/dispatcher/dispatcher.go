@@ -113,7 +113,7 @@ func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messa
 		}(masterName)
 	}
 
-	for _ = range masterNames {
+	for range masterNames {
 		r := <-res
 		if r.be != nil {
 			bes[r.name] = r.be

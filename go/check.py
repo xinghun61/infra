@@ -56,7 +56,7 @@ def gofmt_main(verbose, filestream):
   (use ./env.py to set this up)."""
   def check_file(path):
     proc = subprocess.Popen(
-        ['gofmt', '-d', path],
+        ['gofmt', '-s', '-d', path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
     out, err = proc.communicate()
@@ -81,7 +81,7 @@ def gofmt_main(verbose, filestream):
         p = p[len(root):]
       print '  %s' % p
     print
-    print 'Consider running \'go fmt infra/...\''
+    print 'Consider running \'go fmt -s -w infra\''
   return 0 if not bad else 1
 
 

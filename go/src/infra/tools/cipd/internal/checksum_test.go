@@ -15,7 +15,7 @@ import (
 func TestChecksumCheckingWorks(t *testing.T) {
 	msg := messages.TagCache{
 		Entries: []*messages.TagCache_Entry{
-			&messages.TagCache_Entry{
+			{
 				Package:    strPtr("package"),
 				Tag:        strPtr("tag"),
 				InstanceId: strPtr("instance_id"),
