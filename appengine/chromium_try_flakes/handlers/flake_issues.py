@@ -36,8 +36,6 @@ DESCRIPTION_TEMPLATE = (
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
-ROTATIONS_URL = 'http://chromium-build.appspot.com/p/chromium/all_rotations.js'
-GOOGLER_MAPPING_URL = 'https://chromium-access.appspot.com/auto/mapping'
 MAX_UPDATED_ISSUES_PER_DAY = 50
 
 
@@ -129,36 +127,6 @@ class UpdateIssue(webapp2.RequestHandler):
 
 
 class CreateIssue(webapp2.RequestHandler):
-  def _get_googler_mapping(self):
-    # Get and parse Googler mapping.
-    content = urlfetch.fetch(GOOGLER_MAPPING_URL,
-                             follow_redirects=False).content
-    lines = [line.split(',') for line in content.splitlines()]
-    return {google_email: chromium_email
-            for chromium_email, google_email in lines}
-
-  def _get_current_sheriff_emails(self):
-    # Get all rotations as JSON.
-    urlfetch.set_default_fetch_deadline(60)
-    rotations = json.loads(urlfetch.fetch(ROTATIONS_URL).content)
-
-    # Find Chrome rotation for today.
-    today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
-    for day in rotations['calendar']:
-      if day['date'] == today:
-        chrome_rotation_index = rotations['rotations'].index('chrome')
-        sheriffs = day['participants'][chrome_rotation_index]
-        break
-
-    # Get Googler mapping and map all emails to @chromium.org.
-    googler_mapping = self._get_googler_mapping()
-    emails = []
-    for sheriff in sheriffs:
-      if '@' not in sheriff:
-        sheriff = '%s@google.com' % sheriff
-      emails.append(googler_mapping.get(sheriff, sheriff))
-    return emails
-
   @ndb.transactional
   def post(self, urlsafe_key):
     flake = ndb.Key(urlsafe=urlsafe_key).get()
@@ -170,11 +138,9 @@ class CreateIssue(webapp2.RequestHandler):
           'description': description, 'old_issue': flake.old_issue_id}
 
     api = IssueTrackerAPI('chromium')
-    sheriff_emails = self._get_current_sheriff_emails()
     issue = Issue({'summary': summary,
                    'description': description,
                    'status': 'Untriaged',
-                   'cc': [{'name': email} for email in sheriff_emails],
                    'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                               'Via-TryFlakes', 'Sheriff-Chromium']})
     flake.issue_id = api.create(issue).id
