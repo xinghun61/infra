@@ -9,4 +9,4 @@ builders:
 root: ../../go/bin
 data:
   - file: authutil${exe_suffix}
-  - version_file: authutil${exe_suffix}.cipd_version
+  - version_file: .versions/authutil${exe_suffix}.cipd_version

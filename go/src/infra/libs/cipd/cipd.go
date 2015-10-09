@@ -39,7 +39,7 @@ type VersionFile struct {
 // Add following lines to package definition yaml to to set this up:
 //
 //   data:
-//     - version_file: <exe-name>${exe_suffix}.cipd_version
+//     - version_file: .versions/<exe-name>${exe_suffix}.cipd_version
 //
 // Replace <exe-name> with name of the binary file.
 //
@@ -94,7 +94,19 @@ func recoverSymlinkPath(p string) string {
 }
 
 func getCurrentVersion(exePath string) (VersionFile, error) {
-	f, err := os.Open(exePath + ".cipd_version")
+	// <root>/.versions/exename.cipd_version
+	p := filepath.Join(filepath.Dir(exePath), ".versions", filepath.Base(exePath)+".cipd_version")
+	if vf, _ := readVersionFile(p); vf.InstanceID != "" {
+		return vf, nil
+	}
+	// <root>/exename.cipd_version
+	return readVersionFile(exePath + ".cipd_version")
+}
+
+// readVersionFile returns parsed version file. Returns empty struct and nil if
+// it is missing, error if it can't be read.
+func readVersionFile(path string) (VersionFile, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			err = nil
