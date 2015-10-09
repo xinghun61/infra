@@ -17,6 +17,7 @@ from google.appengine.ext import ndb
 
 from issue_tracker.issue_tracker_api import IssueTrackerAPI
 from issue_tracker.issue import Issue
+from model.flake import FlakeUpdateSingleton, FlakeUpdate
 
 
 FLAKY_RUNS_TEMPLATE = (
@@ -37,6 +38,16 @@ REOPENED_DESCRIPTION_TEMPLATE = (
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
 ROTATIONS_URL = 'http://chromium-build.appspot.com/p/chromium/all_rotations.js'
 GOOGLER_MAPPING_URL = 'https://chromium-access.appspot.com/auto/mapping'
+MAX_UPDATED_ISSUES_PER_DAY = 50
+
+
+@ndb.transactional
+def _get_flake_update_singleton_key():
+  """Returns a key for the FlakeUpdateSingleton singleton entity."""
+  singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
+  if not singleton_key.get():
+    FlakeUpdateSingleton(key=singleton_key).put()
+  return singleton_key
 
 
 class UpdateIssue(webapp2.RequestHandler):
@@ -70,14 +81,6 @@ class UpdateIssue(webapp2.RequestHandler):
     now = datetime.datetime.utcnow()
     flake = ndb.Key(urlsafe=urlsafe_key).get()
 
-    # Update issues at most once a day.
-    if flake.issue_last_updated > now - datetime.timedelta(days=1):
-      return
-
-    # Only update issues if there are new flaky runs.
-    if flake.num_reported_flaky_runs == len(flake.occurrences):
-      return
-
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
     # number of groups supported by cross-group transactions on AppEngine.
@@ -108,7 +111,6 @@ class UpdateIssue(webapp2.RequestHandler):
         # If the issue was closed, we do not update it. This allows changes made
         # to reduce flakiness to propagate and take effect. If after one week we
         # still see flakiness, we will create a new issue.
-        now = datetime.datetime.utcnow()
         if issue.updated < now - datetime.timedelta(weeks=1):
           self.recreate_issue_for_flake(flake)
         return
@@ -181,19 +183,49 @@ class CreateIssue(webapp2.RequestHandler):
                  flake.name)
     flake.put()
 
-    # Update the newly created issue with the latest flaky runs.
-    taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
+    # Process the issue again after this transaction is committed to post
+    # updates about the latest flaky runs.
+    taskqueue.add(url='/issues/process/%s' % flake.key.urlsafe(),
                   queue_name='issue-updates', transactional=True)
 
 
 class ProcessIssue(webapp2.RequestHandler):
-  @ndb.transactional
+  def _increment_update_counter(self):
+    # Optimistically record the fact that we've updated issue tracker. We cannot
+    # do this update post-factum because we would then be able to schedule too
+    # many tasks updating issue tracker before incrementing the counter and then
+    # still file too many issues.
+    FlakeUpdate(parent=_get_flake_update_singleton_key()).put()
+
+  @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
+    # Check if we should stop processing this issue because we've posted too
+    # many updates to issue tracker today already.
+    day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    num_updates_last_day = FlakeUpdate.query(
+        FlakeUpdate.time_updated > day_ago,
+        ancestor=_get_flake_update_singleton_key()).count()
+    if num_updates_last_day >= MAX_UPDATED_ISSUES_PER_DAY:
+      return
+
+    now = datetime.datetime.utcnow()
     flake = ndb.Key(urlsafe=urlsafe_key).get()
 
     if flake.issue_id > 0:
+      # Update issues at most once a day.
+      if flake.issue_last_updated > now - datetime.timedelta(days=1):
+        return
+
+      # Only update issues if there are new flaky runs.
+      if flake.num_reported_flaky_runs == len(flake.occurrences):
+        return
+
+      # We schedule this task transactionally because we want to ensure that we
+      # have checked Flake properties and the limit of daily updates and there
+      # was no contention with another /issues/process task.
       taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
                     queue_name='issue-updates', transactional=True)
+      self._increment_update_counter()
     else:
       # We reduce the likely hood of creating multiple issues for the same flake
       # by using named tasks. If two processes schedule two tasks with the same
@@ -204,5 +236,6 @@ class ProcessIssue(webapp2.RequestHandler):
       try:
         taskqueue.add(name=task_name, queue_name='issue-updates',
                       url='/issues/create/%s' % flake.key.urlsafe())
+        self._increment_update_counter()
       except taskqueue.TombstonedTaskError:
         pass

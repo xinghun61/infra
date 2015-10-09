@@ -68,3 +68,8 @@ indexes:
   properties:
   - name: last_week
   - name: last_time_seen
+
+- kind: FlakeUpdate
+  ancestor: yes
+  properties:
+  - name: time_updated

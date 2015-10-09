@@ -27,6 +27,7 @@ class FlakyRun(ndb.Model):
   flakes = ndb.StructuredProperty(FlakeOccurance, repeated=True)
   comment = ndb.StringProperty()
 
+
 # Represents a step that flakes. The name could be a test_suite:test name (i.e.
 # unit_tests:FooTest), a ninja step in case of compile flake, etc... This entity
 # groups together all the occurrences of this flake, with each particular
@@ -60,3 +61,16 @@ class Flake(ndb.Model):
 
   # Number of occurences that were already reported on the issue.
   num_reported_flaky_runs = ndb.IntegerProperty(default=0)
+
+
+# The following two entities are used to track updates posted to the issue
+# tracker and prevent too many updates filed. The FlakeUpdateSingleton entity is
+# a singleton and all FlakyUpdate entities should be child entities of this
+# singleton entity, which allows us to query all of them within a single
+# transaction.
+class FlakeUpdateSingleton(ndb.Model):
+  pass
+
+
+class FlakeUpdate(ndb.Model):
+  time_updated = ndb.DateTimeProperty(auto_now_add=True)
