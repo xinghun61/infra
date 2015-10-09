@@ -14,12 +14,16 @@ builtins:
 
 handlers:
 - url: /robots.txt
-  static_files: robots.txt
-  upload: robots.txt
+  static_files: static/robots.txt
+  upload: static/robots.txt
 
 - url: /
   static_files: templates/home.html
   upload: templates/home.html
+
+- url: /common.css
+  static_files: static/common.css
+  upload: static/common.css
 
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
