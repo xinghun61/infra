@@ -113,7 +113,7 @@ func TestEndpointService(t *testing.T) {
 		})
 
 		Convey(`Retries sending when an error is encountered.`, func() {
-			tc.SetTimerCallback(func(t clock.Timer) {
+			tc.SetTimerCallback(func(time.Duration, clock.Timer) {
 				tc.Add(time.Second)
 			})
 			h.failures = 4

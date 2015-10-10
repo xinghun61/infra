@@ -89,7 +89,9 @@ func TestPushBuffer(t *testing.T) {
 
 	Convey("Retry works", t, func() {
 		cl := testclock.New(time.Time{})
-		cl.SetTimerCallback(func(clock.Timer) { cl.Add(1 * time.Second) })
+		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
+			cl.Add(1 * time.Second)
+		})
 
 		client := &fakeClient{brokenReplies: 4, clock: cl}
 		buf := NewPushBuffer(PushBufferOptions{
@@ -105,7 +107,9 @@ func TestPushBuffer(t *testing.T) {
 
 	Convey("Gives up retrying", t, func() {
 		cl := testclock.New(time.Time{})
-		cl.SetTimerCallback(func(clock.Timer) { cl.Add(1 * time.Second) })
+		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
+			cl.Add(1 * time.Second)
+		})
 
 		client := &fakeClient{brokenReplies: 10000, clock: cl}
 		buf := NewPushBuffer(PushBufferOptions{
@@ -122,7 +126,9 @@ func TestPushBuffer(t *testing.T) {
 	Convey("Stop timeout works", t, func() {
 		startTs := time.Time{}
 		cl := testclock.New(startTs)
-		cl.SetTimerCallback(func(clock.Timer) { cl.Add(1 * time.Second) })
+		cl.SetTimerCallback(func(time.Duration, clock.Timer) {
+			cl.Add(1 * time.Second)
+		})
 
 		client := &fakeClient{brokenReplies: 10000, clock: cl}
 		buf := NewPushBuffer(PushBufferOptions{
