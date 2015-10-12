@@ -229,7 +229,7 @@ class ServiceTest(TestBase):
     self.assertEqual(mock.call(42), self.mock_close.call_args_list[0])
     self.mock_fdopen.assert_called_once_with(43, 'w')
     self.mock_become_daemon.assert_called_once_with(keep_fds=True)
-    self.mock_close_all_fds.assert_called_once_with(keep_fds=None)
+    self.mock_close_all_fds.assert_called_once_with(keep_fds={1, 2})
     self.assertEqual('{"pid": 555}', self._all_writes(mock_pipe_object))
     mock_pipe_object.close.assert_called_once_with()
     self.mock_execv.assert_called_once_with('/rootdir/run.py', [
@@ -370,6 +370,62 @@ class ServiceTest(TestBase):
 
     self.assertIn('/cloudtail', self.s.cloudtail_args)
     self.assertIn('foo', self.s.cloudtail_args)
+
+
+class ProcessCreatorTest(unittest.TestCase):
+  def setUp(self):
+    self.mock_popen = mock.patch('subprocess.Popen').start()
+    self.mock_service = mock.create_autospec('service.Service', instance=True)
+    self.mock_service.name = 'foo'
+    self.c = service.ProcessCreator(self.mock_service)
+
+  def tearDown(self):
+    mock.patch.stopall()
+
+  def test_open_output_fh_no_cloudtail(self):
+    self.mock_service.cloudtail_args = None
+    fh = self.c._open_output_fh({'foo': 'bar'})
+    try:
+      self.assertFalse(self.mock_popen.called)
+      self.assertEqual(os.devnull, fh.name)
+    finally:
+      fh.close()
+
+  def test_open_output_fh(self):
+    self.mock_service.cloudtail_args = [1, 2, 3]
+    self.mock_popen.return_value.pid = 1234
+    fh = self.c._open_output_fh({'foo': 'bar'})
+    try:
+      self.assertEquals(1, self.mock_popen.call_count)
+      self.assertEquals([1, 2, 3], self.mock_popen.call_args[0][0])
+      kwargs = self.mock_popen.call_args[1]
+      self.assertIn('foo', kwargs)
+      self.assertIn('stdin', kwargs)
+      self.assertIn('stdout', kwargs)
+      self.assertIn('stderr', kwargs)
+
+      self.assertEquals(os.devnull, kwargs['stdout'].name)
+      self.assertEquals(os.devnull, kwargs['stderr'].name)
+      self.assertEquals('<fdopen>', fh.name)
+
+      # Clean up the write end of the pipe.
+      kwargs['stdout'].close()
+    finally:
+      fh.close()
+
+  def test_open_output_fh_not_found(self):
+    self.mock_service.cloudtail_args = [1, 2, 3]
+    self.mock_popen.side_effect = OSError()
+    fh = self.c._open_output_fh({'foo': 'bar'})
+    try:
+      self.assertEquals(1, self.mock_popen.call_count)
+      kwargs = self.mock_popen.call_args[1]
+      self.assertEqual(os.devnull, fh.name)
+
+      # Clean up the write end of the pipe.
+      kwargs['stdout'].close()
+    finally:
+      fh.close()
 
 
 class OwnServiceTest(TestBase):

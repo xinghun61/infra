@@ -66,11 +66,11 @@ class ServiceManager(infra_libs.BaseApplication):
         '--cloudtail-experiment-percent',
         type=int, default=0,
         help='Probability of tailing log files of started services to cloud '
-             'logging using cloudtail')
+             'logging using cloudtail (default %(default)s%%)')
     parser.add_argument(
         '--cloudtail-path',
         default=default_cloudtail_path,
-        help='Path to the cloudtail binary')
+        help='Path to the cloudtail binary (default %(default)s)')
 
     parser.set_defaults(
         ts_mon_target_type='task',

@@ -169,6 +169,37 @@ class ProcessCreator(object):
 
     raise NotImplementedError
 
+  def _open_output_fh(self, popen_kwargs):
+    """Opens and returns a file handle suitable for the process to write to.
+
+    This is either cloudtail (if configured) or the null device.
+
+    The caller *must* close this file handle after spawning the subprocess.
+    """
+
+    if self.service.cloudtail_args is not None:
+      log_r, log_w = os.pipe()
+      try:
+        with open(os.devnull, 'w') as null_fh:
+          cloudtail = subprocess.Popen(
+              self.service.cloudtail_args,
+              stdin=log_r,
+              stdout=null_fh,
+              stderr=null_fh,
+              **popen_kwargs)
+      except OSError:
+        logging.exception('Failed to start cloudtail with args %s',
+                          self.service.cloudtail_args)
+        os.close(log_w)
+      else:
+        logging.info('Started cloudtail for %s with PID %d',
+                     self.service.name, cloudtail.pid)
+        return os.fdopen(log_w, 'w')
+      finally:
+        os.close(log_r)
+
+    return open(os.devnull, 'w')
+
 
 class Service(object):
   """Controls a running service process.
@@ -412,31 +443,13 @@ class UnixProcessCreator(ProcessCreator):  # pragma: no cover
     # Start cloudtail.  This needs to be done after become_daemon so it's a
     # child of the service itself, not service_manager.
     # Cloudtail's stdout and stderr will go to /dev/null.
-    if self.service.cloudtail_args is not None:
-      log_r, log_w = os.pipe()
-      try:
-        with open(os.devnull, 'w') as null_fh:
-          handle = subprocess.Popen(
-              self.service.cloudtail_args,
-              stdin=log_r, stdout=null_fh, stderr=null_fh, close_fds=True)
-      except OSError:
-        log_w = None
-        logging.exception('Failed to start cloudtail with args %s',
-                          self.service.cloudtail_args)
-      else:
-        logging.info('Started cloudtail for %s with PID %d',
-                     self.service.name, handle.pid)
-    else:
-      log_w = None
+    output_fh = self._open_output_fh({'close_fds': True})
 
     # Pipe our stdout and stderr to cloudtail if configured.  Close all other
     # FDs.
-    if log_w is not None:
-      os.dup2(log_w, 1)
-      os.dup2(log_w, 2)
-      daemon.close_all_fds(keep_fds={1, 2})
-    else:
-      daemon.close_all_fds(keep_fds=None)
+    os.dup2(output_fh.fileno(), 1)
+    os.dup2(output_fh.fileno(), 2)
+    daemon.close_all_fds(keep_fds={1, 2})
 
     # Exec the service.
     runpy = os.path.join(self.service.root_directory, 'run.py')
@@ -477,15 +490,12 @@ class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
   CREATE_NO_WINDOW = 0x08000000
 
   def start(self):
-    # A process started with CREATE_NO_WINDOW doesn't get an open stdout or
-    # stderr on Windows, so writes (eg. from a print statement) will fail with
-    # 'Bad file descriptor'.  Work around this by giving the process open file
-    # handles to 'nul' instead.  See http://bugs.python.org/issue706263.
-    with open(os.devnull, 'w') as null_fh:
+    output_fh = self._open_output_fh({'creationflags': self.CREATE_NO_WINDOW})
+    try:
       handle = subprocess.Popen(
           creationflags=self.CREATE_NO_WINDOW,
-          stderr=null_fh,
-          stdout=null_fh,
+          stderr=output_fh,
+          stdout=output_fh,
           args=[
               os.path.join(self.service.root_directory,
                            'ENV/Scripts/python.exe'),
@@ -493,5 +503,7 @@ class WindowsProcessCreator(ProcessCreator):  # pragma: no cover
               self.service.tool,
           ] + self.service.args,
       )
+    finally:
+      output_fh.close()
 
     return handle.pid
