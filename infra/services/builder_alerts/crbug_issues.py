@@ -61,7 +61,7 @@ def _list_issues(crbug_service_account):
 
       # Deduplicate issues in case crbug returns fewer issues than BATCH_SIZE
       # and then returns more issues than before. This can happen in rare cases
-      # such as when a an issue is closed and then immediately reopened again
+      # such as when an issue is closed and then immediately reopened again
       # before we run the next query.
       new_issues = [issue for issue in response['items']
                     if issue['id'] not in seen_issue_ids]

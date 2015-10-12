@@ -290,7 +290,7 @@ def inner_loop(args):
 
   json_data = json.dumps(data)
   logging.info('Alerts json is %s bytes uncompressed.', len(json_data))
-  gzipped_data = gzipped(data)
+  gzipped_data = gzipped(json_data)
 
   if old_api_endpoint:
     logging.info('POST %s alerts (%s bytes compressed) to %s',
