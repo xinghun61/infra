@@ -28,3 +28,14 @@ def re_range(lst):
 # python has one, just burried inside os.path!?
 def longest_substring(string1, string2):
   return os.path.commonprefix([string1, string2])
+
+
+def slash_join(*args):
+  if not args:
+    return ''
+  res = args[0]
+  for piece in args[1:]:
+    if not res.endswith('/') and not piece.startswith('/'):
+      res += '/'
+    res += piece
+  return res

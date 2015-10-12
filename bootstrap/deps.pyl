@@ -59,15 +59,12 @@
     'build': '0',
     'repo': 'external/github.com/google/google-api-python-client',
     'rev': '49d45a6c3318b75e551c3022020f46c78655f365',
-    'implicit': True,  # Required by monacq
   },
   'httplib2': {
     'version': '0.9',
     'build': '0',
     'repo': 'external/github.com/jcgregorio/httplib2',
     'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
-    'implicit': True,  # Required by oauth2client, google_api_python_client,
-                       # and monacq.
   },
   'Jinja2': {
     'version': '2.7.3dev_20141205',
@@ -106,7 +103,6 @@
     'build': '0',
     'repo': 'external/github.com/google/oauth2client',
     'rev': 'f46290a33418bd18308af27e519db95a51b0136c',
-    'implicit': True,  # Required by google_api_python_client
   },
   'pyOpenSSL': {
     'version': '0.14',
