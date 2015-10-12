@@ -2,10 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import socket
 import sys
+import traceback
 
-import infra_libs.logs
 import infra_libs.event_mon as event_mon
 import infra_libs.ts_mon as ts_mon
 
@@ -44,6 +43,7 @@ def main(argv):  # pragma: no cover
       success_metric.set(False)
   except Exception:
     success_metric.set(False)
+    traceback.print_exc()  # helps with debugging locally.
   finally:
     event_mon.close()
     try:

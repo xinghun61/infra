@@ -3,14 +3,17 @@
 # found in the LICENSE file.
 
 import logging
+import os
 import random
+import sys
 import time
 
 import httplib2
 
+import infra_libs
 from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
-import infra_libs
+
 
 def time_ms():
   """Return current timestamp in milliseconds."""
@@ -34,9 +37,10 @@ def backoff_time(attempt, retry_backoff=2., max_delay=30.):
 
 
 class _Router(object):
-  """Route events to the right destination.
+  """Route events to the right destination. Base class.
 
   This object is meant to be a singleton, and is not part of the API.
+  Subclasses must implement _send_to_endpoint().
 
   Usage:
   router = _Router()
@@ -44,79 +48,6 @@ class _Router(object):
   ... fill in event ...
   router.push_event(event)
   """
-  def __init__(self, cache, endpoint=None, timeout=10):
-    # cache is defined in config.py. Passed as a parameter to avoid
-    # a circular import.
-
-    # endpoint == None means 'dry run'. No data is sent.
-    self.endpoint = endpoint
-    self.http = httplib2.Http(timeout=timeout)
-    self.cache = cache
-
-    if self.endpoint and self.cache['service_account_creds']:
-      logging.debug('Activating OAuth2 authentication.')
-      self.http = infra_libs.get_authenticated_http(
-        self.cache['service_account_creds'],
-        service_accounts_creds_root=self.cache['service_accounts_creds_root'],
-        scope='https://www.googleapis.com/auth/cclog'
-      )
-
-  def _post_to_endpoint(self, events, try_num=3, retry_backoff=2.):
-    """Post protobuf to endpoint.
-
-    Args:
-      events(LogRequestLite): the protobuf to post.
-
-    Keyword Args:
-      try_num(int): max number of http requests send to the endpoint.
-      retry_backoff(float): time in seconds before retrying posting to the
-         endpoint. Randomized exponential backoff is applied on subsequent
-         retries.
-
-    Returns:
-      success(bool): whether pushing to the endpoint succeeded or not.
-    """
-    # Set this time at the very last moment
-    events.request_time_ms = time_ms()
-    if self.endpoint:  # pragma: no cover
-      logging.info('event_mon: POSTing events to %s', self.endpoint)
-
-      for attempt in xrange(try_num - 1):
-        response, _ = self.http.request(
-          uri=self.endpoint,
-          method='POST',
-          headers={'Content-Type': 'application/octet-stream'},
-          body=events.SerializeToString()
-        )
-
-        if response.status == 200:
-          return True
-
-        logging.error('failed to POST data to %s (attempt %d)',
-                      self.endpoint, attempt)
-        logging.error('data: %s', str(events)[:200])
-
-        time.sleep(backoff_time(attempt, retry_backoff=retry_backoff))
-      return False
-
-    else:
-      infra_events = [str(ChromeInfraEvent.FromString(
-        ev.source_extension)) for ev in events.log_event]
-      logging.info('Fake post request. Sending:\n%s',
-                   '\n'.join(infra_events))
-      return True
-
-  def close(self, timeout=None): # pylint: disable=unused-argument
-    """
-    Returns:
-      success (bool): True if everything went well. Otherwise, there is no
-        guarantee that all events have been properly sent to the remote.
-    """
-    # This is a stub now, for backward compatibility. Maybe we'll use that
-    # again if a thread is re-added to the lib.
-    logging.debug('event_mon: closing.')
-    return True
-
   def push_event(self, log_events):
     """Enqueue event to push to the collection service.
 
@@ -125,6 +56,7 @@ class _Router(object):
 
     Args:
       log_events (LogRequestLite.LogEventLite or list/tuple of): events.
+
     Returns:
       success (bool): False if an error happened. True means 'event accepted',
         but NOT 'event successfully pushed to the remote'.
@@ -140,4 +72,173 @@ class _Router(object):
     request_p = LogRequestLite()
     request_p.log_source_name = 'CHROME_INFRA'
     request_p.log_event.extend(log_events)  # copies the protobuf
-    return self._post_to_endpoint(request_p)
+    # Sets the sending time here for safety, _send_to_endpoint should change it
+    # if needed.
+    request_p.request_time_ms = time_ms()
+    return self._send_to_endpoint(request_p)
+
+  def _send_to_endpoint(self, events):
+    """Send a protobuf to wherever it should be sent.
+
+    This method is called by push_event.
+    If some computation is require, make sure to update events.request_time_ms
+    right before sending.
+
+    Args:
+      events(LogRequestLite): protobuf to send.
+
+    Returns:
+      success(bool): whether POSTing/writing succeeded or not.
+    """
+    raise NotImplementedError('Please implement _send_to_endpoint().')
+
+
+class _LocalFileRouter(_Router):
+  def __init__(self, output_file, dry_run=False):
+    """Initialize the router.
+
+    Writes a serialized LogRequestLite protobuf in a local file. File is
+    created/truncated before writing (no append).
+
+    Args:
+      output_file(str): path to file where to write the protobuf.
+
+    Keyword Args:
+      dry_run(bool): if True, the file is not written.
+    """
+    _Router.__init__(self)
+    self.output_file = output_file
+    self._dry_run = dry_run
+
+  def _send_to_endpoint(self, events):
+    try:
+      if not os.path.isdir(os.path.dirname(self.output_file)):
+        logging.error('File cannot be written, parent directory does '
+                      'not exist: %s' % os.path.dirname(self.output_file))
+      if self._dry_run:
+        logging.info('Would have written in %s', self.output_file)
+      else:
+        with open(self.output_file, 'w') as f:
+          f.write(events.SerializeToString())  # pragma: no branch
+    except Exception:
+      logging.exception('Failed to write in file: %s', self.output_file)
+      return False
+
+    return True
+
+
+class _TextStreamRouter(_Router):
+  def __init__(self, stream=sys.stdout):
+    """Initialize the router.
+
+    Args:
+      stream(File): where to write the output.
+    """
+    _Router.__init__(self)
+    self.stream = stream
+
+  def _send_to_endpoint(self, events):
+    # Prints individual events because it's what we're usually interested in
+    # in that case.
+    infra_events = [str(ChromeInfraEvent.FromString(
+      ev.source_extension)) for ev in events.log_event]
+    try:
+      self.stream.write('%s\n' % '\n'.join(infra_events))
+    except Exception:
+      logging.exception('Unable to write to provided stream')
+      return False
+    return True
+
+
+class _HttpRouter(_Router):
+  def __init__(self, cache, endpoint, timeout=10, try_num=3, retry_backoff=2.,
+               dry_run=False):
+    """Initialize the router.
+
+    Args:
+      cache(dict): This must be config._cache. Passed as a parameter to
+        avoid a circular import.
+      endpoint(str or None): None means 'dry run'. What would be sent is printed
+        on stdout. If endpoint starts with 'https://' data is POSTed there.
+        Otherwise it is interpreted as a file where to write serialized
+        LogEventLite protos.
+      try_num(int): max number of http requests send to the endpoint.
+      retry_backoff(float): time in seconds before retrying posting to the
+         endpoint. Randomized exponential backoff is applied on subsequent
+         retries.
+      dry_run(boolean): if True, no http request is sent. Instead a message is
+         printed.
+    """
+    _Router.__init__(self)
+    self.endpoint = endpoint
+    self.try_num = try_num
+    self.retry_backoff = retry_backoff
+    self._cache = cache
+    self._http = httplib2.Http(timeout=timeout)
+    self._dry_run = dry_run
+
+    # TODO(pgervais) pass this as parameters instead.
+    if self._cache.get('service_account_creds'):
+      try:
+        logging.debug('Activating OAuth2 authentication.')
+        self._http = infra_libs.get_authenticated_http(
+          self._cache['service_account_creds'],
+          service_accounts_creds_root=
+              self._cache['service_accounts_creds_root'],
+          scope='https://www.googleapis.com/auth/cclog'
+        )
+      except IOError:
+        logging.error('Unable to read credentials, requests will be '
+                      'unauthenticated. File: %s',
+                      self._cache.get('service_account_creds'))
+
+  def _send_to_endpoint(self, events):
+    """Send protobuf to endpoint
+
+    Args:
+      events(LogRequestLite): the protobuf to send.
+
+    Keyword Args:
+      try_num(int): max number of http requests send to the endpoint.
+      retry_backoff(float): time in seconds before retrying posting to the
+         endpoint. Randomized exponential backoff is applied on subsequent
+         retries.
+
+    Returns:
+      success(bool): whether POSTing/writing succeeded or not.
+    """
+    if not self.endpoint.startswith('https://'):
+      logging.error("Received invalid https endpoint: %s", self.endpoint)
+      return False
+
+    logging.info('event_mon: POSTing events to %s', self.endpoint)
+
+    for attempt in xrange(self.try_num - 1):  # pragma: no branch
+      # Set this time at the very last moment
+      events.request_time_ms = time_ms()
+
+      if self._dry_run:
+        logging.info('Http requests disabled. Not sending anything')
+      else:  # pragma: no cover
+        response, _ = self._http.request(
+          uri=self.endpoint,
+          method='POST',
+          headers={'Content-Type': 'application/octet-stream'},
+          body=events.SerializeToString()
+        )
+
+      if self._dry_run or response.status == 200:  # pragma: no branch
+        return True
+
+      logging.error('failed to POST data to %s (attempt %d)',
+                    self.endpoint, attempt)  # pragma: no cover
+
+      if attempt == 0:  # pragma: no cover
+        logging.error('data: %s', str(events)[:200])
+
+      time.sleep(  # pragma: no cover
+        backoff_time(attempt, retry_backoff=self.retry_backoff))
+
+    logging.error('failed to POST data after %d attempts, giving up.',
+                  self.try_num)   # pragma: no cover
+    return False  # pragma: no cover

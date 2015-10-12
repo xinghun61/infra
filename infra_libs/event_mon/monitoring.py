@@ -52,7 +52,7 @@ def _get_chrome_infra_event(timestamp_kind, service_name=None):
     return None
 
   event = ChromeInfraEvent()
-  event.CopyFrom(config.cache['default_event'])
+  event.CopyFrom(config._cache['default_event'])
 
   if timestamp_kind:
     event.timestamp_kind = getattr(ChromeInfraEvent, timestamp_kind)

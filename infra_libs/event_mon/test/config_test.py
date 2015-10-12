@@ -3,8 +3,11 @@
 # found in the LICENSE file.
 
 import argparse
+import os
+import traceback
 import unittest
 
+import infra_libs
 from infra_libs import event_mon
 from infra_libs.event_mon import config, router
 
@@ -14,7 +17,9 @@ class ConfigTest(unittest.TestCase):
     parser = argparse.ArgumentParser()
     event_mon.add_argparse_options(parser)
     args = parser.parse_args((args or []))
-    self.assertEquals(args.event_mon_run_type, 'dry')
+    # Safety net. We really don't want to send something to a real endpoint.
+    self.assertTrue((args.event_mon_run_type not in ('test', 'prod'))
+                    or args.dry_run)
     event_mon.process_argparse_options(args)
     r = config._router
     self.assertIsInstance(r, router._Router)
@@ -23,8 +28,9 @@ class ConfigTest(unittest.TestCase):
     self.assertIs(config._router, r)
 
   def _close(self):
+    self.assertTrue(config._router)
     self.assertTrue(event_mon.close())
-    self.assertFalse(config.cache)
+    self.assertFalse(config._cache)
     # Test that calling it twice does not raise an exception.
     self.assertTrue(event_mon.close())
 
@@ -39,21 +45,39 @@ class ConfigTest(unittest.TestCase):
     service_name = 'b'
     appengine_name = 'c'
 
-    args = ['--event-mon-hostname', hostname,
+    args = ['--event-mon-run-type', 'dry',
+            '--event-mon-hostname', hostname,
             '--event-mon-service-name', service_name,
             '--event-mon-appengine-name', appengine_name]
-    self._set_up_args(args=args)
-    event = config.cache['default_event']
-    self.assertEquals(event.event_source.host_name, hostname)
-    self.assertEquals(event.event_source.service_name, service_name)
-    self.assertEquals(event.event_source.appengine_name, appengine_name)
-    self._close()
+    try:
+      self._set_up_args(args=args)
+      event = config._cache['default_event']
+      self.assertEquals(event.event_source.host_name, hostname)
+      self.assertEquals(event.event_source.service_name, service_name)
+      self.assertEquals(event.event_source.appengine_name, appengine_name)
+    finally:
+      self._close()
 
+  def test_run_type_file_good(self):
+    try:
+      with infra_libs.temporary_directory(prefix='config_test-') as tempdir:
+        filename = os.path.join(tempdir, 'output.db')
+        self._set_up_args(args=['--event-mon-run-type', 'file',
+                                '--event-mon-output-file', filename])
+        self.assertEqual(config._router.output_file, filename)
+    except Exception:  # pragma: no cover
+      # help for debugging
+      traceback.print_exc()
+      raise
+    finally:
+      self._close()
+
+  # Direct setup_monitoring testing below this line.
   def test_default_event(self):
     # The protobuf structure is actually an API not an implementation detail
     # so it's sane to test for changes.
     event_mon.setup_monitoring()
-    event = config.cache['default_event']
+    event = config._cache['default_event']
     self.assertTrue(event.event_source.HasField('host_name'))
     self.assertFalse(event.event_source.HasField('service_name'))
     self.assertFalse(event.event_source.HasField('appengine_name'))
@@ -72,7 +96,7 @@ class ConfigTest(unittest.TestCase):
       service_name=service_name,
       appengine_name=appengine_name
     )
-    event = config.cache['default_event']
+    event = config._cache['default_event']
     self.assertEquals(event.event_source.host_name, hostname)
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertEquals(event.event_source.appengine_name, appengine_name)

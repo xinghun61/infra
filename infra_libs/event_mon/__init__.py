@@ -14,5 +14,3 @@ from infra_libs.event_mon.monitoring import send_service_event
 from infra_libs.event_mon.monitoring import send_build_event
 from infra_libs.event_mon.monitoring import get_build_event
 from infra_libs.event_mon.monitoring import send_events
-
-from infra_libs.event_mon.router import time_ms

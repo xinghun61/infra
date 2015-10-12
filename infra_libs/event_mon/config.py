@@ -5,16 +5,16 @@
 import logging
 import socket
 
+import infra_libs
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
-from infra_libs.event_mon.router import _Router
-import infra_libs
+from infra_libs.event_mon import router as ev_router
 
 DEFAULT_SERVICE_ACCOUNT_CREDS = 'service-account-event-mon.json'
+RUNTYPES = set(('dry', 'test', 'prod', 'file'))
 
-# endpoint to hit for the various run types.
+# Remote endpoints
 ENDPOINTS = {
-  'dry': None,
   'test': 'https://jmt17.google.com/log',
   'prod': 'https://play.googleapis.com/log',
 }
@@ -22,19 +22,28 @@ ENDPOINTS = {
 # Instance of router._Router (singleton)
 _router = None
 
-# Cache some generally useful values
-cache = {}
+# Cache some generally useful values / options
+_cache = {}
 
 
 def add_argparse_options(parser):  # pragma: no cover
   # The default values should make sense for local testing, not production.
   group = parser.add_argument_group('Event monitoring (event_mon) '
                                     'global options')
+  group.add_argument('--dry-run', default=False,
+                     action='store_true',
+                     help='When passed, just print what would happen, but '
+                     'do not do it.'
+                     )
   group.add_argument('--event-mon-run-type', default='dry',
-                      choices=('dry', 'test', 'prod'),
+                      choices=RUNTYPES,
                       help='Determine how to send data. "dry" does not send\n'
-                      'anything. "test" sends to the test endpoint, and \n'
-                      '"prod" to the actual production endpoint.')
+                      'anything. "test" sends to the test endpoint, \n'
+                      '"prod" to the actual production endpoint, and "file" \n'
+                      'writes to a file.')
+  group.add_argument('--event-mon-output-file', default='event_mon.output',
+                     help='File into which LogEventLite serialized protos are\n'
+                     'written when --event-mon-run-type is "file"')
   group.add_argument('--event-mon-service-name',
                       help='Service name to use in log events.')
   group.add_argument('--event-mon-hostname',
@@ -68,7 +77,10 @@ def process_argparse_options(args):  # pragma: no cover
     service_name=args.event_mon_service_name,
     appengine_name=args.event_mon_appengine_name,
     service_account_creds=args.event_mon_service_account_creds,
-    service_accounts_creds_root=args.event_mon_service_accounts_creds_root)
+    service_accounts_creds_root=args.event_mon_service_accounts_creds_root,
+    output_file=args.event_mon_output_file,
+    dry_run=args.dry_run
+  )
 
 
 def setup_monitoring(run_type='dry',
@@ -76,7 +88,9 @@ def setup_monitoring(run_type='dry',
                      service_name=None,
                      appengine_name=None,
                      service_account_creds=None,
-                     service_accounts_creds_root=None):
+                     service_accounts_creds_root=None,
+                     output_file=None,
+                     dry_run=False):
   """Initializes event monitoring.
 
   This function is mainly used to provide default global values which are
@@ -104,6 +118,11 @@ def setup_monitoring(run_type='dry',
 
     service_account_creds_root (str): path containing credentials files.
 
+    output_file (str): file where to write the output in run_type == 'file'
+      mode.
+
+    dry_run (bool): if True, the code has no side-effect, what would have been
+      done is printed instead.
   """
   global _router
   logging.debug('event_mon: setting up monitoring.')
@@ -123,33 +142,38 @@ def setup_monitoring(run_type='dry',
     if appengine_name:
       default_event.event_source.appengine_name = appengine_name
 
-    cache['default_event'] = default_event
-    cache['service_account_creds'] = service_account_creds
-    cache['service_accounts_creds_root'] = service_accounts_creds_root
+    _cache['default_event'] = default_event
+    if run_type in ('prod', 'test'):
+      _cache['service_account_creds'] = service_account_creds
+      _cache['service_accounts_creds_root'] = service_accounts_creds_root
+    else:
+      _cache['service_account_creds'] = None
+      _cache['service_accounts_creds_root'] = None
 
-    if run_type not in ENDPOINTS:
+    if run_type not in RUNTYPES:
       logging.error('Unknown run_type (%s). Setting to "dry"', run_type)
-    endpoint = ENDPOINTS.get(run_type)
-    _router = _Router(cache, endpoint=endpoint)
+      run_type = 'dry'
+
+    if run_type == 'dry':
+      _router = ev_router._TextStreamRouter()
+    elif run_type == 'file':
+      _router = ev_router._LocalFileRouter(output_file,
+                                           dry_run=dry_run)
+    else:
+      _router = ev_router._HttpRouter(_cache,
+                                      ENDPOINTS.get(run_type),
+                                      dry_run=dry_run)
 
 
-def close(timeout=5):
-  """Make sure pending events are sent and gracefully shutdown.
+def close():
+  """Reset the state.
 
   Call this right before exiting the program.
 
-  Keyword Args:
-    timeout (int): number of seconds to wait before giving up.
   Returns:
-    success (bool): False if a timeout occured.
+    success (bool): False if an error occured
   """
-  global _router, cache
-  success = True
-  if _router:
-    success = _router.close(timeout=timeout)
-    # If the thread is still alive, the global state can still change, thus
-    # keep the values around for consistency.
-    if success:  # pragma: no branch
-      _router = None
-      cache = {}
-  return success
+  global _router, _cache
+  _router = None
+  _cache = {}
+  return True

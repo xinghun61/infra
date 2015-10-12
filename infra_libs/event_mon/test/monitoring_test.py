@@ -38,7 +38,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_default(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     log_event = monitoring._get_service_event('START')
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
@@ -53,7 +53,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_correct_versions(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     code_version = [
       {'source_url': 'https://fake.url/thing',
@@ -95,7 +95,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_crash_simple(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     log_event = monitoring._get_service_event('CRASH')
     event = ChromeInfraEvent.FromString(log_event.source_extension)
@@ -103,7 +103,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_crash_with_ascii_trace(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = 'A nice ascii string'
     log_event = monitoring._get_service_event('CRASH',
@@ -114,7 +114,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_crash_with_unicode_trace(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = u"Soyez prêt à un étrange goût de Noël."
     log_event = monitoring._get_service_event('CRASH',
@@ -125,7 +125,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_crash_with_big_trace(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = "this is way too long" * 55
     self.assertTrue(len(stack_trace) > monitoring.STACK_TRACE_MAX_SIZE)
@@ -138,7 +138,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_crash_invalid_trace(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     # This is not a stacktrace
     stack_trace = 123456
@@ -153,7 +153,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_trace_without_crash(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = 'A nice ascii string'
     log_event = monitoring._get_service_event('START',
@@ -166,7 +166,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_with_non_default_service_name(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     log_event = monitoring._get_service_event(
       'START', service_name='my.nice.service.name')
@@ -183,7 +183,7 @@ class GetServiceEventTest(unittest.TestCase):
 
   def test_get_service_event_with_unicode_service_name(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
     service_name = u'à_la_française_hé_oui'
     log_event = monitoring._get_service_event(
       'START', service_name=service_name)
@@ -209,7 +209,7 @@ class SendServiceEventTest(unittest.TestCase):
   def test_send_service_event_bad_versions(self):
     # Check that an invalid version does not cause any exception.
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     code_version = [{}, {'revision': 'https://fake.url'}]
     log_event = monitoring._get_service_event('START',
@@ -235,7 +235,7 @@ class SendServiceEventTest(unittest.TestCase):
 
   def test_send_service_event_smoke(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     self.assertTrue(event_mon.send_service_event('START'))
     self.assertTrue(event_mon.send_service_event('START',
@@ -248,7 +248,7 @@ class SendServiceEventTest(unittest.TestCase):
 
   def test_send_service_errors(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     self.assertFalse(event_mon.send_service_event('invalid'))
     self.assertFalse(event_mon.send_service_event('START',
@@ -908,7 +908,7 @@ class SendBuildEventTest(unittest.TestCase):
 
   def test_send_build_event_smoke(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     self.assertTrue(event_mon.send_build_event('BUILD',
                                                'bot.host.name',
@@ -933,7 +933,7 @@ class SendEventsTest(unittest.TestCase):
 
   def test_send_events_smoke(self):
     self.assertIsInstance(config._router, router._Router)
-    self.assertIsInstance(config.cache.get('default_event'), ChromeInfraEvent)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     log_events = [
       event_mon.get_build_event(
