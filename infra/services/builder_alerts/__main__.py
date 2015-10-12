@@ -21,10 +21,12 @@ import requests_cache
 from infra_libs import logs
 from infra.libs.service_utils import outer_loop
 
+from infra.services.builder_alerts import alert_builder
 from infra.services.builder_alerts import analysis
 from infra.services.builder_alerts import buildbot
+from infra.services.builder_alerts import crbug_issues
 from infra.services.builder_alerts import gatekeeper_extras
-from infra.services.builder_alerts import alert_builder
+from infra.services.builder_alerts import string_helpers
 
 
 import infra
@@ -171,9 +173,21 @@ def query_findit(findit_api_url, alerts):
     return []
 
 
+def gzipped(data):
+  s = cStringIO.StringIO()
+  with contextlib.closing(gzip.GzipFile(fileobj=s, mode='w')) as g:
+    g.write(data)
+  return s.getvalue()
+
+
 def inner_loop(args):
-  if not args.data_url:
-    logging.warn('No /data url passed, will write to builder_alerts.json')
+  old_api_endpoint = string_helpers.slash_join(
+      args.api_endpoint_prefix, args.old_api_path)
+  if not old_api_endpoint:
+    logging.warn(
+        'No /data url passed, will write to builder_alerts.json. JSON posted '
+        'to new API endpoints will be written to builder_alerts_<tree>.json '
+        'files.')
 
   if args.use_cache:
     requests_cache.install_cache('failure_stats')
@@ -196,9 +210,9 @@ def inner_loop(args):
   cache = buildbot.DiskCache(CACHE_PATH)
 
   old_alerts = {}
-  if args.data_url:
+  if old_api_endpoint:
     try:
-      old_alerts_raw = requests.get(args.data_url[0]).json()
+      old_alerts_raw = requests.get(old_api_endpoint).json()
     except ValueError:
       logging.debug('No old alerts found.')
     else:
@@ -268,7 +282,7 @@ def inner_loop(args):
       'missing_masters': missing_masters,
   }
 
-  if not args.data_url:
+  if not old_api_endpoint:
     with open('builder_alerts.json', 'w') as f:
       f.write(json.dumps(data, indent=1))
 
@@ -276,29 +290,51 @@ def inner_loop(args):
 
   json_data = json.dumps(data)
   logging.info('Alerts json is %s bytes uncompressed.', len(json_data))
-  s = cStringIO.StringIO()
-  with contextlib.closing(gzip.GzipFile(fileobj=s, mode='w')) as g:
-    g.write(json_data)
-  gzipped_data = s.getvalue()
+  gzipped_data = gzipped(data)
 
-  for url in args.data_url:
+  if old_api_endpoint:
     logging.info('POST %s alerts (%s bytes compressed) to %s',
-                 len(alerts), len(gzipped_data), url)
-    resp = requests.post(url, data=gzipped_data,
+                 len(alerts), len(gzipped_data), old_api_endpoint)
+    resp = requests.post(old_api_endpoint, data=gzipped_data,
                          headers={'content-encoding': 'gzip'})
     try:
       resp.raise_for_status()
     except requests.HTTPError as e:
-      logging.error('POST to %s failed! %d %s, %s, %s',
-                    url, resp.status_code, resp.reason, resp.content, e)
+      logging.error('POST to %s failed! %d %s, %s, %s', old_api_endpoint,
+                    resp.status_code, resp.reason, resp.content, e)
       ret = False
+
+  # Query sheriff issues and post them to the new API endpoint.
+  if args.crbug_service_account:
+    issues_per_tree = crbug_issues.query(args.crbug_service_account)
+    for tree, issues in issues_per_tree.iteritems():
+      json_data = {'alerts': issues}
+      gzipped_data = gzipped(json.dumps(json_data))
+      if args.api_endpoint_prefix:
+        new_api_url = string_helpers.slash_join(
+            args.api_endpoint_prefix, 'api/v1/alerts', tree)
+        resp = requests.post(new_api_url, data=gzipped_data,
+                             headers={'content-encoding': 'gzip'})
+        try:
+          resp.raise_for_status()
+        except requests.HTTPError:
+          logging.exception('POST to %s failed! %d %s, %s', new_api_url,
+                            resp.status_code, resp.reason, resp.content)
+          ret = False
+      else:
+        with open('builder_alerts_%s.json' % tree, 'w') as f:
+          f.write(json.dumps(json_data, indent=1))
+  else:
+    logging.error(
+        '--crbug-service-account was not specified, can not get crbug issues')
+    ret = False
 
   return ret
 
 
 def main(args):
   parser = argparse.ArgumentParser(prog='run.py %s' % __package__)
-  parser.add_argument('data_url', action='store', nargs='*')
+  parser.add_argument('data_url', action='store', nargs='*')  # Deprecated
   parser.add_argument('--use-cache', action='store_true')
   parser.add_argument('--master-filter', action='store')
   parser.add_argument('--builder-filter', action='store')
@@ -318,10 +354,41 @@ def main(args):
 
   parser.add_argument('--findit-api-url',
                       help='Query findit results from this url.')
+  parser.add_argument('--crbug-service-account',
+                      help='Path to a service account JSON file to be used to '
+                           'search for relevant issues on crbug.com.')
+  parser.add_argument('--api-endpoint-prefix',
+                      help='Endpoint prefix for posting alerts. Old API '
+                           'endpoint will be formed by adding value specified '
+                           'in --old-api-path to the prefix, new API endpoints '
+                           'will be formed by adding '
+                           '/api/v1/alerts/<tree_name>.')
+  parser.add_argument('--old-api-path',
+                      help='Path to be appended to --api-endpoint-prefix to '
+                           'form old API endpoint.')
 
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
   loop_args = outer_loop.process_argparse_options(args)
+
+  # TODO(sergiyb): Remove support for data_url when builder_alerts recipes are
+  # updated and using new syntax to call this script.
+  if args.data_url:
+    if (args.data_url.endswith('alerts') and not args.api_endpoint_prefix and
+        not args.old_api_path):
+      logging.warn(
+          'You are using positional arguments to specify URL to post updates '
+          'to. Please use --api-endpoint-prefix and --old-api-path instead.')
+      slash_index = args.data_url.rindex('/')
+      args.api_endpoint_prefix = args.data_url[slash_index+1:]
+      args.old_api_path = args.data_url[:slash_index] 
+    else:
+      logging.error(
+          'Unsupported positional argument or used together with '
+          '--api-endpoint-prefix/--old-api-path. Please use only '
+          '--api-endpoint-prefix and --old-api-path to specify URL to post new '
+          'alerts to.')
+      return
 
   # Suppress all logging from connectionpool; it is too verbose at info level.
   if args.log_level != logging.DEBUG:
