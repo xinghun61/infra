@@ -122,10 +122,19 @@ test('Default builder gets set.', 3, function() {
 
 test('addBuilderLoadErrors', 1, function() {
     var resourceLoader = new loader.Loader();
-    resourceLoader._builderKeysThatFailedToLoad = ['FailMaster1:FailBuilder1', 'FailMaster2:FailBuilder2'];
+
+    // Create an element for testing that won't be added to the unittest page.
+    resourceLoader._errors._containerElement = document.createElement('div');
+
+    resourceLoader._builderKeysThatFailedToLoad = ['FailMaster1:FailBuilder1', 'FailMaster2.fyi:FailBuilder2'];
     resourceLoader._staleBuilderKeys = ['StaleMaster:StaleBuilder'];
     resourceLoader._addErrors();
-    equal(resourceLoader._errors._messages, 'ERROR: Failed to get data from FailMaster1:FailBuilder1,FailMaster2:FailBuilder2.<br>ERROR: Data from StaleMaster:StaleBuilder is more than 1 day stale.<br>');
+    resourceLoader.showErrors();
+    equal(resourceLoader._errors._containerElement.innerHTML,
+          '<div><h3>Data is missing for builders:</h3><ul>' +
+          '<li>FailMaster1:FailBuilder1</li></ul></div>' +
+          '<div><h3>Data is more than 1 day stale for builders:</h3><ul>' +
+          '<li>StaleMaster:StaleBuilder</li></ul></div>');
 });
 
 test('flattenTrie', 1, function() {

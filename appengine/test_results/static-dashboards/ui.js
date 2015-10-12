@@ -223,31 +223,68 @@ ui.html.blinkRevisionLink = function(testResults, index)
 
 
 ui.Errors = function() {
-    this._messages = '';
+    // Keep track of the missing/stale builders.
+    this._stale = [];
+    this._missing = [];
+
     // Element to display the errors within.
     this._containerElement = null;
 }
 
 ui.Errors.prototype = {
-    show: function()
-    {
+    isWarningOnlyBuilder: function(builder) {
+        // FYI builders are best-effort. chromium.swarm is the canary master.
+        return (builder.indexOf('.fyi') != -1 ||
+                builder.indexOf('chromium.swarm') != -1);
+    },
+    show: function() {
         if (!this._containerElement) {
-            this._containerElement = document.createElement('H2');
+            this._containerElement = document.createElement('div');
             this._containerElement.style.color = 'red';
             this._containerElement.id = 'errors';
-            document.documentElement.insertBefore(this._containerElement, document.body);
+            document.body.appendChild(this._containerElement);
+        }
+        var messages = '';
+
+        var missingMessage = '';
+        for (var i = 0; i < this._missing.length; i++) {
+            if (this.isWarningOnlyBuilder(this._missing[i])) {
+                console.warn('Builder is missing: ' + this._missing[i]);
+            } else {
+                missingMessage += '<li>' + this._missing[i] + '</li>';
+            }
+        }
+        if (missingMessage.length) {
+          messages +=
+              '<div><h3>Data is missing for builders:</h3>' +
+              '<ul>' + missingMessage + '</ul></div>';
         }
 
-        this._containerElement.innerHTML = this._messages;
+        var staleMessage = '';
+        for (var i = 0; i < this._stale.length; i++) {
+            if (this.isWarningOnlyBuilder(this._stale[i])) {
+                console.warn('Builder is stale: ' + this._stale[i]);
+            } else {
+                staleMessage += '<li>' + this._stale[i] + '</li>';
+            }
+        }
+        if (staleMessage.length) {
+          messages +=
+              '<div><h3>Data is more than 1 day stale for builders:</h3>' +
+              '<ul>' + staleMessage + '</ul></div>';
+        }
+        this._containerElement.innerHTML = messages;
     },
-    // Record a new error message.
-    addError: function(message)
-    {
-        this._messages += message + '<br>';
+    // Record missing builders.
+    addMissing: function(builders) {
+        this._missing = this._missing.concat(builders);
     },
-    hasErrors: function()
-    {
-        return !!this._messages;
+    // Record stale builders.
+    addStale: function(builders) {
+        this._stale = this._stale.concat(builders);
+    },
+    hasErrors: function() {
+        return !!this._stale || !!this._missing;
     }
 }
 

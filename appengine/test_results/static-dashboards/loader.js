@@ -229,11 +229,12 @@ loader.Loader.prototype = {
     },
     _addErrors: function()
     {
-        if (this._builderKeysThatFailedToLoad.length)
-            this._errors.addError('ERROR: Failed to get data from ' + this._builderKeysThatFailedToLoad.toString() +'.');
-
-        if (this._staleBuilderKeys.length)
-            this._errors.addError('ERROR: Data from ' + this._staleBuilderKeys.toString() + ' is more than 1 day stale.');
+        if (this._builderKeysThatFailedToLoad.length) {
+            this._errors.addMissing(this._builderKeysThatFailedToLoad);
+        }
+        if (this._staleBuilderKeys.length) {
+            this._errors.addStale(this._staleBuilderKeys);
+        }
     }
 }
 
