@@ -11,12 +11,13 @@ import mock
 
 from infra_libs import temporary_directory
 from infra.services.mastermon import monitor
+from infra.services.mastermon import pollers
 import infra_libs
 
 
 class MasterMonitorTest(unittest.TestCase):
   def test_poll(self):
-    mock_poller_class = mock.Mock()
+    mock_poller_class = mock.create_autospec(pollers.Poller, spec_set=True)
     mock_poller = mock_poller_class.return_value
 
     class MasterMonitor(monitor.MasterMonitor):
@@ -33,7 +34,7 @@ class MasterMonitorTest(unittest.TestCase):
     self.assertFalse(m.up.get())
 
   def test_poll_with_name(self):
-    mock_poller_class = mock.Mock()
+    mock_poller_class = mock.create_autospec(pollers.Poller, spec_set=True)
     mock_poller = mock_poller_class.return_value
 
     class MasterMonitor(monitor.MasterMonitor):

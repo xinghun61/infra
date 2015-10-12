@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import os
+import socket
+import time
 import unittest
 
 from infra_libs.ts_mon.common import http_metrics
@@ -11,7 +13,6 @@ from infra_libs import httplib2_utils
 import httplib2
 import mock
 import oauth2client.client
-import socket
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
@@ -128,7 +129,7 @@ class GetAuthenticatedHttp(unittest.TestCase):
 class InstrumentedHttplib2Test(unittest.TestCase):
   def setUp(self):
     super(InstrumentedHttplib2Test, self).setUp()
-    self.mock_time = mock.Mock()
+    self.mock_time = mock.create_autospec(time.time, spec_set=True)
     self.mock_time.return_value = 42
     self.http = httplib2_utils.InstrumentedHttp('test', time_fn=self.mock_time)
     http_metrics._reset_for_testing()
@@ -216,11 +217,11 @@ class InstrumentedHttplib2Test(unittest.TestCase):
         {'name': 'test', 'client': 'httplib2'}).sum)
 
   def test_duration(self):
-    time = [4.2]
+    current_time = [4.2]
 
     def time_side_effect():
-      ret = time[0]
-      time[0] += 0.3
+      ret = current_time[0]
+      current_time[0] += 0.3
       return ret
     self.mock_time.side_effect = time_side_effect
 

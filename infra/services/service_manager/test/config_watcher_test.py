@@ -6,6 +6,7 @@ import json
 import os.path
 import shutil
 import tempfile
+import time
 import unittest
 
 import mock
@@ -19,7 +20,7 @@ class ConfigWatcherTest(unittest.TestCase):
   def setUp(self):
     self.config_directory = tempfile.mkdtemp()
 
-    self.mock_sleep = mock.Mock()
+    self.mock_sleep = mock.create_autospec(time.sleep, spec_set=True)
 
     self.mock_ownservice_ctor = mock.patch(
         'infra.services.service_manager.service.OwnService').start()

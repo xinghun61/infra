@@ -5,6 +5,7 @@
 import os
 import shutil
 import tempfile
+import time
 import unittest
 
 import mock
@@ -101,7 +102,7 @@ class PuppetMetricsTest(unittest.TestCase):
 """)
     self.fh.close()
 
-    mock_time = mock.Mock()
+    mock_time = mock.create_autospec(time.time, spec_set=True)
     mock_time.return_value = 1440132466 + 123
     puppet_metrics.get_puppet_summary(time_fn=mock_time)
 
@@ -144,7 +145,7 @@ class PuppetMetricsTest(unittest.TestCase):
 """)
     self.fh.close()
 
-    mock_time = mock.Mock()
+    mock_time = mock.create_autospec(time.time, spec_set=True)
     mock_time.return_value = 1440132466 + 123
     puppet_metrics.get_puppet_summary(time_fn=mock_time)
 

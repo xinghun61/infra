@@ -13,6 +13,7 @@ from testing_support import auto_stub
 
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.test import stubs
 
 
@@ -37,8 +38,9 @@ class GlobalsTest(auto_stub.TestCase):
     def serialize_to(pb, default_target=None, loop_action=None):
       pb.data.add().name = 'foo'
 
-    fake_metric = mock.Mock()
-    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+    fake_metric = mock.create_autospec(
+        metrics.Metric, spec_set=True, instance=True)
+    fake_metric.serialize_to.side_effect = serialize_to
 
     interface.send(fake_metric)
     interface.state.global_monitor.send.assert_called_once()
@@ -50,8 +52,7 @@ class GlobalsTest(auto_stub.TestCase):
     interface.state.flush_mode = 'manual'
     interface.state.global_monitor = stubs.MockMonitor()
 
-    fake_metric = mock.Mock()
-    fake_metric.serialize_to = mock.Mock()
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
 
     interface.send(fake_metric)
     self.assertFalse(interface.state.global_monitor.send.called)
@@ -75,8 +76,8 @@ class GlobalsTest(auto_stub.TestCase):
     def serialize_to(pb, default_target=None, loop_action=None):
       pb.data.add().name = 'foo'
 
-    fake_metric = mock.Mock()
-    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.serialize_to.side_effect = serialize_to
     interface.state.metrics.add(fake_metric)
 
     interface.flush()
@@ -106,8 +107,8 @@ class GlobalsTest(auto_stub.TestCase):
       data_lengths.append(len(proto.data))
     interface.state.global_monitor.send.side_effect = send
 
-    fake_metric = mock.Mock()
-    fake_metric.serialize_to = mock.Mock(side_effect=serialize_to)
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.serialize_to.side_effect = serialize_to
     interface.state.metrics.add(fake_metric)
 
     interface.flush()
@@ -116,7 +117,7 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(1, data_lengths[1])
 
   def test_register_unregister(self):
-    fake_metric = mock.Mock()
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     self.assertEqual(0, len(interface.state.metrics))
     interface.register(fake_metric)
     self.assertEqual(1, len(interface.state.metrics))
