@@ -105,12 +105,13 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
         self.urls = collections.defaultdict(lambda: self.response_class(
             content=None, status_code=404, headers={}))
 
-      def register_handler(self, url, content, status_code=200, headers=None):
-        self.urls[url] = self.response_class(
+      def register_handler(
+          self, url, content, status_code=200, headers=None, data=None):
+        self.urls[(url, data)] = self.response_class(
             content=content, status_code=status_code, headers=headers or {})
 
-      def handle_url(self, url, **_kwargs):
-        return self.urls[url]
+      def handle_url(self, url, payload=None, **_kwargs):
+        return self.urls[(url, payload)]
 
 
     url_handlers = UrlHandlers()
