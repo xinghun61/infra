@@ -139,7 +139,6 @@ FULL_RESULT_EXAMPLE = """ADD_RESULTS({
     "builder_name": "Webkit",
     "num_passes": 10,
     "pixel_tests_enabled": true,
-    "blink_revision": "1234",
     "has_pretty_patch": true,
     "fixable": 25,
     "num_flaky": 0,
@@ -163,7 +162,6 @@ FULL_RESULT_EXAMPLE = """ADD_RESULTS({
 JSON_RESULTS_OLD_TEMPLATE = (
     '{"[BUILDER_NAME]":{'
     '"allFixableCount":[[TESTDATA_COUNT]],'
-    '"blinkRevision":[[TESTDATA_WEBKITREVISION]],'
     '"buildNumbers":[[TESTDATA_BUILDNUMBERS]],'
     '"chromeRevision":[[TESTDATA_CHROMEREVISION]],'
     '"failure_map": %s,'
@@ -181,7 +179,6 @@ JSON_RESULTS_COUNTS = ('{"' + '":[[TESTDATA_COUNT]],"'.join(
 
 JSON_RESULTS_TEMPLATE = (
     '{"[BUILDER_NAME]":{'
-    '"blinkRevision":[[TESTDATA_WEBKITREVISION]],'
     '"buildNumbers":[[TESTDATA_BUILDNUMBERS]],'
     '"chromeRevision":[[TESTDATA_CHROMEREVISION]],'
     '"failure_map": %s,'
@@ -450,7 +447,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_merge_full_results_format(self):
     expected_incremental_results = {
         "Webkit": {
-            "blinkRevision": ["1234"],
             "buildNumbers": ["3"],
             "chromeRevision": ["5678"],
             "failure_map": jsonresults.CHAR_TO_FAILURE,
@@ -1227,7 +1223,6 @@ class JsonResultsTest(unittest.TestCase):
             'build_number': '123',
             'version': jsonresults.JSON_RESULTS_HIERARCHICAL_VERSION,
             'builder_name': builder,
-            'blink_revision': '12345',
             'seconds_since_epoch': 1406123456,
             'num_failures_by_type': {
                 'FAIL': 0,
@@ -1247,7 +1242,6 @@ class JsonResultsTest(unittest.TestCase):
             'build_number': '456',
             'version': jsonresults.JSON_RESULTS_HIERARCHICAL_VERSION,
             'builder_name': builder,
-            'blink_revision': '54321',
             'seconds_since_epoch': 1406654321,
             'num_failures_by_type': {
                 'FAIL': 1,
@@ -1272,7 +1266,9 @@ class JsonResultsTest(unittest.TestCase):
     self.assertEqual(len(files), 2)
     for f in files:
       j = json.loads(f.data)
-      self.assertItemsEqual(j[builder]['blinkRevision'], ['12345', '54321'])
+      self.assertItemsEqual(j[builder]['chromeRevision'],
+                            ['761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
+                             '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d5'])
 
     tb.deactivate()
 
@@ -1286,7 +1282,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_int_fields(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': 'foobar',
-      'blink_revision': 'foobar',
       'build_number': 'foobar',
       'version': 'foobar',
       'builder_name': 'foobar',
@@ -1298,7 +1293,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_dict_fields(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1310,7 +1304,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_failure_type_value(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1322,7 +1315,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_failure_type_count(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1334,7 +1326,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_test_name(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1346,7 +1337,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_test_config_type(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1358,7 +1348,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_missing_required_fields_in_test(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1370,7 +1359,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_actual_expected_type(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1382,7 +1370,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_invalid_full_results_json_incorrect_time_type(self):
     self.assertFalse(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1396,7 +1383,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_valid_full_results_json_numeric_chromium_revision(self):
     self.assertTrue(JsonResults.is_valid_full_results_json({
       'chromium_revision': '12345',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',
@@ -1409,7 +1395,6 @@ class JsonResultsTest(unittest.TestCase):
   def test_is_valid_full_results_json(self):
     self.assertTrue(JsonResults.is_valid_full_results_json({
       'chromium_revision': '761b2a4cbc3103ef5e48cc7e77184f57eb50f6d4',
-      'blink_revision': '12345',
       'build_number': '12345',
       'version': '5',
       'builder_name': 'foobar',

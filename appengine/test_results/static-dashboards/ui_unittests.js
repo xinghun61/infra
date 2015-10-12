@@ -71,30 +71,3 @@ test('chromiumRevisionLinkRevisionRange', 1, function() {
     var html = ui.html.chromiumRevisionLink(testResults, 0);
     equal(html, '<a href="../../revision_range?start=3&end=5">r3 to r5</a>');
 });
-
-test('blinkRevisionLinkGitHash', 1, function() {
-    var testResults = {};
-    testResults[results.BLINK_REVISIONS] = ['hashhere'];
-    equal(ui.html.blinkRevisionLink(testResults, 1), null);
-});
-
-test('blinkRevisionLinkOneRevision', 1, function() {
-    var testResults = {};
-    testResults[results.BLINK_REVISIONS] = [3, 2, 1];
-    var html = ui.html.blinkRevisionLink(testResults, 1);
-    equal(html, '<a href="http://src.chromium.org/viewvc/blink?view=rev&revision=2">r2</a>');
-});
-
-test('blinkRevisionLinkAtRevision', 1, function() {
-    var testResults = {};
-    testResults[results.BLINK_REVISIONS] = [3, 2, 2];
-    var html = ui.html.blinkRevisionLink(testResults, 1);
-    equal(html, 'At <a href="http://src.chromium.org/viewvc/blink?view=rev&revision=2">r2</a>');
-});
-
-test('blinkRevisionLinkRevisionRange', 1, function() {
-    var testResults = {};
-    testResults[results.BLINK_REVISIONS] = [5, 2];
-    var html = ui.html.blinkRevisionLink(testResults, 0);
-    equal(html, '<a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range=3:5&mode=html">r3 to r5</a>');
-});

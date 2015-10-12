@@ -112,7 +112,7 @@ test('htmlForIndividualTestOnAllBuildersWithResultsLinks', 1, function() {
     g_history.dashboardSpecificState.showChrome = true;
 
     var builder = new builders.Builder('DummyMaster', 'WebKit Linux');
-    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: [1234, 1233], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], chromeRevision: [1234, 1233], failure_map: FAILURE_MAP};
 
     var test = 'dummytest.html';
     var resultsObject = createResultsObjectForTest(test, builder);
@@ -161,7 +161,7 @@ test('individualTestsForSubstringList', 2, function() {
     var builder = new builders.Builder('chromium.webkit', 'WebKit Linux');
     g_resultsByBuilder[builder.key()] = {
         buildNumbers: [2, 1],
-        blinkRevision: [1234, 1233],
+        chromeRevision: [1234, 1233],
         failure_map: FAILURE_MAP,
         tests: {
             'foo/one.html': { results: [1, 'F'], times: [1, 0] },
@@ -207,8 +207,8 @@ test('htmlForSingleTestRow', 1, function() {
     var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
     var test = createResultsObjectForTest('foo/exists.html', builder);
     historyInstance.dashboardSpecificState.showNonFlaky = true;
-    var blinkRevisions = [1234, 1233];
-    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
+    var chromeRevisions = [1234, 1233];
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], chromeRevision: chromeRevisions, failure_map: FAILURE_MAP};
     test.rawResults = [[1, 'F'], [2, 'I']];
     test.rawTimes = [[1, 0], [2, 5]];
     var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
@@ -221,7 +221,7 @@ test('htmlForSingleTestRow', 1, function() {
             '<div title="IMAGE. Click for more info." class="results IMAGE">5</div>' +
         '</td>';
 
-    equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
+    equal(htmlForSingleTestRow(test, false, chromeRevisions), expected);
 });
 
 test('htmlForSingleTestRowWithFlakyResult', 1, function() {
@@ -229,8 +229,8 @@ test('htmlForSingleTestRowWithFlakyResult', 1, function() {
     var builder = new builders.Builder('dummyMaster', 'dummyBuilder');
     var test = createResultsObjectForTest('foo/exists.html', builder);
     historyInstance.dashboardSpecificState.showNonFlaky = true;
-    var blinkRevisions = [1234, 1233];
-    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], blinkRevision: blinkRevisions, failure_map: FAILURE_MAP};
+    var chromeRevisions = [1234, 1233];
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [2, 1], chromeRevision: chromeRevisions, failure_map: FAILURE_MAP};
     test.rawResults = [[1, 'F'], [2, 'IP']];
     test.rawTimes = [[1, 0], [2, 5]];
     var expected = '<tr builder="dummyMaster:dummyBuilder" test="foo/exists.html">' +
@@ -243,7 +243,7 @@ test('htmlForSingleTestRowWithFlakyResult', 1, function() {
             '<div title="IMAGE PASS . Click for more info." class="results FLAKY">5</div>' +
         '</td>';
 
-    equal(htmlForSingleTestRow(test, false, blinkRevisions), expected);
+    equal(htmlForSingleTestRow(test, false, chromeRevisions), expected);
 });
 
 test('lookupVirtualTestSuite', 2, function() {
@@ -400,35 +400,16 @@ test('shouldShowTest', 9, function() {
     equal(shouldShowTest(test), true, 'show all non layout tests');
 });
 
-test('collapsedRevisionListBlink', 1, function() {
-    resetGlobals();
-    var test = 'dummytest.html';
-
-    var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
-    // Note: r1235 results were generated twice by two separate builds.
-    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
-
-    var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
-    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
-
-    var resultsObject1 = createResultsObjectForTest(test, builder1);
-    var resultsObject2 = createResultsObjectForTest(test, builder2);
-
-    var result = collapsedRevisionList([resultsObject1, resultsObject2]).join(',');
-    var expected = [1236, 1235, 1235, 1234, 1232].join(',');
-    equal(result, expected, 'collapsedRevisionList result should be the unique blink builds, sorted in descending order');
-});
-
 test('collapsedRevisionListChromium', 1, function() {
     resetGlobals();
     var test = 'dummytest.html';
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
     // Note: r1235 results were generated twice by two separate builds.
-    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], chromeRevision: [1235, 1235, 1234, 1232], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
-    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], chromeRevision: [1236, 1234], failure_map: FAILURE_MAP};
 
     var resultsObject1 = createResultsObjectForTest(test, builder1);
     var resultsObject2 = createResultsObjectForTest(test, builder2);
@@ -444,10 +425,10 @@ test('collapsedRevisionListChromiumGitHashes', 1, function() {
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux 1');
     // Note: r1235 results were generated twice by two separate builds.
-    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], blinkRevision: ['1234', 'asdf', '1111', '2222'], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {builder: builder1, buildNumbers: [2, 1, 3, 4], chromeRevision: ['1234', 'asdf', '1111', '2222'], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Linux 2');
-    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], blinkRevision: ['asdf', '2345'], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder2.key()] = {builder: builder2, buildNumbers: [4, 5], chromeRevision: ['asdf', '2345'], failure_map: FAILURE_MAP};
 
     var resultsObject1 = createResultsObjectForTest(test, builder1);
     var resultsObject2 = createResultsObjectForTest(test, builder2);
@@ -464,10 +445,10 @@ test('htmlForTestsWithMultipleRunsAtTheSameRevision', 6, function() {
 
     var builder1 = new builders.Builder('Master1', 'WebKit Linux (dbg)');
     // Note: r1235 results were generated thrice by three separate builds.
-    g_resultsByBuilder[builder1.key()] = {buildNumbers: [4, 3, 2, 1, 0], blinkRevision: [1235, 1235, 1235, 1234, 1233], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder1.key()] = {buildNumbers: [4, 3, 2, 1, 0], chromeRevision: [1235, 1235, 1235, 1234, 1233], failure_map: FAILURE_MAP};
 
     var builder2 = new builders.Builder('Master1', 'WebKit Win (dbg)');
-    g_resultsByBuilder[builder2.key()] = {buildNumbers: [6, 5], blinkRevision: [1236, 1234], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder2.key()] = {buildNumbers: [6, 5], chromeRevision: [1236, 1234], failure_map: FAILURE_MAP};
 
     var resultsObject1 = createResultsObjectForTest(test, builder1);
     resultsObject1.rawResults = [[0, 'F'], [1, 'I'], [2, 'I'], [3, 'P'], [4, 'F']];
@@ -587,7 +568,7 @@ test('htmlForTestsWithMultipleRunsWithGitHash', 1, function() {
     var test = 'dummytest.html';
 
     var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
-    g_resultsByBuilder[builder.key()] = {buildNumbers: [0], blinkRevision: ['b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b'], failure_map: FAILURE_MAP};
+    g_resultsByBuilder[builder.key()] = {buildNumbers: [0], chromeRevision: ['b7228ffd469f5d3f4a10952fb8e9a34acb2f0d4b'], failure_map: FAILURE_MAP};
 
     var resultsObject = createResultsObjectForTest(test, builder);
     resultsObject.rawResults = [[0, 'P']];
@@ -638,7 +619,7 @@ test('htmlForPopupForBuild', 2, function() {
     var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
     g_resultsByBuilder[builder.key()] = {
         buildNumbers: [4, 3],
-        blinkRevision: [1235, 1233],
+        chromeRevision: [1235, 1233],
         chromeRevision: [1235, 1233],
         secondsSinceEpoch: [1234, 1234],
         failure_map: FAILURE_MAP
@@ -656,7 +637,6 @@ test('htmlForPopupForBuild', 2, function() {
                     'Build log' +
                 '</a>' +
             '</li>' +
-            '<li>Blink: <a href="http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk&range=1234:1235&mode=html">r1234 to r1235</a></li>' +
             '<li>Chromium: <a href="../../revision_range?start=1234&end=1235">r1234 to r1235</a></li>' +
             '<li>' +
                 '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/4/layout-test-results.zip">' +
@@ -687,7 +667,6 @@ test('htmlForPopupForBuildWithGitHashes', 1, function() {
     var builder = new builders.Builder('Master1', 'WebKit Linux (dbg)');
     g_resultsByBuilder[builder.key()] = {
         buildNumbers: [4, 3],
-        blinkRevision: ['asdf', 'qwer'],
         chromeRevision: ['asdf', 'qwer'],
         secondsSinceEpoch: [1234, 1234],
         failure_map: FAILURE_MAP

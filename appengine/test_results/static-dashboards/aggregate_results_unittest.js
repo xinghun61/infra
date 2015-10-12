@@ -69,7 +69,6 @@ function setupAggregateResultsData(includeRevisonNumbers)
     };
 
     if (includeRevisonNumbers) {
-        g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS] = [1234, 1233];
         g_resultsByBuilder[builder.key()][results.CHROME_REVISIONS] = [4567, 4566];
     }
 

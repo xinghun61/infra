@@ -34,7 +34,6 @@ var results = results || {};
 results.NUM_FAILURES_BY_TYPE = 'num_failures_by_type';
 results.FAILURE_MAP = 'failure_map';
 results.CHROME_REVISIONS = 'chromeRevision';
-results.BLINK_REVISIONS = 'blinkRevision';
 results.TIMESTAMPS = 'secondsSinceEpoch';
 results.BUILD_NUMBERS = 'buildNumbers';
 results.TESTS = 'tests';

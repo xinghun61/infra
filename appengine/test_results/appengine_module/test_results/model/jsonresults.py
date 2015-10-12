@@ -446,7 +446,6 @@ class JsonResults(object):
             # to be camel-case.
             BUILD_NUMBERS_KEY: [full_results_format['build_number']],
             'chromeRevision': [full_results_format['chromium_revision']],
-            'blinkRevision': [full_results_format['blink_revision']],
             'secondsSinceEpoch': [full_results_format['seconds_since_epoch']],
         }
     }
@@ -547,7 +546,7 @@ class JsonResults(object):
   def is_valid_full_results_json(cls, file_json):
     if not isinstance(file_json, dict):
       return False
-    required_fields = ['chromium_revision', 'blink_revision',
+    required_fields = ['chromium_revision',
                        'build_number', 'version', 'builder_name',
                        'seconds_since_epoch', 'num_failures_by_type',
                        'tests']
@@ -562,8 +561,7 @@ class JsonResults(object):
       except ValueError:
         return False
 
-    int_fields = ['blink_revision', 'build_number', 'version',
-                  'seconds_since_epoch']
+    int_fields = ['build_number', 'version', 'seconds_since_epoch']
     for int_field in int_fields:
       if not is_convertable_to_int(file_json[int_field]):
         return False

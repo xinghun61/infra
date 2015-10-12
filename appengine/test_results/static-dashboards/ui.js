@@ -177,15 +177,8 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
     if (!currentRevision)
         return null;
 
-    // TODO(ojan): chromium/src is the only repository supported by crrev.com.
-    // Once blink is supported, send all code down the isChrome codepath.
-    var isChrome = resultsKey == results.CHROME_REVISIONS;
-
     var singleUrl;
-    if (isChrome)
-        singleUrl = 'https://crrev.com/' + currentRevision;
-    else
-        singleUrl = 'http://src.chromium.org/viewvc/blink?view=rev&revision=' + currentRevision;
+    singleUrl = 'https://crrev.com/' + currentRevision;
 
     var previousRevision = Number(testResults[resultsKey][index + 1]);
     if (!previousRevision)
@@ -198,15 +191,9 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
         return '<a href="' + singleUrl + '">r' + currentRevision    + '</a>';
 
     var rangeUrl;
-    if (isChrome) {
-        // Intentionally do not increment previous revision. This rev works the
-        // way gitiles does (exclude the start of the range) instead of the way
-        // the perf dashboard below does.
-        rangeUrl = '../../revision_range?start=' + (previousRevision + 1) + '&end=' + currentRevision;
-    } else {
-        rangeUrl = 'http://build.chromium.org/f/chromium/perf/dashboard/ui/changelog_blink.html?url=/trunk' +
-            '&range=' + (previousRevision + 1) + ':' + currentRevision + '&mode=html';
-    }
+    // Intentionally do not increment previous revision. This rev works the
+    // way gitiles does (exclude the start of the range).
+    rangeUrl = '../../revision_range?start=' + (previousRevision + 1) + '&end=' + currentRevision;
 
     return '<a href="' + rangeUrl + '">r' + (previousRevision + 1) + ' to r' + currentRevision + '</a>';
 }
@@ -214,11 +201,6 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
 ui.html.chromiumRevisionLink = function(testResults, index)
 {
     return ui.html._revisionLink(results.CHROME_REVISIONS, testResults, index);
-}
-
-ui.html.blinkRevisionLink = function(testResults, index)
-{
-    return ui.html._revisionLink(results.BLINK_REVISIONS, testResults, index);
 }
 
 

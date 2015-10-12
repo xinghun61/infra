@@ -229,7 +229,6 @@ function updateBuildInspector(resultsForBuilder, builder, dygraph, index)
 
     // Revision link(s)
     addRow('Chromium change:', ui.html.chromiumRevisionLink(resultsForBuilder, index));
-    addRow('Blink change:', ui.html.blinkRevisionLink(resultsForBuilder, index));
 
     // Test status/counts
     addRow('', '');

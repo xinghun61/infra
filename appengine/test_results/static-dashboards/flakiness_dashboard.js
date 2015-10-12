@@ -31,7 +31,9 @@
 //////////////////////////////////////////////////////////////////////////////
 var FORWARD = 'forward';
 var BACKWARD = 'backward';
-var TEST_URL_BASE_PATH_FOR_BROWSING = 'http://src.chromium.org/viewvc/blink/trunk/LayoutTests/';
+var TEST_URL_BASE_PATH_FOR_BROWSING =
+    'https://chromium.googlesource.com/' +
+    'chromium/src/+/master/third_party/WebKit/LayoutTests/';
 var TEST_URL_BASE_PATH_FOR_XHR = 'http://src.chromium.org/blink/trunk/LayoutTests/';
 var TEST_RESULTS_BASE_PATH = 'https://storage.googleapis.com/chromium-layout-test-archives/';
 var GPU_RESULTS_BASE_PATH = 'http://chromium-browser-gpu-tests.commondatastorage.googleapis.com/runs/'
@@ -550,12 +552,6 @@ function htmlForPopupForBuild(builderKey, index, opt_testName)
 
     html += '<ul><li>' + linkHTMLToOpenWindow(buildBasePath, 'Build log') + '</li>';
 
-    if (g_resultsByBuilder[builder.key()][results.BLINK_REVISIONS]) {
-        var blinkLink = ui.html.blinkRevisionLink(g_resultsByBuilder[builder.key()], index);
-        if (blinkLink)
-            html += '<li>Blink: ' + blinkLink + '</li>';
-    }
-
     var chromiumLink = ui.html.chromiumRevisionLink(g_resultsByBuilder[builder.key()], index);
     if (chromiumLink)
         html += '<li>Chromium: ' + chromiumLink + '</li>';
@@ -596,10 +592,6 @@ function htmlForTestResults(test, revisions)
     var times = test.rawTimes.concat();
     var builder = test.builder;
     var buildNumbers = g_resultsByBuilder[builder.key()].buildNumbers;
-
-    // FIXME: Support other revision types instead of just chrome/blink based on the test type.
-    var revisionType = g_history.isLayoutTestResults() ?
-        results.BLINK_REVISIONS : results.CHROME_REVISIONS;
 
     var cells = [];
     if (revisions) {
@@ -646,10 +638,10 @@ function htmlForTestResults(test, revisions)
               indexToReplaceCurrentTime += buildNumbers.length;
         }
 
-        var rawRevision = g_resultsByBuilder[builder.key()][revisionType][i];
+        var rawRevision = g_resultsByBuilder[builder.key()][results.CHROME_REVISIONS][i];
         var revision = Number(rawRevision) || rawRevision;
 
-        // Locate the empty cell corresponding to this blink revision.
+        // Locate the empty cell corresponding to this revision.
         var cell;
 
         if (revisions) {
@@ -918,17 +910,9 @@ function sortTests(tests, column, order)
 }
 
 // Return an array of revisions across all builders such that all of a builder's
-// builds have a unique entry in the list. The currently selected test type
-// (e.g., layout tests) determines which revision type is not collapsed.
-// Note that revisions may not be unique: a single builder can have two runs at
-// the same blink revision but different chrome revisions which will result in
-// multiple entries of the same blink revision.
+// builds have a unique entry in the list.
 function collapsedRevisionList(testResults)
 {
-    // FIXME: Support other revision types instead of just chrome/blink based on the test type.
-    var revisionType = g_history.isLayoutTestResults() ?
-        results.BLINK_REVISIONS : results.CHROME_REVISIONS;
-
     var revisionsCountedSet = {};
     for (var resultIndex = 0; resultIndex < testResults.length; resultIndex++) {
         var builder = testResults[resultIndex].builder;
@@ -936,7 +920,7 @@ function collapsedRevisionList(testResults)
         var buildNumbers = build.buildNumbers;
         var builderRevisionsCountedSet = {};
         for (var i = 0; i < buildNumbers.length; i++) {
-            var revision = build[revisionType][i];
+            var revision = build[results.CHROME_REVISIONS][i];
 
             if (!Number(revision))
                 return null;
