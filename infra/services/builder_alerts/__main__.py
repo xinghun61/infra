@@ -380,8 +380,8 @@ def main(args):
           'You are using positional argument to specify URL to post updates '
           'to. Please use --api-endpoint-prefix and --old-api-path instead.')
       slash_index = args.data_url[0].rindex('/')
-      args.api_endpoint_prefix = args.data_url[0][slash_index+1:]
-      args.old_api_path = args.data_url[0][:slash_index]
+      args.api_endpoint_prefix = args.data_url[0][:slash_index]
+      args.old_api_path = args.data_url[0][slash_index+1:]
     else:
       logging.error(
           'Unsupported positional argument(s) or used together with '
