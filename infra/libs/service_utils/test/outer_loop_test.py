@@ -27,11 +27,6 @@ class TestOuterLoop(auto_stub.TestCase):
   def setUp(self):
     super(TestOuterLoop, self).setUp()
     self.time_mod = TestOuterLoop.MyTime()
-    self.mock(interface, 'register', stubs.MockInterfaceModule().register)
-
-  def tearDown(self):
-    super(TestOuterLoop, self).tearDown()
-    interface.state.metrics = set()
 
   def testLongUnsuccessfulJobStillFails(self):
     ret = outer_loop.loop(lambda: self.time_mod.sleep(100),

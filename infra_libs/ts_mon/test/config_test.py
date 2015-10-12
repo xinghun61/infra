@@ -135,21 +135,6 @@ class GlobalsTest(auto_stub.TestCase):
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', auto_spec=True)
-  def test_flush_all_non_instrumented_http(self, fake_monitor):
-    singleton = mock.Mock()
-    fake_monitor.return_value = singleton
-    p = argparse.ArgumentParser()
-    config.add_argparse_options(p)
-    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
-                         '--ts-mon-endpoint', 'https://foo.tld/api',
-                         '--ts-mon-flush', 'all'])
-    config.process_argparse_options(args)
-    fake_monitor.assert_called_once_with(
-        '/path/to/creds.p8.json', 'https://foo.tld/api',
-        use_instrumented_http=False)
-    self.assertIs(interface.state.global_monitor, singleton)
-
   @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor', auto_spec=True)
   def test_pubsub_args(self, fake_monitor):
     singleton = mock.Mock()
@@ -162,21 +147,6 @@ class GlobalsTest(auto_stub.TestCase):
     fake_monitor.assert_called_once_with(
         '/path/to/creds.p8.json', 'mytopic', 'myproject',
         use_instrumented_http=True)
-    self.assertIs(interface.state.global_monitor, singleton)
-
-  @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor', auto_spec=True)
-  def test_pubsub_args_non_instrumented_http(self, fake_monitor):
-    singleton = mock.Mock()
-    fake_monitor.return_value = singleton
-    p = argparse.ArgumentParser()
-    config.add_argparse_options(p)
-    args = p.parse_args(['--ts-mon-credentials', '/path/to/creds.p8.json',
-                         '--ts-mon-endpoint', 'pubsub://mytopic/myproject',
-                         '--ts-mon-flush', 'all'])
-    config.process_argparse_options(args)
-    fake_monitor.assert_called_once_with(
-        '/path/to/creds.p8.json', 'mytopic', 'myproject',
-        use_instrumented_http=False)
     self.assertIs(interface.state.global_monitor, singleton)
 
   @mock.patch('infra_libs.ts_mon.monitors.DiskMonitor', auto_spec=True)

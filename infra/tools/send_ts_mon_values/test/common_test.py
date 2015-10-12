@@ -106,7 +106,7 @@ class test_set_metric(unittest.TestCase):
     self.assertEqual(1, len(metrics))
     self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
     for metric in metrics:
-      ts_mon.unregister(metric)  # Cleanup
+      metric.unregister()  # Cleanup
 
   def test_set_metric_no_input(self):
     metrics = common.set_metrics(None, ts_mon.GaugeMetric)
@@ -120,7 +120,7 @@ class test_set_metric(unittest.TestCase):
     self.assertTrue(metrics[0].name.startswith("test/name"))
     self.assertEquals(metrics[0]._start_time, 1234)
     for metric in metrics:
-      ts_mon.unregister(metric)  # Cleanup
+      metric.unregister()  # Cleanup
 
   def test_set_one_metric_missing_name(self):
     json_str = '{"value": 13, "start_time": 1234}'
@@ -143,7 +143,7 @@ class test_set_metric(unittest.TestCase):
     for metric in metrics:
       self.assertIsInstance(metric, ts_mon.GaugeMetric)
       self.assertTrue(metric.name.startswith("test/name"))
-      ts_mon.unregister(metric)  # Cleanup
+      metric.unregister()  # Cleanup
 
   def test_set_multiple_points(self):
     # list of json strs, call set_metrics
@@ -155,9 +155,10 @@ class test_set_metric(unittest.TestCase):
 
     self.assertIsInstance(metrics[0], ts_mon.GaugeMetric)
     self.assertEqual(metrics[0].name, "test/name")
-    self.assertEqual(2, len(metrics[0]._values))
+    self.assertEqual(13, metrics[0].get({'field': 'foo'}))
+    self.assertEqual(14, metrics[0].get({'field': 'bar'}))
     for metric in metrics:
-      ts_mon.unregister(metric)  # Cleanup
+      metric.unregister()  # Cleanup
 
   def test_set_multiple_points_wrong_fields(self):
     # list of json strs, call set_metrics
@@ -189,7 +190,7 @@ class test_set_metric(unittest.TestCase):
     for metric in metrics:
       self.assertIsInstance(metric, ts_mon.GaugeMetric)
       self.assertTrue(metric.name.startswith("test/name"))
-      ts_mon.unregister(metric)  # Cleanup
+      metric.unregister()  # Cleanup
 
 
 class main_test(unittest.TestCase):

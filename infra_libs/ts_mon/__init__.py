@@ -10,10 +10,8 @@ from infra_libs.ts_mon.monitors import DiskMonitor
 from infra_libs.ts_mon.monitors import NullMonitor
 
 from infra_libs.ts_mon.interface import close
-from infra_libs.ts_mon.interface import send
 from infra_libs.ts_mon.interface import flush
-from infra_libs.ts_mon.interface import register
-from infra_libs.ts_mon.interface import unregister
+from infra_libs.ts_mon.interface import reset_for_unittest
 
 from infra_libs.ts_mon.common.distribution import Distribution
 from infra_libs.ts_mon.common.distribution import FixedWidthBucketer

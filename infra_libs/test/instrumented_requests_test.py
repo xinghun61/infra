@@ -7,6 +7,7 @@ import unittest
 
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs import instrumented_requests
+from infra_libs import ts_mon
 
 import requests
 import mock
@@ -14,8 +15,7 @@ import mock
 
 class InstrumentedRequestsTest(unittest.TestCase):
   def setUp(self):
-    super(InstrumentedRequestsTest, self).setUp()
-    http_metrics._reset_for_testing()
+    ts_mon.reset_for_unittest()
 
     self.response = requests.Response()
     self.response.elapsed = datetime.timedelta(seconds=2, milliseconds=500)
@@ -35,14 +35,14 @@ class InstrumentedRequestsTest(unittest.TestCase):
 
     self.assertEquals(1, http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 200}))
-    self.assertEquals(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 404}))
 
   def test_error_status(self):
     self.response.status_code = 404
     self.hook(self.response)
 
-    self.assertEquals(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 200}))
     self.assertEquals(1, http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 404}))
@@ -115,7 +115,7 @@ class InstrumentedRequestsTest(unittest.TestCase):
     with self.assertRaises(requests.exceptions.ReadTimeout):
       self._setup_wrap(side_effect=requests.exceptions.ReadTimeout)
 
-    self.assertEquals(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 200}))
     self.assertEquals(1, http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests',
@@ -125,7 +125,7 @@ class InstrumentedRequestsTest(unittest.TestCase):
     with self.assertRaises(requests.exceptions.ConnectionError):
       self._setup_wrap(side_effect=requests.exceptions.ConnectionError)
 
-    self.assertEquals(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 200}))
     self.assertEquals(1, http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests',
@@ -135,7 +135,7 @@ class InstrumentedRequestsTest(unittest.TestCase):
     with self.assertRaises(requests.exceptions.RequestException):
       self._setup_wrap(side_effect=requests.exceptions.RequestException)
 
-    self.assertEquals(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests', 'status': 200}))
     self.assertEquals(1, http_metrics.response_status.get(
         {'name': 'foo', 'client': 'requests',

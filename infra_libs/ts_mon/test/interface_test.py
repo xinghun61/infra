@@ -17,68 +17,33 @@ from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.test import stubs
 
 
-class GlobalsTest(auto_stub.TestCase):
+class GlobalsTest(unittest.TestCase):
 
   def setUp(self):
-    super(GlobalsTest, self).setUp()
-    self.mock(interface, 'state', stubs.MockState())
+    self.mock_state = stubs.MockState()
+    self.state_patcher = mock.patch('infra_libs.ts_mon.interface.state',
+                                    new=self.mock_state)
+    self.state_patcher.start()
 
   def tearDown(self):
     # It's important to call close() before un-setting the mock state object,
     # because any FlushThread started by the test is stored in that mock state
     # and needs to be stopped before running any other tests.
     interface.close()
-    super(GlobalsTest, self).tearDown()
-
-  def test_send(self):
-    interface.state.flush_mode = 'all'
-    interface.state.global_monitor = stubs.MockMonitor()
-
-    # pylint: disable=unused-argument
-    def serialize_to(pb, default_target=None, loop_action=None):
-      pb.data.add().name = 'foo'
-
-    fake_metric = mock.create_autospec(
-        metrics.Metric, spec_set=True, instance=True)
-    fake_metric.serialize_to.side_effect = serialize_to
-
-    interface.send(fake_metric)
-    interface.state.global_monitor.send.assert_called_once()
-    proto = interface.state.global_monitor.send.call_args[0][0]
-    self.assertEqual(1, len(proto.data))
-    self.assertEqual('foo', proto.data[0].name)
-
-  def test_send_manual(self):
-    interface.state.flush_mode = 'manual'
-    interface.state.global_monitor = stubs.MockMonitor()
-
-    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
-
-    interface.send(fake_metric)
-    self.assertFalse(interface.state.global_monitor.send.called)
-    self.assertFalse(fake_metric.serialize_to.called)
-
-  def test_send_all_raises(self):
-    self.assertIsNone(interface.state.global_monitor)
-    interface.state.flush_mode = 'all'
-    with self.assertRaises(errors.MonitoringNoConfiguredMonitorError):
-      interface.send(mock.MagicMock())
-
-  def test_send_manual_works(self):
-    self.assertIsNone(interface.state.global_monitor)
-    interface.state.flush_mode = 'manual'
-    interface.send(mock.MagicMock())
+    self.state_patcher.stop()
 
   def test_flush(self):
     interface.state.global_monitor = stubs.MockMonitor()
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, default_target=None, loop_action=None):
+    def serialize_to(pb, start_time, fields, value, default_target=None):
       pb.data.add().name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.name = 'fake'
     fake_metric.serialize_to.side_effect = serialize_to
-    interface.state.metrics.add(fake_metric)
+    interface.register(fake_metric)
+    interface.state.store.set('fake', (), 123)
 
     interface.flush()
     interface.state.global_monitor.send.assert_called_once()
@@ -95,10 +60,8 @@ class GlobalsTest(auto_stub.TestCase):
     interface.state.global_monitor = stubs.MockMonitor()
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, default_target=None, loop_action=None):
-      for _ in xrange(1001):
-        loop_action(pb)
-        pb.data.add().name = 'foo'
+    def serialize_to(pb, start_time, fields, value, default_target=None):
+      pb.data.add().name = 'foo'
 
     # We can't use the mock's call_args_list here because the same object is
     # reused as the argument to both calls and cleared inbetween.
@@ -108,8 +71,12 @@ class GlobalsTest(auto_stub.TestCase):
     interface.state.global_monitor.send.side_effect = send
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.name = 'fake'
     fake_metric.serialize_to.side_effect = serialize_to
-    interface.state.metrics.add(fake_metric)
+    interface.register(fake_metric)
+
+    for i in xrange(1001):
+      interface.state.store.set('fake', ('field', i), 123)
 
     interface.flush()
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
@@ -131,8 +98,10 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(1, len(interface.state.metrics))
 
   def test_duplicate_register_raises(self):
-    fake_metric = mock.Mock(_name='foo')
-    phake_metric = mock.Mock(_name='foo')
+    fake_metric = mock.Mock()
+    fake_metric.name = 'foo'
+    phake_metric = mock.Mock()
+    phake_metric.name = 'foo'
     interface.register(fake_metric)
     with self.assertRaises(errors.MonitoringDuplicateRegistrationError):
       interface.register(phake_metric)
@@ -151,6 +120,14 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertTrue(interface.state.flush_thread.is_alive())
     interface.close()
     self.assertFalse(interface.state.flush_thread.is_alive())
+
+  def test_reset_for_unittest(self):
+    metric = metrics.CounterMetric('foo')
+    metric.increment()
+    self.assertEquals(1, metric.get())
+
+    interface.reset_for_unittest()
+    self.assertIsNone(metric.get())
 
 
 class FakeThreadingEvent(object):

@@ -37,8 +37,8 @@ import threading
 import time
 
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.protos import metrics_pb2
-
 
 # The maximum number of MetricsData messages to include in each HTTP request.
 # MetricsCollections larger than this will be split into multiple requests.
@@ -66,26 +66,11 @@ class State(object):
     # --ts-mon-flush != 'auto' or --ts-mon-flush-interval-secs == 0.
     self.flush_thread = None
     # All metrics created by this application.
-    self.metrics = set()
+    self.metrics = {}
+    # The MetricStore object that holds the actual metric values.
+    self.store = metric_store.InProcessMetricStore(self)
 
 state = State()
-
-
-def send(metric):
-  """Send a single metric to the monitoring api.
-
-  This is called automatically by Metric.set - you don't need to call it
-  manually.
-  """
-  if state.flush_mode != 'all':
-    return
-
-  if not state.global_monitor:
-    raise errors.MonitoringNoConfiguredMonitorError(metric._name)
-
-  proto = metrics_pb2.MetricsCollection()
-  metric.serialize_to(proto, default_target=state.default_target)
-  state.global_monitor.send(proto)
 
 
 def flush():
@@ -95,14 +80,16 @@ def flush():
 
   proto = metrics_pb2.MetricsCollection()
 
-  def loop_action(proto):
-    if len(proto.data) >= METRICS_DATA_LENGTH_LIMIT:
-      state.global_monitor.send(proto)
-      del proto.data[:]
+  for name, (start_time, fields_values) in state.store.get_all().iteritems():
+    metric = state.metrics[name]
 
-  for metric in state.metrics:
-    metric.serialize_to(proto, default_target=state.default_target,
-                        loop_action=loop_action)
+    for fields, value in fields_values.iteritems():
+      if len(proto.data) >= METRICS_DATA_LENGTH_LIMIT:
+        state.global_monitor.send(proto)
+        del proto.data[:]
+
+      metric.serialize_to(proto, start_time, fields, value,
+                          default_target=state.default_target)
 
   state.global_monitor.send(proto)
 
@@ -114,25 +101,29 @@ def register(metric):
   """
   # If someone is registering the same metric object twice, that's okay, but
   # registering two different metric objects with the same metric name is not.
-  for m in state.metrics:
+  for m in state.metrics.values():
     if metric == m:
-      state.metrics.remove(m)
-      state.metrics.add(metric)
+      state.metrics[metric.name] = metric
       return
-  if any([metric._name == m._name for m in state.metrics]):
-    raise errors.MonitoringDuplicateRegistrationError(metric._name)
+  if metric.name in state.metrics:
+    raise errors.MonitoringDuplicateRegistrationError(metric.name)
 
-  state.metrics.add(metric)
+  state.metrics[metric.name] = metric
+
 
 def unregister(metric):
   """Removes the metric from the list of metrics sent by flush()."""
-  state.metrics.remove(metric)
+  del state.metrics[metric.name]
 
 
 def close():
   """Stops any background threads and waits for them to exit."""
   if state.flush_thread is not None:
     state.flush_thread.stop()
+
+
+def reset_for_unittest():
+  state.store.reset_for_unittest()
 
 
 class _FlushThread(threading.Thread):

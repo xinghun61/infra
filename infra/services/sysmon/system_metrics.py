@@ -25,7 +25,7 @@ if os.name == 'posix':  # pragma: no cover
 mem_free = ts_mon.GaugeMetric('dev/mem/free')
 mem_total = ts_mon.GaugeMetric('dev/mem/total')
 
-START_TIME = int(psutil.boot_time() * MICROSECONDS_PER_SECOND)
+START_TIME = psutil.boot_time()
 net_up = ts_mon.CounterMetric('dev/net/bytes/up', start_time=START_TIME)
 net_down = ts_mon.CounterMetric('dev/net/bytes/down', start_time=START_TIME)
 net_err_up = ts_mon.CounterMetric('dev/net/err/up', start_time=START_TIME)

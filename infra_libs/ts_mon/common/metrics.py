@@ -5,6 +5,7 @@
 """Classes representing individual metrics that can be sent."""
 
 import copy
+import operator
 import threading
 import time
 
@@ -50,8 +51,6 @@ class Metric(object):
   * FloatMetric for metrics with arbitrarily varying float values
   """
 
-  _initial_value = None
-
   def __init__(self, name, target=None, fields=None, description=None):
     """Create an instance of a Metric.
 
@@ -65,7 +64,7 @@ class Metric(object):
                             know what the metric is about.
     """
     self._name = name.lstrip('/')
-    self._values = {}
+    self._start_time = None
     self._target = target
     fields = fields or {}
     if len(fields) > 7:
@@ -83,6 +82,10 @@ class Metric(object):
   def name(self):
     return self._name
 
+  @property
+  def start_time(self):
+    return self._start_time
+
   def __eq__(self, other):
     name = self._name == other._name
     target = self._target == other._target
@@ -93,37 +96,33 @@ class Metric(object):
   def unregister(self):
     interface.unregister(self)
 
-  def serialize_to(self, collection_pb, default_target=None, loop_action=None):
+  def serialize_to(self, collection_pb, start_time, fields, value,
+                   default_target=None):
     """Generate metrics_pb2.MetricsData messages for this metric.
 
     Args:
       collection_pb (metrics_pb2.MetricsCollection): protocol buffer into which
         to add the current metric values.
       default_target (Target): a Target to use if self._target is not set.
-      loop_action (function(metrics_pb2.MetricsCollection)): a function that we
-        must call with the collection_pb every loop iteration.
 
     Raises:
       MonitoringNoConfiguredTargetError: if neither self._target nor
                                          default_target is set
     """
 
-    for fields, value in self._values.iteritems():
-      if callable(loop_action):
-        loop_action(collection_pb)
-      metric_pb = collection_pb.data.add()
-      metric_pb.metric_name_prefix = '/chrome/infra/'
-      metric_pb.name = self._name
+    metric_pb = collection_pb.data.add()
+    metric_pb.metric_name_prefix = '/chrome/infra/'
+    metric_pb.name = self._name
 
-      self._populate_value(metric_pb, value)
-      self._populate_fields(metric_pb, fields)
+    self._populate_value(metric_pb, value, start_time)
+    self._populate_fields(metric_pb, fields)
 
-      if self._target:
-        self._target._populate_target_pb(metric_pb)
-      elif default_target:
-        default_target._populate_target_pb(metric_pb)
-      else:
-        raise errors.MonitoringNoConfiguredTargetError(self._name)
+    if self._target:
+      self._target._populate_target_pb(metric_pb)
+    elif default_target:
+      default_target._populate_target_pb(metric_pb)
+    else:
+      raise errors.MonitoringNoConfiguredTargetError(self._name)
 
   def _populate_fields(self, metric, fields):
     """Fill in the fields attribute of a metric protocol buffer.
@@ -174,17 +173,7 @@ class Metric(object):
 
     return tuple(sorted(all_fields.iteritems()))
 
-  def _set_and_send_value(self, value, fields):
-    """Called by subclasses to set a new value for this metric.
-
-    Args:
-      value (see concrete class): the value of the metric to be set
-      fields (dict): additional metric fields to complement those on self
-    """
-    self._values[self._normalize_fields(fields)] = value
-    interface.send(self)
-
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     """Fill in the the data values of a metric protocol buffer.
 
     Args:
@@ -206,125 +195,131 @@ class Metric(object):
     raise NotImplementedError()
 
   def get(self, fields=None):
-    """Returns the current value for this metric."""
-    return self._values.get(self._normalize_fields(fields), self._initial_value)
+    """Returns the current value for this metric.
+
+    Subclasses should never use this to get a value, modify it and set it again.
+    Instead use _incr with a modify_fn.
+    """
+    return interface.state.store.get(self.name, self._normalize_fields(fields))
 
   def reset(self):
-    """Resets the current values for this metric to 0.  Useful for tests."""
-    self._values = {}
+    """Clears the values of this metric.  Useful in unit tests.
+
+    It might be easier to call ts_mon.reset_for_unittest() in your setUp()
+    method instead of resetting every individual metric.
+    """
+
+    interface.state.store.reset_for_unittest(self.name)
+
+  def _set(self, fields, value, enforce_ge=False):
+    interface.state.store.set(self.name, self._normalize_fields(fields), value,
+                              enforce_ge=enforce_ge)
+
+  def _incr(self, fields, delta, modify_fn=operator.add):
+    interface.state.store.incr(self.name, self._normalize_fields(fields), delta,
+                               modify_fn=modify_fn)
 
 
 class StringMetric(Metric):
   """A metric whose value type is a string."""
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.string_value = value
 
   def set(self, value, fields=None):
     if not isinstance(value, basestring):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    self._set_and_send_value(value, fields)
+    self._set(fields, value)
 
 
 class BooleanMetric(Metric):
   """A metric whose value type is a boolean."""
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.boolean_value = value
 
   def set(self, value, fields=None):
     if not isinstance(value, bool):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    self._set_and_send_value(value, fields)
-
-  def toggle(self, fields=None):
-    self.set(not self.get(fields), fields)
+    self._set(fields, value)
 
 
 class NumericMetric(Metric):  # pylint: disable=abstract-method
   """Abstract base class for numeric (int or float) metrics."""
-  #TODO(agable): Figure out if there's a way to send units with these metrics.
+  # TODO(agable): Figure out if there's a way to send units with these metrics.
 
   def increment(self, fields=None):
-    self.increment_by(1, fields)
+    self._incr(fields, 1)
 
   def increment_by(self, step, fields=None):
-    if self.get(fields) is None:
-      raise errors.MonitoringIncrementUnsetValueError(self._name)
-    with self._thread_lock:
-      self.set(self.get(fields) + step, fields)
+    self._incr(fields, step)
 
 
 class CounterMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing integer."""
 
-  _initial_value = 0
-
   def __init__(self, name, target=None, fields=None, start_time=None,
-               time_fn=time.time, description=None):
+               description=None):
     super(CounterMetric, self).__init__(
         name, target=target, fields=fields, description=description)
-    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.counter = value
-    metric.start_timestamp_us = self._start_time
+    metric.start_timestamp_us = int(start_time * MICROSECONDS_PER_SECOND)
 
   def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    if value < self.get(fields):
-      raise errors.MonitoringDecreasingValueError(
-          self._name, self.get(fields), value)
-    self._set_and_send_value(value, fields)
+    self._set(fields, value, enforce_ge=True)
+
+  def increment_by(self, step, fields=None):
+    if not isinstance(step, (int, long)):
+      raise errors.MonitoringInvalidValueTypeError(self._name, step)
+    self._incr(fields, step)
 
 
 class GaugeMetric(NumericMetric):
   """A metric whose value type is an integer."""
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.gauge = value
 
   def set(self, value, fields=None):
     if not isinstance(value, (int, long)):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    self._set_and_send_value(value, fields)
+    self._set(fields, value)
 
 
 class CumulativeMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing float."""
 
-  _initial_value = 0.0
-
   def __init__(self, name, target=None, fields=None, start_time=None,
-               time_fn=time.time, description=None):
+               description=None):
     super(CumulativeMetric, self).__init__(
         name, target=target, fields=fields, description=description)
-    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.cumulative_double_value = value
-    metric.start_timestamp_us = self._start_time
+    metric.start_timestamp_us = int(start_time * MICROSECONDS_PER_SECOND)
 
   def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    if value < self.get(fields):
-      raise errors.MonitoringDecreasingValueError(
-          self._name, self.get(fields), value)
-    self._set_and_send_value(float(value), fields)
+    self._set(fields, float(value), enforce_ge=True)
 
 
 class FloatMetric(NumericMetric):
   """A metric whose value type is a float."""
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     metric.noncumulative_double_value = value
 
   def set(self, value, fields=None):
     if not isinstance(value, (float, int)):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
-    self._set_and_send_value(float(value), fields)
+    self._set(fields, float(value))
 
 
 class DistributionMetric(Metric):
@@ -342,11 +337,10 @@ class DistributionMetric(Metric):
   }
 
   def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
-               fields=None, start_time=None, time_fn=time.time,
-               description=None):
+               fields=None, start_time=None, description=None):
     super(DistributionMetric, self).__init__(
         name, target=target, fields=fields, description=description)
-    self._start_time = start_time or int(time_fn() * MICROSECONDS_PER_SECOND)
+    self._start_time = start_time
 
     if bucketer is None:
       bucketer = distribution.GeometricBucketer()
@@ -354,11 +348,11 @@ class DistributionMetric(Metric):
     self.is_cumulative = is_cumulative
     self.bucketer = bucketer
 
-  def _populate_value(self, metric, value):
+  def _populate_value(self, metric, value, start_time):
     pb = metric.distribution
 
     pb.is_cumulative = self.is_cumulative
-    metric.start_timestamp_us = self._start_time
+    metric.start_timestamp_us = int(start_time * MICROSECONDS_PER_SECOND)
 
     # Copy the bucketer params.
     if (value.bucketer.width == 0 and
@@ -404,13 +398,13 @@ class DistributionMetric(Metric):
         yield value
 
   def add(self, value, fields=None):
-    with self._thread_lock:
-      dist = self.get(fields)
-      if dist is None:
+    def modify_fn(dist, value):
+      if dist == 0:
         dist = distribution.Distribution(self.bucketer)
-
       dist.add(value)
-      self._set_and_send_value(dist, fields)
+      return dist
+
+    self._incr(fields, value, modify_fn=modify_fn)
 
   def set(self, value, fields=None):
     """Replaces the distribution with the given fields with another one.
@@ -428,21 +422,20 @@ class DistributionMetric(Metric):
     if not isinstance(value, distribution.Distribution):
       raise errors.MonitoringInvalidValueTypeError(self._name, value)
 
-    self._set_and_send_value(value, fields)
+    self._set(fields, value)
 
 
 class CumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to True."""
 
   def __init__(self, name, bucketer=None, target=None, fields=None,
-               time_fn=time.time, description=None):
+               description=None):
     super(CumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=True,
         bucketer=bucketer,
         target=target,
         fields=fields,
-        time_fn=time_fn,
         description=description)
 
 
@@ -450,12 +443,11 @@ class NonCumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to False."""
 
   def __init__(self, name, bucketer=None, target=None, fields=None,
-               time_fn=time.time, description=None):
+               description=None):
     super(NonCumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=False,
         bucketer=bucketer,
         target=target,
         fields=fields,
-        time_fn=time_fn,
         description=description)

@@ -6,17 +6,22 @@ import mock
 
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon import monitors
+from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import targets
 
 
 class MockState(interface.State):  # pragma: no cover
 
-  def __init__(self):
+  def __init__(self, store_ctor=None):
+    if store_ctor is None:
+      store_ctor = metric_store.InProcessMetricStore
+
     self.global_monitor = None
     self.default_target = None
     self.flush_mode = None
     self.flush_thread = None
-    self.metrics = set()
+    self.metrics = {}
+    self.store = store_ctor(self)
 
 
 def MockMonitor():  # pragma: no cover
@@ -25,28 +30,3 @@ def MockMonitor():  # pragma: no cover
 
 def MockTarget():  # pragma: no cover
   return mock.MagicMock(targets.Target)
-
-
-class MockInterfaceModule(object):  # pragma: no cover
-
-  def __init__(self):
-    self._state = MockState()
-
-  def add_argparse_options(self, parser):
-    pass
-
-  def process_argparse_options(self, opts):  # pylint: disable=unused-argument
-    self._state.global_monitor = MockMonitor()
-    self._state.default_target = MockTarget()
-
-  def send(self, metric):
-    pass
-
-  def flush(self):
-    pass
-
-  def register(self, metric):
-    pass
-
-  def unregister(self, metric):
-    pass

@@ -9,6 +9,7 @@ import unittest
 
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs import httplib2_utils
+from infra_libs import ts_mon
 
 import httplib2
 import mock
@@ -132,8 +133,8 @@ class InstrumentedHttplib2Test(unittest.TestCase):
     self.mock_time = mock.create_autospec(time.time, spec_set=True)
     self.mock_time.return_value = 42
     self.http = httplib2_utils.InstrumentedHttp('test', time_fn=self.mock_time)
-    http_metrics._reset_for_testing()
     self.http._request = mock.Mock()
+    ts_mon.reset_for_unittest()
 
   def test_success_status(self):
     self.http._request.return_value = (
@@ -144,7 +145,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
     self.assertEqual(200, response.status)
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
-    self.assertEqual(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 404}))
 
   def test_error_status(self):
@@ -154,7 +155,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     response, _ = self.http.request('http://foo/')
     self.assertEqual(404, response.status)
-    self.assertEqual(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 404}))
@@ -164,7 +165,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     with self.assertRaises(socket.timeout):
       self.http.request('http://foo/')
-    self.assertEqual(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2',
@@ -175,7 +176,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     with self.assertRaises(socket.error):
       self.http.request('http://foo/')
-    self.assertEqual(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2',
@@ -186,7 +187,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
 
     with self.assertRaises(httplib2.HttpLib2Error):
       self.http.request('http://foo/')
-    self.assertEqual(0, http_metrics.response_status.get(
+    self.assertIsNone(http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2', 'status': 200}))
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2',

@@ -110,7 +110,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.t.start()
     self.condition.start()
 
-    self.assertEqual(0, self.t.failures.get({'service': 'foo'}))
+    self.assertIsNone(self.t.failures.get({'service': 'foo'}))
 
     self.mock_service.get_running_process_state.side_effect = (
         service.StateFileNotFound)
@@ -120,7 +120,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.condition.next()
 
     self.mock_service.start.assert_called_once_with()
-    self.assertEqual(0, self.t.failures.get({'service': 'foo'}))
+    self.assertIsNone(self.t.failures.get({'service': 'foo'}))
 
     self.condition.next()
     self.assertEqual(2, self.mock_service.start.call_count)
@@ -141,7 +141,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.t.start()
     self.condition.start()
 
-    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+    self.assertIsNone(self.t.upgrades.get({'service': 'foo'}))
 
     self.mock_service.get_running_process_state.side_effect = (
         service.StateFileOpenError)
@@ -154,7 +154,7 @@ class ServiceThreadTest(unittest.TestCase):
 
     self.assertEqual(0, self.mock_service.stop.call_count)
     self.assertEqual(1, self.mock_service.start.call_count)
-    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+    self.assertIsNone(self.t.upgrades.get({'service': 'foo'}))
 
     self.mock_service.get_running_process_state.side_effect = None
     self.mock_service.get_running_process_state.return_value = (
@@ -163,7 +163,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.condition.next()
     self.assertEqual(0, self.mock_service.stop.call_count)
     self.assertEqual(2, self.mock_service.start.call_count)
-    self.assertEqual(0, self.t.upgrades.get({'service': 'foo'}))
+    self.assertIsNone(self.t.upgrades.get({'service': 'foo'}))
 
     self.mock_service.has_version_changed.return_value = True
 
@@ -186,7 +186,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.t.start()
     self.condition.start()
 
-    self.assertEqual(0, self.t.reconfigs.get({'service': 'foo'}))
+    self.assertIsNone(self.t.reconfigs.get({'service': 'foo'}))
 
     new_config = {'name': 'bar'}
     new_service = mock.Mock()
@@ -205,7 +205,7 @@ class ServiceThreadTest(unittest.TestCase):
     self.t.start()
     self.condition.start()
 
-    self.assertEqual(0, self.t.reconfigs.get({'service': 'foo'}))
+    self.assertIsNone(self.t.reconfigs.get({'service': 'foo'}))
 
     self.mock_service.get_running_process_state.return_value = (
         service.ProcessState(pid=1, starttime=2))

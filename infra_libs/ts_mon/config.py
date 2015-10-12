@@ -14,6 +14,7 @@ import requests
 
 from infra_libs.ts_mon import interface
 from infra_libs.ts_mon import monitors
+from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import standard_metrics
 from infra_libs.ts_mon.common import targets
 
@@ -90,11 +91,10 @@ def add_argparse_options(parser):
            'in --ts-mon-config-file')
   parser.add_argument(
       '--ts-mon-flush',
-      choices=('all', 'manual', 'auto'), default='auto',
-      help=('metric push behavior: all (send every metric individually), '
-            'manual (only send when flush() is called), or auto (send '
-            'automatically every --ts-mon-flush-interval-secs seconds). '
-            '(default: %(default)s)'))
+      choices=('manual', 'auto'), default='auto',
+      help=('metric push behavior: manual (only send when flush() is called), '
+            'or auto (send automatically every --ts-mon-flush-interval-secs '
+            'seconds). (default: %(default)s)'))
   parser.add_argument(
       '--ts-mon-flush-interval-secs',
       type=int,
@@ -184,21 +184,15 @@ def process_argparse_options(args):
     interface.state.global_monitor = monitors.DiskMonitor(
         endpoint[len('file://'):])
   elif credentials:
-    # If the flush mode is 'all' metrics will be sent immediately as they are
-    # updated.  If this is the case, we mustn't set metrics while we're
-    # sending metrics.
-    use_instrumented_http = args.ts_mon_flush != 'all'
-
     if endpoint.startswith('pubsub://'):
       url = urlparse.urlparse(endpoint)
       project = url.netloc
       topic = url.path.strip('/')
       interface.state.global_monitor = monitors.PubSubMonitor(
-          credentials, project, topic,
-          use_instrumented_http=use_instrumented_http)
+          credentials, project, topic, use_instrumented_http=True)
     else:
       interface.state.global_monitor = monitors.ApiMonitor(
-          credentials, endpoint, use_instrumented_http=use_instrumented_http)
+          credentials, endpoint, use_instrumented_http=True)
   else:
     logging.error('Monitoring is disabled because --ts-mon-credentials was not '
                   'set')

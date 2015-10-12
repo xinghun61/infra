@@ -26,8 +26,3 @@ durations = CumulativeDistributionMetric(
     description='Time elapsed between sending a request and getting a'
                 ' response (including parsing) in milliseconds.')
 response_status = CounterMetric('http/response_status')
-
-
-def _reset_for_testing():  # pragma: no cover
-  for metric in (request_bytes, response_bytes, durations, response_status):
-    metric.reset()
