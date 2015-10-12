@@ -17,11 +17,3 @@ class StringHelpersTest(unittest.TestCase):
     self.assertEquals(string_helpers.longest_substring('foo', 'foo'), 'foo')
     self.assertEquals(string_helpers.longest_substring('aa', 'aaa'), 'aa')
     self.assertEquals(string_helpers.longest_substring('aaa', 'aa'), 'aa')
-
-  def test_slash_join(self):
-    joined = string_helpers.slash_join('abc', 'def/', 'ghi', '/jkl')
-    self.assertEquals(joined, 'abc/def/ghi/jkl')
-    joined = string_helpers.slash_join(
-        'https://www.example.com', 'api/v1/alerts', 'chromium')
-    self.assertEquals(joined, 'https://www.example.com/api/v1/alerts/chromium')
-    self.assertEquals(string_helpers.slash_join(), '')
