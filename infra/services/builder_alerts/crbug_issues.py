@@ -29,7 +29,7 @@ def _build_crbug_service(crbug_service_account):  # pragma: no cover
       service_account['client_email'], service_account['private_key'],
       PROJECT_HOSTING_SCOPE)
   http = creds.authorize(httplib2.Http())
-  return discovery.build('project_hosting', 'v2',
+  return discovery.build('projecthosting', 'v2',
                          discoveryServiceUrl=DISCOVERY_URL, http=http)
 
 
