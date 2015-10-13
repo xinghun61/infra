@@ -159,6 +159,10 @@ def add_failure_to_flake(name, flaky_run):
 def get_flakes(step):
   combined = ' '.join(step['text'])
 
+  # If test results were invalid, report whole step as flaky.
+  if 'TEST RESULTS WERE INVALID' in combined:
+    return [combined]
+
   #gtest
   gtest_search_str = 'failures:<br/>'
   gtest_search_index = combined.find(gtest_search_str)
