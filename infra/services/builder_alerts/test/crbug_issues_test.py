@@ -144,13 +144,15 @@ class CrbugIssuesQueryTest(unittest.TestCase):
 
 class CrbugIssuesListTest(unittest.TestCase):
   def setUp(self):
-    self.crbug_service_mock = mock.Mock()
-    self.crbug_service_mock.issues.comments.list.return_value.execute = (
+    crbug_service_mock = mock.Mock()
+    issues_mock = crbug_service_mock.issues.return_value
+    issues_mock.comments.return_value.list.return_value.execute = (
         mock.Mock(return_value={'items': [{'content': 'TestBody'}]}))
+    self.list_mock = issues_mock.list.return_value
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_build_crbug_service',
-                          lambda _: self.crbug_service_mock)
+                          lambda _: crbug_service_mock)
     ]
     for patcher in self._patchers:
       patcher.start()
@@ -160,7 +162,7 @@ class CrbugIssuesListTest(unittest.TestCase):
       patcher.stop()
 
   def test_correctly_stops_on_no_results(self):
-    self.crbug_service_mock.issues.list.return_value.execute.side_effect = [
+    self.list_mock.execute.side_effect = [
         {'items': [{'id': 1}, {'id': 2}, {'id': 3}]},
         {},
         {'items': [{'id': 4}]},
@@ -170,7 +172,7 @@ class CrbugIssuesListTest(unittest.TestCase):
     self.assertEqual(len(issues), 3)
 
   def test_correctly_stops_on_empty_results(self):
-    self.crbug_service_mock.issues.list.return_value.execute.side_effect = [
+    self.list_mock.execute.side_effect = [
         {'items': [{'id': 1}, {'id': 2}, {'id': 3}]},
         {'items': []},
         {'items': [{'id': 4}]},
@@ -180,7 +182,7 @@ class CrbugIssuesListTest(unittest.TestCase):
     self.assertEqual(len(issues), 3)
 
   def test_correctly_deduplicates_results(self):
-    self.crbug_service_mock.issues.list.return_value.execute.side_effect = [
+    self.list_mock.execute.side_effect = [
         {'items': [{'id': 1}, {'id': 2}, {'id': 3}]},
         {'items': [{'id': 2}, {'id': 3}, {'id': 4}]},
         {},
@@ -191,7 +193,7 @@ class CrbugIssuesListTest(unittest.TestCase):
     self.assertEqual([1, 2, 3, 4], [issue['id'] for issue in issues])
 
   def test_correctly_reads_description(self):
-    self.crbug_service_mock.issues.list.return_value.execute.side_effect = [
+    self.list_mock.execute.side_effect = [
         {'items': [{'id': 1}]},
         {},
     ]

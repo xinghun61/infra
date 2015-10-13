@@ -40,11 +40,9 @@ def _list_issues(crbug_service_account):
   for whitelisted_label in WHITELISTED_LABELS:
     start_index = 1
     while True:
-      request = service.issues.list(projectId='chromium',
-                                    body={'label': whitelisted_label,
-                                          'startIndex': start_index,
-                                          'maxResults': BATCH_SIZE,
-                                          'can': 'open'})
+      request = service.issues().list(
+          projectId='chromium', label=whitelisted_label,
+          startIndex=start_index, maxResults=BATCH_SIZE, can='open')
       response = request.execute(num_retries=5)
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
@@ -70,8 +68,8 @@ def _list_issues(crbug_service_account):
 
   # Retrieve description (first comment) for each issue.
   for issue in issues:
-    request = service.issues.comments.list(
-        projectId='chromium', issueId=issue['id'], body={'maxResults': 1})
+    request = service.issues().comments().list(
+        projectId='chromium', issueId=issue['id'], maxResults=1)
     response = request.execute(num_retries=5)
     issue['description'] = response['items'][0]['content']
 
