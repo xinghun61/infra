@@ -57,7 +57,8 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
     """
     commit_log = COMMIT_LOG_TEMPLATE.replace(
         'REVISION', revision).replace('USER_NAME', user_name).replace(
-        'COMMIT_POSITION', str(commit_position)).replace('FILE_PATH', file_path)
+            'COMMIT_POSITION', str(commit_position)).replace(
+                'FILE_PATH', file_path)
     urlfetch.register_handler(url, commit_log)
 
   def _Setup(self, master_name, builder_name, build_number):
@@ -74,7 +75,7 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
       # Mock build data.
       for i in range(2):
         build_url = buildbot.CreateBuildUrl(
-                  master_name, builder_name, build_number - i, json_api=True)
+            master_name, builder_name, build_number - i, json_api=True)
         file_name = os.path.join(os.path.dirname(__file__), 'data',
                                  'm_b_%s.json' % (build_number - i))
         with open(file_name, 'r') as f:
@@ -112,6 +113,7 @@ class AnalyzeBuildFailurePipelineTest(testing.AppengineTestCase):
         'failures': [
             {
                 'step_name': 'a',
+                'supported': True,
                 'first_failure': 124,
                 'last_pass': 123,
                 'suspected_cls': [

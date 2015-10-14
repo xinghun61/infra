@@ -4,9 +4,9 @@
 
 from datetime import datetime
 
-from model.wf_analysis import WfAnalysis
 from model import wf_analysis_result_status
 from model import wf_analysis_status
+from model.wf_analysis import WfAnalysis
 from pipeline_wrapper import BasePipeline
 from waterfall import build_failure_analysis
 
@@ -55,7 +55,8 @@ class IdentifyCulpritPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info, change_logs, deps_info, signals):
-    """
+    """Identifies culprit CL.
+
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
       change_logs (dict): Output of pipeline PullChangelogPipeline.

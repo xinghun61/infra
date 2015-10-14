@@ -12,6 +12,7 @@ from common.change_log import FileChangeInfo
 from common.diff import ChangeType
 from common.git_repository import GitRepository
 from waterfall import build_failure_analysis
+from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
@@ -555,6 +556,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
 
   def testAnalyzeBuildFailure(self):
     failure_info = {
+        'master_name': 'blabla',
         'failed': True,
         'chromium_revision': 'r99_2',
         'failed_steps': {
@@ -657,6 +659,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         'failures': [
             {
                 'step_name': 'a',
+                'supported': True,
                 'first_failure': 98,
                 'last_pass': None,
                 'suspected_cls': [
@@ -675,6 +678,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             },
             {
                 'step_name': 'b',
+                'supported': True,
                 'first_failure': 98,
                 'last_pass': 96,
                 'suspected_cls': [
@@ -694,6 +698,54 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         ]
     }
 
+    analysis_result = build_failure_analysis.AnalyzeBuildFailure(
+        failure_info, change_logs, deps_info, failure_signals_json)
+    self.assertEqual(expected_analysis_result, analysis_result)
+
+  def testAnalyzeBuildFailureForUnsupportedStep(self):
+    def _MockIsStepSupportedForMaster(*_):
+      return False
+    failure_info = {
+        'master_name': 'm',
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'not_supported': {
+                'current_failure': 99,
+                'first_failure': 98,
+            },
+        },
+        'builds': {
+            '99': {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            '98': {
+                'blame_list': ['r98_1'],
+            },
+        }
+    }
+    change_logs = {}
+    deps_info = {}
+    failure_signals_json = {
+        'not_supported': {
+            'files': {
+                'src/a/b/f99_2.cc': [],
+            },
+        }
+    }
+    expected_analysis_result = {
+        'failures': [
+            {
+                'step_name': 'not_supported',
+                'supported': False,
+                'first_failure': 98,
+                'last_pass': None,
+                'suspected_cls': [],
+            },
+        ]
+    }
+    self.mock(waterfall_config, 'IsStepSupportedForMaster',
+              _MockIsStepSupportedForMaster)
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)

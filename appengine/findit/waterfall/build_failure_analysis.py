@@ -9,6 +9,7 @@ import re
 from common.diff import ChangeType
 from common.git_repository import GitRepository
 from common.http_client_appengine import HttpClientAppengine as HttpClient
+from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
@@ -615,6 +616,7 @@ def AnalyzeBuildFailure(
       'failures': [
         {
           'step_name': 'compile',
+          'supported': True
           'first_failure': 230,
           'last_pass': 229,
           'suspected_cls': [
@@ -663,6 +665,8 @@ def AnalyzeBuildFailure(
 
   failed_steps = failure_info['failed_steps']
   builds = failure_info['builds']
+  master_name = failure_info.get('master_name')
+
   for step_name, step_failure_info in failed_steps.iteritems():
     failure_signal = FailureSignal.FromDict(failure_signals[step_name])
     failed_build_number = step_failure_info['current_failure']
@@ -677,21 +681,24 @@ def AnalyzeBuildFailure(
         'first_failure': step_failure_info['first_failure'],
         'last_pass': step_failure_info.get('last_pass'),
         'suspected_cls': [],
+        'supported': waterfall_config.IsStepSupportedForMaster(
+            step_name, master_name)
     }
 
-    while build_number <= failed_build_number:
-      for revision in builds[str(build_number)]['blame_list']:
-        justification_dict = _CheckFiles(
-            failure_signal, change_logs[revision], deps_info)
+    if step_analysis_result['supported']:
+      while build_number <= failed_build_number:
+        for revision in builds[str(build_number)]['blame_list']:
+          justification_dict = _CheckFiles(
+              failure_signal, change_logs[revision], deps_info)
 
-        if not justification_dict:
-          continue
+          if not justification_dict:
+            continue
 
-        step_analysis_result['suspected_cls'].append(
-            CreateCLInfoDict(justification_dict, build_number,
-                             change_logs[revision]))
+          step_analysis_result['suspected_cls'].append(
+              CreateCLInfoDict(justification_dict, build_number,
+                               change_logs[revision]))
 
-      build_number += 1
+        build_number += 1
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)

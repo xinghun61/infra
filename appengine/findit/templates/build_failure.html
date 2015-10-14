@@ -238,7 +238,11 @@
                 {% else %}
                 <td>N/A</td>
                 {% endif %}
-                <td colspan="5">Not found.</td>
+                {% if failure.supported %}
+                  <td colspan="5">Not found.</td>
+                {% else %}
+                  <td colspan="5">Not supported.</td>
+                {% endif%}
               </tr>
             {% else %}
               {% set first_suspected_cl = failure.suspected_cls[0] %}

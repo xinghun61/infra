@@ -9,7 +9,7 @@ from testing_utils import testing
 from model.wf_step import WfStep
 from pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
-from waterfall import extractors
+from waterfall import waterfall_config
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 
 
@@ -23,14 +23,14 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   """
 
   FAILURE_SIGNALS = {
-      "abc_test": {
-        "files": {
-          "content/common/gpu/media/v4l2_video_encode_accelerator.cc": [306]
-        },
-        "keywords": {},
-        "tests": []
+      'abc_test': {
+          'files': {
+              'content/common/gpu/media/v4l2_video_encode_accelerator.cc': [306]
+          },
+          'keywords': {},
+          'tests': []
       }
-    }
+  }
 
   FAILURE_INFO = {
       'master_name': 'm',
@@ -45,6 +45,10 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
               'first_failure': 223,
           }
       }
+  }
+
+  UNSUPPORTED_STEPS = {
+      'master': ['unsupported_step']
   }
 
   def testExtractStorablePortionOfLogWithSmallLogData(self):
@@ -129,8 +133,8 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
                             'a/b/u3s2.cc:110: Failure\n'
                            )
 
-    step_log = self._GetGtestResultLog(master_name,
-                                builder_name, build_number, step_name)
+    step_log = self._GetGtestResultLog(
+        master_name, builder_name, build_number, step_name)
 
     failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
@@ -143,8 +147,8 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     expected_failure_log = 'flaky'
 
-    step_log = self._GetGtestResultLog(master_name,
-                                builder_name, build_number, step_name)
+    step_log = self._GetGtestResultLog(
+        master_name, builder_name, build_number, step_name)
 
     failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
@@ -157,14 +161,14 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     expected_failure_log = 'invalid'
 
-    step_log = self._GetGtestResultLog(master_name,
-                                builder_name, build_number, step_name)
+    step_log = self._GetGtestResultLog(
+        master_name, builder_name, build_number, step_name)
 
     failed_test_log = ExtractSignalPipeline._GetReliableTestFailureLog(step_log)
     self.assertEqual(expected_failure_log, failed_test_log)
 
   def MockGetGtestJsonResult(self):
-    self.mock(buildbot, 'GetGtestResultLog',self._GetGtestResultLog)
+    self.mock(buildbot, 'GetGtestResultLog', self._GetGtestResultLog)
 
   def testGetSignalFromStepLog(self):
     master_name = 'm'
@@ -277,6 +281,27 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     }
     expected_signals = {}
 
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(failure_info)
+    self.assertEqual(expected_signals, signals)
+
+  def MockIsStepSupportedForMaster(self, step_name, master_name):
+    return step_name in self.UNSUPPORTED_STEPS.get(master_name, [])
+
+  def testBailOutForUnsupportedStep(self):
+    failure_info = {
+        'master_name': 'master',
+        'builder_name': 'b',
+        'build_number': 123,
+        'failed': True,
+        'chromium_revision': 'a_git_hash',
+        'failed_steps': {
+            'not_supported': {}
+        }
+    }
+    expected_signals = {}
+    self.mock(waterfall_config, 'IsStepSupportedForMaster',
+              self.MockIsStepSupportedForMaster)
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)

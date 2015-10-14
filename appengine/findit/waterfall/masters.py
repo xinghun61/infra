@@ -12,6 +12,7 @@ _SUPPORTED_MASTERS = [
     'chromium.chromiumos',
     'chromium.chrome',
     'chromium.memory',
+    'chromium.webkit',
 
     # Non-tree-closer.
 ]
@@ -26,7 +27,6 @@ _UNSUPPORTED_MASTERS = [
     'chromium.memory.fyi',
     'chromium.gpu.fyi',
 
-    'chromium.webkit',
     'chromium.perf',
 ]
 

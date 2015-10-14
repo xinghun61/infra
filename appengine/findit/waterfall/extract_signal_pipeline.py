@@ -4,18 +4,19 @@
 
 import base64
 import cStringIO
-import logging
 import json
+import logging
 
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from common.http_client_appengine import HttpClientAppengine as HttpClient
 from model.wf_step import WfStep
-from pipeline_wrapper import pipeline
 from pipeline_wrapper import BasePipeline
+from pipeline_wrapper import pipeline
 from waterfall import buildbot
 from waterfall import extractors
 from waterfall import lock_util
+from waterfall import waterfall_config
 
 
 class ExtractSignalPipeline(BasePipeline):
@@ -92,7 +93,8 @@ class ExtractSignalPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
-    """
+    """Extracts failure signals from failed steps.
+
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
 
@@ -112,6 +114,10 @@ class ExtractSignalPipeline(BasePipeline):
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
     for step_name in failure_info.get('failed_steps', []):
+      if not waterfall_config.IsStepSupportedForMaster(step_name, master_name):
+        # Bail out if the step is not supported.
+        continue
+
       step = WfStep.Get(master_name, builder_name, build_number, step_name)
       if step and step.log_data:
         failure_log = step.log_data
@@ -119,7 +125,7 @@ class ExtractSignalPipeline(BasePipeline):
         # TODO: do test-level analysis instead of step-level.
         # TODO: Use swarming test result instead of archived gtest results
         gtest_result = buildbot.GetGtestResultLog(
-              master_name, builder_name, build_number, step_name)
+            master_name, builder_name, build_number, step_name)
         if gtest_result:
           failure_log = self._GetReliableTestFailureLog(gtest_result)
 
