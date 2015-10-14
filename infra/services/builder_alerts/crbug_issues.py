@@ -92,18 +92,6 @@ def _list_issues(crbug_service_account):
       issues.extend(new_issues)
       seen_issue_ids.update(issue['id'] for issue in new_issues)
 
-  # Retrieve description (first comment) for each issue.
-  for issue in issues:
-    request = service.issues().comments().list(
-        projectId='chromium', issueId=issue['id'], maxResults=1)
-    try:
-      response = request.execute(num_retries=5)
-    except HttpError as e:
-      if _is_quota_error(e):
-        raise QuotaExceededError()
-      raise
-    issue['description'] = response['items'][0]['content']
-
   return issues
 
 
@@ -118,7 +106,7 @@ def query(crbug_service_account):
     following properties:
       - key: 'crbug_issue_id:' + issue id.
       - title: summary of the issue.
-      - body: description of the issue (first message).
+      - body: '' (empty).
       - links: list containing a single URL pair dict:
             [{'title': 'issue', 'href': 'https://crbug.com/issue_id'}]
       - start_time: time when issue was created.
@@ -133,8 +121,7 @@ def query(crbug_service_account):
           {
             'key': 'crbug_issue_id:536766',
             'title': 'Test/step "compile (with patch)" is flaky',
-            'body': 'Test/step "compile (with patch)" is flaky.\n\nThis issue '
-                    'was created automatically by the chromium-try-flakes...',
+            'body': '',
             'links': [{'title': 'issue', 'href: 'https://crbug.com/536766'}],
             'start_time': '2015-09-28T12:28:25Z',
             'time': '2015-10-02T09:07:55Z',

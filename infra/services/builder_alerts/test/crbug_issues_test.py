@@ -45,7 +45,6 @@ CRBUG_ISSUES_LIST_TEST_REPLY = [
     'projectId': 'chromium',
     'canComment': True,
     'canEdit': True,
-    'description': 'TestBody'
   },
   {
     'kind': 'projecthosting#issue',
@@ -76,7 +75,6 @@ CRBUG_ISSUES_LIST_TEST_REPLY = [
     'projectId': 'chromium',
     'canComment': True,
     'canEdit': True,
-    'description': 'TestBody'
   }
 ]
 
@@ -150,8 +148,6 @@ class CrbugIssuesListTest(unittest.TestCase):
   def setUp(self):
     crbug_service_mock = mock.Mock()
     issues_mock = crbug_service_mock.issues.return_value
-    issues_mock.comments.return_value.list.return_value.execute = (
-        mock.Mock(return_value={'items': [{'content': 'TestBody'}]}))
     self.list_mock = issues_mock.list.return_value
 
     self._patchers = [
@@ -196,22 +192,12 @@ class CrbugIssuesListTest(unittest.TestCase):
     self.assertEqual(len(issues), 4)
     self.assertEqual([1, 2, 3, 4], [issue['id'] for issue in issues])
 
-  def test_correctly_reads_description(self):
-    self.list_mock.execute.side_effect = [
-        {'items': [{'id': 1}]},
-        {},
-    ]
-    issues = crbug_issues._list_issues('test-account.json')
-    self.assertEqual(issues[0].get('description'), 'TestBody')
-
 
 class CrbugIssuesListQuotaErrors(unittest.TestCase):
   def setUp(self):
     crbug_service_mock = mock.Mock()
     issues_mock = crbug_service_mock.issues.return_value
     self.issues_list_mock = issues_mock.list.return_value
-    comments_mock = issues_mock.comments.return_value 
-    self.comments_list_mock = comments_mock.list.return_value
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_build_crbug_service',
@@ -263,20 +249,5 @@ class CrbugIssuesListQuotaErrors(unittest.TestCase):
     content_json = json.dumps(
         {'error': {'errors': [{'domain': 'usageLimits'}]}})
     self.issues_list_mock.execute.side_effect = HttpError('resp', content_json)
-    with self.assertRaises(crbug_issues.QuotaExceededError):
-      crbug_issues._list_issues('test-account.json')
-
-  def test_non_quota_http_error_for_comments(self):
-    self.issues_list_mock.execute.side_effect = [{'items': [{'id': 1}]}, {}]
-    content_json = json.dumps({'error': {'errors': [{'domain': 'testDomain'}]}})
-    self.comments_list_mock.execute.side_effect = HttpError('rsp', content_json)
-    with self.assertRaises(HttpError):
-      crbug_issues._list_issues('test-account.json')
-
-  def test_quota_error_for_comments(self):
-    self.issues_list_mock.execute.side_effect = [{'items': [{'id': 1}]}, {}]
-    content_json = json.dumps(
-        {'error': {'errors': [{'domain': 'usageLimits'}]}})
-    self.comments_list_mock.execute.side_effect = HttpError('rsp', content_json)
     with self.assertRaises(crbug_issues.QuotaExceededError):
       crbug_issues._list_issues('test-account.json')
