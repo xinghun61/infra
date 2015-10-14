@@ -1,0 +1,79 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../ct-bug-queue.html">
+<link rel="import" href="../../model/ct-bug-queue.html">
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+var kExampleAlerts = {
+  'chromium': {
+    alerts : [
+      {
+        'key': 11,
+        'title': 'test',
+        'body': '',
+        'type': 'crbug'
+      },
+      {
+        'key': 22,
+        'title': 'test',
+        'body': '',
+        'type': 'other'
+      }
+    ]
+   },
+  'empty': {
+    alerts : []
+  }
+};
+
+function createMockBugQueue() {
+  var bugs = new CTBugQueue();
+  bugs.alerts = kExampleAlerts;
+  return bugs;
+}
+
+describe('ct-bug-queue', function() {
+  var queue;
+
+  beforeEach(function(done) {
+    queue = document.createElement('ct-bug-queue');
+    queue.bugQueue = createMockBugQueue();
+    setTimeout(done);
+  });
+
+  describe('bug queue', function() {
+    it('should show ct-alerts for non empty tree', function(done) {
+      queue.tree = 'chromium';
+      setTimeout(function() {
+        var alerts = queue.shadowRoot.querySelectorAll('ct-alerts');
+        assert.lengthOf(alerts, 1);
+        var title = queue.shadowRoot.querySelectorAll('h3');
+        assert.lengthOf(title, 1);
+        done();
+      });
+    });
+
+    it('should be empty for empty tree', function(done) {
+      queue.tree = 'empty';
+      setTimeout(function() {
+
+        var alerts = queue.shadowRoot.querySelectorAll('ct-alerts');
+        assert.lengthOf(alerts, 0);
+        var title = queue.shadowRoot.querySelectorAll('h3');
+        assert.lengthOf(title, 0);
+        done();
+      });
+    });
+  });
+});
+
+})();
+</script>

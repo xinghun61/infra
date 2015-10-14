@@ -1,0 +1,74 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../ct-alerts.html">
+
+<script>
+(function() {
+
+var assert = chai.assert;
+
+var kExampleAlerts = {
+  'chromium': {
+    alerts : [
+      {
+        'key': 11,
+        'title': 'test',
+        'body': '',
+        'type': 'crbug'
+      },
+      {
+        'key': 22,
+        'title': 'test2',
+        'body': '',
+        'type': 'other'
+      }
+    ]
+  },
+  'blink': {
+    alerts : [
+     {
+        'key': 22,
+        'title': 'test',
+        'body': '',
+        'type': 'crbug'
+      }
+    ]
+  }
+};
+
+describe('ct-alerts', function() {
+  var alerts;
+
+  beforeEach(function(done) {
+    alerts = document.createElement('ct-alerts');
+    alerts.alerts = kExampleAlerts;
+    setTimeout(done);
+  });
+
+  describe('alerts UI', function() {
+    it('should render ct-alert-card for each alert in chromium tree', function(done) {
+      alerts.tree = 'chromium';
+      setTimeout(function() {
+        var cards = alerts.shadowRoot.querySelectorAll('ct-alert-card');
+        assert.lengthOf(cards, 2);
+        done();
+      });
+    });
+
+    it('should render ct-alert-card for each alert in blink tree', function(done) {
+      alerts.tree = 'blink';
+      setTimeout(function() {
+        var cards = alerts.shadowRoot.querySelectorAll('ct-alert-card');
+        assert.lengthOf(cards, 1);
+        done();
+      });
+    });
+  });
+});
+
+})();
+</script>

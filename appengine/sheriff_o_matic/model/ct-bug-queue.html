@@ -1,0 +1,32 @@
+<!--
+Copyright 2015 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<script>
+function CTBugQueue() {
+  // List of all bugs in the queue per tree. Note that we use 'alerts' here because |ct-alerts|
+  // component requires this naming.
+  this.alerts = {};
+}
+
+(function() {
+'use strict';
+
+CTBugQueue.prototype.update = function(allAlerts) {
+  this.alerts = {};
+  Object.keys(allAlerts, function(tree, treeAlerts) {
+    if (!treeAlerts || !treeAlerts.alerts)
+      return;
+
+    this.alerts[tree] = {
+      'alerts' : treeAlerts.alerts.filter(function(alert) {
+        return alert.type == 'crbug';
+      })
+    }
+  }.bind(this));
+}
+
+})();
+</script>

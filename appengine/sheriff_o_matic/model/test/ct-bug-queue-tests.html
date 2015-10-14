@@ -1,0 +1,63 @@
+<!--
+Copyright 2014 The Chromium Authors. All rights reserved.
+Use of this source code is governed by a BSD-style license that can be
+found in the LICENSE file.
+-->
+
+<link rel="import" href="../ct-bug-queue.html">
+
+<script>
+(function () {
+
+var assert = chai.assert;
+
+describe('ct-bug-queue', function() {
+  describe('bug queue model', function() {
+    it('filters alerts', function() {
+      var alerts = {
+        'chromium': {
+          alerts : [
+            {
+              'key': 11,
+              'type': 'crbug'
+            },
+            {
+              'key': 0,
+              'type': 'other'
+            }
+          ]
+         },
+        'blink': {
+          alerts : [
+            {
+              'key': 22,
+              'type': 'other'
+            }
+          ]
+        }
+      }
+
+      var bq = new CTBugQueue();
+      bq.update(alerts);
+      assert.lengthOf(Object.keys(bq.alerts), 2);
+      assert.lengthOf(bq.alerts['chromium'].alerts, 1);
+      assert.equal(bq.alerts['chromium'].alerts[0].key, 11);
+      assert.equal(bq.alerts['chromium'].alerts[0].type, 'crbug');
+      assert.lengthOf(bq.alerts['blink'].alerts, 0);
+    });
+
+    it('filters out empty or undefined alerts', function() {
+      var alerts = {
+        'empty': {},
+        'undefined': undefined
+      }
+
+      var bq = new CTBugQueue();
+      bq.update(alerts);
+      assert.lengthOf(Object.keys(bq.alerts), 0);
+    });
+  });
+});
+
+})();
+</script>

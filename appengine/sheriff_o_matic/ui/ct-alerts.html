@@ -8,12 +8,7 @@ found in the LICENSE file.
 
 <polymer-element name="ct-alerts" attributes="alerts tree" noscript>
   <template>
-    <style>
-      .main {
-        margin: 1em;
-      }
-    </style>
-    <div class='main' style=''>
+    <div>
       <template repeat="{{ alert in alerts[tree].alerts }}">
         <ct-alert-card alert="{{ alert }}" tree="{{ tree }}" alerts="{{ alerts[tree] }}"></ct-alert-card>
       </template>

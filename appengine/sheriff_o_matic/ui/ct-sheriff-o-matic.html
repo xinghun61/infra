@@ -15,6 +15,7 @@ found in the LICENSE file.
 <link rel="import" href="../model/ct-repositories.html">
 <link rel="import" href="../model/ct-rotations.html">
 <link rel="import" href="../model/ct-failures.html">
+<link rel="import" href="../model/ct-bug-queue.html">
 <link rel="import" href="../model/ct-tree-list.html">
 <link rel="import" href="ct-alerts.html">
 <link rel="import" href="ct-health.html">
@@ -219,7 +220,7 @@ found in the LICENSE file.
 
             <app-route path="/:tree" fit on-before-data-binding="{{ modifyTreeModel }}">
               <template>
-                <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}"></ct-unexpected-failures>
+                <ct-unexpected-failures id="unexpected" tree="{{ tree }}" repositories="{{ repositories }}" failures="{{ failures }}" bugQueue="{{ bugQueue }}"></ct-unexpected-failures>
               </template>
             </app-route>
 
@@ -267,6 +268,7 @@ found in the LICENSE file.
       modifyTreeModel: function(e) {
         e.detail.model.repositories = this.repositories;
         e.detail.model.failures = this.failures;
+        e.detail.model.bugQueue = this.bugQueue;
       },
 
       modifyFailureGroupModel: function(e) {
@@ -308,6 +310,7 @@ found in the LICENSE file.
         this._defaultPath = '/' + this.treeList.defaultValue();
         this.repositories  = new CTRepositories();
         this.failures = new CTFailures(this.repositories);
+        this.bugQueue = new CTBugQueue();
         this._updater = new CTScheduledUpdater(this.update.bind(this), kUpdateFrequency);
         this._analytics = new Analytics('UA-55762617-1');
         this._rotations = CTRotations.getInstance();
@@ -348,6 +351,7 @@ found in the LICENSE file.
 
       _updateCompleted: function() {
         this._endUpdating();
+        this.bugQueue.update(this.failures.alerts);
         if (!this.failures.failures)
           return;
         this.alertsHistoryKey = this.failures.alertsHistoryKey;
