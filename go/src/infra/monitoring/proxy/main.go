@@ -67,20 +67,18 @@ func (c *config) createAuthenticatedClient(ctx context.Context) (*http.Client, e
 	scopes = append(scopes, cloudLoggingScopes...)
 	scopes = append(scopes, pubsubScopes...)
 
+	mode := auth.SilentLogin
+	if c.authInteractive {
+		mode = auth.InteractiveLogin
+	}
+
 	// Get our authenticated client.
 	options := auth.Options{
 		Scopes:                 scopes,
 		ServiceAccountJSONPath: c.serviceAccountJSONPath,
 		Logger:                 log.Get(ctx),
 	}
-	authenticator := auth.NewAuthenticator(options)
-
-	mode := auth.SilentLogin
-	if c.authInteractive {
-		mode = auth.InteractiveLogin
-	}
-
-	return auth.AuthenticatedClient(mode, authenticator)
+	return auth.NewAuthenticator(mode, options).Client()
 }
 
 // application represents the main application state.

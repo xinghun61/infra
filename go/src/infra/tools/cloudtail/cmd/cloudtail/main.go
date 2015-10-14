@@ -104,7 +104,7 @@ func (opts *commonOptions) processFlags() (state, error) {
 	}
 
 	// Client.
-	httpClient, err := auth.AuthenticatedClient(auth.SilentLogin, auth.NewAuthenticator(authOpts))
+	httpClient, err := auth.NewAuthenticator(auth.SilentLogin, authOpts).Client()
 	if err != nil {
 		return state{}, err
 	}

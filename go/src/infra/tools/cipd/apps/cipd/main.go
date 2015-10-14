@@ -243,12 +243,13 @@ func (opts *ServiceOptions) makeCipdClient(root string) (cipd.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	authOpts.Logger = log
 	return cipd.NewClient(cipd.ClientOptions{
 		ServiceURL: opts.serviceURL,
 		Root:       root,
 		Logger:     log,
 		AuthenticatedClientFactory: func() (*http.Client, error) {
-			return auth.AuthenticatedClient(auth.OptionalLogin, auth.NewAuthenticator(authOpts))
+			return auth.NewAuthenticator(auth.OptionalLogin, authOpts).Client()
 		},
 	}), nil
 }

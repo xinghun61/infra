@@ -68,13 +68,14 @@ func (c *endpointConfig) createService(ctx context.Context) (endpointService, er
 	}
 
 	authenticator := auth.NewAuthenticator(
+		auth.SilentLogin,
 		auth.Options{
 			Method:                 auth.ServiceAccountMethod,
 			Scopes:                 endpointScopes,
 			ServiceAccountJSONPath: c.serviceAccountJSONPath,
 			Logger:                 log.Get(ctx),
 		})
-	client, err := auth.AuthenticatedClient(auth.SilentLogin, authenticator)
+	client, err := authenticator.Client()
 	if err != nil {
 		log.Errorf(log.SetError(ctx, err), "Failed to configure endpoint client.")
 		return nil, errors.New("endpoint: failed to configure endpoint client")
