@@ -109,10 +109,11 @@ class CrbugIssuesQueryTest(unittest.TestCase):
     issues_by_tree = crbug_issues.query('test-account.json')
     issue = issues_by_tree['chromium'][0]
     self.assertEqual(issue.get('key'), 'crbug_issue_id:123456')
-    self.assertEqual(issue.get('title'), 'crbug.com/123456')
+    self.assertEqual(issue.get('title'), 'TestTitle')
     self.assertEqual(issue.get('body'), '')
-    self.assertEqual(issue.get('links'),
-                     [{'title': 'issue', 'href': 'https://crbug.com/123456'}])
+    self.assertEqual(
+        issue.get('links'),
+        [{'title': 'crbug.com/123456', 'href': 'https://crbug.com/123456'}])
     self.assertEqual(issue.get('start_time'), '2015-10-01T22:59:56.000Z')
     self.assertEqual(issue.get('type'), 'crbug')
     self.assertEqual(issue.get('severity'), 1)  # highest of two priority labels

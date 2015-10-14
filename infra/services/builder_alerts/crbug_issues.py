@@ -167,10 +167,10 @@ def query(crbug_service_account):
   sheriff_issues = defaultdict(list)
   for raw_issue in raw_issues:
     sheriff_issue = {'key': 'crbug_issue_id:%d' % raw_issue['id'],
-                     'title': 'crbug.com/%d' % raw_issue['id'],
+                     'title': raw_issue['title'],
                      'body': '',
                      'links': [{
-                       'title': 'issue',
+                       'title': 'crbug.com/%d' % raw_issue['id'],
                        'href': 'https://crbug.com/%s' % raw_issue['id']
                      }],
                      'start_time': raw_issue['published'],
