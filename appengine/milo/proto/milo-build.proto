@@ -105,36 +105,36 @@ message Progress {
 // These are based off the Material Design Bootstrap color pallets.
 enum ComponentStatus {
   // The component has not yet been run.
-  NOT_RUN = 1;  // 100 Gray.
+  NOT_RUN = 0;  // 100 Gray.
 
   // The component is currently executing.
-  RUNNING = 2;  // 100 Teal
+  RUNNING = 1;  // 100 Teal
 
   // The component has finished executing and is not noteworthy.
-  SUCCESS = 3;  // A200 Green.
+  SUCCESS = 2;  // A200 Green.
 
   // The component has finished executing and contains a failure.
-  FAILURE = 4;  // A200 Red.
+  FAILURE = 3;  // A200 Red.
 
   // The component has finished incompletely due to a failure in infra.
-  INFRA_FAILURE = 5; // A100, Purple.
+  INFRA_FAILURE = 4; // A100, Purple.
 
   // The component has finished incompletely due to a failure in a dependency.
-  DEPENDENCY_FAILURE = 6; // 100 Amber.
+  DEPENDENCY_FAILURE = 5; // 100 Amber.
 
   // The component has finished or paused execution due to an incomplete
   // dependency.
-  WAITING_DEPENDENCY = 7; // 100 Brown.
+  WAITING_DEPENDENCY = 6; // 100 Brown.
 }
 
 // Denotes the type of component.
 enum ComponentType {
   // Also known as a DM attempt.  Dependencies are expressed as a recipe
   // at a deeper level.
-  RECIPE = 1;
+  RECIPE = 0;
 
   // A step from a recipe.
-  STEP = 2;
+  STEP = 1;
 }
 
 // Represents a single entry of a Step, subsetup, or attempt.
@@ -155,14 +155,14 @@ message Component {
   Progress progress = 5;
 
   // When did this step start.  Set null if not started.
-  Timestamp started = 6;
+  google.protobuf.Timestamp started = 6;
 
   // When did this step finish.  Set null if not finished.
-  Timestamp finished = 7;
+  google.protobuf.Timestamp finished = 7;
 
   // The time it took for this step to finish.  If unfinished, this is the
   // current elapsed duration.
-  Duration duration = 8;
+  google.protobuf.Duration duration = 8;
 
   // The type of component.  This manifests itself as a little label on the
   // top left corner of the component.
