@@ -21,6 +21,30 @@ import webapp2
 def FlakeSortFunction(s):
   return s.builder + str(time.mktime(s.time_finished.timetuple()))
 
+def GetFilteredOccurences(flake, time_formatter, filter_function):
+  occurrences = ndb.get_multi(flake.occurrences)
+
+  failure_run_keys = []
+  patchsets_keys = []
+  for o in occurrences:
+    failure_run_keys.append(o.failure_run)
+    patchsets_keys.append(o.failure_run.parent())
+
+  failure_runs = ndb.get_multi(failure_run_keys)
+  patchsets = ndb.get_multi(patchsets_keys)
+
+  filtered_occurrences = []
+  for index, r in enumerate(failure_runs):
+    if filter_function(r.time_finished):
+      r.patchset_url = patchsets[index].getURL()
+      r.builder = patchsets[index].builder
+      r.formatted_time = time_formatter(r.time_finished)
+      filtered_occurrences.append(r)
+
+  # Do simple sorting of occurances by builder to make reading easier.
+  return sorted(filtered_occurrences, key=FlakeSortFunction)
+
+
 class Index(webapp2.RequestHandler):
   def get(self):
     time_range = self.request.get('range', default_value='day')
@@ -47,46 +71,37 @@ class Index(webapp2.RequestHandler):
     # Filter out occurrences so that we only show ones for the selected time
     # range. This is less confusing to read, and also less cluttered and renders
     # faster when not viewing all range.
+    def filter_by_range(t):
+      if time_range == 'hour':
+        return is_last_hour(t)
+      if time_range == 'day':
+        return is_last_day(t)
+      if time_range == 'week':
+        return is_last_week(t)
+      if time_range == 'month':
+        return is_last_month(t)
+      if time_range == 'all':
+        return True
+
+    time_format = ''
+    if time_range == 'hour':
+      time_format = '%I:%M %p'
+    elif (time_range == 'day' or time_range == 'week' or
+          time_range == 'month'):
+      time_format = '%m/%d %I:%M %p'
+    else:
+      time_format = '%m/%d/%y %I:%M %p'
+
+    # tryserver pages show PST time so do so here as well for easy comparison.
+    pst_timezone = pytz.timezone("US/Pacific")
+
+    def time_formatter(t):
+      return t.replace(tzinfo=pytz.utc).astimezone(pst_timezone).strftime(
+          time_format)
+
     for f in flakes:
-      # get_multi is much faster than calling .get for each f.occurrences
-      occurrences = ndb.get_multi(f.occurrences)
-
-      failure_run_keys = []
-      patchsets_keys = []
-      for o in occurrences:
-        failure_run_keys.append(o.failure_run)
-        patchsets_keys.append(o.failure_run.parent())
-
-      failure_runs = ndb.get_multi(failure_run_keys)
-      patchsets = ndb.get_multi(patchsets_keys)
-
-      f.filtered_occurrences = []
-      # tryserver pages show PST time so do so here as well for easy comparison.
-      pst_timezone = pytz.timezone("US/Pacific")
-      for index, r in enumerate(failure_runs):
-        if (time_range == 'hour' and is_last_hour(r.time_finished)) or \
-           (time_range == 'day' and is_last_day(r.time_finished)) or \
-           (time_range == 'week' and is_last_week(r.time_finished)) or \
-           (time_range == 'month' and is_last_month(r.time_finished)) or \
-           time_range == 'all':
-          r.patchset_url = patchsets[index].getURL()
-          r.builder = patchsets[index].builder
-
-          time_format = ''
-          if time_range == 'hour':
-            time_format = '%I:%M %p'
-          elif (time_range == 'day' or time_range == 'week' or
-                time_range == 'month'):
-            time_format = '%m/%d %I:%M %p'
-          else:
-            time_format = '%m/%d/%y %I:%M %p'
-          r.formatted_time = r.time_finished.replace(tzinfo=pytz.utc). \
-              astimezone(pst_timezone).strftime(time_format)
-          f.filtered_occurrences.append(r)
-
-      # Do simple sorting of occurances by builder to make reading easier.
-      f.filtered_occurrences = sorted(f.filtered_occurrences,
-                                      key=FlakeSortFunction)
+      f.filtered_occurrences = GetFilteredOccurences(
+          f, time_formatter, filter_by_range)
 
     values = {
       'range': time_range,
