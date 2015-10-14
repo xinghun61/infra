@@ -9,6 +9,7 @@ import json
 import httplib2
 
 from apiclient import discovery
+from apiclient.errors import HttpError
 from oauth2client import client
 
 
@@ -19,6 +20,10 @@ DISCOVERY_URL = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
 # This is needed because there are many labels that have 'Sheriff' in them.
 WHITELISTED_LABELS = ['Sheriff-Chromium']
 BATCH_SIZE = 10
+
+
+class QuotaExceededError(Exception):
+  pass
 
 
 def _build_crbug_service(crbug_service_account):  # pragma: no cover
@@ -33,6 +38,22 @@ def _build_crbug_service(crbug_service_account):  # pragma: no cover
                          discoveryServiceUrl=DISCOVERY_URL, http=http)
 
 
+def _is_quota_error(exc):
+  try:
+    content = json.loads(exc.content)
+  except (ValueError, TypeError, AttributeError):
+    return False
+
+  errors = content.get('error', {}).get('errors', [])
+  if not errors:
+    return False
+
+  if any(error.get('domain') != 'usageLimits' for error in errors):
+    return False
+
+  return True
+
+
 def _list_issues(crbug_service_account):
   service = _build_crbug_service(crbug_service_account)
   issues = []
@@ -43,7 +64,12 @@ def _list_issues(crbug_service_account):
       request = service.issues().list(
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
-      response = request.execute(num_retries=5)
+      try:
+        response = request.execute(num_retries=5)
+      except HttpError as e:
+        if _is_quota_error(e):
+          raise QuotaExceededError()
+        raise
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
       # they add up to 'totalResults' in response is not relaible. However, we
@@ -70,7 +96,12 @@ def _list_issues(crbug_service_account):
   for issue in issues:
     request = service.issues().comments().list(
         projectId='chromium', issueId=issue['id'], maxResults=1)
-    response = request.execute(num_retries=5)
+    try:
+      response = request.execute(num_retries=5)
+    except HttpError as e:
+      if _is_quota_error(e):
+        raise QuotaExceededError()
+      raise
     issue['description'] = response['items'][0]['content']
 
   return issues
@@ -78,6 +109,9 @@ def _list_issues(crbug_service_account):
 
 def query(crbug_service_account):
   """Queries issue tracker for issues with Sheriff-* label.
+
+  Raises QuotaExceededError if requests result in quota errors. Callers should
+  retry calling this function again later.
 
   Returns:
     A dict mapping tree name to a list of issue dicts, each dict having the

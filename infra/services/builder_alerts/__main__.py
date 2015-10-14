@@ -306,24 +306,28 @@ def inner_loop(args):
 
   # Query sheriff issues and post them to the new API endpoint.
   if args.crbug_service_account:
-    issues_per_tree = crbug_issues.query(args.crbug_service_account)
-    for tree, issues in issues_per_tree.iteritems():
-      json_data = {'alerts': issues}
-      gzipped_data = gzipped(json.dumps(json_data))
-      if args.api_endpoint_prefix:
-        new_api_url = string_helpers.slash_join(
-            args.api_endpoint_prefix, 'api/v1/alerts', tree)
-        resp = requests.post(new_api_url, data=gzipped_data,
-                             headers={'content-encoding': 'gzip'})
-        try:
-          resp.raise_for_status()
-        except requests.HTTPError:
-          logging.exception('POST to %s failed! %d %s, %s', new_api_url,
-                            resp.status_code, resp.reason, resp.content)
-          ret = False
-      else:
-        with open('builder_alerts_%s.json' % tree, 'w') as f:
-          f.write(json.dumps(json_data, indent=1))
+    try:
+      issues_per_tree = crbug_issues.query(args.crbug_service_account)
+    except crbug_issues.QuotaExceededError:
+      logging.warn('Crbug quota was exceeded. Skipping crbug updates.')
+    else:
+      for tree, issues in issues_per_tree.iteritems():
+        json_data = {'alerts': issues}
+        gzipped_data = gzipped(json.dumps(json_data))
+        if args.api_endpoint_prefix:
+          new_api_url = string_helpers.slash_join(
+              args.api_endpoint_prefix, 'api/v1/alerts', tree)
+          resp = requests.post(new_api_url, data=gzipped_data,
+                               headers={'content-encoding': 'gzip'})
+          try:
+            resp.raise_for_status()
+          except requests.HTTPError:
+            logging.exception('POST to %s failed! %d %s, %s', new_api_url,
+                              resp.status_code, resp.reason, resp.content)
+            ret = False
+        else:
+          with open('builder_alerts_%s.json' % tree, 'w') as f:
+            f.write(json.dumps(json_data, indent=1))
   else:
     # TODO(sergiyb): Make it a hard error after we start passing
     # crbug_service_account parameter from the recipe.
