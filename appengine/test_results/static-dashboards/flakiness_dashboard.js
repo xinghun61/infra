@@ -616,6 +616,15 @@ function htmlForTestResults(test, revisions)
                   for (var j = 0; j < encodedResults.length; j++) {
                     detailedResultString += failureMap[encodedResults[j]] + ' ';
                   }
+                  // We treat three attempts as a special case since many test
+                  // runners run the first attempt with other tests in parallel,
+                  // resulting in occassional races. Tests *should* be resilient
+                  // to that, so we label them as FLAKY above. If tests still
+                  // fail once when run sequentially afterward it's noteworthy
+                  // and we label them VERYFLAKY.
+                  if (encodedResults.length > 2) {
+                    resultString = 'VERYFLAKY';
+                  }
                 } else {
                   resultString = g_resultsByBuilder[builder.key()][results.FAILURE_MAP][encodedResults];
                   detailedResultString = resultString;

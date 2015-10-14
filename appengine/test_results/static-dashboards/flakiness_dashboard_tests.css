@@ -154,7 +154,10 @@ below and should be kept in sync. See: crbug.com/397886.
     background-color: rgba(173, 216, 230, 0.2);
 }
 .FLAKY.interpolatedResult {
-    background-color: rgba(64, 224, 208, 0.2);
+    background-color: rgba(175, 238, 238, 0.2);
+}
+.VERYFLAKY.interpolatedResult {
+    background-color: rgba(0, 206, 209, 0.2);
 }
 .LEAK.interpolatedResult {
     background-color: rgba(255, 192, 203, 0.2);
@@ -192,7 +195,10 @@ below and should be kept in sync. See: crbug.com/397886.
     background-color: lightblue;
 }
 .FLAKY {
-    background-color: turquoise;
+    background-color: paleturquoise;
+}
+.VERYFLAKY {
+    background-color: darkturquoise;
 }
 .LEAK {
     background-color: pink;
