@@ -40,6 +40,7 @@ import os
 from monacq import acquisition_api
 
 from infra_libs import httplib2_utils
+from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.protos import metrics_pb2
 
 from apiclient import discovery
@@ -55,7 +56,7 @@ GCE_CREDENTIALS = ':gce'
 LOGGER = logging.getLogger('__name__')
 
 
-def _logging_callback(resp, content):  # pragma: no cover
+def _logging_callback(resp, content):
   logging.debug(repr(resp))
   logging.debug(content)
 
@@ -134,28 +135,44 @@ class PubSubMonitor(Monitor):
       'https://www.googleapis.com/auth/pubsub',
   ]
 
-  @classmethod
-  def _load_credentials(cls, credentials_file_path):
+  def _load_credentials(self, credentials_file_path):
     if credentials_file_path == GCE_CREDENTIALS:
-      return AppAssertionCredentials(cls._SCOPES)
+      return AppAssertionCredentials(self._SCOPES)
 
     with open(credentials_file_path, 'r') as credentials_file:
       credentials_json = json.load(credentials_file)
     if credentials_json.get('type', None):
       credentials = GoogleCredentials.from_stream(credentials_file_path)
-      credentials = credentials.create_scoped(cls._SCOPES)
+      credentials = credentials.create_scoped(self._SCOPES)
       return credentials
     return Storage(credentials_file_path).get()
 
-  def _initialize(self, credsfile, project, topic, use_instrumented_http):
-    creds = self._load_credentials(credsfile)
-    if use_instrumented_http:
-      self._http = httplib2_utils.InstrumentedHttp('acq-mon-api-pubsub')
-    else:  # pragma: no cover
-      self._http = httplib2.Http()
+  def _initialize(self):
+    creds = self._load_credentials(self._credsfile)
     creds.authorize(self._http)
     self._api = discovery.build('pubsub', 'v1', http=self._http)
-    self._topic = 'projects/%s/topics/%s' % (project, topic)
+
+  def _update_init_metrics(self, status):
+    if not self._use_instrumented_http:
+      return
+    fields = {'name': 'acq-mon-api-pubsub',
+              'client': 'discovery',
+              'status': status}
+    http_metrics.response_status.increment(fields=fields)
+
+  def _check_initialize(self):
+    if self._api:
+      return True
+    try:
+      self._initialize()
+    except EnvironmentError:
+      logging.exception('PubSubMonitor._initialize failed')
+      self._api = None
+      self._update_init_metrics(http_metrics.STATUS_ERROR)
+      return False
+
+    self._update_init_metrics(http_metrics.STATUS_OK)
+    return True
 
   def __init__(self, credsfile, project, topic, use_instrumented_http=True):
     """Process monitoring related command line flags and initialize api.
@@ -167,7 +184,15 @@ class PubSubMonitor(Monitor):
       use_instrumented_http (bool): whether to record monitoring metrics for
           HTTP requests made to the pubsub API.
     """
-    self._initialize(credsfile, project, topic, use_instrumented_http)
+    self._api = None
+    self._use_instrumented_http = use_instrumented_http
+    if use_instrumented_http:
+      self._http = httplib2_utils.InstrumentedHttp('acq-mon-api-pubsub')
+    else:
+      self._http = httplib2.Http()
+    self._credsfile = credsfile
+    self._topic = 'projects/%s/topics/%s' % (project, topic)
+    self._check_initialize()
 
   def send(self, metric_pb):
     """Send a metric proto to the monitoring api.
@@ -175,6 +200,8 @@ class PubSubMonitor(Monitor):
     Args:
       metric_pb (MetricsData or MetricsCollection): the metric protobuf to send
     """
+    if not self._check_initialize():
+      return
     proto = self._wrap_proto(metric_pb)
     body = {
         'messages': [

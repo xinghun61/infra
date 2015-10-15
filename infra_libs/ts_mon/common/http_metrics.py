@@ -10,6 +10,7 @@ except ImportError: # pragma: no cover
   from common.metrics import CounterMetric
 
 # Extending HTTP status codes to client-side errors and timeouts.
+STATUS_OK = 200
 STATUS_ERROR = 901
 STATUS_TIMEOUT = 902
 STATUS_EXCEPTION = 909
