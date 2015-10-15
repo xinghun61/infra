@@ -120,16 +120,14 @@ class TestReadEventsFromFile(SendingEventBaseTest):
     events = send_event.read_events_from_file(
       os.path.join(DATA_DIR, 'events_valid.log'))
     for event in events:
-      # use the class name to avoid importing the pb2 file from event_mon
-      self.assertEqual(event.__class__.__name__, "LogEventLite")
+      self.assertIsInstance(event, event_mon.Event)
     self.assertEqual(len(events), 5)
 
   def test_read_invalid_file(self):
     events = send_event.read_events_from_file(
       os.path.join(DATA_DIR, 'events_invalid.log'))
     for event in events:
-      # use the class name to avoid importing the pb2 file from event_mon
-      self.assertEqual(event.__class__.__name__, "LogEventLite")
+      self.assertIsInstance(event, event_mon.Event)
 
     self.assertEqual(len(events), 4)
 
@@ -137,8 +135,7 @@ class TestReadEventsFromFile(SendingEventBaseTest):
     events = send_event.read_events_from_file(
       os.path.join(DATA_DIR, 'events_blank_lines.log'))
     for event in events:
-      # use the class name to avoid importing the pb2 file from event_mon
-      self.assertEqual(event.__class__.__name__, "LogEventLite")
+      self.assertIsInstance(event, event_mon.Event)
 
     self.assertEqual(len(events), 5)
 
@@ -147,8 +144,7 @@ class TestReadEventsFromFile(SendingEventBaseTest):
     events = send_event.read_events_from_file(
       os.path.join(DATA_DIR, 'events_one_service_event.log'))
     for event in events:
-      # use the class name to avoid importing the pb2 file from event_mon
-      self.assertEqual(event.__class__.__name__, "LogEventLite")
+      self.assertIsInstance(event, event_mon.Event)
 
     self.assertEqual(len(events), 4)
 

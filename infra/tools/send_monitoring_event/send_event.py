@@ -250,9 +250,9 @@ def read_events_from_file(filename):
     filename(str): path to the file to read.
 
   Return:
-    log_events (iterable of LogRequestLite): events read from the file.
+    events (iterable of event_mon.Event): events read from the file.
   """
-  log_events = []
+  events = []
   with open(filename, 'r') as f:
     for line in f:
       if not line.strip():
@@ -264,7 +264,7 @@ def read_events_from_file(filename):
         continue
 
       if 'build-event-type' in args:
-        log_events.append(
+        events.append(
           event_mon.get_build_event(
             args.get('build-event-type'),
             args.get('build-event-hostname'),
@@ -278,4 +278,4 @@ def read_events_from_file(filename):
             event_timestamp=args.get('event-mon-event-timestamp'),
             service_name=args.get('event-mon-service-name')))
 
-  return log_events
+  return events

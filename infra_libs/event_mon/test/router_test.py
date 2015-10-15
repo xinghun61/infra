@@ -71,7 +71,7 @@ class TextStreamRouterTests(unittest.TestCase):
   def test_stringio_stream(self):
     config._cache['default_event'] = ChromeInfraEvent()
     log_event = infra_libs.event_mon.monitoring._get_service_event(
-      'START', timestamp_kind='POINT', event_timestamp=1234)
+      'START', timestamp_kind='POINT', event_timestamp=1234).log_event()
 
     stream = StringIO.StringIO()
     r = router._TextStreamRouter(stream=stream)

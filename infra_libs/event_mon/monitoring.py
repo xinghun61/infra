@@ -26,6 +26,54 @@ TIMESTAMP_KINDS = (None, 'UNKNOWN', 'POINT', 'BEGIN', 'END')
 STACK_TRACE_MAX_SIZE = 1000
 
 
+class Event(object):
+  """Wraps the event proto with the necessary boilerplate code."""
+
+  def __init__(self, timestamp_kind='POINT',
+               event_timestamp_ms=None, service_name=None):
+    """
+    Args:
+      timestamp_kind (string): 'POINT', 'START' or 'STOP'.
+      event_timestamp_ms (int or float): time of the event in milliseconds
+         from Unix epoch. Default: now.
+      service_name (string): name of the monitored service.
+    """
+    self._timestamp_ms = event_timestamp_ms
+    self._event =  _get_chrome_infra_event(
+        timestamp_kind, service_name=service_name)
+
+  @property
+  def is_null(self):
+    return self.proto is None
+
+  @staticmethod
+  def null():
+    """Create an "null" Event, without the proto.
+
+    Null event's send() method will fail (return False). This is useful for
+    returning a consistent object type from helper functions even in the
+    case of failure.
+    """
+    event = Event()
+    event._event = None
+    return event
+
+  @property
+  def proto(self):
+    return self._event
+
+  def log_event(self):
+    if self.is_null:
+      return None
+    return _get_log_event_lite(
+        self.proto, event_timestamp=self._timestamp_ms)
+
+  def send(self):
+    if self.proto is None:
+      return False
+    return config._router.push_event(self.log_event())
+
+
 def _get_chrome_infra_event(timestamp_kind, service_name=None):
   """Compute a basic event.
 
@@ -42,13 +90,12 @@ def _get_chrome_infra_event(timestamp_kind, service_name=None):
     event (chrome_infra_log_pb2.ChromeInfraEvent):
   """
   if timestamp_kind not in TIMESTAMP_KINDS:
-    logging.error('Invalid value for timestamp_kind: %s' %
-                 str(timestamp_kind))
+    logging.error('Invalid value for timestamp_kind: %s', timestamp_kind)
     return None
 
   # We must accept unicode here.
   if service_name is not None and not isinstance(service_name, basestring):
-    logging.error('Invalid type for service_name: %s' % type(service_name))
+    logging.error('Invalid type for service_name: %s', type(service_name))
     return None
 
   event = ChromeInfraEvent()
@@ -74,8 +121,8 @@ def _get_log_event_lite(chrome_infra_event, event_timestamp=None):
     log_event (log_request_lite_pb2.LogRequestLite.LogEventLite):
   """
   if not isinstance(event_timestamp, (int, float, None.__class__ )):
-    logging.error('Invalid type for event_timestamp. Needs a number, got %s'
-                  % str(type(event_timestamp)))
+    logging.error('Invalid type for event_timestamp. Needs a number, got %s',
+                  type(event_timestamp))
     return None
 
   log_event = LogRequestLite.LogEventLite()
@@ -95,16 +142,17 @@ def _get_service_event(event_type,
   to this docstring.
 
   Returns:
-    event (log_request_lite_pb2.LogRequestLite.LogEventLite): can be None
-      if there is a major processing issue.
+    event (Event): can be a "null" Event if there is a major processing issue.
   """
-  event = _get_chrome_infra_event(timestamp_kind, service_name=service_name)
-  if not event:
-    return None
-
   if event_type not in EVENT_TYPES:
-    logging.error('Invalid value for event_type: %s' % str(event_type))
-    return None
+    logging.error('Invalid value for event_type: %s', event_type)
+    return Event.null()
+
+  event_wrapper = Event(timestamp_kind, event_timestamp, service_name)
+  if event_wrapper.is_null:
+    return event_wrapper
+
+  event = event_wrapper.proto
 
   event.service_event.type = getattr(ServiceEvent, event_type)
 
@@ -113,8 +161,8 @@ def _get_service_event(event_type,
   if not isinstance(code_version, (tuple, list)):
     logging.error('Invalid type provided to code_version argument in '
                   '_get_service_event. Please fix the calling code. '
-                  'Type provided: %s, expected list, tuple or None.'
-                  % str(type(code_version)))
+                  'Type provided: %s, expected list, tuple or None.',
+                  type(code_version))
     code_version = ()
 
   for version_d in code_version:
@@ -153,7 +201,7 @@ def _get_service_event(event_type,
       logging.error('stack_trace should be a string, got %s',
                     stack_trace.__class__.__name__)
 
-  return _get_log_event_lite(event, event_timestamp=event_timestamp)
+  return event_wrapper
 
 
 def send_service_event(event_type,
@@ -190,13 +238,12 @@ def send_service_event(event_type,
   Returns:
     success (bool): False if some error happened.
   """
-  log_event = _get_service_event(event_type,
-                                 timestamp_kind=timestamp_kind,
-                                 event_timestamp=event_timestamp,
-                                 code_version=code_version,
-                                 stack_trace=stack_trace)
-
-  return config._router.push_event(log_event)
+  return _get_service_event(event_type=event_type,
+                            timestamp_kind=timestamp_kind,
+                            service_name=None,
+                            event_timestamp=event_timestamp,
+                            code_version=code_version,
+                            stack_trace=stack_trace).send()
 
 
 def get_build_event(event_type,
@@ -220,23 +267,25 @@ def get_build_event(event_type,
     event (log_request_lite_pb2.LogRequestLite.LogEventLite): can be None
       if there is a major processing issue.
   """
-  event = _get_chrome_infra_event(timestamp_kind, service_name=service_name)
-
-  if not event:
-    return None
-
   if event_type not in BUILD_EVENT_TYPES:
-    logging.error('Invalid value for event_type: %s' % str(event_type))
-    return None
+    logging.error('Invalid value for event_type: %s', event_type)
+    return Event.null()
+
+  event_wrapper = Event(timestamp_kind, event_timestamp,
+                        service_name=service_name)
+  if event_wrapper.is_null:
+    return event_wrapper
+
+  event = event_wrapper.proto
 
   event.build_event.type = getattr(BuildEvent, event_type)
   if not hostname:
-    logging.error('hostname must be provided, got %s' % hostname)
+    logging.error('hostname must be provided, got %s', hostname)
   else:
     event.build_event.host_name = hostname
 
   if not build_name:
-    logging.error('build_name must be provided, got %s' % build_name)
+    logging.error('build_name must be provided, got %s', build_name)
   else:  # avoid sending empty strings
     event.build_event.build_name = build_name
 
@@ -291,7 +340,7 @@ def get_build_event(event_type,
   result = mapping.get(result, result)
 
   if result not in BUILD_RESULTS:
-    logging.error('Invalid value for result: %s' % str(result))
+    logging.error('Invalid value for result: %s', result)
 
   else:
     if result:  # can be None
@@ -316,7 +365,7 @@ def get_build_event(event_type,
       logging.error('Invalid goma_stats_gz (%s) is passed',
                     goma_stats_gz)
 
-  return _get_log_event_lite(event, event_timestamp=event_timestamp)
+  return event_wrapper
 
 
 def send_build_event(event_type,
@@ -355,28 +404,26 @@ def send_build_event(event_type,
   Returns:
     success (bool): False if some error happened.
   """
-  log_event = get_build_event(event_type,
-                              hostname,
-                              build_name,
-                              build_number=build_number,
-                              build_scheduling_time=build_scheduling_time,
-                              step_name=step_name,
-                              step_number=step_number,
-                              result=result,
-                              goma_stats_gz=goma_stats_gz,
-                              timestamp_kind=timestamp_kind,
-                              event_timestamp=event_timestamp)
-
-  return config._router.push_event(log_event)
+  return get_build_event(event_type,
+                         hostname,
+                         build_name,
+                         build_number=build_number,
+                         build_scheduling_time=build_scheduling_time,
+                         step_name=step_name,
+                         step_number=step_number,
+                         result=result,
+                         goma_stats_gz=goma_stats_gz,
+                         timestamp_kind=timestamp_kind,
+                         event_timestamp=event_timestamp).send()
 
 
-def send_events(log_events):
+def send_events(events):
   """Send several events at once to the endpoint.
 
   Args:
-    log_events (iterable of LogRequestLite.LogEventLite): events to send
+    events (iterable of Event): events to send
 
   Return:
     success (bool): True if data was successfully received by the endpoint.
   """
-  return config._router.push_event(log_events)
+  return config._router.push_event(tuple(e.log_event() for e in events))

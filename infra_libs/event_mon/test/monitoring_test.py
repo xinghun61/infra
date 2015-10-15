@@ -40,7 +40,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._router, router._Router)
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
-    log_event = monitoring._get_service_event('START')
+    log_event = monitoring._get_service_event('START').log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
     self.assertTrue(log_event.HasField('source_extension'))
@@ -66,8 +66,8 @@ class GetServiceEventTest(unittest.TestCase):
        'dirty': True},
       ]
 
-    log_event = monitoring._get_service_event('START',
-                                              code_version=code_version)
+    log_event = monitoring._get_service_event(
+        'START', code_version=code_version).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     code_version_p = event.service_event.code_version
     self.assertEquals(len(code_version_p), len(code_version))
@@ -97,7 +97,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._router, router._Router)
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
-    log_event = monitoring._get_service_event('CRASH')
+    log_event = monitoring._get_service_event('CRASH').log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
 
@@ -106,8 +106,8 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = 'A nice ascii string'
-    log_event = monitoring._get_service_event('CRASH',
-                                              stack_trace=stack_trace)
+    log_event = monitoring._get_service_event(
+        'CRASH', stack_trace=stack_trace).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
@@ -117,8 +117,8 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = u"Soyez prêt à un étrange goût de Noël."
-    log_event = monitoring._get_service_event('CRASH',
-                                              stack_trace=stack_trace)
+    log_event = monitoring._get_service_event(
+        'CRASH', stack_trace=stack_trace).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
@@ -129,8 +129,8 @@ class GetServiceEventTest(unittest.TestCase):
 
     stack_trace = "this is way too long" * 55
     self.assertTrue(len(stack_trace) > monitoring.STACK_TRACE_MAX_SIZE)
-    log_event = monitoring._get_service_event('CRASH',
-                                              stack_trace=stack_trace)
+    log_event = monitoring._get_service_event(
+        'CRASH', stack_trace=stack_trace).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(len(event.service_event.stack_trace),
@@ -143,8 +143,8 @@ class GetServiceEventTest(unittest.TestCase):
     # This is not a stacktrace
     stack_trace = 123456
     # Should not crash
-    log_event = monitoring._get_service_event('CRASH',
-                                              stack_trace=stack_trace)
+    log_event = monitoring._get_service_event(
+        'CRASH', stack_trace=stack_trace).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
 
     # Send only valid data this time
@@ -156,8 +156,8 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     stack_trace = 'A nice ascii string'
-    log_event = monitoring._get_service_event('START',
-                                              stack_trace=stack_trace)
+    log_event = monitoring._get_service_event(
+        'START', stack_trace=stack_trace).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
 
     # Make sure we send even invalid data.
@@ -169,7 +169,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     log_event = monitoring._get_service_event(
-      'START', service_name='my.nice.service.name')
+        'START', service_name='my.nice.service.name').log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
     self.assertTrue(log_event.HasField('source_extension'))
@@ -186,7 +186,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
     service_name = u'à_la_française_hé_oui'
     log_event = monitoring._get_service_event(
-      'START', service_name=service_name)
+        'START', service_name=service_name).log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
     self.assertTrue(log_event.HasField('source_extension'))
@@ -212,8 +212,8 @@ class SendServiceEventTest(unittest.TestCase):
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
     code_version = [{}, {'revision': 'https://fake.url'}]
-    log_event = monitoring._get_service_event('START',
-                                              code_version=code_version)
+    log_event = monitoring._get_service_event(
+        'START', code_version=code_version).log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertTrue(event.HasField('service_event'))
     self.assertTrue(event.service_event.HasField('type'))
@@ -226,8 +226,8 @@ class SendServiceEventTest(unittest.TestCase):
     code_versions = [None, 123, 'string',
                      [None], [123], ['string'], [['list']]]
     for code_version in code_versions:
-      log_event = monitoring._get_service_event('START',
-                                                code_version=code_version)
+      log_event = monitoring._get_service_event(
+          'START', code_version=code_version).log_event()
       event = ChromeInfraEvent.FromString(log_event.source_extension)
       self.assertTrue(event.HasField('service_event'))
       self.assertTrue(event.service_event.HasField('type'))
@@ -267,7 +267,8 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_default(self):
     hostname = 'bot.host.name'
     build_name = 'build_name'
-    log_event = monitoring.get_build_event('BUILD', hostname, build_name)
+    log_event = monitoring.get_build_event(
+        'BUILD', hostname, build_name).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
@@ -283,14 +284,14 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_invalid_type(self):
     # An invalid type is a critical error.
     log_event = monitoring.get_build_event('INVALID_TYPE',
-                                            'bot.host.name',
-                                            'build_name')
+                                           'bot.host.name',
+                                           'build_name').log_event()
     self.assertIsNone(log_event)
 
   def test_get_build_event_invalid_build_name(self):
     # an invalid builder name is not a critical error.
     hostname = 'bot.host.name'
-    log_event = monitoring.get_build_event('BUILD', hostname, '')
+    log_event = monitoring.get_build_event('BUILD', hostname, '').log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
     # Check that source_extension deserializes to the right thing.
@@ -304,7 +305,8 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_invalid_hostname(self):
     # an invalid hostname is not a critical error.
     builder_name = 'builder_name'
-    log_event = monitoring.get_build_event('BUILD', None, builder_name)
+    log_event = monitoring.get_build_event(
+        'BUILD', None, builder_name).log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
     # Check that source_extension deserializes to the right thing.
@@ -326,7 +328,7 @@ class GetBuildEventTest(unittest.TestCase):
       hostname,
       build_name,
       build_number=build_number,
-      build_scheduling_time=build_scheduling_time)
+      build_scheduling_time=build_scheduling_time).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -350,7 +352,7 @@ class GetBuildEventTest(unittest.TestCase):
       hostname,
       build_name,
       build_number=build_number,
-      build_scheduling_time=build_scheduling_time)
+      build_scheduling_time=build_scheduling_time).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -373,7 +375,7 @@ class GetBuildEventTest(unittest.TestCase):
       'SCHEDULER',
       hostname,
       build_name,
-      build_number=build_number)
+      build_number=build_number).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -397,7 +399,7 @@ class GetBuildEventTest(unittest.TestCase):
       hostname,
       build_name,
       build_number=build_number,
-      build_scheduling_time=build_scheduling_time)
+      build_scheduling_time=build_scheduling_time).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -419,7 +421,7 @@ class GetBuildEventTest(unittest.TestCase):
       'BUILD',
       hostname,
       build_name,
-      build_scheduling_time=build_scheduling_time)
+      build_scheduling_time=build_scheduling_time).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -450,7 +452,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
       step_name=step_name,
-      step_number=step_number)
+      step_number=step_number).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -481,7 +483,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
       step_name=step_name,
-      step_number=step_number)
+      step_number=step_number).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -510,7 +512,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      step_number=step_number)
+      step_number=step_number).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -540,7 +542,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      step_name=step_name)
+      step_name=step_name).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -568,7 +570,7 @@ class GetBuildEventTest(unittest.TestCase):
       hostname,
       build_name,
       step_name=step_name,
-      step_number=step_number)
+      step_number=step_number).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -597,7 +599,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      result=result)
+      result=result).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -626,7 +628,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      result=result)
+      result=result).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -655,7 +657,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      result='WARNINGS')  # with an S
+      result='WARNINGS').log_event()  # with an S
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -677,7 +679,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      result='EXCEPTION')
+      result='EXCEPTION').log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -706,7 +708,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      result=result)
+      result=result).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -737,7 +739,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
       step_name=step_name,
-      goma_stats_gz=goma_stats_gz)
+      goma_stats_gz=goma_stats_gz).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -772,7 +774,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
       step_name=step_name,
-      goma_stats_gz=goma_stats_gz)
+      goma_stats_gz=goma_stats_gz).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -803,7 +805,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_name,
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
-      goma_stats_gz=goma_stats_gz)
+      goma_stats_gz=goma_stats_gz).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -836,7 +838,7 @@ class GetBuildEventTest(unittest.TestCase):
       build_number=build_number,
       build_scheduling_time=build_scheduling_time,
       step_name=step_name,
-      goma_stats_gz=goma_stats_gz)
+      goma_stats_gz=goma_stats_gz).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
@@ -856,7 +858,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     service_name = 'my.other.nice.service'
     log_event = monitoring.get_build_event(
-      'BUILD', hostname, build_name, service_name=service_name)
+      'BUILD', hostname, build_name, service_name=service_name).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
@@ -875,7 +877,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     service_name = u'à_la_française'
     log_event = monitoring.get_build_event(
-      'BUILD', hostname, build_name, service_name=service_name)
+      'BUILD', hostname, build_name, service_name=service_name).log_event()
 
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
     self.assertTrue(log_event.HasField('event_time_ms'))
@@ -894,7 +896,7 @@ class GetBuildEventTest(unittest.TestCase):
     build_name = 'build_name'
     service_name = 1234  # invalid
     log_event = monitoring.get_build_event(
-      'BUILD', hostname, build_name, service_name=service_name)
+      'BUILD', hostname, build_name, service_name=service_name).log_event()
 
     self.assertIsNone(log_event)
 
@@ -935,7 +937,7 @@ class SendEventsTest(unittest.TestCase):
     self.assertIsInstance(config._router, router._Router)
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
 
-    log_events = [
+    events = [
       event_mon.get_build_event(
         'BUILD',
         'bot.host.name',
@@ -955,4 +957,4 @@ class SendEventsTest(unittest.TestCase):
         timestamp_kind='POINT',
         event_timestamp=None),
     ]
-    self.assertTrue(monitoring.send_events(log_events))
+    self.assertTrue(monitoring.send_events(events))
