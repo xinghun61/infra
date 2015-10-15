@@ -246,22 +246,43 @@ the source tree twice for a debug builder and a release builder).
 
 ### type
 This is a *required* field used to the type of scheduler this is; it
-must have one of the following two values: `"cron"` or `"git_poller"`.
+must have one of the following three values: `"cron"`, `"git_poller"`, or
+`"repo_poller"`.
 
-The former indicates that builds will be scheduled periodically (one or
-more times every day); the latter indicates that builds will be
-scheduled when there are new commits to the given repo.
+`cron` indicates that builds will be scheduled periodically (one or
+more times every day). The scheduler dict must also have the "hour" and
+"minute" fields.
 
-If the type is "cron", the scheduler dict must also have the "hour" and
-"minute" fields; if the type is "git-poller"; the scheduler dict must
-also have the "git-repo-url" field.
+`git_poller` indicates that builds will be scheduled when there are new
+commits to the given repo. The scheduler dict must also have the "git-repo-url"
+field.
+
+`repo_poller` behaves the same as `git_poller`, but uses repo rather than git
+(repo being the meta repository used in projects such as Android or ChromiumOS).
+The scheduler dict must also have the `"repo_url"` field.
 
 ### git_repo_url
-This is an *optional* field but must be present if the scheduler type is
-"git-poller".
+This is a *required* field if the scheduler type is "git_poller".
 
 It must contain a string value that is the URL for a repo to be cloned
 and polled for changes.
+
+### repo_url
+This is a *required* field if the scheduler type is "repo_poller".
+
+The URL that is the base of the repo tree. It is assumed that the manifest is
+located in the `manifest` subdirectory of this path. For example, Android would
+use `"https://android.googlesource.com/platform"` rather than
+`"https://android.googlesource.com/platform/manifest"`.
+
+### rev_link_template
+This is an *optional* field that may be used with the "repo_poller" scheduler
+type. It is a format string that will be used to generate a link to the change
+being built in the build page.
+
+The format string expects two string arguments: the project path and the
+revision SHA. For example, Android uses
+"https://android.googlesource.com/platform/%s/+/%s".
 
 ### hour
 This is an *optional* field but must be present if and only if the
