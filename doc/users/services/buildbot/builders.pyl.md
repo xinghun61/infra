@@ -210,6 +210,16 @@ should normally only have one purpose).
 This is a *required* field that specifies one or more pools of slaves
 that can be builders.
 
+### mergeRequests
+This is an *optional* field that specifies whether buildbot will merge duplicate
+requests together. If unspecified, this field defaults to True if a named
+scheduler is specified, and False otherwise.
+
+You might want to merge builds if you have a waterfall builder that is polling
+a repository, because you want to always test the most current revision.
+You would not want to merge builds for tryservers because you want to test each
+revision in isolation.
+
 ### auto_reboot
 This is an *optional* field that specifies whether the builder should
 reboot after each build. If not specified, it defaults to `True`.
