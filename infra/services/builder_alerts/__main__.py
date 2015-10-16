@@ -319,14 +319,16 @@ def inner_loop(args):
         json_data = {'alerts': issues}
         gzipped_data = gzipped(json.dumps(json_data))
         if args.api_endpoint_prefix:
-          new_api_url = string_helpers.slash_join(
+          new_api_endpoint = string_helpers.slash_join(
               args.api_endpoint_prefix, 'api/v1/alerts', tree)
-          resp = requests.post(new_api_url, data=gzipped_data,
+          logging.info('POST %s alerts (%s bytes compressed) to %s',
+              len(issues), len(gzipped_data), new_api_endpoint)
+          resp = requests.post(new_api_endpoint, data=gzipped_data,
                                headers={'content-encoding': 'gzip'})
           try:
             resp.raise_for_status()
           except requests.HTTPError:
-            logging.exception('POST to %s failed! %d %s, %s', new_api_url,
+            logging.exception('POST to %s failed! %d %s, %s', new_api_endpoint,
                               resp.status_code, resp.reason, resp.content)
             ret = False
         else:
