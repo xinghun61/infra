@@ -45,6 +45,9 @@ CACHE_PATH = 'build_cache'
 PARALLEL_TASKS = 13
 CONCURRENT_TASKS = 16
 
+ISSUE_TRACKER_POLLING_FREQUENCY_SEC = 60  # 1 minute
+issue_tracker_last_poll = datetime.datetime.min
+
 
 class SubProcess(object):
 
@@ -306,11 +309,12 @@ def inner_loop(args):
 
   # Query sheriff issues and post them to the new API endpoint.
   if args.crbug_service_account:
-    try:
+    global issue_tracker_last_poll
+    seconds_since_last_poll = (
+        datetime.datetime.utcnow() - issue_tracker_last_poll).total_seconds()
+    if seconds_since_last_poll > ISSUE_TRACKER_POLLING_FREQUENCY_SEC:
+      issue_tracker_last_poll = datetime.datetime.utcnow()
       issues_per_tree = crbug_issues.query(args.crbug_service_account)
-    except crbug_issues.QuotaExceededError:
-      logging.warn('Crbug quota was exceeded. Skipping crbug updates.')
-    else:
       for tree, issues in issues_per_tree.iteritems():
         json_data = {'alerts': issues}
         gzipped_data = gzipped(json.dumps(json_data))

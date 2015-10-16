@@ -22,10 +22,6 @@ WHITELISTED_LABELS = ['Sheriff-Chromium']
 BATCH_SIZE = 10
 
 
-class QuotaExceededError(Exception):
-  pass
-
-
 def _build_crbug_service(crbug_service_account):  # pragma: no cover
   with open(crbug_service_account) as crbug_sa_file:
     service_account = json.load(crbug_sa_file)
@@ -38,22 +34,6 @@ def _build_crbug_service(crbug_service_account):  # pragma: no cover
                          discoveryServiceUrl=DISCOVERY_URL, http=http)
 
 
-def _is_quota_error(exc):
-  try:
-    content = json.loads(exc.content)
-  except (ValueError, TypeError, AttributeError):
-    return False
-
-  errors = content.get('error', {}).get('errors', [])
-  if not errors:
-    return False
-
-  if any(error.get('domain') != 'usageLimits' for error in errors):
-    return False
-
-  return True
-
-
 def _list_issues(crbug_service_account):
   service = _build_crbug_service(crbug_service_account)
   issues = []
@@ -64,12 +44,7 @@ def _list_issues(crbug_service_account):
       request = service.issues().list(
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
-      try:
-        response = request.execute(num_retries=5)
-      except HttpError as e:
-        if _is_quota_error(e):
-          raise QuotaExceededError()
-        raise
+      response = request.execute(num_retries=5)
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
       # they add up to 'totalResults' in response is not relaible. However, we
