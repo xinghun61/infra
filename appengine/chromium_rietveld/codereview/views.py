@@ -2059,6 +2059,21 @@ def edit(request):
     return respond(request, 'edit.html', {'issue': issue, 'form': form})
   cleaned_data = form.cleaned_data
 
+  if issue.description != cleaned_data['description']:
+    old_description = issue.description.strip()
+    new_description = cleaned_data['description'].strip()
+    description_changed_msg = (
+        'Description was changed from\n\n'
+        '==========\n'
+        '%s\n'
+        '==========\n\n'
+        'to\n\n'
+        '==========\n'
+        '%s\n'
+        '==========\n' % (old_description, new_description))
+    make_message(request, request.issue, description_changed_msg,
+                 send_mail=False, auto_generated=True).put()
+
   issue.subject = cleaned_data['subject']
   issue.description = cleaned_data['description']
   issue.closed = cleaned_data['closed']
