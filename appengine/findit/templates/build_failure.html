@@ -238,10 +238,10 @@
                 {% else %}
                 <td>N/A</td>
                 {% endif %}
-                {% if failure.supported %}
-                  <td colspan="5">Not found.</td>
-                {% else %}
+                {% if failure.supported is defined and failure.supported == false %}
                   <td colspan="5">Not supported.</td>
+                {% else %}
+                  <td colspan="5">Not found.</td>
                 {% endif%}
               </tr>
             {% else %}
