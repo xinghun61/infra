@@ -19,7 +19,7 @@ from handlers.index import Index
 from handlers.post_comment import PostComment
 from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.search import Search
-from handlers.flake_issues import UpdateIssue, CreateIssue, ProcessIssue
+from handlers.flake_issues import ProcessIssue
 
 handlers = [
   (r'/', Index),
@@ -27,8 +27,6 @@ handlers = [
   (r'/all_flake_occurrences', AllFlakeOccurrences),
   (r'/search', Search),
   (r'/cron/(.*)', CronDispatch),
-  (r'/issues/update/(.*)', UpdateIssue),
-  (r'/issues/create/(.*)', CreateIssue),
   (r'/issues/process/(.*)', ProcessIssue),
 ]
 

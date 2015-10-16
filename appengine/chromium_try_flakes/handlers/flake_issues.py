@@ -39,16 +39,18 @@ REOPENED_DESCRIPTION_TEMPLATE = (
 MAX_UPDATED_ISSUES_PER_DAY = 50
 
 
-@ndb.transactional
-def _get_flake_update_singleton_key():
-  """Returns a key for the FlakeUpdateSingleton singleton entity."""
-  singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
-  if not singleton_key.get():
-    FlakeUpdateSingleton(key=singleton_key).put()
-  return singleton_key
+class ProcessIssue(webapp2.RequestHandler):
+  @ndb.transactional
+  def _get_flake_update_singleton_key(self):
+    singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
+    if not singleton_key.get():
+      FlakeUpdateSingleton(key=singleton_key).put()
+    return singleton_key
 
+  @ndb.transactional
+  def _increment_update_counter(self):
+    FlakeUpdate(parent=self._get_flake_update_singleton_key()).put()
 
-class UpdateIssue(webapp2.RequestHandler):
   @ndb.non_transactional
   def _get_flaky_runs(self, flake):
     # Only report up to 20 last runs.
@@ -65,20 +67,17 @@ class UpdateIssue(webapp2.RequestHandler):
     return FLAKY_RUNS_TEMPLATE % {'flaky_runs': '\n'.join(flaky_run_msg_parts),
                                   'name': test_name}
 
-  def recreate_issue_for_flake(self, flake):
+  @ndb.transactional
+  def _recreate_issue_for_flake(self, flake):
     """Updates a flake to re-create an issue and creates a respective task."""
     flake.old_issue_id = flake.issue_id
     flake.issue_id = 0
-    flake.put()
     taskqueue.add(url='/issues/process/%s' % flake.key.urlsafe(),
                   queue_name='issue-updates', transactional=True)
 
   @ndb.transactional
-  def post(self, urlsafe_key):
+  def _update_issue(self, flake, now):
     """Updates an issue on the issue tracker."""
-    now = datetime.datetime.utcnow()
-    flake = ndb.Key(urlsafe=urlsafe_key).get()
-
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
     # number of groups supported by cross-group transactions on AppEngine.
@@ -103,14 +102,14 @@ class UpdateIssue(webapp2.RequestHandler):
         else:
           logging.info('Detected issue duplication loop: %s. Re-creating an '
                        'issue for the flake %s.', seen_issues, flake.name)
-          self.recreate_issue_for_flake(flake)
+          self._recreate_issue_for_flake(flake)
           return
       else:  # Fixed, WontFix, Verified, Archived, custom status
         # If the issue was closed, we do not update it. This allows changes made
         # to reduce flakiness to propagate and take effect. If after one week we
         # still see flakiness, we will create a new issue.
         if issue.updated < now - datetime.timedelta(weeks=1):
-          self.recreate_issue_for_flake(flake)
+          self._recreate_issue_for_flake(flake)
         return
 
     new_flaky_runs_msg = self._format_flaky_runs_msg(flake.name, new_flaky_runs)
@@ -119,18 +118,8 @@ class UpdateIssue(webapp2.RequestHandler):
                  flake.issue_id, flake.name, len(new_flaky_runs))
     flake.issue_last_updated = now
 
-    # Note that if transaction fails for some reason at this point, we may post
-    # updates multiple times. On the other hand, this should be extremely rare
-    # becase we set the number of concurrently running tasks to 1, therefore
-    # there should be no contention for updating this issue's entity.
-    flake.put()
-
-
-class CreateIssue(webapp2.RequestHandler):
   @ndb.transactional
-  def post(self, urlsafe_key):
-    flake = ndb.Key(urlsafe=urlsafe_key).get()
-
+  def _create_issue(self, flake):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {'summary': summary}
     if flake.old_issue_id:
@@ -147,21 +136,6 @@ class CreateIssue(webapp2.RequestHandler):
 
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
-    flake.put()
-
-    # Process the issue again after this transaction is committed to post
-    # updates about the latest flaky runs.
-    taskqueue.add(url='/issues/process/%s' % flake.key.urlsafe(),
-                  queue_name='issue-updates', transactional=True)
-
-
-class ProcessIssue(webapp2.RequestHandler):
-  def _increment_update_counter(self):
-    # Optimistically record the fact that we've updated issue tracker. We cannot
-    # do this update post-factum because we would then be able to schedule too
-    # many tasks updating issue tracker before incrementing the counter and then
-    # still file too many issues.
-    FlakeUpdate(parent=_get_flake_update_singleton_key()).put()
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
@@ -170,7 +144,7 @@ class ProcessIssue(webapp2.RequestHandler):
     day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     num_updates_last_day = FlakeUpdate.query(
         FlakeUpdate.time_updated > day_ago,
-        ancestor=_get_flake_update_singleton_key()).count()
+        ancestor=self._get_flake_update_singleton_key()).count()
     if num_updates_last_day >= MAX_UPDATED_ISSUES_PER_DAY:
       return
 
@@ -186,22 +160,16 @@ class ProcessIssue(webapp2.RequestHandler):
       if flake.num_reported_flaky_runs == len(flake.occurrences):
         return
 
-      # We schedule this task transactionally because we want to ensure that we
-      # have checked Flake properties and the limit of daily updates and there
-      # was no contention with another /issues/process task.
-      taskqueue.add(url='/issues/update/%s' % flake.key.urlsafe(),
-                    queue_name='issue-updates', transactional=True)
+      self._update_issue(flake, now)
       self._increment_update_counter()
     else:
-      # We reduce the likely hood of creating multiple issues for the same flake
-      # by using named tasks. If two processes schedule two tasks with the same
-      # name, only one will be executed. We also append previous issue ID to the
-      # name to allow re-creating issues, e.g. when a previous issue was clsoed.
-      task_id = sha.new(flake.name).hexdigest()  # sanitize name for task
-      task_name = 'create_issue_%s_%s' % (task_id, flake.old_issue_id)
-      try:
-        taskqueue.add(name=task_name, queue_name='issue-updates',
-                      url='/issues/create/%s' % flake.key.urlsafe())
-        self._increment_update_counter()
-      except taskqueue.TombstonedTaskError:
-        pass
+      self._create_issue(flake)
+      self._update_issue(flake, now)
+      self._increment_update_counter()
+
+    # Note that if transaction fails for some reason at this point, we may post
+    # updates or create issues multiple times. On the other hand, this should be
+    # extremely rare becase we set the number of concurrently running tasks to
+    # 1, therefore there should be no contention for updating this issue's
+    # entity.
+    flake.put()

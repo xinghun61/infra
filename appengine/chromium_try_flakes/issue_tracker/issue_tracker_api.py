@@ -63,17 +63,26 @@ class IssueTrackerAPI(object):
                                _createHttpObject(PROJECT_HOSTING_SCOPE),
                                discovery_url)
 
+  def _retry_api_call(self, request, num_retries=5):
+    retries = 0
+    while True:
+      try:
+        return request.execute()
+      except HttpError as e:
+        # This retries internal server (500, 503) and quota (403) errors.
+        if retries == num_retries or e.resp.status not in [403, 500, 503]:
+          raise
+        time.sleep(2**retries)
+        retries += 1
 
   def create(self, issue, send_email=True):
     cc = [{'name': user} for user in issue.cc]
-    tmp = self.client.issues().insert(projectId=self.project_name,
-                                      sendEmail=send_email,
-                                      body={'summary': issue.summary,
-                                            'description': issue.description,
-                                            'status': issue.status,
-                                            'owner': {'name': issue.owner},
-                                            'labels': issue.labels,
-                                            'cc': cc}).execute()
+    request = self.client.issues().insert(
+        projectId=self.project_name, sendEmail=send_email,
+        body={'summary': issue.summary, 'description': issue.description,
+              'status': issue.status, 'owner': {'name': issue.owner},
+              'labels': issue.labels, 'cc': cc})
+    tmp = self._retry_api_call(request)
     issue.id = int(tmp['id'])
     issue.dirty = False
     return issue
@@ -108,10 +117,10 @@ class IssueTrackerAPI(object):
     if comment:
       body['content'] = comment
 
-    self.client.issues().comments().insert(projectId=self.project_name,
-                                           issueId=issue.id,
-                                           sendEmail=send_email,
-                                           body=body).execute()
+    request = self.client.issues().comments().insert(
+        projectId=self.project_name, issueId=issue.id, sendEmail=send_email,
+        body=body)
+    self._retry_api_call(request)
 
     if issue.owner == '----':
       issue.owner = ''
@@ -124,51 +133,53 @@ class IssueTrackerAPI(object):
     self.update(issue, comment, send_email)
 
   def getCommentCount(self, issue_id):
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=1,
-                                                maxResults=0).execute()
+    request = self.client.issues().comments().list(
+        projectId=self.project_name, issueId=issue_id, startIndex=1,
+        maxResults=0)
+    feed = self._retry_api_call(request)
     return feed.get('totalResults', '0')
 
   def getComments(self, issue_id):
     rtn = []
 
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id).execute()
+    request = self.client.issues().comments().list(
+        projectId=self.project_name, issueId=issue_id)
+    feed = self._retry_api_call(request)
     rtn.extend([Comment(entry) for entry in feed['items']])
     total_results = feed['totalResults']
     if not total_results:
       return rtn
 
     while len(rtn) < total_results:
-      feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                  issueId=issue_id,
-                                                  startIndex=len(rtn)).execute()
+      request = self.client.issues().comments().list(
+          projectId=self.project_name, issueId=issue_id, startIndex=len(rtn))
+      feed = self._retry_api_call(request)
       rtn.extend([Comment(entry) for entry in feed['items']])
 
     return rtn
 
   def getFirstComment(self, issue_id):
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=0,
-                                                maxResults=1).execute()
+    request = self.client.issues().comments().list(
+        projectId=self.project_name, issueId=issue_id, startIndex=0,
+        maxResults=1)
+    feed = self._retry_api_call(request)
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
 
   def getLastComment(self, issue_id):
     total_results = self.getCommentCount(issue_id)
-    feed = self.client.issues().comments().list(projectId=self.project_name,
-                                                issueId=issue_id,
-                                                startIndex=total_results-1,
-                                                maxResults=1).execute()
+    request = self.client.issues().comments().list(
+        projectId=self.project_name, issueId=issue_id,
+        startIndex=total_results-1, maxResults=1)
+    feed = self._retry_api_call(request)
     if 'items' in feed and len(feed['items']) > 0:
       return Comment(feed['items'][0])
     return None
 
   def getIssue(self, issue_id):
     """Retrieve a set of issues in a project."""
-    entry = self.client.issues().get(projectId=self.project_name,
-                                     issueId=issue_id).execute()
+    request = self.client.issues().get(
+        projectId=self.project_name, issueId=issue_id)
+    entry = self._retry_api_call(request)
     return Issue(entry)
