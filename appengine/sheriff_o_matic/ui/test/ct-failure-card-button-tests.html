@@ -9,7 +9,6 @@ found in the LICENSE file.
 <link rel="import" href="../../lib/analytics-mock.html">
 
 <link rel="import" href="../../model/ct-commit-list-mock.html">
-<link rel="import" href="../../model/ct-commit-log-mock.html">
 <link rel="import" href="../../model/ct-failure-group.html">
 
 <script>
@@ -40,65 +39,75 @@ describe('ct-failure-card-buttons', function() {
 
     it('clicking link bug should show dialog', function(done) {
       card.shadowRoot.getElementById('link-bug').dispatchEvent(new CustomEvent('tap'));
-      setTimeout(function() {
-        var dialog = document.querySelector('::shadow #bugDialog');
-        assert.isTrue(dialog.opened);
-        var bugField = document.querySelector('::shadow #bug');
-        bugField.value = '999';
-        document.querySelector('::shadow #dialogOk').dispatchEvent(new CustomEvent('tap'));
+      var dialog = card.querySelector('::shadow #bugDialog');
+      dialog.addEventListener('core-overlay-open-completed', function() {
         setTimeout(function() {
-          assert.equal(group.bug, 'https://crbug.com/999');
-          assert.equal(group.bugLabel, 'Bug 999');
-          assert.equal(group._annotation.bug, 'https://crbug.com/999');
-          assert(!dialog.opened, 'dialog should be closed after clicking ok');
-          done();
+          assert.isTrue(dialog.opened);
+          var bugField = document.querySelector('::shadow #bug');
+          bugField.value = '999';
+          document.querySelector('::shadow #dialogOk').dispatchEvent(new CustomEvent('tap'));
+          dialog.addEventListener('core-overlay-close-completed', function() {
+            assert.equal(group.bug, 'https://crbug.com/999');
+            assert.equal(group.bugLabel, 'Bug 999');
+            assert.equal(group._annotation.bug, 'https://crbug.com/999');
+            assert(!dialog.opened, 'dialog should be closed after clicking ok');
+            done();
+          });
         });
       });
     });
 
     it('entering URLs should work for bugs', function(done) {
       card.shadowRoot.getElementById('link-bug').dispatchEvent(new CustomEvent('tap'));
-      setTimeout(function() {
-        var dialog = document.querySelector('::shadow #bugDialog');
-        assert.isTrue(dialog.opened);
-        var bugField = document.querySelector('::shadow #bug');
-        bugField.value = 'https://foo.com/?id=888';
-        document.querySelector('::shadow #dialogOk').dispatchEvent(new CustomEvent('tap'));
+      var dialog = card.querySelector('::shadow #bugDialog');
+      dialog.addEventListener('core-overlay-open-completed', function() {
         setTimeout(function() {
-          assert.equal(group.bug, 'https://foo.com/?id=888');
-          assert.equal(group.bugLabel, 'Bug 888');
-          assert.equal(group._annotation.bug, 'https://foo.com/?id=888');
-          assert(!dialog.opened, 'dialog should be closed');
-          done();
+          assert.isTrue(dialog.opened);
+          var bugField = document.querySelector('::shadow #bug');
+          bugField.value = 'https://foo.com/?id=888';
+          document.querySelector('::shadow #dialogOk').dispatchEvent(new CustomEvent('tap'));
+          dialog.addEventListener('core-overlay-close-completed', function(){
+            assert.equal(group.bug, 'https://foo.com/?id=888');
+            assert.equal(group.bugLabel, 'Bug 888');
+            assert.equal(group._annotation.bug, 'https://foo.com/?id=888');
+            assert(!dialog.opened, 'dialog should be closed');
+            done();
+          });
         });
       });
     });
 
     it('file bug link should have the right URL', function(done) {
       card.shadowRoot.getElementById('link-bug').dispatchEvent(new CustomEvent('tap'));
-      setTimeout(function() {
-        var dialog = document.querySelector('::shadow #bugDialog');
-        assert.isTrue(dialog.opened);
-        var fileBugLink = document.querySelector('::shadow #fileBugLink');
-        assert.equal(fileBugLink.href, 'https://code.google.com/p/chromium/issues/entry?status=Available&labels=gardening-blink,Pri-2&summary=Build%20failure&comment=Build%20is%20broken%3A%0Aautobot%20unknown%0Ahttp%3A%2F%2Ftest-results.appspot.com%2Fdashboards%2Fflakiness_dashboard.html%23tests%3Dunknown%26testType%3Dautobot%0A%0ARevision%20range%3A%0Ablink%20158544%20%3A%20158545%0A%0AFailing%20builders%3A%0AsomeBuilder%3A%20undefined%2Fbuilders%2FsomeBuilder%0A');
-        dialog.close();
-        assert(!dialog.opened, 'dialog should be closed');
-        done();
+      var dialog = card.querySelector('::shadow #bugDialog');
+      dialog.addEventListener('core-overlay-open-completed', function() {
+        setTimeout(function() {
+          assert.isTrue(dialog.opened);
+          var fileBugLink = document.querySelector('::shadow #fileBugLink');
+          assert.equal(fileBugLink.href, 'https://code.google.com/p/chromium/issues/entry?status=Available&labels=gardening-blink,Pri-2&summary=Build%20failure&comment=Build%20is%20broken%3A%0Aautobot%20unknown%0Ahttp%3A%2F%2Ftest-results.appspot.com%2Fdashboards%2Fflakiness_dashboard.html%23tests%3Dunknown%26testType%3Dautobot%0A%0ARevision%20range%3A%0Ablink%20158544%20%3A%20158545%0A%0AFailing%20builders%3A%0AsomeBuilder%3A%20undefined%2Fbuilders%2FsomeBuilder%0A');
+          dialog.close();
+          dialog.addEventListener('core-overlay-close-completed', function(){
+            assert(!dialog.opened, 'dialog should be closed');
+            done();
+          });
+        });
       });
     });
 
     it('remove bug link should work', function(done) {
       group.setBug(123);
       card.shadowRoot.getElementById('link-bug').dispatchEvent(new CustomEvent('tap'));
-      setTimeout(function() {
-        var dialog = document.querySelector('::shadow #bugDialog');
-        assert.isTrue(dialog.opened);
-        document.querySelector('::shadow #dialogRemoveBug').dispatchEvent(new CustomEvent('tap'));
+      var dialog = card.querySelector('::shadow #bugDialog');
+      dialog.addEventListener('core-overlay-open-completed', function() {
         setTimeout(function() {
-          assert.isUndefined(group.bug);
-          assert.isUndefined(group.bugLabel);
-          assert(!dialog.opened, 'dialog should be closed');
-          done();
+          assert.isTrue(dialog.opened);
+          document.querySelector('::shadow #dialogRemoveBug').dispatchEvent(new CustomEvent('tap'));
+          dialog.addEventListener('core-overlay-close-completed', function() {
+            assert.isUndefined(group.bug);
+            assert.isUndefined(group.bugLabel);
+            assert(!dialog.opened, 'dialog should be closed');
+            done();
+          });
         });
       });
     });

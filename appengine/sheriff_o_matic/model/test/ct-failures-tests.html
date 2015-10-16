@@ -8,7 +8,6 @@ found in the LICENSE file.
 
 <link rel="import" href="../../lib/network-simulator.html">
 <link rel="import" href="../ct-commit-list.html">
-<link rel="import" href="../ct-commit-log-mock.html">
 <link rel="import" href="../ct-failure-group.html">
 <link rel="import" href="../ct-step-failure.html">
 
@@ -478,7 +477,9 @@ describe('ct-failures', function() {
         },
         'trooper-o-matic.appspot.com/alerts': {
 
-        }
+        },
+        '/api/v1/alerts/': {},
+
       }
       simulator.json = function(url) {
         var matched = Object.find(netData, function(key) {

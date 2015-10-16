@@ -138,7 +138,7 @@ describe('ct-results-detail', function() {
           },
         };
         result.failure = new CTStepFailure('foo_step', 'TestSuite.TestName', resultsByBuilder, 123, 124);
-        expectedUrl = 'https://masterurl//builders/dummy%20builder/builds/124/steps/foo_step/logs/TestName';
+        expectedUrl = 'https://masterurl//builders/dummy%20builder/builds/124/steps/foo_step/logs/TestSuite.TestName';
 
         setTimeout(done);
       });
@@ -158,7 +158,7 @@ describe('ct-results-detail', function() {
           },
         };
         result.failure = new CTStepFailure('foo_step', 'TestSuite.TestName/98', resultsByBuilder, 123, 124);
-        expectedUrl = 'http://masterurl//builders/dummy%20builder/builds/124/steps/foo_step/logs/TestName_98';
+        expectedUrl = 'http://masterurl//builders/dummy%20builder/builds/124/steps/foo_step/logs/TestSuite.TestName_98';
 
         setTimeout(done);
       });
