@@ -668,7 +668,6 @@ def AnalyzeBuildFailure(
   master_name = failure_info.get('master_name')
 
   for step_name, step_failure_info in failed_steps.iteritems():
-    failure_signal = FailureSignal.FromDict(failure_signals[step_name])
     failed_build_number = step_failure_info['current_failure']
 
     if step_failure_info.get('last_pass') is not None:
@@ -686,6 +685,8 @@ def AnalyzeBuildFailure(
     }
 
     if step_analysis_result['supported']:
+      failure_signal = FailureSignal.FromDict(
+          failure_signals.get(step_name, {}))
       while build_number <= failed_build_number:
         for revision in builds[str(build_number)]['blame_list']:
           justification_dict = _CheckFiles(
