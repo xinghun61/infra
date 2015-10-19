@@ -101,5 +101,10 @@
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "webkit-patch auto-rebaseline"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

@@ -97,5 +97,10 @@
     ],
     "cwd": "[SLAVE_BUILD]",
     "name": "go test"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

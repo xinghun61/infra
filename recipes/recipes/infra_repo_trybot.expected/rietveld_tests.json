@@ -115,5 +115,10 @@
     ],
     "cwd": "[SLAVE_BUILD]/infra",
     "name": "test.py"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

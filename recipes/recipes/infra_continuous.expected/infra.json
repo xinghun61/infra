@@ -165,5 +165,10 @@
       "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_LINK@infra/tools/some_tool/linux-bitness abcdefabcdef63ad814cd1dfffe2fcfc9f81299c@http://example.com/not-implemented-yet@@@"
     ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

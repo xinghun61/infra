@@ -254,5 +254,10 @@
     "~followup_annotations": [
       "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
     ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

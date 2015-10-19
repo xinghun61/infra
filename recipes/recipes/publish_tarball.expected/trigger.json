@@ -41,5 +41,10 @@
     "~followup_annotations": [
       "@@@STEP_TEXT@publish_tarball@@@"
     ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
   }
 ]

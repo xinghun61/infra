@@ -124,7 +124,7 @@
     "name": "cq_stats_uploader (blink-week)"
   },
   {
-    "name": "$final_result",
+    "name": "$result",
     "reason": "1 out of 4 aggregated steps failed. Failures: Step('cq_stats_uploader (blink-day)') failed with return_code 1",
     "status_code": 1
   }
