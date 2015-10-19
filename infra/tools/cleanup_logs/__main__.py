@@ -45,6 +45,9 @@ class CleanupLogs(infra_libs.BaseApplication):
     delete_before = time.time() - MAX_AGE_SECS
 
     for path, pattern in DIRECTORIES[sys.platform]:
+      if not os.path.isdir(path):
+        continue
+
       names = os.listdir(path)
       if pattern is not None:
         names = fnmatch.filter(names, pattern)
