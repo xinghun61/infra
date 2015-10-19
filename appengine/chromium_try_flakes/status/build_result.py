@@ -8,7 +8,7 @@ import logging
 (NOT_STARTED, SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY,
  TRY_PENDING) = range(-1, 7)
 
-def getHumanReadableResult(result):
+def getHumanReadableResult(result):  # pragma: no cover
   """Returns an English name of a buildbot result value.
   """
   if result == NOT_STARTED:
@@ -30,13 +30,13 @@ def getHumanReadableResult(result):
   logging.info('unknown' + str(result))
 
 
-def isResultSuccess(result):
+def isResultSuccess(result):  # pragma: no cover
   return result in [SUCCESS, WARNINGS]
 
 
-def isResultFailure(result):
+def isResultFailure(result):  # pragma: no cover
   return result in [FAILURE, SKIPPED, EXCEPTION, RETRY]
 
 
-def isResultPending(result):
+def isResultPending(result):  # pragma: no cover
   return result in [NOT_STARTED, TRY_PENDING]

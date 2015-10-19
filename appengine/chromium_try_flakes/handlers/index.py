@@ -18,10 +18,11 @@ import logging
 import time
 import webapp2
 
-def FlakeSortFunction(s):
+def FlakeSortFunction(s):  # pragma: no cover
   return s.builder + str(time.mktime(s.time_finished.timetuple()))
 
-def GetFilteredOccurences(flake, time_formatter, filter_function):
+def GetFilteredOccurences(flake, time_formatter,
+                          filter_function):  # pragma: no cover
   occurrences = ndb.get_multi(flake.occurrences)
 
   failure_run_keys = []
@@ -45,7 +46,7 @@ def GetFilteredOccurences(flake, time_formatter, filter_function):
   return sorted(filtered_occurrences, key=FlakeSortFunction)
 
 
-class Index(webapp2.RequestHandler):
+class Index(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     time_range = self.request.get('range', default_value='day')
     cursor = Cursor(urlsafe=self.request.get('cursor'))

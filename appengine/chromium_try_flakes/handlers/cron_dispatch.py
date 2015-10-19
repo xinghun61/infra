@@ -17,6 +17,6 @@ commands = {
   'update_flake_month_counter': cq_status.update_flake_month_counter,
 }
 
-class CronDispatch(webapp2.RequestHandler):
+class CronDispatch(webapp2.RequestHandler):  # pragma: no cover
   def get(self, job):
     commands[job]()

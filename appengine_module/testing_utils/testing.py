@@ -29,6 +29,9 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
   # To be set in tests that wants to use test_app
   app_module = None
 
+  # To be set in tests that want to test with custom task queues.
+  taskqueue_stub_root_path = None
+
   def setUp(self):
     super(AppengineTestCase, self).setUp()
     self.testbed = testbed.Testbed()
@@ -46,7 +49,7 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
     self.testbed.init_mail_stub()
     self.testbed.init_memcache_stub()
     self.testbed.init_search_stub()
-    self.testbed.init_taskqueue_stub()
+    self.testbed.init_taskqueue_stub(root_path=self.taskqueue_stub_root_path)
     self.testbed.init_urlfetch_stub()
     self.testbed.init_user_stub()
     self.testbed.init_xmpp_stub()

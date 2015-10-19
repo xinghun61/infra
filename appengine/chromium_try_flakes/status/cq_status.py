@@ -22,7 +22,8 @@ from model.flake import FlakyRun
 from status import build_result
 
 @ndb.transactional
-def get_patchset_builder_runs(issue, patchset, master, builder):
+def get_patchset_builder_runs(issue, patchset, master,
+                              builder):  # pragma: no cover
   patchset_builder_runs_id = PatchsetBuilderRuns.getId(issue, patchset, master,
                                                        builder)
 
@@ -39,25 +40,25 @@ def get_patchset_builder_runs(issue, patchset, master, builder):
   return patchset_builder_runs
 
 
-def is_last_hour(date):
+def is_last_hour(date):  # pragma: no cover
   return (datetime.datetime.now() - date) < datetime.timedelta(hours=1)
 
 
-def is_last_day(date):
+def is_last_day(date):  # pragma: no cover
   return (datetime.datetime.now() - date) < datetime.timedelta(days=1)
 
 
-def is_last_week(date):
+def is_last_week(date):  # pragma: no cover
   return (datetime.datetime.now() - date) < datetime.timedelta(weeks=1)
 
 
-def is_last_month(date):
+def is_last_month(date):  # pragma: no cover
   return (datetime.datetime.now() - date) < datetime.timedelta(days=31)
 
 
 # Updates a Flake object, which spans all the instances of one flake, with the
 # time of an occurance of that flake.
-def add_occurance_time_to_flake(flake, occurance_time):
+def add_occurance_time_to_flake(flake, occurance_time):  # pragma: no cover
   if occurance_time > flake.last_time_seen:
     flake.last_time_seen = occurance_time
   if is_last_hour(occurance_time):
@@ -76,7 +77,7 @@ def add_occurance_time_to_flake(flake, occurance_time):
 
 
 # Calculate the counters for a Flake object.
-def update_flake_counters(flake):
+def update_flake_counters(flake):  # pragma: no cover
   occurrences = ndb.get_multi(flake.occurrences)
   flake.count_hour = 0
   flake.count_day = 0
@@ -96,20 +97,20 @@ def update_flake_counters(flake):
 # The following four functions are cron jobs which update the counters for
 # flakes. To speed things up, we don't update last month/week/day as often as we
 # update hourly counters.
-def update_flake_hour_counter():
+def update_flake_hour_counter():  # pragma: no cover
   query = Flake.query().filter(Flake.last_hour == True)
   for flake in query:
     update_flake_counters(flake)
 
 
-def update_flake_day_counter():
+def update_flake_day_counter():  # pragma: no cover
   query = Flake.query().filter(Flake.last_day == True,
                                Flake.last_hour == False)
   for flake in query:
     update_flake_counters(flake)
 
 
-def update_flake_week_counter():
+def update_flake_week_counter():  # pragma: no cover
   query = Flake.query().filter(Flake.last_week == True,
                                Flake.last_day == False,
                                Flake.last_hour == False)
@@ -117,7 +118,7 @@ def update_flake_week_counter():
     update_flake_counters(flake)
 
 
-def update_flake_month_counter():
+def update_flake_month_counter():  # pragma: no cover
   query = Flake.query().filter(Flake.last_month == True,
                                Flake.last_week == False,
                                Flake.last_day == False,
@@ -135,7 +136,7 @@ def update_issue_tracker():
 
 
 @ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
-def add_failure_to_flake(name, flaky_run):
+def add_failure_to_flake(name, flaky_run):  # pragma: no cover
   flake = Flake.get_by_id(name)
   if not flake:
     flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min)
@@ -156,7 +157,7 @@ def add_failure_to_flake(name, flaky_run):
 # TODO(jam): get specific problem with compile so we can use that as name
 # TODO(jam): It's unfortunate to have to parse this html. Can we get it from
 # another place instead of the tryserver's json?
-def get_flakes(step):
+def get_flakes(step):  # pragma: no cover
   combined = ' '.join(step['text'])
 
   # If test results were invalid, report whole step as flaky.
@@ -198,7 +199,7 @@ def get_flakes(step):
 
 # A queued task which polls the tryserver to get more information about why a
 # run failed.
-def get_flaky_run_reason(flaky_run_key):
+def get_flaky_run_reason(flaky_run_key):  # pragma: no cover
   flaky_run = flaky_run_key.get()
   failure_run = flaky_run.failure_run.get()
   patchset_builder_runs = failure_run.key.parent().get()
@@ -267,7 +268,7 @@ def get_flaky_run_reason(flaky_run_key):
   flaky_run.put()
 
 
-def get_int_value(properties, key):
+def get_int_value(properties, key):  # pragma: no cover
   if not key in properties:
     raise ValueError('key not found')
   value = properties[key]
@@ -277,7 +278,7 @@ def get_int_value(properties, key):
 
 
 # Parses the json which we get from chromium-cq-status.
-def parse_cq_data(json_data):
+def parse_cq_data(json_data):  # pragma: no cover
   logging_output = []
   for result in json_data['results']:
     fields = result['fields']
@@ -377,7 +378,7 @@ def parse_cq_data(json_data):
   return logging_output
 
 
-def fetch_cq_status():
+def fetch_cq_status():  # pragma: no cover
   """Fetches data from chromium-cq-status app and saves new data.
 
   Remembers old cursor and fetches new data.

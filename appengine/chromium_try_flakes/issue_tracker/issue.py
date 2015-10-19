@@ -5,7 +5,7 @@ import re
 from issue_tracker.change_tracking_list import ChangeTrackingList
 from issue_tracker.utils import parseDateTime
 
-class Issue(object):
+class Issue(object):  # pragma: no cover
   def __init__(self, issue_entry):
     self.id = issue_entry.get('id')
 

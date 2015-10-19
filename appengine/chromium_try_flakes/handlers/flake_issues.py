@@ -39,7 +39,7 @@ REOPENED_DESCRIPTION_TEMPLATE = (
 MAX_UPDATED_ISSUES_PER_DAY = 50
 
 
-class ProcessIssue(webapp2.RequestHandler):
+class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
     singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')

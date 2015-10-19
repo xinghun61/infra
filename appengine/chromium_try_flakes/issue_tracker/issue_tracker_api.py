@@ -18,12 +18,13 @@ PROJECT_HOSTING_SCOPE = 'https://www.googleapis.com/auth/projecthosting'
 # TODO(akuegel): Do we want to use a different timeout? Do we want to use a
 # cache? See documentation here:
 # https://github.com/jcgregorio/httplib2/blob/master/python2/httplib2/__init__.py#L1142
-def _createHttpObject(scope):
+def _createHttpObject(scope):  # pragma: no cover
   credentials = AppAssertionCredentials(scope=scope)
   return credentials.authorize(httplib2.Http())
 
 
-def _buildClient(api_name, api_version, http, discovery_url):
+def _buildClient(api_name, api_version, http,
+                 discovery_url):  # pragma: no cover
   # This occassionally hits a 503 "Backend Error". Hopefully a simple retry
   # can recover.
   tries_left = 5
@@ -51,7 +52,7 @@ def _buildClient(api_name, api_version, http, discovery_url):
   return client
 
 
-class IssueTrackerAPI(object):
+class IssueTrackerAPI(object):  # pragma: no cover
   CAN_ALL = 'all'
 
   """A wrapper around the issue tracker api."""

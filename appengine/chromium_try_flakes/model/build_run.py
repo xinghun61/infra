@@ -9,7 +9,7 @@ from status import build_result
 # Represents a parent for BuildRun objects that are for the same patchset and
 # builder. i.e. all win_chromium_rel_swarming runs for
 # codereview.chromium.org/123456/#ps1
-class PatchsetBuilderRuns(ndb.Model):
+class PatchsetBuilderRuns(ndb.Model):  # pragma: no cover
   @staticmethod
   def getId(issue, patchset, master, builder):
     return str(issue) + '.' + str(patchset) + '.' + master + '.' + builder
@@ -28,7 +28,7 @@ class PatchsetBuilderRuns(ndb.Model):
 # a test_suite:test name (i.e. unit_tests:FooTest), a ninja step in case of
 # compile flake, etc... This entity groups together all the instances that this
 # flake happened. A PatchsetBuilderRuns is always a parent of a BuildRun entity.
-class BuildRun(ndb.Model):
+class BuildRun(ndb.Model):  # pragma: no cover
   def getURL(self):
     return ('http://build.chromium.org/p/' + self.key.parent().get().master +
             '/builders/' + self.key.parent().get().builder + '/builds/' +

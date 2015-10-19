@@ -9,7 +9,7 @@ from handlers.all_flake_occurrences import show_all_flakes
 
 import webapp2
 
-class Search(webapp2.RequestHandler):
+class Search(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     search = self.request.get('q')
 

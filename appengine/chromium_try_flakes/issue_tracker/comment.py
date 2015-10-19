@@ -6,7 +6,7 @@ from issue_tracker.change_tracking_list import ChangeTrackingList
 from issue_tracker.utils import parseDateTime
 
 
-class Comment(object):
+class Comment(object):  # pragma: no cover
   def __init__(self, comment_entry):
     self.author = comment_entry['author']['name']
     self.comment = comment_entry['content']

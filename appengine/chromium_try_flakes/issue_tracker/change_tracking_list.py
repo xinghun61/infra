@@ -4,7 +4,7 @@ performed
 """
 
 
-class ChangeTrackingList(list):
+class ChangeTrackingList(list):  # pragma: no cover
   def __init__(self, seq=()):
     list.__init__(self, seq)
     self.added = set()

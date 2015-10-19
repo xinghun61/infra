@@ -13,10 +13,10 @@ import logging
 import time
 import webapp2
 
-def RunsSortFunction(s):
+def RunsSortFunction(s):  # pragma: no cover
   return s.builder + str(time.mktime(s.time_finished.timetuple()))
 
-def show_all_flakes(flake, bug_friendly):
+def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   occurrence_keys = []
   for o in flake.occurrences:
     occurrence_keys.append(o)
@@ -51,7 +51,7 @@ def show_all_flakes(flake, bug_friendly):
 
   return template.render('templates/all_flake_occurrences.html', values)
 
-class AllFlakeOccurrences(webapp2.RequestHandler):
+class AllFlakeOccurrences(webapp2.RequestHandler):  # pragma: no cover
   def get(self):
     key = self.request.get('key')
     flake = ndb.Key(urlsafe=key).get()

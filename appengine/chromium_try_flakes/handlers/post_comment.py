@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 
 import webapp2
 
-class PostComment(webapp2.RequestHandler):
+class PostComment(webapp2.RequestHandler):  # pragma: no cover
   def post(self):
     key = self.request.get('key')
     comment = self.request.get('comment')
