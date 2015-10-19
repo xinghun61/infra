@@ -335,10 +335,9 @@ def inner_loop(args):
           with open('builder_alerts_%s.json' % tree, 'w') as f:
             f.write(json.dumps(json_data, indent=1))
   else:
-    # TODO(sergiyb): Make it a hard error after we start passing
-    # crbug_service_account parameter from the recipe.
-    logging.warn(
+    logging.error(
         '--crbug-service-account was not specified, can not get crbug issues')
+    ret = False
 
   return ret
 
