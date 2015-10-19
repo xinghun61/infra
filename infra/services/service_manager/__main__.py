@@ -64,7 +64,7 @@ class ServiceManager(infra_libs.BaseApplication):
 
     parser.add_argument(
         '--cloudtail-experiment-percent',
-        type=int, default=0,
+        type=int, default=100,
         help='Probability of tailing log files of started services to cloud '
              'logging using cloudtail (default %(default)s%%)')
     parser.add_argument(
