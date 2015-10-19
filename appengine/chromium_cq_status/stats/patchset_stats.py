@@ -73,7 +73,7 @@ class AttemptFalseRejectCommitCount(CountAnalyzer):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
-          if is_failure_record('failed_commit', record))
+          if is_failure_record('failed-commit', record))
 
 
 class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):
@@ -83,7 +83,7 @@ class AttemptFalseRejectCQPresubmitCount(CountAnalyzer):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
-          if is_failure_record('failed_presubmit_check', record))
+          if is_failure_record('failed-presubmit-check', record))
 
 
 class AttemptFalseRejectTriggerCount(CountAnalyzer):
@@ -93,7 +93,7 @@ class AttemptFalseRejectTriggerCount(CountAnalyzer):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
-          if is_failure_record('failed_to_trigger_jobs', record))
+          if is_failure_record('failed-to-trigger', record))
 
 
 class AttemptFalseRejectTryjobCount(CountAnalyzer):
@@ -103,7 +103,7 @@ class AttemptFalseRejectTryjobCount(CountAnalyzer):
       self.tally[reference] = sum(1
           for attempt in all_attempts
           for record in attempt
-          if is_failure_record('failed_jobs', record))
+          if is_failure_record('failed-jobs', record))
 
 
 class BlockedOnClosedTreeDurations(ListAnalyzer):
@@ -262,26 +262,25 @@ def duration_between_actions(attempts, action_start, action_end,
 
 
 def is_flaky_failure_record(record):
-  if record.fields.get('action') == 'patch_failed':
-    reason = record.fields.get('reason') or {}
-    fail_type = reason.get('fail_type')
-    valid_fail = fail_type in (
-      'failed_presubmit_bot',
-      'missing_lgtm',
-      'not_lgtm',
-    )
-    if valid_fail:
-      return False
-    message = record.fields.get('message')
-    valid_fail = message and (
-      'No LGTM' in message or
-      'A disapproval has been posted' in message or
-      'Failed to apply' in message or
-      'Presubmit check' in message or
-      'Transient error: Invalid delimiter' in message or
-      ('Try jobs failed' in message and 'presubmit' in message))
-    return not valid_fail
-  return False
+  if record.fields.get('action') != 'patch_failed':
+    return False
+
+  reason = record.fields.get('reason') or {}
+  fail_type = reason.get('fail_type')
+
+  valid_reasons = (
+      'manual-cancel',
+      'missing-lgtm',
+      'not-lgtm',
+      'failed-patch',
+      'invalid-delimiter',
+      'failed-presubmit-bot',
+      'failed-remote-ref-presubmit',
+      'commit-false',
+      'open-dependency',
+      'no-signcla',
+  )
+  return fail_type not in valid_reasons
 
 
 def is_failure_record(fail_type_check, record):

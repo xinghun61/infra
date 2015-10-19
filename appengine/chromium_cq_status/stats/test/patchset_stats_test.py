@@ -120,22 +120,22 @@ class PatchsetStatsTest(StatsTest):
       (4, {'issue': 7, 'patchset': 1, 'action': 'patch_committed'}),
       (5, {'issue': 7, 'patchset': 1, 'action': 'patch_stop'}),
     ),
-    false_reject_message_records(8, 'Presubmit check'),
-    false_reject_message_records(9, 'Transient error: Invalid delimiter'),
-    false_reject_message_records(10, 'Try jobs failed: project_tester'),
-    false_reject_message_records(11, 'Try jobs failed: project_presubmit'),
-    false_reject_message_records(12, 'No LGTM'),
-    false_reject_message_records(13, 'Failed to apply'),
+    false_reject_fail_type_records(8, 'failed-presubmit-bot'),
+    false_reject_fail_type_records(9, 'invalid-delimiter'),
+    false_reject_fail_type_records(10, 'failed-jobs'),
+    false_reject_fail_type_records(11, 'failed-presubmit-bot'),
+    false_reject_fail_type_records(12, 'not-lgtm'),
+    false_reject_fail_type_records(13, 'failed-patch'),
     false_reject_message_records(14, ''),
-    false_reject_fail_type_records(15, 'failed_commit'),
-    false_reject_fail_type_records(16, 'failed_presubmit_check'),
-    false_reject_fail_type_records(17, 'failed_presubmit_bot'),
-    false_reject_fail_type_records(18, 'failed_jobs'),
-    false_reject_fail_type_records(19, 'failed_to_trigger_jobs'),
-    false_reject_fail_type_records(20, 'missing_lgtm'),
-    false_reject_fail_type_records(21, 'not_lgtm'),
-    false_reject_fail_type_records(22, ''), (
-    )
+    false_reject_fail_type_records(15, 'failed-commit'),
+    false_reject_fail_type_records(16, 'failed-presubmit-check'),
+    false_reject_fail_type_records(17, 'failed-presubmit-bot'),
+    false_reject_fail_type_records(18, 'failed-jobs'),
+    false_reject_fail_type_records(19, 'failed-to-trigger'),
+    false_reject_fail_type_records(20, 'missing-lgtm'),
+    false_reject_fail_type_records(21, 'not-lgtm'),
+    false_reject_fail_type_records(22, ''),
+    ( ),
   )
 
   def test_attempt_false_reject_count(self):
@@ -182,7 +182,8 @@ class PatchsetStatsTest(StatsTest):
     self.assertEquals(self.create_count(
         name='attempt-false-reject-tryjob-count',
         description='Number of failed job attempts on a committed patch.',
-        tally={PatchsetReference(18, 1): 1},
+        tally={PatchsetReference(10, 1): 1,
+               PatchsetReference(18, 1): 1},
       ), self.get_stats('attempt-false-reject-tryjob-count'))
 
   def test_blocked_on_closed_tree_durations(self):

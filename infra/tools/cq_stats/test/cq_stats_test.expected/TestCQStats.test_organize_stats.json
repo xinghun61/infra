@@ -34,7 +34,7 @@
   "issue-count": 0,
   "manual-cancel": [],
   "missing-lgtm": [],
-  "no-cigncla": [],
+  "no-signcla": [],
   "not-lgtm": [],
   "open-dependency": [],
   "patch_stats": {},

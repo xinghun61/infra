@@ -88,7 +88,7 @@ VALID_REASONS = collections.OrderedDict([
         'item': 'failures',
         'message': 'depend on other uncommitted CL(s)',
     }),
-    ('no-cigncla', {
+    ('no-signcla', {
         'item': 'failures',
         'message': 'submitted by a user who hasn\'t signed CLA',
     }),
