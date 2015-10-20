@@ -20,12 +20,6 @@ class FailureSignalTest(unittest.TestCase):
     signal.AddFile('a.cc', None)
     self.assertEqual({'a.cc': []}, signal.files)
 
-  def testAddTest(self):
-    signal = FailureSignal()
-    signal.AddTest('suite.name1')
-    signal.AddTest('suite.name2')
-    self.assertEqual(['suite.name1', 'suite.name2'], signal.tests)
-
   def testAddKeyWord(self):
     signal = FailureSignal()
     signal.AddKeyword(' ')
@@ -40,9 +34,6 @@ class FailureSignalTest(unittest.TestCase):
             'a.cc': [2],
             'd.cc': []
         },
-        'tests': [
-            'suite.name'
-        ],
         'keywords': {
             'k1': 3
         }

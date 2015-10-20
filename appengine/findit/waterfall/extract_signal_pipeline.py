@@ -164,6 +164,17 @@ class ExtractSignalPipeline(BasePipeline):
           logging.exception(e)
 
       # TODO: save result in datastore?
-      signals[step_name] = extractors.ExtractSignal(
-          master_name, builder_name, step_name, None, failure_log).ToDict()
+      if step.isolated:
+        if failure_log == 'flaky':
+          json_failure_log = {}
+        else:
+          signals[step_name] = {}
+          json_failure_log = json.loads(failure_log)
+        for test_name, test_failure_log in json_failure_log.iteritems():
+          signals[step_name][test_name] = extractors.ExtractSignal(
+              master_name, builder_name, step_name, test_name,
+              base64.b64decode(test_failure_log)).ToDict()
+      else:
+        signals[step_name] = extractors.ExtractSignal(
+            master_name, builder_name, step_name, None, failure_log).ToDict()
     return signals

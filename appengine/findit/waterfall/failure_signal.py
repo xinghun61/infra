@@ -11,7 +11,6 @@ class FailureSignal(object):
 
   def __init__(self):
     self.files = collections.defaultdict(list)
-    self.tests = []
     self.keywords = collections.defaultdict(int)
 
   def AddFile(self, file_path, line_number=None):
@@ -21,9 +20,6 @@ class FailureSignal(object):
       if line_number not in line_numbers:
         line_numbers.append(line_number)
 
-  def AddTest(self, test):
-    self.tests.append(test)
-
   def AddKeyword(self, keyword):
     keyword = keyword.strip()
     if keyword:
@@ -32,7 +28,6 @@ class FailureSignal(object):
   def ToDict(self):
     return {
       'files': self.files,
-      'tests': self.tests,
       'keywords': self.keywords,
     }
 
@@ -40,7 +35,6 @@ class FailureSignal(object):
   def FromDict(data):
     signal = FailureSignal()
     signal.files.update(copy.deepcopy(data.get('files', {})))
-    signal.tests.extend(data.get('tests', []))
     signal.keywords.update(data.get('keywords', {}))
     return signal
 
@@ -49,10 +43,6 @@ class FailureSignal(object):
       print 'Files:'
       for file_path, line_numbers in self.files.iteritems():
         print '  %s : %s' % (file_path, ','.join(map(str, line_numbers)))
-    if self.tests:
-      print 'Tests:'
-      for test in self.tests:
-        print '  %s' % test
     if self.keywords:
       print 'Keywords:'
       for keyword, count in self.keywords.iteritems():

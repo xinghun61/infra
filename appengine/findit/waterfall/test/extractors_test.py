@@ -27,7 +27,6 @@ class ExtractorsTest(testing.AppengineTestCase):
         'files': {
             'd/e/f.cc': [30]
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -48,7 +47,6 @@ class ExtractorsTest(testing.AppengineTestCase):
         'files': {
             'a/b/c.h': [90]
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -80,7 +78,6 @@ class ExtractorsTest(testing.AppengineTestCase):
             'path/to/b.cc': [2],
             'path/to/f.cc': [90],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -106,7 +103,6 @@ class ExtractorsTest(testing.AppengineTestCase):
             'd.cc': [4],
             'a/b/c.h': [90],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -132,7 +128,6 @@ class ExtractorsTest(testing.AppengineTestCase):
             'd.cc': [4],
             'a/b/c.h': [90],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -158,7 +153,6 @@ class ExtractorsTest(testing.AppengineTestCase):
             'd.cc': [4],
             'a/b/c.h': [90],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -182,7 +176,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a.cc': [1],
             'b.cc': [2],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -282,7 +275,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'path/x.py': [4],
             'path/y.py': [5],
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -313,7 +305,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a/b/d.cc': [123],
             'a/b/e.cc': [79]
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -331,7 +322,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'files': {
             'r/w/c/sess.js': []
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -372,7 +362,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a/c/in_signal_5.cc': [],
             'a/c/in_signal_6.cc': []
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -391,7 +380,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'files': {
             'd/e/f.py': []
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -448,7 +436,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'e.cc': [],
             'f.cc': []
         },
-        'tests': [],
         'keywords': {}
     }
 
@@ -488,7 +475,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'org/chromium/g/file7.java': [333],
             'org/chromium/h/file8.java': [444]
         },
-        'tests': [],
         'keywords': {}
     }
     self._RunTest(failure_log,
@@ -549,7 +535,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'org/chromium/a/file9.java': [9],
             'org/chromium/a/b/testFile3.java': []
         },
-        'tests': [],
         'keywords': {}
     }
     self._RunTest(failure_log,
@@ -590,7 +575,6 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'c:/a/b/c/file2.exe': [],
             'c:/a/b/file1.gyp': []
         },
-        'tests': [],
         'keywords': {}
     }
 
