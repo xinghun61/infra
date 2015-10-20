@@ -7,6 +7,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"expvar"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -15,7 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -31,7 +31,8 @@ const (
 )
 
 var (
-	log = gologger.Get()
+	log     = gologger.Get()
+	expvars = expvar.NewMap("client")
 )
 
 // MasterURL returns the builder URL for the given master.
@@ -80,9 +81,6 @@ type Reader interface {
 	// StdioForStep fetches the standard output for a given build step, and an error if any
 	// occurred.
 	StdioForStep(master, builder, step string, buildNum int64) ([]string, error)
-
-	// DumpStats logs stats about the client to stdout.
-	DumpStats()
 }
 
 type Writer interface {
@@ -141,6 +139,9 @@ func (r *reader) Build(master, builder string, buildNum int64) (*messages.Build,
 	build = &messages.Build{}
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/json/builders/%s/builds/%d",
 		master, builder, buildNum)
+
+	expvars.Add("Build", 1)
+	defer expvars.Add("Build", -1)
 	if code, err := r.hc.getJSON(URL, build); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
@@ -159,6 +160,8 @@ func (r *reader) LatestBuilds(master, builder string) ([]*messages.Build, error)
 		Builds []*messages.Build `json:"builds"`
 	}{}
 
+	expvars.Add("LatestBuilds", 1)
+	defer expvars.Add("LatestBuilds", -1)
 	if code, err := r.hc.getJSON(URL, &res); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
@@ -191,6 +194,8 @@ func (r *reader) TestResults(masterName, builderName, stepName string, buildNumb
 	URL := fmt.Sprintf("https://test-results.appspot.com/testfile?%s", v.Encode())
 	tr := &messages.TestResults{}
 
+	expvars.Add("TestResults", 1)
+	defer expvars.Add("TestResults", -1)
 	if code, err := r.hc.getJSON(URL, tr); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
@@ -202,6 +207,9 @@ func (r *reader) TestResults(masterName, builderName, stepName string, buildNumb
 func (r *reader) BuildExtract(master string) (*messages.BuildExtract, error) {
 	URL := fmt.Sprintf("https://chrome-build-extract.appspot.com/get_master/%s", master)
 	ret := &messages.BuildExtract{}
+
+	expvars.Add("BuildExtract", 1)
+	defer expvars.Add("BuildExtract", -1)
 	if code, err := r.hc.getJSON(URL, ret); err != nil {
 		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
@@ -211,12 +219,11 @@ func (r *reader) BuildExtract(master string) (*messages.BuildExtract, error) {
 
 func (r *reader) StdioForStep(master, builder, step string, buildNum int64) ([]string, error) {
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
+
+	expvars.Add("StdioForStep", 1)
+	defer expvars.Add("StdioForStep", -1)
 	res, _, err := r.hc.getText(URL)
 	return strings.Split(res, "\n"), err
-}
-
-func (r *reader) DumpStats() {
-	r.hc.dumpStats()
 }
 
 func cacheable(b *messages.Build) bool {
@@ -231,6 +238,8 @@ func NewWriter(alertsBase string) Writer {
 func (w *writer) PostAlerts(alerts *messages.Alerts) error {
 	return w.hc.trackRequestStats(func() (length int64, err error) {
 		log.Infof("POSTing alerts to %s", w.alertsBase)
+		expvars.Add("PostAlerts", 1)
+		defer expvars.Add("PostAlerts", -1)
 		b, err := json.Marshal(alerts)
 		if err != nil {
 			return
@@ -253,33 +262,18 @@ func (w *writer) PostAlerts(alerts *messages.Alerts) error {
 	})
 }
 
-func (hc *trackingHTTPClient) startReq() {
-	atomic.AddInt64(&hc.currReqs, 1)
-	atomic.AddInt64(&hc.totalReqs, 1)
-}
-
-func (hc *trackingHTTPClient) endReq(r int64) {
-	atomic.AddInt64(&hc.currReqs, -1)
-	atomic.AddInt64(&hc.totalBytes, r)
-}
-
-func (hc *trackingHTTPClient) errReq() {
-	atomic.AddInt64(&hc.currReqs, -1)
-	atomic.AddInt64(&hc.totalErrs, 1)
-}
-
 func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error {
 	var err error
-	length := int64(0)
-	hc.startReq()
+	expvars.Add("InFlight", 1)
+	defer expvars.Add("InFlight", -1)
 	defer func() {
 		if err != nil {
-			hc.errReq()
-		} else {
-			hc.endReq(length)
+			expvars.Add("TotalErrors", 1)
 		}
 	}()
+	length := int64(0)
 	length, err = cb()
+	expvars.Add("TotalBytesRead", length)
 	return err
 }
 
@@ -367,9 +361,4 @@ func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err e
 		return length, err
 	})
 	return ret, status, nil
-}
-
-func (hc *trackingHTTPClient) dumpStats() {
-	log.Infof("%d reqs total, %d errors, %d current", hc.totalReqs, hc.totalErrs, hc.currReqs)
-	log.Infof("%d bytes read", hc.totalBytes)
 }

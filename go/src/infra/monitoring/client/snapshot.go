@@ -91,11 +91,6 @@ func (c *snapshot) StdioForStep(master, builder, step string, buildNum int64) ([
 	return s, err
 }
 
-// DumpStats logs stats about the client to stdout.
-func (c *snapshot) DumpStats() {
-	c.wrapped.DumpStats()
-}
-
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func write(path string, v interface{}) error {
 	err := os.MkdirAll(filepath.Dir(path), 0777)

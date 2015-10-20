@@ -6,6 +6,7 @@ package analyzer
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"sort"
 	"strings"
@@ -33,7 +34,8 @@ const (
 )
 
 var (
-	log = gologger.Get()
+	log     = gologger.Get()
+	expvars = expvar.NewMap("analyzer")
 )
 
 var (
@@ -144,7 +146,8 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 	if be.CreatedTimestamp == messages.EpochTime(0) {
 		return ret
 	}
-
+	expvars.Add("MasterAlerts", 1)
+	defer expvars.Add("MasterAlerts", -1)
 	elapsed := a.Now().Sub(be.CreatedTimestamp.Time())
 	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
@@ -168,6 +171,7 @@ func (a *Analyzer) MasterAlerts(master string, be *messages.BuildExtract) []mess
 
 // BuilderAlerts returns alerts generated from builders connected to the master.
 func (a *Analyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) []messages.Alert {
+
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
 		builderName string
@@ -191,6 +195,8 @@ func (a *Analyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) [
 				c <- out
 			}()
 
+			expvars.Add("BuilderAlerts", 1)
+			defer expvars.Add("BuilderAlerts", -1)
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
@@ -210,6 +216,7 @@ func (a *Analyzer) BuilderAlerts(masterName string, be *messages.BuildExtract) [
 	}
 
 	ret = a.mergeAlertsByStep(ret)
+
 	return ret
 }
 
@@ -731,6 +738,8 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 
 		scannedFailures = append(scannedFailures, failure)
 		go func(f stepFailure) {
+			expvars.Add("StepFailures", 1)
+			defer expvars.Add("StepFailures", -1)
 			alr := messages.Alert{
 				Title: fmt.Sprintf("Builder step failure: %s.%s", f.masterName, f.builderName),
 				Time:  messages.EpochTime(a.Now().Unix()),
@@ -837,6 +846,7 @@ func (a *Analyzer) stepFailureAlerts(failures []stepFailure) ([]messages.Alert, 
 				a:   &alr,
 				err: nil,
 			}
+
 		}(failure)
 	}
 

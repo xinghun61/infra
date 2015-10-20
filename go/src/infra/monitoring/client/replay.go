@@ -62,10 +62,6 @@ func (c *replay) StdioForStep(master, builder, step string, buildNum int64) ([]s
 	return s, err
 }
 
-// DumpStats logs stats about the client to stdout.
-func (c *replay) DumpStats() {
-}
-
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func read(path string, v interface{}) error {
 	f, err := os.Open(path)

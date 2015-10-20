@@ -70,10 +70,6 @@ func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
 	return nil
 }
 
-func (m mockReader) DumpStats() {
-	// Not actually used.
-}
-
 func TestMasterAlerts(t *testing.T) {
 	tests := []struct {
 		name   string

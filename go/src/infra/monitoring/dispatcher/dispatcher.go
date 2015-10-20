@@ -10,9 +10,11 @@ package main
 
 import (
 	"encoding/json"
+	"expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -57,6 +59,7 @@ var (
 	// gkt is the gatekeeper trees config.
 	gkt              = map[string]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
+	expvars          = expvar.NewMap("dispatcher")
 )
 
 func init() {
@@ -122,9 +125,102 @@ func fetchBuildExtracts(c client.Reader, masterNames []string) map[string]*messa
 	return bes
 }
 
+func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) error {
+	done := make(chan interface{})
+	errs := make(chan error)
+	for treeName := range trees {
+		go func(tree string) {
+			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
+			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
+			log.Infof("Checking tree: %s", tree)
+			masterNames := []string{}
+			t := gkt[tree]
+			for _, url := range t.Masters {
+				masterNames = append(masterNames, masterFromURL(url))
+			}
+
+			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
+			bes := fetchBuildExtracts(a.Reader, masterNames)
+			log.Infof("Build Extracts read: %d", len(bes))
+
+			alerts := &messages.Alerts{
+				RevisionSummaries: map[string]messages.RevisionSummary{},
+			}
+			for masterName, be := range bes {
+				alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
+			}
+
+			// Make sure we have summaries for each revision implicated in a builder failure.
+			for _, alert := range alerts.Alerts {
+				if bf, ok := alert.Extension.(messages.BuildFailure); ok {
+					for _, r := range bf.RegressionRanges {
+						revs, err := a.GetRevisionSummaries(r.Revisions)
+						if err != nil {
+							log.Errorf("Couldn't get revision summaries: %v", err)
+							continue
+						}
+						for _, rev := range revs {
+							alerts.RevisionSummaries[rev.GitHash] = rev
+						}
+					}
+				}
+			}
+			alerts.Timestamp = messages.TimeToEpochTime(time.Now())
+
+			if *alertsBaseURL == "" {
+				log.Infof("No data_url provided. Writing to %s-alerts.json", tree)
+
+				abytes, err := json.MarshalIndent(alerts, "", "\t")
+				if err != nil {
+					log.Errorf("Couldn't marshal alerts json: %v", err)
+					errs <- err
+					return
+				}
+
+				if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
+					log.Errorf("Couldn't write to alerts.json: %v", err)
+					errs <- err
+					return
+				}
+			} else {
+				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
+				w := client.NewWriter(alertsURL)
+				log.Infof("Posting alerts to %s", alertsURL)
+				err := w.PostAlerts(alerts)
+				if err != nil {
+					log.Errorf("Couldn't post alerts: %v", err)
+					errs <- err
+					return
+				}
+			}
+
+			log.Infof("Filtered failures: %v", filteredFailures)
+			done <- nil
+		}(treeName)
+	}
+
+	for range trees {
+		select {
+		case err := <-errs:
+			return err
+		case <-done:
+		}
+	}
+
+	return nil
+}
+
 func main() {
-	start := time.Now()
 	flag.Parse()
+
+	// Start serving expvars.
+	go func() {
+		err := http.ListenAndServe(":12345", nil)
+		if err != nil {
+			log.Errorf("ListenAndServe: %v", err)
+			os.Exit(1)
+		}
+	}()
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
@@ -211,87 +307,7 @@ func main() {
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func(ctx context.Context) error {
-		done := make(chan interface{})
-		errs := make(chan error)
-		for treeName := range trees {
-			go func(tree string) {
-				log.Infof("Checking tree: %s", tree)
-				masterNames := []string{}
-				t := gkt[tree]
-				for _, url := range t.Masters {
-					masterNames = append(masterNames, masterFromURL(url))
-				}
-
-				// TODO(seanmccullough): Plumb ctx through the rest of these calls.
-				bes := fetchBuildExtracts(a.Reader, masterNames)
-				log.Infof("Build Extracts read: %d", len(bes))
-
-				alerts := &messages.Alerts{
-					RevisionSummaries: map[string]messages.RevisionSummary{},
-				}
-				for masterName, be := range bes {
-					alerts.Alerts = append(alerts.Alerts, analyzeBuildExtract(a, masterName, be)...)
-				}
-
-				// Make sure we have summaries for each revision implicated in a builder failure.
-				for _, alert := range alerts.Alerts {
-					if bf, ok := alert.Extension.(messages.BuildFailure); ok {
-						for _, r := range bf.RegressionRanges {
-							revs, err := a.GetRevisionSummaries(r.Revisions)
-							if err != nil {
-								log.Errorf("Couldn't get revision summaries: %v", err)
-								continue
-							}
-							for _, rev := range revs {
-								alerts.RevisionSummaries[rev.GitHash] = rev
-							}
-						}
-					}
-				}
-				alerts.Timestamp = messages.TimeToEpochTime(time.Now())
-
-				if *alertsBaseURL == "" {
-					log.Infof("No data_url provided. Writing to %s-alerts.json", tree)
-
-					abytes, err := json.MarshalIndent(alerts, "", "\t")
-					if err != nil {
-						log.Errorf("Couldn't marshal alerts json: %v", err)
-						errs <- err
-						return
-					}
-
-					if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
-						log.Errorf("Couldn't write to alerts.json: %v", err)
-						errs <- err
-						return
-					}
-				} else {
-					alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
-					w := client.NewWriter(alertsURL)
-					log.Infof("Posting alerts to %s", alertsURL)
-					err := w.PostAlerts(alerts)
-					if err != nil {
-						log.Errorf("Couldn't post alerts: %v", err)
-						errs <- err
-						return
-					}
-				}
-
-				log.Infof("Filtered failures: %v", filteredFailures)
-				a.Reader.DumpStats()
-				log.Infof("Elapsed time: %v", time.Since(start))
-				done <- nil
-			}(treeName)
-		}
-
-		for range trees {
-			select {
-			case err := <-errs:
-				return err
-			case <-done:
-			}
-		}
-		return nil
+		return mainLoop(ctx, a, trees)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), duration)

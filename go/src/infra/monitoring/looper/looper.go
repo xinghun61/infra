@@ -1,11 +1,16 @@
 package looper
 
 import (
+	"expvar"
 	"time"
 
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
+)
+
+var (
+	expvars = expvar.NewMap("looper")
 )
 
 // Results describe the results of running a loop.
@@ -37,6 +42,10 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 	log := logging.Get(ctx)
 
 	run := func() {
+		expvars.Add("Running", 1)
+		defer expvars.Add("Running", -1)
+		defer expvars.Add("Runs", 1)
+
 		t0 := c.Now()
 		// TODO(seanmccullough) Optionally cancel overruns via context.WithTimeout.
 		err := f(ctx)
@@ -44,11 +53,13 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 		if dur > cycle {
 			log.Errorf("Task overran by %v (%v - %v)", (dur - cycle), dur, cycle)
 			ret.Overruns++
+			expvars.Add("Overruns", 1)
 		}
 
 		if err != nil {
 			log.Errorf("Got an error: %v", err)
 			ret.Errs++
+			expvars.Add("Errors", 1)
 			if consecErrs++; consecErrs >= maxErrs {
 				ret.Success = false
 				return
