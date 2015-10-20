@@ -77,6 +77,26 @@ class _BuildFailureAnalysisResultCollection(messages.Message):
 class FindItApi(remote.Service):
   """FindIt API v1."""
 
+  def _GenerateBuildFailureAnalysisResult(
+      self, build, suspected_cls_in_result, step_name,
+      first_failure, test_name=None):
+    suspected_cls = []
+    for suspected_cl in suspected_cls_in_result:
+      suspected_cls.append(_SuspectedCL(
+          repo_name=suspected_cl['repo_name'],
+          revision=suspected_cl['revision'],
+          commit_position=suspected_cl['commit_position']))
+
+    return _BuildFailureAnalysisResult(
+        master_url=build.master_url,
+        builder_name=build.builder_name,
+        build_number=build.build_number,
+        step_name=step_name,
+        is_sub_test=test_name is not None,
+        test_name=test_name,
+        first_known_failed_build_number=first_failure,
+        suspected_cls=suspected_cls)
+
   @endpoints.method(
       _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
       path='buildfailure', name='buildfailure')
@@ -115,24 +135,20 @@ class FindItApi(remote.Service):
         continue
 
       for failure in analysis.result['failures']:
-        if not failure['suspected_cls']:
+        if not failure['suspected_cls'] and not failure.get('tests'):
           continue
 
-        suspected_cls = []
-        for suspected_cl in failure['suspected_cls']:
-          suspected_cls.append(_SuspectedCL(
-              repo_name=suspected_cl['repo_name'],
-              revision=suspected_cl['revision'],
-              commit_position=suspected_cl['commit_position']))
+        if failure.get('tests'):
+          for test in failure['tests']:
+            if not test['suspected_cls']:
+              continue
+            results.append(self._GenerateBuildFailureAnalysisResult(
+                build, test['suspected_cls'], failure['step_name'],
+                test['first_failure'], test['test_name']))
 
-        results.append(_BuildFailureAnalysisResult(
-            master_url=build.master_url,
-            builder_name=build.builder_name,
-            build_number=build.build_number,
-            step_name=failure['step_name'],
-            is_sub_test=False,
-            test_name=None,
-            first_known_failed_build_number=failure['first_failure'],
-            suspected_cls=suspected_cls))
+        else:
+          results.append(self._GenerateBuildFailureAnalysisResult(
+              build, failure['suspected_cls'], failure['step_name'],
+              failure['first_failure']))
 
     return _BuildFailureAnalysisResultCollection(results=results)

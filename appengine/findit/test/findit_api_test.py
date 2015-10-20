@@ -310,3 +310,171 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results'))
+
+  def testTestLevelResultIsReturned(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 5
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number
+            }
+        ]
+    }
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = wf_analysis_status.ANALYZED
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 4,
+                'last_pass': 3,
+                'suspected_cls': [
+                    {
+                        'build_number': 4,
+                        'repo_name': 'chromium',
+                        'revision': 'r4_2',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 2,
+                        'hints': {
+                            'modified f4_2.cc (and it was in log)': 2,
+                        },
+                    }
+                ],
+            },
+            {
+                'step_name': 'b',
+                'first_failure': 3,
+                'last_pass': 2,
+                'suspected_cls': [
+                    {
+                        'build_number': 3,
+                        'repo_name': 'chromium',
+                        'revision': 'r3_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 5,
+                        'hints': {
+                            'added x/y/f3_1.cc (and it was in log)': 5,
+                        },
+                    },
+                    {
+                        'build_number': 4,
+                        'repo_name': 'chromium',
+                        'revision': 'r4_1',
+                        'commit_position': None,
+                        'url': None,
+                        'score': 2,
+                        'hints': {
+                            'modified f4.cc (and it was in log)': 2,
+                        },
+                    }
+                ],
+                'tests':[
+                    {
+                        'test_name': 'Unittest1.Subtest1',
+                        'first_failure': 3,
+                        'last_pass': 2,
+                        'suspected_cls': [
+                            {
+                                'build_number': 2,
+                                'repo_name': 'chromium',
+                                'revision': 'r2_1',
+                                'commit_position': None,
+                                'url': None,
+                                'score': 5,
+                                'hints': {
+                                    'added x/y/f99_1.cc (and it was in log)': 5,
+                                },
+                            }
+                        ]
+                    },
+                    {
+                        'test_name': 'Unittest2.Subtest1',
+                        'first_failure': 4,
+                        'last_pass': 2,
+                        'suspected_cls': [
+                            {
+                                'build_number': 2,
+                                'repo_name': 'chromium',
+                                'revision': 'r2_1',
+                                'commit_position': None,
+                                'url': None,
+                                'score': 5,
+                                'hints': {
+                                    'added x/y/f99_1.cc (and it was in log)': 5,
+                                },
+                            }
+                        ]
+                    },
+                    {
+                        'test_name': 'Unittest3.Subtest1',
+                        'first_failure': 4,
+                        'last_pass': 2,
+                        'suspected_cls': []
+                    }
+                ]
+            }
+        ]
+    }
+    analysis.put()
+
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'a',
+            'is_sub_test': False,
+            'first_known_failed_build_number': 4,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'r4_2',
+                }
+            ]
+        },
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'b',
+            'is_sub_test': True,
+            'test_name': 'Unittest1.Subtest1',
+            'first_known_failed_build_number': 3,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'r2_1',
+                }
+            ]
+        },
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'b',
+            'is_sub_test': True,
+            'test_name': 'Unittest2.Subtest1',
+            'first_known_failed_build_number': 4,
+            'suspected_cls': [
+                {
+                    'repo_name': 'chromium',
+                    'revision': 'r2_1',
+                }
+            ]
+        }
+    ]
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_results, response.json_body.get('results'))
