@@ -200,7 +200,7 @@ def process_argparse_options(args):
     interface.state.global_monitor = monitors.NullMonitor()
 
   if args.ts_mon_target_type == 'device':
-    interface.state.default_target = targets.DeviceTarget(
+    interface.state.target = targets.DeviceTarget(
         args.ts_mon_device_region,
         args.ts_mon_device_role,
         args.ts_mon_device_network,
@@ -215,7 +215,7 @@ def process_argparse_options(args):
       print >> sys.stderr, ('Argument --ts-mon-task-job-name must be provided '
                             'when the target type is "task".')
       sys.exit(2)
-    interface.state.default_target = targets.TaskTarget(
+    interface.state.target = targets.TaskTarget(
         args.ts_mon_task_service_name,
         args.ts_mon_task_job_name,
         args.ts_mon_task_region,

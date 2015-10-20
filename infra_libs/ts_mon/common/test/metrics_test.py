@@ -45,31 +45,14 @@ class MetricTest(TestBase):
 
   def test_serialize(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.StringMetric('test', target=t, fields={'bar': 1})
-    m.set('val', fields={'baz': False})
-    p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get({'baz': False}))
-    return str(p).splitlines()
-
-  def test_serialize_default_target(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
     m = metrics.StringMetric('test')
     m.set('val')
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (), m.get(), default_target=t)
+    m.serialize_to(p, 1234, (('bar', 1), ('baz', False)), m.get(), t)
     return str(p).splitlines()
-
-  def test_serialize_no_target(self):
-    m = metrics.StringMetric('test')
-    m.set('val')
-    with self.assertRaises(errors.MonitoringNoConfiguredTargetError):
-      p = metrics_pb2.MetricsCollection()
-      m.serialize_to(p, 1234, (), m.get())
 
   def test_serialize_too_many_fields(self):
-    t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.StringMetric('test', target=t,
-                            fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
+    m = metrics.StringMetric('test', fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
     m.set('val', fields={'e': 5, 'f': 6, 'g': 7})
     with self.assertRaises(errors.MonitoringTooManyFieldsError):
       m.set('val', fields={'e': 5, 'f': 6, 'g': 7, 'h': 8})
@@ -218,10 +201,10 @@ class CounterMetricTest(TestBase):
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CounterMetric('test', target=t, fields={'foo': 'bar'})
+    m = metrics.CounterMetric('test', fields={'foo': 'bar'})
     m.increment()
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (), m.get())
+    m.serialize_to(p, 1234, (), m.get(), t)
     self.assertEquals(1234000000, p.data[0].start_timestamp_us)
 
 
@@ -274,10 +257,10 @@ class CumulativeMetricTest(TestBase):
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CumulativeMetric('test', target=t, fields={'foo': 'bar'})
+    m = metrics.CumulativeMetric('test', fields={'foo': 'bar'})
     m.set(3.14)
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (), m.get())
+    m.serialize_to(p, 1234, (), m.get(), t)
     self.assertEquals(1234000000, p.data[0].start_timestamp_us)
 
 
@@ -482,10 +465,10 @@ class DistributionMetricTest(TestBase):
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CumulativeDistributionMetric('test', target=t)
+    m = metrics.CumulativeDistributionMetric('test')
     m.add(1)
     m.add(5)
     m.add(25)
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p, 1234, (), m.get())
+    m.serialize_to(p, 1234, (), m.get(), t)
     self.assertEquals(1234000000, p.data[0].start_timestamp_us)

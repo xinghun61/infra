@@ -58,7 +58,7 @@ class State(object):
     self.global_monitor = None
     # The Target object that will be paired with all metrics that don't supply
     # their own.
-    self.default_target = None
+    self.target = None
     # The flush mode being used to control when metrics are pushed.
     self.flush_mode = None
     # The background thread that flushes metrics every
@@ -75,7 +75,7 @@ state = State()
 
 def flush():
   """Send all metrics that are registered in the application."""
-  if not state.global_monitor:
+  if not state.global_monitor or not state.target:
     raise errors.MonitoringNoConfiguredMonitorError(None)
 
   proto = metrics_pb2.MetricsCollection()
@@ -88,8 +88,7 @@ def flush():
         state.global_monitor.send(proto)
         del proto.data[:]
 
-      metric.serialize_to(proto, start_time, fields, value,
-                          default_target=state.default_target)
+      metric.serialize_to(proto, start_time, fields, value, state.target)
 
   state.global_monitor.send(proto)
 

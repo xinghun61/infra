@@ -45,21 +45,17 @@ class Metric(object):
   * FloatMetric for metrics with arbitrarily varying float values
   """
 
-  def __init__(self, name, target=None, fields=None, description=None):
+  def __init__(self, name, fields=None, description=None):
     """Create an instance of a Metric.
 
     Args:
       name (str): the file-like name of this metric
       fields (dict): a set of key-value pairs to be set as default metric fields
-      target (Target): a Target to be used with this metric. This should be
-                       specified only rarely; usually the library's default
-                       Target will be used (set up by the top-level process).
       description (string): help string for the metric. Should be enough to
                             know what the metric is about.
     """
     self._name = name.lstrip('/')
     self._start_time = None
-    self._target = target
     fields = fields or {}
     if len(fields) > 7:
       raise errors.MonitoringTooManyFieldsError(self._name, fields)
@@ -82,26 +78,20 @@ class Metric(object):
 
   def __eq__(self, other):
     name = self._name == other._name
-    target = self._target == other._target
     field = self._fields == other._fields
     instance_type = type(self) == type(other)
-    return name and target and field and instance_type
+    return name and field and instance_type
 
   def unregister(self):
     interface.unregister(self)
 
-  def serialize_to(self, collection_pb, start_time, fields, value,
-                   default_target=None):
+  def serialize_to(self, collection_pb, start_time, fields, value, target):
     """Generate metrics_pb2.MetricsData messages for this metric.
 
     Args:
       collection_pb (metrics_pb2.MetricsCollection): protocol buffer into which
         to add the current metric values.
-      default_target (Target): a Target to use if self._target is not set.
-
-    Raises:
-      MonitoringNoConfiguredTargetError: if neither self._target nor
-                                         default_target is set
+      target (Target): a Target to use.
     """
 
     metric_pb = collection_pb.data.add()
@@ -111,12 +101,7 @@ class Metric(object):
     self._populate_value(metric_pb, value, start_time)
     self._populate_fields(metric_pb, fields)
 
-    if self._target:
-      self._target._populate_target_pb(metric_pb)
-    elif default_target:
-      default_target._populate_target_pb(metric_pb)
-    else:
-      raise errors.MonitoringNoConfiguredTargetError(self._name)
+    target._populate_target_pb(metric_pb)
 
   def _populate_fields(self, metric, fields):
     """Fill in the fields attribute of a metric protocol buffer.
@@ -252,10 +237,9 @@ class NumericMetric(Metric):  # pylint: disable=abstract-method
 class CounterMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing integer."""
 
-  def __init__(self, name, target=None, fields=None, start_time=None,
-               description=None):
+  def __init__(self, name, fields=None, start_time=None, description=None):
     super(CounterMetric, self).__init__(
-        name, target=target, fields=fields, description=description)
+        name, fields=fields, description=description)
     self._start_time = start_time
 
   def _populate_value(self, metric, value, start_time):
@@ -288,10 +272,9 @@ class GaugeMetric(NumericMetric):
 class CumulativeMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing float."""
 
-  def __init__(self, name, target=None, fields=None, start_time=None,
-               description=None):
+  def __init__(self, name, fields=None, start_time=None, description=None):
     super(CumulativeMetric, self).__init__(
-        name, target=target, fields=fields, description=description)
+        name, fields=fields, description=description)
     self._start_time = start_time
 
   def _populate_value(self, metric, value, start_time):
@@ -330,10 +313,10 @@ class DistributionMetric(Metric):
       10: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10,
   }
 
-  def __init__(self, name, is_cumulative=True, bucketer=None, target=None,
-               fields=None, start_time=None, description=None):
+  def __init__(self, name, is_cumulative=True, bucketer=None, fields=None,
+               start_time=None, description=None):
     super(DistributionMetric, self).__init__(
-        name, target=target, fields=fields, description=description)
+        name, fields=fields, description=description)
     self._start_time = start_time
 
     if bucketer is None:
@@ -422,13 +405,12 @@ class DistributionMetric(Metric):
 class CumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to True."""
 
-  def __init__(self, name, bucketer=None, target=None, fields=None,
+  def __init__(self, name, bucketer=None, fields=None,
                description=None):
     super(CumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=True,
         bucketer=bucketer,
-        target=target,
         fields=fields,
         description=description)
 
@@ -436,12 +418,11 @@ class CumulativeDistributionMetric(DistributionMetric):
 class NonCumulativeDistributionMetric(DistributionMetric):
   """A DistributionMetric with is_cumulative set to False."""
 
-  def __init__(self, name, bucketer=None, target=None, fields=None,
+  def __init__(self, name, bucketer=None, fields=None,
                description=None):
     super(NonCumulativeDistributionMetric, self).__init__(
         name,
         is_cumulative=False,
         bucketer=bucketer,
-        target=target,
         fields=fields,
         description=description)

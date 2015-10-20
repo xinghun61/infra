@@ -17,7 +17,7 @@ class MockState(interface.State):  # pragma: no cover
       store_ctor = metric_store.InProcessMetricStore
 
     self.global_monitor = None
-    self.default_target = None
+    self.target = None
     self.flush_mode = None
     self.flush_thread = None
     self.metrics = {}

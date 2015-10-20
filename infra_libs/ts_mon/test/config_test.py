@@ -56,7 +56,7 @@ class GlobalsTest(auto_stub.TestCase):
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
     fake_target.assert_called_once_with('reg', 'default', '1', 'slave1-a1')
-    self.assertIs(interface.state.default_target, singleton)
+    self.assertIs(interface.state.target, singleton)
     self.assertEquals(args.ts_mon_flush, 'auto')
     self.assertIsNotNone(interface.state.flush_thread)
     self.assertTrue(standard_metrics.up.get())
@@ -105,7 +105,7 @@ class GlobalsTest(auto_stub.TestCase):
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
     fake_target.assert_called_once_with('', 'default', '', 'foo')
-    self.assertIs(interface.state.default_target, singleton)
+    self.assertIs(interface.state.target, singleton)
 
   @mock.patch('socket.getfqdn', autospec=True)
   @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
@@ -175,7 +175,7 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-device-hostname', 'host'])
     config.process_argparse_options(args)
     fake_target.assert_called_once_with('reg', 'role', 'net', 'host')
-    self.assertIs(interface.state.default_target, singleton)
+    self.assertIs(interface.state.target, singleton)
 
   @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.TaskTarget', autospec=True)
@@ -193,7 +193,7 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-task-number', '1'])
     config.process_argparse_options(args)
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
-    self.assertIs(interface.state.default_target, singleton)
+    self.assertIs(interface.state.target, singleton)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.NullMonitor', autospec=True)
   def test_no_args(self, fake_monitor):

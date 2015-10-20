@@ -34,9 +34,10 @@ class GlobalsTest(unittest.TestCase):
 
   def test_flush(self):
     interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = stubs.MockTarget()
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, start_time, fields, value, default_target=None):
+    def serialize_to(pb, start_time, fields, value, target):
       pb.data.add().name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
@@ -58,9 +59,10 @@ class GlobalsTest(unittest.TestCase):
 
   def test_flush_many(self):
     interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = stubs.MockTarget()
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, start_time, fields, value, default_target=None):
+    def serialize_to(pb, start_time, fields, value, target):
       pb.data.add().name = 'foo'
 
     # We can't use the mock's call_args_list here because the same object is

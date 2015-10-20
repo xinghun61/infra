@@ -50,7 +50,7 @@ def initialize(endpoint=None, flush='manual', job_name=None,
     logging.error('service_name variable is not set for task.')
   if not job_name:  # pragma: no cover
     logging.error('job_name variable is not set for task.')
-  interface.state.default_target = targets.TaskTarget(
+  interface.state.target = targets.TaskTarget(
       service_name, job_name, region, hostname, instance)
 
   interface.state.flush_mode = flush
