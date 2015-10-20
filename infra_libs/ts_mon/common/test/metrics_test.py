@@ -10,20 +10,20 @@ import mock
 from infra_libs.ts_mon.protos import metrics_pb2
 
 
-from infra_libs.ts_mon import interface
 from infra_libs.ts_mon.common import distribution
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
+from infra_libs.ts_mon.common.test import stubs
 from infra_libs.ts_mon.protos import metrics_pb2
-from infra_libs.ts_mon.test import stubs
 
 
 class TestBase(unittest.TestCase):
   def setUp(self):
     self.mock_state = stubs.MockState()
-    self.state_patcher = mock.patch('infra_libs.ts_mon.interface.state',
+    self.state_patcher = mock.patch('infra_libs.ts_mon.common.interface.state',
                                     new=self.mock_state)
     self.state_patcher.start()
 

@@ -11,17 +11,17 @@ import mock
 
 from testing_support import auto_stub
 
-from infra_libs.ts_mon import interface
 from infra_libs.ts_mon.common import errors
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metrics
-from infra_libs.ts_mon.test import stubs
+from infra_libs.ts_mon.common.test import stubs
 
 
 class GlobalsTest(unittest.TestCase):
 
   def setUp(self):
     self.mock_state = stubs.MockState()
-    self.state_patcher = mock.patch('infra_libs.ts_mon.interface.state',
+    self.state_patcher = mock.patch('infra_libs.ts_mon.common.interface.state',
                                     new=self.mock_state)
     self.state_patcher.start()
 
@@ -185,8 +185,9 @@ class FakeThreadingEvent(object):
 class FlushThreadTest(unittest.TestCase):
 
   def setUp(self):
-    mock.patch('infra_libs.ts_mon.interface.flush').start()
-    mock.patch('time.time').start()
+    mock.patch('infra_libs.ts_mon.common.interface.flush',
+               autospec=True).start()
+    mock.patch('time.time', autospec=True).start()
 
     self.fake_time = 0
     time.time.side_effect = lambda: self.fake_time

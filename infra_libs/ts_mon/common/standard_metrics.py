@@ -4,10 +4,7 @@
 
 """Metrics common to all tasks and devices."""
 
-try:
-  from infra_libs.ts_mon.common import metrics
-except ImportError: # pragma: no cover
-  from common import metrics
+from infra_libs.ts_mon.common import metrics
 
 
 up = metrics.BooleanMetric(

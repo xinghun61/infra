@@ -2,63 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Classes representing the monitoring interface for tasks or devices.
-
-Usage:
-  import argparse
-  from infra_libs import ts_mon
-
-  p = argparse.ArgumentParser()
-  ts_mon.add_argparse_options(p)
-  args = p.parse_args()  # Must contain info for Monitor (and optionally Target)
-  ts_mon.process_argparse_options(args)
-
-  # Will use the default Target set up via command line args:
-  m = ts_mon.BooleanMetric('/my/metric/name', fields={'foo': 1, 'bar': 'baz'})
-  m.set(True)
-
-  # Use a custom Target:
-  t = ts_mon.TaskTarget('service', 'job', 'region', 'host')  # or DeviceTarget
-  m2 = ts_mon.GaugeMetric('/my/metric/name2', fields={'asdf': 'qwer'}, target=t)
-  m2.set(5)
-
-Library usage:
-  from infra_libs.ts_mon import CounterMetric
-  # No need to set up Monitor or Target, assume calling code did that.
-  c = CounterMetric('/my/counter', fields={'source': 'mylibrary'})
-  c.set(0)
-  for x in range(100):
-    c.increment()
-"""
+"""Classes representing the monitoring interface for tasks or devices."""
 
 
 import base64
 import json
 import logging
-import os
 
-from monacq import acquisition_api
+from apiclient import discovery
+from oauth2client import gce
+from oauth2client.client import GoogleCredentials
+from oauth2client.file import Storage
+import httplib2
 
 from infra_libs import httplib2_utils
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.protos import metrics_pb2
 
-from apiclient import discovery
-from oauth2client.client import GoogleCredentials
-from oauth2client.file import Storage
-from oauth2client.gce import AppAssertionCredentials
-import httplib2
 
 # Special string that can be passed through as the credentials path to use the
-# default GCE service account.
+# default Appengine or GCE service account.
+APPENGINE_CREDENTIALS = ':appengine'
 GCE_CREDENTIALS = ':gce'
-
-LOGGER = logging.getLogger('__name__')
-
-
-def _logging_callback(resp, content):
-  logging.debug(repr(resp))
-  logging.debug(content)
 
 
 class Monitor(object):
@@ -92,42 +57,6 @@ class Monitor(object):
     raise NotImplementedError()
 
 
-class ApiMonitor(Monitor):
-  """Class which sends metrics to the monitoring api, the default behavior."""
-  def __init__(self, credsfile, endpoint, use_instrumented_http=True):
-    """Process monitoring related command line flags and initialize api.
-
-    Args:
-      credsfile (str): path to the credentials json file
-      endpoint (str): url of the monitoring endpoint to hit
-    """
-
-    if credsfile == GCE_CREDENTIALS:
-      raise NotImplementedError(
-          'GCE service accounts are not supported for ApiMonitor')
-
-    creds = acquisition_api.AcquisitionCredential.Load(
-        os.path.abspath(credsfile))
-    api = acquisition_api.AcquisitionApi(creds, endpoint)
-    api.SetResponseCallback(_logging_callback)
-
-    if use_instrumented_http:
-      api.SetHttp(httplib2_utils.InstrumentedHttp('acq-mon-api'))
-
-    self._api = api
-
-  def send(self, metric_pb):
-    """Send a metric proto to the monitoring api.
-
-    Args:
-      metric_pb (MetricsData or MetricsCollection): the metric protobuf to send
-    """
-    try:
-      self._api.Send(self._wrap_proto(metric_pb))
-    except acquisition_api.AcquisitionApiRequestException as e:
-      logging.error('Failed to send the metrics: %s', e)
-
-
 class PubSubMonitor(Monitor):
   """Class which publishes metrics to a Cloud Pub/Sub topic."""
 
@@ -137,7 +66,11 @@ class PubSubMonitor(Monitor):
 
   def _load_credentials(self, credentials_file_path):
     if credentials_file_path == GCE_CREDENTIALS:
-      return AppAssertionCredentials(self._SCOPES)
+      return gce.AppAssertionCredentials(self._SCOPES)
+    if credentials_file_path == APPENGINE_CREDENTIALS:  # pragma: no cover
+      # This import doesn't work outside appengine, so delay it until it's used.
+      from oauth2client import appengine
+      return appengine.AppAssertionCredentials(self._SCOPES)
 
     with open(credentials_file_path, 'r') as credentials_file:
       credentials_json = json.load(credentials_file)
@@ -213,16 +146,20 @@ class PubSubMonitor(Monitor):
         body=body).execute(num_retries=5)
 
 
-class DiskMonitor(Monitor):
-  """Class which writes metrics to a local file for debugging."""
-  def __init__(self, filepath):
-    self._fh = open(filepath, 'a')
+class DebugMonitor(Monitor):
+  """Class which writes metrics to logs or a local file for debugging."""
+  def __init__(self, filepath=None):
+    if filepath is None:
+      self._fh = None
+    else:
+      self._fh = open(filepath, 'a')
 
   def send(self, metric_pb):
     text = str(self._wrap_proto(metric_pb))
-    LOGGER.info('\n' + text)
-    self._fh.write(text + '\n\n')
-    self._fh.flush()
+    logging.info('Flushing monitoring metrics:\n%s', text)
+    if self._fh is not None:
+      self._fh.write(text + '\n\n')
+      self._fh.flush()
 
 
 class NullMonitor(Monitor):

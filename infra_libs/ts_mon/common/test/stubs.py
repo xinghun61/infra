@@ -4,9 +4,9 @@
 
 import mock
 
-from infra_libs.ts_mon import interface
-from infra_libs.ts_mon import monitors
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
+from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
 
 

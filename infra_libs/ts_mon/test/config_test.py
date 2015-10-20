@@ -13,9 +13,9 @@ import mock
 from testing_support import auto_stub
 
 from infra_libs.ts_mon import config
-from infra_libs.ts_mon import interface
+from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import standard_metrics
-from infra_libs.ts_mon.test import stubs
+from infra_libs.ts_mon.common.test import stubs
 
 
 class GlobalsTest(auto_stub.TestCase):
@@ -34,7 +34,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
   def test_default_monitor_args(self, fake_target, fake_monitor, fake_fqdn,
                                 fake_get):
@@ -63,7 +63,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
   def test_default_monitor_args_uppercase_fqdn(self, fake_target, fake_monitor,
                                                fake_fqdn, fake_get):
@@ -83,7 +83,7 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
   def test_fallback_monitor_args(self, fake_target, fake_monitor, fake_fqdn,
                                  fake_get):
@@ -108,7 +108,7 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertIs(interface.state.default_target, singleton)
 
   @mock.patch('socket.getfqdn', autospec=True)
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
   def test_manual_flush(self, fake_target, fake_monitor, fake_fqdn):
     singleton = mock.Mock()
@@ -121,7 +121,7 @@ class GlobalsTest(auto_stub.TestCase):
     config.process_argparse_options(args)
     self.assertIsNone(interface.state.flush_thread)
 
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   def test_monitor_args(self, fake_monitor):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton
@@ -135,7 +135,7 @@ class GlobalsTest(auto_stub.TestCase):
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.PubSubMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor', autospec=True)
   def test_pubsub_args(self, fake_monitor):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton
@@ -149,7 +149,7 @@ class GlobalsTest(auto_stub.TestCase):
         use_instrumented_http=True)
     self.assertIs(interface.state.global_monitor, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.DiskMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.common.monitors.DebugMonitor', auto_spec=True)
   def test_dryrun_args(self, fake_monitor):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton
@@ -160,7 +160,7 @@ class GlobalsTest(auto_stub.TestCase):
     fake_monitor.assert_called_once_with('foo.txt')
     self.assertIs(interface.state.global_monitor, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.DeviceTarget', autospec=True)
   def test_device_args(self, fake_target, _fake_monitor):
     singleton = mock.Mock()
@@ -177,7 +177,7 @@ class GlobalsTest(auto_stub.TestCase):
     fake_target.assert_called_once_with('reg', 'role', 'net', 'host')
     self.assertIs(interface.state.default_target, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.ApiMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.api_monitor.ApiMonitor', autospec=True)
   @mock.patch('infra_libs.ts_mon.common.targets.TaskTarget', autospec=True)
   def test_task_args(self, fake_target, _fake_monitor):
     singleton = mock.Mock()
@@ -195,7 +195,7 @@ class GlobalsTest(auto_stub.TestCase):
     fake_target.assert_called_once_with('serv', 'job' ,'reg', 'host', 1)
     self.assertIs(interface.state.default_target, singleton)
 
-  @mock.patch('infra_libs.ts_mon.monitors.NullMonitor', autospec=True)
+  @mock.patch('infra_libs.ts_mon.common.monitors.NullMonitor', autospec=True)
   def test_no_args(self, fake_monitor):
     singleton = mock.Mock()
     fake_monitor.return_value = singleton

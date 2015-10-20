@@ -5,14 +5,6 @@
 from infra_libs.ts_mon.config import add_argparse_options
 from infra_libs.ts_mon.config import process_argparse_options
 
-from infra_libs.ts_mon.monitors import ApiMonitor
-from infra_libs.ts_mon.monitors import DiskMonitor
-from infra_libs.ts_mon.monitors import NullMonitor
-
-from infra_libs.ts_mon.interface import close
-from infra_libs.ts_mon.interface import flush
-from infra_libs.ts_mon.interface import reset_for_unittest
-
 from infra_libs.ts_mon.common.distribution import Distribution
 from infra_libs.ts_mon.common.distribution import FixedWidthBucketer
 from infra_libs.ts_mon.common.distribution import GeometricBucketer
@@ -28,6 +20,10 @@ from infra_libs.ts_mon.common.errors import MonitoringNoConfiguredMonitorError
 from infra_libs.ts_mon.common.errors import MonitoringNoConfiguredTargetError
 
 from infra_libs.ts_mon.common.helpers import ScopedIncrementCounter
+
+from infra_libs.ts_mon.common.interface import close
+from infra_libs.ts_mon.common.interface import flush
+from infra_libs.ts_mon.common.interface import reset_for_unittest
 
 from infra_libs.ts_mon.common.metrics import BooleanMetric
 from infra_libs.ts_mon.common.metrics import CounterMetric
