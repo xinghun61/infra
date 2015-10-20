@@ -57,10 +57,9 @@ CRBUG_ISSUES_LIST_TEST_REPLY = [
     'state': 'open',
     'labels': [
       'Pri-abc',
-      'Sheriff-Chromium',
-      'Sheriff-ChrOmiUm',
       'Sheriff-Blink',
-      'Sheriff-Trooper',
+      'Infra-Troopers',
+      'Infra-TrOopErS',
       'Type-Bug',
       'Cr-Blink-PerformanceAPIs',
       'OS-All'
@@ -89,7 +88,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
         mock.patch.object(crbug_issues, '_list_issues', list_issues_mock),
         mock.patch.object(crbug_issues, 'WHITELISTED_LABELS',
                           {'sheriff-chromium': 'chromium',
-                           'sheriff-trooper': 'trooper',
+                           'infra-troopers': 'trooper',
                            'sheriff-foobar': 'foobar'}),
     ]
     for patcher in self._patchers:
@@ -103,7 +102,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
     issues_by_tree = crbug_issues.query('test-account.json')
     self.assertEqual(sorted(issues_by_tree.keys()),
                      ['chromium', 'foobar', 'trooper'])
-    self.assertEqual(len(issues_by_tree['chromium']), 2)
+    self.assertEqual(len(issues_by_tree['chromium']), 1)
     self.assertEqual(len(issues_by_tree['trooper']), 1)
     self.assertEqual(len(issues_by_tree['foobar']), 0)
 
@@ -139,12 +138,12 @@ class CrbugIssuesQueryTest(unittest.TestCase):
 
   def test_parses_tags_correctly(self):
     issues_by_tree = crbug_issues.query('test-account.json')
-    issue = issues_by_tree['chromium'][1]
-    self.assertEqual(issue.get('tags'), ['chromium', 'trooper'])
+    issue = issues_by_tree['trooper'][0]
+    self.assertEqual(issue.get('tags'), ['trooper'])
 
   def test_correct_severity_for_issues_with_no_priority(self):
     issues_by_tree = crbug_issues.query('test-account.json')
-    issue = issues_by_tree['chromium'][1]
+    issue = issues_by_tree['trooper'][0]
     self.assertIsNone(issue.get('severity'))
 
 
@@ -156,7 +155,12 @@ class CrbugIssuesListTest(unittest.TestCase):
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_build_crbug_service',
-                          lambda _: crbug_service_mock)
+                          lambda _: crbug_service_mock),
+        # Tests below expect only a single sequence of calls to issue tracker
+        # API iterating over all issues, so we mock whitelisted labels to only
+        # contain a single entry.
+        mock.patch.object(crbug_issues, 'WHITELISTED_LABELS',
+                          {'sheriff-chromium': 'chromium'}),
     ]
     for patcher in self._patchers:
       patcher.start()

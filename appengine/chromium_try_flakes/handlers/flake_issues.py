@@ -5,14 +5,10 @@
 """Task queue endpoints for creating and updating issues on issue tracker."""
 
 import datetime
-import json
 import logging
-import random
-import sha
 import webapp2
 
 from google.appengine.api import taskqueue
-from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 
 from issue_tracker import issue_tracker_api, issue
@@ -27,11 +23,10 @@ FLAKY_RUN_TEMPLATE = (
 SUMMARY_TEMPLATE = '"%(name)s" is flaky'
 DESCRIPTION_TEMPLATE = (
     '%(summary)s.\n\n'
-    'This issue was created automatically by the chromium-try-flakes app and '
-    'was assigned to the current sheriff. Please find the right owner to fix '
-    'the respective test/step and re-assign this issue to them. If the '
-    'step/test is infrastructure-related, please add a label Infra=Troopers, '
-    'remove yourself as an owner and mark the issue as Untriaged.')
+    'This issue was created automatically by the chromium-try-flakes app. '
+    'Please find the right owner to fix the respective test/step and assign '
+    'this issue to them. If the step/test is infrastructure-related, please '
+    'add Infra-Troopers label and change issue status to Untriaged.')
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')

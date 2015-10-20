@@ -100,11 +100,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(
         issue.description,
         '"foo.bar" is flaky.\n\nThis issue was created automatically by the '
-        'chromium-try-flakes app and was assigned to the current sheriff. '
-        'Please find the right owner to fix the respective test/step and '
-        're-assign this issue to them. If the step/test is '
-        'infrastructure-related, please add a label Infra=Troopers, remove '
-        'yourself as an owner and mark the issue as Untriaged.')
+        'chromium-try-flakes app. Please find the right owner to fix the '
+        'respective test/step and assign this issue to them. If the step/test '
+        'is infrastructure-related, please add Infra-Troopers label and change '
+        'issue status to Untriaged.')
     self.assertEqual(issue.status, 'Untriaged')
     self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                     'Via-TryFlakes', 'Sheriff-Chromium'])

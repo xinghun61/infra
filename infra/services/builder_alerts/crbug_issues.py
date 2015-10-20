@@ -18,8 +18,8 @@ DISCOVERY_URL = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
                  '{apiVersion}/rest')
 
 # Dictionary mapping whitelisted lower-case labels to corresponding tree names.
-# This is needed because there are many labels that have 'Sheriff' in them.
-WHITELISTED_LABELS = {'sheriff-chromium': 'chromium'}
+WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
+                      'infra-troopers': 'trooper'}
 BATCH_SIZE = 10
 
 
@@ -72,7 +72,7 @@ def _list_issues(crbug_service_account):
 
 
 def query(crbug_service_account):
-  """Queries issue tracker for issues with Sheriff-* label.
+  """Queries issue tracker for issues with whitelisted labels.
 
   Raises QuotaExceededError if requests result in quota errors. Callers should
   retry calling this function again later.
@@ -89,7 +89,7 @@ def query(crbug_service_account):
       - type: 'crbug'
       - time: current time (updated each time builder_alerts is called).
       - severity: priority of the issue (or 4 for issues without priority).
-      - tags: list containing second parts of all Sheriff-* labels in lower-case
+      - tags: list containing tree names corresponding to labels.
 
     Example:
       {
@@ -102,7 +102,7 @@ def query(crbug_service_account):
             'start_time': '2015-09-28T12:28:25Z',
             'time': '2015-10-02T09:07:55Z',
             'severity': 1,
-            'tags': ['chromium', 'blink'],
+            'tags': ['chromium', 'trooper'],
             'type': 'crbug'
           },
           {
@@ -111,18 +111,19 @@ def query(crbug_service_account):
              ...
           }
         ],
-        'blink': [
+        'trooper': [
           {
              ...
-             'tags': ['chromium', 'blink'],
+             'tags': ['chromium', 'trooper'],
              ...
           },
           {
              ...
-             'tags': ['blink'],
+             'tags': ['trooper'],
              ...
           },
         ],
+        'foobar': [],
         ...
       }
   """
@@ -151,7 +152,8 @@ def query(crbug_service_account):
     for label in raw_issue['labels']:
       label = label.lower()
       if label in WHITELISTED_LABELS:
-        tags.add(WHITELISTED_LABELS[label])
+        tree_name = WHITELISTED_LABELS[label]
+        tags.add(tree_name)
       if label.startswith('pri-'):
         try:
           priority = int(label[len('pri-'):])
