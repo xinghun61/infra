@@ -19,6 +19,7 @@ DISCOVERY_URL = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
 
 # Dictionary mapping whitelisted lower-case labels to corresponding tree names.
 WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
+                      'sheriff-blink': 'blink',
                       'infra-troopers': 'trooper'}
 BATCH_SIZE = 10
 
