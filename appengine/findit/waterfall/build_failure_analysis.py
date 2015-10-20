@@ -668,13 +668,13 @@ def AnalyzeBuildFailure(
   master_name = failure_info.get('master_name')
 
   for step_name, step_failure_info in failed_steps.iteritems():
-    is_test_level = step_failure_info.get('tests') is not None
-
     failed_build_number = step_failure_info['current_failure']
+
     if step_failure_info.get('last_pass') is not None:
-      start_build_number = step_failure_info.get('last_pass') + 1
+      build_number = step_failure_info.get('last_pass') + 1
     else:
-      start_build_number = step_failure_info['first_failure']
+      build_number = step_failure_info['first_failure']
+
     step_analysis_result = {
         'step_name': step_name,
         'first_failure': step_failure_info['first_failure'],
@@ -684,55 +684,22 @@ def AnalyzeBuildFailure(
             step_name, master_name)
     }
 
-    if is_test_level:
-      step_analysis_result['tests'] = []
-      for test_name, test_failure in step_failure_info['tests'].iteritems():
-        test_analysis_result = {
-            'test_name': test_name,
-            'first_failure': test_failure['first_failure'],
-            'last_pass': test_failure.get('last_pass'),
-            'suspected_cls': [],
-        }
-        step_analysis_result['tests'].append(test_analysis_result)
-
     if step_analysis_result['supported']:
-      for build_number in range(start_build_number, failed_build_number + 1):
+      failure_signal = FailureSignal.FromDict(
+          failure_signals.get(step_name, {}))
+      while build_number <= failed_build_number:
         for revision in builds[str(build_number)]['blame_list']:
-          if is_test_level:
-            for test_analysis_result in step_analysis_result['tests']:
-              test_name = test_analysis_result['test_name']
-              test_signal = FailureSignal.FromDict(
-                  failure_signals[step_name].get(test_name, {}))
+          justification_dict = _CheckFiles(
+              failure_signal, change_logs[revision], deps_info)
 
-              justification_dict = _CheckFiles(
-                  test_signal, change_logs[revision], deps_info)
+          if not justification_dict:
+            continue
 
-              if not justification_dict:
-                continue
+          step_analysis_result['suspected_cls'].append(
+              CreateCLInfoDict(justification_dict, build_number,
+                               change_logs[revision]))
 
-              new_suspected_cl_dict = CreateCLInfoDict(
-                  justification_dict, build_number, change_logs[revision])
-              test_analysis_result['suspected_cls'].append(
-                  new_suspected_cl_dict)
-              # Store suspected CLs of the whole step as well
-              # so the dashboard can still be running after this change.
-              # TODO: Make sure only record the same revision once
-              # but concatenate signals if different.
-              if (new_suspected_cl_dict not in
-                  step_analysis_result['suspected_cls']):
-                step_analysis_result['suspected_cls'].append(
-                    new_suspected_cl_dict)
-          else:
-            failure_signal = FailureSignal.FromDict(failure_signals[step_name])
-            justification_dict = _CheckFiles(
-                failure_signal, change_logs[revision], deps_info)
-
-            if not justification_dict:
-              continue
-
-            step_analysis_result['suspected_cls'].append(
-                CreateCLInfoDict(justification_dict, build_number,
-                                 change_logs[revision]))
+        build_number += 1
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)
