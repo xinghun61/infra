@@ -32,6 +32,9 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
   # To be set in tests that want to test with custom task queues.
   taskqueue_stub_root_path = None
 
+  # To be set in tests that want to change test datastore consistency policy.
+  datastore_stub_consistency_policy = None
+
   def setUp(self):
     super(AppengineTestCase, self).setUp()
     self.testbed = testbed.Testbed()
@@ -43,7 +46,8 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
     self.testbed.init_blobstore_stub()
     self.testbed.init_capability_stub()
     self.testbed.init_channel_stub()
-    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_datastore_v3_stub(
+        consistency_policy=self.datastore_stub_consistency_policy)
     self.testbed.init_files_stub()
     self.testbed.init_logservice_stub()
     self.testbed.init_mail_stub()

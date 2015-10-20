@@ -15,8 +15,7 @@ from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 
-from issue_tracker.issue_tracker_api import IssueTrackerAPI
-from issue_tracker.issue import Issue
+from issue_tracker import issue_tracker_api, issue
 from model.flake import FlakeUpdateSingleton, FlakeUpdate
 
 
@@ -37,9 +36,10 @@ REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
 MAX_UPDATED_ISSUES_PER_DAY = 50
+MAX_FLAKY_RUNS_PER_UPDATE = 20
 
 
-class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
+class ProcessIssue(webapp2.RequestHandler):
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
     singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
@@ -53,8 +53,8 @@ class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
 
   @ndb.non_transactional
   def _get_flaky_runs(self, flake):
-    # Only report up to 20 last runs.
-    num_runs = min(len(flake.occurrences) - flake.num_reported_flaky_runs, 20)
+    num_runs = min(len(flake.occurrences) - flake.num_reported_flaky_runs,
+                   MAX_FLAKY_RUNS_PER_UPDATE)
     return ndb.get_multi(flake.occurrences[-num_runs:])
 
   @ndb.non_transactional
@@ -84,21 +84,21 @@ class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
     new_flaky_runs = self._get_flaky_runs(flake)
     flake.num_reported_flaky_runs = len(flake.occurrences)
 
-    api = IssueTrackerAPI('chromium')
-    issue = api.getIssue(flake.issue_id)
+    api = issue_tracker_api.IssueTrackerAPI('chromium')
+    flake_issue = api.getIssue(flake.issue_id)
 
     # Handle cases when an issue has been closed. We need to do this in a loop
     # because we might move onto another issue.
     seen_issues = set()
-    while not issue.open:
-      if issue.status == 'Duplicate':
+    while not flake_issue.open:
+      if flake_issue.status == 'Duplicate':
         # If the issue was marked as duplicate, we update the issue ID stored in
         # datastore to the one it was merged into and continue working with the
         # new issue.
-        seen_issues.add(issue.id)
-        if issue.merged_into not in seen_issues:
-          flake.issue_id = issue.merged_into
-          issue = api.getIssue(flake.issue_id)
+        seen_issues.add(flake_issue.id)
+        if flake_issue.merged_into not in seen_issues:
+          flake.issue_id = flake_issue.merged_into
+          flake_issue = api.getIssue(flake.issue_id)
         else:
           logging.info('Detected issue duplication loop: %s. Re-creating an '
                        'issue for the flake %s.', seen_issues, flake.name)
@@ -108,12 +108,12 @@ class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
         # If the issue was closed, we do not update it. This allows changes made
         # to reduce flakiness to propagate and take effect. If after one week we
         # still see flakiness, we will create a new issue.
-        if issue.updated < now - datetime.timedelta(weeks=1):
+        if flake_issue.updated < now - datetime.timedelta(weeks=1):
           self._recreate_issue_for_flake(flake)
         return
 
     new_flaky_runs_msg = self._format_flaky_runs_msg(flake.name, new_flaky_runs)
-    api.update(issue, comment=new_flaky_runs_msg)
+    api.update(flake_issue, comment=new_flaky_runs_msg)
     logging.info('Updated issue %d for flake %s with %d flake runs',
                  flake.issue_id, flake.name, len(new_flaky_runs))
     flake.issue_last_updated = now
@@ -126,13 +126,13 @@ class ProcessIssue(webapp2.RequestHandler):  # pragma: no cover
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
 
-    api = IssueTrackerAPI('chromium')
-    issue = Issue({'summary': summary,
-                   'description': description,
-                   'status': 'Untriaged',
-                   'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
-                              'Via-TryFlakes', 'Sheriff-Chromium']})
-    flake.issue_id = api.create(issue).id
+    api = issue_tracker_api.IssueTrackerAPI('chromium')
+    new_issue = issue.Issue({'summary': summary,
+                             'description': description,
+                             'status': 'Untriaged',
+                             'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
+                                        'Via-TryFlakes', 'Sheriff-Chromium']})
+    flake.issue_id = api.create(new_issue).id
 
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
