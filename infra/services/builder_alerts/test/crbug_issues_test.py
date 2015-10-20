@@ -58,7 +58,7 @@ CRBUG_ISSUES_LIST_TEST_REPLY = [
     'labels': [
       'Pri-abc',
       'Sheriff-Chromium',
-      'Sheriff-BlInK',
+      'Sheriff-ChrOmiUm',
       'Sheriff-Blink',
       'Sheriff-Trooper',
       'Type-Bug',
@@ -87,6 +87,10 @@ class CrbugIssuesQueryTest(unittest.TestCase):
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_list_issues', list_issues_mock),
+        mock.patch.object(crbug_issues, 'WHITELISTED_LABELS',
+                          {'sheriff-chromium': 'chromium',
+                           'sheriff-trooper': 'trooper',
+                           'sheriff-foobar': 'foobar'}),
     ]
     for patcher in self._patchers:
       patcher.start()
@@ -98,10 +102,10 @@ class CrbugIssuesQueryTest(unittest.TestCase):
   def test_correctly_sorts_issues_by_tree(self):
     issues_by_tree = crbug_issues.query('test-account.json')
     self.assertEqual(sorted(issues_by_tree.keys()),
-                     ['blink', 'chromium', 'trooper'])
+                     ['chromium', 'foobar', 'trooper'])
     self.assertEqual(len(issues_by_tree['chromium']), 2)
-    self.assertEqual(len(issues_by_tree['blink']), 1)
     self.assertEqual(len(issues_by_tree['trooper']), 1)
+    self.assertEqual(len(issues_by_tree['foobar']), 0)
 
   def test_retrieves_basic_issue_basic_properties(self):
     issues_by_tree = crbug_issues.query('test-account.json')
@@ -136,7 +140,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
   def test_parses_tags_correctly(self):
     issues_by_tree = crbug_issues.query('test-account.json')
     issue = issues_by_tree['chromium'][1]
-    self.assertEqual(issue.get('tags'), ['blink', 'chromium', 'trooper'])
+    self.assertEqual(issue.get('tags'), ['chromium', 'trooper'])
 
   def test_correct_severity_for_issues_with_no_priority(self):
     issues_by_tree = crbug_issues.query('test-account.json')

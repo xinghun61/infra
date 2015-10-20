@@ -17,8 +17,9 @@ PROJECT_HOSTING_SCOPE = 'https://www.googleapis.com/auth/projecthosting'
 DISCOVERY_URL = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
                  '{apiVersion}/rest')
 
+# Dictionary mapping whitelisted lower-case labels to corresponding tree names.
 # This is needed because there are many labels that have 'Sheriff' in them.
-WHITELISTED_LABELS = ['Sheriff-Chromium']
+WHITELISTED_LABELS = {'sheriff-chromium': 'chromium'}
 BATCH_SIZE = 10
 
 
@@ -125,8 +126,14 @@ def query(crbug_service_account):
         ...
       }
   """
+  # Initialize each tree with an empty list to ensure that we POST updates into
+  # each tree's endpoint even if there are no current issues.
+  sheriff_issues = {}
+  whitelisted_trees = WHITELISTED_LABELS.values()
+  for tree_name in whitelisted_trees:
+    sheriff_issues[tree_name] = []
+
   raw_issues = _list_issues(crbug_service_account)
-  sheriff_issues = defaultdict(list)
   for raw_issue in raw_issues:
     sheriff_issue = {'key': 'crbug_issue_id:%d' % raw_issue['id'],
                      'title': raw_issue['title'],
@@ -143,8 +150,8 @@ def query(crbug_service_account):
     severity = None
     for label in raw_issue['labels']:
       label = label.lower()
-      if label.startswith('sheriff-'):
-        tags.add(label[len('sheriff-'):])
+      if label in WHITELISTED_LABELS:
+        tags.add(WHITELISTED_LABELS[label])
       if label.startswith('pri-'):
         try:
           priority = int(label[len('pri-'):])
@@ -159,7 +166,7 @@ def query(crbug_service_account):
       sheriff_issue['severity'] = severity
 
     # We assume that a tags have 1:1 mapping to trees here.
-    for tag in sheriff_issue['tags']:
-      sheriff_issues[tag].append(sheriff_issue)
+    for tree_name in sheriff_issue['tags']:
+      sheriff_issues[tree_name].append(sheriff_issue)
 
   return sheriff_issues
