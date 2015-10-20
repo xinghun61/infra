@@ -15,8 +15,11 @@ from model.wf_step import WfStep
 
 def _SendRequestToServer(url, http_client, auth_token, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content."""
-  headers = {'Authorization': 'Bearer <' + auth_token + '>'}
+  headers = {'Authorization': 'Bearer ' + auth_token}
   if post_data:
+    post_data = json.dumps(post_data, sort_keys=True, separators=(',', ':'))
+    headers['Content-Type'] = 'application/json; charset=UTF-8'
+    headers['Content-Length'] = len(post_data)
     status_code, content = http_client.Post(url, post_data, headers=headers)
   else:
     status_code, content = http_client.Get(url, headers=headers)
@@ -34,7 +37,7 @@ def _DownloadSwarmingTasksData(
     step_name=None):
   """Downloads tasks data from swarming server."""
   base_url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
-              'list?tags={%s}&tags={%s}&tags={%s}') % (
+              'list?tags=%s&tags=%s&tags=%s') % (
                   urllib.quote('master:%s' % master_name),
                   urllib.quote('buildername:%s' % builder_name),
                   urllib.quote('buildnumber:%d' % build_number))
@@ -55,7 +58,9 @@ def _DownloadSwarmingTasksData(
       break
 
     new_data_json = json.loads(new_data)
-    items.extend(new_data_json['items'])
+    if new_data_json.get('items'):
+      items.extend(new_data_json['items'])
+
     if new_data_json.get('cursor'):
       cursor = new_data_json['cursor']
     else:
@@ -97,7 +102,8 @@ def GetIsolatedDataForFailedBuild(
 
   new_steps = []
   for step_name in build_isolated_data:
-    failed_steps[step_name]['isolated_data'] = build_isolated_data[step_name]
+    failed_steps[step_name]['list_isolated_data'] = (
+        build_isolated_data[step_name])
 
     # Create WfStep object for all the failed steps.
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
@@ -108,7 +114,7 @@ def GetIsolatedDataForFailedBuild(
   return True
 
 
-def _GetIsolatedDataForStep(
+def GetIsolatedDataForStep(
     master_name, builder_name, build_number, step_name,
     http_client, auth_token):
   """Returns the isolated data for a specific step."""
@@ -256,17 +262,16 @@ def _MergeSwarmingTestShards(shard_results):
   return merged_results
 
 
-def _RetrieveShardedTestResultsFromIsolatedServer(
-    isolated_data, http_client, auth_token):
+def RetrieveShardedTestResultsFromIsolatedServer(
+    list_isolated_data, http_client, auth_token):
   """Gets test results from isolated server and merge the results."""
   shard_results = []
-  for isolated in isolated_data:
-    output_json = _DownloadTestResults(isolated, http_client, auth_token)
-
+  for isolated_data in list_isolated_data:
+    output_json = _DownloadTestResults(isolated_data, http_client, auth_token)
     if not output_json:
       return None
     shard_results.append(output_json)
 
-  if len(isolated_data) == 1:
+  if len(list_isolated_data) == 1:
     return shard_results[0]
   return _MergeSwarmingTestShards(shard_results)

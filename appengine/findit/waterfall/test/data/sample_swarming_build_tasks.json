@@ -312,7 +312,7 @@
       "outputs_ref": {
         "isolatedserver": "https://isolateserver.appspot.com",
         "namespace": "default-gzip",
-        "isolated": "isolatedhashabctest"
+        "isolated": "isolatedhashabctest-223"
       }
     }
   ]

@@ -1,0 +1,139 @@
+{
+    "timestamp": "2015-05-20 02:54:17.691218",
+    "gtest_results": {
+        "disabled_tests": [],
+        "global_tags": [],
+        "all_tests": [
+            "Unittest1.Subtest1",
+            "Unittest1.Subtest2",
+            "Unittest2.Subtest1",
+            "Unittest2.Subtest2",
+            "Unittest3.Subtest1",
+            "Unittest3.Subtest2",
+            "Unittest3.Subtest3"
+        ],
+        "per_iteration_data": [
+            {
+                "Unittest1.Subtest1": [
+                    {
+                        "elapsed_time_ms": 1,
+                        "losless_snippet": true,
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                    }
+                ],
+                "Unittest1.Subtest2": [
+                    {
+                        "elapsed_time_ms": 66,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
+                    },
+                    {
+                        "elapsed_time_ms": 64,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u1s2.cc:1234: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UxczIuY2M6MTIzNDogRmFpbHVyZQo="
+                    },
+                    {
+                        "elapsed_time_ms": 50,
+                        "losless_snippet": true,
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                    }
+                ],
+                "Unittest2.Subtest1": [
+                    {
+                        "elapsed_time_ms": 56,
+                        "losless_snippet": true,
+                        "output_snippet": "ERROR:x_test.cc:1234\\na/b/u2s1.cc:567: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "RVJST1I6eF90ZXN0LmNjOjEyMzRcbmEvYi91MnMxLmNjOjU2NzogRmFpbHVyZVxu"
+                    },
+                    {
+                        "elapsed_time_ms": 58,
+                        "losless_snippet": true,
+                        "output_snippet": "ERROR:[2]: 2594735000 bogo-microseconds\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "RVJST1I6WzJdOiAyNTk0NzM1MDAwIGJvZ28tbWljcm9zZWNvbmRzXG4="
+                    },
+                    {
+                        "elapsed_time_ms": 60,
+                        "losless_snippet": true,
+                        "output_snippet": "ERROR:x_test.cc:1234\\na/b/u2s1.cc:567: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6NTY3OiBGYWlsdXJlCg=="
+                    },
+                    {
+                        "elapsed_time_ms": 60,
+                        "losless_snippet": true,
+                        "output_snippet": "ERROR:x_test.cc:1234\\na/b/u2s1.cc:567: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6NTY3OiBGYWlsdXJlCg=="
+                    }
+                ],
+                "Unittest2.Subtest2": [
+                    {
+                        "elapsed_time_ms": 1,
+                        "losless_snippet": true,
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                    }
+                ],
+                "Unittest3.Subtest1": [
+                    {
+                        "elapsed_time_ms": 1,
+                        "losless_snippet": true,
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                    }
+                ],
+                "Unittest3.Subtest2": [
+                    {
+                        "elapsed_time_ms": 80,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                    },
+                    {
+                        "elapsed_time_ms": 58,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                    },
+                    {
+                        "elapsed_time_ms": 60,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                    },
+                    {
+                        "elapsed_time_ms": 60,
+                        "losless_snippet": true,
+                        "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
+                        "status": "FAILURE",
+                        "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                    }
+                ],
+                "Unittest3.Subtest3": [
+                    {
+                        "elapsed_time_ms": 1,
+                        "losless_snippet": true,
+                        "output_snippet": "[       OK ]\\n",
+                        "status": "SUCCESS",
+                        "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
+                    }
+                ]
+            }
+        ]
+    }
+}

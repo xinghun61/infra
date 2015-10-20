@@ -67,11 +67,11 @@
                     "output_snippet_base64": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6NTY3OiBGYWlsdXJlCg=="
                 },
                 {
-                    "elapsed_time_ms": 60,
+                    "elapsed_time_ms": 1,
                     "losless_snippet": true,
-                    "output_snippet": "ERROR:x_test.cc:1234\\na/b/u2s1.cc:567: Failure\\n",
-                    "status": "FAILURE",
-                    "output_snippet_base64": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6NTY3OiBGYWlsdXJlCg=="
+                    "output_snippet": "[       OK ]\\n",
+                    "status": "SUCCESS",
+                    "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                 }
             ],
             "Unittest2.Subtest2": [
@@ -115,11 +115,11 @@
                     "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
                 },
                 {
-                    "elapsed_time_ms": 60,
+                    "elapsed_time_ms": 1,
                     "losless_snippet": true,
-                    "output_snippet": "a/b/u3s2.cc:110: Failure\\n",
-                    "status": "FAILURE",
-                    "output_snippet_base64": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="
+                    "output_snippet": "[       OK ]\\n",
+                    "status": "SUCCESS",
+                    "output_snippet_base64": "WyAgICAgICBPSyBdCg=="
                 }
             ],
             "Unittest3.Subtest3": [

@@ -42,7 +42,7 @@ class SwarmingHttpClient(RetryHttpClient):
       return
 
     url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
-           'list?tags={%s}&tags={%s}&tags={%s}') % (
+           'list?tags=%s&tags=%s&tags=%s') % (
                urllib.quote('master:%s' % master_name),
                urllib.quote('buildername:%s' % builder_name),
                urllib.quote('buildnumber:%d' % build_number))
@@ -79,6 +79,7 @@ class SwarmingHttpClient(RetryHttpClient):
     return 404, 'Download Failed!'
 
   def _Post(self, url, data, *_):
+    data = json.loads(data)
     if data and data.get('digest') and data['digest'] in self.post_responses:
       return 200, self.post_responses[data['digest']]
     return 404, 'Download Failed!'
@@ -119,7 +120,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'a_tests': {
             'current_failure': 2,
             'first_failure': 0,
-            'isolated_data': [
+            'list_isolated_data': [
                 {
                     'digest': 'isolatedhashatests',
                     'namespace': 'default-gzip',
@@ -130,7 +131,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'unit_tests': {
             'current_failure': 2,
             'first_failure': 0,
-            'isolated_data': [
+            'list_isolated_data': [
                 {
                     'digest': 'isolatedhashunittests',
                     'namespace': 'default-gzip',
@@ -201,7 +202,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.http_client._SetResponseForGetRequestSwarming(
         master_name, builder_name, build_number, step_name)
-    data = swarming_util._GetIsolatedDataForStep(
+    data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
         self.http_client, self.auth_token)
     expected_data = [
@@ -221,7 +222,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
 
     self.http_client._SetResponseForGetRequestSwarming(
         master_name, builder_name, build_number, step_name)
-    task_ids = swarming_util._GetIsolatedDataForStep(
+    task_ids = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name,
         self.http_client, self.auth_token)
     expected_task_ids = []
@@ -333,7 +334,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'https://isolateserver.storage.googleapis.com/default-gzip/shard3',
         'shard3')
 
-    result = swarming_util._RetrieveShardedTestResultsFromIsolatedServer(
+    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client, self.auth_token)
     expected_results_file = os.path.join(
         os.path.dirname(__file__), 'data', 'expected_collect_results')
@@ -356,7 +357,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         'https://isolateserver.storage.googleapis.com/default-gzip/shard1',
         'shard1')
 
-    result = swarming_util._RetrieveShardedTestResultsFromIsolatedServer(
+    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client, self.auth_token)
 
     expected_result = json.loads(zlib.decompress(
@@ -372,7 +373,7 @@ class SwarmingUtilTest(testing.AppengineTestCase):
         }
     ]
 
-    result = swarming_util._RetrieveShardedTestResultsFromIsolatedServer(
+    result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client, self.auth_token)
 
     self.assertIsNone(result)

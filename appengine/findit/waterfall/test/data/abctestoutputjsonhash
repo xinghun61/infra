@@ -1,0 +1,17 @@
+{
+  "223":{
+      "url": "https://isolateserver.storage.googleapis.com/default-gzip/m_b_223_abc_test",
+      "kind": "isolateservice#resourcesItem",
+      "etag": "\"H_l3X6I4W5tDAoEMN5F54pK9RCg/XbHclsT-8W7pkcnWgQ4VowrWvzE\""
+  },
+  "222":{
+      "url": "https://isolateserver.storage.googleapis.com/default-gzip/m_b_222_abc_test",
+      "kind": "isolateservice#resourcesItem",
+      "etag": "\"H_l3X6I4W5tDAoEMN5F54pK9RCg/XbHclsT-8W7pkcnWgQ4VowrWvzE\""
+  },
+  "221":{
+      "url": "https://isolateserver.storage.googleapis.com/default-gzip/m_b_221_abc_test",
+      "kind": "isolateservice#resourcesItem",
+      "etag": "\"H_l3X6I4W5tDAoEMN5F54pK9RCg/XbHclsT-8W7pkcnWgQ4VowrWvzE\""
+  }
+}
