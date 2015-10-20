@@ -125,6 +125,7 @@ class ProcessIssue(webapp2.RequestHandler):
     new_issue = issue.Issue({'summary': summary,
                              'description': description,
                              'status': 'Untriaged',
+                             'owner': {'name': '----'},
                              'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                         'Via-TryFlakes', 'Sheriff-Chromium']})
     flake.issue_id = api.create(new_issue).id
