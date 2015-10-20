@@ -35,8 +35,6 @@ dashboards = [
     ["Overview", "/dashboards/overview.html"],
     ["Results", "/dashboards/flakiness_dashboard.html"],
     ["Times", "/dashboards/treemap.html"],
-    ["Stats", "/dashboards/aggregate_results.html"],
-    ["Stats Timeline", "/dashboards/timeline_explorer.html"],
     ["Load failures", "/dashboards/builderstate.html"],
 ]
 
