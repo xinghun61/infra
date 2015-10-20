@@ -1,4 +1,5 @@
-{%autoescape off%}Reviewers: {{reviewer_nicknames}},
+{%autoescape off%}Reviewers: {{reviewer_nicknames}}
+CL: {{url}}
 
 {%if message%}Message:
 {{message|wordwrap:"80"}}
