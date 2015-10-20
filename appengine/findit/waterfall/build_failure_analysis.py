@@ -699,10 +699,11 @@ def AnalyzeBuildFailure(
       for build_number in range(start_build_number, failed_build_number + 1):
         for revision in builds[str(build_number)]['blame_list']:
           if is_test_level:
+            # Checks files at test level.
             for test_analysis_result in step_analysis_result['tests']:
               test_name = test_analysis_result['test_name']
               test_signal = FailureSignal.FromDict(
-                  failure_signals[step_name].get(test_name, {}))
+                  failure_signals[step_name]['tests'].get(test_name, {}))
 
               justification_dict = _CheckFiles(
                   test_signal, change_logs[revision], deps_info)
@@ -714,25 +715,20 @@ def AnalyzeBuildFailure(
                   justification_dict, build_number, change_logs[revision])
               test_analysis_result['suspected_cls'].append(
                   new_suspected_cl_dict)
-              # Store suspected CLs of the whole step as well
-              # so the dashboard can still be running after this change.
-              # TODO: Make sure only record the same revision once
-              # but concatenate signals if different.
-              if (new_suspected_cl_dict not in
-                  step_analysis_result['suspected_cls']):
-                step_analysis_result['suspected_cls'].append(
-                    new_suspected_cl_dict)
-          else:
-            failure_signal = FailureSignal.FromDict(failure_signals[step_name])
-            justification_dict = _CheckFiles(
-                failure_signal, change_logs[revision], deps_info)
 
-            if not justification_dict:
-              continue
+          # Checks Files on step level using step level signals
+          # regardless of test level signals so we can make sure
+          # no duplicate justifications added to the step result.
+          failure_signal = FailureSignal.FromDict(failure_signals[step_name])
+          justification_dict = _CheckFiles(
+              failure_signal, change_logs[revision], deps_info)
 
-            step_analysis_result['suspected_cls'].append(
-                CreateCLInfoDict(justification_dict, build_number,
-                                 change_logs[revision]))
+          if not justification_dict:
+            continue
+
+          step_analysis_result['suspected_cls'].append(
+              CreateCLInfoDict(justification_dict, build_number,
+                               change_logs[revision]))
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)

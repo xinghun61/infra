@@ -40,3 +40,34 @@ class FailureSignalTest(unittest.TestCase):
     }
     signal = FailureSignal.FromDict(data)
     self.assertEqual(data, signal.ToDict())
+
+  def testMergeFrom(self):
+    test_signals = [
+        {
+            'files': {
+                'a.cc': [2],
+                'd.cc': []
+            },
+            'keywords': {}
+        },
+        {
+            'files': {
+                'a.cc': [2, 3, 4],
+                'b.cc': [],
+                'd.cc': [1]
+            },
+            'keywords': {}
+        },
+    ]
+    step_signal = FailureSignal()
+
+    for test_signal in test_signals:
+      step_signal.MergeFrom(test_signal)
+
+    expected_step_signal_files = {
+        'a.cc': [2, 3, 4],
+        'd.cc': [1],
+        'b.cc': []
+    }
+
+    self.assertEqual(expected_step_signal_files, step_signal.files)

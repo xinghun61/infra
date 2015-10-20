@@ -25,6 +25,16 @@ class FailureSignal(object):
     if keyword:
       self.keywords[keyword] += 1
 
+  def MergeFrom(self, other_signal):
+    """Adds files in signal to self, adds line number if file exists."""
+    # TODO: Merge keywords later after we add support for keywords.
+    for file_path, line_numbers in other_signal['files'].iteritems():
+      if file_path in self.files:
+        self.files[file_path].extend(
+            x for x in line_numbers if x not in self.files[file_path])
+      else:
+        self.files[file_path] = line_numbers[:]
+
   def ToDict(self):
     return {
       'files': self.files,

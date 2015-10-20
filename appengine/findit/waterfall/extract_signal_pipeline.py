@@ -15,6 +15,7 @@ from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
 from waterfall import buildbot
 from waterfall import extractors
+from waterfall.failure_signal import FailureSignal
 from waterfall import lock_util
 from waterfall import waterfall_config
 
@@ -165,16 +166,25 @@ class ExtractSignalPipeline(BasePipeline):
 
       # TODO: save result in datastore?
       if step.isolated:
-        if failure_log == 'flaky':
-          json_failure_log = {}
-        else:
-          signals[step_name] = {}
-          json_failure_log = json.loads(failure_log)
+        json_failure_log = (
+            json.loads(failure_log) if failure_log != 'flaky' else {})
+        signals[step_name] = {
+            'tests': {}
+        }
+        step_signal = FailureSignal()
+
         for test_name, test_failure_log in json_failure_log.iteritems():
-          signals[step_name][test_name] = extractors.ExtractSignal(
+          signals[step_name]['tests'][test_name] = extractors.ExtractSignal(
               master_name, builder_name, step_name, test_name,
               base64.b64decode(test_failure_log)).ToDict()
+
+          # Save signals in test failure log to step level.
+          step_signal.MergeFrom(signals[step_name]['tests'][test_name])
+
+        signals[step_name]['files'] = step_signal.files
+        signals[step_name]['keywords'] = step_signal.keywords
       else:
         signals[step_name] = extractors.ExtractSignal(
             master_name, builder_name, step_name, None, failure_log).ToDict()
+
     return signals

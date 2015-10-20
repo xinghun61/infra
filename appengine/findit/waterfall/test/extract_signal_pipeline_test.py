@@ -314,25 +314,34 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step = WfStep.Create('m', 'b', 223, 'abc_test')
     step.isolated = True
     step.log_data = (
-         '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzRcbmEvYi91MnMxLmNjO'
-         'jU2NzogRmFpbHVyZVxuRVJST1I6WzJdOiAyNTk0NzM1MDAwIGJvZ28tbWljcm9zZWNvbm'
-         'RzXG5FUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTJzMS5jYzo1Njc6IEZhaWx1cmUK", '
-         '"Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}')
+         '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6N'
+         'TY3OiBGYWlsdXJlCkVSUk9SOlsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jvc2Vjb25kcw'
+         'pFUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTNzMi5jYzoxMjM6IEZhaWx1cmUK"'
+         ', "Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCmEvYi91M3My'
+         'LmNjOjEyMzogRmFpbHVyZQo="}')
     step.put()
 
     expected_signals = {
         'abc_test':{
-            'Unittest2.Subtest1':{
-                'files':{
-                    'a/b/u2s1.cc': [567]
-                },
-                'keywords':{}
+            'files':{
+                'a/b/u2s1.cc': [567],
+                'a/b/u3s2.cc': [123, 110]
             },
-            'Unittest3.Subtest2':{
-                'files':{
-                    'a/b/u3s2.cc': [110]
+            'keywords':{},
+            'tests':{
+                'Unittest2.Subtest1':{
+                    'files':{
+                        'a/b/u2s1.cc': [567],
+                        'a/b/u3s2.cc': [123]
+                    },
+                    'keywords':{}
                 },
-                'keywords':{}
+                'Unittest3.Subtest2':{
+                    'files':{
+                        'a/b/u3s2.cc': [110, 123]
+                    },
+                    'keywords':{}
+                }
             }
         }
     }
@@ -374,7 +383,13 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step.log_data = 'flaky'
     step.put()
 
-    expected_signals = {}
+    expected_signals = {
+        'abc_test':{
+            'files':{},
+            'keywords':{},
+            'tests':{}
+        }
+    }
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)

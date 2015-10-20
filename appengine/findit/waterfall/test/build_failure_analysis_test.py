@@ -826,23 +826,37 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             },
         },
         'b': {
-            'Unittest1.Subtest1':{
-                'files': {
-                    'x/y/f99_1.cc': [],
-                },
+            'files':{
+                'x/y/f99_1.cc': [],
+                'y/z/f98.cc': [123, 456],
             },
-            'Unittest2.Subtest1':{
-                'files': {
-                    'x/y/f99_1.cc': [],
+            'tests':{
+                'Unittest1.Subtest1':{
+                    'files': {
+                        'x/y/f99_1.cc': [],
+                    },
                 },
-            },
-            'Unittest3.Subtest2':{
-                'files': {
-                    'y/z/f98.cc': [],
+                'Unittest2.Subtest1':{
+                    'files': {
+                        'y/z/f98.cc': [123],
+                    },
                 },
+                'Unittest3.Subtest2':{
+                    'files': {
+                        'y/z/f98.cc': [456],
+                    },
+                }
             }
         }
     }
+
+    def MockGetChangedLines(repo_info, touched_file, line_numbers, _):
+      # Only need line_numbers, ignoring the first two parameters.
+      del repo_info, touched_file
+      if line_numbers:
+        return line_numbers
+    self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
+              MockGetChangedLines)
 
     expected_analysis_result = {
         'failures': [
@@ -888,9 +902,9 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                         'revision': 'r98_1',
                         'commit_position': None,
                         'url': None,
-                        'score': 2,
+                        'score': 4,
                         'hints': {
-                            'modified f98.cc (and it was in log)': 2,
+                            'modified f98.cc[123, 456] (and it was in log)': 4,
                         },
                     }
                 ],
@@ -919,14 +933,15 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                         'last_pass': 97,
                         'suspected_cls': [
                             {
-                                'build_number': 97,
+                                'build_number': 98,
                                 'repo_name': 'chromium',
-                                'revision': 'r97_1',
+                                'revision': 'r98_1',
                                 'commit_position': None,
                                 'url': None,
-                                'score': 5,
+                                'score': 4,
                                 'hints': {
-                                    'added x/y/f99_1.cc (and it was in log)': 5,
+                                    ('modified f98.cc[123] '
+                                     '(and it was in log)'): 4,
                                 },
                             }
                         ]
@@ -942,9 +957,10 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                                 'revision': 'r98_1',
                                 'commit_position': None,
                                 'url': None,
-                                'score': 2,
+                                'score': 4,
                                 'hints': {
-                                    'modified f98.cc (and it was in log)': 2,
+                                    ('modified f98.cc[456] '
+                                     '(and it was in log)'): 4,
                                 },
                             }
                         ]
