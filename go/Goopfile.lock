@@ -16,7 +16,7 @@ github.com/klauspost/crc32 #f8d2e12057f7ef26ae42ecfa42697f4bdc32d7eb !https://ch
 github.com/kr/pretty #e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb !https://chromium.googlesource.com/external/github.com/kr/pretty.git
 github.com/kr/pty #f7ee69f31298ecbe5d2b349c711e2547a617d398 !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
-github.com/luci/gkvlite #cf7fa95b097418138e80474e217d865e2eb853ac !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+github.com/luci/gkvlite #10bbae231193ace9d3c8969a194b425166b486e8 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/maruel/panicparse #35b70c396b3b7ff615b29678b2385d8adb91c9c2 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #480f19b6bfc4ad8989f989f37d8837e2f487a14d !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
