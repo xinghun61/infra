@@ -77,12 +77,21 @@ class IssueTrackerAPI(object):  # pragma: no cover
         retries += 1
 
   def create(self, issue, send_email=True):
-    cc = [{'name': user} for user in issue.cc]
+    body = {}
+    assert issue.summary
+    body['summary'] = issue.summary
+    if issue.description:
+      body['description'] = issue.description
+    if issue.status:
+      body['status'] = issue.status
+    if issue.owner:
+      body['owner'] = {'name': issue.owner}
+    if issue.labels:
+      body['labels'] = issue.labels
+    if issue.cc:
+      body['cc'] = [{'name': user} for user in issue.cc]
     request = self.client.issues().insert(
-        projectId=self.project_name, sendEmail=send_email,
-        body={'summary': issue.summary, 'description': issue.description,
-              'status': issue.status, 'owner': {'name': issue.owner},
-              'labels': issue.labels, 'cc': cc})
+        projectId=self.project_name, sendEmail=send_email, body=body)
     tmp = self._retry_api_call(request)
     issue.id = int(tmp['id'])
     issue.dirty = False
