@@ -1,0 +1,13 @@
+<!-- Entry point for luci related pages -->
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/parts/milo-main.html">
+<link rel="import" href="/services/milo-swarming-service.html">
+
+<polymer-element name="milo-swarming" atributes="swarming_id" noscript>
+  <template>
+    <milo-swarming-service
+        id="service" root="{{root}}" swarming_id="{{swarming_id}}">
+    </milo-swarming-service>
+    <milo-main root="{{root}}"></milo-main>
+  </template>
+</polymer-element>

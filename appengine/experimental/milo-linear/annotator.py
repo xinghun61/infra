@@ -1,0 +1,1 @@
+../../../../build/scripts/common/annotator.py

@@ -4,7 +4,7 @@
 
 vulcanize: check
 	mkdir -p ./gen
-	../third_party/npm_modules/node_modules/vulcanize/bin/vulcanize --abspath html html/main.html -o vulcanized_main.html
+	../../third_party/npm_modules/node_modules/vulcanize/bin/vulcanize --abspath html html/main.html -o vulcanized_main.html
 
 deploy: vulcanize
 	appcfg.py --oauth2 update . --version `git rev-parse --short HEAD`

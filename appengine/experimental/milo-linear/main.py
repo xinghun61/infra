@@ -17,6 +17,7 @@ from components import utils
 
 import feebas  # Buildbot Endpoints
 # import milotic  # LUCI Endpoints
+import log2milo
 
 
 main_file = (
@@ -48,7 +49,7 @@ def create_html_app():
 
 def create_endpoints_app():
   """Returns WSGI app that serves cloud endpoints requests."""
-  apis = [feebas.FeebasApi]
+  apis = [feebas.FeebasApi, log2milo.LogApi]
   return endpoints.api_server(apis, restricted=not utils.is_local_dev_server())
 
 
