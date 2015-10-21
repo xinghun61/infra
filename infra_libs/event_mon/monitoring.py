@@ -254,6 +254,7 @@ def get_build_event(event_type,
                     step_name=None,
                     step_number=None,
                     result=None,
+                    extra_result_code=None,
                     goma_stats_gz=None,
                     timestamp_kind='POINT',
                     event_timestamp=None,
@@ -341,7 +342,6 @@ def get_build_event(event_type,
 
   if result not in BUILD_RESULTS:
     logging.error('Invalid value for result: %s', result)
-
   else:
     if result:  # can be None
       event.build_event.result = getattr(BuildEvent, result)
@@ -350,6 +350,26 @@ def get_build_event(event_type,
         logging.error('A result was provided for a "SCHEDULER" event type '
                       '(%s). This is only accepted for BUILD and TEST types.',
                       result)
+
+  if isinstance(extra_result_code, basestring):
+    extra_result_code = (extra_result_code, )
+  if not isinstance(extra_result_code, (list, tuple)):
+    logging.error('extra_result_code must be a string or list of strings. '
+                  'Got %s' % type(extra_result_code))
+  else:
+    non_strings = []
+    extra_result_strings = []
+    for s in extra_result_code:
+      if not isinstance(s, basestring):
+        non_strings.append(s)
+      else:
+        extra_result_strings.append(s)
+
+    if non_strings:
+      logging.error('some values provided to extra_result_code are not strings:'
+                    ' %s' % str(non_strings))
+    for s in extra_result_strings:
+      event.build_event.extra_result_code.append(s)
 
   if goma_stats_gz:
     try:
@@ -376,6 +396,7 @@ def send_build_event(event_type,
                      step_name=None,
                      step_number=None,
                      result=None,
+                     extra_result_code=None,
                      goma_stats_gz=None,
                      timestamp_kind='POINT',
                      event_timestamp=None):
@@ -399,6 +420,8 @@ def send_build_event(event_type,
       order.
     result (string): any name of enum BuildEvent.BuildResult.
       (listed in infra_libs.event_mon.monitoring.BUILD_RESULTS)
+    extra_result_code (string or list of): arbitrary strings intended to provide
+      more fine-grained information about the result.
     goma_stats_gz(string): base64 gzipped GomaStats binary protobuf.
 
   Returns:
@@ -412,6 +435,7 @@ def send_build_event(event_type,
                          step_name=step_name,
                          step_number=step_number,
                          result=result,
+                         extra_result_code=extra_result_code,
                          goma_stats_gz=goma_stats_gz,
                          timestamp_kind=timestamp_kind,
                          event_timestamp=event_timestamp).send()

@@ -900,6 +900,93 @@ class GetBuildEventTest(unittest.TestCase):
 
     self.assertIsNone(log_event)
 
+  def test_get_build_event_with_extra_result_code_string(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      extra_result_code='result').log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.extra_result_code, ['result'])
+
+  def test_get_build_event_with_extra_result_code_list(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    extra_results = ['result1', 'result2']
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      extra_result_code=extra_results).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.extra_result_code, extra_results)
+
+  def test_get_build_event_with_extra_result_code_invalid_scalar(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    extra_results = 1234
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      extra_result_code=extra_results).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(len(event.build_event.extra_result_code), 0)
+
+  def test_get_build_event_with_extra_result_code_invalid_list(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    service_name = 'my nice service'
+    extra_results = [1234, 'result']
+    log_event = monitoring.get_build_event(
+      'BUILD', hostname, build_name, service_name=service_name,
+      extra_result_code=extra_results).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+    self.assertTrue(log_event.HasField('event_time_ms'))
+    self.assertTrue(log_event.HasField('source_extension'))
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.build_event.extra_result_code, ['result'])
+
 
 class SendBuildEventTest(unittest.TestCase):
   def setUp(self):
