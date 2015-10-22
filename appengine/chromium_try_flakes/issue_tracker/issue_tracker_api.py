@@ -100,10 +100,6 @@ class IssueTrackerAPI(object):  # pragma: no cover
   def update(self, issue, comment=None, send_email=True):
     if not issue.dirty and not comment:
       return issue
-    if not issue.owner:
-      # workaround for existing bug:
-      # https://code.google.com/a/google.com/p/codesite/issues/detail?id=115
-      issue.owner = '----'
 
     updates = {}
     if 'summary' in issue.changed:
@@ -111,7 +107,9 @@ class IssueTrackerAPI(object):  # pragma: no cover
     if 'status' in issue.changed:
       updates['status'] = issue.status
     if 'owner' in issue.changed:
-      updates['owner'] = issue.owner
+      # workaround for existing bug:
+      # https://code.google.com/a/google.com/p/codesite/issues/detail?id=115
+      updates['owner'] = issue.owner if issue.owner else '----'
     if 'blocked_on' in issue.changed:
       updates['blockedOn'] = issue.blocked_on
     if issue.labels.isChanged():

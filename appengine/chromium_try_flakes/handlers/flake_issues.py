@@ -71,7 +71,7 @@ class ProcessIssue(webapp2.RequestHandler):
                   queue_name='issue-updates', transactional=True)
 
   @ndb.transactional
-  def _update_issue(self, flake, now):
+  def _update_issue(self, api, flake, now, flake_issue=None):
     """Updates an issue on the issue tracker."""
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
@@ -79,8 +79,8 @@ class ProcessIssue(webapp2.RequestHandler):
     new_flaky_runs = self._get_flaky_runs(flake)
     flake.num_reported_flaky_runs = len(flake.occurrences)
 
-    api = issue_tracker_api.IssueTrackerAPI('chromium')
-    flake_issue = api.getIssue(flake.issue_id)
+    if not flake_issue:
+      flake_issue = api.getIssue(flake.issue_id)
 
     # Handle cases when an issue has been closed. We need to do this in a loop
     # because we might move onto another issue.
@@ -114,26 +114,32 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.issue_last_updated = now
 
   @ndb.transactional
-  def _create_issue(self, flake):
+  def _create_issue(self, api, flake):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
     description = DESCRIPTION_TEMPLATE % {'summary': summary}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
 
-    api = issue_tracker_api.IssueTrackerAPI('chromium')
     new_issue = issue.Issue({'summary': summary,
                              'description': description,
                              'status': 'Untriaged',
                              'labels': ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                         'Via-TryFlakes', 'Sheriff-Chromium']})
-    flake.issue_id = api.create(new_issue).id
+    flake_issue = api.create(new_issue)
+    flake.issue_id = flake_issue.id
 
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
+    # Store the issue id. This prevents creating duplicate bugs in case a later
+    # step fails.
+    flake.put()
+    return flake_issue
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
+    api = issue_tracker_api.IssueTrackerAPI('chromium')
+
     # Check if we should stop processing this issue because we've posted too
     # many updates to issue tracker today already.
     day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
@@ -155,16 +161,16 @@ class ProcessIssue(webapp2.RequestHandler):
       if flake.num_reported_flaky_runs == len(flake.occurrences):
         return
 
-      self._update_issue(flake, now)
+      self._update_issue(api, flake, now)
       self._increment_update_counter()
     else:
-      self._create_issue(flake)
-      self._update_issue(flake, now)
+      flake_issue = self._create_issue(api, flake)
+      self._update_issue(api, flake, now, flake_issue)
       self._increment_update_counter()
 
     # Note that if transaction fails for some reason at this point, we may post
     # updates or create issues multiple times. On the other hand, this should be
-    # extremely rare becase we set the number of concurrently running tasks to
+    # extremely rare because we set the number of concurrently running tasks to
     # 1, therefore there should be no contention for updating this issue's
     # entity.
     flake.put()
