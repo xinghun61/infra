@@ -3,9 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import unittest
-import zlib
 
 from infra_libs import event_mon
 from infra_libs.event_mon import config, router
@@ -13,7 +11,6 @@ from infra_libs.event_mon import monitoring
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
 from infra_libs.event_mon.chrome_infra_log_pb2 import BuildEvent
-from infra_libs.event_mon.goma_stats_pb2 import GomaStats
 from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
 
 
@@ -722,136 +719,6 @@ class GetBuildEventTest(unittest.TestCase):
     self.assertEquals(event.build_event.build_scheduling_time_ms,
                       build_scheduling_time)
     self.assertEquals(event.build_event.result, BuildEvent.SUCCESS)
-
-  def test_get_build_event_invalid_goma_stats(self):
-    # SCHEDULER can't have a result
-    hostname = 'bot.host.name'
-    build_name = 'build_name'
-    build_number = 314159265
-    build_scheduling_time = 123456789
-    step_name = 'compile'
-    goma_stats_gz = base64.b64encode(zlib.compress('invalid goma_stats'))
-
-    log_event = monitoring.get_build_event(
-      'STEP',
-      hostname,
-      build_name,
-      build_number=build_number,
-      build_scheduling_time=build_scheduling_time,
-      step_name=step_name,
-      goma_stats_gz=goma_stats_gz).log_event()
-
-    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
-
-    # Check that source_extension deserializes to the right thing.
-    event = ChromeInfraEvent.FromString(log_event.source_extension)
-    self.assertTrue(event.HasField('build_event'))
-    self.assertEquals(event.build_event.type, BuildEvent.STEP)
-    self.assertEquals(event.build_event.host_name, hostname)
-    self.assertEquals(event.build_event.build_name, build_name)
-    self.assertEquals(event.build_event.build_number, build_number)
-    self.assertEquals(event.build_event.build_scheduling_time_ms,
-                      build_scheduling_time)
-
-    self.assertFalse(event.build_event.HasField('goma_stats'))
-    #self.assertFalse(event.build_event.goma_stats.IsInitialized())
-
-  def test_get_build_event_valid_goma_stats(self):
-    # SCHEDULER can't have a result
-    hostname = 'bot.host.name'
-    build_name = 'build_name'
-    build_number = 314159265
-    build_scheduling_time = 123456789
-    step_name = 'compile'
-    goma_stats = GomaStats()
-    goma_stats_gz = base64.b64encode(
-        zlib.compress(goma_stats.SerializeToString()))
-
-    log_event = monitoring.get_build_event(
-      'STEP',
-      hostname,
-      build_name,
-      build_number=build_number,
-      build_scheduling_time=build_scheduling_time,
-      step_name=step_name,
-      goma_stats_gz=goma_stats_gz).log_event()
-
-    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
-
-    # Check that source_extension deserializes to the right thing.
-    event = ChromeInfraEvent.FromString(log_event.source_extension)
-    self.assertTrue(event.HasField('build_event'))
-    self.assertEquals(event.build_event.type, BuildEvent.STEP)
-    self.assertEquals(event.build_event.host_name, hostname)
-    self.assertEquals(event.build_event.build_name, build_name)
-    self.assertEquals(event.build_event.build_number, build_number)
-    self.assertEquals(event.build_event.build_scheduling_time_ms,
-                      build_scheduling_time)
-    self.assertEquals(event.build_event.goma_stats, goma_stats)
-
-  def test_get_build_event_valid_goma_stats_wrong_type(self):
-    # SCHEDULER can't have a result
-    hostname = 'bot.host.name'
-    build_name = 'build_name'
-    build_number = 314159265
-    build_scheduling_time = 123456789
-    goma_stats = GomaStats()
-    goma_stats_gz = base64.b64encode(
-        zlib.compress(goma_stats.SerializeToString()))
-
-    log_event = monitoring.get_build_event(
-      'SCHEDULER',
-      hostname,
-      build_name,
-      build_number=build_number,
-      build_scheduling_time=build_scheduling_time,
-      goma_stats_gz=goma_stats_gz).log_event()
-
-    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
-
-    # Check that source_extension deserializes to the right thing.
-    event = ChromeInfraEvent.FromString(log_event.source_extension)
-    self.assertTrue(event.HasField('build_event'))
-    self.assertEquals(event.build_event.type, BuildEvent.SCHEDULER)
-    self.assertEquals(event.build_event.host_name, hostname)
-    self.assertEquals(event.build_event.build_name, build_name)
-    self.assertEquals(event.build_event.build_number, build_number)
-    self.assertEquals(event.build_event.build_scheduling_time_ms,
-                      build_scheduling_time)
-    self.assertEquals(event.build_event.goma_stats, goma_stats)
-
-  def test_get_build_event_valid_goma_stats_wrong_step_name(self):
-    # SCHEDULER can't have a result
-    hostname = 'bot.host.name'
-    build_name = 'build_name'
-    build_number = 314159265
-    build_scheduling_time = 123456789
-    step_name = 'invalid'
-    goma_stats = GomaStats()
-    goma_stats_gz = base64.b64encode(
-        zlib.compress(goma_stats.SerializeToString()))
-
-    log_event = monitoring.get_build_event(
-      'STEP',
-      hostname,
-      build_name,
-      build_number=build_number,
-      build_scheduling_time=build_scheduling_time,
-      step_name=step_name,
-      goma_stats_gz=goma_stats_gz).log_event()
-
-    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
-
-    # Check that source_extension deserializes to the right thing.
-    event = ChromeInfraEvent.FromString(log_event.source_extension)
-    self.assertTrue(event.HasField('build_event'))
-    self.assertEquals(event.build_event.type, BuildEvent.STEP)
-    self.assertEquals(event.build_event.host_name, hostname)
-    self.assertEquals(event.build_event.build_name, build_name)
-    self.assertEquals(event.build_event.build_number, build_number)
-    self.assertEquals(event.build_event.build_scheduling_time_ms,
-                      build_scheduling_time)
-    self.assertEquals(event.build_event.goma_stats, goma_stats)
 
   def test_get_build_event_with_non_default_service_name(self):
     hostname = 'bot.host.name'

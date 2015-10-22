@@ -2,9 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
 import logging
-import zlib
 
 from google.protobuf.message import DecodeError
 from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
@@ -255,7 +253,6 @@ def get_build_event(event_type,
                     step_number=None,
                     result=None,
                     extra_result_code=None,
-                    goma_stats_gz=None,
                     timestamp_kind='POINT',
                     event_timestamp=None,
                     service_name=None):
@@ -371,20 +368,6 @@ def get_build_event(event_type,
     for s in extra_result_strings:
       event.build_event.extra_result_code.append(s)
 
-  if goma_stats_gz:
-    try:
-      goma_stats = GomaStats()
-      goma_stats.ParseFromString(
-          zlib.decompress(base64.b64decode(goma_stats_gz)))
-      event.build_event.goma_stats.CopyFrom(goma_stats)
-      if event_type != 'STEP' or 'compile' not in step_name:
-        logging.error('A goma_stats can be used only for compile STEP. '
-                      'However, it is provided for %s %s.',
-                      event_type, step_name)
-    except (TypeError, zlib.error, DecodeError):
-      logging.error('Invalid goma_stats_gz (%s) is passed',
-                    goma_stats_gz)
-
   return event_wrapper
 
 
@@ -397,7 +380,6 @@ def send_build_event(event_type,
                      step_number=None,
                      result=None,
                      extra_result_code=None,
-                     goma_stats_gz=None,
                      timestamp_kind='POINT',
                      event_timestamp=None):
   """Send a ChromeInfraEvent filled with a BuildEvent
@@ -422,7 +404,6 @@ def send_build_event(event_type,
       (listed in infra_libs.event_mon.monitoring.BUILD_RESULTS)
     extra_result_code (string or list of): arbitrary strings intended to provide
       more fine-grained information about the result.
-    goma_stats_gz(string): base64 gzipped GomaStats binary protobuf.
 
   Returns:
     success (bool): False if some error happened.
@@ -436,7 +417,6 @@ def send_build_event(event_type,
                          step_number=step_number,
                          result=result,
                          extra_result_code=extra_result_code,
-                         goma_stats_gz=goma_stats_gz,
                          timestamp_kind=timestamp_kind,
                          event_timestamp=event_timestamp).send()
 
