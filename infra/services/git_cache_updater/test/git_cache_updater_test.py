@@ -33,7 +33,26 @@ class CacheUpdaterTest(unittest.TestCase):
 
       with mock.patch.object(subprocess, 'check_output',
                              return_value=fake_cookie_file) as _:
-        return git_cache_updater.get_cookies()
+        cookies = list(git_cache_updater.get_cookies())
+
+    self.assertEquals(1, len(cookies))
+    cookie = cookies[0]
+
+    self.assertEquals('o', cookie.name)
+    self.assertEquals('foo=barbaz', cookie.value)
+    self.assertIsNone(cookie.port)
+    self.assertEquals(False, cookie.port_specified)
+    self.assertEquals('.googlesource.com', cookie.domain)
+    self.assertEquals(True, cookie.domain_specified)
+    self.assertEquals(True, cookie.domain_initial_dot)
+    self.assertEquals('/', cookie.path)
+    self.assertEquals(False, cookie.path_specified)
+    self.assertEquals(True, cookie.secure)
+    self.assertEquals(2147483647, cookie.expires)
+    self.assertEquals(False, cookie.discard)
+    self.assertIsNone(cookie.comment)
+    self.assertIsNone(cookie.comment_url)
+    self.assertEquals(False, cookie.rfc2109)
 
   def test_get_no_cookies(self):
     with utils.temporary_directory() as tempdir:
