@@ -47,10 +47,15 @@ try run for the same patchset.
 <tr>
 <td colspan="3">
   <div style=" float: left">
-    <span ><b>{{f.name}}</b></span>
-    <small><a href="/all_flake_occurrences?key={{f.key.urlsafe}}">
-      (all occurrences)
-    </small></a>
+    <span><b>{{f.name}}</b></span>
+    <small>(
+      <a href="/all_flake_occurrences?key={{f.key.urlsafe}}">
+          all occurrences</a>
+      {% if f.issue_id > 0 %}
+        , <a href="https://crbug.com/{{f.issue_id}}">bug</a>
+      {% endif %}
+      )
+    </small>
   </div>
 </td>
 </tr>
