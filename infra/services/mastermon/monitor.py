@@ -76,6 +76,7 @@ class MasterMonitor(object):
           cloudtail_path,
           'tail',
           '--path', log_file,
+          '--resource-type', 'master',
           '--resource-id', name,
           '--log-id', 'master_twistd.log',
           '--local-log-level', 'info',
