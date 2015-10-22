@@ -71,7 +71,7 @@ class ProcessIssue(webapp2.RequestHandler):
                   queue_name='issue-updates', transactional=True)
 
   @ndb.transactional
-  def _update_issue(self, api, flake, now, flake_issue=None):
+  def _update_issue(self, api, flake, now):
     """Updates an issue on the issue tracker."""
     # Retrieve flaky runs outside of the transaction, because we are not
     # planning to modify them and because there could be more of them than the
@@ -79,8 +79,7 @@ class ProcessIssue(webapp2.RequestHandler):
     new_flaky_runs = self._get_flaky_runs(flake)
     flake.num_reported_flaky_runs = len(flake.occurrences)
 
-    if not flake_issue:
-      flake_issue = api.getIssue(flake.issue_id)
+    flake_issue = api.getIssue(flake.issue_id)
 
     # Handle cases when an issue has been closed. We need to do this in a loop
     # because we might move onto another issue.
@@ -131,9 +130,6 @@ class ProcessIssue(webapp2.RequestHandler):
 
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
-    # Store the issue id. This prevents creating duplicate bugs in case a later
-    # step fails.
-    flake.put()
     return flake_issue
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
@@ -164,8 +160,9 @@ class ProcessIssue(webapp2.RequestHandler):
       self._update_issue(api, flake, now)
       self._increment_update_counter()
     else:
-      flake_issue = self._create_issue(api, flake)
-      self._update_issue(api, flake, now, flake_issue)
+      self._create_issue(api, flake)
+      # Don't update the issue just yet, this may fail, and we need the
+      # transaction to succeed in order to avoid filing duplicate bugs.
       self._increment_update_counter()
 
     # Note that if transaction fails for some reason at this point, we may post
