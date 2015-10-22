@@ -42,6 +42,11 @@ class MetricStoreTestBase(object):
 
     self.metric = metrics.Metric('foo')
 
+  def tearDown(self):
+    super(MetricStoreTestBase, self).tearDown()
+
+    mock.patch.stopall()
+
   def test_sets_start_time(self):
     self.metric._start_time = None
     self.mock_time.return_value = 1234
