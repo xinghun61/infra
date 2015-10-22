@@ -6,6 +6,7 @@ import datetime
 import mock
 
 from google.appengine.datastore import datastore_stub_util
+from google.appengine.ext import ndb
 
 import main
 from model.flake import Flake, FlakyRun
@@ -88,9 +89,11 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
 
   def test_creates_issue_for_new_flake(self):
-    flake_key = self._create_flake().put()
+    flake = self._create_flake()
+    flake.key = ndb.Key('Flake', 'test-flake-key')
+    flake.put()
 
-    response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
+    response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
     self.assertEqual(200, response.status_int)
 
     self.assertEqual(len(self.mock_api.issues), 1)
@@ -103,7 +106,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'chromium-try-flakes app. Please find the right owner to fix the '
         'respective test/step and assign this issue to them. If the step/test '
         'is infrastructure-related, please add Infra-Troopers label and change '
-        'issue status to Untriaged.')
+        'issue status to Untriaged.\n\n'
+        'List of all flakes for this test/step can be found at '
+        'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key='
+        'agx0ZXN0YmVkLXRlc3RyGQsSBUZsYWtlIg50ZXN0LWZsYWtlLWtleQw.')
     self.assertEqual(issue.status, 'Untriaged')
     self.assertEqual(issue.labels, ['Type-Bug', 'Pri-1', 'Cr-Tests-Flaky',
                                     'Via-TryFlakes', 'Sheriff-Chromium'])

@@ -26,12 +26,15 @@ DESCRIPTION_TEMPLATE = (
     'This issue was created automatically by the chromium-try-flakes app. '
     'Please find the right owner to fix the respective test/step and assign '
     'this issue to them. If the step/test is infrastructure-related, please '
-    'add Infra-Troopers label and change issue status to Untriaged.')
+    'add Infra-Troopers label and change issue status to Untriaged.\n\n'
+    'List of all flakes for this test/step can be found at %(flakes_url)s.')
 REOPENED_DESCRIPTION_TEMPLATE = (
     '%(description)s\n\n'
     'This flaky test/step was previously tracked in issue %(old_issue)d.')
 MAX_UPDATED_ISSUES_PER_DAY = 50
 MAX_FLAKY_RUNS_PER_UPDATE = 20
+FLAKES_URL_TEMPLATE = (
+    'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
 
 
 class ProcessIssue(webapp2.RequestHandler):
@@ -115,7 +118,9 @@ class ProcessIssue(webapp2.RequestHandler):
   @ndb.transactional
   def _create_issue(self, api, flake):
     summary = SUMMARY_TEMPLATE % {'name': flake.name}
-    description = DESCRIPTION_TEMPLATE % {'summary': summary}
+    description = DESCRIPTION_TEMPLATE % {
+        'summary': summary,
+        'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe()}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
