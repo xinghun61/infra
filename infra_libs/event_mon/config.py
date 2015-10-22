@@ -6,8 +6,8 @@ import logging
 import socket
 
 import infra_libs
-from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
-from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import (
+  ChromeInfraEvent, ServiceEvent)
 from infra_libs.event_mon import router as ev_router
 
 DEFAULT_SERVICE_ACCOUNT_CREDS = 'service-account-event-mon.json'

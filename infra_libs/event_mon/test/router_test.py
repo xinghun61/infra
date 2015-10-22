@@ -10,8 +10,8 @@ import unittest
 import infra_libs
 from infra_libs.event_mon import config
 from infra_libs.event_mon import router
-from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
-from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import ChromeInfraEvent
+from infra_libs.event_mon.protos.log_request_lite_pb2 import LogRequestLite
 import infra_libs.event_mon.monitoring
 
 

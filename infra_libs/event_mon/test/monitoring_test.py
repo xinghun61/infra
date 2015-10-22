@@ -8,10 +8,9 @@ import unittest
 from infra_libs import event_mon
 from infra_libs.event_mon import config, router
 from infra_libs.event_mon import monitoring
-from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
-from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
-from infra_libs.event_mon.chrome_infra_log_pb2 import BuildEvent
-from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import (
+  ChromeInfraEvent, ServiceEvent, BuildEvent)
+from infra_libs.event_mon.protos.log_request_lite_pb2 import LogRequestLite
 
 
 class ConstantTest(unittest.TestCase):

@@ -5,11 +5,10 @@
 import logging
 
 from google.protobuf.message import DecodeError
-from infra_libs.event_mon.chrome_infra_log_pb2 import ChromeInfraEvent
-from infra_libs.event_mon.chrome_infra_log_pb2 import ServiceEvent
-from infra_libs.event_mon.chrome_infra_log_pb2 import BuildEvent
-from infra_libs.event_mon.goma_stats_pb2 import GomaStats
-from infra_libs.event_mon.log_request_lite_pb2 import LogRequestLite
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import (
+  ChromeInfraEvent, ServiceEvent, BuildEvent)
+from infra_libs.event_mon.protos.goma_stats_pb2 import GomaStats
+from infra_libs.event_mon.protos.log_request_lite_pb2 import LogRequestLite
 from infra_libs.event_mon import config, router
 
 
