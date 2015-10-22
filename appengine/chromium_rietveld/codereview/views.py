@@ -1703,7 +1703,7 @@ def replace_bug(message):
   dit_valid_trackers = ('chromium', 'chromium-os', 'chrome-os-partner', 'gyp',
                         'skia', 'v8', 'webrtc', 'libyuv')
   monorail_base_tracker_url = (
-      'http://monorail-prod.appspot.com/p/%s/issues/detail?id=%s')
+      'https://bugs.chromium.org/p/%s/issues/detail?id=%s')
   monorail_valid_trackers = ('crashpad', 'monorail',)
 
   bugs = re.split(r"[\s,]+", message.group(1))
