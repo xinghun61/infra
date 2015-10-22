@@ -80,15 +80,13 @@ def flush():
 
   proto = metrics_pb2.MetricsCollection()
 
-  for name, (start_time, fields_values) in state.store.get_all().iteritems():
-    metric = state.metrics[name]
-
+  for target, metric, start_time, fields_values in state.store.get_all():
     for fields, value in fields_values.iteritems():
       if len(proto.data) >= METRICS_DATA_LENGTH_LIMIT:
         state.global_monitor.send(proto)
         del proto.data[:]
 
-      metric.serialize_to(proto, start_time, fields, value, state.target)
+      metric.serialize_to(proto, start_time, fields, value, target)
 
   state.global_monitor.send(proto)
 

@@ -14,35 +14,59 @@ from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common.test import stubs
 
 
-class InProcessMetricStoreTest(unittest.TestCase):
+class MetricStoreTestBase(object):
+  """Abstract base class for testing MetricStore implementations.
+
+  This class doesn't inherit from unittest.TestCase to prevent it from being
+  run automatically by expect_tests.
+
+  Your subclass should inherit from this and unittest.TestCase, and set
+  METRIC_STORE_CLASS to the implementation you want to test.  See
+  InProcessMetricStoreTest in this file for an example.
+  """
+
+  METRIC_STORE_CLASS = None
+
   def setUp(self):
+    super(MetricStoreTestBase, self).setUp()
+
     self.mock_time = mock.create_autospec(time.time, spec_set=True)
+    self.mock_time.return_value = 1234
+
     self.state = stubs.MockState(store_ctor=functools.partial(
-        metric_store.InProcessMetricStore, time_fn=self.mock_time))
+        self.METRIC_STORE_CLASS, time_fn=self.mock_time))
+    mock.patch('infra_libs.ts_mon.common.interface.state',
+        new=self.state).start()
+
     self.store = self.state.store
 
-    self.metric = mock.create_autospec(
-        metrics.Metric, spec_set=True, instance=True)
-    self.metric.name = 'foo'
-    self.state.metrics['foo'] = self.metric
+    self.metric = metrics.Metric('foo')
 
   def test_sets_start_time(self):
-    self.metric.start_time = None
+    self.metric._start_time = None
     self.mock_time.return_value = 1234
 
     self.store.set('foo', (('field', 'value'),), 42)
     self.store.set('foo', (('field', 'value2'),), 43)
 
-    self.assertEqual(1234, self.store.get_all()['foo'][0])
+    all_metrics = list(self.store.get_all())
+    self.assertEqual(1, len(all_metrics))
+    self.assertEqual('foo', all_metrics[0][1].name)
+    self.assertEqual(1234, all_metrics[0][2])
+
     self.mock_time.assert_called_once_with()
 
   def test_uses_start_time_from_metric(self):
-    self.metric.start_time = 5678
+    self.metric._start_time = 5678
 
     self.store.set('foo', (('field', 'value'),), 42)
     self.store.set('foo', (('field', 'value2'),), 43)
 
-    self.assertEqual(5678, self.store.get_all()['foo'][0])
+    all_metrics = list(self.store.get_all())
+    self.assertEqual(1, len(all_metrics))
+    self.assertEqual('foo', all_metrics[0][1].name)
+    self.assertEqual(5678, all_metrics[0][2])
+
     self.assertFalse(self.mock_time.called)
 
   def test_get(self):
@@ -96,3 +120,8 @@ class InProcessMetricStoreTest(unittest.TestCase):
 
     self.store.reset_for_unittest(name='foo')
     self.assertIsNone(self.store.get('foo', (('field', 'value'),)))
+
+
+class InProcessMetricStoreTest(MetricStoreTestBase, unittest.TestCase):
+  METRIC_STORE_CLASS = metric_store.InProcessMetricStore
+

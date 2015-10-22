@@ -53,10 +53,10 @@ class MetricStore(object):
     raise NotImplementedError
 
   def get_all(self):
-    """Returns the values for all the metrics registered in the store.
+    """Returns an iterator over all the metrics present in the store.
 
-    Returns:
-      A dict of {name: (start_timestamp, {((field, field_value), ...): value}}
+    The iterator yields 4-tuples:
+      (target, metric, start_time, field_values)
     """
     raise NotImplementedError
 
@@ -126,7 +126,10 @@ class InProcessMetricStore(MetricStore):
     return self._entry(name)[1].get(fields, default)
 
   def get_all(self):
-    return self._values
+    state = self._state
+    for name, (start_time, fields_values) in self._values.iteritems():
+      if name in state.metrics:  # pragma: no cover
+        yield state.target, state.metrics[name], start_time, fields_values
 
   def set(self, name, fields, value, enforce_ge=False):
     with self._thread_lock:

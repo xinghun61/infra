@@ -2,57 +2,51 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 import os
-import socket
-import sys
-import urlparse
-import re
 
-import monitors
-import interface
-from common import standard_metrics
-from common import targets
+from google.appengine.api import modules
+from google.appengine.api.app_identity import app_identity
+
+from infra_libs.ts_mon import memcache_metric_store
+from infra_libs.ts_mon.common import interface
+from infra_libs.ts_mon.common import monitors
+from infra_libs.ts_mon.common import targets
+
+REGION = 'appengine'
+PUBSUB_PROJECT = 'chrome-infra-mon-pubsub'
+PUBSUB_TOPIC = 'monacq'
 
 
-def initialize(endpoint=None, flush='manual', job_name=None,
-               service_name=None, instance=0):
-  """Initialize the global monitor.
+def initialize():
+  if interface.state.global_monitor is not None:
+    # Even if ts_mon was already initialized in this instance we should update
+    # the metric index in case any new metrics have been registered.
+    interface.state.store.update_metric_index()
+    return
 
-  Also initializes the default target if endpoint argument is supplied.
-  If they aren't, all created metrics will have to supply their own target.
-  This is generally a bad idea, as many libraries rely on the default target
-  being set up.
+  # Use the application ID as the service name and the module name as the job
+  # name.
+  service_name = app_identity.get_application_id()
+  job_name = modules.get_current_module_name()
+  hostname = modules.get_current_version_name()
 
-  Args:
-    endpoint: url (in format pubsub://project/topic) to post ts_mon metrics to
-    flush:  metric push behavior: all (send every metric individually),
-            or manual (only send when flush() is called)
-    job_name: name of the job instance of the task
-    instance: number of instance for this task
-    service_name: name of service being monitored
-
-  """
-  hostname = socket.getfqdn().split('.')[0]
-  try:
-    region = fqdn.split('.')[1]
-  except:
-    region = ''
-
-  url = urlparse.urlparse(endpoint)
-  project = url.netloc
-  topic = url.path.strip('/')
-  interface.state.global_monitor = monitors.PubSubMonitor(project, topic)
-
-  # Reimplement ArgumentParser.error, since we don't have access to the parser
-  if not service_name:
-    logging.error('service_name variable is not set for task.')
-  if not job_name:  # pragma: no cover
-    logging.error('job_name variable is not set for task.')
   interface.state.target = targets.TaskTarget(
-      service_name, job_name, region, hostname, instance)
+      service_name, job_name, REGION, hostname)
+  interface.state.flush_mode = 'auto'
+  interface.state.store = memcache_metric_store.MemcacheMetricStore(
+      interface.state)
 
-  interface.state.flush_mode = flush
+  # Don't send metrics when running on the dev appserver.
+  if os.environ.get('SERVER_SOFTWARE', '').startswith('Development'):
+    logging.info('Using debug monitor')
+    interface.state.global_monitor = monitors.DebugMonitor()
+  else:
+    logging.info('Using pubsub monitor %s/%s', PUBSUB_PROJECT, PUBSUB_TOPIC)
+    interface.state.global_monitor = monitors.PubSubMonitor(
+        monitors.APPENGINE_CREDENTIALS, PUBSUB_PROJECT, PUBSUB_TOPIC)
 
-  standard_metrics.init()
+  logging.info('Initialized ts_mon with service_name=%s, job_name=%s, '
+               'hostname=%s',
+               service_name, job_name, hostname)
+

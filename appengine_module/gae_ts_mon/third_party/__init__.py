@@ -7,5 +7,5 @@ import logging
 import sys
 
 third_party_dir = os.path.join(os.path.dirname(__file__), '..', 'third_party')
-if third_party_dir not in sys.path:
-    sys.path.insert(0, third_party_dir)
+if third_party_dir not in sys.path:  # pragma: no cover
+  sys.path.insert(0, third_party_dir)

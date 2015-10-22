@@ -61,7 +61,6 @@ class Metric(object):
       raise errors.MonitoringTooManyFieldsError(self._name, fields)
     self._fields = fields
     self._normalized_fields = self._normalize_fields(self._fields)
-    self._thread_lock = threading.Lock()
     # pgervais: Yes, description is unused. Waiting for the rest of the pipeline
     # to support it.
     self._description = description

@@ -34,12 +34,12 @@ class DeviceTarget(Target):
       hostname (str): name by which the device self-identifies.
     """
     super(DeviceTarget, self).__init__()
-    self._region = region
-    self._role = role
-    self._network = network
-    self._hostname = hostname
-    self._realm = 'ACQ_CHROME'
-    self._alertable = True
+    self.region = region
+    self.role = role
+    self.network = network
+    self.hostname = hostname
+    self.realm = 'ACQ_CHROME'
+    self.alertable = True
 
   def _populate_target_pb(self, metric):
     """Populate the 'network_device' embedded message of a metric protobuf.
@@ -48,19 +48,18 @@ class DeviceTarget(Target):
       metric (metrics_pb2.MetricsData): the metric proto to be populated.
     """
     # Note that this disregards the pop, asn, role, and vendor fields.
-    metric.network_device.metro = self._region
-    metric.network_device.role = self._role
-    metric.network_device.hostgroup = self._network
-    metric.network_device.hostname = self._hostname
-    metric.network_device.realm = self._realm
-    metric.network_device.alertable = self._alertable
+    metric.network_device.metro = self.region
+    metric.network_device.role = self.role
+    metric.network_device.hostgroup = self.network
+    metric.network_device.hostname = self.hostname
+    metric.network_device.realm = self.realm
+    metric.network_device.alertable = self.alertable
 
 
 class TaskTarget(Target):
   """Monitoring interface class for monitoring active jobs or processes."""
 
-  def __init__(self, service_name, job_name,
-               region, hostname, task_num=0):
+  def __init__(self, service_name, job_name, region, hostname, task_num=0):
     """Create a Target object exporting info about a specific task.
 
     Args:
@@ -71,11 +70,11 @@ class TaskTarget(Target):
       task_num (int): replication id of this task.
     """
     super(TaskTarget, self).__init__()
-    self._service_name = service_name
-    self._job_name = job_name
-    self._region = region
-    self._hostname = hostname
-    self._task_num = task_num
+    self.service_name = service_name
+    self.job_name = job_name
+    self.region = region
+    self.hostname = hostname
+    self.task_num = task_num
 
   def _populate_target_pb(self, metric):
     """Populate the 'task' embedded message field of a metric protobuf.
@@ -83,8 +82,8 @@ class TaskTarget(Target):
     Args:
       metric (metrics_pb2.MetricsData): the metric proto to be populated.
     """
-    metric.task.service_name = self._service_name
-    metric.task.job_name = self._job_name
-    metric.task.data_center = self._region
-    metric.task.host_name = self._hostname
-    metric.task.task_num = self._task_num
+    metric.task.service_name = self.service_name
+    metric.task.job_name = self.job_name
+    metric.task.data_center = self.region
+    metric.task.host_name = self.hostname
+    metric.task.task_num = self.task_num
