@@ -178,7 +178,7 @@ def get_flakes(step):  # pragma: no cover
         break  # layout test output
       results.append(failure)
     return results
-      
+
   #gpu
   gpu_search_str = '&tests='
   gpu_search_index = combined.find(gpu_search_str)
@@ -290,6 +290,11 @@ def parse_cq_data(json_data):  # pragma: no cover
       continue
 
     if fields['verifier'] != 'try job':
+      continue
+
+    # At the moment, much of the parsing logic assumes this is a Chromium
+    # tryjob.
+    if fields['project'] != 'chromium':
       continue
 
     job_states = fields['jobs']
