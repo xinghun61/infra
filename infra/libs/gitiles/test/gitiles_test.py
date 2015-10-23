@@ -10,6 +10,7 @@ import time
 from infra.libs.gitiles import gitiles
 from testing_support import auto_stub
 
+import mock
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
@@ -18,7 +19,7 @@ class TestGitiles(auto_stub.TestCase):
   def setUp(self):
     super(TestGitiles, self).setUp()
 
-    self.response = {'status': '200'}
+    self.response = {'status': 200}
     self.content = None
 
     class FakeHttp(object):
@@ -27,7 +28,9 @@ class TestGitiles(auto_stub.TestCase):
         self.content = content
 
       def request(self, *_args, **_kwargs):
-        return self.response, self.content
+        r = mock.Mock()
+        r.status = self.response['status']
+        return r, self.content
 
     def http_maker():
       return FakeHttp(self.response, self.content)
@@ -57,7 +60,15 @@ class TestGitiles(auto_stub.TestCase):
     self.assertTrue(result.startswith('# Copyright 2015'))
 
   def testInvalidResponse(self):
-    self.response = {'status': '500'}
+    self.response = {'status': 500}
+    with self.assertRaises(gitiles.GitilesError):
+      gitiles.call_gitiles(
+          'http://bananas',
+          'text',
+          os.path.join(DATA_DIR, 'netrc'))
+
+  def testErrorResponse(self):
+    self.response = {'status': 400}
     with self.assertRaises(gitiles.GitilesError):
       gitiles.call_gitiles(
           'http://bananas',
@@ -101,3 +112,15 @@ class TestGitiles(auto_stub.TestCase):
         'json'
     )
     self.assertEqual(result['id'], '24a7f79e278700fab6dfd3866b1b8508c44ddb55')
+
+  def testRepositoryCall(self):
+    r = gitiles.Repository('http://example.com')
+    self.content = ')]}\'\n{"commit": "foo"}'
+    v = r.ref_info('master')
+    self.assertEqual(v, {'commit': 'foo'})
+
+  def testRepositorySubpathCall(self):
+    r = gitiles.Repository('http://example.com')
+    self.content = ')]}\'\n{"commit": "foo"}'
+    v = r(subpath='master/foo/bar/baz.py')
+    self.assertEqual(v, {'commit': 'foo'})
