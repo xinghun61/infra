@@ -85,6 +85,9 @@ func Run(ctx context.Context, f Runner, cycle time.Duration, maxErrs int, c cloc
 			return ret
 		case <-tmr.GetC():
 			run()
+			if !ret.Success {
+				return ret
+			}
 		}
 	}
 }
