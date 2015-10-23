@@ -4,10 +4,14 @@
 
 import hashlib
 import json
+import os
+import shutil
+import tempfile
 import unittest
 
 from infra.libs.gitiles import gitiles
 from infra.tools.cros_pin import pinfile
+from infra.tools.cros_pin.logger import LOGGER
 
 import mock
 
@@ -22,25 +26,16 @@ class TestPinfile(unittest.TestCase):
       ('path', 'to', 'pins.json'),
       ('mywaterfall',))
 
-  _MOCK_PINFILE = '{"test": "foo", "release": "bar"}'
   _CHROMITE_REPO = 'https://example.com/fake'
 
   def setUp(self):
     self._patchers = []
-    self._pinfile = self._MOCK_PINFILE
-
-    self._open = mock.mock_open(read_data=self._pinfile)
-
-    self._write_out = ''
-    def fake_write(data):
-      self._write_out = self._write_out + data
-    self._open().write = mock.Mock(side_effect=fake_write)
-
-    for patchme, m in (
-        ('__builtin__.open', self._open),
-        ('infra.libs.gitiles.gitiles.Repository', mock.DEFAULT),
+    for patchme in (
+        'infra.libs.gitiles.gitiles.Repository',
+        'infra.tools.cros_pin.pinfile.Editor.File.load',
+        'infra.tools.cros_pin.pinfile.Editor.File.save',
         ):
-      p = mock.patch(patchme, m)
+      p = mock.patch(patchme)
       self._patchers.append(p)
 
     for p in self._patchers:
@@ -54,28 +49,31 @@ class TestPinfile(unittest.TestCase):
     for p in reversed(self._patchers):
       p.stop()
 
-  def _assertWroteJSON(self, **kw):
-    self.assertEqual(json.loads(self._write_out), kw)
-
   def testUpdatesPinSuccessfully(self):
+    self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
     pu = self._f.update('test', version=h('baz'))
     self.assertEqual(pu, pinfile.PinUpdate(name='test', fr='foo', to=h('baz')))
-    self._assertWroteJSON(test=h('baz'), release='bar')
+    self._f.save.assert_called_with(test=h('baz'), release='bar')
 
   def testUpdateIsNoneForSameValue(self):
+    self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
     self._editor._validate = False
     pu = self._f.update('test', version='foo')
     self.assertIsNone(pu)
+    self._f.save.assert_not_called()
 
   def testUpdatesPinToToTSuccessfully(self):
+    self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
+    self._editor._validate = False
     self._editor._gitiles.ref_info.return_value = {
         'commit': 'baz',
     }
     pu = self._f.update('test')
     self.assertEqual(pu, pinfile.PinUpdate(name='test', fr='foo', to='baz'))
-    self._assertWroteJSON(test='baz', release='bar')
+    self._f.save.assert_called_with(test='baz', release='bar')
 
   def testUpdateRejectsNewPinWithoutCreate(self):
+    self._f.load.return_value = {}
     self.assertRaises(pinfile.ReadOnlyError,
         self._f.update, 'newpin', create=False, version=h('baz'))
 
@@ -90,21 +88,33 @@ class TestPinfile(unittest.TestCase):
         self._f.update, 'test', version=h('baz'))
 
   def testRemoveDeletesPin(self):
+    self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
     pu = self._f.remove('test')
     self.assertEqual(pu, pinfile.PinUpdate(name='test', fr='foo', to=None))
-    self._assertWroteJSON(release='bar')
+    self._f.save.assert_called_with(release='bar')
 
+    self._f.load.return_value = {'release': 'bar'}
     pu = self._f.remove('asdf')
     self.assertIsNone(pu)
-    self._assertWroteJSON(release='bar')
+    self._f.save.assert_not_called()
 
   def testIterPins(self):
+    self._f.load.return_value = {'test': 'foo', 'release': 'bar'}
     self.assertEqual(set(self._f.iterpins()),
                      set([('test', 'foo'), ('release', 'bar')]))
 
-  def testLoad(self):
-    m = mock.mock_open(read_data='{"foo": "bar"}')
-    with mock.patch('__builtin__.open', m):
-      self.assertEqual(set(self._f.iterpins()),
-                       set([('foo', 'bar')]))
 
+class TestPinfileIO(unittest.TestCase):
+
+  def setUp(self):
+    self._dir = tempfile.mkdtemp()
+
+    self._f = pinfile.Editor('fakepath', None).load(TestPinfile._CFG)
+    self._f._path = os.path.join(self._dir, 'pinfile.json')
+
+  def tearDown(self):
+    shutil.rmtree(self._dir)
+
+  def testLoadSave(self):
+    self._f.save(foo='bar')
+    self.assertEqual(self._f.load(), {'foo': 'bar'})
