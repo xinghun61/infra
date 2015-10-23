@@ -185,6 +185,10 @@ def RunSteps(api):
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
   api.bot_update.ensure_checkout(force=True, with_branch_heads=True)
+  api.step(
+      'touch chrome/test/data/webui/i18n_process_css_test.html',
+      ['touch', api.path['checkout'].join(
+          'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
   with api.step.defer_results():
     # Export full tarball.
