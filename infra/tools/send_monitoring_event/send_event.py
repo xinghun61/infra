@@ -274,6 +274,7 @@ def read_events_from_file(filename):
             step_name=args.get('build-event-step-name'),
             step_number=args.get('build-event-step-number'),
             result=args.get('build-event-result'),
+            extra_result_code=args.get('build-event-extra-result-code'),
             timestamp_kind=args.get('event-mon-timestamp-kind'),
             event_timestamp=args.get('event-mon-event-timestamp'),
             service_name=args.get('event-mon-service-name')))
