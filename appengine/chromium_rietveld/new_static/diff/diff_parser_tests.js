@@ -64,6 +64,34 @@ describe("DiffParser", function() {
         assert.isTrue(result.groups[3].lines[0].context);
         assert.equal(result.groups[3].lines[0].text, "Context 2");
     });
+    it("should parse both one-number and two-number line ranges", function() {
+        var text =
+            "Index: example.cc\n" +
+            "diff --git a/example.cc b/example.cc\n" +
+            "index aaf..def 100644\n" +
+            "--- a/example.cc\n" +
+            "+++ b/example.cc\n" +
+            "@@ -1 +1,1 @@ Context 1\n" +
+            " A line of text\n" +
+            "- Example line 1\n" +
+            "@@ -4,2 +3,1 @@ Context 2\n" +
+            " A line of text\n" +
+            "- Example line 1\n";
+        var parser = new DiffParser(text);
+        var result = parser.parse()[0];
+        assert.equal(result.name, "example.cc");
+        assert.equal(result.groups.length, 7);
+        assert.equal(result.groups[0].type, "header");
+        assert.equal(result.groups[0].lines.length, 1);
+        assert.equal(result.groups[0].lines[0].type, "header");
+        assert.isFalse(result.groups[0].lines[0].context);
+        assert.equal(result.groups[0].lines[0].text, "Context 1");
+        assert.equal(result.groups[3].type, "header");
+        assert.equal(result.groups[3].lines.length, 1);
+        assert.equal(result.groups[3].lines[0].type, "header");
+        assert.isTrue(result.groups[3].lines[0].context);
+        assert.equal(result.groups[3].lines[0].text, "Context 2");
+    });
     it("should skip lines with backslash prefixes", function() {
         var text =
             "Index: example.cc\n" +

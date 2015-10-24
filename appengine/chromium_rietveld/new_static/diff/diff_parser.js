@@ -18,7 +18,7 @@ DiffParser.COPY_FROM_PREFIX = "copy from ";
 DiffParser.COPY_TO_PREFIX = "copy to ";
 DiffParser.RENAME_FROM_PREFIX = "rename from ";
 DiffParser.RENAME_TO_PREFIX = "rename to ";
-DiffParser.HEADER_PATTERN = /^@@ \-(\d+),[^+]+\+(\d+)(,\d+)? @@ ?(.*)/;
+DiffParser.HEADER_PATTERN = /^@@ \-(\d+)[^+]+\+(\d+)(,\d+)? @@ ?(.*)/;
 DiffParser.IMAGE_EXTENSIONS = {
     "png": true,
     "jpeg": true,
