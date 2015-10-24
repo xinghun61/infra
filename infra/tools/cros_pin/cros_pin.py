@@ -294,7 +294,7 @@ class UpdateTracker(object):
     LOGGER.debug('Creating commit in [%s] with message:\n%s',
                  repo_path, commit_msg)
     execute.check_call(
-        ['git', 'checkout', '-b', '_cros_pin', '--track'],
+        ['git', 'checkout', '-b', '_cros_pin'],
         cwd=repo_path)
     execute.check_call(
         ['git', 'commit', '--all', '--message', commit_msg],
