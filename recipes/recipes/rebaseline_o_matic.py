@@ -23,6 +23,8 @@ DEPS = [
 
 
 def RunSteps(api):
+  RIETVELD_REFRESH_TOKEN = '/creds/refresh_tokens/blink_rebaseline_bot_rietveld'
+
   api.gclient.set_config('blink')
   api.bot_update.ensure_checkout(force=True)
 
@@ -30,7 +32,8 @@ def RunSteps(api):
 
   api.python('webkit-patch auto-rebaseline',
              cwd.join('Tools', 'Scripts', 'webkit-patch'),
-             ['auto-rebaseline', '--verbose'],
+             ['auto-rebaseline', '--verbose', '--auth-refresh-token-json',
+              RIETVELD_REFRESH_TOKEN],
              cwd=cwd)
 
 

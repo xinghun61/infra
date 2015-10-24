@@ -97,7 +97,9 @@
       "-u",
       "[SLAVE_BUILD]/src/third_party/WebKit/Tools/Scripts/webkit-patch",
       "auto-rebaseline",
-      "--verbose"
+      "--verbose",
+      "--auth-refresh-token-json",
+      "/creds/refresh_tokens/blink_rebaseline_bot_rietveld"
     ],
     "cwd": "[SLAVE_BUILD]/src/third_party/WebKit",
     "name": "webkit-patch auto-rebaseline"
