@@ -20,8 +20,6 @@
       "/path/to/tmp/json",
       "--revision",
       "src@HEAD",
-      "--revision",
-      "src/third_party/WebKit@HEAD",
       "--force",
       "--output_manifest"
     ],
