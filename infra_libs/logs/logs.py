@@ -158,6 +158,18 @@ def add_handler(logger, handler=None, timezone='UTC',
   logger.setLevel(level=logging.DEBUG)
 
 
+def default_program_name():
+  # Use argv[0] as the program name, except when it's '__main__.py' which is the
+  # case when we were invoked by run.py.  In this case look at the main module's
+  # __package__ variable which is set by runpy.
+  ret = os.path.basename(sys.argv[0])
+  if ret == '__main__.py':
+    package = sys.modules['__main__'].__package__
+    if package is not None:
+      return package.split('.')[-1]
+  return ret
+
+
 def add_argparse_options(parser,
                          default_level=logging.WARNING):  # pragma: no cover
   """Adds logging related options to an argparse.ArgumentParser.
@@ -187,14 +199,19 @@ def add_argparse_options(parser,
   parser.add_argument(
       '--logs-directory',
       default=DEFAULT_LOG_DIRECTORIES,
-      help=textwrap.fill('directory into which to write logs (default: '
-                         '%%(default)s). If '
-           'this directory does not exist or is not writable, the temporary '
-           'directory (%s) will be used instead. If this is explicitly set '
-           'to the empty string, logs will not be written at all. May be set'
-           ' to multiple directories separated by the "%s" character, in '
-           'which case the first one that exists and is writable is used.' % (
+      help=textwrap.fill(
+          'directory into which to write logs (default: %%(default)s). If '
+          'this directory does not exist or is not writable, the temporary '
+          'directory (%s) will be used instead. If this is explicitly set '
+          'to the empty string, logs will not be written at all. May be set '
+          'to multiple directories separated by the "%s" character, in '
+          'which case the first one that exists and is writable is used.' % (
                 tempfile.gettempdir(), os.pathsep), width=56))
+  parser.add_argument(
+      '--logs-program-name',
+      default=default_program_name(),
+      help='the program name used to name the log files created in '
+           '--logs-directory (default: %(default)s).')
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -245,19 +262,10 @@ def _add_file_handlers(options, logger):  # pragma: no cover
       logs_directory = directory
       break
 
-  # Use argv[0] as the program name, except when it's '__main__.py' which is the
-  # case when we were invoked by run.py.  In this case look at the main module's
-  # __package__ variable which is set by runpy.
-  program_name = os.path.basename(sys.argv[0])
-  if program_name == '__main__.py':
-    package = sys.modules['__main__'].__package__
-    if package is not None:
-      program_name = package.split('.')[-1]
-
   # Log files are named with this pattern:
   # <program>.<hostname>.<username>.log.<level>.YYYYMMDD-HHMMSS.<pid>
   pattern = "%s.%s.%s.log.%%s.%s.%d" % (
-      program_name,
+      options.logs_program_name,
       socket.getfqdn().split('.')[0],
       getpass.getuser(),
       datetime.datetime.utcnow().strftime('%Y%m%d-%H%M%S'),

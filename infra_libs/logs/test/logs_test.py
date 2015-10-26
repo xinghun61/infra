@@ -2,8 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import logging
+import sys
 import unittest
+
+import mock
 
 from infra_libs.logs import logs
 
@@ -32,3 +36,28 @@ class InfraFilterTest(unittest.TestCase):
         'US/Pacific',
         module_name_blacklist=r'^infra_libs\.logs\.test\.logs_test$')
     self.assertFalse(infrafilter.filter(record))
+
+
+class DefaultProgramNameTest(unittest.TestCase):
+
+  def setUp(self):
+    self.old_argv = copy.copy(sys.argv)
+    self.old_package = sys.modules['__main__'].__package__
+
+  def tearDown(self):
+    sys.argv = self.old_argv
+    sys.modules['__main__'].__package__ = self.old_package
+
+  def test_from_argv(self):
+    sys.argv = ['/foo/bar/program', '--args']
+    self.assertEquals('program', logs.default_program_name())
+
+  def test_from_main_package(self):
+    sys.argv = ['/foo/bar/__main__.py', '--args']
+    sys.modules['__main__'].__package__ = 'foo.bar.program'
+    self.assertEquals('program', logs.default_program_name())
+
+  def test_from_argv_when_main_package_is_none(self):
+    sys.argv = ['/foo/bar/__main__.py', '--args']
+    sys.modules['__main__'].__package__ = None
+    self.assertEquals('__main__.py', logs.default_program_name())

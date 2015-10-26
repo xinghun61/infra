@@ -786,7 +786,8 @@ class TestCQStats(auto_stub.TestCase):
     self.mock(cq_stats, 'output', self.print_mock)
     self.mock(cq_stats, 'parse_args', lambda: Args(
         project='chromium', log_level=logging.CRITICAL, logs_black_list=None,
-        logs_directory=tempfile.gettempdir()))
+        logs_directory=tempfile.gettempdir(),
+        logs_program_name='cq_stats_test'))
     self.mock(cq_stats, 'acquire_stats', lambda _: cq_stats.default_stats())
     cq_stats.main()
     return self.expectations
