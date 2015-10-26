@@ -654,28 +654,75 @@ func (c *ensureRun) Run(a subcommands.Application, args []string) int {
 	if !c.init(args, 0, 0) {
 		return 1
 	}
-	return c.done(ensurePackages(c.rootDir, c.listFile, c.ServiceOptions))
+	currentPins, _, err := ensurePackages(c.rootDir, c.listFile, false, c.ServiceOptions)
+	return c.done(currentPins, err)
 }
 
-func ensurePackages(root string, desiredStateFile string, serviceOpts ServiceOptions) ([]common.Pin, error) {
+func ensurePackages(root string, desiredStateFile string, dryRun bool, serviceOpts ServiceOptions) ([]common.Pin, cipd.Actions, error) {
 	f, err := os.Open(desiredStateFile)
 	if err != nil {
-		return nil, err
+		return nil, cipd.Actions{}, err
 	}
 	defer f.Close()
 	client, err := serviceOpts.makeCipdClient(root)
 	if err != nil {
-		return nil, err
+		return nil, cipd.Actions{}, err
 	}
 	defer client.Close()
 	desiredState, err := client.ProcessEnsureFile(f)
 	if err != nil {
-		return nil, err
+		return nil, cipd.Actions{}, err
 	}
-	if err = client.EnsurePackages(desiredState); err != nil {
-		return nil, err
+	actions, err := client.EnsurePackages(desiredState, dryRun)
+	if err != nil {
+		return nil, actions, err
 	}
-	return desiredState, nil
+	return desiredState, actions, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 'puppet-check-updates' subcommand.
+
+var cmdPuppetCheckUpdates = &subcommands.Command{
+	UsageLine: "puppet-check-updates [options]",
+	ShortDesc: "returns 0 exit code iff 'ensure' will do some actions",
+	LongDesc: "Returns 0 exit code iff 'ensure' will do some actions.\n\n" +
+		"Exists to be used from Puppet's Exec 'onlyif' option to trigger " +
+		"'ensure' only if something is out of date. If puppet-check-updates " +
+		"fails, it returns non-zero exit code (as usual), so that Puppet doesn't " +
+		"trigger notification chain (that can result in service restarts) on " +
+		"transient errors.",
+	CommandRun: func() subcommands.CommandRun {
+		c := &checkUpdatesRun{}
+		c.registerBaseFlags()
+		c.ServiceOptions.registerFlags(&c.Flags)
+		c.Flags.StringVar(&c.rootDir, "root", "<path>", "Path to an installation site root directory.")
+		c.Flags.StringVar(&c.listFile, "list", "<path>", "A file with a list of '<package name> <version>' pairs.")
+		return c
+	},
+}
+
+type checkUpdatesRun struct {
+	Subcommand
+	ServiceOptions
+
+	rootDir  string
+	listFile string
+}
+
+func (c *checkUpdatesRun) Run(a subcommands.Application, args []string) int {
+	if !c.init(args, 0, 0) {
+		return 1
+	}
+	_, actions, err := ensurePackages(c.rootDir, c.listFile, true, c.ServiceOptions)
+	if err != nil {
+		return c.done(actions, err)
+	}
+	c.done(actions, nil)
+	if actions.Empty() {
+		return 5 // some arbitrary non-zero number, unlikely to show up on errors
+	}
+	return 0
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1555,6 +1602,9 @@ var application = &subcommands.DefaultApplication{
 		cmdFetch,
 		cmdInspect,
 		cmdRegister,
+
+		// Low level misc commands.
+		cmdPuppetCheckUpdates,
 	},
 }
 

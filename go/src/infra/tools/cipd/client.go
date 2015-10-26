@@ -123,6 +123,16 @@ func (t UnixTime) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
 }
 
+// JSONError is wrapper around Error that serializes it as string.
+type JSONError struct {
+	error
+}
+
+// MarshalJSON is used by JSON encoder.
+func (e JSONError) MarshalJSON() ([]byte, error) {
+	return []byte(e.Error()), nil
+}
+
 // PackageACL is per package path per role access control list that is a part of
 // larger overall ACL: ACL for package "a/b/c" is a union of PackageACLs for "a"
 // "a/b" and "a/b/c".
@@ -185,6 +195,33 @@ type RefInfo struct {
 	ModifiedBy string `json:"modified_by"`
 	// ModifiedTs is when the ref was modified last time.
 	ModifiedTs UnixTime `json:"modified_ts"`
+}
+
+// Actions is returned by EnsurePackages. It lists pins that were attempted to
+// be installed, updated or removed, as well as all errors.
+type Actions struct {
+	ToInstall []common.Pin  `json:"to_install,omitempty"` // pins to be installed
+	ToUpdate  []UpdatedPin  `json:"to_update,omitempty"`  // pins to be replaced
+	ToRemove  []common.Pin  `json:"to_remove,omitempty"`  // pins to be removed
+	Errors    []ActionError `json:"errors,omitempty"`     // all individual errors
+}
+
+// Empty is true if there are no actions specified.
+func (a *Actions) Empty() bool {
+	return len(a.ToInstall) == 0 && len(a.ToUpdate) == 0 && len(a.ToRemove) == 0
+}
+
+// UpdatedPin specifies a pair of pins: old and new version of a package.
+type UpdatedPin struct {
+	From common.Pin `json:"from"`
+	To   common.Pin `json:"to"`
+}
+
+// ActionError holds an error that happened when installing or removing the pin.
+type ActionError struct {
+	Action string     `json:"action"`
+	Pin    common.Pin `json:"pin"`
+	Error  JSONError  `json:"error,omitempty"`
 }
 
 // Client provides high-level CIPD client interface. Thread safe.
@@ -260,7 +297,12 @@ type Client interface {
 	// of packages inside the installation site root. Given a description of
 	// what packages (and versions) should be installed it will do all necessary
 	// actions to bring the state of the site root to the desired one.
-	EnsurePackages(pins []common.Pin) error
+	//
+	// If dryRun is true, will just check for changes and return them in Actions
+	// struct, but won't actually perform them.
+	//
+	// If the update was only partially applied, returns both Actions and error.
+	EnsurePackages(pins []common.Pin, dryRun bool) (Actions, error)
 
 	// Close should be called to dump any cached state to disk.
 	Close()
@@ -796,12 +838,12 @@ func (client *clientImpl) ProcessEnsureFile(r io.Reader) ([]common.Pin, error) {
 	return out, nil
 }
 
-func (client *clientImpl) EnsurePackages(pins []common.Pin) error {
+func (client *clientImpl) EnsurePackages(pins []common.Pin, dryRun bool) (actions Actions, err error) {
 	// Make sure a package is specified only once.
 	seen := make(map[string]bool, len(pins))
 	for _, p := range pins {
 		if seen[p.PackageName] {
-			return fmt.Errorf("package %s is specified twice", p.PackageName)
+			return actions, fmt.Errorf("package %s is specified twice", p.PackageName)
 		}
 		seen[p.PackageName] = true
 	}
@@ -809,52 +851,82 @@ func (client *clientImpl) EnsurePackages(pins []common.Pin) error {
 	// Enumerate existing packages.
 	existing, err := client.deployer.FindDeployed()
 	if err != nil {
-		return err
+		return actions, err
 	}
 
 	// Figure out what needs to be updated and deleted, log it.
-	toDeploy, toDelete := buildActionPlan(pins, existing)
-	if len(toDeploy) == 0 && len(toDelete) == 0 {
+	actions = buildActionPlan(pins, existing)
+	if actions.Empty() {
 		client.Logger.Infof("Everything is up-to-date.")
-		return nil
+		return actions, nil
 	}
-	if len(toDeploy) != 0 {
+	if len(actions.ToInstall) != 0 {
 		client.Logger.Infof("Packages to be installed:")
-		for _, pin := range toDeploy {
+		for _, pin := range actions.ToInstall {
 			client.Logger.Infof("  %s", pin)
 		}
 	}
-	if len(toDelete) != 0 {
+	if len(actions.ToUpdate) != 0 {
+		client.Logger.Infof("Packages to be updated:")
+		for _, pair := range actions.ToUpdate {
+			client.Logger.Infof("  %s (%s -> %s)",
+				pair.From.PackageName, pair.From.InstanceID, pair.To.InstanceID)
+		}
+	}
+	if len(actions.ToRemove) != 0 {
 		client.Logger.Infof("Packages to be removed:")
-		for _, pin := range toDelete {
+		for _, pin := range actions.ToRemove {
 			client.Logger.Infof("  %s", pin)
 		}
+	}
+
+	if dryRun {
+		client.Logger.Infof("Dry run, not actually doing anything.")
+		return actions, nil
 	}
 
 	// Remove all unneeded stuff.
-	fail := false
-	for _, pin := range toDelete {
+	for _, pin := range actions.ToRemove {
 		err = client.deployer.RemoveDeployed(pin.PackageName)
 		if err != nil {
 			client.Logger.Errorf("Failed to remove %s - %s", pin.PackageName, err)
-			fail = true
+			actions.Errors = append(actions.Errors, ActionError{
+				Action: "remove",
+				Pin:    pin,
+				Error:  JSONError{err},
+			})
 		}
 	}
 
-	// Install all new stuff.
-	for _, pin := range toDeploy {
+	// Install all new and updated stuff. Install in the order specified by
+	// 'pins'. Order matters if multiple packages install same file.
+	toDeploy := make(map[string]bool, len(actions.ToInstall)+len(actions.ToUpdate))
+	for _, p := range actions.ToInstall {
+		toDeploy[p.PackageName] = true
+	}
+	for _, pair := range actions.ToUpdate {
+		toDeploy[pair.To.PackageName] = true
+	}
+	for _, pin := range pins {
+		if !toDeploy[pin.PackageName] {
+			continue
+		}
 		err = client.FetchAndDeployInstance(pin)
 		if err != nil {
 			client.Logger.Errorf("Failed to install %s - %s", pin, err)
-			fail = true
+			actions.Errors = append(actions.Errors, ActionError{
+				Action: "install",
+				Pin:    pin,
+				Error:  JSONError{err},
+			})
 		}
 	}
 
-	if !fail {
+	if len(actions.Errors) == 0 {
 		client.Logger.Infof("All changes applied.")
-		return nil
+		return actions, nil
 	}
-	return ErrEnsurePackagesFailed
+	return actions, ErrEnsurePackagesFailed
 }
 
 func (client *clientImpl) Close() {
@@ -919,12 +991,17 @@ func (c *clockImpl) now() time.Time        { return time.Now() }
 func (c *clockImpl) sleep(d time.Duration) { time.Sleep(d) }
 
 // buildActionPlan is used by EnsurePackages to figure out what to install or remove.
-func buildActionPlan(desired, existing []common.Pin) (toDeploy, toDelete []common.Pin) {
+func buildActionPlan(desired, existing []common.Pin) (a Actions) {
 	// Figure out what needs to be installed or updated.
 	existingMap := buildInstanceIDMap(existing)
 	for _, d := range desired {
-		if existingMap[d.PackageName] != d.InstanceID {
-			toDeploy = append(toDeploy, d)
+		if existingID, exists := existingMap[d.PackageName]; !exists {
+			a.ToInstall = append(a.ToInstall, d)
+		} else if existingID != d.InstanceID {
+			a.ToUpdate = append(a.ToUpdate, UpdatedPin{
+				From: common.Pin{PackageName: d.PackageName, InstanceID: existingID},
+				To:   d,
+			})
 		}
 	}
 
@@ -932,7 +1009,7 @@ func buildActionPlan(desired, existing []common.Pin) (toDeploy, toDelete []commo
 	desiredMap := buildInstanceIDMap(desired)
 	for _, e := range existing {
 		if desiredMap[e.PackageName] == "" {
-			toDelete = append(toDelete, e)
+			a.ToRemove = append(a.ToRemove, e)
 		}
 	}
 

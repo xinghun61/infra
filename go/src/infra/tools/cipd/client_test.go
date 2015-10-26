@@ -608,13 +608,13 @@ func TestEnsurePackages(t *testing.T) {
 
 			// Calls EnsurePackages, mocking fetch backend first. Backend will be mocked
 			// to serve only 'fetched' packages.
-			callEnsure := func(instances []local.PackageInstance, fetched []local.PackageInstance) error {
+			callEnsure := func(instances []local.PackageInstance, fetched []local.PackageInstance) (Actions, error) {
 				client := mockClientForFetch(c, tempDir, fetched)
 				pins := []common.Pin{}
 				for _, i := range instances {
 					pins = append(pins, i.Pin())
 				}
-				return client.EnsurePackages(pins)
+				return client.EnsurePackages(pins, false)
 			}
 
 			findDeployed := func(root string) []common.Pin {
@@ -625,45 +625,69 @@ func TestEnsurePackages(t *testing.T) {
 			}
 
 			// Noop run on top of empty directory.
-			err := callEnsure(nil, nil)
+			actions, err := callEnsure(nil, nil)
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{})
 
 			// Specify same package twice. Fails.
-			err = callEnsure([]local.PackageInstance{a1, a2}, nil)
+			actions, err = callEnsure([]local.PackageInstance{a1, a2}, nil)
 			So(err, ShouldNotBeNil)
+			So(actions, ShouldResemble, Actions{})
 
 			// Install a1 into a site root.
-			err = callEnsure([]local.PackageInstance{a1}, []local.PackageInstance{a1})
+			actions, err = callEnsure([]local.PackageInstance{a1}, []local.PackageInstance{a1})
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{
+				ToInstall: []common.Pin{a1.Pin()},
+			})
 			assertFile("file a 1", "test data")
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin()})
 
 			// Noop run. Nothing is fetched.
-			err = callEnsure([]local.PackageInstance{a1}, nil)
+			actions, err = callEnsure([]local.PackageInstance{a1}, nil)
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{})
 			assertFile("file a 1", "test data")
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin()})
 
 			// Upgrade a1 to a2.
-			err = callEnsure([]local.PackageInstance{a2}, []local.PackageInstance{a2})
+			actions, err = callEnsure([]local.PackageInstance{a2}, []local.PackageInstance{a2})
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{
+				ToUpdate: []UpdatedPin{
+					{
+						From: a1.Pin(),
+						To:   a2.Pin(),
+					},
+				},
+			})
 			assertFile("file a 2", "test data")
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a2.Pin()})
 
 			// Remove a2 and install b.
-			err = callEnsure([]local.PackageInstance{b}, []local.PackageInstance{b})
+			actions, err = callEnsure([]local.PackageInstance{b}, []local.PackageInstance{b})
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{
+				ToInstall: []common.Pin{b.Pin()},
+				ToRemove:  []common.Pin{a2.Pin()},
+			})
 			assertFile("file b", "test data")
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{b.Pin()})
 
 			// Remove b.
-			err = callEnsure(nil, nil)
+			actions, err = callEnsure(nil, nil)
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{
+				ToRemove: []common.Pin{b.Pin()},
+			})
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{})
 
 			// Install a1 and b.
-			err = callEnsure([]local.PackageInstance{a1, b}, []local.PackageInstance{a1, b})
+			actions, err = callEnsure([]local.PackageInstance{a1, b}, []local.PackageInstance{a1, b})
 			So(err, ShouldBeNil)
+			So(actions, ShouldResemble, Actions{
+				ToInstall: []common.Pin{a1.Pin(), b.Pin()},
+			})
 			assertFile("file a 1", "test data")
 			assertFile("file b", "test data")
 			So(findDeployed(tempDir), ShouldResemble, []common.Pin{a1.Pin(), b.Pin()})
