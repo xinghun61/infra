@@ -618,27 +618,34 @@ def derive_stats(args, begin_date, init_stats=None):
 
   stats['begin'] = date_from_timestamp(results[-1]['timestamp'])
   stats['end'] = date_from_timestamp(results[0]['timestamp'])
-  # Create map issue:patchset -> #attempts
-  patches, issues = set(), set()
+
+  raw_patches = set()
   for reason in results:
-    issues.add(reason['fields']['issue'])
-    patches.add((reason['fields']['issue'], reason['fields']['patchset']))
-  stats['issue-count'] = len(issues)
-  stats['patchset-count'] = len(patches)
+    raw_patches.add((reason['fields']['issue'], reason['fields']['patchset']))
+
   patch_stats = {}
   # Fetch and process each patchset log
   def get_patch_stats(patch_id):
     return derive_patch_stats(args, begin_date, end_date, patch_id)
 
   if args.seq or not args.thread_pool:
-    iterable = map(get_patch_stats, patches)
+    iterable = map(get_patch_stats, raw_patches)
   else:
-    pool = ThreadPool(min(args.thread_pool, len(patches)))
-    iterable = pool.imap_unordered(get_patch_stats, patches)
+    pool = ThreadPool(min(args.thread_pool, len(raw_patches)))
+    iterable = pool.imap_unordered(get_patch_stats, raw_patches)
+
+  patches, issues = set(), set()
   for patch_id, pstats in iterable:
     if not pstats['supported']:
       continue
     patch_stats[patch_id] = pstats
+
+    issue, patchset = patch_id
+    issues.add(issue)
+    patches.add((issue, patchset))
+
+  stats['issue-count'] = len(issues)
+  stats['patchset-count'] = len(patches)
 
   stats['patch_stats'] = patch_stats
   _derive_stats_from_patch_stats(stats)
