@@ -1704,7 +1704,7 @@ def replace_bug(message):
                         'skia', 'v8', 'webrtc', 'libyuv')
   monorail_base_tracker_url = (
       'https://bugs.chromium.org/p/%s/issues/detail?id=%s')
-  monorail_valid_trackers = ('crashpad', 'monorail',)
+  monorail_valid_trackers = ('crashpad', 'monorail', 'pdfium')
 
   bugs = re.split(r"[\s,]+", message.group(1))
   urls = []

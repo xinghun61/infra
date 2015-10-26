@@ -10,7 +10,7 @@ function LinkTextParser(callback)
     Object.preventExtensions(this);
 }
 
-LinkTextParser.TRACKERS = [
+LinkTextParser.CODESITE_TRACKERS = [
     "chromium",
     "chromium-os",
     "chrome-os-partner",
@@ -18,6 +18,12 @@ LinkTextParser.TRACKERS = [
     "skia",
     "v8"
 ];
+
+LinkTextParser.MONORAIL_TRACKERS = [
+    "crashpad",
+    "monorail",
+    "pdfium"
+]
 
 LinkTextParser.prototype.addText = function(text, href)
 {
@@ -28,14 +34,26 @@ LinkTextParser.prototype.addText = function(text, href)
 
 LinkTextParser.prototype.addBugText = function(text, tracker, bugId)
 {
-    if (tracker && !LinkTextParser.TRACKERS.find(tracker)) {
-        this.addText(text)
+    if (tracker && LinkTextParser.CODESITE_TRACKERS.find(tracker)) {
+        var href = "https://code.google.com/p/{1}/issues/detail?id={2}".assign(
+            encodeURIComponent(tracker), encodeURIComponent(bugId));
+        this.addText(text, href);
         return;
     }
-    var href = "http://code.google.com/p/{1}/issues/detail?id={2}".assign(
-        encodeURIComponent(tracker || "chromium"),
-        encodeURIComponent(bugId));
-    this.addText(text, href);
+    if (tracker && LinkTextParser.MONORAIL_TRACKERS.find(tracker)) {
+        var href = "https://bugs.chromium.org/p/{1}/issues/detail?id={2}".assign(
+            encodeURIComponent(tracker), encodeURIComponent(bugId));
+        this.addText(text, href);
+        return;
+    }
+    // If there's a bug number, but no tracker, assume Chromium.
+    if (!tracker) {
+        var href = "https://code.google.com/p/chromium/issues/detail?id={1}".assign(
+            encodeURIComponent(bugId));
+        this.addText(text, href);
+        return;
+    }
+    this.addText(text)
 };
 
 LinkTextParser.prototype.parse = function(text)
