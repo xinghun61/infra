@@ -25,6 +25,34 @@
       "revision": null
     }
   ],
+  [
+    {
+      "author": "noone@chromium.org",
+      "commit-bot": true,
+      "date": "2014-11-23T22:38:39",
+      "revision": null
+    }
+  ],
+  [
+    {
+      "author": "someone@chromium.org",
+      "commit-bot": false,
+      "date": "2014-10-22T22:38:39",
+      "revision": null
+    },
+    {
+      "author": "blink-deps-roller@chromium.org",
+      "commit-bot": true,
+      "date": "2014-10-21T23:38:39",
+      "revision": null
+    },
+    {
+      "author": "blink-deps-roller@chromium.org",
+      "commit-bot": false,
+      "date": "2014-10-21T22:38:39",
+      "revision": null
+    }
+  ],
   {
     "bot_commits": 2,
     "bot_committers": 1,

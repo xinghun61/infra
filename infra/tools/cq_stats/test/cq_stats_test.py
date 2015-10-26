@@ -36,6 +36,7 @@ class Args(object):
     self.verbose = 'error'
     self.seq = 'false'
     self.thread_pool = 3
+    self.bots = []
     for name, val in kwargs.iteritems():
       self.__dict__[name] = val
 
@@ -169,7 +170,13 @@ class TestCQStats(auto_stub.TestCase):
                             'time': 'Tue Dec 23 22:38:39 2014'}},
              {'author': {'email': 'noone@chromium.org'},
               'committer': {'email': 'commit-bot@chromium.org',
-                            'time': 'Tue Nov 23 22:38:39 2014'}},
+                            'time': 'Tue Nov 23 22:38:39 2014'},
+              'tree_diff': [
+                {
+                  'old_path': 'cc/trees/layer_tree_impl.cc',
+                  'new_path': 'cc/trees/layer_tree_impl.cc',
+                },
+              ]},
              {'author': {'email': 'someone@chromium.org'},
               'committer': {'email': 'anyone@chromium.org',
                             'time': 'Tue Oct 22 22:38:39 2014'}},
@@ -202,15 +209,29 @@ class TestCQStats(auto_stub.TestCase):
     data = cq_stats.fetch_git_logs(
         'chromium',
         datetime.datetime(2014, 10, 1),
-        datetime.datetime(2014, 12, 1))
+        datetime.datetime(2014, 12, 1),
+        Args())
+
+    included_data = cq_stats.fetch_git_logs(
+        'chromium',
+        datetime.datetime(2014, 10, 1),
+        datetime.datetime(2014, 12, 1),
+        Args(path_filter_include=['cc']))
+
+    excluded_data = cq_stats.fetch_git_logs(
+        'chromium',
+        datetime.datetime(2014, 10, 1),
+        datetime.datetime(2014, 12, 1),
+        Args(path_filter_exclude=['cc']))
 
     derived_data = cq_stats.derive_git_stats(
         'chromium',
         datetime.datetime(2014,  9, 1),
         datetime.datetime(2014, 12, 1),
-        ['blink-deps-roller@chromium.org'])
+        Args(bots=['blink-deps-roller@chromium.org']))
 
-    return map(ensure_serializable, [data, derived_data])
+    return map(ensure_serializable,
+               [data, included_data, excluded_data, derived_data])
 
   def test_fetch_stats(self):
     self.mock(cq_stats, 'fetch_json', lambda _: 'json')

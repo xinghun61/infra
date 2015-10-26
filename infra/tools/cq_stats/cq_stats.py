@@ -319,6 +319,7 @@ def fetch_git_page(repo_url, cursor=None, page_size=2000):
       'pretty': 'full',
       'format': 'JSON',
       'n': page_size,
+      'name-status': 1,
   }
   if cursor:
     params.update({'s': cursor})
@@ -336,7 +337,11 @@ def fetch_git_page(repo_url, cursor=None, page_size=2000):
   return page
 
 
-def fetch_git_logs(repo, from_date, to_date):
+def matches_path_filter(entry, filters):
+  return any(entry.startswith(f) for f in filters)
+
+
+def fetch_git_logs(repo, from_date, to_date, args):
   """Fetch all logs from Gitiles for the given date range.
 
   Gitiles does not natively support time ranges, so we just fetch
@@ -359,6 +364,21 @@ def fetch_git_logs(repo, from_date, to_date):
         continue
       if commit_date < from_date:
         break
+
+      files = set()
+      for entry in log.get('tree_diff', []):
+        files.add(entry['old_path'])
+        files.add(entry['new_path'])
+
+      if args.path_filter_include:
+        if not any(matches_path_filter(p, args.path_filter_include)
+                   for p in files):
+          continue
+      if args.path_filter_exclude:
+        if any(matches_path_filter(p, args.path_filter_exclude)
+               for p in files):
+          continue
+
       data.append({
           'author': log.get('author', {}).get('email'),
           'date': commit_date,
@@ -704,9 +724,6 @@ def derive_patch_stats(args, begin_date, end_date, patch_id):
         ', '.join([r for r in REASONS if attempt[r]]))
     attempts.append(attempt)
 
-  def matches_path_filter(entry, filters):
-    return any(entry.startswith(f) for f in filters)
-
   # An attempt is a set of actions between patch_start and patch_stop
   # actions. Repeated patch_start / patch_stop actions are ignored.
   attempt = new_attempt()
@@ -922,9 +939,10 @@ def derive_log_stats(log_data, bots):
       if c == manual_committers.get(a, 0)}
   return stats
 
-def derive_git_stats(project, start_date, end_date, bots):
-  log_data = fetch_git_logs(PROJECTS[project]['repo'], start_date, end_date)
-  return derive_log_stats(log_data, bots)
+
+def derive_git_stats(project, start_date, end_date, args):
+  logs = fetch_git_logs(PROJECTS[project]['repo'], start_date, end_date, args)
+  return derive_log_stats(logs, args.bots)
 
 
 def percentage_tuple(data, total):
@@ -1350,8 +1368,7 @@ def acquire_stats(args, add_tree_stats=True):
 
   if add_tree_stats:
     stats['tree'] = derive_tree_stats(args.project, args.date, end_date)
-    stats['usage'] = derive_git_stats(
-        args.project, args.date, end_date, args.bots)
+    stats['usage'] = derive_git_stats(args.project, args.date, end_date, args)
 
   return stats
 
