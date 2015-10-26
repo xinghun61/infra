@@ -50,6 +50,8 @@ func StdParser() LogParser {
 	return LogParserChain{
 		&infraLogsParser{},
 		&twistedLogsParser{},
+		&puppetLogsParser{},
+		&apacheErrorLogsParser{time.Local},
 	}
 }
 
@@ -153,6 +155,118 @@ func (p *twistedLogsParser) ParseLogLine(line string) *Entry {
 }
 
 func (p *twistedLogsParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	puppetLogsRe = regexp.MustCompile(
+		`(\w{3} \w{3} \d{1,2} \d{2}:\d{2}:\d{2} [\+-]\d{4} \d{4})` + // Dow Mon DD HH:MM:SS +ZZZZ YYYY
+			` (\w+)` + // Source
+			` \((\w+)\)` + // Severity
+			`: (.*)`) // Message
+
+	// https://github.com/puppetlabs/puppet/blob/master/lib/puppet/util/log.rb
+	puppetSeverities = map[string]Severity{
+		"debug":   Debug,
+		"info":    Info,
+		"notice":  Notice,
+		"warning": Warning,
+		"err":     Error,
+		"alert":   Alert,
+		"emerg":   Emergency,
+		"crit":    Critical,
+	}
+)
+
+type puppetLogsParser struct{}
+
+func (p *puppetLogsParser) ParseLogLine(line string) *Entry {
+	if matches := puppetLogsRe.FindStringSubmatch(line); matches != nil {
+		timestamp, err := time.Parse("Mon Jan 2 15:04:05 -0700 2006", matches[1])
+		if err != nil {
+			return nil
+		}
+
+		source := matches[2]
+		severityText := matches[3]
+		message := matches[4]
+
+		severity, ok := puppetSeverities[severityText]
+		if !ok {
+			return nil
+		}
+
+		return &Entry{
+			Timestamp:   timestamp,
+			Severity:    severity,
+			TextPayload: fmt.Sprintf("%s: %s", source, message),
+			ParsedBy:    p,
+		}
+	}
+	return nil
+}
+
+func (p *puppetLogsParser) MergeLogLine(line string, e *Entry) bool {
+	e.TextPayload += "\n" + line
+	return true
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	apacheErrorLogsRe = regexp.MustCompile(
+		`\[(\w{3} \w{3} \d{1,2} \d{2}:\d{2}:\d{2} \d{4})\]` + // [Dow Mon DD HH:MM:SS YYYY]
+			` \[(\w+)\]` + // Severity
+			` \[client ([^\]]+)\]` + // Client
+			` (.*)`) // Message
+
+	// https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
+	apacheErrorLogSeverities = map[string]Severity{
+		"emerg":  Emergency,
+		"alert":  Alert,
+		"crit":   Critical,
+		"error":  Error,
+		"warn":   Warning,
+		"notice": Notice,
+		"info":   Info,
+		"debug":  Debug,
+	}
+)
+
+type apacheErrorLogsParser struct {
+	localTimeZone *time.Location
+}
+
+func (p *apacheErrorLogsParser) ParseLogLine(line string) *Entry {
+	if matches := apacheErrorLogsRe.FindStringSubmatch(line); matches != nil {
+		timestamp, err := time.ParseInLocation("Mon Jan 2 15:04:05 2006", matches[1], p.localTimeZone)
+		if err != nil {
+			return nil
+		}
+
+		severityText := matches[2]
+		client := matches[3]
+		message := matches[4]
+
+		severity, ok := apacheErrorLogSeverities[severityText]
+		if !ok {
+			return nil
+		}
+
+		return &Entry{
+			Timestamp:   timestamp,
+			Severity:    severity,
+			TextPayload: fmt.Sprintf("[%s] %s", client, message),
+			ParsedBy:    p,
+		}
+	}
+	return nil
+}
+
+func (p *apacheErrorLogsParser) MergeLogLine(line string, e *Entry) bool {
 	e.TextPayload += "\n" + line
 	return true
 }

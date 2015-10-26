@@ -6,6 +6,7 @@ package cloudtail
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -53,7 +54,7 @@ func testTextLogsParser(t *testing.T, p LogParser, cases []textTestCase) {
 		} else if !test.wantSuccess && got != nil {
 			t.Errorf("%d: ParseLogLine('%s') -> %v, want failure", i, test.line, got)
 		} else if test.wantSuccess && got.Timestamp.Format(timeLayout) != test.wantTimestamp {
-			t.Errorf("%d: ParseLogLine('%s').Timestamp -> %v, want %v", i, test.line, got.Timestamp, test.wantTimestamp)
+			t.Errorf("%d: ParseLogLine('%s').Timestamp -> %v, want %v", i, test.line, got.Timestamp.Format(timeLayout), test.wantTimestamp)
 		} else if test.wantSuccess && got.Severity != test.wantSeverity {
 			t.Errorf("%d: ParseLogLine('%s').Severity -> %v, want %v", i, test.line, got.Severity, test.wantSeverity)
 		} else if test.wantSuccess && got.TextPayload != test.wantPayload {
@@ -122,6 +123,48 @@ func TestTwistedLogsParser(t *testing.T) {
 				wantPayload:   "HTTPChannel,44506,127.0.0.1] Loading builder Android's build 39149 from on-disk pickle",
 			},
 		})
+}
+
+func TestPuppetLogsParser(t *testing.T) {
+	testTextLogsParser(t, &puppetLogsParser{},
+		[]textTestCase{
+			{
+				line:        "not a valid log line",
+				wantSuccess: false,
+			},
+			{
+				line:          "Thu Oct 22 22:42:42 -0700 2015 Puppet (notice): Compiled catalog for vm8-m4.golo.chromium.org in environment production in 0.30 seconds",
+				wantSuccess:   true,
+				wantTimestamp: "2015-10-22T22:42:42.000000-07:00",
+				wantSeverity:  Notice,
+				wantPayload:   "Puppet: Compiled catalog for vm8-m4.golo.chromium.org in environment production in 0.30 seconds",
+			},
+			{
+				line:          "Thu Oct 22 22:44:00 +1000 2015 Puppet (warning): Ignoring invalid UTF-8 byte sequences in data to be sent to PuppetDB",
+				wantSuccess:   true,
+				wantTimestamp: "2015-10-22T22:44:00.000000+10:00",
+				wantSeverity:  Warning,
+				wantPayload:   "Puppet: Ignoring invalid UTF-8 byte sequences in data to be sent to PuppetDB",
+			},
+		})
+}
+
+func TestApacheErrorLogsParser(t *testing.T) {
+	testTextLogsParser(t, &apacheErrorLogsParser{
+		localTimeZone: time.FixedZone("", -7*60*60),
+	}, []textTestCase{
+		{
+			line:        "not a valid log line",
+			wantSuccess: false,
+		},
+		{
+			line:          "[Thu Oct 22 23:27:26 2015] [error] [client 192.168.70.8] Certificate Verification: Error (23): certificate revoked",
+			wantSuccess:   true,
+			wantTimestamp: "2015-10-22T23:27:26.000000-07:00",
+			wantSeverity:  Error,
+			wantPayload:   "[192.168.70.8] Certificate Verification: Error (23): certificate revoked",
+		},
+	})
 }
 
 type callbackParser struct {
