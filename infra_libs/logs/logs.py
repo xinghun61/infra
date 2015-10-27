@@ -212,6 +212,11 @@ def add_argparse_options(parser,
       default=default_program_name(),
       help='the program name used to name the log files created in '
            '--logs-directory (default: %(default)s).')
+  parser.add_argument(
+      '--logs-debug-file',
+      action='store_true',
+      help='by default only INFO, WARNING and ERROR log files are written to '
+           'disk.  This flag causes a DEBUG log to be written as well.')
 
 
 def process_argparse_options(options, logger=None):  # pragma: no cover
@@ -271,7 +276,11 @@ def _add_file_handlers(options, logger):  # pragma: no cover
       datetime.datetime.utcnow().strftime('%Y%m%d-%H%M%S'),
       os.getpid())
 
-  for level in (logging.INFO, logging.WARNING, logging.ERROR):
+  file_levels = [logging.INFO, logging.WARNING, logging.ERROR]
+  if options.logs_debug_file:
+    file_levels.append(logging.DEBUG)
+
+  for level in file_levels:
     add_handler(
         logger,
         handler=logging.handlers.RotatingFileHandler(
