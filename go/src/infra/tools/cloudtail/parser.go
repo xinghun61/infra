@@ -99,7 +99,10 @@ func (p *infraLogsParser) ParseLogLine(line string) *Entry {
 	if matches := infraLogsRe.FindStringSubmatch(line); matches != nil {
 		timestamp, err := time.Parse("2006-01-02T15:04:05.000000-07:00", matches[2])
 		if err != nil {
-			return nil
+			timestamp, err = time.ParseInLocation("2006-01-02T15:04:05.000000", matches[2], time.UTC)
+			if err != nil {
+				return nil
+			}
 		}
 
 		severity := matches[1]

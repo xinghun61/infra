@@ -91,6 +91,13 @@ func TestInfraLogsParser(t *testing.T) {
 				wantSeverity:  Critical,
 				wantPayload:   "123 foo.bar:789] Hello world",
 			},
+			{
+				line:          "[I2015-10-27T06:59:24.219355 29084 140208595912448 lib.botmap:403] Checking swarming botmap updates...",
+				wantSuccess:   true,
+				wantTimestamp: "2015-10-27T06:59:24.219355+00:00",
+				wantSeverity:  Info,
+				wantPayload:   "29084 lib.botmap:403] Checking swarming botmap updates...",
+			},
 		})
 }
 
