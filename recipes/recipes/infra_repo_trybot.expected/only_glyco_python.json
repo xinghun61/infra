@@ -104,7 +104,7 @@
       "test"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
-    "name": "test.py"
+    "name": "python tests"
   },
   {
     "cmd": [
@@ -113,7 +113,7 @@
       "[SLAVE_BUILD]/infra/glyco/tests/run_all_tests.py"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
-    "name": "Glyco tests"
+    "name": "glyco tests"
   },
   {
     "name": "$result",

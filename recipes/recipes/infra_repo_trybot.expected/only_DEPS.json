@@ -98,23 +98,13 @@
   },
   {
     "cmd": [
-      "make",
-      "-C",
-      "appengine/chromium_rietveld",
-      "test"
-    ],
-    "cwd": "[SLAVE_BUILD]/infra",
-    "name": "rietveld tests"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "test.py",
       "test"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
-    "name": "test.py"
+    "name": "python tests"
   },
   {
     "cmd": [
@@ -125,7 +115,26 @@
       "[SLAVE_BUILD]/infra/go/test.py"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "go test.py"
+    "name": "go tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "testjs.py"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "js tests"
+  },
+  {
+    "cmd": [
+      "make",
+      "-C",
+      "appengine/chromium_rietveld",
+      "test"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "rietveld tests"
   },
   {
     "name": "$result",

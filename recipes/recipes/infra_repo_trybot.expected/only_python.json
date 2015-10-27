@@ -104,7 +104,7 @@
       "test"
     ],
     "cwd": "[SLAVE_BUILD]/infra",
-    "name": "test.py"
+    "name": "python tests"
   },
   {
     "name": "$result",

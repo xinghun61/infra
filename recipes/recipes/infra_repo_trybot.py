@@ -43,26 +43,31 @@ def RunSteps(api):
     # Rietveld tests.
     deps_mod = 'DEPS' in files
 
+    if deps_mod or any(f.endswith('.py') for f in files):
+      api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
+
+    if any(f.startswith('infra/glyco/') for f in files):
+      api.python(
+        'glyco tests',
+        api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
+        [], cwd=api.path['checkout'])
+
+    if deps_mod or any(f.endswith('.go') for f in files):
+      # Note: env.py knows how to expand 'python' into sys.executable.
+      api.python(
+          'go tests', api.path['checkout'].join('go', 'env.py'),
+          ['python', api.path['checkout'].join('go', 'test.py')])
+
+    if not api.platform.is_win and (
+        deps_mod or any(f.endswith('.js') for f in files)):
+      api.python(
+          'js tests', 'testjs.py', cwd=api.path['checkout'])
+
     if not api.platform.is_win and (deps_mod or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
       api.step('rietveld tests',
                ['make', '-C', 'appengine/chromium_rietveld', 'test'],
                cwd=api.path['checkout'])
-
-    if deps_mod or not all(f.startswith('go/') for f in files):
-      api.python('test.py', 'test.py', ['test'], cwd=api.path['checkout'])
-
-    if any(f.startswith('infra/glyco/') for f in files):
-      api.python(
-        'Glyco tests',
-        api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
-        [], cwd=api.path['checkout'])
-
-    if deps_mod or any(f.startswith('go/') for f in files):
-      # Note: env.py knows how to expand 'python' into sys.executable.
-      api.python(
-          'go test.py', api.path['checkout'].join('go', 'env.py'),
-          ['python', api.path['checkout'].join('go', 'test.py')])
 
 
 def GenTests(api):
@@ -86,6 +91,15 @@ def GenTests(api):
         buildername='infra_tester',
         patch_project='infra') +
     diff('go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('only_js') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('appengine/foo/static/stuff.js')
   )
 
   yield (

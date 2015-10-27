@@ -3,7 +3,7 @@
     "cmd": [
       "python",
       "-u",
-      "[BUILD]\\scripts\\slave\\bot_update.py",
+      "[BUILD]/scripts/slave/bot_update.py",
       "--master",
       "tryserver.chromium.linux",
       "--builder",
@@ -11,7 +11,7 @@
       "--slave",
       "TestSlavename",
       "--spec",
-      "cache_dir = '[ROOT]\\\\git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[ROOT]/git_cache'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--root",
       "infra",
       "--revision_mapping_file",
@@ -57,7 +57,7 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "git",
       "-c",
       "user.email=commit-bot@chromium.org",
       "-c",
@@ -67,14 +67,14 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
+    "cwd": "[SLAVE_BUILD]/infra",
     "name": "commit git patch"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[DEPOT_TOOLS]\\gclient.py",
+      "[DEPOT_TOOLS]/gclient.py",
       "runhooks"
     ],
     "cwd": "[SLAVE_BUILD]",
@@ -82,17 +82,17 @@
   },
   {
     "cmd": [
-      "[DEPOT_TOOLS]\\git.bat",
+      "git",
       "diff",
       "--name-only",
       "HEAD",
       "HEAD~"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
+    "cwd": "[SLAVE_BUILD]/infra",
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@change list@appengine/chromium_rietveld/codereview/views.py@@@",
+      "@@@STEP_LOG_LINE@change list@appengine/foo/static/stuff.js@@@",
       "@@@STEP_LOG_END@change list@@@"
     ]
   },
@@ -100,11 +100,10 @@
     "cmd": [
       "python",
       "-u",
-      "test.py",
-      "test"
+      "testjs.py"
     ],
-    "cwd": "[SLAVE_BUILD]\\infra",
-    "name": "python tests"
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "js tests"
   },
   {
     "name": "$result",

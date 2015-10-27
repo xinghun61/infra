@@ -105,7 +105,7 @@
       "[SLAVE_BUILD]/infra/go/test.py"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "go test.py"
+    "name": "go tests"
   },
   {
     "name": "$result",

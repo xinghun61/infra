@@ -109,7 +109,7 @@
       "test"
     ],
     "cwd": "[SLAVE_BUILD]/infra_internal",
-    "name": "test.py"
+    "name": "python tests"
   },
   {
     "cmd": [
@@ -120,7 +120,7 @@
       "[SLAVE_BUILD]/infra_internal/go/test.py"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "go test.py"
+    "name": "go tests"
   },
   {
     "name": "$result",
