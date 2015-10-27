@@ -267,6 +267,13 @@ This is a *required* field if the scheduler type is "git_poller".
 It must contain a string value that is the URL for a repo to be cloned
 and polled for changes.
 
+### branch
+This is an *optional* field that is used if the scheduler type is
+"git_poller" or "repo_poller".
+
+It must contain a string value that is the branch name in the repo to watch.
+If it is not specified, it defaults to "master".
+
 ### repo_url
 This is a *required* field if the scheduler type is "repo_poller".
 
