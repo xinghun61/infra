@@ -45,6 +45,26 @@ class TestArgumentParsing(unittest.TestCase):
       send_event.get_arguments(
         ['--service-event-type', 'START', '--events-from-file', 'filename'])
 
+  def test_extra_result_code_string(self):
+    args = send_event.get_arguments(
+        ['--service-event-type', 'START',
+         '--build-event-extra-result-code', 'test-string'])
+    self.assertEquals(args.build_event_extra_result_code, 'test-string')
+
+  def test_extra_result_code_strings_list(self):
+    args = send_event.get_arguments(
+        ['--service-event-type', 'START',
+         '--build-event-extra-result-code', 'code1,code2,code3'])
+    self.assertEquals(args.build_event_extra_result_code,
+                      ['code1', 'code2', 'code3'])
+
+  def test_extra_result_code_json(self):
+    args = send_event.get_arguments(
+        ['--service-event-type', 'START',
+         '--build-event-extra-result-code', '["code4", "code5","code6"]'])
+    self.assertEquals(args.build_event_extra_result_code,
+                      ['code4', 'code5', 'code6'])
+
 
 class TestServiceEvent(SendingEventBaseTest):
   def test_send_service_event_stack_trace_smoke(self):
@@ -68,6 +88,7 @@ class TestBuildEvent(SendingEventBaseTest):
        '--build-event-type', 'SCHEDULER',
        '--build-event-hostname', 'foo.bar.dns',
        '--build-event-build-name', 'whatever'])
+    self.assertEquals(args.event_mon_run_type, 'dry')
     send_event.send_build_event(args)
 
 

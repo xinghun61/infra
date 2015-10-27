@@ -116,6 +116,11 @@ def get_arguments(argv):
                            'whether any \n--build-event-step-* options have '
                            'been provided or not.')
 
+  build_group.add_argument('--build-event-extra-result-code',
+                           help='Extra result code. String, comma-separated '
+                           'list of strings or json-encoded list of string. '
+                           'Each one must be less than 20 characters long.')
+
   # Read events from file
   file_group = parser.add_argument_group('Read events from file')
   file_group.add_argument('--events-from-file',
@@ -155,6 +160,16 @@ def get_arguments(argv):
       or (args.service_event_type and args.events_from_file)):
     parser.error('--events-from-file is not compatible with either'
                  '--service-event-type or --build-event-type.')
+
+  # Convert extra_result_code to a list when needed.
+  if args.build_event_extra_result_code:
+    extra_result_code = args.build_event_extra_result_code.strip()
+    if extra_result_code.startswith('['):
+      extra_result_code = json.loads(extra_result_code)
+    elif ',' in extra_result_code:
+      extra_result_code = extra_result_code.split(',')
+    args.build_event_extra_result_code = extra_result_code
+
   return args
 
 
@@ -189,6 +204,7 @@ def send_service_event(args):
 
 def send_build_event(args):
   """Entry point when --build-event-type is passed."""
+
   return bool(event_mon.send_build_event(
     args.build_event_type,
     args.build_event_hostname,
@@ -198,6 +214,7 @@ def send_build_event(args):
     step_name=args.build_event_step_name,
     step_number=args.build_event_step_number,
     result=args.build_event_result,
+    extra_result_code=args.build_event_extra_result_code,
     timestamp_kind=args.event_mon_timestamp_kind,
     event_timestamp=args.event_mon_event_timestamp))
 
