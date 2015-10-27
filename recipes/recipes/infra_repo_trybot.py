@@ -63,7 +63,7 @@ def RunSteps(api):
       api.python(
           'js tests', 'testjs.py', cwd=api.path['checkout'])
 
-    if not api.platform.is_win and (deps_mod or
+    if api.platform.is_linux and (deps_mod or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
       api.step('rietveld tests',
                ['make', '-C', 'appengine/chromium_rietveld', 'test'],
