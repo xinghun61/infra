@@ -58,7 +58,7 @@ def RunSteps(api):
           'go tests', api.path['checkout'].join('go', 'env.py'),
           ['python', api.path['checkout'].join('go', 'test.py')])
 
-    if not api.platform.is_win and (
+    if api.platform.is_linux and (
         deps_mod or any(f.endswith('.js') for f in files)):
       api.python(
           'js tests', 'testjs.py', cwd=api.path['checkout'])
