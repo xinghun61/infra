@@ -25,19 +25,13 @@ describe("PatchSet", function() {
             "Source/rendering/FrameView.hpp",
             "Source/frame/Frame.cpp",
             "Source/core/Document.cpp",
-            "LayoutTests/foo/bar.js",
             "Source/core/DocumentImplementation.h",
             "Source/frame/Frame.h",
-            "LayoutTests/foo/bar.html",
             "Source/rendering/FrameView.cpph",
             "Source/rendering/FrameView.cpp",
-            "public/rendering/FrameView.cpp",
-            "LayoutTests/foo/ack.html",
-            "LayoutTests/foo/bar.hxx",
             "Source/rendering/FrameView.html",
             "Source/core/Document.h",
         ], [
-            "public/rendering/FrameView.cpp",
             "Source/core/Document.h",
             "Source/core/Document.cpp",
             "Source/core/DocumentImplementation.h",
@@ -47,10 +41,22 @@ describe("PatchSet", function() {
             "Source/rendering/FrameView.cpp",
             "Source/rendering/FrameView.cpph",
             "Source/rendering/FrameView.html",
-            "LayoutTests/foo/ack.html",
-            "LayoutTests/foo/bar.hxx",
-            "LayoutTests/foo/bar.html",
-            "LayoutTests/foo/bar.js",
+        ]);
+    });
+
+    it("should sort LayoutTests after other files", function() {
+        assertSortedNames([
+            "third_party/WebKit/LayoutTests/foo/bar.js",
+            "third_party/WebKit/LayoutTests/foo/bar.html",
+            "third_party/WebKit/public/rendering/FrameView.cpp",
+            "third_party/WebKit/LayoutTests/foo/ack.html",
+            "third_party/WebKit/LayoutTests/foo/bar.hxx",
+        ], [
+            "third_party/WebKit/public/rendering/FrameView.cpp",
+            "third_party/WebKit/LayoutTests/foo/ack.html",
+            "third_party/WebKit/LayoutTests/foo/bar.hxx",
+            "third_party/WebKit/LayoutTests/foo/bar.html",
+            "third_party/WebKit/LayoutTests/foo/bar.js",
         ]);
     });
 

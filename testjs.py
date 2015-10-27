@@ -15,6 +15,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 KARMA_PROJECTS = [
   'appengine/chromium_cq_status',
+  'appengine/chromium_rietveld/new_static',
 ]
 
 
