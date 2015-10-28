@@ -13,15 +13,19 @@
    Typical safe choices for new chrome infra clients: `master3` (public) or
    `master7` (internal).
 1. Choose a master name, e.g. `master.client.x`.
-1. File a [slave-request ticket] early.
+1. File a [slave-request ticket] early.  Include master's vlan (m3, m7 or so),
+   and slave types (GCE or VMs).
 1. Create a new master directory in
    [build/masters](https://chromium.googlesource.com/chromium/tools/build/+/master/masters/) or
    [build_internal/masters](https://chrome-internal.googlesource.com/chrome/tools/build/+/master/masters/).
 1. Create a [builders.pyl file](builders.pyl.md) in the master directory
-   describing the builders on this master.
-1. Run `../../build/scripts/tools/buildbot-tool gen .` in master dir
+   describing the builders on this master.  You could leave 0 for
+   `master_port`, `master_port_alt` and `slave_port`.  `mastermap.py` will find
+   it for you in later step.
+1. Run `../../../build/scripts/tools/buildbot-tool gen .` in your master dir
    to regenerate master configuration. Run it whenever `builders.pyl` changes.
-1. Run `mastermap.py --find <master-class-name>` where `master-class-name` is
+1. Run `../../../build/scripts/tools/mastermap.py --find <master-class-name>`
+   where `master-class-name` is
    a name of the class in the generated `master_site_config.py`.
    It will search for available master port numbers.
    Put them to `builders.pyl` and regenerate the configuration.
