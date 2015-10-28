@@ -1,2 +1,2 @@
-per-file v8_cfg.py=machenbach@chromium.org
-per-file webrtc_cfg.py=kjellander@chromium.org
+per-file v8_cfg.pyl=machenbach@chromium.org
+per-file webrtc_cfg.pyl=kjellander@chromium.org
