@@ -350,8 +350,9 @@ def get_build_event(event_type,
   if isinstance(extra_result_code, basestring):
     extra_result_code = (extra_result_code, )
   if not isinstance(extra_result_code, (list, tuple)):
-    logging.error('extra_result_code must be a string or list of strings. '
-                  'Got %s' % type(extra_result_code))
+    if extra_result_code is not None:
+      logging.error('extra_result_code must be a string or list of strings. '
+                    'Got %s' % type(extra_result_code))
   else:
     non_strings = []
     extra_result_strings = []
