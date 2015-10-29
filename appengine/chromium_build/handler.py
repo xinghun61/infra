@@ -5,12 +5,11 @@
 import urllib
 
 from google.appengine.ext import deferred
-# F0401:  9,0: Unable to import 'webapp2'
-# pylint: disable=F0401
 import webapp2
 
 import app
 import base_page
+import gae_ts_mon
 import utils
 
 from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup
@@ -152,3 +151,4 @@ application = webapp2.WSGIApplication(
    ('/p/(.*)/' + ONE_BOX_URL, OneBoxAction),
    ('/p/(.*)', PageAction),
    ('/tasks/fetch_pages', FetchPagesAction)])
+gae_ts_mon.initialize(application)

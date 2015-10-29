@@ -18,6 +18,7 @@ from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 
+import gae_ts_mon
 import utils
 
 
@@ -540,3 +541,4 @@ app = webapp2.WSGIApplication([
     ('/buildbot/(.*)/buildslaves/(.*)/?', BuildSlave),
     ('/buildbot/(.*)', BuildbotPassthrough),
     ])
+gae_ts_mon.initialize(app)

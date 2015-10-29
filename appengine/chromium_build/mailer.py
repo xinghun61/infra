@@ -11,6 +11,7 @@ import webapp2
 from webapp2_extras import jinja2
 
 import gatekeeper_mailer
+import gae_ts_mon
 
 
 class MailerSecret(ndb.Model):
@@ -199,3 +200,4 @@ class Email(BaseHandler):
 app = webapp2.WSGIApplication([('/mailer', MainPage),
                                ('/mailer/email', Email)],
                               debug=True)
+gae_ts_mon.initialize(app)

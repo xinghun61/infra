@@ -40,6 +40,9 @@ handlers:
 - url: /.*
   script: handler.application
 
+includes:
+- gae_ts_mon  # handles /internal/cron/ts_mon/send
+
 libraries:
 - name: django
   version: 1.2

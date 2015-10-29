@@ -9,6 +9,7 @@ import webapp2
 
 import app
 import base_page
+import gae_ts_mon
 import utils
 
 from third_party.BeautifulSoup.BeautifulSoup import BeautifulSoup
@@ -265,3 +266,4 @@ URLS = [
 ]
 
 application = webapp2.WSGIApplication(URLS, debug=True)
+gae_ts_mon.initialize(application)

@@ -1,3 +1,7 @@
 cron:
 - url: /tasks/fetch_pages
   schedule: every 1 minutes
+
+- description: Send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes
