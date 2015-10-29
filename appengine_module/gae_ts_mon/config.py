@@ -4,11 +4,15 @@
 
 import logging
 import os
+import time
+
+import webapp2
 
 from google.appengine.api import modules
 from google.appengine.api.app_identity import app_identity
 
 from infra_libs.ts_mon import memcache_metric_store
+from infra_libs.ts_mon.common import http_metrics
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
@@ -18,7 +22,10 @@ PUBSUB_PROJECT = 'chrome-infra-mon-pubsub'
 PUBSUB_TOPIC = 'monacq'
 
 
-def initialize():
+def initialize(app=None):
+  if app is not None:
+    instrument_wsgi_application(app)
+
   if interface.state.global_monitor is not None:
     # Even if ts_mon was already initialized in this instance we should update
     # the metric index in case any new metrics have been registered.
@@ -50,3 +57,52 @@ def initialize():
                'hostname=%s',
                service_name, job_name, hostname)
 
+
+def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
+  start_time = time_fn()
+  try:
+    ret = dispatcher(request, response)
+  except webapp2.HTTPException as ex:
+    response_status = ex.code
+    raise
+  except Exception:
+    response_status = 500
+    raise
+  else:
+    if isinstance(ret, webapp2.Response):
+      response = ret
+    response_status = response.status_int
+  finally:
+    elapsed_ms = int((time_fn() - start_time) * 1000)
+
+    fields = {'status': response_status, 'name': ''}
+    if request.route is not None:
+      # Use the route template regex, not the request path, to prevent an
+      # explosion in possible field values.
+      fields['name'] = request.route.template
+
+    http_metrics.server_durations.add(elapsed_ms, fields=fields)
+    http_metrics.server_response_status.increment(fields=fields)
+    if request.content_length is not None:
+      http_metrics.server_request_bytes.add(request.content_length,
+                                            fields=fields)
+    if response.content_length is not None:  # pragma: no cover
+      http_metrics.server_response_bytes.add(response.content_length,
+                                             fields=fields)
+
+  return ret
+
+
+def instrument_wsgi_application(app, time_fn=time.time):
+  # Don't instrument the same router twice.
+  if hasattr(app.router, '__instrumented_by_ts_mon'):
+    return
+
+  old_dispatcher = app.router.dispatch
+
+  def dispatch(router, request, response):
+    return _instrumented_dispatcher(old_dispatcher, request, response,
+                                    time_fn=time_fn)
+
+  app.router.set_dispatcher(dispatch)
+  app.router.__instrumented_by_ts_mon = True

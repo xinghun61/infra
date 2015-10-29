@@ -24,8 +24,8 @@
 
         [...]
 
-        gae_ts_mon.initialize()
         app = webapp2.WSGIApplication(my_handlers)
+        gae_ts_mon.initialize(app)
 
     You must do this in every top-level request handler that's listed in your
     app.yaml to ensure metrics are registered no matter which type of request
@@ -37,6 +37,9 @@
     `app-id@appspot.gserviceaccount.com`.  Add it as a "Publisher" of the
     "monacq" PubSub topic in the
     [chrome-infra-mon-pubsub project](https://pantheon.corp.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList).
+
+1.  You also need to enable the Google Cloud Pub/Sub API for your project if
+    it's not enabled already.
 
 You're done!  You can now use ts_mon metrics exactly as you normally would using
 the infra_libs.ts_mon module. Here's a quick example, but see the

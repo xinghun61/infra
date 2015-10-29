@@ -17,9 +17,22 @@ request_bytes = metrics.CumulativeDistributionMetric(
     description='Bytes sent per http request (body only).')
 response_bytes = metrics.CumulativeDistributionMetric(
     'http/response_bytes',
-    description='Bytes received per http requests (content only).')
+    description='Bytes received per http request (content only).')
 durations = metrics.CumulativeDistributionMetric(
     'http/durations',
     description='Time elapsed between sending a request and getting a'
                 ' response (including parsing) in milliseconds.')
 response_status = metrics.CounterMetric('http/response_status')
+
+
+server_request_bytes = metrics.CumulativeDistributionMetric(
+    'http/server_request_bytes',
+    description='Bytes received per http request (body only).')
+server_response_bytes = metrics.CumulativeDistributionMetric(
+    'http/server_response_bytes',
+    description='Bytes sent per http request (content only).')
+server_durations = metrics.CumulativeDistributionMetric(
+    'http/server_durations',
+    description='Time elapsed between receiving a request and sending a'
+                ' response (including parsing) in milliseconds.')
+server_response_status = metrics.CounterMetric('http/server_response_status')
