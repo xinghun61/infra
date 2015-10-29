@@ -26,7 +26,7 @@ STACK_TRACE_MAX_SIZE = 1000
 class Event(object):
   """Wraps the event proto with the necessary boilerplate code."""
 
-  def __init__(self, timestamp_kind='POINT',
+  def __init__(self, timestamp_kind=None,
                event_timestamp_ms=None, service_name=None):
     """
     Args:
@@ -130,7 +130,7 @@ def _get_log_event_lite(chrome_infra_event, event_timestamp=None):
 
 
 def _get_service_event(event_type,
-                       timestamp_kind='POINT',
+                       timestamp_kind=None,
                        event_timestamp=None,
                        code_version=None,
                        stack_trace=None,
@@ -203,7 +203,7 @@ def _get_service_event(event_type,
 
 
 def send_service_event(event_type,
-                       timestamp_kind='POINT',
+                       timestamp_kind=None,
                        event_timestamp=None,
                        code_version=(),
                        stack_trace=None):
@@ -253,7 +253,7 @@ def get_build_event(event_type,
                     step_number=None,
                     result=None,
                     extra_result_code=None,
-                    timestamp_kind='POINT',
+                    timestamp_kind=None,
                     event_timestamp=None,
                     service_name=None,
                     goma_stats=None):
@@ -389,7 +389,7 @@ def send_build_event(event_type,
                      step_number=None,
                      result=None,
                      extra_result_code=None,
-                     timestamp_kind='POINT',
+                     timestamp_kind=None,
                      event_timestamp=None,
                      goma_stats=None):
   """Send a ChromeInfraEvent filled with a BuildEvent

@@ -15,3 +15,12 @@ from infra_libs.event_mon.monitoring import get_build_event
 from infra_libs.event_mon.monitoring import send_build_event
 from infra_libs.event_mon.monitoring import send_events
 from infra_libs.event_mon.monitoring import send_service_event
+
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import ChromeInfraEvent
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import BuildEvent
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import ServiceEvent
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import InfraEventSource
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import CodeVersion
+from infra_libs.event_mon.protos.chrome_infra_log_pb2 import CQEvent
+
+from infra_libs.event_mon.protos.log_request_lite_pb2 import LogRequestLite
