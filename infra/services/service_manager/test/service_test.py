@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import signal
+import sys
 import tempfile
 import time
 import unittest
@@ -16,6 +17,7 @@ import mock
 from infra.libs.service_utils import daemon
 from infra.services.service_manager import service
 from infra.services.service_manager import version_finder
+import infra_libs
 
 
 class TestBase(unittest.TestCase):
@@ -23,6 +25,7 @@ class TestBase(unittest.TestCase):
     self.state_directory = tempfile.mkdtemp()
 
     self.mock_getpid = mock.patch('os.getpid').start()
+    self.mock_getpid.return_value = 7
     self.mock_find_version = mock.patch(
         'infra.services.service_manager.version_finder.find_version').start()
 
@@ -34,7 +37,7 @@ class TestBase(unittest.TestCase):
   def tearDown(self):
     mock.patch.stopall()
 
-    shutil.rmtree(self.state_directory)
+    infra_libs.rmtree(self.state_directory)
 
   def _state_filename(self, name):
     return os.path.join(self.state_directory, name)
@@ -55,12 +58,13 @@ class ProcessStateTest(TestBase):
     with self.assertRaises(service.StateFileNotFound):
       service.ProcessState.from_file(path)
 
-    # State file present but not readable.
-    self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
-    os.chmod(path, 0)
-    with self.assertRaises(service.StateFileOpenError):
-      service.ProcessState.from_file(path)
-    os.unlink(path)
+    if sys.platform != 'win32':  # pragma: no cover
+      # State file present but not readable.
+      self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
+      os.chmod(path, 0)
+      with self.assertRaises(service.StateFileOpenError):
+        service.ProcessState.from_file(path)
+      os.unlink(path)
 
     # State file present but no /proc file.
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
@@ -117,8 +121,12 @@ class ServiceTest(TestBase):
         time_fn=self.mock_time,
         sleep_fn=self.mock_sleep)
 
+    if sys.platform == 'win32':  # pragma: no cover
+      self.mock_fork = mock.Mock()
+    else:
+      self.mock_fork = mock.patch('os.fork').start()
+
     self.mock_pipe = mock.patch('os.pipe').start()
-    self.mock_fork = mock.patch('os.fork').start()
     self.mock_close = mock.patch('os.close').start()
     self.mock_exit = mock.patch('os._exit').start()
     self.mock_fdopen = mock.patch('os.fdopen').start()
@@ -138,6 +146,7 @@ class ServiceTest(TestBase):
 
     self.assertFalse(self.mock_fork.called)
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_parent(self):
     self.mock_pipe.return_value = (42, 43)
     self.mock_fork.return_value = 123
@@ -168,6 +177,7 @@ class ServiceTest(TestBase):
           'args': ['one', 'two'],
       }, json.load(fh))
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_parent_child_exited(self):
     self.mock_pipe.return_value = (42, 43)
     self.mock_fork.return_value = 123
@@ -182,6 +192,7 @@ class ServiceTest(TestBase):
     with self.assertRaises(service.ServiceException):
       self.s.start()
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_parent_invalid_json(self):
     self.mock_pipe.return_value = (42, 43)
     self.mock_fork.return_value = 123
@@ -196,6 +207,7 @@ class ServiceTest(TestBase):
     with self.assertRaises(service.ServiceException):
       self.s.start()
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_parent_no_proc_entry(self):
     self.mock_pipe.return_value = (42, 43)
     self.mock_fork.return_value = 123
@@ -209,6 +221,7 @@ class ServiceTest(TestBase):
     with self.assertRaises(service.ServiceException):
       self.s.start()
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_child(self):
     self.mock_pipe.return_value = (42, 43)
     self.mock_fork.return_value = 0
@@ -256,6 +269,7 @@ class ServiceTest(TestBase):
     self.mock_kill.assert_called_once_with(1234, signal.SIGTERM)
     self.assertFalse(os.path.exists(self._state_filename('foo')))
 
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_stop_sends_sig_kill(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
     self.mock_read_starttime.return_value = 5678
@@ -443,7 +457,7 @@ class OwnServiceTest(TestBase):
 
   def tearDown(self):
     super(OwnServiceTest, self).tearDown()
-    shutil.rmtree(self.root_directory)
+    infra_libs.rmtree(self.root_directory)
 
   def test_start_locked(self):
     self.mock_flock.side_effect = daemon.LockAlreadyLocked

@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import os
 import requests
 import tempfile
 import unittest
@@ -16,6 +17,7 @@ from infra_libs.ts_mon import config
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import standard_metrics
 from infra_libs.ts_mon.common.test import stubs
+import infra_libs
 
 
 class GlobalsTest(auto_stub.TestCase):
@@ -230,17 +232,21 @@ class GlobalsTest(auto_stub.TestCase):
 class ConfigTest(unittest.TestCase):
 
   def test_load_machine_config(self):
-    with tempfile.NamedTemporaryFile() as fh:
-      json.dump({'foo': 'bar'}, fh)
-      fh.flush()
-      self.assertEquals({'foo': 'bar'}, config.load_machine_config(fh.name))
+    with infra_libs.temporary_directory() as temp_dir:
+      filename = os.path.join(temp_dir, 'config')
+      with open(filename, 'w') as fh:
+        json.dump({'foo': 'bar'}, fh)
+
+      self.assertEquals({'foo': 'bar'}, config.load_machine_config(filename))
 
   def test_load_machine_config_bad(self):
-    with tempfile.NamedTemporaryFile() as fh:
-      fh.write('not a json file')
-      fh.flush()
+    with infra_libs.temporary_directory() as temp_dir:
+      filename = os.path.join(temp_dir, 'config')
+      with open(filename, 'w') as fh:
+        fh.write('not a json file')
+
       with self.assertRaises(ValueError):
-        config.load_machine_config(fh.name)
+        config.load_machine_config(filename)
 
   def test_load_machine_config_not_exists(self):
     self.assertEquals({}, config.load_machine_config('does not exist'))

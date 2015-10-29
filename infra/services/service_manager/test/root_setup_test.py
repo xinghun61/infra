@@ -5,6 +5,7 @@
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -14,6 +15,7 @@ from infra.services.service_manager import root_setup
 
 
 class RootSetupTest(unittest.TestCase):
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
   def setUp(self):
     self.temp_path = tempfile.mkdtemp()
 

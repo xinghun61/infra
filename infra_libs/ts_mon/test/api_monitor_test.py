@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import unittest
 
 import mock
@@ -22,8 +23,11 @@ class ApiMonitorTest(unittest.TestCase):
   @mock.patch('infra_libs.ts_mon.api_monitor.acquisition_api', auto_spec=True)
   def test_init(self, fake_api):
     _ = api_monitor.ApiMonitor('/path/to/creds.p8.json', 'https://www.tld/api')
+    # ApiMonitor calls abspath on the credential filename before passing it to
+    # AcquisitionCredential.Load.  That doesn't change anything on Linux, but
+    # on Windows it prepends a drive letter and turns /s into \s.
     fake_api.AcquisitionCredential.Load.assert_called_once_with(
-        '/path/to/creds.p8.json')
+        os.path.abspath('/path/to/creds.p8.json'))
     fake_api.AcquisitionApi.assert_called_once_with(
         fake_api.AcquisitionCredential.Load.return_value,
         'https://www.tld/api')

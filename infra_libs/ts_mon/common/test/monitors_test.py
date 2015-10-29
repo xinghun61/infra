@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import os
 import tempfile
 import unittest
 
@@ -141,15 +142,17 @@ class PubSubMonitorTest(unittest.TestCase):
 class DebugMonitorTest(unittest.TestCase):
 
   def test_send_file(self):
-    with tempfile.NamedTemporaryFile(delete=True) as f:
-      m = monitors.DebugMonitor(f.name)
+    with infra_libs.temporary_directory() as temp_dir:
+      filename = os.path.join(temp_dir, 'out')
+      m = monitors.DebugMonitor(filename)
       metric1 = metrics_pb2.MetricsData(name='m1')
       m.send(metric1)
       metric2 = metrics_pb2.MetricsData(name='m2')
       m.send([metric1, metric2])
       collection = metrics_pb2.MetricsCollection(data=[metric1, metric2])
       m.send(collection)
-      output = f.read()
+      with open(filename) as fh:
+        output = fh.read()
     self.assertEquals(output.count('data {\n  name: "m1"\n}'), 3)
     self.assertEquals(output.count('data {\n  name: "m2"\n}'), 2)
 

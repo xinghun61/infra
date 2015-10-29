@@ -43,13 +43,13 @@ WIN_ENABLED_PACKAGES = [
   'infra/libs/state_machine',
   'infra/libs/time_functions',
 
-  # 'infra/services/service_manager', # TODO: crbug.com/515704
+  'infra/services/service_manager',
   'infra/services/sysmon',
 
   'infra_libs/event_mon',
   'infra_libs/infra_types',
   'infra_libs/logs',
-  # 'infra_libs/ts_mon',  # TODO: crbug.com/515704
+  'infra_libs/ts_mon',
 
   'infra_libs:infra_libs.test.*',
 ]

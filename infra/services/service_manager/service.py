@@ -101,8 +101,8 @@ class ProcessState(object):
     try:
       with open(filename) as fh:
         data = json.load(fh)
-        pid = data['pid']
-        starttime = data['starttime']  # pragma: no cover (coverage bug??)
+      pid = data['pid']
+      starttime = data['starttime']  # pragma: no cover (coverage bug??)
     except IOError as ex:
       raise StateFileOpenError(filename, ex)
     except Exception as ex:
@@ -305,7 +305,8 @@ class Service(object):
     except ProcessStateError:
       return  # Not running.
 
-    if not self._signal_and_wait(state, signal.SIGTERM, self.stop_time):
+    if (not self._signal_and_wait(state, signal.SIGTERM, self.stop_time) and
+        sys.platform != 'win32'):
       self._signal_and_wait(state, signal.SIGKILL, None)
 
     LOGGER.info("Service %s stopped", self.name)
