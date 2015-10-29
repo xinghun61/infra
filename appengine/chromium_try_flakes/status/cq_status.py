@@ -157,7 +157,7 @@ def add_failure_to_flake(name, flaky_run):  # pragma: no cover
 # TODO(jam): get specific problem with compile so we can use that as name
 # TODO(jam): It's unfortunate to have to parse this html. Can we get it from
 # another place instead of the tryserver's json?
-def get_flakes(step):  # pragma: no cover
+def get_flakes(step):
   combined = ' '.join(step['text'])
 
   # If test results were invalid, report whole step as flaky.
@@ -199,7 +199,7 @@ def get_flakes(step):  # pragma: no cover
 
 # A queued task which polls the tryserver to get more information about why a
 # run failed.
-def get_flaky_run_reason(flaky_run_key):  # pragma: no cover
+def get_flaky_run_reason(flaky_run_key):
   flaky_run = flaky_run_key.get()
   failure_run = flaky_run.failure_run.get()
   patchset_builder_runs = failure_run.key.parent().get()

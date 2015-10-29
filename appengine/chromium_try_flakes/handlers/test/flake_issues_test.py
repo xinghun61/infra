@@ -46,9 +46,11 @@ class MockIssueTrackerAPI(object):
 
 
 class FlakeIssuesTestCase(testing.AppengineTestCase):
+  app_module = main.app
+
   # This is needed to be able to test handlers using cross-group transactions.
   datastore_stub_consistency_policy = (
-      datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=0))
+      datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=1))
 
   # Needed to read queues from queue.yaml in the root of the app.
   taskqueue_stub_root_path = '.'
@@ -68,10 +70,6 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     super(FlakeIssuesTestCase, self).tearDown()
     for patcher in self.patchers:
       patcher.stop()
-
-  @property
-  def app_module(self):
-    return main.app
 
   def _create_flake(self):
     tf = datetime.datetime.utcnow()
