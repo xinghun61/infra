@@ -4,7 +4,7 @@
 from infra_libs.event_mon.checkouts import get_revinfo, parse_revinfo
 
 from infra_libs.event_mon.config import add_argparse_options
-from infra_libs.event_mon.config import close
+from infra_libs.event_mon.config import close, set_default_event
 from infra_libs.event_mon.config import process_argparse_options
 from infra_libs.event_mon.config import setup_monitoring
 

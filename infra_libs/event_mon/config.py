@@ -165,6 +165,23 @@ def setup_monitoring(run_type='dry',
                                       dry_run=dry_run)
 
 
+def set_default_event(event):
+  """Change the default ChromeInfraEvent used to compute all events.
+
+  Args:
+    event (ChromeInfraEvent): default event
+  """
+  # Here we raise an exception because failing to set the default event
+  # could lead to invalid data in the database.
+  if not isinstance(event, ChromeInfraEvent):
+    msg = ('A ChromeInfraEvent is required as the default event. Got %s' %
+           type(event))
+    logging.error(msg)
+    raise TypeError(msg)
+
+  _cache['default_event'] = event
+
+
 def close():
   """Reset the state.
 

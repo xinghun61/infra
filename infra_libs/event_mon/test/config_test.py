@@ -10,9 +10,13 @@ import unittest
 import infra_libs
 from infra_libs import event_mon
 from infra_libs.event_mon import config, router
+from infra_libs.event_mon.protos import chrome_infra_log_pb2
 
 
 class ConfigTest(unittest.TestCase):
+  def tearDown(self):
+    self._close()
+
   def _set_up_args(self, args=None):  # pragma: no cover
     parser = argparse.ArgumentParser()
     event_mon.add_argparse_options(parser)
@@ -28,7 +32,6 @@ class ConfigTest(unittest.TestCase):
     self.assertIs(config._router, r)
 
   def _close(self):
-    self.assertTrue(config._router)
     self.assertTrue(event_mon.close())
     self.assertFalse(config._cache)
     # Test that calling it twice does not raise an exception.
@@ -36,7 +39,6 @@ class ConfigTest(unittest.TestCase):
 
   def test_no_args_smoke(self):  # pragma: no cover
     self._set_up_args()
-    self._close()
 
   def test_args_and_default_event(self):  # pragma: no cover
     # The protobuf structure is actually an API not an implementation detail
@@ -49,14 +51,11 @@ class ConfigTest(unittest.TestCase):
             '--event-mon-hostname', hostname,
             '--event-mon-service-name', service_name,
             '--event-mon-appengine-name', appengine_name]
-    try:
-      self._set_up_args(args=args)
-      event = config._cache['default_event']
-      self.assertEquals(event.event_source.host_name, hostname)
-      self.assertEquals(event.event_source.service_name, service_name)
-      self.assertEquals(event.event_source.appengine_name, appengine_name)
-    finally:
-      self._close()
+    self._set_up_args(args=args)
+    event = config._cache['default_event']
+    self.assertEquals(event.event_source.host_name, hostname)
+    self.assertEquals(event.event_source.service_name, service_name)
+    self.assertEquals(event.event_source.appengine_name, appengine_name)
 
   def test_run_type_file_good(self):
     try:
@@ -69,8 +68,6 @@ class ConfigTest(unittest.TestCase):
       # help for debugging
       traceback.print_exc()
       raise
-    finally:
-      self._close()
 
   # Direct setup_monitoring testing below this line.
   def test_default_event(self):
@@ -81,8 +78,6 @@ class ConfigTest(unittest.TestCase):
     self.assertTrue(event.event_source.HasField('host_name'))
     self.assertFalse(event.event_source.HasField('service_name'))
     self.assertFalse(event.event_source.HasField('appengine_name'))
-
-    self._close()
 
   def test_default_event_with_values(self):
     # The protobuf structure is actually an API not an implementation detail
@@ -101,4 +96,23 @@ class ConfigTest(unittest.TestCase):
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertEquals(event.event_source.appengine_name, appengine_name)
 
-    self._close()
+  def test_set_default_event(self):
+    event_mon.setup_monitoring()
+    orig_event = config._cache['default_event']
+
+    # Set the new default event to something different from orig_event
+    # to make sure it has changed.
+    event = chrome_infra_log_pb2.ChromeInfraEvent()
+    new_hostname = orig_event.event_source.host_name + '.foo'
+    event.event_source.host_name = new_hostname
+    event_mon.set_default_event(event)
+
+    new_event = config._cache['default_event']
+    self.assertEquals(new_event.event_source.host_name, new_hostname)
+
+  def test_set_default_event_bad_type(self):
+    event_mon.setup_monitoring()
+
+    # bad type
+    with self.assertRaises(TypeError):
+      event_mon.set_default_event({'hostname': 'foo'})
