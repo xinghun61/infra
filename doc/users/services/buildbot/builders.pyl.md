@@ -96,6 +96,7 @@ At the top-level, builders.pyl files contain a single Python dictionary
 containing things that are configured per-master.
 
 ### master_base_class
+
 This is a *required* field. It must be set to the name of the Python
 class of the buildbot master that this master is based on. This is
 usually one of the classes defined in
@@ -105,20 +106,24 @@ For example, if you were setting up a new master in the -m1 VLAN, you
 would be subclassing Master.Master1, so this value would be `'Master1'`.
 
 ### master_port
+
 This is a *required* field. It must be set to the main IP port that the
 buildbot master instance runs on. You should set this to the port
 obtained from the admins.
 
 ### master_port_alt
+
 This is a *required* field. It must be set to the alternate IP port that
 the buildbot master instance runs on. You should set this to the port
 obtained from the admins.
 
 ### slave_port
+
 This is a *required* field. It must be set to the port that the buildbot
 slaves will attempt to connect to on the master.
 
 ### templates
+
 This is a *required* field. It must be set to a list of directory paths
 (relative to the master directory) that contains the HTML templates that
 will be used to display the builds. Each directory is searched in order
@@ -133,6 +138,7 @@ is not provided, we will synthesize one for build.chromium.org based
 on the master name.
 
 ### buildbucket_bucket
+
 This is an *optional* field but must be present if the builders on the
 master are intended to be scheduled through buildbucket (i.e., they are
 tryservers or triggered from other bots). Such builders normally have
@@ -141,10 +147,11 @@ have their scheduler set to `None`, this field must be present.
 
 If set, it should contain the string value of the
 [buildbucket bucket](/appengine/cr-buildbucket/README.md) created for this
-buildbot master. If it is not set, it defaults to `None`. By convention, buckets
-are named to match the master name, e.g. "master.tryserver.nacl".
+buildbot master. If it is not set, it defaults to `None`. By convention,
+buckets are named to match the master name, e.g. "master.tryserver.nacl".
 
 ### master_classname
+
 This is an *optional* field. If it is not specified, it is synthesized
 from the name of the directory containing the builders.pyl file.
 
@@ -153,6 +160,7 @@ For example, if the builders.pyl file was in
 the master-classname would default to ClientCrashpad.
 
 ### service_account_file
+
 This is an *optional* field but must be present if the builders on the
 master are intended to be scheduled through buildbucket (i.e., they are
 tryservers or triggered from other builders, possibly on other masters).
@@ -169,11 +177,13 @@ By convention, the value is "service-account-\<project\>.json". If not
 set, it defaults to None.
 
 ### builders
+
 This is a *required* field and must be a dict of builder names and their
 respective configurations; valid values for those configurations are
 described in the per-builder configurations section, below.
 
 ### schedulers
+
 This is a *required* field and must be a dict of scheduler names and
 their respective configurations; valid values for those configurations
 are described in the per-scheduler configurations section, below. The
@@ -181,6 +191,7 @@ dict may be empty, if there are no scheduled builders, only tryservers,
 but it must be present even in that case.
 
 ### slave_pools
+
 This is a *required* field and must be a dict of pool names and
 properties, as described below.
 
@@ -189,10 +200,12 @@ properties, as described below.
 Each builder is described by a dict that contains three or four fields:
 
 ### recipe
+
 This is a *required* field that specifies the [recipe
 name](/doc/users/recipes.md).
 
 ### scheduler
+
 This is a *required* field that indicates which scheduler will be used
 to schedule builds on the builder.
 
@@ -207,10 +220,12 @@ scheduled via buildbucket, but that doing so would be unusual (builders
 should normally only have one purpose).
 
 ### slave_pools
+
 This is a *required* field that specifies one or more pools of slaves
 that can be builders.
 
 ### mergeRequests
+
 This is an *optional* field that specifies whether buildbot will merge duplicate
 requests together. If unspecified, this field defaults to True if a named
 scheduler is specified, and False otherwise.
@@ -221,30 +236,34 @@ You would not want to merge builds for tryservers because you want to test each
 revision in isolation.
 
 ### auto_reboot
+
 This is an *optional* field that specifies whether the builder should
 reboot after each build. If not specified, it defaults to `True`.
 
 ### properties
+
 This is an *optional* field that is a dict of settings that will be
 passed to the [recipe](recipes.md) as key/value properties.
 
 ### slavebuilddir
+
 This is an *optional* field; if it is not set, it defaults to the
 builder name. This field can be used to share a single build directory
 between multiple builders (so, for example, you don't have to check out
 the source tree twice for a debug builder and a release builder).
 
-
 ### category
-  This is an *optional* field that specifies a category for the builder, so you
-  can group builders visually on the master.  The categories are sorted
-  left-to-right in ascending order, and for display any initial number is
-  stripped.  So categories will often be specified like `"0builders"`,
-  `"1testers"`, etc.
+
+This is an *optional* field that specifies a category for the builder, so you
+can group builders visually on the master.  The categories are sorted
+left-to-right in ascending order, and for display any initial number is
+stripped.  So categories will often be specified like `"0builders"`,
+`"1testers"`, etc.
 
 ## Per-scheduler configurations
 
 ### type
+
 This is a *required* field used to the type of scheduler this is; it
 must have one of the following three values: `"cron"`, `"git_poller"`, or
 `"repo_poller"`.
@@ -262,20 +281,25 @@ field.
 The scheduler dict must also have the `"repo_url"` field.
 
 ### git_repo_url
-This is a *required* field if the scheduler type is "git_poller".
+
+This is a *required* field if the scheduler type is "git_poller". It must
+not be present otherwise.
 
 It must contain a string value that is the URL for a repo to be cloned
 and polled for changes.
 
 ### branch
+
 This is an *optional* field that is used if the scheduler type is
-"git_poller" or "repo_poller".
+"git_poller" or "repo_poller". It must not be present otherwise.
 
 It must contain a string value that is the branch name in the repo to watch.
 If it is not specified, it defaults to "master".
 
 ### repo_url
-This is a *required* field if the scheduler type is "repo_poller".
+
+This is a *required* field if the scheduler type is "repo_poller". It must
+not be present otherwise.
 
 The URL that is the base of the repo tree. It is assumed that the manifest is
 located in the `manifest` subdirectory of this path. For example, Android would
@@ -283,6 +307,7 @@ use `"https://android.googlesource.com/platform"` rather than
 `"https://android.googlesource.com/platform/manifest"`.
 
 ### rev_link_template
+
 This is an *optional* field that may be used with the "repo_poller" scheduler
 type. It is a format string that will be used to generate a link to the change
 being built in the build page.
@@ -292,9 +317,9 @@ revision SHA. For example, Android uses
 "https://android.googlesource.com/platform/%s/+/%s".
 
 ### hour
-This is an *optional* field but must be present if and only if the
-scheduler type is "cron". If this field is present, `minute` must be
-also.
+
+This is a *required* if the scheduler type is "cron". It must not be
+present otherwise.
 
 This field and the `minute` field control when cron jobs are scheduled
 on the builder.
@@ -305,8 +330,9 @@ is equivalent to specifying a list containing every value in the range.
 This matches the syntax used for the `Nightly` scheduler in buildbot.
 
 ### minute
-This is an *optional* field but must be present if and only if the
-scheduler type is "cron". If this field is present, `hour` must be also.
+
+This is a *required* field if the scheduler type is "cron". It must
+not be present otherwise.
 
 This field and the `hour` field control when cron jobs are scheduled on
 the builder.
@@ -323,10 +349,12 @@ have the same characteristics. The pool is described by a dict that
 contains two fields
 
 ### slave_data
+
 This is a *required* field that contains a dict describing the
 configuration of every slaves in the pool, as described below.
 
 ### slaves
+
 This is a *required* field that contains list of individual hostnames,
 one for each VM (do not specify the domain, just the basename).
 
@@ -337,21 +365,24 @@ characteristics of each machine: operating system name, version, and
 architecture, with the following keys:
 
 ### bits
+
 This is a *required* field and must have either the value 32 or 64 (as
 numbers, not strings).
 
 ### os
+
 This is a *required* field that must have one of the following values:
 `"mac"`, `"linux"`, or `"win"`.
 
 ### version
+
 This is a *required* field and must have one of the following values:
 
 os       | Valid values
 ---------|-------------
-`"mac"`  | `"10.6"`, `"10.7"`, `"10.8"`, `"10.9"`, `"10.10"`
+`"mac"`  | `"10.6"`, `"10.7"`, `"10.8"`, `"10.9"`, `"10.10", `"10.11"``
 `"linux"`| `"precise"`, `"trusty"`
-`"win"`  |   `"xp"`, `"vista"`, `"win7"`, `"win8"`, `"2008"`
+`"win"`  |   `"xp"`, `"vista"`, `"win7"`, `"win8"`, `"win10"`, `"2008"`
 
 ## Feedback
 
