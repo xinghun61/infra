@@ -8,17 +8,26 @@
 import os
 import sys
 
+
+def _fix_sys_path_for_appengine(pretest_filename):
+  infra_base_dir = os.path.abspath(pretest_filename)
+  pos = infra_base_dir.rfind('/infra/appengine')
+  if pos == -1:
+    return
+  infra_base_dir = infra_base_dir[:pos + len('/infra')]
+
+  # Remove the base infra directory from the path, since this isn't available
+  # on appengine.
+  sys.path.remove(infra_base_dir)
+
+  # Add the google_appengine directory.
+  sys.path.insert(0,
+      os.path.join(os.path.dirname(infra_base_dir), 'google_appengine'))
+
+  import dev_appserver as pretest_dev_appserver
+  pretest_dev_appserver.fix_sys_path()
+
+
 # Using pretest_filename is magic, because it is available in the locals() of
 # the script which execfiles this file.
-# prefixing with 'pretest' to avoid name collisions in expect_tests.
-pretest_APPENGINE_ENV_PATH = os.path.join(
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(
-                os.path.dirname(
-                    os.path.abspath(pretest_filename))))),
-    'google_appengine')
-sys.path.insert(0, pretest_APPENGINE_ENV_PATH)
-
-import dev_appserver as pretest_dev_appserver
-pretest_dev_appserver.fix_sys_path()
+_fix_sys_path_for_appengine(pretest_filename)

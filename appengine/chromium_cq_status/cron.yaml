@@ -18,3 +18,7 @@ cron:
   url: /background/update-stats?interval_minutes=10080
   schedule: every monday 00:15
   timezone: US/Pacific
+
+- description: Send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes

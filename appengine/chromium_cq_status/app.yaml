@@ -39,9 +39,11 @@ handlers:
 - url: /.*
   script: main.app
 
-
 libraries:
 - name: webapp2
   version: latest
 - name: numpy
   version: latest
+
+includes:
+- gae_ts_mon

@@ -79,6 +79,7 @@ if all([arg.startswith('--') for arg in sys.argv[2:]]):
     args.extend(['infra', 'infra_libs'])  # TODO(pgervais): add 'test/'
   appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
   if sys.platform != 'win32' and os.path.isdir(appengine_dir):
+    args.extend(['appengine_module'])
     appengine_dirs = [
       os.path.join('appengine', d)
       for d in os.listdir(appengine_dir)

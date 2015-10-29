@@ -36,7 +36,7 @@ class InitializeTest(testing.AppengineTestCase):
     mock.patch.stopall()
 
   def test_sets_target(self):
-    config.initialize()
+    config.initialize(is_local_unittest=False)
 
     self.assertEqual('testbed-test', self.mock_state.target.service_name)
     self.assertEqual('default', self.mock_state.target.job_name)
@@ -46,12 +46,12 @@ class InitializeTest(testing.AppengineTestCase):
   def test_sets_monitor(self):
     os.environ['SERVER_SOFTWARE'] = 'Production'  # != 'Development'
 
-    config.initialize()
+    config.initialize(is_local_unittest=False)
 
     self.assertEquals(1, monitors.PubSubMonitor.call_count)
 
   def test_sets_monitor_dev(self):
-    config.initialize()
+    config.initialize(is_local_unittest=False)
 
     self.assertFalse(monitors.PubSubMonitor.called)
     self.assertIsInstance(self.mock_state.global_monitor, monitors.DebugMonitor)
@@ -61,7 +61,7 @@ class InitializeTest(testing.AppengineTestCase):
     self.mock_state.store = memcache_metric_store.MemcacheMetricStore(
         self.mock_state)
 
-    config.initialize()
+    config.initialize(is_local_unittest=False)
 
     self.assertIsNone(self.mock_state.target)
 
@@ -71,7 +71,7 @@ class InitializeTest(testing.AppengineTestCase):
         self.response.write('success!')
 
     app = webapp2.WSGIApplication([('/', Handler)])
-    config.initialize(app)
+    config.initialize(app, is_local_unittest=False)
 
     app.get_response('/')
 
@@ -84,9 +84,9 @@ class InitializeTest(testing.AppengineTestCase):
         self.response.write('success!')
 
     app = webapp2.WSGIApplication([('/', Handler)])
-    config.initialize(app)
-    config.initialize(app)
-    config.initialize(app)
+    config.initialize(app, is_local_unittest=False)
+    config.initialize(app, is_local_unittest=False)
+    config.initialize(app, is_local_unittest=False)
 
     app.get_response('/')
 
