@@ -6,7 +6,7 @@ The version of npm in apt-get is too old for bower.
     $ export PATH="$HOME/local/bin:$PATH"
     # Install Node
     $ mkdir -p /tmp/node-install && cd /tmp/node-install
-    $ curl http://nodejs.org/dist/node-latest.tar.gz | tar xz --strip-components=1
+    $ curl https://nodejs.org/dist/node-latest.tar.gz | tar xz --strip-components=1
     $ ./configure --prefix=${HOME}/local
     $ make install
 
