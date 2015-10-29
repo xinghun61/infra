@@ -15,9 +15,9 @@ from infra_libs.event_mon import config, router
 # These constants are part of the API.
 EVENT_TYPES = ('START', 'STOP', 'UPDATE', 'CURRENT_VERSION', 'CRASH')
 BUILD_EVENT_TYPES = ('SCHEDULER', 'BUILD', 'STEP')
-BUILD_RESULTS = (None, 'UNKNOWN', 'SUCCESS', 'FAILURE', 'INFRA_FAILURE',
+BUILD_RESULTS = ('UNKNOWN', 'SUCCESS', 'FAILURE', 'INFRA_FAILURE',
                  'WARNING', 'SKIPPED', 'RETRY')
-TIMESTAMP_KINDS = (None, 'UNKNOWN', 'POINT', 'BEGIN', 'END')
+TIMESTAMP_KINDS = ('UNKNOWN', 'POINT', 'BEGIN', 'END')
 
 # Maximum size of stack trace sent in an event, in characters.
 STACK_TRACE_MAX_SIZE = 1000
@@ -86,7 +86,8 @@ def _get_chrome_infra_event(timestamp_kind, service_name=None):
   Returns:
     event (chrome_infra_log_pb2.ChromeInfraEvent):
   """
-  if timestamp_kind not in TIMESTAMP_KINDS:
+  # Testing for None because we want an error message when timestamp_kind == ''.
+  if timestamp_kind is not None and timestamp_kind not in TIMESTAMP_KINDS:
     logging.error('Invalid value for timestamp_kind: %s', timestamp_kind)
     return None
 
@@ -254,7 +255,8 @@ def get_build_event(event_type,
                     extra_result_code=None,
                     timestamp_kind='POINT',
                     event_timestamp=None,
-                    service_name=None):
+                    service_name=None,
+                    goma_stats=None):
   """Compute a ChromeInfraEvent filled with a BuildEvent.
 
   Arguments are identical to those in send_build_event(), please refer
@@ -336,10 +338,10 @@ def get_build_event(event_type,
   mapping = {'WARNINGS': 'WARNING', 'EXCEPTION': 'INFRA_FAILURE'}
   result = mapping.get(result, result)
 
-  if result not in BUILD_RESULTS:
-    logging.error('Invalid value for result: %s', result)
-  else:
-    if result:  # can be None
+  if result is not None:  # we want an error message if result==''.
+    if result not in BUILD_RESULTS:
+      logging.error('Invalid value for result: %s', result)
+    else:
       event.build_event.result = getattr(BuildEvent, result)
 
       if event_type == 'SCHEDULER':
@@ -368,6 +370,13 @@ def get_build_event(event_type,
     for s in extra_result_strings:
       event.build_event.extra_result_code.append(s)
 
+  if goma_stats:
+    if isinstance(goma_stats, GomaStats):
+      event.build_event.goma_stats.MergeFrom(goma_stats)
+    else:
+      logging.error('expected goma_stats to be an instance of GomaStats, '
+                    'got %s', type(goma_stats))
+
   return event_wrapper
 
 
@@ -381,7 +390,8 @@ def send_build_event(event_type,
                      result=None,
                      extra_result_code=None,
                      timestamp_kind='POINT',
-                     event_timestamp=None):
+                     event_timestamp=None,
+                     goma_stats=None):
   """Send a ChromeInfraEvent filled with a BuildEvent
 
   Args:
@@ -404,6 +414,7 @@ def send_build_event(event_type,
       (listed in infra_libs.event_mon.monitoring.BUILD_RESULTS)
     extra_result_code (string or list of): arbitrary strings intended to provide
       more fine-grained information about the result.
+    goma_stats (goma_stats_pb2.GomaStats): statistics output by the Goma proxy.
 
   Returns:
     success (bool): False if some error happened.
@@ -418,7 +429,8 @@ def send_build_event(event_type,
                          result=result,
                          extra_result_code=extra_result_code,
                          timestamp_kind=timestamp_kind,
-                         event_timestamp=event_timestamp).send()
+                         event_timestamp=event_timestamp,
+                         goma_stats=goma_stats).send()
 
 
 def send_events(events):
