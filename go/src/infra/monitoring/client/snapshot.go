@@ -91,6 +91,18 @@ func (c *snapshot) StdioForStep(master, builder, step string, buildNum int64) ([
 	return s, err
 }
 
+func (c *snapshot) CrbugItems(label string) ([]messages.CrbugItem, error) {
+	items, err := c.wrapped.CrbugItems(label)
+	if err != nil {
+		return nil, err
+	}
+	err = write(filepath.Join(c.baseDir, "crbugitems", label), items)
+	if err != nil {
+		log.Errorf("Error snapshotting crbug items: %v", err)
+	}
+	return items, err
+}
+
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func write(path string, v interface{}) error {
 	err := os.MkdirAll(filepath.Dir(path), 0777)

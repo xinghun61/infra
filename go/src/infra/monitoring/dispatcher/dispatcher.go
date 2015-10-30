@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -47,6 +48,7 @@ var (
 	snapshot            = flag.String("record-snapshot", "", "Save a snapshot of infra responses to this path, which will be created if it does not already exist.")
 	replay              = flag.String("replay-snapshot", "", "Replay a snapshot of infra responses from this path, which should have been created previously by running with --record-snapshot.")
 	replayTime          = flag.String("replay-time", "", "Specify a simulated starting time for the replay in RFC3339 format, used with --replay-snapshot.")
+	serviceAccountJSON  = flag.String("service-account", "", "Service account JSON file.")
 
 	log             = gologger.Get()
 	duration, cycle time.Duration
@@ -213,6 +215,20 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool) 
 func main() {
 	flag.Parse()
 
+	authOptions := auth.Options{
+		ServiceAccountJSONPath: *serviceAccountJSON,
+		Scopes: []string{
+			auth.OAuthScopeEmail,
+			"https://www.googleapis.com/auth/projecthosting",
+		},
+	}
+
+	transport, err := auth.NewAuthenticator(auth.SilentLogin, authOptions).Transport()
+	if err != nil {
+		log.Errorf("AuthenticatedTransport: %v", err)
+		os.Exit(1)
+	}
+
 	// Start serving expvars.
 	go func() {
 		err := http.ListenAndServe(":12345", nil)
@@ -251,7 +267,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := client.NewReader()
+	r := client.NewReader(transport)
+
 	if *snapshot != "" {
 		r = client.NewSnapshot(r, *snapshot)
 	}

@@ -81,6 +81,9 @@ type Reader interface {
 	// StdioForStep fetches the standard output for a given build step, and an error if any
 	// occurred.
 	StdioForStep(master, builder, step string, buildNum int64) ([]string, error)
+
+	// CrbugItems fetches a list of open issues from crbug matching the given label.
+	CrbugItems(label string) ([]messages.CrbugItem, error)
 }
 
 type Writer interface {
@@ -101,7 +104,6 @@ type trackingHTTPClient struct {
 
 type reader struct {
 	hc *trackingHTTPClient
-
 	// bCache is a map of build cache key to Build message.
 	bCache map[string]*messages.Build
 	// bLock protects bCache
@@ -115,9 +117,15 @@ type writer struct {
 
 // NewReader returns a new Reader, which will read data from various chrome infra
 // data sources.
-func NewReader() Reader {
+func NewReader(transport http.RoundTripper) Reader {
 	return &reader{
-		hc:     &trackingHTTPClient{c: &http.Client{Timeout: timeout}},
+		hc: &trackingHTTPClient{
+			c: &http.Client{
+				// TODO: figure out how to get Timeout to work with oauth Transport,
+				// which fails because it doesn't implement CancelRequest.
+				Transport: transport,
+			},
+		},
 		bCache: map[string]*messages.Build{},
 	}
 }
@@ -226,6 +234,24 @@ func (r *reader) StdioForStep(master, builder, step string, buildNum int64) ([]s
 	return strings.Split(res, "\n"), err
 }
 
+func (r *reader) CrbugItems(label string) ([]messages.CrbugItem, error) {
+	v := url.Values{}
+	v.Add("can", "open")
+	v.Add("maxResults", "100")
+	v.Add("q", fmt.Sprintf("label:%s", label))
+
+	URL := "https://www.googleapis.com/projecthosting/v2/projects/chromium/issues?" + v.Encode()
+	expvars.Add("CrbugIssues", 1)
+	defer expvars.Add("CrbugIssues", -1)
+	res := &messages.CrbugSearchResults{}
+	if code, err := r.hc.getJSON(URL, res); err != nil {
+		log.Errorf("Error (%d) fetching %s: %v", code, URL, err)
+		return nil, err
+	}
+
+	return res.Items, nil
+}
+
 func cacheable(b *messages.Build) bool {
 	return len(b.Times) > 1 && b.Times[1] != 0
 }
@@ -281,16 +307,18 @@ func (hc *trackingHTTPClient) attemptJSON(url string, v interface{}) (bool, int,
 	resp, err := hc.c.Get(url)
 	if err != nil {
 		log.Errorf("error: %q, possibly retrying.", err.Error())
-		return false, 0, 0, nil
+		return false, 0, 0, err
 	}
+
 	defer resp.Body.Close()
 	status := resp.StatusCode
 	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
+		log.Errorf("Error decoding response: %v", err)
 		return false, status, 0, err
 	}
 	ct := strings.ToLower(resp.Header.Get("Content-Type"))
 	expected := "application/json"
-	if ct != expected {
+	if !strings.HasPrefix(ct, expected) {
 		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, url)
 		return false, status, 0, err
 	}
@@ -310,6 +338,9 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 			done, status, length, err := hc.attemptJSON(url, v)
 			if done {
 				return length, err
+			}
+			if err != nil {
+				log.Errorf("Error attempting fetch: %v", err)
 			}
 
 			attempts++

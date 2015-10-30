@@ -70,6 +70,10 @@ func (m mockReader) PostAlerts(alerts *messages.Alerts) error {
 	return nil
 }
 
+func (m mockReader) CrbugItems(tree string) ([]messages.CrbugItem, error) {
+	return nil, nil
+}
+
 func TestMasterAlerts(t *testing.T) {
 	tests := []struct {
 		name   string
