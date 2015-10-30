@@ -6,7 +6,6 @@ from google.appengine.ext import ndb
 from google.appengine.ext.webapp import template
 
 from model.flake import Flake
-from pytz.gae import pytz
 
 import datetime
 import logging
@@ -32,15 +31,13 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   failure_runs = ndb.get_multi(failure_runs_keys)
   patchsets = ndb.get_multi(patchsets_keys)
 
-  pst_timezone = pytz.timezone("US/Pacific")
   for index, f in enumerate(failure_runs):
     f.patchset_url = patchsets[index].getURL()
     f.builder = patchsets[index].builder
-    f.formatted_time = f.time_finished.replace(tzinfo=pst_timezone).astimezone(
-        pytz.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+    f.formatted_time = f.time_finished.strftime('%Y-%m-%d %H:%M:%S UTC')
 
   # Do simple sorting to make reading easier.
-  failure_runs = sorted(failure_runs, key=RunsSortFunction)
+  failure_runs = sorted(failure_runs, key=RunsSortFunction, reverse=True)
 
   values = {
     'flake': flake,
