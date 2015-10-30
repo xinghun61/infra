@@ -14,7 +14,7 @@ import time
 import webapp2
 
 def RunsSortFunction(s):  # pragma: no cover
-  return s.builder + str(time.mktime(s.time_finished.timetuple()))
+  return s.time_finished
 
 def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   occurrence_keys = []
@@ -36,8 +36,8 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
   for index, f in enumerate(failure_runs):
     f.patchset_url = patchsets[index].getURL()
     f.builder = patchsets[index].builder
-    f.formatted_time = f.time_finished.replace(tzinfo=pytz.utc).astimezone(
-        pst_timezone).strftime('%m/%d/%y %I:%M %p')
+    f.formatted_time = f.time_finished.replace(tzinfo=pst_timezone).astimezone(
+        pytz.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
 
   # Do simple sorting to make reading easier.
   failure_runs = sorted(failure_runs, key=RunsSortFunction)
