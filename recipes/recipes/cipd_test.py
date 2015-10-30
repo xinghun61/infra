@@ -15,6 +15,7 @@ DEPS = [
   'gclient',
   'json',
   'path',
+  'platform',
   'properties',
   'python',
   'raw_io',
@@ -23,7 +24,6 @@ DEPS = [
 ]
 
 # Credentials to register the cipd package.
-CREDS = '/creds/service_accounts/service-account-cipd-builder.json'
 REPO = 'https://chromium.googlesource.com/chrome/tools/build'
 TEST_PACKAGE_PREFIX = 'infra/cipd_recipe_test'
 # What directory will be packaged?
@@ -84,8 +84,15 @@ def inner(api):
   assert package_pin['package'] == test_package
   step.presentation.step_text = 'instance_id: %s' % package_pin['instance_id']
 
+  # Path to a service account credentials to use to talk to CIPD backend.
+  # Deployed by Puppet.
+  if api.platform.is_win:
+    creds = 'C:\\creds\\service_accounts\\service-account-cipd-builder.json'
+  else:
+    creds = '/creds/service_accounts/service-account-cipd-builder.json'
+  api.cipd.set_service_account_credentials(creds)
+
   # Upload the test package.
-  api.cipd.set_service_account_credentials(CREDS)
   step = api.cipd.register(
       test_package, test_package_file,
       refs=['latest'],
@@ -137,6 +144,17 @@ def GenTests(api):
           dir_to_package=(
             '[SLAVE_BUILD]/build/scripts/slave/recipe_modules/cipd'),
       )
+  )
+  yield (
+      api.test('cipd-latest-ok-inner-win') +
+      api.properties.generic(
+          mastername='chromium.infra',
+          buildername='cipd-module-tester',
+          revision_tag='deadbeaf',
+          dir_to_package=(
+            '[SLAVE_BUILD]/build/scripts/slave/recipe_modules/cipd'),
+      ) +
+      api.platform.name('win')
   )
   yield (
       api.test('cipd-latest-ok-outer') +
