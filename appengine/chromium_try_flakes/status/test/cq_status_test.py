@@ -120,6 +120,11 @@ class CQStatusTestCase(testing.AppengineTestCase):
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = TEST_BUILDBOT_JSON_REPLY
 
+    # We also create one Flake to test that it is correctly updated. Other Flake
+    # entities will be created automatically.
+    Flake(id='bar5', name='bar5', occurrences=[],
+          last_time_seen=datetime.datetime.min).put()
+
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
       cq_status.get_flaky_run_reason(fr_key)
 

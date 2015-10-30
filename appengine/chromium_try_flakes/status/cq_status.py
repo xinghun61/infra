@@ -40,19 +40,19 @@ def get_patchset_builder_runs(issue, patchset, master,
   return patchset_builder_runs
 
 
-def is_last_hour(date):  # pragma: no cover
+def is_last_hour(date):
   return (datetime.datetime.now() - date) < datetime.timedelta(hours=1)
 
 
-def is_last_day(date):  # pragma: no cover
+def is_last_day(date):
   return (datetime.datetime.now() - date) < datetime.timedelta(days=1)
 
 
-def is_last_week(date):  # pragma: no cover
+def is_last_week(date):
   return (datetime.datetime.now() - date) < datetime.timedelta(weeks=1)
 
 
-def is_last_month(date):  # pragma: no cover
+def is_last_month(date):
   return (datetime.datetime.now() - date) < datetime.timedelta(days=31)
 
 
@@ -136,7 +136,7 @@ def update_issue_tracker():
 
 
 @ndb.transactional(xg=True)  # pylint: disable=no-value-for-parameter
-def add_failure_to_flake(name, flaky_run):  # pragma: no cover
+def add_failure_to_flake(name, flaky_run):
   flake = Flake.get_by_id(name)
   if not flake:
     flake = Flake(name=name, id=name, last_time_seen=datetime.datetime.min)
