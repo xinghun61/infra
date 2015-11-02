@@ -224,6 +224,7 @@ def send_events_from_file(args):
   file_list = get_event_file_list(args.events_from_file)
   status = True
 
+  LOGGER.info("Processing %d files", len(file_list))
   for filename in file_list:
     LOGGER.info('Processing %s', filename)
     events = read_events_from_file(filename)
@@ -271,7 +272,9 @@ def read_events_from_file(filename):
   """
   events = []
   with open(filename, 'r') as f:
+    lineno = 0
     for line in f:
+      lineno += 1
       if not line.strip():
         continue
       try:
@@ -295,5 +298,7 @@ def read_events_from_file(filename):
             timestamp_kind=args.get('event-mon-timestamp-kind'),
             event_timestamp=args.get('event-mon-event-timestamp'),
             service_name=args.get('event-mon-service-name')))
-
+      else:
+        LOGGER.warning('build-event-type field not found, skipping line '
+                       '%d in %s', lineno, filename)
   return events
