@@ -169,6 +169,15 @@ class TestReadEventsFromFile(SendingEventBaseTest):
 
     self.assertEqual(len(events), 4)
 
+  def test_read_with_extra_result_code(self):
+    events = send_event.read_events_from_file(
+      os.path.join(DATA_DIR, 'events_valid_extra_result.log'))
+    for event in events:
+      self.assertIsInstance(event, event_mon.Event)
+    self.assertEqual(len(events), 1)
+    self.assertEqual(
+      len(events[0].proto.build_event.extra_result_code), 1)
+
 
 class TestGetEventsFileList(unittest.TestCase):
   FILES_DIR = os.path.join(DATA_DIR, 'get_events_file_list')
