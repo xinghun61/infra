@@ -43,7 +43,7 @@ def show_all_flakes(flake, bug_friendly):  # pragma: no cover
     'flake': flake,
     'failure_runs': failure_runs,
     'bug_friendly': bug_friendly,
-    'time_now': datetime.datetime.now(),
+    'time_now': datetime.datetime.utcnow(),
   }
 
   return template.render('templates/all_flake_occurrences.html', values)

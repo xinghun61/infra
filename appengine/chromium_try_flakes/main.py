@@ -7,11 +7,12 @@ import sys
 import webapp2
 
 THIRD_PARTY_DIR = os.path.join(os.path.dirname(__file__), 'third_party')
+sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'gae-pytz'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'google-api-python-client'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'httplib2', 'python2'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'oauth2client'))
-sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'gae-pytz'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'six'))
+sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'time_functions'))
 sys.path.insert(0, os.path.join(THIRD_PARTY_DIR, 'uritemplate'))
 
 from handlers.cron_dispatch import CronDispatch

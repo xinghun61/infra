@@ -20,10 +20,11 @@ from model.flake import Flake
 from model.flake import FlakeOccurance
 from model.flake import FlakyRun
 from status import build_result
+import time_functions.timestamp
+
 
 @ndb.transactional
-def get_patchset_builder_runs(issue, patchset, master,
-                              builder):  # pragma: no cover
+def get_patchset_builder_runs(issue, patchset, master, builder):
   patchset_builder_runs_id = PatchsetBuilderRuns.getId(issue, patchset, master,
                                                        builder)
 
@@ -41,19 +42,19 @@ def get_patchset_builder_runs(issue, patchset, master,
 
 
 def is_last_hour(date):
-  return (datetime.datetime.now() - date) < datetime.timedelta(hours=1)
+  return (datetime.datetime.utcnow() - date) < datetime.timedelta(hours=1)
 
 
 def is_last_day(date):
-  return (datetime.datetime.now() - date) < datetime.timedelta(days=1)
+  return (datetime.datetime.utcnow() - date) < datetime.timedelta(days=1)
 
 
 def is_last_week(date):
-  return (datetime.datetime.now() - date) < datetime.timedelta(weeks=1)
+  return (datetime.datetime.utcnow() - date) < datetime.timedelta(weeks=1)
 
 
 def is_last_month(date):
-  return (datetime.datetime.now() - date) < datetime.timedelta(days=31)
+  return (datetime.datetime.utcnow() - date) < datetime.timedelta(days=31)
 
 
 # Updates a Flake object, which spans all the instances of one flake, with the
@@ -268,7 +269,7 @@ def get_flaky_run_reason(flaky_run_key):
   flaky_run.put()
 
 
-def get_int_value(properties, key):  # pragma: no cover
+def get_int_value(properties, key):
   if not key in properties:
     raise ValueError('key not found')
   value = properties[key]
@@ -278,7 +279,7 @@ def get_int_value(properties, key):  # pragma: no cover
 
 
 # Parses the json which we get from chromium-cq-status.
-def parse_cq_data(json_data):  # pragma: no cover
+def parse_cq_data(json_data):
   logging_output = []
   for result in json_data['results']:
     fields = result['fields']
@@ -383,7 +384,7 @@ def parse_cq_data(json_data):  # pragma: no cover
   return logging_output
 
 
-def fetch_cq_status():  # pragma: no cover
+def fetch_cq_status():
   """Fetches data from chromium-cq-status app and saves new data.
 
   Remembers old cursor and fetches new data.
@@ -399,12 +400,12 @@ def fetch_cq_status():  # pragma: no cover
     if fetch_status:
       if fetch_status.done:
         logging.info('historical fetching done so fetch latest...')
-        end = str(time.mktime(datetime.datetime.now().timetuple()))
+        end = str(time_functions.timestamp.utcnow_ts())
 
         last_build_run_seen = BuildRun.query().order(
             -BuildRun.time_finished).fetch(1)
-        begin = str(time.mktime(
-            last_build_run_seen[0].time_finished.timetuple()))
+        begin = str(time_functions.timestamp.utctimestamp(
+            last_build_run_seen[0].time_finished))
         cursor = ''
       else:
         begin = fetch_status.begin
@@ -412,9 +413,9 @@ def fetch_cq_status():  # pragma: no cover
         cursor = fetch_status.cursor
     else:
       logging.info('didnt find any historical information. fetching last week')
-      begin = str(time.mktime((datetime.datetime.now() -
-                               datetime.timedelta(weeks=1)).timetuple()))
-      end = str(time.mktime(datetime.datetime.now().timetuple()))
+      begin = str(time_functions.timestamp.utctimestamp(
+          datetime.datetime.utcnow() - datetime.timedelta(weeks=1)))
+      end = str(time_functions.timestamp.utcnow_ts())
 
     if begin and end:
       logging.info('fetching from ' +
@@ -438,10 +439,8 @@ def fetch_cq_status():  # pragma: no cover
     # "Values may not be more than 1000000 bytes in length; received 2118015
     # bytes"
     params.append('count=10')
-   
-    
-    if params:
-      url += '?' + '&'.join(params)
+
+    url += '?' + '&'.join(params)
     logging.info('fetching url: ' + url)
 
     try:
