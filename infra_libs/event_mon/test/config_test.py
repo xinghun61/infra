@@ -52,7 +52,7 @@ class ConfigTest(unittest.TestCase):
             '--event-mon-service-name', service_name,
             '--event-mon-appengine-name', appengine_name]
     self._set_up_args(args=args)
-    event = config._cache['default_event']
+    event = event_mon.get_default_event()
     self.assertEquals(event.event_source.host_name, hostname)
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertEquals(event.event_source.appengine_name, appengine_name)
@@ -74,7 +74,7 @@ class ConfigTest(unittest.TestCase):
     # The protobuf structure is actually an API not an implementation detail
     # so it's sane to test for changes.
     event_mon.setup_monitoring()
-    event = config._cache['default_event']
+    event = event_mon.get_default_event()
     self.assertTrue(event.event_source.HasField('host_name'))
     self.assertFalse(event.event_source.HasField('service_name'))
     self.assertFalse(event.event_source.HasField('appengine_name'))
@@ -91,14 +91,14 @@ class ConfigTest(unittest.TestCase):
       service_name=service_name,
       appengine_name=appengine_name
     )
-    event = config._cache['default_event']
+    event = event_mon.get_default_event()
     self.assertEquals(event.event_source.host_name, hostname)
     self.assertEquals(event.event_source.service_name, service_name)
     self.assertEquals(event.event_source.appengine_name, appengine_name)
 
   def test_set_default_event(self):
     event_mon.setup_monitoring()
-    orig_event = config._cache['default_event']
+    orig_event = event_mon.get_default_event()
 
     # Set the new default event to something different from orig_event
     # to make sure it has changed.
@@ -107,7 +107,7 @@ class ConfigTest(unittest.TestCase):
     event.event_source.host_name = new_hostname
     event_mon.set_default_event(event)
 
-    new_event = config._cache['default_event']
+    new_event = event_mon.get_default_event()
     self.assertEquals(new_event.event_source.host_name, new_hostname)
 
   def test_set_default_event_bad_type(self):
@@ -116,3 +116,9 @@ class ConfigTest(unittest.TestCase):
     # bad type
     with self.assertRaises(TypeError):
       event_mon.set_default_event({'hostname': 'foo'})
+
+  def test_get_default_event(self):
+    event_mon.setup_monitoring()
+    orig_event = config._cache['default_event']
+    self.assertEqual(orig_event, event_mon.get_default_event())
+    self.assertIsNot(orig_event, event_mon.get_default_event())

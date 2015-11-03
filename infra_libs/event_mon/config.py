@@ -165,6 +165,15 @@ def setup_monitoring(run_type='dry',
                                       dry_run=dry_run)
 
 
+def get_default_event():
+  """Returns a copy of the default event."""
+
+  # We return a copy here to tell people not to modify the event directly.
+  ret = ChromeInfraEvent()
+  ret.CopyFrom(_cache['default_event'])
+  return ret
+
+
 def set_default_event(event):
   """Change the default ChromeInfraEvent used to compute all events.
 

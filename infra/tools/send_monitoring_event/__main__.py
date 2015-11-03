@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import sys
 import traceback
 
@@ -23,7 +24,6 @@ def main(argv):  # pragma: no cover
 
   try:
     args = send_event.get_arguments(argv)
-
     send_event.process_argparse_options(args)
 
     if args.build_event_type:
@@ -49,7 +49,9 @@ def main(argv):  # pragma: no cover
     try:
       ts_mon.flush()
     except ts_mon.MonitoringNoConfiguredMonitorError:
-      pass
+      logging.error("Unable to flush ts_mon because it's not configured.")
+    except Exception:
+      logging.exception("Flushing ts_mon metrics failed.")
   return status
 
 
