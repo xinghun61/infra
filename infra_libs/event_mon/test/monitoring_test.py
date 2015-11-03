@@ -42,11 +42,12 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertTrue(log_event.HasField('event_time_ms'))
     self.assertTrue(log_event.HasField('source_extension'))
 
-    # Check that source_extension deserializes to the right thing.
+    # Check that source_extension deserializes to the correct thing.
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertTrue(event.HasField('service_event'))
     self.assertTrue(event.service_event.HasField('type'))
     self.assertEquals(event.service_event.type, ServiceEvent.START)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.BEGIN)
 
   def test_get_service_event_correct_versions(self):
     self.assertIsInstance(config._router, router._Router)
@@ -90,6 +91,24 @@ class GetServiceEventTest(unittest.TestCase):
                      code_version[3]['source_url'])
     self.assertEqual(code_version_p[3].dirty, True)
 
+  def test_get_service_event_stop(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
+
+    log_event = monitoring._get_service_event('STOP').log_event()
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.STOP)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.END)
+
+  def test_get_service_event_update(self):
+    self.assertIsInstance(config._router, router._Router)
+    self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
+
+    log_event = monitoring._get_service_event('UPDATE').log_event()
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertEqual(event.service_event.type, ServiceEvent.UPDATE)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.POINT)
+
   def test_get_service_event_crash_simple(self):
     self.assertIsInstance(config._router, router._Router)
     self.assertIsInstance(config._cache.get('default_event'), ChromeInfraEvent)
@@ -97,6 +116,7 @@ class GetServiceEventTest(unittest.TestCase):
     log_event = monitoring._get_service_event('CRASH').log_event()
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.END)
 
   def test_get_service_event_crash_with_ascii_trace(self):
     self.assertIsInstance(config._router, router._Router)
@@ -108,6 +128,7 @@ class GetServiceEventTest(unittest.TestCase):
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.END)
 
   def test_get_service_event_crash_with_unicode_trace(self):
     self.assertIsInstance(config._router, router._Router)
@@ -119,6 +140,7 @@ class GetServiceEventTest(unittest.TestCase):
     event = ChromeInfraEvent.FromString(log_event.source_extension)
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.END)
 
   def test_get_service_event_crash_with_big_trace(self):
     self.assertIsInstance(config._router, router._Router)
@@ -132,6 +154,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertEqual(event.service_event.type, ServiceEvent.CRASH)
     self.assertEqual(len(event.service_event.stack_trace),
                      monitoring.STACK_TRACE_MAX_SIZE)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.END)
 
   def test_get_service_event_crash_invalid_trace(self):
     self.assertIsInstance(config._router, router._Router)
@@ -160,6 +183,7 @@ class GetServiceEventTest(unittest.TestCase):
     # Make sure we send even invalid data.
     self.assertEqual(event.service_event.type, ServiceEvent.START)
     self.assertEqual(event.service_event.stack_trace, stack_trace)
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.BEGIN)
 
   def test_get_service_event_with_non_default_service_name(self):
     self.assertIsInstance(config._router, router._Router)
@@ -194,7 +218,7 @@ class GetServiceEventTest(unittest.TestCase):
     self.assertTrue(event.service_event.HasField('type'))
     self.assertEquals(event.service_event.type, ServiceEvent.START)
     self.assertEquals(event.event_source.service_name, service_name)
-
+    self.assertEquals(event.timestamp_kind, ChromeInfraEvent.BEGIN)
 
 class SendServiceEventTest(unittest.TestCase):
   def setUp(self):

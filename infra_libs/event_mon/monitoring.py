@@ -146,6 +146,15 @@ def _get_service_event(event_type,
     logging.error('Invalid value for event_type: %s', event_type)
     return Event.null()
 
+  if timestamp_kind is None:
+    timestamp_kind = 'POINT'
+    if event_type == 'START':
+      timestamp_kind = 'BEGIN'
+    elif event_type == 'STOP':
+      timestamp_kind = 'END'
+    elif event_type == 'CRASH':
+      timestamp_kind = 'END'
+
   event_wrapper = Event(timestamp_kind, event_timestamp, service_name)
   if event_wrapper.is_null:
     return event_wrapper
