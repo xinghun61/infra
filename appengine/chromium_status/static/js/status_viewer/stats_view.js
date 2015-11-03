@@ -93,7 +93,6 @@ var SKIP_WORDS = {
   "org": true,
   "tests": true,
   "the": true,
-  "throttled": true,
   "to": true,
   "too": true,
   "tree": true,
@@ -147,7 +146,7 @@ function CalculateStatistics(runs, topN) {
       continue;
 
     IncrementProperty(authors, run.entry.author.toLowerCase(), 1);
-    
+
     var durationSeconds = DateUtil.MillisToSeconds(run.duration);
     var state = run.entry.GetTreeState();
     statusTotalsSeconds.Increment(state, durationSeconds);
@@ -194,9 +193,6 @@ function DrawStatsView(timeRange, allEntries) {
   // Time closed due to maintenance.
   var timeMaintenance = stats.statusTotalsSeconds.GetClosedForMaintenance();
 
-  // Time throttled.
-  var timeThrottled = stats.statusTotalsSeconds.GetThrottled();
-
   // Total time.
   var total = stats.statusTotalsSeconds.GetTotalKnown();
 
@@ -208,9 +204,6 @@ function DrawStatsView(timeRange, allEntries) {
 
   DrawTimeTotal(timeClosedDiv, "Total time closed for maintenance",
                 timeMaintenance, total);
-
-  DrawTimeTotal(timeClosedDiv, "Total time throttled",
-                timeThrottled, total);
 
   // Draw the top authors/words.
   DrawTopList(topAuthorsDiv, stats.topAuthors);
@@ -225,7 +218,7 @@ function DrawStatsView(timeRange, allEntries) {
  */
 function FormatSeconds(t) {
   var minutes = t / 60;
-  
+
   if (minutes > 60) {
     var hours = minutes / 60;
     var precision = 1;

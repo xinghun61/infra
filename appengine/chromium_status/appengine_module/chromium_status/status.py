@@ -189,8 +189,6 @@ class Status(db.Model):
     closed = re.search('close', message, re.IGNORECASE)
     if closed and re.search('maint', message, re.IGNORECASE):
       return 'maintenance'
-    if re.search('throt', message, re.IGNORECASE):
-      return 'throttled'
     if closed:
       return 'closed'
     return 'open'

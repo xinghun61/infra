@@ -31,7 +31,6 @@ Entry.prototype.GetTreeState = function() {
 Entry.TREE_STATES = [
   "open",
   "closed",
-  "throttled",
   "maintenance", // Tree is closed (for maintenance)
   "unknown"
 ];
@@ -72,10 +71,6 @@ StatusTotals.prototype.GetClosed = function(type) {
 
 StatusTotals.prototype.GetClosedForMaintenance = function(type) {
   return this.totals_.maintenance;
-};
-
-StatusTotals.prototype.GetThrottled = function(type) {
-  return this.totals_.throttled;
 };
 
 StatusTotals.prototype.GetUnknown = function(type) {
