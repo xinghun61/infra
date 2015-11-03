@@ -11,7 +11,6 @@ from status.cq_status import is_last_hour
 from status.cq_status import is_last_day
 from status.cq_status import is_last_week
 from status.cq_status import is_last_month
-from pytz.gae import pytz
 
 import datetime
 import logging
@@ -86,19 +85,12 @@ class Index(webapp2.RequestHandler):  # pragma: no cover
 
     time_format = ''
     if time_range == 'hour':
-      time_format = '%I:%M %p'
-    elif (time_range == 'day' or time_range == 'week' or
-          time_range == 'month'):
-      time_format = '%m/%d %I:%M %p'
+      time_format = '%H:%M:%S'
     else:
-      time_format = '%m/%d/%y %I:%M %p'
-
-    # tryserver pages show PST time so do so here as well for easy comparison.
-    pst_timezone = pytz.timezone("US/Pacific")
+      time_format = '%Y-%m-%d %H:%M:%S'
 
     def time_formatter(t):
-      return t.replace(tzinfo=pytz.utc).astimezone(pst_timezone).strftime(
-          time_format)
+      return t.strftime(time_format)
 
     for f in flakes:
       f.filtered_occurrences = GetFilteredOccurences(
