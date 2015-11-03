@@ -6,7 +6,7 @@ import datetime
 from pytz import timezone
 import unittest
 
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 
 
 class TestTimestamps(unittest.TestCase):

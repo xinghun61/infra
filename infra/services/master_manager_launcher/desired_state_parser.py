@@ -13,8 +13,8 @@ import os
 import re
 
 from infra.libs.buildbot import master
-from infra.libs.time_functions import timestamp
-from infra.libs.time_functions import zulu
+from infra_libs.time_functions import timestamp
+from infra_libs.time_functions import zulu
 from infra.services.master_lifecycle import buildbot_state
 
 

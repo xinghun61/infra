@@ -8,7 +8,7 @@
 import datetime
 import pytz
 
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 
 
 def parse_zulu_time(string):

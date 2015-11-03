@@ -147,7 +147,7 @@ the python standard library, but other quirks are documented as well.
   time when you have zero microseconds and then it can't
 
   See https://bugs.python.org/issue19475 for the problem, and see
-  [zulu.py](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/time_functions/zulu.py)
+  [zulu.py](https://chromium.googlesource.com/infra/infra/+/master/infra_libs/time_functions/zulu.py)
   for the 'solution.'
     
 

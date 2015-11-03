@@ -7,7 +7,7 @@ import re
 from testing_support import auto_stub
 
 from infra.libs.buildbot import master
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 from infra.services.master_lifecycle import buildbot_state
 
 class TestBuildbotState(auto_stub.TestCase):

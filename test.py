@@ -41,7 +41,6 @@ WIN_ENABLED_PACKAGES = [
   'infra/libs/process_invocation',
   'infra/libs/service_utils',
   'infra/libs/state_machine',
-  'infra/libs/time_functions',
 
   'infra/services/service_manager',
   'infra/services/sysmon',
@@ -49,6 +48,7 @@ WIN_ENABLED_PACKAGES = [
   'infra_libs/event_mon',
   'infra_libs/infra_types',
   'infra_libs/logs',
+  'infra_libs/time_functions',
   'infra_libs/ts_mon',
 
   'infra_libs:infra_libs.test.*',

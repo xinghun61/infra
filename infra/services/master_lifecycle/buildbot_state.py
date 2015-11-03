@@ -7,7 +7,7 @@
 
 
 from infra.libs.state_machine import pattern_match
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 from infra.libs.buildbot import master
 
 

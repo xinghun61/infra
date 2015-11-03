@@ -6,7 +6,7 @@ import os
 import unittest
 
 from infra.libs.buildbot import master
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 from infra.services.master_manager_launcher import desired_state_parser
 from testing_support import auto_stub
 

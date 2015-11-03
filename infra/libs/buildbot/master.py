@@ -16,7 +16,7 @@ import sys
 
 from dateutil.parser import parse
 
-from infra.libs.time_functions import timestamp
+from infra_libs.time_functions import timestamp
 
 ######## Getting information about the master.
 
