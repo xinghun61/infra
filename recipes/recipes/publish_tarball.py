@@ -112,6 +112,7 @@ def export_lite_tarball(api, version):
         api.step('prune %s' % directory, [
             'find', api.path.join(dest_dir, directory), '-type', 'f',
             '!', '-iname', '*.gyp*',
+            '!', '-iname', '*.gn*',
             '!', '-iname', '*.isolate*',
             '!', '-iname', '*.grd*',
             '-delete'])
