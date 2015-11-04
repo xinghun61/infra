@@ -38,6 +38,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 
 from appengine_module.test_results.handlers import master_config
+from appengine_module.test_results.handlers import util
 from appengine_module.test_results.model.builderstate import BuilderState
 from appengine_module.test_results.model.jsonresults import JsonResults
 from appengine_module.test_results.model.testfile import TestFile
@@ -265,6 +266,7 @@ class Upload(webapp2.RequestHandler):  # pylint: disable=W0232
       master = master_parameter
 
     test_type = self.request.get(PARAM_TEST_TYPE)
+    test_type = util.normalize_test_type(test_type)
 
     logging.debug(
         "Processing upload request, master: %s, builder: %s, test_type: %s.",

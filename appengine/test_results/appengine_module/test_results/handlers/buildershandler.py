@@ -37,6 +37,7 @@ import webapp2
 from google.appengine.api import memcache
 
 from appengine_module.test_results.handlers import master_config
+from appengine_module.test_results.handlers import util
 
 # Buildbot steps that have test in the name, but don't run tests.
 NON_TEST_STEP_NAMES = [
@@ -153,7 +154,8 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
         # This is just triggering and collecting tests on swarming, not the
         # actual test types.
         if (step_name.startswith('[trigger]') or
-            step_name.startswith('[collect]')):
+            step_name.startswith('[collect]') or
+            step_name.startswith('[skipped]')):
           continue
 
         # Get the test type from the test-results uploading step name.
@@ -163,6 +165,18 @@ def fetch_buildbot_data(masters=None):  # pragma: no cover
 
         if step_name == 'webkit_tests':
           step_name = 'layout-tests'
+
+        # Aggressively skip all steps that dont have test in the first
+        # word (before first space) and remove all platform cruft. This rule
+        # is based on a manual audit of valid and invalid test types populated
+        # in the dashboard in Q4 2015.
+        # Note: Normalization also happens at upload time to ensure known and
+        # actual test types match.
+        # TODO: Remove NON_TEST_STEP_NAMES since this rule should remove all
+        # of them already.
+        step_name = util.normalize_test_type(step_name)
+        if 'test' not in step_name:
+          continue
 
         tests_object.setdefault(step_name, {'builders': set()})
         tests_object[step_name]['builders'].add(builder)
