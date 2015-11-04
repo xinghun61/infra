@@ -8,6 +8,7 @@ import contextlib
 import glob
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -181,6 +182,25 @@ def activate_env(env, deps, quiet=False):
     import virtualenv  # pylint: disable=F0401
     virtualenv.create_environment(
         env, search_dirs=virtualenv.file_search_dirs())
+
+    # Hack: On windows orig-prefix.txt contains the hardcoded path
+    # "E:\b\depot_tools\python276_bin", but some systems have depot_tools
+    # installed on C:\ instead, so fiddle site.py to try loading it from there
+    # as well.
+    if sys.platform.startswith('win'):
+      site_py_path = os.path.join(env, 'Lib\\site.py')
+      with open(site_py_path) as fh:
+        site_py = fh.read()
+
+      m = re.search(r'( +)sys\.real_prefix = .*', site_py)
+      replacement = ('%(indent)sif (sys.real_prefix.startswith("E:\\\\") and\n'
+                     '%(indent)s    not os.path.exists(sys.real_prefix)):\n'
+                     '%(indent)s  sys.real_prefix = "C" + sys.real_prefix[1:]\n'
+                     % {'indent': m.group(1)})
+
+      site_py = site_py[:m.end(0)] + '\n' + replacement + site_py[m.end(0):]
+      with open(site_py_path, 'w') as fh:
+        fh.write(site_py)
 
   if not quiet:
     print '  Activating environment'
