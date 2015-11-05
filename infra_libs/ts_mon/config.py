@@ -12,7 +12,6 @@ import re
 
 import requests
 
-from infra_libs.ts_mon import api_monitor
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import monitors
@@ -181,6 +180,8 @@ def process_argparse_options(args):
   if args.ts_mon_credentials is not None:
     credentials = args.ts_mon_credentials
 
+  interface.state.global_monitor = monitors.NullMonitor()
+
   if endpoint.startswith('file://'):
     interface.state.global_monitor = monitors.DebugMonitor(
         endpoint[len('file://'):])
@@ -192,12 +193,11 @@ def process_argparse_options(args):
       interface.state.global_monitor = monitors.PubSubMonitor(
           credentials, project, topic, use_instrumented_http=True)
     else:
-      interface.state.global_monitor = api_monitor.ApiMonitor(
-          credentials, endpoint, use_instrumented_http=True)
+      logging.error('Monitoring is disabled because the endpoint provided is '
+                    'invalid or not supported: %s', endpoint)
   else:
-    logging.error('Monitoring is disabled because --ts-mon-credentials was not '
-                  'set')
-    interface.state.global_monitor = monitors.NullMonitor()
+    logging.error('Monitoring is disabled because credentials are not '
+                  'available')
 
   if args.ts_mon_target_type == 'device':
     interface.state.target = targets.DeviceTarget(
@@ -230,4 +230,3 @@ def process_argparse_options(args):
     interface.state.flush_thread.start()
 
   standard_metrics.init()
-

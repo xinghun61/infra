@@ -85,12 +85,6 @@
     'repo': 'external/code.google.com/p/mock',
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
   },
-  'monacq': {
-    'version': '1.1.1',
-    'build': '0',
-    'repo': 'git+https://chrome-internal.googlesource.com/infra/third_party/monacq',
-    'rev': '18386bc2416d39fcec91098bbc7b8e096a24dbfd',
-  },
   'numpy': {
     'version': '1.6.1',
     'build': '0',
@@ -115,7 +109,6 @@
     'build': '0',
     'repo': 'external/github.com/google/protobuf',
     'rev': '629a556879cc84e0f52546f0484b65b72ce44fe8',
-    'implicit': True,  # Required by monacq
   },
   'pyasn1': {
     'version': '0.1.7',
