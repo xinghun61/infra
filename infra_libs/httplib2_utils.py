@@ -118,7 +118,8 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
 
 def get_authenticated_http(credentials_filename,
                            scope=None,
-                           service_accounts_creds_root=None):
+                           service_accounts_creds_root=None,
+                           http_identifier=None):
   """Creates an httplib2.Http wrapped with a service account authenticator.
 
   Args:
@@ -132,6 +133,8 @@ def get_authenticated_http(credentials_filename,
     service_accounts_creds_root (str or None): location where all service
       account credentials are stored. ``credentials_filename`` is relative
       to this path. None means 'use default location'.
+    http_identifier (str): if provided, returns an instrumented http request
+      and use this string to identify it to ts_mon.
 
   Returns:
     httplib2.Http authenticated with master's service account.
@@ -141,7 +144,11 @@ def get_authenticated_http(credentials_filename,
     scope=scope,
     service_accounts_creds_root=service_accounts_creds_root)
 
-  return creds.authorize(httplib2.Http())
+  if http_identifier:
+    http = InstrumentedHttp(http_identifier)
+  else:
+    http = httplib2.Http()
+  return creds.authorize(http)
 
 
 class InstrumentedHttp(httplib2.Http):

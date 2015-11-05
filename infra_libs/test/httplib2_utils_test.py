@@ -118,6 +118,13 @@ class GetAuthenticatedHttp(unittest.TestCase):
       service_accounts_creds_root=DATA_DIR)
     self.assertIsInstance(http, httplib2.Http)
 
+  def test_valid_credentials_authenticated(self):
+    http = httplib2_utils.get_authenticated_http(
+      'valid_creds.json',
+      service_accounts_creds_root=DATA_DIR,
+      http_identifier='test_case')
+    self.assertIsInstance(http, httplib2_utils.InstrumentedHttp)
+
   # Only test one malformed case and rely on LoadJsonCredentialsTest
   # for the other cases.
   def test_malformed_credentials(self):
