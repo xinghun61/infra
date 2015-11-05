@@ -98,15 +98,13 @@
     "name": "cipd set-tag infra/cipd_recipe_test/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"pin\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
@@ -129,15 +127,13 @@
     "name": "cipd set-ref infra/cipd_recipe_test/linux-amd64",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"pin\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/cipd_recipe_test/linux-amd64\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/cipd_recipe_test/linux-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
@@ -155,7 +151,7 @@
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
     "cwd": "[SLAVE_BUILD]",
-    "name": "cipd search infra/cipd_recipe_test/linux-amd64",
+    "name": "cipd search infra/cipd_recipe_test/linux-amd64 revision:deadbeaf",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
