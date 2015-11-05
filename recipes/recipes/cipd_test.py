@@ -92,24 +92,43 @@ def inner(api):
     creds = '/creds/service_accounts/service-account-cipd-builder.json'
   api.cipd.set_service_account_credentials(creds)
 
+  tags = {
+    'revision': api.properties['revision_tag'],
+    'git_repository': REPO,
+    'buildbot_build': '%s/%s/%s' % (
+        api.properties['mastername'],
+        api.properties['buildername'],
+        api.properties['buildnumber']
+    ),
+  }
   # Upload the test package.
   step = api.cipd.register(
       test_package, test_package_file,
       refs=['latest'],
-      tags={
-        'revision': api.properties['revision_tag'],
-        'git_repository': REPO,
-        'buildbot_build': '%s/%s/%s' % (
-            api.properties['mastername'],
-            api.properties['buildername'],
-            api.properties['buildnumber']
-        ),
-      }
+      tags=tags,
   )
   assert step.json.output['result'] == package_pin
   # Set tags and refs.
   api.cipd.set_tag(test_package, instance_id, tags={'tag': 'cipd_test'})
   api.cipd.set_ref(test_package, instance_id, refs=['cipd_test'])
+
+  step = api.cipd.search(test_package,
+                         tag='revision:%s' % api.properties['revision_tag'])
+  assert len(step.json.output['result']) == 1, 'there should be just 1 package'
+
+  step = api.cipd.describe(
+      test_package,
+      version=step.json.output['result'][0]['instance_id'],
+      test_data_refs=['latest'],
+      test_data_tags=['%s:%s' % i for i in tags.iteritems()],
+  )
+
+  # Verify that tags are properly set. Note, there could be more tags!
+  unset_tags = set('%s:%s' % i for i in tags.iteritems())
+  for tag_info in step.json.output['result']['tags']:
+    if tag_info['tag'] in unset_tags:
+      unset_tags.remove(tag_info['tag'])
+  assert not unset_tags
 
   # Install test package we've just uploaded by ref.
   cipd_root = api.path['slave_build'].join('cipd_test_package')
