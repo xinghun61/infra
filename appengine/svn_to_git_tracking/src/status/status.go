@@ -15,21 +15,15 @@ import (
 	"appengine/datastore"
 )
 
-type hostStateReport struct {
-	Host     string
-	State    string
-	Reported time.Time
+type host struct {
+	// Key is hostname
+	State         string
+	StateReported time.Time
 }
 
-type hostLatestState struct {
-	State    string
+type errorReport struct {
+	// Parent is host, rey is error type
 	Reported time.Time
-}
-
-type brokenSlave struct {
-	Host      string
-	ErrorType string
-	Reported  time.Time
 }
 
 func init() {
@@ -58,7 +52,7 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := getFormParam(r, "host")
+	hostname, err := getFormParam(r, "host")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -71,20 +65,8 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := appengine.NewContext(r)
-	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
-		hsr := hostStateReport{host, state, time.Now().UTC()}
-		hsrKey := datastore.NewIncompleteKey(c, "hostStateReport", nil)
-		if _, err := datastore.Put(c, hsrKey, &hsr); err != nil {
-			return err
-		}
-
-		hls := hostLatestState{state, time.Now().UTC()}
-		hlsKey := datastore.NewKey(c, "hostLatestState", host, 0, nil)
-		_, err = datastore.Put(c, hlsKey, &hls)
-		return err
-	}, &datastore.TransactionOptions{XG: true})
-
-	if err != nil {
+	hostKey := datastore.NewKey(c, "host", hostname, 0, nil)
+	if _, err = datastore.Put(c, hostKey, &host{state, time.Now().UTC()}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -99,10 +81,10 @@ func reportState(w http.ResponseWriter, r *http.Request) {
 
 func pendingHosts(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	weekAgo := time.Now().AddDate(0, 0, -7)
-	q := datastore.NewQuery("hostLatestState").
-		Filter("Reported >", weekAgo).
-		Filter("State=", "SVN").
+	hourAgo := time.Now().Add(-time.Hour)
+	q := datastore.NewQuery("host").
+		Filter("State =", "SVN").
+		Filter("StateReported >", hourAgo).
 		KeysOnly()
 	svnHosts, err := q.GetAll(c, nil)
 	if err != nil {
@@ -148,9 +130,9 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := appengine.NewContext(r)
-	bs := brokenSlave{host, error_type, time.Now().UTC()}
-	bsKey := datastore.NewIncompleteKey(c, "brokenSlave", nil)
-	if _, err := datastore.Put(c, bsKey, &bs); err != nil {
+	hostKey := datastore.NewKey(c, "host", host, 0, nil)
+	errorReportKey := datastore.NewKey(c, "errorReport", error_type, 0, hostKey)
+	if _, err = datastore.Put(c, errorReportKey, &errorReport{time.Now().UTC()}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -158,38 +140,26 @@ func reportBrokenSlave(w http.ResponseWriter, r *http.Request) {
 
 func brokenSlaves(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	dayAgo := time.Now().AddDate(0, 0, -1)
-	q := datastore.NewQuery("brokenSlave").
-		Filter("Reported >", dayAgo).
-		Project("Host", "ErrorType", "Reported")
-	var brokenSlaves []brokenSlave
-	_, err := q.GetAll(c, &brokenSlaves)
+	hourAgo := time.Now().Add(-time.Hour)
+	q := datastore.NewQuery("errorReport").Filter("Reported >", hourAgo)
+	var errorReports []errorReport
+	errorReportKeys, err := q.GetAll(c, &errorReports)
+	c.Infof("Num error reports: %d", len(errorReports))
+	c.Infof("Num error report keys: %d", len(errorReportKeys))
 	if err != nil {
 		c.Errorf("Failed to get broken slaves: %s", err)
 		http.Error(w, "Failed to get broken slaves", http.StatusInternalServerError)
 		return
 	}
 
-	// Due to the limitations of datastore, we may only request all reports for a
-	// given slave within 1 day (can't group them by host and error type only).
-	// In this loop we deduplicate them by creating a map from error type to
-	// another map from slave name to boolean value, which is always true, to
-	// simulate a set. In the next loop, we convert this map into a map from error
-	// type to a list of slave names.
-	slaveErrorMap := make(map[string]map[string]bool)
-	for _, brokenSlave := range brokenSlaves {
-		if _, ok := slaveErrorMap[brokenSlave.ErrorType]; !ok {
-			slaveErrorMap[brokenSlave.ErrorType] = make(map[string]bool)
-		}
-		slaveErrorMap[brokenSlave.ErrorType][brokenSlave.Host] = true
-	}
-
 	slaveErrors := make(map[string][]string)
-	for errorType, slaveMap := range slaveErrorMap {
-		slaveErrors[errorType] = make([]string, 0)
-		for slaveName, _ := range slaveMap {
-			slaveErrors[errorType] = append(slaveErrors[errorType], slaveName)
+	for i := 0; i < len(errorReportKeys); i++ {
+		hostname := errorReportKeys[i].Parent().StringID()
+		error_type := errorReportKeys[i].StringID()
+		if _, ok := slaveErrors[error_type]; !ok {
+			slaveErrors[error_type] = make([]string, 0)
 		}
+		slaveErrors[error_type] = append(slaveErrors[error_type], hostname)
 	}
 
 	out, err := json.Marshal(slaveErrors)

@@ -1,10 +1,5 @@
 indexes:
-- kind: hostLatestState
+- kind: host
   properties:
   - name: State
-  - name: Reported
-- kind: brokenSlave
-  properties:
-  - name: Reported
-  - name: ErrorType
-  - name: Host
+  - name: StateReported
