@@ -50,12 +50,22 @@ Then add the actual dep:
 
 Then build it:
 
-    $ ./bootstrap/build_deps.py
+    $ ./bootstrap/build_deps.py --upload
     # builds and uploads my_pkg-1.2.3-0_deadbeef...-....whl to google storage
 
 *** note
 If your dep is not pure-python, you will have to run `build_deps.py`
 for each platform.
+***
+
+*** note
+If you're running an unsupported platform (the main symptom being that `gclient
+sync` fails with `__main__.NoWheelException: No matching wheel found for`. See
+http://crbug.com/520285 for more details), then you have to run `build_deps.py`
+to rebuild the missing packages. See also 'rolling deps' below. If you don't
+have permission to upload the generated packages to Cloud Storage (e.g. if
+you're not a Googler), then drop the `--upload` option and all packages will be
+stored locally only.
 ***
 
 ### If your dep needs special treatment
@@ -134,12 +144,12 @@ To ingest such a tarball into the infra google storage bucket, use
 `ingest_source.py /path/to/archive`. This will print the value for the
 'gs' key for a deps.pyl entry.
 
-## build\_deps.py / rolling deps
+## build_deps.py / rolling deps
 
 Any time a new dependency/version is introduced into `deps.pyl`, you
-must run [build\_deps.py](build_deps.py). If the dependency is a pure-Python dependency
-(i.e. no compiled extensions), you only need to run it once on CPython
-2.7. You can tell that it's a pure python module by looking at the name
+must run `build_deps.py --upload`. If the dependency is a pure-Python
+dependency (i.e. no compiled extensions), you only need to run it once on
+CPython 2.7. You can tell that it's a pure python module by looking at the name
 of the wheel file. For example:
 
     requests-2.3.0-py2.py3-none-any.whl
@@ -147,11 +157,11 @@ of the wheel file. For example:
 Is compatible with Python 2 and Python 3 (py2.py3) any python ABI
 (none), and any OS platform (any).
 
-Running `build_deps.py` will only attempt to build dependencies which
-are missing for the current platform.
+Running [build_deps.py](build_deps.py) will only attempt to build dependencies
+which are missing for the current platform.
 
 If the module does contain compiled extensions, you must run
-`build_deps.py` on the following systems (all with CPython 2.7):
+[build_deps.py](build_deps.py) on the following systems (all with CPython 2.7):
 
 * OS X 10.9 - `x86_64`
 * Windows 7 - `x86_64`
@@ -167,8 +177,8 @@ command to authenticate first:
 
     depot_tools/third_party/gsutil/gsutil config
 
-`build_deps.py` assumes that it can find `gsutil` on `PATH`, so go ahead
-and install it appropriately for whichever platform you're on.
+[build_deps.py](build_deps.py) assumes that it can find `gsutil` on `PATH`, so
+go ahead and install it appropriately for whichever platform you're on.
 
 ## Custom builds
 
