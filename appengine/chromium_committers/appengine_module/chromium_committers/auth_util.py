@@ -23,6 +23,9 @@ TRUSTED_APP_IDS = [
   'chromiumcodereview-hr',
 ]
 
+TRUSTED_CLIENT_EMAILS = [
+  'chrome-infra-prod-borg@system.gserviceaccount.com',
+]
 
 class User(object):
   """A generalized user, compatible with both AppEngine and Cloud Endpoints."""
@@ -31,6 +34,7 @@ class User(object):
   AUTH_HMAC = 'hmac'
   AUTH_OAUTH = 'oauth'
   AUTH_TRUSTED_APP = 'trusted_app'
+  AUTH_TRUSTED_CLIENT = 'trusted_client'
 
   def __init__(self, email, is_admin, auth):
     self._email = email
@@ -73,11 +77,19 @@ class User(object):
       # Added via hmac_util.CheckHmacAuth decorator.
       auth.append(cls.AUTH_HMAC)
 
-    u = users.get_current_user()
-    if u:
-      email = u.email()
-      admin = users.is_current_user_admin()
-      auth.append(cls.AUTH_COOKIES)
+    try:
+      oauth_user = oauth.get_current_user(endpoints.EMAIL_SCOPE)
+      email = oauth_user.email()
+      admin = oauth.is_current_user_admin(endpoints.EMAIL_SCOPE)
+      auth.append(cls.AUTH_OAUTH)
+      if email in TRUSTED_CLIENT_EMAILS:
+        auth.append(cls.AUTH_TRUSTED_CLIENT)
+    except oauth.OAuthRequestError:
+      u = users.get_current_user()
+      if u:
+        email = u.email()
+        admin = users.is_current_user_admin()
+        auth.append(cls.AUTH_COOKIES)
     return cls(email, admin, auth)
 
 

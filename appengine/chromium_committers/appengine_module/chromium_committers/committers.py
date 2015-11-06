@@ -43,7 +43,9 @@ def get_list(user, list_name):
     raise InvalidList('List is empty or does not exist.')
 
   valid_request = (
-      user.is_auth(auth_util.User.AUTH_HMAC, auth_util.User.AUTH_TRUSTED_APP) or
+      user.is_auth(auth_util.User.AUTH_HMAC,
+                   auth_util.User.AUTH_TRUSTED_APP,
+                   auth_util.User.AUTH_TRUSTED_CLIENT) or
       auth_util.CheckUserInList(user, emails)
   )
   if not valid_request:
