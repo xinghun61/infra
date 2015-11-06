@@ -1,10 +1,11 @@
-# For users
+# I want to
 
-* [Contacting troopers](contacting_troopers.md)
-* [User-visible chrome infra services](services/index.md)
+* [Contact a troopers](contacting_troopers.md)
+* [See what services chrome infra offers](services/index.md)
+* [Set up a new buildbot master](services/buildbot/faq.md#How-to-setup-a-new-buildbot-master)
+* [Modify the chromium recipe](chromium_recipe.md)
 
 ## User guides
 
-* [How to set up a new buildbot master](services/buildbot/faq.md#How-to-setup-a-new-buildbot-master)
 * [The builders.pyl file format for masters](services/buildbot/builders.pyl.md)
 * [Recipes user guide](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/user_guide.md)
