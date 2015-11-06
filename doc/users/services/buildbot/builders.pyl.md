@@ -380,9 +380,9 @@ This is a *required* field and must have one of the following values:
 
 os       | Valid values
 ---------|-------------
-`"mac"`  | `"10.6"`, `"10.7"`, `"10.8"`, `"10.9"`, `"10.10", `"10.11"``
-`"linux"`| `"precise"`, `"trusty"`
-`"win"`  |   `"xp"`, `"vista"`, `"win7"`, `"win8"`, `"win10"`, `"2008"`
+`"mac"`  | `"10.6"`, `"10.7"`, `"10.8"`, `"10.9"`, `"10.10"`, `"10.11"`
+`"linux"`| `"precise"`, `"trusty"`, `"xenial"`
+`"win"`  | `"xp"`, `"vista"`, `"win7"`, `"win8"`, `"win10"`, `"2008"`
 
 ## Feedback
 
