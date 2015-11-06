@@ -68,6 +68,10 @@
 .text {
     white-space: pre-wrap;
     word-wrap: break-word;
+    /* For non-WebKit browsers */
+    word-break: break-all;
+    /* For WebKit/Blink browsers. Non-standard but more beautiful. */
+    word-break: break-word;
     font-family: Menlo, Monaco, monospace;
     flex-shrink: 0;
     -webkit-flex-shrink: 0;
