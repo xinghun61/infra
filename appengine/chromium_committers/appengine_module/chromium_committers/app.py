@@ -84,8 +84,8 @@ class UpdateHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPageHandler),
-    ('/lists/([a-zA-Z0-9_-]+)', ListHandler),
-    ('/update/([a-zA-Z0-9_-]+)', UpdateHandler),
+    ('/lists/([a-zA-Z0-9.@_-]+)', ListHandler),
+    ('/update/([a-zA-Z0-9.@_-]+)', UpdateHandler),
     ], debug=True)
 
 ep_server = endpoints.api_server([ep_api.CommittersApi])
