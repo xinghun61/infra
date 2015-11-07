@@ -3,7 +3,9 @@ The static-dashboards files can just be loaded off disk as file urls.
 If you need to test the server, use appengine's dev_appserver to start
 a localhost server.
 
-Run the web tests via static-dashboards/run-unittests.html.
+Run the web tests via static-dashboards/run-unittests.html. Note: running
+these tests outside of PST/PDT will result in a couple of false negatives
+in some tests that are checking date strings.
 
 Run the python tests one python _tests file at a time. You need to
 add the following to your PYTHON_PATH first though. Fill in the
@@ -14,7 +16,7 @@ export PYTHON_PATH=PYTHON_PATH:CHROMIUM_ROOT/src/third_party/WebKit/Tools/TestRe
 
 PUSHING
 Fill in the revision you're pushing for XXXX.
-1. appcfg.py update . --version rXXXX
+1. appcfg.py update . -V $(git rev-parse --short HEAD)
 2. Go to appengine.google.com and select the test-results-hrd app.
 3. Click on the version tab
 4. Make the rXXXX version the default
@@ -24,4 +26,6 @@ wrong with the push and so we can know what we've pushed.
 
 If you're unsure about whether you might have broken things, before
 step 4, you can click on the link for that version to see that
-version of the server before you make it the default.
+version of the server before you make it the default. Note: this only
+tests changes to the serving code and not code that saves any state,
+e.g. the upload handler, builder state updater cron, etc.
