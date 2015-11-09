@@ -31,6 +31,7 @@ func init() {
 	http.HandleFunc("/api/pending", pendingHosts)
 	http.HandleFunc("/api/reportBrokenSlave", reportBrokenSlave)
 	http.HandleFunc("/api/broken", brokenSlaves)
+	http.HandleFunc("/api/hosts", allHosts)
 }
 
 func getFormParam(r *http.Request, paramName string) (string, error) {
@@ -166,6 +167,33 @@ func brokenSlaves(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		c.Errorf("Failed to encode list of slave errors as JSON: %s", err)
 		http.Error(w, "Failed to encode list of slave errors as JSON",
+			http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintln(w, string(out))
+}
+
+func allHosts(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	q := datastore.NewQuery("host").KeysOnly()
+	hostKeys, err := q.GetAll(c, nil)
+	if err != nil {
+		c.Errorf("Failed to get list of all hosts: %s", err)
+		http.Error(w, "Failed to get list of all hosts", http.StatusInternalServerError)
+		return
+	}
+
+	allHosts := make([]string, 0)
+	for _, hostKey := range hostKeys {
+		allHosts = append(allHosts, hostKey.StringID())
+	}
+
+	out, err := json.Marshal(allHosts)
+	if err != nil {
+		c.Errorf("Failed to encode list of all hosts as JSON: %s", err)
+		http.Error(w, "Failed to encode list of all hosts as JSON",
 			http.StatusInternalServerError)
 		return
 	}
