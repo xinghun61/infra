@@ -140,7 +140,7 @@ class BuildbucketTryJobResult(models.TryJobResult):
         timestamp=timestamp,
         clobber=read_prop('clobber', bool),
         tests=read_prop('testfilter', list) or [],
-        project=read_prop('project', basestring),
+        project=read_prop('patch_project', basestring),
         requester=requester,
         category=read_prop('category', basestring),
         build_properties=json.dumps(properties, sort_keys=True),
@@ -245,7 +245,6 @@ def schedule(issue, patchset_id, builds):
       'patch_project': issue.project,
       'patch_storage': 'rietveld',
       'patchset': patchset_id,
-      'project': issue.project,
       'rietveld': 'https://%s' % self_hostname,
     })
     req['builds'].append({

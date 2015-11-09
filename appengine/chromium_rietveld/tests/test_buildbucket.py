@@ -78,7 +78,7 @@ class BuildbucketTryJobResultTest(TestCase):
       'buildnumber': 2,
       'category': 'cq_experimental',
       'clobber': False,
-      'project': 'chromium',
+      'patch_project': 'chromium',
       'reason': 'because I can',
       'requester': 'chrome-bot@chromium.org',
       'revision': 'deadbeef',
