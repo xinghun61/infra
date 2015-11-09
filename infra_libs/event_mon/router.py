@@ -217,18 +217,21 @@ class _HttpRouter(_Router):
       # Set this time at the very last moment
       events.request_time_ms = time_ms()
 
-      if self._dry_run:
-        logging.info('Http requests disabled. Not sending anything')
-      else:  # pragma: no cover
-        response, _ = self._http.request(
-          uri=self.endpoint,
-          method='POST',
-          headers={'Content-Type': 'application/octet-stream'},
-          body=events.SerializeToString()
-        )
+      try:
+        if self._dry_run:
+          logging.info('Http requests disabled. Not sending anything')
+        else:  # pragma: no cover
+          response, _ = self._http.request(
+            uri=self.endpoint,
+            method='POST',
+            headers={'Content-Type': 'application/octet-stream'},
+            body=events.SerializeToString()
+          )
 
-      if self._dry_run or response.status == 200:  # pragma: no branch
-        return True
+        if self._dry_run or response.status == 200:  # pragma: no branch
+          return True
+      except Exception:  # pragma: no cover
+        logging.exception('exception when POSTing data')
 
       logging.error('failed to POST data to %s (attempt %d)',
                     self.endpoint, attempt)  # pragma: no cover
