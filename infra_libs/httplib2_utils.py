@@ -119,7 +119,8 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
 def get_authenticated_http(credentials_filename,
                            scope=None,
                            service_accounts_creds_root=None,
-                           http_identifier=None):
+                           http_identifier=None,
+                           timeout=30):
   """Creates an httplib2.Http wrapped with a service account authenticator.
 
   Args:
@@ -135,6 +136,7 @@ def get_authenticated_http(credentials_filename,
       to this path. None means 'use default location'.
     http_identifier (str): if provided, returns an instrumented http request
       and use this string to identify it to ts_mon.
+    timeout (int): timeout passed to httplib2.Http, in seconds.
 
   Returns:
     httplib2.Http authenticated with master's service account.
@@ -145,9 +147,9 @@ def get_authenticated_http(credentials_filename,
     service_accounts_creds_root=service_accounts_creds_root)
 
   if http_identifier:
-    http = InstrumentedHttp(http_identifier)
+    http = InstrumentedHttp(http_identifier, timeout=timeout)
   else:
-    http = httplib2.Http()
+    http = httplib2.Http(timeout=timeout)
   return creds.authorize(http)
 
 

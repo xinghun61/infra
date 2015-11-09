@@ -169,12 +169,13 @@ class _HttpRouter(_Router):
       dry_run(boolean): if True, no http request is sent. Instead a message is
          printed.
     """
+    HTTP_IDENTIFIER = 'event_mon'
     _Router.__init__(self)
     self.endpoint = endpoint
     self.try_num = try_num
     self.retry_backoff = retry_backoff
     self._cache = cache
-    self._http = httplib2.Http(timeout=timeout)
+    self._http = infra_libs.InstrumentedHttp(HTTP_IDENTIFIER, timeout=timeout)
     self._dry_run = dry_run
 
     # TODO(pgervais) pass this as parameters instead.
@@ -185,7 +186,9 @@ class _HttpRouter(_Router):
           self._cache['service_account_creds'],
           service_accounts_creds_root=
               self._cache['service_accounts_creds_root'],
-          scope='https://www.googleapis.com/auth/cclog'
+          scope='https://www.googleapis.com/auth/cclog',
+          http_identifier=HTTP_IDENTIFIER,
+          timeout=timeout
         )
       except IOError:
         logging.error('Unable to read credentials, requests will be '
@@ -228,9 +231,9 @@ class _HttpRouter(_Router):
             body=events.SerializeToString()
           )
 
-        if self._dry_run or response.status == 200:  # pragma: no branch
+        if self._dry_run or response.status == 200:
           return True
-      except Exception:  # pragma: no cover
+      except Exception: # pragma: no cover
         logging.exception('exception when POSTing data')
 
       logging.error('failed to POST data to %s (attempt %d)',
