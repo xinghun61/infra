@@ -1,9 +1,0 @@
-application: helloworld
-version: 1
-module: backend
-runtime: go
-api_version: go1
-
-handlers:
-- url: /.*
-  script: _go_app

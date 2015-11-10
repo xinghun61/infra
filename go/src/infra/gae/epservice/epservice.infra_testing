@@ -1,4 +1,0 @@
-{
-  "skip_testing": ["windows", "darwin", "linux"]
-}
-

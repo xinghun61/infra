@@ -1,9 +1,0 @@
-cron:
-- description: Say hello on backend
-  target: backend
-  url: /
-  schedule: every 1 minutes
-- description: Say hello on frontend
-  target: default
-  url: /
-  schedule: every 1 minutes
