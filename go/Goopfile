@@ -37,7 +37,7 @@ golang.org/x/net #042ba42fa6633b34205efc66ba5719cd3afd8d38
 golang.org/x/oauth2 #d4780cd8b5fffdab1cc8ef7a4f9050dc37755847
 golang.org/x/text #615a6c1fcabd12bbd980d47316f3d827159f8f67
 golang.org/x/tools #747ae2594e531eeef12cf276085f6409cb10ff2d
-google.golang.org/api #fd081149e482b10c55262756934088ffe3197ea3
+google.golang.org/api #a42d61d9c2a5d4ec49ca228ecfcd5ad85843ac8c
 google.golang.org/appengine #488e34aaffd6e7f0cf3e849664a2d305c5298868 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
 google.golang.org/cloud #9c0b73c53416546c696c264367227be8f0757442
 google.golang.org/grpc #1684e4a49ba8e6c88a8628b26395f310a1e3d99f !https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
