@@ -1,9 +1,9 @@
-github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/coreos/etcd #3e74ff7ad4a176d3f0decfa5f52490f064dbabe8 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #d3d78384b82d449651d2435ed329d70f7c48aa56 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #fd081149e482b10c55262756934088ffe3197ea3 !https://code.googlesource.com/google-api-go-client.git
+github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/julienschmidt/httprouter #77a895ad01ebc98a4dc95d8355bc825ce80a56f6 !https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
@@ -16,7 +16,7 @@ github.com/klauspost/crc32 #f8d2e12057f7ef26ae42ecfa42697f4bdc32d7eb !https://ch
 github.com/kr/pretty #e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb !https://chromium.googlesource.com/external/github.com/kr/pretty.git
 github.com/kr/pty #f7ee69f31298ecbe5d2b349c711e2547a617d398 !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
-github.com/luci/gkvlite #10bbae231193ace9d3c8969a194b425166b486e8 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+github.com/luci/gkvlite #107566880ec5e4c0c2ab65c0329a5ebd4f22bd19 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/maruel/panicparse #35b70c396b3b7ff615b29678b2385d8adb91c9c2 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #480f19b6bfc4ad8989f989f37d8837e2f487a14d !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
