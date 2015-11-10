@@ -101,6 +101,7 @@ class Build(ndb.Model):
       Changes every time a build is leased. Can be used to verify that a client
       is the leaseholder.
     is_leased (bool): True if the build is currently leased. Otherwise False
+    never_leased (bool): True if the build was never leased before.
     url (str): a URL to a build-system-specific build, viewable by a human.
     result (BuildResult): build result.
     cancelation_reason (CancelationReason): why the build was canceled.
@@ -123,6 +124,7 @@ class Build(ndb.Model):
   lease_key = ndb.IntegerProperty(indexed=False)
   is_leased = ndb.ComputedProperty(lambda self: self.lease_key is not None)
   leasee = auth.IdentityProperty()
+  never_leased = ndb.BooleanProperty()
 
   # Start time attributes.
   url = ndb.StringProperty(indexed=False)

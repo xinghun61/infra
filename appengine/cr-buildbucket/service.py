@@ -148,6 +148,7 @@ class BuildBucketService(object):
         parameters=parameters,
         status=model.BuildStatus.SCHEDULED,
         created_by=identity,
+        never_leased=lease_expiration_date is None,
     )
     if lease_expiration_date is not None:
       build.lease_expiration_date = lease_expiration_date
@@ -370,6 +371,7 @@ class BuildBucketService(object):
       build.lease_expiration_date = lease_expiration_date
       build.regenerate_lease_key()
       build.leasee = auth.get_current_identity()
+      build.never_leased = False
       build.put()
       logging.info(
           'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())

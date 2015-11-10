@@ -1,5 +1,6 @@
 indexes:
 
+# Peeking.
 - kind: Build
   properties:
   - name: bucket
@@ -8,12 +9,22 @@ indexes:
   - name: __key__
     direction: desc
 
+# Lease expiration.
 - kind: Build
   properties:
   - name: is_leased
   - name: lease_expiration_date
 
+# Build timeout.
 - kind: Build
   properties:
   - name: status
+  - name: create_time
+
+# Build lease latency monitoring.
+- kind: Build
+  properties:
+  - name: bucket
+  - name: status
+  - name: never_leased
   - name: create_time
