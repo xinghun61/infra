@@ -51,14 +51,14 @@ class FailureLogTest(testing.AppengineTestCase):
                    re.MULTILINE|re.DOTALL),
         self.test_app.get, '/failure-log', params={'url': step_url, 
                                                    'format': 'json'})
- 
+
   def testFailureLogFetched(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 'compile'
     step_url = buildbot.CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)   
+        master_name, builder_name, build_number, step_name)
 
     step_log = WfStep.Create(master_name, builder_name, build_number, step_name)
     step_log.log_data = 'Log has been successfully fetched!'
@@ -76,5 +76,43 @@ class FailureLogTest(testing.AppengineTestCase):
         'step_logs': 'Log has been successfully fetched!'
     }
 
+    self.assertEquals(200, response.status_int)
+    self.assertEquals(expected_response, response.json_body)
+
+  def testGetFormattedJsonLogIfSwarming(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'browser_test'
+    step_url = buildbot.CreateStdioLogUrl(
+        master_name, builder_name, build_number, step_name)
+
+    step_log = WfStep.Create(master_name, builder_name, build_number, step_name)
+    step_log.isolated = True
+    step_log.log_data = (
+        '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3Uy'
+        'czEuY2M6NTY3OiBGYWlsdXJlCkVSUk9SOlsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jv'
+        'c2Vjb25kcwpFUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTJzMS5jYzo1Njc6IE'
+        'ZhaWx1cmUK", '
+        '"Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}')
+    step_log.put()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.get('/failure-log', params={'url': step_url, 
+                                                         'format': 'json'})
+    expected_response = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 123,
+        'step_name': 'browser_test',
+        'step_logs': ('{\n    "Unittest2.Subtest1": "ERROR:x_test.cc:1234'
+                      '\n        a/b/u2s1.cc:567: Failure\n        '
+                      'ERROR:[2]: 2594735000 bogo-microseconds\n        '
+                      'ERROR:x_test.cc:1234\n        a/b/u2s1.cc:567: Failure'
+                      '\n        ", \n    "Unittest3.Subtest2": '
+                      '"a/b/u3s2.cc:110: Failure\n        "\n}')
+
+    }
     self.assertEquals(200, response.status_int)
     self.assertEquals(expected_response, response.json_body)

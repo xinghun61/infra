@@ -19,6 +19,13 @@ JINJA_ENVIRONMENT = jinja2.Environment(
   autoescape=True)
 
 
+def ToJson(data):
+  return json.dumps(data)
+
+
+JINJA_ENVIRONMENT.filters['tojson'] = ToJson
+
+
 class Permission(object):
   ADMIN = 0
   CORP_USER = 8

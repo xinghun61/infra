@@ -10,6 +10,7 @@ import webtest
 
 from testing_utils import testing
 
+import base_handler
 from base_handler import BaseHandler
 from base_handler import Permission
 
@@ -221,6 +222,8 @@ class ResultFormatTest(testing.AppengineTestCase):
                      '\n  "b": "%s"\n}' % ('1' * 200))
     self.assertEquals(response.body, expected_body)
 
+  def testToJson(self):
+    self.assertEqual('{}', base_handler.ToJson({}))
 
 class InternalExceptionHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE

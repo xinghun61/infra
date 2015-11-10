@@ -58,24 +58,136 @@
     .thumb-down:hover, .thumb-down.triaged {
       background-color: #e98080;
     }
+    .not-display, .hidden-row {
+      display: none;
+    }
+    .displayed-row {
+      display: table-row;
+      background: #E0E0E0;
+    }
+    .toggle-img {
+      vertical-align: middle;
+    }
+    .header-test {
+      background-color:#E0E0E0;
+    }
+    .valign-middle {
+       vertical-align: middle;
+    }
   </style>
   <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
-    analysisCompleted = '{{analysis_completed}}' == 'True';
-    analysisFailed = '{{analysis_failed}}' == 'True';
-    build_url = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}';
-    analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
-    show_triage_help_button = '{{show_triage_help_button}}' == 'True';
+    var findit = {};
+    findit.analysisCompleted = '{{analysis_completed}}' == 'True';
+    findit.analysisFailed = '{{analysis_failed}}' == 'True';
+    findit.builderUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}';
+    findit.buildUrl = findit.builderUrl + '/builds/{{build_number}}';
+    findit.analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
+    findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
+    findit.showDebugInfo = '{{show_debug_info}}' == 'True';
+    findit.analysisResult = {{analysis_result | tojson | safe}};
 
-    function TriageAnalysisResult(e) {
+    function generateStringForSingleCL(cl) {
+      var clString = '';
+      clString += '<td><a href="' + findit.builderUrl + '/builds/' + cl.build_number + '">' + cl.build_number + '</a></td>';
+      clString += '<td>' + cl.repo_name + '</td>';
+      clString += '<td><a href="' + cl.url + '">' + cl.commit_position || cl.revision + '</a></td>';
+      clString += '<td>' + cl.score + '</td>';
+      clString += '<td>';
+
+      var sortedHintsList = Object.keys(cl.hints).sort(function(a, b) {
+        return cl.hints[b] - cl.hints[a];
+      }); // Sorts hints by score in descending order.
+      $.each(sortedHintsList, function(index, hint) {
+        clString += '<li>' + hint + '</li>';
+      });
+      clString += '</td>';
+      return clString;
+    }
+
+    function addRowToResultTable(stepIndex, testIndex, failure, type){
+      var rowString;
+      var failureWithLink;
+      if (type == 'step'){
+        rowString = '<tr id="' + stepIndex.toString() +'">';
+        var stepUrl = findit.buildUrl + '/steps/' + failure.step_name;
+        var arrowImg = '';
+        if (failure.tests && failure.suspected_cls.length > 0){
+          arrowImg = '<a class="collapsed"> <img class="toggle-img" src="https://www.gstatic.com/images/icons/material/system/1x/keyboard_arrow_right_black_24dp.png"> </a>';
+        }
+
+        if (findit.showDebugInfo){
+          failureWithLink = arrowImg + '<a href="./failure-log?url=' + stepUrl + '"><font class="valign-middle">' + failure.step_name + '</font></a>';
+        } else {
+          failureWithLink = arrowImg + '<a href="' + stepUrl + '">' + failure.step_name + '</a>';
+        }
+
+      } else {
+        rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-0"  class="hidden-row">';
+        failureWithLink = '<i>' + failure.test_name + '</i>';
+      }
+
+      var generalStepString = failureWithLink + '</td>';
+      generalStepString += '<td><a href="' + findit.builderUrl + '/builds/' + failure.first_failure + '">' + failure.first_failure + '</a></td>';
+      if (failure.last_pass){
+        generalStepString += '<td><a href="' + findit.builderUrl + '/builds/' + failure.last_pass + '">' + failure.last_pass + '</a></td>';
+      } else {
+        generalStepString += '<td>N/A</td>';
+      }
+      if (failure.suspected_cls.length > 0){
+        rowString += '<td valigh="middle" rowspan="' + failure.suspected_cls.length + '">';
+        rowString += generalStepString;
+
+        clString = generateStringForSingleCL(failure.suspected_cls[0]);
+        rowString += clString + '</tr>';
+        $('#failures tbody').append(rowString);
+
+        for (var i = 1; i < failure.suspected_cls.length; i++){
+          if (type == 'step'){
+            rowString = '<tr>';
+          } else {
+            rowString = '<tr id="' + stepIndex.toString() + '-' + testIndex.toString() + '-' + i.toString() + '">';
+          }
+
+          clString = generateStringForSingleCL(failure.suspected_cls[i]);
+          rowString += clString + '</tr>';
+          $('#failures tbody').append(rowString);
+        }
+      } else {
+        rowString += '<td>';
+        rowString += generalStepString;
+        rowString += '<td colspan="5">';
+        if(type == 'step' && failure.supported == false){
+          rowString += 'Not Supported</td>';
+        } else {
+          rowString += 'Not Found</td>';
+        }
+        rowString += '</tr>';
+        $('#failures tbody').append(rowString);
+      }
+
+      if(type == 'step' && failure.suspected_cls.length > 0 && failure.tests && failure.tests.length > 0){
+        $.each(failure.tests, function(testIndex, value) {
+          addRowToResultTable(stepIndex, testIndex, value, 'test');
+        });
+      }
+    }
+
+    function displayAnalysisResult(){
+      $.each(findit.analysisResult.failures, function(index, value) {
+        addRowToResultTable(index, -1, value, 'step');
+      });
+    }
+
+    function triageAnalysisResult(e) {
       var target = $(this);
       if (target.hasClass('triaged'))
         return;
 
       var correct = target.hasClass('thumb-up');
-      $.getJSON('triage-analysis?correct=' + correct + '&url=' + build_url, function(data) {
+      $.getJSON('triage-analysis?correct=' + correct + '&url=' + findit.buildUrl, function(data) {
         if (data['success']) {
           $('.triaged').addClass('triage').removeClass('triaged');
           target.addClass('triaged').removeClass('triage');
@@ -90,23 +202,22 @@
       e.preventDefault();
     }
 
-    function TriageHelp(e) {
+    function triageHelp(e) {
       $('#triage_help_button').prop('disabled', true);
       $('#triage_help_result').html("Checking...");
-      $.getJSON('help-triage?url=' + build_url, function(data) {
+      $.getJSON('help-triage?url=' + findit.buildUrl, function(data) {
         if (! jQuery.isEmptyObject(data)) {
           tableString = '<table><tr><th width="150">Build Number</th><th width="150">Culprit CL</th>'
           tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
-          fixed_cls = data;
-          for(var key in fixed_cls){
+          $.each(data, function(key, value) {
             tableString += '<tr>';
-            tableString += '<td><a href="' + fixed_cls[key]['fixed_build_url'] + '">'+ fixed_cls[key]['fixed_build_number'] +'</a></td>';
-            tableString += '<td><a href="' + fixed_cls[key]['fixed_cl_review_url'] + '">'+ fixed_cls[key]['fixed_cl_commit_position'] +'</a></td>';
-            tableString += '<td><a href="' + fixed_cls[key]['fixing_build_url'] + '">'+ fixed_cls[key]['fixing_build_number'] +'</a></td>';
-            tableString += '<td><a href="' + fixed_cls[key]['fixing_cl_review_url'] + '">'+ fixed_cls[key]['fixing_cl_commit_position'] +'</a></td>';
-            tableString += '<td>' + fixed_cls[key]['action'] + '</td>';
+            tableString += '<td><a href="' + value.fixed_build_url + '">' + value.fixed_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixed_cl_review_url + '">' + value.fixed_cl_commit_position +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_build_url + '">' + value.fixing_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_cl_review_url + '">' + value.fixing_cl_commit_position +'</a></td>';
+            tableString += '<td>' + value.action + '</td>';
             tableString += '</tr>';
-          }
+          });
           tableString += '</table>';
           $('#triage_help_result').html(tableString);
         } else {
@@ -121,18 +232,50 @@
       e.preventDefault();
     }
 
+    function toggle(thisobj) {
+      var imgDirection;
+      var rowAddedClass;
+      var rowRemovedClass;
+      if (thisobj.hasClass("collapsed")){
+        thisobj.removeClass("collapsed").addClass("expanded");
+        imgDirection = 'down';
+        rowAddedClass = "displayed-row";
+        rowRemovedClass = "hidden-row";
+      } else {
+        thisobj.removeClass("expanded").addClass("collapsed");
+        imgDirection = 'right';
+        rowAddedClass = "hidden-row";
+        rowRemovedClass = "displayed-row";
+      }
+      thisobj.html('<img class="toggle-img" src="https://www.gstatic.com/images/icons/material/system/1x/keyboard_arrow_' + imgDirection + '_black_24dp.png">');
+      var stepRowId = thisobj.closest("tr").attr("id");
+      var testRowId = stepRowId + "-" + "0";
+      var clRowId = testRowId + "-" + "0";
+      var i = 0;
+      while ($("#" + testRowId + "-" + "0").length){
+        var j = 0;
+        while ($("#" + clRowId).length){
+          $( "#" + clRowId ).addClass(rowAddedClass).removeClass(rowRemovedClass);
+          j++;
+          clRowId = testRowId + "-" + j;
+        }
+        i++;
+        testRowId = stepRowId + "-" + i;
+      }
+    }
+
     $(document).ready(function() {
-      if (!analysisCompleted) {
+      if (!findit.analysisCompleted) {
         $('#status_message').text('running, will refresh in 5 seconds...');
         $('#status_message').attr('class', 'running');
-        setTimeout(function(){
+        setTimeout(function() {
           {% if show_debug_info %}
-          window.location.href = 'build-failure?url=' + build_url + '&debug=1';
+          window.location.href = 'build-failure?url=' + findit.buildUrl + '&debug=1';
           {% else %}
-          window.location.href = 'build-failure?url=' + build_url;
+          window.location.href = 'build-failure?url=' + findit.buildUrl;
           {% endif %}
         }, 5000);
-      } else if (analysisFailed) {
+      } else if (findit.analysisFailed) {
         $('#status_message').text('error');
         $('#status_message').attr('class', 'error');
       } else {
@@ -140,13 +283,23 @@
         $('#status_message').text('completed');
         $('#status_message').attr('class', 'completed');
 
-        $('.triage').click(TriageAnalysisResult);
-        if (show_triage_help_button){
-          $('#triage_help_button').click(TriageHelp);
+        $('.triage').click(triageAnalysisResult);
+
+        if (findit.analysisResult.failures.length > 0){
+          displayAnalysisResult();
+        } else {
+          $('#triage-and-table').text('no failure is found');
         }
-        if (analysisCorrect == 'True') {
+        $(document).on("click",".expanded, .collapsed",function() {
+          toggle($(this));
+        });
+
+        if (findit.showTriageHelpButton){
+          $('#triage_help_button').click(triageHelp);
+        }
+        if (findit.analysisCorrect == 'True') {
           $('.thumb-up').addClass('triaged').removeClass('triage');
-        } else if (analysisCorrect == 'False') {
+        } else if (findit.analysisCorrect == 'False') {
           $('.thumb-down').addClass('triaged').removeClass('triage');
         }
       }
@@ -199,108 +352,33 @@
     {% if analysis_failed %}
       <br>
       <span class="error">No result because of some error in analysis!</span>
-    {% elif analysis_result.failures|length == 0 %}
-      <div>No failure is found.</div>
     {% else %}
-      <div class="thumbs-up-down">
-        <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
-        <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
-      </div>
-      <div id="analysis_result">
-        <table id="failures">
-          <tr>
-            <th rowspan="2" title="Failed step name">Step</th>
-            <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
-            <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-            <th colspan="7">Suspected CLs</th>
-          </tr>
-          <tr>
-            <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-            <th title="The Git repo name of the CL">Repo Name</th>
-            <th title="Git commit position/hash">Commit</th>
-            <th title="The higher score, the more suspected">Score (<a id="score-info" href="javascript:">?</a>)</th>
-            <th title="Why this CL is related to the failure">Hints</th>
-          </tr>
-          <tbody>
-          {% for failure in analysis_result.failures %}
-            {% if failure.suspected_cls|length == 0 %}
+      <div id="triage-and-table">
+        <div class="thumbs-up-down">
+          <div class="triage thumb-up">Correct <img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_up_black_24dp.png"/></div>
+          <div class="triage thumb-down"><img src="https://www.gstatic.com/images/icons/material/system/1x/thumb_down_black_24dp.png"/> Incorrect</div>
+        </div>
+        <div id="analysis_result">
+          <table id="failures">
+            <thead>
               <tr>
-                <td>
-                {% if show_debug_info %}
-                  <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
-                {% else %}
-                  <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
-                {% endif %}
-                </td>
-                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
-                {% if failure.last_pass %}
-                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>
-                {% else %}
-                <td>N/A</td>
-                {% endif %}
-                {% if failure.supported is defined and failure.supported == false %}
-                  <td colspan="5">Not supported.</td>
-                {% else %}
-                  <td colspan="5">Not found.</td>
-                {% endif%}
+                <th rowspan="2" title="Failed step/test name">Step/<font class="header-test">Test</font></th>
+                <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
+                <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
+                <th colspan="7">Suspected CLs</th>
               </tr>
-            {% else %}
-              {% set first_suspected_cl = failure.suspected_cls[0] %}
               <tr>
-                <td rowspan="{{failure.suspected_cls|length}}">
-                {% if show_debug_info %}
-                  <a href="./failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
-                {% else %}
-                  <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/{{failure.step_name}}">{{failure.step_name}}</a>
-                {% endif %}
-                </td>
-                <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.first_failure}}">{{failure.first_failure}}</a></td>
-                {% if failure.last_pass %}
-                <td rowspan="{{failure.suspected_cls|length}}"><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{failure.last_pass}}">{{failure.last_pass}}</a></td>
-                {% else %}
-                <td rowspan="{{failure.suspected_cls|length}}">N/A</td>
-                {% endif %}
-
-                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{first_suspected_cl.build_number}}">{{first_suspected_cl.build_number}}</a></td>
-                <td>{{first_suspected_cl.repo_name}}</td>
-                <td>
-                  {% if first_suspected_cl.commit_position %}
-                    <a href="{{first_suspected_cl.url}}">{{first_suspected_cl.commit_position}}</a>
-                  {% else %}
-                    <a href="{{first_suspected_cl.url}}">{{first_suspected_cl.revision}}</a>
-                  {% endif %}
-                </td>
-                <td>{{first_suspected_cl.score}}</td>
-                <td>
-                  {% for hint, _ in first_suspected_cl.hints|dictsort(case_sensitive=True, by='value')|reverse %}
-                    <li>{{hint}}</li>
-                  {% endfor %}
-                </td>
+                <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
+                <th title="The Git repo name of the CL">Repo Name</th>
+                <th title="Git commit position/hash">Commit</th>
+                <th title="The higher score, the more suspected">Score (<a id="score-info" href="javascript:">?</a>)</th>
+                <th title="Why this CL is related to the failure">Hints</th>
               </tr>
-              {# Show the remaining suspected CLs, so skip the first three columns. #}
-              {% for suspected_cl in failure.suspected_cls[1:] %}
-              <tr>
-                <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
-                <td>{{suspected_cl.repo_name}}</td>
-                <td>
-                  {% if suspected_cl.commit_position %}
-                    <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position}}</a>
-                  {% else %}
-                    <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
-                  {% endif %}
-                </td>
-                <td>{{suspected_cl.score}}</td>
-                <td>
-                  {% for hint, _ in suspected_cl.hints|dictsort(case_sensitive=True, by='value')|reverse %}
-                    <li>{{hint}}</li>
-                  {% endfor %}
-                </td>
-              </tr>
-              {% endfor %}
-            {% endif %}
-          {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
       </div>
     {% endif %}
   {% endif %}
