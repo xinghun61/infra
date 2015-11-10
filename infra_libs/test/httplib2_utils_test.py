@@ -7,6 +7,7 @@ import socket
 import time
 import unittest
 
+import infra_libs
 from infra_libs.ts_mon.common import http_metrics
 from infra_libs import httplib2_utils
 from infra_libs import ts_mon
@@ -17,11 +18,6 @@ import oauth2client.client
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
-
-
-class ConstantsTest(unittest.TestCase):
-  def test_constants_presence(self):
-    self.assertTrue(httplib2_utils.SERVICE_ACCOUNTS_CREDS_ROOT)
 
 
 class LoadJsonCredentialsTest(unittest.TestCase):
@@ -37,31 +33,31 @@ class LoadJsonCredentialsTest(unittest.TestCase):
 
   # File exists but issue with the content: raises AuthError.
   def test_missing_type(self):
-    with self.assertRaises(httplib2_utils.AuthError):
+    with self.assertRaises(infra_libs.AuthError):
       httplib2_utils.load_service_account_credentials(
         'creds_missing_type.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_wrong_type(self):
-    with self.assertRaises(httplib2_utils.AuthError):
+    with self.assertRaises(infra_libs.AuthError):
       httplib2_utils.load_service_account_credentials(
         'creds_wrong_type.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_missing_client_email(self):
-    with self.assertRaises(httplib2_utils.AuthError):
+    with self.assertRaises(infra_libs.AuthError):
       httplib2_utils.load_service_account_credentials(
         'creds_missing_client_email.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_missing_private_key(self):
-    with self.assertRaises(httplib2_utils.AuthError):
+    with self.assertRaises(infra_libs.AuthError):
       httplib2_utils.load_service_account_credentials(
         'creds_missing_private_key.json',
         service_accounts_creds_root=DATA_DIR)
 
   def test_malformed(self):
-    with self.assertRaises(httplib2_utils.AuthError):
+    with self.assertRaises(infra_libs.AuthError):
       httplib2_utils.load_service_account_credentials(
         'creds_malformed.json',
         service_accounts_creds_root=DATA_DIR)
@@ -76,7 +72,7 @@ class LoadJsonCredentialsTest(unittest.TestCase):
 
 class GetSignedJwtAssertionCredentialsTest(unittest.TestCase):
   def test_valid_credentials(self):
-    creds = httplib2_utils.get_signed_jwt_assertion_credentials(
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       service_accounts_creds_root=DATA_DIR)
     self.assertIsInstance(creds,
@@ -85,7 +81,7 @@ class GetSignedJwtAssertionCredentialsTest(unittest.TestCase):
     self.assertTrue(creds.scope)
 
   def test_valid_credentials_with_scope_as_string(self):
-    creds = httplib2_utils.get_signed_jwt_assertion_credentials(
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       scope='repo',
       service_accounts_creds_root=DATA_DIR)
@@ -94,7 +90,7 @@ class GetSignedJwtAssertionCredentialsTest(unittest.TestCase):
     self.assertIn('repo', creds.scope)
 
   def test_valid_credentials_with_scope_as_list(self):
-    creds = httplib2_utils.get_signed_jwt_assertion_credentials(
+    creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       scope=['gist'],
       service_accounts_creds_root=DATA_DIR)
@@ -105,31 +101,31 @@ class GetSignedJwtAssertionCredentialsTest(unittest.TestCase):
   # Only test one malformed case and rely on LoadJsonCredentialsTest
   # for the other cases.
   def test_malformed_credentials(self):
-    with self.assertRaises(httplib2_utils.AuthError):
-      httplib2_utils.get_signed_jwt_assertion_credentials(
+    with self.assertRaises(infra_libs.AuthError):
+      infra_libs.get_signed_jwt_assertion_credentials(
         'creds_malformed.json',
         service_accounts_creds_root=DATA_DIR)
 
 
 class GetAuthenticatedHttp(unittest.TestCase):
   def test_valid_credentials(self):
-    http = httplib2_utils.get_authenticated_http(
+    http = infra_libs.get_authenticated_http(
       'valid_creds.json',
       service_accounts_creds_root=DATA_DIR)
     self.assertIsInstance(http, httplib2.Http)
 
   def test_valid_credentials_authenticated(self):
-    http = httplib2_utils.get_authenticated_http(
+    http = infra_libs.get_authenticated_http(
       'valid_creds.json',
       service_accounts_creds_root=DATA_DIR,
       http_identifier='test_case')
-    self.assertIsInstance(http, httplib2_utils.InstrumentedHttp)
+    self.assertIsInstance(http, infra_libs.InstrumentedHttp)
 
   # Only test one malformed case and rely on LoadJsonCredentialsTest
   # for the other cases.
   def test_malformed_credentials(self):
-    with self.assertRaises(httplib2_utils.AuthError):
-      httplib2_utils.get_authenticated_http(
+    with self.assertRaises(infra_libs.AuthError):
+      infra_libs.get_authenticated_http(
         'creds_malformed.json',
         service_accounts_creds_root=DATA_DIR)
 
@@ -139,7 +135,7 @@ class InstrumentedHttplib2Test(unittest.TestCase):
     super(InstrumentedHttplib2Test, self).setUp()
     self.mock_time = mock.create_autospec(time.time, spec_set=True)
     self.mock_time.return_value = 42
-    self.http = httplib2_utils.InstrumentedHttp('test', time_fn=self.mock_time)
+    self.http = infra_libs.InstrumentedHttp('test', time_fn=self.mock_time)
     self.http._request = mock.Mock()
     ts_mon.reset_for_unittest()
 
@@ -242,3 +238,61 @@ class InstrumentedHttplib2Test(unittest.TestCase):
         {'name': 'test', 'client': 'httplib2'}).count)
     self.assertAlmostEqual(300, http_metrics.durations.get(
         {'name': 'test', 'client': 'httplib2'}).sum)
+
+
+class HttpMockTest(unittest.TestCase):
+  def test_empty(self):
+    http = infra_libs.HttpMock([])
+    with self.assertRaises(AssertionError):
+      http.request('https://www.google.com', 'GET')
+
+  def test_invalid_parameter(self):
+    with self.assertRaises(TypeError):
+      infra_libs.HttpMock(None)
+
+  def test_uris_wrong_length(self):
+    with self.assertRaises(ValueError):
+      infra_libs.HttpMock([(1, 2)])
+
+  def test_uris_wrong_type(self):
+    with self.assertRaises(ValueError):
+      infra_libs.HttpMock([(None,)])
+
+  def test_invalid_uri(self):
+    with self.assertRaises(TypeError):
+      infra_libs.HttpMock([(1, {'status': '100'}, None)])
+
+  def test_invalid_headers(self):
+    with self.assertRaises(TypeError):
+      infra_libs.HttpMock([('https://www.google.com', None, None)])
+
+  def test_headers_without_status(self):
+    with self.assertRaises(ValueError):
+      infra_libs.HttpMock([('https://www.google.com', {'foo': 'bar'}, None)])
+
+  def test_invalid_body(self):
+    with self.assertRaises(TypeError):
+      infra_libs.HttpMock([('https://www.google.com', {'status': '200'}, 42)])
+
+  def test_one_uri(self):
+    http = infra_libs.HttpMock([('https://www.google.com',
+                                 {'status': '403'},
+                                 'bar')])
+    response, body = http.request('https://www.google.com', 'GET')
+    self.assertIsInstance(response, httplib2.Response)
+    self.assertEqual(response.status, 403)
+    self.assertEqual(body, 'bar')
+
+  def test_two_uris(self):
+    http = infra_libs.HttpMock([('https://www.google.com',
+                                 {'status': 200}, 'foo'),
+                                ('.*', {'status': 404}, '')])
+    response, body = http.request('https://mywebserver.woo.hoo', 'GET')
+    self.assertIsInstance(response, httplib2.Response)
+    self.assertEqual(response.status, 404)
+    self.assertEqual(body, '')
+
+    self.assertEqual(http.requests_made[0].uri, 'https://mywebserver.woo.hoo')
+    self.assertEqual(http.requests_made[0].method, 'GET')
+    self.assertEqual(http.requests_made[0].body, None)
+    self.assertEqual(http.requests_made[0].headers, None)

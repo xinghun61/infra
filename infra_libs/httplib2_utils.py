@@ -2,9 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
+import copy
 import json
 import logging
 import os
+import re
 import socket
 import time
 
@@ -200,3 +203,57 @@ class InstrumentedHttp(httplib2.Http):
     self._update_metrics(response.status, start_time)
 
     return response, content
+
+
+class HttpMock(object):
+  """Mock of httplib2.Http"""
+  HttpCall = collections.namedtuple('HttpCall', ('uri', 'method', 'body',
+                                                 'headers'))
+
+  def __init__(self, uris):
+    """
+    Args:
+      uris(dict): list of  (uri, headers, body). `uri` is a regexp for
+        matching the requested uri, (headers, body) gives the values returned
+        by the mock. Uris are tested in the order from `uris`.
+        `headers` is a dict mapping headers to value. The 'status' key is
+        mandatory. `body` is a string or None.
+        Ex: [('.*', {'status': 200}, 'nicely done.')]
+    """
+    self._uris = []
+    self.requests_made = []
+
+    for value in uris:
+      if not isinstance(value, (list, tuple)) or len(value) != 3:
+        raise ValueError("'uris' must be a sequence of (uri, headers, body)")
+      uri, headers, body = value
+      compiled_uri = re.compile(uri)
+      if not isinstance(headers, dict):
+        raise TypeError("'headers' must be a dict")
+      if not 'status' in headers:
+        raise ValueError("'headers' must have 'status' as a key")
+
+      new_headers = copy.copy(headers)
+      new_headers['status'] = int(new_headers['status'])
+
+      if not isinstance(body, basestring):
+        raise TypeError("'body' must be a string, got %s" % type(body))
+      self._uris.append((compiled_uri, new_headers, body))
+
+  # pylint: disable=unused-argument
+  def request(self, uri,
+              method='GET',
+              body=None,
+              headers=None,
+              redirections=1,
+              connection_type=None):
+    self.requests_made.append(self.HttpCall(uri, method, body, headers))
+    headers = None
+    body = None
+    for candidate in self._uris:
+      if candidate[0].match(uri):
+        _, headers, body = candidate
+        break
+    if not headers:
+      raise AssertionError("Unexpected request to %s" % uri)
+    return httplib2.Response(headers), body
