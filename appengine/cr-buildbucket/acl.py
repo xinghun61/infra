@@ -40,6 +40,8 @@ class Action(messages.Enum):
   READ_ACL = 7
   # Change bucket ACLs.
   WRITE_ACL = 8
+  # Delete all scheduled builds from a bucket.
+  DELETE_SCHEDULED_BUILDS = 9
 
 
 _action_dict = Action.to_dict()
@@ -56,6 +58,7 @@ SCHEDULER_ROLE_ACTIONS = READER_ROLE_ACTIONS + [
 WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
     Action.LEASE_BUILD,
     Action.RESET_BUILD,
+    Action.DELETE_SCHEDULED_BUILDS,
 ]
 ACTIONS_FOR_ROLE = {
     project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
@@ -92,6 +95,7 @@ can_cancel_build = can_fn_for_build(Action.CANCEL_BUILD)
 can_reset_build = can_fn_for_build(Action.RESET_BUILD)
 can_read_acl = can_fn(Action.READ_ACL)
 can_write_acl = can_fn(Action.WRITE_ACL)
+can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
 
 
 ################################################################################

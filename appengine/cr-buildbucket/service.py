@@ -11,7 +11,9 @@ import urlparse
 from components import auth
 from components import utils
 from google.appengine.api import taskqueue
+from google.appengine.api import modules
 from google.appengine.ext import db
+from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
 import acl
@@ -247,13 +249,7 @@ class BuildBucketService(object):
     validate_tags(tags)
     tags = tags or []
     max_builds = fix_max_builds(max_builds)
-    if isinstance(created_by, basestring):
-      if ':' not in created_by:  # pragma: no branch
-        created_by = 'user:%s' % created_by
-      try:
-        created_by = auth.Identity.from_bytes(created_by)
-      except ValueError as ex:
-        raise errors.InvalidInputError('Invalid created_by identity: %s' % ex)
+    created_by = parse_identity(created_by)
 
     if buckets:
       self._check_search_acls(buckets)
@@ -677,3 +673,56 @@ class BuildBucketService(object):
       futures.append(self._timeout_async(key.id()))
 
     ndb.Future.wait_all(futures)
+
+  def delete_scheduled_builds(self, bucket, tags=None, created_by=None):
+    if not acl.can_delete_scheduled_builds(bucket):
+      raise current_identity_cannot('delete scheduled builds of %s', bucket)
+    # Validate created_by prior scheduled a push task.
+    created_by = parse_identity(created_by)
+    deferred.defer(
+        delete_scheduled_builds,
+        bucket,
+        tags=tags,
+        created_by=created_by,
+        # Schedule it on the backend module of the same version.
+        # This assumes that both frontend and backend are uploaded together.
+        _target='%s.backend' % modules.get_current_version_name(),
+        # Retry immediatelly.
+        _retry_options=taskqueue.TaskRetryOptions(
+            min_backoff_seconds=0,
+            max_backoff_seconds=1,
+        ),
+    )
+
+
+def delete_scheduled_builds(bucket, tags=None, created_by=None):
+  @ndb.transactional_tasklet
+  def del_if_scheduled(key):
+    build = yield key.get_async()
+    scheduled = model.BuildStatus.SCHEDULED
+    if build and build.status == scheduled:  # pragma: no branch
+      yield key.delete_async()
+      logging.debug('Deleted %s', key.id())
+  tags = tags or []
+  created_by = parse_identity(created_by)
+  q = model.Build.query(
+      model.Build.bucket == bucket,
+      model.Build.status == model.BuildStatus.SCHEDULED)
+  for t in tags:
+    q = q.filter(model.Build.tags == t)
+  if created_by:
+    q = q.filter(model.Build.created_by == created_by)
+  q.map(del_if_scheduled, keys_only=True)
+
+
+def parse_identity(identity):
+  if isinstance(identity, basestring):
+    if not identity:  # pragma: no cover
+      return None
+    if ':' not in identity:  # pragma: no branch
+      identity = 'user:%s' % identity
+    try:
+      identity = auth.Identity.from_bytes(identity)
+    except ValueError as ex:
+      raise errors.InvalidInputError('Invalid identity identity: %s' % ex)
+  return identity

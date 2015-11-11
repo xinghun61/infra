@@ -29,6 +29,9 @@ libraries:
 - name: yaml
   version: "3.10"
 
+builtins:
+- deferred: on
+
 skip_files:
 - ^(.*/)?.*\.(orig|rej|py[co])
 - ^(.*/)?#.*#

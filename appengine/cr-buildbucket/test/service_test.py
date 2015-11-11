@@ -694,3 +694,48 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(build.cancelation_reason, model.CancelationReason.TIMEOUT)
     self.assertIsNone(build.lease_key)
+
+  ########################## RESET EXPIRED BUILDS ##############################
+
+  def test_delete_scheduled_builds(self):
+    self.test_build.put()
+    completed_build = model.Build(
+        bucket=self.test_build.bucket,
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.SUCCESS,
+    )
+    completed_build.put()
+    self.assertIsNotNone(self.test_build.key.get())
+    self.assertIsNotNone(completed_build.key.get())
+    service.delete_scheduled_builds(self.test_build.bucket)
+    self.assertIsNone(self.test_build.key.get())
+    self.assertIsNotNone(completed_build.key.get())
+
+  def test_delete_scheduled_builds_with_tags(self):
+    self.test_build.tags = ['tag:1']
+    self.test_build.put()
+
+    service.delete_scheduled_builds(self.test_build.bucket, tags=['tag:0'])
+    self.assertIsNotNone(self.test_build.key.get())
+
+    service.delete_scheduled_builds(self.test_build.bucket, tags=['tag:1'])
+    self.assertIsNone(self.test_build.key.get())
+
+  def test_delete_scheduled_builds_created_by(self):
+    self.test_build.created_by = auth.Identity('user', 'nodir@google.com')
+    self.test_build.put()
+    other_build = model.Build(bucket=self.test_build.bucket)
+    other_build.put()
+
+    service.delete_scheduled_builds(
+      self.test_build.bucket, created_by='nodir@google.com')
+    self.assertIsNone(self.test_build.key.get())
+    self.assertIsNotNone(other_build.key.get())
+
+  def test_delete_scheduled_builds_auth_error(self):
+    self.mock_cannot(acl.Action.DELETE_SCHEDULED_BUILDS)
+    with self.assertRaises(auth.AuthorizationError):
+      self.service.delete_scheduled_builds(self.test_build.bucket)
+
+  def test_delete_scheduled_builds_schedule_task(self):
+    self.service.delete_scheduled_builds(self.test_build.bucket)

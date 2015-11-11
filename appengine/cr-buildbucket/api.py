@@ -259,11 +259,12 @@ class BuildBucketApi(remote.Service):
 
   ##################################  SEARCH   #################################
 
+
   SEARCH_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
       start_cursor=messages.StringField(1),
-      # All specified tags must be present in a build.
       bucket=messages.StringField(2, repeated=True),
+      # All specified tags must be present in a build.
       tag=messages.StringField(3, repeated=True),
       status=messages.EnumField(model.BuildStatus, 4),
       result=messages.EnumField(model.BuildResult, 5),
@@ -516,3 +517,21 @@ class BuildBucketApi(remote.Service):
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)
     return res
+
+  ########################  DELETE_SCHEDULED_BUILDS  ###########################
+
+  @buildbucket_api_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          bucket=messages.StringField(1, required=True),
+          # All specified tags must be present in a build.
+          tag=messages.StringField(2, repeated=True),
+          created_by=messages.StringField(3),
+      ),
+      message_types.VoidMessage,
+      path='bucket/{bucket}/delete-scheduled', http_method='POST')
+  def delete_scheduled_builds(self, request):
+    """Deletes scheduled builds."""
+    self.service.delete_scheduled_builds(
+        request.bucket, tags=request.tag[:], created_by=request.created_by)
+    return message_types.VoidMessage()
