@@ -1,4 +1,4 @@
-github.com/coreos/etcd #3e74ff7ad4a176d3f0decfa5f52490f064dbabe8 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
+github.com/coreos/etcd #2990249c1d2923493c9928ac0ed032d212888a06 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #d3d78384b82d449651d2435ed329d70f7c48aa56 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
@@ -10,13 +10,13 @@ github.com/julienschmidt/httprouter #77a895ad01ebc98a4dc95d8355bc825ce80a56f6 !h
 github.com/kardianos/osext #6e7f843663477789fac7c02def0d0909e969b4e5 !https://chromium.googlesource.com/external/github.com/kardianos/osext.git
 github.com/kisielk/errcheck #4419e40d034d93519b28da8e47e97c6bda349607 !https://chromium.googlesource.com/external/github.com/kisielk/errcheck.git
 github.com/kisielk/gotool #58a7a198f2ec6ea7af221fd216e7f559d663ce02 !https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
-github.com/klauspost/compress #0449b1c6d2b3d5a55c22646ff39f32d49d4e00ef !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
+github.com/klauspost/compress #229b3b3fd88178861fd78faeb84854ef6f02a2b0 !https://chromium.googlesource.com/external/github.com/klauspost/compress.git
 github.com/klauspost/cpuid #8d9fe9648674c9699346aa4a5456cc9e1c0a96db !https://chromium.googlesource.com/external/github.com/klauspost/cpuid.git
 github.com/klauspost/crc32 #f8d2e12057f7ef26ae42ecfa42697f4bdc32d7eb !https://chromium.googlesource.com/external/github.com/klauspost/crc32.git
 github.com/kr/pretty #e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb !https://chromium.googlesource.com/external/github.com/kr/pretty.git
 github.com/kr/pty #f7ee69f31298ecbe5d2b349c711e2547a617d398 !https://chromium.googlesource.com/external/github.com/kr/pty.git
 github.com/kr/text #bb797dc4fb8320488f47bf11de07a733d7233e1f !https://chromium.googlesource.com/external/github.com/kr/text.git
-github.com/luci/gkvlite #107566880ec5e4c0c2ab65c0329a5ebd4f22bd19 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+github.com/luci/gkvlite #33184d2edd2d39ef71c3ed883e8ff752c4a18213 !https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
 github.com/maruel/panicparse #35b70c396b3b7ff615b29678b2385d8adb91c9c2 !https://chromium.googlesource.com/external/github.com/maruel/panicparse.git
 github.com/maruel/pre-commit-go #480f19b6bfc4ad8989f989f37d8837e2f487a14d !https://chromium.googlesource.com/external/github.com/maruel/pre-commit-go.git
 github.com/maruel/subcommands #a4141cc8723941ce5b7a9ab87b77f397a80e2be6 !https://chromium.googlesource.com/external/github.com/maruel/subcommands.git
@@ -33,10 +33,10 @@ github.com/steveyen/go-slab #2f82a688478741b7843a5575749f726d4b3f92b1 !https://c
 github.com/texttheater/golang-levenshtein #9ab79d77423b5c17e36d1f02838fe9e788678ff0 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
 github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
 golang.org/x/crypto #575fdbe86e5dd89229707ebec0575ce7d088a4a6
-golang.org/x/net #042ba42fa6633b34205efc66ba5719cd3afd8d38
+golang.org/x/net #cf8d7ec53c651c505fbc0b1cce6d0ce821391360
 golang.org/x/oauth2 #3314c49c831be809de14a5e6c7c68f4c83733a69
 golang.org/x/text #5eb8d4684c4796dd36c74f6452f2c0fa6c79597e
-golang.org/x/tools #747ae2594e531eeef12cf276085f6409cb10ff2d
+golang.org/x/tools #d94e6fe0fd36ddeac451f8ed1987b55db35bca35
 google.golang.org/api #fd081149e482b10c55262756934088ffe3197ea3
 google.golang.org/appengine #488e34aaffd6e7f0cf3e849664a2d305c5298868 !https://chromium.googlesource.com/external/github.com/golang/appengine.git
 google.golang.org/cloud #9c0b73c53416546c696c264367227be8f0757442
