@@ -281,39 +281,43 @@ def get_int_value(properties, key):
 # Parses the json which we get from chromium-cq-status.
 def parse_cq_data(json_data):
   logging_output = []
-  for result in json_data['results']:
-    fields = result['fields']
+  for result in json_data.get('results', {}):
+    fields = result.get('fields', [])
     if not 'action' in fields:
       continue
 
-    action = fields['action']
+    action = fields.get('action')
     if action != 'verifier_jobs_update':
       continue
 
-    if fields['verifier'] != 'try job':
+    if fields.get('verifier') != 'try job':
       continue
 
     # At the moment, much of the parsing logic assumes this is a Chromium
     # tryjob.
-    if fields['project'] != 'chromium':
+    if fields.get('project') != 'chromium':
       continue
 
-    job_states = fields['jobs']
+    job_states = fields.get('jobs', [])
     for state in job_states:
       # Just go by |result|.
       #if state not in ['JOB_SUCCEEDED', 'JOB_FAILED', 'JOB_TIMED_OUT']:
       #  continue
 
       for job in job_states[state]:
-        build_properties = job['build_properties']
+        build_properties = job.get('build_properties')
         if not build_properties:
           continue
 
-        master = job['master']
-        builder = job['builder']
-        result = job['result']
-        timestamp = datetime.datetime.strptime(job['timestamp'],
-                                               '%Y-%m-%d %H:%M:%S.%f')
+        try:
+          master = job['master']
+          builder = job['builder']
+          result = job['result']
+          timestamp = datetime.datetime.strptime(job['timestamp'],
+                                                 '%Y-%m-%d %H:%M:%S.%f')
+        except KeyError:
+          continue
+
         try:
           buildnumber = get_int_value(build_properties, 'buildnumber')
           issue = get_int_value(build_properties, 'issue')

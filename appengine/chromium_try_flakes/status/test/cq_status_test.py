@@ -83,6 +83,19 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
         'project': 'chromium',
       }
     },
+    # Ignored because verifier field is missing.
+    {
+      'fields': {
+        'action': 'verifier_jobs_update',
+      }
+    },
+    # Ignored because project field is missing.
+    {
+      'fields': {
+        'action': 'verifier_jobs_update',
+        'verifier': 'try job',
+      }
+    },
     # Ignored because action field is not 'verifier_jobs_update'.
     {
       'fields': {
@@ -128,6 +141,23 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             },
           ],
           'JOB_SUCCEEDED': [
+            # Ignored because build_properties is missing.
+            {
+            },
+            # Ignored because master, builder, result and timestamp are missing.
+            {
+              'build_properties': {
+                'buildnumber': 101,
+                'issue': 123456789,
+                'patchset': 20001,
+              },
+            },
+            # Ignored because issue, patchset and buildnumber in
+            # build_properties are missing.
+            {
+              'build_properties': {},
+            },
+            # This is a valid success report.
             {
               'build_properties': {
                 'buildnumber': 101,
@@ -139,7 +169,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
               'result': 0,  # SUCCESS
               'timestamp': '2015-10-30 17:30:12.123456',
             },
-            # This duplicate success should generate more flakes.
+            # This is a second success, which should not generate more flakes.
             {
               'build_properties': {
                 'buildnumber': 102,
@@ -176,10 +206,6 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             },
           ],
           'JOB_FAILED': [
-            # Ignored because build_properties is empty.
-            {
-              'build_properties': {},
-            },
             {
               'build_properties': {
                 'buildnumber': 105,
