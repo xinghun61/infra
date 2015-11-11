@@ -71,7 +71,7 @@ try run for the same patchset.
 </tr>
 {% for o in f.filtered_occurrences %}
 <tr>
-<td><a href="{{o.getURL}}">try run at {{o.formatted_time}}</a></td>
+<td><a href="{{o.getURL}}">try run at {{o.formatted_time}} UTC</a></td>
 <td><a href="{{o.patchset_url}}">patchset</a></td>
 <td>{{o.builder}} </td>
 
