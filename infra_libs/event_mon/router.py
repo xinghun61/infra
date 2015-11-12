@@ -152,7 +152,7 @@ class _TextStreamRouter(_Router):
 
 class _HttpRouter(_Router):
   def __init__(self, cache, endpoint, timeout=10, try_num=3, retry_backoff=2.,
-               dry_run=False):
+               dry_run=False, _sleep_fn=time.sleep):
     """Initialize the router.
 
     Args:
@@ -168,6 +168,8 @@ class _HttpRouter(_Router):
          retries.
       dry_run(boolean): if True, no http request is sent. Instead a message is
          printed.
+      _sleep_fn (function): function to wait specified number of seconds. This
+        argument is provided for testing purposes.
     """
     HTTP_IDENTIFIER = 'event_mon'
     _Router.__init__(self)
@@ -177,6 +179,7 @@ class _HttpRouter(_Router):
     self._cache = cache
     self._http = infra_libs.InstrumentedHttp(HTTP_IDENTIFIER, timeout=timeout)
     self._dry_run = dry_run
+    self._sleep_fn = _sleep_fn
 
     # TODO(pgervais) pass this as parameters instead.
     if self._cache.get('service_account_creds'):
@@ -200,12 +203,6 @@ class _HttpRouter(_Router):
 
     Args:
       events(LogRequestLite): the protobuf to send.
-
-    Keyword Args:
-      try_num(int): max number of http requests send to the endpoint.
-      retry_backoff(float): time in seconds before retrying posting to the
-         endpoint. Randomized exponential backoff is applied on subsequent
-         retries.
 
     Returns:
       success(bool): whether POSTing/writing succeeded or not.
@@ -233,18 +230,18 @@ class _HttpRouter(_Router):
 
         if self._dry_run or response.status == 200:
           return True
-      except Exception: # pragma: no cover
+      except Exception:
         logging.exception('exception when POSTing data')
+        break
 
-      logging.error('failed to POST data to %s (attempt %d)',
-                    self.endpoint, attempt)  # pragma: no cover
+      logging.error('failed to POST data to %s Status: %d (attempt %d)',
+                    self.endpoint, response.status, attempt)
 
-      if attempt == 0:  # pragma: no cover
+      if attempt == 0:
         logging.error('data: %s', str(events)[:200])
 
-      time.sleep(  # pragma: no cover
-        backoff_time(attempt, retry_backoff=self.retry_backoff))
+      self._sleep_fn(backoff_time(attempt, retry_backoff=self.retry_backoff))
 
     logging.error('failed to POST data after %d attempts, giving up.',
-                  self.try_num)   # pragma: no cover
-    return False  # pragma: no cover
+                  self.try_num)
+    return False

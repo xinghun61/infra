@@ -5,9 +5,11 @@
 import os
 import random
 import StringIO
+import time
 import unittest
 
 import httplib2
+import mock
 
 import infra_libs
 from infra_libs.event_mon import config
@@ -62,6 +64,52 @@ class HttpRouterTests(unittest.TestCase):
 
     r = router._HttpRouter({}, 'ftp://any.where', dry_run=True)
     self.assertFalse(r.push_event(event))
+
+  # Below this line, test the send/retry loop.
+  def test_push_ok(self):
+    # Successfully push event the first time.
+    sleep = mock.create_autospec(time.sleep, auto_set=True)
+    r = router._HttpRouter({}, 'https://bla.bla', _sleep_fn=sleep)
+    r._http = infra_libs.HttpMock([('https://bla.bla', {'status': 200}, '')])
+
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    self.assertTrue(r.push_event(event))
+    self.assertEquals(len(sleep.call_args_list), 0)
+
+  def test_push_fail(self):
+    # Fail to push events even after all retries
+    sleep = mock.create_autospec(time.sleep, auto_set=True)
+    r = router._HttpRouter({}, 'https://bla.bla', _sleep_fn=sleep)
+    r._http = infra_libs.HttpMock([('https://bla.bla', {'status': 403}, '')])
+
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    self.assertFalse(r.push_event(event))
+    self.assertEquals(len(sleep.call_args_list), r.try_num - 1)
+
+  def test_push_exception(self):
+    # Fail to push events even after all retries
+    sleep = mock.create_autospec(time.sleep, auto_set=True)
+    r = router._HttpRouter({}, 'https://bla.bla', _sleep_fn=sleep)
+
+    class FakeHttp(object):
+      # pylint: disable=unused-argument
+      def request(self, *args, **kwargs):
+        raise ValueError()
+
+    r._http = FakeHttp()
+
+    event = LogRequestLite.LogEventLite()
+    event.event_time_ms = router.time_ms()
+    event.event_code = 1
+    event.event_flow_id = 2
+    self.assertFalse(r.push_event(event))
+    self.assertEquals(len(sleep.call_args_list), 0)
 
 
 class TextStreamRouterTests(unittest.TestCase):

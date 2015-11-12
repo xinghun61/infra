@@ -217,7 +217,7 @@ class HttpMock(object):
         matching the requested uri, (headers, body) gives the values returned
         by the mock. Uris are tested in the order from `uris`.
         `headers` is a dict mapping headers to value. The 'status' key is
-        mandatory. `body` is a string or None.
+        mandatory. `body` is a string.
         Ex: [('.*', {'status': 200}, 'nicely done.')]
     """
     self._uris = []
