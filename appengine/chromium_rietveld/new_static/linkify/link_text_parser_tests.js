@@ -84,6 +84,13 @@ describe("LinkTextParser", function() {
             {href:"https://bugs.chromium.org/p/monorail/issues/detail?id=789", text:"monorail:789"},
         ]);
     });
+    it("should parse github trackers in a BUG= line", function() {
+        expectTokens("abc\nBUG=catapult:#1274", [
+            "abc\n",
+            "BUG=",
+            {href:"https://github.com/catapult-project/catapult/issues/1274", text:"catapult:#1274"},
+        ]);
+    });
     it("should ignore invalid trackers in a BUG= line", function() {
         expectTokens("abc\nBUG=foo:678\nbar", [
             "abc\n",

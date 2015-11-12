@@ -19,6 +19,14 @@ LinkTextParser.CODESITE_TRACKERS = [
     "v8"
 ];
 
+LinkTextParser.GITHUB_TRACKERS = [
+    "catapult"
+];
+
+LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS = {
+    catapult: "catapult-project/catapult"
+};
+
 LinkTextParser.MONORAIL_TRACKERS = [
     "crashpad",
     "monorail",
@@ -37,6 +45,13 @@ LinkTextParser.prototype.addBugText = function(text, tracker, bugId)
     if (tracker && LinkTextParser.CODESITE_TRACKERS.find(tracker)) {
         var href = "https://code.google.com/p/{1}/issues/detail?id={2}".assign(
             encodeURIComponent(tracker), encodeURIComponent(bugId));
+        this.addText(text, href);
+        return;
+    }
+    if (tracker && LinkTextParser.GITHUB_TRACKERS.find(tracker)) {
+        var trackerPath = LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS[tracker];
+        var href = "https://github.com/{1}/issues/{2}".assign(
+            encodeURIComponent(trackerPath), encodeURIComponent(bugId));
         this.addText(text, href);
         return;
     }
@@ -77,7 +92,7 @@ LinkTextParser.prototype.parseBugs = function(text) {
     // And the BUG= line is in a "footer", i.e. the last newline-separated
     // paragraph of the commit message.
     var BUG_PATTERN = /^BUG=(.+)$/m;
-    var BUG_ID = /(([a-zA-Z0-9\-]*):)?(\d+)/;
+    var BUG_ID = /(([a-zA-Z0-9\-]*):)?#?(\d+)/;
 
     for (var match = text.match(BUG_PATTERN); match; match = text.match(BUG_PATTERN)) {
         var before = text.substring(0, match.index);
