@@ -239,6 +239,11 @@ def get_flaky_run_reason(flaky_run_key):
   for step in failed_steps:
     step_name = step['name']
     if ' (with patch)' in step_name:
+      # Android instrumentation tests add a prefix before the step name, which
+      # doesn't appear on the summary step (without suffixes). To make sure we
+      # correctly ignore duplicate failures, we remove the prefix.
+      step_name = step_name.replace('Instrumentation test ', '')
+
       step_name_with_no_modifier = step_name.replace(' (with patch)', '')
       for other_step in failed_steps:
         # A step which fails, and then is retried and also fails, will have its
