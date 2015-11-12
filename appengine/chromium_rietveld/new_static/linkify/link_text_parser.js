@@ -24,7 +24,7 @@ LinkTextParser.GITHUB_TRACKERS = [
 ];
 
 LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS = {
-    catapult: "catapult-project/catapult"
+    catapult: ['catapult-project', 'catapult']
 };
 
 LinkTextParser.MONORAIL_TRACKERS = [
@@ -49,9 +49,11 @@ LinkTextParser.prototype.addBugText = function(text, tracker, bugId)
         return;
     }
     if (tracker && LinkTextParser.GITHUB_TRACKERS.find(tracker)) {
-        var trackerPath = LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS[tracker];
-        var href = "https://github.com/{1}/issues/{2}".assign(
-            encodeURIComponent(trackerPath), encodeURIComponent(bugId));
+        var trackerOrg = LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS[tracker][0];
+        var trackerProj = LinkTextParser.GITHUB_TRACKER_PROJECT_PATHS[tracker][1];
+        var href = "https://github.com/{1}/{2}/issues/{3}".assign(
+            encodeURIComponent(trackerOrg), encodeURIComponent(trackerProj),
+            encodeURIComponent(bugId));
         this.addText(text, href);
         return;
     }
