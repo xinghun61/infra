@@ -2508,6 +2508,9 @@ def _patchset_as_dict(
       requester_email = request.user.email() if request.user else 'no email'
       comments_on_patch = all_comments_by_patch_id.get(patch.key.id(), [])
       for comment in comments_on_patch:
+        if not comment or not comment.author:
+          logging.info('Ignoring authorless comment: %r', comment)
+          continue  # Ignore a small number of existing corrupt comments.
         if not comment.draft or requester_email == comment.author.email():
           visible_comments.append({
               'author': library.get_nickname(comment.author, True, request),
@@ -3071,6 +3074,7 @@ def _add_or_update_comment(user, issue, patch, lineno, left, text, message_id):
     comment.text = text
     comment.message_id = message_id
     comment.put()
+    logging.info('New comment author is %r', comment.author)
     # The actual count doesn't matter, just that there's at least one.
     models.Account.current_user_account.update_drafts(issue, 1)
   return comment
@@ -3137,6 +3141,7 @@ def api_draft_message(request):
   comment.text = text
   comment.message_id = message_id
   comment.put()
+  logging.info('Saved comment with author = %r', comment.author)
   issue.calculate_draft_count_by_user()
   issue.put()
   models.Account.current_user_account.update_drafts(issue, have_drafts=True)

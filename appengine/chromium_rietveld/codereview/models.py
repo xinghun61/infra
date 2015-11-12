@@ -274,6 +274,9 @@ class Issue(ndb.Model):
     self._num_drafts = {}
     query = Comment.query(Comment.draft == True, ancestor=self.key)
     for comment in query:
+      if not comment.author:
+        logging.info('Ignoring authorless comment: %r', comment)
+        continue
       cur = self._num_drafts.setdefault(comment.author.email(), 0)
       self._num_drafts[comment.author.email()] = cur + 1
     self.draft_count_by_user = json.dumps(self._num_drafts)
