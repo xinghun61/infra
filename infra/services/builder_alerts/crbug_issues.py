@@ -41,7 +41,7 @@ def _list_issues(crbug_service_account):
   issues = []
   seen_issue_ids = set()
   for whitelisted_label in WHITELISTED_LABELS:
-    start_index = 1
+    start_index = 0
     while True:
       request = service.issues().list(
           projectId='chromium', label=whitelisted_label,
