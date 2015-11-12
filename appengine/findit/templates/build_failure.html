@@ -129,17 +129,15 @@
         failureWithLink = '<i>' + failure.test_name + '</i>';
       }
 
-      var generalStepString = failureWithLink + '</td>';
-      generalStepString += '<td><a href="' + findit.builderUrl + '/builds/' + failure.first_failure + '">' + failure.first_failure + '</a></td>';
+      var rowsSpan = failure.suspected_cls.length > 0 ? failure.suspected_cls.length : 1;
+      rowString += '<td valigh="middle" rowspan="' + rowsSpan + '">' + failureWithLink + '</td>';
+      rowString += '<td rowspan="' + rowsSpan + '"><a href="' + findit.builderUrl + '/builds/' + failure.first_failure + '">' + failure.first_failure + '</a></td>';
       if (failure.last_pass){
-        generalStepString += '<td><a href="' + findit.builderUrl + '/builds/' + failure.last_pass + '">' + failure.last_pass + '</a></td>';
+        rowString += '<td rowspan="' + rowsSpan + '"><a href="' + findit.builderUrl + '/builds/' + failure.last_pass + '">' + failure.last_pass + '</a></td>';
       } else {
-        generalStepString += '<td>N/A</td>';
+        rowString += '<td>N/A</td>';
       }
       if (failure.suspected_cls.length > 0){
-        rowString += '<td valigh="middle" rowspan="' + failure.suspected_cls.length + '">';
-        rowString += generalStepString;
-
         clString = generateStringForSingleCL(failure.suspected_cls[0]);
         rowString += clString + '</tr>';
         $('#failures tbody').append(rowString);
@@ -156,8 +154,6 @@
           $('#failures tbody').append(rowString);
         }
       } else {
-        rowString += '<td>';
-        rowString += generalStepString;
         rowString += '<td colspan="5">';
         if(type == 'step' && failure.supported == false){
           rowString += 'Not Supported</td>';
