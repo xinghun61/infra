@@ -16,7 +16,7 @@ describe("LinkTextParser", function() {
                 assert.isUndefined(href);
                 assert.equal(text, expected);
             } else {
-                assert.equal(href, expected.href);
+                assert.strictEqual(href, expected.href);
                 assert.equal(text, expected.text);
             }
         });
