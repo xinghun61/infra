@@ -8,6 +8,7 @@ import webapp2
 from findit_api import FindItApi
 from handlers import build_failure
 from handlers import check_duplicate_failures
+from handlers import config
 from handlers import failure_log
 from handlers import help_triage
 from handlers import list_analyses
@@ -23,7 +24,8 @@ from pipeline_wrapper import pipeline_status_ui
 web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/check-duplicate-failures',
-        check_duplicate_failures.CheckDuplicateFailures),
+     check_duplicate_failures.CheckDuplicateFailures),
+    ('/config', config.Configuration),
     ('/failure-log', failure_log.FailureLog),
     ('/help-triage', help_triage.HelpTriage),
     ('/list-analyses', list_analyses.ListAnalyses),

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="/common.css"></link>
+  <title>Findit Configuration</title>
+  <style>
+    .supported-masters, .unsupported-steps {
+      min-width: 200px;
+      max-width: 200px;
+      min-height: 150px;
+      max-height: 150px;
+    }
+    .support {
+      float: left;
+    }
+  </style>
+  <script>
+    var findit = {};
+    findit.mastersToBlacklistedSteps = {{ masters | tojson | safe }};
+
+    function optionExistsInSelect(option, selectId) {
+      var selectObject = $('#' + selectId + ' option');
+      for (var i = 0; i < selectObject.size(); i ++) {
+        if (option == selectObject[i].value) {
+          alert(option + ' already exists');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function addNewMaster(e) {
+      var masterName = $('#add-new-master-textfield').val().trim();
+
+      if (masterName.length == 0) {
+        return;
+      }
+
+      var exists = optionExistsInSelect(masterName, 'supported-masters-list');
+
+      if (!exists) {
+        findit.mastersToBlacklistedSteps[masterName] = [];
+        addOptionToSelect(masterName, 'supported-masters-list');
+      }
+      e.preventDefault();
+    }
+
+    function addNewStepForMaster(e) {
+      e.preventDefault();
+
+      var newStepName = $('#add-unsupported-step-textfield').val().trim();
+
+      if (newStepName.length == 0) {
+        return;
+      }
+
+      if (!$('#supported-masters-list').val()) {
+        alert('Please select a master to add a step to');
+        return;
+      }
+
+      var exists = optionExistsInSelect(newStepName, 'unsupported-steps-list');
+
+      if (!exists) {
+        var masterName = $('#supported-masters-list').val();
+        findit.mastersToBlacklistedSteps[masterName].push(newStepName);
+        addOptionToSelect(newStepName, 'unsupported-steps-list');
+      }
+    }
+
+    function removeSelectedOptionFromSelect(selectId) {
+      $('#' + selectId + ' option:selected').remove();
+    }
+
+    function clearList(listId) {
+      $('#' + listId).find('option').remove().end();
+    }
+
+    function showUnsupportedSteps(e)
+    {
+      var selectedMaster = $('#supported-masters-list').val();
+      
+      var unsupportedStepsList = findit.mastersToBlacklistedSteps[selectedMaster];
+      clearList('unsupported-steps-list');
+
+      for (var index in unsupportedStepsList) {
+          var option = unsupportedStepsList[index];
+          addOptionToSelect(option, 'unsupported-steps-list');
+      }
+
+      e.preventDefault();
+    }
+
+    function removeSelectedMaster(e) {
+      delete findit.mastersToBlacklistedSteps[$('#supported-masters-list').val()];
+      removeSelectedOptionFromSelect('supported-masters-list');
+      clearList('unsupported-steps-list');
+      e.preventDefault();
+    }
+
+    function removeSelectedStepFromMaster(e) {
+      var selectedMaster = $('#supported-masters-list').val();
+      var stepToRemove = $('#unsupported-steps-list').val();
+
+      var unsupportedSteps = findit.mastersToBlacklistedSteps[selectedMaster];
+      var stepIndex = unsupportedSteps.indexOf(stepToRemove);
+
+      if (stepIndex > -1) {
+        unsupportedSteps.splice(stepIndex, 1);
+      }
+
+      removeSelectedOptionFromSelect('unsupported-steps-list');
+      e.preventDefault();
+    }
+
+    function addOptionToSelect(option, selectId) {
+      $('#' + selectId).append($('<option></option>').attr("value", option).text(option));
+    }
+
+    function save(e) {
+      var newConfig = {
+        'masters_to_blacklisted_steps': findit.mastersToBlacklistedSteps,
+      }
+      $.post('/config', { data: JSON.stringify(newConfig) });
+      e.preventDefault();
+    }
+
+    $(document).ready(function() {
+      for (var master in findit.mastersToBlacklistedSteps) {
+        addOptionToSelect(master, 'supported-masters-list');
+      }
+      $('#add-new-master-button').click(addNewMaster);
+      $('#add-new-step-button').click(addNewStepForMaster);
+      $('#remove-selected-master-button').click(removeSelectedMaster);
+      $('#remove-step-button').click(removeSelectedStepFromMaster);
+      $('#save-button').click(save);
+      $('#supported-masters-list').on('change', showUnsupportedSteps);
+    });
+  </script>
+</head>
+<body>
+  <h3>Findit Configuration Page</h3>
+  <div>Configuration version: {{ version }}</div>
+  <br>
+  <div>
+    <div id="supported-masters" class="support">
+      Supported masters:<br>
+      <select id="supported-masters-list" size="10" class="supported-masters">
+      </select>
+      <br>
+      <button id="remove-selected-master-button">Remove</button>
+      <br>
+      <br>Add new master:<br>
+      <input type="text" id="add-new-master-textfield"</input>
+      <button id="add-new-master-button">Add</button>
+      <span>&nbsp;</span>
+    </div>
+    <div>
+      Unspported Steps:<br>
+      <select id="unsupported-steps-list" size="10" class="unsupported-steps">
+      </select>
+      <br>
+      <button id="remove-step-button">Remove</button>
+      <br>
+      <br>Add step:<br>
+      <input type="text" id="add-unsupported-step-textfield"</input>
+      <button id="add-new-step-button">Add</button>
+      <span>&nbsp;</span>
+    </div>
+  </div>
+  <br>
+  <button type="submit" id="save-button">Save</button>
+</body>
