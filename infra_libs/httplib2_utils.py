@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import socket
+import sys
 import time
 
 import httplib2
@@ -19,8 +20,10 @@ from infra_libs.ts_mon.common import http_metrics
 DEFAULT_SCOPES = ['email']
 
 # This is part of the API.
-# TODO: this is linux-specific, make it multi-platform.
-SERVICE_ACCOUNTS_CREDS_ROOT = '/creds/service_accounts'
+if sys.platform.startswith('win'): # pragma: no cover
+  SERVICE_ACCOUNTS_CREDS_ROOT = 'C:\\creds\\service_accounts'
+else:
+  SERVICE_ACCOUNTS_CREDS_ROOT = '/creds/service_accounts'
 
 
 class AuthError(Exception):
