@@ -26,7 +26,7 @@ _router = None
 _cache = {}
 
 
-def add_argparse_options(parser):  # pragma: no cover
+def add_argparse_options(parser):
   # The default values should make sense for local testing, not production.
   group = parser.add_argument_group('Event monitoring (event_mon) '
                                     'global options')
@@ -127,14 +127,14 @@ def setup_monitoring(run_type='dry',
   global _router
   logging.debug('event_mon: setting up monitoring.')
 
-  if not _router:  # pragma: no cover
+  if not _router:
     default_event = ChromeInfraEvent()
 
     hostname = hostname or socket.getfqdn()
     # hostname might be empty string or None on some systems, who knows.
     if hostname:  # pragma: no branch
       default_event.event_source.host_name = hostname
-    else:
+    else:  # pragma: no cover
       logging.warning('event_mon: unable to determine hostname.')
 
     if service_name:

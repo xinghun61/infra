@@ -122,3 +122,11 @@ class ConfigTest(unittest.TestCase):
     orig_event = config._cache['default_event']
     self.assertEqual(orig_event, event_mon.get_default_event())
     self.assertIsNot(orig_event, event_mon.get_default_event())
+
+  def test_run_type_test(self):
+    event_mon.setup_monitoring(run_type='test', service_account_creds='creds')
+    self.assertEquals(config._cache['service_account_creds'], 'creds')
+
+  def test_run_type_invalid(self):
+    event_mon.setup_monitoring(run_type='invalid.')
+    self.assertFalse(isinstance(config._router, router._HttpRouter))
