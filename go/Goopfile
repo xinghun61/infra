@@ -1,9 +1,9 @@
-github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/coreos/etcd #185097ffaa627b909007e772c175e8fefac17af3 !https://chromium.googlesource.com/external/github.com/coreos/etcd.git
 github.com/golang/glog #fca8c8854093a154ff1eb580aae10276ad6b1b5f !https://chromium.googlesource.com/external/github.com/golang/glog.git
 github.com/golang/lint #32a87160691b3c96046c0c678fe57c5bef761456 !https://chromium.googlesource.com/external/github.com/golang/lint.git
 github.com/golang/protobuf #d3d78384b82d449651d2435ed329d70f7c48aa56 !https://chromium.googlesource.com/external/github.com/golang/protobuf.git
 github.com/google/google-api-go-client/google-api-go-generator #e4bb4e4880a5cabeec41cbff1095e86059f2f908 !https://code.googlesource.com/google-api-go-client.git
+github.com/GoogleCloudPlatform/go-endpoints/endpoints #30cbe84e0d7ff4253cd6f89c39a53d3e60b98088 !https://chromium.googlesource.com/external/github.com/GoogleCloudPlatform/go-endpoints.git
 github.com/gorhill/cronexpr #a557574d6c024ed6e36acc8b610f5f211c91568a !https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 github.com/jtolds/gls #9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690 !https://chromium.googlesource.com/external/github.com/jtolds/gls.git
 github.com/julienschmidt/httprouter #77a895ad01ebc98a4dc95d8355bc825ce80a56f6 !https://chromium.googlesource.com/external/github.com/julienschmidt/httprouter.git
@@ -31,6 +31,7 @@ github.com/smartystreets/assertions #01fedaa993c0a9f9aa55111501cd7c81a49e812e !h
 github.com/smartystreets/goconvey #530dd3d2cafa09958178e8c557bc4abeea1651a5 !https://chromium.googlesource.com/external/github.com/smartystreets/goconvey.git
 github.com/steveyen/go-slab #2f82a688478741b7843a5575749f726d4b3f92b1 !https://chromium.googlesource.com/external/github.com/steveyen/go-slab.git
 github.com/texttheater/golang-levenshtein #9ab79d77423b5c17e36d1f02838fe9e788678ff0 !https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
+github.com/xtgo/set #0b98658fd796bd807dad4fea0f61b24259900a1b !https://chromium.googlesource.com/external/github.com/xtgo/set
 github.com/yosuke-furukawa/json5 #07fdad7a3c55f2098b172ea58890470c07f7d392 !https://chromium.googlesource.com/external/github.com/yosuke-furukawa/json5.git
 golang.org/x/crypto #575fdbe86e5dd89229707ebec0575ce7d088a4a6
 golang.org/x/net #c764672d0ee39ffd83cfcb375804d3181302b62b
