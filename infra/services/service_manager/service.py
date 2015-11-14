@@ -181,19 +181,15 @@ class ProcessCreator(object):
       log_r, log_w = os.pipe()
       try:
         with open(os.devnull, 'w') as null_fh:
-          cloudtail = subprocess.Popen(
+          subprocess.Popen(
               self.service.cloudtail_args,
               stdin=log_r,
               stdout=null_fh,
               stderr=null_fh,
               **popen_kwargs)
       except OSError:
-        logging.exception('Failed to start cloudtail with args %s',
-                          self.service.cloudtail_args)
         os.close(log_w)
       else:
-        logging.info('Started cloudtail for %s with PID %d',
-                     self.service.name, cloudtail.pid)
         return os.fdopen(log_w, 'w')
       finally:
         os.close(log_r)
