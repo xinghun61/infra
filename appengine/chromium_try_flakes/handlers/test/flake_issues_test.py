@@ -123,7 +123,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     flake.issue_last_updated = now - datetime.timedelta(days=2)
     flake.num_reported_flaky_runs = 0
     flake_key = flake.put()
-    issue.updated = now - datetime.timedelta(days=5)
+    issue.updated = now - datetime.timedelta(days=2)
 
     response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
     self.assertEqual(200, response.status_int)
@@ -131,7 +131,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(len(tasks), 0)
 
     flake.num_reported_flaky_runs = 0
-    issue.updated = now - datetime.timedelta(days=8)
+    issue.updated = now - datetime.timedelta(days=4)
     flake_key = flake.put()
     response = self.test_app.post('/issues/process/%s' % flake_key.urlsafe())
     self.assertEqual(200, response.status_int)

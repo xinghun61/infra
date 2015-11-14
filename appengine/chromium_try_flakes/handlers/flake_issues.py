@@ -103,9 +103,9 @@ class ProcessIssue(webapp2.RequestHandler):
           return
       else:  # Fixed, WontFix, Verified, Archived, custom status
         # If the issue was closed, we do not update it. This allows changes made
-        # to reduce flakiness to propagate and take effect. If after one week we
+        # to reduce flakiness to propagate and take effect. If after 3 days we
         # still see flakiness, we will create a new issue.
-        if flake_issue.updated < now - datetime.timedelta(weeks=1):
+        if flake_issue.updated < now - datetime.timedelta(days=3):
           self._recreate_issue_for_flake(flake)
         return
 

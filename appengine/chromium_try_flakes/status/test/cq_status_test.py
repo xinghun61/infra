@@ -352,9 +352,9 @@ class CQStatusTestCase(testing.AppengineTestCase):
 
   def test_create_tasks_to_update_issue_tracker(self):
     Flake(name='foo1', count_day=1).put()
-    key2 = Flake(name='foo2', count_day=10).put()
-    key3 = Flake(name='foo3', count_day=15).put()
-    Flake(name='foo4', count_day=5).put()
+    key2 = Flake(name='foo2', count_day=5).put()
+    key3 = Flake(name='foo3', count_day=7).put()
+    Flake(name='foo4', count_day=3).put()
     key5 = Flake(name='foo5', count_day=200).put()
 
     path = '/cron/update_issue_tracker'

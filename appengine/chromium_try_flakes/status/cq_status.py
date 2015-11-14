@@ -130,8 +130,8 @@ def update_flake_month_counter():  # pragma: no cover
 
 def update_issue_tracker():
   """File/update issues for flakes on issue_tracker."""
-  # Only process flakes that happened at least 10 times in the last 24 hours.
-  for flake in Flake.query(Flake.count_day >= 10, projection=[Flake.count_day]):
+  # Only process flakes that happened at least 5 times in the last 24 hours.
+  for flake in Flake.query(Flake.count_day >= 5, projection=[Flake.count_day]):
     taskqueue.add(queue_name='issue-updates',
                   url='/issues/process/%s' % flake.key.urlsafe())
 
