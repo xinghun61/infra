@@ -22,14 +22,6 @@ import urllib2
 GO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# Packages that should be checked out via some non-standard ref. Notable
-# examples are packages distributed via gopkg.in hackery.
-EXCEPTIONS = {
-  'gopkg.in/fsnotify.v1': 'refs/tags/v1.2.0',
-  'gopkg.in/yaml.v2': 'refs/heads/v2',
-}
-
-
 def parse_goop_line(line):
   """Line of Goop file -> (package name, ref, mirror repo or None)."""
   chunks = [c.strip() for c in line.split()]
@@ -61,24 +53,77 @@ def resolve_meta_import(pkg):
   return repo_url
 
 
-def get_latest_sha1(repo, ref=None):
-  """Git repo URL -> SHA1 of go1 tag/ref or master ref."""
-  if ref:
-    refs = [ref]
-  else:
-    refs = ['refs/heads/master', 'refs/heads/go1', 'refs/tags/go1']
-  out = subprocess.check_output(['git', 'ls-remote', repo] + refs)
+def get_latest_refs(repo):
+  """Git repo URL -> map {refs|tags => sha1}."""
+  out = subprocess.check_output(['git', 'ls-remote', repo])
   sha1s = {}
   for l in out.strip().splitlines():
     sha1, r = [s.strip() for s in l.split()]
     sha1s[r] = sha1
-  if ref:
-    return sha1s[ref]
-  if 'refs/heads/go1' in sha1s:
-    return sha1s['refs/heads/go1']
-  if 'refs/tags/go1' in sha1s:
-    return sha1s['refs/tags/go1']
-  return sha1s['refs/heads/master']
+  return sha1s
+
+
+def pick_ref(pkg, refs):
+  """Given a dict with repo refs, chooses the one to put in Goopfile.
+
+  Uses default 'go get' rules, unless packages are known to use some custom
+  scheme, e.g. packages imported via 'gopkg.in/*'.
+  """
+  # gopkg.in package with custom ref rules?
+  gopkg_in = re.match(r'^gopkg\.in/.*\.v([0-9]+)$', pkg)
+  if gopkg_in:
+    requested_ver = int(gopkg_in.group(1))
+    return pick_gopkgin_ref(refs, requested_ver)
+
+  # Default 'go get' rules.
+  for ref in ('refs/heads/go1', 'refs/tags/go1', 'refs/heads/master'):
+    if ref in refs:
+      return refs[ref]
+
+  raise ValueError('Can\'t pick a ref for %s from %s' % (pkg, refs))
+
+
+def pick_gopkgin_ref(refs, requested_ver):
+  """Chooses a refs that best matches requested version.
+
+  Implements gopkg.in rules as described at http://labix.org/gopkg.in.
+  See "Version number" section.
+  """
+  # Make a map (version tuple => SHA1). Choose heads over tags.
+  versions = {}
+  for ref in sorted(refs, key=lambda r: r.startswith('refs/tags/')):
+    name = ref[ref.rfind('/')+1:] # e.g. "v1.0.1"
+    if name[0] == 'v':
+      ver = tuple(map(int, name[1:].split('.')))
+      if ver[0] == requested_ver and ver not in versions:
+        versions[ver] = refs[ref]
+  if not versions:
+    raise ValueError('Can\'t find v%d in %s' % (requested_ver, refs))
+
+  # Find best matching version.
+  best = versions.keys()[0]
+  for ver in versions:
+    if is_newer_version(ver, best):
+      best = ver
+  return versions[best]
+
+
+def is_newer_version(a, b):
+  """Given two version tuples, returns True if version `a` is newer than `b`.
+
+  Rules (examples):
+    1.0.0 > 1.0
+    1.1 > 1.0.0
+    2 > 1.1
+  """
+  for i in xrange(max(len(a), len(b))):
+    a_i = a[i] if i < len(a) else -1
+    b_i = b[i] if i < len(b) else -1
+    if a_i > b_i:
+      return True
+    if a_i < b_i:
+      return False
+  return False # equal
 
 
 def main():
@@ -87,9 +132,8 @@ def main():
   filtered = []
   for line in goop.splitlines():
     pkg, ref, mirror = parse_goop_line(line)
-    latest = get_latest_sha1(
-        repo=mirror or resolve_meta_import(pkg),
-        ref=EXCEPTIONS.get(pkg))
+    refs = get_latest_refs(mirror or resolve_meta_import(pkg))
+    latest = pick_ref(pkg, refs)
     if ref == latest:
       print '%s is up-to-date' % pkg
     else:
