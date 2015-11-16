@@ -457,6 +457,64 @@ class GetBuildEventTest(unittest.TestCase):
 
     self.assertFalse(event.build_event.HasField('build_number'))
 
+  def test_get_build_event_with_default_build_number(self):
+    event_mon.setup_monitoring()
+    orig_event = event_mon.get_default_event()
+    build_number = 123
+    orig_event.build_event.build_number = build_number
+    event_mon.set_default_event(orig_event)
+
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    build_scheduling_time = 123456789
+    log_event = monitoring.get_build_event(
+      'BUILD',
+      hostname,
+      build_name,
+      build_scheduling_time=build_scheduling_time).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.build_event.build_scheduling_time_ms,
+                      build_scheduling_time)
+
+    self.assertEquals(event.build_event.build_number, build_number)
+
+  def test_get_build_event_build_number_overwrites_default(self):
+    event_mon.setup_monitoring()
+    orig_event = event_mon.get_default_event()
+    orig_event.build_event.build_number = 123
+    event_mon.set_default_event(orig_event)
+
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    build_number = 0  # zero should override the default value
+    build_scheduling_time = 123456789
+    log_event = monitoring.get_build_event(
+      'BUILD',
+      hostname,
+      build_name,
+      build_number=build_number,
+      build_scheduling_time=build_scheduling_time).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.BUILD)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.build_event.build_number, build_number)
+    self.assertEquals(event.build_event.build_scheduling_time_ms,
+                      build_scheduling_time)
+
   def test_get_build_event_with_step_info_wrong_type(self):
     # BUILD event with step info is invalid.
     hostname = 'bot.host.name'
@@ -519,6 +577,42 @@ class GetBuildEventTest(unittest.TestCase):
                       build_scheduling_time)
     self.assertEquals(event.build_event.step_name, step_name)
     self.assertEquals(event.build_event.step_number, step_number)
+
+  def test_get_build_event_step_name_in_default(self):
+    hostname = 'bot.host.name'
+    build_name = 'build_name'
+    build_number = 314159265
+    build_scheduling_time = 123456789
+    step_number = 0  # valid step number
+    step_name = 'step_name'
+
+    event_mon.setup_monitoring()
+    orig_event = event_mon.get_default_event()
+    orig_event.build_event.step_name = step_name
+    event_mon.set_default_event(orig_event)
+
+    log_event = monitoring.get_build_event(
+      'STEP',
+      hostname,
+      build_name,
+      build_number=build_number,
+      build_scheduling_time=build_scheduling_time,
+      step_number=step_number).log_event()
+
+    self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
+
+    # Check that source_extension deserializes to the right thing.
+    event = ChromeInfraEvent.FromString(log_event.source_extension)
+    self.assertTrue(event.HasField('build_event'))
+    self.assertEquals(event.build_event.type, BuildEvent.STEP)
+    self.assertEquals(event.build_event.host_name, hostname)
+    self.assertEquals(event.build_event.build_name, build_name)
+    self.assertEquals(event.build_event.build_number, build_number)
+    self.assertEquals(event.build_event.build_scheduling_time_ms,
+                      build_scheduling_time)
+    self.assertEquals(event.build_event.step_number, step_number)
+
+    self.assertEquals(event.build_event.step_name, step_name)
 
   def test_get_build_event_missing_step_name(self):
     hostname = 'bot.host.name'

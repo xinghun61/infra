@@ -100,7 +100,7 @@ def _get_chrome_infra_event(timestamp_kind, service_name=None):
   event.CopyFrom(config._cache['default_event'])
 
   if timestamp_kind:
-    event.timestamp_kind = getattr(ChromeInfraEvent, timestamp_kind)
+    event.timestamp_kind = ChromeInfraEvent.TimestampKind.Value(timestamp_kind)
   if service_name:
     event.event_source.service_name = service_name
 
@@ -285,20 +285,22 @@ def get_build_event(event_type,
     return event_wrapper
 
   event = event_wrapper.proto
+  event.build_event.type = BuildEvent.BuildEventType.Value(event_type)
 
-  event.build_event.type = getattr(BuildEvent, event_type)
-  if not hostname:
-    logging.error('hostname must be provided, got %s', hostname)
-  else:
+  if hostname:
     event.build_event.host_name = hostname
+  if not event.build_event.HasField('host_name'):
+    logging.error('hostname must be provided, got %s', hostname)
 
-  if not build_name:
-    logging.error('build_name must be provided, got %s', build_name)
-  else:  # avoid sending empty strings
+  if build_name:
     event.build_event.build_name = build_name
+  if not event.build_event.HasField('build_name'):
+    logging.error('build_name must be provided, got %s', build_name)
 
-  if build_number is not None:  # 0 is a valid value
+  # 0 is a valid value for build_number
+  if build_number is not None:
     event.build_event.build_number = build_number
+  if event.build_event.HasField('build_number'):
     if event_type == 'SCHEDULER':
       logging.error('build_number should not be provided for a "SCHEDULER"'
                     ' type, got %s (drop or use BUILD or STEP type)',
@@ -309,38 +311,40 @@ def get_build_event(event_type,
                     'build_scheduling_time was not. '
                     'Provide either both or none.', build_number)
 
-  else:  # not using elif because it's not semantically a switch statement.
-    if build_scheduling_time:
-      logging.error('build_number has not been provided, '
-                    'build_scheduling_time was provided (%s). '
-                    'Both must be present or missing.',
-                    build_scheduling_time)
-
+  # 0 is not a valid scheduling time
   if build_scheduling_time:
     event.build_event.build_scheduling_time_ms = build_scheduling_time
+  if (event.build_event.HasField('build_scheduling_time_ms') and
+      not event.build_event.HasField('build_number')):
+    logging.error('build_number has not been provided, '
+                  'build_scheduling_time was provided (%s). '
+                  'Both must be present or missing.',
+                  build_scheduling_time)
 
   if step_name:
     event.build_event.step_name = step_name
+  if step_number is not None:
+    event.build_event.step_number = step_number
+
+  if event.build_event.step_name:
     if event_type != 'STEP':
       logging.error('step_name should be provided only for type "STEP", '
                     'got %s', event_type)
-    if step_number is None:  # 0 is a valid value
+    if not event.build_event.HasField('step_number'):
       logging.error('step_number was not provided, but got a value for '
                     'step_name (%s). Provide either both or none',
                     step_name)
-    if build_number is None and build_scheduling_time is None:
+    if (not event.build_event.HasField('build_number')
+        and not event.build_event.HasField('build_scheduling_time_ms')):
       logging.error('build information must be provided when step '
                     'information is provided. Got nothing in build_name '
                     'and build_number')
   else:
-    if step_number is not None:
+    if event.build_event.HasField('step_number'):
       logging.error('step_number has been provided (%s), '
                     'step_name has not. '
                     'Both must be present or missing.',
-                    step_number)
-
-  if step_number is not None:
-    event.build_event.step_number = step_number
+                    event.build_event.step_number)
 
   # TODO(pgervais) remove this.
   # Hack to work around errors in the proto
