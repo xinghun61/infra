@@ -35,6 +35,7 @@
 1. If you were provided with slaves, update builders.pyl.
 1. Send the CL, land it.
 1. File a [master deployment ticket].
+1. Add entry in [master-manager/desired_master_state.json](https://chrome-internal.googlesource.com/infradata/master-manager/+/master/desired_master_state.json) (e.g. https://chromereviews.googleplex.com/304367013/).
 
 Whenever you modify builders.pyl, e.g. add/remove slaves, you need to
 [restart the master].
