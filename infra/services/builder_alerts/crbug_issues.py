@@ -24,7 +24,8 @@ WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
 BATCH_SIZE = 10
 
 
-def _build_crbug_service(crbug_service_account):  # pragma: no cover
+def _build_crbug_service(crbug_service_account,
+                         use_monorail):  # pragma: no cover
   with open(crbug_service_account) as crbug_sa_file:
     service_account = json.load(crbug_sa_file)
 
@@ -32,12 +33,14 @@ def _build_crbug_service(crbug_service_account):  # pragma: no cover
       service_account['client_email'], service_account['private_key'],
       PROJECT_HOSTING_SCOPE)
   http = creds.authorize(httplib2.Http())
-  return discovery.build('projecthosting', 'v2',
-                         discoveryServiceUrl=DISCOVERY_URL, http=http)
+  api_name = 'monorail' if use_monorail else 'projecthosting'
+  api_version = 'v1' if use_monorail else 'v2'
+  return discovery.build(
+      api_name, api_version, discoveryServiceUrl=DISCOVERY_URL, http=http)
 
 
-def _list_issues(crbug_service_account):
-  service = _build_crbug_service(crbug_service_account)
+def _list_issues(crbug_service_account, use_monorail):
+  service = _build_crbug_service(crbug_service_account, use_monorail)
   issues = []
   seen_issue_ids = set()
   for whitelisted_label in WHITELISTED_LABELS:
@@ -72,7 +75,7 @@ def _list_issues(crbug_service_account):
   return issues
 
 
-def query(crbug_service_account):
+def query(crbug_service_account, use_monorail):
   """Queries issue tracker for issues with whitelisted labels.
 
   Raises QuotaExceededError if requests result in quota errors. Callers should
@@ -135,7 +138,7 @@ def query(crbug_service_account):
   for tree_name in whitelisted_trees:
     sheriff_issues[tree_name] = []
 
-  raw_issues = _list_issues(crbug_service_account)
+  raw_issues = _list_issues(crbug_service_account, use_monorail)
   for raw_issue in raw_issues:
     sheriff_issue = {'key': 'crbug_issue_id:%d' % raw_issue['id'],
                      'title': raw_issue['title'],

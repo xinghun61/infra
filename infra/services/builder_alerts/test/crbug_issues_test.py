@@ -99,7 +99,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
       patcher.stop()
 
   def test_correctly_sorts_issues_by_tree(self):
-    issues_by_tree = crbug_issues.query('test-account.json')
+    issues_by_tree = crbug_issues.query('test-account.json', False)
     self.assertEqual(sorted(issues_by_tree.keys()),
                      ['chromium', 'foobar', 'trooper'])
     self.assertEqual(len(issues_by_tree['chromium']), 1)
@@ -107,7 +107,7 @@ class CrbugIssuesQueryTest(unittest.TestCase):
     self.assertEqual(len(issues_by_tree['foobar']), 0)
 
   def test_retrieves_basic_issue_basic_properties(self):
-    issues_by_tree = crbug_issues.query('test-account.json')
+    issues_by_tree = crbug_issues.query('test-account.json', False)
     issue = issues_by_tree['chromium'][0]
     self.assertEqual(issue.get('key'), 'crbug_issue_id:123456')
     self.assertEqual(issue.get('title'), 'TestTitle')
@@ -130,19 +130,19 @@ class CrbugIssuesQueryTest(unittest.TestCase):
     old_datetime = datetime.datetime
     datetime.datetime = MockDateTime
 
-    issues_by_tree = crbug_issues.query('test-account.json')
+    issues_by_tree = crbug_issues.query('test-account.json', False)
     issue = issues_by_tree['chromium'][0]
     self.assertEqual(issue.get('time'), '2015-10-02T22:00:00Z')
 
     datetime.datetime = old_datetime
 
   def test_parses_tags_correctly(self):
-    issues_by_tree = crbug_issues.query('test-account.json')
+    issues_by_tree = crbug_issues.query('test-account.json', False)
     issue = issues_by_tree['trooper'][0]
     self.assertEqual(issue.get('tags'), ['trooper'])
 
   def test_correct_severity_for_issues_with_no_priority(self):
-    issues_by_tree = crbug_issues.query('test-account.json')
+    issues_by_tree = crbug_issues.query('test-account.json', False)
     issue = issues_by_tree['trooper'][0]
     self.assertIsNone(issue.get('severity'))
 
@@ -155,7 +155,7 @@ class CrbugIssuesListTest(unittest.TestCase):
 
     self._patchers = [
         mock.patch.object(crbug_issues, '_build_crbug_service',
-                          lambda _: crbug_service_mock),
+                          lambda _csa, _um: crbug_service_mock),
         # Tests below expect only a single sequence of calls to issue tracker
         # API iterating over all issues, so we mock whitelisted labels to only
         # contain a single entry.
@@ -176,7 +176,7 @@ class CrbugIssuesListTest(unittest.TestCase):
         {'items': [{'id': 4}]},
     ]
 
-    issues = crbug_issues._list_issues('test-account.json')
+    issues = crbug_issues._list_issues('test-account.json', False)
     self.assertEqual(len(issues), 3)
 
   def test_correctly_stops_on_empty_results(self):
@@ -186,7 +186,7 @@ class CrbugIssuesListTest(unittest.TestCase):
         {'items': [{'id': 4}]},
     ]
 
-    issues = crbug_issues._list_issues('test-account.json')
+    issues = crbug_issues._list_issues('test-account.json', False)
     self.assertEqual(len(issues), 3)
 
   def test_correctly_deduplicates_results(self):
@@ -196,6 +196,6 @@ class CrbugIssuesListTest(unittest.TestCase):
         {},
     ]
 
-    issues = crbug_issues._list_issues('test-account.json')
+    issues = crbug_issues._list_issues('test-account.json', False)
     self.assertEqual(len(issues), 4)
     self.assertEqual([1, 2, 3, 4], [issue['id'] for issue in issues])

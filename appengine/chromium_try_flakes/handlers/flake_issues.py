@@ -139,7 +139,7 @@ class ProcessIssue(webapp2.RequestHandler):
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
-    api = issue_tracker_api.IssueTrackerAPI('chromium')
+    api = issue_tracker_api.IssueTrackerAPI('chromium', use_monorail=False)
 
     # Check if we should stop processing this issue because we've posted too
     # many updates to issue tracker today already.

@@ -314,7 +314,8 @@ def inner_loop(args):
         datetime.datetime.utcnow() - issue_tracker_last_poll).total_seconds()
     if seconds_since_last_poll > ISSUE_TRACKER_POLLING_FREQUENCY_SEC:
       issue_tracker_last_poll = datetime.datetime.utcnow()
-      issues_per_tree = crbug_issues.query(args.crbug_service_account)
+      issues_per_tree = crbug_issues.query(args.crbug_service_account,
+                                           args.use_monorail)
       for tree, issues in issues_per_tree.iteritems():
         json_data = {'alerts': issues}
         gzipped_data = gzipped(json.dumps(json_data))
@@ -367,6 +368,9 @@ def main(args):
   parser.add_argument('--crbug-service-account',
                       help='Path to a service account JSON file to be used to '
                            'search for relevant issues on crbug.com.')
+  parser.add_argument('--use-monorail', default=False, action='store_true',
+                      help='When specified, Monorail API is used to search for '
+                           'issues on crbug')
   parser.add_argument('--api-endpoint-prefix',
                       help='Endpoint prefix for posting alerts. Old API '
                            'endpoint will be formed by adding value specified '

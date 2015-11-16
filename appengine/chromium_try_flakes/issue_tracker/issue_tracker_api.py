@@ -56,11 +56,14 @@ class IssueTrackerAPI(object):  # pragma: no cover
   CAN_ALL = 'all'
 
   """A wrapper around the issue tracker api."""
-  def __init__(self, project_name):
+  def __init__(self, project_name, use_monorail):
     self.project_name = project_name
+    self.use_monorail = use_monorail
     discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
                      '{apiVersion}/rest')
-    self.client = _buildClient('projecthosting', 'v2',
+    api_name = 'monorail' if use_monorail else 'projecthosting'
+    api_version = 'v1' if use_monorail else 'v2'
+    self.client = _buildClient(api_name, api_version,
                                _createHttpObject(PROJECT_HOSTING_SCOPE),
                                discovery_url)
 
@@ -109,7 +112,10 @@ class IssueTrackerAPI(object):  # pragma: no cover
     if 'owner' in issue.changed:
       # workaround for existing bug:
       # https://code.google.com/a/google.com/p/codesite/issues/detail?id=115
-      updates['owner'] = issue.owner if issue.owner else '----'
+      if self.use_monorail:
+        updates['owner'] = issue.owner
+      else:
+        updates['owner'] = issue.owner if issue.owner else '----'
     if 'blocked_on' in issue.changed:
       updates['blockedOn'] = issue.blocked_on
     if issue.labels.isChanged():

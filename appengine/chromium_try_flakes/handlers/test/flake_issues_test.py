@@ -60,7 +60,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.mock_api = MockIssueTrackerAPI()
     self.patchers = [
         mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
-                   lambda _: self.mock_api),
+                   lambda *args, **kwargs: self.mock_api),
         mock.patch('issue_tracker.issue.Issue', MockIssue),
     ]
     for patcher in self.patchers:
