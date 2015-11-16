@@ -3367,7 +3367,7 @@ def publish(request):
   issue.reviewers = reviewers
   issue.required_reviewers = required_reviewers
   issue.cc = cc
-  if form.cleaned_data['commit'] and not issue.closed:
+  if form.cleaned_data['commit'] and not issue.closed and issue.is_cq_available:
     issue.commit = True
     commit_checked_msg = 'The CQ bit was checked by %s' % (
         request.user.email().lower())
