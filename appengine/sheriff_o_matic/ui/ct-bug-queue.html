@@ -16,7 +16,7 @@ found in the LICENSE file.
       }
     </style>
     <template if="{{ bugQueue.alerts[tree] && bugQueue.alerts[tree].alerts.length != 0 }}" >
-      <h3>Bug queue:</h3>
+      <h3>Bug queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues">what to do with this?</a>):</h3>
       <!-- TODO(majidvp): Display a snooze button for alerts. http://crbug.com/542673 -->
       <ct-alerts tree="{{ tree }}" alerts="{{ bugQueue.alerts }}"></ct-alerts>
     </template>
