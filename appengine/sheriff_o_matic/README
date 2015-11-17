@@ -10,10 +10,14 @@ The version of npm in apt-get is too old for bower.
     $ ./configure --prefix=~/local
     $ make install -j
     # Install NPM
-    $ curl https://www.npmjs.org/install.sh | sh
+    $ curl https://www.npmjs.com/install.sh | sh
 
 Eventually, we will ship hermetic copies of these binaries along with this repo.
 Bower is automatically installed by the makefile.
+
+If you have node installed on system-level (/usr/bin/node) it may be used even
+despite the PATH environment varible. In this case, you may try removing it:
+    $ sudo apt-get remove nodejs
 
 # SYNCING DEPENDENCIES
 
