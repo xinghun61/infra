@@ -9,9 +9,9 @@ import re
 import requests
 
 
-def is_canary(slave_name):
+def is_staging(slave_name):
   return (
-      slave_name.startswith('swarm-canary-') or
+      slave_name.startswith('swarm-staging-') or
       re.match(r'^swarm[0-9]-c4$', slave_name))
 
 
@@ -22,10 +22,9 @@ def start(slave_name, root_dir):
     pass
 
   url = 'https://chromium-swarm.appspot.com'
-  if is_canary(slave_name):
+  if is_staging(slave_name):
     url = 'https://chromium-swarm-dev.appspot.com'
 
   exec requests.get('%s/bootstrap' % url).text
 
   return 0
-
