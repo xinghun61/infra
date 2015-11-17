@@ -300,26 +300,28 @@ def get_build_event(event_type,
   # 0 is a valid value for build_number
   if build_number is not None:
     event.build_event.build_number = build_number
+
+  # 0 is not a valid scheduling time
+  if build_scheduling_time:
+    event.build_event.build_scheduling_time_ms = build_scheduling_time
+
   if event.build_event.HasField('build_number'):
     if event_type == 'SCHEDULER':
       logging.error('build_number should not be provided for a "SCHEDULER"'
                     ' type, got %s (drop or use BUILD or STEP type)',
                     build_number)
 
-    if not build_scheduling_time:
+    if not event.build_event.HasField('build_scheduling_time_ms'):
       logging.error('build_number has been provided (%s), '
                     'build_scheduling_time was not. '
-                    'Provide either both or none.', build_number)
-
-  # 0 is not a valid scheduling time
-  if build_scheduling_time:
-    event.build_event.build_scheduling_time_ms = build_scheduling_time
-  if (event.build_event.HasField('build_scheduling_time_ms') and
-      not event.build_event.HasField('build_number')):
-    logging.error('build_number has not been provided, '
-                  'build_scheduling_time was provided (%s). '
-                  'Both must be present or missing.',
-                  build_scheduling_time)
+                    'Provide either both or none.',
+                    event.build_event.build_number)
+  else: # no 'build_number' field
+    if event.build_event.HasField('build_scheduling_time_ms'):
+      logging.error('build_number has not been provided, '
+                    'build_scheduling_time was provided (%s). '
+                    'Both must be present or missing.',
+                    event.build_event.build_scheduling_time_ms)
 
   if step_name:
     event.build_event.step_name = step_name
