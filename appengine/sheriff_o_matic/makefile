@@ -16,12 +16,8 @@ deploy-staging: vulcanize
 	../../../google_appengine/appcfg.py update_dispatch -A sheriff-o-matic-staging .
 	../../../google_appengine/appcfg.py update -A sheriff-o-matic-staging . --version `git rev-parse --short HEAD`
 
-deploy-staging-monitoring:
-	../../../google_appengine/appcfg.py update -A sheriff-o-matic-staging appengine_module/gae_ts_mon/monitoring.yaml --version `git rev-parse --short HEAD`
-
 deploy-prod: vulcanize
 	../../../google_appengine/appcfg.py update . --version `git rev-parse --short HEAD`
 	../../../google_appengine/appcfg.py update_dispatch -A sheriff-o-matic .
-	../../../google_appengine/appcfg.py update -A sheriff-o-matic appengine_module/gae_ts_mon/monitoring.yaml --version `git rev-parse --short HEAD`
 
 .PHONY: test single-test
