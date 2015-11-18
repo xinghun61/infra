@@ -8,6 +8,7 @@ import distutils.util
 import json
 import logging
 import os
+import pytz
 import re
 import shutil
 import subprocess
@@ -36,6 +37,9 @@ def add_argparse_options(parser):
       '-m', '--minutes-in-future', default=15, type=int,
       help='how many minutes in the future to schedule the restart. '
            'use 0 for "now." default %(default)d')
+  parser.add_argument(
+      '--eod', action='store_true',
+      help='schedules restart for 6:30PM Google Standard Time.')
   parser.add_argument('-b', '--bug', default=None, type=str,
                       help='Bug containing master restart request.')
   parser.add_argument('-r', '--reviewer', action='append', type=str,
@@ -50,10 +54,17 @@ def add_argparse_options(parser):
       help='update the file, but refrain from performing the actual commit')
 
 
-def get_restart_time(delta):
-  """Returns a zulu time string of when to restart a master, now + delta."""
-  restart_time = datetime.datetime.utcnow() + delta
-  return zulu.to_zulu_string(restart_time)
+def get_restart_time_eod():
+  gst_now = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
+  if gst_now.hour > 18 and gst_now.minute > 30:
+    # next 6:30PM is tomorrow
+    gst_now += datetime.timedelta(days=1)
+  gst_now = gst_now.replace(hour=16, minute=30, second=0, microsecond=0)
+  return gst_now.astimezone(pytz.UTC).replace(tzinfo=None)
+
+
+def get_restart_time_delta(mins):
+  return datetime.datetime.utcnow() + datetime.timedelta(minutes=mins)
 
 
 @contextlib.contextmanager
@@ -68,7 +79,8 @@ def get_master_state_checkout():
     shutil.rmtree(target_dir)
 
 
-def commit(target, masters, reviewers, bug, timestring, delta, force):
+def commit(
+    target, masters, reviewers, bug, restart_time, restart_time_str, force):
   """Commits the local CL via the CQ."""
   desc = 'Restarting master(s) %s\n' % ', '.join(masters)
   if bug:
@@ -78,9 +90,11 @@ def commit(target, masters, reviewers, bug, timestring, delta, force):
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
 
+  delta = restart_time - datetime.datetime.utcnow()
+
   print
   print 'Restarting the following masters in %d minutes (%s)' % (
-      delta.total_seconds() / 60, timestring)
+      delta.total_seconds() / 60, restart_time_str)
   for master in sorted(masters):
     print '  %s' % master
   print
@@ -111,17 +125,24 @@ def commit(target, masters, reviewers, bug, timestring, delta, force):
   subprocess.check_call(upload_cmd, cwd=target)
 
 
-def run(masters, delta, reviewers, bug, force, no_commit):
+def run(masters, restart_time, reviewers, bug, force, no_commit):
   """Restart all the masters in the list of masters.
 
-    Schedules the restart for now + delta.
+  Schedules the restart for restart_time.
+
+  Args:
+    masters - a list(str) of masters to restart
+    restart_time - a datetime in UTC of when to restart them
+    reviewers - a list(str) of reviewers for the CL (may be empty)
+    bug - an integer bug number to include in the review or None
+    force - a bool which causes commit not to prompt if true
+    no_commit - aborts before running the commit process
   """
   # Step 1: Acquire a clean master state checkout.
   # This repo is too small to consider caching.
   with get_master_state_checkout() as master_state_dir:
     master_state_json = os.path.join(
         master_state_dir, 'desired_master_state.json')
-    restart_time = get_restart_time(delta)
 
     # Step 2: make modifications to the master state json.
     LOGGER.info('Reading %s' % master_state_json)
@@ -138,6 +159,7 @@ def run(masters, delta, reviewers, bug, force, no_commit):
 
     master_states = desired_master_state.get('master_states', {})
     entries = 0
+    restart_time_str = zulu.to_zulu_string(restart_time)
     for master in masters:
       if not master.startswith('master.'):
         master = 'master.%s' % master
@@ -147,7 +169,8 @@ def run(masters, delta, reviewers, bug, force, no_commit):
         raise MasterNotFoundException(msg)
 
       master_states.setdefault(master, []).append({
-          'desired_state': 'running', 'transition_time_utc': restart_time
+          'desired_state': 'running',
+          'transition_time_utc': restart_time_str,
       })
       entries += 1
 
@@ -163,5 +186,5 @@ def run(masters, delta, reviewers, bug, force, no_commit):
       return 0
 
     LOGGER.info('Committing back into repository')
-    commit(
-        master_state_dir, masters, reviewers, bug, restart_time, delta, force)
+    commit(master_state_dir, masters, reviewers, bug, restart_time,
+           restart_time_str, force)

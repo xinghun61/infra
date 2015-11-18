@@ -9,7 +9,6 @@ import argparse
 import datetime
 import sys
 
-
 import infra_libs.logs
 
 
@@ -25,13 +24,21 @@ def main(argv):
   args = parser.parse_args(argv)
   infra_libs.logs.process_argparse_options(args)
 
-  if args.minutes_in_future < 0:
-    parser.error('minutes-in-future must be nonnegative, use 0 for "now"')
+  if args.minutes_in_future < 0 and not args.eod:
+    parser.error('minutes-in-future must be nonnegative, use 0 for "now", '
+                 'or --eod')
 
-  delta = datetime.timedelta(minutes=args.minutes_in_future)
+  # 15 minutes is the default, so don't get hung up on that.
+  if (args.minutes_in_future > 0 and args.minutes_in_future != 15) and args.eod:
+    parser.error('minutes-in-future is mutually exclusive with --eod')
 
-  return restart.run(args.masters, delta, args.reviewer, args.bug, args.force,
-                     args.no_commit)
+  if args.eod:
+    restart_time = restart.get_restart_time_eod()
+  else:
+    restart_time = restart.get_restart_time_delta(args.minutes_in_future)
+
+  return restart.run(args.masters, restart_time,
+                     args.reviewer, args.bug, args.force, args.no_commit)
 
 
 if __name__ == '__main__':
