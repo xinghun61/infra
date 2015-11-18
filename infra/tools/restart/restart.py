@@ -56,10 +56,10 @@ def add_argparse_options(parser):
 
 def get_restart_time_eod():
   gst_now = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
-  if gst_now.hour > 18 and gst_now.minute > 30:
+  if gst_now.hour > 18 or (gst_now.hour == 18 and gst_now.minute > 30):
     # next 6:30PM is tomorrow
     gst_now += datetime.timedelta(days=1)
-  gst_now = gst_now.replace(hour=16, minute=30, second=0, microsecond=0)
+  gst_now = gst_now.replace(hour=18, minute=30, second=0, microsecond=0)
   return gst_now.astimezone(pytz.UTC).replace(tzinfo=None)
 
 
