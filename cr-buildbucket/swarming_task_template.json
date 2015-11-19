@@ -1,0 +1,16 @@
+{
+  "name": "buildbucket-$bucket-$builder",
+  "properties":
+  {
+    "inputs_ref":
+    {
+      "isolatedserver": "https://isolateserver.appspot.com",
+      "isolated": "0eb18f00752452d375ee1267aebf78b5ca0445b3",
+      "namespace": "default-gzip"
+    },
+    "extra_args": ["hello", "recipe", "$recipe"],
+    "execution_timeout_secs": "3600"
+  },
+  "expiration_secs": "3600",
+  "priority": "100"
+}
