@@ -6,11 +6,12 @@ from collections import defaultdict
 import datetime
 import json
 
-import httplib2
-
 from apiclient import discovery
 from apiclient.errors import HttpError
+import httplib2
 from oauth2client import client
+
+from infra_libs import ts_mon
 
 
 PROJECT_HOSTING_SCOPE = 'https://www.googleapis.com/auth/projecthosting'
@@ -22,6 +23,10 @@ WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
                       'sheriff-blink': 'blink',
                       'infra-troopers': 'trooper'}
 BATCH_SIZE = 10
+
+
+issue_tracker_calls = (
+    ts_mon.CounterMetric('flaky_issues_pipeline/issue_tracker_calls'))
 
 
 def _build_crbug_service(crbug_service_account,
@@ -49,6 +54,10 @@ def _list_issues(crbug_service_account, use_monorail):
       request = service.issues().list(
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
+      issue_tracker_calls.increment({
+        'project': 'chromium', 'label': whitelisted_label,
+        'source': 'builder_alerts',
+        'tracker': 'monorail' if use_monorail else 'codesite'})
       response = request.execute(num_retries=5)
   
       # Issue Tracker may omit certain issues occasionally, so counting whether
