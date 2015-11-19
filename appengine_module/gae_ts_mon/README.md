@@ -36,7 +36,11 @@
     project in the cloud console - it'll look something like
     `app-id@appspot.gserviceaccount.com`.  Add it as a "Publisher" of the
     "monacq" PubSub topic in the
-    [chrome-infra-mon-pubsub project](https://pantheon.corp.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList).
+    [chrome-infra-mon-pubsub project](https://pantheon.corp.google.com/project/chrome-infra-mon-pubsub/cloudpubsub/topicList)
+    by selecting it from the list and clicking "Permissions". If you see an
+    error "You do not have viewing permissions for the selected resource.", then
+    please ask pgervais@chromium.org (AMER) or sergiyb@chromium.org (EMEA) to do
+    it for you.
 
 1.  You also need to enable the Google Cloud Pub/Sub API for your project if
     it's not enabled already.

@@ -6,6 +6,7 @@ import time
 
 from apiclient import discovery
 from apiclient.errors import HttpError
+from infra_libs import ts_mon
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
 from oauth2client.appengine import AppAssertionCredentials
@@ -55,6 +56,10 @@ def _buildClient(api_name, api_version, http,
 class IssueTrackerAPI(object):  # pragma: no cover
   CAN_ALL = 'all'
 
+  issue_tracker_calls = ts_mon.CounterMetric(
+      'flaky_issues_pipeline/issue_tracker_calls', 
+      description='Number of calls to the issue tracker API')
+
   """A wrapper around the issue tracker api."""
   def __init__(self, project_name, use_monorail):
     self.project_name = project_name
@@ -71,7 +76,11 @@ class IssueTrackerAPI(object):  # pragma: no cover
     retries = 0
     while True:
       try:
-        return request.execute()
+        result = request.execute()
+        self.issue_tracker_calls.increment({
+          'project': self.project_name, 'source': 'chromium-try-flakes',
+          'tracker': 'monorail' if self.use_monorail else 'codesite'})
+        return result
       except HttpError as e:
         # This retries internal server (500, 503) and quota (403) errors.
         if retries == num_retries or e.resp.status not in [403, 500, 503]:

@@ -22,3 +22,7 @@ cron:
 - description: File/update issues for flaky tests/steps on issue tracker.
   url: /cron/update_issue_tracker
   schedule: every 30 minutes
+
+- description: Send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes

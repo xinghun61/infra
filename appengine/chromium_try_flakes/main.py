@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import gae_ts_mon
 import os
 import sys
 import webapp2
@@ -32,3 +33,4 @@ handlers = [
 ]
 
 app = webapp2.WSGIApplication(handlers, debug=True)
+gae_ts_mon.initialize(app)
