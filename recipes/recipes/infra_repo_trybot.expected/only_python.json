@@ -107,6 +107,17 @@
     "name": "python tests"
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
+      "python",
+      "[SLAVE_BUILD]/infra/go/test.py"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go tests"
+  },
+  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0

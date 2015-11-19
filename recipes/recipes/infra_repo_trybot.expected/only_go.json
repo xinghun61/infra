@@ -100,6 +100,16 @@
     "cmd": [
       "python",
       "-u",
+      "test.py",
+      "test"
+    ],
+    "cwd": "[SLAVE_BUILD]/infra",
+    "name": "python tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[SLAVE_BUILD]/infra/go/env.py",
       "python",
       "[SLAVE_BUILD]/infra/go/test.py"

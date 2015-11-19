@@ -43,8 +43,7 @@ def RunSteps(api):
     # Rietveld tests.
     deps_mod = 'DEPS' in files
 
-    if deps_mod or any(f.endswith('.py') for f in files):
-      api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
+    api.python('python tests', 'test.py', ['test'], cwd=api.path['checkout'])
 
     if any(f.startswith('infra/glyco/') for f in files):
       api.python(
@@ -52,11 +51,10 @@ def RunSteps(api):
         api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
         [], cwd=api.path['checkout'])
 
-    if deps_mod or any(f.endswith('.go') for f in files):
-      # Note: env.py knows how to expand 'python' into sys.executable.
-      api.python(
-          'go tests', api.path['checkout'].join('go', 'env.py'),
-          ['python', api.path['checkout'].join('go', 'test.py')])
+    # Note: env.py knows how to expand 'python' into sys.executable.
+    api.python(
+        'go tests', api.path['checkout'].join('go', 'env.py'),
+        ['python', api.path['checkout'].join('go', 'test.py')])
 
     if api.platform.is_linux and (
         deps_mod or any(f.endswith('.js') for f in files)):

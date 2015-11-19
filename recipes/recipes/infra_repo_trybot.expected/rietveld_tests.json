@@ -108,6 +108,17 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "[SLAVE_BUILD]/infra/go/env.py",
+      "python",
+      "[SLAVE_BUILD]/infra/go/test.py"
+    ],
+    "cwd": "[SLAVE_BUILD]",
+    "name": "go tests"
+  },
+  {
+    "cmd": [
       "make",
       "-C",
       "appengine/chromium_rietveld",
