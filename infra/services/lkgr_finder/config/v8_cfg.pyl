@@ -3,7 +3,7 @@
   'source_vcs': 'git',
   'source_url': 'https://chromium.googlesource.com/v8/v8',
   'status_url': 'https://v8-status.appspot.com',
-  'error_recipients': 'machenbach@google.com',
+  'error_recipients': 'machenbach@google.com,hablich@google.com',
   'monkeypatch_rev_map': {
     '7b9ea585802485b842a8bbbc941e53543963dde2': (24865, 'refs/heads/master'),
     '4c0decf17e75806f956a253e786af6606659231e': (24866, 'refs/heads/master'),
