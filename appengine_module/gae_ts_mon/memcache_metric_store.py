@@ -10,10 +10,19 @@ import operator
 import threading
 
 from google.appengine.api import memcache
+from google.appengine.api import modules
 from google.appengine.ext import ndb
 
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
+from infra_libs.ts_mon.common import metrics
+
+
+# Note: this metric is not registered in the index, since it's handled in
+# a special way.
+appengine_default_version = metrics.StringMetric(
+    'appengine/default_version',
+    description='Name of the version currently marked as default.')
 
 
 class MetricIndexEntry(ndb.Model):
@@ -29,8 +38,12 @@ class MemcacheMetricStore(metric_store.MetricStore):
   CAS_RETRIES = 10
   BASE_NAMESPACE = 'ts_mon_py'
 
-  def __init__(self, state, time_fn=None):
+  METRICS_EXCLUDED_FROM_INDEX = (appengine_default_version,)
+
+  def __init__(self, state, time_fn=None, report_module_versions=False):
     super(MemcacheMetricStore, self).__init__(state, time_fn=time_fn)
+
+    self.report_module_versions = report_module_versions
 
     self._thread_local = threading.local()
     self.update_metric_index()
@@ -61,7 +74,8 @@ class MemcacheMetricStore(metric_store.MetricStore):
             name=name,
             job_name=self._state.target.job_name,
             metric=metric)
-        for name, metric in self._state.metrics.iteritems()]
+        for name, metric in self._state.metrics.iteritems()
+        if metric not in self.METRICS_EXCLUDED_FROM_INDEX]
     ndb.put_multi(entities)
 
   def get(self, name, fields, default=None):
@@ -74,6 +88,19 @@ class MemcacheMetricStore(metric_store.MetricStore):
     return targets_values.get(self._target_key(), {}).get(fields, default)
 
   def get_all(self):
+    if self.report_module_versions:
+      for module_name in modules.get_modules():
+        # 'hostname' is usually set to module version name, but default version
+        # name is a global thing, not associated with any version.
+        target = copy.copy(self._state.target)
+        target.hostname = ''
+        target.job_name = module_name
+        fields_values = {
+            appengine_default_version._normalize_fields(None):
+                modules.get_default_version(module_name),
+        }
+        yield (target, appengine_default_version, 0, fields_values)
+
     client = self._client()
     target = copy.copy(self._state.target)
 
@@ -115,6 +142,9 @@ class MemcacheMetricStore(metric_store.MetricStore):
           self.CAS_RETRIES, name, namespace)
 
   def _compare_and_set_metric(self, name, fields, modify_value_fn, delta):
+    if any(name == m.name for m in self.METRICS_EXCLUDED_FROM_INDEX):
+      raise errors.MonitoringError('Metric %s is magical, can\'t set it' % name)
+
     def modify_fn(entry):
       if entry is None:
         entry = (self._start_time(name), {})

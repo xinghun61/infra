@@ -62,7 +62,7 @@ def initialize(app=None, is_local_unittest=None):
     interface.state.store = metric_store.InProcessMetricStore(interface.state)
   else:
     interface.state.store = memcache_metric_store.MemcacheMetricStore(
-        interface.state)
+        interface.state, report_module_versions=not is_local_unittest)
 
   # Don't send metrics when running on the dev appserver.
   if (is_local_unittest or

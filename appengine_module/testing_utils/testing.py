@@ -52,6 +52,7 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
     self.testbed.init_logservice_stub()
     self.testbed.init_mail_stub()
     self.testbed.init_memcache_stub()
+    self.testbed.init_modules_stub()
     self.testbed.init_search_stub()
     self.testbed.init_taskqueue_stub(root_path=self.taskqueue_stub_root_path)
     self.testbed.init_urlfetch_stub()
