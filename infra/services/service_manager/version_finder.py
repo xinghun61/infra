@@ -29,10 +29,7 @@ def find_version(service_config):
 
 
 def _cipd_version_file_finder(service_config):
-  """Load the new CIPD VERSION.json file.
-
-  This isn't used anywhere yet, but will be in the future.
-  """
+  """Load the CIPD VERSION.json file."""
 
   filename = os.path.join(service_config['root_directory'], 'CIPD_VERSION.json')
   if not os.path.isfile(filename):
