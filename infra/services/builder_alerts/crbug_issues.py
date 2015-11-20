@@ -25,11 +25,6 @@ WHITELISTED_LABELS = {'sheriff-chromium': 'chromium',
 BATCH_SIZE = 10
 
 
-issue_tracker_calls = ts_mon.CounterMetric(
-    'flaky_issues_pipeline/issue_tracker_calls', 
-    description='Number of calls to the issue tracker API')
-
-
 def _build_crbug_service(crbug_service_account,
                          use_monorail):  # pragma: no cover
   with open(crbug_service_account) as crbug_sa_file:
@@ -55,9 +50,6 @@ def _list_issues(crbug_service_account, use_monorail):
       request = service.issues().list(
           projectId='chromium', label=whitelisted_label,
           startIndex=start_index, maxResults=BATCH_SIZE, can='open')
-      issue_tracker_calls.increment({
-        'project': 'chromium', 'source': 'builder_alerts',
-        'tracker': 'monorail' if use_monorail else 'codesite'})
       response = request.execute(num_retries=5)
   
       # Issue Tracker may omit certain issues occasionally, so counting whether

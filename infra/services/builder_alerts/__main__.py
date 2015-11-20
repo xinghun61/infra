@@ -19,7 +19,6 @@ import requests
 import requests_cache
 
 from infra_libs import logs
-from infra_libs import ts_mon
 from infra.libs.service_utils import outer_loop
 
 from infra.services.builder_alerts import alert_builder
@@ -355,7 +354,6 @@ def main(args):
   parser.add_argument('--jobs', default=CONCURRENT_TASKS, action='store',
                       type=int)
   logs.add_argparse_options(parser)
-  ts_mon.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
 
   gatekeeper_json = os.path.join(build_scripts_dir, 'slave', 'gatekeeper.json')
@@ -385,7 +383,6 @@ def main(args):
 
   args = parser.parse_args(args)
   logs.process_argparse_options(args)
-  ts_mon.process_argparse_options(args)
   loop_args = outer_loop.process_argparse_options(args)
 
   # TODO(sergiyb): Remove support for data_url when builder_alerts recipes are
