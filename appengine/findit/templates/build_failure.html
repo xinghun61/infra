@@ -246,9 +246,9 @@
       thisobj.html('<img class="toggle-img" src="https://www.gstatic.com/images/icons/material/system/1x/keyboard_arrow_' + imgDirection + '_black_24dp.png">');
       var stepRowId = thisobj.closest("tr").attr("id");
       var testRowId = stepRowId + "-" + "0";
-      var clRowId = testRowId + "-" + "0";
       var i = 0;
       while ($("#" + testRowId + "-" + "0").length){
+        var clRowId = testRowId + "-" + "0";
         var j = 0;
         while ($("#" + clRowId).length){
           $( "#" + clRowId ).addClass(rowAddedClass).removeClass(rowRemovedClass);
