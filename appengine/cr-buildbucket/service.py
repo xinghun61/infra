@@ -608,10 +608,12 @@ class BuildBucketService(object):
       if build.result == model.BuildResult.CANCELED:
         return build
       raise errors.BuildIsCompletedError('Cannot cancel a completed build')
+    now = utils.utcnow()
     build.status = model.BuildStatus.COMPLETED
-    build.status_changed_time = utils.utcnow()
+    build.status_changed_time = now
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+    build.complete_time = now
     self._clear_lease(build)
     build.put()
     logging.info(

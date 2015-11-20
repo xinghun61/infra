@@ -129,6 +129,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build = self.service.cancel(self.test_build.key.id())
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.status_changed_time, utils.utcnow())
+    self.assertEqual(build.complete_time, utils.utcnow())
     self.assertEqual(build.result, model.BuildResult.CANCELED)
     self.assertEqual(
         build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY)
