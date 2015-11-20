@@ -38,7 +38,7 @@ def initialize(app=None, is_local_unittest=None):
   if interface.state.global_monitor is not None:
     # Even if ts_mon was already initialized in this instance we should update
     # the metric index in case any new metrics have been registered.
-    if isinstance(interface.state.store,
+    if isinstance(interface.state.store,  # pragma: no cover
                   memcache_metric_store.MemcacheMetricStore):
       interface.state.store.update_metric_index()
     return
@@ -96,11 +96,17 @@ def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
   finally:
     elapsed_ms = int((time_fn() - start_time) * 1000)
 
-    fields = {'status': response_status, 'name': ''}
+    fields = {'status': response_status, 'name': '', 'is_robot': False}
     if request.route is not None:
       # Use the route template regex, not the request path, to prevent an
       # explosion in possible field values.
       fields['name'] = request.route.template
+    if request.user_agent is not None:
+      # We shouldn't log user agents, but we can store whether or not the
+      # user agent string indicates that the requester was a Google bot.
+      fields['is_robot'] = (
+          'GoogleBot' in request.user_agent or
+          'GoogleSecurityScanner' in request.user_agent)
 
     http_metrics.server_durations.add(elapsed_ms, fields=fields)
     http_metrics.server_response_status.increment(fields=fields)

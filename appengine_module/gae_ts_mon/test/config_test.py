@@ -76,7 +76,7 @@ class InitializeTest(testing.AppengineTestCase):
     app.get_response('/')
 
     self.assertEqual(1, http_metrics.server_response_status.get({
-        'name': '^/$', 'status': 200}))
+        'name': '^/$', 'status': 200, 'is_robot': False}))
 
   def test_instruments_app_only_once(self):
     class Handler(webapp2.RequestHandler):
@@ -90,7 +90,7 @@ class InitializeTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 200}
+    fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
 
@@ -118,7 +118,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 200}
+    fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertEqual(3000, http_metrics.server_durations.get(fields).sum)
     self.assertEqual(
@@ -134,7 +134,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 417}
+    fields = {'name': '^/$', 'status': 417, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_set_status(self):
@@ -147,7 +147,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 418}
+    fields = {'name': '^/$', 'status': 418, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_exception(self):
@@ -160,7 +160,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 500}
+    fields = {'name': '^/$', 'status': 500, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_http_exception(self):
@@ -173,7 +173,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 417}
+    fields = {'name': '^/$', 'status': 417, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_return_response(self):
@@ -188,7 +188,22 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 418}
+    fields = {'name': '^/$', 'status': 418, 'is_robot': False}
+    self.assertEqual(1, http_metrics.server_response_status.get(fields))
+
+  def test_robot(self):
+    class Handler(webapp2.RequestHandler):
+      def get(self):
+        ret = webapp2.Response()
+        ret.set_status(200)
+        return ret
+
+    app = webapp2.WSGIApplication([('/', Handler)])
+    config.instrument_wsgi_application(app)
+
+    app.get_response('/', user_agent='GoogleBot')
+
+    fields = {'name': '^/$', 'status': 200, 'is_robot': True}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_missing_response_content_length(self):
@@ -201,7 +216,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/')
 
-    fields = {'name': '^/$', 'status': 200}
+    fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertIsNone(http_metrics.server_response_bytes.get(fields))
 
@@ -211,7 +226,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/notfound')
 
-    fields = {'name': '', 'status': 404}
+    fields = {'name': '', 'status': 404, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_post(self):
@@ -224,7 +239,7 @@ class InstrumentTest(testing.AppengineTestCase):
 
     app.get_response('/', POST='foo')
 
-    fields = {'name': '^/$', 'status': 200}
+    fields = {'name': '^/$', 'status': 200, 'is_robot': False}
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
     self.assertEqual(
         len('foo'), http_metrics.server_request_bytes.get(fields).sum)
