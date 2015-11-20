@@ -173,9 +173,11 @@ class FilePollerTest(unittest.TestCase):
   @mock.patch('infra_libs.ts_mon.CumulativeDistributionMetric.add')
   def test_file_has_data(self, fake_add, fake_increment):
     result1 = {'builder': 'b1', 'slave': 's1',
-               'result': 'r1', 'project_id': 'chromium'}
+               'result': 'r1', 'project_id': 'chromium',
+               'subproject_tag': 'unknown'}
     result2 = {'builder': 'b1', 'slave': 's1',
-               'result': 'r1', 'project_id': 'unknown'}
+               'result': 'r1', 'project_id': 'unknown',
+               'subproject_tag': 'unknown'}
     # Check that we've listed all the required metric fields.
     self.assertEqual(set(result1), set(pollers.FilePoller.field_keys))
     self.assertEqual(set(result2), set(pollers.FilePoller.field_keys))

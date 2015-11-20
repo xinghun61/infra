@@ -127,7 +127,7 @@ class FilePoller(Poller):
   it was rotated or deleted.
   """
   endpoint = 'FILE'
-  field_keys = ('builder', 'slave', 'result', 'project_id')
+  field_keys = ('builder', 'slave', 'result', 'project_id', 'subproject_tag')
   result_count = ts_mon.CounterMetric('buildbot/master/builders/results/count')
   # A custom bucketer with 12% resolution in the range of 1..10**5,
   # better suited for build cycle times.
