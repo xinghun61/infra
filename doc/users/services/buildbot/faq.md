@@ -28,7 +28,9 @@
    where `master-class-name` is
    a name of the class in the generated `master_site_config.py`.
    It will search for available master port numbers.
-   Put them to `builders.pyl` and regenerate the configuration.
+   If you are creating an internal master, you'll need to run
+   `build_internal/scripts/tools/mastermap_internal.py` instead.
+   Put the chosen ports into `builders.pyl` and regenerate the configuration.
 1. Add your new master to the list of masters in [masters_test.py]:
    `'<master-name>': '<master-class-name>',`,
    so the master is included in presubmit checks.
