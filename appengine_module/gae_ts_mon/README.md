@@ -3,7 +3,7 @@
 1.  Symlink this directory into your appengine app.
 
         cd infra/appengine/myapp
-        ln -s ../../appengine_modules/gae_ts_mon .
+        ln -s ../../appengine_module/gae_ts_mon .
 
 1.  Add the scheduled task to your `cron.yaml` file.  Create it if you don't
     have one already.
