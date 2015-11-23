@@ -15,8 +15,8 @@ from pipeline_wrapper import BasePipeline
 from pipeline_wrapper import pipeline
 from waterfall import buildbot
 from waterfall import extractors
-from waterfall.failure_signal import FailureSignal
 from waterfall import lock_util
+from waterfall.failure_signal import FailureSignal
 from waterfall import waterfall_config
 
 
@@ -115,7 +115,7 @@ class ExtractSignalPipeline(BasePipeline):
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
     for step_name in failure_info.get('failed_steps', []):
-      if not waterfall_config.IsStepSupportedForMaster(step_name, master_name):
+      if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
         # Bail out if the step is not supported.
         continue
 

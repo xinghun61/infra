@@ -698,6 +698,11 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
         ]
     }
 
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)
@@ -722,26 +727,26 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                         'digest': 'isolatedhashabctest-223'
                     }
                 ],
-                'tests':{
-                    'Unittest1.Subtest1':{
-                      'current_failure': 99,
-                      'first_failure': 98,
-                      'last_pass': 97
+                'tests': {
+                    'Unittest1.Subtest1': {
+                        'current_failure': 99,
+                        'first_failure': 98,
+                        'last_pass': 97
                     },
-                    'Unittest2.Subtest1':{
-                      'current_failure': 99,
-                      'first_failure': 98,
-                      'last_pass': 97
+                    'Unittest2.Subtest1': {
+                        'current_failure': 99,
+                        'first_failure': 98,
+                        'last_pass': 97
                     },
-                    'Unittest3.Subtest2':{
-                      'current_failure': 99,
-                      'first_failure': 98,
-                      'last_pass': 96
+                    'Unittest3.Subtest2': {
+                        'current_failure': 99,
+                        'first_failure': 98,
+                        'last_pass': 96
                     },
-                    'Unittest3.Subtest3':{
-                      'current_failure': 99,
-                      'first_failure': 98,
-                      'last_pass': 96
+                    'Unittest3.Subtest3': {
+                        'current_failure': 99,
+                        'first_failure': 98,
+                        'last_pass': 96
                     }
                 }
             },
@@ -826,22 +831,22 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             },
         },
         'b': {
-            'files':{
+            'files': {
                 'x/y/f99_1.cc': [],
                 'y/z/f98.cc': [123, 456],
             },
-            'tests':{
-                'Unittest1.Subtest1':{
+            'tests': {
+                'Unittest1.Subtest1': {
                     'files': {
                         'x/y/f99_1.cc': [],
                     },
                 },
-                'Unittest2.Subtest1':{
+                'Unittest2.Subtest1': {
                     'files': {
                         'y/z/f98.cc': [123],
                     },
                 },
-                'Unittest3.Subtest2':{
+                'Unittest3.Subtest2': {
                     'files': {
                         'y/z/f98.cc': [456],
                     },
@@ -849,6 +854,11 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             }
         }
     }
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
 
     def MockGetChangedLines(repo_info, touched_file, line_numbers, _):
       # Only need line_numbers, ignoring the first two parameters.
@@ -908,7 +918,7 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
                         },
                     }
                 ],
-                'tests':[
+                'tests': [
                     {
                         'test_name': 'Unittest1.Subtest1',
                         'first_failure': 98,
@@ -982,8 +992,6 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
     self.assertEqual(expected_analysis_result, analysis_result)
 
   def testAnalyzeBuildFailureForUnsupportedStep(self):
-    def _MockIsStepSupportedForMaster(*_):
-      return False
     failure_info = {
         'master_name': 'm',
         'failed': True,
@@ -1023,8 +1031,12 @@ class BuildFailureAnalysisTest(testing.AppengineTestCase):
             },
         ]
     }
-    self.mock(waterfall_config, 'IsStepSupportedForMaster',
-              _MockIsStepSupportedForMaster)
+
+    def MockStepIsSupportedForMaster(*_):
+      return False
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+
     analysis_result = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
     self.assertEqual(expected_analysis_result, analysis_result)

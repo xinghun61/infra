@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-""" This module is to provide Findit service APIs through Cloud Endpoints:
+"""This module is to provide Findit service APIs through Cloud Endpoints:
 
 Current APIs include:
 1. Analysis of build failures in Chromium waterfalls.
@@ -13,12 +13,11 @@ import logging
 
 import endpoints
 from protorpc import messages
-from protorpc import message_types
 from protorpc import remote
 
-from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
-from waterfall import masters
+from waterfall import buildbot
+from waterfall import waterfall_config
 
 
 _BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
@@ -61,7 +60,7 @@ class _BuildFailureAnalysisResult(messages.Message):
   is_sub_test = messages.BooleanField(5, variant=messages.Variant.BOOL,
                                       required=True)
   test_name = messages.StringField(6)
-  first_known_failed_build_number=messages.IntegerField(
+  first_known_failed_build_number = messages.IntegerField(
       7, variant=messages.Variant.INT32)
   suspected_cls = messages.MessageField(_SuspectedCL, 8, repeated=True)
 
@@ -118,7 +117,7 @@ class FindItApi(remote.Service):
 
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
-      if not (master_name and masters.MasterIsSupported(master_name)):
+      if not (master_name and waterfall_config.MasterIsSupported(master_name)):
         continue
 
       # If the build failure was already analyzed and a new analysis is

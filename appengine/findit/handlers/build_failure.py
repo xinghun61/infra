@@ -12,9 +12,9 @@ from base_handler import BaseHandler
 from base_handler import Permission
 from model.wf_analysis import WfAnalysis
 from model.wf_analysis_result_status import RESULT_STATUS_TO_DESCRIPTION
-from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
-from waterfall import masters
+from waterfall import buildbot
+from waterfall import waterfall_config
 
 
 BUILD_FAILURE_ANALYSIS_TASKQUEUE = 'build-failure-analysis-queue'
@@ -77,7 +77,7 @@ class BuildFailure(BaseHandler):
     master_name, builder_name, build_number = build_info
 
     analysis = None
-    if not (masters.MasterIsSupported(master_name) or
+    if not (waterfall_config.MasterIsSupported(master_name) or
             users.is_current_user_admin()):
       # If the build failure was already analyzed, just show it to the user.
       analysis = WfAnalysis.Get(master_name, builder_name, build_number)

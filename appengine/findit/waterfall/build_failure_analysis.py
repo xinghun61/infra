@@ -680,7 +680,7 @@ def AnalyzeBuildFailure(
         'first_failure': step_failure_info['first_failure'],
         'last_pass': step_failure_info.get('last_pass'),
         'suspected_cls': [],
-        'supported': waterfall_config.IsStepSupportedForMaster(
+        'supported': waterfall_config.StepIsSupportedForMaster(
             step_name, master_name)
     }
 

@@ -7,9 +7,8 @@ import json
 
 from base_handler import BaseHandler
 from base_handler import Permission
-from waterfall import buildbot
-from waterfall import masters
 from model.wf_step import WfStep
+from waterfall import buildbot
 
 
 class FailureLog(BaseHandler):
@@ -38,17 +37,17 @@ class FailureLog(BaseHandler):
 
     step = WfStep.Get(master_name, builder_name, build_number,
                       step_name)
-    
+
     if not step:
       return BaseHandler.CreateError('No failure log available.', 404)
 
     failure_log = self._GetFormattedJsonLogIfSwarming(step)
 
     data = {
-          'master_name': master_name,
-          'builder_name': builder_name,
-          'build_number': build_number,
-          'step_name': step_name,
-          'step_logs': failure_log,
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'step_logs': failure_log,
     }
     return {'template': 'failure_log.html', 'data': data}

@@ -9,7 +9,7 @@ from testing_utils import testing
 from findit_api import FindItApi
 from model.wf_analysis import WfAnalysis
 from model import wf_analysis_status
-from waterfall import masters
+from waterfall import waterfall_config
 
 
 class FinditApiTest(testing.EndpointsTestCase):
@@ -18,7 +18,8 @@ class FinditApiTest(testing.EndpointsTestCase):
   def _MockMasterIsSupported(self, supported):
     def MockMasterIsSupported(*_):
       return supported
-    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
+    self.mock(waterfall_config, 'MasterIsSupported',
+              MockMasterIsSupported)
 
   def testUnrecognizedMasterUrl(self):
     builds = {
@@ -377,7 +378,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                         },
                     }
                 ],
-                'tests':[
+                'tests': [
                     {
                         'test_name': 'Unittest1.Subtest1',
                         'first_failure': 3,

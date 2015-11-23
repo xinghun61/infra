@@ -10,7 +10,7 @@ from base_handler import Permission
 from common.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
-from waterfall import masters
+from waterfall import waterfall_config
 
 
 _ALERTS_SOURCE_URL = 'https://sheriff-o-matic.appspot.com/alerts'
@@ -51,7 +51,7 @@ def _GetLatestBuildFailures(http_client):
   build_failures = {}
   for alert in alerts:
     master_name = buildbot.GetMasterNameFromUrl(alert['master_url'])
-    if not (master_name and masters.MasterIsSupported(master_name)):
+    if not (master_name and waterfall_config.MasterIsSupported(master_name)):
       continue
 
     builder_name = alert['builder_name']

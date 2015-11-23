@@ -11,10 +11,11 @@ from testing_utils import testing
 from common.http_client_appengine import RetryHttpClient
 from handlers import monitor_alerts
 from waterfall import build_failure_analysis_pipelines
-from waterfall import masters
+from waterfall import waterfall_config
 
 
 class _MockedHttpClient(RetryHttpClient):
+
   def __init__(self, status_code, content):
     self.status_code = status_code
     self.content = content
@@ -37,7 +38,7 @@ class MonitorAlertsTest(testing.AppengineTestCase):
     def MockMasterIsSupported(master_name):
       return master_name != 'm0'
 
-    self.mock(masters, 'MasterIsSupported', MockMasterIsSupported)
+    self.mock(waterfall_config, 'MasterIsSupported', MockMasterIsSupported)
 
   def testGetLatestBuildFailuresWhenFailedToPullAlerts(self):
     http_client = _MockedHttpClient(404, 'Not Found')

@@ -23,11 +23,11 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
   """
 
   FAILURE_SIGNALS = {
-      "abc_test": {
-        "files": {
-          "content/common/gpu/media/v4l2_video_encode_accelerator.cc": [306]
-        },
-        "keywords": {}
+      'abc_test': {
+          'files': {
+              'content/common/gpu/media/v4l2_video_encode_accelerator.cc': [306]
+          },
+          'keywords': {}
       }
   }
 
@@ -44,10 +44,6 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
               'first_failure': 123,
           }
       }
-  }
-
-  UNSUPPORTED_STEPS = {
-      'master': ['unsupported_step']
   }
 
   def testExtractStorablePortionOfLogWithSmallLogData(self):
@@ -79,6 +75,11 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
         master_name, builder_name, build_number, step_name)
     with self.mock_urlfetch() as urlfetch:
       urlfetch.register_handler(step_log_url, 'If used, test should fail!')
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
     signals = pipeline.run(self.FAILURE_INFO)
@@ -178,6 +179,12 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     # go to step log first when both logs exist.
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+
     pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
     signals = pipeline.run(self.FAILURE_INFO)
 
@@ -215,6 +222,12 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
 
@@ -248,6 +261,11 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
 
     self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
@@ -295,16 +313,16 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
-                'tests':{
-                    'Unittest2.Subtest1':{
-                      'current_failure': 223,
-                      'first_failure': 222,
-                      'last_pass': 221
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
                     },
-                    'Unittest3.Subtest2':{
-                      'current_failure': 223,
-                      'first_failure': 222,
-                      'last_pass': 221
+                    'Unittest3.Subtest2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
                     }
                 }
             }
@@ -314,37 +332,42 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step = WfStep.Create('m', 'b', 223, 'abc_test')
     step.isolated = True
     step.log_data = (
-         '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6N'
-         'TY3OiBGYWlsdXJlCkVSUk9SOlsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jvc2Vjb25kcw'
-         'pFUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTNzMi5jYzoxMjM6IEZhaWx1cmUK"'
-         ', "Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCmEvYi91M3My'
-         'LmNjOjEyMzogRmFpbHVyZQo="}')
+        '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6N'
+        'TY3OiBGYWlsdXJlCkVSUk9SOlsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jvc2Vjb25kcw'
+        'pFUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTNzMi5jYzoxMjM6IEZhaWx1cmUK"'
+        ', "Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCmEvYi91M3My'
+        'LmNjOjEyMzogRmFpbHVyZQo="}')
     step.put()
 
     expected_signals = {
-        'abc_test':{
-            'files':{
+        'abc_test': {
+            'files': {
                 'a/b/u2s1.cc': [567],
                 'a/b/u3s2.cc': [123, 110]
             },
-            'keywords':{},
-            'tests':{
-                'Unittest2.Subtest1':{
-                    'files':{
+            'keywords': {},
+            'tests': {
+                'Unittest2.Subtest1': {
+                    'files': {
                         'a/b/u2s1.cc': [567],
                         'a/b/u3s2.cc': [123]
                     },
-                    'keywords':{}
+                    'keywords': {}
                 },
-                'Unittest3.Subtest2':{
-                    'files':{
+                'Unittest3.Subtest2': {
+                    'files': {
                         'a/b/u3s2.cc': [110, 123]
                     },
-                    'keywords':{}
+                    'keywords': {}
                 }
             }
         }
     }
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
@@ -362,16 +385,16 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
                 'last_pass': 221,
                 'current_failure': 223,
                 'first_failure': 222,
-                'tests':{
-                    'Unittest2.Subtest1':{
-                      'current_failure': 223,
-                      'first_failure': 222,
-                      'last_pass': 221
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
                     },
-                    'Unittest3.Subtest2':{
-                      'current_failure': 223,
-                      'first_failure': 222,
-                      'last_pass': 221
+                    'Unittest3.Subtest2': {
+                        'current_failure': 223,
+                        'first_failure': 222,
+                        'last_pass': 221
                     }
                 }
             }
@@ -384,33 +407,56 @@ class ExtractSignalPipelineTest(testing.AppengineTestCase):
     step.put()
 
     expected_signals = {
-        'abc_test':{
-            'files':{},
-            'keywords':{},
-            'tests':{}
+        'abc_test': {
+            'files': {},
+            'keywords': {},
+            'tests': {}
         }
     }
+
+    def MockStepIsSupportedForMaster(*_):
+      return True
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
-  def MockIsStepSupportedForMaster(self, step_name, master_name):
-    return step_name in self.UNSUPPORTED_STEPS.get(master_name, [])
-
   def testBailOutForUnsupportedStep(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    supported_step_name = 'abc_test'
     failure_info = {
-        'master_name': 'master',
+        'master_name': master_name,
         'builder_name': 'b',
         'build_number': 123,
         'failed': True,
         'chromium_revision': 'a_git_hash',
         'failed_steps': {
-            'not_supported': {}
+            supported_step_name: {
+                'last_pass': 122,
+                'current_failure': 123,
+                'first_failure': 123,
+            },
+            'not_supported': {
+            }
         }
     }
-    expected_signals = {}
-    self.mock(waterfall_config, 'IsStepSupportedForMaster',
-              self.MockIsStepSupportedForMaster)
+
+    def MockStepIsSupportedForMaster(step_name, _):
+      return step_name == supported_step_name
+
+    def MockGetGtestResultLog(*_):
+      return None
+
+    self.mock(waterfall_config, 'StepIsSupportedForMaster',
+              MockStepIsSupportedForMaster)
+    self.MockGetStdiolog(master_name, builder_name, build_number,
+                         supported_step_name)
+    self.mock(buildbot, 'GetGtestResultLog', MockGetGtestResultLog)
+
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
-    self.assertEqual(expected_signals, signals)
+    self.assertEqual(self.FAILURE_SIGNALS, signals)
