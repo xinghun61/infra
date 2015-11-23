@@ -190,6 +190,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
       path='builds/{id}', http_method='GET')
+  @auth.public
   def get(self, request):
     """Returns a build by id."""
     build = self.service.get(request.id)
@@ -202,6 +203,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       PutRequestMessage, BuildResponseMessage,
       path='builds', http_method='PUT')
+  @auth.public
   def put(self, request):
     """Creates a new build."""
     build = self.service.add(
@@ -228,6 +230,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       PutBatchRequestMessage, PutBatchResponseMessage,
       path='builds/batch', http_method='PUT')
+  @auth.public
   def put_batch(self, request):
     """Creates builds."""
     build_futures = [
@@ -282,6 +285,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       SEARCH_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='search', http_method='GET')
+  @auth.public
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
@@ -312,6 +316,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       PEEK_REQUEST_RESOURCE_CONTAINER, SearchResponseMessage,
       path='peek', http_method='GET')
+  @auth.public
   def peek(self, request):
     """Returns available builds."""
     assert isinstance(request.bucket, list)
@@ -332,6 +337,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(LeaseRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/lease', http_method='POST')
+  @auth.public
   def lease(self, request):
     """Leases a build.
 
@@ -355,6 +361,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
       path='builds/{id}/reset', http_method='POST')
+  @auth.public
   def reset(self, request):
     """Forcibly unleases a build and resets its state to SCHEDULED."""
     build = self.service.reset(request.id)
@@ -369,6 +376,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(StartRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/start', http_method='POST')
+  @auth.public
   def start(self, request):
     """Marks a build as started."""
     build = self.service.start(request.id, request.lease_key, url=request.url)
@@ -383,6 +391,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(HeartbeatRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/heartbeat', http_method='POST')
+  @auth.public
   def heartbeat(self, request):
     """Updates build lease."""
     build = self.service.heartbeat(
@@ -407,6 +416,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       HeartbeatBatchRequestMessage, HeartbeatBatchResponseMessage,
       path='heartbeat', http_method='POST')
+  @auth.public
   def heartbeat_batch(self, request):
     """Updates multiple build leases."""
     heartbeats = [
@@ -449,6 +459,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(SucceedRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/succeed', http_method='POST')
+  @auth.public
   def succeed(self, request):
     """Marks a build as succeeded."""
     build = self.service.succeed(
@@ -469,6 +480,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(FailRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/fail', http_method='POST')
+  @auth.public
   def fail(self, request):
     """Marks a build as failed."""
     build = self.service.fail(
@@ -485,6 +497,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
       path='builds/{id}/cancel', http_method='POST')
+  @auth.public
   def cancel(self, request):
     """Cancels a build."""
     build = self.service.cancel(request.id)
@@ -505,6 +518,7 @@ class BuildBucketApi(remote.Service):
   @buildbucket_api_method(
       CancelBatchRequestMessage, CancelBatchResponseMessage,
       path='builds/cancel', http_method='POST')
+  @auth.public
   def cancel_batch(self, request):
     """Cancels builds."""
     res = self.CancelBatchResponseMessage()
@@ -530,6 +544,7 @@ class BuildBucketApi(remote.Service):
       ),
       message_types.VoidMessage,
       path='bucket/{bucket}/delete-scheduled', http_method='POST')
+  @auth.public
   def delete_scheduled_builds(self, request):
     """Deletes scheduled builds."""
     self.service.delete_scheduled_builds(

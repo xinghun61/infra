@@ -594,6 +594,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       path='package',
       name='fetchPackage')
+  @auth.public  # ACL check is inside
   def fetch_package(self, request):
     """Returns information about a package."""
     package_name = validate_package_name(request.package_name)
@@ -623,6 +624,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       path='package/search',
       name='listPackages')
+  @auth.public  # ACL check is inside
   def list_packages(self, request):
     """Returns packages in the given directory and possibly subdirectories."""
     path = request.path or ''
@@ -643,6 +645,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='DELETE',
       path='package',
       name='deletePackage')
+  @auth.public  # ACL check is inside
   def delete_package(self, request):
     """Deletes a package along with all its instances."""
     package_name = validate_package_name(request.package_name)
@@ -669,6 +672,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       path='instance',
       name='fetchInstance')
+  @auth.public  # ACL check is inside
   def fetch_instance(self, request):
     """Returns signed URL that can be used to fetch a package instance."""
     package_name = validate_package_name(request.package_name)
@@ -693,6 +697,7 @@ class PackageRepositoryApi(remote.Service):
       path='instance',
       http_method='POST',
       name='registerInstance')
+  @auth.public  # ACL check is inside
   def register_instance(self, request):
     """Registers a new package instance in the repository."""
     package_name = validate_package_name(request.package_name)
@@ -741,6 +746,7 @@ class PackageRepositoryApi(remote.Service):
       path='ref',
       http_method='POST',
       name='setRef')
+  @auth.public  # ACL check is inside
   def set_ref(self, request):
     """Creates a ref or moves an existing one."""
     package_name = validate_package_name(request.package_name)
@@ -770,6 +776,7 @@ class PackageRepositoryApi(remote.Service):
       path='ref',
       http_method='GET',
       name='fetchRefs')
+  @auth.public  # ACL check is inside
   def fetch_refs(self, request):
     """Lists package instance refs (newest first)."""
     package_name = validate_package_name(request.package_name)
@@ -809,6 +816,7 @@ class PackageRepositoryApi(remote.Service):
       path='tags',
       http_method='GET',
       name='fetchTags')
+  @auth.public  # ACL check is inside
   def fetch_tags(self, request):
     """Lists package instance tags (newest first)."""
     package_name = validate_package_name(request.package_name)
@@ -840,6 +848,7 @@ class PackageRepositoryApi(remote.Service):
       path='tags',
       http_method='POST',
       name='attachTags')
+  @auth.public  # ACL check is inside
   def attach_tags(self, request):
     """Attaches a set of tags to a package instance."""
     package_name = validate_package_name(request.package_name)
@@ -870,6 +879,7 @@ class PackageRepositoryApi(remote.Service):
       path='tags',
       http_method='DELETE',
       name='detachTags')
+  @auth.public  # ACL check is inside
   def detach_tags(self, request):
     """Removes given tags from a package instance."""
     package_name = validate_package_name(request.package_name)
@@ -901,6 +911,7 @@ class PackageRepositoryApi(remote.Service):
       path='instance/search',
       http_method='GET',
       name='searchInstances')
+  @auth.public  # ACL check is inside
   def search_instances(self, request):
     """Returns package instances with given tag (in no particular order)."""
     tag = validate_instance_tag(request.tag)
@@ -937,6 +948,7 @@ class PackageRepositoryApi(remote.Service):
       path='instance/resolve',
       http_method='GET',
       name='resolveVersion')
+  @auth.public  # ACL check is inside
   def resolve_version(self, request):
     """Returns instance ID of an existing instance given a ref or a tag."""
     package_name = validate_package_name(request.package_name)
@@ -971,6 +983,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       path='acl',
       name='fetchACL')
+  @auth.public  # ACL check is inside
   def fetch_acl(self, request):
     """Returns access control list for a given package path."""
     package_path = validate_package_path(request.package_path)
@@ -993,6 +1006,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='POST',
       path='acl',
       name='modifyACL')
+  @auth.public  # ACL check is inside
   def modify_acl(self, request):
     """Changes access control list for a given package path."""
     package_path = validate_package_path(request.package_path)
@@ -1028,6 +1042,7 @@ class PackageRepositoryApi(remote.Service):
       http_method='GET',
       path='client',
       name='fetchClientBinary')
+  @auth.public  # ACL check is inside
   def fetch_client_binary(self, request):
     """Returns signed URL that can be used to fetch CIPD client binary."""
     package_name = validate_package_name(request.package_name)

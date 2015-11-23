@@ -141,6 +141,7 @@ class UIApi(remote.Service):
   """API for the console configuration UI."""
 
   @auth.endpoints_method(message_types.VoidMessage, Configs)
+  @auth.public
   def get_projects(self, _request):
     project_configs = config.get_project_configs(
         'project.cfg', project_config_pb2.ProjectCfg)
@@ -153,6 +154,7 @@ class UIApi(remote.Service):
     return Configs(configs=configList)
 
   @auth.endpoints_method(GetGraphsRequest, TimeSeriesPacket)
+  @auth.public
   def get_graphs(self, request):
     logging.debug('Got %s', request)
     project_id = request.project_id
