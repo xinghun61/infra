@@ -1,7 +1,8 @@
-application: chromiumbugs
-version: 2014-05-02
-runtime: python
+application: chromiumbugs-hr
+version: use-make-deploy-to-set
+runtime: python27
 api_version: 1
+threadsafe: yes
 
 default_expiration: "1h"
 
@@ -13,4 +14,4 @@ handlers:
   static_dir: html/ajah
 
 - url: /.*
-  script: main.py
+  script: main.application
