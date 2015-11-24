@@ -328,6 +328,9 @@ def parse_cq_data(json_data):
           buildnumber = get_int_value(build_properties, 'buildnumber')
           issue = get_int_value(build_properties, 'issue')
           patchset = get_int_value(build_properties, 'patchset')
+          attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
+          time_started = datetime.datetime.utcfromtimestamp(
+              attempt_start_ts / 1000000)
         except ValueError:
           continue
 
@@ -345,6 +348,7 @@ def parse_cq_data(json_data):
         build_run = BuildRun(parent=patchset_builder_runs.key,
                              buildnumber=buildnumber,
                              result=result,
+                             time_started=time_started,
                              time_finished=timestamp)
 
         previous_runs = BuildRun.query(
@@ -372,6 +376,7 @@ def parse_cq_data(json_data):
             # We saw the flake and then the pass.
             flaky_run = FlakyRun(
                 failure_run=previous_run.key,
+                failure_run_time_started=previous_run.time_started,
                 failure_run_time_finished=previous_run.time_finished,
                 success_run=build_run.key)
             flaky_run.put()
@@ -382,6 +387,7 @@ def parse_cq_data(json_data):
             # historical data.
             flaky_run = FlakyRun(
                 failure_run=build_run.key,
+                failure_run_time_started=build_run.time_started,
                 failure_run_time_finished=build_run.time_finished,
                 success_run=previous_run.key)
             flaky_run.put()

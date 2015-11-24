@@ -134,6 +134,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 100,
                 'issue': 987654321,
                 'patchset': 1,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -151,6 +152,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 101,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
             },
             # Ignored because issue, patchset and buildnumber in
@@ -164,6 +166,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 101,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -176,6 +179,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 102,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -188,6 +192,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 103,
                 'issue': 100200300,
                 'patchset': 1,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -199,6 +204,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 104,
                 'issue': 100200300,
                 'patchset': 1,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -212,6 +218,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 105,
                 'issue': 987654321,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -223,6 +230,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 106,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -235,6 +243,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 106,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -247,6 +256,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 107,
                 'issue': 100300200,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -259,6 +269,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': [108, 300, 500],
                 'issue': [100300200, -1, -2],
                 'patchset': [20001, 0],
+                'attempt_start_ts': [1446221292000000, 0],
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -270,6 +281,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
               'build_properties': {
                 'issue': 100300200,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -282,6 +294,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 'abc',
                 'issue': 100300200,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -306,6 +319,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 109,
                 'issue': 123456789,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -319,6 +333,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'buildnumber': 110,
                 'issue': 987654321,
                 'patchset': 20001,
+                'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
               'builder': 'test-builder',
@@ -368,19 +383,21 @@ class CQStatusTestCase(testing.AppengineTestCase):
     self.assertEqual(tasks[1].url, '/issues/process/%s' % key3.urlsafe())
     self.assertEqual(tasks[2].url, '/issues/process/%s' % key5.urlsafe())
 
-  def _create_flaky_run(self, tf):
+  def _create_flaky_run(self, ts, tf):
     pbr = PatchsetBuilderRuns(
         issue=123456789, patchset=20001, master='test.master',
         builder='test-builder').put()
-    br_f = BuildRun(
-        parent=pbr, buildnumber=100, result=2, time_finished=tf).put()
-    br_s = BuildRun(
-        parent=pbr, buildnumber=101, result=0, time_finished=tf).put()
-    return FlakyRun(
-        failure_run=br_f, success_run=br_s, failure_run_time_finished=tf).put()
+    br_f = BuildRun(parent=pbr, buildnumber=100, result=2, time_started=ts,
+                    time_finished=tf).put()
+    br_s = BuildRun(parent=pbr, buildnumber=101, result=0, time_started=ts,
+                    time_finished=tf).put()
+    return FlakyRun(failure_run=br_f, success_run=br_s,
+                    failure_run_time_started=ts,
+                    failure_run_time_finished=tf).put()
 
   def test_get_flaky_run_reason_ignores_invalid_json(self):
-    fr_key = self._create_flaky_run(datetime.datetime.utcnow())
+    now = datetime.datetime.utcnow()
+    fr_key = self._create_flaky_run(now - datetime.timedelta(hours=1), now)
 
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = 'invalid-json'
@@ -390,7 +407,7 @@ class CQStatusTestCase(testing.AppengineTestCase):
 
   def test_get_flaky_run_reason(self):
     now = datetime.datetime.utcnow()
-    fr_key = self._create_flaky_run(now)
+    fr_key = self._create_flaky_run(now - datetime.timedelta(hours=1), now)
 
     urlfetch_mock = mock.Mock()
     urlfetch_mock.return_value.content = TEST_BUILDBOT_JSON_REPLY
@@ -519,9 +536,11 @@ class CQStatusTestCase(testing.AppengineTestCase):
         'more': False, 'cursor': None, 'results': []})
 
     FetchStatus(cursor='xxx', begin='1', end='2', done=True).put()
-    BuildRun(time_finished=datetime.datetime(2015, 10, 30, 13, 17, 42),
+    BuildRun(time_started=datetime.datetime(2015, 10, 30, 12, 17, 42),
+             time_finished=datetime.datetime(2015, 10, 30, 13, 17, 42),
              buildnumber=0, result=0).put()
-    BuildRun(time_finished=datetime.datetime(2015, 10, 30, 12, 17, 42),
+    BuildRun(time_started=datetime.datetime(2015, 10, 30, 11, 17, 42),
+             time_finished=datetime.datetime(2015, 10, 30, 12, 17, 42),
              buildnumber=0, result=0).put()
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
       cq_status.fetch_cq_status()

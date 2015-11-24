@@ -21,6 +21,8 @@ class FlakeOccurance(ndb.Model):
 # it to turn red, each represented by a FlakeOccurance.
 class FlakyRun(ndb.Model):
   failure_run = ndb.KeyProperty(BuildRun, required=True)
+  # A copy of failure_run.time_started to reduce lookups.
+  failure_run_time_started = ndb.DateTimeProperty(default=datetime.datetime.max)
   # A copy of failure_run.time_finished to reduce lookups.
   failure_run_time_finished = ndb.DateTimeProperty(required=True)
   success_run = ndb.KeyProperty(BuildRun, required=True)

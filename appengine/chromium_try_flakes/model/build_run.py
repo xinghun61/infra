@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 from google.appengine.ext import ndb
 
 from status import build_result
@@ -35,8 +36,9 @@ class BuildRun(ndb.Model):  # pragma: no cover
             str(self.buildnumber))
 
   buildnumber = ndb.IntegerProperty(required=True)
-  result = ndb.IntegerProperty(required=True)  
+  result = ndb.IntegerProperty(required=True)
   time_finished = ndb.DateTimeProperty(required=True)
+  time_started = ndb.DateTimeProperty(default=datetime.datetime.max)
 
   is_success = ndb.ComputedProperty(
       lambda self: build_result.isResultSuccess(self.result))
