@@ -81,6 +81,7 @@ def initialize(app=None, is_local_unittest=None):
 
 def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
   start_time = time_fn()
+  response_status = 0
   try:
     ret = dispatcher(request, response)
   except webapp2.HTTPException as ex:
