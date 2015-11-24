@@ -349,13 +349,32 @@ class GerritAgentTestCase(unittest.TestCase):
 
   @mock.patch.object(requests.Session, 'request')
   def test_get_issue(self, mock_method):
+    # By default, Gerrit doesn't return revisions data.
+    info_without_revisions = TEST_CHANGE_INFO.copy()
+    info_without_revisions.pop('revisions')
+    info_without_revisions.pop('current_revision')
     mock_method.return_value = _create_mock_return(
-        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(TEST_CHANGE_INFO)), 200)
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(info_without_revisions)), 200)
     result = self.gerrit.get_issue('test/project~weird/branch~hash')
     mock_method.assert_called_once_with(
         data=None,
         method='GET',
         params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'test%2Fproject~weird%2Fbranch~hash/detail'),
+        headers=HEADERS)
+    self.assertEquals(result, info_without_revisions)
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_issue_with_revisions(self, mock_method):
+    mock_method.return_value = _create_mock_return(
+        '%s%s' % (GERRIT_JSON_HEADER, json.dumps(TEST_CHANGE_INFO)), 200)
+    result = self.gerrit.get_issue('test/project~weird/branch~hash',
+                                   revisions='ALL_REVISIONS')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params={'o': 'ALL_REVISIONS'},
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS)

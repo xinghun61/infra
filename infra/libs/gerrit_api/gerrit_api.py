@@ -378,17 +378,24 @@ class Gerrit(object):
       raise UnexpectedResponseException(code, body)
     return body
 
-  def get_issue(self, issue_id):
+  def get_issue(self, issue_id, revisions=None):
     """Returns a ChangeInfo dictionary for a given issue_id or None if it
     doesn't exist.
+
     Documentation:
     https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-change-detail
 
     Args:
       issue_id is gerrit issue id like project~branch~change_id.
+      revisions either None (default) or 'CURRENT_REVISION' or 'ALL_REVISIONS'.
     """
     request_path = '/changes/%s/detail' % urllib.quote(issue_id, safe='~')
-    code, body = self._request(method='GET', request_path=request_path)
+    params = None
+    if revisions is not None:
+      assert revisions in ('CURRENT_REVISION', 'ALL_REVISIONS')
+      params = {'o': revisions}
+    code, body = self._request(method='GET', request_path=request_path,
+                               params=params)
     if code == 404:
       return None
     if code != 200:
@@ -462,7 +469,7 @@ def _is_response_cached(method, full_url):
     full_url (str): url, including the protocol
   Returns:
     is_cached (bool):
-"""
+  """
   if method != 'GET':
     return False # pragma: no cover
   try:
