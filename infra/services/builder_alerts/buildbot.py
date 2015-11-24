@@ -101,7 +101,7 @@ def fetch_master_json(master_url):  # pragma: no cover
   url = '%s/get_master/%s' % (CBE_BASE, master_name)
   response = fetch_json(url)
 
-  if not json:
+  if not response:
     response = fetch_json('%s/json' % master_url)
 
   return response

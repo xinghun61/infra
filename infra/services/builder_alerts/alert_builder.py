@@ -260,7 +260,8 @@ def find_current_step_failures(fetch_function, recent_build_ids):
 
   # Some builders use a sub-step pattern which just generates noise.
   # FIXME: This code shouldn't contain constants like these.
-  IGNORED_STEP_NAMES = ['steps', 'trigger', 'slave_steps']
+  IGNORED_STEP_NAMES = ['steps', 'trigger', 'slave_steps',
+                        'recipe failure reason']
 
   ignored_failures = [s for s in step_failures
                       if s['step_name'] in IGNORED_STEP_NAMES]
