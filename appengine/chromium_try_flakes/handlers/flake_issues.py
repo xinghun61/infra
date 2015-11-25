@@ -136,10 +136,8 @@ class ProcessIssue(webapp2.RequestHandler):
                                         'Via-TryFlakes', 'Sheriff-Chromium']})
     flake_issue = api.create(new_issue)
     flake.issue_id = flake_issue.id
-
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
-    return flake_issue
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):

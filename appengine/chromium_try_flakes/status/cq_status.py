@@ -227,12 +227,15 @@ def get_flaky_run_reason(flaky_run_key):
     if not build_result.isResultFailure(result):
       continue
     step_name = step['name']
-    if step_name == 'steps' or step_name.startswith('[swarming]') or \
-       step_name == 'presubmit' or step_name == 'recipe failure reason':
-      # recipe code shows errors twice with first being 'steps'. also when a
-      # swarming test fails, it shows up twice. also ignore 'presubmit' since
-      # it changes from fail to pass for same patchset depending on new lgtm.
-      # finally 'recipe failure reason' step would also be red on any failure.
+    # The following step failures are ignored:
+    #  - steps: always red when any other step is red (not actual failure)
+    #  - [swarming] ...: summary step would also be red (do not double count) 
+    #  - presubmit: typically red due to missing OWNERs LGTM, not a flake
+    #  - recipe failure reason: always red when build fails (not actual failure)
+    #  - test results: always red when another step is red (not actual failure)
+    if (step_name == 'steps' or step_name.startswith('[swarming]') or
+        step_name == 'presubmit' or step_name == 'recipe failure reason' or
+        step_name == 'test results'):
       continue
     failed_steps.append(step)
 
